@@ -1,0 +1,51 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t001-baseline-20260806",
+  "generated_at": "2026-08-06T08:42:29Z",
+  "actor": "codex-agent",
+  "repository": "bynanci/courtside-tw",
+  "baseline": {
+    "main_commit_sha": "bd6c5c67db8aac43910c5e372a9ccbea9cc63aae",
+    "constitution_path": ".specify/memory/constitution.md",
+    "constitution_on_main": {
+      "exists": false,
+      "receipt": "GitHub contents read returned 404 Not Found."
+    },
+    "source_plan_path": "specs/001-taiwan-basketball-magazine-ebook/plan.md",
+    "source_plan_blob_sha": "8f4472b838961818c1e10b5a11653fe5942ce817",
+    "task_path": "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    "task_blob_sha": "a1ccba65b40d213c5202857e2c45bb7fc9922daa",
+    "task_status": "unchecked"
+  },
+  "provisional_gates": [
+    "Spec traceability",
+    "Contract first",
+    "Immutable publication",
+    "Rights before reach",
+    "Testable slices",
+    "Accessible and fast",
+    "Progressive enhancement",
+    "Least privilege",
+    "Web3 least agency",
+    "Operational recovery",
+    "Simplicity budget"
+  ],
+  "acceptance_boundary": {
+    "required": [
+      "Translate all provisional gates into normative project rules.",
+      "Include approval and amendment governance.",
+      "Keep status proposed until explicit human approval."
+    ],
+    "not_authorized": [
+      "Approve or ratify the constitution.",
+      "Mark T001 complete.",
+      "Merge to main.",
+      "Start T002."
+    ]
+  },
+  "proof": {
+    "claim": "T001 is incomplete before this change and its source gates are explicit.",
+    "result": "pass",
+    "confidence": 0.98
+  }
+}

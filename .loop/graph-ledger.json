@@ -1,0 +1,357 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-ticket-supervisor-t001",
+  "graph_version": 4,
+  "run_id": "courtside-tw-t001-20260806",
+  "status": "running",
+  "iteration": 2,
+  "started_at": "2026-08-06T08:42:29Z",
+  "updated_at": "2026-08-06T08:59:55Z",
+  "current_frontier": [
+    "s-terminal-policy"
+  ],
+  "blocked_nodes": [],
+  "terminal_state": null,
+  "next_action": "Record the approval on PR #2, mark it ready, squash merge the exact verified head, then read back main.",
+  "events": [
+    {
+      "event_id": "evt-001-graph-initialized",
+      "at": "2026-08-06T08:42:29Z",
+      "actor": "codex-supervisor",
+      "type": "graph_initialized",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": ".loop/graphify-loop.yaml",
+            "after": "Bounded L2/L1/L3 graph for T001 with explicit authority, budgets, proofs, memory, and stop states."
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/l2-reconciliation.json"
+      ],
+      "proof_receipts": [],
+      "failure_signature": null,
+      "decision": "Dispatch T001 only.",
+      "token_usage": {
+        "estimated": 6000,
+        "input": 0,
+        "output": 0,
+        "total": 6000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-002-cross-layer-edge-corrected",
+      "at": "2026-08-06T08:43:20Z",
+      "actor": "codex-agent",
+      "type": "graph_validation_repair",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.edges/e-review-trigger/type",
+            "before": "enables",
+            "after": "feedback"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t001-acceptance.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "strict validator",
+          "result": "Cross-layer execution edge rejected as intended."
+        }
+      ],
+      "failure_signature": "L1_MAY_INFORM_L3_ONLY_THROUGH_FEEDBACK_OR_EVIDENCE",
+      "decision": "Represent automated L1 evidence as feedback to the human L3 trigger.",
+      "token_usage": {
+        "estimated": 1000,
+        "input": 0,
+        "output": 0,
+        "total": 1000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-003-terminal-reachability-corrected",
+      "at": "2026-08-06T08:43:50Z",
+      "actor": "codex-agent",
+      "type": "graph_validation_repair",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "graph.entry_nodes",
+            "after": "t-human-review"
+          },
+          {
+            "op": "add",
+            "path": "graph.edges/e-l1-stop",
+            "after": "p-t001-acceptance enables the named stop policy."
+          },
+          {
+            "op": "replace",
+            "path": "flow.source",
+            "before": "t-supervisor",
+            "after": "t-human-review"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t001-acceptance.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "strict validator",
+          "result": "All actions reach a terminal node and the flow sink is reachable."
+        }
+      ],
+      "failure_signature": "EXECUTION_DAG_TERMINAL_UNREACHABLE",
+      "decision": "Keep L1 completion and L3 approval as separate valid execution paths joined by feedback evidence.",
+      "token_usage": {
+        "estimated": 1500,
+        "input": 0,
+        "output": 0,
+        "total": 1500
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-004-authoritative-state-reconciled",
+      "at": "2026-08-06T08:42:29Z",
+      "actor": "codex-supervisor",
+      "type": "authoritative_state_reconciled",
+      "base_graph_version": 3,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-reconcile/status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-reconciliation/status",
+            "before": "planned",
+            "after": "done"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/l2-reconciliation.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "p-reconciliation",
+          "result": "pass",
+          "confidence": 0.97
+        }
+      ],
+      "failure_signature": null,
+      "decision": "T001 is the only dispatched ready frontier.",
+      "token_usage": {
+        "estimated": 5000,
+        "input": 0,
+        "output": 0,
+        "total": 5000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-005-t001-draft-validated",
+      "at": "2026-08-06T08:44:34Z",
+      "actor": "codex-agent",
+      "type": "l1_iteration_completed",
+      "base_graph_version": 3,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-inspect-gates/status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-t001-baseline/status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-draft-constitution/status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-t001-acceptance/status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/g-t001-approval/status",
+            "before": "planned",
+            "after": "needs_human"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t001-baseline.json",
+        ".loop/evidence/t001-acceptance.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "p-t001-baseline",
+          "result": "pass",
+          "confidence": 0.98
+        },
+        {
+          "proof": "p-t001-acceptance",
+          "result": "pass",
+          "confidence": 0.96
+        }
+      ],
+      "failure_signature": null,
+      "decision": "The proposal is review-ready but remains unratified.",
+      "token_usage": {
+        "estimated": 17000,
+        "input": 0,
+        "output": 0,
+        "total": 17000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-006-draft-pr-published",
+      "at": "2026-08-06T08:47:21Z",
+      "actor": "codex-supervisor",
+      "type": "human_gate_requested",
+      "base_graph_version": 3,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "ledger.status",
+            "before": "running",
+            "after": "needs_human"
+          },
+          {
+            "op": "replace",
+            "path": "ledger.terminal_state",
+            "before": null,
+            "after": "needs_human"
+          },
+          {
+            "op": "add",
+            "path": "external.pull_request",
+            "after": "https://github.com/bynanci/courtside-tw/pull/2"
+          }
+        ]
+      },
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/pull/2",
+        ".loop/evidence/t001-acceptance.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "remote branch blob read-back",
+          "result": "7/7 validated artifact SHAs match"
+        },
+        {
+          "proof": "draft pull request",
+          "result": "open, draft, unmerged",
+          "head_sha": "58b24a9a4825af573a141bf76de74d599117e3a8",
+          "base_sha": "bd6c5c67db8aac43910c5e372a9ccbea9cc63aae"
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Stop before ratification and merge; wait for explicit human review.",
+      "token_usage": {
+        "estimated": 2500,
+        "input": 0,
+        "output": 0,
+        "total": 2500
+      },
+      "terminal_reason": "T001 constitution approval and protected-branch merge require a human decision."
+    },
+    {
+      "event_id": "evt-007-t001-human-approved",
+      "at": "2026-08-06T08:59:55Z",
+      "actor": "human-mark",
+      "type": "human_gate_approved",
+      "base_graph_version": 3,
+      "new_graph_version": 4,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/t-human-review/status",
+            "before": "ready",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-review-package/status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-human-approval/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/g-t001-approval/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": ".specify/memory/constitution.md/status",
+            "before": "PROPOSED",
+            "after": "RATIFIED 0.1.0"
+          }
+        ]
+      },
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/pull/2",
+        ".specify/memory/constitution.md"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "p-human-approval",
+          "level": "P3",
+          "result": "pass",
+          "receipt": "Mark explicitly instructed: 核准 T001 v0.1.0 並 merge"
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Ratify constitution v0.1.0 and authorize squash merge of PR #2.",
+      "token_usage": {
+        "estimated": 1200,
+        "input": 0,
+        "output": 0,
+        "total": 1200
+      },
+      "terminal_reason": null
+    }
+  ]
+}

@@ -1,0 +1,489 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-ticket-supervisor-t001
+objective: Produce a review-ready proposed project constitution for T001 on its dedicated branch and draft pull request, with reproducible evidence, then stop before human approval or merge.
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - Reconcile main, tasks.md, the T001 branch, and pull-request state in bynanci/courtside-tw.
+    - Draft and validate .specify/memory/constitution.md from the provisional gates in plan.md.
+    - Publish only T001 artifacts to ticket/t001-project-constitution and open a draft pull request.
+  out:
+    - Approving the constitution, marking T001 complete, or merging the pull request.
+    - Starting T002 or any implementation task.
+    - Deployments, protected-branch writes, secrets, providers, payments, or production changes.
+
+policy:
+  authority:
+    allowed:
+      - Read authoritative GitHub state and scoped specification artifacts.
+      - Write T001 documentation, graph, ledger, and proof artifacts on the dedicated branch.
+      - Run deterministic local validation and open a draft pull request.
+    requires_approval:
+      - Approve or amend the project constitution.
+      - Mark T001 complete or dispatch T002.
+      - Merge to main, deploy, reprioritize, or expand scope.
+    forbidden:
+      - Infer approval from silence or from passing automated checks.
+      - Weaken provisional gates or alter unrelated user work.
+      - Write secrets, personal data, draft content, or signing material to evidence.
+  human_gates:
+    - constitution approval and T001 acceptance
+    - protected-branch merge
+    - architecture, scope, priority, or risk-limit change
+    - destructive, irreversible, production, authentication, authorization, secret, payment, or external commitment
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+graph:
+  entry_nodes:
+    - x-github-state
+    - t-supervisor
+    - t-human-review
+  terminal_nodes:
+    - s-terminal-policy
+
+  loops:
+    - id: l1-t001-execution
+      layer: L1
+      owner: codex-agent
+      trigger_nodes: [t-t001-ready]
+      action_nodes: [a-inspect-gates, a-draft-constitution]
+      proof_nodes: [p-t001-baseline, p-t001-acceptance]
+      memory_nodes: [m-l1-ledger]
+      stop_nodes: [s-terminal-policy]
+      budgets:
+        max_iterations: 3
+        max_minutes: 60
+        max_same_failure: 2
+        max_graph_changes: 12
+        max_tokens: 50000
+
+    - id: l2-ticket-supervisor
+      layer: L2
+      owner: codex-supervisor
+      trigger_nodes: [t-supervisor]
+      action_nodes: [a-reconcile]
+      proof_nodes: [p-reconciliation]
+      memory_nodes: [m-l2-ledger]
+      stop_nodes: [s-terminal-policy]
+      budgets:
+        max_iterations: 3
+        max_minutes: 30
+        max_same_failure: 2
+        max_graph_changes: 8
+        max_tokens: 24000
+
+    - id: l3-constitution-approval
+      layer: L3
+      owner: human-mark
+      trigger_nodes: [t-human-review]
+      action_nodes: [a-review-package]
+      proof_nodes: [p-human-approval]
+      memory_nodes: [m-l3-decisions]
+      stop_nodes: [s-terminal-policy]
+      budgets:
+        max_iterations: 3
+        max_minutes: 90
+        max_same_failure: 2
+        max_graph_changes: 8
+        max_tokens: 30000
+
+  nodes:
+    - id: x-github-state
+      kind: external
+      layer: EXTERNAL
+      label: Authoritative GitHub repository state
+      owner: github
+      status: done
+      risk: low
+      confidence:
+        score: 0.98
+        basis: Connector read-back of repository, refs, task blob, and pull-request search on 2026-08-06.
+        evidence_refs: [.loop/evidence/l2-reconciliation.json]
+      budget:
+        effort_hours: 0.1
+        tokens: 1500
+      config:
+        source_type: github-repository
+        freshness: Read during this run before dispatch.
+        limitations: GitHub compare metadata briefly lagged ref read-back; file blob SHA is used as the branch-content receipt.
+
+    - id: t-supervisor
+      kind: trigger
+      layer: L2
+      label: Ticket reconciliation requested
+      owner: codex-supervisor
+      status: done
+      risk: low
+      confidence:
+        score: 1.0
+        basis: Explicit user request to automatically start solving tickets.
+        evidence_refs: [.loop/evidence/l2-reconciliation.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: Reconcile the authoritative ticket graph and dispatch only dependency-satisfied work.
+        inputs_required: [tasks.md, main ref, ticket branches, pull requests, previous ledger]
+        dedupe: repository plus main-sha plus tasks-blob-sha plus run-id
+
+    - id: a-reconcile
+      kind: action
+      layer: L2
+      label: Reconcile tickets, branches, dependencies, and gates
+      owner: codex-supervisor
+      status: done
+      risk: low
+      confidence:
+        score: 0.97
+        basis: T001 is the first unchecked task, has no prerequisite, and has no existing pull request.
+        evidence_refs: [.loop/evidence/l2-reconciliation.json]
+      budget:
+        effort_hours: 0.25
+        tokens: 5000
+      config:
+        workflow: [read authoritative state, compare task dependencies, fast-forward the T001 branch, select one bounded ready item]
+        allowed: [read repository status, update ledger, fast-forward an empty ticket branch, route T001]
+        requires_approval: [merge, mark task complete, reprioritize, expand scope]
+        forbidden: [dispatch T002 before T001 approval, self-approve a gate, create work solely to remain active]
+
+    - id: p-reconciliation
+      kind: proof
+      layer: L2
+      label: Authoritative ticket reconciliation proof
+      owner: codex-supervisor
+      status: done
+      risk: low
+      confidence:
+        score: 0.97
+        basis: IDs, dependency order, blob SHA, branch content, and pull-request search were deterministically compared.
+        evidence_refs: [.loop/evidence/l2-reconciliation.json]
+      budget:
+        effort_hours: 0.2
+        tokens: 3000
+      config:
+        level: P2
+        claim: T001 is the only ready frontier and its branch is based on the current reviewed plan.
+        method: Compare tasks.md order, PR search, main SHA, and plan.md blob SHA on main and the ticket branch.
+        evidence_path: .loop/evidence/l2-reconciliation.json
+        required: true
+        baseline_required: false
+
+    - id: m-l2-ledger
+      kind: memory
+      layer: L2
+      label: Supervisor append-only ledger
+      owner: codex-supervisor
+      status: done
+      risk: low
+      confidence:
+        score: 0.95
+        basis: Versioned graph deltas and reconciliation receipts are recorded in the repository.
+        evidence_refs: [.loop/graph-ledger.json]
+      budget:
+        effort_hours: 0.1
+        tokens: 1200
+      config:
+        path: .loop/graph-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+
+    - id: t-t001-ready
+      kind: trigger
+      layer: L1
+      label: T001 project constitution is ready
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        score: 0.97
+        basis: T001 has no prerequisite and plan.md contains the provisional gate source.
+        evidence_refs: [.loop/evidence/t001-baseline.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: T001 is unchecked, dependency-free, bounded to one constitution file, and no duplicate pull request exists.
+        inputs_required: [T001 text, plan.md Constitution Check, spec.md requirements]
+        dedupe: T001 plus plan-blob-sha plus constitution-path
+
+    - id: a-inspect-gates
+      kind: action
+      layer: L1
+      label: Establish the T001 baseline and gate inventory
+      owner: codex-agent
+      status: done
+      risk: low
+      confidence:
+        score: 0.98
+        basis: The missing constitution and all eleven provisional plan gates were directly inspected.
+        evidence_refs: [.loop/evidence/t001-baseline.json]
+      budget:
+        effort_hours: 0.25
+        tokens: 4000
+      config:
+        workflow: [confirm constitution absence, extract provisional gates, map normative requirements, preserve approval status]
+        allowed: [read spec, plan, tasks, record baseline]
+        requires_approval: [change acceptance criteria]
+        forbidden: [invent approval, omit a provisional gate, modify task completion state]
+
+    - id: p-t001-baseline
+      kind: proof
+      layer: L1
+      label: Reproducible T001 baseline
+      owner: verifier
+      status: done
+      risk: low
+      confidence:
+        score: 0.98
+        basis: GitHub has no constitution file on main and plan.md enumerates eleven provisional gates.
+        evidence_refs: [.loop/evidence/t001-baseline.json]
+      budget:
+        effort_hours: 0.2
+        tokens: 2000
+      config:
+        level: P2
+        claim: T001 is incomplete before this change and its normative source is unambiguous.
+        method: Read main at the recorded SHA; verify the target file is absent and enumerate the Constitution Check table.
+        evidence_path: .loop/evidence/t001-baseline.json
+        required: true
+        baseline_required: true
+
+    - id: a-draft-constitution
+      kind: action
+      layer: L1
+      label: Draft the smallest complete project constitution
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        score: 0.94
+        basis: The proposal preserves all provisional gates and adds explicit governance without changing product scope.
+        evidence_refs: [.loop/evidence/t001-acceptance.json]
+      budget:
+        effort_hours: 1.0
+        tokens: 12000
+      config:
+        workflow: [write normative principles, define evidence gates, define amendment governance, mark proposal pending approval]
+        allowed: [create constitution proposal, add traceability and governance, run static checks]
+        requires_approval: [ratify constitution, change principle, mark T001 complete, merge]
+        forbidden: [weaken plan gates, claim ratification, start T002]
+
+    - id: p-t001-acceptance
+      kind: proof
+      layer: L1
+      label: T001 draft acceptance proof
+      owner: verifier
+      status: done
+      risk: medium
+      confidence:
+        score: 0.96
+        basis: Strict graph validation and deterministic content checks cover every requested gate and the pending approval state.
+        evidence_refs: [.loop/evidence/t001-acceptance.json]
+      budget:
+        effort_hours: 0.4
+        tokens: 4000
+      config:
+        level: P2
+        claim: The proposed constitution is review-ready, complete against T001, and does not falsely mark itself approved.
+        method: Strict graph validation, JSON validation, required-heading and gate-term checks, and diff-scope inspection.
+        evidence_path: .loop/evidence/t001-acceptance.json
+        required: true
+        baseline_required: true
+
+    - id: m-l1-ledger
+      kind: memory
+      layer: L1
+      label: T001 execution ledger
+      owner: codex-agent
+      status: done
+      risk: low
+      confidence:
+        score: 0.95
+        basis: Append-only events preserve baseline, graph deltas, and proof receipts.
+        evidence_refs: [.loop/graph-ledger.json]
+      budget:
+        effort_hours: 0.1
+        tokens: 1500
+      config:
+        path: .loop/graph-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+
+    - id: t-human-review
+      kind: trigger
+      layer: L3
+      label: T001 constitution review is required
+      owner: human-mark
+      status: done
+      risk: high
+      confidence:
+        score: 1.0
+        basis: T001 explicitly requires approval, which automated proof cannot substitute.
+        evidence_refs: [.specify/memory/constitution.md]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: The draft and automated evidence pass, but ratification and merge remain pending.
+        inputs_required: [constitution diff, proof receipts, explicit approval question]
+        dedupe: T001 plus draft-pr-number plus constitution-version
+
+    - id: a-review-package
+      kind: action
+      layer: L3
+      label: Review the constitution proposal and evidence
+      owner: human-mark
+      status: done
+      risk: high
+      confidence:
+        score: 0.9
+        basis: A bounded draft pull request will expose the exact diff and proof.
+        evidence_refs: [.specify/memory/constitution.md, .loop/evidence/t001-acceptance.json]
+      budget:
+        effort_hours: 0.5
+        tokens: 3000
+      config:
+        workflow: [inspect principles and governance, inspect proof, approve or request a bounded amendment]
+        allowed: [approve, reject, request changes, amend acceptance]
+        requires_approval: [ratification, T001 completion, merge]
+        forbidden: [treat automated checks as human approval]
+
+    - id: p-human-approval
+      kind: proof
+      layer: L3
+      label: Explicit constitution approval
+      owner: human-mark
+      status: done
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: Approval is binary and cannot be inferred.
+        evidence_refs: [https://github.com/bynanci/courtside-tw/pull/2]
+      budget:
+        effort_hours: 0.1
+        tokens: 500
+      config:
+        level: P3
+        claim: The accountable human approved constitution version 0.1.0 and its governance.
+        method: Explicit approving review or instruction on the draft pull request, followed by merge read-back.
+        evidence_path: .loop/evidence/t001-human-approval.json
+        required: true
+        baseline_required: false
+
+    - id: g-t001-approval
+      kind: gate
+      layer: L3
+      label: Human T001 approval and merge gate
+      owner: human-mark
+      status: done
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: Explicit human ratification and merge are required by T001 and repository policy.
+        evidence_refs: [https://github.com/bynanci/courtside-tw/pull/2]
+      budget:
+        effort_hours: 0.25
+        tokens: 1000
+      config:
+        condition: Approve the proposed constitution before ratification, task completion, merge, or T002 dispatch.
+        approver: human-mark
+        required: true
+
+    - id: m-l3-decisions
+      kind: memory
+      layer: L3
+      label: Constitution decision ledger
+      owner: human-mark
+      status: ready
+      risk: medium
+      confidence:
+        score: 0.9
+        basis: The pull request and append-only graph ledger will hold the decision receipt.
+        evidence_refs: [.loop/graph-ledger.json]
+      budget:
+        effort_hours: 0.1
+        tokens: 1200
+      config:
+        path: .loop/graph-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+
+    - id: s-terminal-policy
+      kind: stop
+      layer: GLOBAL
+      label: Named terminal-state policy
+      owner: policy
+      status: running
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: Deterministic terminal states and budget limits are explicit.
+        evidence_refs: [.loop/graph-ledger.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        states:
+          success: Required proof passes, the constitution is explicitly approved and merged, and T001 is marked complete with read-back.
+          no_op: Authoritative state already satisfies T001 with an approved constitution and no safe change is required.
+          blocked: A named input, dependency, permission, or external system is unavailable.
+          stalled: The same failure or no-evidence-delta limit is reached.
+          exhausted: An iteration, time, graph-change, token, or cost budget is reached.
+          needs_human: The review-ready draft exists but constitution approval or merge is pending.
+          cancelled: The user cancels or the governing specification becomes invalid.
+
+  edges:
+    - {id: e-external-reconcile, from: x-github-state, to: a-reconcile, type: feedback, required: true, confidence: 0.98, token_capacity: 6000}
+    - {id: e-l2-trigger, from: t-supervisor, to: a-reconcile, type: enables, required: true, confidence: 1.0, token_capacity: 12000}
+    - {id: e-l2-proof, from: a-reconcile, to: p-reconciliation, type: verifies, required: true, confidence: 0.97, token_capacity: 10000}
+    - {id: e-l2-work, from: p-reconciliation, to: t-t001-ready, type: enables, required: true, confidence: 0.97, token_capacity: 9000}
+    - {id: e-l2-memory-a, from: a-reconcile, to: m-l2-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3500}
+    - {id: e-l2-memory-p, from: p-reconciliation, to: m-l2-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3500}
+    - {id: e-l2-feedback, from: m-l2-ledger, to: a-reconcile, type: feedback, required: true, confidence: 0.95, token_capacity: 5000}
+
+    - {id: e-l1-trigger, from: t-t001-ready, to: a-inspect-gates, type: enables, required: true, confidence: 0.97, token_capacity: 14000}
+    - {id: e-l1-baseline, from: a-inspect-gates, to: p-t001-baseline, type: verifies, required: true, confidence: 0.98, token_capacity: 10000}
+    - {id: e-l1-change, from: p-t001-baseline, to: a-draft-constitution, type: enables, required: true, confidence: 0.98, token_capacity: 9000}
+    - {id: e-l1-acceptance, from: a-draft-constitution, to: p-t001-acceptance, type: verifies, required: true, confidence: 0.96, token_capacity: 9000}
+    - {id: e-l1-memory-i, from: a-inspect-gates, to: m-l1-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3500}
+    - {id: e-l1-memory-d, from: a-draft-constitution, to: m-l1-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3500}
+    - {id: e-l1-memory-p, from: p-t001-acceptance, to: m-l1-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3500}
+    - {id: e-l1-feedback, from: m-l1-ledger, to: a-inspect-gates, type: feedback, required: true, confidence: 0.95, token_capacity: 5000}
+    - {id: e-l1-stop, from: p-t001-acceptance, to: s-terminal-policy, type: enables, required: false, confidence: 0.96, token_capacity: 5000}
+
+    - {id: e-review-trigger, from: p-t001-acceptance, to: t-human-review, type: feedback, required: true, confidence: 0.96, token_capacity: 8000}
+    - {id: e-l3-trigger, from: t-human-review, to: a-review-package, type: enables, required: true, confidence: 1.0, token_capacity: 7000}
+    - {id: e-l3-proof, from: a-review-package, to: p-human-approval, type: verifies, required: true, confidence: 1.0, token_capacity: 6000}
+    - {id: e-l3-gate, from: p-human-approval, to: g-t001-approval, type: requires_approval, required: true, confidence: 1.0, token_capacity: 5000}
+    - {id: e-gate-stop, from: g-t001-approval, to: s-terminal-policy, type: approves, required: true, confidence: 1.0, token_capacity: 4000}
+    - {id: e-l3-memory-a, from: a-review-package, to: m-l3-decisions, type: records, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-l3-memory-p, from: p-human-approval, to: m-l3-decisions, type: records, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-l3-feedback, from: m-l3-decisions, to: a-review-package, type: feedback, required: true, confidence: 0.9, token_capacity: 3500}
+
+flow:
+  source: t-human-review
+  sink: s-terminal-policy
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - next_action

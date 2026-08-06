@@ -1,0 +1,52 @@
+flowchart TD
+  subgraph G_EXTERNAL["External Evidence"]
+    N0[/"[EXTERNAL] external · Authoritative GitHub repository state"/]
+  end
+  subgraph G_L3["L3 · Human Direction"]
+    N11(["[L3] trigger · T001 constitution review is required"])
+    N12["[L3] action · Review the constitution proposal and evidence"]
+    N13{{"[L3] proof · Explicit constitution approval"}}
+    N14{"[L3] gate · Human T001 approval and merge gate"}
+    N15[("[L3] memory · Constitution decision ledger")]
+  end
+  subgraph G_L2["L2 · Supervisor"]
+    N1(["[L2] trigger · Ticket reconciliation requested"])
+    N2["[L2] action · Reconcile tickets, branches, dependencies, and gates"]
+    N3{{"[L2] proof · Authoritative ticket reconciliation proof"}}
+    N4[("[L2] memory · Supervisor append-only ledger")]
+  end
+  subgraph G_L1["L1 · Execution"]
+    N5(["[L1] trigger · T001 project constitution is ready"])
+    N6["[L1] action · Establish the T001 baseline and gate inventory"]
+    N7{{"[L1] proof · Reproducible T001 baseline"}}
+    N8["[L1] action · Draft the smallest complete project constitution"]
+    N9{{"[L1] proof · T001 draft acceptance proof"}}
+    N10[("[L1] memory · T001 execution ledger")]
+  end
+  subgraph G_GLOBAL["Global Policy"]
+    N16(["[GLOBAL] stop · Named terminal-state policy"])
+  end
+  N0 -.->|"feedback · 6000t"| N2
+  N1 -->|"enables · 12000t"| N2
+  N2 -->|"verifies · 10000t"| N3
+  N3 -->|"enables · 9000t"| N5
+  N2 -.->|"records · 3500t"| N4
+  N3 -.->|"records · 3500t"| N4
+  N4 -.->|"feedback · 5000t"| N2
+  N5 -->|"enables · 14000t"| N6
+  N6 -->|"verifies · 10000t"| N7
+  N7 -->|"enables · 9000t"| N8
+  N8 -->|"verifies · 9000t"| N9
+  N6 -.->|"records · 3500t"| N10
+  N8 -.->|"records · 3500t"| N10
+  N9 -.->|"records · 3500t"| N10
+  N10 -.->|"feedback · 5000t"| N6
+  N9 -->|"enables · 5000t"| N16
+  N9 -.->|"feedback · 8000t"| N11
+  N11 -->|"enables · 7000t"| N12
+  N12 -->|"verifies · 6000t"| N13
+  N13 -->|"requires_approval · 5000t"| N14
+  N14 -->|"approves · 4000t"| N16
+  N12 -.->|"records · 2500t"| N15
+  N13 -.->|"records · 2500t"| N15
+  N15 -.->|"feedback · 3500t"| N12
