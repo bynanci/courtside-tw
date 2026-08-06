@@ -7,13 +7,15 @@
 
 以「公開閱讀優先、出版流程可追溯、媒體權利先於發布」為核心，建立一個 Mobile-first 數位雜誌平台。公開期刊與文章由 Nuxt SSR 輸出，Spring Boot modular monolith 負責內容版本、審稿、發布、媒體權利、搜尋、收藏與稽核；PostgreSQL 保存交易資料與結構化內容文件，S3 相容儲存保存原始媒體與公開衍生檔。
 
+體驗層以 Motion for Vue 提供克制、可關閉的 editorial motion，並以 p5.js 2.x 實作一種 schema-constrained `generative-canvas` block。Web3 採 progressive decentralization：先產生可重現的 publication manifest 與 digest，再以可替換 adapter 選擇性發布 IPFS CIDv1、EVM-compatible 存證與 SIWE；核心閱讀、SEO、OIDC 與出版 workflow 不依賴鏈、錢包或 gateway。
+
 MVP 採三個可獨立驗收的 P1 slice：
 
 1. 匿名讀者瀏覽期刊並開始閱讀。
-2. 讀者完成長篇文章閱讀與期刊內導覽。
+2. 讀者完成具靜態 fallback、reduced-motion 與基礎生成式視覺的長篇文章閱讀與期刊內導覽。
 3. 編輯團隊完成草稿到發布／下架的受控工作流。
 
-搜尋、帳號收藏／續讀列為 P2；離線期刊列為 P3。付款、付費牆、留言、即時比分與原生 App 不進入此 feature。
+搜尋、帳號收藏／續讀與可選 Web3 provenance／wallet 列為 P2；離線期刊列為 P3。付款、付費牆、NFT、代幣、token gate、留言、即時比分與原生 App 不進入此 feature。
 
 ## Technical Context
 
@@ -26,7 +28,10 @@ MVP 採三個可獨立驗收的 P1 slice：
 | API | REST + OpenAPI 3.1；錯誤使用 RFC 9457 Problem Details；generated TypeScript client |
 | Storage | PostgreSQL 18；S3-compatible object storage；CDN |
 | Content model | Versioned block document（JSON Schema + JSONB），禁止任意 HTML 成為 canonical source |
+| Motion | Motion for Vue (`motion-v`，官方文件基準 v13)；只用於 page／layout transition、TOC reveal、progress feedback 與明確 gesture，簡單 hover/focus 優先 CSS |
+| Generative visual | p5.js 2.x；Nuxt client-only dynamic import、instance mode、fixed seed、schema-bounded preset、SSR poster／summary fallback，不接受任意 JavaScript／shader |
 | Authentication | OIDC Authorization Code + PKCE；Nuxt BFF session 使用 Secure/HttpOnly/SameSite cookie；Spring Security 驗證 JWT |
+| Optional Web3 | EIP-1193 provider boundary + ERC-4361 SIWE；framework-agnostic `viem` adapter；RFC 8785 JCS manifest；`CIDv1/raw/sha2-256` mirror；EVM-compatible digest registry behind feature flags |
 | Search | PostgreSQL `pg_trgm` + normalized search document；以 curated zh-TW query set 驗證，達取消條件才導入專用搜尋服務 |
 | Background work | PostgreSQL transactional outbox + worker profile；資料庫鎖確保排程冪等，MVP 不引入 message broker |
 | Frontend testing | Vitest、Vue Test Utils、Playwright、axe-core、Lighthouse CI |
@@ -39,7 +44,7 @@ MVP 採三個可獨立驗收的 P1 slice：
 
 ### Version Baseline Verification
 
-版本基準於 2026-08-06 依官方來源確認：Nuxt 4.5 已發布且使用 Vite 8；Spring Boot 官方穩定頁顯示 4.1.0；Node.js 24 為 LTS；PostgreSQL 18 為 current、19 仍為 beta。實作時鎖定相容 patch 版本，不追逐 RC／beta。
+版本基準於 2026-08-06 依官方來源確認：Nuxt 4.5 已發布且使用 Vite 8；Spring Boot 官方穩定頁顯示 4.1.0；Node.js 24 為 LTS；PostgreSQL 18 為 current、19 仍為 beta；Motion 官方文件為 v13 且 Vue package 為 `motion-v`；p5.js 官方文件與 tutorials 已以 2.x 為基準。EIP-1193 與 ERC-4361 均為 Final；實作時鎖定相容 patch 版本，不追逐 RC／beta，Web3 provider 套件升級需重跑 wallet／signature regression suite。
 
 ## Constitution Check
 
@@ -53,7 +58,9 @@ MVP 採三個可獨立驗收的 P1 slice：
 | Rights before reach | 缺少有效授權與署名的媒體不得送審或發布；撤回高於快取可用性 | PASS |
 | Testable slices | 每個 P1 User Story 先建立失敗的 contract／integration／E2E 測試再實作 | PASS |
 | Accessible and fast | WCAG 2.2 AA 與 Core Web Vitals 是 release gate，不是發布後 backlog | PASS |
+| Progressive enhancement | Motion／p5.js 不得隱藏 SSR 內容；reduced-motion、無 JS、canvas failure 都有完整 fallback | PASS |
 | Least privilege | OIDC、RBAC、BFF session、短效上傳 URL；草稿與原始媒體預設不公開 | PASS |
+| Web3 least agency | 不要求錢包、不持有讀者私鑰、不把個資／草稿／可撤回媒體上鏈；所有外部寫入經 outbox、feature flag 與人類核准的 provider ADR | PASS |
 | Operational recovery | 冪等 worker、可觀測性、RPO 24h／RTO 4h 與還原演練必須在 GA 前驗證 | PASS |
 | Simplicity budget | MVP 不引入 message broker、專用搜尋叢集、microservices 或付費系統 | PASS |
 
@@ -63,12 +70,14 @@ MVP 採三個可獨立驗收的 P1 slice：
 
 ```mermaid
 flowchart TD
-    R["Reader / Editor"] --> C["CDN + Nuxt Web/BFF"]
+    R["Reader / Editor"] --> C["CDN + Nuxt SSR/BFF"]
     C --> A["Spring Boot API"]
-    A --> D["PostgreSQL"]
+    C -. "client enhancement" .-> X["Motion + p5 + Wallet"]
+    A --> D["PostgreSQL + Outbox"]
     A --> O["S3 Media"]
     W["Worker profile"] --> D
     W --> O
+    W -. "P2 optional" .-> P["IPFS + EVM adapter"]
 ```
 
 ### Runtime Responsibilities
@@ -77,7 +86,10 @@ flowchart TD
 
 - SSR 公開首頁、期刊、文章、搜尋與 SEO metadata。
 - 渲染經 JSON Schema 驗證的內容 block；不使用 `v-html` 渲染 canonical content。
+- 以 `motion-v` 建立不改變語意的動態 pattern，啟動前檢查 reduced-motion；hydration 前不隱藏 SSR 內容。
+- 以 Vue client-only boundary 動態載入 p5.js instance；由 renderer 傳入經驗證 preset／seed／parameters，visibility 或 route 改變時 pause／dispose。
 - 提供後台 UI、OIDC callback 與 Secure/HttpOnly session。
+- P2 提供 EIP-1193 wallet adapter 與 SIWE challenge UI；wallet state 不進 Pinia durable state，account／chain change 使相關 session 失效或重新驗證。
 - 對 Spring API 使用 generated client；不得自行拼接隱性 API contract。
 - 提供匿名閱讀進度的 local adapter，登入後透過明確合併流程同步。
 - P3 才啟用 offline issue manifest 與 service worker content cache。
@@ -90,12 +102,14 @@ flowchart TD
 - 產生簽章上傳意圖、確認 checksum／MIME／尺寸與媒體處理狀態。
 - 只公開可發布投影，不讓 public endpoint 查詢 draft entity graph。
 - 將索引、媒體處理、排程發布、撤回與 CDN invalidation 事件寫入 outbox。
+- 產生 deterministic publication manifest，保存 digest 與 provenance 狀態；不直接在 request transaction 呼叫 RPC、pinning 或公鏈。
 
 #### Worker Profile
 
 - 與 API 共用 artifact 與 domain code，但以不同 process profile 執行。
 - 以 claim + lease + idempotency key 消費 outbox，不依賴單機 scheduler 正確性。
 - 執行媒體衍生圖、metadata 清除、排程發布、搜尋投影更新、撤回與 cache purge。
+- P2 以獨立 job 發布符合 rights policy 的 manifest／CID 與 chain digest；使用 managed signer／KMS 邊界，private key 不進 app config、DB、prompt 或普通日誌。
 - 工作失敗採 bounded retry + dead-letter state；超過門檻告警，不無限重試。
 
 ### Module Boundaries
@@ -110,6 +124,7 @@ flowchart TD
 | `search` | public search projection、query normalization、ranking | publication events、taxonomy |
 | `readerlibrary` | bookmarks、reading progress、account erasure | identity、publication |
 | `analytics` | consent-aware minimal product events and retention controls | identity、publication |
+| `provenance` | canonical manifests、CID／chain attestations、SIWE challenge、wallet links | publication、identity、media、audit、outbox |
 | `audit` | append-only security and publication events | none |
 | `outbox` | durable domain event delivery and worker lease | none |
 
@@ -148,6 +163,9 @@ flowchart TD
 | `search_document` | 已發布搜尋投影 | no draft content; versioned source checksum |
 | `outbox_event` | durable async work | unique idempotency key; lease and retry fields |
 | `audit_event` | append-only audit trail | no update/delete app permission |
+| `publication_provenance` | manifest digest、CID、chain reference、verification／withdrawal state | unique `(snapshot_id, manifest_version)`; no body or PII |
+| `wallet_identity_link` | optional off-chain reader／wallet relation | unique normalized chain namespace + address; explicit consent and revocation |
+| `siwe_challenge` | short-lived sign-in nonce | hashed nonce; single use; domain／chain／expiry binding |
 
 ### Content Document Contract
 
@@ -175,6 +193,8 @@ Canonical content 使用 `content-document.schema.json`，最外層至少包含�
 - 純文字搜尋投影由可信 server extractor 產生，不接受 client 直接提供。
 - media block 只保存 `assetId` 與展示選項，不保存任意外部 HTML。
 - iframe 僅允許明確 provider 與 canonical embed URL；無法識別時降級為外部連結。
+- `generative-canvas` 僅保存 `presetId`、`seed`、bounded numeric／enum parameters、`posterAssetId`、alt text 與非視覺摘要；不得保存 source code、shader、callback 或任意遠端 URL。
+- p5 preset registry 是受版本控制的 trusted code；未知 preset／version 以 poster 與摘要安全降級，不由內容 payload 動態 import module。
 - schema migration 必須是可重跑的純轉換，保留原 revision 與 migration evidence。
 
 ## Publication Lifecycle
@@ -203,7 +223,7 @@ stateDiagram-v2
 
 ## API Contract Surface
 
-所有 endpoint 以 `/api/v1` 為前綴，公開與受保護資源分離。以下是最小 contract，完整 OpenAPI 由 T006 建立。
+所有 endpoint 以 `/api/v1` 為前綴，公開與受保護資源分離。以下是最小 contract，完整 OpenAPI 由 T011 建立。
 
 ### Public
 
@@ -215,6 +235,7 @@ stateDiagram-v2
 | `GET` | `/public/search` | query + filters + cursor-paginated results |
 | `GET` | `/public/taxonomy/{type}` | active public filter terms |
 | `GET` | `/public/withdrawals` | signed/versioned offline withdrawal manifest |
+| `GET` | `/public/issues/{issueSlug}/provenance` | manifest digest、CID、attestation and verification status; never gates content |
 
 ### Reader
 
@@ -225,6 +246,9 @@ stateDiagram-v2
 | `GET` | `/me/progress` | current reader progress list |
 | `PUT` | `/me/progress/{articleId}` | revision-aware progress upsert |
 | `POST` | `/me/progress:merge` | explicit local/server merge preview + apply |
+| `POST` | `/auth/siwe/challenge` | short-lived domain／chain-bound nonce and ERC-4361 message fields |
+| `POST` | `/auth/siwe/verify` | signature verification and optional BFF session link |
+| `DELETE` | `/me/wallets/{chainNamespace}/{address}` | revoke off-chain wallet link after re-authentication |
 | `DELETE` | `/me` | verified account deletion workflow |
 
 ### Editorial
@@ -279,6 +303,55 @@ stateDiagram-v2
 - 圖片固定 width/height 或 aspect-ratio，使用 `srcset`、lazy loading 與 dominant placeholder 控制 CLS。
 - 閱讀進度以 block anchor 為主、百分比為輔，避免字級或 viewport 改變後定位失真。
 
+### Editorial experience direction
+
+視覺定位採「當代運動編輯設計」，不套用常見的加密貨幣霓虹 dashboard。Web3 資訊只出現在次要的 Edition Passport／來源抽屜，封面、目錄、正文與閱讀 CTA 仍以籃球內容為主。
+
+| Surface | Layout / visual role | Motion baseline | p5.js baseline | Static / reduced fallback |
+| --- | --- | --- | --- | --- |
+| Home / latest issue | 大型封面、非對稱標題、3 個以下主入口 | cover reveal + restrained stagger | none by default | 完整 SSR cover and links |
+| Issue detail | 封面、期號、主題、分章 TOC | cover-to-detail shared layout | optional `court-pulse-v1` poster hero | fixed poster + semantic TOC |
+| Article | 窄正文欄、寬媒體 breakout、sticky progress | progress interpolation + intentional block reveal | editorial-insert `generative-canvas` only | poster、alt text、data summary |
+| Edition Passport | digest／CID／chain status 的 compact evidence panel | status transition only | none | text status + copyable references |
+| Studio preview | 與公開 renderer 同源、參數表單在旁 | no decorative route motion | fixed-seed preview with explicit play/pause | generated poster preview |
+
+首個候選 preset 為 `court-pulse-v1`：以球場線條、投籃落點／文章數據與雜誌色票生成可重現的抽象圖。允許參數只包含 `density`、`tempo`、`lineWeight`、`paletteId` 與經 server 驗證的非個資數值序列；發布時以同 seed 產生 poster，preset 未通過 ADR／效能驗證則只交付 poster，不啟動 animation。
+
+### Motion system
+
+- 動態語彙限於 3–5 個具用途的 patterns：route fade/slide、issue-cover shared layout、TOC stagger、reading-progress interpolation、button／gesture feedback。
+- 尺寸、位置或內容重排才使用 Motion；單純 color、opacity hover／focus 優先 CSS transition，避免把 runtime animation library 當萬用調味料。
+- 所有 pattern 由 `features/motion/variants.ts` 集中輸出 duration、easing、spring 與 reduced-motion variants；feature component 不自行散落 magic numbers。
+- SSR DOM 必須是最終可讀狀態。Motion 只能從完成狀態開始增強，不得用 `opacity: 0` 等待 hydration。
+- route transition 不綁定資料取得完成；錯誤、慢 API 或 hydration failure 不能讓頁面卡在中間狀態。
+
+### p5.js creative runtime
+
+- 只採 instance mode，每個 block 由 `P5CanvasHost.vue` 擁有 mount、resize、pause、resume、remove lifecycle；禁止 global mode 汙染 `window`。
+- preset interface 固定為 `createSketch({ seed, params, palette, reducedMotion })`；schema 先 clamp 數值、限制 palette／mode enum，再傳入 trusted preset。
+- p5.js 與 preset 皆 dynamic import；IntersectionObserver 接近一個 viewport 才下載，document hidden／離開 viewport 時 `noLoop()`，route unmount 時 `remove()`。
+- reduced-motion 預設不自動播放；使用 poster 或單幀 `redraw()`，若互動有實質資訊則提供明確「啟用互動」按鈕。
+- canvas 同層提供可聚焦說明、資料摘要與下載／查看靜態圖入口；canvas 本身不可成為唯一資訊來源。
+
+## Web3 Boundary (P2, optional)
+
+Web3 採 hexagonal adapter，不改變 publication aggregate 的權威性：
+
+1. `PublicationService` 完成原子發布並產生 immutable snapshot checksum。
+2. `ManifestCanonicalizer` 將通過版本化 JSON Schema 與 I-JSON 約束的 payload 依 RFC 8785 JCS 產生 canonical UTF-8 bytes，再計算 SHA-256 digest；ID、decimal 與大整數使用 schema-defined string representation，禁止 runtime 自行猜測 number precision。
+3. outbox 觸發 `ProvenanceWorker`；rights policy 先決定只存 digest、發布 manifest，或允許鏡像公開 asset bytes。
+4. `DecentralizedMirrorPort` 以 canonical bytes 建立 `CIDv1 + raw multicodec + sha2-256` block 並驗證 round-trip；`ChainAttestationPort` 只寫入 manifest digest、CID digest、snapshot ID、schema version 與 timestamp。
+5. DB 保存 provider、network、contract、transaction、block confirmation 與 verification 狀態；public API 將 `PENDING`／`VERIFIED`／`FAILED`／`SUPERSEDED`／`WITHDRAWN` 明確呈現。
+
+設計限制：
+
+- PostgreSQL publication snapshot 是 workflow system of record；鏈上紀錄是 external attestation，不反向觸發核准、發布或角色變更。
+- IPFS 不等於永久保存。至少兩個可替換 pinning／gateway 路徑才可宣稱受管理的 availability；CID 只證明 bytes 對應，不證明內容合法或真實。
+- 驗證 CID 不採 provider 預設的 UnixFS、chunking 或 DAG layout；manifest verification profile 固定為 `CIDv1/raw/sha2-256`，任何 profile 變更都建立新 manifest schema/version 與 migration evidence。
+- 有期限、可撤回、含個資或 rights 不足的內容只記錄 digest，不發布 bytes；一旦公開到 permissionless network，系統不得承諾刪除第三方副本。
+- reader wallet 只在明確操作後 request accounts。SIWE nonce 單次、短效、domain／URI／chain／time bound；provider 回傳值一律視為不可信輸入。
+- MVP/P1 feature flags 預設 `web3.provenance=false`、`web3.wallet=false`；任何 RPC、gateway、contract 或 signer outage 都只降低驗證能力。
+
 ## Security and Privacy Plan
 
 ### Threat priorities
@@ -288,7 +361,10 @@ stateDiagram-v2
 3. OIDC token／session 外洩、CSRF 或角色提升。
 4. 簽章上傳被拿來放置任意檔案、超大檔或惡意 payload。
 5. 發布／下架重送、競態或 worker 重試造成不一致。
-6. 閱讀分析過度收集個資。
+6. Motion／p5.js 造成 hydration mismatch、認知負荷、暈動症、主執行緒壅塞或 lifecycle leak。
+7. 惡意 p5 payload、wallet provider、錯誤 chain、SIWE replay／phishing、RPC 或 signer 權限造成程式執行、錯誤身分或外部寫入。
+8. 將有限期媒體、草稿、個資或原始 storage key 寫入不可刪除的公鏈／去中心化網路。
+9. 閱讀分析過度收集個資。
 
 ### Controls
 
@@ -296,11 +372,17 @@ stateDiagram-v2
 - Nuxt BFF 使用 HttpOnly cookie、session rotation、CSRF token 與 strict redirect URI allowlist。
 - Spring Security method authorization；角色 mapping 只信任設定好的 issuer/audience/claim。
 - Content schema validation + sanitizer + CSP；禁止 inline script 與未知 iframe origin。
+- p5 payload 只允許 preset ID／seed／bounded parameters；禁止 `eval`、Function constructor、remote module、user shader 與任意 asset fetch；canvas host 有 deterministic dispose test。
+- Motion 與 p5.js 遵守 reduced-motion、lazy-load 與 main-thread budgets；UI 不以動畫完成事件作為唯一狀態轉換訊號。
 - 上傳 URL 短效、綁定 key／size／MIME；完成後 server 重新檢查 magic bytes 與 checksum。
 - 原始媒體 bucket 私有；公開只用不可猜測且可撤回的 variant URL。
 - 寫入 API 使用 idempotency key、transaction、optimistic lock 與 append-only audit。
 - 日誌不記錄 access token、完整文章正文、email、signed URL 或原始 media key。
 - Analytics 採最小事件與 consent gate；讀者可閱讀時不強迫接受非必要追蹤。
+- SIWE challenge 使用 single-use hashed nonce、短 TTL、domain／URI／chain binding、CSRF 與 rate limit；account／chain change、logout 或 unlink 立即失效相關 session。
+- EIP-1193 provider 視為 adversarial；驗證 account／chain／signature shape 與 error codes，不在載入頁面時自動 request accounts。
+- chain signer 使用隔離的 managed signer／KMS policy，只能呼叫 allowlisted contract method、network 與 bounded gas；request path 無 signer capability。
+- provenance canonicalizer 掃描並拒絕 PII、draft fields、original media keys 與 rights-ineligible assets；外部寫入先產生 exact manifest digest receipt。
 - CI 執行 dependency、secret、SAST 與 container scan；critical finding 阻擋 release。
 
 ## Search Plan
@@ -352,6 +434,8 @@ MVP 圖片上限與影片策略需在 implementation ADR 定稿；預設圖片�
 - Search latency、zero-result rate、query length bucket；原始 query 是否保存由 privacy review 決定。
 - Cache hit、purge latency、stale version observations。
 - Web Vitals、reader JS error、Studio save conflict、upload failure。
+- Motion reduced-motion selection、p5 chunk load／mount／dispose failure、active canvas count 與 long-task attribution；不保存可識別的互動軌跡。
+- Provenance job latency／state、CID round-trip、RPC provider、confirmation depth、gas upper bound、signer denial、SIWE challenge failure／replay；wallet address 不作 metrics label。
 
 ### Initial SLOs
 
@@ -374,6 +458,9 @@ MVP 圖片上限與影片策略需在 implementation ADR 定稿；預設圖片�
 - **Contract tests**: OpenAPI examples, status/error codes, generated client compile, backward compatibility diff.
 - **Integration tests**: PostgreSQL/S3 emulator/OIDC stubs via Testcontainers; publication transaction and worker idempotency.
 - **Component tests**: block renderers, TOC, reader navigation, editor validation, upload states.
+- **Motion tests**: variants 與 reduced-motion unit tests；hydration 前內容可見、transition interrupted／route error 的 component tests。
+- **p5 tests**: schema fixtures、fixed-seed preset determinism、dynamic-import boundary、visibility pause／resume、route unmount dispose 與 SSR poster／summary tests。
+- **Web3 contract tests**: RFC 8785 canonical manifest byte-for-byte fixtures、TypeScript／Java SHA-256 parity、`CIDv1/raw/sha2-256` recomputation、EIP-1193 event/error matrix、ERC-4361 domain／nonce／time／chain validation、adapter idempotency。
 - **E2E tests**: each P1 acceptance scenario; P2/P3 are added with their slice.
 - **Accessibility**: automated axe for core routes plus manual keyboard, VoiceOver/TalkBack/NVDA smoke test matrix.
 - **Performance**: Lighthouse CI budgets, k6 public reads, large 20-article issue, content document limit tests.
@@ -388,7 +475,9 @@ MVP 圖片上限與影片策略需在 implementation ADR 定稿；預設圖片�
 - zero critical/high exploitable security findings。
 - WCAG automated zero serious/critical，人工 smoke pass。
 - Lighthouse budgets pass on representative mobile profile。
+- p5.js 未進入無 generative block 的 route bundle；含 block 的 route 通過 poster／reduced-motion／dispose 與 representative Android performance gate。
 - publish/withdraw retry and idempotency evidence captured。
+- 若啟用 Web3 slice，manifest/CID/attestation round-trip、wallet rejection/replay 與 external-provider outage degradation tests 全數通過。
 - backup restore drill passed。
 
 ## Delivery and Rollback
@@ -407,12 +496,15 @@ MVP 圖片上限與影片策略需在 implementation ADR 定稿；預設圖片�
 3. 部署 Nuxt web，啟用新 client。
 4. smoke test public、editor、publish、withdraw。
 5. 以 feature flag 開啟 editor slice，再開 public routes。
+6. Motion pattern 與 p5 preset 分別以 feature flag 啟用；Web3 provenance 先 testnet／shadow write，再人工比對 manifest receipt，最後才允許 production adapter。
 
 ### Rollback rules
 
 - App rollback 不自動回滾已執行 migration；schema changes 採 expand → migrate → contract。
 - 發布內容 rollback 使用既有已核准 snapshot 重新指向，不覆寫 revision。
 - worker 新 job type 先支援舊 payload 版本；無法解析時 dead-letter，不猜測。
+- Motion／p5 發生 CWV、a11y 或錯誤率退化時關閉 creative flags，SSR poster 與正文保持可用。
+- Web3 rollback 只停用 wallet／new attestation／pinning job；既有鏈上紀錄不可刪除，必須以 `SUPERSEDED`／`WITHDRAWN` 狀態與新 manifest 修正，不偽造回滾。
 - 若公開讀取錯誤率 >2% 持續 5 分鐘、權限洩漏或撤回失效，立即關閉受影響 route／feature flag 並回退上一 image。
 
 ## Project Structure
@@ -438,10 +530,14 @@ specs/001-taiwan-basketball-magazine-ebook/
 │   │   │   │   ├── content-blocks/
 │   │   │   │   └── ui/
 │   │   │   ├── features/
+│   │   │   │   ├── creative/
+│   │   │   │   ├── motion/
 │   │   │   │   ├── issues/
 │   │   │   │   ├── reader/
 │   │   │   │   ├── search/
 │   │   │   │   ├── library/
+│   │   │   │   ├── provenance/
+│   │   │   │   ├── wallet/
 │   │   │   │   └── studio/
 │   │   │   ├── pages/
 │   │   │   └── stores/
@@ -463,6 +559,7 @@ specs/001-taiwan-basketball-magazine-ebook/
 │       │   ├── search/
 │       │   ├── readerlibrary/
 │       │   ├── analytics/
+│       │   ├── provenance/
 │       │   ├── audit/
 │       │   ├── outbox/
 │       │   └── shared/
@@ -471,10 +568,13 @@ specs/001-taiwan-basketball-magazine-ebook/
 ├── packages/
 │   ├── api-client/
 │   ├── content-schema/
+│   ├── creative-runtime/
+│   ├── web3-adapter/
 │   ├── eslint-config/
 │   └── tsconfig/
 ├── contracts/
 │   ├── openapi.yaml
+│   ├── provenance-manifest.schema.json
 │   └── content-document.schema.json
 ├── infra/
 │   ├── compose/
@@ -497,23 +597,28 @@ specs/001-taiwan-basketball-magazine-ebook/
 | 3. P1 Studio | editorial workflow + publication/withdrawal | US3 E2E + audit/idempotency evidence |
 | 4. P2 Discovery & library | search + taxonomy + bookmark/progress | US4/US5 independent tests |
 | 5. P3 Offline | issue download + withdrawal | US6 offline matrix |
-| 6. GA hardening | security、load、recovery、runbooks | release gate complete |
+| 6. P2 Web3 provenance | canonical manifest + optional CID／attestation／SIWE | US7 independent tests + external outage degradation |
+| 7. GA hardening | security、load、recovery、runbooks | release gate complete |
 
 ### Indicative Effort
 
-以 1 名全端工程師、0.5 名前端／設計支援、0.25 名編輯 domain owner 計算：P1 beta 約 10–12 週；P2 約 3–4 週；P3 約 2–3 週。這是容量規劃假設，不是交付承諾。若只有單一工程師，先停在 P1 beta 進行真實內容驗證，不同時啟動 P2/P3。
+以 1 名全端工程師、0.5 名前端／設計支援、0.25 名編輯 domain owner 計算：含 Motion／單一 p5 preset 的 P1 beta 約 11–13 週；搜尋／library P2 約 3–4 週；Web3 provenance P2 約 2–3 週；P3 offline 約 2–3 週。這是容量規劃假設，不是交付承諾。若只有單一工程師，先停在 P1 beta 進行真實內容驗證，不同時啟動其餘 slices。
 
 ## Risks, Trade-offs and Cancellation Conditions
 
 | Risk | Impact | Mitigation | Cancellation / downgrade condition |
 | --- | --- | --- | --- |
-| 自建編輯器範圍膨脹 | 延遲 P1、renderer 不一致 | MVP block types ≤10；每種 block 都需 schema/renderer/test | 首期需求超過 10 種 block 時，改採已驗證 headless editor adapter 或刪版型，不無限擴充 |
+| 自建編輯器範圍膨脹 | 延遲 P1、renderer 不一致 | MVP block types ≤11，新增名額只給 `generative-canvas`；每種 block 都需 schema/renderer/test | 首期需求超過 11 種 block 時，改採已驗證 headless editor adapter 或刪版型，不無限擴充 |
 | 媒體授權資料不完整 | 法律與品牌風險 | rights gate、署名必填、撤回 impact report | 無法由內容 owner 提供使用依據的媒體，不發布、不以技術手段繞過 |
 | 雙 runtime 維運成本 | build/deploy/debug 複雜 | monorepo、單一 OpenAPI、shared CI、modular monolith | 團隊無 Java 維運能力且 P1 尚未開始時，重新 ADR 評估 Nuxt full-stack；開始後不半途雙寫 |
 | 中文搜尋品質不足 | 找不到歷史內容 | curated query set、aliases、pg_trgm、可觀測 zero-result | 達 search escalation trigger 後獨立規劃搜尋服務，不塞進 P1 |
 | CDN 與下架不一致 | 撤回內容仍被讀到 | short TTL、surrogate purge、origin active pointer | provider 無法在 60 秒內可靠 purge，降低 cache TTL 或暫停 CDN article cache |
 | Offline 無法保證撤回 | 授權／法務風險 | withdrawal manifest、online revalidation、清楚限制 | 若必須保證永久離線裝置立即撤回，取消 web offline feature |
 | 大圖造成速度與成本問題 | CWV 失敗、流量費用 | direct upload、variants、AVIF/WebP、budget | SC-002 未達標即減少首屏媒體與動態版型，不能用提高 budget 解決 |
+| Motion／p5 過度設計 | 暈動症、閱讀干擾、hydration／CPU／battery 退化 | pattern allowlist、reduced-motion、client-only lazy load、poster fallback、dispose proof | 任一 P1 route 無法同時通過 SC-002／007／013／014，先關閉該 motion／preset，不降低品質門檻 |
+| p5 內容成為程式執行入口 | XSS、供應鏈與任意網路存取 | trusted preset registry、schema-bounded params、CSP、無 eval／remote code | 若內容 owner 要求上傳自訂 script／shader，移出本 feature 並先完成 sandbox threat model |
+| Web3 外部依賴與永久性 | RPC／gateway／gas 失敗、誤把 digest 當真實性、內容難撤回 | adapter + outbox、origin-first、feature flag、rights allowlist、明確 provenance semantics | 若 Web3 故障會阻斷匿名閱讀、signer 無法最小權限、或 rights owner 不接受永久公開風險，取消 chain／IPFS writes，只保留 off-chain manifest |
+| 錢包登入增加個資與 phishing surface | 帳號接管、重放、錯鏈、使用者誤簽 | SIWE standard message、short nonce、domain binding、no auto-connect、unlink path | 未通過 replay／domain／chain／account-change matrix 或無法提供清楚簽章說明，停用 wallet feature |
 | 內容 migration 未知 | 上線前大量人工成本 | MVP 假設新內容；另立 migration spec | 若上線必須先匯入 >500 篇舊文，先暫停 P2/P3，建立 migration feature |
 
 ## Complexity Tracking
@@ -524,16 +629,20 @@ specs/001-taiwan-basketball-magazine-ebook/
 | Immutable revisions + publication snapshots | 防止靜默改稿、支援稽核與安全 rollback | 原地更新文章雖簡單，但不符合 FR-012/020 與撤回／修訂證據需求 |
 | Transactional outbox | 發布 commit 與搜尋/CDN/media 副作用不能因 process crash 遺失 | 同交易直接呼叫外部服務會造成長交易與不一致；message broker 對 MVP 又過重 |
 | Structured content schema | 支援可驗證的雜誌 block、SSR、安全與 migration | 任意 HTML 開發快，但 XSS、跨端 rendering 與版本演進成本不可控 |
+| Client-only Motion／p5 runtime | 數位雜誌需要受控的節奏與生成式視覺，同時保留 SSR／SEO／a11y | 純靜態最簡單但無法滿足新體驗目標；全站 WebGL／canvas 又會犧牲內容語意、效能與維護性 |
+| Optional provenance adapters | 讓已發布 snapshot 可做內容定址與外部存證，但不污染 publication domain | 直接把內容與流程搬上鏈會增加 gas、隱私、撤回與可用性風險；完全不設 boundary 則未來會把 provider SDK 滲入核心模組 |
 
 ## Decisions Required Before Implementation
 
-T001–T005 應在兩個工作日內定稿，否則停止功能實作：
+T001–T002 的治理與 ADR 應在兩個工作日內定稿，否則停止功能實作：
 
 1. 核准 provisional constitution 與 release gates。
 2. 選定 OIDC provider、email provider 與 production hosting；保留 contract，不把 provider SDK 滲入 domain。
-3. 定義首期實際內容樣本、最多 10 種 block、圖片上限與允許 video providers。
+3. 定義首期實際內容樣本、最多 11 種 block、圖片上限與允許 video providers；第 11 種固定為受限 `generative-canvas`。
 4. 確認品牌名稱、合法字體／媒體素材與至少一位 `PUBLISHER` content owner。
 5. 確認 P1 全部免費；若不是，退回 spec 先補 entitlement/commerce，而不是直接開始開發。
+6. 核准 3–5 組 motion patterns、首個 p5 preset、poster 產生流程、reduced-motion 規則與 representative Android 效能裝置。
+7. 決定 P2 Web3 scope（manifest-only／IPFS／chain／SIWE）、network、contract ownership、signer custody、gas ceiling、RPC/pinning provider 與退出方案；未核准前所有 external write flags 保持關閉。
 
 ## Source Baseline
 
@@ -542,3 +651,10 @@ T001–T005 應在兩個工作日內定稿，否則停止功能實作：
 - Node.js release status: https://nodejs.org/en/about/previous-releases
 - Spring Boot official project baseline: https://spring.io/projects/spring-boot/
 - PostgreSQL current documentation: https://www.postgresql.org/docs/
+- Motion for Vue official documentation (v13 baseline): https://motion.dev/docs/vue
+- p5.js official reference and v2 tutorials: https://p5js.org/reference/ and https://p5js.org/tutorials/
+- EIP-1193 Ethereum Provider JavaScript API: https://eips.ethereum.org/EIPS/eip-1193
+- ERC-4361 Sign-In with Ethereum: https://eips.ethereum.org/EIPS/eip-4361
+- IPFS content addressing and CID guidance: https://docs.ipfs.tech/concepts/content-addressing/
+- RFC 8785 JSON Canonicalization Scheme (JCS): https://www.rfc-editor.org/rfc/rfc8785
+- viem official clients／SIWE verification documentation: https://viem.sh/docs/clients/intro and https://v3.viem.sh/docs/actions/public/verifySiweMessage

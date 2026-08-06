@@ -2,12 +2,14 @@
 
 **Feature Branch**: `001-taiwan-basketball-magazine-ebook`  
 **Created**: 2026-08-06  
-**Status**: Draft v0.1  
-**Input**: User description:「把台灣籃球雜誌電子書整理成規格、技術計畫與開發任務」
+**Status**: Draft v0.2  
+**Input**: User description:「把台灣籃球雜誌電子書整理成規格、技術計畫與開發任務」，並加入 Web3-ready 架構、Motion 與 p5.js 基礎互動敘事。
 
 ## Product Outcome
 
 建立一個以繁體中文為主、Mobile-first 的台灣籃球數位雜誌平台。讀者可以用「期刊 → 目錄 → 文章」的方式閱讀人物、球隊、賽事、戰術、文化與歷史專題；編輯團隊可以在具審稿、媒體授權與排程發布控制的後台中完成一期雜誌。
+
+閱讀體驗以可漸進增強的 editorial motion 與受限的生成式視覺為差異化能力；發布資料則保留可驗證 manifest、內容定址鏡像與鏈上存證的 Web3 adapter 邊界。SSR、公開閱讀與出版交易仍是系統主幹，任何錢包、鏈或 IPFS 故障都不得阻斷核心內容。
 
 本產品的第一目標是證明兩件事：
 
@@ -23,6 +25,8 @@
 - 編輯後台：草稿、送審、核准、排程、發布、下架與修訂。
 - 圖片上傳、圖片說明、攝影／來源署名與授權檢核。
 - 基礎期刊主題、文章署名、分享與 SEO metadata。
+- Motion for Vue 的頁面／目錄／閱讀進度基礎動態，以及一種以 p5.js preset 驅動的生成式視覺區塊。
+- 動態與生成式視覺的 SSR poster、文字摘要、reduced-motion 與無 JavaScript fallback。
 - 編輯身分驗證、角色權限、稽核紀錄。
 - 核心流程的自動化測試、效能與無障礙門檻。
 
@@ -36,10 +40,13 @@
 - 自動抓取、改寫或未取得授權的第三方新聞與圖片。
 - 紙本排版、印刷工作流、任意 PDF 自動轉成文章。
 - 多語系內容；資料模型保留未來擴充空間，MVP 僅 `zh-TW`。
+- NFT、代幣發行、DAO、加密貨幣付款、token-gated content 或要求讀者連接錢包才能閱讀。
+- 讓編輯上傳或執行任意 p5.js／JavaScript 程式碼；互動視覺只能使用已審核 preset 與受 schema 限制的參數。
 
 ### Post-MVP 增量
 
 - **P2**: 可管理的聯盟／球隊／球員／賽季 taxonomy、搜尋與篩選、登入讀者收藏與跨裝置續讀。
+- **P2**: 可選的 EIP-1193 錢包連接、ERC-4361 Sign-In with Ethereum、公開出版 manifest、IPFS CIDv1 鏡像與 EVM-compatible 存證 adapter；不改變免費閱讀政策。
 - **P3**: 具版本、配額與撤回處理的離線期刊。
 
 ## User Scenarios & Testing (mandatory)
@@ -63,7 +70,7 @@
 
 ### User Story 2 - 沉浸式閱讀長篇文章 (Priority: P1)
 
-讀者在手機、平板或桌面裝置上閱讀包含文字、圖片、圖說、引言、數據卡、影片與延伸資料的長篇文章，系統保留閱讀位置並提供期刊內導覽。
+讀者在手機、平板或桌面裝置上閱讀包含文字、圖片、圖說、引言、數據卡、影片、延伸資料與受限生成式視覺的長篇文章；系統以克制的動態建立雜誌節奏，保留閱讀位置並提供期刊內導覽。
 
 **Why this priority**: 閱讀體驗是數位雜誌的核心差異，不能退化成一般部落格或 PDF 縮放器。
 
@@ -76,6 +83,8 @@
 3. **Given** 文章屬於一期期刊，**When** 讀者到達文章結尾，**Then** 系統提供上一篇、下一篇與返回目錄入口，順序與編輯設定一致。
 4. **Given** 圖片載入失敗或網路不穩，**When** 讀者閱讀文章，**Then** 文字內容、替代文字與圖說仍可閱讀，版面不應大幅跳動。
 5. **Given** 讀者分享文章，**When** 連結出現在支援 Open Graph 的平台，**Then** 預覽使用該文章的標題、摘要、主圖與正式 canonical URL。
+6. **Given** 文章含生成式視覺區塊，**When** 瀏覽器支援 JavaScript 且區塊進入接近 viewport 的範圍，**Then** 系統才載入 p5.js client chunk，以固定 seed 與受限參數建立可重現的互動視覺。
+7. **Given** 讀者啟用 reduced motion、瀏覽器不支援 canvas 或 JavaScript 載入失敗，**When** 閱讀同一文章，**Then** 系統顯示 SSR poster、替代文字與資料摘要，不隱藏正文或造成導覽失效。
 
 ---
 
@@ -147,6 +156,24 @@
 3. **Given** 內容因授權或法律原因撤回，**When** 裝置重新連線收到撤回清單，**Then** 系統使該離線內容失效並清除受影響快取。
 4. **Given** 空間不足或瀏覽器拒絕持久儲存，**When** 下載失敗，**Then** 系統顯示可理解的原因且不留下被誤認為完整的半成品。
 
+---
+
+### User Story 7 - 驗證出版來源並選擇性連接錢包 (Priority: P2)
+
+讀者可以查看一期公開版本的可驗證 manifest、內容雜湊、IPFS CID 與鏈上存證狀態；若讀者選擇連接錢包，可透過標準簽章建立站內 session，但匿名閱讀不受影響。
+
+**Why this priority**: 可驗證出版來源能強化數位典藏與收藏信任，但不應成為閱讀、SEO 或編輯出版的前置依賴。
+
+**Independent Test**: 對同一期已發布快照重新計算 canonical manifest digest，驗證 CID／鏈上紀錄；再以錢包拒絕、錯誤鏈、切換帳號、RPC 中斷與 nonce replay 測試，確認公開閱讀始終可用。
+
+**Acceptance Scenarios**:
+
+1. **Given** 一期已建立可驗證出版紀錄，**When** 讀者查看來源資訊，**Then** 系統顯示 manifest schema 版本、快照 checksum、CID、chain ID、transaction reference 與驗證時間，且重新計算結果一致。
+2. **Given** IPFS gateway、RPC 或鏈上索引暫時不可用，**When** 讀者開啟已發布文章，**Then** origin 內容仍可閱讀，來源狀態降級為「暫時無法驗證」而非誤報失敗或隱藏正文。
+3. **Given** 讀者主動選擇連接錢包，**When** 完成 ERC-4361 簽章，**Then** 系統驗證 domain、URI、chain ID、nonce、issued-at 與 expiration，再建立短效 HttpOnly session；系統不得取得私鑰。
+4. **Given** 使用者拒絕簽章、切換 account／chain 或 provider 斷線，**When** 錢包狀態事件發生，**Then** 系統清除或降級相關 session，顯示可恢復狀態且不影響匿名閱讀。
+5. **Given** 已存證內容後續下架或媒體權利撤回，**When** 查看來源資訊，**Then** 系統保留不可變歷史紀錄並新增 withdrawal／superseded 狀態，不宣稱能刪除已公開的鏈上 digest 或第三方保存副本。
+
 ### Edge Cases
 
 - 期刊已發布，但所有文章都被下架時，期刊公開頁應顯示「暫無可閱讀內容」並停止被列為最新一期。
@@ -161,6 +188,11 @@
 - 搜尋查詢過長、只有標點、包含罕見中文字或中英混合時，不得造成錯誤或極慢查詢。
 - 登入到期、跨分頁編輯衝突或兩位編輯同時儲存時，系統不得靜默覆蓋較新的修訂。
 - 讀者禁用 JavaScript 時，已發布文章的核心文字內容仍應由 SSR 輸出並可閱讀。
+- Motion hydration 前不得把可讀內容設為透明或移出可操作範圍；client enhancement 失敗時頁面仍保持完成狀態。
+- p5.js canvas 建立後離開 route、切換文章或進入背景分頁時，必須停止 loop、解除 listener 並釋放 instance，避免重複 canvas 與記憶體洩漏。
+- 編輯輸入惡意 shader、script、外部 asset URL 或超出範圍的 p5 參數時，schema 與 renderer registry 必須拒絕，不得動態求值。
+- 錢包 provider 視為不可信輸入；錯誤 chain、異常 account、超長簽章訊息或重放 nonce 不得建立 session。
+- IPFS 只鏡像權利允許長期公開的內容；有限期、可撤回或含個資的媒體不得因 Web3 功能被永久公開。
 
 ## Requirements (mandatory)
 
@@ -232,6 +264,17 @@
 - **FR-044**: 系統 MUST 提供健康檢查、結構化日誌、指標、分散式追蹤與發布／排程失敗告警。
 - **FR-045**: 系統 MUST 每日備份資料庫與媒體 metadata，且每季以隔離環境驗證還原程序。
 
+#### 互動敘事與 Web3
+
+- **FR-046**: 系統 MUST 將 Motion 動態視為 progressive enhancement；核心內容與操作在 hydration 前可見，並完整尊重 `prefers-reduced-motion`。
+- **FR-047**: 系統 MUST 提供一種 `generative-canvas` 內容區塊，只接受已審核 `presetId`、固定 seed、bounded parameters、SSR poster、替代文字與資料摘要；不得接受任意 JavaScript、shader 或遠端程式碼。
+- **FR-048**: p5.js MUST 以 client-only dynamic import 載入，只在包含該區塊且接近 viewport 時啟動；離開 viewport／route 或頁面隱藏時 MUST pause／dispose，失敗時回到靜態內容。
+- **FR-049**: 系統 MUST 為每個選擇存證的公開期刊快照產生版本化 canonical manifest，至少包含穩定 issue／revision IDs、snapshot checksum、公開媒體 digests、rights scope、published-at 與 schema version；hash input MUST 是符合 I-JSON 限制、以 RFC 8785 JCS canonicalize 後的 UTF-8 bytes。
+- **FR-050**: 系統 SHOULD 透過可替換 adapter 將符合資格的 canonical manifest bytes 發布為 `CIDv1 + raw multicodec + sha2-256` 的 IPFS block，並可將 manifest digest 錨定至經 ADR 核准的 EVM-compatible network；資料庫仍是 workflow system of record，不得依賴 provider 預設的 UnixFS／chunking profile 產生驗證 CID。
+- **FR-051**: 選用錢包登入時，瀏覽器 provider MUST 遵循 EIP-1193 邊界，session challenge MUST 遵循 ERC-4361 並驗證 domain、URI、chain ID、nonce、時間窗與簽章；私鑰不得進入應用程式、日誌或後端。
+- **FR-052**: 匿名公開閱讀 MUST 不依賴錢包、RPC、IPFS、token、NFT 或鏈上交易；錢包拒絕與外部 Web3 服務失效不得降低公開內容可用性。
+- **FR-053**: 系統 MUST 禁止將個資、草稿、原始媒體 key、有限期／可撤回媒體內容寫入公鏈；撤回後新增可驗證狀態與 origin deny，不宣稱能刪除既有鏈上紀錄或第三方副本。
+
 ### Key Entities
 
 - **PublicationIssue**: 一期雜誌；包含期號、slug、主題、封面、摘要、出版狀態、排程時間、公開版本與目錄。
@@ -249,6 +292,8 @@
 - **ReadingProgress**: 讀者或本機對文章修訂的閱讀位置、完成比例與更新時間。
 - **PublicationJob**: 立即／排程發布、下架、索引或媒體處理工作的狀態與冪等鍵。
 - **AuditEvent**: 不可變的敏感操作紀錄；保存 actor、action、target、結果、時間與 request ID。
+- **PublicationProvenance**: 公開出版快照的 canonical manifest digest、CID、chain／contract／transaction reference、狀態、重試與驗證結果；不承載正文或個資。
+- **WalletIdentityLink**: 讀者明確同意後建立的 off-chain wallet address 與 ReaderProfile 關聯；保存 chain namespace、驗證時間與撤銷狀態，不保存私鑰。
 
 ## Business Rules
 
@@ -259,6 +304,10 @@
 - 所有 MVP 公開內容的 `accessPolicy` 固定為 `FREE`；可先保留欄位，但不得在未完成 entitlement 與付款驗證前顯示「已付費即可閱讀」。
 - 撤回優先於快取、搜尋與離線可用性；無法確認撤回狀態時，受影響內容採不可用處理。
 - 文章分析資料僅收集達成產品指標所需的事件；未同意分析追蹤的讀者仍可閱讀完整公開內容。
+- Motion 與 p5.js 不得改變內容語意、閱讀順序或操作結果；動畫關閉時仍是完整產品，不是次等版本。
+- Web3 是可選驗證與身分 adapter，不是新的出版 system of record；鏈上狀態不得直接越過 editorial approval、rights gate 或 origin withdrawal。
+- 只有權利允許長期再散布的公開 manifest／asset 才能進入去中心化鏡像；無法證明時只存 digest，不鏡像內容 bytes。
+- 錢包位址視為可識別資料；連結帳號需明確同意並可解除 off-chain 關聯，介面需說明公開鏈歷史無法由本站刪除。
 
 ## Success Criteria (mandatory)
 
@@ -276,6 +325,10 @@
 - **SC-010**: 每季還原演練可在 4 小時內恢復資料庫與媒體 metadata，資料復原點不超過 24 小時。
 - **SC-011**: 上線後首三期，至少 60% 開始閱讀長篇文章的讀者達到 50% 閱讀深度；此為產品驗證指標，不作為單一讀者評價。
 - **SC-012**: P1 自動化測試在 CI 中連續 20 次執行無不穩定測試後，才可解除 beta 標記。
+- **SC-013**: P1 核心頁在 reduced-motion 與無 JavaScript 測試中，100% 正文、TOC、上一篇／下一篇與分享連結仍可操作，且無非必要自動動態。
+- **SC-014**: 不含 `generative-canvas` 的頁面不得下載 p5.js chunk；含該區塊的頁面初始 SSR 必須提供 poster／摘要，且連續切換 20 次文章後不存在遺留 p5 canvas、animation loop 或 global listener。
+- **SC-015**: 100% 已標記 `VERIFIED` 的出版存證可在 TypeScript 與 Java 由相同 RFC 8785 canonical bytes 重新計算出一致的 SHA-256 digest 與 `CIDv1/raw/sha2-256`，且自動掃描確認鏈上 payload 不含個資、草稿或媒體原始位置。
+- **SC-016**: 錢包拒絕、錯誤 chain、account change、provider disconnect、過期 challenge 與 nonce replay 測試全部安全失敗；相同期間匿名閱讀成功率不低於未啟用 Web3 feature flag 的基準。
 
 ## Assumptions
 
@@ -286,9 +339,13 @@
 - 正式環境使用 CDN 與 S3 相容物件儲存；原始媒體與公開衍生圖分開存放。
 - 編輯器使用結構化 block document，而非任意 HTML；特殊版型需先建立受測試的 block type。
 - 產品擁有可設定的 OIDC 身分提供者與寄信服務；供應商名稱在部署前以 ADR 確認。
+- Motion for Vue 與 p5.js 僅在 Nuxt client layer 使用；server render 不執行 canvas 或依賴瀏覽器全域。
+- P2 Web3 預設使用 EVM-compatible testnet／L2 adapter 驗證，正式 network、RPC、pinning 與 signer provider 必須經成本、權利、安全與退出能力 ADR 核准。
 
 ## Open Decisions (non-blocking for MVP specification)
 
 1. **商業模式**: 首三期全免費、會員制或單期付費。預設先全免費；若改為付費，必須新增 entitlement、付款、退款、稅務與客服規格，不可只加前端遮罩。
 2. **既有內容來源**: 目前未提供既有 PDF、Word、Notion 或 CMS。預設首期由編輯後台建立；大量移轉需另立 migration feature。
 3. **品牌與視覺方向**: 尚未定義雜誌名稱、Logo、字體授權與攝影風格。這不阻擋架構，但會影響設計 token、封面模板與內容區塊最終驗收。
+4. **動態與生成式視覺**: 需選定 3–5 組允許的 motion pattern、首個 p5 preset、靜態 poster 產生方式與低階 Android 效能基準；未定稿前不得開放任意創意程式碼。
+5. **Web3 provider 與治理**: 需決定是否只做 manifest／CID，或再加入鏈上 registry 與 SIWE；同時核准 network、contract owner、signer custody、gas 預算、RPC／pinning 退出方案及永久公開風險。
