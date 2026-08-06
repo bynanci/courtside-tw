@@ -3,10 +3,10 @@
   "graph_name": "courtside-tw-ticket-supervisor-t001",
   "graph_version": 3,
   "run_id": "courtside-tw-t001-20260806",
-  "status": "running",
+  "status": "needs_human",
   "iteration": 1,
   "started_at": "2026-08-06T08:42:29Z",
-  "updated_at": "2026-08-06T08:44:34Z",
+  "updated_at": "2026-08-06T08:47:21Z",
   "current_frontier": [
     "a-review-package"
   ],
@@ -14,8 +14,8 @@
     "p-human-approval",
     "g-t001-approval"
   ],
-  "terminal_state": null,
-  "next_action": "Publish the validated artifacts to ticket/t001-project-constitution and open a draft pull request for explicit human approval.",
+  "terminal_state": "needs_human",
+  "next_action": "Human Mark reviews https://github.com/bynanci/courtside-tw/pull/2 and explicitly approves version 0.1.0 or requests a bounded amendment.",
   "events": [
     {
       "event_id": "evt-001-graph-initialized",
@@ -238,6 +238,60 @@
         "total": 17000
       },
       "terminal_reason": null
+    },
+    {
+      "event_id": "evt-006-draft-pr-published",
+      "at": "2026-08-06T08:47:21Z",
+      "actor": "codex-supervisor",
+      "type": "human_gate_requested",
+      "base_graph_version": 3,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "ledger.status",
+            "before": "running",
+            "after": "needs_human"
+          },
+          {
+            "op": "replace",
+            "path": "ledger.terminal_state",
+            "before": null,
+            "after": "needs_human"
+          },
+          {
+            "op": "add",
+            "path": "external.pull_request",
+            "after": "https://github.com/bynanci/courtside-tw/pull/2"
+          }
+        ]
+      },
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/pull/2",
+        ".loop/evidence/t001-acceptance.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "remote branch blob read-back",
+          "result": "7/7 validated artifact SHAs match"
+        },
+        {
+          "proof": "draft pull request",
+          "result": "open, draft, unmerged",
+          "head_sha": "58b24a9a4825af573a141bf76de74d599117e3a8",
+          "base_sha": "bd6c5c67db8aac43910c5e372a9ccbea9cc63aae"
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Stop before ratification and merge; wait for explicit human review.",
+      "token_usage": {
+        "estimated": 2500,
+        "input": 0,
+        "output": 0,
+        "total": 2500
+      },
+      "terminal_reason": "T001 constitution approval and protected-branch merge require a human decision."
     }
   ]
 }
