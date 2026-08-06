@@ -322,7 +322,7 @@ graph:
       layer: L3
       label: T001 constitution review is required
       owner: human-mark
-      status: ready
+      status: done
       risk: high
       confidence:
         score: 1.0
@@ -341,7 +341,7 @@ graph:
       layer: L3
       label: Review the constitution proposal and evidence
       owner: human-mark
-      status: planned
+      status: done
       risk: high
       confidence:
         score: 0.9
@@ -361,12 +361,12 @@ graph:
       layer: L3
       label: Explicit constitution approval
       owner: human-mark
-      status: needs_human
+      status: done
       risk: critical
       confidence:
         score: 1.0
         basis: Approval is binary and cannot be inferred.
-        evidence_refs: []
+        evidence_refs: [https://github.com/bynanci/courtside-tw/pull/2]
       budget:
         effort_hours: 0.1
         tokens: 500
@@ -383,12 +383,12 @@ graph:
       layer: L3
       label: Human T001 approval and merge gate
       owner: human-mark
-      status: needs_human
+      status: done
       risk: critical
       confidence:
         score: 1.0
         basis: Explicit human ratification and merge are required by T001 and repository policy.
-        evidence_refs: []
+        evidence_refs: [https://github.com/bynanci/courtside-tw/pull/2]
       budget:
         effort_hours: 0.25
         tokens: 1000
@@ -422,7 +422,7 @@ graph:
       layer: GLOBAL
       label: Named terminal-state policy
       owner: policy
-      status: needs_human
+      status: running
       risk: critical
       confidence:
         score: 1.0
