@@ -1,0 +1,55 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t003-completion-main-readback-20260806",
+  "generated_at": "2026-08-06T23:44:00Z",
+  "actor": "codex-supervisor",
+  "subject": "T003 completion receipt merge and main read-back",
+  "repository": "bynanci/courtside-tw",
+  "pull_request": {
+    "number": 6,
+    "url": "https://github.com/bynanci/courtside-tw/pull/6",
+    "branch": "ticket/t003-completion-receipt",
+    "base": "main",
+    "state": "closed",
+    "merged": true,
+    "draft": false,
+    "head_sha": "c5d137a1fe1f607732d8a4718e472b482d611be5",
+    "merge_commit_sha": "1df560a1c7459628f79864c92a0789400cf56725",
+    "merge_method": "squash"
+  },
+  "main_readback": {
+    "ref": "main",
+    "observed_commit": "1df560a1c7459628f79864c92a0789400cf56725",
+    "result": "pass",
+    "task_state": {
+      "T001": "checked",
+      "T002": "checked",
+      "T003": "checked",
+      "T004": "not_dispatched"
+    },
+    "graph": {
+      "ledger_status": "success",
+      "ledger_graph_version": 4,
+      "terminal_state": "success",
+      "current_frontier": []
+    },
+    "blob_sha_matches_local": true,
+    "paths": {
+      "specs/001-taiwan-basketball-magazine-ebook/tasks.md": "e814cc4556402dccdcdfe49cb423435b05876ffa",
+      ".loop/t003-implementation-graphify-loop.yaml": "5301b622e51c3ac1e394aaf80ab951269f316df5",
+      ".loop/t003-implementation-ledger.json": "52510a662d29127e4f6b6d34795117e85da5f02a",
+      ".loop/evidence/t003-completion-receipt.json": "62a0384e4cae7f0f8a7a230becd80cfa0c38ddae"
+    }
+  },
+  "scope": {
+    "completed": "Record explicit Mark approval and check T003 after PR #5 merge/read-back.",
+    "next": "Dispatch T005 from a separate implementation graph.",
+    "excluded": [
+      "implement T005",
+      "dispatch T004",
+      "change DESIGN/ADR/provider/Web3"
+    ]
+  },
+  "result": "pass",
+  "confidence": 0.99
+}
