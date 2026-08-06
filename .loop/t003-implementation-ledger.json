@@ -4,9 +4,9 @@
   "graph_version": 3,
   "run_id": "courtside-tw-t003-implementation-20260806",
   "status": "needs_human",
-  "iteration": 2,
+  "iteration": 3,
   "started_at": "2026-08-06T15:19:50Z",
-  "updated_at": "2026-08-06T15:19:50Z",
+  "updated_at": "2026-08-06T15:28:22Z",
   "current_frontier": [
     "t-human-review"
   ],
@@ -127,6 +127,58 @@
         "total": 19000
       },
       "terminal_reason": "Required local evidence passes, but review/remote read-back and merge approval remain human-gated."
+    },
+    {
+      "event_id": "evt-t003-implementation-003-remote-readback",
+      "at": "2026-08-06T15:28:22Z",
+      "actor": "codex-supervisor",
+      "type": "external_branch_published_and_read_back",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": ".loop/evidence/t003-remote-readback.json",
+            "after": "Remote branch and PR content read-back receipt."
+          },
+          {
+            "op": "replace",
+            "path": "external.github.pull_request/5/status",
+            "before": "preflight draft",
+            "after": "implementation draft, open and unmerged"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t003-remote-readback.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "branch publication",
+          "result": "pass",
+          "details": "T003 branch ticket/t003-repo-scaffold updated through the GitHub connector."
+        },
+        {
+          "proof": "content read-back",
+          "result": "pass",
+          "details": "All 12 implementation/design/proof paths match local artifacts."
+        },
+        {
+          "proof": "scope read-back",
+          "result": "pass",
+          "details": "PR #5 changed filenames contain the six root files, DESIGN.md and expected loop artifacts only."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Expose T003 for human review; do not merge, mark the task checked or dispatch T004.",
+      "token_usage": {
+        "estimated": 6500,
+        "input": 0,
+        "output": 0,
+        "total": 6500
+      },
+      "terminal_reason": "Remote branch and PR are ready, but protected merge and task completion approval remain pending."
     }
   ],
   "proof": {
