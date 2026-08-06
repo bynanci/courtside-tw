@@ -1,20 +1,16 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-supervisor-t002",
-  "graph_version": 3,
+  "graph_version": 4,
   "run_id": "courtside-tw-t002-20260806",
-  "status": "needs_human",
+  "status": "success",
   "iteration": 1,
   "started_at": "2026-08-06T09:16:27Z",
-  "updated_at": "2026-08-06T10:00:01Z",
-  "current_frontier": [
-    "s-terminal-policy"
-  ],
-  "blocked_nodes": [
-    "s-terminal-policy"
-  ],
-  "terminal_state": "needs_human",
-  "next_action": "Mark PR #4 ready for review; merge it after the approval receipt, read back main, then dispatch T003.",
+  "updated_at": "2026-08-06T10:18:30Z",
+  "current_frontier": [],
+  "blocked_nodes": [],
+  "terminal_state": "success",
+  "next_action": "Dispatch T003 as a separate scoped graph and branch from main commit 0a41d715748551989bc91bc38e521f0951498235.",
   "events": [
     {
       "event_id": "evt-t002-001-graph-initialized",
@@ -302,6 +298,68 @@
         "total": 5000
       },
       "terminal_reason": "Approval is recorded; terminal success still requires PR merge and main read-back."
+    },
+    {
+      "event_id": "evt-t002-006-merge-main-readback",
+      "at": "2026-08-06T10:18:30Z",
+      "actor": "codex-supervisor",
+      "type": "terminal_success",
+      "base_graph_version": 3,
+      "new_graph_version": 4,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/s-terminal-policy/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "ledger/status",
+            "before": "needs_human",
+            "after": "success"
+          },
+          {
+            "op": "replace",
+            "path": "ledger/terminal_state",
+            "before": "needs_human",
+            "after": "success"
+          },
+          {
+            "op": "add",
+            "path": "external.github.merge_commit",
+            "after": "0a41d715748551989bc91bc38e521f0951498235"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t002-merge-readback.json",
+        ".loop/evidence/t002-human-approval.json",
+        ".loop/t002-graphify-loop.yaml",
+        "https://github.com/bynanci/courtside-tw/pull/4"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "merge",
+          "result": "pass",
+          "details": "PR #4 squash-merged into main at 0a41d715748551989bc91bc38e521f0951498235."
+        },
+        {
+          "proof": "main read-back",
+          "result": "pass",
+          "details": "Six ADRs are ACCEPTED; T002 is checked; T003 remains unchecked and undispatched; spec.md and plan.md are unchanged."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "T002 terminal success reached after merge and main read-back. Dispatch T003 separately; do not reuse the T002 graph or branch.",
+      "token_usage": {
+        "estimated": 4500,
+        "input": 0,
+        "output": 0,
+        "total": 4500
+      },
+      "terminal_reason": "Approved ADRs are merged, read back from main, and T002 is checked."
     }
   ]
 }
