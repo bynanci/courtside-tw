@@ -1,21 +1,18 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-supervisor-t001",
-  "graph_version": 3,
+  "graph_version": 4,
   "run_id": "courtside-tw-t001-20260806",
-  "status": "needs_human",
-  "iteration": 1,
+  "status": "running",
+  "iteration": 2,
   "started_at": "2026-08-06T08:42:29Z",
-  "updated_at": "2026-08-06T08:47:21Z",
+  "updated_at": "2026-08-06T08:59:55Z",
   "current_frontier": [
-    "a-review-package"
+    "s-terminal-policy"
   ],
-  "blocked_nodes": [
-    "p-human-approval",
-    "g-t001-approval"
-  ],
-  "terminal_state": "needs_human",
-  "next_action": "Human Mark reviews https://github.com/bynanci/courtside-tw/pull/2 and explicitly approves version 0.1.0 or requests a bounded amendment.",
+  "blocked_nodes": [],
+  "terminal_state": null,
+  "next_action": "Record the approval on PR #2, mark it ready, squash merge the exact verified head, then read back main.",
   "events": [
     {
       "event_id": "evt-001-graph-initialized",
@@ -292,6 +289,69 @@
         "total": 2500
       },
       "terminal_reason": "T001 constitution approval and protected-branch merge require a human decision."
+    },
+    {
+      "event_id": "evt-007-t001-human-approved",
+      "at": "2026-08-06T08:59:55Z",
+      "actor": "human-mark",
+      "type": "human_gate_approved",
+      "base_graph_version": 3,
+      "new_graph_version": 4,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/t-human-review/status",
+            "before": "ready",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-review-package/status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-human-approval/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/g-t001-approval/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": ".specify/memory/constitution.md/status",
+            "before": "PROPOSED",
+            "after": "RATIFIED 0.1.0"
+          }
+        ]
+      },
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/pull/2",
+        ".specify/memory/constitution.md"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "p-human-approval",
+          "level": "P3",
+          "result": "pass",
+          "receipt": "Mark explicitly instructed: 核准 T001 v0.1.0 並 merge"
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Ratify constitution v0.1.0 and authorize squash merge of PR #2.",
+      "token_usage": {
+        "estimated": 1200,
+        "input": 0,
+        "output": 0,
+        "total": 1200
+      },
+      "terminal_reason": null
     }
   ]
 }
