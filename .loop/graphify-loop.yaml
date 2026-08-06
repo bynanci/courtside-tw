@@ -422,7 +422,7 @@ graph:
       layer: GLOBAL
       label: Named terminal-state policy
       owner: policy
-      status: running
+      status: done
       risk: critical
       confidence:
         score: 1.0

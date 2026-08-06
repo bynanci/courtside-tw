@@ -1,18 +1,16 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-supervisor-t001",
-  "graph_version": 4,
+  "graph_version": 5,
   "run_id": "courtside-tw-t001-20260806",
-  "status": "running",
+  "status": "success",
   "iteration": 2,
   "started_at": "2026-08-06T08:42:29Z",
-  "updated_at": "2026-08-06T08:59:55Z",
-  "current_frontier": [
-    "s-terminal-policy"
-  ],
+  "updated_at": "2026-08-06T09:02:56Z",
+  "current_frontier": [],
   "blocked_nodes": [],
-  "terminal_state": null,
-  "next_action": "Record the approval on PR #2, mark it ready, squash merge the exact verified head, then read back main.",
+  "terminal_state": "success",
+  "next_action": null,
   "events": [
     {
       "event_id": "evt-001-graph-initialized",
@@ -352,6 +350,72 @@
         "total": 1200
       },
       "terminal_reason": null
+    },
+    {
+      "event_id": "evt-008-t001-merge-verified",
+      "at": "2026-08-06T09:02:56Z",
+      "actor": "codex-supervisor",
+      "type": "terminal_success",
+      "base_graph_version": 4,
+      "new_graph_version": 5,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/s-terminal-policy/status",
+            "before": "running",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "specs/001-taiwan-basketball-magazine-ebook/tasks.md/T001",
+            "before": "unchecked",
+            "after": "checked"
+          },
+          {
+            "op": "replace",
+            "path": "ledger.status",
+            "before": "running",
+            "after": "success"
+          },
+          {
+            "op": "replace",
+            "path": "ledger.terminal_state",
+            "before": null,
+            "after": "success"
+          }
+        ]
+      },
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/pull/2",
+        "https://github.com/bynanci/courtside-tw/commit/e9bf7a1045ef8ddc367f7dfa77ea3cc2e317e453",
+        ".specify/memory/constitution.md",
+        "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "GitHub PR merge read-back",
+          "result": "pass",
+          "merged": true,
+          "merge_commit_sha": "e9bf7a1045ef8ddc367f7dfa77ea3cc2e317e453"
+        },
+        {
+          "proof": "main constitution read-back",
+          "result": "pass",
+          "status": "RATIFIED",
+          "version": "0.1.0",
+          "blob_sha": "33578b4d25b75ca0dd4de8e37168ea974a7f0e77"
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Mark T001 complete after verified approval, merge, and main read-back.",
+      "token_usage": {
+        "estimated": 1800,
+        "input": 0,
+        "output": 0,
+        "total": 1800
+      },
+      "terminal_reason": "T001 acceptance, P3 approval, merge, and authoritative main read-back all passed."
     }
   ]
 }
