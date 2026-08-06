@@ -1,0 +1,148 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-ticket-supervisor-t002",
+  "graph_version": 2,
+  "run_id": "courtside-tw-t002-20260806",
+  "status": "running",
+  "iteration": 1,
+  "started_at": "2026-08-06T09:16:27Z",
+  "updated_at": "2026-08-06T09:16:27Z",
+  "current_frontier": [
+    "a-review-adrs"
+  ],
+  "blocked_nodes": [
+    "p-human-approval",
+    "g-t002-approval"
+  ],
+  "terminal_state": null,
+  "next_action": "Publish the six validated ADRs and loop artifacts to ticket/t002-architecture-decisions and open a draft pull request for Mark review.",
+  "events": [
+    {
+      "event_id": "evt-t002-001-graph-initialized",
+      "at": "2026-08-06T09:16:27Z",
+      "actor": "codex-supervisor",
+      "type": "graph_initialized",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": ".loop/t002-graphify-loop.yaml",
+            "after": "T002 L1/L2/L3 graph with provider, rights, access and Web3 human gates."
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t002-reconciliation.json"
+      ],
+      "proof_receipts": [],
+      "failure_signature": null,
+      "decision": "Dispatch T002 only.",
+      "token_usage": {
+        "estimated": 6000,
+        "input": 0,
+        "output": 0,
+        "total": 6000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-t002-002-authoritative-reconciled",
+      "at": "2026-08-06T09:16:27Z",
+      "actor": "codex-supervisor",
+      "type": "authoritative_state_reconciled",
+      "base_graph_version": 1,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-reconcile/status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-reconciliation/status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/t-t002-ready/status",
+            "before": "ready",
+            "after": "done"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t002-reconciliation.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "p-reconciliation",
+          "result": "pass",
+          "confidence": 0.98
+        }
+      ],
+      "failure_signature": null,
+      "decision": "T002 is the only ready frontier; T003 remains blocked by ADR approval.",
+      "token_usage": {
+        "estimated": 5000,
+        "input": 0,
+        "output": 0,
+        "total": 5000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-t002-003-adr-packet-validated",
+      "at": "2026-08-06T09:16:27Z",
+      "actor": "codex-agent",
+      "type": "l1_iteration_completed",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-draft-adrs/status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-adr-acceptance/status",
+            "before": "planned",
+            "after": "done"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t002-reconciliation.json",
+        ".loop/evidence/t002-acceptance.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "p-adr-acceptance",
+          "result": "pass",
+          "confidence": 0.95
+        },
+        {
+          "proof": "strict graph validation",
+          "result": "15 nodes / 21 edges / 0 warnings / 0 errors"
+        }
+      ],
+      "failure_signature": null,
+      "decision": "The six ADRs are review-ready; provider, rights, access, Motion/p5 and Web3 choices remain human-gated.",
+      "token_usage": {
+        "estimated": 28000,
+        "input": 0,
+        "output": 0,
+        "total": 28000
+      },
+      "terminal_reason": null
+    }
+  ]
+}
