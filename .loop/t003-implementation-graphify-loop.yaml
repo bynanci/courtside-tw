@@ -109,7 +109,7 @@ graph:
       config:
         source_type: repository-and-approved-user-direction
         freshness: Read at the start of this implementation iteration.
-        limitations: Local git metadata is unavailable in this runner; remote branch publication is a separate external proof.
+        limitations: Local git metadata is unavailable in this runner; branch publication and content read-back use the GitHub connector.
 
     - id: t-supervisor
       kind: trigger
@@ -221,7 +221,7 @@ graph:
       confidence:
         score: 0.96
         basis: Six files implement pinned Node/pnpm toolchain, workspace globs, no-dependency setup, recursive commands and root documentation.
-        evidence_refs: [.loop/evidence/t003-command-proof.json]
+        evidence_refs: [.loop/evidence/t003-command-proof.json, .loop/evidence/t003-remote-readback.json]
       budget:
         effort_hours: 1.0
         tokens: 12000
@@ -241,7 +241,7 @@ graph:
       confidence:
         score: 0.97
         basis: make setup/verify, all four workspace checks, pnpm run verify and a six-file clean clone passed with no generated lockfile.
-        evidence_refs: [.loop/evidence/t003-command-proof.json]
+        evidence_refs: [.loop/evidence/t003-command-proof.json, .loop/evidence/t003-remote-readback.json]
       budget:
         effort_hours: 0.5
         tokens: 7000
@@ -283,7 +283,7 @@ graph:
       confidence:
         score: 0.98
         basis: Root command proof passed; remote publication, task check and merge remain human-controlled actions.
-        evidence_refs: [.loop/evidence/t003-command-proof.json]
+        evidence_refs: [.loop/evidence/t003-command-proof.json, .loop/evidence/t003-remote-readback.json]
       budget:
         effort_hours: 0.0
         tokens: 0
@@ -302,7 +302,7 @@ graph:
       confidence:
         score: 0.9
         basis: Human must inspect the patch and remote read-back; local proof alone cannot authorize merge or task completion.
-        evidence_refs: [.loop/evidence/t003-command-proof.json]
+        evidence_refs: [.loop/evidence/t003-command-proof.json, .loop/evidence/t003-remote-readback.json]
       budget:
         effort_hours: 0.25
         tokens: 3500
