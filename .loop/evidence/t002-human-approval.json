@@ -1,0 +1,50 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t002-human-approval-20260806",
+  "generated_at": "2026-08-06T10:00:01Z",
+  "actor": "human-mark",
+  "subject": "T002 six-ADR approval",
+  "source": {
+    "kind": "explicit_user_message",
+    "text": "核准 T002 六份 ADR",
+    "pull_request": "https://github.com/bynanci/courtside-tw/pull/4"
+  },
+  "approval": {
+    "result": "pass",
+    "all_six_adrs_approved": true,
+    "approved_status": "ACCEPTED",
+    "t002_task_may_be_checked": true,
+    "t003_dispatch": false,
+    "merge_authorized": false
+  },
+  "approved_paths": [
+    "docs/adr/0001-application-topology.md",
+    "docs/adr/0002-identity-and-hosting-providers.md",
+    "docs/adr/0003-content-document-and-media-policy.md",
+    "docs/adr/0004-free-mvp-access-policy.md",
+    "docs/adr/0005-motion-and-generative-runtime.md",
+    "docs/adr/0006-web3-provenance-boundary.md"
+  ],
+  "decision_boundaries": {
+    "topology": "Accepted for MVP; provider-specific deployment remains adapter/configuration-level.",
+    "providers": "Provider-neutral contracts accepted; production vendor selection remains a follow-up.",
+    "content_media_rights": "Policy accepted; named PUBLISHER owner and rights metadata remain required before production publish.",
+    "free_mvp": "Free anonymous reading accepted; paid or token-gated change requires spec/ADR re-approval.",
+    "motion_p5": "Five-pattern allowlist, court-pulse-v1, poster and reduced-motion baseline accepted.",
+    "web3": "Manifest-only provenance accepted; IPFS, chain, SIWE, signer and gas writes remain off."
+  },
+  "follow_up_gate": "PR #4 may be marked ready. T002 terminal success still requires merge and read-back from main; do not dispatch T003 before that.",
+  "artifact_blob_shas": {
+    "docs/adr/0001-application-topology.md": "09083902af510ae230c0e6f31dcbadd627f7563a",
+    "docs/adr/0002-identity-and-hosting-providers.md": "bc2d94faa56da56efd8e90b8cae6ba05163a7dd9",
+    "docs/adr/0003-content-document-and-media-policy.md": "636cdf9450c229b88c29aba0751577ccebeb26ca",
+    "docs/adr/0004-free-mvp-access-policy.md": "e5a6c4364e49afef7b5c755878b0cdfdd91d4b31",
+    "docs/adr/0005-motion-and-generative-runtime.md": "398272b08b8931bdb1f781a5e2c9b29775fc0d52",
+    "docs/adr/0006-web3-provenance-boundary.md": "bce3eac5e69c33f9ec243c5de6116d136955c8d6"
+  },
+  "proof": {
+    "claim": "Mark explicitly approved all six T002 ADRs while preserving provider, rights, paid-access and external-Web3 safety boundaries.",
+    "result": "pass",
+    "confidence": 1
+  }
+}

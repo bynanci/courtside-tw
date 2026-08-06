@@ -1,0 +1,446 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-ticket-supervisor-t002
+objective: Record and verify explicit human approval of the six T002 ADRs on a dedicated branch, then stop before merge and main read-back.
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - Reconcile main, T001 completion, tasks.md, T002 dependencies, branches and pull requests.
+    - Draft the six ADRs required by T002: topology, providers, content/media rights, free MVP, Motion/p5, and Web3 provenance.
+    - Validate traceability, decision boundaries, free anonymous reading, progressive enhancement, rights and Web3 least agency.
+    - Publish only T002 artifacts to ticket/t002-architecture-decisions and open a draft pull request.
+  out:
+    - Selecting or purchasing production vendors without Mark approval.
+    - Publishing external Web3 writes, enabling paid/token-gated access, or changing spec.md/plan.md.
+    - Starting T003 or any implementation task.
+    - Merging the ADRs or claiming T002 complete before merge and main read-back.
+
+policy:
+  authority:
+    allowed:
+      - Read authoritative GitHub state and scoped spec/plan/task artifacts.
+      - Draft six ADRs, graph, ledger, and proof artifacts on the T002 branch.
+      - Run deterministic validation and open a draft pull request.
+    requires_approval:
+      - Choose production OIDC/email/hosting providers.
+      - Approve brand/font/media rights owner and video allowlist.
+      - Approve Motion/p5 baseline and Web3 scope, network, signer, gas, or permanent-publication risk.
+      - Mark T002 complete, merge, or dispatch T003 before the merge and main read-back gate.
+    forbidden:
+      - Infer a provider, rights license, product access policy, or Web3 write permission from silence.
+      - Enable payment, token gating, wallet gating, IPFS pinning, chain writes, or SIWE.
+      - Modify spec.md, plan.md, T001 artifacts, or unrelated user work.
+  human_gates:
+    - architecture and provider selection
+    - acceptance, product access, rights, brand, or risk-limit change
+    - production, protected-branch merge, external communication or irreversible Web3 write
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+graph:
+  entry_nodes:
+    - x-github-state
+    - t-supervisor
+    - t-human-review
+  terminal_nodes:
+    - s-terminal-policy
+
+  loops:
+    - id: l1-t002-execution
+      layer: L1
+      owner: codex-agent
+      trigger_nodes: [t-t002-ready]
+      action_nodes: [a-draft-adrs]
+      proof_nodes: [p-adr-acceptance]
+      memory_nodes: [m-l1-t002-ledger]
+      stop_nodes: [s-terminal-policy]
+      budgets:
+        max_iterations: 3
+        max_minutes: 90
+        max_same_failure: 2
+        max_graph_changes: 12
+        max_tokens: 60000
+
+    - id: l2-t002-supervisor
+      layer: L2
+      owner: codex-supervisor
+      trigger_nodes: [t-supervisor]
+      action_nodes: [a-reconcile]
+      proof_nodes: [p-reconciliation]
+      memory_nodes: [m-l2-t002-ledger]
+      stop_nodes: [s-terminal-policy]
+      budgets:
+        max_iterations: 3
+        max_minutes: 30
+        max_same_failure: 2
+        max_graph_changes: 8
+        max_tokens: 24000
+
+    - id: l3-t002-direction
+      layer: L3
+      owner: human-mark
+      trigger_nodes: [t-human-review]
+      action_nodes: [a-review-adrs]
+      proof_nodes: [p-human-approval]
+      memory_nodes: [m-l3-t002-decisions]
+      stop_nodes: [s-terminal-policy]
+      budgets:
+        max_iterations: 3
+        max_minutes: 120
+        max_same_failure: 2
+        max_graph_changes: 8
+        max_tokens: 30000
+
+  nodes:
+    - id: x-github-state
+      kind: external
+      layer: EXTERNAL
+      label: Authoritative GitHub main and PR state
+      owner: github
+      status: done
+      risk: low
+      confidence:
+        score: 0.99
+        basis: Connector read-back at the start of the T002 supervisor iteration.
+        evidence_refs: [.loop/evidence/t002-reconciliation.json]
+      budget:
+        effort_hours: 0.1
+        tokens: 1500
+      config:
+        source_type: github-repository
+        freshness: fetched_at recorded in reconciliation evidence
+        limitations: GitHub search is authoritative for branch/PR existence; task blob and merge receipts are used for dependency state.
+
+    - id: t-supervisor
+      kind: trigger
+      layer: L2
+      label: T002 supervisor reconciliation requested
+      owner: codex-supervisor
+      status: done
+      risk: low
+      confidence:
+        score: 1.0
+        basis: Explicit user instruction to enter the next supervisor reconciliation.
+        evidence_refs: [.loop/evidence/t002-reconciliation.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: Reconcile the post-T001 task graph and dispatch only dependency-satisfied T002 work.
+        inputs_required: [main commit, tasks.md, plan.md, T001 ledger, T002 branches, T002 PRs]
+        dedupe: main-sha plus tasks-blob-sha plus t002-run-id
+
+    - id: a-reconcile
+      kind: action
+      layer: L2
+      label: Reconcile T002 dependency, branch and approval state
+      owner: codex-supervisor
+      status: done
+      risk: low
+      confidence:
+        score: 0.98
+        basis: T001 is checked and terminal success; T002 is first unchecked task with no branch or PR.
+        evidence_refs: [.loop/evidence/t002-reconciliation.json]
+      budget:
+        effort_hours: 0.25
+        tokens: 5000
+      config:
+        workflow: [read main and T001 receipt, inspect T002 dependency, search branch and PR, select bounded ADR packet]
+        allowed: [read state, write reconciliation evidence, route T002]
+        requires_approval: [mark complete, merge, reprioritize, expand scope]
+        forbidden: [dispatch T003, infer provider approval, alter T001 history]
+
+    - id: p-reconciliation
+      kind: proof
+      layer: L2
+      label: T002 authoritative reconciliation proof
+      owner: verifier
+      status: done
+      risk: low
+      confidence:
+        score: 0.98
+        basis: Main commit, T001 success ledger, task order, plan source and no duplicate T002 work were read back.
+        evidence_refs: [.loop/evidence/t002-reconciliation.json]
+      budget:
+        effort_hours: 0.2
+        tokens: 3000
+      config:
+        level: P2
+        claim: T002 is the only dispatched ready ticket and its decision source is current.
+        method: Compare main/task/plan blob SHAs, T001 terminal receipt, unchecked task order, branches and PR search.
+        evidence_path: .loop/evidence/t002-reconciliation.json
+        required: true
+        baseline_required: false
+
+    - id: m-l2-t002-ledger
+      kind: memory
+      layer: L2
+      label: T002 supervisor ledger
+      owner: codex-supervisor
+      status: done
+      risk: low
+      confidence:
+        score: 0.95
+        basis: Append-only T002 ledger preserves reconciliation and routing decisions.
+        evidence_refs: [.loop/t002-graph-ledger.json]
+      budget:
+        effort_hours: 0.1
+        tokens: 1200
+      config:
+        path: .loop/t002-graph-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+
+    - id: t-t002-ready
+      kind: trigger
+      layer: L1
+      label: T002 ADR packet is ready to draft
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        score: 0.98
+        basis: T001 completion unlocks T002; T002 has six bounded output paths and no duplicate work.
+        evidence_refs: [.loop/evidence/t002-reconciliation.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: T002 is unchecked, dependency-satisfied, and bounded to six ADRs plus loop evidence.
+        inputs_required: [T002 task text, plan Decisions Required, spec Open Decisions, constitution]
+        dedupe: T002 plus plan-blob-sha plus six-adr-path-set
+
+    - id: a-draft-adrs
+      kind: action
+      layer: L1
+      label: Draft six reviewable T002 ADRs
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 0.9
+        basis: ADRs preserve source constraints and make unresolved vendor/rights/Web3 choices explicit approval points.
+        evidence_refs: [.loop/evidence/t002-acceptance.json]
+      budget:
+        effort_hours: 2.5
+        tokens: 22000
+      config:
+        workflow: [extract required decisions, write proposed decisions, define contracts and exit conditions, add traceability and approval gates]
+        allowed: [create six ADRs, create evidence, preserve provider-neutral and origin-first boundaries]
+        requires_approval: [vendor selection, rights acceptance, access policy, Motion/p5 baseline, Web3 scope, merge]
+        forbidden: [claim an unapproved vendor/license, enable paid/token/wallet gates, perform external Web3 writes]
+
+    - id: p-adr-acceptance
+      kind: proof
+      layer: L1
+      label: Six-ADR traceability and boundary proof
+      owner: verifier
+      status: done
+      risk: high
+      confidence:
+        score: 0.95
+        basis: Static checks cover six paths, required decision topics, explicit proposal status and cross-artifact traceability.
+        evidence_refs: [.loop/evidence/t002-acceptance.json]
+      budget:
+        effort_hours: 0.6
+        tokens: 6000
+      config:
+        level: P2
+        claim: The T002 ADR packet is complete, bounded, traceable and does not silently authorize irreversible choices.
+        method: JSON/YAML validation, six-file/path check, required-heading/topic check, status/approval check and diff-scope check.
+        evidence_path: .loop/evidence/t002-acceptance.json
+        required: true
+        baseline_required: true
+
+    - id: m-l1-t002-ledger
+      kind: memory
+      layer: L1
+      label: T002 execution ledger
+      owner: codex-agent
+      status: done
+      risk: low
+      confidence:
+        score: 0.95
+        basis: T002 graph deltas and proof receipts are append-only.
+        evidence_refs: [.loop/t002-graph-ledger.json]
+      budget:
+        effort_hours: 0.1
+        tokens: 1500
+      config:
+        path: .loop/t002-graph-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+
+    - id: t-human-review
+      kind: trigger
+      layer: L3
+      label: T002 architecture and product review required
+      owner: human-mark
+      status: done
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: ADRs contain provider, rights, access, Motion/p5 and Web3 choices that require accountable human approval.
+        evidence_refs: [.loop/evidence/t002-acceptance.json, .loop/evidence/t002-human-approval.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: Draft ADR packet and automated proof pass; Mark must approve or request bounded amendments.
+        inputs_required: [six ADRs, proof receipts, provider/rights/access/Web3 decision questions]
+        dedupe: T002 plus draft-pr-number plus ADR-content-fingerprint
+
+    - id: a-review-adrs
+      kind: action
+      layer: L3
+      label: Review T002 ADR decision packet
+      owner: codex-agent
+      status: done
+      risk: critical
+      confidence:
+        score: 0.9
+        basis: Exact diffs and proof receipts will be visible in the draft PR.
+        evidence_refs: [.loop/evidence/t002-human-approval.json]
+      budget:
+        effort_hours: 0.75
+        tokens: 5000
+      config:
+        workflow: [inspect proposed decisions, confirm non-goals, choose providers/rights/risk boundaries, approve or request changes]
+        allowed: [approve, reject, request a bounded amendment]
+        requires_approval: [all unresolved provider, product, rights, architecture and Web3 decisions]
+        forbidden: [treat draft ADR as approved or dispatch implementation before approval]
+
+    - id: p-human-approval
+      kind: proof
+      layer: L3
+      label: Explicit T002 ADR approval
+      owner: human-mark
+      status: done
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: Architecture, provider, rights and product decisions are binary human approvals.
+        evidence_refs: [.loop/evidence/t002-human-approval.json]
+      budget:
+        effort_hours: 0.2
+        tokens: 1000
+      config:
+        level: P3
+        claim: Mark approved the six ADRs, their proposed defaults, and any selected provider/rights/Web3 boundaries.
+        method: Explicit approval on the draft PR, recorded in the approval evidence; merge and main read-back remain the terminal follow-up.
+        evidence_path: .loop/evidence/t002-human-approval.json
+        required: true
+        baseline_required: false
+
+    - id: g-t002-approval
+      kind: gate
+      layer: L3
+      label: T002 architecture and product approval gate
+      owner: human-mark
+      status: done
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: Passing static checks cannot select a vendor, license, access policy or permanent-publication risk.
+        evidence_refs: [.loop/evidence/t002-human-approval.json]
+      budget:
+        effort_hours: 0.25
+        tokens: 1000
+      config:
+        condition: Approve ADR-0001 through ADR-0006 before marking T002 complete or dispatching T003.
+        approver: human-mark
+        required: true
+
+    - id: m-l3-t002-decisions
+      kind: memory
+      layer: L3
+      label: T002 decision ledger
+      owner: human-mark
+      status: done
+      risk: medium
+      confidence:
+        score: 0.9
+        basis: Draft PR and append-only T002 ledger preserve the decision receipt.
+        evidence_refs: [.loop/t002-graph-ledger.json, .loop/evidence/t002-human-approval.json]
+      budget:
+        effort_hours: 0.1
+        tokens: 1200
+      config:
+        path: .loop/t002-graph-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+
+    - id: s-terminal-policy
+      kind: stop
+      layer: GLOBAL
+      label: T002 named terminal-state policy
+      owner: policy
+      status: needs_human
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: ADR approval is recorded; T002 terminal success still requires merge, main read-back and the checked task.
+        evidence_refs: [.loop/t002-graph-ledger.json, .loop/evidence/t002-human-approval.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        states:
+          success: Six ADRs are approved, merged, read back from main, and T002 is checked.
+          no_op: Main already contains approved equivalent ADRs and no safe change is required.
+          blocked: A source, owner, permission, rights input, or external system is unavailable.
+          stalled: Same failure or no-evidence-delta limit is reached.
+          exhausted: Iteration, time, graph-change, token, or cost budget is reached.
+          needs_human: ADR approval is recorded; merge and main read-back are pending before terminal success.
+          cancelled: User cancels or governing spec becomes invalid.
+
+  edges:
+    - {id: e-external-l2, from: x-github-state, to: a-reconcile, type: feedback, required: true, confidence: 0.99, token_capacity: 6000}
+    - {id: e-l2-trigger, from: t-supervisor, to: a-reconcile, type: enables, required: true, confidence: 1.0, token_capacity: 12000}
+    - {id: e-l2-proof, from: a-reconcile, to: p-reconciliation, type: verifies, required: true, confidence: 0.98, token_capacity: 10000}
+    - {id: e-l2-work, from: p-reconciliation, to: t-t002-ready, type: enables, required: true, confidence: 0.98, token_capacity: 9000}
+    - {id: e-l2-memory-a, from: a-reconcile, to: m-l2-t002-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3500}
+    - {id: e-l2-memory-p, from: p-reconciliation, to: m-l2-t002-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3500}
+    - {id: e-l2-feedback, from: m-l2-t002-ledger, to: a-reconcile, type: feedback, required: true, confidence: 0.95, token_capacity: 5000}
+
+    - {id: e-l1-trigger, from: t-t002-ready, to: a-draft-adrs, type: enables, required: true, confidence: 0.98, token_capacity: 16000}
+    - {id: e-l1-proof, from: a-draft-adrs, to: p-adr-acceptance, type: verifies, required: true, confidence: 0.95, token_capacity: 12000}
+    - {id: e-l1-memory-a, from: a-draft-adrs, to: m-l1-t002-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3500}
+    - {id: e-l1-memory-p, from: p-adr-acceptance, to: m-l1-t002-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3500}
+    - {id: e-l1-feedback, from: m-l1-t002-ledger, to: a-draft-adrs, type: feedback, required: true, confidence: 0.95, token_capacity: 5000}
+    - {id: e-l1-l3-feedback, from: p-adr-acceptance, to: t-human-review, type: feedback, required: true, confidence: 0.95, token_capacity: 8000}
+    - {id: e-l1-stop, from: p-adr-acceptance, to: s-terminal-policy, type: enables, required: false, confidence: 0.95, token_capacity: 5000}
+
+    - {id: e-l3-trigger, from: t-human-review, to: a-review-adrs, type: enables, required: true, confidence: 1.0, token_capacity: 9000}
+    - {id: e-l3-proof, from: a-review-adrs, to: p-human-approval, type: verifies, required: true, confidence: 1.0, token_capacity: 7000}
+    - {id: e-l3-gate, from: p-human-approval, to: g-t002-approval, type: requires_approval, required: true, confidence: 1.0, token_capacity: 5000}
+    - {id: e-gate-stop, from: g-t002-approval, to: s-terminal-policy, type: approves, required: true, confidence: 1.0, token_capacity: 4000}
+    - {id: e-l3-memory-a, from: a-review-adrs, to: m-l3-t002-decisions, type: records, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-l3-memory-p, from: p-human-approval, to: m-l3-t002-decisions, type: records, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-l3-feedback, from: m-l3-t002-decisions, to: a-review-adrs, type: feedback, required: true, confidence: 0.9, token_capacity: 3500}
+
+flow:
+  source: t-human-review
+  sink: s-terminal-policy
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - next_action

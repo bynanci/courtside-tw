@@ -1,0 +1,307 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-ticket-supervisor-t002",
+  "graph_version": 3,
+  "run_id": "courtside-tw-t002-20260806",
+  "status": "needs_human",
+  "iteration": 1,
+  "started_at": "2026-08-06T09:16:27Z",
+  "updated_at": "2026-08-06T10:00:01Z",
+  "current_frontier": [
+    "s-terminal-policy"
+  ],
+  "blocked_nodes": [
+    "s-terminal-policy"
+  ],
+  "terminal_state": "needs_human",
+  "next_action": "Mark PR #4 ready for review; merge it after the approval receipt, read back main, then dispatch T003.",
+  "events": [
+    {
+      "event_id": "evt-t002-001-graph-initialized",
+      "at": "2026-08-06T09:16:27Z",
+      "actor": "codex-supervisor",
+      "type": "graph_initialized",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": ".loop/t002-graphify-loop.yaml",
+            "after": "T002 L1/L2/L3 graph with provider, rights, access and Web3 human gates."
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t002-reconciliation.json"
+      ],
+      "proof_receipts": [],
+      "failure_signature": null,
+      "decision": "Dispatch T002 only.",
+      "token_usage": {
+        "estimated": 6000,
+        "input": 0,
+        "output": 0,
+        "total": 6000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-t002-002-authoritative-reconciled",
+      "at": "2026-08-06T09:16:27Z",
+      "actor": "codex-supervisor",
+      "type": "authoritative_state_reconciled",
+      "base_graph_version": 1,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-reconcile/status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-reconciliation/status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/t-t002-ready/status",
+            "before": "ready",
+            "after": "done"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t002-reconciliation.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "p-reconciliation",
+          "result": "pass",
+          "confidence": 0.98
+        }
+      ],
+      "failure_signature": null,
+      "decision": "T002 is the only ready frontier; T003 remains blocked by ADR approval.",
+      "token_usage": {
+        "estimated": 5000,
+        "input": 0,
+        "output": 0,
+        "total": 5000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-t002-003-adr-packet-validated",
+      "at": "2026-08-06T09:16:27Z",
+      "actor": "codex-agent",
+      "type": "l1_iteration_completed",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-draft-adrs/status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-adr-acceptance/status",
+            "before": "planned",
+            "after": "done"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t002-reconciliation.json",
+        ".loop/evidence/t002-acceptance.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "p-adr-acceptance",
+          "result": "pass",
+          "confidence": 0.95
+        },
+        {
+          "proof": "strict graph validation",
+          "result": "15 nodes / 21 edges / 0 warnings / 0 errors"
+        }
+      ],
+      "failure_signature": null,
+      "decision": "The six ADRs are review-ready; provider, rights, access, Motion/p5 and Web3 choices remain human-gated.",
+      "token_usage": {
+        "estimated": 28000,
+        "input": 0,
+        "output": 0,
+        "total": 28000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-t002-004-draft-pr-published",
+      "at": "2026-08-06T09:54:08Z",
+      "actor": "codex-supervisor",
+      "type": "human_review_gate_opened",
+      "base_graph_version": 2,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "external.github.pull_request",
+            "after": {
+              "number": 4,
+              "url": "https://github.com/bynanci/courtside-tw/pull/4",
+              "state": "open",
+              "draft": true,
+              "merged": false,
+              "head": "ticket/t002-architecture-decisions",
+              "base": "main"
+            }
+          },
+          {
+            "op": "replace",
+            "path": "loop/terminal_state",
+            "before": null,
+            "after": "needs_human"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t002-reconciliation.json",
+        ".loop/evidence/t002-acceptance.json",
+        ".loop/t002-graphify-loop.yaml",
+        ".loop/t002-graphify-loop.mmd",
+        "https://github.com/bynanci/courtside-tw/pull/4"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "remote branch comparison",
+          "result": "pass",
+          "details": "ticket/t002-architecture-decisions is 11 commits ahead of main and 0 behind."
+        },
+        {
+          "proof": "remote artifact read-back",
+          "result": "pass",
+          "details": {
+            "t002-graphify-loop.mmd": "e6e700262cefa72ee6af8ff4c40f13aebeb31858",
+            "t002-acceptance.json": "7222fdb96d09752d5a4f8561e9bd4baee931cead"
+          }
+        },
+        {
+          "proof": "draft PR #4",
+          "result": "open / draft / unmerged",
+          "url": "https://github.com/bynanci/courtside-tw/pull/4"
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Open the T002 supervisor review gate. Keep all six ADRs PROPOSED; T002 is not complete and T003 remains blocked.",
+      "token_usage": {
+        "estimated": 4500,
+        "input": 0,
+        "output": 0,
+        "total": 4500
+      },
+      "terminal_reason": "Await explicit supervisor approval of the six T002 ADRs."
+    },
+    {
+      "event_id": "evt-t002-005-approval-recorded",
+      "at": "2026-08-06T10:00:01Z",
+      "actor": "human-mark",
+      "type": "human_approval_recorded",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/t-human-review/status",
+            "before": "ready",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-review-adrs/status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-human-approval/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/g-t002-approval/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/m-l3-t002-decisions/status",
+            "before": "ready",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/s-terminal-policy/status",
+            "before": "needs_human",
+            "after": "needs_human"
+          },
+          {
+            "op": "replace",
+            "path": "tasks/T002/checked",
+            "before": false,
+            "after": true
+          },
+          {
+            "op": "replace",
+            "path": "adr/0001..0006/status",
+            "before": "PROPOSED",
+            "after": "ACCEPTED"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t002-human-approval.json",
+        ".loop/t002-graphify-loop.yaml",
+        "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+        "https://github.com/bynanci/courtside-tw/pull/4"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "explicit Mark approval",
+          "result": "pass",
+          "confidence": 1,
+          "evidence": ".loop/evidence/t002-human-approval.json"
+        },
+        {
+          "proof": "six ADR status read-back",
+          "result": "ACCEPTED",
+          "details": "All six ADRs record Mark approval dated 2026-08-06."
+        },
+        {
+          "proof": "T002 task read-back",
+          "result": "checked",
+          "details": "T003 remains unchecked and undispatched."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Mark approved all six T002 ADRs. Keep the terminal merge/main-readback gate active; do not dispatch T003 yet.",
+      "token_usage": {
+        "estimated": 5000,
+        "input": 0,
+        "output": 0,
+        "total": 5000
+      },
+      "terminal_reason": "Approval is recorded; terminal success still requires PR merge and main read-back."
+    }
+  ]
+}
