@@ -1,6 +1,6 @@
 # ADR-0004: Free MVP access policy
 
-**Status**: PROPOSED — product owner approval required  
+**Status**: ACCEPTED — Mark approval recorded 2026-08-06 via PR #4
 **Date**: 2026-08-06
 
 ## Decision
@@ -40,3 +40,10 @@
 Plan: MVP scope、Constitution Check、Implementation Strategy、Delivery and Rollback。  
 Spec: US1–US2、FR-001–FR-010、FR-052、SC-003、SC-013、Open Decisions #1。  
 Tasks: T002、T009–T041、T071–T076、T087–T096。
+
+## Approval record
+
+- **Approver**: Mark
+- **Approved**: 2026-08-06 via [T002 PR #4](https://github.com/bynanci/courtside-tw/pull/4)
+- **Decision**: Free anonymous MVP policy accepted; any paid, membership or token-gated change requires the documented spec/ADR re-approval.
+- **Evidence**: `.loop/evidence/t002-human-approval.json`
