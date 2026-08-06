@@ -1,21 +1,30 @@
 # DESIGN.md — Taiwan Basketball Digital Magazine
 
-**Status**: PROVISIONAL / REVIEW-READY v0.1 — implementation preflight, not approved  
+**Status**: INITIAL VISUAL BASELINE APPROVED v0.2 — implementation contract; brand and production assets remain gated  
 **Date**: 2026-08-06  
+**Approved by**: Mark, 2026-08-06  
 **Working title**: `Courtside TW` is a repository label, not an approved brand name  
 **Primary platform**: Mobile-first SSR web; installable/offline PWA behavior remains roadmap-gated  
 **Implementation stack**: Nuxt 4.5, Motion for Vue, bounded p5.js preset  
+**Theme baseline**: System-adaptive light/dark surfaces; explicit manual override is optional  
+**Approved visual reference**: [`generated_images/exec-93223fcc-3e65-4571-8df1-3a8f1d47e4ec.png`](generated_images/exec-93223fcc-3e65-4571-8df1-3a8f1d47e4ec.png)  
 **Owners**: Product owner, design owner, engineering owner, PUBLISHER content owner  
 
 ## 0. Decision summary
 
-Courtside TW 採用「當代運動編輯設計」：
+Courtside TW 初版採用 **Arena Editorial／場邊紀實編輯式 UI**：
 
-- **Editorial Grid / Magazine** 提供長篇內容、封面、引言、圖說與媒體的閱讀節奏。
-- **Swiss Modernism 2.0** 提供 4／8／12 欄網格、數學化間距、單一主強調色與清楚資訊層級。
-- **Courtside signals** 只在封面、章節標記、數據卡與 court-pulse-v1 中加入球場線、計分板節奏與比賽能量。
+- **Arena Night**：首頁與期刊 Hero 以近黑球館、紀實攝影、巨大期號和單一朱紅強調色建立職籃張力。
+- **Editorial Paper**：文章、目錄與內容清單回到骨白／炭黑紙張表面，讓長篇閱讀保持安靜。
+- **Swiss Editorial Grid**：4／8／12 欄網格、8px 主節奏、非對稱構圖和清楚字級層級，避免卡片堆疊。
+- **Courtside Data**：比分、shot chart 與比賽脈絡是文章證據，不是首頁 Dashboard。
+- **Procedural Signal**：p5 只負責球場線、投籃路徑、網點粒子與聲量波形；必須可重現、可停用並有靜態 poster。
 
-不採用搜尋建議中的完整 Neo Brutalism：厚黑框、硬陰影、貼紙堆疊與高飽和粉色會增加長篇閱讀噪音，也不符合 plan 已核准的「內容優先、非 crypto-neon dashboard」方向。可保留的是非對稱構圖、強烈標題比例與少量色塊，不保留重邊框、隨機旋轉或機械式視覺負擔。
+不採用搜尋建議中的 Tactile／Deformable UI、完整 Neo Brutalism 或 Cinema Glass：果凍按鈕、厚框、硬陰影、發光玻璃、彈跳和高飽和色會增加長文噪音，也不符合 plan 已核准的「內容優先、非 crypto-neon dashboard」方向。可保留非對稱構圖、強烈標題比例與少量色塊，不保留重邊框、隨機旋轉、膠質材質或持續漂浮效果。
+
+核准圖是**視覺方向參考**，不是可直接發布的 UI、文案或媒體資產。圖中的 AI 球員影像、細小文字、隊名與數據均為 placeholder；production 只能使用通過 rights gate 的素材、真實內容與 semantic tokens。
+
+系統背景色採三層 token：primitive 保存核准色值，semantic 依 light／dark 系統偏好指派用途，component 只引用 semantic。首頁／期刊 Hero 可維持固定深色品牌場景；頁面 canvas、文章紙張、toolbar、Reader Dock、Studio 和狀態表面必須跟隨有效 theme，不得在 feature component 寫死白底或黑底。
 
 此文件是 UI／UX implementation contract，不是品牌資產授權書，也不得覆蓋 constitution、spec、plan 或 ADR。品牌名稱、Logo、最終色票、字體檔與攝影素材仍須由指定 owner 提供合法使用依據。
 
@@ -34,7 +43,7 @@ Courtside TW 採用「當代運動編輯設計」：
 每個設計變更 PR 必須附：
 
 - 受影響 route、viewport 與 component
-- light theme 截圖；若啟用 dark theme，需另附 dark 截圖
+- system-light 與 system-dark 截圖；若交付 manual override，另附 override 首幀與重新整理證據
 - keyboard、screen reader、reduced-motion、no-JS 影響
 - loading、empty、error 與 degraded state
 - 對 SC-001、SC-002、SC-007、SC-013、SC-014 的驗證結果
@@ -159,97 +168,224 @@ flowchart TD
 
 ## 7. Visual language
 
-### 7.1 Composition
+### 7.1 Approved composition
 
-- 封面與 Issue Hero：大幅 4:5 cover、非對稱標題、期號與日期形成明確 editorial lockup。
-- 文章：平靜、線性、窄正文；圖片、引言、數據卡與 generative insert 才打破欄位。
-- Studio：高密度但不「卡片化一切」；使用 section、divider、table 與 split pane 建立層級。
-- Court geometry 只能作為低頻輔助：半場弧線、罰球線、shot path、scoreboard labels；不可變成每張卡片的背景。
+- **Home／Issue Hero**：固定使用深色 `hero` surface、大幅紀實攝影、巨大期號、非對稱標題與單一 CTA；深色 Hero 是內容構圖，不等同全站強制 dark mode。
+- **Story feed／TOC**：以紙張 surface、水平細分隔線與垂直內容流呈現；單列最多一張縮圖、一組 metadata 和一個前進 action，不包進獨立陰影卡片。
+- **Article reader**：跟隨有效 theme 的安靜背景、線性窄正文與固定閱讀節奏；只有寬幅媒體、pull quote、stat 和 generative insert 可突破正文欄。
+- **Data insert**：比分、shot chart 與數據摘要靠對齊、直接標示和線型區分，不靠發光、漸層或多層容器。
+- **Studio**：高密度但不「卡片化一切」；使用 section、divider、table 與 split pane 建立層級。
+- **Court geometry**：只能出現在 Hero 邊緣、章節轉場或指定 creative block；不可成為每張卡片背景。
 
-### 7.2 Provisional semantic colors
+Desktop 首頁的視覺比例以約 60–70% Hero、30–40% 首批內容為上限，不為了複製核准圖而鎖死 viewport 高度。Mobile 先呈現期號、主題、影像與 CTA，再進入 story feed；文章 route 不延續全頁黑色 Hero，以閱讀 surface 為主。
 
-品牌 owner 未核准最終色票前，元件只使用 semantic token；不得把 provisional hex 寫死在 feature component。
+### 7.2 System-adaptive background contract
 
-| Token | Light fallback | Dark preview | Use |
+有效 theme 的決策優先序：
+
+1. SSR 已讀取的使用者明確選擇 `light`／`dark`。
+2. 沒有明確選擇時，直接使用 `prefers-color-scheme`。
+3. 不支援 color-scheme media query 時，fallback 為 light。
+
+實作規則：
+
+- 沒有 override 時 `<html>` 不設定 `data-theme`，由 CSS media query 在首幀決定 background；不得等 hydration 後才切換而產生白閃或黑閃。
+- 若日後提供手動選擇，控制項循環為「跟隨系統／淺色／深色」；override 存入 server-readable cookie，SSR 同步輸出 `data-theme="light|dark"`。不得只寫 localStorage 再於 mount 修正。
+- `color-scheme` 必須與有效 theme 一致，讓原生 form control、scrollbar 與瀏覽器 UI 採正確背景。
+- 系統 theme 在頁面開啟期間改變時，只有「跟隨系統」模式即時更新；明確 override 不被系統事件覆蓋。
+- 公開 route、Reader Dock、Dialog、Sheet、Studio 與 error／empty state 使用相同 semantic map。照片不做 `filter: invert()`；dark mode 只調整 surrounding surface、scrim、caption 與 control。
+- Hero 的固定深色 surface 在 light／dark 都使用 `--color-bg-hero`；離開 Hero 後的 canvas 必須回到 `--color-bg-page`。
+- `<meta name="theme-color">` 至少提供 light `#F2EEE5` 與 dark `#080808` media variants；有 explicit override 時同步更新，不影響 no-JS fallback。
+- `forced-colors: active` 時改用 `Canvas`、`CanvasText`、`LinkText`、`Highlight` 等系統色，停用紙張紋理、圖片 scrim 與非必要 canvas decoration。
+
+### 7.3 Three-layer color tokens
+
+品牌 owner 未核准最終色票前，下表是已核准初版 fallback。Primitive 只保存色值；semantic 才表達背景與文字用途；feature component 只能引用 semantic／component token。
+
+#### Primitive palette
+
+| Primitive | Value | Role |
+| --- | --- | --- |
+| `ink.950` | `#080808` | Arena black／dark page |
+| `ink.900` | `#151515` | Dark surface |
+| `ink.800` | `#1E1E1C` | Dark raised surface |
+| `paper.50` | `#FBF8F1` | Light surface |
+| `paper.100` | `#F2EEE5` | Bone-paper page |
+| `paper.300` | `#D3CCC0` | Light divider |
+| `stone.800` | `#5B5852` | Light muted text |
+| `stone.700` | `#6A625A` | Dark control boundary |
+| `stone.600` | `#827A70` | Light control boundary |
+| `stone.400` | `#B8B1A7` | Dark muted text |
+| `vermilion.700` | `#B83A18` | Light action／label |
+| `vermilion.400` | `#E76C3C` | Dark action／shot hit |
+| `arenaNavy.800` | `#25314A` | Light information |
+| `arenaSky.300` | `#9CC2E0` | Dark information |
+
+#### Semantic theme map
+
+| Semantic token | Light | Dark | Use |
 | --- | --- | --- | --- |
-| canvas | #F6F2E8 | #101418 | 紙張／頁面背景 |
-| surface | #FFFDF8 | #171C22 | Sheet、toolbar、Studio panels |
-| ink | #11100E | #F4F1EA | 主要文字 |
-| ink-muted | #475467 | #B8C0CC | 次要資訊 |
-| accent | #B54708 | #FFB36B | 閱讀 CTA、章節標記、focus accent |
-| info | #22577A | #8AC6E8 | 來源／provenance 資訊 |
-| success | #166534 | #86D39A | 已核准／verified |
-| warning | #9A3412 | #FDBA74 | rights 即將過期／pending |
-| danger | #B42318 | #FDA29B | blocked／failed／withdrawn |
-| border | #D8D1C4 | #343C46 | Divider 與 control boundary |
+| `color.bg.page` | `#F2EEE5` | `#080808` | 系統 page canvas |
+| `color.bg.surface` | `#FBF8F1` | `#151515` | 文章、toolbar、panel |
+| `color.bg.raised` | `#FFFDF8` | `#1E1E1C` | Dialog、Sheet；不得當一般 card |
+| `color.bg.hero` | `#080808` | `#080808` | 固定 Arena Hero |
+| `color.text.primary` | `#11110F` | `#F2EEE5` | 主要文字 |
+| `color.text.muted` | `#5B5852` | `#B8B1A7` | metadata、caption |
+| `color.text.onHero` | `#F2EEE5` | `#F2EEE5` | Hero 文字 |
+| `color.action` | `#B83A18` | `#E76C3C` | CTA、link、focus、shot hit |
+| `color.onAction` | `#FFFFFF` | `#080808` | Filled action 文字 |
+| `color.info` | `#25314A` | `#9CC2E0` | source／provenance |
+| `color.success` | `#166534` | `#86D39A` | approved／verified |
+| `color.warning` | `#9A3412` | `#FDBA74` | expiring／pending |
+| `color.danger` | `#B42318` | `#FDA29B` | blocked／failed／withdrawn |
+| `color.border.subtle` | `#D3CCC0` | `#373532` | 非必要 divider／gridline |
+| `color.border.control` | `#827A70` | `#6A625A` | Input／control boundary，≥3:1 |
 
-已驗證的主要 light contrast：
+已驗證的核心 contrast：
 
-- ink / canvas：約 17:1
-- ink-muted / surface：約 7.7:1
-- accent / surface：約 5.4:1
-- info / canvas：約 6.9:1
-
-Dark theme 是 token contract 的預留能力，不是 P1 必交項。若啟用，必須逐頁重跑 contrast、media treatment、focus、disabled 與 scrim QA，不能只反轉顏色。
+- light primary／page：約 `16.3:1`；light muted／page：約 `6.1:1`
+- light action／page：約 `5.0:1`；white／light action：約 `5.7:1`
+- dark primary／page：約 `17.3:1`；dark muted／page：約 `9.4:1`
+- dark action／page 與 dark page／action：約 `6.3:1`
+- light info／page：約 `11.2:1`；dark info／page：約 `10.7:1`
+- control border／surface：light 約 `4.0:1`；dark 約 `3.1:1`。Subtle border 不得作唯一 control boundary
 
 ~~~css
+/* Primitive layer: values only. */
 :root {
-  --color-canvas: #f6f2e8;
-  --color-surface: #fffdf8;
-  --color-ink: #11100e;
-  --color-ink-muted: #475467;
-  --color-accent: #b54708;
-  --color-on-accent: #ffffff;
-  --color-info: #22577a;
-  --color-success: #166534;
-  --color-warning: #9a3412;
-  --color-danger: #b42318;
-  --color-border: #d8d1c4;
+  color-scheme: light dark;
+  --palette-ink-950: #080808;
+  --palette-ink-900: #151515;
+  --palette-ink-800: #1e1e1c;
+  --palette-paper-50: #fbf8f1;
+  --palette-paper-100: #f2eee5;
+  --palette-paper-300: #d3ccc0;
+  --palette-stone-800: #5b5852;
+  --palette-stone-700: #6a625a;
+  --palette-stone-600: #827a70;
+  --palette-stone-400: #b8b1a7;
+  --palette-vermilion-700: #b83a18;
+  --palette-vermilion-400: #e76c3c;
+  --palette-arena-navy-800: #25314a;
+  --palette-arena-sky-300: #9cc2e0;
+}
+
+/* Semantic layer: light fallback and explicit light. */
+:root,
+:root[data-theme="light"] {
+  --color-bg-page: var(--palette-paper-100);
+  --color-bg-surface: var(--palette-paper-50);
+  --color-bg-raised: #fffdf8;
+  --color-bg-hero: var(--palette-ink-950);
+  --color-text-primary: #11110f;
+  --color-text-muted: var(--palette-stone-800);
+  --color-text-on-hero: var(--palette-paper-100);
+  --color-action: var(--palette-vermilion-700);
+  --color-on-action: #ffffff;
+  --color-info: var(--palette-arena-navy-800);
+  --color-border-subtle: var(--palette-paper-300);
+  --color-border-control: var(--palette-stone-600);
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+}
+
+/* No data-theme means follow the OS before hydration. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme]) {
+    color-scheme: dark;
+    --color-bg-page: var(--palette-ink-950);
+    --color-bg-surface: var(--palette-ink-900);
+    --color-bg-raised: var(--palette-ink-800);
+    --color-text-primary: var(--palette-paper-100);
+    --color-text-muted: var(--palette-stone-400);
+    --color-action: var(--palette-vermilion-400);
+    --color-on-action: var(--palette-ink-950);
+    --color-info: var(--palette-arena-sky-300);
+    --color-border-subtle: #373532;
+    --color-border-control: var(--palette-stone-700);
+  }
+}
+
+/* Explicit override. Generate this and the media-query map from one source. */
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --color-bg-page: var(--palette-ink-950);
+  --color-bg-surface: var(--palette-ink-900);
+  --color-bg-raised: var(--palette-ink-800);
+  --color-text-primary: var(--palette-paper-100);
+  --color-text-muted: var(--palette-stone-400);
+  --color-action: var(--palette-vermilion-400);
+  --color-on-action: var(--palette-ink-950);
+  --color-info: var(--palette-arena-sky-300);
+  --color-border-subtle: #373532;
+  --color-border-control: var(--palette-stone-700);
 }
 ~~~
 
-### 7.3 Typography
+Component token examples：
 
-採兩個角色，不超過兩個實際載入 font families：
+~~~css
+:root {
+  --masthead-bg: var(--color-bg-hero);
+  --masthead-fg: var(--color-text-on-hero);
+  --article-bg: var(--color-bg-surface);
+  --article-fg: var(--color-text-primary);
+  --story-row-border: var(--color-border-subtle);
+  --reader-dock-bg: var(--color-bg-raised);
+  --reader-dock-fg: var(--color-text-primary);
+  --button-primary-bg: var(--color-action);
+  --button-primary-fg: var(--color-on-action);
+  --chart-hit: var(--color-action);
+  --chart-gridline: var(--color-border-subtle);
+  --chart-axis: var(--color-border-control);
+}
+~~~
 
-- **Editorial serif**：Noto Serif TC 候選，用於 issue title、feature headline、pull quote 與有限的文章標題。
-- **UI／reading sans**：Noto Sans TC 候選，用於 navigation、metadata、forms、Studio 與正文預設。
+### 7.4 Typography
 
-合法字體檔、subset 與 self-hosting 方案未核准前，使用 system fallback：
+初版以 sans-first 對齊核准圖，不超過兩個實際載入 font families：
 
-- Serif：Songti TC、PMingLiU、serif
-- Sans：PingFang TC、Microsoft JhengHei、system-ui、sans-serif
+- **Display condensed**：只用於 `COURTSIDE TW`、期號、比分、英文 eyebrow 與短 Latin headline；字體未核准前使用 `Arial Narrow`、`Avenir Next Condensed`、sans-serif fallback。
+- **Traditional Chinese UI／reading**：用於繁中標題、navigation、正文、forms 與 Studio；Noto Sans TC 是候選，核准前使用 `PingFang TC`、`Microsoft JhengHei`、system-ui、sans-serif。
+- Pull quote 可用同一 CJK family 的 heavier weight 與尺寸建立編輯感，不為「高級」額外載入第三套 serif。
 
 規則：
 
-- 正文 mobile 18px／1.8 line-height；desktop 18–20px／1.75。
-- 每個 screen 最多四個主要 type sizes、兩個 weight levels；hero display 可作為明確例外。
-- 日期、期號、統計與 digest 使用 font-variant-numeric: tabular-nums，不為此額外載入 monospace。
+- 正文 mobile `18px / 1.75–1.8`；desktop `18–20px / 1.7–1.75`。
+- Mobile 正文約 28–36 個繁中字元寬；desktop 約 36–42 個，禁止滿版長行。
+- 每個 screen 最多四個主要 type sizes、兩個正文 weight；Hero display 是明確例外。
+- 日期、期號、統計與 digest 使用 `font-variant-numeric: tabular-nums`，不為此額外載入 monospace。
 - 不以全大寫處理繁中；英文 eyebrow 可 uppercase 並保留可讀 tracking。
-- Webfont 採 font-display: swap 或 optional，預載只限 above-the-fold 必要字重。
-- 正式核准前禁止透過 Google Fonts CSS、CDN、npm package 或執行期 `@import` 下載字體；fallback stack 中出現 Noto 不代表 repository 已擁有字體檔或 redistribution 權。
+- Webfont 採 `font-display: swap` 或 `optional`，預載只限 above-the-fold 必要字重。
+- 正式核准前禁止透過 Google Fonts CSS、CDN、npm package 或執行期 `@import` 下載字體；fallback 中的名稱不代表 repository 已取得字體檔或 redistribution 權。
 
-### 7.4 Spacing, radius, elevation and z-index
+### 7.5 Spacing, radius, elevation and z-index
 
 | System | Tokens | Rule |
 | --- | --- | --- |
-| Spacing | 4, 8, 12, 16, 24, 32, 48, 64, 80 | 以 8 為主、4 為微調；相關元素距離小於不同群組 |
-| Radius | 0, 8, 16, 24, pill | Editorial media 可直角；controls 8；cards 16；sheet 24 |
-| Elevation | none, 1, 2, overlay | 主要靠 spacing／tone；soft shadow 僅給 floating UI |
-| Z-index | 0, 10, 20, 40, 50, 60 | base、sticky、nav、sheet、modal、toast；禁止 9999 |
+| Spacing | 4, 8, 12, 16, 24, 32, 48, 64, 80, 96 | 8px 為主、4px 微調；section gap 必須大於 component gap |
+| Radius | 0, 2, 4, 8, 12 | media／story row 直角；controls 2–4；floating Sheet／Dialog 最多 8–12；不使用 pill 作一般容器 |
+| Border | 0, 1px, 2px focus | 主要用 1px hairline；2–4px 只給 focus indicator，不做厚框裝飾 |
+| Elevation | none, scrim, overlay | 一般內容無 shadow；只有 Dialog／Sheet 可用克制 overlay shadow |
+| Z-index | 0, 10, 20, 40, 60, 80 | base、sticky、nav、sheet、modal、toast；禁止任意 9999 |
 
-避免厚黑框、硬 offset shadow、隨機 radius、三層巢狀 cards 與純裝飾 blur。
+質感來自對齊、留白、照片、字體與表面對比，不來自多層陰影。避免硬 offset shadow、隨機 radius、三層巢狀 cards、純裝飾 blur、半透明玻璃和每個 label 都做 pill。
 
-### 7.5 Icons and imagery
+### 7.6 Icons, photography and procedural imagery
 
-- 結構 icon 使用單一 SVG family；Vue 候選為 Phosphor Vue，dependency 加入前仍需記錄 package version 與 license，並統一 outline／filled hierarchy 與 stroke。
+- 結構 icon 使用單一 SVG family；Vue 候選為 Phosphor Vue，dependency 加入前需記錄 package version 與 license。相同層級統一 outline／filled style、1.5px stroke 與 optical size。
 - Emoji 不作為 navigation、status 或 system control。
 - 圖片必須使用正式 brand／rights asset，不猜 Logo、不拉未授權球員或賽事照片。
+- 攝影方向是台灣球館紀實：球員準備、板凳、地板反光、觀眾布條、球鞋、訓練與賽後情緒；避免每頁同一個巨大去背球員。
+- 色調維持自然膚色、低飽和 arena black、保留暗部細節；film grain／halftone 只能是低強度、可停用的 presentation layer，不得蓋住文字或 alt content。
 - Issue cover 預設 4:5；feature landscape 16:9 或 3:2；profile 1:1。所有媒體保存 focal point、width、height、alt、caption、credit 與 rights status。
-- 圖片宣告 aspect-ratio／尺寸，提供 AVIF、WebP、JPEG variants 與 dominant placeholder。
-- 不生成或使用看似真實球員、球隊或賽事紀實的 AI 圖像；生成素材只能是明確標示的抽象／概念視覺，且仍須有 owner 與 rights record。
+- 圖片宣告 `aspect-ratio`／尺寸，提供 AVIF、WebP、JPEG variants 與 dominant placeholder。
+- 不生成或使用看似真實球員、球隊或賽事紀實的 AI 圖像。核准圖中的人物只能作概念參考，不能成為 production content。
+- p5 只生成 court line、shot path、halftone particle 與 sound-wave trace；不得生成角色、Logo、球衣或偽造賽事影像。
 
-### 7.6 Brand and asset activation gate
+### 7.7 Brand and asset activation gate
 
 正式品牌決策前，header 只顯示可設定的 working title，不建立、描摹或臆造 Logo，也不使用未授權的球隊、聯盟、贊助商或媒體標誌。任何品牌、字體、攝影、插畫或生成資產啟用前，repository 必須保留：
 
@@ -264,19 +400,25 @@ Dark theme 是 token contract 的預留能力，不是 P1 必交項。若啟用�
 
 - 首屏只回答三件事：這一期是什麼、為什麼值得讀、如何開始。
 - Hero 最多一個 primary CTA 與兩個 secondary links。
-- Mobile 先顯示 cover／title／CTA，再顯示摘要；desktop 才允許 cover 與標題不對稱並排。
+- Hero 固定使用 `--color-bg-hero`／`--color-text-on-hero`，影像 scrim 只服務標題可讀性；CTA 使用有效 theme 對應的 action token。
+- Mobile 先顯示 cover／期號／title／CTA，再切入跟隨 system theme 的 story feed；desktop 才允許 cover 與標題不對稱並排。
+- Hero 與 feed 的交界使用色面、間距或 1px divider，不加浮動玻璃卡或大陰影。
 - 最新一期後依序為精選文章、過往期刊、主題入口；不使用無限 carousel。
 
 ### 8.2 Issue detail and TOC
 
 - 期號、主題、日期與簡介在 cover 附近，不埋在 drawer。
 - TOC 使用 section heading + article rows；每列包含 title、article type、作者與閱讀時間。
+- Cover 可維持 Arena dark composition；TOC 必須回到有效 theme 的 page／surface token，不能把整頁鎖成核准圖的黑底。
+- Article row 用 divider 和 spacing 分組；hover／focus 改變 surface 或 underline，不建立整列浮起陰影。
 - 未發布內容完全不出現在 public DOM。
 - court-pulse-v1 預設只顯示 poster，互動版需通過 feature flag 與效能 gate。
 
 ### 8.3 Article reader
 
 - Header：section、title、dek、作者、發布／更新時間、閱讀時間、issue link。
+- Reader page、article surface、caption、pull quote、Reader Dock 與 inline data insert 全部引用 system-adaptive semantic token；不得在 block renderer 寫死 white／black。
+- Light 使用 bone-paper page + warm surface；dark 使用 arena black page + charcoal surface。兩者保持相同 content order、measure、spacing 與 affordance，不把 dark mode 當另一份版型。
 - Top bar：左側「返回本期目錄」、右側分享／更多；窄螢幕可省略中間期號，但不可截斷核心標題。返回 control 必須有包含「本期目錄」的 accessible name。
 - Reading progress：頂部視覺條 + 可讀文字；不把 percentage 當唯一恢復定位，也不在每次 scroll 用 `aria-live` 播報。
 - Body：paragraph rhythm 優先，不讓 sticky UI、分享工具或動畫打斷段落。
@@ -293,6 +435,8 @@ Dark theme 是 token contract 的預留能力，不是 P1 必交項。若啟用�
 - `<1024px` 開啟不支援的 authoring route 時，保留已保存／conflict 狀態並顯示「使用較大螢幕繼續」，不得留下破版 editor。
 - Autosave 狀態固定可見：saving、saved、conflict、offline、failed。
 - Publish checklist 依序顯示 schema、required fields、media rights、credit、preview、schedule；blocked item 可直接跳到問題欄位。
+- Studio 使用相同 system theme map，但密度由 component spacing tokens 調整；不得另建一套灰色 Dashboard palette。
+- Editor 與 public preview 可同時顯示不同 preview theme；preview theme 只影響 renderer sandbox，不改變 Studio shell 或使用者全域偏好。
 - Responsive capability 不是 authorization；API 仍執行 RBAC 與 workflow gate。Mobile emergency withdrawal 是唯一要求完整手機支援的敏感 mutation。
 
 ## 9. Content block visual contract
@@ -325,6 +469,21 @@ Dark theme 是 token contract 的預留能力，不是 P1 必交項。若啟用�
 
 無領域語意的 primitive 才能放進共用 UI layer；Issue、Article、Rights、Creative 與 Provenance 元件歸各自 feature。每個互動元件都需定義 default、hover、focus-visible、pressed、selected、disabled、loading、error、empty、reduced-motion 與 no-JS 行為。
 
+### 9.2 Arena Editorial component contract
+
+| Component | Background／foreground | Shape／spacing | State rule |
+| --- | --- | --- | --- |
+| ArenaMasthead | hero／onHero | 56–64px；0 radius；1px bottom divider | Sticky 時只調 tone／border，不加 blur glass |
+| PrimaryAction | action／onAction | 48px min height；2px radius；16–24px inline padding | Hover shift tone；pressed scale 0.98；focus 2–4px ring |
+| StoryRow | surface／primary | 0 radius；24–32px block padding；1px divider | 整列可點時保持單一 link target；hover 不位移 |
+| ArticleSurface | page + surface／primary | 0 radius；正文 measure 42rem max | Theme 改變不重置 scroll、focus 或 resume anchor |
+| ReaderDock | raised／primary | safe-area aware；8px max radius；無巢狀 card | 48px controls；focus 不被 viewport／overflow 裁切 |
+| StatBlock | surface／primary + action | 0–4px radius；數字右對齊；直接 label | 顏色外再用 label／shape；提供文字摘要 |
+| ShotChart | hero 或 surface／theme text | 1px court line；hit／miss 至少形狀不同 | Tooltip 可鍵盤／tap；reduced-motion 立即顯示完整資料 |
+| GenerativePoster | media asset + semantic overlay | 固定 aspect-ratio；0 radius | Poster 永遠存在；canvas failure 不改變 block 尺寸 |
+
+狀態優先序為 `disabled > loading > active > focus > hover > default`。所有互動狀態只使用 color、opacity、outline 或 transform；不得改變 layout bounds。Disabled 仍需至少 3:1 可辨識，不能只把 opacity 降到看不見；loading 超過 300ms 才顯示保留尺寸的 progress／skeleton。
+
 ## 10. Motion contract
 
 ### 10.1 Motion tokens
@@ -344,6 +503,8 @@ Dark theme 是 token contract 的預留能力，不是 P1 必交項。若啟用�
 
 Enter 使用 `cubic-bezier(.16, 1, .3, 1)`，exit 使用 `cubic-bezier(.4, 0, 1, 1)`；shared cover 採 `stiffness 320 / damping 32 / mass 0.9` 且不得可見 overshoot。所有值由單一 motion variant module 匯出，component 不得自訂 duration／spring／transform magic number。同一 viewport 最多同時運動兩個主要元素。
 
+Theme token 切換不新增第六種 Motion pattern。作業系統自行切換 theme 時立即套用新 token，不重播 route／Hero／TOC 動畫；使用者明確選擇 light／dark 時，只允許最長 150ms 的 color／background／border CSS transition，不淡出正文、不重置 focus／scroll，`prefers-reduced-motion` 下立即切換。
+
 ### 10.2 Five allowed patterns
 
 | Pattern | Purpose | Default | Reduced / failure |
@@ -359,6 +520,9 @@ SSR DOM 必須從第一個 byte 就是可讀完成狀態；不得先 opacity: 0�
 ## 11. court-pulse-v1 contract
 
 - 內容：球場線、shot locations、文章內非個資數值與 issue palette 的可重現抽象圖。
+- `paletteId` 只選擇 semantic palette family，不保存 raw hex。有效 theme 決定 light／dark variant；切換 theme 只重繪 palette，不改 seed、geometry、sequence 或資料結論。
+- Canonical poster 優先輸出同 seed／presetVersion／params 的 light 與 dark variants，使用 `<picture media="(prefers-color-scheme: dark)">` 在 no-JS 首幀選擇；若 pipeline 只能產一份，必須使用兩種背景皆達對比的 theme-neutral poster。
+- Theme change 不得建立第二個 p5 instance、重啟 lifecycle 或重新下載資料；active canvas 最多 `redraw()` 一次，paused／offscreen instance 保持 paused。
 - Input 僅限以下 bounded schema；所有值先由 server normalize：
 
 | Field | Bound |
@@ -448,6 +612,9 @@ Edition Passport 是 publication evidence panel，不是首頁主角，也不是
 | Recoverable error | 顯示簡短原因、Retry、返回安全頁；request ID 可收在 details，不顯示 stack／SQL／draft metadata |
 | Network degraded | 先文字、後低解析圖片；提供 retry，不重置閱讀位置 |
 | Offline after render | 保留已渲染正文，只顯示非阻塞 offline status；不得用 error page 取代文章 |
+| System theme changed | 只在「跟隨系統」時更新 semantic tokens；不重置 scroll／focus／resume、不重播 motion、不建立第二個 canvas |
+| Explicit theme override | SSR cookie + `data-theme` 保證首幀一致；失敗時回到 system preference，不留下半套 token |
+| Forced colors | 使用系統 Canvas／CanvasText／LinkText／Highlight；停用紙張紋理、scrim 與非必要 decoration，功能與焦點保持完整 |
 | Uncached offline route | Retry／Back；只有 P3 完整離線包成功安裝且 flag on 才顯示「開啟已下載版本」 |
 | Media／p5 failed | 保留 aspect ratio、poster、alt、data summary、caption、credit；正文與導覽繼續 |
 | Unpublished／unknown／withdrawn | 統一 `CONTENT_UNAVAILABLE` UI，不洩漏 draft。已知曾公開且撤回可回 410；draft／unknown 回 404；withdrawn 移除正文與媒體並返回本期目錄 |
@@ -459,6 +626,7 @@ Edition Passport 是 publication evidence panel，不是首頁主角，也不是
 ## 14. Accessibility contract
 
 - WCAG 2.2 AA；normal text contrast ≥4.5:1，large text／large glyph ≥3:1。
+- Light、dark 與 fixed dark Hero 必須各自驗證 contrast；不得假設同一 accent／on-accent pair 可跨背景直接沿用。
 - Skip link、語意 landmark、順序正確的 h1–h4、figure／figcaption、list 與 nav。
 - 所有 controls keyboard 可用；route change 將 focus 移到 main heading；Back 還原原焦點。
 - Focus ring 2–4px，不能被 overflow 或 sticky layer 裁掉。
@@ -468,6 +636,8 @@ Edition Passport 是 publication evidence panel，不是首頁主角，也不是
 - Modal／sheet 支援 Escape、focus trap、明確 close、unsaved change confirmation。
 - Gesture 必須有可見替代；drag reorder 另提供上移／下移。
 - Canvas 同層有可聚焦描述、data summary、poster 與 pause control。
+- 紙張 grain、halftone、scrim 與照片不得降低正文／caption contrast；高對比／forced-colors 下全部可移除。
+- 若提供 theme selector，使用原生 button／menu semantics，顯示目前值「跟隨系統／淺色／深色」，keyboard 與 screen reader 可完整操作。
 - prefers-reduced-motion 下取消非必要位移、parallax、stagger 與 autoplay。
 - 每頁提供 skip-to-main；article 可另提供 skip-to-TOC／body。TOC 使用具 label 的 `nav` + ordered list。
 - 人工驗收至少涵蓋 TalkBack／Chrome、VoiceOver／Safari 與 NVDA／Firefox 或 Chrome；reading progress 不得持續 live announce。
@@ -488,6 +658,9 @@ No-JS 時必須保留 Home → issue → `#toc` → article SSR links、完整 h
 - p5 offscreen／hidden CPU 必須趨近 idle；route unmount 後零 canvas、零 loop、零 global listener。
 - 連續切換 20 篇文章後，DOM、observer 與 animation lifecycle 無遺留。
 - no-JS 與 hydration failure 仍提供 title、author、body、TOC、prev／next、share 與 poster。
+- System theme 由 CSS media query 在首幀決定，不新增阻塞 JavaScript。Explicit theme cookie 由 SSR 輸出，不允許 hydration 後二次翻色。
+- Light／dark poster 使用 `<picture>` media selection；瀏覽器不得同時下載兩份 full-size Hero 或 p5 poster。
+- Theme 切換只改 custom properties，不造成 layout shift；CLS attribution 必須維持 0。
 - `prefers-reduced-motion` 或 `saveData=true` 未經手動啟用前不得下載 p5；普通 CSS hover／focus 不引入 Motion runtime。
 
 ## 16. Validation matrix
@@ -520,13 +693,16 @@ No-JS 時必須保留 Home → issue → `#toc` → article SSR links、完整 h
 | UX-22 | Core routes axe | Home、issue、article、unavailable、Studio review 無 serious／critical violations | CI axe report |
 | UX-23 | Pixel 6 throttled | SC-002 通過；普通文章 p5 0 B；20 route switches 零 leak | Lighthouse + bundle + trace |
 | UX-24 | Web3 flags off | 無 wallet／RPC／gateway／chain request；external write receipt = 0 | HAR + audit receipt |
-| UX-25 | Light theme／optional dark | 所有使用組合達 WCAG contrast；dark 未啟用時不納入 P1 UI | contrast report + screenshots |
+| UX-25 | System light／dark cold start | 首幀背景、原生 controls、Hero、Reader、Studio 與 theme-color 一致，無 hydration 翻色 | screenshots + filmstrip + DOM assertion |
+| UX-26 | System theme live change／explicit override | system 模式即時更新；override 保持；scroll／focus／resume／canvas instance 不重置 | E2E + lifecycle counters |
+| UX-27 | Forced colors／high contrast | 核心內容、focus、links、controls 與 chart summary 可辨識，texture／scrim 不遮蔽 | manual + Playwright emulation where supported |
 
 ### 16.1 Design acceptance
 
 - 90% usability participants can open a target article within three actions.
 - Reader and TOC remain complete at 375px without horizontal scroll or clipped controls.
 - Article body, metadata, navigation and media alternatives work without JavaScript.
+- System light／dark 在首次 SSR、hydration 與 live change 都保持正確背景、對比和閱讀位置；若使用者 override，下一次 SSR 不閃爍。
 - Keyboard and screen reader order matches visual order.
 - Every asynchronous, empty, failed and withdrawn state has cause + recovery.
 - Motion and p5 pass Pixel 6, reduced-motion and lifecycle gates.
@@ -535,9 +711,12 @@ No-JS 時必須保留 Home → issue → `#toc` → article SSR links、完整 h
 ## 17. Anti-patterns
 
 - Crypto-neon dashboard、wallet-first onboarding、giant chain badges
+- Jelly／deformable controls、chrome material、Cinema Glass、glowing cards 或把「高級」理解成 blur + shadow
 - PDF viewer、page-flip gimmick、scroll-jacking 或強制 parallax
 - Neo Brutalism 的厚框／硬陰影全面套用到正文與 Studio
 - Card inside card inside card、每個 section 都有 rounded container
+- 在 feature component 寫死 `#fff`／`#000` 背景、只支援單一 theme，或 hydration 後才讀 localStorage 翻色
+- Dark mode 直接反轉照片、Logo、插圖或影片；light／dark 各自維護一套無法同步的 component CSS
 - Hero、TOC、正文與 nav 同時做 entrance animation
 - opacity: 0 等 hydration、無 poster 的 canvas、continuous decorative loop
 - Mobile horizontal TOC carousel、gesture-only controls、fixed bar 遮住最後一段
@@ -549,20 +728,23 @@ No-JS 時必須保留 Home → issue → `#toc` → article SSR links、完整 h
 
 | Decision | Current baseline | Owner / gate | Blocks |
 | --- | --- | --- | --- |
+| 初版視覺方向 | Arena Editorial V2 已核准 | Mark／design owner | 已解除 design-direction gate |
 | 雜誌正式名稱與 Logo | Courtside TW 為 working title | Product / brand owner | Production brand acceptance |
-| 最終色票 | semantic fallback tokens | Brand owner + accessibility proof | Visual sign-off |
-| 字體檔與授權 | system fallback；Noto Serif/Sans TC 候選 | Brand／legal／rights owner | Webfont shipping |
+| 最終品牌色票 | v0.2 Arena fallback 可供實作；production 前仍需品牌核准 | Brand owner + accessibility proof | Production visual sign-off |
+| 字體檔與授權 | system fallback；Noto Sans TC 與 licensed condensed display 候選 | Brand／legal／rights owner | Webfont shipping |
 | 攝影與 cover style | rights-valid editorial photography | PUBLISHER content owner | First issue publishing |
 | Video allowlist | 未指定 provider 時 external link fallback | PUBLISHER + security | Video embed |
-| Dark theme | token preview，非 P1 必交 | Product owner + full QA | Dark-mode release |
+| System theme | 跟隨系統的 light／dark background 是 P1 baseline；手動 selector 可延後 | Design／frontend owner + UX-25–27 | Reader／Studio theme release |
 
 ## 19. Implementation gate
 
 開始 T003 root baseline 或任何 UI scaffold 前，必須完成：
 
-- DESIGN.md 已加入 PR 並完成 traceability read-back。
-- Mark 核准本 baseline，或提出 bounded amendment。
+- DESIGN.md v0.2 已加入 PR 並完成 traceability read-back。
+- Mark 已於 2026-08-06 核准 Arena Editorial V2 初版視覺方向；此項不再是 open gate。
+- Root theme contract 使用三層 tokens，no-override 首幀跟隨系統，不能先建 light-only component 再補 dark patch。
+- 核准圖只作 reference；AI 人物、placeholder 文案與未授權標誌不得進入 scaffold fixtures 或 production assets。
 - 未決品牌／字體／媒體項目保留為 named gate，不被假設為已解決。
 - T003 graph 將 design preflight 標為 done，implementation frontier 才能回到 root baseline。
 
-下一個 implementation action 僅能是 T003 的 root workspace baseline；T004 Nuxt、T005 Spring 與後續 UI implementation 仍分開 dispatch。
+本文件核准完成 design-direction gate，但依治理仍須以 PR merge／main read-back 作遠端生效證據。下一個 implementation action 僅能是 T003 的 root workspace baseline；T004 Nuxt、T005 Spring 與後續 UI implementation 仍分開 dispatch。
