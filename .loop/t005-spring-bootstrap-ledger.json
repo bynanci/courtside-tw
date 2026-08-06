@@ -1,0 +1,146 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-ticket-implementation-t005",
+  "graph_version": 2,
+  "run_id": "courtside-tw-t005-spring-bootstrap-20260806",
+  "status": "ready",
+  "iteration": 1,
+  "started_at": "2026-08-06T23:44:00Z",
+  "updated_at": "2026-08-06T23:44:00Z",
+  "current_frontier": [
+    "a-spring-scaffold"
+  ],
+  "blocked_nodes": [
+    "p-spring-boot",
+    "t-human-review",
+    "a-review-t005",
+    "p-human-approval",
+    "g-t005-approval",
+    "s-terminal-policy"
+  ],
+  "terminal_state": "running",
+  "next_action": "Implement only the four T005 Java/Spring files on ticket/t005-spring-bootstrap, then run both api and worker profile boot proofs.",
+  "events": [
+    {
+      "event_id": "evt-t005-spring-bootstrap-001-graph-initialized",
+      "at": "2026-08-06T23:44:00Z",
+      "actor": "codex-supervisor",
+      "type": "graph_initialized",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": ".loop/t005-spring-bootstrap-graphify-loop.yaml",
+            "after": "Strict-valid T005 L2/L1/L3 graph with a ready implementation frontier and protected review gate."
+          },
+          {
+            "op": "add",
+            "path": ".loop/t005-spring-bootstrap-graphify-loop.mmd",
+            "after": "Rendered T005 graph view."
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t005-dispatch.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "strict graph validation",
+          "result": "pass",
+          "details": "15 nodes / 21 edges / 0 warnings / 0 errors"
+        }
+      ],
+      "failure_signature": null,
+      "decision": "T003 completion is closed; expose only the T005 implementation action and keep profile proof and merge human-gated.",
+      "token_usage": {
+        "estimated": 6500,
+        "input": 0,
+        "output": 0,
+        "total": 6500
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-t005-spring-bootstrap-002-dispatched",
+      "at": "2026-08-06T23:44:00Z",
+      "actor": "codex-supervisor",
+      "type": "t005_dispatched",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "external.github.branch/ticket/t005-spring-bootstrap",
+            "after": "Branch created from main completion read-back commit ec4740b01be442444aa99809e245b7880677ffef."
+          },
+          {
+            "op": "add",
+            "path": ".loop/evidence/t005-dispatch.json",
+            "after": "Explicit Mark dispatch receipt for T005 only."
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/t-t005-ready/status",
+            "before": "planned",
+            "after": "ready"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-spring-scaffold/status",
+            "before": "planned",
+            "after": "ready"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [],
+            "after": [
+              "a-spring-scaffold"
+            ]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t003-completion-main-readback.json",
+        ".loop/evidence/t005-dispatch.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "authorization",
+          "level": "P3",
+          "result": "pass",
+          "details": "Current instruction: 核准 T003 完成，dispatch T005."
+        },
+        {
+          "proof": "base commit",
+          "level": "P2",
+          "result": "pass",
+          "details": "T005 branch starts at main completion read-back commit ec4740b01be442444aa99809e245b7880677ffef."
+        },
+        {
+          "proof": "scope containment",
+          "level": "P2",
+          "result": "pass",
+          "details": "Dispatch permits only the four T005 Java/Spring paths plus loop evidence; no T004, database, provider, secret or Web3 writes."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Dispatch T005 only; do not implement, merge or mark T005 complete in this dispatch receipt.",
+      "token_usage": {
+        "estimated": 5000,
+        "input": 0,
+        "output": 0,
+        "total": 5000
+      },
+      "terminal_reason": "Dispatch proof is complete; implementation and profile proof are the next L1 frontier."
+    }
+  ],
+  "proof": {
+    "claim": "T005 is dispatched from the verified T003 completion baseline with a strict graph and bounded four-file implementation scope; no implementation is claimed.",
+    "result": "pass",
+    "confidence": 0.98
+  }
+}
