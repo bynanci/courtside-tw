@@ -1,0 +1,446 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-ticket-implementation-t005
+objective: Dispatch the approved T005 Java 21 and Spring Boot 4.1 baseline on a fresh branch, then execute and prove only its api/worker profile scaffold.
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - Read the T003 completion main read-back, approved DESIGN.md, constitution, ADRs, plan.md and the exact T005 task before implementation.
+    - Create only apps/api/build.gradle.kts, apps/api/settings.gradle.kts, apps/api/src/main/java/tw/basketball/magazine/MagazineApplication.java and apps/api/src/main/resources/application.yml for T005 implementation.
+    - Configure Java 21, Spring Boot 4.1 and the api/worker profiles; prove both profiles boot with deterministic local commands.
+    - Preserve dispatch, implementation, proof and review decisions in append-only T005 loop evidence.
+    - Start from the post-T003 completion read-back commit and expose a reviewable T005 branch/PR without merging it.
+  out:
+    - Nuxt T004, T006 or later tasks, packages, contracts, databases, Compose, CI, deployment, providers, secrets or Web3 writes.
+    - Modifying spec.md, plan.md, constitution.md, ADRs or DESIGN.md during this implementation slice.
+    - Adding controllers, persistence, migrations, authentication, infrastructure, provider SDKs or production configuration beyond the four T005 paths.
+    - Marking T005 complete, merging its PR, dispatching T004 or any later ticket from this graph.
+
+policy:
+  authority:
+    allowed:
+      - Read scoped project and loop artifacts from main.
+      - Create ticket/t005-spring-bootstrap from the verified T003 completion read-back.
+      - Write the four T005 implementation paths and T005 loop evidence on the ticket branch.
+      - Run deterministic Java/Gradle profile boot checks and create a reviewable PR.
+    requires_approval:
+      - Merge the T005 PR or mark T005 checked.
+      - Dispatch T004, T006 or any later ticket.
+      - Change the approved design, architecture, provider, rights, access or Web3 boundary.
+    forbidden:
+      - Add later-task scaffolds, production credentials, paid/token-gated access or external Web3 writes.
+      - Weaken profile boot acceptance, hide a failed proof or rewrite prior evidence.
+  human_gates:
+    - T005 implementation scope, profile proof and merge review.
+    - Any change to DESIGN.md, constitution, ADRs, free-MVP access, rights or Web3 least-agency boundaries.
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+graph:
+  entry_nodes:
+    - x-authoritative-state
+    - t-supervisor
+    - t-t005-ready
+    - t-human-review
+  terminal_nodes:
+    - s-terminal-policy
+
+  loops:
+    - id: l2-t005-supervisor
+      layer: L2
+      owner: codex-supervisor
+      trigger_nodes: [t-supervisor]
+      action_nodes: [a-reconcile]
+      proof_nodes: [p-reconciliation]
+      memory_nodes: [m-l2-t005-ledger]
+      stop_nodes: [s-terminal-policy]
+      budgets:
+        max_iterations: 2
+        max_minutes: 20
+        max_same_failure: 2
+        max_graph_changes: 8
+        max_tokens: 18000
+
+    - id: l1-t005-execution
+      layer: L1
+      owner: codex-agent
+      trigger_nodes: [t-t005-ready]
+      action_nodes: [a-spring-scaffold]
+      proof_nodes: [p-spring-boot]
+      memory_nodes: [m-l1-t005-ledger]
+      stop_nodes: [s-terminal-policy]
+      budgets:
+        max_iterations: 3
+        max_minutes: 60
+        max_same_failure: 2
+        max_graph_changes: 12
+        max_tokens: 36000
+
+    - id: l3-t005-review
+      layer: L3
+      owner: human-mark
+      trigger_nodes: [t-human-review]
+      action_nodes: [a-review-t005]
+      proof_nodes: [p-human-approval]
+      memory_nodes: [m-l3-t005-decisions]
+      stop_nodes: [s-terminal-policy]
+      budgets:
+        max_iterations: 2
+        max_minutes: 60
+        max_same_failure: 2
+        max_graph_changes: 8
+        max_tokens: 18000
+
+  nodes:
+    - id: x-authoritative-state
+      kind: external
+      layer: EXTERNAL
+      label: T003 completion read-back and approved T005 task
+      owner: github-and-project-state
+      status: done
+      risk: medium
+      confidence:
+        score: 0.99
+        basis: Main read-back confirms T003 checked, graph version 4 success and T005 remains the next bounded parallel setup task.
+        evidence_refs: [.loop/evidence/t003-completion-main-readback.json, .loop/evidence/t003-completion-receipt.json]
+      budget:
+        effort_hours: 0.1
+        tokens: 1800
+      config:
+        source_type: repository-and-approved-user-direction
+        freshness: Read after the T003 completion receipt merge and main read-back.
+        limitations: Local git metadata is unavailable in this runner; branch publication and content read-back use the GitHub connector.
+
+    - id: t-supervisor
+      kind: trigger
+      layer: L2
+      label: T005 dispatch and scope reconciliation requested
+      owner: codex-supervisor
+      status: done
+      risk: low
+      confidence:
+        score: 1.0
+        basis: Current Mark instruction explicitly approves T003 completion and dispatches T005 only.
+        evidence_refs: [.loop/evidence/t003-completion-main-readback.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: Reconcile T005 against the checked T003 baseline and create its separate implementation frontier.
+        inputs_required: [T003 main read-back, T005 task text, plan.md, DESIGN.md, constitution, ADRs]
+        dedupe: T005 plus checked-T003 plus java21-spring41-four-path-set
+
+    - id: a-reconcile
+      kind: action
+      layer: L2
+      label: Reconcile T005 authority, scope and dispatch frontier
+      owner: codex-supervisor
+      status: done
+      risk: low
+      confidence:
+        score: 0.99
+        basis: T005 is parallel after T003, its four-file scope is explicit and T004/later work is excluded.
+        evidence_refs: [.loop/evidence/t005-dispatch.json]
+      budget:
+        effort_hours: 0.2
+        tokens: 3500
+      config:
+        workflow: [read main read-back, read task and plan, confirm four-file scope, confirm Java 21/Spring Boot 4.1 profiles, open dispatch branch]
+        allowed: [read state, append dispatch evidence, route T005]
+        requires_approval: [merge T005, mark T005 checked, dispatch later tickets, expand scope]
+        forbidden: [alter approved design, infer provider or rights approval, start T004 or later task]
+
+    - id: p-reconciliation
+      kind: proof
+      layer: L2
+      label: T005 authoritative scope reconciliation proof
+      owner: verifier
+      status: done
+      risk: low
+      confidence:
+        score: 0.99
+        basis: The dispatch receipt binds the branch to the post-T003 main commit and records the exact four implementation paths and exclusions.
+        evidence_refs: [.loop/evidence/t005-dispatch.json]
+      budget:
+        effort_hours: 0.15
+        tokens: 2500
+      config:
+        level: P2
+        claim: T005 is authorized for a Java 21/Spring Boot 4.1 scaffold and remains bounded to four API files plus proof artifacts.
+        method: Compare T005 task text, main read-back, plan runtime baseline, branch base SHA and current changed-file inventory.
+        evidence_path: .loop/evidence/t005-dispatch.json
+        required: true
+        baseline_required: true
+
+    - id: m-l2-t005-ledger
+      kind: memory
+      layer: L2
+      label: T005 supervisor dispatch ledger
+      owner: codex-supervisor
+      status: done
+      risk: low
+      confidence:
+        score: 0.95
+        basis: Dispatch evidence records the authority boundary, branch base, exact task and next action without closing T005.
+        evidence_refs: [.loop/t005-spring-bootstrap-ledger.json]
+      budget:
+        effort_hours: 0.05
+        tokens: 800
+      config:
+        path: .loop/t005-spring-bootstrap-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+
+    - id: t-t005-ready
+      kind: trigger
+      layer: L1
+      label: Approved T005 Java/Spring baseline is ready
+      owner: codex-agent
+      status: ready
+      risk: medium
+      confidence:
+        score: 0.99
+        basis: T005 dispatch is authorized and the branch starts from the verified T003 completion read-back commit.
+        evidence_refs: [.loop/evidence/t005-dispatch.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: T005 branch exists from the latest main read-back and the exact four-file scope is recorded.
+        inputs_required: [T005 task text, Java 21/Spring Boot 4.1 baseline, branch base SHA, dispatch receipt]
+        dedupe: T005 plus checked-T003 plus four-file-path-set
+
+    - id: a-spring-scaffold
+      kind: action
+      layer: L1
+      label: Implement four T005 Java/Spring bootstrap files
+      owner: codex-agent
+      status: ready
+      risk: medium
+      confidence:
+        score: 0.88
+        basis: The branch and proof contract are dispatched; implementation has not started in this dispatch-only iteration.
+        evidence_refs: [.loop/evidence/t005-dispatch.json]
+      budget:
+        effort_hours: 1.5
+        tokens: 16000
+      config:
+        workflow: [create Gradle settings/build files, create minimal Spring application, define api/worker profiles, run both profile boot proofs, record evidence]
+        allowed: [write four T005 paths, write T005 loop evidence, run local Java/Gradle commands]
+        requires_approval: [merge, mark T005 checked, dispatch T004 or later task, add provider/database/infrastructure scope]
+        forbidden: [create Nuxt or later-task files, add controllers/persistence/auth/DB/migrations/providers/secrets/Web3, weaken profile boot checks]
+
+    - id: p-spring-boot
+      kind: proof
+      layer: L1
+      label: T005 api/worker profile boot proof
+      owner: verifier
+      status: planned
+      risk: medium
+      confidence:
+        score: 0.0
+        basis: Profile boot commands are pending implementation on the dispatched branch.
+        evidence_refs: []
+      budget:
+        effort_hours: 0.5
+        tokens: 7000
+      config:
+        level: P2
+        claim: Both api and worker Spring profiles start successfully from a clean T005 checkout without later-task dependencies or secrets.
+        method: Run the pinned Gradle test/build contract and start each profile with bounded local settings; inspect changed files and shutdown cleanly.
+        evidence_path: .loop/evidence/t005-profile-boot.json
+        required: true
+        baseline_required: true
+
+    - id: m-l1-t005-ledger
+      kind: memory
+      layer: L1
+      label: T005 execution ledger
+      owner: codex-agent
+      status: planned
+      risk: low
+      confidence:
+        score: 0.0
+        basis: The implementation ledger will append implementation and profile-proof receipts after the action runs.
+        evidence_refs: []
+      budget:
+        effort_hours: 0.05
+        tokens: 1000
+      config:
+        path: .loop/t005-spring-bootstrap-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+
+    - id: t-human-review
+      kind: trigger
+      layer: L3
+      label: T005 bootstrap review requested
+      owner: human-mark
+      status: planned
+      risk: high
+      confidence:
+        score: 0.0
+        basis: Human review follows implementation and both profile boot proofs; it is not part of dispatch.
+        evidence_refs: []
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: Review the four-file patch, Gradle/profile receipts and branch/PR read-back before merge.
+        inputs_required: [four-file diff, profile boot proof, implementation ledger, remote branch or PR]
+        dedupe: T005 profile-proof fingerprint plus review-run-id
+
+    - id: a-review-t005
+      kind: action
+      layer: L3
+      label: Review T005 scope, profile proof and merge readiness
+      owner: human-mark
+      status: needs_human
+      risk: high
+      confidence:
+        score: 0.0
+        basis: Human must inspect the implementation patch and profile proof before merge or task completion.
+        evidence_refs: []
+      budget:
+        effort_hours: 0.25
+        tokens: 3500
+      config:
+        workflow: [inspect diff, read profile proof, verify branch and PR scope, approve or request bounded changes]
+        allowed: [human review and explicit approval decision]
+        requires_approval: [merge T005, mark T005 checked, dispatch the next ticket]
+        forbidden: [silently broaden scope, waive failed proof, approve missing remote evidence]
+
+    - id: p-human-approval
+      kind: proof
+      layer: L3
+      label: Explicit T005 review and merge approval
+      owner: human-mark
+      status: needs_human
+      risk: critical
+      confidence:
+        score: 0.0
+        basis: No T005 implementation approval exists in this dispatch receipt.
+        evidence_refs: []
+      budget:
+        effort_hours: 0.25
+        tokens: 2500
+      config:
+        level: P3
+        claim: T005 is implemented, remotely read back and explicitly approved for merge and task completion.
+        method: Human review receipt naming branch/PR, four-file diff, profile boot proof, merge decision and bounded follow-up.
+        evidence_path: .loop/evidence/t005-completion-receipt.json
+        required: true
+        baseline_required: false
+
+    - id: g-t005-approval
+      kind: gate
+      layer: L3
+      label: T005 scope, profile and merge approval gate
+      owner: human-mark
+      status: needs_human
+      risk: critical
+      confidence:
+        score: 0.0
+        basis: T005 implementation and merge remain protected human decisions after the dispatch.
+        evidence_refs: []
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: Explicit approval follows review of the four-file patch, profile proof and remote read-back.
+        approver: human-mark
+        required: true
+
+    - id: m-l3-t005-decisions
+      kind: memory
+      layer: L3
+      label: T005 human decision ledger
+      owner: human-mark
+      status: planned
+      risk: low
+      confidence:
+        score: 0.0
+        basis: The memory path is reserved for a future T005 review decision and remains empty until approval.
+        evidence_refs: []
+      budget:
+        effort_hours: 0.05
+        tokens: 800
+      config:
+        path: .loop/t005-spring-bootstrap-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+
+    - id: s-terminal-policy
+      kind: stop
+      layer: GLOBAL
+      label: T005 named terminal-state policy
+      owner: policy
+      status: needs_human
+      risk: critical
+      confidence:
+        score: 0.9
+        basis: Dispatch is complete and the next safe terminal states are implementation proof, bounded block, or human review; no completion is claimed.
+        evidence_refs: [.loop/t005-spring-bootstrap-ledger.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        states:
+          success: Four T005 files pass both api/worker profile boot proofs, are remotely read back, reviewed and merged, and T005 is checked.
+          no_op: Approved equivalent Java/Spring baseline already exists and no safe change is required.
+          blocked: Required source, Java/Gradle runtime, permission, branch or review evidence is unavailable.
+          stalled: Same failure or no-evidence-delta limit is reached.
+          exhausted: Iteration, time, graph-change or token budget is reached.
+          needs_human: T005 dispatch or implementation proof is ready but review, merge or task completion approval is pending.
+          cancelled: User cancels or governing artifacts become invalid.
+
+  edges:
+    - {id: e-external-l2, from: x-authoritative-state, to: a-reconcile, type: feedback, required: true, confidence: 0.99, token_capacity: 5000}
+    - {id: e-l2-trigger, from: t-supervisor, to: a-reconcile, type: enables, required: true, confidence: 1.0, token_capacity: 8000}
+    - {id: e-l2-proof, from: a-reconcile, to: p-reconciliation, type: verifies, required: true, confidence: 0.99, token_capacity: 6000}
+    - {id: e-l2-work, from: p-reconciliation, to: t-t005-ready, type: enables, required: true, confidence: 0.99, token_capacity: 7000}
+    - {id: e-l2-memory-a, from: a-reconcile, to: m-l2-t005-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-l2-memory-p, from: p-reconciliation, to: m-l2-t005-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-l2-feedback, from: m-l2-t005-ledger, to: a-reconcile, type: feedback, required: true, confidence: 0.95, token_capacity: 3000}
+
+    - {id: e-l1-trigger, from: t-t005-ready, to: a-spring-scaffold, type: enables, required: true, confidence: 0.99, token_capacity: 12000}
+    - {id: e-l1-proof, from: a-spring-scaffold, to: p-spring-boot, type: verifies, required: true, confidence: 0.95, token_capacity: 9000}
+    - {id: e-l1-memory-a, from: a-spring-scaffold, to: m-l1-t005-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-l1-memory-p, from: p-spring-boot, to: m-l1-t005-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-l1-feedback, from: m-l1-t005-ledger, to: a-spring-scaffold, type: feedback, required: true, confidence: 0.95, token_capacity: 3500}
+    - {id: e-l1-review-feedback, from: p-spring-boot, to: t-human-review, type: feedback, required: true, confidence: 0.95, token_capacity: 6000}
+    - {id: e-l1-stop, from: p-spring-boot, to: s-terminal-policy, type: enables, required: false, confidence: 0.95, token_capacity: 4000}
+
+    - {id: e-l3-trigger, from: t-human-review, to: a-review-t005, type: enables, required: true, confidence: 1.0, token_capacity: 6000}
+    - {id: e-l3-proof, from: a-review-t005, to: p-human-approval, type: verifies, required: true, confidence: 1.0, token_capacity: 5000}
+    - {id: e-l3-gate, from: p-human-approval, to: g-t005-approval, type: requires_approval, required: true, confidence: 1.0, token_capacity: 4000}
+    - {id: e-gate-stop, from: g-t005-approval, to: s-terminal-policy, type: approves, required: true, confidence: 1.0, token_capacity: 3000}
+    - {id: e-l3-memory-a, from: a-review-t005, to: m-l3-t005-decisions, type: records, required: true, confidence: 0.9, token_capacity: 2000}
+    - {id: e-l3-memory-p, from: p-human-approval, to: m-l3-t005-decisions, type: records, required: true, confidence: 0.9, token_capacity: 2000}
+    - {id: e-l3-feedback, from: m-l3-t005-decisions, to: a-review-t005, type: feedback, required: true, confidence: 0.9, token_capacity: 2500}
+
+flow:
+  source: t-supervisor
+  sink: s-terminal-policy
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - next_action
