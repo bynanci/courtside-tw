@@ -1,0 +1,73 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t003-design-preflight-20260806",
+  "generated_at": "2026-08-06T11:23:16.787Z",
+  "actor": "codex-design-supervisor",
+  "subject": "T003 pre-implementation DESIGN.md gate",
+  "source_request": "在開始實作以前請先 @ui-ux-pro-max @ui-ux-pro-max-slides @mobile-app-ui-design 制定 DESIGN.md",
+  "skills": [
+    {
+      "name": "ui-ux-pro-max",
+      "contribution": "Selected Editorial Grid plus Swiss Modernism 2.0, semantic tokens, typography, accessibility and anti-patterns after design-system search."
+    },
+    {
+      "name": "ui-ux-pro-max-slides",
+      "contribution": "Structured the contract as decision, experience narrative, system, surfaces and verification rather than a slide carousel."
+    },
+    {
+      "name": "mobile-app-ui-design",
+      "contribution": "Defined mobile reading IA, 320px reflow, safe areas, thumb targets, Reader Dock, Studio responsive boundaries and device acceptance."
+    }
+  ],
+  "artifact": {
+    "path": "DESIGN.md",
+    "branch": "ticket/t003-repo-scaffold",
+    "blob_sha": "6b45997e14e4776343ae811bb81c6d2f5208fe5b",
+    "status": "PROVISIONAL / REVIEW-READY v0.1",
+    "approved": false,
+    "sections": 19,
+    "validation_cases": 25
+  },
+  "design_decision": {
+    "direction": "Swiss Modernism 2.0 plus Editorial Grid plus contemporary Taiwanese basketball imagery",
+    "rejected": [
+      "crypto-neon dashboard",
+      "full Neo Brutalism",
+      "card or bento soup",
+      "page-flip and scroll-jacking",
+      "wallet-first reading"
+    ],
+    "mobile_baseline_css_px": 375,
+    "reflow_floor_css_px": 320,
+    "article_body_px": 18,
+    "wcag_target": "2.2 AA",
+    "motion_patterns": 5,
+    "p5_preset": "court-pulse-v1",
+    "web3_boundary": {
+      "manifest_ui": "off until P2 slice",
+      "ipfs_mirror": "off",
+      "chain_attestation": "off",
+      "siwe_wallet": "off",
+      "signer_capability": "absent",
+      "externalWrites": false,
+      "gas_ceiling": 0
+    }
+  },
+  "scope_change": {
+    "authorized_by_user": true,
+    "effect": "DESIGN.md approval is now a precondition to T003 root-baseline implementation.",
+    "implementation_started": false,
+    "t003_task_checked": false,
+    "t004_dispatched": false
+  },
+  "approval_gate": {
+    "owner": "human-mark",
+    "status": "needs_human",
+    "next_action": "Review and approve DESIGN.md or request a bounded amendment."
+  },
+  "proof": {
+    "claim": "A complete pre-implementation design contract exists on the T003 branch and implementation remains paused.",
+    "result": "pass",
+    "confidence": 0.98
+  }
+}
