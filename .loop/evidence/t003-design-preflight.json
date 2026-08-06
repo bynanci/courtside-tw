@@ -25,7 +25,7 @@
     "blob_sha": "6b45997e14e4776343ae811bb81c6d2f5208fe5b",
     "status": "PROVISIONAL / REVIEW-READY v0.1",
     "approved": false,
-    "sections": 19,
+    "sections": 20,
     "validation_cases": 25
   },
   "design_decision": {
