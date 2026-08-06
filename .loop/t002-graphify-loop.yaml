@@ -1,6 +1,6 @@
 schema_version: mark-graphify-loop/v2
 name: courtside-tw-ticket-supervisor-t002
-objective: Record and verify explicit human approval of the six T002 ADRs on a dedicated branch, then stop before merge and main read-back.
+objective: Complete T002 approval, merge, main read-back, and route T003 through a separate scoped graph.
 feedback_updates_next_action: true
 
 scope:
@@ -13,7 +13,7 @@ scope:
     - Selecting or purchasing production vendors without Mark approval.
     - Publishing external Web3 writes, enabling paid/token-gated access, or changing spec.md/plan.md.
     - Starting T003 or any implementation task.
-    - Merging the ADRs or claiming T002 complete before merge and main read-back.
+    - Dispatching T003 without a fresh T003 reconciliation graph and dedicated branch.
 
 policy:
   authority:
@@ -25,7 +25,7 @@ policy:
       - Choose production OIDC/email/hosting providers.
       - Approve brand/font/media rights owner and video allowlist.
       - Approve Motion/p5 baseline and Web3 scope, network, signer, gas, or permanent-publication risk.
-      - Mark T002 complete, merge, or dispatch T003 before the merge and main read-back gate.
+      - Dispatch T003 through its own scoped graph, branch, proof and review gate.
     forbidden:
       - Infer a provider, rights license, product access policy, or Web3 write permission from silence.
       - Enable payment, token gating, wallet gating, IPFS pinning, chain writes, or SIWE.
@@ -382,12 +382,12 @@ graph:
       layer: GLOBAL
       label: T002 named terminal-state policy
       owner: policy
-      status: needs_human
+      status: done
       risk: critical
       confidence:
         score: 1.0
-        basis: ADR approval is recorded; T002 terminal success still requires merge, main read-back and the checked task.
-        evidence_refs: [.loop/t002-graph-ledger.json, .loop/evidence/t002-human-approval.json]
+        basis: All six ADRs are approved, merged, read back from main, and T002 is checked.
+        evidence_refs: [.loop/t002-graph-ledger.json, .loop/evidence/t002-human-approval.json, .loop/evidence/t002-merge-readback.json]
       budget:
         effort_hours: 0.0
         tokens: 0
