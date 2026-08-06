@@ -1,21 +1,20 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-supervisor-t002",
-  "graph_version": 2,
+  "graph_version": 3,
   "run_id": "courtside-tw-t002-20260806",
   "status": "needs_human",
   "iteration": 1,
   "started_at": "2026-08-06T09:16:27Z",
-  "updated_at": "2026-08-06T09:54:08Z",
+  "updated_at": "2026-08-06T10:00:01Z",
   "current_frontier": [
-    "a-review-adrs"
+    "s-terminal-policy"
   ],
   "blocked_nodes": [
-    "p-human-approval",
-    "g-t002-approval"
+    "s-terminal-policy"
   ],
   "terminal_state": "needs_human",
-  "next_action": "Review draft PR #4 and explicitly approve or request changes to the six T002 ADRs; do not dispatch T003 until approval.",
+  "next_action": "Mark PR #4 ready for review; merge it after the approval receipt, read back main, then dispatch T003.",
   "events": [
     {
       "event_id": "evt-t002-001-graph-initialized",
@@ -210,6 +209,99 @@
         "total": 4500
       },
       "terminal_reason": "Await explicit supervisor approval of the six T002 ADRs."
+    },
+    {
+      "event_id": "evt-t002-005-approval-recorded",
+      "at": "2026-08-06T10:00:01Z",
+      "actor": "human-mark",
+      "type": "human_approval_recorded",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/t-human-review/status",
+            "before": "ready",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-review-adrs/status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-human-approval/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/g-t002-approval/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/m-l3-t002-decisions/status",
+            "before": "ready",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/s-terminal-policy/status",
+            "before": "needs_human",
+            "after": "needs_human"
+          },
+          {
+            "op": "replace",
+            "path": "tasks/T002/checked",
+            "before": false,
+            "after": true
+          },
+          {
+            "op": "replace",
+            "path": "adr/0001..0006/status",
+            "before": "PROPOSED",
+            "after": "ACCEPTED"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t002-human-approval.json",
+        ".loop/t002-graphify-loop.yaml",
+        "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+        "https://github.com/bynanci/courtside-tw/pull/4"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "explicit Mark approval",
+          "result": "pass",
+          "confidence": 1,
+          "evidence": ".loop/evidence/t002-human-approval.json"
+        },
+        {
+          "proof": "six ADR status read-back",
+          "result": "ACCEPTED",
+          "details": "All six ADRs record Mark approval dated 2026-08-06."
+        },
+        {
+          "proof": "T002 task read-back",
+          "result": "checked",
+          "details": "T003 remains unchecked and undispatched."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Mark approved all six T002 ADRs. Keep the terminal merge/main-readback gate active; do not dispatch T003 yet.",
+      "token_usage": {
+        "estimated": 5000,
+        "input": 0,
+        "output": 0,
+        "total": 5000
+      },
+      "terminal_reason": "Approval is recorded; terminal success still requires PR merge and main read-back."
     }
   ]
 }
