@@ -1,6 +1,6 @@
 schema_version: mark-graphify-loop/v2
 name: courtside-tw-ticket-supervisor-t002
-objective: Produce a review-ready six-ADR decision packet for T002 on a dedicated branch and draft pull request, with reproducible evidence, then stop before human direction approval or merge.
+objective: Record and verify explicit human approval of the six T002 ADRs on a dedicated branch, then stop before merge and main read-back.
 feedback_updates_next_action: true
 
 scope:
@@ -13,7 +13,7 @@ scope:
     - Selecting or purchasing production vendors without Mark approval.
     - Publishing external Web3 writes, enabling paid/token-gated access, or changing spec.md/plan.md.
     - Starting T003 or any implementation task.
-    - Merging the ADRs or claiming T002 approved.
+    - Merging the ADRs or claiming T002 complete before merge and main read-back.
 
 policy:
   authority:
@@ -25,7 +25,7 @@ policy:
       - Choose production OIDC/email/hosting providers.
       - Approve brand/font/media rights owner and video allowlist.
       - Approve Motion/p5 baseline and Web3 scope, network, signer, gas, or permanent-publication risk.
-      - Mark T002 complete, merge, or dispatch T003.
+      - Mark T002 complete, merge, or dispatch T003 before the merge and main read-back gate.
     forbidden:
       - Infer a provider, rights license, product access policy, or Web3 write permission from silence.
       - Enable payment, token gating, wallet gating, IPFS pinning, chain writes, or SIWE.
@@ -282,12 +282,12 @@ graph:
       layer: L3
       label: T002 architecture and product review required
       owner: human-mark
-      status: ready
+      status: done
       risk: critical
       confidence:
         score: 1.0
         basis: ADRs contain provider, rights, access, Motion/p5 and Web3 choices that require accountable human approval.
-        evidence_refs: [.loop/evidence/t002-acceptance.json]
+        evidence_refs: [.loop/evidence/t002-acceptance.json, .loop/evidence/t002-human-approval.json]
       budget:
         effort_hours: 0.0
         tokens: 0
@@ -301,12 +301,12 @@ graph:
       layer: L3
       label: Review T002 ADR decision packet
       owner: codex-agent
-      status: planned
+      status: done
       risk: critical
       confidence:
         score: 0.9
         basis: Exact diffs and proof receipts will be visible in the draft PR.
-        evidence_refs: [docs/adr/0001-application-topology.md, docs/adr/0006-web3-provenance-boundary.md]
+        evidence_refs: [.loop/evidence/t002-human-approval.json]
       budget:
         effort_hours: 0.75
         tokens: 5000
@@ -321,19 +321,19 @@ graph:
       layer: L3
       label: Explicit T002 ADR approval
       owner: human-mark
-      status: needs_human
+      status: done
       risk: critical
       confidence:
         score: 1.0
         basis: Architecture, provider, rights and product decisions are binary human approvals.
-        evidence_refs: []
+        evidence_refs: [.loop/evidence/t002-human-approval.json]
       budget:
         effort_hours: 0.2
         tokens: 1000
       config:
         level: P3
         claim: Mark approved the six ADRs, their proposed defaults, and any selected provider/rights/Web3 boundaries.
-        method: Explicit approval on the draft PR followed by merge read-back.
+        method: Explicit approval on the draft PR, recorded in the approval evidence; merge and main read-back remain the terminal follow-up.
         evidence_path: .loop/evidence/t002-human-approval.json
         required: true
         baseline_required: false
@@ -343,12 +343,12 @@ graph:
       layer: L3
       label: T002 architecture and product approval gate
       owner: human-mark
-      status: needs_human
+      status: done
       risk: critical
       confidence:
         score: 1.0
         basis: Passing static checks cannot select a vendor, license, access policy or permanent-publication risk.
-        evidence_refs: []
+        evidence_refs: [.loop/evidence/t002-human-approval.json]
       budget:
         effort_hours: 0.25
         tokens: 1000
@@ -362,12 +362,12 @@ graph:
       layer: L3
       label: T002 decision ledger
       owner: human-mark
-      status: ready
+      status: done
       risk: medium
       confidence:
         score: 0.9
         basis: Draft PR and append-only T002 ledger preserve the decision receipt.
-        evidence_refs: [.loop/t002-graph-ledger.json]
+        evidence_refs: [.loop/t002-graph-ledger.json, .loop/evidence/t002-human-approval.json]
       budget:
         effort_hours: 0.1
         tokens: 1200
@@ -386,8 +386,8 @@ graph:
       risk: critical
       confidence:
         score: 1.0
-        basis: T002 cannot be complete until all required ADR decisions are approved and merged.
-        evidence_refs: [.loop/t002-graph-ledger.json]
+        basis: ADR approval is recorded; T002 terminal success still requires merge, main read-back and the checked task.
+        evidence_refs: [.loop/t002-graph-ledger.json, .loop/evidence/t002-human-approval.json]
       budget:
         effort_hours: 0.0
         tokens: 0
@@ -398,7 +398,7 @@ graph:
           blocked: A source, owner, permission, rights input, or external system is unavailable.
           stalled: Same failure or no-evidence-delta limit is reached.
           exhausted: Iteration, time, graph-change, token, or cost budget is reached.
-          needs_human: Draft ADRs are ready but architecture, product, rights, provider, or Web3 approval is pending.
+          needs_human: ADR approval is recorded; merge and main read-back are pending before terminal success.
           cancelled: User cancels or governing spec becomes invalid.
 
   edges:
