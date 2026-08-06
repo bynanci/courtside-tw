@@ -1,0 +1,52 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "l2-reconciliation-20260806-t001",
+  "generated_at": "2026-08-06T08:42:29Z",
+  "actor": "codex-supervisor",
+  "repository": "bynanci/courtside-tw",
+  "authoritative_sources": {
+    "default_branch": "main",
+    "main_commit_sha": "bd6c5c67db8aac43910c5e372a9ccbea9cc63aae",
+    "tasks_path": "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    "tasks_blob_sha": "a1ccba65b40d213c5202857e2c45bb7fc9922daa",
+    "plan_blob_sha": "8f4472b838961818c1e10b5a11653fe5942ce817",
+    "ticket_branch": "ticket/t001-project-constitution",
+    "ticket_branch_plan_blob_sha_after_update": "8f4472b838961818c1e10b5a11653fe5942ce817",
+    "ticket_branch_ref_update_requested_sha": "bd6c5c67db8aac43910c5e372a9ccbea9cc63aae",
+    "ticket_branch_ref_update_receipt": "success",
+    "existing_t001_pull_requests": []
+  },
+  "reconciliation": {
+    "first_unchecked_task": "T001",
+    "task": "Write and approve the provisional engineering gates as .specify/memory/constitution.md.",
+    "prerequisites": [],
+    "duplicate_work": false,
+    "ready_frontier": [
+      "T001"
+    ],
+    "blocked": [
+      {
+        "task": "T002",
+        "reason": "This bounded loop intentionally stops at T001 human approval; T002 is not dispatched before that gate."
+      },
+      {
+        "tasks": "T003-T096",
+        "reason": "Phase and task dependencies are not satisfied."
+      }
+    ],
+    "decision": "Dispatch T001 only."
+  },
+  "freshness_and_limitations": {
+    "fetched_at": "2026-08-06T08:42:29Z",
+    "expected_update_frequency": "On every supervisor iteration and before each dispatch.",
+    "limitations": [
+      "GitHub compare metadata briefly returned the pre-update merge base after a successful fast-forward receipt.",
+      "The branch content read-back is authoritative for this reconciliation: plan.md on main and the ticket branch have the identical reviewed blob SHA."
+    ]
+  },
+  "proof": {
+    "claim": "T001 is the only dispatched ready item and its working branch contains the current reviewed plan.",
+    "result": "pass",
+    "confidence": 0.97
+  }
+}
