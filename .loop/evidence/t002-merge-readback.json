@@ -1,0 +1,39 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t002-merge-readback-20260806",
+  "generated_at": "2026-08-06T10:18:30Z",
+  "actor": "codex-supervisor",
+  "subject": "T002 merge and main read-back",
+  "merge": {
+    "pull_request": 4,
+    "url": "https://github.com/bynanci/courtside-tw/pull/4",
+    "merged": true,
+    "merge_method": "squash",
+    "merge_commit": "0a41d715748551989bc91bc38e521f0951498235"
+  },
+  "readback": {
+    "ref": "main",
+    "accepted_adr_count": 6,
+    "all_adr_statuses": "ACCEPTED",
+    "t002_checked": true,
+    "t003_unchecked": true,
+    "t003_dispatch": false,
+    "spec_or_plan_modified": false
+  },
+  "artifact_blob_shas": {
+    "docs/adr/0001-application-topology.md": "09083902af510ae230c0e6f31dcbadd627f7563a",
+    "docs/adr/0002-identity-and-hosting-providers.md": "bc2d94faa56da56efd8e90b8cae6ba05163a7dd9",
+    "docs/adr/0003-content-document-and-media-policy.md": "636cdf9450c229b88c29aba0751577ccebeb26ca",
+    "docs/adr/0004-free-mvp-access-policy.md": "e5a6c4364e49afef7b5c755878b0cdfdd91d4b31",
+    "docs/adr/0005-motion-and-generative-runtime.md": "398272b08b8931bdb1f781a5e2c9b29775fc0d52",
+    "docs/adr/0006-web3-provenance-boundary.md": "bce3eac5e69c33f9ec243c5de6116d136955c8d6",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md": "0735ac5a06fc78289c3dcbfc98dff78b19a202f3",
+    ".loop/t002-graphify-loop.yaml": "94e2868a6195a83c59e05b6fdc4ca0586bc9c2ce",
+    ".loop/t002-graph-ledger.json": "e5d43232f16fe9bdbd56585a66b53882c5d1512d"
+  },
+  "proof": {
+    "claim": "The approved six ADRs and checked T002 task are present on main after PR #4 merge.",
+    "result": "pass",
+    "confidence": 1
+  }
+}
