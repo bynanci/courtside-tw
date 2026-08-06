@@ -1,6 +1,6 @@
 # ADR-0006: Origin-first Web3 provenance boundary
 
-**Status**: PROPOSED — product, rights, security and cost approval required  
+**Status**: ACCEPTED — Mark approval recorded 2026-08-06 via PR #4
 **Date**: 2026-08-06
 
 ## Decision
@@ -44,3 +44,10 @@ T002 不選 production network、RPC、pinning、contract owner 或 signer custo
 Plan: Optional provenance adapters、Web3 Boundary、Security and Privacy Plan、Delivery and Rollback。  
 Spec: US7、FR-049–FR-053、SC-015–SC-016、Open Decisions #5。  
 Tasks: T002、T080、T087–T096。
+
+## Approval record
+
+- **Approver**: Mark
+- **Approved**: 2026-08-06 via [T002 PR #4](https://github.com/bynanci/courtside-tw/pull/4)
+- **Decision**: Manifest-only provenance boundary accepted; IPFS, chain, SIWE, signer and gas writes remain off by default and require separate approval.
+- **Evidence**: `.loop/evidence/t002-human-approval.json`
