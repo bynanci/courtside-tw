@@ -1,0 +1,105 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t003-command-proof-20260806",
+  "generated_at": "2026-08-06T15:19:50Z",
+  "actor": "codex-agent",
+  "subject": "T003 root command and clean-clone proof",
+  "repository_path": "/workspace/scratch/41fb42ed0939",
+  "toolchain": {
+    "node": "24.14.0",
+    "pnpm": "11.7.0"
+  },
+  "commands": [
+    {
+      "command": "make setup",
+      "result": "pass",
+      "details": "No workspace dependencies yet; install skipped without creating pnpm-lock.yaml."
+    },
+    {
+      "command": "make dev",
+      "result": "pass",
+      "details": "Recursive workspace dev command returned success with no package scripts; no app was started before T004."
+    },
+    {
+      "command": "make lint",
+      "result": "pass",
+      "details": "Recursive workspace lint command returned success with no package scripts."
+    },
+    {
+      "command": "make typecheck",
+      "result": "pass",
+      "details": "Recursive workspace typecheck command returned success with no package scripts."
+    },
+    {
+      "command": "make test",
+      "result": "pass",
+      "details": "Recursive workspace test command returned success with no package scripts."
+    },
+    {
+      "command": "make contract",
+      "result": "pass",
+      "details": "Recursive workspace contract command returned success with no package scripts."
+    },
+    {
+      "command": "make verify",
+      "result": "pass",
+      "details": "Root contract check plus lint/typecheck/test/contract passed."
+    },
+    {
+      "command": "pnpm run verify",
+      "result": "pass",
+      "details": "Package alias delegates to make verify without auto-installing dependencies."
+    }
+  ],
+  "clean_clone": {
+    "directory": "/tmp/courtside-tw-t003.bWh2AB",
+    "copied_paths": [
+      "pnpm-workspace.yaml",
+      "package.json",
+      ".node-version",
+      ".npmrc",
+      "Makefile",
+      "README.md"
+    ],
+    "command": "make setup && make verify",
+    "result": "pass",
+    "generated_files": [
+      ".node-version",
+      ".npmrc",
+      "Makefile",
+      "README.md",
+      "package.json",
+      "pnpm-workspace.yaml"
+    ],
+    "pnpm_lockfile_created": false
+  },
+  "scope_checks": {
+    "six_root_files_present": true,
+    "later_task_directories_absent": true,
+    "production_secrets_present": false,
+    "web3_external_writes": false,
+    "remote_branch_readback": "pending separate GitHub/local-git publication proof"
+  },
+  "artifact_sha256": {
+    "pnpm-workspace.yaml": "5a51406603c85b849d69524bd1cdbee7151ec242fab926fa9fed8b45aa2af72e",
+    "package.json": "034790b84deb9b1114f114dc37766438f32ce3791471204ee5d224eb70f67d86",
+    ".node-version": "75daa0bc10dae1f22b2d13386b55b232adf16930d4325902f37b5033b3a7ca93",
+    ".npmrc": "1907a9f1c4436bee45b2aefe4172bebcd770d9451a84ee41ed6aae18190463aa",
+    "Makefile": "c11249d673dacf437ceb5880c193a848c7f6461ade86e6736c0f61e6ca6e462c",
+    "README.md": "4df65614ef09528eda68f5f9adfeeed9b7d87a495fa665a4111863a2f304869b"
+  },
+  "graph_proof": {
+    "source": ".loop/t003-implementation-graphify-loop.yaml",
+    "strict_validation": "pass",
+    "nodes": 15,
+    "edges": 21,
+    "warnings": 0,
+    "errors": 0,
+    "rendered_mermaid": ".loop/t003-implementation-graphify-loop.mmd"
+  },
+  "proof": {
+    "claim": "T003 root commands are deterministic and pass both the current workspace and a clean six-file clone; implementation did not create later-task scaffolds or a lockfile.",
+    "result": "pass",
+    "confidence": 0.97
+  }
+}

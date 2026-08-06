@@ -1,0 +1,80 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t003-implementation-baseline-20260806",
+  "generated_at": "2026-08-06T15:19:50Z",
+  "actor": "codex-supervisor",
+  "subject": "T003 approved root-baseline implementation reconciliation",
+  "authoritative_inputs": {
+    "design_path": "DESIGN.md",
+    "design_status": "INITIAL VISUAL BASELINE APPROVED v0.2",
+    "design_approval": "Mark, 2026-08-06",
+    "design_gate": "DESIGN.md implementation gate names T003 root workspace baseline as the next action",
+    "task_path": "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    "task_id": "T003",
+    "task_text": "Create the monorepo and root commands in pnpm-workspace.yaml, package.json, .node-version, .npmrc, Makefile and README.md; provide deterministic setup, dev, lint, typecheck, test, contract and verify commands.",
+    "plan_runtime": "Node.js 24 LTS; pnpm monorepo with Nuxt web and Spring modular monolith",
+    "constitution": ".specify/memory/constitution.md",
+    "adrs": [
+      "docs/adr/0001-application-topology.md",
+      "docs/adr/0002-identity-and-hosting-providers.md",
+      "docs/adr/0003-content-document-and-media-policy.md",
+      "docs/adr/0004-free-mvp-access-policy.md",
+      "docs/adr/0005-motion-and-generative-runtime.md",
+      "docs/adr/0006-web3-provenance-boundary.md"
+    ]
+  },
+  "authorization": {
+    "source": "Explicit user instruction: 核准 DESIGN.md 開始實作 T003",
+    "implementation_allowed": true,
+    "merge_allowed": false,
+    "task_completion_allowed": false,
+    "later_tasks_allowed": false
+  },
+  "scope": {
+    "allowed_paths": [
+      "pnpm-workspace.yaml",
+      "package.json",
+      ".node-version",
+      ".npmrc",
+      "Makefile",
+      "README.md"
+    ],
+    "loop_proof_paths": [
+      ".loop/t003-implementation-graphify-loop.yaml",
+      ".loop/t003-implementation-graphify-loop.mmd",
+      ".loop/t003-implementation-ledger.json",
+      ".loop/evidence/t003-implementation-baseline.json",
+      ".loop/evidence/t003-command-proof.json"
+    ],
+    "excluded_paths": [
+      "apps/**",
+      "packages/**",
+      "contracts/**",
+      "infra/**",
+      ".github/workflows/**",
+      "specs/001-taiwan-basketball-magazine-ebook/spec.md",
+      "specs/001-taiwan-basketball-magazine-ebook/plan.md",
+      "DESIGN.md"
+    ]
+  },
+  "toolchain": {
+    "node": "24.14.0",
+    "pnpm": "11.7.0",
+    "make": "GNU Make 4.3",
+    "workspace_packages": [
+      "apps/*",
+      "packages/*"
+    ]
+  },
+  "preflight": {
+    "root_baseline_files_were_absent_before_iteration": true,
+    "later_task_directories_present": false,
+    "remote_branch_publication": "not performed in this local implementation iteration because the checkout has no usable git metadata",
+    "decision": "Proceed with local T003 implementation and stop at human review/remote publication gate."
+  },
+  "proof": {
+    "claim": "The approved DESIGN.md gate is cleared and T003 is authorized as a six-file root-baseline slice without later-task scope expansion.",
+    "result": "pass",
+    "confidence": 0.98
+  }
+}

@@ -1,0 +1,141 @@
+{
+  "schema_version": "courtside-tw-code-review/v1",
+  "evidence_id": "t003-code-review-20260806",
+  "generated_at": "2026-08-06T23:15:48Z",
+  "actor": "codex-code-review",
+  "subject": "T003 Code Review and Merge Readiness Gate",
+  "request": "@Code Review & Merge Gate review 後merge",
+  "repository": "bynanci/courtside-tw",
+  "pull_request": {
+    "number": 5,
+    "url": "https://github.com/bynanci/courtside-tw/pull/5",
+    "branch": "ticket/t003-repo-scaffold",
+    "base": "main",
+    "head_sha_reviewed": "d4d28673fd7032c0d2c3aa1053adc18a6c45ea85",
+    "state_before_merge": "open",
+    "draft_before_merge": true
+  },
+  "risk": {
+    "tier": "T2",
+    "basis": "Root package, workspace and deterministic install configuration establish a shared command contract and pin the runtime toolchain; no application, API, persistence or production infrastructure is included.",
+    "blast_radius": "Repository setup and future workspace command execution only."
+  },
+  "scope": {
+    "implementation_paths": [
+      "pnpm-workspace.yaml",
+      "package.json",
+      ".node-version",
+      ".npmrc",
+      "Makefile",
+      "README.md"
+    ],
+    "design_and_proof_paths": [
+      "DESIGN.md",
+      ".loop/t003-implementation-graphify-loop.yaml",
+      ".loop/t003-implementation-graphify-loop.mmd",
+      ".loop/t003-implementation-ledger.json",
+      ".loop/evidence/t003-command-proof.json",
+      ".loop/evidence/t003-implementation-baseline.json",
+      ".loop/evidence/t003-remote-readback.json"
+    ],
+    "changed_filename_inventory": 18,
+    "invariants": [
+      "No Nuxt, Spring, packages, contracts, databases, infra, CI, providers, secrets or Web3 writes are introduced.",
+      "Root commands remain deterministic and safe before T004/T005 add workspace packages.",
+      "DESIGN.md remains the approved v0.2 implementation contract; brand, font and rights decisions remain named gates."
+    ]
+  },
+  "gates": {
+    "intent_and_scope": {
+      "status": "PASS",
+      "evidence": "T003 in specs/001-taiwan-basketball-magazine-ebook/tasks.md, approved DESIGN.md v0.2, PR description and exact changed-file inventory.",
+      "residual_risk": "T003 task checkbox remains intentionally unchanged; this request authorizes review and merge only."
+    },
+    "behavior_and_correctness": {
+      "status": "PASS",
+      "evidence": "All seven root command contracts pass on the current workspace and a clean six-file clone; empty workspace behavior is an explicit no-op until T004/T005.",
+      "residual_risk": "Package-level behavior is deferred to the package-owning tickets."
+    },
+    "contract_and_data": {
+      "status": "PASS",
+      "evidence": "Root contract validates required files, scripts, private package, Node/pnpm pins, workspace globs and deterministic run configuration; no API, event, database or migration boundary is changed.",
+      "residual_risk": "No data migration or runtime API exists in this bounded slice."
+    },
+    "security_and_abuse_resistance": {
+      "status": "PASS",
+      "evidence": "No dependencies, lifecycle scripts, credentials, authentication, user input, external writes or Web3 capability are added; setup uses --ignore-scripts and frozen lockfile when a lockfile exists; targeted secret scan passed.",
+      "residual_risk": "Dependency and CI security scans are deferred until dependencies and T008 workflows exist."
+    },
+    "reliability_and_rollback": {
+      "status": "PASS",
+      "evidence": "Pinned toolchain checks fail fast; setup uses a fixed temporary pnpm store, skips install without workspace dependencies, and uses --frozen-lockfile after lockfile introduction. Reverting the merge commit is sufficient because this slice has no external side effects or data migration.",
+      "residual_risk": "Future workspace packages must preserve the root command contract and add their own bounded rollback behavior."
+    },
+    "verification": {
+      "status": "PASS",
+      "evidence": "Exact commands and results are recorded below; remote combined status and workflow runs are empty because T003 intentionally adds no CI workflow.",
+      "residual_risk": "CI/security workflow coverage is a T008 follow-up, not a T003 runtime gate."
+    }
+  },
+  "checks": [
+    {
+      "command": "node --version && pnpm --version",
+      "result": "PASS",
+      "details": "v24.14.0; 11.7.0"
+    },
+    {
+      "command": "make setup",
+      "result": "PASS",
+      "details": "No workspace dependencies yet; install skipped without creating pnpm-lock.yaml."
+    },
+    {
+      "command": "make dev && make lint && make typecheck && make test && make contract && make verify",
+      "result": "PASS",
+      "details": "Workspace scripts safely no-op with no projects; root contract and verify pass."
+    },
+    {
+      "command": "pnpm run verify",
+      "result": "PASS",
+      "details": "Root alias delegates to make verify and passes."
+    },
+    {
+      "command": "clean six-file clone: make setup && make verify",
+      "result": "PASS",
+      "details": "Clone passes and does not create pnpm-lock.yaml."
+    },
+    {
+      "command": "python3 /root/.codex/skills/remote-skills/skill-6a733e2311d08191b084fbc1ebfc621e/scripts/validate_graphify_loop.py .loop/t003-implementation-graphify-loop.yaml --strict --json",
+      "result": "PASS",
+      "details": "15 nodes, 21 edges, 0 warnings, 0 errors."
+    },
+    {
+      "command": "pnpm config list --location project",
+      "result": "PASS",
+      "details": "Workspace globs, strict engines/peers, exact saves, shared lockfile and deterministic run settings are effective."
+    },
+    {
+      "command": "targeted secret and dependency/lifecycle scan",
+      "result": "PASS",
+      "details": "No dependency sections, lifecycle scripts, credential patterns or private keys; dependency audit is not applicable with zero dependencies."
+    },
+    {
+      "command": "GitHub combined status and PR workflow runs for reviewed head",
+      "result": "NOT APPLICABLE",
+      "details": "No status entries or workflows are configured for the intentionally CI-excluded T003 slice; CI/security coverage is T008."
+    }
+  ],
+  "findings": [],
+  "review_threads": {
+    "unresolved": 0,
+    "open_comments": 0,
+    "submitted_reviews": 0
+  },
+  "merge": {
+    "authorized_by_current_user_request": true,
+    "merge_scope": "PR #5 only; do not check T003 or dispatch T004 in this action.",
+    "expected_head_sha": "d4d28673fd7032c0d2c3aa1053adc18a6c45ea85",
+    "rollback": "Revert the merge commit; no external side effects, data migration or irreversible write exists in T003."
+  },
+  "decision": "PASS",
+  "confidence": 0.97
+}

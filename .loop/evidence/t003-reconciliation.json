@@ -1,0 +1,63 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t003-reconciliation-20260806",
+  "generated_at": "2026-08-06T10:20:00Z",
+  "actor": "codex-supervisor",
+  "subject": "T003 repository baseline dispatch",
+  "authoritative_state": {
+    "main_ref": "main",
+    "main_commit": "ca1098c11ec16a19cfe9095c87ee2f48b8d7ec12",
+    "t002_terminal_state": "success",
+    "t002_merge_commit": "0a41d715748551989bc91bc38e521f0951498235",
+    "t002_task_checked": true,
+    "t003_task_checked": false,
+    "t004_dispatch": false
+  },
+  "task": {
+    "id": "T003",
+    "description": "Create the monorepo and root commands in pnpm-workspace.yaml, package.json, .node-version, .npmrc, Makefile and README.md; provide deterministic setup, dev, lint, typecheck, test, contract and verify commands.",
+    "plan_baseline": "Node.js 24 LTS; monorepo with Nuxt web and Spring modular monolith; implementation must not select providers or add later-phase scaffolds."
+  },
+  "duplicate_search": {
+    "branch_query": "ticket/t003",
+    "existing_branches": [],
+    "existing_t003_prs": []
+  },
+  "dispatch": {
+    "branch": "ticket/t003-repo-scaffold",
+    "base_commit": "ca1098c11ec16a19cfe9095c87ee2f48b8d7ec12",
+    "scope_paths": [
+      "pnpm-workspace.yaml",
+      "package.json",
+      ".node-version",
+      ".npmrc",
+      "Makefile",
+      "README.md"
+    ],
+    "command_contracts": [
+      "setup",
+      "dev",
+      "lint",
+      "typecheck",
+      "test",
+      "contract",
+      "verify"
+    ],
+    "excluded": [
+      "apps/**",
+      "packages/**",
+      "contracts/**",
+      "infra/**",
+      ".github/workflows/**",
+      "spec.md",
+      "plan.md"
+    ],
+    "result": "dispatched"
+  },
+  "decision": "Dispatch T003 only; implementation and T004 remain separate follow-up work.",
+  "proof": {
+    "claim": "T003 is the first unchecked task, has a unique branch from T002-success main, and has a bounded root-baseline scope.",
+    "result": "pass",
+    "confidence": 0.99
+  }
+}

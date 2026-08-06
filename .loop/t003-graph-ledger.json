@@ -1,0 +1,210 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-ticket-supervisor-t003",
+  "graph_version": 2,
+  "run_id": "courtside-tw-t003-20260806",
+  "status": "needs_human",
+  "iteration": 2,
+  "started_at": "2026-08-06T10:20:00Z",
+  "updated_at": "2026-08-06T11:25:35.258Z",
+  "current_frontier": [
+    "g-design-baseline"
+  ],
+  "blocked_nodes": [
+    "t-t003-ready",
+    "a-root-baseline",
+    "p-root-baseline",
+    "m-l1-t003-ledger",
+    "t-human-review",
+    "a-review-t003",
+    "p-t003-approval",
+    "g-t003-approval"
+  ],
+  "terminal_state": "needs_human",
+  "next_action": "Human Mark reviews and approves DESIGN.md or requests a bounded amendment; do not start the six-file T003 root baseline before this gate passes.",
+  "events": [
+    {
+      "event_id": "evt-t003-001-dispatched",
+      "at": "2026-08-06T10:20:00Z",
+      "actor": "codex-supervisor",
+      "type": "task_dispatched",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": ".loop/t003-graphify-loop.yaml",
+            "after": "T003 L2/L1/L3 graph for root repository baseline."
+          },
+          {
+            "op": "add",
+            "path": "ticket/t003-repo-scaffold",
+            "after": "Branch created from T002 terminal-success main commit."
+          },
+          {
+            "op": "replace",
+            "path": "tasks/T003/status",
+            "before": "unchecked",
+            "after": "dispatched"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t003-reconciliation.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "T002 main read-back",
+          "result": "pass",
+          "details": "Six ADRs ACCEPTED; T002 checked; main merge commit verified."
+        },
+        {
+          "proof": "T003 branch uniqueness",
+          "result": "pass",
+          "details": "No prior T003 branch or PR found."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Dispatch T003 only; keep T004 and later tasks blocked.",
+      "token_usage": {
+        "estimated": 6000,
+        "input": 0,
+        "output": 0,
+        "total": 6000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-t003-002-draft-pr-opened",
+      "at": "2026-08-06T10:24:24Z",
+      "actor": "codex-supervisor",
+      "type": "review_gate_opened",
+      "base_graph_version": 1,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "external.github.pull_request",
+            "after": {
+              "number": 5,
+              "url": "https://github.com/bynanci/courtside-tw/pull/5",
+              "state": "open",
+              "draft": true,
+              "merged": false,
+              "base": "main",
+              "head": "ticket/t003-repo-scaffold"
+            }
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t003-reconciliation.json",
+        ".loop/t003-graphify-loop.yaml",
+        ".loop/t003-graphify-loop.mmd",
+        "https://github.com/bynanci/courtside-tw/pull/5"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "T003 draft PR",
+          "result": "open / draft / unmerged",
+          "url": "https://github.com/bynanci/courtside-tw/pull/5"
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Open the T003 implementation entry point; keep T003 unchecked and T004 blocked until root baseline proof passes.",
+      "token_usage": {
+        "estimated": 2500,
+        "input": 0,
+        "output": 0,
+        "total": 2500
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-t003-003-design-preflight",
+      "at": "2026-08-06T11:25:35.258Z",
+      "actor": "codex-design-supervisor",
+      "type": "design_preflight_gate_opened",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "DESIGN.md",
+            "after": {
+              "status": "PROVISIONAL / REVIEW-READY v0.1",
+              "blob_sha": "6b45997e14e4776343ae811bb81c6d2f5208fe5b"
+            }
+          },
+          {
+            "op": "add",
+            "path": ".loop/evidence/t003-design-preflight.json",
+            "after": "Named-skill synthesis, artifact fingerprint and no-implementation receipt."
+          },
+          {
+            "op": "add",
+            "path": "graph/loops/l3-design-direction",
+            "after": "Trigger, action, proof, human gate and memory inserted before L1 execution."
+          },
+          {
+            "op": "replace",
+            "path": "graph/current_frontier",
+            "before": [
+              "a-root-baseline"
+            ],
+            "after": [
+              "g-design-baseline"
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "run/terminal_state",
+            "before": null,
+            "after": "needs_human"
+          }
+        ]
+      },
+      "evidence_refs": [
+        "DESIGN.md",
+        ".loop/evidence/t003-design-preflight.json",
+        ".loop/t003-graphify-loop.yaml",
+        ".loop/t003-graphify-loop.mmd",
+        "https://github.com/bynanci/courtside-tw/pull/5"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Named design skill synthesis",
+          "result": "pass",
+          "details": "ui-ux-pro-max, ui-ux-pro-max-slides and mobile-app-ui-design were read and applied; three independent reviews were reconciled."
+        },
+        {
+          "proof": "DESIGN.md branch read-back",
+          "result": "pass",
+          "details": "Remote UTF-8 artifact exists with blob 6b45997e14e4776343ae811bb81c6d2f5208fe5b."
+        },
+        {
+          "proof": "Implementation pause and scope containment",
+          "result": "pass",
+          "details": "Branch differs from main only by DESIGN.md and .loop artifacts; none of the six T003 root implementation files exists in the diff."
+        },
+        {
+          "proof": "Task ordering",
+          "result": "pass",
+          "details": "T003 and T004 remain unchecked; T004 remains blocked behind T003."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Accept the user-authorized design preflight scope change, keep T003 implementation paused, and expose only the DESIGN.md human approval gate.",
+      "token_usage": {
+        "estimated": 18000,
+        "input": 0,
+        "output": 0,
+        "total": 18000
+      },
+      "terminal_reason": "DESIGN.md is complete and review-ready, but explicit human approval is required before implementation."
+    }
+  ]
+}

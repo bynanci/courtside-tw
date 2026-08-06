@@ -1,0 +1,91 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t003-remote-readback-20260806",
+  "generated_at": "2026-08-06T15:28:22Z",
+  "actor": "codex-supervisor",
+  "subject": "T003 branch and draft PR publication read-back",
+  "repository": "bynanci/courtside-tw",
+  "branch": {
+    "name": "ticket/t003-repo-scaffold",
+    "base": "main",
+    "head_sha": "e6d518939aa419b08091926732f9132d6d131e7a",
+    "publication_method": "GitHub connector contents API; local checkout has no usable git metadata"
+  },
+  "pull_request": {
+    "number": 5,
+    "url": "https://github.com/bynanci/courtside-tw/pull/5",
+    "state": "open",
+    "draft": true,
+    "merged": false,
+    "base": "main",
+    "head": "ticket/t003-repo-scaffold",
+    "title": "T003: Add deterministic monorepo root baseline",
+    "changed_files": 17
+  },
+  "read_back_paths": [
+    "DESIGN.md",
+    "pnpm-workspace.yaml",
+    "package.json",
+    ".node-version",
+    ".npmrc",
+    "Makefile",
+    "README.md",
+    ".loop/t003-implementation-graphify-loop.yaml",
+    ".loop/t003-implementation-graphify-loop.mmd",
+    ".loop/evidence/t003-implementation-baseline.json",
+    ".loop/evidence/t003-command-proof.json",
+    ".loop/t003-implementation-ledger.json"
+  ],
+  "content_read_back": {
+    "result": "pass",
+    "all_paths_match_local_artifacts": true,
+    "blob_shas": {
+      "DESIGN.md": "0fe7afaed8b695c102ba720ec1d10bfa05a2cce8",
+      "pnpm-workspace.yaml": "1669f27f149dfcdf2dbdd4c247c767de4f02019a",
+      "package.json": "0913733e0d8b52869d7ff40466098041c22ccbef",
+      ".node-version": "d845d9d88db71e92ea1e8f50a4af89d49fecf2e3",
+      ".npmrc": "4d119e7c6fc44f2fa66ab4e9f47a3cda34a28d07",
+      "Makefile": "9f26383cbd2ba8023874f8e66a46391849fa73af",
+      "README.md": "2058645f3086cf996b802221561cfe7d50840408",
+      ".loop/t003-implementation-graphify-loop.yaml": "409a6526ed9d803ccac091c19a42346c5150043d",
+      ".loop/t003-implementation-graphify-loop.mmd": "8d3e679694c36242d36e4daa1bd73fba6b45a753",
+      ".loop/evidence/t003-implementation-baseline.json": "f90f479730095ff75aeaf5600a4e91f76d6ffff1",
+      ".loop/evidence/t003-command-proof.json": "e1767d6ea7b912345ef6da4fb82a223519c860fa",
+      ".loop/t003-implementation-ledger.json": "c2e67e13c0773aca13ddedd2b5c9bf1a16bc7913"
+    }
+  },
+  "scope_read_back": {
+    "result": "pass",
+    "changed_filenames": [
+      ".loop/evidence/t003-command-proof.json",
+      ".loop/evidence/t003-design-preflight.json",
+      ".loop/evidence/t003-implementation-baseline.json",
+      ".loop/evidence/t003-reconciliation.json",
+      ".loop/t003-graph-ledger.json",
+      ".loop/t003-graphify-loop.mmd",
+      ".loop/t003-graphify-loop.yaml",
+      ".loop/t003-implementation-graphify-loop.mmd",
+      ".loop/t003-implementation-graphify-loop.yaml",
+      ".loop/t003-implementation-ledger.json",
+      ".node-version",
+      ".npmrc",
+      "DESIGN.md",
+      "Makefile",
+      "README.md",
+      "package.json",
+      "pnpm-workspace.yaml"
+    ],
+    "unexpected_paths": []
+  },
+  "protected_actions": {
+    "merge": "not performed",
+    "mark_t003_checked": "not performed",
+    "dispatch_t004": "not performed",
+    "main_read_back": "not applicable before merge"
+  },
+  "proof": {
+    "claim": "The approved DESIGN.md and T003 root baseline are present on the dedicated branch, content matches local proof artifacts, and PR #5 remains an unmerged draft at the human review gate.",
+    "result": "pass",
+    "confidence": 0.98
+  }
+}

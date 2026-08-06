@@ -1,0 +1,189 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-ticket-implementation-t003",
+  "graph_version": 3,
+  "run_id": "courtside-tw-t003-implementation-20260806",
+  "status": "needs_human",
+  "iteration": 3,
+  "started_at": "2026-08-06T15:19:50Z",
+  "updated_at": "2026-08-06T15:28:22Z",
+  "current_frontier": [
+    "t-human-review"
+  ],
+  "blocked_nodes": [
+    "a-review-t003",
+    "p-human-approval",
+    "g-t003-approval",
+    "s-terminal-policy"
+  ],
+  "terminal_state": "needs_human",
+  "next_action": "Review the six-file T003 patch and command receipts, then obtain remote branch/PR read-back before deciding merge and task completion.",
+  "events": [
+    {
+      "event_id": "evt-t003-implementation-001-graph-initialized",
+      "at": "2026-08-06T15:19:50Z",
+      "actor": "codex-supervisor",
+      "type": "graph_initialized",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": ".loop/t003-implementation-graphify-loop.yaml",
+            "after": "Post-approval T003 L2/L1/L3 graph with six-file scope, proof nodes and a pending review gate."
+          },
+          {
+            "op": "add",
+            "path": ".loop/t003-implementation-graphify-loop.mmd",
+            "after": "Rendered strict-valid graph view."
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t003-implementation-baseline.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "strict graph validation",
+          "result": "pass",
+          "details": "15 nodes / 21 edges / 0 warnings / 0 errors"
+        }
+      ],
+      "failure_signature": null,
+      "decision": "DESIGN.md approval clears the implementation frontier; preserve review and merge as a separate human gate.",
+      "token_usage": {
+        "estimated": 6500,
+        "input": 0,
+        "output": 0,
+        "total": 6500
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-t003-implementation-002-root-proof",
+      "at": "2026-08-06T15:19:50Z",
+      "actor": "codex-agent",
+      "type": "l1_iteration_completed",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "T003/root-baseline",
+            "after": "Six root files implement pinned toolchain, workspace globs, recursive commands and scope documentation."
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-root-baseline/status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-root-baseline/status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [
+              "a-root-baseline"
+            ],
+            "after": [
+              "t-human-review"
+            ]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t003-command-proof.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "root command contract",
+          "result": "pass",
+          "details": "setup, dev, lint, typecheck, test, contract and verify passed; pnpm run verify alias passed."
+        },
+        {
+          "proof": "clean clone",
+          "result": "pass",
+          "details": "Six-file clone passed make setup && make verify and created no pnpm-lock.yaml."
+        },
+        {
+          "proof": "scope containment",
+          "result": "pass",
+          "details": "No apps, packages, contracts, infra or CI scaffold was created."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Local T003 proof is complete; stop before remote publication, merge, task completion or T004 dispatch.",
+      "token_usage": {
+        "estimated": 19000,
+        "input": 0,
+        "output": 0,
+        "total": 19000
+      },
+      "terminal_reason": "Required local evidence passes, but review/remote read-back and merge approval remain human-gated."
+    },
+    {
+      "event_id": "evt-t003-implementation-003-remote-readback",
+      "at": "2026-08-06T15:28:22Z",
+      "actor": "codex-supervisor",
+      "type": "external_branch_published_and_read_back",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": ".loop/evidence/t003-remote-readback.json",
+            "after": "Remote branch and PR content read-back receipt."
+          },
+          {
+            "op": "replace",
+            "path": "external.github.pull_request/5/status",
+            "before": "preflight draft",
+            "after": "implementation draft, open and unmerged"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t003-remote-readback.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "branch publication",
+          "result": "pass",
+          "details": "T003 branch ticket/t003-repo-scaffold updated through the GitHub connector."
+        },
+        {
+          "proof": "content read-back",
+          "result": "pass",
+          "details": "All 12 implementation/design/proof paths match local artifacts."
+        },
+        {
+          "proof": "scope read-back",
+          "result": "pass",
+          "details": "PR #5 changed filenames contain the six root files, DESIGN.md and expected loop artifacts only."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Expose T003 for human review; do not merge, mark the task checked or dispatch T004.",
+      "token_usage": {
+        "estimated": 6500,
+        "input": 0,
+        "output": 0,
+        "total": 6500
+      },
+      "terminal_reason": "Remote branch and PR are ready, but protected merge and task completion approval remain pending."
+    }
+  ],
+  "proof": {
+    "claim": "T003 implementation is locally complete and bounded; the graph correctly stops at needs_human for remote review and merge.",
+    "result": "pass",
+    "confidence": 0.97
+  }
+}

@@ -1,0 +1,552 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-ticket-supervisor-t003
+objective: Establish and approve a pre-implementation DESIGN.md contract, then dispatch T003 as a bounded repository-baseline task from the T002-success main commit with proof-first implementation and a separate merge review gate.
+feedback_updates_next_action: true
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - next_action
+
+scope:
+  in:
+    - Reconcile main after T002 terminal success and confirm T003 is the first unchecked task.
+    - Create the T003 repository-baseline branch and dispatch receipt.
+    - Synthesize DESIGN.md with the explicitly requested UI/UX and mobile design skills before implementation.
+    - After explicit design approval, implement only root workspace metadata and deterministic setup/dev/lint/typecheck/test/contract/verify commands.
+    - Prove a clean clone can run make setup and make verify without production secrets.
+  out:
+    - Scaffolding Nuxt, Spring Boot, packages, contracts, databases, Compose, CI or deployment; those remain T004 and later.
+    - Choosing production providers, adding paid access, enabling Web3 writes, or modifying spec.md/plan.md.
+    - Starting root implementation before DESIGN.md is approved or a bounded amendment is reconciled.
+    - Checking T003 before its command contract and clean-clone evidence pass.
+    - Dispatching T004 or parallel implementation before T003 review is complete.
+
+policy:
+  authority:
+    allowed:
+      - Read authoritative main state, T002 terminal receipt, tasks.md and plan.md.
+      - Create the scoped ticket/t003-repo-scaffold branch and loop evidence.
+      - Create and validate DESIGN.md plus its pre-implementation gate evidence.
+      - After design approval, implement and validate only the six root baseline files named by T003.
+      - Open a draft PR for T003 review.
+    requires_approval:
+      - Approving DESIGN.md before T003 implementation begins.
+      - Expanding the T003 file list or changing T003 acceptance criteria.
+      - Protected-branch merge or dispatch of T004.
+    forbidden:
+      - Modify spec.md, plan.md, T001/T002 artifacts, or unrelated user work.
+      - Add production secrets, vendor lock-in, app scaffolds or infrastructure to T003.
+      - Check T003 without reproducible command and clean-clone evidence.
+  human_gates:
+    - DESIGN.md approval before T003 implementation
+    - protected-branch merge
+    - T003 scope expansion or acceptance change
+    - dispatch of T004
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+graph:
+  entry_nodes:
+    - x-main-state
+    - t-t003-dispatch
+    - t-design-direction
+    - t-human-review
+  terminal_nodes:
+    - s-terminal-policy
+
+  loops:
+    - id: l2-t003-supervisor
+      layer: L2
+      owner: codex-supervisor
+      trigger_nodes: [t-t003-dispatch]
+      action_nodes: [a-reconcile-t003]
+      proof_nodes: [p-t003-reconciliation]
+      memory_nodes: [m-l2-t003-ledger]
+      stop_nodes: [s-terminal-policy]
+      budgets:
+        max_iterations: 3
+        max_minutes: 30
+        max_same_failure: 2
+        max_graph_changes: 8
+        max_tokens: 24000
+
+    - id: l3-design-direction
+      layer: L3
+      owner: codex-design-supervisor
+      trigger_nodes: [t-design-direction]
+      action_nodes: [a-design-baseline]
+      proof_nodes: [p-design-contract]
+      memory_nodes: [m-l3-design-ledger]
+      stop_nodes: [s-terminal-policy]
+      budgets:
+        max_iterations: 3
+        max_minutes: 120
+        max_same_failure: 2
+        max_graph_changes: 10
+        max_tokens: 40000
+
+    - id: l1-t003-execution
+      layer: L1
+      owner: codex-agent
+      trigger_nodes: [t-t003-ready]
+      action_nodes: [a-root-baseline]
+      proof_nodes: [p-root-baseline]
+      memory_nodes: [m-l1-t003-ledger]
+      stop_nodes: [s-terminal-policy]
+      budgets:
+        max_iterations: 3
+        max_minutes: 90
+        max_same_failure: 2
+        max_graph_changes: 12
+        max_tokens: 60000
+
+    - id: l3-t003-review
+      layer: L3
+      owner: human-mark
+      trigger_nodes: [t-human-review]
+      action_nodes: [a-review-t003]
+      proof_nodes: [p-t003-approval]
+      memory_nodes: [m-l3-t003-ledger]
+      stop_nodes: [s-terminal-policy]
+      budgets:
+        max_iterations: 3
+        max_minutes: 120
+        max_same_failure: 2
+        max_graph_changes: 8
+        max_tokens: 30000
+
+  nodes:
+    - id: x-main-state
+      kind: external
+      layer: EXTERNAL
+      label: Authoritative main after T002 terminal success
+      owner: github
+      status: done
+      risk: low
+      confidence:
+        score: 1.0
+        basis: T002 merge commit and main read-back are available.
+        evidence_refs: [.loop/evidence/t002-merge-readback.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        ref: main
+        commit: 0a41d715748551989bc91bc38e521f0951498235
+
+    - id: t-t003-dispatch
+      kind: trigger
+      layer: L2
+      label: T003 repository baseline dispatch requested
+      owner: codex-supervisor
+      status: done
+      risk: high
+      confidence:
+        score: 1.0
+        basis: T002 terminal success unblocks the first unchecked task T003.
+        evidence_refs: [.loop/evidence/t003-reconciliation.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: Main has accepted ADRs, checked T002, and T003 is unchecked.
+        inputs_required: [main commit, T002 merge read-back, T003 task text, plan source]
+        dedupe: T003 plus main-commit plus root-baseline-file-set
+
+    - id: a-reconcile-t003
+      kind: action
+      layer: L2
+      label: Reconcile T003 dependency, scope and branch state
+      owner: codex-supervisor
+      status: done
+      risk: high
+      confidence:
+        score: 0.99
+        basis: T003 is first unchecked task and no duplicate branch or PR exists.
+        evidence_refs: [.loop/evidence/t003-reconciliation.json]
+      budget:
+        effort_hours: 0.25
+        tokens: 4000
+      config:
+        workflow: [read main T002 terminal receipt, inspect T003 task and plan baseline, search duplicate branch/PR, create bounded dispatch]
+        allowed: [read state, write reconciliation evidence, create T003 branch]
+        forbidden: [implement T004+, check T003, dispatch T004]
+
+    - id: p-t003-reconciliation
+      kind: proof
+      layer: L2
+      label: T003 authoritative dispatch proof
+      owner: codex-supervisor
+      status: done
+      risk: high
+      confidence:
+        score: 0.99
+        basis: Main, T002 success, task order and branch uniqueness were read back.
+        evidence_refs: [.loop/evidence/t003-reconciliation.json]
+      budget:
+        effort_hours: 0.15
+        tokens: 2000
+      config:
+        claim: T003 is the only dispatched task and its root-baseline scope is bounded.
+        required: true
+
+    - id: m-l2-t003-ledger
+      kind: memory
+      layer: L2
+      label: T003 supervisor ledger
+      owner: codex-supervisor
+      status: done
+      risk: medium
+      confidence:
+        score: 0.95
+        basis: Append-only dispatch ledger records the T003 route.
+        evidence_refs: [.loop/t003-graph-ledger.json]
+      budget:
+        effort_hours: 0.1
+        tokens: 1200
+      config:
+        path: .loop/t003-graph-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+
+    - id: t-design-direction
+      kind: trigger
+      layer: L3
+      label: Pre-implementation design direction requested
+      owner: human-mark
+      status: done
+      risk: high
+      confidence:
+        score: 1.0
+        basis: The user explicitly required three named design skills to produce DESIGN.md before implementation.
+        evidence_refs: [.loop/evidence/t003-design-preflight.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: T003 is dispatched, implementation has not started, and DESIGN.md is required first.
+        inputs_required: [spec, plan, accepted ADRs, named design skills, T003 branch]
+        dedupe: T003 plus DESIGN.md plus source-request
+
+    - id: a-design-baseline
+      kind: action
+      layer: L3
+      label: Synthesize the pre-implementation design contract
+      owner: codex-design-supervisor
+      status: done
+      risk: high
+      confidence:
+        score: 0.98
+        basis: Three named design skills and three independent reviews were reconciled against spec, plan and accepted ADRs.
+        evidence_refs: [DESIGN.md, .loop/evidence/t003-design-preflight.json]
+      budget:
+        effort_hours: 1.5
+        tokens: 30000
+      config:
+        workflow: [search design system, define visual and narrative direction, specify mobile reader and Studio boundaries, bound Motion p5 and Web3, define proof matrix]
+        allowed: [DESIGN.md, design evidence, graph and ledger delta]
+        forbidden: [root implementation files, app scaffolds, unlicensed assets, Web3 writes]
+
+    - id: p-design-contract
+      kind: proof
+      layer: L3
+      label: DESIGN.md completeness and traceability proof
+      owner: codex-design-supervisor
+      status: done
+      risk: high
+      confidence:
+        score: 0.98
+        basis: DESIGN.md is review-ready, covers 20 top-level sections and 25 acceptance cases, and keeps implementation paused.
+        evidence_refs: [DESIGN.md, .loop/evidence/t003-design-preflight.json]
+      budget:
+        effort_hours: 0.4
+        tokens: 4000
+      config:
+        claim: A provisional design contract covers IA, responsive surfaces, tokens, accessibility, Motion, bounded p5, provenance UX, degraded states and implementation gates.
+        required: true
+        evidence_path: .loop/evidence/t003-design-preflight.json
+
+    - id: g-design-baseline
+      kind: gate
+      layer: L3
+      label: DESIGN.md approval gate
+      owner: human-mark
+      status: needs_human
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: The user required design direction before implementation and the baseline is explicitly provisional.
+        evidence_refs: [DESIGN.md, .loop/evidence/t003-design-preflight.json]
+      budget:
+        effort_hours: 0.25
+        tokens: 1000
+      config:
+        condition: Approve DESIGN.md or request a bounded amendment before enabling T003 root implementation.
+        approver: human-mark
+        required: true
+
+    - id: m-l3-design-ledger
+      kind: memory
+      layer: L3
+      label: T003 design-direction ledger
+      owner: codex-design-supervisor
+      status: done
+      risk: medium
+      confidence:
+        score: 0.98
+        basis: The source request, skill synthesis, artifact SHA and approval state are recorded append-only.
+        evidence_refs: [.loop/t003-graph-ledger.json, .loop/evidence/t003-design-preflight.json]
+      budget:
+        effort_hours: 0.1
+        tokens: 1200
+      config:
+        path: .loop/t003-graph-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+
+    - id: t-t003-ready
+      kind: trigger
+      layer: L1
+      label: T003 root baseline awaits design approval
+      owner: codex-agent
+      status: blocked
+      risk: high
+      confidence:
+        score: 0.98
+        basis: The six-file baseline remains bounded, but DESIGN.md approval is now a required precondition.
+        evidence_refs: [.loop/evidence/t003-reconciliation.json, .loop/evidence/t003-design-preflight.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: DESIGN.md is explicitly approved, the branch exists from T002-success main, and no implementation files are mixed in.
+        inputs_required: [approved DESIGN.md, T003 task, plan version baseline, branch base commit]
+        dedupe: T003 plus root-baseline-file-set
+
+    - id: a-root-baseline
+      kind: action
+      layer: L1
+      label: Implement T003 root workspace baseline
+      owner: codex-agent
+      status: blocked
+      risk: high
+      confidence:
+        score: 0.9
+        basis: Root files and command contract are explicit; app and infrastructure scaffolds are out of scope.
+        evidence_refs: [specs/001-taiwan-basketball-magazine-ebook/tasks.md, specs/001-taiwan-basketball-magazine-ebook/plan.md]
+      budget:
+        effort_hours: 2.0
+        tokens: 15000
+      config:
+        workflow: [write tests or command probes first, add root metadata, implement deterministic scripts, run clean-clone verification]
+        allowed: [pnpm-workspace.yaml, package.json, .node-version, .npmrc, Makefile, README.md, scoped command probes]
+        forbidden: [apps, packages, contracts, infra, .github workflows, production secrets, T004+ files]
+
+    - id: p-root-baseline
+      kind: proof
+      layer: L1
+      label: T003 deterministic root-command proof
+      owner: codex-agent
+      status: planned
+      risk: high
+      confidence:
+        score: 0.9
+        basis: T003 requires clean-clone setup and verify evidence plus deterministic command mapping.
+        evidence_refs: []
+      budget:
+        effort_hours: 0.5
+        tokens: 5000
+      config:
+        claim: A clean clone can run make setup and make verify, while all seven root commands have explicit deterministic contracts.
+        required: true
+        evidence_path: .loop/evidence/t003-acceptance.json
+
+    - id: m-l1-t003-ledger
+      kind: memory
+      layer: L1
+      label: T003 execution ledger
+      owner: codex-agent
+      status: planned
+      risk: medium
+      confidence:
+        score: 0.9
+        basis: Root baseline iterations and proof receipts are append-only.
+        evidence_refs: [.loop/t003-graph-ledger.json]
+      budget:
+        effort_hours: 0.1
+        tokens: 1200
+      config:
+        path: .loop/t003-graph-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+
+    - id: t-human-review
+      kind: trigger
+      layer: L3
+      label: T003 repository baseline review required
+      owner: human-mark
+      status: planned
+      risk: critical
+      confidence:
+        score: 0.9
+        basis: Root command changes affect the developer workflow and protected-branch merge.
+        evidence_refs: []
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: Root baseline proof passes and draft PR is ready for review.
+        inputs_required: [six root files, command proof, clean-clone evidence]
+        dedupe: T003 plus draft-pr-number plus root-baseline-fingerprint
+
+    - id: a-review-t003
+      kind: action
+      layer: L3
+      label: Review T003 root baseline
+      owner: codex-agent
+      status: planned
+      risk: critical
+      confidence:
+        score: 0.9
+        basis: Diff and command evidence will be visible in the PR.
+        evidence_refs: []
+      budget:
+        effort_hours: 0.5
+        tokens: 5000
+      config:
+        workflow: [inspect root files, verify command contracts, inspect clean-clone proof, approve or request bounded changes]
+        allowed: [approve, reject, request bounded amendment]
+        forbidden: [merge without explicit approval, dispatch T004 before T003 terminal success]
+
+    - id: p-t003-approval
+      kind: proof
+      layer: L3
+      label: Explicit T003 approval
+      owner: human-mark
+      status: needs_human
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: Protected-branch merge and task completion require accountable human review.
+        evidence_refs: []
+      budget:
+        effort_hours: 0.2
+        tokens: 1000
+      config:
+        claim: Mark approved the bounded T003 root baseline and its verification evidence.
+        method: Explicit approval on the T003 draft PR followed by merge read-back.
+        evidence_path: .loop/evidence/t003-human-approval.json
+        required: true
+
+    - id: g-t003-approval
+      kind: gate
+      layer: L3
+      label: T003 scope and merge approval gate
+      owner: human-mark
+      status: needs_human
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: Root command changes are reviewable but protected-branch merge remains a human gate.
+        evidence_refs: []
+      budget:
+        effort_hours: 0.25
+        tokens: 1000
+      config:
+        condition: Approve T003 evidence before checking T003 or dispatching T004.
+        approver: human-mark
+        required: true
+
+    - id: m-l3-t003-ledger
+      kind: memory
+      layer: L3
+      label: T003 decision ledger
+      owner: human-mark
+      status: ready
+      risk: medium
+      confidence:
+        score: 0.9
+        basis: T003 draft PR and append-only ledger preserve the review receipt.
+        evidence_refs: [.loop/t003-graph-ledger.json]
+      budget:
+        effort_hours: 0.1
+        tokens: 1200
+      config:
+        path: .loop/t003-graph-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+
+    - id: s-terminal-policy
+      kind: stop
+      layer: GLOBAL
+      label: T003 named terminal-state policy
+      owner: policy
+      status: needs_human
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: T003 cannot be complete until root commands pass clean-clone verification and the change is merged.
+        evidence_refs: [.loop/t003-graph-ledger.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        states:
+          success: Root baseline files and command proof pass, T003 is checked, merged and read back from main.
+          no_op: Main already contains equivalent root baseline and no safe change is required.
+          blocked: A dependency, permission, version baseline or command contract is unavailable.
+          stalled: Same failure or no-evidence-delta limit is reached.
+          exhausted: Iteration, time, graph-change, token or cost budget is reached.
+          needs_human: Root baseline is ready but review or protected-branch merge is pending.
+          cancelled: User cancels or governing spec becomes invalid.
+
+  edges:
+    - {id: e-external-l2, from: x-main-state, to: a-reconcile-t003, type: feedback, required: true, confidence: 0.99, token_capacity: 5000}
+    - {id: e-l2-trigger, from: t-t003-dispatch, to: a-reconcile-t003, type: enables, required: true, confidence: 1.0, token_capacity: 9000}
+    - {id: e-l2-proof, from: a-reconcile-t003, to: p-t003-reconciliation, type: verifies, required: true, confidence: 0.99, token_capacity: 7000}
+    - {id: e-l2-design-handoff, from: p-t003-reconciliation, to: t-design-direction, type: feedback, required: true, confidence: 0.99, token_capacity: 6000}
+    - {id: e-design-trigger, from: t-design-direction, to: a-design-baseline, type: enables, required: true, confidence: 1.0, token_capacity: 10000}
+    - {id: e-design-proof, from: a-design-baseline, to: p-design-contract, type: verifies, required: true, confidence: 0.98, token_capacity: 8000}
+    - {id: e-design-gate, from: p-design-contract, to: g-design-baseline, type: requires_approval, required: true, confidence: 1.0, token_capacity: 5000}
+    - {id: e-design-enables-l1, from: g-design-baseline, to: t-t003-ready, type: approves, required: true, confidence: 1.0, token_capacity: 4000}
+    - {id: e-design-memory-a, from: a-design-baseline, to: m-l3-design-ledger, type: records, required: true, confidence: 0.98, token_capacity: 3000}
+    - {id: e-design-memory-p, from: p-design-contract, to: m-l3-design-ledger, type: records, required: true, confidence: 0.98, token_capacity: 3000}
+    - {id: e-design-feedback, from: m-l3-design-ledger, to: a-design-baseline, type: feedback, required: true, confidence: 0.98, token_capacity: 4500}
+    - {id: e-l2-memory-a, from: a-reconcile-t003, to: m-l2-t003-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-l2-memory-p, from: p-t003-reconciliation, to: m-l2-t003-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-l2-feedback, from: m-l2-t003-ledger, to: a-reconcile-t003, type: feedback, required: true, confidence: 0.95, token_capacity: 4000}
+    - {id: e-l1-trigger, from: t-t003-ready, to: a-root-baseline, type: enables, required: true, confidence: 0.97, token_capacity: 15000}
+    - {id: e-l1-proof, from: a-root-baseline, to: p-root-baseline, type: verifies, required: true, confidence: 0.9, token_capacity: 10000}
+    - {id: e-l1-memory-a, from: a-root-baseline, to: m-l1-t003-ledger, type: records, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-l1-memory-p, from: p-root-baseline, to: m-l1-t003-ledger, type: records, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-l1-feedback, from: m-l1-t003-ledger, to: a-root-baseline, type: feedback, required: true, confidence: 0.9, token_capacity: 5000}
+    - {id: e-l1-l3-feedback, from: p-root-baseline, to: t-human-review, type: feedback, required: true, confidence: 0.9, token_capacity: 8000}
+    - {id: e-l3-trigger, from: t-human-review, to: a-review-t003, type: enables, required: true, confidence: 1.0, token_capacity: 7000}
+    - {id: e-l3-proof, from: a-review-t003, to: p-t003-approval, type: verifies, required: true, confidence: 0.9, token_capacity: 6000}
+    - {id: e-l3-gate, from: p-t003-approval, to: g-t003-approval, type: requires_approval, required: true, confidence: 1.0, token_capacity: 5000}
+    - {id: e-gate-stop, from: g-t003-approval, to: s-terminal-policy, type: approves, required: true, confidence: 1.0, token_capacity: 4000}
+    - {id: e-l3-memory-a, from: a-review-t003, to: m-l3-t003-ledger, type: records, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-l3-memory-p, from: p-t003-approval, to: m-l3-t003-ledger, type: records, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-l3-feedback, from: m-l3-t003-ledger, to: a-review-t003, type: feedback, required: true, confidence: 0.9, token_capacity: 3500}
+
+flow:
+  source: t-t003-dispatch
+  sink: s-terminal-policy
+  capacity_unit: tokens
+  interpretation: planning-proxy
