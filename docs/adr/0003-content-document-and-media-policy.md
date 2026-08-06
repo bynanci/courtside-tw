@@ -1,6 +1,6 @@
 # ADR-0003: Content document, media and rights policy
 
-**Status**: PROPOSED — publisher and rights-owner approval required  
+**Status**: ACCEPTED — Mark approval recorded 2026-08-06 via PR #4
 **Date**: 2026-08-06
 
 ## Decision
@@ -48,3 +48,10 @@
 Plan: Content Document Contract、Media and Rights、Publication Lifecycle、Decisions Required #3–#4。  
 Spec: FR-009、FR-021–FR-025、FR-046–FR-050、SC-005、SC-014–SC-015。  
 Tasks: T002、T009–T010、T019–T020、T036–T038、T048–T049、T087–T096。
+
+## Approval record
+
+- **Approver**: Mark
+- **Approved**: 2026-08-06 via [T002 PR #4](https://github.com/bynanci/courtside-tw/pull/4)
+- **Decision**: Content, media and rights policy accepted; a named PUBLISHER owner and rights metadata are still required before production publish.
+- **Evidence**: `.loop/evidence/t002-human-approval.json`
