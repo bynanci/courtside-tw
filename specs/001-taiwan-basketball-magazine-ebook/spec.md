@@ -269,8 +269,8 @@
 - **FR-046**: 系統 MUST 將 Motion 動態視為 progressive enhancement；核心內容與操作在 hydration 前可見，並完整尊重 `prefers-reduced-motion`。
 - **FR-047**: 系統 MUST 提供一種 `generative-canvas` 內容區塊，只接受已審核 `presetId`、固定 seed、bounded parameters、SSR poster、替代文字與資料摘要；不得接受任意 JavaScript、shader 或遠端程式碼。
 - **FR-048**: p5.js MUST 以 client-only dynamic import 載入，只在包含該區塊且接近 viewport 時啟動；離開 viewport／route 或頁面隱藏時 MUST pause／dispose，失敗時回到靜態內容。
-- **FR-049**: 系統 MUST 為每個選擇存證的公開期刊快照產生版本化 canonical manifest，至少包含穩定 issue／revision IDs、snapshot checksum、公開媒體 digests、rights scope、published-at 與 schema version。
-- **FR-050**: 系統 SHOULD 透過可替換 adapter 將符合資格的 manifest 發布為 IPFS CIDv1，並可將 manifest digest 錨定至經 ADR 核准的 EVM-compatible network；資料庫仍是 workflow system of record。
+- **FR-049**: 系統 MUST 為每個選擇存證的公開期刊快照產生版本化 canonical manifest，至少包含穩定 issue／revision IDs、snapshot checksum、公開媒體 digests、rights scope、published-at 與 schema version；hash input MUST 是符合 I-JSON 限制、以 RFC 8785 JCS canonicalize 後的 UTF-8 bytes。
+- **FR-050**: 系統 SHOULD 透過可替換 adapter 將符合資格的 canonical manifest bytes 發布為 `CIDv1 + raw multicodec + sha2-256` 的 IPFS block，並可將 manifest digest 錨定至經 ADR 核准的 EVM-compatible network；資料庫仍是 workflow system of record，不得依賴 provider 預設的 UnixFS／chunking profile 產生驗證 CID。
 - **FR-051**: 選用錢包登入時，瀏覽器 provider MUST 遵循 EIP-1193 邊界，session challenge MUST 遵循 ERC-4361 並驗證 domain、URI、chain ID、nonce、時間窗與簽章；私鑰不得進入應用程式、日誌或後端。
 - **FR-052**: 匿名公開閱讀 MUST 不依賴錢包、RPC、IPFS、token、NFT 或鏈上交易；錢包拒絕與外部 Web3 服務失效不得降低公開內容可用性。
 - **FR-053**: 系統 MUST 禁止將個資、草稿、原始媒體 key、有限期／可撤回媒體內容寫入公鏈；撤回後新增可驗證狀態與 origin deny，不宣稱能刪除既有鏈上紀錄或第三方副本。
@@ -327,7 +327,7 @@
 - **SC-012**: P1 自動化測試在 CI 中連續 20 次執行無不穩定測試後，才可解除 beta 標記。
 - **SC-013**: P1 核心頁在 reduced-motion 與無 JavaScript 測試中，100% 正文、TOC、上一篇／下一篇與分享連結仍可操作，且無非必要自動動態。
 - **SC-014**: 不含 `generative-canvas` 的頁面不得下載 p5.js chunk；含該區塊的頁面初始 SSR 必須提供 poster／摘要，且連續切換 20 次文章後不存在遺留 p5 canvas、animation loop 或 global listener。
-- **SC-015**: 100% 已標記 `VERIFIED` 的出版存證可由 manifest 重新計算出相同 digest／CID，且自動掃描確認鏈上 payload 不含個資、草稿或媒體原始位置。
+- **SC-015**: 100% 已標記 `VERIFIED` 的出版存證可在 TypeScript 與 Java 由相同 RFC 8785 canonical bytes 重新計算出一致的 SHA-256 digest 與 `CIDv1/raw/sha2-256`，且自動掃描確認鏈上 payload 不含個資、草稿或媒體原始位置。
 - **SC-016**: 錢包拒絕、錯誤 chain、account change、provider disconnect、過期 challenge 與 nonce replay 測試全部安全失敗；相同期間匿名閱讀成功率不低於未啟用 Web3 feature flag 的基準。
 
 ## Assumptions

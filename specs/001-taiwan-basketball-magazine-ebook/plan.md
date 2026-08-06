@@ -31,7 +31,7 @@ MVP 採三個可獨立驗收的 P1 slice：
 | Motion | Motion for Vue (`motion-v`，官方文件基準 v13)；只用於 page／layout transition、TOC reveal、progress feedback 與明確 gesture，簡單 hover/focus 優先 CSS |
 | Generative visual | p5.js 2.x；Nuxt client-only dynamic import、instance mode、fixed seed、schema-bounded preset、SSR poster／summary fallback，不接受任意 JavaScript／shader |
 | Authentication | OIDC Authorization Code + PKCE；Nuxt BFF session 使用 Secure/HttpOnly/SameSite cookie；Spring Security 驗證 JWT |
-| Optional Web3 | EIP-1193 provider boundary + ERC-4361 SIWE；framework-agnostic `viem` adapter；IPFS CIDv1 manifest mirror；EVM-compatible digest registry behind feature flags |
+| Optional Web3 | EIP-1193 provider boundary + ERC-4361 SIWE；framework-agnostic `viem` adapter；RFC 8785 JCS manifest；`CIDv1/raw/sha2-256` mirror；EVM-compatible digest registry behind feature flags |
 | Search | PostgreSQL `pg_trgm` + normalized search document；以 curated zh-TW query set 驗證，達取消條件才導入專用搜尋服務 |
 | Background work | PostgreSQL transactional outbox + worker profile；資料庫鎖確保排程冪等，MVP 不引入 message broker |
 | Frontend testing | Vitest、Vue Test Utils、Playwright、axe-core、Lighthouse CI |
@@ -338,15 +338,16 @@ stateDiagram-v2
 Web3 採 hexagonal adapter，不改變 publication aggregate 的權威性：
 
 1. `PublicationService` 完成原子發布並產生 immutable snapshot checksum。
-2. `ManifestCanonicalizer` 依版本化 JSON Schema、固定欄位排序與 UTF-8 encoding 建立 manifest bytes／SHA-256 digest。
+2. `ManifestCanonicalizer` 將通過版本化 JSON Schema 與 I-JSON 約束的 payload 依 RFC 8785 JCS 產生 canonical UTF-8 bytes，再計算 SHA-256 digest；ID、decimal 與大整數使用 schema-defined string representation，禁止 runtime 自行猜測 number precision。
 3. outbox 觸發 `ProvenanceWorker`；rights policy 先決定只存 digest、發布 manifest，或允許鏡像公開 asset bytes。
-4. `DecentralizedMirrorPort` 產生 CIDv1 並驗證 round-trip；`ChainAttestationPort` 只寫入 manifest digest、CID digest、snapshot ID、schema version 與 timestamp。
+4. `DecentralizedMirrorPort` 以 canonical bytes 建立 `CIDv1 + raw multicodec + sha2-256` block 並驗證 round-trip；`ChainAttestationPort` 只寫入 manifest digest、CID digest、snapshot ID、schema version 與 timestamp。
 5. DB 保存 provider、network、contract、transaction、block confirmation 與 verification 狀態；public API 將 `PENDING`／`VERIFIED`／`FAILED`／`SUPERSEDED`／`WITHDRAWN` 明確呈現。
 
 設計限制：
 
 - PostgreSQL publication snapshot 是 workflow system of record；鏈上紀錄是 external attestation，不反向觸發核准、發布或角色變更。
 - IPFS 不等於永久保存。至少兩個可替換 pinning／gateway 路徑才可宣稱受管理的 availability；CID 只證明 bytes 對應，不證明內容合法或真實。
+- 驗證 CID 不採 provider 預設的 UnixFS、chunking 或 DAG layout；manifest verification profile 固定為 `CIDv1/raw/sha2-256`，任何 profile 變更都建立新 manifest schema/version 與 migration evidence。
 - 有期限、可撤回、含個資或 rights 不足的內容只記錄 digest，不發布 bytes；一旦公開到 permissionless network，系統不得承諾刪除第三方副本。
 - reader wallet 只在明確操作後 request accounts。SIWE nonce 單次、短效、domain／URI／chain／time bound；provider 回傳值一律視為不可信輸入。
 - MVP/P1 feature flags 預設 `web3.provenance=false`、`web3.wallet=false`；任何 RPC、gateway、contract 或 signer outage 都只降低驗證能力。
@@ -459,7 +460,7 @@ MVP 圖片上限與影片策略需在 implementation ADR 定稿；預設圖片�
 - **Component tests**: block renderers, TOC, reader navigation, editor validation, upload states.
 - **Motion tests**: variants 與 reduced-motion unit tests；hydration 前內容可見、transition interrupted／route error 的 component tests。
 - **p5 tests**: schema fixtures、fixed-seed preset determinism、dynamic-import boundary、visibility pause／resume、route unmount dispose 與 SSR poster／summary tests。
-- **Web3 contract tests**: canonical manifest byte-for-byte fixtures、CID recomputation、EIP-1193 event/error matrix、ERC-4361 domain／nonce／time／chain validation、adapter idempotency。
+- **Web3 contract tests**: RFC 8785 canonical manifest byte-for-byte fixtures、TypeScript／Java SHA-256 parity、`CIDv1/raw/sha2-256` recomputation、EIP-1193 event/error matrix、ERC-4361 domain／nonce／time／chain validation、adapter idempotency。
 - **E2E tests**: each P1 acceptance scenario; P2/P3 are added with their slice.
 - **Accessibility**: automated axe for core routes plus manual keyboard, VoiceOver/TalkBack/NVDA smoke test matrix.
 - **Performance**: Lighthouse CI budgets, k6 public reads, large 20-article issue, content document limit tests.
@@ -655,4 +656,5 @@ T001–T002 的治理與 ADR 應在兩個工作日內定稿，否則停止功能
 - EIP-1193 Ethereum Provider JavaScript API: https://eips.ethereum.org/EIPS/eip-1193
 - ERC-4361 Sign-In with Ethereum: https://eips.ethereum.org/EIPS/eip-4361
 - IPFS content addressing and CID guidance: https://docs.ipfs.tech/concepts/content-addressing/
+- RFC 8785 JSON Canonicalization Scheme (JCS): https://www.rfc-editor.org/rfc/rfc8785
 - viem official clients／SIWE verification documentation: https://viem.sh/docs/clients/intro and https://v3.viem.sh/docs/actions/public/verifySiweMessage
