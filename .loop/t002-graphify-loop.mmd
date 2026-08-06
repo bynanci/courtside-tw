@@ -1,0 +1,47 @@
+flowchart TD
+  subgraph G_EXTERNAL["External Evidence"]
+    N0[/"[EXTERNAL] external · Authoritative GitHub main and PR state"/]
+  end
+  subgraph G_L3["L3 · Human Direction"]
+    N9(["[L3] trigger · T002 architecture and product review required"])
+    N10["[L3] action · Review T002 ADR decision packet"]
+    N11{{"[L3] proof · Explicit T002 ADR approval"}}
+    N12{"[L3] gate · T002 architecture and product approval gate"}
+    N13[("[L3] memory · T002 decision ledger")]
+  end
+  subgraph G_L2["L2 · Supervisor"]
+    N1(["[L2] trigger · T002 supervisor reconciliation requested"])
+    N2["[L2] action · Reconcile T002 dependency, branch and approval state"]
+    N3{{"[L2] proof · T002 authoritative reconciliation proof"}}
+    N4[("[L2] memory · T002 supervisor ledger")]
+  end
+  subgraph G_L1["L1 · Execution"]
+    N5(["[L1] trigger · T002 ADR packet is ready to draft"])
+    N6["[L1] action · Draft six reviewable T002 ADRs"]
+    N7{{"[L1] proof · Six-ADR traceability and boundary proof"}}
+    N8[("[L1] memory · T002 execution ledger")]
+  end
+  subgraph G_GLOBAL["Global Policy"]
+    N14(["[GLOBAL] stop · T002 named terminal-state policy"])
+  end
+  N0 -.->|"feedback · 6000t"| N2
+  N1 -->|"enables · 12000t"| N2
+  N2 -->|"verifies · 10000t"| N3
+  N3 -->|"enables · 9000t"| N5
+  N2 -.->|"records · 3500t"| N4
+  N3 -.->|"records · 3500t"| N4
+  N4 -.->|"feedback · 5000t"| N2
+  N5 -->|"enables · 16000t"| N6
+  N6 -->|"verifies · 12000t"| N7
+  N6 -.->|"records · 3500t"| N8
+  N7 -.->|"records · 3500t"| N8
+  N8 -.->|"feedback · 5000t"| N6
+  N7 -.->|"feedback · 8000t"| N9
+  N7 -->|"enables · 5000t"| N14
+  N9 -->|"enables · 9000t"| N10
+  N10 -->|"verifies · 7000t"| N11
+  N11 -->|"requires_approval · 5000t"| N12
+  N12 -->|"approves · 4000t"| N14
+  N10 -.->|"records · 2500t"| N13
+  N11 -.->|"records · 2500t"| N13
+  N13 -.->|"feedback · 3500t"| N10
