@@ -1,6 +1,6 @@
 # ADR-0005: Motion and generative runtime baseline
 
-**Status**: PROPOSED — accessibility, performance and publisher approval required  
+**Status**: ACCEPTED — Mark approval recorded 2026-08-06 via PR #4
 **Date**: 2026-08-06
 
 ## Decision
@@ -50,3 +50,10 @@ p5.js 2.x 使用 instance mode、fixed seed、client-only dynamic import 與 Int
 Plan: Editorial experience direction、Motion system、p5.js creative runtime、Testing Strategy。  
 Spec: US2、FR-046–FR-048、SC-002、SC-007、SC-013–SC-014。  
 Tasks: T002、T025、T029、T033、T036–T041、T051、T078–T079。
+
+## Approval record
+
+- **Approver**: Mark
+- **Approved**: 2026-08-06 via [T002 PR #4](https://github.com/bynanci/courtside-tw/pull/4)
+- **Decision**: Motion allowlist, court-pulse-v1, poster and reduced-motion baseline accepted; performance and accessibility kill-switches remain mandatory.
+- **Evidence**: `.loop/evidence/t002-human-approval.json`
