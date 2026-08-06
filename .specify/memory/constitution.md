@@ -1,9 +1,9 @@
 # Courtside TW Project Constitution
 
-**Status**: PROPOSED — T001 human approval pending  
-**Proposed version**: 0.1.0  
+**Status**: RATIFIED  
+**Version**: 0.1.0  
 **Proposed on**: 2026-08-06  
-**Ratified on**: Pending  
+**Ratified on**: 2026-08-06  
 **Last amended**: 2026-08-06
 
 ## Purpose and authority
@@ -118,9 +118,9 @@ PRs MUST declare: requirement trace, scope／non-goals, contracts or migrations 
 
 | Field | Value |
 | --- | --- |
-| Proposed version | 0.1.0 |
-| Proposal status | PROPOSED |
+| Ratified version | 0.1.0 |
+| Constitution status | RATIFIED |
 | Accountable approver | Human project owner (Mark) |
-| Approval evidence | Pending draft PR review |
-| Effective date | Pending approval and merge |
-| T001 completion | Pending |
+| Approval evidence | Explicit Mark approval on 2026-08-06; recorded in GitHub PR #2 |
+| Effective date | 2026-08-06 upon merge of PR #2 |
+| T001 completion | Tracked in tasks.md after merge read-back |
