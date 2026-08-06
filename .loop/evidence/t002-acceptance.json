@@ -1,0 +1,104 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t002-acceptance-20260806",
+  "generated_at": "2026-08-06T09:16:27Z",
+  "actor": "verifier",
+  "subject": "T002 six-ADR decision packet",
+  "acceptance": {
+    "result": "pass",
+    "adr_count": 6,
+    "all_statuses": "PROPOSED",
+    "t002_checkbox_remains_unchecked": true,
+    "t003_dispatch": false,
+    "spec_or_plan_modified": false
+  },
+  "required_paths": [
+    "docs/adr/0001-application-topology.md",
+    "docs/adr/0002-identity-and-hosting-providers.md",
+    "docs/adr/0003-content-document-and-media-policy.md",
+    "docs/adr/0004-free-mvp-access-policy.md",
+    "docs/adr/0005-motion-and-generative-runtime.md",
+    "docs/adr/0006-web3-provenance-boundary.md"
+  ],
+  "topic_coverage": {
+    "topology_and_boundaries": true,
+    "oidc_email_hosting_and_exit": true,
+    "content_11_blocks_media_limit_video_and_rights_owner": true,
+    "free_anonymous_mvp_and_paid_change_trigger": true,
+    "five_motion_patterns_court_pulse_poster_reduced_motion_android_baseline": true,
+    "manifest_only_web3_ipfs_chain_siwe_signer_gas_rights_exit": true
+  },
+  "checks": [
+    {
+      "name": "strict_graph_validation",
+      "command": "python3 scripts/validate_graphify_loop.py .loop/t002-graphify-loop.yaml --strict --json",
+      "result": "pass",
+      "details": {
+        "nodes": 15,
+        "edges": 21,
+        "action_proof_coverage": "3/3",
+        "warnings": 0,
+        "errors": 0
+      }
+    },
+    {
+      "name": "six_adr_structure",
+      "method": "Every required ADR exists and contains Decision, Approval gate, Traceability, proposed status and date.",
+      "result": "pass"
+    },
+    {
+      "name": "decision_boundary",
+      "method": "Provider, rights, paid access, Motion/p5 and Web3 irreversible choices remain explicit human approval points.",
+      "result": "pass"
+    },
+    {
+      "name": "traceability",
+      "method": "Every ADR points back to plan/spec sections and affected tasks.",
+      "result": "pass"
+    },
+    {
+      "name": "rendered_graph",
+      "method": "Rendered .loop/t002-graphify-loop.mmd from the strictly valid source graph.",
+      "result": "pass"
+    }
+  ],
+  "graph_analysis": {
+    "ready_frontier": [
+      "t-human-review"
+    ],
+    "derived_action": "a-review-adrs",
+    "critical_path": [
+      "t-supervisor",
+      "a-reconcile",
+      "p-reconciliation",
+      "t-t002-ready",
+      "a-draft-adrs",
+      "p-adr-acceptance",
+      "s-terminal-policy"
+    ],
+    "critical_path_effort_hours": 3.55,
+    "critical_path_estimated_tokens": 36000,
+    "confidence_floor": 0.9,
+    "token_max_flow": 4000,
+    "min_cut": [
+      "e-gate-stop"
+    ]
+  },
+  "artifact_blob_shas": {
+    "docs/adr/0001-application-topology.md": "1914ca247fada73591cee563e409b109c3317e27",
+    "docs/adr/0002-identity-and-hosting-providers.md": "3c5fb2c1c9a6cd155dfe11566a5db686ed18c73f",
+    "docs/adr/0003-content-document-and-media-policy.md": "f5cb2de67ff7d5eeaf50b16da1976011c4136a0d",
+    "docs/adr/0004-free-mvp-access-policy.md": "d93190ea0869a40d40510a58818d496273ff5df0",
+    "docs/adr/0005-motion-and-generative-runtime.md": "a8c70c9cb4bf6559afe6eb652cbcbfac3594b637",
+    "docs/adr/0006-web3-provenance-boundary.md": "b54ab2aafae19ed40321b6292972b35a6401e492",
+    ".loop/t002-graphify-loop.yaml": "cf4f868fc8ff33b944d1473f96b01bf3ad5ab454",
+    ".loop/t002-graphify-loop.mmd": "e6e700262cefa72ee6af8ff4c40f13aebeb31858",
+    ".loop/t002-graph-ledger.json": "dd5fed8d35ec163a992256d9e2e1a243d4d7b43b",
+    ".loop/evidence/t002-reconciliation.json": "ce0cac96778ce1cb83dba586a1ea5e4ca661cdfc"
+  },
+  "proof": {
+    "claim": "The six ADRs are review-ready and bounded, but T002 is not approved or complete.",
+    "result": "pass",
+    "confidence": 0.95
+  }
+}
