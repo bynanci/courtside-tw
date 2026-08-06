@@ -1,23 +1,16 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t003",
-  "graph_version": 3,
+  "graph_version": 4,
   "run_id": "courtside-tw-t003-implementation-20260806",
-  "status": "needs_human",
-  "iteration": 3,
+  "status": "success",
+  "iteration": 4,
   "started_at": "2026-08-06T15:19:50Z",
-  "updated_at": "2026-08-06T15:28:22Z",
-  "current_frontier": [
-    "t-human-review"
-  ],
-  "blocked_nodes": [
-    "a-review-t003",
-    "p-human-approval",
-    "g-t003-approval",
-    "s-terminal-policy"
-  ],
-  "terminal_state": "needs_human",
-  "next_action": "Review the six-file T003 patch and command receipts, then obtain remote branch/PR read-back before deciding merge and task completion.",
+  "updated_at": "2026-08-06T23:37:02Z",
+  "current_frontier": [],
+  "blocked_nodes": [],
+  "terminal_state": "success",
+  "next_action": "T003 completion is recorded; dispatch T005 from the next supervisor graph only.",
   "events": [
     {
       "event_id": "evt-t003-implementation-001-graph-initialized",
@@ -179,11 +172,112 @@
         "total": 6500
       },
       "terminal_reason": "Remote branch and PR are ready, but protected merge and task completion approval remain pending."
+    },
+    {
+      "event_id": "evt-t003-implementation-004-completion-approved",
+      "at": "2026-08-06T23:37:02Z",
+      "actor": "codex-supervisor",
+      "type": "t003_completion_approved",
+      "base_graph_version": 3,
+      "new_graph_version": 4,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": ".loop/evidence/t003-completion-receipt.json",
+            "after": "Mark explicitly approved T003 completion after PR #5 merge and main read-back."
+          },
+          {
+            "op": "replace",
+            "path": "tasks.md/T003",
+            "before": "[ ]",
+            "after": "[x]"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/t-human-review/status",
+            "before": "ready",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-review-t003/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-human-approval/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/g-t003-approval/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/m-l3-t003-decisions/status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/s-terminal-policy/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [
+              "t-human-review"
+            ],
+            "after": []
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t003-completion-receipt.json",
+        ".loop/evidence/t003-merge-readback.json",
+        ".loop/evidence/t003-code-review.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Mark approval",
+          "level": "P3",
+          "result": "pass",
+          "details": "Current instruction: 核准 T003 完成，dispatch T005."
+        },
+        {
+          "proof": "merged PR and main read-back",
+          "level": "P2",
+          "result": "pass",
+          "details": "PR #5 squash merged as da32d8c4253414f321a0c300e7e8d156048ae3a8; main read-back commit 8427895e1977c0b8df98754cdd4d3f295ab63919."
+        },
+        {
+          "proof": "task completion",
+          "level": "P2",
+          "result": "pass",
+          "details": "T003 acceptance commands and clean clone already passed; tasks.md will be checked in this completion receipt."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Complete T003 and hand off only T005; do not implement T004/T005 in this receipt.",
+      "token_usage": {
+        "estimated": 5500,
+        "input": 0,
+        "output": 0,
+        "total": 5500
+      },
+      "terminal_reason": "T003 proof, merge/read-back and current Mark approval are complete; next ticket requires its own dispatch graph."
     }
   ],
   "proof": {
-    "claim": "T003 implementation is locally complete and bounded; the graph correctly stops at needs_human for remote review and merge.",
+    "claim": "T003 implementation, merge/read-back and explicit completion approval are complete; T005 remains a separate dispatch.",
     "result": "pass",
-    "confidence": 0.97
+    "confidence": 0.99
   }
 }

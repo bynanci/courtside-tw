@@ -1,6 +1,6 @@
 schema_version: mark-graphify-loop/v2
 name: courtside-tw-ticket-implementation-t003
-objective: Implement the approved T003 monorepo root baseline in exactly six files, prove the seven root commands on the current workspace and a clean clone, then stop at the separate human review gate.
+objective: Complete the approved T003 monorepo root baseline after merge read-back, record the explicit task-completion approval, and hand off to the next ticket supervisor.
 feedback_updates_next_action: true
 
 scope:
@@ -9,10 +9,11 @@ scope:
     - Create only pnpm-workspace.yaml, package.json, .node-version, .npmrc, Makefile and README.md for the root baseline.
     - Provide deterministic setup, dev, lint, typecheck, test, contract and verify commands that no-op safely before T004/T005 add workspace packages.
     - Run toolchain, command, scope and clean-clone proofs and preserve their evidence in the append-only ledger.
+    - Record the approved T003 completion receipt and check only T003 in tasks.md.
   out:
     - Nuxt, Spring Boot, packages, contracts, databases, Compose, CI, deployment, providers, secrets or Web3 writes.
     - Modifying spec.md, plan.md, constitution.md, ADRs or DESIGN.md during this implementation slice.
-    - Checking T003, dispatching T004, merging or deploying before the review gate is explicitly approved.
+    - Implementing or dispatching T004/T005 from this completion slice, changing the approved design, or deploying.
 
 policy:
   authority:
@@ -20,14 +21,15 @@ policy:
       - Read scoped project and loop artifacts.
       - Write the six T003 root files and T003 loop evidence.
       - Run deterministic local commands and create a reviewable patch.
+      - Write the T003 completion receipt and update the T003 task checkbox after the current Mark approval.
     requires_approval:
-      - Mark T003 complete, check tasks.md, merge the pull request or dispatch T004.
+      - Dispatch T004/T005, merge an implementation PR or deploy.
       - Change the approved design, architecture, provider, rights, access or Web3 boundary.
     forbidden:
       - Add later-task scaffolds, production credentials, paid/token-gated access or external Web3 writes.
       - Weaken command acceptance, hide a failed proof or rewrite prior evidence.
   human_gates:
-    - T003 scope and merge review after root command proof.
+    - T004/T005 scope and dispatch review after T003 completion.
     - Any change to DESIGN.md, constitution, ADRs, free-MVP access, rights or Web3 least-agency boundaries.
   no_progress:
     max_same_failure: 2
@@ -278,17 +280,17 @@ graph:
       layer: L3
       label: T003 root baseline review requested
       owner: human-mark
-      status: ready
+      status: done
       risk: high
       confidence:
         score: 0.98
-        basis: Root command proof passed; remote publication, task check and merge remain human-controlled actions.
-        evidence_refs: [.loop/evidence/t003-command-proof.json, .loop/evidence/t003-remote-readback.json]
+        basis: Root command proof passed; the merged PR and main read-back are confirmed and Mark explicitly approved T003 completion.
+        evidence_refs: [.loop/evidence/t003-code-review.json, .loop/evidence/t003-merge-readback.json, .loop/evidence/t003-completion-receipt.json]
       budget:
         effort_hours: 0.0
         tokens: 0
       config:
-        condition: Review the six-file patch, command receipts and remote branch/PR read-back before merge.
+        condition: Review the six-file patch, command receipts and remote branch/PR read-back before completion.
         inputs_required: [six-file diff, command proof, implementation ledger, remote branch or PR]
         dedupe: T003 command-proof fingerprint plus review-run-id
 
@@ -297,19 +299,19 @@ graph:
       layer: L3
       label: Review T003 scope, reproducibility and merge readiness
       owner: human-mark
-      status: needs_human
+      status: done
       risk: high
       confidence:
-        score: 0.9
-        basis: Human must inspect the patch and remote read-back; local proof alone cannot authorize merge or task completion.
-        evidence_refs: [.loop/evidence/t003-command-proof.json, .loop/evidence/t003-remote-readback.json]
+        score: 1.0
+        basis: Mark explicitly approved T003 completion after the merged PR and main read-back were verified.
+        evidence_refs: [.loop/evidence/t003-code-review.json, .loop/evidence/t003-merge-readback.json, .loop/evidence/t003-completion-receipt.json]
       budget:
         effort_hours: 0.25
         tokens: 3500
       config:
         workflow: [inspect diff, read command receipts, verify remote branch and PR scope, approve or request bounded changes]
         allowed: [human review and explicit approval decision]
-        requires_approval: [merge, mark T003 checked, dispatch T004]
+        requires_approval: [recorded human completion approval]
         forbidden: [silently broaden scope, waive failed proof, approve missing remote evidence]
 
     - id: p-human-approval
@@ -317,12 +319,12 @@ graph:
       layer: L3
       label: Explicit T003 review and merge approval
       owner: human-mark
-      status: needs_human
+      status: done
       risk: critical
       confidence:
-        score: 0.0
-        basis: No approval receipt has been supplied in this iteration.
-        evidence_refs: []
+        score: 1.0
+        basis: Current Mark instruction explicitly approves T003 completion and T005 dispatch.
+        evidence_refs: [.loop/evidence/t003-completion-receipt.json]
       budget:
         effort_hours: 0.25
         tokens: 2500
@@ -330,7 +332,7 @@ graph:
         level: P3
         claim: T003 is reviewed, remotely read back and explicitly approved for merge and task completion.
         method: Human review receipt naming branch/PR, six-file diff, command proof, merge decision and any bounded follow-up.
-        evidence_path: .loop/evidence/t003-human-approval.json
+        evidence_path: .loop/evidence/t003-completion-receipt.json
         required: true
         baseline_required: false
 
@@ -339,17 +341,17 @@ graph:
       layer: L3
       label: T003 scope and merge approval gate
       owner: human-mark
-      status: needs_human
+      status: done
       risk: critical
       confidence:
-        score: 0.0
-        basis: Merge and task completion are protected actions and have not been approved in this request.
-        evidence_refs: []
+        score: 1.0
+        basis: Mark's current approval is bound to T003 completion and the exact T005 dispatch scope.
+        evidence_refs: [.loop/evidence/t003-completion-receipt.json]
       budget:
         effort_hours: 0.0
         tokens: 0
       config:
-        condition: Explicit approval follows review of local proof and remote branch/PR read-back.
+        condition: Explicit approval follows review of local proof, remote merge/read-back and exact next-ticket scope.
         approver: human-mark
         required: true
 
@@ -358,12 +360,12 @@ graph:
       layer: L3
       label: T003 human decision ledger
       owner: human-mark
-      status: planned
+      status: done
       risk: low
       confidence:
-        score: 0.8
-        basis: The memory path is reserved for the eventual review decision and remains empty until approval.
-        evidence_refs: []
+        score: 1.0
+        basis: Completion decision and next-ticket authorization are recorded append-only.
+        evidence_refs: [.loop/evidence/t003-completion-receipt.json]
       budget:
         effort_hours: 0.05
         tokens: 800
@@ -378,12 +380,12 @@ graph:
       layer: GLOBAL
       label: T003 named terminal-state policy
       owner: policy
-      status: needs_human
+      status: done
       risk: critical
       confidence:
         score: 1.0
-        basis: Required local proof passed, but the protected review/merge gate is still pending.
-        evidence_refs: [.loop/t003-implementation-ledger.json]
+        basis: Required local proof, merge/read-back and explicit T003 task-completion approval passed; T005 handoff is a separate graph.
+        evidence_refs: [.loop/t003-implementation-ledger.json, .loop/evidence/t003-completion-receipt.json]
       budget:
         effort_hours: 0.0
         tokens: 0
