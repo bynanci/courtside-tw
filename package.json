@@ -1,0 +1,20 @@
+{
+  "name": "courtside-tw",
+  "version": "0.1.0",
+  "private": true,
+  "description": "台灣籃球雜誌電子書的 monorepo root baseline",
+  "packageManager": "pnpm@11.7.0",
+  "engines": {
+    "node": "24.14.x",
+    "pnpm": "11.7.x"
+  },
+  "scripts": {
+    "setup": "make setup",
+    "dev": "make dev",
+    "lint": "make lint",
+    "typecheck": "make typecheck",
+    "test": "make test",
+    "contract": "make contract",
+    "verify": "make verify"
+  }
+}
