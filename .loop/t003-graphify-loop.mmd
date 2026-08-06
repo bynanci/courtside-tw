@@ -1,0 +1,46 @@
+flowchart TD
+  subgraph G_EXTERNAL["External Evidence"]
+    N0[/"[EXTERNAL] main · T002 terminal success and merge read-back"/]
+  end
+  subgraph G_L2["L2 · Supervisor"]
+    N1(["[L2] trigger · T003 repository baseline dispatch requested"])
+    N2["[L2] action · Reconcile T003 dependency, scope and branch"]
+    N3{{"[L2] proof · T003 authoritative dispatch proof"}}
+    N4[("[L2] memory · T003 supervisor ledger")]
+  end
+  subgraph G_L1["L1 · Execution"]
+    N5(["[L1] trigger · T003 root baseline ready"])
+    N6["[L1] action · Implement six root files and seven commands"]
+    N7{{"[L1] proof · clean-clone command proof"}}
+    N8[("[L1] memory · T003 execution ledger")]
+  end
+  subgraph G_L3["L3 · Human Direction"]
+    N9(["[L3] trigger · T003 repository baseline review"])
+    N10["[L3] action · Review T003 root baseline"]
+    N11{{"[L3] proof · Explicit T003 approval"}}
+    N12{"[L3] gate · T003 scope and merge approval"}
+    N13[("[L3] memory · T003 decision ledger")]
+  end
+  subgraph G_GLOBAL["Global Policy"]
+    N14[("[GLOBAL] stop · T003 terminal policy")]
+  end
+  N0 -.->|"feedback · 5000t"| N2
+  N1 -->|"enables · 9000t"| N2
+  N2 -->|"verifies · 7000t"| N3
+  N3 -->|"enables · 6000t"| N5
+  N2 -.->|"records · 2500t"| N4
+  N3 -.->|"records · 2500t"| N4
+  N4 -.->|"feedback · 4000t"| N2
+  N5 -->|"enables · 15000t"| N6
+  N6 -->|"verifies · 10000t"| N7
+  N6 -.->|"records · 2500t"| N8
+  N7 -.->|"records · 2500t"| N8
+  N8 -.->|"feedback · 5000t"| N6
+  N7 -.->|"feedback · 8000t"| N9
+  N9 -->|"enables · 7000t"| N10
+  N10 -->|"verifies · 6000t"| N11
+  N11 -->|"requires_approval · 5000t"| N12
+  N12 -->|"approves · 4000t"| N14
+  N10 -.->|"records · 2500t"| N13
+  N11 -.->|"records · 2500t"| N13
+  N13 -.->|"feedback · 3500t"| N10
