@@ -1,0 +1,73 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-ticket-supervisor-t003",
+  "graph_version": 1,
+  "run_id": "courtside-tw-t003-20260806",
+  "status": "running",
+  "iteration": 1,
+  "started_at": "2026-08-06T10:20:00Z",
+  "updated_at": "2026-08-06T10:20:00Z",
+  "current_frontier": [
+    "a-root-baseline"
+  ],
+  "blocked_nodes": [
+    "p-t003-approval",
+    "g-t003-approval"
+  ],
+  "terminal_state": null,
+  "next_action": "Implement only the six T003 root baseline files and seven deterministic commands; do not start T004.",
+  "events": [
+    {
+      "event_id": "evt-t003-001-dispatched",
+      "at": "2026-08-06T10:20:00Z",
+      "actor": "codex-supervisor",
+      "type": "task_dispatched",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": ".loop/t003-graphify-loop.yaml",
+            "after": "T003 L2/L1/L3 graph for root repository baseline."
+          },
+          {
+            "op": "add",
+            "path": "ticket/t003-repo-scaffold",
+            "after": "Branch created from T002 terminal-success main commit."
+          },
+          {
+            "op": "replace",
+            "path": "tasks/T003/status",
+            "before": "unchecked",
+            "after": "dispatched"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t003-reconciliation.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "T002 main read-back",
+          "result": "pass",
+          "details": "Six ADRs ACCEPTED; T002 checked; main merge commit verified."
+        },
+        {
+          "proof": "T003 branch uniqueness",
+          "result": "pass",
+          "details": "No prior T003 branch or PR found."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Dispatch T003 only; keep T004 and later tasks blocked.",
+      "token_usage": {
+        "estimated": 6000,
+        "input": 0,
+        "output": 0,
+        "total": 6000
+      },
+      "terminal_reason": null
+    }
+  ]
+}
