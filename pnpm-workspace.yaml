@@ -1,0 +1,10 @@
+packages:
+  - "apps/*"
+  - "packages/*"
+engineStrict: true
+strictPeerDependencies: true
+autoInstallPeers: false
+saveExact: true
+sharedWorkspaceLockfile: true
+managePackageManagerVersions: false
+verifyDepsBeforeRun: false
