@@ -269,7 +269,7 @@ graph:
       risk: high
       confidence:
         score: 0.98
-        basis: DESIGN.md is review-ready, covers 19 sections and 25 acceptance cases, and keeps implementation paused.
+        basis: DESIGN.md is review-ready, covers 20 top-level sections and 25 acceptance cases, and keeps implementation paused.
         evidence_refs: [DESIGN.md, .loop/evidence/t003-design-preflight.json]
       budget:
         effort_hours: 0.4
