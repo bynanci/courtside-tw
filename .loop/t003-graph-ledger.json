@@ -6,7 +6,7 @@
   "status": "running",
   "iteration": 1,
   "started_at": "2026-08-06T10:20:00Z",
-  "updated_at": "2026-08-06T10:20:00Z",
+  "updated_at": "2026-08-06T10:24:24Z",
   "current_frontier": [
     "a-root-baseline"
   ],
@@ -15,7 +15,7 @@
     "g-t003-approval"
   ],
   "terminal_state": null,
-  "next_action": "Implement only the six T003 root baseline files and seven deterministic commands; do not start T004.",
+  "next_action": "Implement only the six T003 root baseline files and seven deterministic commands; attach acceptance evidence before requesting review.",
   "events": [
     {
       "event_id": "evt-t003-001-dispatched",
@@ -66,6 +66,53 @@
         "input": 0,
         "output": 0,
         "total": 6000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-t003-002-draft-pr-opened",
+      "at": "2026-08-06T10:24:24Z",
+      "actor": "codex-supervisor",
+      "type": "review_gate_opened",
+      "base_graph_version": 1,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "external.github.pull_request",
+            "after": {
+              "number": 5,
+              "url": "https://github.com/bynanci/courtside-tw/pull/5",
+              "state": "open",
+              "draft": true,
+              "merged": false,
+              "base": "main",
+              "head": "ticket/t003-repo-scaffold"
+            }
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t003-reconciliation.json",
+        ".loop/t003-graphify-loop.yaml",
+        ".loop/t003-graphify-loop.mmd",
+        "https://github.com/bynanci/courtside-tw/pull/5"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "T003 draft PR",
+          "result": "open / draft / unmerged",
+          "url": "https://github.com/bynanci/courtside-tw/pull/5"
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Open the T003 implementation entry point; keep T003 unchecked and T004 blocked until root baseline proof passes.",
+      "token_usage": {
+        "estimated": 2500,
+        "input": 0,
+        "output": 0,
+        "total": 2500
       },
       "terminal_reason": null
     }
