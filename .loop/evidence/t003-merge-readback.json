@@ -1,0 +1,66 @@
+{
+  "schema_version": "courtside-tw-merge-readback/v1",
+  "evidence_id": "t003-merge-readback-20260806",
+  "generated_at": "2026-08-06T23:18:30Z",
+  "actor": "codex-supervisor",
+  "subject": "T003 PR #5 merge and main read-back",
+  "repository": "bynanci/courtside-tw",
+  "pull_request": {
+    "number": 5,
+    "url": "https://github.com/bynanci/courtside-tw/pull/5",
+    "branch": "ticket/t003-repo-scaffold",
+    "base": "main",
+    "state": "closed",
+    "merged": true,
+    "draft": false,
+    "head_sha": "194776d683a30c81e77fce70f6298aa7967b923d",
+    "merge_commit_sha": "da32d8c4253414f321a0c300e7e8d156048ae3a8",
+    "merged_at": "2026-08-06T23:17:23Z",
+    "merge_method": "squash"
+  },
+  "review": {
+    "receipt": ".loop/evidence/t003-code-review.json",
+    "decision": "PASS",
+    "implementation_head_reviewed": "d4d28673fd7032c0d2c3aa1053adc18a6c45ea85",
+    "receipt_publication_head": "194776d683a30c81e77fce70f6298aa7967b923d",
+    "blocking_findings": 0,
+    "important_findings": 0,
+    "unresolved_review_threads": 0
+  },
+  "main_readback": {
+    "ref": "main",
+    "observed_commit": "da32d8c4253414f321a0c300e7e8d156048ae3a8",
+    "result": "pass",
+    "blob_sha_matches_local": true,
+    "paths": {
+      "DESIGN.md": "0fe7afaed8b695c102ba720ec1d10bfa05a2cce8",
+      "pnpm-workspace.yaml": "1669f27f149dfcdf2dbdd4c247c767de4f02019a",
+      "package.json": "0913733e0d8b52869d7ff40466098041c22ccbef",
+      ".node-version": "d845d9d88db71e92ea1e8f50a4af89d49fecf2e3",
+      ".npmrc": "4d119e7c6fc44f2fa66ab4e9f47a3cda34a28d07",
+      "Makefile": "9f26383cbd2ba8023874f8e66a46391849fa73af",
+      "README.md": "2058645f3086cf996b802221561cfe7d50840408",
+      ".loop/evidence/t003-code-review.json": "a9048a2da2b23adc618fc5e3a5570ce79201d6e4",
+      ".loop/evidence/t003-command-proof.json": "e1767d6ea7b912345ef6da4fb82a223519c860fa",
+      ".loop/evidence/t003-implementation-baseline.json": "f90f479730095ff75aeaf5600a4e91f76d6ffff1",
+      ".loop/evidence/t003-remote-readback.json": "ae11503cbb517ffcf91352024c9440dbb6093fb5",
+      ".loop/t003-implementation-graphify-loop.yaml": "1d3b2149b9745dcd03cf7fc2fd564269d1b912dd",
+      ".loop/t003-implementation-graphify-loop.mmd": "8d3e679694c36242d36e4daa1bd73fba6b45a753",
+      ".loop/t003-implementation-ledger.json": "74b34670c60f35e15e55baae233e7ccd291bf132",
+      "specs/001-taiwan-basketball-magazine-ebook/tasks.md": "0735ac5a06fc78289c3dcbfc98dff78b19a202f3"
+    }
+  },
+  "task_state": {
+    "T001": "checked",
+    "T002": "checked",
+    "T003": "unchecked_by_request_scope",
+    "T004": "not_dispatched"
+  },
+  "remote_checks": {
+    "combined_status": "empty",
+    "workflow_runs": "empty",
+    "interpretation": "T003 intentionally excludes CI/security workflows; T008 owns that follow-up."
+  },
+  "next_action": "Obtain explicit task-completion approval before checking T003; do not dispatch T004 from this merge action.",
+  "confidence": 0.99
+}
