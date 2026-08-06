@@ -3,10 +3,10 @@
   "graph_name": "courtside-tw-ticket-supervisor-t002",
   "graph_version": 2,
   "run_id": "courtside-tw-t002-20260806",
-  "status": "running",
+  "status": "needs_human",
   "iteration": 1,
   "started_at": "2026-08-06T09:16:27Z",
-  "updated_at": "2026-08-06T09:16:27Z",
+  "updated_at": "2026-08-06T09:54:08Z",
   "current_frontier": [
     "a-review-adrs"
   ],
@@ -14,8 +14,8 @@
     "p-human-approval",
     "g-t002-approval"
   ],
-  "terminal_state": null,
-  "next_action": "Publish the six validated ADRs and loop artifacts to ticket/t002-architecture-decisions and open a draft pull request for Mark review.",
+  "terminal_state": "needs_human",
+  "next_action": "Review draft PR #4 and explicitly approve or request changes to the six T002 ADRs; do not dispatch T003 until approval.",
   "events": [
     {
       "event_id": "evt-t002-001-graph-initialized",
@@ -143,6 +143,73 @@
         "total": 28000
       },
       "terminal_reason": null
+    },
+    {
+      "event_id": "evt-t002-004-draft-pr-published",
+      "at": "2026-08-06T09:54:08Z",
+      "actor": "codex-supervisor",
+      "type": "human_review_gate_opened",
+      "base_graph_version": 2,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "external.github.pull_request",
+            "after": {
+              "number": 4,
+              "url": "https://github.com/bynanci/courtside-tw/pull/4",
+              "state": "open",
+              "draft": true,
+              "merged": false,
+              "head": "ticket/t002-architecture-decisions",
+              "base": "main"
+            }
+          },
+          {
+            "op": "replace",
+            "path": "loop/terminal_state",
+            "before": null,
+            "after": "needs_human"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t002-reconciliation.json",
+        ".loop/evidence/t002-acceptance.json",
+        ".loop/t002-graphify-loop.yaml",
+        ".loop/t002-graphify-loop.mmd",
+        "https://github.com/bynanci/courtside-tw/pull/4"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "remote branch comparison",
+          "result": "pass",
+          "details": "ticket/t002-architecture-decisions is 11 commits ahead of main and 0 behind."
+        },
+        {
+          "proof": "remote artifact read-back",
+          "result": "pass",
+          "details": {
+            "t002-graphify-loop.mmd": "e6e700262cefa72ee6af8ff4c40f13aebeb31858",
+            "t002-acceptance.json": "7222fdb96d09752d5a4f8561e9bd4baee931cead"
+          }
+        },
+        {
+          "proof": "draft PR #4",
+          "result": "open / draft / unmerged",
+          "url": "https://github.com/bynanci/courtside-tw/pull/4"
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Open the T002 supervisor review gate. Keep all six ADRs PROPOSED; T002 is not complete and T003 remains blocked.",
+      "token_usage": {
+        "estimated": 4500,
+        "input": 0,
+        "output": 0,
+        "total": 4500
+      },
+      "terminal_reason": "Await explicit supervisor approval of the six T002 ADRs."
     }
   ]
 }
