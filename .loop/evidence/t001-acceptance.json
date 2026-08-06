@@ -1,0 +1,85 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t001-acceptance-20260806",
+  "generated_at": "2026-08-06T08:44:34Z",
+  "actor": "verifier",
+  "subject": ".specify/memory/constitution.md",
+  "acceptance": {
+    "result": "pass",
+    "status_assertion": "PROPOSED — T001 human approval pending",
+    "core_principles_found": 10,
+    "required_gate_rows_found": 11,
+    "t001_checkbox_remains_unchecked": true,
+    "ratification_claimed": false
+  },
+  "checks": [
+    {
+      "name": "strict_graph_validation",
+      "command": "python3 scripts/validate_graphify_loop.py .loop/graphify-loop.yaml --strict --json",
+      "result": "pass",
+      "details": {
+        "nodes": 17,
+        "edges": 24,
+        "action_proof_coverage": "4/4",
+        "warnings": 0,
+        "errors": 0
+      }
+    },
+    {
+      "name": "constitution_structure",
+      "method": "Count numbered core-principle headings and the eleven exact engineering-gate table rows.",
+      "result": "pass"
+    },
+    {
+      "name": "approval_safety",
+      "method": "Assert proposed status, pending T001 record, and unchecked T001 task.",
+      "result": "pass"
+    },
+    {
+      "name": "evidence_json_syntax",
+      "method": "Parse reconciliation and baseline receipts with python3 -m json.tool.",
+      "result": "pass"
+    },
+    {
+      "name": "graph_render",
+      "method": "Render the strictly valid graph to .loop/graphify-loop.mmd.",
+      "result": "pass"
+    }
+  ],
+  "artifact_blob_shas": {
+    ".specify/memory/constitution.md": "2193f78128f50a7f50c1dff49921bcb5fa96ccfa",
+    ".loop/graphify-loop.yaml": "289fe6918f3f4d456d20d1ffb192d2befc4854e7",
+    ".loop/graphify-loop.mmd": "5400d1ea6a74c9d88a519b5e3f370cc20c054f5b",
+    ".loop/evidence/l2-reconciliation.json": "c60d09615867279cb5ce61b933405d00cc9b6717",
+    ".loop/evidence/t001-baseline.json": "3e7f904f141bb4edd3c9a1030990b7a123797135"
+  },
+  "graph_analysis": {
+    "ready_frontier": [
+      "t-human-review"
+    ],
+    "derived_action": "a-review-package",
+    "critical_path": [
+      "t-supervisor",
+      "a-reconcile",
+      "p-reconciliation",
+      "t-t001-ready",
+      "a-inspect-gates",
+      "p-t001-baseline",
+      "a-draft-constitution",
+      "p-t001-acceptance",
+      "s-terminal-policy"
+    ],
+    "critical_path_effort_hours": 2.3,
+    "critical_path_estimated_tokens": 30000,
+    "confidence_floor": 0.94,
+    "token_max_flow": 4000,
+    "min_cut": [
+      "e-gate-stop"
+    ]
+  },
+  "proof": {
+    "claim": "The proposed constitution is review-ready, complete against T001, and does not claim human approval.",
+    "result": "pass",
+    "confidence": 0.96
+  }
+}
