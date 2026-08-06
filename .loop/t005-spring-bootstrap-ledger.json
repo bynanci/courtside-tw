@@ -1,12 +1,12 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t005",
-  "graph_version": 2,
+  "graph_version": 3,
   "run_id": "courtside-tw-t005-spring-bootstrap-20260806",
   "status": "ready",
-  "iteration": 1,
+  "iteration": 2,
   "started_at": "2026-08-06T23:44:00Z",
-  "updated_at": "2026-08-06T23:44:00Z",
+  "updated_at": "2026-08-06T23:48:36Z",
   "current_frontier": [
     "a-spring-scaffold"
   ],
@@ -136,6 +136,49 @@
         "total": 5000
       },
       "terminal_reason": "Dispatch proof is complete; implementation and profile proof are the next L1 frontier."
+    },
+    {
+      "event_id": "evt-t005-spring-bootstrap-003-pr-opened",
+      "at": "2026-08-06T23:48:36Z",
+      "actor": "codex-supervisor",
+      "type": "external_branch_and_draft_pr_readback",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "external.github.pull_request/7",
+            "after": "Draft PR #7 is open from ticket/t005-spring-bootstrap and contains only the four T005 dispatch graph/evidence artifacts."
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t005-dispatch.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "draft PR read-back",
+          "level": "P2",
+          "result": "pass",
+          "details": "PR #7 is open, draft and unmerged; changed filenames are exactly the T005 graph, rendered graph, ledger and dispatch receipt."
+        },
+        {
+          "proof": "content read-back",
+          "level": "P2",
+          "result": "pass",
+          "details": "Branch blob SHAs match local strict-valid graph, ledger, rendered graph and dispatch receipt."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Keep T005 as a dispatch-only draft; implementation and merge remain pending on the ready L1 frontier.",
+      "token_usage": {
+        "estimated": 2500,
+        "input": 0,
+        "output": 0,
+        "total": 2500
+      },
+      "terminal_reason": "Branch and draft PR are read back; no T005 implementation files have been added."
     }
   ],
   "proof": {
