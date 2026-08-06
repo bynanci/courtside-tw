@@ -1,0 +1,76 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t003-completion-receipt-20260806",
+  "generated_at": "2026-08-06T23:37:02Z",
+  "actor": "codex-supervisor",
+  "subject": "T003 task completion after merge/read-back",
+  "request": "核准 T003 完成，dispatch T005",
+  "repository": "bynanci/courtside-tw",
+  "authority": {
+    "approver": "Mark",
+    "approval_status": "APPROVED",
+    "approved_at": "2026-08-06T23:37:02Z",
+    "scope": [
+      "check T003",
+      "dispatch T005"
+    ],
+    "excluded": [
+      "implement T005",
+      "dispatch T004",
+      "change DESIGN/ADR/provider/Web3"
+    ]
+  },
+  "source_evidence": [
+    {
+      "path": ".loop/evidence/t003-code-review.json",
+      "claim_status": "CONFIRMED",
+      "proof_level": "P2",
+      "details": "T003 review PASS"
+    },
+    {
+      "path": ".loop/evidence/t003-merge-readback.json",
+      "claim_status": "CONFIRMED",
+      "proof_level": "P2",
+      "details": "PR #5 merged and main read-back passed"
+    },
+    {
+      "path": "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+      "claim_status": "CONFIRMED",
+      "proof_level": "P1",
+      "details": "T003 acceptance text and prior checkbox state [ ]"
+    }
+  ],
+  "task_transition": {
+    "task_id": "T003",
+    "before": "unchecked",
+    "after": "checked",
+    "verification": "Root commands, clean clone, strict graph and merge/read-back passed"
+  },
+  "merge": {
+    "pr_number": 5,
+    "merge_commit": "da32d8c4253414f321a0c300e7e8d156048ae3a8",
+    "main_readback_commit": "8427895e1977c0b8df98754cdd4d3f295ab63919"
+  },
+  "next_ticket": {
+    "id": "T005",
+    "title": "Scaffold Java 21/Spring Boot 4.1 application and api/worker profiles",
+    "branch": "ticket/t005-spring-bootstrap",
+    "dispatch_only": true
+  },
+  "governance": {
+    "inherent_tier": "G2",
+    "decision": "ALLOW_WITH_CONTROLS",
+    "controls": [
+      "GOV-002",
+      "GOV-003",
+      "AGT-001",
+      "AGT-004",
+      "AGT-007",
+      "AGT-008",
+      "OPS-001"
+    ],
+    "residual_risk": "T005 implementation still requires its own graph, proof and review."
+  },
+  "result": "pass",
+  "confidence": 0.99
+}
