@@ -56,6 +56,20 @@
     "verification": "Both api and worker profiles must boot from a clean checkout before T005 can be marked complete.",
     "implementation_started": false
   },
+  "pull_request": {
+    "number": 7,
+    "url": "https://github.com/bynanci/courtside-tw/pull/7",
+    "state": "open",
+    "draft": true,
+    "merged": false,
+    "head": "e80881c2a4946491f9923324de6862356b3b0664",
+    "changed_files": [
+      ".loop/evidence/t005-dispatch.json",
+      ".loop/t005-spring-bootstrap-graphify-loop.mmd",
+      ".loop/t005-spring-bootstrap-graphify-loop.yaml",
+      ".loop/t005-spring-bootstrap-ledger.json"
+    ]
+  },
   "governance": {
     "inherent_tier": "G2",
     "decision": "ALLOW_WITH_CONTROLS",
