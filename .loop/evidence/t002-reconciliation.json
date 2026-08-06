@@ -1,0 +1,69 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t002-reconciliation-20260806",
+  "generated_at": "2026-08-06T09:16:27Z",
+  "actor": "codex-supervisor",
+  "repository": "bynanci/courtside-tw",
+  "authoritative_sources": {
+    "default_branch": "main",
+    "main_commit_sha": "db24b14aee83717fb7d5b6cb5da4c3c21b5165ce",
+    "tasks_path": "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    "tasks_blob_sha": "3baf1951e854a73bdca141c3d0c0e63cccb6d393",
+    "spec_blob_sha": "26e5a9f943fb7a672cecb0005da42d23e7032d5d",
+    "plan_blob_sha": "8f4472b838961818c1e10b5a11653fe5942ce817",
+    "constitution_status": "RATIFIED v0.1.0",
+    "t001_ledger_blob_sha": "4bfa3f07dca1e23afd5e5ef07d4db077c078530b",
+    "t002_branch_search": [],
+    "t002_pull_request_search": []
+  },
+  "reconciliation": {
+    "first_unchecked_task": "T002",
+    "task": "Resolve the remaining pre-implementation decisions and record six ADR files.",
+    "t001_status": "checked",
+    "prerequisites": [
+      "T001 constitution is RATIFIED v0.1.0",
+      "T001 Graphify LOOP terminal state is success"
+    ],
+    "duplicate_work": false,
+    "ready_frontier": [
+      "T002"
+    ],
+    "blocked": [
+      {
+        "task": "T003-T096",
+        "reason": "T002 ADR approval and the Phase 1 checkpoint are not complete."
+      }
+    ],
+    "decision": "Dispatch T002 only; stop implementation work until the six ADRs are approved."
+  },
+  "decision_inputs": {
+    "required_adr_paths": [
+      "docs/adr/0001-application-topology.md",
+      "docs/adr/0002-identity-and-hosting-providers.md",
+      "docs/adr/0003-content-document-and-media-policy.md",
+      "docs/adr/0004-free-mvp-access-policy.md",
+      "docs/adr/0005-motion-and-generative-runtime.md",
+      "docs/adr/0006-web3-provenance-boundary.md"
+    ],
+    "plan_decisions_required": [
+      "OIDC, email and production hosting provider",
+      "brand, legal fonts/media and PUBLISHER owner",
+      "first issue sample, 11-block limit, image limit and video allowlist",
+      "free P1 policy and stop condition for paid/token-gated access",
+      "Motion patterns, court-pulse-v1, poster/reduced-motion and Android baseline",
+      "Web3 scope, network/provider/signer/gas/rights exit conditions"
+    ]
+  },
+  "freshness_and_limitations": {
+    "fetched_at": "2026-08-06T09:16:27Z",
+    "limitations": [
+      "No production provider, rights owner, brand asset or Web3 network was supplied by the task source.",
+      "ADR-0002 and ADR-0006 therefore present recommended defaults and explicit human selection points; they do not claim vendor authorization."
+    ]
+  },
+  "proof": {
+    "claim": "T002 is the only dispatched ready ticket and all required decision inputs are available from the reviewed main artifacts.",
+    "result": "pass",
+    "confidence": 0.98
+  }
+}
