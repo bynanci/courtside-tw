@@ -1,6 +1,6 @@
 # ADR-0002: Identity, email and hosting provider boundary
 
-**Status**: PROPOSED — provider choice requires Mark approval  
+**Status**: ACCEPTED — Mark approval recorded 2026-08-06 via PR #4
 **Date**: 2026-08-06  
 **Decision type**: Architecture, cost, privacy and operations
 
@@ -43,3 +43,10 @@ Local／CI 必須完全使用 OIDC stub、Mailpit／email stub、PostgreSQL Test
 Plan: Decisions Required Before Implementation #2、Runtime Responsibilities、Security and Privacy Plan、Delivery and Rollback。  
 Spec: FR-031–FR-032、SC-008、SC-010、Open Decisions #2–#3。  
 Tasks: T002、T003、T007、T008、T013、T015–T021。
+
+## Approval record
+
+- **Approver**: Mark
+- **Approved**: 2026-08-06 via [T002 PR #4](https://github.com/bynanci/courtside-tw/pull/4)
+- **Decision**: Provider-neutral identity, email and hosting contracts accepted; production vendor selection remains a follow-up.
+- **Evidence**: `.loop/evidence/t002-human-approval.json`
