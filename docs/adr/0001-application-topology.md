@@ -1,6 +1,6 @@
 # ADR-0001: Application topology and deployment boundary
 
-**Status**: PROPOSED — T002 approval required  
+**Status**: ACCEPTED — Mark approval recorded 2026-08-06 via PR #4
 **Date**: 2026-08-06  
 **Owners**: Engineering owner + project owner  
 **Scope**: MVP/P1 web reading, editorial workflow, media processing and optional P2 adapters
@@ -41,3 +41,10 @@ provider 選擇只能在 adapter／configuration 層決定：
 Plan: Technical Context、Structure Decision、Runtime Responsibilities、Delivery and Rollback。  
 Spec: FR-031、FR-046–FR-053、SC-002、SC-013–SC-016。  
 Tasks unlocked after approval: T003–T023。
+
+## Approval record
+
+- **Approver**: Mark
+- **Approved**: 2026-08-06 via [T002 PR #4](https://github.com/bynanci/courtside-tw/pull/4)
+- **Decision**: Topology accepted; provider-specific deployment choices remain adapter/configuration-level until selected.
+- **Evidence**: `.loop/evidence/t002-human-approval.json`
