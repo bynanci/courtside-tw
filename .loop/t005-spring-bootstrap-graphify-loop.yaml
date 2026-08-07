@@ -223,8 +223,8 @@ graph:
       status: done
       risk: medium
       confidence:
-        score: 0.94
-        basis: The four scoped implementation files are present on the ticket branch and pass inventory, YAML and Java contract checks; profile boot remains a separate blocked proof.
+        score: 0.98
+        basis: The four scoped implementation files pass inventory, static contracts, Gradle clean build and both bounded profile boot checks; repository policy was corrected before proof completion.
         evidence_refs: [.loop/evidence/t005-dispatch.json, .loop/evidence/t005-implementation-proof.json]
       budget:
         effort_hours: 1.5
@@ -240,11 +240,11 @@ graph:
       layer: L1
       label: T005 api/worker profile boot proof
       owner: verifier
-      status: blocked
+      status: done
       risk: medium
       confidence:
-        score: 0.86
-        basis: The implementation is ready, but Gradle dependency resolution could not complete because Java network access to the configured proxy was unavailable in this runner; neither profile boot is claimed.
+        score: 0.98
+        basis: Gradle 8.14 clean build passed against a temporary Maven mirror and both api and worker bootRun processes started successfully from the exact four-file source set.
         evidence_refs: [.loop/evidence/t005-implementation-proof.json]
       budget:
         effort_hours: 0.5
@@ -265,8 +265,8 @@ graph:
       status: done
       risk: low
       confidence:
-        score: 0.86
-        basis: The implementation and blocked-proof receipts were appended without rewriting the dispatch history.
+        score: 0.98
+        basis: The implementation fix and passing profile-proof receipts were appended without rewriting the dispatch history.
         evidence_refs: [.loop/t005-spring-bootstrap-ledger.json, .loop/evidence/t005-implementation-proof.json]
       budget:
         effort_hours: 0.05
@@ -282,12 +282,12 @@ graph:
       layer: L3
       label: T005 bootstrap review requested
       owner: human-mark
-      status: planned
+      status: ready
       risk: high
       confidence:
-        score: 0.0
-        basis: Human review follows implementation and both profile boot proofs; it is not part of dispatch.
-        evidence_refs: []
+        score: 0.98
+        basis: Implementation and both profile boot proofs are complete; explicit human review and merge approval remain required.
+        evidence_refs: [.loop/evidence/t005-implementation-proof.json]
       budget:
         effort_hours: 0.0
         tokens: 0
@@ -304,9 +304,9 @@ graph:
       status: needs_human
       risk: high
       confidence:
-        score: 0.0
-        basis: Human must inspect the implementation patch and profile proof before merge or task completion.
-        evidence_refs: []
+        score: 0.98
+        basis: Human must inspect the implementation patch, passing profile proof and PR read-back before merge or task completion.
+        evidence_refs: [.loop/evidence/t005-implementation-proof.json]
       budget:
         effort_hours: 0.25
         tokens: 3500
