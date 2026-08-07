@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "memory_id": "wm:project:courtside-tw:t009-content-document-schema",
+  "scope": "project",
+  "kind": "task_state",
+  "title": "T009 ContentDocument v1 schema dispatched",
+  "summary": "T009 is the first Phase 2 bounded contract slice. It defines a closed-world ContentDocument v1 schema and valid/invalid fixtures; validators, generated types and runtime consumers remain deferred to T010 and later tasks.",
+  "claims": [
+    {
+      "text": "T009 was dispatched from main@a75f1c2 after Phase 1 PASS read-back.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The contract must represent exactly 11 approved MVP block types.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "generative-canvas is limited to court-pulse-v1, fixed seed, bounded parameters, poster asset, alt text and data summary.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "T010 validator parity and generated types are not part of this slice.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    }
+  ],
+  "status": "verified",
+  "confidence": "high",
+  "confidence_basis": [
+    ".loop/evidence/t009-dispatch-20260807.json",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T009",
+    "docs/adr/0003-content-document-and-media-policy.md",
+    "docs/adr/0005-motion-and-generative-runtime.md"
+  ],
+  "volatility": "medium",
+  "as_of": "2026-08-07",
+  "source_refs": [
+    ".loop/evidence/t009-dispatch-20260807.json",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T009",
+    "docs/adr/0003-content-document-and-media-policy.md",
+    "docs/adr/0005-motion-and-generative-runtime.md",
+    "main@a75f1c2"
+  ],
+  "entities": [
+    "T009",
+    "ContentDocument",
+    "JSON Schema",
+    "generative-canvas",
+    "court-pulse-v1"
+  ],
+  "relations": {
+    "supports": [
+      "wm:project:courtside-tw:phase1-review"
+    ],
+    "contradicts": [],
+    "supersedes": [],
+    "blocks": [],
+    "invalidates": []
+  },
+  "decision": {
+    "context": "Phase 1 setup/governance and CI/security baseline are complete; dependent implementation requires a versioned content contract first.",
+    "chosen": "Define a closed-world JSON Schema and fixtures before implementing validators or renderers.",
+    "alternatives": [
+      "Start T010 validator code without a canonical schema.",
+      "Define permissive payloads and enforce safety only in renderers."
+    ],
+    "tradeoffs": [
+      "Schema is safer and reviewable at the boundary.",
+      "Provider allowlists and runtime parity still require T010/T011 evidence."
+    ],
+    "invalidation": "If ADR-0003/0005 or tasks.md changes the allowed block/preset contract, mark this record needs_update and stop T009."
+  },
+  "next_review_at": "2026-08-14",
+  "sensitivity": "internal",
+  "retention": "until_superseded"
+}
