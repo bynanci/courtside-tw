@@ -83,7 +83,7 @@ flowchart TD
   H --> A["直接開始精選文章"]
   I --> A
   A --> E["文章結尾：上一篇／下一篇／目錄"]
-  A -. "次要入口" .-> P["Edition Passport"]
+  A -. "次要入口" .-> P["Edition Provenance"]
 ~~~
 
 閱讀節奏沿用簡報設計的單一敘事弧線，但不做 slide carousel：
@@ -573,9 +573,9 @@ Kill switch：
 
 Flags 必須可分別關閉 `creative.motion.enabled`、五種 motion pattern、`creative.p5.enabled` 與 `creative.p5.courtPulseV1`。任一 P1 route 未通過 SC-002／007／013／014，即關閉造成失敗的 enhancement。
 
-## 12. Edition Passport and Web3 UX
+## 12. Edition Provenance and Web3 UX
 
-Edition Passport 是 publication evidence panel，不是首頁主角，也不是閱讀資格。
+Edition Provenance 是 publication evidence panel，不是首頁主角，也不是閱讀資格。Fan Season Passport 是獨立的讀者身份／季節貢獻 domain，不在本 section 內混用。
 
 ### 12.1 Placement and hierarchy
 
@@ -706,7 +706,7 @@ No-JS 時必須保留 Home → issue → `#toc` → article SSR links、完整 h
 - Keyboard and screen reader order matches visual order.
 - Every asynchronous, empty, failed and withdrawn state has cause + recovery.
 - Motion and p5 pass Pixel 6, reduced-motion and lifecycle gates.
-- Edition Passport never blocks reading and never overstates what digest／CID proves.
+- Edition Provenance never blocks reading and never overstates what digest／CID proves.
 
 ## 17. Anti-patterns
 
