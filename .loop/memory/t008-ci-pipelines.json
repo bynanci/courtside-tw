@@ -1,0 +1,77 @@
+{
+  "schema_version": 1,
+  "memory_id": "wm:project:courtside-tw:t008-ci-pipelines",
+  "scope": "project",
+  "kind": "task_state",
+  "title": "T008 CI pipelines dispatched with runtime proof pending",
+  "summary": "T008 workflows and Dependabot configuration are implemented on an isolated branch; static proof passes, while GitHub Actions and Docker health remain pending.",
+  "claims": [
+    {
+      "text": "T008 requires CI, security and Dependabot files under .github.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The implementation uses fixed action commit SHAs, least-privilege permissions and retained reports.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "T007 Docker Compose health is not yet proven on GitHub Actions until the workflow runs.",
+      "class": "UNKNOWN",
+      "confidence": "high"
+    },
+    {
+      "text": "T008 must remain unchecked until runtime evidence is read back.",
+      "class": "INFERRED",
+      "confidence": "high"
+    }
+  ],
+  "status": "verified",
+  "confidence": "high",
+  "confidence_basis": [
+    ".loop/evidence/t008-dispatch.json",
+    ".loop/evidence/t008-static-proof.json",
+    ".loop/evidence/t008-runtime-proof.json"
+  ],
+  "volatility": "medium",
+  "as_of": "2026-08-07",
+  "source_refs": [
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    ".github/workflows/ci.yml",
+    ".github/workflows/security.yml",
+    ".github/dependabot.yml"
+  ],
+  "entities": [
+    "T008",
+    "GitHub Actions",
+    "Docker Compose",
+    "PostgreSQL",
+    "S3Mock",
+    "OIDC"
+  ],
+  "relations": {
+    "supports": [],
+    "contradicts": [],
+    "supersedes": [],
+    "blocks": [
+      "wm:project:courtside-tw:t008-ci-runtime-proof"
+    ],
+    "invalidates": []
+  },
+  "decision": {
+    "context": "T007 was merged with explicit runtime-proof follow-up assigned to T008.",
+    "chosen": "Implement and execute T008 through GitHub Actions before changing the T008 checkbox or merge state.",
+    "alternatives": [
+      "Mark T008 complete from static inspection only"
+    ],
+    "tradeoffs": [
+      "Runtime evidence is delayed until remote runners execute",
+      "No unchecked task is represented as complete"
+    ],
+    "invalidation": "If workflows cannot run or fail the dependency health proof, keep T008 unchecked and record the failing receipt."
+  },
+  "next_review_at": "2026-08-14",
+  "sensitivity": "internal",
+  "retention": "until_superseded"
+}
