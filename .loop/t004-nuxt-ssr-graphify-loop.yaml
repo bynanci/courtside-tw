@@ -1,6 +1,6 @@
 schema_version: mark-graphify-loop/v2
 name: courtside-tw-ticket-implementation-t004
-objective: Implement the bounded Nuxt 4.5 SSR scaffold, prove the root smoke route returns server-rendered HTML, and stop at the protected review gate.
+objective: Complete the bounded Nuxt 4.5 SSR scaffold, prove the root smoke route returns server-rendered HTML, and stop at the named terminal policy after merge, main read-back and T004 checkbox completion.
 feedback_updates_next_action: true
 
 scope:
@@ -10,8 +10,9 @@ scope:
     - Pin Nuxt 4.5.1 within the Nuxt 4.5 line and the repository Node.js 24.14.x / pnpm 11.7.x baseline.
     - Prove frozen installation, production dependency audit, typecheck, production build, root verification and SSR HTML from the root smoke route.
     - Preserve baseline, implementation, proof and review decisions in append-only T004 loop evidence.
+    - After the implementation merge, execute the separately authorized completion slice: read back main, check T004 and record append-only completion evidence.
   out:
-    - Modifying specs, plan, constitution, ADRs, DESIGN.md or the T004 checkbox in this implementation slice.
+    - Modifying specs, plan, constitution, ADRs, DESIGN.md or the T004 checkbox in the implementation slice; post-merge checkbox completion must remain a separate gated slice.
     - Adding unrelated lockfiles or dependency changes, pages, components, API clients, Motion, p5.js, Web3, authentication, database, infrastructure, CI or production deployment.
     - Dispatching T006 or any later ticket from this graph.
 
@@ -282,12 +283,12 @@ graph:
       layer: L3
       label: T004 scaffold review and protected merge requested
       owner: human-mark
-      status: ready
+      status: done
       risk: high
       confidence:
-        score: 0.98
-        basis: Runtime, dependency integrity and remote PR proof are complete, but protected-branch merge and T004 checkbox completion remain explicit human gates.
-        evidence_refs: [.loop/evidence/t004-implementation-proof.json, .loop/evidence/t004-code-review.json, .loop/evidence/t004-review-approval.json]
+        score: 0.99
+        basis: Current-head Code Review PASS was recorded, PR #15 was merged, and the post-merge completion receipt confirms main read-back and T004 checkbox completion.
+        evidence_refs: [.loop/evidence/t004-implementation-proof.json, .loop/evidence/t004-code-review.json, .loop/evidence/t004-review-approval.json, .loop/evidence/t004-completion-receipt.json]
       budget:
         effort_hours: 0.0
         tokens: 0
@@ -301,12 +302,12 @@ graph:
       layer: L3
       label: Review T004 scope, SSR proof and merge readiness
       owner: human-mark
-      status: needs_human
+      status: done
       risk: high
       confidence:
-        score: 0.9
-        basis: Automated proof passes, but human review must confirm no later-task scope or architecture drift.
-        evidence_refs: [.loop/evidence/t004-implementation-proof.json, .loop/evidence/t004-code-review.json]
+        score: 0.99
+        basis: Current-head review inspected scope, dependency integrity, SSR behavior, rollback and remote state; no blocking or important finding remained.
+        evidence_refs: [.loop/evidence/t004-implementation-proof.json, .loop/evidence/t004-code-review.json, .loop/evidence/t004-completion-receipt.json]
       budget:
         effort_hours: 0.3
         tokens: 3500
@@ -321,12 +322,12 @@ graph:
       layer: L3
       label: Explicit T004 review and merge approval
       owner: human-mark
-      status: needs_human
+      status: done
       risk: critical
       confidence:
         score: 1.0
-        basis: The user has authorized implementation, not an implicit protected-branch merge or checkbox completion; code safety review is recorded separately from the protected approval.
-        evidence_refs: [.loop/evidence/t004-review-approval.json]
+        basis: Mark explicitly authorized the reviewed T004 merge and checkbox completion; GitHub recorded the current-head Code Review PASS as a comment because the PR author cannot self-approve.
+        evidence_refs: [.loop/evidence/t004-review-approval.json, .loop/evidence/t004-completion-receipt.json]
       budget:
         effort_hours: 0.25
         tokens: 2500
@@ -343,12 +344,12 @@ graph:
       layer: L3
       label: T004 scope, proof and protected merge gate
       owner: human-mark
-      status: needs_human
+      status: done
       risk: critical
       confidence:
         score: 1.0
-        basis: Protected branch merge and task completion cannot be inferred from local or CI checks.
-        evidence_refs: [.loop/evidence/t004-review-approval.json]
+        basis: The reviewed PR was merged at dec6368 and T004 was checked only after main read-back in the separate completion slice.
+        evidence_refs: [.loop/evidence/t004-review-approval.json, .loop/evidence/t004-completion-receipt.json]
       budget:
         effort_hours: 0.0
         tokens: 0
@@ -362,12 +363,12 @@ graph:
       layer: L3
       label: T004 human decision ledger
       owner: human-mark
-      status: planned
+      status: done
       risk: low
       confidence:
-        score: 0.9
-        basis: The pending review and eventual approval decision will be recorded in the append-only T004 ledger.
-        evidence_refs: [.loop/t004-nuxt-ssr-ledger.json]
+        score: 1.0
+        basis: Review, merge, main read-back and task completion are recorded in the append-only T004 ledger and completion receipt.
+        evidence_refs: [.loop/t004-nuxt-ssr-ledger.json, .loop/evidence/t004-completion-receipt.json]
       budget:
         effort_hours: 0.05
         tokens: 800
@@ -382,12 +383,12 @@ graph:
       layer: GLOBAL
       label: T004 named terminal-state policy
       owner: policy
-      status: needs_human
+      status: done
       risk: critical
       confidence:
-        score: 0.99
-        basis: Implementation, dependency integrity and SSR proof pass; the graph stops at the named human review/merge gate.
-        evidence_refs: [.loop/t004-nuxt-ssr-ledger.json, .loop/evidence/t004-code-review.json, .loop/evidence/t004-review-approval.json]
+        score: 1.0
+        basis: PR #15 is merged, main read-back is verified and T004 is checked; the named terminal policy is complete and T006 remains a separate undispatched ticket.
+        evidence_refs: [.loop/t004-nuxt-ssr-ledger.json, .loop/evidence/t004-code-review.json, .loop/evidence/t004-review-approval.json, .loop/evidence/t004-completion-receipt.json]
       budget:
         effort_hours: 0.0
         tokens: 0
