@@ -4,11 +4,16 @@
   "task": "T009",
   "recorded_at": "2026-08-07T12:48:41Z",
   "validated_ref": "ticket/t009-content-document-schema",
-  "validated_commit": "bdb92b162f43ce153d6946b035fea5f7f949dc07",
+  "validated_commit": "6cd31d85b6a0dea6479e6809f02fe2015f8e3ddc",
   "scope": {
     "contract": "contracts/content-document.schema.json",
     "valid_fixture": "packages/content-schema/fixtures/valid/content-document-v1-all-blocks.json",
-    "invalid_fixture_directory": "packages/content-schema/fixtures/invalid"
+    "invalid_fixture_directory": "packages/content-schema/fixtures/invalid",
+    "validator_script": "scripts/validate-content-schema.mjs",
+    "dependencies": [
+      "ajv@8.20.0",
+      "ajv-formats@3.0.1"
+    ]
   },
   "validator": {
     "engine": "Ajv",
@@ -16,9 +21,11 @@
     "formats_plugin": "ajv-formats 3.0.1",
     "dialect": "JSON Schema draft 2020-12",
     "strict": true,
-    "setup": "npm install --prefix <temporary-dir> --no-save ajv@8 ajv-formats@3",
+    "setup": "pnpm install --frozen-lockfile --ignore-scripts",
     "result": "PASS",
-    "provider_policy": "No production provider is authorized in T009; video uses the rights-pending sentinel until ADR-0003 approval."
+    "provider_policy": "No production provider is authorized in T009; video uses the rights-pending sentinel until ADR-0003 approval.",
+    "command": "pnpm run contract:schema",
+    "reproducible": true
   },
   "checks": {
     "schema_parse_and_compile": {
@@ -28,7 +35,7 @@
     "valid_fixture": {
       "path": "packages/content-schema/fixtures/valid/content-document-v1-all-blocks.json",
       "result": "PASS",
-      "detail": "One fixture covers all 11 approved MVP block types; video remains rights-pending and cannot authorize an external provider."
+      "detail": "One fixture covers all 11 approved MVP block types and includes a UUIDv7 document identifier; video remains rights-pending and cannot authorize an external provider."
     },
     "invalid_fixtures": [
       {
@@ -125,12 +132,22 @@
         "path": "packages/content-schema/fixtures/invalid/https-link-missing-host.json",
         "result": "REJECTED",
         "intended_reason": "HTTPS href requires a non-empty host."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/https-link-invalid-authority.json",
+        "result": "REJECTED",
+        "intended_reason": "URI format and authority pattern reject an invalid port."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/text-nul.json",
+        "result": "REJECTED",
+        "intended_reason": "Shared NUL exclusion rejects a persisted JSONB-incompatible character."
       }
     ]
   },
   "independent_validation": {
-    "command": "Ajv2020 strict compile plus validate(validFixture) and validate(eachInvalidFixture), exit 0 iff valid passes and every invalid fixture is rejected.",
-    "observed": "valid=true; 19 schema-invalid fixtures all valid=false; process exit code 0",
+    "command": "pnpm run contract:schema; exit 0 iff the valid fixture passes, all 21 schema-invalid fixtures are rejected, and the duplicate-ID semantic fixture is detected.",
+    "observed": "valid=true; 21 schema-invalid fixtures all valid=false; duplicate block IDs detected; process exit code 0",
     "output_digest": {
       "block-unknown-property.json": "additionalProperties",
       "divider-invalid-style.json": "enum",
@@ -144,7 +161,9 @@
       "stat-invalid-label.json": "minLength",
       "unknown-block.json": "enum",
       "video-raw-url.json": "const/additionalProperties",
-      "video-unapproved-provider.json": "const"
+      "video-unapproved-provider.json": "const",
+      "https-link-invalid-authority.json": "format/pattern",
+      "text-nul.json": "not/pattern"
     }
   },
   "companion_validations": [
@@ -160,6 +179,11 @@
     {
       "command": "validate_memory_record.py .loop/memory/phase1-review.json",
       "result": "PASS"
+    },
+    {
+      "command": "node scripts/validate-content-schema.mjs",
+      "result": "PASS",
+      "detail": "Independent replay with Node 24.14.0, Ajv 8.20.0 and ajv-formats 3.0.1 passed: valid fixture accepted, 21 schema-invalid fixtures rejected, duplicate-ID invariant detected."
     }
   ],
   "decision": "PASS",
@@ -168,7 +192,7 @@
     "ADR-0003 publisher/rights-owner approval is still required before any real video provider is enumerated.",
     "T011 and later must prove runtime consumers preserve this boundary."
   ],
-  "next_gate": "Await CI/Security on the current follow-up head, then complete current-head review; keep T009 unchecked until merge and main read-back.",
+  "next_gate": "Await GitHub CI/Security and current-head review after the reproducible validator wiring; then complete expected-head merge and main read-back. Keep T009 unchecked until read-back.",
   "post_format_revalidation": {
     "input_commit": "277656cbad7105ece7fdd7e80d67c2928b1e316f",
     "reason": "CI Frontend and contract verification rejected the previously unformatted complete fixture.",
@@ -192,18 +216,19 @@
     }
   },
   "latest_revalidation": {
-    "input_commit": "cf2d48d44d025e06a19d52e3912a85663211c75a",
+    "input_commit": "6cd31d85b6a0dea6479e6809f02fe2015f8e3ddc",
+    "recorded_at": "2026-08-07T14:02:00Z",
     "result": "PASS",
-    "observed": "Ajv2020 strict compile accepted the rights-pending valid fixture and rejected 19 focused invalid fixtures; Prettier check passed for all fixture JSON; duplicate block ID semantic invariant was rejected.",
-    "scope": "Schema enum/rights gate, palette enum, per-block negative fixtures and duplicate-ID evidence.",
-    "recorded_at": "2026-08-07T11:07:00Z"
+    "command": "node scripts/validate-content-schema.mjs",
+    "observed": "Valid fixture accepted; all 11 block types present; UUIDv7 identifier accepted; 21 schema-invalid fixtures rejected; duplicate block-ID invariant detected; Prettier 3.9.6 check passed for the touched contract files.",
+    "scope": "UUIDv7 compatibility, URI authority/port validation, NUL exclusion, isolated negative fixtures, locked repository validator and CI wiring."
   },
   "boundary_revalidation": {
-    "input_commit": "bdb92b162f43ce153d6946b035fea5f7f949dc07",
-    "recorded_at": "2026-08-07T12:48:41Z",
+    "input_commit": "6cd31d85b6a0dea6479e6809f02fe2015f8e3ddc",
+    "recorded_at": "2026-08-07T14:02:00Z",
     "strict_ajv_recheck": {
       "result": "PASS",
-      "observed": "Valid fixture accepted; 19 schema-invalid fixtures rejected under Ajv2020 strict mode."
+      "observed": "Valid fixture accepted; 21 schema-invalid fixtures rejected under Ajv2020 strict mode."
     },
     "semantic_invariant": {
       "result": "PASS",
@@ -229,8 +254,28 @@
         "path": "packages/content-schema/fixtures/invalid/https-link-missing-host.json",
         "result": "REJECTED",
         "reason": "secureHref requires a non-empty HTTPS host."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/https-link-invalid-authority.json",
+        "result": "REJECTED",
+        "reason": "Invalid port is rejected by URI format and the authority pattern."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/text-nul.json",
+        "result": "REJECTED",
+        "reason": "NUL is rejected by the shared string exclusion before persistence."
       }
     ],
     "scope_unchanged": true
+  },
+  "reproducible_validation": {
+    "command": "pnpm install --frozen-lockfile --ignore-scripts && pnpm run contract:schema",
+    "dependencies": [
+      "ajv@8.20.0",
+      "ajv-formats@3.0.1"
+    ],
+    "independent_replay_result": "PASS",
+    "github_ci_result": "PENDING",
+    "validated_commit": "6cd31d85b6a0dea6479e6809f02fe2015f8e3ddc"
   }
 }
