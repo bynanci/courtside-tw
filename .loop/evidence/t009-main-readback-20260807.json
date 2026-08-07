@@ -1,0 +1,72 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t009-main-readback-20260807",
+  "generated_at": "2026-08-07T14:35:00Z",
+  "actor": "codex-supervisor",
+  "subject": "T009 authoritative main read-back",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T009",
+  "branch": "ticket/t009-main-readback",
+  "supersedes": [
+    ".loop/evidence/t009-ci-security-20260807.json"
+  ],
+  "readback_target": {
+    "ref": "main",
+    "sha": "6387a2fe292fe805fdc37ded42d2c301d1e5cc40",
+    "url": "https://github.com/bynanci/courtside-tw/commit/6387a2fe292fe805fdc37ded42d2c301d1e5cc40",
+    "method": "GitHub contents read-back from main after T009 implementation merge and before this completion receipt merge"
+  },
+  "authorization": {
+    "claim_status": "CONFIRMED",
+    "approved_by": "current user",
+    "source": "current user direction: T009/T011 acceptance followed by merge",
+    "scope": "Complete T009 after implementation acceptance, expected-head merge and canonical main read-back."
+  },
+  "checks": [
+    {
+      "claim": "T009 implementation PR is merged",
+      "result": "PASS",
+      "evidence_refs": [
+        "PR #32",
+        "main@6387a2fe292fe805fdc37ded42d2c301d1e5cc40"
+      ],
+      "details": "PR #32 merged by squash at main@6387a2f after CI/Security run #66 and 21/21 resolved review threads."
+    },
+    {
+      "claim": "Canonical ContentDocument schema is on main",
+      "result": "PASS",
+      "evidence_refs": [
+        "contracts/content-document.schema.json"
+      ],
+      "details": "main contains the draft 2020-12 closed-world schema with UUIDv7 support, h2-h4 heading bounds, stat unit/context requirements, strict URL authority/port checks and NUL exclusion."
+    },
+    {
+      "claim": "Canonical validator and fixtures are on main",
+      "result": "PASS",
+      "evidence_refs": [
+        "scripts/validate-content-schema.mjs",
+        "packages/content-schema/fixtures/valid/content-document-v1-all-blocks.json",
+        "packages/content-schema/fixtures/invalid/"
+      ],
+      "details": "main contains the locked Ajv validator, one valid fixture with 11 block types and 23 schema-invalid fixtures; the valid fixture uses a UUIDv7 document ID."
+    },
+    {
+      "claim": "T009 task checkbox is updated only after main read-back",
+      "result": "PASS",
+      "evidence_refs": [
+        "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+      ],
+      "details": "This completion branch changes the T009 line from unchecked to checked after the main read-back target passed."
+    }
+  ],
+  "task_state": {
+    "t009_checked": true,
+    "t009_implementation_merged": true,
+    "t010_checked": false,
+    "t011_checked": false,
+    "result": "PASS"
+  },
+  "result": "PASS",
+  "decision": "T009 is complete on main after implementation merge and authoritative read-back; T010 and T011 remain separate unchecked tasks.",
+  "next_action": "Open T011 implementation only against the now-canonical schema on main; keep T010 and T011 independently gated."
+}
