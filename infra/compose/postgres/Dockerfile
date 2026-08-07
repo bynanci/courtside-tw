@@ -27,6 +27,10 @@ RUN set -eux; \
     chmod 0755 /out/gosu; \
     /out/gosu --version
 
+# The official PostgreSQL entrypoint must start as root to initialize the
+# mounted data directory, then drops privileges through gosu.
+USER nobody
+
 FROM postgres:18.4-alpine3.24@sha256:9a8afca54e7861fd90fab5fdf4c42477a6b1cb7d293595148e674e0a3181de15
 
 COPY --from=gosu-build /out/gosu /usr/local/bin/gosu
