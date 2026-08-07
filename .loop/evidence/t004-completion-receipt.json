@@ -1,0 +1,65 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t004-completion-receipt-20260807",
+  "generated_at": "2026-08-07T03:57:01Z",
+  "actor": "codex-supervisor",
+  "subject": "T004 Nuxt 4.5 SSR scaffold post-merge completion and main read-back",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T004",
+  "pull_request": {
+    "number": 15,
+    "base": "main",
+    "base_sha": "32f9e5bb3b90f637fe969563e05a4ee0d84c768b",
+    "head_branch": "ticket/t004-nuxt-ssr-scaffold",
+    "head_sha": "ccccdc7d721409cb1ee145b0ff39cebf61985d4d",
+    "changed_files": 12,
+    "state": "merged",
+    "draft": false,
+    "merged": true,
+    "merge_method": "squash",
+    "merge_sha": "dec6368ab432fcaa549c67b5f2738ea57085221e",
+    "review_comment_id": 4879818078,
+    "review_decision": "PASS"
+  },
+  "main_readback": {
+    "ref": "main",
+    "commit": "dec6368ab432fcaa549c67b5f2738ea57085221e",
+    "t004_checked_before_completion": false,
+    "t004_checked_after_completion": true,
+    "runtime_paths": [
+      "apps/web/package.json",
+      "apps/web/nuxt.config.ts",
+      "apps/web/tsconfig.json",
+      "apps/web/app/app.vue"
+    ],
+    "dependency_artifact": "pnpm-lock.yaml",
+    "no_later_ticket_dispatch": true
+  },
+  "verification": {
+    "make setup": "PASS",
+    "pnpm audit --prod --json": "PASS — 0 info/low/moderate/high/critical vulnerabilities",
+    "pnpm --filter @courtside/web typecheck": "PASS",
+    "pnpm --filter @courtside/web build": "PASS — Nuxt 4.5.1 / Nitro node-server",
+    "live SSR GET /": "PASS — SSR marker, title, h1, archive label and scaffold text",
+    "make verify": "PASS",
+    "github status checks": "NOT_CONFIGURED — no status entries or workflow runs"
+  },
+  "scope": {
+    "completion_slice": "task checkbox, append-only completion receipt and Graphify terminal-state read-back",
+    "runtime_implementation_changed": false,
+    "database_migration": false,
+    "api_contract_change": false,
+    "web3_or_infrastructure_change": false
+  },
+  "graphify": {
+    "prior_terminal_state": "needs_human",
+    "final_terminal_state": "success",
+    "final_frontier": [
+      "t004-complete"
+    ],
+    "completion_condition": "Merged PR #15 read back from main and T004 checkbox checked."
+  },
+  "result": "success",
+  "confidence": 1,
+  "next_action": "Stop T004 graph; T006 remains a separate unchecked ticket and is not dispatched by this completion slice."
+}

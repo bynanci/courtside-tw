@@ -1,16 +1,16 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t004",
-  "graph_version": 4,
+  "graph_version": 5,
   "run_id": "courtside-tw-t004-nuxt-ssr-20260807",
-  "status": "needs_human",
-  "iteration": 4,
+  "status": "success",
+  "iteration": 5,
   "started_at": "2026-08-07T03:18:00Z",
-  "updated_at": "2026-08-07T03:39:44Z",
-  "current_frontier": ["t-human-review"],
+  "updated_at": "2026-08-07T03:57:01Z",
+  "current_frontier": ["s-terminal-policy"],
   "blocked_nodes": [],
-  "terminal_state": "needs_human",
-  "next_action": "Review the Code Review PASS and bounded T004 PR; explicit protected merge and checkbox completion remain human-gated.",
+  "terminal_state": "success",
+  "next_action": "Stop T004 graph; T006 remains a separate unchecked ticket and is not dispatched by this completion slice.",
   "events": [
     {
       "event_id": "evt-t004-nuxt-ssr-001-baseline",
@@ -126,6 +126,44 @@
       "token_usage": {"estimated": 8000, "input": 0, "output": 0, "total": 8000},
       "terminal_reason": "Automated review and remote content proof are complete; only the accountable human protected merge gate remains.",
       "memory_receipt": {"memory_status": "NO_OP", "memory_id": null, "version": null, "retrieval_ids": [], "evidence_refs": [".loop/evidence/t004-code-review.json", ".loop/evidence/t004-review-approval.json"], "next_review_at": null, "blocker": null}
+    },
+    {
+      "event_id": "evt-t004-nuxt-ssr-005-completion-readback",
+      "at": "2026-08-07T03:57:01Z",
+      "actor": "codex-supervisor",
+      "type": "merge_main_readback_and_task_completion",
+      "base_graph_version": 4,
+      "new_graph_version": 5,
+      "graph_delta": {
+        "operations": [
+          {"op": "add", "path": "external.github.pull_request/15", "after": "PR #15 squash-merged into main at dec6368ab432fcaa549c67b5f2738ea57085221e."},
+          {"op": "add", "path": ".loop/evidence/t004-completion-receipt.json", "after": "Post-merge receipt binds current PR head, merge SHA, verification results and main read-back."},
+          {"op": "replace", "path": "specs/001-taiwan-basketball-magazine-ebook/tasks.md/T004", "before": "[ ]", "after": "[x]"},
+          {"op": "replace", "path": "graph.nodes/t-human-review/status", "before": "ready", "after": "done"},
+          {"op": "replace", "path": "graph.nodes/a-review-t004/status", "before": "needs_human", "after": "done"},
+          {"op": "replace", "path": "graph.nodes/p-human-approval/status", "before": "needs_human", "after": "done"},
+          {"op": "replace", "path": "graph.nodes/g-t004-approval/status", "before": "needs_human", "after": "done"},
+          {"op": "replace", "path": "graph.nodes/m-l3-t004-decisions/status", "before": "planned", "after": "done"},
+          {"op": "replace", "path": "graph.nodes/s-terminal-policy/status", "before": "needs_human", "after": "done"},
+          {"op": "replace", "path": "graph.current_frontier", "before": ["t-human-review"], "after": ["s-terminal-policy"]}
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t004-completion-receipt.json",
+        ".loop/evidence/t004-code-review.json",
+        ".loop/evidence/t004-implementation-proof.json",
+        "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+      ],
+      "proof_receipts": [
+        {"proof": "remote merge", "level": "P2", "result": "pass", "details": "PR #15 is merged=true with squash merge commit dec6368ab432fcaa549c67b5f2738ea57085221e."},
+        {"proof": "task checkbox", "level": "P3", "result": "pass", "details": "T004 is checked only in the separate completion slice after implementation review, merge and main read-back."},
+        {"proof": "main read-back", "level": "P2", "result": "pass", "details": "main at dec6368 contains the four T004 runtime paths, pnpm-lock.yaml, evidence artifacts and no T004 checkbox in the implementation merge itself."},
+        {"proof": "scope guard", "level": "P2", "result": "pass", "details": "Completion slice changes only task bookkeeping and append-only governance evidence; T006 and later tickets remain unchecked and undispatched."}
+      ],
+      "failure_signature": null,
+      "decision": "Mark T004 complete after PR #15 merge and main read-back; stop the graph and do not dispatch T006.",
+      "token_usage": {"estimated": 2200, "input": 0, "output": 0, "total": 2200},
+      "terminal_reason": "T004 implementation, independent proof, code review, merge, main read-back and checkbox completion are complete."
     }
   ]
 }
