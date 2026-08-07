@@ -2,7 +2,7 @@
 
 **Feature Branch**: `001-taiwan-basketball-magazine-ebook`  
 **Created**: 2026-08-06  
-**Status**: Draft v0.2  
+**Status**: Draft v0.3 — product / architecture alignment  
 **Input**: User description:「把台灣籃球雜誌電子書整理成規格、技術計畫與開發任務」，並加入 Web3-ready 架構、Motion 與 p5.js 基礎互動敘事。
 
 ## Product Outcome
@@ -15,6 +15,10 @@
 
 1. 讀者願意在手機上完成長篇籃球內容閱讀，而非只看短影音或即時新聞。
 2. 編輯能以可控、可追溯的流程穩定出版數位期刊，不必請工程師手改頁面。
+
+產品願景進一步整合為「台灣籃球數位雜誌 × 台籃文化檔案 × Fan Season Passport × 可驗證出版來源」。內容域正式涵蓋中華隊、旅外球員、TPBL、P. LEAGUE+／PLG 與 SBL；事實、關係、時間線與來源由獨立 `basketball`／`evidence` bounded contexts 管理，不能由內容分類 `TaxonomyTerm` 取代。
+
+Fan Season Passport 與 Edition Provenance 是兩個不同 bounded contexts。Provenance 只驗證 publication snapshot 的 digest／revision 一致性；Fan Passport 以 OIDC／email identity 與 off-chain entitlement 為第一階段 Reader Stamp 基礎，之後才允許使用者 opt-in 的 optional Web3 delivery。兩者都不得成為匿名免費 Article reading 的前置條件。
 
 ## MVP Boundary
 
@@ -30,6 +34,8 @@
 - 編輯身分驗證、角色權限、稽核紀錄。
 - 核心流程的自動化測試、效能與無障礙門檻。
 
+P1 的閱讀與出版基線是 `Home → Issue → TOC → Article`，並且 anonymous-first、free-first、SSR-first、SEO-first、mobile-first。Wallet、token、NFT、blockchain、IPFS、login 與 payment 都不是 Article 的閱讀前置條件；Web3／external provider 故障時，Article 必須仍可正常閱讀。
+
 ### MVP 明確不做
 
 - 線上付款、訂閱扣款、優惠券、發票與退款。
@@ -43,11 +49,26 @@
 - NFT、代幣發行、DAO、加密貨幣付款、token-gated content 或要求讀者連接錢包才能閱讀。
 - 讓編輯上傳或執行任意 p5.js／JavaScript 程式碼；互動視覺只能使用已審核 preset 與受 schema 限制的參數。
 
+### Delivery boundary
+
+- **P1 — Public Magazine MVP**：Issue、TOC、Article、Studio、rights gate、immutable publication、revision、SEO、SSR、accessibility、Motion 與 bounded p5.js poster／runtime。
+- **P2A — Taiwan Basketball Domain**：League、Season、Team、Player、alias、TeamSeason、PlayerTeamStint、NationalTeamCampaign／Roster、Competition、Tournament、Game。
+- **P2B — Evidence Layer**：Source、SourceSnapshot、EvidenceRef、claim status、freshness、source conflict 與 review policy。
+- **P2C — Data Adapters**：FIBA、CTBA、TPBL、PLG、SBL 與 overseas sources 的 adapter ports；先 snapshot／normalize／validate，再進 canonical domain。
+- **P2D — Fan Passport Off-chain**：Reader Stamp、OIDC／email identity、off-chain entitlement、idempotent claim、revoke、supersede、unlink 與 account delete。
+- **P2E — Optional Web3 Credential**：wallet opt-in、credential adapter、sponsored transaction、chain attestation、revocation registry；預設 non-transferable、no investment representation。
+- **P3 — Archive / Season Recap**：個人賽季年鑑、受控 p5.js Season Poster、歷史照片、票根、口述歷史與 Archive Contributor。
+
+P1 與 P2D／P2E／P3 完全分離；不得以 Passport、wallet、token、NFT、payment 或 credential gate P1 reading。
+
 ### Post-MVP 增量
 
-- **P2**: 可管理的聯盟／球隊／球員／賽季 taxonomy、搜尋與篩選、登入讀者收藏與跨裝置續讀。
-- **P2**: 可選的 EIP-1193 錢包連接、ERC-4361 Sign-In with Ethereum、公開出版 manifest、IPFS CIDv1 鏡像與 EVM-compatible 存證 adapter；不改變免費閱讀政策。
-- **P3**: 具版本、配額與撤回處理的離線期刊。
+- **P2A**: Basketball domain 的 stable identity、alias、historical names、team／player timeline、national-team campaigns 與 canonical relationships。
+- **P2B**: Evidence graph 的 SourceSnapshot、EvidenceRef、status、freshness、source precedence 與 contradiction review。
+- **P2C**: FIBA／CTBA／TPBL／PLG／SBL／overseas adapter boundary；外部來源不得直接 overwrite production entity。
+- **P2D**: Off-chain Fan Season Passport、Reader Stamp eligibility、idempotent claim、revocation、supersede、wallet unlink 與 account deletion。
+- **P2E**: Optional EIP-1193 wallet link、credential adapter、sponsored transaction、chain attestation 與 revocation registry；不改變免費閱讀政策。
+- **P3**: Season Recap、controlled p5.js poster、Archive Contributor 與受 rights gate 保護的歷史素材；私人閱讀歷史不得直接公開上鏈。
 
 ## User Scenarios & Testing (mandatory)
 
@@ -285,14 +306,14 @@
 - **ContentDocument**: 版本化 block document；每個區塊有穩定 ID、type、schemaVersion 與經驗證 payload。
 - **MediaAsset**: 原始媒體與衍生檔 metadata；包含 checksum、尺寸、MIME、儲存鍵、處理狀態、替代文字與 rights record。
 - **RightsRecord**: 媒體使用依據；包含權利人、授權類型、來源、署名、允許通路、有效期間與撤回狀態。
-- **TaxonomyTerm**: 聯盟、賽事、球隊、球員、賽季或主題；可有別名、父子關係與有效期間。
+- **TaxonomyTerm**: 內容分類、導覽與搜尋 facet；可有別名、父子關係與有效期間，但不承擔籃球事實、球員生涯或球隊 membership。
 - **Contributor**: 作者、攝影、插畫、編輯等內容貢獻者及公開署名資訊。
 - **ReaderProfile**: 由外部身分主體對應的最小讀者資料與偏好。
 - **Bookmark**: 讀者與文章的收藏關聯。
 - **ReadingProgress**: 讀者或本機對文章修訂的閱讀位置、完成比例與更新時間。
 - **PublicationJob**: 立即／排程發布、下架、索引或媒體處理工作的狀態與冪等鍵。
 - **AuditEvent**: 不可變的敏感操作紀錄；保存 actor、action、target、結果、時間與 request ID。
-- **PublicationProvenance**: 公開出版快照的 canonical manifest digest、CID、chain／contract／transaction reference、狀態、重試與驗證結果；不承載正文或個資。
+- **EditionProvenance**: 公開出版快照的 canonical manifest digest、revision、checksum、publishedAt、rights scope、CID、chain／contract／transaction reference、狀態、重試與驗證結果；只回答版本是否與原始 snapshot 一致，不宣稱內容真實、著作權合法或永遠可用；不承載正文或個資。
 - **WalletIdentityLink**: 讀者明確同意後建立的 off-chain wallet address 與 ReaderProfile 關聯；保存 chain namespace、驗證時間與撤銷狀態，不保存私鑰。
 
 ## Business Rules
@@ -349,3 +370,90 @@
 3. **品牌與視覺方向**: 尚未定義雜誌名稱、Logo、字體授權與攝影風格。這不阻擋架構，但會影響設計 token、封面模板與內容區塊最終驗收。
 4. **動態與生成式視覺**: 需選定 3–5 組允許的 motion pattern、首個 p5 preset、靜態 poster 產生方式與低階 Android 效能基準；未定稿前不得開放任意創意程式碼。
 5. **Web3 provider 與治理**: 需決定是否只做 manifest／CID，或再加入鏈上 registry 與 SIWE；同時核准 network、contract owner、signer custody、gas 預算、RPC／pinning 退出方案及永久公開風險。
+
+## Product / Architecture Alignment Addendum v0.3
+
+本 addendum 將「台灣籃球數位雜誌 × 台籃文化檔案 × Fan Season Passport × 可驗證出版來源」正式納入本 feature spec。它是 non-breaking specification evolution；不授權本輪 runtime、database migration、API、wallet、smart contract 或 deployment。
+
+### User Story 8 - 建立台灣籃球 domain archive (Priority: P2)
+
+作為編輯與 archive reader，我希望能以穩定的聯盟、球隊、球員、賽季與國家隊 campaign identity 連結內容，保留改名、轉隊、解散、跨聯盟與歷史名稱，而不是以 taxonomy label 或姓名猜測事實。
+
+**Independent Test**: 使用包含中華隊男／女／青年／3x3、旅外球員、TPBL、P. LEAGUE+／PLG、SBL、改名、解散、跨聯盟與同名球員的 fixture，驗證 stable identity、alias、valid period、TeamSeason 與 PlayerTeamStint。
+
+### User Story 9 - 以 evidence 閱讀台籃事實 (Priority: P2)
+
+作為編輯，我希望每個 roster、傷病、合約／身份、轉隊、角色與戰術 claim 都能追溯到 source snapshot，並在資料 stale 或衝突時清楚降級，而不是靜默覆寫 canonical data。
+
+**Independent Test**: 匯入兩個互相矛盾的來源 snapshot，驗證 `EvidenceRef`、claim status、freshness、`DISPUTED` state、人工裁決 audit 與 public projection 的 as-of 顯示。
+
+### User Story 10 - 取得 Fan Season Passport Reader Stamp (Priority: P2)
+
+作為讀者，我可以在完成閱讀條件後，以 OIDC／email identity 取得 off-chain Reader Stamp；重試、撤銷、supersede、unlink 與 account delete 都有可預期結果，且不影響匿名閱讀。
+
+**Independent Test**: 對同一 reader／season／issue／condition 重複 claim、並執行 revoke、supersede、wallet unlink 與 account delete，確認只有一個有效 entitlement、狀態可追溯且沒有必要以 wallet 取代 identity。
+
+### User Story 11 - 選擇性取得 Web3 credential (Priority: P2)
+
+作為已取得 Reader Stamp 且明確 opt-in 的讀者，我可以選擇 embedded／external wallet credential delivery；provider、RPC、signer 或 gas 失敗時，Article 仍依 P1 baseline 可閱讀。
+
+**Independent Test**: 驗證 wallet link／unlink、wrong chain、account change、sponsor denial、gas ceiling、revocation registry、non-transferable default 與 provider outage，不把 email、閱讀歷史或 private behavior 寫入 public payload。
+
+### User Story 12 - 回顧一個籃球 season (Priority: P3)
+
+作為球迷或 archive contributor，我可以查看依 rights 與 privacy policy 產生的 Season Recap、p5 poster、歷史照片、票根、口述歷史與貢獻 credential；私人閱讀歷史不會被默認公開上鏈。
+
+**Independent Test**: 以固定 seed 與 bounded schema 產生相同 recap poster，驗證 SSR poster、reduced-motion／no-JS fallback、dispose lifecycle、rights withdrawal 與 private-field exclusion。
+
+### Additional Functional Requirements
+
+- **FR-054**: Basketball Domain MUST 正式涵蓋中華隊男籃、女籃、青年代表隊、3x3、FIBA 國際賽、亞洲盃、世界盃資格賽、奧運資格賽、國際賽窗口、國家隊名單、徵召／傷病與戰術／角色分析。
+- **FR-055**: Basketball Domain MUST 能描述旅外球員在日本、美國、中國、澳洲、歐洲、亞洲其他聯賽、NCAA／College、G League 與其他職業體系的 team、league、season、contract／identity status、role、minutes、tactical position、transfer、national-team relation 與 timeline。
+- **FR-056**: League／Team domain MUST 正式支援 TPBL、P. LEAGUE+／PLG 與 SBL，並能表示更名、歷史名稱、alias、加入／退出、解散、跨聯盟與不同賽季 label；UI MUST 不以聯盟名稱 hard-code branch。
+- **FR-057**: `TaxonomyTerm` MUST 只負責內容分類、導覽與搜尋 facet；canonical league、team、player、season、roster 與 career facts MUST 屬於 Basketball bounded context。
+- **FR-058**: `Player` MUST 使用 stable primary identity；`PlayerAlias` MUST 支援 name、locale、validFrom、validTo 與 evidence；姓名相同不得自動合併。
+- **FR-059**: `PlayerTeamStint` MUST 支援 team、league、season、startDate、endDate、status 與 EvidenceRef；完整 career MUST NOT 依賴單一 `player.teamId`。
+- **FR-060**: `NationalTeamCampaign`、`NationalTeamRoster` 與 `RosterEntry` MUST 能表示 campaign、競賽、名單、徵召、傷病、退出、替補、角色與 effective period。
+- **FR-061**: 每個可作為 canonical claim 的 basketball fact MUST 有 `EvidenceRef`，至少包含 sourceId、sourceType、sourceUrl、retrievedAt、publishedAt、effectiveAt、confidence、status、freshness 與 snapshot reference。
+- **FR-062**: Evidence layer MUST 區分 `CONFIRMED`、`REPORTED`、`ANALYSIS`、`RUMOR`、`UNKNOWN`，以及 `fresh`、`stale`、`expired`、`disputed`；模型輸出不得升級 evidence status。
+- **FR-063**: 來源衝突時 MUST 保留所有 SourceSnapshot／EvidenceRef、標示 canonical claim 為 disputed／待審或明確保持上一個已確認值；不得 silently overwrite 或以 last-write-wins 解決。
+- **FR-064**: FIBA、CTBA、TPBL、PLG、SBL 與 overseas adapters MUST 位於 modular monolith 的 `basketball` ports／adapters boundary；流程 MUST 先 SourceSnapshot、Normalize、Evidence validation，再進 canonical domain；外部來源不得直接 overwrite production entity。
+- **FR-065**: `Edition Provenance` MUST 只表示 publication manifest、revision、digest、checksum、publishedAt、rights scope、CID 與 attestation status 是否對應原始發布 snapshot；MUST NOT 宣稱內容真實、著作權一定合法或永遠可用。
+- **FR-066**: `Fan Season Passport` MUST 是獨立 domain，至少支援 Reader Stamp、Issue Stamp、Event Credential、Archive Contributor、Creator Credential 與 Season Recap；MUST NOT 被解釋為金融資產。
+- **FR-067**: Reader Stamp MUST 先以 OIDC／email identity 驗證 claim condition、建立 off-chain entitlement 並提供 idempotent claim；wallet 不得是身份唯一來源。
+- **FR-068**: WalletIdentityLink MUST 是可撤銷的 identifiable information link；系統 MUST 支援 user opt-in、wallet unlink、wrong chain／provider failure 與 account lifecycle，不得保存私鑰。
+- **FR-069**: Fan Passport MUST 支援 claim、revoke、supersede、expire 與 account delete／anonymization，並為狀態變更保留 audit evidence；重試不得重複發行有效 stamp。
+- **FR-070**: Optional Web3 credential MUST 預設 non-transferable、no investment representation，且不得提供 token speculation、secondary marketplace、staking、yield 或 governance token；sponsored transaction、signer custody、gas ceiling 與 revocation registry 必須另行核准。
+- **FR-071**: 系統 MUST 禁止將 email、姓名、閱讀歷史、精確觀看時間、location、原始 check-in、IP、device ID、draft、private media、rights contract 或 storage key 公開上鏈。
+- **FR-072**: 每個 credential／collectible／visual asset MUST 能描述 rightsOwner、license、allowedChannels、collectibleAllowed、redistributionAllowed、validFrom、validUntil、credit 與 withdrawalPolicy；withdrawal MUST 高於 CDN、cache、search、offline、IPFS 與 presentation。
+- **FR-073**: `court-pulse-v1` MUST 保留；新增 `issue-cover-v1`、`season-recap-v1`、`player-journey-v1` 只能使用 fixed seed、bounded schema、server validation、reproducible SSR poster、no arbitrary JavaScript／shader／remote code／remote asset URL、reduced-motion fallback 與 dispose lifecycle。
+- **FR-074**: Article public reading MUST remain anonymous／free／SSR／SEO／mobile-first and available when wallet、token、blockchain、IPFS、RPC 或 external provider fails；私人閱讀歷史不得直接公開上鏈。
+
+### Additional Success Criteria
+
+- **SC-017**: Domain fixtures MUST represent league／team rename、dissolution、join／exit、cross-league 與 historical label without deleting the prior relationship or changing old article context。
+- **SC-018**: Same-name player fixtures MUST resolve to distinct stable Player IDs unless human-reviewed evidence proves identity; name string alone MUST never merge records。
+- **SC-019**: 100% 的 canonical basketball facts in the acceptance fixture MUST have SourceSnapshot／EvidenceRef、status、freshness 與 effective／retrieved time；unverified facts MUST NOT be presented as `CONFIRMED`。
+- **SC-020**: Conflicting source fixtures MUST preserve every snapshot and expose `DISPUTED`／review state; no silent overwrite is accepted。
+- **SC-021**: Duplicate Reader Stamp claim requests MUST be idempotent and result in one effective entitlement per reader／season／condition; revoke／supersede status MUST be observable off-chain。
+- **SC-022**: Wallet／RPC／IPFS／provider outage tests MUST preserve P1 Article availability and baseline anonymous reading behavior。
+- **SC-023**: Credential／poster fixtures MUST exclude the prohibited private fields and respect rights withdrawal, while SSR poster／reduced-motion／no-JS fallback remains complete。
+
+### Alignment traceability
+
+| Product story | Functional requirements | ADR | Tasks | Future tests |
+| --- | --- | --- | --- | --- |
+| US8 Taiwan Basketball Domain | FR-054–FR-060 | ADR-0007 | T098–T100 | stable identity／alias／timeline／roster fixtures |
+| US9 Basketball Evidence | FR-061–FR-064 | ADR-0007 | T101–T104 | snapshot immutability／freshness／conflict／adapter contracts |
+| US10 Fan Passport Off-chain | FR-066–FR-069 | ADR-0008 | T105–T106 | claim idempotency／revoke／supersede／unlink／delete |
+| US11 Optional Web3 Credential | FR-065、FR-068、FR-070–FR-072、FR-074 | ADR-0008 | T107–T109 | wallet／sponsor／privacy／rights／outage tests |
+| US12 Season Recap | FR-072–FR-074 | ADR-0005、ADR-0008 | T110–T112 | deterministic p5／SSR／a11y／rights withdrawal |
+
+### Alignment business rules
+
+- P1 公開閱讀永遠不需 wallet、login、payment、token、NFT、IPFS、RPC 或 blockchain。
+- `Edition Provenance` 只屬 publication provenance；`Fan Season Passport` 只屬 fan credential／claim；兩者不得共用一個語意模糊的 Passport domain。
+- Taxonomy 負責分類；Basketball Domain 負責事實、關係與歷史；Evidence Layer 負責來源與衝突。
+- 外部來源先成為 SourceSnapshot，再由 normalization／evidence validation 產生 canonical proposal；不可直接 overwrite production entity。
+- Rights withdrawal 優先於任何 cache、search、offline、IPFS 或 credential presentation；鏈上只放 digest／minimal status，不放 content bytes 或私人閱讀行為。
+- Motion／p5 與效能或 accessibility 衝突時回到 SSR poster、語意摘要與 reduced-motion fallback。
