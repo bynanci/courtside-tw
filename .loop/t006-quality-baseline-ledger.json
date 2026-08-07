@@ -1,21 +1,18 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t006",
-  "graph_version": 3,
+  "graph_version": 5,
   "run_id": "courtside-tw-t006-quality-baseline-20260807",
   "status": "needs_human",
-  "iteration": 3,
+  "iteration": 4,
   "started_at": "2026-08-07T05:08:32Z",
-  "updated_at": "2026-08-07T05:08:32Z",
+  "updated_at": "2026-08-07T06:18:00Z",
   "current_frontier": [
-    "p-quality-verification",
     "t-human-review"
   ],
-  "blocked_nodes": [
-    "p-quality-verification"
-  ],
+  "blocked_nodes": [],
   "terminal_state": "needs_human",
-  "next_action": "Publish the bounded branch and PR, then run the Java Checkstyle/SpotBugs tasks on a compatible Java 21/Gradle runner before any T006 merge or checkbox completion decision.",
+  "next_action": "Review the final T006 head and current diff, then merge with the current PR head after the review receipt; perform the separate T006 completion and main read-back gate without dispatching T007.",
   "events": [
     {
       "event_id": "evt-t006-quality-baseline-001-graph-initialized",
@@ -248,11 +245,90 @@
         "total": 1800
       },
       "terminal_reason": "Strict graph proof is complete; remote publication and human merge gate remain open."
+    },
+    {
+      "event_id": "evt-t006-quality-baseline-005-java-quality-proof",
+      "at": "2026-08-07T06:18:00Z",
+      "actor": "codex-agent",
+      "type": "java_quality_proof",
+      "base_graph_version": 4,
+      "new_graph_version": 5,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-quality-verification/status",
+            "before": "blocked",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-quality-verification/evidence_refs",
+            "before": [
+              ".loop/evidence/t006-implementation-proof.json"
+            ],
+            "after": [
+              ".loop/evidence/t006-implementation-proof.json",
+              ".loop/evidence/t006-java-quality-proof.json"
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [
+              "p-quality-verification",
+              "t-human-review"
+            ],
+            "after": [
+              "t-human-review"
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-quality-verification/confidence.score",
+            "before": 0.9,
+            "after": 0.99
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t006-implementation-proof.json",
+        ".loop/evidence/t006-java-quality-proof.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Java 21 / Gradle 8.14 task execution",
+          "level": "P2",
+          "result": "pass",
+          "details": "checkstyleMain and spotbugsMain completed successfully against the typed SpotBugs Kotlin DSL configuration; the combined Gradle task run reported BUILD SUCCESSFUL."
+        },
+        {
+          "proof": "blocking defect resolution",
+          "level": "P2",
+          "result": "pass",
+          "details": "The original string assignments to SpotBugs Property<Enum> settings were replaced with typed Property.set values in apps/api/build.gradle.kts."
+        },
+        {
+          "proof": "scope containment",
+          "level": "P2",
+          "result": "pass",
+          "details": "The proof and enhancement remain within T006 quality configuration and evidence paths; no T007 or later work was dispatched."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Clear the Java quality proof blocker; retain the current-head human review, merge and separate checkbox-completion gates.",
+      "token_usage": {
+        "estimated": 4500,
+        "input": 0,
+        "output": 0,
+        "total": 4500
+      },
+      "terminal_reason": "Required Node and Java quality receipts are complete; current-head review and merge remain open."
     }
   ],
   "proof": {
-    "claim": "T006 shared quality configuration and deterministic Node enforcement are implemented within scope; Java Gradle quality execution remains a recorded blocker.",
+    "claim": "T006 shared quality configuration and deterministic Node and Java Gradle enforcement are implemented within scope; current-head review, merge and checkbox completion remain separately gated.",
     "result": "needs_human",
-    "confidence": 0.9
+    "confidence": 0.99
   }
 }
