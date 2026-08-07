@@ -6,7 +6,7 @@ flowchart TD
   t1 --> a1["Implement quality baseline"]
   a1 --> p1["Quality proof\nJava Gradle passed"]
   p1 -.-> t3["Review PASS"]
-  p1 -.-> stop["Stop: needs_human\nmain read-back pending"]
+  p1 -.-> stop["Terminal: success\nmain read-back PASS"]
   t3 --> a3["Review PASS"]
   a3 --> p3["Approval PASS"]
   p3 --> gate["Merge gate PASS"]
