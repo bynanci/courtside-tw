@@ -1,0 +1,94 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-ticket-implementation-t009",
+  "graph_version": 1,
+  "run_id": "courtside-tw-t009-content-document-schema-20260807",
+  "status": "running",
+  "iteration": 1,
+  "started_at": "2026-08-07T11:20:00Z",
+  "updated_at": "2026-08-07T11:20:00Z",
+  "current_frontier": [
+    "a-t009-define-contract"
+  ],
+  "blocked_nodes": [],
+  "terminal_state": "running",
+  "next_action": "Implement schema and fixtures, then produce independent validation evidence.",
+  "events": [
+    {
+      "event_id": "evt-t009-001-dispatched",
+      "at": "2026-08-07T11:20:00Z",
+      "actor": "codex-supervisor",
+      "type": "t009_dispatched",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "external.github.branch/ticket/t009-content-document-schema",
+            "after": "Branch created from main@a75f1c2."
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [],
+            "after": [
+              "a-t009-define-contract"
+            ]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t009-dispatch-20260807.json",
+        "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T009"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Phase 1 main read-back",
+          "level": "P3",
+          "result": "pass",
+          "details": "PR #31 merged and main read-back confirms T001-T008 checked, T009 next."
+        },
+        {
+          "proof": "scope authorization",
+          "level": "P3",
+          "result": "pass",
+          "details": "Current user direction authorizes starting Phase 2."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "SAVED",
+        "memory_id": "wm:project:courtside-tw:t009-content-document-schema",
+        "version": 1,
+        "retrieval_ids": [
+          "wm:project:courtside-tw:phase1-review",
+          "wm:project:courtside-tw:t008-ci-pipelines"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t009-dispatch-20260807.json",
+          ".loop/memory/phase1-review.json"
+        ],
+        "next_review_at": "2026-08-14",
+        "blocker": null
+      },
+      "failure_signature": null,
+      "decision": "Implement only T009 schema and fixture contract; keep T009 unchecked until proof and main read-back."
+    }
+  ],
+  "proof": [],
+  "memory_receipt": {
+    "memory_status": "SAVED",
+    "memory_id": "wm:project:courtside-tw:t009-content-document-schema",
+    "version": 1,
+    "retrieval_ids": [
+      "wm:project:courtside-tw:phase1-review",
+      "wm:project:courtside-tw:t008-ci-pipelines"
+    ],
+    "evidence_refs": [
+      ".loop/evidence/t009-dispatch-20260807.json",
+      ".loop/memory/t009-content-document-schema.json"
+    ],
+    "next_review_at": "2026-08-14",
+    "blocker": null
+  }
+}
