@@ -10,10 +10,10 @@ Web3 是可選的出版來源驗證與 credential delivery 基礎設施，不是
 
 ## Current status
 
-- T001、T003、T005、T097 已完成並由 `main` read-back 驗證；T097 alignment merge 為 PR #12，receipt 為 PR #13。
+- T001、T002、T003、T005、T097 已完成並由歷史 merge/read-back 或本輪 reconciliation evidence 驗證；T002 ADR merge 為 PR #4，本輪修復 main task checkbox drift。
 - T005 canonical implementation 為 PR #10；completion receipt 為 PR #11。
 - T004 Nuxt SSR scaffold 已完成；PR #15 已合併至 `main`，PR #16 已完成 T004 checkbox／Graphify terminal state，最終 read-back receipt 為 `.loop/evidence/t004-main-readback.json`。
-- ADR-0001～0006 的既有 decision content 維持不變；其 repository approval bookkeeping 仍由 T002 管理。ADR-0007、0008 為本輪 draft。
+- ADR-0001～0006 的既有 decision content 維持不變；T002 approval／status reconciliation 由 PR #4 與本輪 `.loop/evidence/t002-current-main-reconciliation.json` 留下可追溯紀錄。ADR-0007、0008 為本輪 draft。
 
 根目錄固定：
 
