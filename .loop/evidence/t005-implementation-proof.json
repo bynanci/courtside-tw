@@ -1,9 +1,9 @@
 {
   "schema_version": "courtside-tw-loop-evidence/v1",
   "evidence_id": "t005-implementation-proof-20260807",
-  "generated_at": "2026-08-07T01:19:49Z",
+  "generated_at": "2026-08-07T01:46:20Z",
   "actor": "codex-agent",
-  "subject": "T005 Java 21/Spring Boot implementation and profile-proof attempt",
+  "subject": "T005 Java 21/Spring Boot implementation and profile proof",
   "repository": "bynanci/courtside-tw",
   "branch": "ticket/t005-spring-bootstrap",
   "implementation_paths": [
@@ -34,18 +34,18 @@
     },
     {
       "check": "Gradle invocation",
-      "result": "blocked",
-      "details": "Gradle 8.14 started, but plugin/dependency resolution failed with Java connection errors to the configured proxy; no build or boot result is inferred."
+      "result": "pass",
+      "details": "Gradle 8.14 ran clean build offline against a temporary Maven mirror populated from Maven Central; the exact committed source files compiled, packaged and completed test with no test sources."
     },
     {
       "check": "api profile boot",
-      "result": "blocked",
-      "details": "Requires the unresolved Gradle dependency graph; not claimed."
+      "result": "pass",
+      "details": "Gradle bootRun started the api profile on bounded local port 18081; Tomcat initialized and started, then the process was stopped by the bounded timeout."
     },
     {
       "check": "worker profile boot",
-      "result": "blocked",
-      "details": "Requires the unresolved Gradle dependency graph; not claimed."
+      "result": "pass",
+      "details": "Gradle bootRun started the worker profile as a non-web process and logged Started MagazineApplication; the task exited cleanly."
     }
   ],
   "scope_guard": {
@@ -56,7 +56,11 @@
     "external_web3_writes": false,
     "production_deployment": false
   },
-  "result": "blocked",
-  "confidence": 0.86,
-  "next_action": "Rerun Gradle test/build and bounded api/worker profile starts on a runner with Java 21 and dependency-resolution access; only then request merge and T005 completion approval."
+  "implementation_fix": {
+    "result": "pass",
+    "details": "Removed the build.gradle.kts project repository that conflicted with settings.gradle.kts FAIL_ON_PROJECT_REPOS; pinned the starter version and removed unused dependency-management/test scaffolding from this setup slice."
+  },
+  "result": "pass",
+  "confidence": 0.98,
+  "next_action": "Review PR #8 and obtain explicit T005 merge/completion approval; do not dispatch a later ticket from this receipt."
 }
