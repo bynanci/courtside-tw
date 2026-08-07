@@ -1,7 +1,7 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t006",
-  "graph_version": 5,
+  "graph_version": 6,
   "run_id": "courtside-tw-t006-quality-baseline-20260807",
   "status": "needs_human",
   "iteration": 4,
@@ -12,7 +12,7 @@
   ],
   "blocked_nodes": [],
   "terminal_state": "needs_human",
-  "next_action": "Review the final T006 head and current diff, then merge with the current PR head after the review receipt; perform the separate T006 completion and main read-back gate without dispatching T007.",
+  "next_action": "Review the final T006 head and current diff, then merge with an expected-head guard; perform the separate T006 completion and main read-back gate without dispatching T007.",
   "events": [
     {
       "event_id": "evt-t006-quality-baseline-001-graph-initialized",
@@ -324,6 +324,44 @@
         "total": 4500
       },
       "terminal_reason": "Required Node and Java quality receipts are complete; current-head review and merge remain open."
+    },
+    {
+      "event_id": "evt-t006-quality-baseline-006-post-proof-graph-validation",
+      "at": "2026-08-07T06:18:00Z",
+      "actor": "codex-supervisor",
+      "type": "graph_validation",
+      "base_graph_version": 5,
+      "new_graph_version": 6,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": ".loop/evidence/t006-graph-validation-v2.json",
+            "after": "Strict graph validation after Java quality proof: 15 nodes, 21 edges, 0 warnings and 0 errors."
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t006-java-quality-proof.json",
+        ".loop/evidence/t006-graph-validation-v2.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "strict graph validation",
+          "level": "P2",
+          "result": "pass",
+          "details": "The updated graph is strict-valid, keeps the completed Java proof on the graph, and leaves only current-head human review and merge gates open."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Graph proof is current; proceed to current-head review and expected-head merge, then separately record task completion and main read-back.",
+      "token_usage": {
+        "estimated": 1800,
+        "input": 0,
+        "output": 0,
+        "total": 1800
+      },
+      "terminal_reason": "All required implementation and proof receipts are present; review and merge remain the only open gates."
     }
   ],
   "proof": {
