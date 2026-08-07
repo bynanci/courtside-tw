@@ -296,17 +296,17 @@ graph:
       layer: L3
       label: T006 quality baseline review and merge decision
       owner: human-mark
-      status: needs_human
+      status: done
       risk: high
       confidence:
-        score: 0.92
-        basis: The branch is reviewable, but merge requires an explicit decision on the blocked Java Gradle proof and current-head diff.
-        evidence_refs: [.loop/evidence/t006-implementation-proof.json]
+        score: 0.99
+        basis: Current-head review passed; the Java quality proof is complete and merge remains a separate gate.
+        evidence_refs: [.loop/evidence/t006-implementation-proof.json, .loop/evidence/t006-java-quality-proof.json, .loop/evidence/t006-review-proof.json]
       budget:
         effort_hours: 0.0
         tokens: 0
       config:
-        condition: Review the bounded T006 diff, independent proof receipt, Java blocker and remote PR state.
+        condition: Review the bounded T006 diff, independent proof receipts and remote PR state.
         inputs_required: [T006 diff, implementation proof, Graphify ledger, branch and PR read-back]
         dedupe: T006 implementation fingerprint plus current-head review-run-id
 
@@ -315,12 +315,12 @@ graph:
       layer: L3
       label: Review T006 scope proof and merge readiness
       owner: human-mark
-      status: needs_human
+      status: done
       risk: high
       confidence:
-        score: 0.9
-        basis: Review must confirm the bounded current-head diff and the completed Java quality receipt.
-        evidence_refs: [.loop/evidence/t006-implementation-proof.json]
+        score: 0.99
+        basis: The bounded current-head diff passed scope review and the completed Java quality receipt is attached.
+        evidence_refs: [.loop/evidence/t006-implementation-proof.json, .loop/evidence/t006-java-quality-proof.json, .loop/evidence/t006-review-proof.json]
       budget:
         effort_hours: 0.25
         tokens: 3500
@@ -335,12 +335,12 @@ graph:
       layer: L3
       label: Explicit T006 review and merge approval
       owner: human-mark
-      status: needs_human
+      status: done
       risk: critical
       confidence:
-        score: 0.92
-        basis: No merge or checkbox completion is inferred from implementation success; it requires a current-head review and explicit approval.
-        evidence_refs: [.loop/evidence/t006-implementation-proof.json]
+        score: 0.99
+        basis: Current-head review passed with explicit PASS; merge and checkbox completion remain separate gates.
+        evidence_refs: [.loop/evidence/t006-review-proof.json, .loop/evidence/t006-java-quality-proof.json]
       budget:
         effort_hours: 0.25
         tokens: 2500
@@ -361,8 +361,8 @@ graph:
       risk: critical
       confidence:
         score: 0.92
-        basis: The gate is intentionally open for the current-head human merge decision; the required Java Gradle quality receipt is complete.
-        evidence_refs: [.loop/evidence/t006-implementation-proof.json]
+        basis: The gate remains open only for the requested merge and post-merge completion read-back; current-head review passed.
+        evidence_refs: [.loop/evidence/t006-review-proof.json, .loop/evidence/t006-java-quality-proof.json]
       budget:
         effort_hours: 0.0
         tokens: 0
@@ -376,12 +376,12 @@ graph:
       layer: L3
       label: T006 human decision ledger
       owner: human-mark
-      status: needs_human
+      status: done
       risk: low
       confidence:
-        score: 0.9
-        basis: The decision ledger remains open until review, merge and task completion are separately evidenced.
-        evidence_refs: [.loop/t006-quality-baseline-ledger.json]
+        score: 0.99
+        basis: Current-head review is recorded; merge and task completion remain separately evidenced.
+        evidence_refs: [.loop/t006-quality-baseline-ledger.json, .loop/evidence/t006-review-proof.json]
       budget:
         effort_hours: 0.05
         tokens: 800
