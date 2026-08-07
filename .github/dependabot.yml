@@ -45,6 +45,32 @@ updates:
         patterns:
           - '*'
 
+  - package-ecosystem: docker
+    directory: /infra/compose/postgres
+    schedule:
+      interval: weekly
+      day: monday
+      time: '03:35'
+      timezone: UTC
+    open-pull-requests-limit: 10
+    groups:
+      postgres-base-image:
+        patterns:
+          - '*'
+
+  - package-ecosystem: docker
+    directory: /infra/compose/s3mock
+    schedule:
+      interval: weekly
+      day: monday
+      time: '03:40'
+      timezone: UTC
+    open-pull-requests-limit: 10
+    groups:
+      s3mock-build-images:
+        patterns:
+          - '*'
+
   - package-ecosystem: github-actions
     directory: /
     schedule:
