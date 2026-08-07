@@ -67,7 +67,8 @@
           "name": "CodeQL (java-kotlin)",
           "job_id": 92810861051,
           "conclusion": "success",
-          "artifact": "security-codeql-java-kotlin"
+          "artifact": "security-codeql-java-kotlin",
+          "artifact_id": 8987063501
         },
         {
           "name": "Trivy (filesystem)",
