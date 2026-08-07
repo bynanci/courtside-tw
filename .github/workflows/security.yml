@@ -87,16 +87,57 @@ jobs:
           set -o pipefail
           gradle --no-daemon --console=plain -p apps/api test 2>&1 | tee artifacts/dependency-audit/gradle-security-resolution.log
 
+      - name: Export resolved Gradle runtime classpath
+        env:
+          RUNTIME_CLASSPATH_OUTPUT: ${{ runner.temp }}/courtside-runtime-classpath.txt
+        run: |
+          set -euo pipefail
+          init_script="$RUNNER_TEMP/export-runtime-classpath.gradle"
+          cat > "$init_script" <<'EOF'
+          def outputPath = System.getenv("RUNTIME_CLASSPATH_OUTPUT")
+          if (!outputPath) {
+              throw new GradleException("RUNTIME_CLASSPATH_OUTPUT is required")
+          }
+
+          gradle.beforeProject { project ->
+              project.tasks.register("exportRuntimeClasspath") {
+                  doLast {
+                      def configuration = project.configurations.findByName("runtimeClasspath")
+                      if (configuration == null) {
+                          throw new GradleException("runtimeClasspath not found in ${project.path}")
+                      }
+                      def files = configuration.resolve().findAll { it.isFile() }.sort { left, right ->
+                          left.name <=> right.name
+                      }
+                      def output = new File(outputPath)
+                      output.parentFile.mkdirs()
+                      output.text = files.collect { it.absolutePath }.join(System.lineSeparator()) + System.lineSeparator()
+                  }
+              }
+          }
+          EOF
+          gradle --no-daemon --console=plain -p apps/api -I "$init_script" exportRuntimeClasspath
+          test -s "$RUNTIME_CLASSPATH_OUTPUT"
+
       - name: Collect resolved Gradle artifacts
         run: |
           set -euo pipefail
-          gradle_cache_dir="${GRADLE_USER_HOME:-$HOME/.gradle}/caches/modules-2/files-2.1"
+          runtime_classpath="$RUNNER_TEMP/courtside-runtime-classpath.txt"
+          test -s "$runtime_classpath"
           mkdir -p artifacts/dependency-audit/gradle-jars
-          find "$gradle_cache_dir" -type f -name '*.jar' -print0 |
-            while IFS= read -r -d '' jar; do
-              digest="$(sha256sum "$jar" | cut -d' ' -f1)"
-              cp "$jar" "artifacts/dependency-audit/gradle-jars/${digest}-$(basename "$jar")"
-            done
+          while IFS= read -r jar; do
+            [ -n "$jar" ] || continue
+            case "$jar" in
+              *.jar) ;;
+              *) echo "Unexpected runtime classpath entry: $jar" >&2; exit 1 ;;
+            esac
+            test -f "$jar"
+            digest="$(sha256sum "$jar" | cut -d' ' -f1)"
+            cp "$jar" "artifacts/dependency-audit/gradle-jars/${digest}-$(basename "$jar")"
+          done < "$runtime_classpath"
+          jar_count="$(find artifacts/dependency-audit/gradle-jars -type f -name '*.jar' | wc -l)"
+          test "$jar_count" -gt 0
+          cp "$runtime_classpath" artifacts/dependency-audit/runtime-classpath.txt
 
       - name: Scan resolved Gradle artifacts
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
@@ -107,7 +148,8 @@ jobs:
           format: sarif
           output: artifacts/dependency-audit/trivy-gradle.sarif
           severity: HIGH,CRITICAL
-          ignore-unfixed: true
+          limit-severities-for-sarif: true
+          ignore-unfixed: false
           exit-code: '1'
           cache: true
 
@@ -189,32 +231,43 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
-  trivy:
-    name: Trivy (${{ matrix.name }})
+  compose-images:
+    name: Resolve Compose images
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    outputs:
+      matrix: ${{ steps.resolve.outputs.matrix }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Resolve Compose image matrix
+        id: resolve
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts
+          compose_json="$(docker compose --env-file infra/compose/.env.example --file infra/compose/compose.yaml config --format json)"
+          matrix="$(jq -c '[.services | to_entries[] | {name: .key, service: .key, image: .value.image, build: (.value.build != null), output: ("artifacts/trivy-" + .key + ".sarif")}]' <<<"$compose_json")"
+          test "$(jq 'length' <<<"$matrix")" -eq 3
+          jq . <<<"$matrix" | tee artifacts/compose-images.json
+          echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
+
+      - name: Upload resolved Compose image list
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: security-compose-images
+          path: artifacts/compose-images.json
+          retention-days: 14
+
+  trivy-filesystem:
+    name: Trivy (filesystem)
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
       contents: read
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - name: filesystem
-            scan-type: fs
-            scan-ref: .
-            output: artifacts/trivy-filesystem.sarif
-          - name: postgres
-            scan-type: image
-            image-ref: postgres:18.4-alpine3.24
-            output: artifacts/trivy-postgres.sarif
-          - name: s3mock
-            scan-type: image
-            image-ref: adobe/s3mock:5.1.0
-            output: artifacts/trivy-s3mock.sarif
-          - name: oidc
-            scan-type: image
-            image-ref: ghcr.io/navikt/mock-oauth2-server:5.0.2
-            output: artifacts/trivy-oidc.sarif
     steps:
       - name: Checkout
         uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
@@ -225,30 +278,63 @@ jobs:
         run: mkdir -p artifacts
 
       - name: Scan filesystem for vulnerabilities, secrets and misconfiguration
-        if: ${{ matrix.scan-type == 'fs' }}
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
         with:
-          scan-type: ${{ matrix.scan-type }}
-          scan-ref: ${{ matrix.scan-ref }}
+          scan-type: fs
+          scan-ref: .
           scanners: vuln,secret,misconfig
           format: sarif
-          output: ${{ matrix.output }}
+          output: artifacts/trivy-filesystem.sarif
           severity: HIGH,CRITICAL
-          ignore-unfixed: true
+          limit-severities-for-sarif: true
+          ignore-unfixed: false
           exit-code: '1'
           cache: true
 
+      - name: Upload Trivy report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: security-trivy-filesystem
+          path: artifacts/trivy-filesystem.sarif
+          if-no-files-found: warn
+          retention-days: 14
+
+  trivy-compose-images:
+    name: Trivy (image ${{ matrix.name }})
+    needs: compose-images
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include: ${{ fromJSON(needs.compose-images.outputs.matrix) }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Prepare scan output directory
+        run: mkdir -p artifacts
+
+      - name: Build Compose image
+        if: ${{ matrix.build }}
+        run: docker compose --env-file infra/compose/.env.example --file infra/compose/compose.yaml build --pull "${{ matrix.service }}"
+
       - name: Scan Compose container image
-        if: ${{ matrix.scan-type == 'image' }}
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
         with:
-          scan-type: ${{ matrix.scan-type }}
-          image-ref: ${{ matrix.image-ref }}
+          scan-type: image
+          image-ref: ${{ matrix.image }}
           scanners: vuln
           format: sarif
           output: ${{ matrix.output }}
           severity: HIGH,CRITICAL
-          ignore-unfixed: true
+          limit-severities-for-sarif: true
+          ignore-unfixed: false
           exit-code: '1'
           cache: true
 
