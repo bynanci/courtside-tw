@@ -47,6 +47,9 @@ jobs:
           mkdir -p artifacts/frontend
           pnpm install --frozen-lockfile --ignore-scripts 2>&1 | tee artifacts/frontend/pnpm-install.log
 
+      - name: Validate ContentDocument contract
+        run: pnpm run contract:schema
+
       - name: Run repository verification
         run: |
           set -o pipefail

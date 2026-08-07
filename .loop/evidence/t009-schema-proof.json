@@ -1,0 +1,309 @@
+{
+  "schema_version": 1,
+  "evidence_id": "t009-schema-proof-20260807",
+  "task": "T009",
+  "recorded_at": "2026-08-07T14:21:00Z",
+  "validated_ref": "ticket/t009-content-document-schema",
+  "validated_commit": "60e1ea0cc4f8eb65f1fbc84637e115dc1aa7ec1d",
+  "scope": {
+    "contract": "contracts/content-document.schema.json",
+    "valid_fixture": "packages/content-schema/fixtures/valid/content-document-v1-all-blocks.json",
+    "invalid_fixture_directory": "packages/content-schema/fixtures/invalid",
+    "validator_script": "scripts/validate-content-schema.mjs",
+    "dependencies": [
+      "ajv@8.20.0",
+      "ajv-formats@3.0.1"
+    ]
+  },
+  "validator": {
+    "engine": "Ajv",
+    "version": "8.20.0",
+    "formats_plugin": "ajv-formats 3.0.1",
+    "dialect": "JSON Schema draft 2020-12",
+    "strict": true,
+    "setup": "pnpm install --frozen-lockfile --ignore-scripts",
+    "result": "PASS",
+    "provider_policy": "No production provider is authorized in T009; video uses the rights-pending sentinel until ADR-0003 approval.",
+    "command": "pnpm run contract:schema",
+    "reproducible": true
+  },
+  "checks": {
+    "schema_parse_and_compile": {
+      "result": "PASS",
+      "detail": "Ajv2020 compiled the schema with strict mode and UUID format support."
+    },
+    "valid_fixture": {
+      "path": "packages/content-schema/fixtures/valid/content-document-v1-all-blocks.json",
+      "result": "PASS",
+      "detail": "One fixture covers all 11 approved MVP block types and includes a UUIDv7 document identifier; video remains rights-pending and cannot authorize an external provider."
+    },
+    "invalid_fixtures": [
+      {
+        "path": "packages/content-schema/fixtures/invalid/block-unknown-property.json",
+        "result": "REJECTED",
+        "intended_reason": "Closed block object rejects render."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/divider-invalid-style.json",
+        "result": "REJECTED",
+        "intended_reason": "Divider style enum rejects dashed."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/gallery-invalid-too-few.json",
+        "result": "REJECTED",
+        "intended_reason": "Gallery items minItems rejects a one-item gallery."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/generative-canvas-invalid-palette.json",
+        "result": "REJECTED",
+        "intended_reason": "Palette enum rejects never-approved-palette."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/generative-canvas-remote-url-unsafe.json",
+        "result": "REJECTED",
+        "intended_reason": "Closed generative payload rejects remoteUrl."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/generative-canvas-shader-unsafe.json",
+        "result": "REJECTED",
+        "intended_reason": "Closed generative payload rejects shader."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/generative-canvas-unsafe.json",
+        "result": "REJECTED",
+        "intended_reason": "Closed generative payload rejects code."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/heading-invalid-level.json",
+        "result": "REJECTED",
+        "intended_reason": "Heading level maximum rejects 7."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/image-invalid-asset-id.json",
+        "result": "REJECTED",
+        "intended_reason": "Image asset ID UUID format and pattern reject the value."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/javascript-inline-link.json",
+        "result": "REJECTED",
+        "intended_reason": "secureHref rejects javascript:."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/list-invalid-empty.json",
+        "result": "REJECTED",
+        "intended_reason": "List items minItems rejects an empty list."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/quote-invalid-empty.json",
+        "result": "REJECTED",
+        "intended_reason": "Quote content minItems rejects an empty quote."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/related-reading-invalid-slug.json",
+        "result": "REJECTED",
+        "intended_reason": "Slug pattern rejects an uppercase/non-slug value."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/stat-invalid-label.json",
+        "result": "REJECTED",
+        "intended_reason": "Stat label minLength rejects an empty label."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/unknown-block.json",
+        "result": "REJECTED",
+        "intended_reason": "Block type enum rejects html."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/video-raw-url.json",
+        "result": "REJECTED",
+        "intended_reason": "Closed payload and rights-pending provider contract reject a raw custom embed URL."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/video-unapproved-provider.json",
+        "result": "REJECTED",
+        "intended_reason": "rights-pending provider const rejects youtube before rights-owner approval."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/heading-whitespace-text.json",
+        "result": "REJECTED",
+        "intended_reason": "Required human-readable text rejects whitespace-only values."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/https-link-missing-host.json",
+        "result": "REJECTED",
+        "intended_reason": "HTTPS href requires a non-empty host."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/https-link-invalid-authority.json",
+        "result": "REJECTED",
+        "intended_reason": "URI format and authority pattern reject an invalid port."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/text-nul.json",
+        "result": "REJECTED",
+        "intended_reason": "Shared NUL exclusion rejects a persisted JSONB-incompatible character."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/heading-invalid-level-low.json",
+        "result": "REJECTED",
+        "intended_reason": "Heading level minimum rejects 1; the existing level-7 fixture covers the upper bound."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/stat-missing-unit-context.json",
+        "result": "REJECTED",
+        "intended_reason": "Stat requires unit and context alongside label and value."
+      }
+    ]
+  },
+  "independent_validation": {
+    "command": "pnpm run contract:schema; exit 0 iff the valid fixture passes, all 23 schema-invalid fixtures are rejected, and the duplicate-ID semantic fixture is detected.",
+    "observed": "valid=true; 23 schema-invalid fixtures all valid=false; duplicate block IDs detected; process exit code 0",
+    "output_digest": {
+      "block-unknown-property.json": "additionalProperties",
+      "divider-invalid-style.json": "enum",
+      "generative-canvas-invalid-palette.json": "enum",
+      "generative-canvas-code/shader/remote-url": "additionalProperties",
+      "heading-invalid-level.json": "maximum",
+      "image-invalid-asset-id.json": "format/pattern",
+      "javascript-inline-link.json": "pattern",
+      "list/quote/gallery-invalid": "minItems",
+      "related-reading-invalid-slug.json": "pattern",
+      "stat-invalid-label.json": "minLength",
+      "unknown-block.json": "enum",
+      "video-raw-url.json": "const/additionalProperties",
+      "video-unapproved-provider.json": "const",
+      "https-link-invalid-authority.json": "format/pattern",
+      "text-nul.json": "not/pattern",
+      "heading-invalid-level-low.json": "minimum",
+      "stat-missing-unit-context.json": "required"
+    }
+  },
+  "companion_validations": [
+    {
+      "command": "validate_graphify_loop.py .loop/t009-content-document-schema-graphify-loop.yaml --strict --json",
+      "result": "PASS",
+      "detail": "10 nodes, 12 edges, 2 proofs cover the high-risk action; graph has named terminal states and L3 dispatch gate."
+    },
+    {
+      "command": "validate_memory_record.py .loop/memory/t009-content-document-schema.json",
+      "result": "PASS"
+    },
+    {
+      "command": "validate_memory_record.py .loop/memory/phase1-review.json",
+      "result": "PASS"
+    },
+    {
+      "command": "node scripts/validate-content-schema.mjs",
+      "result": "PASS",
+      "detail": "Independent replay with Node 24.14.0, Ajv 8.20.0 and ajv-formats 3.0.1 passed: valid fixture accepted, 23 schema-invalid fixtures rejected, duplicate-ID invariant detected."
+    }
+  ],
+  "decision": "PASS",
+  "residual_risks": [
+    "T010 must establish TypeScript/Java validator parity and enforce blocks[*].id uniqueness at the runtime boundary.",
+    "ADR-0003 publisher/rights-owner approval is still required before any real video provider is enumerated.",
+    "T011 and later must prove runtime consumers preserve this boundary."
+  ],
+  "next_gate": "T009 current-head CI/Security run #65 and review threads pass; use expected-head merge authority, then read back main and keep T009 unchecked until that read-back confirms the canonical schema.",
+  "post_format_revalidation": {
+    "input_commit": "60e1ea0cc4f8eb65f1fbc84637e115dc1aa7ec1d",
+    "reason": "CI Frontend and contract verification rejected the previously unformatted complete fixture.",
+    "prettier_check": {
+      "command": "prettier@3.9.6 --check packages/content-schema/fixtures/valid/content-document-v1-all-blocks.json",
+      "result": "PASS"
+    },
+    "strict_ajv_recheck": {
+      "result": "PASS",
+      "observed": "valid fixture accepted and all twenty-three schema-invalid fixtures rejected"
+    },
+    "scope_unchanged": true
+  },
+  "semantic_invariants": {
+    "duplicate_block_id": {
+      "path": "packages/content-schema/fixtures/invalid/duplicate-block-id.json",
+      "invariant": "blocks[*].id must be unique even when payloads differ",
+      "method": "Independent structural assertion over block IDs",
+      "result": "REJECTED",
+      "observed": "duplicate ID detected and rejected by the semantic invariant check"
+    }
+  },
+  "latest_revalidation": {
+    "input_commit": "60e1ea0cc4f8eb65f1fbc84637e115dc1aa7ec1d",
+    "recorded_at": "2026-08-07T14:21:00Z",
+    "result": "PASS",
+    "command": "node scripts/validate-content-schema.mjs",
+    "observed": "Valid fixture accepted; all 11 block types present; UUIDv7 identifier accepted; heading levels are bounded to h2-h4; stat unit/context are required; 23 schema-invalid fixtures rejected; duplicate block-ID invariant detected; Prettier 3.9.6 check passed for the touched contract files.",
+    "scope": "UUIDv7 compatibility, URI authority/port validation, NUL exclusion, heading/stat boundary hardening, isolated negative fixtures, locked repository validator and CI wiring."
+  },
+  "boundary_revalidation": {
+    "input_commit": "60e1ea0cc4f8eb65f1fbc84637e115dc1aa7ec1d",
+    "recorded_at": "2026-08-07T14:21:00Z",
+    "strict_ajv_recheck": {
+      "result": "PASS",
+      "observed": "Valid fixture accepted; 23 schema-invalid fixtures rejected under Ajv2020 strict mode."
+    },
+    "semantic_invariant": {
+      "result": "PASS",
+      "observed": "Duplicate block ID fixture remains rejected by the independent structural assertion."
+    },
+    "focused_security_cases": [
+      {
+        "path": "packages/content-schema/fixtures/invalid/generative-canvas-unsafe.json",
+        "result": "REJECTED",
+        "reason": "code is the sole invalid field after the approved palette correction."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/video-raw-url.json",
+        "result": "REJECTED",
+        "reason": "embedUrl is the sole invalid field on an otherwise-valid rights-pending video payload."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/heading-whitespace-text.json",
+        "result": "REJECTED",
+        "reason": "pattern \\\\S rejects whitespace-only required text."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/https-link-missing-host.json",
+        "result": "REJECTED",
+        "reason": "secureHref requires a non-empty HTTPS host."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/https-link-invalid-authority.json",
+        "result": "REJECTED",
+        "reason": "Invalid port is rejected by URI format and the authority pattern."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/text-nul.json",
+        "result": "REJECTED",
+        "reason": "NUL is rejected by the shared string exclusion before persistence."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/heading-invalid-level-low.json",
+        "result": "REJECTED",
+        "reason": "Heading level 1 is rejected by the h2-h4 boundary."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/stat-missing-unit-context.json",
+        "result": "REJECTED",
+        "reason": "Missing unit and context are rejected by the required-field boundary."
+      }
+    ],
+    "scope_unchanged": true
+  },
+  "reproducible_validation": {
+    "command": "pnpm install --frozen-lockfile --ignore-scripts && pnpm run contract:schema",
+    "dependencies": [
+      "ajv@8.20.0",
+      "ajv-formats@3.0.1"
+    ],
+    "independent_replay_result": "PASS",
+    "github_ci_result": "PASS",
+    "validated_commit": "60e1ea0cc4f8eb65f1fbc84637e115dc1aa7ec1d",
+    "github_ci": {
+      "ci_run_id": 31186112513,
+      "security_run_id": 31186112657,
+      "run_number": 65,
+      "conclusion": "success"
+    }
+  }
+}

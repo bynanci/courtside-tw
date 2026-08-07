@@ -1,0 +1,680 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://courtside.tw/contracts/content-document.schema.json",
+  "title": "Courtside TW ContentDocument v1",
+  "description": "Versioned, deny-by-default content blocks for published magazine articles. Canonical content is structured JSON; arbitrary HTML, scripts, shaders, callbacks and remote code are not part of this contract.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "documentId", "blocks"],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "documentId": {
+      "$ref": "#/$defs/uuid"
+    },
+    "blocks": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "uniqueItems": true,
+      "$comment": "Block IDs are a semantic uniqueness invariant: every blocks[*].id must be unique even when payloads differ; validators must enforce this before persistence.",
+      "items": {
+        "$ref": "#/$defs/block"
+      }
+    }
+  },
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "not": {
+        "pattern": "\\u0000"
+      },
+      "format": "uuid",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-57][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+    },
+    "slug": {
+      "type": "string",
+      "not": {
+        "pattern": "\\u0000"
+      },
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "secureHref": {
+      "type": "string",
+      "not": {
+        "pattern": "\\u0000"
+      },
+      "maxLength": 2048,
+      "format": "uri",
+      "pattern": "^(https://(?:[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?(?::[0-9]{1,5})?|\\[[0-9A-Fa-f:.]+\\])(?:[/?#][^\\s]*)?|mailto:[^\\s@]+@[^\\s@]+)$"
+    },
+    "inlineTextRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "text"],
+      "properties": {
+        "kind": {
+          "const": "text"
+        },
+        "text": {
+          "type": "string",
+          "not": {
+            "pattern": "\\u0000"
+          },
+          "minLength": 1,
+          "maxLength": 4000,
+          "pattern": "\\S"
+        }
+      }
+    },
+    "inlineLinkRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind", "text", "href"],
+      "properties": {
+        "kind": {
+          "const": "link"
+        },
+        "text": {
+          "type": "string",
+          "not": {
+            "pattern": "\\u0000"
+          },
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "\\S"
+        },
+        "href": {
+          "$ref": "#/$defs/secureHref"
+        }
+      }
+    },
+    "inlineContent": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/inlineTextRun"
+          },
+          {
+            "$ref": "#/$defs/inlineLinkRun"
+          }
+        ]
+      }
+    },
+    "paragraphPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["content"],
+      "properties": {
+        "content": {
+          "$ref": "#/$defs/inlineContent"
+        }
+      }
+    },
+    "headingPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["level", "text"],
+      "properties": {
+        "level": {
+          "type": "integer",
+          "minimum": 2,
+          "maximum": 4
+        },
+        "text": {
+          "type": "string",
+          "not": {
+            "pattern": "\\u0000"
+          },
+          "minLength": 1,
+          "maxLength": 500,
+          "pattern": "\\S"
+        }
+      }
+    },
+    "listItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["content"],
+      "properties": {
+        "content": {
+          "$ref": "#/$defs/inlineContent"
+        }
+      }
+    },
+    "listPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["ordered", "items"],
+      "properties": {
+        "ordered": {
+          "type": "boolean"
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 50,
+          "items": {
+            "$ref": "#/$defs/listItem"
+          }
+        }
+      }
+    },
+    "quotePayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["content"],
+      "properties": {
+        "content": {
+          "$ref": "#/$defs/inlineContent"
+        },
+        "attribution": {
+          "type": "string",
+          "not": {
+            "pattern": "\\u0000"
+          },
+          "maxLength": 300
+        }
+      }
+    },
+    "dividerPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "style": {
+          "type": "string",
+          "not": {
+            "pattern": "\\u0000"
+          },
+          "enum": ["solid", "space"]
+        }
+      }
+    },
+    "imagePayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assetId", "altText"],
+      "properties": {
+        "assetId": {
+          "$ref": "#/$defs/uuid"
+        },
+        "altText": {
+          "type": "string",
+          "not": {
+            "pattern": "\\u0000"
+          },
+          "minLength": 1,
+          "maxLength": 500,
+          "pattern": "\\S"
+        },
+        "variant": {
+          "type": "string",
+          "not": {
+            "pattern": "\\u0000"
+          },
+          "enum": ["hero", "wide", "inline", "card"]
+        },
+        "caption": {
+          "type": "string",
+          "not": {
+            "pattern": "\\u0000"
+          },
+          "maxLength": 1000
+        },
+        "credit": {
+          "type": "string",
+          "not": {
+            "pattern": "\\u0000"
+          },
+          "maxLength": 500
+        }
+      }
+    },
+    "galleryItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["assetId", "altText"],
+      "properties": {
+        "assetId": {
+          "$ref": "#/$defs/uuid"
+        },
+        "altText": {
+          "type": "string",
+          "not": {
+            "pattern": "\\u0000"
+          },
+          "minLength": 1,
+          "maxLength": 500,
+          "pattern": "\\S"
+        },
+        "caption": {
+          "type": "string",
+          "not": {
+            "pattern": "\\u0000"
+          },
+          "maxLength": 1000
+        },
+        "credit": {
+          "type": "string",
+          "not": {
+            "pattern": "\\u0000"
+          },
+          "maxLength": 500
+        }
+      }
+    },
+    "galleryPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["items"],
+      "properties": {
+        "layout": {
+          "type": "string",
+          "not": {
+            "pattern": "\\u0000"
+          },
+          "enum": ["grid", "stack"]
+        },
+        "items": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 24,
+          "items": {
+            "$ref": "#/$defs/galleryItem"
+          }
+        }
+      }
+    },
+    "statPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["label", "value", "unit", "context"],
+      "properties": {
+        "label": {
+          "type": "string",
+          "not": {
+            "pattern": "\\u0000"
+          },
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "\\S"
+        },
+        "value": {
+          "type": "string",
+          "not": {
+            "pattern": "\\u0000"
+          },
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "\\S"
+        },
+        "unit": {
+          "type": "string",
+          "not": {
+            "pattern": "\\u0000"
+          },
+          "maxLength": 50
+        },
+        "context": {
+          "type": "string",
+          "not": {
+            "pattern": "\\u0000"
+          },
+          "maxLength": 500
+        }
+      }
+    },
+    "videoPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["providerId", "videoId", "title"],
+      "properties": {
+        "providerId": {
+          "type": "string",
+          "not": {
+            "pattern": "\\u0000"
+          },
+          "const": "rights-pending",
+          "description": "No external video provider is authorized until ADR-0003 rights-owner approval is recorded."
+        },
+        "videoId": {
+          "type": "string",
+          "not": {
+            "pattern": "\\u0000"
+          },
+          "minLength": 1,
+          "maxLength": 64,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "title": {
+          "type": "string",
+          "not": {
+            "pattern": "\\u0000"
+          },
+          "minLength": 1,
+          "maxLength": 300,
+          "pattern": "\\S"
+        },
+        "caption": {
+          "type": "string",
+          "not": {
+            "pattern": "\\u0000"
+          },
+          "maxLength": 1000
+        }
+      }
+    },
+    "relatedReadingPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["articleSlug", "label"],
+      "properties": {
+        "articleSlug": {
+          "$ref": "#/$defs/slug"
+        },
+        "label": {
+          "type": "string",
+          "not": {
+            "pattern": "\\u0000"
+          },
+          "minLength": 1,
+          "maxLength": 300,
+          "pattern": "\\S"
+        }
+      }
+    },
+    "generativeCanvasPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["presetId", "seed", "parameters", "posterAssetId", "altText", "dataSummary"],
+      "properties": {
+        "presetId": {
+          "const": "court-pulse-v1"
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 2147483647
+        },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["density", "tempo", "lineWeight", "paletteId", "numericSequence"],
+          "properties": {
+            "density": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "tempo": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2
+            },
+            "lineWeight": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 10
+            },
+            "paletteId": {
+              "type": "string",
+              "not": {
+                "pattern": "\\u0000"
+              },
+              "enum": ["court-dusk"]
+            },
+            "numericSequence": {
+              "type": "array",
+              "maxItems": 256,
+              "items": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            }
+          }
+        },
+        "posterAssetId": {
+          "$ref": "#/$defs/uuid"
+        },
+        "altText": {
+          "type": "string",
+          "not": {
+            "pattern": "\\u0000"
+          },
+          "minLength": 1,
+          "maxLength": 500,
+          "pattern": "\\S"
+        },
+        "dataSummary": {
+          "type": "string",
+          "not": {
+            "pattern": "\\u0000"
+          },
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "\\S"
+        }
+      }
+    },
+    "block": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "version", "payload"],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "type": {
+          "type": "string",
+          "not": {
+            "pattern": "\\u0000"
+          },
+          "enum": [
+            "paragraph",
+            "heading",
+            "list",
+            "quote",
+            "divider",
+            "image",
+            "gallery",
+            "stat",
+            "video",
+            "related-reading",
+            "generative-canvas"
+          ]
+        },
+        "version": {
+          "const": 1
+        },
+        "payload": {
+          "type": "object"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "paragraph"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/paragraphPayload"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "heading"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/headingPayload"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "list"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/listPayload"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "quote"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/quotePayload"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "divider"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/dividerPayload"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "image"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/imagePayload"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "gallery"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/galleryPayload"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "stat"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/statPayload"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "video"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/videoPayload"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "related-reading"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/relatedReadingPayload"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "generative-canvas"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/generativeCanvasPayload"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

@@ -11,17 +11,20 @@
   "scripts": {
     "setup": "make setup",
     "dev": "make dev",
-    "format": "prettier --write \"apps/**/*.{js,mjs,cjs,ts,tsx,vue,json}\" \"packages/**/*.{js,mjs,cjs,ts,tsx,vue,json}\" \"*.{js,mjs,cjs,json}\"",
-    "format:check": "prettier --check \"apps/**/*.{js,mjs,cjs,ts,tsx,vue,json}\" \"packages/**/*.{js,mjs,cjs,ts,tsx,vue,json}\" \"*.{js,mjs,cjs,json}\"",
+    "format": "prettier --write \"apps/**/*.{js,mjs,cjs,ts,tsx,vue,json}\" \"packages/**/*.{js,mjs,cjs,ts,tsx,vue,json}\" \"scripts/**/*.{js,mjs,cjs}\" \"*.{js,mjs,cjs,json}\"",
+    "format:check": "prettier --check \"apps/**/*.{js,mjs,cjs,ts,tsx,vue,json}\" \"packages/**/*.{js,mjs,cjs,ts,tsx,vue,json}\" \"scripts/**/*.{js,mjs,cjs}\" \"*.{js,mjs,cjs,json}\"",
     "lint": "make lint",
     "typecheck": "make typecheck",
     "test": "make test",
     "contract": "make contract",
-    "verify": "make verify"
+    "verify": "make verify",
+    "contract:schema": "node scripts/validate-content-schema.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
     "@stylistic/eslint-plugin": "5.10.0",
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1",
     "eslint": "10.8.0",
     "eslint-config-prettier": "10.1.8",
     "eslint-plugin-vue": "10.10.0",

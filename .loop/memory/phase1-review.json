@@ -48,9 +48,17 @@
   },
   "decision": {
     "chosen": "Merge the bounded governance correction, then start T009; do not mark T009 complete from dispatch alone.",
-    "invalidation": "If main read-back shows any T001-T008 checkbox, constitution/ADR status or T008 security receipt contradiction, stop T009 and reopen Phase 1 reconciliation."
+    "invalidation": "If source evidence changes or the Phase 1 gate is reopened, mark this record needs_update and stop dependent dispatch.",
+    "correction": "Add the required work-memory/v1 source_refs field; preserve the original review-time task-state claim."
   },
   "next_review_at": "2026-08-14",
   "sensitivity": "internal",
-  "retention": "until_superseded"
+  "retention": "until_superseded",
+  "source_refs": [
+    ".loop/evidence/phase1-review-20260807.json",
+    ".loop/evidence/t008-main-readback.json",
+    ".specify/memory/constitution.md",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    "PR #31"
+  ]
 }

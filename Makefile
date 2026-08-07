@@ -36,8 +36,11 @@ typecheck: check-toolchain
 test: check-toolchain
 	@$(MAKE) --no-print-directory _run-workspace SCRIPT=test
 
-contract: check-toolchain
+contract: check-toolchain contract-schema
 	@$(MAKE) --no-print-directory _run-workspace SCRIPT=contract
+
+contract-schema: check-toolchain
+	@$(PNPM) run contract:schema
 
 verify: check-toolchain check-root-contract format-check lint typecheck test contract
 	@echo "verify: pass (root contract and available workspace checks)"

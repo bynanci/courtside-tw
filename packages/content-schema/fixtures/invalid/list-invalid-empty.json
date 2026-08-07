@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "documentId": "00000000-0000-4000-8000-000000000017",
+  "blocks": [
+    {
+      "id": "00000000-0000-4000-8000-000000000018",
+      "type": "list",
+      "version": 1,
+      "payload": {
+        "ordered": false,
+        "items": []
+      }
+    }
+  ]
+}

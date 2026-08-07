@@ -1,0 +1,41 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t009-ci-security-20260807",
+  "generated_at": "2026-08-07T14:21:00Z",
+  "actor": "verifier",
+  "subject": "T009 current-head CI and Security",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T009",
+  "head": {
+    "branch": "ticket/t009-content-document-schema",
+    "sha": "60e1ea0cc4f8eb65f1fbc84637e115dc1aa7ec1d",
+    "pr": 32,
+    "state": "open",
+    "mergeable": true,
+    "t009_checked": false
+  },
+  "workflows": [
+    {
+      "name": "CI",
+      "run_id": 31186112513,
+      "run_number": 65,
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "Security",
+      "run_id": 31186112657,
+      "run_number": 65,
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "review_threads": {
+    "current_head_threads_resolved": true,
+    "resolved_count": 10,
+    "unresolved_count": 0,
+    "merge_authority": "human-required"
+  },
+  "result": "PASS_WITH_HUMAN_MERGE_GATE",
+  "next_action": "Current-head CI/Security and review threads pass. Use expected-head merge authority, then read back main and keep T009 unchecked until that read-back confirms the canonical schema."
+}

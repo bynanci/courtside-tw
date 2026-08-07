@@ -1,0 +1,436 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-ticket-implementation-t009
+objective: Define ContentDocument v1 and bounded MVP fixtures as the safe contract foundation for later validators and renderers.
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - contracts/content-document.schema.json
+    - packages/content-schema/fixtures/valid/
+    - packages/content-schema/fixtures/invalid/
+    - scripts/validate-content-schema.mjs
+    - package.json, pnpm-lock.yaml, Makefile and CI contract wiring
+    - T009 dispatch, evidence, ledger and semantic memory
+  out:
+    - T010 validators and generated TypeScript/Java types
+    - T011+ API, database, authentication, media pipeline and runtime implementation
+    - production credentials, deployment and release publishing
+    - Web3/provider writes
+authority:
+  allowed:
+    - define schema and fixtures within T009 paths
+    - run static and negative validation
+    - open a review PR
+  requires_approval:
+    - merge implementation PR
+    - mark T009 checked
+  forbidden:
+    - weaken constraints to satisfy a fixture
+    - implement T010 or later tickets
+    - add arbitrary HTML, scripts, shaders, callbacks or remote modules
+    - add production credentials or external writes
+
+acceptance:
+  - schema validates one fixture covering all 11 MVP block types
+  - each approved block type has a focused invalid fixture for its payload boundary
+  - invalid fixtures reject unsafe links, arbitrary block types/properties, raw video URLs, unapproved video providers and generative code/shader/remote URL
+  - video remains a rights-pending sentinel until ADR-0003 publisher/rights-owner approval; no external provider is authorized
+  - paletteId is an enum for the approved court-pulse-v1 palette
+  - duplicate blocks[*].id is rejected by the declared semantic uniqueness invariant
+  - required human-readable strings reject whitespace-only values
+  - HTTPS links require a non-empty host
+  - HTTPS links reject malformed authority and port values through URI format and a bounded authority pattern
+  - all persisted string fields reject NUL characters before JSONB persistence
+  - repository CI runs the locked ContentDocument validator before merge
+  - UUIDv7 identifiers accepted by the data model are accepted by the contract
+  - heading levels are bounded to h2-h4, with focused lower-bound coverage
+  - stat blocks require label, value, unit and context
+  - schema is closed-world at document, block and payload boundaries
+  - T009 remains unchecked until implementation proof and main read-back
+
+budgets:
+  max_iterations: 10
+  max_minutes: 60
+  max_same_failure: 2
+  max_graph_changes: 12
+  max_tokens: 40000
+
+policy:
+  human_gates:
+    - mark merge T009
+    - mark T009 checked
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+memory_workflow:
+  contract: work-memory/v1
+  control_ledger: Append graph delta, proof receipts, failure signatures and token usage every iteration.
+  semantic_memory: Capture only durable T009 state and constraints.
+  modes: [recall, capture, update, forget, no_op]
+  retrieval:
+    levels: [index, timeline_relations, details]
+    max_index_results: 10
+    stop_on_sufficient_evidence: true
+  capture:
+    allowed_kinds: [constraint, fact, attempt, task_state, evidence]
+    requires_downstream_proof: true
+    requires_write_receipt: true
+  lifecycle: [seed, verified, stable, needs_update, disputed, archived]
+  failure_policy:
+    write_pending: blocked
+    stale_or_disputed: needs_human
+    redact_secrets: true
+
+graph:
+  entry_nodes: [x-phase1-main-readback, t-t009-ready]
+  terminal_nodes: [s-t009-terminal]
+  current_frontier: [g-t009-review-merge]
+  blocked_nodes: []
+  nodes:
+    - id: x-phase1-main-readback
+      kind: external
+      layer: EXTERNAL
+      label: Authoritative Phase 1 main read-back
+      owner: github
+      status: done
+      risk: medium
+      confidence:
+        score: 1.0
+        basis: PR #31 main read-back confirms Phase 1 gate PASS and T009 is the next unchecked task.
+        evidence_refs: ["PR #31", .loop/evidence/phase1-review-20260807.json]
+      budget:
+        effort_hours: 0.2
+        tokens: 1500
+      config:
+        source_type: github-main
+        freshness: "2026-08-07T10:50:00Z"
+        limitations: "GitHub connector read-back; no private repository secrets or hidden session state."
+
+    - id: t-t009-ready
+      kind: trigger
+      layer: L1
+      label: T009 is explicitly dispatched after Phase 1 read-back
+      owner: codex-supervisor
+      status: done
+      risk: low
+      confidence:
+        score: 1.0
+        basis: Current user direction authorizes starting Phase 2 and dispatch evidence binds the branch to main@a75f1c2.
+        evidence_refs: [.loop/evidence/t009-dispatch-20260807.json]
+      budget:
+        effort_hours: 0.1
+        tokens: 1000
+      config:
+        condition: Phase 1 PASS and T009 remains the first unchecked task.
+        inputs_required: [tasks.md, plan.md, constitution, phase1 main read-back]
+        dedupe: ticket plus main SHA
+
+    - id: g-phase1-dispatch
+      kind: gate
+      layer: L3
+      label: Phase 1 read-back authorizes T009 dispatch
+      owner: human-mark
+      status: done
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: Current user direction and PR #31 main read-back authorize starting Phase 2 while T009 remains unchecked.
+        evidence_refs: [.loop/evidence/t009-dispatch-20260807.json, "PR #31"]
+      budget:
+        effort_hours: 0.1
+        tokens: 1000
+      config:
+        condition: Phase 1 PASS and T009 is the first unchecked bounded task.
+        approver: human-mark
+        required: true
+
+    - id: m-phase1-review
+      kind: memory
+      layer: L1
+      label: Phase 1 review memory and governance constraint
+      owner: codex-supervisor
+      status: done
+      risk: medium
+      confidence:
+        score: 0.95
+        basis: Repository memory record was corrected to satisfy work-memory/v1 source reference requirements.
+        evidence_refs: [.loop/memory/phase1-review.json, "PR #31"]
+      budget:
+        effort_hours: 0.1
+        tokens: 1200
+      config:
+        path: .loop/memory/phase1-review.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: work-memory/v1
+        memory_role: semantic_memory
+        receipt_required: true
+        write_failure_state: blocked
+
+    - id: a-t009-define-contract
+      kind: action
+      layer: L1
+      label: Define ContentDocument v1 schema and bounded fixtures
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 0.95
+        basis: Schema and fixture proof passed under strict Ajv; provider rights approval, ID uniqueness enforcement and validator parity remain gated follow-ups.
+        evidence_refs: [specs/001-taiwan-basketball-magazine-ebook/tasks.md#T009, docs/adr/0003-content-document-and-media-policy.md, docs/adr/0005-motion-and-generative-runtime.md, .loop/evidence/t009-schema-proof.json]
+      budget:
+        effort_hours: 3.0
+        tokens: 18000
+      config:
+        workflow: [read current contract, define schema, add valid fixture, add negative fixtures, run independent validation]
+        allowed: [T009 paths, evidence and memory paths]
+        requires_approval: [open review PR, merge implementation PR, mark T009 checked]
+        forbidden: [T010 implementation, API/database/UI/runtime changes, external writes]
+
+    - id: p-t009-schema-validation
+      kind: proof
+      layer: L1
+      label: JSON Schema parses and validates all fixture expectations
+      owner: verifier
+      status: done
+      risk: high
+      confidence:
+        score: 0.98
+        basis: Ajv2020 strict compilation, UUIDv7 fixture acceptance and reproducible repository validator replay passed.
+        evidence_refs: [.loop/evidence/t009-schema-proof.json, .loop/evidence/t009-ci-security-20260807.json]
+      budget:
+        effort_hours: 0.5
+        tokens: 5000
+      config:
+        level: P2
+        claim: The schema is syntactically valid and the valid fixture is accepted.
+        method: Independent JSON Schema validator plus fixture parse.
+        evidence_path: .loop/evidence/t009-schema-proof.json
+        required: true
+        baseline_required: true
+
+    - id: p-t009-negative-fixtures
+      kind: proof
+      layer: L1
+      label: Focused negative fixtures fail for each block and security boundary
+      owner: verifier
+      status: done
+      risk: high
+      confidence:
+        score: 0.98
+        basis: Twenty-three focused schema-invalid fixtures and the duplicate-ID semantic invariant were rejected for the intended constraints.
+        evidence_refs: [.loop/evidence/t009-schema-proof.json, .loop/evidence/t009-ci-security-20260807.json]
+      budget:
+        effort_hours: 0.5
+        tokens: 5000
+      config:
+        level: P2
+        claim: Twenty-three schema-invalid fixtures and the duplicate-ID semantic invariant are rejected without weakening the contract.
+        method: Independent Ajv validator with per-fixture receipts plus a structural uniqueness assertion.
+        evidence_path: .loop/evidence/t009-schema-proof.json
+        required: true
+        baseline_required: true
+
+    - id: g-t009-review-merge
+      kind: gate
+      layer: L2
+      label: T009 PR review and merge gate
+      owner: human-mark
+      status: ready
+      risk: critical
+      confidence:
+        score: 0.98
+        basis: Latest Ajv/Prettier replay, strict boundary proof, repository validator wiring, CI/Security run #65 and all current review threads pass; explicit human merge authority and main read-back remain.
+        evidence_refs: [.loop/evidence/t009-schema-proof.json, .loop/evidence/t009-ci-security-20260807.json]
+      budget:
+        effort_hours: 0.5
+        tokens: 3000
+      config:
+        condition: Current head has required proof, no blocking finding and expected-head protection.
+        approver: human-mark
+        required: true
+
+    - id: m-t009
+      kind: memory
+      layer: L1
+      label: Durable T009 task state and constraints
+      owner: codex-supervisor
+      status: done
+      risk: medium
+      confidence:
+        score: 0.95
+        basis: Durable T009 state was updated with the independent proof receipt.
+        evidence_refs: [.loop/evidence/t009-dispatch-20260807.json, .loop/evidence/t009-schema-proof.json, .loop/memory/t009-content-document-schema.json]
+      budget:
+        effort_hours: 0.2
+        tokens: 2000
+      config:
+        path: .loop/memory/t009-content-document-schema.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: work-memory/v1
+        memory_role: hybrid
+        receipt_required: true
+        write_failure_state: blocked
+
+    - id: s-t009-terminal
+      kind: stop
+      layer: GLOBAL
+      label: T009 named terminal policy
+      owner: policy
+      status: planned
+      risk: critical
+      confidence:
+        score: 0.6
+        basis: Success requires both schema proof and negative-fixture proof, then merge/read-back and completion state.
+        evidence_refs: []
+      budget:
+        effort_hours: 0.1
+        tokens: 500
+      config:
+        states:
+          success: Schema and fixtures pass, PR is merged, T009 completion is read back on main.
+          blocked: Required validator, authority or evidence is unavailable.
+          needs_human: Merge or completion approval is pending.
+          no_op: No authoritative T009 change is required or the task is already satisfied.
+          stalled: Evidence delta does not change after the configured retry budget.
+          exhausted: Graph budget is reached.
+  edges:
+    - id: e-read-phase1
+      from: m-phase1-review
+      to: a-t009-define-contract
+      type: reads
+      required: true
+      confidence: 0.95
+      token_capacity: 12000
+    - id: e-main-dispatch
+      from: x-phase1-main-readback
+      to: g-phase1-dispatch
+      type: enables
+      required: true
+      confidence: 1.0
+      token_capacity: 12000
+    - id: e-dispatch-trigger
+      from: g-phase1-dispatch
+      to: t-t009-ready
+      type: approves
+      required: true
+      confidence: 1.0
+      token_capacity: 12000
+    - id: e-trigger-action
+      from: t-t009-ready
+      to: a-t009-define-contract
+      type: enables
+      required: true
+      confidence: 1.0
+      token_capacity: 12000
+    - id: e-action-schema
+      from: a-t009-define-contract
+      to: p-t009-schema-validation
+      type: verifies
+      required: true
+      confidence: 0.82
+      token_capacity: 8000
+    - id: e-action-negative
+      from: a-t009-define-contract
+      to: p-t009-negative-fixtures
+      type: verifies
+      required: true
+      confidence: 0.82
+      token_capacity: 8000
+    - id: e-proof-gate
+      from: p-t009-schema-validation
+      to: g-t009-review-merge
+      type: requires_approval
+      required: true
+      confidence: 0.8
+      token_capacity: 8000
+    - id: e-negative-gate
+      from: p-t009-negative-fixtures
+      to: g-t009-review-merge
+      type: requires_approval
+      required: true
+      confidence: 0.8
+      token_capacity: 8000
+    - id: e-gate-stop
+      from: g-t009-review-merge
+      to: s-t009-terminal
+      type: approves
+      required: true
+      confidence: 0.7
+      token_capacity: 8000
+    - id: e-action-memory
+      from: a-t009-define-contract
+      to: m-t009
+      type: records
+      required: true
+      confidence: 0.75
+      token_capacity: 4000
+    - id: e-proof-memory
+      from: p-t009-schema-validation
+      to: m-t009
+      type: records
+      required: true
+      confidence: 0.75
+      token_capacity: 4000
+    - id: e-memory-feedback
+      from: m-t009
+      to: a-t009-define-contract
+      type: feedback
+      required: true
+      confidence: 0.7
+      token_capacity: 4000
+  loops:
+    - id: l1-execution
+      layer: L1
+      owner: agent
+      trigger_nodes: [t-t009-ready]
+      action_nodes: [a-t009-define-contract]
+      proof_nodes: [p-t009-schema-validation, p-t009-negative-fixtures]
+      memory_nodes: [m-phase1-review, m-t009]
+      stop_nodes: [s-t009-terminal]
+      budgets:
+        max_iterations: 10
+        max_minutes: 60
+        max_same_failure: 2
+        max_graph_changes: 12
+        max_tokens: 40000
+flow:
+  source: t-t009-ready
+  sink: s-t009-terminal
+  capacity_unit: tokens
+  interpretation: planning-proxy
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - memory_receipt
+  - next_action
+loops:
+  - id: l1-execution
+    layer: L1
+    owner: agent
+    trigger_nodes: [t-t009-ready]
+    action_nodes: [a-t009-define-contract]
+    proof_nodes: [p-t009-schema-validation, p-t009-negative-fixtures]
+    memory_nodes: [m-phase1-review, m-t009]
+    stop_nodes: [s-t009-terminal]
+    budgets:
+      max_iterations: 10
+      max_minutes: 60
+      max_same_failure: 2
+      max_graph_changes: 12
+      max_tokens: 40000
