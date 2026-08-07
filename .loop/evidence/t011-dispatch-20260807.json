@@ -1,0 +1,83 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t011-dispatch-20260807",
+  "generated_at": "2026-08-07T12:56:56Z",
+  "actor": "codex-supervisor",
+  "subject": "T011 OpenAPI v1 contract dispatch",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T011",
+  "authorization": {
+    "claim_status": "CONFIRMED",
+    "approved_by": "Mark",
+    "source": "Current user direction: 開始phase 2 tickets",
+    "scope": "Start bounded Phase 2 ticket work within the existing Phase 1 gates; no merge or task checkbox without explicit approval."
+  },
+  "main_readback": {
+    "ref": "main",
+    "sha": "a75f1c250155216ec0b3f9f1f3a130bf4ff1c43e",
+    "t001_t008_checked": true,
+    "t009_checked": false,
+    "t011_checked": false,
+    "t009_canonical_schema_on_main": false,
+    "source_refs": [
+      "PR #31",
+      "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T011",
+      "specs/001-taiwan-basketball-magazine-ebook/plan.md#API Contract Surface",
+      "PR #32"
+    ]
+  },
+  "t009_dependency": {
+    "pr": "#32",
+    "head": "8584c914b771c2e45e372a0fad1e9e98ee148209",
+    "branch": "ticket/t009-content-document-schema",
+    "state": "open",
+    "mergeable": true,
+    "ci_security_at_dispatch": "in_progress",
+    "required_for": "A self-contained OpenAPI ContentDocument $ref and combined contract proof require T009 main read-back."
+  },
+  "scope": {
+    "in": [
+      "T011 dispatch and governance evidence",
+      "contracts/openapi.yaml after T009 main read-back",
+      ".loop Graphify ledger and semantic memory for T011"
+    ],
+    "out": [
+      "T009 ContentDocument schema/fixtures",
+      "T010 validators and generated types",
+      "T012 generated client",
+      "runtime API/controllers/database/auth implementation",
+      "UI/deployment/credentials/provider writes"
+    ]
+  },
+  "acceptance": [
+    "Define all T011 API v1 paths under /api/v1 from tasks.md and the API Contract Surface plan.",
+    "Specify public, reader, editorial, publisher, media, taxonomy, provenance, optional SIWE and offline operations with explicit security requirements.",
+    "Use RFC 9457 Problem Details application/problem+json with stable code and field-error rules for 400/401/403/404/409/422/429.",
+    "Reference the T009 canonical ContentDocument schema; do not duplicate or weaken its boundary.",
+    "Run independent OpenAPI parse/lint, local $ref resolution and representative request/response example proof before review."
+  ],
+  "authority": {
+    "allowed": [
+      "Read main, tasks, plan, ADRs and T009 current PR.",
+      "Create T011 dispatch, governance, Graphify, ledger and memory artifacts.",
+      "After T009 main read-back, define and lint contracts/openapi.yaml.",
+      "Open a review PR."
+    ],
+    "requires_approval": [
+      "Merge T011.",
+      "Mark T011 checked in tasks.md.",
+      "Change authentication, provider, permission or wallet scope."
+    ],
+    "forbidden": [
+      "Duplicate or weaken the ContentDocument schema.",
+      "Implement T010, T012 or runtime endpoints.",
+      "Write secrets, production state or external provider data."
+    ]
+  },
+  "result": "DISPATCHED_BLOCKED",
+  "blockers": [
+    "T009 ContentDocument schema is not on main.",
+    "T009 PR #32 current-head CI/Security and merge/read-back are pending."
+  ],
+  "next_action": "After T009 merges and main read-back succeeds, create contracts/openapi.yaml referencing the canonical ContentDocument schema, then run independent OpenAPI lint and example proof."
+}

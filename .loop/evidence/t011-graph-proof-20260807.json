@@ -1,0 +1,52 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t011-graph-proof-20260807",
+  "generated_at": "2026-08-07T13:01:47Z",
+  "actor": "verifier",
+  "subject": "T011 Graphify strict validation",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T011",
+  "input": {
+    "graph_ref": "ticket/t011-openapi-contract@801e5536305acae8c12c139f0abce0f16818c5f8",
+    "graph_blob_sha": "d94cdb8da589fb81fca3f9e86052b4a9e34cc139",
+    "validator": "/root/.codex/skills/remote-skills/skill-6a733e2311d08191b084fbc1ebfc621e/scripts/validate_graphify_loop.py",
+    "mode": "--strict --json"
+  },
+  "result": "PASS",
+  "analysis": {
+    "nodes": 10,
+    "edges": 12,
+    "action_count": 1,
+    "covered_actions": [
+      "a-t011-define-openapi"
+    ],
+    "uncovered_actions": [],
+    "confidence_floor": 0.4,
+    "min_cut": [
+      "e-action-proof"
+    ],
+    "blocker_frontier": [
+      "x-t009-contract-state",
+      "g-t009-main-readback",
+      "t-t011-ready",
+      "a-t011-define-openapi",
+      "p-t011-openapi-proof",
+      "g-t011-review-merge"
+    ]
+  },
+  "checks": [
+    "graph.loops is present and covers trigger, action, proof, memory and stop nodes",
+    "external T009 evidence routes through the L3 T009 main read-back gate before L1 implementation",
+    "T011 action has a downstream proof and a required memory read/record path",
+    "no strict validator errors or warnings"
+  ],
+  "repair_history": {
+    "initial_failure": [
+      "root.graph.loops was missing",
+      "external T009 evidence directly blocked the L1 action"
+    ],
+    "resolution": "Added the L1 loop registry and routed the T009 dependency through g-t009-main-readback at L3.",
+    "scope_change": false
+  },
+  "next_action": "Keep T011 blocked; wait for T009 merge and main read-back before implementing contracts/openapi.yaml."
+}

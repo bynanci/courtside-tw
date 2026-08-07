@@ -1,0 +1,99 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t011-openapi-proof-20260807",
+  "generated_at": "2026-08-07T14:50:00Z",
+  "actor": "codex-supervisor",
+  "subject": "T011 OpenAPI v1 contract independent proof",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T011",
+  "validated_ref": "ticket/t011-openapi-contract-implementation",
+  "validated_commit": "11e70c353a1a97578548e118e62e7e520e8e30b7",
+  "scope": {
+    "contract": "contracts/openapi.yaml",
+    "validator": "scripts/validate-openapi.mjs",
+    "canonical_content_ref": "./content-document.schema.json",
+    "package_wiring": [
+      "package.json",
+      "pnpm-lock.yaml",
+      "Makefile",
+      ".github/workflows/ci.yml"
+    ]
+  },
+  "contract": {
+    "openapi": "3.1.0",
+    "paths": 28,
+    "operations": 35,
+    "request_examples": 17,
+    "stable_error_statuses": [
+      400,
+      401,
+      403,
+      404,
+      409,
+      422,
+      429
+    ],
+    "security_schemes": [
+      "oidcBearer",
+      "bffSession"
+    ],
+    "pagination": "opaque cursor plus bounded limit",
+    "idempotency": "Idempotency-Key is required on x-idempotent operations",
+    "optimistic_locking": "If-Match is required on x-optimistic-lock operations",
+    "problem_media_type": "application/problem+json",
+    "canonical_content_ref": "./content-document.schema.json"
+  },
+  "validator": {
+    "engine": "yaml 2.9.0 parser plus deterministic OpenAPI structural/example/ref checks",
+    "command": "pnpm run contract:openapi",
+    "setup": "pnpm install --frozen-lockfile --ignore-scripts",
+    "result": "PASS",
+    "strict": true
+  },
+  "checks": [
+    {
+      "name": "OpenAPI dialect",
+      "result": "PASS",
+      "detail": "OpenAPI 3.1.0 and JSON Schema draft 2020-12 dialect are explicit."
+    },
+    {
+      "name": "planned operation inventory",
+      "result": "PASS",
+      "detail": "Public, reader, editorial/publisher, media, taxonomy, offline, provenance and optional SIWE operations are present under /api/v1."
+    },
+    {
+      "name": "security and concurrency",
+      "result": "PASS",
+      "detail": "OIDC bearer and BFF cookie schemes are declared; Idempotency-Key and If-Match requirements are linted."
+    },
+    {
+      "name": "Problem Details catalog",
+      "result": "PASS",
+      "detail": "All stable statuses 400, 401, 403, 404, 409, 422 and 429 use application/problem+json responses with stable codes and examples."
+    },
+    {
+      "name": "examples",
+      "result": "PASS",
+      "detail": "Every request body and successful response with content has an example; 17 request bodies are checked."
+    },
+    {
+      "name": "canonical ContentDocument ref",
+      "result": "PASS",
+      "detail": "The OpenAPI component references ./content-document.schema.json and the file is present and parseable on the implementation branch."
+    }
+  ],
+  "decision": "PASS",
+  "residual_risks": [
+    "T010 must prove runtime validator parity and T012 must generate the TypeScript client from this contract.",
+    "OpenAPI security and optimistic-lock declarations are contract requirements; runtime enforcement remains later implementation scope.",
+    "SIWE is optional and never grants editor/publisher authority."
+  ],
+  "next_gate": "PASS WITH FOLLOW-UP: CI #70 and Security #70 pass with no review threads; use expected-head human merge authority and keep T011 unchecked until main read-back.",
+  "review": {
+    "pr": 35,
+    "head": "98626b8c9c198ecada69acf307ab12bf3dc27355",
+    "ci_run": 31188910511,
+    "security_run": 31188911425,
+    "unresolved_review_threads": 0
+  }
+}

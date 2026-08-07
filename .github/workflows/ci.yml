@@ -50,6 +50,9 @@ jobs:
       - name: Validate ContentDocument contract
         run: pnpm run contract:schema
 
+      - name: Validate OpenAPI contract
+        run: pnpm run contract:openapi
+
       - name: Run repository verification
         run: |
           set -o pipefail

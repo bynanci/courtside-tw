@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "memory_id": "wm:project:courtside-tw:t011-openapi-contract",
+  "scope": "project",
+  "kind": "task_state",
+  "title": "T011 OpenAPI v1 contract implementation",
+  "summary": "T011 defines a review-ready OpenAPI 3.1 v1 contract on the post-T009 main baseline. It covers 28 paths and 35 planned operations across public reading, reader library, editorial/publisher, media, offline, provenance and optional SIWE; references the canonical ContentDocument schema, declares OIDC/BFF security, cursor pagination, Idempotency-Key, If-Match, RFC 9457 Problem Details and stable 400/401/403/404/409/422/429 examples. Independent parse/lint/example/ref proof passes; CI #70, Security #70 and current-head review pass with no unresolved threads. Human merge and main read-back remain pending.",
+  "claims": [
+    {
+      "text": "Phase 1 PR #31 is merged and main@a75f1c2 confirms T001-T008 checked while T009 and T011 remain unchecked.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "T011 requires a complete OpenAPI 3.1 v1 contract covering public, reader, editorial/publisher, media, taxonomy, provenance, offline and optional SIWE operations.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "T011 must reference T009's canonical ContentDocument schema rather than duplicate a permissive content object.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The repaired T011 Graphify graph passes strict validation with 10 nodes, 12 edges, a complete loop registry and an L3 route for the external T009 dependency.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "T009 is checked on main@70c9e71 after PR #32 implementation merge and PR #34 main read-back completion.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "T011 contract implementation includes 28 paths and 35 operations from the planned API surface, including offline, provenance and optional SIWE operations.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The OpenAPI document references ./content-document.schema.json rather than duplicating a permissive content object.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Independent OpenAPI proof passes for stable error statuses, request/response examples, cursor pagination, Idempotency-Key, If-Match and security schemes.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "PR #35 head 98626b8 passed CI #70, Security #70 and current-head review with zero unresolved review threads.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    }
+  ],
+  "status": "verified",
+  "confidence": "high",
+  "confidence_basis": [
+    ".loop/evidence/t011-openapi-proof-20260807.json",
+    ".loop/evidence/t009-main-readback-20260807.json",
+    "main@70c9e71aa1d24b5ed807ff7fc7b0001d5683e545",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T011",
+    "specs/001-taiwan-basketball-magazine-ebook/plan.md#API Contract Surface",
+    ".loop/evidence/t011-ci-security-20260807.json",
+    "PR #35@98626b8"
+  ],
+  "volatility": "medium",
+  "as_of": "2026-08-07",
+  "source_refs": [
+    ".loop/evidence/t011-dispatch-20260807.json",
+    ".loop/evidence/t011-governance-review.json",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T011",
+    "specs/001-taiwan-basketball-magazine-ebook/plan.md#API Contract Surface",
+    "docs/adr/0003-content-document-and-media-policy.md",
+    "docs/adr/0004-identity-wallet-and-entitlements.md",
+    "main@a75f1c250155216ec0b3f9f1f3a130bf4ff1c43e",
+    "ticket/t009-content-document-schema@8584c914b771c2e45e372a0fad1e9e98ee148209",
+    ".loop/evidence/t011-graph-proof-20260807.json",
+    ".loop/evidence/t011-t009-dependency-readback-20260807.json",
+    "main@70c9e71aa1d24b5ed807ff7fc7b0001d5683e545",
+    ".loop/evidence/t009-main-readback-20260807.json",
+    ".loop/evidence/t011-openapi-proof-20260807.json",
+    "contracts/openapi.yaml",
+    "scripts/validate-openapi.mjs",
+    ".loop/evidence/t011-ci-security-20260807.json",
+    "PR #35"
+  ],
+  "entities": [
+    "T011",
+    "OpenAPI 3.1",
+    "ContentDocument",
+    "RFC 9457 Problem Details",
+    "T009",
+    "T012"
+  ],
+  "relations": {
+    "supports": [
+      "wm:project:courtside-tw:phase1-review"
+    ],
+    "contradicts": [],
+    "supersedes": [],
+    "blocks": [],
+    "invalidates": []
+  },
+  "decision": {
+    "context": "Phase 1 foundation is complete, T009 is the canonical content boundary, and T011 is the next API contract slice.",
+    "chosen": "Implement the complete bounded OpenAPI v1 contract only after T009 canonical schema availability on main, with deterministic examples/ref/security/concurrency lint.",
+    "alternatives": [
+      "Duplicate ContentDocument definitions inside OpenAPI before T009 is merged.",
+      "Use a permissive object schema and defer safety to runtime renderers.",
+      "Implement runtime endpoints or the generated client in the T011 slice."
+    ],
+    "tradeoffs": [
+      "The dispatch PR is useful and auditable but does not yet deliver contracts/openapi.yaml.",
+      "T011 waits on T009, preserving a single source of truth and a resolvable local $ref.",
+      "Runtime authorization, rate limiting, audit, provider rights and generated-client parity remain later proofs.",
+      "Workflow-clean T009 reduces implementation uncertainty but does not replace the main read-back or human merge gate."
+    ],
+    "invalidation": "If tasks.md, the API Contract Surface plan, ADR-0003/0004, or T009 canonical schema changes, mark this record needs_update and stop before implementing T011.",
+    "proof": "T009 main read-back is complete. OpenAPI 3.1 independent proof passes with 28 paths, 35 operations, 17 request examples, stable Problem Details statuses/codes, cursor pagination, Idempotency-Key, If-Match, OIDC/BFF schemes and a local canonical ContentDocument ref. CI #70, Security #70 and current-head review on PR #35 pass with zero unresolved threads; human merge and main read-back remain pending."
+  },
+  "next_review_at": "2026-08-08",
+  "sensitivity": "internal",
+  "retention": "until_superseded"
+}
