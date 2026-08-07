@@ -1,14 +1,14 @@
 {
   "schema_version": "courtside-tw-loop-evidence/v1",
   "evidence_id": "t004-implementation-proof-20260807",
-  "generated_at": "2026-08-07T03:21:22Z",
+  "generated_at": "2026-08-07T03:34:12Z",
   "actor": "codex-agent",
   "subject": "T004 Nuxt 4.5 SSR scaffold implementation and proof",
   "repository": "bynanci/courtside-tw",
   "runtime": {
     "node": "24.14.0",
     "pnpm": "11.7.0",
-    "nuxt": "4.5.0",
+    "nuxt": "4.5.1",
     "nitro": "2.13.4",
     "vite": "8.2.0",
     "vue": "3.5.41",
@@ -21,6 +21,12 @@
       "result": "failed_then_fixed",
       "observation": "nuxt typecheck correctly stopped because no type checker was declared",
       "fix": "Added exact typescript and vue-tsc devDependencies within apps/web/package.json"
+    },
+    {
+      "attempt": "dependency reproducibility and audit",
+      "result": "failed_then_fixed",
+      "observation": "The first audit could not run without a lockfile; after generating the lockfile, pnpm audit found six Nuxt 4.5.0 advisories (five high and one moderate).",
+      "fix": "Upgraded the exact Nuxt dependency to 4.5.1, regenerated pnpm-lock.yaml, and reran frozen install plus production audit with zero vulnerabilities."
     }
   ],
   "changed_runtime_paths": [
@@ -33,7 +39,22 @@
     {
       "command": "make setup",
       "result": "pass",
-      "details": "Root toolchain contract passed and workspace dependencies installed without creating a lockfile."
+      "details": "Root toolchain contract passed and workspace dependencies installed from the committed frozen lockfile."
+    },
+    {
+      "command": "pnpm install --lockfile-only --ignore-scripts --store-dir /tmp/courtside-tw-pnpm-store",
+      "result": "pass",
+      "details": "Regenerated the root pnpm-lock.yaml for the exact Nuxt 4.5.1, TypeScript 5.9.3 and vue-tsc 3.3.9 dependency graph."
+    },
+    {
+      "command": "pnpm install --frozen-lockfile --ignore-scripts --store-dir /tmp/courtside-tw-pnpm-store",
+      "result": "pass",
+      "details": "Frozen installation accepted the committed lockfile and passed the repository supply-chain policy check."
+    },
+    {
+      "command": "pnpm audit --prod --json",
+      "result": "pass",
+      "details": "Production dependency audit reported zero info, low, moderate, high or critical vulnerabilities across 646 total dependencies."
     },
     {
       "command": "pnpm --filter @courtside/web typecheck",
@@ -43,7 +64,7 @@
     {
       "command": "pnpm --filter @courtside/web build",
       "result": "pass",
-      "details": "Nuxt 4.5.0 production build completed with the node-server Nitro preset."
+      "details": "Nuxt 4.5.1 production build completed with the node-server Nitro preset."
     },
     {
       "command": "PORT=18104 NITRO_PORT=18104 pnpm --filter @courtside/web start",
@@ -51,9 +72,9 @@
       "details": "Generated production server listened on port 18104."
     },
     {
-      "command": "curl -fsS http://127.0.0.1:18104/ plus HTML assertions",
+      "command": "GET http://127.0.0.1:18104/ plus HTML assertions",
       "result": "pass",
-      "details": "Response contained data-ssr-smoke=\"true\", <h1>Courtside TW</h1>, the scaffold marker and the expected SSR title."
+      "details": "A live production server response contained data-ssr-smoke=\"true\", <h1>Courtside TW</h1>, the scaffold marker and the expected SSR title."
     },
     {
       "command": "make verify",
@@ -64,8 +85,12 @@
   "scope": {
     "result": "pass",
     "runtime_implementation_files": 4,
+    "dependency_artifact_files": 1,
+    "dependency_artifacts": [
+      "pnpm-lock.yaml"
+    ],
     "forbidden_runtime_files_added": [],
-    "no_lockfile_added": true,
+    "lockfile_added_for_reproducibility": true,
     "no_spec_plan_design_adr_change": true,
     "no_api_database_provider_auth_web3_change": true
   },
@@ -74,6 +99,6 @@
     "details": "Nitro/Rollup emitted a third-party annotation removal warning during bundling; the build and runtime proof completed successfully and no project source warning was reported."
   },
   "result": "pass",
-  "confidence": 0.98,
-  "decision": "Implementation and required local proofs pass; expose the exact patch to the human review and protected merge gate."
+  "confidence": 0.99,
+  "decision": "Implementation, dependency integrity and required local proofs pass; expose the exact patch to the human review and protected merge gate."
 }

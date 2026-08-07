@@ -1,16 +1,16 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t004",
-  "graph_version": 2,
+  "graph_version": 3,
   "run_id": "courtside-tw-t004-nuxt-ssr-20260807",
   "status": "needs_human",
-  "iteration": 2,
+  "iteration": 3,
   "started_at": "2026-08-07T03:18:00Z",
-  "updated_at": "2026-08-07T03:21:22Z",
+  "updated_at": "2026-08-07T03:34:12Z",
   "current_frontier": ["t-human-review"],
   "blocked_nodes": [],
   "terminal_state": "needs_human",
-  "next_action": "Open and review the bounded T004 PR; protected merge and checkbox completion remain human-gated.",
+  "next_action": "Review the bounded T004 PR with its dependency lockfile and security receipt; protected merge and checkbox completion remain human-gated.",
   "events": [
     {
       "event_id": "evt-t004-nuxt-ssr-001-baseline",
@@ -69,6 +69,35 @@
       "decision": "T004 implementation and required proof pass; create the reviewable PR and stop at the protected human gate.",
       "token_usage": {"estimated": 12000, "input": 0, "output": 0, "total": 12000},
       "terminal_reason": "L1 proof is complete; protected merge and T004 completion are explicitly human-gated.",
+      "memory_receipt": {"memory_status": "NO_OP", "memory_id": null, "version": null, "retrieval_ids": [], "evidence_refs": [".loop/evidence/t004-implementation-proof.json"], "next_review_at": null, "blocker": null}
+    },
+    {
+      "event_id": "evt-t004-nuxt-ssr-003-security-repair-proof",
+      "at": "2026-08-07T03:34:12Z",
+      "actor": "codex-agent",
+      "type": "dependency_security_repair_and_proof",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {"op": "add", "path": "pnpm-lock.yaml", "after": "Root dependency lockfile generated for reproducible T004 installation."},
+          {"op": "replace", "path": "apps/web/package.json/dependencies/nuxt", "before": "4.5.0", "after": "4.5.1"},
+          {"op": "replace", "path": "graph.nodes/p-nuxt-ssr/status", "before": "done", "after": "done"},
+          {"op": "replace", "path": "graph.current_frontier", "before": ["t-human-review"], "after": ["t-human-review"]}
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t004-baseline.json", ".loop/evidence/t004-implementation-proof.json"],
+      "proof_receipts": [
+        {"proof": "dependency repair", "level": "P2", "result": "pass", "details": "Six Nuxt 4.5.0 advisories were resolved by exact Nuxt 4.5.1 and a committed root lockfile."},
+        {"proof": "frozen install", "level": "P2", "result": "pass", "details": "pnpm install --frozen-lockfile passed and the lockfile passed the supply-chain policy check."},
+        {"proof": "production audit", "level": "P2", "result": "pass", "details": "pnpm audit --prod reported zero vulnerabilities across the production dependency graph."},
+        {"proof": "regression proof", "level": "P2", "result": "pass", "details": "Nuxt typecheck, build, live SSR HTML assertions and make verify all passed after the repair."},
+        {"proof": "scope", "level": "P2", "result": "pass", "details": "The only additions beyond the four runtime paths are the root reproducibility lockfile and append-only T004 evidence updates."}
+      ],
+      "failure_signature": {"initial": "pnpm audit was unavailable without a lockfile and then identified six Nuxt 4.5.0 advisories", "resolution": "Nuxt 4.5.1 and frozen lockfile audit pass"},
+      "decision": "Security and reproducibility repair is proven; keep the graph at the explicit human review and protected merge gate.",
+      "token_usage": {"estimated": 10000, "input": 0, "output": 0, "total": 10000},
+      "terminal_reason": "L1 dependency, build and SSR proof is complete; protected merge and T004 completion are explicitly human-gated.",
       "memory_receipt": {"memory_status": "NO_OP", "memory_id": null, "version": null, "retrieval_ids": [], "evidence_refs": [".loop/evidence/t004-implementation-proof.json"], "next_review_at": null, "blocker": null}
     }
   ]

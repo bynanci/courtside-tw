@@ -6,13 +6,13 @@ feedback_updates_next_action: true
 scope:
   in:
     - Read the post-T097 main read-back, approved DESIGN.md, constitution, plan.md and the exact T004 task before implementation.
-    - Create only apps/web/package.json, apps/web/nuxt.config.ts, apps/web/tsconfig.json and apps/web/app/app.vue for runtime implementation.
-    - Pin Nuxt 4.5.0 and the repository Node.js 24.14.x / pnpm 11.7.x baseline.
-    - Prove typecheck, production build, root verification and SSR HTML from the root smoke route.
+    - Create only apps/web/package.json, apps/web/nuxt.config.ts, apps/web/tsconfig.json and apps/web/app/app.vue for runtime implementation, plus the root dependency lockfile required for reproducibility.
+    - Pin Nuxt 4.5.1 within the Nuxt 4.5 line and the repository Node.js 24.14.x / pnpm 11.7.x baseline.
+    - Prove frozen installation, production dependency audit, typecheck, production build, root verification and SSR HTML from the root smoke route.
     - Preserve baseline, implementation, proof and review decisions in append-only T004 loop evidence.
   out:
     - Modifying specs, plan, constitution, ADRs, DESIGN.md or the T004 checkbox in this implementation slice.
-    - Adding pages, components, API clients, Motion, p5.js, Web3, authentication, database, infrastructure, CI or production deployment.
+    - Adding unrelated lockfiles or dependency changes, pages, components, API clients, Motion, p5.js, Web3, authentication, database, infrastructure, CI or production deployment.
     - Dispatching T006 or any later ticket from this graph.
 
 policy:
@@ -149,7 +149,7 @@ graph:
         effort_hours: 0.25
         tokens: 3500
       config:
-        workflow: [read main read-back, read task and plan, confirm four-file scope, confirm Node 24/Nuxt 4.5 baseline, open implementation frontier]
+        workflow: [read main read-back, read task and plan, confirm four runtime files plus dependency artifact scope, confirm Node 24/Nuxt 4.5.1 baseline, open implementation frontier]
         allowed: [read state, append baseline evidence, route T004]
         requires_approval: [merge, mark T004 complete, dispatch later tickets, expand scope]
         forbidden: [alter approved design, start T006, create competing T004 source of truth]
@@ -218,19 +218,19 @@ graph:
     - id: a-nuxt-scaffold
       kind: action
       layer: L1
-      label: Implement the four-file Nuxt 4.5 SSR scaffold
+      label: Implement the four-file Nuxt 4.5.1 SSR scaffold with reproducible dependencies
       owner: codex-agent
       status: done
       risk: medium
       confidence:
         score: 0.98
-        basis: The four paths pass typecheck, production build, root verify and a live SSR HTTP smoke assertion.
+        basis: The four runtime paths plus the root lockfile pass frozen installation, production audit, typecheck, production build, root verify and a live SSR HTTP smoke assertion.
         evidence_refs: [.loop/evidence/t004-implementation-proof.json]
       budget:
         effort_hours: 1.5
         tokens: 16000
       config:
-        workflow: [create package and Nuxt config, create strict tsconfig, render accessible smoke HTML, run typecheck/build/server proof, inspect scope]
+        workflow: [create package and Nuxt config, create strict tsconfig, render accessible smoke HTML, pin Nuxt 4.5.1 and generate the root lockfile, run frozen install/audit/typecheck/build/server proof, inspect scope]
         allowed: [write the four T004 paths, write T004 loop/evidence artifacts, run local Node/pnpm/Nuxt checks]
         requires_approval: [merge, mark T004 complete, dispatch T006 or later, add API/database/provider/infrastructure scope]
         forbidden: [create pages or later-task UI, add Motion/p5/Web3/auth/DB/CI/deployment, weaken SSR proof]
@@ -238,13 +238,13 @@ graph:
     - id: p-nuxt-ssr
       kind: proof
       layer: L1
-      label: T004 Nuxt typecheck, build and SSR smoke proof
+      label: T004 Nuxt dependency, typecheck, build and SSR smoke proof
       owner: verifier
       status: done
       risk: medium
       confidence:
         score: 0.98
-        basis: Node 24.14.0 and pnpm 11.7.0 passed; Nuxt 4.5.0 typecheck and build passed; the production server returned the expected title, marker and h1; root verify passed.
+        basis: Node 24.14.0 and pnpm 11.7.0 passed; frozen install and production audit passed with zero vulnerabilities; Nuxt 4.5.1 typecheck and build passed; the production server returned the expected title, marker and h1; root verify passed.
         evidence_refs: [.loop/evidence/t004-implementation-proof.json]
       budget:
         effort_hours: 0.6
@@ -252,7 +252,7 @@ graph:
       config:
         level: P2
         claim: The T004 root smoke route returns complete server-rendered HTML from a production Nuxt build without client-only prerequisites.
-        method: Run pnpm install without a lockfile mutation, nuxt typecheck, nuxt build, start the generated node-server, curl / and assert SSR markers, then run make verify.
+        method: Run frozen pnpm install and production audit, nuxt typecheck, nuxt build, start the generated node-server, GET / and assert SSR markers, then run make verify.
         evidence_path: .loop/evidence/t004-implementation-proof.json
         required: true
         baseline_required: true
@@ -286,14 +286,14 @@ graph:
       risk: high
       confidence:
         score: 0.98
-        basis: Runtime proof is complete, but protected-branch merge and T004 checkbox completion remain explicit human gates.
+        basis: Runtime, dependency integrity and remote PR proof are complete, but protected-branch merge and T004 checkbox completion remain explicit human gates.
         evidence_refs: [.loop/evidence/t004-implementation-proof.json, .loop/evidence/t004-review-approval.json]
       budget:
         effort_hours: 0.0
         tokens: 0
       config:
-        condition: The four-file patch and independent SSR proof are ready for review.
-        inputs_required: [four-file diff, SSR proof, scope inventory, implementation ledger, pull request]
+        condition: The four-file runtime patch, reproducible dependency artifact and independent SSR proof are ready for review.
+        inputs_required: [four-file diff, dependency lockfile diff, SSR proof, scope inventory, implementation ledger, pull request]
         dedupe: T004-ssr-proof-fingerprint plus review-run-id
 
     - id: a-review-t004
@@ -311,7 +311,7 @@ graph:
         effort_hours: 0.3
         tokens: 3500
       config:
-        workflow: [inspect four-file diff, read proof, verify Nuxt/Node baseline, verify PR scope, approve or request bounded changes]
+        workflow: [inspect four-file diff and lockfile, read proof and audit receipt, verify Nuxt/Node baseline, verify PR scope, approve or request bounded changes]
         allowed: [human review and explicit approval decision]
         requires_approval: [protected merge and T004 checkbox completion]
         forbidden: [infer approval from passing automation, broaden scope, waive missing SSR evidence]
@@ -325,15 +325,15 @@ graph:
       risk: critical
       confidence:
         score: 1.0
-        basis: The user has authorized implementation, not an implicit protected-branch merge or checkbox completion.
+        basis: The user has authorized implementation, not an implicit protected-branch merge or checkbox completion; code safety review is recorded separately from the protected approval.
         evidence_refs: [.loop/evidence/t004-review-approval.json]
       budget:
         effort_hours: 0.25
         tokens: 2500
       config:
         level: P3
-        claim: The accountable human approved the exact T004 patch and its merge/completion action.
-        method: Explicit approval after PR diff, scope inventory and SSR proof read-back.
+        claim: The accountable human approved the exact T004 patch, dependency artifact and its merge/completion action.
+        method: Explicit approval after PR diff, lockfile, scope inventory, audit receipt and SSR proof read-back.
         evidence_path: .loop/evidence/t004-review-approval.json
         required: true
         baseline_required: false
@@ -353,7 +353,7 @@ graph:
         effort_hours: 0.0
         tokens: 0
       config:
-        condition: Explicit approval follows review of the four-file patch, SSR proof and remote PR read-back.
+        condition: Explicit approval follows review of the four-file runtime patch, dependency lockfile, SSR proof and remote PR read-back.
         approver: human-mark
         required: true
 
@@ -386,19 +386,19 @@ graph:
       risk: critical
       confidence:
         score: 0.99
-        basis: Implementation and SSR proof pass; the graph stops at the named human review/merge gate.
+        basis: Implementation, dependency integrity and SSR proof pass; the graph stops at the named human review/merge gate.
         evidence_refs: [.loop/t004-nuxt-ssr-ledger.json, .loop/evidence/t004-review-approval.json]
       budget:
         effort_hours: 0.0
         tokens: 0
       config:
         states:
-          success: Four T004 files pass typecheck, build and SSR proof, are reviewed, merged and read back, and T004 is checked.
+          success: Four T004 runtime files plus the dependency lockfile pass frozen install, audit, typecheck, build and SSR proof, are reviewed, merged and read back, and T004 is checked.
           no_op: An approved equivalent Nuxt 4.5 SSR scaffold already exists and no safe change is required.
           blocked: Required source, Node/pnpm runtime, permission, branch or proof system is unavailable.
           stalled: Same failure or no-evidence-delta limit is reached.
           exhausted: Iteration, time, graph-change or token budget is reached.
-          needs_human: Implementation proof is complete but review, protected merge or checkbox completion is pending.
+          needs_human: Implementation and dependency proof is complete but review, protected merge or checkbox completion is pending.
           cancelled: User cancels or the governing specification becomes invalid.
 
   edges:

@@ -1,14 +1,20 @@
 {
   "schema_version": "courtside-tw-loop-evidence/v1",
   "evidence_id": "t004-review-approval-pending-20260807",
-  "generated_at": "2026-08-07T03:21:22Z",
+  "generated_at": "2026-08-07T03:34:12Z",
   "actor": "codex-supervisor",
   "subject": "T004 review and protected merge gate",
   "repository": "bynanci/courtside-tw",
   "human_gate": {
     "approver": "human-mark",
     "required": true,
-    "scope": "Review the four-file Nuxt scaffold, SSR proof and remote PR read-back before protected main merge and T004 checkbox completion."
+    "scope": "Review the four-file Nuxt scaffold, reproducibility lockfile, security/audit receipt, SSR proof and remote PR read-back before protected main merge and T004 checkbox completion."
+  },
+  "pull_request": {
+    "number": 15,
+    "base": "main",
+    "head_branch": "ticket/t004-nuxt-ssr-scaffold",
+    "status": "open_draft"
   },
   "decision": "NEEDS_HUMAN",
   "result": "needs_human",

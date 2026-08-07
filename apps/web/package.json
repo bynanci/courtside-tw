@@ -16,7 +16,7 @@
     "typecheck": "nuxt typecheck"
   },
   "dependencies": {
-    "nuxt": "4.5.0"
+    "nuxt": "4.5.1"
   },
   "devDependencies": {
     "typescript": "5.9.3",
