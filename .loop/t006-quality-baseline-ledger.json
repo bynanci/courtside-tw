@@ -1,16 +1,16 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t006",
-  "graph_version": 9,
+  "graph_version": 10,
   "run_id": "courtside-tw-t006-quality-baseline-20260807",
-  "status": "needs_human",
+  "status": "success",
   "iteration": 4,
   "started_at": "2026-08-07T05:08:32Z",
-  "updated_at": "2026-08-07T06:25:00Z",
+  "updated_at": "2026-08-07T06:28:00Z",
   "current_frontier": [],
   "blocked_nodes": [],
-  "terminal_state": "needs_human",
-  "next_action": "Open the separate final main read-back slice, verify T006 is checked on main and T007 remains unchecked/undispatched, then close the terminal policy.",
+  "terminal_state": "success",
+  "next_action": "Stop T006. Do not dispatch T007 or later work from this final read-back.",
   "events": [
     {
       "event_id": "evt-t006-quality-baseline-001-graph-initialized",
@@ -534,11 +534,73 @@
         "total": 2200
       },
       "terminal_reason": "Implementation PR is merged and T006 is checked on the completion branch; final main read-back is intentionally separate."
+    },
+    {
+      "event_id": "evt-t006-quality-baseline-010-final-main-readback",
+      "at": "2026-08-07T06:28:00Z",
+      "actor": "codex-supervisor",
+      "type": "main_readback",
+      "base_graph_version": 9,
+      "new_graph_version": 10,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/x-main-readback/confidence/basis",
+            "before": "Main read-back confirms the reconciliation merge, checked T001-T005, unchecked T006 and no competing T006 frontier.",
+            "after": "Final main read-back confirms PR #20/#21 merges, checked T001-T006, unchecked and undispatched T007, and no competing T006 frontier."
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/s-terminal-policy/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "add",
+            "path": ".loop/evidence/t006-main-readback.json",
+            "after": "Final main read-back confirms T006 checked and T007/later undispatched."
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t006-main-readback.json",
+        ".loop/evidence/t006-completion-receipt.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "final main task status",
+          "level": "P3",
+          "result": "pass",
+          "details": "main@9d97573 confirms T001-T006 checked, T007 unchecked and T007/later undispatched."
+        },
+        {
+          "proof": "merge lineage",
+          "level": "P2",
+          "result": "pass",
+          "details": "PR #20 implementation merged at 6ab687e and PR #21 completion merged at 9d97573."
+        },
+        {
+          "proof": "status reconciliation",
+          "level": "P2",
+          "result": "pass",
+          "details": "README no longer describes T006 as undispatched; the final read-back receipt is linked."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "T006 is complete and terminal success is justified by implementation proof, review, both merges, final main read-back and unchanged T007 frontier.",
+      "token_usage": {
+        "estimated": 2600,
+        "input": 0,
+        "output": 0,
+        "total": 2600
+      },
+      "terminal_reason": "T006 quality paths pass, PR #20 is merged, PR #21 records completion, main read-back verifies T006 checked, and T007 remains undispatched."
     }
   ],
   "proof": {
-    "claim": "T006 implementation is merged, the separate completion slice checks T006, and only final main read-back remains before terminal success.",
-    "result": "needs_human",
-    "confidence": 0.99
+    "claim": "T006 shared quality configuration and deterministic Node and Java Gradle enforcement are implemented, reviewed, merged, checked and read back from main; T007 remains undispatched.",
+    "result": "success",
+    "confidence": 1
   }
 }
