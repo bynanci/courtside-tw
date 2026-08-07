@@ -1,0 +1,687 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://courtside.tw/contracts/content-document.schema.json",
+  "title": "Courtside TW ContentDocument v1",
+  "description": "Versioned, deny-by-default content blocks for published magazine articles. Canonical content is structured JSON; arbitrary HTML, scripts, shaders, callbacks and remote code are not part of this contract.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "documentId",
+    "blocks"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "documentId": {
+      "$ref": "#/$defs/uuid"
+    },
+    "blocks": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "items": {
+        "$ref": "#/$defs/block"
+      }
+    }
+  },
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "format": "uuid",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+    },
+    "slug": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 160,
+      "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+    },
+    "secureHref": {
+      "type": "string",
+      "maxLength": 2048,
+      "pattern": "^(https://[^\\s]+|mailto:[^\\s@]+@[^\\s@]+)$"
+    },
+    "inlineTextRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "text"
+      ],
+      "properties": {
+        "kind": {
+          "const": "text"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 4000
+        }
+      }
+    },
+    "inlineLinkRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "text",
+        "href"
+      ],
+      "properties": {
+        "kind": {
+          "const": "link"
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "href": {
+          "$ref": "#/$defs/secureHref"
+        }
+      }
+    },
+    "inlineContent": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 200,
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/inlineTextRun"
+          },
+          {
+            "$ref": "#/$defs/inlineLinkRun"
+          }
+        ]
+      }
+    },
+    "paragraphPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "content"
+      ],
+      "properties": {
+        "content": {
+          "$ref": "#/$defs/inlineContent"
+        }
+      }
+    },
+    "headingPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "level",
+        "text"
+      ],
+      "properties": {
+        "level": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 6
+        },
+        "text": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      }
+    },
+    "listItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "content"
+      ],
+      "properties": {
+        "content": {
+          "$ref": "#/$defs/inlineContent"
+        }
+      }
+    },
+    "listPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "ordered",
+        "items"
+      ],
+      "properties": {
+        "ordered": {
+          "type": "boolean"
+        },
+        "items": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 50,
+          "items": {
+            "$ref": "#/$defs/listItem"
+          }
+        }
+      }
+    },
+    "quotePayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "content"
+      ],
+      "properties": {
+        "content": {
+          "$ref": "#/$defs/inlineContent"
+        },
+        "attribution": {
+          "type": "string",
+          "maxLength": 300
+        }
+      }
+    },
+    "dividerPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "style": {
+          "type": "string",
+          "enum": [
+            "solid",
+            "space"
+          ]
+        }
+      }
+    },
+    "imagePayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assetId",
+        "altText"
+      ],
+      "properties": {
+        "assetId": {
+          "$ref": "#/$defs/uuid"
+        },
+        "altText": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "variant": {
+          "type": "string",
+          "enum": [
+            "hero",
+            "wide",
+            "inline",
+            "card"
+          ]
+        },
+        "caption": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "credit": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    },
+    "galleryItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assetId",
+        "altText"
+      ],
+      "properties": {
+        "assetId": {
+          "$ref": "#/$defs/uuid"
+        },
+        "altText": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "caption": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "credit": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    },
+    "galleryPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "items"
+      ],
+      "properties": {
+        "layout": {
+          "type": "string",
+          "enum": [
+            "grid",
+            "stack"
+          ]
+        },
+        "items": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 24,
+          "items": {
+            "$ref": "#/$defs/galleryItem"
+          }
+        }
+      }
+    },
+    "statPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "label",
+        "value"
+      ],
+      "properties": {
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "unit": {
+          "type": "string",
+          "maxLength": 50
+        },
+        "context": {
+          "type": "string",
+          "maxLength": 500
+        }
+      }
+    },
+    "videoPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "providerId",
+        "videoId",
+        "title"
+      ],
+      "properties": {
+        "providerId": {
+          "type": "string",
+          "enum": [
+            "youtube",
+            "vimeo"
+          ]
+        },
+        "videoId": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 32,
+          "pattern": "^[A-Za-z0-9_-]+$"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        },
+        "caption": {
+          "type": "string",
+          "maxLength": 1000
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "providerId": {
+                "const": "youtube"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "videoId": {
+                "pattern": "^[A-Za-z0-9_-]{11}$"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "providerId": {
+                "const": "vimeo"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "videoId": {
+                "pattern": "^[0-9]{6,12}$"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "relatedReadingPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "articleSlug",
+        "label"
+      ],
+      "properties": {
+        "articleSlug": {
+          "$ref": "#/$defs/slug"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300
+        }
+      }
+    },
+    "generativeCanvasPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "presetId",
+        "seed",
+        "parameters",
+        "posterAssetId",
+        "altText",
+        "dataSummary"
+      ],
+      "properties": {
+        "presetId": {
+          "const": "court-pulse-v1"
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 2147483647
+        },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "density",
+            "tempo",
+            "lineWeight",
+            "paletteId",
+            "numericSequence"
+          ],
+          "properties": {
+            "density": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "tempo": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 2
+            },
+            "lineWeight": {
+              "type": "number",
+              "exclusiveMinimum": 0,
+              "maximum": 10
+            },
+            "paletteId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 64,
+              "pattern": "^[a-z0-9-]+$"
+            },
+            "numericSequence": {
+              "type": "array",
+              "maxItems": 256,
+              "items": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            }
+          }
+        },
+        "posterAssetId": {
+          "$ref": "#/$defs/uuid"
+        },
+        "altText": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "dataSummary": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000
+        }
+      }
+    },
+    "block": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "type",
+        "version",
+        "payload"
+      ],
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/uuid"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "paragraph",
+            "heading",
+            "list",
+            "quote",
+            "divider",
+            "image",
+            "gallery",
+            "stat",
+            "video",
+            "related-reading",
+            "generative-canvas"
+          ]
+        },
+        "version": {
+          "const": 1
+        },
+        "payload": {
+          "type": "object"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "paragraph"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/paragraphPayload"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "heading"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/headingPayload"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "list"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/listPayload"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "quote"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/quotePayload"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "divider"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/dividerPayload"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "image"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/imagePayload"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "gallery"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/galleryPayload"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "stat"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/statPayload"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "video"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/videoPayload"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "related-reading"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/relatedReadingPayload"
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "type": {
+                "const": "generative-canvas"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "payload": {
+                "$ref": "#/$defs/generativeCanvasPayload"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}
