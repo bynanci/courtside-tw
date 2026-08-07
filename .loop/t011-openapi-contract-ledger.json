@@ -1,18 +1,18 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t011",
-  "graph_version": 6,
+  "graph_version": 7,
   "run_id": "courtside-tw-t011-openapi-contract-20260807",
-  "status": "needs_human",
-  "iteration": 6,
+  "status": "completed",
+  "iteration": 7,
   "started_at": "2026-08-07T12:56:56Z",
-  "updated_at": "2026-08-07T14:48:03.040Z",
+  "updated_at": "2026-08-07T15:03:02.886Z",
   "current_frontier": [
-    "g-t011-review-merge"
+    "s-t011-terminal"
   ],
   "blocked_nodes": [],
-  "terminal_state": "needs_human",
-  "next_action": "T011 OpenAPI proof, CI #70, Security #70 and current-head review pass; use expected-head human merge authority. Keep T011 unchecked until main read-back.",
+  "terminal_state": "success",
+  "next_action": "T011 is complete on main after implementation merge and authoritative read-back; keep T010 and T012 independently gated.",
   "events": [
     {
       "event_id": "evt-t011-001-dispatched-blocked",
@@ -518,6 +518,93 @@
       },
       "decision": "REVIEW_PASS_NEEDS_HUMAN_MERGE",
       "follow_up": "Merge PR #35 with expected head, then perform authoritative main read-back and T011 completion update."
+    },
+    {
+      "event_id": "evt-t011-007-main-readback-complete",
+      "at": "2026-08-07T15:03:02.886Z",
+      "actor": "codex-supervisor",
+      "type": "t011_main_readback_complete",
+      "base_graph_version": 6,
+      "new_graph_version": 7,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [
+              "g-t011-review-merge"
+            ],
+            "after": [
+              "s-t011-terminal"
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes.g-t011-review-merge.status",
+            "before": "ready",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes.s-t011-terminal.status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T011",
+            "before": "unchecked",
+            "after": "checked"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t011-main-readback-20260807.json",
+        "PR #35",
+        "main@20f4f3fea1ef251c60c72260232b0494ed2c0f2e"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "implementation merge",
+          "level": "P3",
+          "result": "pass",
+          "details": "PR #35 squash-merged at main@20f4f3f after the T011 PASS WITH FOLLOW-UP gate."
+        },
+        {
+          "proof": "authoritative main read-back",
+          "level": "P3",
+          "result": "pass",
+          "details": "OpenAPI, validator, package script, Makefile target and CI validation are present on main; the canonical ContentDocument ref is preserved."
+        },
+        {
+          "proof": "task-state completion",
+          "level": "P3",
+          "result": "pass",
+          "details": "T011 checkbox is checked in the post-merge read-back branch after the main read-back target passed."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:t011-openapi-contract",
+        "version": 7,
+        "retrieval_ids": [
+          "wm:project:courtside-tw:t009-content-document-schema"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t011-main-readback-20260807.json",
+          ".loop/memory/t011-openapi-contract.json"
+        ],
+        "next_review_at": "2026-08-14",
+        "blocker": null
+      },
+      "failure_signature": null,
+      "token_usage": {
+        "estimated_tokens": 1600,
+        "validator_runtime_seconds": 0,
+        "notes": "Post-merge main contents read-back and task-state completion only."
+      },
+      "decision": "COMPLETE",
+      "follow_up": "T010 validator/type parity and T012 generated-client parity remain separate tasks; runtime enforcement remains a later proof."
     }
   ],
   "proof": [
@@ -548,21 +635,27 @@
       "result": "pass",
       "evidence_ref": ".loop/evidence/t011-ci-security-20260807.json",
       "recorded_at": "2026-08-07T14:48:03.040Z"
+    },
+    {
+      "proof_id": "t011-main-readback-20260807",
+      "level": "P3",
+      "result": "pass",
+      "evidence_ref": ".loop/evidence/t011-main-readback-20260807.json",
+      "recorded_at": "2026-08-07T15:03:02.886Z"
     }
   ],
   "memory_receipt": {
     "memory_status": "UPDATED",
     "memory_id": "wm:project:courtside-tw:t011-openapi-contract",
-    "version": 6,
+    "version": 7,
     "retrieval_ids": [
       "wm:project:courtside-tw:t009-content-document-schema"
     ],
     "evidence_refs": [
-      ".loop/evidence/t011-openapi-proof-20260807.json",
-      ".loop/evidence/t011-ci-security-20260807.json",
+      ".loop/evidence/t011-main-readback-20260807.json",
       ".loop/memory/t011-openapi-contract.json"
     ],
-    "next_review_at": "2026-08-08",
-    "blocker": "explicit human merge and main read-back"
+    "next_review_at": "2026-08-14",
+    "blocker": null
   }
 }
