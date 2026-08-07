@@ -4,7 +4,7 @@
   "task": "T009",
   "recorded_at": "2026-08-07T10:56:31Z",
   "validated_ref": "ticket/t009-content-document-schema",
-  "validated_commit": "be946ef9ba607e54dd7a4f355fc3793c5e48d552",
+  "validated_commit": "277656cbad7105ece7fdd7e80d67c2928b1e316f",
   "scope": {
     "contract": "contracts/content-document.schema.json",
     "valid_fixture": "packages/content-schema/fixtures/valid/content-document-v1-all-blocks.json",
@@ -88,5 +88,18 @@
     "T010 must establish validator parity and generated TypeScript/Java types.",
     "T011 and later must prove runtime consumers preserve this boundary."
   ],
-  "next_gate": "Open the T009 review PR; keep T009 unchecked until merge and main read-back."
+  "next_gate": "Await CI/Security on the formatting-only follow-up head, then complete current-head review; keep T009 unchecked until merge and main read-back.",
+  "post_format_revalidation": {
+    "input_commit": "277656cbad7105ece7fdd7e80d67c2928b1e316f",
+    "reason": "CI Frontend and contract verification rejected the previously unformatted complete fixture.",
+    "prettier_check": {
+      "command": "prettier@3.9.6 --check packages/content-schema/fixtures/valid/content-document-v1-all-blocks.json",
+      "result": "PASS"
+    },
+    "strict_ajv_recheck": {
+      "result": "PASS",
+      "observed": "valid fixture accepted and all five invalid fixtures rejected"
+    },
+    "scope_unchanged": true
+  }
 }
