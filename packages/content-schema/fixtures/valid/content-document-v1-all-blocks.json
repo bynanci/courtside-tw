@@ -124,8 +124,8 @@
       "type": "video",
       "version": 1,
       "payload": {
-        "providerId": "youtube",
-        "videoId": "dQw4w9WgXcQ",
+        "providerId": "rights-pending",
+        "videoId": "T009-demo-video",
         "title": "比賽精華示意"
       }
     },
