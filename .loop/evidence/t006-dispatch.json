@@ -1,0 +1,99 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t006-dispatch-20260807",
+  "generated_at": "2026-08-07T05:08:32Z",
+  "actor": "codex-supervisor",
+  "subject": "T006 shared quality baseline dispatch",
+  "request": "Merge the approved reconciliation change, read back main, then dispatch T006.",
+  "repository": "bynanci/courtside-tw",
+  "authority": {
+    "approver": "Mark",
+    "approval_status": "APPROVED",
+    "approved_at": "2026-08-07T05:08:32Z",
+    "scope": [
+      "dispatch exactly one bounded T006 implementation slice",
+      "create ticket/t006-quality-baseline from the final main read-back",
+      "configure shared formatting, linting and strict type-check gates"
+    ],
+    "excluded": [
+      "merge T006 or mark its checkbox complete",
+      "dispatch T007 or later work",
+      "add CI workflows or dependency services",
+      "change product, domain, provider, rights or Web3 boundaries"
+    ]
+  },
+  "source_evidence": [
+    {
+      "path": ".loop/evidence/t002-main-readback.json",
+      "claim_status": "CONFIRMED",
+      "proof_level": "P2",
+      "details": "Final main read-back confirms the reconciled main state, T001-T005 checked, T006 unchecked, no open PR and no existing T006 branch."
+    },
+    {
+      "path": "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+      "claim_status": "CONFIRMED",
+      "proof_level": "P1",
+      "details": "T006 is the sole next ready implementation slice and names the five quality configuration paths."
+    },
+    {
+      "path": "README.md",
+      "claim_status": "CONFIRMED",
+      "proof_level": "P1",
+      "details": "Repository toolchain is pinned to Node 24.14.0 and pnpm 11.7.0; root commands are the project contract."
+    }
+  ],
+  "dispatch": {
+    "task_id": "T006",
+    "title": "Configure shared formatting, linting and strict type checks",
+    "branch": "ticket/t006-quality-baseline",
+    "base_ref": "main",
+    "base_commit": "a1afadb1ff45028627d5d84ad5a114aca85411e4",
+    "implementation_paths": [
+      "eslint.config.mjs",
+      "prettier.config.mjs",
+      "packages/tsconfig/base.json",
+      "apps/api/config/checkstyle/checkstyle.xml",
+      "apps/api/config/spotbugs/exclude.xml"
+    ],
+    "supporting_paths": [
+      ".prettierignore",
+      "Makefile",
+      "package.json",
+      "pnpm-lock.yaml",
+      "apps/web/package.json",
+      "apps/api/build.gradle.kts"
+    ],
+    "verification": "A clean checkout must pass deterministic install, formatting, lint, typecheck and root verify gates; Java quality configuration must parse and be run on a compatible Java 21/Gradle environment before merge.",
+    "implementation_started": true
+  },
+  "governance": {
+    "inherent_tier": "G2",
+    "decision": "ALLOW_WITH_CONTROLS",
+    "controls": [
+      "GOV-002",
+      "GOV-003",
+      "AGT-001",
+      "AGT-004",
+      "AGT-007",
+      "AGT-008",
+      "OPS-001"
+    ],
+    "residual_risk": "Java Gradle Checkstyle/SpotBugs execution and the T006 merge decision remain separately gated."
+  },
+  "scope_guard": {
+    "allowed": [
+      "T006 quality configuration paths",
+      "supporting package scripts, lockfile and Make targets needed to enforce the gates",
+      "T006 graph, ledger and proof evidence",
+      "local deterministic Node and static Java quality checks"
+    ],
+    "forbidden": [
+      "T007 or later tickets",
+      "CI workflow authoring",
+      "database, provider, secret or Web3 writes",
+      "production deployment"
+    ]
+  },
+  "result": "pass",
+  "confidence": 0.98
+}
