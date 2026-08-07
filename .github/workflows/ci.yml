@@ -1,0 +1,141 @@
+name: CI
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: 24.14.0
+  PNPM_VERSION: 11.7.0
+  GRADLE_VERSION: 8.14.3
+
+jobs:
+  frontend-contract:
+    name: Frontend and contract verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Set up pnpm and Node.js
+        uses: pnpm/setup@5d160c5bc68a09337ad0d5654e237e03253b5879 # v1
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          runtime: node@${{ env.NODE_VERSION }}
+          cache: true
+          cache-dependency-path: pnpm-lock.yaml
+          install: false
+
+      - name: Install JavaScript dependencies
+        run: |
+          set -o pipefail
+          mkdir -p artifacts/frontend
+          pnpm install --frozen-lockfile --ignore-scripts 2>&1 | tee artifacts/frontend/pnpm-install.log
+
+      - name: Run repository verification
+        run: |
+          set -o pipefail
+          make verify 2>&1 | tee artifacts/frontend/make-verify.log
+
+      - name: Upload frontend and contract reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ci-frontend-reports
+          path: |
+            artifacts/frontend
+            apps/**/coverage
+            apps/**/test-results
+            apps/**/.nuxt
+          if-no-files-found: warn
+          retention-days: 14
+
+  java-quality:
+    name: Java quality and unit verification
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Set up Java
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+          cache-dependency-path: |
+            apps/api/**/*.gradle*
+            apps/api/gradle.properties
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@748248ddd2a24f49513d8f472f81c3a07d4d50e1 # v4.4.4
+        with:
+          gradle-version: ${{ env.GRADLE_VERSION }}
+
+      - name: Run Java quality and unit checks
+        run: |
+          set -o pipefail
+          mkdir -p artifacts/api
+          gradle --no-daemon --console=plain -p apps/api checkstyleMain spotbugsMain test 2>&1 | tee artifacts/api/gradle-quality.log
+
+      - name: Upload Java reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ci-java-reports
+          path: |
+            artifacts/api
+            apps/api/build/reports
+            apps/api/build/test-results
+          if-no-files-found: warn
+          retention-days: 14
+
+  dependency-integration:
+    name: Docker Compose dependency health
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Start dependencies and wait for health
+        run: |
+          set -o pipefail
+          mkdir -p artifacts/dependencies
+          DEPENDENCY_TIMEOUT_SECONDS=120 scripts/dev/check-dependencies.sh check 2>&1 | tee artifacts/dependencies/health-check.log
+
+      - name: Capture dependency status and clean up
+        if: ${{ always() }}
+        run: |
+          mkdir -p artifacts/dependencies
+          scripts/dev/check-dependencies.sh status > artifacts/dependencies/status.log 2>&1 || true
+          scripts/dev/check-dependencies.sh down > artifacts/dependencies/cleanup.log 2>&1 || true
+
+      - name: Upload dependency health reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: ci-dependency-reports
+          path: artifacts/dependencies
+          if-no-files-found: warn
+          retention-days: 14
