@@ -15,6 +15,7 @@ Web3 是可選的出版來源驗證與 credential delivery 基礎設施，不是
 - T004 Nuxt SSR scaffold 已完成；PR #15 已合併至 `main`，PR #16 已完成 T004 checkbox／Graphify terminal state，最終 read-back receipt 為 `.loop/evidence/t004-main-readback.json`。
 - ADR-0001～0006 的既有 decision content 維持不變；T002 approval／status reconciliation 由 PR #4 與本輪 `.loop/evidence/t002-current-main-reconciliation.json` 留下可追溯紀錄。ADR-0007、0008 為本輪 draft。
 - T006 已完成：PR #20 合併 shared quality gates，PR #21 完成 T006 checkbox／Graphify completion；最终 main read-back 见 `.loop/evidence/t006-main-readback.json`。T007 implementation PR #24 以 Mark 明確核准的 bounded follow-up 方式進入合併流程：static proof PASS，Docker container health proof 保留為 T008 CI 的重驗項目。
+- T008 已完成 implementation merge：PR #25 已合併至 `main@e857d50`；CI run #14 與 Security run #14 全部通過，包含 PostgreSQL、S3 與 OIDC image security gate；最終 runtime receipt 為 `.loop/evidence/t008-runtime-verification-final.json`，completion receipt 為 `.loop/evidence/t008-completion-receipt.json`。T009 仍未 dispatch。
 
 根目錄固定：
 
