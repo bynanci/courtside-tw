@@ -1,0 +1,73 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t009-dispatch-20260807",
+  "generated_at": "2026-08-07T11:20:00Z",
+  "actor": "codex-supervisor",
+  "subject": "T009 ContentDocument v1 schema dispatch",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T009",
+  "authorization": {
+    "claim_status": "CONFIRMED",
+    "approved_by": "Mark",
+    "source": "current user direction: review Phase 1 tasks and if done start Phase 2",
+    "scope": "Start the first Phase 2 bounded contract slice after authoritative Phase 1 main read-back."
+  },
+  "main_readback": {
+    "ref": "main",
+    "sha": "a75f1c250155216ec0b3f9f1f3a130bf4ff1c43e",
+    "t001_t008_checked": true,
+    "t009_checked": false,
+    "t009_dispatched": false,
+    "source_refs": [
+      "PR #31",
+      "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+      ".loop/evidence/phase1-review-20260807.json"
+    ]
+  },
+  "scope": {
+    "in": [
+      "contracts/content-document.schema.json",
+      "packages/content-schema/fixtures/valid/",
+      "packages/content-schema/fixtures/invalid/",
+      "T009 dispatch, Graphify ledger and memory receipts"
+    ],
+    "out": [
+      "T010 validators and generated types",
+      "OpenAPI",
+      "database migrations",
+      "API controllers",
+      "Nuxt renderer",
+      "editor",
+      "p5 runtime",
+      "Web3/provider writes",
+      "production credentials and deployment"
+    ]
+  },
+  "acceptance": [
+    "Schema version 1 and stable document/block IDs are required.",
+    "Exactly the 11 approved MVP block types are represented.",
+    "Every block payload is closed-world and bounded.",
+    "Inline links reject non-HTTPS/mailto schemes.",
+    "Video uses a closed provider/id contract rather than arbitrary embed URLs.",
+    "generative-canvas permits only court-pulse-v1, fixed seed, bounded parameters, posterAssetId, altText and dataSummary; code, shader, callback and remote URL are excluded.",
+    "Valid and invalid fixtures cover the security and boundary cases."
+  ],
+  "authority": {
+    "allowed": [
+      "Define the JSON Schema and fixtures within T009 paths",
+      "Run static schema and fixture validation",
+      "Open a review PR"
+    ],
+    "requires_approval": [
+      "Merge the implementation PR",
+      "Check T009 completion"
+    ],
+    "forbidden": [
+      "Weaken schema constraints to make fixtures pass",
+      "Implement T010 or later tasks",
+      "Add arbitrary HTML, executable code, remote modules or provider writes"
+    ]
+  },
+  "result": "DISPATCHED",
+  "next_action": "Implement the schema and fixtures, then run independent static and negative validation before review."
+}
