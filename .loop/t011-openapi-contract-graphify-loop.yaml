@@ -90,13 +90,13 @@ graph:
       risk: high
       confidence:
         score: 0.99
-        basis: "PR #32 has the current schema on its branch, but it is not merged to main."
-        evidence_refs: ["PR #32", "contracts/content-document.schema.json@ticket/t009-content-document-schema", ".loop/evidence/t009-schema-proof.json"]
+        basis: "PR #32 current-head CI/Security and review threads pass; the schema is still not merged to main."
+        evidence_refs: ["PR #32", "contracts/content-document.schema.json@ticket/t009-content-document-schema", ".loop/evidence/t009-schema-proof.json", ".loop/evidence/t009-ci-security-20260807.json", ".loop/evidence/t011-t009-dependency-readback-20260807.json"]
       budget: {effort_hours: 0.2, tokens: 2000}
       config:
         source_type: github-pr
         freshness: "2026-08-07T12:56:56Z"
-        limitations: "PR checks and human merge/read-back are unavailable for a self-contained T011 implementation."
+        limitations: "CI/Security and current-head review pass; human merge and main read-back remain unavailable."
     - id: g-t009-main-readback
       kind: gate
       layer: L3
