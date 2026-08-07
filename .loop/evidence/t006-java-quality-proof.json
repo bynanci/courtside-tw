@@ -1,0 +1,61 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t006-java-quality-proof-20260807",
+  "generated_at": "2026-08-07T06:18:00Z",
+  "actor": "codex-agent",
+  "subject": "T006 Java Gradle Checkstyle and SpotBugs task execution",
+  "repository": "bynanci/courtside-tw",
+  "branch": "ticket/t006-quality-baseline",
+  "base_commit": "a1afadb1ff45028627d5d84ad5a114aca85411e4",
+  "tested_source_head": "61d4bab534c074c01dd51300fc8628e8366c85e6",
+  "proof_environment": {
+    "java": "21.0.12+8",
+    "gradle": "8.14",
+    "project": "apps/api",
+    "resolution": "Isolated local cache populated from the published Maven artifacts; temporary settings added only outside the repository to make the same Gradle project dependency-resolvable.",
+    "source_mutations": "None in the proof checkout beyond the final T006 SpotBugs typed-property change already present at tested_source_head."
+  },
+  "checks": [
+    {
+      "check": "Gradle Java compilation",
+      "command": "apps/api Gradle 8.14 task graph including compileJava with -Xlint:all -Werror",
+      "result": "pass",
+      "details": "compileJava completed successfully on Java 21."
+    },
+    {
+      "check": "Checkstyle Gradle task",
+      "command": "apps/api Gradle checkstyleMain",
+      "result": "pass",
+      "details": "Checkstyle 13.9.0 ran with the committed XML configuration and completed without violations."
+    },
+    {
+      "check": "SpotBugs Gradle task",
+      "command": "apps/api Gradle spotbugsMain",
+      "result": "pass",
+      "details": "SpotBugs Gradle plugin 6.5.10 ran the SpotBugs 4.10.3 engine with max effort, low report level and fail-on-error behavior; the task completed successfully."
+    },
+    {
+      "check": "Combined Java quality gate",
+      "command": "gradle --offline --no-daemon checkstyleMain spotbugsMain",
+      "result": "pass",
+      "details": "BUILD SUCCESSFUL; checkstyleMain and spotbugsMain both completed on the tested source head."
+    }
+  ],
+  "prior_blocker_resolution": {
+    "previous_result": "blocked",
+    "previous_signature": "java-gradle-quality-runner-unavailable",
+    "resolution": "A Java 21 / Gradle 8.14 runner with dependency resolution was supplied through an isolated proof cache. The proof also exposed and fixed the real SpotBugs Kotlin DSL type error by using typed Property.set values."
+  },
+  "scope_guard": {
+    "T007_or_later": false,
+    "CI_workflows": false,
+    "database_or_migrations": false,
+    "providers_or_credentials": false,
+    "external_web3_writes": false,
+    "production_deployment": false
+  },
+  "result": "pass",
+  "verification_result": "pass",
+  "confidence": 0.99,
+  "next_action": "Review the final T006 head, merge with an expected-head guard, then perform the separate T006 completion and main read-back gate."
+}
