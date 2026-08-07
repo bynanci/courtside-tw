@@ -1,0 +1,170 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t008-runtime-verification-20260807",
+  "generated_at": "2026-08-07T08:19:19Z",
+  "actor": "codex-supervisor",
+  "subject": "T008 GitHub Actions runtime verification and security gate",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T008",
+  "branch": "ticket/t008-ci-pipelines",
+  "head_sha": "57d20c1f03cafe3d5934310cffcd3fca95028927",
+  "supersedes": [
+    ".loop/evidence/t008-runtime-proof.json"
+  ],
+  "workflow_runs": [
+    {
+      "name": "CI",
+      "run_id": 31160914214,
+      "run_number": 2,
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "Frontend and contract verification",
+          "job_id": 92810824201,
+          "conclusion": "success",
+          "artifact": "ci-frontend-reports",
+          "artifact_id": 8987022478
+        },
+        {
+          "name": "Java quality and unit verification",
+          "job_id": 92810823910,
+          "conclusion": "success",
+          "artifact": "ci-java-reports",
+          "artifact_id": 8987025326
+        },
+        {
+          "name": "Docker Compose dependency health",
+          "job_id": 92810824318,
+          "conclusion": "success",
+          "artifact": "ci-dependency-reports",
+          "artifact_id": 8987023051
+        }
+      ]
+    },
+    {
+      "name": "Security",
+      "run_id": 31160913990,
+      "run_number": 2,
+      "status": "completed",
+      "conclusion": "failure",
+      "jobs": [
+        {
+          "name": "Dependency audit and reports",
+          "job_id": 92810861046,
+          "conclusion": "success",
+          "artifact": "security-dependency-reports",
+          "artifact_id": 8987035719
+        },
+        {
+          "name": "CodeQL (javascript-typescript)",
+          "job_id": 92810861065,
+          "conclusion": "success",
+          "artifact": "security-codeql-javascript-typescript",
+          "artifact_id": 8987039877
+        },
+        {
+          "name": "CodeQL (java-kotlin)",
+          "job_id": 92810861051,
+          "conclusion": "success",
+          "artifact": "security-codeql-java-kotlin",
+          "artifact_id": 8987063501
+        },
+        {
+          "name": "Trivy (filesystem)",
+          "job_id": 92810861206,
+          "conclusion": "success",
+          "artifact": "security-trivy-filesystem",
+          "artifact_id": 8987017947
+        },
+        {
+          "name": "Trivy (postgres)",
+          "job_id": 92810861176,
+          "conclusion": "failure",
+          "artifact": "security-trivy-postgres",
+          "artifact_id": 8987022786
+        },
+        {
+          "name": "Trivy (s3mock)",
+          "job_id": 92810861033,
+          "conclusion": "failure",
+          "artifact": "security-trivy-s3mock",
+          "artifact_id": 8987027046
+        },
+        {
+          "name": "Trivy (oidc)",
+          "job_id": 92810861069,
+          "conclusion": "failure",
+          "artifact": "security-trivy-oidc",
+          "artifact_id": 8987025789
+        }
+      ]
+    }
+  ],
+  "docker_compose_health": {
+    "result": "PASS",
+    "artifact_id": 8987023051,
+    "services": {
+      "postgres": "healthy",
+      "s3": "healthy",
+      "oidc": "healthy"
+    },
+    "receipt": "check-dependencies: local PostgreSQL, S3 and OIDC dependencies are healthy",
+    "cleanup": "containers and internal network removed successfully"
+  },
+  "security_findings": {
+    "result": "BLOCKED",
+    "policy": "Trivy image scans exit non-zero on HIGH or CRITICAL findings; no waiver applied.",
+    "reports": {
+      "postgres": {
+        "artifact_id": 8987022786,
+        "critical": [
+          "CVE-2025-68121"
+        ],
+        "high": [
+          "CVE-2026-33630",
+          "CVE-2025-61726",
+          "CVE-2025-61729",
+          "CVE-2026-25679",
+          "CVE-2026-27145",
+          "CVE-2026-32280",
+          "CVE-2026-32281",
+          "CVE-2026-32283",
+          "CVE-2026-33811",
+          "CVE-2026-33814",
+          "CVE-2026-39820",
+          "CVE-2026-39822",
+          "CVE-2026-39836",
+          "CVE-2026-42499",
+          "CVE-2026-42504"
+        ]
+      },
+      "s3mock": {
+        "artifact_id": 8987027046,
+        "high": [
+          "CVE-2026-59901",
+          "CVE-2026-55831",
+          "CVE-2026-55833",
+          "CVE-2026-56745",
+          "CVE-2026-56819"
+        ]
+      },
+      "oidc": {
+        "artifact_id": 8987025789,
+        "high": [
+          "CVE-2026-59901",
+          "CVE-2026-55831",
+          "CVE-2026-55833",
+          "CVE-2026-56745",
+          "CVE-2026-56819"
+        ]
+      }
+    }
+  },
+  "task_state": {
+    "t008_checked": false,
+    "merge_authorized": false,
+    "result": "runtime_partially_verified_security_blocked",
+    "decision": "Keep T008 unchecked and PR #25 unmerged until the image findings are remediated or an explicitly approved project-level exception is recorded."
+  }
+}

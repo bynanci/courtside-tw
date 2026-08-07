@@ -90,7 +90,7 @@ wait_for_healthy() {
 
 start_and_wait() {
   validate_config
-  compose up --detach --remove-orphans
+  compose up --build --detach --remove-orphans
   wait_for_healthy
   echo "check-dependencies: local PostgreSQL, S3 and OIDC dependencies are healthy"
 }

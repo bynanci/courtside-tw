@@ -1,0 +1,84 @@
+{
+  "schema_version": 1,
+  "memory_id": "wm:project:courtside-tw:t008-ci-pipelines",
+  "scope": "project",
+  "kind": "task_state",
+  "title": "T008 CI pipelines dispatched with runtime proof pending",
+  "summary": "GitHub Actions proved the CI checks and T007 Docker Compose health, while the security workflow correctly blocked on HIGH/CRITICAL findings in the pinned Compose images.",
+  "claims": [
+    {
+      "text": "T008 CI frontend contract, Java quality/unit and Docker Compose integration jobs completed successfully.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "T007 PostgreSQL, S3Mock and OIDC containers each reported healthy on the GitHub runner.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Dependency audit, CodeQL and filesystem Trivy scans completed successfully.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Trivy image scans reported HIGH/CRITICAL findings for postgres, s3mock and oidc, so the security gate is blocked.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "T008 must remain unchecked and unmerged until the findings are remediated or an explicitly approved security exception is recorded.",
+      "class": "INFERRED",
+      "confidence": "high"
+    }
+  ],
+  "status": "verified",
+  "confidence": "high",
+  "confidence_basis": [
+    ".loop/evidence/t008-dispatch.json",
+    ".loop/evidence/t008-static-proof.json",
+    ".loop/evidence/t008-runtime-verification.json"
+  ],
+  "volatility": "medium",
+  "as_of": "2026-08-07",
+  "source_refs": [
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    ".github/workflows/ci.yml",
+    ".github/workflows/security.yml",
+    ".github/dependabot.yml",
+    ".loop/evidence/t008-runtime-verification.json"
+  ],
+  "entities": [
+    "T008",
+    "GitHub Actions",
+    "Docker Compose",
+    "PostgreSQL",
+    "S3Mock",
+    "OIDC"
+  ],
+  "relations": {
+    "supports": [],
+    "contradicts": [],
+    "supersedes": [],
+    "blocks": [
+      "wm:project:courtside-tw:t008-security-remediation"
+    ],
+    "invalidates": []
+  },
+  "decision": {
+    "context": "T007 was merged with explicit runtime-proof follow-up assigned to T008.",
+    "chosen": "Keep T008 unchecked and PR #25 unmerged; remediate the pinned Compose image findings or obtain explicit project-owner security approval.",
+    "alternatives": [
+      "Mark T008 complete from static inspection only"
+    ],
+    "tradeoffs": [
+      "T007 runtime proof is now available",
+      "The security gate prevents falsely declaring T008 complete",
+      "A separate image-remediation decision is required"
+    ],
+    "invalidation": "If the security findings are fixed and the full workflow rerun passes, update this record and reassess the T008 checkbox/merge gate."
+  },
+  "next_review_at": "2026-08-14",
+  "sensitivity": "internal",
+  "retention": "until_superseded"
+}

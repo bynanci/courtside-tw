@@ -1,0 +1,85 @@
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '03:00'
+      timezone: UTC
+    open-pull-requests-limit: 10
+    groups:
+      npm-minor-patch:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: gradle
+    directory: /apps/api
+    schedule:
+      interval: weekly
+      day: monday
+      time: '03:15'
+      timezone: UTC
+    open-pull-requests-limit: 10
+    groups:
+      gradle-minor-patch:
+        patterns:
+          - '*'
+        update-types:
+          - minor
+          - patch
+
+  - package-ecosystem: docker-compose
+    directory: /infra/compose
+    schedule:
+      interval: weekly
+      day: monday
+      time: '03:30'
+      timezone: UTC
+    open-pull-requests-limit: 10
+    groups:
+      compose-images:
+        patterns:
+          - '*'
+
+  - package-ecosystem: docker
+    directory: /infra/compose/postgres
+    schedule:
+      interval: weekly
+      day: monday
+      time: '03:35'
+      timezone: UTC
+    open-pull-requests-limit: 10
+    groups:
+      postgres-base-image:
+        patterns:
+          - '*'
+
+  - package-ecosystem: docker
+    directory: /infra/compose/s3mock
+    schedule:
+      interval: weekly
+      day: monday
+      time: '03:40'
+      timezone: UTC
+    open-pull-requests-limit: 10
+    groups:
+      s3mock-build-images:
+        patterns:
+          - '*'
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: '03:45'
+      timezone: UTC
+    open-pull-requests-limit: 10
+    groups:
+      github-actions:
+        patterns:
+          - '*'
