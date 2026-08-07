@@ -43,7 +43,7 @@
     "secureHref": {
       "type": "string",
       "maxLength": 2048,
-      "pattern": "^(https://[^\\s]+|mailto:[^\\s@]+@[^\\s@]+)$"
+      "pattern": "^(https://[^\\s/?#]+(?:[/?#][^\\s]*)?|mailto:[^\\s@]+@[^\\s@]+)$"
     },
     "inlineTextRun": {
       "type": "object",
@@ -59,7 +59,8 @@
         "text": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 4000
+          "maxLength": 4000,
+          "pattern": "\\S"
         }
       }
     },
@@ -78,7 +79,8 @@
         "text": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 1000
+          "maxLength": 1000,
+          "pattern": "\\S"
         },
         "href": {
           "$ref": "#/$defs/secureHref"
@@ -128,7 +130,8 @@
         "text": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 500
+          "maxLength": 500,
+          "pattern": "\\S"
         }
       }
     },
@@ -208,7 +211,8 @@
         "altText": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 500
+          "maxLength": 500,
+          "pattern": "\\S"
         },
         "variant": {
           "type": "string",
@@ -243,7 +247,8 @@
         "altText": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 500
+          "maxLength": 500,
+          "pattern": "\\S"
         },
         "caption": {
           "type": "string",
@@ -290,12 +295,14 @@
         "label": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 200
+          "maxLength": 200,
+          "pattern": "\\S"
         },
         "value": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 200
+          "maxLength": 200,
+          "pattern": "\\S"
         },
         "unit": {
           "type": "string",
@@ -330,7 +337,8 @@
         "title": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 300
+          "maxLength": 300,
+          "pattern": "\\S"
         },
         "caption": {
           "type": "string",
@@ -352,7 +360,8 @@
         "label": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 300
+          "maxLength": 300,
+          "pattern": "\\S"
         }
       }
     },
@@ -425,12 +434,14 @@
         "altText": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 500
+          "maxLength": 500,
+          "pattern": "\\S"
         },
         "dataSummary": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 1000
+          "maxLength": 1000,
+          "pattern": "\\S"
         }
       }
     },
