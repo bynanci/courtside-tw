@@ -11,7 +11,10 @@
     "historical_acceptance_pr": 4
   },
   "proposed_changes": {
-    "tasks_checkbox": {"before": "[ ] T002", "after": "[x] T002"},
+    "tasks_checkbox": {
+      "before": "[ ] T002",
+      "after": "[x] T002"
+    },
     "tasks_proof": "Bind T002 to PR #4 accepted ADRs and the current-main drift receipt.",
     "readme_status": "Describe T002 as accepted and this status repair as the current reconciliation.",
     "runtime_files_changed": false,
@@ -26,7 +29,8 @@
     ".loop/t002-status-reconciliation-graphify-loop.yaml",
     ".loop/t002-status-reconciliation-graphify-loop.mmd",
     ".loop/t002-status-reconciliation-ledger.json",
-    ".loop/memory/t002-status-reconciliation.json"
+    ".loop/memory/t002-status-reconciliation.json",
+    ".loop/evidence/t002-status-reconciliation-remote-write.json"
   ],
   "checks": [
     {
@@ -55,6 +59,16 @@
       "name": "historical_evidence_integrity",
       "result": "PASS",
       "details": "PR #4 and .loop/evidence/t002-merge-readback.json are referenced without modification."
+    },
+    {
+      "name": "remote_branch_readback",
+      "result": "PASS",
+      "details": "Branch head db7991cccaede38c55f5823280af6d7539093554 was read back; T002 checkbox, T006 gate, graph, ledger and memory paths are present."
+    },
+    {
+      "name": "semantic_memory_write_receipt",
+      "result": "PASS",
+      "details": "Work Memory record is readable from the branch; ledger version is db7991cccaede38c55f5823280af6d7539093554."
     }
   ],
   "human_gate": {
@@ -62,14 +76,26 @@
     "action": "Review and merge the draft PR; final main read-back and T006 dispatch remain separate."
   },
   "graph_analysis": {
-    "ready_frontier": ["t-human-review"],
-    "critical_path": ["t-supervisor", "a-reconcile", "p-reconciliation", "t-repair-ready", "a-prepare-repair", "p-repair-acceptance", "s-terminal-policy"],
+    "ready_frontier": [
+      "t-human-review"
+    ],
+    "critical_path": [
+      "t-supervisor",
+      "a-reconcile",
+      "p-reconciliation",
+      "t-repair-ready",
+      "a-prepare-repair",
+      "p-repair-acceptance",
+      "s-terminal-policy"
+    ],
     "critical_path_effort_hours": 1.75,
     "critical_path_estimated_tokens": 22000,
     "confidence_floor": 0.95,
     "token_max_flow": 6000,
-    "min_cut": ["e-repair-stop"]
+    "min_cut": [
+      "e-repair-stop"
+    ]
   },
-  "result": "review_ready_pending_remote_receipt",
+  "result": "PASS_WITH_CONTROLS",
   "confidence": 0.95
 }
