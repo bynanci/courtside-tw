@@ -1,18 +1,18 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t005",
-  "graph_version": 8,
+  "graph_version": 9,
   "run_id": "courtside-tw-t005-spring-bootstrap-20260806",
-  "status": "needs_human",
-  "iteration": 5,
+  "status": "success",
+  "iteration": 6,
   "started_at": "2026-08-06T23:44:00Z",
-  "updated_at": "2026-08-07T01:55:38Z",
+  "updated_at": "2026-08-07T02:39:40Z",
   "current_frontier": [
     "s-terminal-policy"
   ],
   "blocked_nodes": [],
-  "terminal_state": "needs_human",
-  "next_action": "PR #10 is merged and main read-back is verified; obtain separate explicit authorization before marking T005 checked or dispatching T004/T006/later work.",
+  "terminal_state": "success",
+  "next_action": "Create and merge the separate spec-only product/domain/passport alignment slice before dispatching T004.",
   "events": [
     {
       "event_id": "evt-t005-spring-bootstrap-001-graph-initialized",
@@ -521,6 +521,63 @@
         "total": 3500
       },
       "terminal_reason": "Remote merge and main read-back are complete; the named terminal policy remains human-gated for task checkbox completion."
+    },
+    {
+      "event_id": "evt-t005-spring-bootstrap-009-completion-checked",
+      "at": "2026-08-07T02:39:40Z",
+      "actor": "codex-supervisor",
+      "type": "human_authorized_task_completion",
+      "base_graph_version": 8,
+      "new_graph_version": 9,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "specs/001-taiwan-basketball-magazine-ebook/tasks.md/T005",
+            "before": "[ ]",
+            "after": "[x]"
+          },
+          {
+            "op": "add",
+            "path": ".loop/evidence/t005-completion-receipt.json",
+            "after": "T005 completion receipt binds Mark authorization to PR #10 merge/read-back and the checked task entry."
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/s-terminal-policy/status",
+            "before": "needs_human",
+            "after": "done"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t005-completion-receipt.json",
+        ".loop/evidence/t005-merge-main-readback.json",
+        "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "task checkbox",
+          "level": "P3",
+          "result": "pass",
+          "details": "T005 is checked only after PR #10 implementation proof, review approval, merge and main read-back."
+        },
+        {
+          "proof": "scope guard",
+          "level": "P2",
+          "result": "pass",
+          "details": "T004 remains unstarted; no later ticket, database, provider, credential, deployment or Web3 write is included."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Mark T005 complete and hold T004 dispatch until the separate product/domain/passport alignment slice is reviewed and merged.",
+      "token_usage": {
+        "estimated": 2200,
+        "input": 0,
+        "output": 0,
+        "total": 2200
+      },
+      "terminal_reason": "T005 implementation, review, merge, main read-back and checkbox completion are complete; T004 dispatch remains a separate gate."
     }
   ],
   "proof": {
