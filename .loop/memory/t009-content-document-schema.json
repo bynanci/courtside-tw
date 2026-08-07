@@ -3,8 +3,8 @@
   "memory_id": "wm:project:courtside-tw:t009-content-document-schema",
   "scope": "project",
   "kind": "task_state",
-  "title": "T009 ContentDocument v1 schema dispatched",
-  "summary": "T009 is the first Phase 2 bounded contract slice. It defines a closed-world ContentDocument v1 schema and valid/invalid fixtures; validators, generated types and runtime consumers remain deferred to T010 and later tasks.",
+  "title": "T009 ContentDocument v1 schema verified",
+  "summary": "T009 defines a closed-world ContentDocument v1 schema and bounded fixtures. Independent strict Ajv validation passed the complete 11-block fixture and rejected all five negative fixtures; validators, generated types and runtime consumers remain deferred.",
   "claims": [
     {
       "text": "T009 was dispatched from main@a75f1c2 after Phase 1 PASS read-back.",
@@ -25,15 +25,21 @@
       "text": "T010 validator parity and generated types are not part of this slice.",
       "class": "CONFIRMED",
       "confidence": "high"
+    },
+    {
+      "text": "Independent Ajv 8 strict validation accepted the complete fixture and rejected all five invalid fixtures.",
+      "class": "CONFIRMED",
+      "confidence": "high"
     }
   ],
-  "status": "verified",
+  "status": "stable",
   "confidence": "high",
   "confidence_basis": [
     ".loop/evidence/t009-dispatch-20260807.json",
     "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T009",
     "docs/adr/0003-content-document-and-media-policy.md",
-    "docs/adr/0005-motion-and-generative-runtime.md"
+    "docs/adr/0005-motion-and-generative-runtime.md",
+    ".loop/evidence/t009-schema-proof.json"
   ],
   "volatility": "medium",
   "as_of": "2026-08-07",
@@ -42,7 +48,9 @@
     "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T009",
     "docs/adr/0003-content-document-and-media-policy.md",
     "docs/adr/0005-motion-and-generative-runtime.md",
-    "main@a75f1c2"
+    "main@a75f1c2",
+    ".loop/evidence/t009-schema-proof.json",
+    "ticket/t009-content-document-schema@ce07740a4c5966f1ac11374e1b8ce4835581ba06"
   ],
   "entities": [
     "T009",
@@ -71,7 +79,8 @@
       "Schema is safer and reviewable at the boundary.",
       "Provider allowlists and runtime parity still require T010/T011 evidence."
     ],
-    "invalidation": "If ADR-0003/0005 or tasks.md changes the allowed block/preset contract, mark this record needs_update and stop T009."
+    "invalidation": "If ADR-0003/0005 or tasks.md changes the allowed block/preset contract, mark this record needs_update and stop T009.",
+    "proof": "Schema compile, valid fixture acceptance, five negative fixture rejections, Graphify strict validation and both memory-record validations passed."
   },
   "next_review_at": "2026-08-14",
   "sensitivity": "internal",
