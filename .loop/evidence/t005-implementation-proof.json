@@ -1,0 +1,57 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t005-implementation-proof-20260807",
+  "generated_at": "2026-08-07T09:00:00Z",
+  "actor": "codex-agent",
+  "subject": "T005 Java 21/Spring Boot implementation and profile-proof attempt",
+  "repository": "bynanci/courtside-tw",
+  "branch": "ticket/t005-spring-implementation",
+  "implementation_paths": [
+    "apps/api/build.gradle.kts",
+    "apps/api/settings.gradle.kts",
+    "apps/api/src/main/java/tw/basketball/magazine/MagazineApplication.java",
+    "apps/api/src/main/resources/application.yml"
+  ],
+  "inventory": {
+    "result": "pass",
+    "details": "The implementation branch contains exactly the four T005 implementation paths; no T004/later-task, provider, database, secret or Web3 files were added."
+  },
+  "static_checks": [
+    {
+      "check": "YAML parse",
+      "result": "pass",
+      "details": "application.yml contains three documents and defines api servlet and worker non-web profile selectors."
+    },
+    {
+      "check": "Java source contract",
+      "result": "pass",
+      "details": "MagazineApplication.java contains the required package, Spring imports, @SpringBootApplication and SpringApplication.run."
+    },
+    {
+      "check": "Gradle profile boot",
+      "result": "blocked",
+      "details": "Java 21 and Gradle 8.14 were available locally, but dependency/plugin resolution could not resolve Spring Boot 4.1.0 from Gradle Plugin Portal/Maven Central in this runner. No boot success is inferred."
+    },
+    {
+      "check": "api profile boot",
+      "result": "blocked",
+      "details": "Not claimed because the Gradle dependency graph could not be resolved."
+    },
+    {
+      "check": "worker profile boot",
+      "result": "blocked",
+      "details": "Not claimed because the Gradle dependency graph could not be resolved."
+    }
+  ],
+  "scope_guard": {
+    "T004": false,
+    "T006_or_later": false,
+    "database_or_migrations": false,
+    "providers_or_credentials": false,
+    "external_web3_writes": false,
+    "production_deployment": false
+  },
+  "result": "blocked",
+  "confidence": 0.9,
+  "next_action": "Run Gradle test/build and bounded api/worker profile starts on a CI or developer runner with Java 21 and dependency-resolution access; then rerun merge gate."
+}
