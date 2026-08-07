@@ -1,0 +1,79 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t004-implementation-proof-20260807",
+  "generated_at": "2026-08-07T03:21:22Z",
+  "actor": "codex-agent",
+  "subject": "T004 Nuxt 4.5 SSR scaffold implementation and proof",
+  "repository": "bynanci/courtside-tw",
+  "runtime": {
+    "node": "24.14.0",
+    "pnpm": "11.7.0",
+    "nuxt": "4.5.0",
+    "nitro": "2.13.4",
+    "vite": "8.2.0",
+    "vue": "3.5.41",
+    "typescript": "5.9.3",
+    "vue_tsc": "3.3.9"
+  },
+  "attempts": [
+    {
+      "attempt": "initial typecheck",
+      "result": "failed_then_fixed",
+      "observation": "nuxt typecheck correctly stopped because no type checker was declared",
+      "fix": "Added exact typescript and vue-tsc devDependencies within apps/web/package.json"
+    }
+  ],
+  "changed_runtime_paths": [
+    "apps/web/package.json",
+    "apps/web/nuxt.config.ts",
+    "apps/web/tsconfig.json",
+    "apps/web/app/app.vue"
+  ],
+  "commands": [
+    {
+      "command": "make setup",
+      "result": "pass",
+      "details": "Root toolchain contract passed and workspace dependencies installed without creating a lockfile."
+    },
+    {
+      "command": "pnpm --filter @courtside/web typecheck",
+      "result": "pass",
+      "details": "Nuxt typecheck completed with strict TypeScript configuration."
+    },
+    {
+      "command": "pnpm --filter @courtside/web build",
+      "result": "pass",
+      "details": "Nuxt 4.5.0 production build completed with the node-server Nitro preset."
+    },
+    {
+      "command": "PORT=18104 NITRO_PORT=18104 pnpm --filter @courtside/web start",
+      "result": "pass",
+      "details": "Generated production server listened on port 18104."
+    },
+    {
+      "command": "curl -fsS http://127.0.0.1:18104/ plus HTML assertions",
+      "result": "pass",
+      "details": "Response contained data-ssr-smoke=\"true\", <h1>Courtside TW</h1>, the scaffold marker and the expected SSR title."
+    },
+    {
+      "command": "make verify",
+      "result": "pass",
+      "details": "Root contract and available workspace checks passed."
+    }
+  ],
+  "scope": {
+    "result": "pass",
+    "runtime_implementation_files": 4,
+    "forbidden_runtime_files_added": [],
+    "no_lockfile_added": true,
+    "no_spec_plan_design_adr_change": true,
+    "no_api_database_provider_auth_web3_change": true
+  },
+  "build_warning": {
+    "result": "non_blocking",
+    "details": "Nitro/Rollup emitted a third-party annotation removal warning during bundling; the build and runtime proof completed successfully and no project source warning was reported."
+  },
+  "result": "pass",
+  "confidence": 0.98,
+  "decision": "Implementation and required local proofs pass; expose the exact patch to the human review and protected merge gate."
+}

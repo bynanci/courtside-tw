@@ -1,0 +1,450 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-ticket-implementation-t004
+objective: Implement the bounded Nuxt 4.5 SSR scaffold, prove the root smoke route returns server-rendered HTML, and stop at the protected review gate.
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - Read the post-T097 main read-back, approved DESIGN.md, constitution, plan.md and the exact T004 task before implementation.
+    - Create only apps/web/package.json, apps/web/nuxt.config.ts, apps/web/tsconfig.json and apps/web/app/app.vue for runtime implementation.
+    - Pin Nuxt 4.5.0 and the repository Node.js 24.14.x / pnpm 11.7.x baseline.
+    - Prove typecheck, production build, root verification and SSR HTML from the root smoke route.
+    - Preserve baseline, implementation, proof and review decisions in append-only T004 loop evidence.
+  out:
+    - Modifying specs, plan, constitution, ADRs, DESIGN.md or the T004 checkbox in this implementation slice.
+    - Adding pages, components, API clients, Motion, p5.js, Web3, authentication, database, infrastructure, CI or production deployment.
+    - Dispatching T006 or any later ticket from this graph.
+
+policy:
+  authority:
+    allowed:
+      - Read authoritative GitHub state and scoped project artifacts from main.
+      - Create ticket/t004-nuxt-ssr-scaffold from the verified T097 main read-back.
+      - Write the four T004 implementation paths and T004 loop/evidence artifacts on the ticket branch.
+      - Run deterministic Node/pnpm/Nuxt checks and open a reviewable pull request.
+    requires_approval:
+      - Merge to protected main or mark T004 complete.
+      - Dispatch T006 or any later task.
+      - Change the approved design, architecture, access, rights or Web3 boundary.
+    forbidden:
+      - Add later-task runtime files, production credentials, secrets or external Web3 writes.
+      - Weaken the SSR acceptance proof, hide failed verification or rewrite prior evidence.
+  human_gates:
+    - T004 implementation scope, SSR proof and merge review.
+    - Protected-branch merge and task checkbox completion.
+    - Any design, architecture, access, rights, authentication or provider boundary change.
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+graph:
+  entry_nodes:
+    - x-authoritative-state
+    - t-supervisor
+    - t-t004-ready
+    - t-human-review
+  terminal_nodes:
+    - s-terminal-policy
+
+  loops:
+    - id: l2-t004-supervisor
+      layer: L2
+      owner: codex-supervisor
+      trigger_nodes: [t-supervisor]
+      action_nodes: [a-reconcile]
+      proof_nodes: [p-reconciliation]
+      memory_nodes: [m-l2-t004-ledger]
+      stop_nodes: [s-terminal-policy]
+      budgets:
+        max_iterations: 2
+        max_minutes: 20
+        max_same_failure: 2
+        max_graph_changes: 8
+        max_tokens: 18000
+
+    - id: l1-t004-execution
+      layer: L1
+      owner: codex-agent
+      trigger_nodes: [t-t004-ready]
+      action_nodes: [a-nuxt-scaffold]
+      proof_nodes: [p-nuxt-ssr]
+      memory_nodes: [m-l1-t004-ledger]
+      stop_nodes: [s-terminal-policy]
+      budgets:
+        max_iterations: 4
+        max_minutes: 60
+        max_same_failure: 2
+        max_graph_changes: 12
+        max_tokens: 40000
+
+    - id: l3-t004-review
+      layer: L3
+      owner: human-mark
+      trigger_nodes: [t-human-review]
+      action_nodes: [a-review-t004]
+      proof_nodes: [p-human-approval]
+      memory_nodes: [m-l3-t004-decisions]
+      stop_nodes: [s-terminal-policy]
+      budgets:
+        max_iterations: 2
+        max_minutes: 60
+        max_same_failure: 2
+        max_graph_changes: 8
+        max_tokens: 18000
+
+  nodes:
+    - id: x-authoritative-state
+      kind: external
+      layer: EXTERNAL
+      label: T097 main read-back and approved T004 task
+      owner: github-and-project-state
+      status: done
+      risk: medium
+      confidence:
+        score: 0.99
+        basis: Main read-back is 32f9e5b; T005 and T097 are complete, T004 is unchecked, target web paths are absent and no open T004 PR exists.
+        evidence_refs: [.loop/evidence/t004-baseline.json]
+      budget:
+        effort_hours: 0.1
+        tokens: 1800
+      config:
+        source_type: repository-and-approved-user-direction
+        freshness: Read from main immediately before branch creation.
+        limitations: Local checkout metadata is unavailable; GitHub branch, blob and PR read-back are authoritative.
+
+    - id: t-supervisor
+      kind: trigger
+      layer: L2
+      label: T004 implementation and scope reconciliation requested
+      owner: codex-supervisor
+      status: done
+      risk: low
+      confidence:
+        score: 1.0
+        basis: Mark explicitly requested Graphify LOOP execution for T004 after the required T097 alignment gate.
+        evidence_refs: [.loop/evidence/t004-baseline.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: Reconcile T004 against the checked T005/T097 baseline and create one implementation frontier.
+        inputs_required: [main read-back, T004 task text, plan.md, DESIGN.md, constitution, open PR state]
+        dedupe: T004 plus T097-main-readback plus four-file-nuxt-scope
+
+    - id: a-reconcile
+      kind: action
+      layer: L2
+      label: Reconcile T004 authority, dependencies and exact file scope
+      owner: codex-supervisor
+      status: done
+      risk: low
+      confidence:
+        score: 0.99
+        basis: T004 is the only authorized next implementation ticket and its four runtime paths are explicit.
+        evidence_refs: [.loop/evidence/t004-baseline.json]
+      budget:
+        effort_hours: 0.25
+        tokens: 3500
+      config:
+        workflow: [read main read-back, read task and plan, confirm four-file scope, confirm Node 24/Nuxt 4.5 baseline, open implementation frontier]
+        allowed: [read state, append baseline evidence, route T004]
+        requires_approval: [merge, mark T004 complete, dispatch later tickets, expand scope]
+        forbidden: [alter approved design, start T006, create competing T004 source of truth]
+
+    - id: p-reconciliation
+      kind: proof
+      layer: L2
+      label: T004 authoritative scope reconciliation proof
+      owner: verifier
+      status: done
+      risk: low
+      confidence:
+        score: 0.99
+        basis: The baseline receipt binds current main, task dependency, absent target paths, empty open-PR state and the exact implementation allowlist.
+        evidence_refs: [.loop/evidence/t004-baseline.json]
+      budget:
+        effort_hours: 0.15
+        tokens: 2500
+      config:
+        level: P2
+        claim: T004 is ready and remains bounded to four Nuxt scaffold files plus loop/evidence artifacts.
+        method: Compare tasks.md, plan.md, main commit, remote target-path 404 responses, branch inventory and open-PR search.
+        evidence_path: .loop/evidence/t004-baseline.json
+        required: true
+        baseline_required: true
+
+    - id: m-l2-t004-ledger
+      kind: memory
+      layer: L2
+      label: T004 supervisor reconciliation ledger
+      owner: codex-supervisor
+      status: done
+      risk: low
+      confidence:
+        score: 0.95
+        basis: The T004 ledger records the authoritative baseline and dispatch decision without closing the protected merge gate.
+        evidence_refs: [.loop/t004-nuxt-ssr-ledger.json]
+      budget:
+        effort_hours: 0.05
+        tokens: 800
+      config:
+        path: .loop/t004-nuxt-ssr-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+
+    - id: t-t004-ready
+      kind: trigger
+      layer: L1
+      label: Approved T004 Nuxt SSR scaffold is ready
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        score: 0.99
+        basis: Fresh Mark authorization follows the merged T097 alignment and the exact four-file scope is recorded.
+        evidence_refs: [.loop/evidence/t004-baseline.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: T004 has a verified main base, no duplicate PR and a four-file implementation allowlist.
+        inputs_required: [T004 task text, Node 24 baseline, Nuxt 4.5 target, branch base SHA, baseline receipt]
+        dedupe: T004 plus current-main-sha plus four-file-path-set
+
+    - id: a-nuxt-scaffold
+      kind: action
+      layer: L1
+      label: Implement the four-file Nuxt 4.5 SSR scaffold
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        score: 0.98
+        basis: The four paths pass typecheck, production build, root verify and a live SSR HTTP smoke assertion.
+        evidence_refs: [.loop/evidence/t004-implementation-proof.json]
+      budget:
+        effort_hours: 1.5
+        tokens: 16000
+      config:
+        workflow: [create package and Nuxt config, create strict tsconfig, render accessible smoke HTML, run typecheck/build/server proof, inspect scope]
+        allowed: [write the four T004 paths, write T004 loop/evidence artifacts, run local Node/pnpm/Nuxt checks]
+        requires_approval: [merge, mark T004 complete, dispatch T006 or later, add API/database/provider/infrastructure scope]
+        forbidden: [create pages or later-task UI, add Motion/p5/Web3/auth/DB/CI/deployment, weaken SSR proof]
+
+    - id: p-nuxt-ssr
+      kind: proof
+      layer: L1
+      label: T004 Nuxt typecheck, build and SSR smoke proof
+      owner: verifier
+      status: done
+      risk: medium
+      confidence:
+        score: 0.98
+        basis: Node 24.14.0 and pnpm 11.7.0 passed; Nuxt 4.5.0 typecheck and build passed; the production server returned the expected title, marker and h1; root verify passed.
+        evidence_refs: [.loop/evidence/t004-implementation-proof.json]
+      budget:
+        effort_hours: 0.6
+        tokens: 8000
+      config:
+        level: P2
+        claim: The T004 root smoke route returns complete server-rendered HTML from a production Nuxt build without client-only prerequisites.
+        method: Run pnpm install without a lockfile mutation, nuxt typecheck, nuxt build, start the generated node-server, curl / and assert SSR markers, then run make verify.
+        evidence_path: .loop/evidence/t004-implementation-proof.json
+        required: true
+        baseline_required: true
+
+    - id: m-l1-t004-ledger
+      kind: memory
+      layer: L1
+      label: T004 execution ledger
+      owner: codex-agent
+      status: done
+      risk: low
+      confidence:
+        score: 0.98
+        basis: The implementation fix and passing proof receipts are recorded append-only; the initial typecheck gap is retained as an attempt and resolved by the dev dependency addition.
+        evidence_refs: [.loop/t004-nuxt-ssr-ledger.json, .loop/evidence/t004-implementation-proof.json]
+      budget:
+        effort_hours: 0.05
+        tokens: 1000
+      config:
+        path: .loop/t004-nuxt-ssr-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+
+    - id: t-human-review
+      kind: trigger
+      layer: L3
+      label: T004 scaffold review and protected merge requested
+      owner: human-mark
+      status: ready
+      risk: high
+      confidence:
+        score: 0.98
+        basis: Runtime proof is complete, but protected-branch merge and T004 checkbox completion remain explicit human gates.
+        evidence_refs: [.loop/evidence/t004-implementation-proof.json, .loop/evidence/t004-review-approval.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: The four-file patch and independent SSR proof are ready for review.
+        inputs_required: [four-file diff, SSR proof, scope inventory, implementation ledger, pull request]
+        dedupe: T004-ssr-proof-fingerprint plus review-run-id
+
+    - id: a-review-t004
+      kind: action
+      layer: L3
+      label: Review T004 scope, SSR proof and merge readiness
+      owner: human-mark
+      status: needs_human
+      risk: high
+      confidence:
+        score: 0.9
+        basis: Automated proof passes, but human review must confirm no later-task scope or architecture drift.
+        evidence_refs: [.loop/evidence/t004-implementation-proof.json]
+      budget:
+        effort_hours: 0.3
+        tokens: 3500
+      config:
+        workflow: [inspect four-file diff, read proof, verify Nuxt/Node baseline, verify PR scope, approve or request bounded changes]
+        allowed: [human review and explicit approval decision]
+        requires_approval: [protected merge and T004 checkbox completion]
+        forbidden: [infer approval from passing automation, broaden scope, waive missing SSR evidence]
+
+    - id: p-human-approval
+      kind: proof
+      layer: L3
+      label: Explicit T004 review and merge approval
+      owner: human-mark
+      status: needs_human
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: The user has authorized implementation, not an implicit protected-branch merge or checkbox completion.
+        evidence_refs: [.loop/evidence/t004-review-approval.json]
+      budget:
+        effort_hours: 0.25
+        tokens: 2500
+      config:
+        level: P3
+        claim: The accountable human approved the exact T004 patch and its merge/completion action.
+        method: Explicit approval after PR diff, scope inventory and SSR proof read-back.
+        evidence_path: .loop/evidence/t004-review-approval.json
+        required: true
+        baseline_required: false
+
+    - id: g-t004-approval
+      kind: gate
+      layer: L3
+      label: T004 scope, proof and protected merge gate
+      owner: human-mark
+      status: needs_human
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: Protected branch merge and task completion cannot be inferred from local or CI checks.
+        evidence_refs: [.loop/evidence/t004-review-approval.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: Explicit approval follows review of the four-file patch, SSR proof and remote PR read-back.
+        approver: human-mark
+        required: true
+
+    - id: m-l3-t004-decisions
+      kind: memory
+      layer: L3
+      label: T004 human decision ledger
+      owner: human-mark
+      status: planned
+      risk: low
+      confidence:
+        score: 0.9
+        basis: The pending review and eventual approval decision will be recorded in the append-only T004 ledger.
+        evidence_refs: [.loop/t004-nuxt-ssr-ledger.json]
+      budget:
+        effort_hours: 0.05
+        tokens: 800
+      config:
+        path: .loop/t004-nuxt-ssr-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+
+    - id: s-terminal-policy
+      kind: stop
+      layer: GLOBAL
+      label: T004 named terminal-state policy
+      owner: policy
+      status: needs_human
+      risk: critical
+      confidence:
+        score: 0.99
+        basis: Implementation and SSR proof pass; the graph stops at the named human review/merge gate.
+        evidence_refs: [.loop/t004-nuxt-ssr-ledger.json, .loop/evidence/t004-review-approval.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        states:
+          success: Four T004 files pass typecheck, build and SSR proof, are reviewed, merged and read back, and T004 is checked.
+          no_op: An approved equivalent Nuxt 4.5 SSR scaffold already exists and no safe change is required.
+          blocked: Required source, Node/pnpm runtime, permission, branch or proof system is unavailable.
+          stalled: Same failure or no-evidence-delta limit is reached.
+          exhausted: Iteration, time, graph-change or token budget is reached.
+          needs_human: Implementation proof is complete but review, protected merge or checkbox completion is pending.
+          cancelled: User cancels or the governing specification becomes invalid.
+
+  edges:
+    - {id: e-external-l2, from: x-authoritative-state, to: a-reconcile, type: feedback, required: true, confidence: 0.99, token_capacity: 5000}
+    - {id: e-l2-trigger, from: t-supervisor, to: a-reconcile, type: enables, required: true, confidence: 1.0, token_capacity: 8000}
+    - {id: e-l2-proof, from: a-reconcile, to: p-reconciliation, type: verifies, required: true, confidence: 0.99, token_capacity: 6000}
+    - {id: e-l2-work, from: p-reconciliation, to: t-t004-ready, type: enables, required: true, confidence: 0.99, token_capacity: 7000}
+    - {id: e-l2-memory-a, from: a-reconcile, to: m-l2-t004-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-l2-memory-p, from: p-reconciliation, to: m-l2-t004-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-l2-memory-read, from: m-l2-t004-ledger, to: a-reconcile, type: reads, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-l2-feedback, from: m-l2-t004-ledger, to: a-reconcile, type: feedback, required: true, confidence: 0.95, token_capacity: 3000}
+
+    - {id: e-l1-trigger, from: t-t004-ready, to: a-nuxt-scaffold, type: enables, required: true, confidence: 0.99, token_capacity: 12000}
+    - {id: e-l1-proof, from: a-nuxt-scaffold, to: p-nuxt-ssr, type: verifies, required: true, confidence: 0.98, token_capacity: 9000}
+    - {id: e-l1-memory-a, from: a-nuxt-scaffold, to: m-l1-t004-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-l1-memory-p, from: p-nuxt-ssr, to: m-l1-t004-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-l1-memory-read, from: m-l1-t004-ledger, to: a-nuxt-scaffold, type: reads, required: true, confidence: 0.95, token_capacity: 3500}
+    - {id: e-l1-feedback, from: m-l1-t004-ledger, to: a-nuxt-scaffold, type: feedback, required: true, confidence: 0.95, token_capacity: 3500}
+    - {id: e-l1-review-feedback, from: p-nuxt-ssr, to: t-human-review, type: feedback, required: true, confidence: 0.95, token_capacity: 6000}
+    - {id: e-l1-stop, from: p-nuxt-ssr, to: s-terminal-policy, type: enables, required: false, confidence: 0.95, token_capacity: 4000}
+
+    - {id: e-l3-trigger, from: t-human-review, to: a-review-t004, type: enables, required: true, confidence: 1.0, token_capacity: 6000}
+    - {id: e-l3-proof, from: a-review-t004, to: p-human-approval, type: verifies, required: true, confidence: 1.0, token_capacity: 6000}
+    - {id: e-l3-gate, from: p-human-approval, to: g-t004-approval, type: requires_approval, required: true, confidence: 1.0, token_capacity: 5000}
+    - {id: e-gate-stop, from: g-t004-approval, to: s-terminal-policy, type: approves, required: true, confidence: 1.0, token_capacity: 4000}
+    - {id: e-l3-memory-a, from: a-review-t004, to: m-l3-t004-decisions, type: records, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-l3-memory-p, from: p-human-approval, to: m-l3-t004-decisions, type: records, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-l3-memory-read, from: m-l3-t004-decisions, to: a-review-t004, type: reads, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-l3-feedback, from: m-l3-t004-decisions, to: a-review-t004, type: feedback, required: true, confidence: 0.9, token_capacity: 3000}
+
+flow:
+  source: t-t004-ready
+  sink: s-terminal-policy
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - memory_receipt
+  - next_action
