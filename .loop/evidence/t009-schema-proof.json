@@ -4,7 +4,7 @@
   "task": "T009",
   "recorded_at": "2026-08-07T10:56:31Z",
   "validated_ref": "ticket/t009-content-document-schema",
-  "validated_commit": "277656cbad7105ece7fdd7e80d67c2928b1e316f",
+  "validated_commit": "90a803347c73cec8f1f785efff1e0bed2d7ffe9f",
   "scope": {
     "contract": "contracts/content-document.schema.json",
     "valid_fixture": "packages/content-schema/fixtures/valid/content-document-v1-all-blocks.json",
@@ -17,7 +17,8 @@
     "dialect": "JSON Schema draft 2020-12",
     "strict": true,
     "setup": "npm install --prefix <temporary-dir> --no-save ajv@8 ajv-formats@3",
-    "result": "PASS"
+    "result": "PASS",
+    "provider_policy": "No production provider is authorized in T009; video uses the rights-pending sentinel until ADR-0003 approval."
   },
   "checks": {
     "schema_parse_and_compile": {
@@ -27,7 +28,7 @@
     "valid_fixture": {
       "path": "packages/content-schema/fixtures/valid/content-document-v1-all-blocks.json",
       "result": "PASS",
-      "detail": "One fixture covers paragraph, heading, list, quote, divider, image, gallery, stat, video, related-reading and generative-canvas."
+      "detail": "One fixture covers all 11 approved MVP block types; video remains rights-pending and cannot authorize an external provider."
     },
     "invalid_fixtures": [
       {
@@ -36,14 +37,69 @@
         "intended_reason": "Closed block object rejects render."
       },
       {
+        "path": "packages/content-schema/fixtures/invalid/divider-invalid-style.json",
+        "result": "REJECTED",
+        "intended_reason": "Divider style enum rejects dashed."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/gallery-invalid-too-few.json",
+        "result": "REJECTED",
+        "intended_reason": "Gallery items minItems rejects a one-item gallery."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/generative-canvas-invalid-palette.json",
+        "result": "REJECTED",
+        "intended_reason": "Palette enum rejects never-approved-palette."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/generative-canvas-remote-url-unsafe.json",
+        "result": "REJECTED",
+        "intended_reason": "Closed generative payload rejects remoteUrl."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/generative-canvas-shader-unsafe.json",
+        "result": "REJECTED",
+        "intended_reason": "Closed generative payload rejects shader."
+      },
+      {
         "path": "packages/content-schema/fixtures/invalid/generative-canvas-unsafe.json",
         "result": "REJECTED",
-        "intended_reason": "Closed generative payload rejects code, shader and remoteUrl."
+        "intended_reason": "Closed generative payload rejects code."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/heading-invalid-level.json",
+        "result": "REJECTED",
+        "intended_reason": "Heading level maximum rejects 7."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/image-invalid-asset-id.json",
+        "result": "REJECTED",
+        "intended_reason": "Image asset ID UUID format and pattern reject the value."
       },
       {
         "path": "packages/content-schema/fixtures/invalid/javascript-inline-link.json",
         "result": "REJECTED",
         "intended_reason": "secureHref rejects javascript:."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/list-invalid-empty.json",
+        "result": "REJECTED",
+        "intended_reason": "List items minItems rejects an empty list."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/quote-invalid-empty.json",
+        "result": "REJECTED",
+        "intended_reason": "Quote content minItems rejects an empty quote."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/related-reading-invalid-slug.json",
+        "result": "REJECTED",
+        "intended_reason": "Slug pattern rejects an uppercase/non-slug value."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/stat-invalid-label.json",
+        "result": "REJECTED",
+        "intended_reason": "Stat label minLength rejects an empty label."
       },
       {
         "path": "packages/content-schema/fixtures/invalid/unknown-block.json",
@@ -53,19 +109,32 @@
       {
         "path": "packages/content-schema/fixtures/invalid/video-raw-url.json",
         "result": "REJECTED",
-        "intended_reason": "Provider allowlist and derived provider ID contract reject custom raw embed URL."
+        "intended_reason": "Closed payload and rights-pending provider contract reject a raw custom embed URL."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/video-unapproved-provider.json",
+        "result": "REJECTED",
+        "intended_reason": "rights-pending provider const rejects youtube before rights-owner approval."
       }
     ]
   },
   "independent_validation": {
     "command": "Ajv2020 strict compile plus validate(validFixture) and validate(eachInvalidFixture), exit 0 iff valid passes and every invalid fixture is rejected.",
-    "observed": "valid=true; invalid fixtures all valid=false; process exit code 0",
+    "observed": "valid=true; 17 schema-invalid fixtures all valid=false; process exit code 0",
     "output_digest": {
       "block-unknown-property.json": "additionalProperties",
-      "generative-canvas-unsafe.json": "additionalProperties",
+      "divider-invalid-style.json": "enum",
+      "generative-canvas-invalid-palette.json": "enum",
+      "generative-canvas-code/shader/remote-url": "additionalProperties",
+      "heading-invalid-level.json": "maximum",
+      "image-invalid-asset-id.json": "format/pattern",
       "javascript-inline-link.json": "pattern",
+      "list/quote/gallery-invalid": "minItems",
+      "related-reading-invalid-slug.json": "pattern",
+      "stat-invalid-label.json": "minLength",
       "unknown-block.json": "enum",
-      "video-raw-url.json": "required/additionalProperties/enum"
+      "video-raw-url.json": "const/additionalProperties",
+      "video-unapproved-provider.json": "const"
     }
   },
   "companion_validations": [
@@ -85,10 +154,11 @@
   ],
   "decision": "PASS",
   "residual_risks": [
-    "T010 must establish validator parity and generated TypeScript/Java types.",
+    "T010 must establish TypeScript/Java validator parity and enforce blocks[*].id uniqueness at the runtime boundary.",
+    "ADR-0003 publisher/rights-owner approval is still required before any real video provider is enumerated.",
     "T011 and later must prove runtime consumers preserve this boundary."
   ],
-  "next_gate": "Await CI/Security on the formatting-only follow-up head, then complete current-head review; keep T009 unchecked until merge and main read-back.",
+  "next_gate": "Await CI/Security on the current follow-up head, then complete current-head review; keep T009 unchecked until merge and main read-back.",
   "post_format_revalidation": {
     "input_commit": "277656cbad7105ece7fdd7e80d67c2928b1e316f",
     "reason": "CI Frontend and contract verification rejected the previously unformatted complete fixture.",
@@ -101,5 +171,20 @@
       "observed": "valid fixture accepted and all five invalid fixtures rejected"
     },
     "scope_unchanged": true
+  },
+  "semantic_invariants": {
+    "duplicate_block_id": {
+      "path": "packages/content-schema/fixtures/invalid/duplicate-block-id.json",
+      "invariant": "blocks[*].id must be unique even when payloads differ",
+      "method": "Independent structural assertion over block IDs",
+      "result": "REJECTED",
+      "observed": "duplicate ID detected and rejected by the semantic invariant check"
+    }
+  },
+  "latest_revalidation": {
+    "input_commit": "90a803347c73cec8f1f785efff1e0bed2d7ffe9f",
+    "result": "PASS",
+    "observed": "Ajv2020 strict compile accepted the rights-pending valid fixture and rejected 17 focused invalid fixtures; Prettier check passed for all fixture JSON; duplicate block ID semantic invariant was rejected.",
+    "scope": "Schema enum/rights gate, palette enum, per-block negative fixtures and duplicate-ID evidence."
   }
 }
