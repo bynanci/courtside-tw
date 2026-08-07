@@ -1,0 +1,52 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t008-dispatch-20260807",
+  "generated_at": "2026-08-07T08:11:31Z",
+  "actor": "codex-supervisor",
+  "subject": "T008 CI and security pipeline dispatch",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T008",
+  "base": {
+    "ref": "main",
+    "sha": "ee21f9bad425ebbac90cda58951d5ca0956f7ea2"
+  },
+  "branch": {
+    "name": "ticket/t008-ci-pipelines",
+    "created_from": "main@ee21f9bad425ebbac90cda58951d5ca0956f7ea2"
+  },
+  "contract": {
+    "task": "Create CI pipelines in .github/workflows/ci.yml, .github/workflows/security.yml and .github/dependabot.yml.",
+    "verification": [
+      "contract/lint/type/unit checks",
+      "integration checks",
+      "secret/dependency/container scans",
+      "preserve test reports"
+    ],
+    "t007_follow_up": "CI must revalidate PostgreSQL, S3Mock and OIDC health from T007."
+  },
+  "scope_guard": {
+    "implementation_paths": [
+      ".github/workflows/ci.yml",
+      ".github/workflows/security.yml",
+      ".github/dependabot.yml"
+    ],
+    "evidence_paths": [
+      ".loop/evidence/t008-dispatch.json",
+      ".loop/evidence/t008-static-proof.json",
+      ".loop/evidence/t008-runtime-proof.json",
+      ".loop/t008-ci-pipelines-ledger.json",
+      ".loop/t008-ci-pipelines-graphify-loop.yaml",
+      ".loop/memory/t008-ci-pipelines.json"
+    ],
+    "forbidden": [
+      "production credentials",
+      "deployment or release publishing",
+      "database migrations",
+      "application feature code",
+      "Web3 writes"
+    ],
+    "t008_checked": false
+  },
+  "status": "dispatched",
+  "next_action": "Open a PR and observe GitHub Actions results before deciding whether T008 can be checked or merged."
+}
