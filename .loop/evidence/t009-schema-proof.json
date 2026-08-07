@@ -2,9 +2,9 @@
   "schema_version": 1,
   "evidence_id": "t009-schema-proof-20260807",
   "task": "T009",
-  "recorded_at": "2026-08-07T12:48:41Z",
+  "recorded_at": "2026-08-07T14:21:00Z",
   "validated_ref": "ticket/t009-content-document-schema",
-  "validated_commit": "6cd31d85b6a0dea6479e6809f02fe2015f8e3ddc",
+  "validated_commit": "60e1ea0cc4f8eb65f1fbc84637e115dc1aa7ec1d",
   "scope": {
     "contract": "contracts/content-document.schema.json",
     "valid_fixture": "packages/content-schema/fixtures/valid/content-document-v1-all-blocks.json",
@@ -142,12 +142,22 @@
         "path": "packages/content-schema/fixtures/invalid/text-nul.json",
         "result": "REJECTED",
         "intended_reason": "Shared NUL exclusion rejects a persisted JSONB-incompatible character."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/heading-invalid-level-low.json",
+        "result": "REJECTED",
+        "intended_reason": "Heading level minimum rejects 1; the existing level-7 fixture covers the upper bound."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/stat-missing-unit-context.json",
+        "result": "REJECTED",
+        "intended_reason": "Stat requires unit and context alongside label and value."
       }
     ]
   },
   "independent_validation": {
-    "command": "pnpm run contract:schema; exit 0 iff the valid fixture passes, all 21 schema-invalid fixtures are rejected, and the duplicate-ID semantic fixture is detected.",
-    "observed": "valid=true; 21 schema-invalid fixtures all valid=false; duplicate block IDs detected; process exit code 0",
+    "command": "pnpm run contract:schema; exit 0 iff the valid fixture passes, all 23 schema-invalid fixtures are rejected, and the duplicate-ID semantic fixture is detected.",
+    "observed": "valid=true; 23 schema-invalid fixtures all valid=false; duplicate block IDs detected; process exit code 0",
     "output_digest": {
       "block-unknown-property.json": "additionalProperties",
       "divider-invalid-style.json": "enum",
@@ -163,7 +173,9 @@
       "video-raw-url.json": "const/additionalProperties",
       "video-unapproved-provider.json": "const",
       "https-link-invalid-authority.json": "format/pattern",
-      "text-nul.json": "not/pattern"
+      "text-nul.json": "not/pattern",
+      "heading-invalid-level-low.json": "minimum",
+      "stat-missing-unit-context.json": "required"
     }
   },
   "companion_validations": [
@@ -183,7 +195,7 @@
     {
       "command": "node scripts/validate-content-schema.mjs",
       "result": "PASS",
-      "detail": "Independent replay with Node 24.14.0, Ajv 8.20.0 and ajv-formats 3.0.1 passed: valid fixture accepted, 21 schema-invalid fixtures rejected, duplicate-ID invariant detected."
+      "detail": "Independent replay with Node 24.14.0, Ajv 8.20.0 and ajv-formats 3.0.1 passed: valid fixture accepted, 23 schema-invalid fixtures rejected, duplicate-ID invariant detected."
     }
   ],
   "decision": "PASS",
@@ -192,9 +204,9 @@
     "ADR-0003 publisher/rights-owner approval is still required before any real video provider is enumerated.",
     "T011 and later must prove runtime consumers preserve this boundary."
   ],
-  "next_gate": "Await GitHub CI/Security and current-head review after the reproducible validator wiring; then complete expected-head merge and main read-back. Keep T009 unchecked until read-back.",
+  "next_gate": "T009 current-head CI/Security run #65 and review threads pass; use expected-head merge authority, then read back main and keep T009 unchecked until that read-back confirms the canonical schema.",
   "post_format_revalidation": {
-    "input_commit": "277656cbad7105ece7fdd7e80d67c2928b1e316f",
+    "input_commit": "60e1ea0cc4f8eb65f1fbc84637e115dc1aa7ec1d",
     "reason": "CI Frontend and contract verification rejected the previously unformatted complete fixture.",
     "prettier_check": {
       "command": "prettier@3.9.6 --check packages/content-schema/fixtures/valid/content-document-v1-all-blocks.json",
@@ -202,7 +214,7 @@
     },
     "strict_ajv_recheck": {
       "result": "PASS",
-      "observed": "valid fixture accepted and all nineteen schema-invalid fixtures rejected"
+      "observed": "valid fixture accepted and all twenty-three schema-invalid fixtures rejected"
     },
     "scope_unchanged": true
   },
@@ -216,19 +228,19 @@
     }
   },
   "latest_revalidation": {
-    "input_commit": "6cd31d85b6a0dea6479e6809f02fe2015f8e3ddc",
-    "recorded_at": "2026-08-07T14:02:00Z",
+    "input_commit": "60e1ea0cc4f8eb65f1fbc84637e115dc1aa7ec1d",
+    "recorded_at": "2026-08-07T14:21:00Z",
     "result": "PASS",
     "command": "node scripts/validate-content-schema.mjs",
-    "observed": "Valid fixture accepted; all 11 block types present; UUIDv7 identifier accepted; 21 schema-invalid fixtures rejected; duplicate block-ID invariant detected; Prettier 3.9.6 check passed for the touched contract files.",
-    "scope": "UUIDv7 compatibility, URI authority/port validation, NUL exclusion, isolated negative fixtures, locked repository validator and CI wiring."
+    "observed": "Valid fixture accepted; all 11 block types present; UUIDv7 identifier accepted; heading levels are bounded to h2-h4; stat unit/context are required; 23 schema-invalid fixtures rejected; duplicate block-ID invariant detected; Prettier 3.9.6 check passed for the touched contract files.",
+    "scope": "UUIDv7 compatibility, URI authority/port validation, NUL exclusion, heading/stat boundary hardening, isolated negative fixtures, locked repository validator and CI wiring."
   },
   "boundary_revalidation": {
-    "input_commit": "6cd31d85b6a0dea6479e6809f02fe2015f8e3ddc",
-    "recorded_at": "2026-08-07T14:02:00Z",
+    "input_commit": "60e1ea0cc4f8eb65f1fbc84637e115dc1aa7ec1d",
+    "recorded_at": "2026-08-07T14:21:00Z",
     "strict_ajv_recheck": {
       "result": "PASS",
-      "observed": "Valid fixture accepted; 21 schema-invalid fixtures rejected under Ajv2020 strict mode."
+      "observed": "Valid fixture accepted; 23 schema-invalid fixtures rejected under Ajv2020 strict mode."
     },
     "semantic_invariant": {
       "result": "PASS",
@@ -264,6 +276,16 @@
         "path": "packages/content-schema/fixtures/invalid/text-nul.json",
         "result": "REJECTED",
         "reason": "NUL is rejected by the shared string exclusion before persistence."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/heading-invalid-level-low.json",
+        "result": "REJECTED",
+        "reason": "Heading level 1 is rejected by the h2-h4 boundary."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/stat-missing-unit-context.json",
+        "result": "REJECTED",
+        "reason": "Missing unit and context are rejected by the required-field boundary."
       }
     ],
     "scope_unchanged": true
@@ -275,7 +297,13 @@
       "ajv-formats@3.0.1"
     ],
     "independent_replay_result": "PASS",
-    "github_ci_result": "PENDING",
-    "validated_commit": "6cd31d85b6a0dea6479e6809f02fe2015f8e3ddc"
+    "github_ci_result": "PASS",
+    "validated_commit": "60e1ea0cc4f8eb65f1fbc84637e115dc1aa7ec1d",
+    "github_ci": {
+      "ci_run_id": 31186112513,
+      "security_run_id": 31186112657,
+      "run_number": 65,
+      "conclusion": "success"
+    }
   }
 }
