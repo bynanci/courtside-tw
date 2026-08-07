@@ -1,16 +1,16 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t006",
-  "graph_version": 10,
+  "graph_version": 11,
   "run_id": "courtside-tw-t006-quality-baseline-20260807",
   "status": "success",
   "iteration": 4,
   "started_at": "2026-08-07T05:08:32Z",
-  "updated_at": "2026-08-07T06:28:00Z",
+  "updated_at": "2026-08-07T06:59:11.016Z",
   "current_frontier": [],
   "blocked_nodes": [],
   "terminal_state": "success",
-  "next_action": "Stop T006. Do not dispatch T007 or later work from this final read-back.",
+  "next_action": "Merge the bounded T006 evidence reconciliation, read back main at the resulting SHA, then dispatch T007 as a separate explicit action.",
   "events": [
     {
       "event_id": "evt-t006-quality-baseline-001-graph-initialized",
@@ -596,11 +596,115 @@
         "total": 2600
       },
       "terminal_reason": "T006 quality paths pass, PR #20 is merged, PR #21 records completion, main read-back verifies T006 checked, and T007 remains undispatched."
+    },
+    {
+      "event_id": "evt-t006-quality-baseline-011-evidence-reconciliation",
+      "at": "2026-08-07T06:59:11.016Z",
+      "actor": "codex-supervisor",
+      "type": "evidence_reconciliation",
+      "base_graph_version": 10,
+      "new_graph_version": 11,
+      "corrects_event_id": "evt-t006-quality-baseline-010-final-main-readback",
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/x-main-readback/confidence/basis",
+            "before": "Final main read-back confirms PR #20/#21 merges, checked T001-T006, unchecked and undispatched T007, and no competing T006 frontier.",
+            "after": "Final main read-back and evidence reconciliation confirm PR #20/#21 merges, checked T001-T006, explicitly enumerated T007 as unchecked and undispatched, and no competing T006 frontier; T097 is a prior completed alignment slice."
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/x-main-readback/confidence/evidence_refs",
+            "before": [
+              ".loop/evidence/t002-main-readback.json",
+              ".loop/evidence/t006-main-readback.json"
+            ],
+            "after": [
+              ".loop/evidence/t002-main-readback.json",
+              ".loop/evidence/t006-main-readback.json",
+              ".loop/evidence/t006-evidence-reconciliation.json",
+              ".loop/evidence/t006-merged-head-reconciliation.json"
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/x-main-readback/config/freshness",
+            "before": "Read at main@9d97573 after PR #21 completion merge.",
+            "after": "Source read-back was main@9d97573 after PR #21; reconciliation is anchored to the PR #22 merge main@62bbf64."
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/x-main-readback/config/limitations",
+            "before": "Java Gradle execution is covered by .loop/evidence/t006-java-quality-proof.json.",
+            "after": "Java Gradle execution is covered by .loop/evidence/t006-java-quality-proof.json; the historical PR review receipt names 22e6623, while the actual merged head 99afeaf is covered by .loop/evidence/t006-merged-head-reconciliation.json."
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/s-terminal-policy/confidence/basis",
+            "before": "PR #20 and PR #21 are merged, final main read-back confirms T006 is checked and T007 remains unchecked and undispatched.",
+            "after": "PR #20/#21 are merged, the final main read-back explicitly confirms T006 checked and T007 unchecked/undispatched, T097 is enumerated as prior completed work, and actual PR #20 head scope is reconciled."
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/s-terminal-policy/confidence/evidence_refs",
+            "before": [
+              ".loop/t006-quality-baseline-ledger.json",
+              ".loop/evidence/t006-implementation-proof.json",
+              ".loop/evidence/t006-completion-receipt.json",
+              ".loop/evidence/t006-main-readback.json"
+            ],
+            "after": [
+              ".loop/t006-quality-baseline-ledger.json",
+              ".loop/evidence/t006-implementation-proof.json",
+              ".loop/evidence/t006-completion-receipt.json",
+              ".loop/evidence/t006-main-readback.json",
+              ".loop/evidence/t006-evidence-reconciliation.json",
+              ".loop/evidence/t006-merged-head-reconciliation.json"
+            ]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t006-evidence-reconciliation.json",
+        ".loop/evidence/t006-merged-head-reconciliation.json",
+        ".loop/evidence/t006-main-readback.json",
+        ".loop/evidence/t006-review-proof.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "T007 scope claim reconciliation",
+          "level": "P2",
+          "result": "pass",
+          "details": "The read-back now asserts T007 specifically and enumerates T097 instead of claiming all later tickets are unchecked."
+        },
+        {
+          "proof": "PR #20 actual merged-head re-read",
+          "level": "P2",
+          "result": "pass",
+          "details": "PR metadata identifies 99afeaf as the merged head; the complete 21-file inventory and post-review commit delta remain within T006 evidence/Graphify scope."
+        },
+        {
+          "proof": "Complete v9-to-v10 graph delta",
+          "level": "P2",
+          "result": "pass",
+          "details": "Event 011 records the omitted evidence_refs, freshness, limitations and terminal-node basis/evidence_refs changes as an append-only correction of event 010."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "T006 evidence is reconciled on this bounded branch; T007 remains a separate explicit dispatch gate after merge and fresh main read-back.",
+      "token_usage": {
+        "estimated": 4200,
+        "input": 0,
+        "output": 0,
+        "total": 4200
+      },
+      "terminal_reason": "No runtime or product paths changed; the T006 terminal policy remains success after the evidence corrections are merged and read back."
     }
   ],
   "proof": {
-    "claim": "T006 shared quality configuration and deterministic Node and Java Gradle enforcement are implemented, reviewed, merged, checked and read back from main; T007 remains undispatched.",
+    "claim": "T006 shared quality configuration and deterministic Node and Java Gradle enforcement are implemented, merged, checked, read back, and its evidence conflicts are reconciled; T007 remains a separate dispatch gate.",
     "result": "success",
-    "confidence": 1
+    "confidence": 0.99
   }
 }

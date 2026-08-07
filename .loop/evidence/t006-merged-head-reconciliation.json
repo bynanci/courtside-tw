@@ -1,0 +1,75 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t006-merged-head-reconciliation-20260807",
+  "generated_at": "2026-08-07T06:59:11.016Z",
+  "actor": "codex-supervisor",
+  "subject": "T006 PR #20 actual merged-head scope re-read",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T006",
+  "pull_request": 20,
+  "review": {
+    "historical_receipt": ".loop/evidence/t006-review-proof.json",
+    "historical_review_id": 4880398361,
+    "historical_reviewed_head": "22e6623462e9d367c5e364088c5832f8b1c03290",
+    "historical_head_mismatch": true,
+    "reviewed_head": "99afeaf4a344000d80f4dc4b67e149c20a5f7092",
+    "base_commit": "a1afadb1ff45028627d5d84ad5a114aca85411e4",
+    "merge_commit": "6ab687e4077550864580f95cc557331bd131aa9f",
+    "method": [
+      "Read PR #20 metadata and merge refs.",
+      "Read the complete changed-file inventory across paginated pages.",
+      "Read the actual merged head commit diff and verify the post-review delta is evidence/Graphify-only."
+    ],
+    "decision": "PASS",
+    "limitation": "This is an append-only repository re-read by codex-supervisor; it does not rewrite the historical hosted review or submit a new GitHub review."
+  },
+  "scope_review": {
+    "changed_files": 21,
+    "changed_file_inventory": [
+      ".loop/evidence/t006-dispatch.json",
+      ".loop/evidence/t006-graph-validation-v2.json",
+      ".loop/evidence/t006-graph-validation-v3.json",
+      ".loop/evidence/t006-graph-validation.json",
+      ".loop/evidence/t006-implementation-proof.json",
+      ".loop/evidence/t006-java-quality-proof.json",
+      ".loop/evidence/t006-review-proof.json",
+      ".loop/t006-quality-baseline-graphify-loop.mmd",
+      ".loop/t006-quality-baseline-graphify-loop.yaml",
+      ".loop/t006-quality-baseline-ledger.json",
+      ".prettierignore",
+      "Makefile",
+      "apps/api/build.gradle.kts",
+      "apps/api/config/checkstyle/checkstyle.xml",
+      "apps/api/config/spotbugs/exclude.xml",
+      "apps/web/package.json",
+      "eslint.config.mjs",
+      "package.json",
+      "packages/tsconfig/base.json",
+      "pnpm-lock.yaml",
+      "prettier.config.mjs"
+    ],
+    "allowed_scope": "T006 quality configuration, root enforcement support, lockfile and append-only evidence",
+    "forbidden_scope_absent": [
+      "T007_or_later",
+      "CI_workflows",
+      "databases",
+      "providers",
+      "credentials",
+      "deployments",
+      "Web3_writes"
+    ],
+    "post_review_head_delta": [
+      ".loop/evidence/t006-graph-validation-v3.json",
+      ".loop/t006-quality-baseline-ledger.json"
+    ],
+    "post_review_delta_interpretation": "Evidence/Graphify-only; no runtime or product-path changes."
+  },
+  "status_checks": {
+    "configured": false,
+    "result": "none",
+    "interpretation": "No CI status is configured; no CI pass is inferred."
+  },
+  "result": "success",
+  "confidence": 0.99,
+  "next_action": "Keep the historical review receipt immutable, use this actual-head reconciliation in the T006 graph, and require a fresh main read-back after this reconciliation merges."
+}

@@ -111,15 +111,15 @@ graph:
       risk: medium
       confidence:
         score: 0.99
-        basis: Final main read-back confirms PR #20/#21 merges, checked T001-T006, unchecked and undispatched T007, and no competing T006 frontier.
-        evidence_refs: [.loop/evidence/t002-main-readback.json, .loop/evidence/t006-main-readback.json]
+        basis: Final main read-back and evidence reconciliation confirm PR #20/#21 merges, checked T001-T006, explicitly enumerated T007 as unchecked and undispatched, and no competing T006 frontier; T097 is a prior completed alignment slice.
+        evidence_refs: [.loop/evidence/t002-main-readback.json, .loop/evidence/t006-main-readback.json, .loop/evidence/t006-evidence-reconciliation.json, .loop/evidence/t006-merged-head-reconciliation.json]
       budget:
         effort_hours: 0.1
         tokens: 1800
       config:
         source_type: repository-and-approved-user-direction
-        freshness: Read at main@9d97573 after PR #21 completion merge.
-        limitations: Java Gradle execution is covered by .loop/evidence/t006-java-quality-proof.json.
+        freshness: Source read-back was main@9d97573 after PR #21; reconciliation is anchored to the PR #22 merge main@62bbf64.
+        limitations: Java Gradle execution is covered by .loop/evidence/t006-java-quality-proof.json; the historical PR review receipt names 22e6623, while the actual merged head 99afeaf is covered by .loop/evidence/t006-merged-head-reconciliation.json.
 
     - id: t-supervisor
       kind: trigger
@@ -300,8 +300,8 @@ graph:
       risk: high
       confidence:
         score: 0.99
-        basis: Current-head review passed; the Java quality proof is complete and merge remains a separate gate.
-        evidence_refs: [.loop/evidence/t006-implementation-proof.json, .loop/evidence/t006-java-quality-proof.json, .loop/evidence/t006-review-proof.json]
+        basis: Historical PR review passed at 22e6623; the actual merged head 99afeaf is independently re-read as T006-only evidence/Graphify scope, and Java quality proof is complete.
+        evidence_refs: [.loop/evidence/t006-implementation-proof.json, .loop/evidence/t006-java-quality-proof.json, .loop/evidence/t006-review-proof.json, .loop/evidence/t006-merged-head-reconciliation.json]
       budget:
         effort_hours: 0.0
         tokens: 0
@@ -319,8 +319,8 @@ graph:
       risk: high
       confidence:
         score: 0.99
-        basis: The bounded current-head diff passed scope review and the completed Java quality receipt is attached.
-        evidence_refs: [.loop/evidence/t006-implementation-proof.json, .loop/evidence/t006-java-quality-proof.json, .loop/evidence/t006-review-proof.json]
+        basis: The bounded T006 diff passed historical review, and the actual merged head is covered by an independent scope re-read; the completed Java quality receipt is attached.
+        evidence_refs: [.loop/evidence/t006-implementation-proof.json, .loop/evidence/t006-java-quality-proof.json, .loop/evidence/t006-review-proof.json, .loop/evidence/t006-merged-head-reconciliation.json]
       budget:
         effort_hours: 0.25
         tokens: 3500
@@ -339,8 +339,8 @@ graph:
       risk: critical
       confidence:
         score: 0.99
-        basis: Current-head review passed with explicit PASS; merge and checkbox completion remain separate gates.
-        evidence_refs: [.loop/evidence/t006-review-proof.json, .loop/evidence/t006-java-quality-proof.json]
+        basis: Historical review passed with explicit PASS at 22e6623; the actual merged head 99afeaf is covered by an independent P2 scope re-read, and merge/check completion remain separately evidenced.
+        evidence_refs: [.loop/evidence/t006-review-proof.json, .loop/evidence/t006-java-quality-proof.json, .loop/evidence/t006-merged-head-reconciliation.json]
       budget:
         effort_hours: 0.25
         tokens: 2500
@@ -361,8 +361,8 @@ graph:
       risk: critical
       confidence:
         score: 0.92
-        basis: PR #20 was merged with the reviewed expected head, and the separate completion slice checked T006 before final main read-back.
-        evidence_refs: [.loop/evidence/t006-review-proof.json, .loop/evidence/t006-java-quality-proof.json, .loop/evidence/t006-completion-receipt.json]
+        basis: PR #20 was merged at actual head 99afeaf; historical review was at 22e6623, the post-review delta is independently bounded to evidence/Graphify files, and the separate completion slice checked T006 before final main read-back.
+        evidence_refs: [.loop/evidence/t006-review-proof.json, .loop/evidence/t006-java-quality-proof.json, .loop/evidence/t006-completion-receipt.json, .loop/evidence/t006-merged-head-reconciliation.json]
       budget:
         effort_hours: 0.0
         tokens: 0
@@ -380,8 +380,8 @@ graph:
       risk: low
       confidence:
         score: 0.99
-        basis: Current-head review is recorded; merge and task completion remain separately evidenced.
-        evidence_refs: [.loop/t006-quality-baseline-ledger.json, .loop/evidence/t006-review-proof.json]
+        basis: Historical review, actual merged-head scope re-read, merge and task completion are separately evidenced.
+        evidence_refs: [.loop/t006-quality-baseline-ledger.json, .loop/evidence/t006-review-proof.json, .loop/evidence/t006-merged-head-reconciliation.json]
       budget:
         effort_hours: 0.05
         tokens: 800
@@ -404,8 +404,8 @@ graph:
       risk: critical
       confidence:
         score: 0.98
-        basis: PR #20 and PR #21 are merged, final main read-back confirms T006 is checked and T007 remains unchecked and undispatched.
-        evidence_refs: [.loop/t006-quality-baseline-ledger.json, .loop/evidence/t006-implementation-proof.json, .loop/evidence/t006-completion-receipt.json, .loop/evidence/t006-main-readback.json]
+        basis: PR #20/#21 are merged, the final main read-back explicitly confirms T006 checked and T007 unchecked/undispatched, T097 is enumerated as prior completed work, and actual PR #20 head scope is reconciled.
+        evidence_refs: [.loop/t006-quality-baseline-ledger.json, .loop/evidence/t006-implementation-proof.json, .loop/evidence/t006-completion-receipt.json, .loop/evidence/t006-main-readback.json, .loop/evidence/t006-evidence-reconciliation.json, .loop/evidence/t006-merged-head-reconciliation.json]
       budget:
         effort_hours: 0.0
         tokens: 0
