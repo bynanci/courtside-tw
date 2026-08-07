@@ -1,25 +1,24 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t005",
-  "graph_version": 5,
+  "graph_version": 6,
   "run_id": "courtside-tw-t005-spring-bootstrap-20260806",
-  "status": "blocked",
-  "iteration": 3,
+  "status": "needs_human",
+  "iteration": 4,
   "started_at": "2026-08-06T23:44:00Z",
-  "updated_at": "2026-08-07T01:21:43Z",
+  "updated_at": "2026-08-07T01:46:24Z",
   "current_frontier": [
-    "p-spring-boot"
+    "t-human-review"
   ],
   "blocked_nodes": [
-    "p-spring-boot",
     "t-human-review",
     "a-review-t005",
     "p-human-approval",
     "g-t005-approval",
     "s-terminal-policy"
   ],
-  "terminal_state": "blocked",
-  "next_action": "Provide a Java 21/Gradle runner with dependency-resolution access, rerun both api and worker profile boot proofs, then open the review gate; do not mark T005 complete.",
+  "terminal_state": "needs_human",
+  "next_action": "Review PR #8, verify the four-file diff and passing Gradle/profile receipts, then explicitly approve or reject merge; do not mark T005 checked without that decision.",
   "events": [
     {
       "event_id": "evt-t005-spring-bootstrap-001-graph-initialized",
@@ -306,11 +305,91 @@
         "total": 1000
       },
       "terminal_reason": null
+    },
+    {
+      "event_id": "evt-t005-spring-bootstrap-006-fix-and-profile-proof-pass",
+      "at": "2026-08-07T01:46:24Z",
+      "actor": "codex-agent",
+      "type": "implementation_fix_and_profile_proof",
+      "base_graph_version": 5,
+      "new_graph_version": 6,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "apps/api/build.gradle.kts/repository-policy",
+            "before": "Project repositories declared while settings uses FAIL_ON_PROJECT_REPOS; dependency versions were managed implicitly.",
+            "after": "Project repository block removed; Spring Boot web starter pinned to 4.1.0 and unused dependency-management/test scaffolding removed from this setup slice."
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-spring-scaffold/confidence",
+            "before": 0.94,
+            "after": 0.98
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-spring-boot/status",
+            "before": "blocked",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-spring-boot/confidence",
+            "before": 0.86,
+            "after": 0.98
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/t-human-review/status",
+            "before": "planned",
+            "after": "ready"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": ["p-spring-boot"],
+            "after": ["t-human-review"]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t005-implementation-proof.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Gradle clean build",
+          "level": "P2",
+          "result": "pass",
+          "details": "Gradle 8.14 with Java 21 completed clean build; compileJava, bootJar, check and test (no test sources) succeeded against a temporary Maven mirror."
+        },
+        {
+          "proof": "api profile boot",
+          "level": "P2",
+          "result": "pass",
+          "details": "bootRun started the api profile, initialized and started Tomcat on bounded port 18081, then was stopped by the timeout guard."
+        },
+        {
+          "proof": "worker profile boot",
+          "level": "P2",
+          "result": "pass",
+          "details": "bootRun started the worker profile as a non-web process and logged Started MagazineApplication before clean task completion."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "T005 implementation and required profile proof pass; open the human review/merge gate. Do not mark T005 checked until explicit approval is recorded.",
+      "token_usage": {
+        "estimated": 7500,
+        "input": 0,
+        "output": 0,
+        "total": 7500
+      },
+      "terminal_reason": "L1 proof is complete; L3 review and explicit merge/completion approval are pending."
     }
   ],
   "proof": {
-    "claim": "T005 four-file implementation passes static scope checks, but both api/worker profile boots remain unproven because Java/Gradle dependency resolution is blocked in the runner.",
-    "result": "blocked",
-    "confidence": 0.86
+    "claim": "T005 four-file implementation passes static scope checks, Gradle clean build, and both api/worker profile boots; explicit human review and merge approval remain pending.",
+    "result": "pass",
+    "confidence": 0.98
   }
 }
