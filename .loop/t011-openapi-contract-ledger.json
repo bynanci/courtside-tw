@@ -1,12 +1,12 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t011",
-  "graph_version": 1,
+  "graph_version": 2,
   "run_id": "courtside-tw-t011-openapi-contract-20260807",
   "status": "blocked",
-  "iteration": 1,
+  "iteration": 2,
   "started_at": "2026-08-07T12:56:56Z",
-  "updated_at": "2026-08-07T12:56:56Z",
+  "updated_at": "2026-08-07T13:01:47Z",
   "current_frontier": [
     "x-t009-contract-state"
   ],
@@ -109,20 +109,110 @@
       },
       "decision": "DISPATCHED_BLOCKED",
       "follow_up": "After T009 main read-back, implement contracts/openapi.yaml and independently validate the contract before requesting human review."
+    },
+    {
+      "event_id": "evt-t011-002-graph-structure-repair",
+      "at": "2026-08-07T13:01:47Z",
+      "actor": "codex-supervisor",
+      "type": "graph_strict_validation_repaired",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "graph.nodes.g-t009-main-readback",
+            "after": "L3 human gate for T009 main read-back before T011 implementation."
+          },
+          {
+            "op": "replace",
+            "path": "graph.edges.e-t009-blocks-action",
+            "before": "EXTERNAL -> L1 direct block",
+            "after": "EXTERNAL -> L3 gate -> T011 trigger."
+          },
+          {
+            "op": "add",
+            "path": "graph.loops/-",
+            "after": "l1-execution covers the T011 trigger/action/proof/memory/stop chain."
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t011-graph-proof-20260807.json",
+        ".loop/t011-openapi-contract-graphify-loop.yaml"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Graphify strict validation",
+          "level": "P2",
+          "result": "pass",
+          "details": "Strict validator passed with 10 nodes, 12 edges, one covered action, no errors and no warnings."
+        },
+        {
+          "proof": "external evidence routing",
+          "level": "P2",
+          "result": "pass",
+          "details": "T009 external state now routes through g-t009-main-readback at L3 before the L1 T011 action."
+        },
+        {
+          "proof": "memory workflow coverage",
+          "level": "P2",
+          "result": "pass",
+          "details": "The graph loop includes required trigger/action/proof/memory/stop nodes and memory read/record edges."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:t011-openapi-contract",
+        "version": 2,
+        "retrieval_ids": [
+          "wm:project:courtside-tw:phase1-review",
+          "wm:project:courtside-tw:t009-content-document-schema"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t011-dispatch-20260807.json",
+          ".loop/evidence/t011-graph-proof-20260807.json",
+          ".loop/memory/t011-openapi-contract.json"
+        ],
+        "next_review_at": "2026-08-08",
+        "blocker": "T009 main read-back"
+      },
+      "failure_signature": {
+        "code": "GRAPH_STRICT_STRUCTURE",
+        "message": "Initial graph lacked graph.loops and routed external T009 state directly to an L1 action.",
+        "resolution": "Added the required loop registry and L3 dependency gate; strict validation now passes.",
+        "status": "resolved",
+        "observed_iteration": 2
+      },
+      "token_usage": {
+        "estimated_tokens": 2200,
+        "validator_runtime_seconds": 0.2,
+        "notes": "Graph-only repair and strict revalidation; no API or runtime scope added."
+      },
+      "decision": "GRAPH_VALID_DISPATCH_BLOCKED",
+      "follow_up": "Keep the T009 main read-back gate and do not implement T011 until it opens."
     }
   ],
-  "proof": [],
+  "proof": [
+    {
+      "proof_id": "t011-graph-proof-20260807",
+      "level": "P2",
+      "result": "pass",
+      "evidence_ref": ".loop/evidence/t011-graph-proof-20260807.json",
+      "recorded_at": "2026-08-07T13:01:47Z"
+    }
+  ],
   "memory_receipt": {
-    "memory_status": "SAVED",
+    "memory_status": "UPDATED",
     "memory_id": "wm:project:courtside-tw:t011-openapi-contract",
-    "version": 1,
+    "version": 2,
     "retrieval_ids": [
       "wm:project:courtside-tw:phase1-review",
       "wm:project:courtside-tw:t009-content-document-schema"
     ],
     "evidence_refs": [
       ".loop/evidence/t011-dispatch-20260807.json",
-      ".loop/evidence/t011-governance-review.json",
+      ".loop/evidence/t011-graph-proof-20260807.json",
       ".loop/memory/t011-openapi-contract.json"
     ],
     "next_review_at": "2026-08-08",
