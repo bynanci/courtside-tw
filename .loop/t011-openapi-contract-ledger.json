@@ -1,22 +1,18 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t011",
-  "graph_version": 3,
+  "graph_version": 5,
   "run_id": "courtside-tw-t011-openapi-contract-20260807",
-  "status": "blocked",
-  "iteration": 3,
+  "status": "needs_human",
+  "iteration": 5,
   "started_at": "2026-08-07T12:56:56Z",
-  "updated_at": "2026-08-07T13:07:22Z",
+  "updated_at": "2026-08-07T14:50:00Z",
   "current_frontier": [
-    "x-t009-contract-state"
-  ],
-  "blocked_nodes": [
-    "a-t011-define-openapi",
-    "p-t011-openapi-proof",
     "g-t011-review-merge"
   ],
-  "terminal_state": "blocked",
-  "next_action": "Await explicit human merge authority and main read-back for T009; then implement only contracts/openapi.yaml and rerun T011 proof.",
+  "blocked_nodes": [],
+  "terminal_state": "needs_human",
+  "next_action": "T009 is checked on main@70c9e71. OpenAPI independent proof passes; await T011 CI/Security and current-head review, then explicit expected-head human merge. Keep T011 unchecked until main read-back.",
   "events": [
     {
       "event_id": "evt-t011-001-dispatched-blocked",
@@ -270,6 +266,186 @@
       },
       "decision": "DEPENDENCY_STILL_BLOCKED",
       "follow_up": "Keep T011 unchecked and do not implement contracts/openapi.yaml until T009 is merged and read back from main."
+    },
+    {
+      "event_id": "evt-t011-004-t009-main-readback-opened",
+      "at": "2026-08-07T14:42:00Z",
+      "actor": "codex-supervisor",
+      "type": "t009_main_readback_opened_t011",
+      "base_graph_version": 3,
+      "new_graph_version": 4,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes.x-t009-contract-state.status",
+            "before": "blocked",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes.g-t009-main-readback.status",
+            "before": "blocked",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes.t-t011-ready.status",
+            "before": "blocked",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.blocked_nodes",
+            "before": [
+              "g-t009-main-readback",
+              "a-t011-define-openapi",
+              "p-t011-openapi-proof",
+              "g-t011-review-merge"
+            ],
+            "after": []
+          }
+        ]
+      },
+      "evidence_refs": [
+        "PR #32",
+        "PR #34",
+        "main@70c9e71",
+        ".loop/evidence/t009-main-readback-20260807.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "T009 completion",
+          "level": "P3",
+          "result": "pass",
+          "details": "T009 implementation PR #32 and completion/read-back PR #34 are merged; main@70c9e71 has T009 checked."
+        },
+        {
+          "proof": "canonical dependency",
+          "level": "P3",
+          "result": "pass",
+          "details": "Main contains contracts/content-document.schema.json and the UUIDv7 valid fixture before T011 implementation."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:t011-openapi-contract",
+        "version": 4,
+        "retrieval_ids": [
+          "wm:project:courtside-tw:phase1-review",
+          "wm:project:courtside-tw:t009-content-document-schema"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t009-main-readback-20260807.json",
+          ".loop/memory/t011-openapi-contract.json"
+        ],
+        "next_review_at": "2026-08-08",
+        "blocker": "T011 CI/Security and review gate"
+      },
+      "failure_signature": {
+        "code": "DEPENDENCY_NOT_ON_MAIN",
+        "message": "The dispatch graph was blocked before T009 completion.",
+        "resolution": "T009 is now merged, checked and read back from main; the L3 dependency gate is open.",
+        "status": "resolved",
+        "observed_iteration": 4
+      },
+      "token_usage": {
+        "estimated_tokens": 1600,
+        "validator_runtime_seconds": 0,
+        "notes": "Main contents read-back and dependency gate transition; no scope expansion."
+      },
+      "decision": "DEPENDENCY_OPEN",
+      "follow_up": "Implement and independently validate contracts/openapi.yaml only."
+    },
+    {
+      "event_id": "evt-t011-005-openapi-independent-proof",
+      "at": "2026-08-07T14:50:00Z",
+      "actor": "codex-supervisor",
+      "type": "openapi_contract_implemented_and_proven",
+      "base_graph_version": 4,
+      "new_graph_version": 5,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "contracts/openapi.yaml",
+            "after": "OpenAPI 3.1 v1 contract with 28 paths and 35 operations."
+          },
+          {
+            "op": "add",
+            "path": "scripts/validate-openapi.mjs",
+            "after": "Deterministic parser/operation/example/stable-error/security/concurrency/local-ref validator."
+          },
+          {
+            "op": "add",
+            "path": "package.json#scripts.contract:openapi",
+            "after": "pnpm run contract:openapi"
+          },
+          {
+            "op": "add",
+            "path": "Makefile#contract-openapi",
+            "after": "Contract gate invokes OpenAPI lint."
+          },
+          {
+            "op": "add",
+            "path": ".github/workflows/ci.yml#Validate OpenAPI contract",
+            "after": "CI invokes pnpm run contract:openapi."
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t011-openapi-proof-20260807.json",
+        "contracts/openapi.yaml",
+        "scripts/validate-openapi.mjs"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "OpenAPI contract proof",
+          "level": "P2",
+          "result": "pass",
+          "details": "OpenAPI 3.1 parses; 28 paths/35 operations are present; 17 request bodies have examples."
+        },
+        {
+          "proof": "stable error catalog",
+          "level": "P2",
+          "result": "pass",
+          "details": "application/problem+json examples cover 400/401/403/404/409/422/429 with stable codes."
+        },
+        {
+          "proof": "canonical ContentDocument ref",
+          "level": "P2",
+          "result": "pass",
+          "details": "./content-document.schema.json is present on the T011 branch and is referenced without duplication."
+        },
+        {
+          "proof": "pagination/idempotency/locking",
+          "level": "P2",
+          "result": "pass",
+          "details": "Cursor+limit, Idempotency-Key and If-Match requirements are structurally linted."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:t011-openapi-contract",
+        "version": 5,
+        "retrieval_ids": [
+          "wm:project:courtside-tw:t009-content-document-schema"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t011-openapi-proof-20260807.json",
+          ".loop/memory/t011-openapi-contract.json"
+        ],
+        "next_review_at": "2026-08-08",
+        "blocker": "CI/Security and review gate"
+      },
+      "failure_signature": null,
+      "token_usage": {
+        "estimated_tokens": 9800,
+        "validator_runtime_seconds": 0.4,
+        "notes": "Contract-only implementation and deterministic local proof; no T010/T012/runtime scope."
+      },
+      "decision": "PASS_WITH_FOLLOW_UP",
+      "follow_up": "Run repository CI/Security and current-head review before human merge."
     }
   ],
   "proof": [
@@ -286,22 +462,27 @@
       "result": "pass",
       "evidence_ref": ".loop/evidence/t011-t009-dependency-readback-20260807.json",
       "recorded_at": "2026-08-07T13:07:22Z"
+    },
+    {
+      "proof_id": "t011-openapi-proof-20260807",
+      "level": "P2",
+      "result": "pass",
+      "evidence_ref": ".loop/evidence/t011-openapi-proof-20260807.json",
+      "recorded_at": "2026-08-07T14:50:00Z"
     }
   ],
   "memory_receipt": {
     "memory_status": "UPDATED",
     "memory_id": "wm:project:courtside-tw:t011-openapi-contract",
-    "version": 3,
+    "version": 5,
     "retrieval_ids": [
-      "wm:project:courtside-tw:phase1-review",
       "wm:project:courtside-tw:t009-content-document-schema"
     ],
     "evidence_refs": [
-      ".loop/evidence/t011-graph-proof-20260807.json",
-      ".loop/evidence/t011-t009-dependency-readback-20260807.json",
+      ".loop/evidence/t011-openapi-proof-20260807.json",
       ".loop/memory/t011-openapi-contract.json"
     ],
     "next_review_at": "2026-08-08",
-    "blocker": "T009 human merge and main read-back"
+    "blocker": "CI/Security and review gate"
   }
 }
