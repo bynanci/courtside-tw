@@ -12,7 +12,7 @@
     "merged": true,
     "merge_commit": "07e9d25c6f28d7bcdb2bde902a5315a25dddfe52",
     "base": "main",
-    "base_before_merge": "5a08ca3a721f13bb9dbdc195e9174527ecdc195e9174527ec753722",
+    "base_before_merge": "5a08ca3a721f13bb9dbdc195e9174527ec753722",
     "head_before_merge": "999332ff22e775e56044ac4308adf527f5bb10bd"
   },
   "main_readback": {
