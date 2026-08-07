@@ -3,7 +3,7 @@
 # S3Mock 5.1.0 is the latest released image. Build the pinned upstream
 # 5.2.0 development line so its runtime dependency removals and updates are
 # applied without depending on an unpublished mutable image tag.
-FROM maven:3.9.14-eclipse-temurin-25@sha256:304ea1e9675d07612c36d5d70d8bd1dbd8aac64c307253bbde4e488857f90faa AS s3mock-build
+FROM maven:3.9.15-eclipse-temurin-26@sha256:029a8e2838ae68238ffb8be407cddbb3f07d4d839c60c6f26c619a69fd184531 AS s3mock-build
 
 ARG S3MOCK_COMMIT=627bf8d37938a5eb89e5775391c0b475c2686f98
 
