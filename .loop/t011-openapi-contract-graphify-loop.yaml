@@ -65,7 +65,7 @@ acceptance:
 graph:
   entry_nodes: [x-phase1-main-readback, x-t009-contract-state, t-t011-ready]
   terminal_nodes: [s-t011-terminal]
-  current_frontier: [g-t011-review-merge]
+  current_frontier: [s-t011-terminal]
   blocked_nodes: []
   nodes:
     - id: x-phase1-main-readback
@@ -190,12 +190,12 @@ graph:
       layer: L2
       label: "T011 review and merge gate"
       owner: human-mark
-      status: ready
+      status: done
       risk: critical
       confidence:
-        score: 0.95
-        basis: "T009 main read-back, OpenAPI proof, CI/Security #70 and current-head review pass; explicit human merge remains."
-        evidence_refs: [".loop/evidence/t009-main-readback-20260807.json", ".loop/evidence/t011-openapi-proof-20260807.json", ".loop/evidence/t011-ci-security-20260807.json"]
+        score: 0.99
+        basis: "PR #35 merged at main@20f4f3f; CI/Security #72 pass, review threads are clear, and main read-back confirms the contract."
+        evidence_refs: [".loop/evidence/t009-main-readback-20260807.json", ".loop/evidence/t011-openapi-proof-20260807.json", ".loop/evidence/t011-ci-security-20260807.json", ".loop/evidence/t011-main-readback-20260807.json", "PR #35"]
       budget: {effort_hours: 0.5, tokens: 3000}
       config:
         condition: "T011 OpenAPI file, lint/examples proof, CI/Security and review pass; T009 main readback is complete."
@@ -227,12 +227,12 @@ graph:
       layer: GLOBAL
       label: "T011 named terminal policy"
       owner: policy
-      status: planned
+      status: done
       risk: critical
       confidence:
-        score: 0.8
-        basis: "T011 contract proof plus CI/Security/current-head review are complete; terminal success still requires merge and main read-back."
-        evidence_refs: [".loop/evidence/t011-openapi-proof-20260807.json"]
+        score: 0.99
+        basis: "PR #35 is merged, T011 is checked after authoritative main read-back, and the named terminal policy is satisfied."
+        evidence_refs: [".loop/evidence/t011-openapi-proof-20260807.json", ".loop/evidence/t011-main-readback-20260807.json", "PR #35"]
       budget: {effort_hours: 0.1, tokens: 500}
       config:
         states:

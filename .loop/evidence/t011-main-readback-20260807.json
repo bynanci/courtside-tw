@@ -1,0 +1,71 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t011-main-readback-20260807",
+  "generated_at": "2026-08-07T15:03:02.886Z",
+  "actor": "verifier",
+  "subject": "T011 authoritative main read-back",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T011",
+  "implementation": {
+    "pr": 35,
+    "merge_commit": "20f4f3fea1ef251c60c72260232b0494ed2c0f2e",
+    "merge_method": "squash",
+    "expected_head": "26d731e7eae85fcc599a5eb34a04de394a899657",
+    "ci_run": 31189432763,
+    "security_run": 31189432757,
+    "review_threads_unresolved": 0
+  },
+  "main_readback": {
+    "ref": "main",
+    "sha": "20f4f3fea1ef251c60c72260232b0494ed2c0f2e",
+    "t009_checked": true,
+    "t011_checked_before_completion": false,
+    "canonical_content_schema_present": true
+  },
+  "files": {
+    "contracts/openapi.yaml": {
+      "blob_sha": "bec9df6d33c76e281581a794a489669647a3c228",
+      "openapi": "3.1.0",
+      "length": 81096,
+      "canonical_content_ref": "./content-document.schema.json"
+    },
+    "scripts/validate-openapi.mjs": {
+      "blob_sha": "620355ef9d5fda13832a8e3e0ed70e9edc8732e4",
+      "present": true
+    },
+    "package.json": {
+      "blob_sha": "40f3c4ec6e3c9edbf31df4df68f280312762e052",
+      "contract_openapi_script": true,
+      "yaml_dependency": "2.9.0"
+    },
+    "Makefile": {
+      "blob_sha": "f3c38d1513304a657f2ff939dc0ffeb7e8486587",
+      "contract_openapi_target": true
+    },
+    ".github/workflows/ci.yml": {
+      "blob_sha": "c4679e95b56bdcb9d6cd425055c819ca065b8b4b",
+      "validates_openapi": true
+    },
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md": {
+      "blob_sha_before_completion": "84c64e347b4df322bd578a4d825d430129281475",
+      "t011_checked_before_completion": false
+    }
+  },
+  "contract": {
+    "paths": 28,
+    "operations": 35,
+    "request_examples": 17,
+    "stable_error_statuses": [
+      400,
+      401,
+      403,
+      404,
+      409,
+      422,
+      429
+    ],
+    "ci_security_result": "PASS"
+  },
+  "result": "PASS",
+  "next_action": "Merge the T011 completion/read-back PR; main read-back is complete and the T011 checkbox is checked on the completion branch."
+}
