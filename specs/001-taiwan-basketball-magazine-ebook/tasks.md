@@ -7,7 +7,7 @@
 ## Format: `[ID] [P?] [Story] Description`
 
 - **[P]**: Can run in parallel because it writes different files and has no unfinished dependency.
-- **[US1]…[US7]**: Traceability to the user story in `spec.md`.
+- **[US1]…[US12]**: Traceability to the user story in `spec.md`.
 - Every task names the main file path(s); generated files are never edited by hand.
 - Check a task only when its described verification passes and evidence is attached to the PR or task record.
 
@@ -25,6 +25,8 @@
 - [ ] T008 Create CI pipelines in `.github/workflows/ci.yml`, `.github/workflows/security.yml`, and `.github/dependabot.yml` that cache dependencies, run contract/lint/type/unit/integration checks, scan secrets/dependencies/containers and preserve test reports.
 
 **Checkpoint**: A clean clone can run `make setup && make verify`; T001 and T002 are approved, not merely drafted.
+
+**Alignment gate**: T005 must be checked before T004. Product/domain/passport alignment T097 must be merged and read back from `main` before T004 is dispatched. T004 remains a Nuxt scaffold task only.
 
 ---
 
@@ -244,6 +246,59 @@
 
 **Checkpoint**: US7 is independently deployable behind `web3.provenance` and `web3.wallet`; manifest-only mode is valid, chain/IPFS writes require approved ADR, and disabling both flags leaves P1/P2 reading behavior unchanged.
 
+## Phase 11: Product / Architecture Alignment (spec-only)
+
+**Goal**: Formally align the product vision, Taiwan basketball domain, evidence graph, Edition Provenance and Fan Season Passport without implementing runtime behavior.
+
+- [x] T097 [ALIGN] Reconcile repository state, compatibility matrix, product docs, ADR-0007/0008, spec／plan／tasks traceability and strict Graphify evidence in `docs/product/`, `docs/adr/0007-basketball-domain-and-evidence-graph.md`, `docs/adr/0008-fan-passport-and-credential-boundary.md`, `specs/001-taiwan-basketball-magazine-ebook/`, `README.md`, `DESIGN.md`, and `.loop/courtside-product-alignment-*`; prove no `apps/`, `packages/`, `contracts/` or infrastructure runtime implementation changed. Completion evidence: `.loop/evidence/courtside-product-alignment-review.json` and `.loop/evidence/courtside-product-alignment-main-readback.json` after the alignment PR is merged.
+
+**Checkpoint**: T097 is merged before T004 dispatch. ADR-0007 and ADR-0008 remain `PROPOSED` drafts until their independent approval gates pass. T004 is not part of this slice.
+
+## Phase 12: P2A — Taiwan Basketball Domain
+
+**Goal**: Define and then implement stable basketball facts and historical relationships inside the modular monolith.
+
+- [ ] T098 [P] [US8] Write basketball domain contract fixtures and glossary for `League`, `LeagueAlias`, `Season`, `Team`, `TeamAlias`, `TeamSeason`, `Player`, and `PlayerAlias` in `docs/product/basketball-domain.md`, `contracts/basketball-domain.schema.json`, and `apps/api/src/test/resources/basketball/`; cover TPBL／P. LEAGUE+／PLG／SBL, league/team rename, alias, dissolve, join／exit, cross-league and valid periods without UI hard-coding.
+- [ ] T099 [P] [US8] Write timeline invariants for `PlayerTeamStint`, stable player identity, same-name separation, overseas dimensions and `NationalTeamCampaign`／`NationalTeamRoster`／`RosterEntry` in `apps/api/src/test/java/tw/basketball/magazine/basketball/domain/` and `apps/api/src/test/resources/basketball/`; prove career history never depends on a single `player.teamId`.
+- [ ] T100 [US8] Implement the canonical basketball domain aggregates and application ports in `apps/api/src/main/java/tw/basketball/magazine/basketball/{domain,application,ports}/` plus migration review evidence; preserve historical labels and append-only relationships, and keep public content readable when the domain projection is unavailable.
+
+## Phase 13: P2B — Evidence Layer
+
+**Goal**: Make source snapshots, evidence status, freshness and contradictions explicit before canonical facts are published.
+
+- [ ] T101 [P] [US9] Define `Source`, immutable `SourceSnapshot` and `EvidenceRef` contract／fixtures in `contracts/evidence.schema.json`, `docs/product/evidence-policy.md`, and `apps/api/src/test/resources/evidence/`; require sourceId, sourceType, sourceUrl, retrievedAt, publishedAt, effectiveAt, confidence, status, freshness and snapshotId.
+- [ ] T102 [P] [US9] Write claim-status and freshness tests for `CONFIRMED`, `REPORTED`, `ANALYSIS`, `RUMOR`, `UNKNOWN`, `fresh`, `stale`, `expired` and `disputed` in `apps/api/src/test/java/tw/basketball/magazine/evidence/`; prove model output cannot promote a claim and stale facts are not presented as current without as-of context.
+- [ ] T103 [US9] Implement immutable snapshot persistence, evidence validation, contradiction review and append-only audit boundary in `apps/api/src/main/java/tw/basketball/magazine/evidence/`; preserve every conflicting snapshot and prohibit silent overwrite／last-write-wins.
+
+## Phase 14: P2C — Data Adapters
+
+**Goal**: Ingest external sources through ports and snapshots without coupling providers to canonical domain or splitting services.
+
+- [ ] T104 [P] [US9] Define and test `FibaAdapter`, `CtbaAdapter`, `TpblAdapter`, `PlgAdapter`, `SblAdapter` and overseas adapter ports／normalization fixtures in `apps/api/src/main/java/tw/basketball/magazine/basketball/{ports,adapters}/` and `apps/api/src/test/`; prove External Source → Adapter → SourceSnapshot → Normalize → Evidence validation → Canonical Domain and reject direct production overwrite.
+
+## Phase 15: P2D — Fan Passport Off-chain
+
+**Goal**: Establish a non-financial, off-chain-first Fan Season Passport after P1 identity and publication boundaries are stable.
+
+- [ ] T105 [P] [US10] Write Reader Stamp claim-condition, OIDC／email identity, off-chain entitlement and idempotency contracts in `docs/product/fan-season-passport.md`, `contracts/fan-passport.schema.json`, and `apps/api/src/test/`; prove duplicate requests yield one effective stamp and never gate anonymous Article reading.
+- [ ] T106 [US10] Implement claim、revoke、supersede、expire、wallet unlink、account delete／anonymization and sanitized audit behavior in `apps/api/src/main/java/tw/basketball/magazine/fanpassport/`; classify wallet address as identifiable information and exclude private behavior from public payloads.
+
+## Phase 16: P2E — Optional Web3 Credential
+
+**Goal**: Add user-initiated credential delivery only after P2D and ADR-0008 activation gates pass.
+
+- [ ] T107 [P] [US11] Write WalletIdentityLink consent／unlink、EIP-1193 provider failure、wrong-chain、account-change and OIDC fallback tests in `apps/web/tests/` and `apps/api/src/test/`; prove wallet is not the sole identity source and public reading is unchanged.
+- [ ] T108 [P] [US11] Define credential adapter、sponsored transaction、gas ceiling、signer custody、non-transferable default and revocation registry contracts in `contracts/`, `packages/` and `docs/operations/`; keep all external write flags off until a separate approval record exists.
+- [ ] T109 [US11] Verify rights withdrawal、credential supersede、public-chain permanence disclosure、privacy payload exclusion and provider／RPC／signer outage rollback in `apps/api/src/test/`, `apps/web/tests/` and `docs/product/fan-season-passport.md`; no content bytes or private reading history may be published.
+
+## Phase 17: P3 — Archive / Season Recap
+
+**Goal**: Turn rights-eligible season signals into a reproducible recap without exposing private reading behavior.
+
+- [ ] T110 [P] [US12] Define Season Recap projection and controlled `season-recap-v1` p5 preset with fixed seed, bounded schema, server validation, SSR poster, no remote code／asset URL and deterministic fixtures in `packages/creative-runtime/`, `contracts/`, and `apps/web/tests/`.
+- [ ] T111 [US12] Define Archive Contributor、歷史照片、票根與口述歷史 contribution records with consent、credit、rightsOwner、license、allowedChannels、validity and withdrawal policy in `docs/product/` and the future archive contract; keep private drafts and rights contracts out of public output.
+- [ ] T112 [US12] Run reduced-motion、no-JS、dispose、privacy、access control and rights-withdrawal acceptance tests for recap／poster presentation in `apps/web/tests/`, `apps/api/src/test/` and `docs/quality/`; prove fallback remains complete and withdrawal outranks cache／search／offline／IPFS presentation.
+
 ---
 
 ## Dependencies and Execution Order
@@ -253,6 +308,7 @@
 | Phase | Depends on | Blocks |
 | --- | --- | --- |
 | Phase 1 Setup | none | all later work |
+| T097 Alignment | T001, T003, T005, repository read-back | T004 dispatch and all new P2 domain／passport work |
 | Phase 2 Foundation | Phase 1, especially T001/T002 | all User Stories |
 | US1 | Phase 2 | US2, US3 public integration |
 | US2 | Phase 2 + US1 public identity/TOC | US3 preview/publication, US5 progress |
@@ -261,6 +317,11 @@
 | US5 | US2 + identity foundation | none; can run beside US4 |
 | US6 | US3 snapshots/withdrawal; optionally US5 library UI | none |
 | US7 | T002 Web3 ADR + Phase 2 contracts + US3 immutable snapshots; SIWE also needs identity foundation | none; optional after P1 |
+| US8 | T097 + Phase 2 contracts + domain owner | US9, archive projections |
+| US9 | US8 identity contracts + source／rights policy | US10 eligibility and adapters |
+| US10 | P1 publication + identity foundation + T097 | US11 |
+| US11 | US10 off-chain entitlement + ADR-0008 activation gate | none; optional after P2D |
+| US12 | US8／US9 + rights owner + ADR-0005 runtime controls | none; P3 |
 | Production readiness | selected stories complete | beta/GA release |
 
 ### User Story Dependency Rules
@@ -272,14 +333,19 @@
 - **US5 (P2)**: Depends on OIDC and stable article/revision IDs, not on US4.
 - **US6 (P3)**: Depends on immutable publication snapshots and withdrawal behavior from US3.
 - **US7 (P2)**: Depends on US3 immutable publication snapshots and rights/outbox behavior; wallet linking additionally depends on identity. External attestation never enables publication or anonymous reading.
+- **US8 (P2)**: Depends on T097 alignment and Phase 2 contracts; domain facts remain inside the modular monolith.
+- **US9 (P2)**: Depends on US8 stable IDs and evidence policy; conflicts are preserved rather than overwritten.
+- **US10 (P2)**: Depends on P1 immutable publication, OIDC／email identity and T097; off-chain claim never gates public reading.
+- **US11 (P2)**: Depends on US10 idempotent off-chain eligibility and ADR-0008 security／rights acceptance; all Web3 delivery is opt-in.
+- **US12 (P3)**: Depends on US8／US9 source and timeline contracts, controlled p5 runtime and rights／privacy review.
 
 ### Critical Path for P1 Beta
 
-`T001 → T002 → T003 → T005 → T009/T011 → T013 → T018 → T023 → T026 → T028 → T030 → T034 → T038 → T041 → T045 → T047 → T050 → T054 → T056 → T078/T080/T081/T086`
+`T001 → T002 → T003 → T005 → T097 → T004 → T009/T011 → T013 → T018 → T023 → T026 → T028 → T030 → T034 → T038 → T041 → T045 → T047 → T050 → T054 → T056 → T078/T080/T081/T086`
 
 ### Safe Parallel Opportunities
 
-- T004 and T005 after T003.
+- T004 follows T097; T005 is already complete and must remain read-back verified.
 - T009 and T011 after T002; T010 follows T009, T012 follows T011.
 - T015, T017, T019 and T021 after T013 where applicable; they write separate modules.
 - T024 and T025; T029 can proceed after the public issue response example stabilizes.
@@ -325,9 +391,15 @@
 | FR-043–FR-045 | T008, story test tasks, T078–T086 |
 | FR-046–FR-048 | T002, T009–T010, T022–T023, T025, T029, T033, T036–T041, T051, T078–T080 |
 | FR-049–FR-053 | T002, T011, T017–T018, T021, T080, T087–T096 |
+| FR-054–FR-060 | T097, T098–T100 |
+| FR-061–FR-064 | T097, T101–T104 |
+| FR-065–FR-074 | T097, T105–T112 |
 | SC-001–SC-012 | T025, T041, T044, T056, T063, T078–T086 |
 | SC-013–SC-014 | T025, T029, T033, T036–T041, T078–T079 |
 | SC-015–SC-016 | T080, T087–T096 |
+| SC-017–SC-020 | T098–T104 |
+| SC-021–SC-022 | T105–T109 |
+| SC-023 | T110–T112 |
 
 ## Task Completion Rules
 
