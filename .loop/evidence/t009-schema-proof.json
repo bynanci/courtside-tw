@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "evidence_id": "t009-schema-proof-20260807",
+  "task": "T009",
+  "recorded_at": "2026-08-07T10:56:31Z",
+  "validated_ref": "ticket/t009-content-document-schema",
+  "validated_commit": "be946ef9ba607e54dd7a4f355fc3793c5e48d552",
+  "scope": {
+    "contract": "contracts/content-document.schema.json",
+    "valid_fixture": "packages/content-schema/fixtures/valid/content-document-v1-all-blocks.json",
+    "invalid_fixture_directory": "packages/content-schema/fixtures/invalid"
+  },
+  "validator": {
+    "engine": "Ajv",
+    "version": "8.20.0",
+    "formats_plugin": "ajv-formats 3.0.1",
+    "dialect": "JSON Schema draft 2020-12",
+    "strict": true,
+    "setup": "npm install --prefix <temporary-dir> --no-save ajv@8 ajv-formats@3",
+    "result": "PASS"
+  },
+  "checks": {
+    "schema_parse_and_compile": {
+      "result": "PASS",
+      "detail": "Ajv2020 compiled the schema with strict mode and UUID format support."
+    },
+    "valid_fixture": {
+      "path": "packages/content-schema/fixtures/valid/content-document-v1-all-blocks.json",
+      "result": "PASS",
+      "detail": "One fixture covers paragraph, heading, list, quote, divider, image, gallery, stat, video, related-reading and generative-canvas."
+    },
+    "invalid_fixtures": [
+      {
+        "path": "packages/content-schema/fixtures/invalid/block-unknown-property.json",
+        "result": "REJECTED",
+        "intended_reason": "Closed block object rejects render."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/generative-canvas-unsafe.json",
+        "result": "REJECTED",
+        "intended_reason": "Closed generative payload rejects code, shader and remoteUrl."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/javascript-inline-link.json",
+        "result": "REJECTED",
+        "intended_reason": "secureHref rejects javascript:."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/unknown-block.json",
+        "result": "REJECTED",
+        "intended_reason": "Block type enum rejects html."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/video-raw-url.json",
+        "result": "REJECTED",
+        "intended_reason": "Provider allowlist and derived provider ID contract reject custom raw embed URL."
+      }
+    ]
+  },
+  "independent_validation": {
+    "command": "Ajv2020 strict compile plus validate(validFixture) and validate(eachInvalidFixture), exit 0 iff valid passes and every invalid fixture is rejected.",
+    "observed": "valid=true; invalid fixtures all valid=false; process exit code 0",
+    "output_digest": {
+      "block-unknown-property.json": "additionalProperties",
+      "generative-canvas-unsafe.json": "additionalProperties",
+      "javascript-inline-link.json": "pattern",
+      "unknown-block.json": "enum",
+      "video-raw-url.json": "required/additionalProperties/enum"
+    }
+  },
+  "companion_validations": [
+    {
+      "command": "validate_graphify_loop.py .loop/t009-content-document-schema-graphify-loop.yaml --strict --json",
+      "result": "PASS",
+      "detail": "10 nodes, 12 edges, 2 proofs cover the high-risk action; graph has named terminal states and L3 dispatch gate."
+    },
+    {
+      "command": "validate_memory_record.py .loop/memory/t009-content-document-schema.json",
+      "result": "PASS"
+    },
+    {
+      "command": "validate_memory_record.py .loop/memory/phase1-review.json",
+      "result": "PASS"
+    }
+  ],
+  "decision": "PASS",
+  "residual_risks": [
+    "T010 must establish validator parity and generated TypeScript/Java types.",
+    "T011 and later must prove runtime consumers preserve this boundary."
+  ],
+  "next_gate": "Open the T009 review PR; keep T009 unchecked until merge and main read-back."
+}
