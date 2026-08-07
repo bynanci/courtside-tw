@@ -1,6 +1,6 @@
 schema_version: mark-graphify-loop/v2
 name: courtside-tw-ticket-implementation-t006
-objective: Dispatch and independently verify one bounded shared quality baseline, then stop at the T006 review and merge gate.
+objective: Complete one bounded shared quality baseline, prove it, merge it, read back main and close T006 at the named terminal policy.
 feedback_updates_next_action: true
 
 scope:
@@ -9,7 +9,7 @@ scope:
     - Configure shared Prettier, ESLint, strict TypeScript, Checkstyle and SpotBugs quality policy.
     - Wire deterministic format, lint and typecheck commands into the existing root verification contract.
     - Run independent Node quality checks and Java Gradle quality task checks.
-    - Expose a reviewable T006 branch and PR without merging it or checking T006.
+    - After the implementation merge, execute the separately authorized completion slice: check T006 and record append-only completion evidence before final main read-back.
   out:
     - T007 or later tasks, CI workflows, local dependency services, database or provider implementation.
     - Product, domain, rights, authentication, secret, payment or Web3 boundary changes.
@@ -357,12 +357,12 @@ graph:
       layer: L3
       label: T006 review and merge gate
       owner: human-mark
-      status: needs_human
+      status: done
       risk: critical
       confidence:
         score: 0.92
-        basis: The gate remains open only for the requested merge and post-merge completion read-back; current-head review passed.
-        evidence_refs: [.loop/evidence/t006-review-proof.json, .loop/evidence/t006-java-quality-proof.json]
+        basis: PR #20 was merged with the reviewed expected head, and the separate completion slice checked T006 before final main read-back.
+        evidence_refs: [.loop/evidence/t006-review-proof.json, .loop/evidence/t006-java-quality-proof.json, .loop/evidence/t006-completion-receipt.json]
       budget:
         effort_hours: 0.0
         tokens: 0
@@ -404,8 +404,8 @@ graph:
       risk: critical
       confidence:
         score: 0.98
-        basis: T006 implementation is bounded and independently proven for Node and Java Gradle checks, while review, merge and completion remain explicitly gated.
-        evidence_refs: [.loop/t006-quality-baseline-ledger.json, .loop/evidence/t006-implementation-proof.json]
+        basis: PR #20 is merged, the T006 completion slice checks the task and records the required proof; final main read-back is the remaining governance receipt.
+        evidence_refs: [.loop/t006-quality-baseline-ledger.json, .loop/evidence/t006-implementation-proof.json, .loop/evidence/t006-completion-receipt.json]
       budget:
         effort_hours: 0.0
         tokens: 0

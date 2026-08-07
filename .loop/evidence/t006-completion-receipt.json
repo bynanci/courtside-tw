@@ -1,0 +1,79 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t006-completion-20260807",
+  "generated_at": "2026-08-07T06:24:00Z",
+  "actor": "codex-supervisor",
+  "subject": "T006 post-merge completion slice",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T006",
+  "authorization": {
+    "claim_status": "CONFIRMED",
+    "instruction": "Review, merge and enhance T006.",
+    "approved_by": "Mark",
+    "approval_scope": "Merge the reviewed T006 implementation, then complete the checkbox and final main read-back without dispatching T007."
+  },
+  "canonical_source": {
+    "pull_request": 20,
+    "url": "https://github.com/bynanci/courtside-tw/pull/20",
+    "merge_commit": "6ab687e4077550864580f95cc557331bd131aa9f",
+    "implementation_paths": [
+      "eslint.config.mjs",
+      "prettier.config.mjs",
+      "packages/tsconfig/base.json",
+      "apps/api/build.gradle.kts",
+      "apps/api/config/checkstyle/checkstyle.xml",
+      "apps/api/config/spotbugs/exclude.xml",
+      "Makefile",
+      "apps/web/package.json",
+      "package.json",
+      "pnpm-lock.yaml"
+    ]
+  },
+  "proof": [
+    {
+      "claim": "T006 implementation review and merge",
+      "result": "PASS",
+      "evidence_ref": ".loop/evidence/t006-review-proof.json"
+    },
+    {
+      "claim": "Node quality gates",
+      "result": "PASS",
+      "evidence_ref": ".loop/evidence/t006-implementation-proof.json"
+    },
+    {
+      "claim": "Java Checkstyle and SpotBugs tasks",
+      "result": "PASS",
+      "evidence_ref": ".loop/evidence/t006-java-quality-proof.json"
+    },
+    {
+      "claim": "T006 task checkbox is checked in the separate completion slice",
+      "result": "PASS",
+      "path": "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+    },
+    {
+      "claim": "Graphify completion state records the merged gate and terminal policy",
+      "result": "PASS",
+      "evidence_ref": ".loop/t006-quality-baseline-graphify-loop.yaml"
+    }
+  ],
+  "scope_guard": {
+    "runtime_implementation_changed": false,
+    "database_or_migrations_changed": false,
+    "providers_or_credentials_changed": false,
+    "external_web3_writes": false,
+    "production_deployment": false,
+    "T007_or_later_dispatch": false
+  },
+  "completion_slice": {
+    "branch": "ticket/t006-completion-readback",
+    "base_commit": "6ab687e4077550864580f95cc557331bd131aa9f",
+    "checkbox_path": "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    "t006_checked": true,
+    "t007_checked": false,
+    "final_main_readback": "separate governed read-back slice"
+  },
+  "decision": "T006_COMPLETION_READY_FOR_MAIN_READBACK",
+  "result": "pass",
+  "confidence": 0.99,
+  "next_action": "Open the separate final main read-back slice, verify the checked T006 state and unchanged T007 frontier, then close the Graphify ledger."
+}

@@ -1,18 +1,16 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t006",
-  "graph_version": 8,
+  "graph_version": 9,
   "run_id": "courtside-tw-t006-quality-baseline-20260807",
   "status": "needs_human",
   "iteration": 4,
   "started_at": "2026-08-07T05:08:32Z",
-  "updated_at": "2026-08-07T06:21:00Z",
-  "current_frontier": [
-    "g-t006-merge"
-  ],
+  "updated_at": "2026-08-07T06:25:00Z",
+  "current_frontier": [],
   "blocked_nodes": [],
   "terminal_state": "needs_human",
-  "next_action": "Merge PR #20 with expected head after final evidence publication, then perform the separate T006 completion and main read-back gate.",
+  "next_action": "Open the separate final main read-back slice, verify T006 is checked on main and T007 remains unchecked/undispatched, then close the terminal policy.",
   "events": [
     {
       "event_id": "evt-t006-quality-baseline-001-graph-initialized",
@@ -478,10 +476,68 @@
         "total": 1800
       },
       "terminal_reason": "All implementation, Node, Java, Graphify and current-head review receipts are present; merge and post-merge completion remain gated."
+    },
+    {
+      "event_id": "evt-t006-quality-baseline-009-completion-slice",
+      "at": "2026-08-07T06:25:00Z",
+      "actor": "codex-supervisor",
+      "type": "completion_slice",
+      "base_graph_version": 8,
+      "new_graph_version": 9,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/g-t006-merge/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "add",
+            "path": ".loop/evidence/t006-completion-receipt.json",
+            "after": "T006 checkbox checked in separate post-merge completion slice; final main read-back remains a separate gate."
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [
+              "g-t006-merge"
+            ],
+            "after": []
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t006-completion-receipt.json",
+        ".loop/t006-quality-baseline-graphify-loop.yaml"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "post-merge task completion",
+          "level": "P3",
+          "result": "pass",
+          "details": "The separate completion branch checks T006 and leaves T007 and later tickets unchecked and undispatched."
+        },
+        {
+          "proof": "scope guard",
+          "level": "P2",
+          "result": "pass",
+          "details": "Completion slice changes governance/evidence state only; no runtime, database, provider, credential, deployment or Web3 paths changed."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "T006 completion is prepared and the merge gate is closed; retain needs_human until the final main read-back confirms the checkbox and frontier.",
+      "token_usage": {
+        "estimated": 2200,
+        "input": 0,
+        "output": 0,
+        "total": 2200
+      },
+      "terminal_reason": "Implementation PR is merged and T006 is checked on the completion branch; final main read-back is intentionally separate."
     }
   ],
   "proof": {
-    "claim": "T006 shared quality configuration and deterministic Node and Java Gradle enforcement are implemented, final Graphify validation and current-head review passed, and only merge plus separate checkbox completion/read-back remain.",
+    "claim": "T006 implementation is merged, the separate completion slice checks T006, and only final main read-back remains before terminal success.",
     "result": "needs_human",
     "confidence": 0.99
   }
