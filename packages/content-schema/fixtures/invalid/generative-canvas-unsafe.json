@@ -19,9 +19,7 @@
         "posterAssetId": "00000000-0000-4000-8000-000000000016",
         "altText": "安全 fallback",
         "dataSummary": "摘要",
-        "code": "alert(1)",
-        "shader": "void main(){}",
-        "remoteUrl": "https://evil.example/preset.js"
+        "code": "alert(1)"
       }
     }
   ]
