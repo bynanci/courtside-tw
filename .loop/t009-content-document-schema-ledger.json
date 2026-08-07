@@ -1,18 +1,18 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t009",
-  "graph_version": 1,
+  "graph_version": 2,
   "run_id": "courtside-tw-t009-content-document-schema-20260807",
-  "status": "running",
-  "iteration": 1,
+  "status": "needs_human",
+  "iteration": 2,
   "started_at": "2026-08-07T11:20:00Z",
-  "updated_at": "2026-08-07T11:20:00Z",
+  "updated_at": "2026-08-07T10:56:31Z",
   "current_frontier": [
-    "a-t009-define-contract"
+    "g-t009-review-merge"
   ],
   "blocked_nodes": [],
-  "terminal_state": "running",
-  "next_action": "Implement schema and fixtures, then produce independent validation evidence.",
+  "terminal_state": "needs_human",
+  "next_action": "Open the T009 review PR, inspect the current-head diff and checks, then await explicit merge authority; keep T009 unchecked.",
   "events": [
     {
       "event_id": "evt-t009-001-dispatched",
@@ -73,9 +73,135 @@
       },
       "failure_signature": null,
       "decision": "Implement only T009 schema and fixture contract; keep T009 unchecked until proof and main read-back."
+    },
+    {
+      "event_id": "evt-t009-002-schema-proof",
+      "at": "2026-08-07T10:56:31Z",
+      "actor": "codex-supervisor",
+      "type": "schema_and_fixture_proof",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [
+              "a-t009-define-contract"
+            ],
+            "after": [
+              "g-t009-review-merge"
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes.a-t009-define-contract.status",
+            "before": "ready",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes.p-t009-schema-validation.status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes.p-t009-negative-fixtures.status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes.g-t009-review-merge.status",
+            "before": "planned",
+            "after": "ready"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes.m-t009.status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "add",
+            "path": "proof_receipt",
+            "after": ".loop/evidence/t009-schema-proof.json"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t009-schema-proof.json",
+        ".loop/t009-content-document-schema-graphify-loop.yaml",
+        ".loop/memory/t009-content-document-schema.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "JSON Schema strict compile",
+          "level": "P2",
+          "result": "pass",
+          "details": "Ajv2020 8.20.0 with ajv-formats 3.0.1 compiled the draft 2020-12 schema in strict mode."
+        },
+        {
+          "proof": "complete fixture",
+          "level": "P2",
+          "result": "pass",
+          "details": "All 11 approved MVP block types validate in one fixture."
+        },
+        {
+          "proof": "negative fixtures",
+          "level": "P2",
+          "result": "pass",
+          "details": "Five invalid fixtures were rejected for closed-world, unsafe URL, provider or enum constraints."
+        },
+        {
+          "proof": "Graphify and memory validation",
+          "level": "P2",
+          "result": "pass",
+          "details": "Strict Graphify validation and both work-memory/v1 validators passed."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:t009-content-document-schema",
+        "version": 2,
+        "retrieval_ids": [
+          "wm:project:courtside-tw:phase1-review",
+          "wm:project:courtside-tw:t008-ci-pipelines"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t009-dispatch-20260807.json",
+          ".loop/evidence/t009-schema-proof.json",
+          ".loop/memory/t009-content-document-schema.json"
+        ],
+        "next_review_at": "2026-08-14",
+        "blocker": null
+      },
+      "failure_signature": {
+        "code": "AJV_STRICT_TYPE_MISSING",
+        "message": "Conditional videoId pattern schemas lacked an explicit string type under strict Ajv.",
+        "resolution": "Added type:string to the youtube and vimeo videoId conditional branches; strict compile and fixture validation then passed.",
+        "status": "resolved",
+        "observed_iteration": 2
+      },
+      "token_usage": {
+        "estimated_tokens": 8500,
+        "validator_runtime_seconds": 0.3,
+        "notes": "Includes schema review, independent validator setup, strict validation, graph validation and memory validation."
+      },
+      "decision": "PASS WITH FOLLOW-UP",
+      "follow_up": "Open and review the T009 PR; do not merge or mark T009 checked until the current-head gate and main read-back pass."
     }
   ],
-  "proof": [],
+  "proof": [
+    {
+      "proof_id": "t009-schema-proof-20260807",
+      "level": "P2",
+      "result": "pass",
+      "evidence_ref": ".loop/evidence/t009-schema-proof.json",
+      "recorded_at": "2026-08-07T10:56:31Z"
+    }
+  ],
   "memory_receipt": {
     "memory_status": "SAVED",
     "memory_id": "wm:project:courtside-tw:t009-content-document-schema",
