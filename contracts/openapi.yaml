@@ -1,0 +1,2829 @@
+openapi: 3.1.0
+jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
+info:
+  title: Courtside TW API
+  version: 1.0.0
+  description: Contract-first REST API for public reading, reader library, editorial publication and optional provenance/SIWE boundaries.
+servers:
+  - url: https://api.courtside.tw
+    description: Production API origin placeholder; deployment is a later task.
+tags:
+  - name: Public
+    description: Anonymous published projections.
+  - name: Reader
+    description: Authenticated reader library and progress.
+  - name: Editorial
+    description: Editor draft and taxonomy operations.
+  - name: Publisher
+    description: Publisher review and publication operations.
+  - name: Media
+    description: Rights-bounded media upload lifecycle.
+  - name: Offline
+    description: Versioned offline manifests and withdrawals.
+  - name: Provenance
+    description: Non-gating publication provenance.
+  - name: SIWE
+    description: Optional ERC-4361 wallet linking; never editor authorization.
+security:
+  - bffSession: []
+  - oidcBearer: []
+paths:
+  /api/v1/public/issues:
+    get:
+      tags:
+        - Public
+      operationId: listPublicIssues
+      summary: List published issues
+      description: Returns only published issue summaries using opaque cursor pagination.
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueSummaryPage"
+              examples:
+                valid:
+                  value:
+                    items: []
+                    page:
+                      nextCursor: null
+                      limit: 20
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "429":
+          $ref: "#/components/responses/Problem429"
+  /api/v1/public/issues/{issueSlug}:
+    get:
+      tags:
+        - Public
+      operationId: getPublicIssue
+      summary: Get a published issue
+      description: Returns issue metadata and the visible ordered table of contents.
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/IssueSlug"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueDetail"
+              examples:
+                valid:
+                  value:
+                    issueId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    slug: issue-1
+                    title: Issue 1
+                    sections: []
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "429":
+          $ref: "#/components/responses/Problem429"
+  /api/v1/public/articles/{articleSlug}:
+    get:
+      tags:
+        - Public
+      operationId: getPublicArticle
+      summary: Get a published article
+      description: Returns a published article projection and issue navigation.
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/ArticleSlug"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArticleProjection"
+              examples:
+                valid:
+                  value:
+                    articleId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    slug: article-1
+                    title: Article 1
+                    content:
+                      schemaVersion: 1
+                      documentId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                      blocks: []
+                    issueNavigation:
+                      issueSlug: issue-1
+                      previous: null
+                      next: null
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "429":
+          $ref: "#/components/responses/Problem429"
+  /api/v1/public/search:
+    get:
+      tags:
+        - Public
+      operationId: searchPublicContent
+      summary: Search published content
+      description: Searches the published projection with bounded filters and cursor pagination.
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 200
+        - name: type
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - article
+              - issue
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SearchResultPage"
+              examples:
+                valid:
+                  value:
+                    items: []
+                    page:
+                      nextCursor: null
+                      limit: 20
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "429":
+          $ref: "#/components/responses/Problem429"
+  /api/v1/public/taxonomy/{type}:
+    get:
+      tags:
+        - Public
+      operationId: listPublicTaxonomy
+      summary: List active taxonomy terms
+      description: Returns public filter terms with stable slugs and cursor pagination.
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/Type"
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaxonomyPage"
+              examples:
+                valid:
+                  value:
+                    items: []
+                    page:
+                      nextCursor: null
+                      limit: 20
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "429":
+          $ref: "#/components/responses/Problem429"
+  /api/v1/public/withdrawals:
+    get:
+      tags:
+        - Public
+        - Offline
+      operationId: getWithdrawalManifest
+      summary: Get the signed withdrawal manifest
+      description: Returns versioned withdrawals for offline clients; it never gates ordinary online reading.
+      security: []
+      parameters: []
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WithdrawalManifest"
+              examples:
+                valid:
+                  value:
+                    version: 1
+                    generatedAt: 2026-08-07T15:00:00Z
+                    withdrawals: []
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "429":
+          $ref: "#/components/responses/Problem429"
+  /api/v1/public/issues/{issueSlug}/provenance:
+    get:
+      tags:
+        - Public
+        - Provenance
+      operationId: getIssueProvenance
+      summary: Get edition provenance
+      description: Returns digest, CID, attestation and verification status without gating content.
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/IssueSlug"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProvenanceManifest"
+              examples:
+                valid:
+                  value:
+                    snapshotId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    schemaVersion: 1
+                    digest: sha256:0000000000000000000000000000000000000000000000000000000000000000
+                    cid: null
+                    attestation: null
+                    status: PENDING
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "429":
+          $ref: "#/components/responses/Problem429"
+  /api/v1/public/offline/issues/{issueSlug}/manifest:
+    get:
+      tags:
+        - Offline
+      operationId: getOfflineIssueManifest
+      summary: Get an offline issue manifest
+      description: Returns a bounded, versioned manifest for a P3 offline client.
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/IssueSlug"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/OfflineManifest"
+              examples:
+                valid:
+                  value:
+                    issueSlug: issue-1
+                    manifestVersion: 1
+                    checksum: "0000000000000000000000000000000000000000000000000000000000000000"
+                    articles: []
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "429":
+          $ref: "#/components/responses/Problem429"
+  /api/v1/me/bookmarks:
+    get:
+      tags:
+        - Reader
+      operationId: listBookmarks
+      summary: List reader bookmarks
+      description: Returns the authenticated reader's bookmarks.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/BookmarkPage"
+              examples:
+                valid:
+                  value:
+                    items: []
+                    page:
+                      nextCursor: null
+                      limit: 20
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "429":
+          $ref: "#/components/responses/Problem429"
+  /api/v1/me/bookmarks/{articleId}:
+    put:
+      tags:
+        - Reader
+      operationId: putBookmark
+      summary: Create or keep a bookmark
+      description: Idempotently creates the reader bookmark.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/ArticleId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "204":
+          description: Successful response.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-idempotent: true
+    delete:
+      tags:
+        - Reader
+      operationId: deleteBookmark
+      summary: Delete a bookmark
+      description: Idempotently deletes the reader bookmark.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/ArticleId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "204":
+          description: Successful response.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-idempotent: true
+  /api/v1/me/progress:
+    get:
+      tags:
+        - Reader
+      operationId: listReadingProgress
+      summary: List reading progress
+      description: Returns revision-aware progress records using cursor pagination.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProgressPage"
+              examples:
+                valid:
+                  value:
+                    items: []
+                    page:
+                      nextCursor: null
+                      limit: 20
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "429":
+          $ref: "#/components/responses/Problem429"
+  /api/v1/me/progress/{articleId}:
+    put:
+      tags:
+        - Reader
+      operationId: putReadingProgress
+      summary: Upsert reading progress
+      description: Upserts progress against an explicit article revision and block anchor.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/ArticleId"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReadingProgress"
+              examples:
+                valid:
+                  value:
+                    articleId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    revisionId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    blockId: 00000000-0000-4000-8000-000000000002
+                    percent: 42
+                    updatedAt: 2026-08-07T15:00:00Z
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProgressUpsert"
+            examples:
+              valid:
+                value:
+                  revisionId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                  blockId: 00000000-0000-4000-8000-000000000002
+                  percent: 42
+      x-idempotent: true
+  /api/v1/me/progress:merge:
+    post:
+      tags:
+        - Reader
+      operationId: mergeReadingProgress
+      summary: Merge local and server progress
+      description: Previews or applies an explicit bounded merge of local progress.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProgressMergeResult"
+              examples:
+                valid:
+                  value:
+                    mode: preview
+                    accepted: []
+                    conflicts: []
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProgressMergeRequest"
+            examples:
+              valid:
+                value:
+                  mode: preview
+                  items: []
+      x-idempotent: true
+  /api/v1/auth/siwe/challenge:
+    post:
+      tags:
+        - SIWE
+      operationId: createSiweChallenge
+      summary: Create a SIWE challenge
+      description: Creates a short-lived domain- and chain-bound nonce; this optional endpoint never grants editor authority.
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiweChallenge"
+              examples:
+                valid:
+                  value:
+                    nonce: 0123456789abcdef
+                    message: courtside.tw wants you to sign in
+                    expiresAt: 2026-08-07T15:00:00Z
+                    domain: courtside.tw
+                    chainId: eip155:1
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SiweChallengeRequest"
+            examples:
+              valid:
+                value:
+                  domain: courtside.tw
+                  address: "0x0000000000000000000000000000000000000001"
+                  chainId: eip155:1
+                  uri: https://courtside.tw
+      x-idempotent: true
+      x-optional: true
+  /api/v1/auth/siwe/verify:
+    post:
+      tags:
+        - SIWE
+      operationId: verifySiweSignature
+      summary: Verify a SIWE signature
+      description: Verifies the ERC-4361 message and may link a BFF session after explicit reader action.
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SiweVerifyResult"
+              examples:
+                valid:
+                  value:
+                    verified: true
+                    sessionLinked: false
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SiweVerifyRequest"
+            examples:
+              valid:
+                value:
+                  message: courtside.tw wants you to sign in
+                  signature: "0x00"
+      x-idempotent: true
+      x-optional: true
+  /api/v1/me/wallets/{chainNamespace}/{address}:
+    delete:
+      tags:
+        - Reader
+        - SIWE
+      operationId: revokeWalletLink
+      summary: Revoke a linked wallet
+      description: Revokes an off-chain wallet link after re-authentication.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/ChainNamespace"
+        - $ref: "#/components/parameters/Address"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "204":
+          description: Successful response.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-idempotent: true
+      x-optional: true
+  /api/v1/me:
+    delete:
+      tags:
+        - Reader
+      operationId: requestAccountDeletion
+      summary: Request account deletion
+      description: Starts the verified account deletion workflow.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DeletionWorkflow"
+              examples:
+                valid:
+                  value:
+                    requestId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    status: QUEUED
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DeletionRequest"
+            examples:
+              valid:
+                value:
+                  confirm: true
+      x-idempotent: true
+  /api/v1/editor/issues:
+    post:
+      tags:
+        - Editorial
+      operationId: createEditorIssue
+      summary: Create an issue draft
+      description: Creates a draft issue owned by the editorial workflow.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "201":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueDraft"
+              examples:
+                valid:
+                  value:
+                    issueId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    version: 1
+                    title: Issue 1
+                    slug: issue-1
+                    state: DRAFT
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IssueDraftInput"
+            examples:
+              valid:
+                value:
+                  title: Issue 1
+                  slug: issue-1
+      x-idempotent: true
+      x-required-roles:
+        - EDITOR
+    get:
+      tags:
+        - Editorial
+      operationId: listEditorIssues
+      summary: List issue drafts
+      description: Lists drafts and workflow states visible to the editorial actor.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueDraftPage"
+              examples:
+                valid:
+                  value:
+                    items: []
+                    page:
+                      nextCursor: null
+                      limit: 20
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-required-roles:
+        - EDITOR
+    patch:
+      tags:
+        - Editorial
+      operationId: patchEditorIssue
+      summary: Patch an issue draft
+      description: Updates an issue draft with an If-Match optimistic lock.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueDraft"
+              examples:
+                valid:
+                  value:
+                    issueId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    version: 2
+                    title: Issue 1 revised
+                    slug: issue-1
+                    state: DRAFT
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IssuePatch"
+            examples:
+              valid:
+                value:
+                  issueId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                  changes:
+                    title: Issue 1 revised
+      x-idempotent: true
+      x-optimistic-lock: If-Match
+      x-required-roles:
+        - EDITOR
+  /api/v1/editor/articles:
+    post:
+      tags:
+        - Editorial
+      operationId: createEditorArticle
+      summary: Create an article draft
+      description: Creates article identity and an initial working revision.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "201":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArticleDraft"
+              examples:
+                valid:
+                  value:
+                    articleId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    version: 1
+                    title: Article 1
+                    slug: article-1
+                    state: DRAFT
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ArticleDraftInput"
+            examples:
+              valid:
+                value:
+                  title: Article 1
+                  slug: article-1
+      x-idempotent: true
+      x-required-roles:
+        - EDITOR
+    get:
+      tags:
+        - Editorial
+      operationId: listEditorArticles
+      summary: List article drafts
+      description: Lists article identities and their current editor-visible revisions.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArticleDraftPage"
+              examples:
+                valid:
+                  value:
+                    items: []
+                    page:
+                      nextCursor: null
+                      limit: 20
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-required-roles:
+        - EDITOR
+    patch:
+      tags:
+        - Editorial
+      operationId: patchEditorArticle
+      summary: Patch an article draft
+      description: Updates an article identity or working revision with an If-Match lock.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArticleDraft"
+              examples:
+                valid:
+                  value:
+                    articleId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    version: 2
+                    title: Article 1 revised
+                    slug: article-1
+                    state: DRAFT
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ArticlePatch"
+            examples:
+              valid:
+                value:
+                  articleId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                  changes:
+                    title: Article 1 revised
+      x-idempotent: true
+      x-optimistic-lock: If-Match
+      x-required-roles:
+        - EDITOR
+  /api/v1/editor/articles/{id}:submit:
+    post:
+      tags:
+        - Editorial
+      operationId: submitArticleForReview
+      summary: Submit an article revision
+      description: Validates content and rights before moving the article into review.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowResult"
+              examples:
+                valid:
+                  value:
+                    operationId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    status: ACCEPTED
+                    version: 1
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SubmitRequest"
+            examples:
+              valid:
+                value:
+                  revisionId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+      x-idempotent: true
+      x-required-roles:
+        - EDITOR
+  /api/v1/publisher/articles/{id}:approve:
+    post:
+      tags:
+        - Publisher
+      operationId: approvePublisherArticle
+      summary: Approve a frozen revision
+      description: Approves an article revision after editorial review.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowResult"
+              examples:
+                valid:
+                  value:
+                    operationId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    status: APPROVED
+                    version: 1
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-idempotent: true
+      x-optimistic-lock: If-Match
+      x-required-roles:
+        - PUBLISHER
+  /api/v1/publisher/issues/{id}:publish:
+    post:
+      tags:
+        - Publisher
+      operationId: publishPublisherIssue
+      summary: Publish an issue now
+      description: Atomically publishes the approved issue and returns the operation result.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowResult"
+              examples:
+                valid:
+                  value:
+                    operationId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    status: PUBLISHED
+                    version: 1
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-idempotent: true
+      x-optimistic-lock: If-Match
+      x-required-roles:
+        - PUBLISHER
+  /api/v1/publisher/issues/{id}:schedule:
+    post:
+      tags:
+        - Publisher
+      operationId: schedulePublisherIssue
+      summary: Schedule an issue
+      description: Schedules publication with an explicit IANA timezone.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowResult"
+              examples:
+                valid:
+                  value:
+                    operationId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    status: SCHEDULED
+                    version: 1
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScheduleRequest"
+            examples:
+              valid:
+                value:
+                  publishAt: 2026-08-07T16:00:00Z
+                  timezone: Asia/Taipei
+      x-idempotent: true
+      x-optimistic-lock: If-Match
+      x-required-roles:
+        - PUBLISHER
+  /api/v1/publisher/articles/{id}:withdraw:
+    post:
+      tags:
+        - Publisher
+      operationId: withdrawPublisherArticle
+      summary: Withdraw an article
+      description: Performs an emergency withdrawal with an auditable reason.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowResult"
+              examples:
+                valid:
+                  value:
+                    operationId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    status: WITHDRAWN
+                    version: 1
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WithdrawRequest"
+            examples:
+              valid:
+                value:
+                  reason: rights revoked
+      x-idempotent: true
+      x-optimistic-lock: If-Match
+      x-required-roles:
+        - PUBLISHER
+  /api/v1/editor/media/uploads:
+    post:
+      tags:
+        - Media
+      operationId: createMediaUploadIntent
+      summary: Create a signed media upload intent
+      description: Creates a short-lived, size- and MIME-bounded upload intent.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "201":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaUploadIntent"
+              examples:
+                valid:
+                  value:
+                    assetId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    uploadUrl: https://s3.example.test/upload
+                    expiresAt: 2026-08-07T15:00:00Z
+                    maxSizeBytes: 52428800
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MediaUploadRequest"
+            examples:
+              valid:
+                value:
+                  filename: cover.jpg
+                  contentType: image/jpeg
+                  sizeBytes: 1024
+                  checksumSha256: "0000000000000000000000000000000000000000000000000000000000000000"
+      x-idempotent: true
+      x-required-roles:
+        - EDITOR
+  /api/v1/editor/media/{id}:complete:
+    post:
+      tags:
+        - Media
+      operationId: completeMediaUpload
+      summary: Complete a media upload
+      description: Confirms checksum and MIME before enqueueing processing.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowResult"
+              examples:
+                valid:
+                  value:
+                    operationId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    status: ACCEPTED
+                    version: 1
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MediaCompleteRequest"
+            examples:
+              valid:
+                value:
+                  checksumSha256: "0000000000000000000000000000000000000000000000000000000000000000"
+                  contentType: image/jpeg
+      x-idempotent: true
+      x-required-roles:
+        - EDITOR
+  /api/v1/publisher/media/{id}:revoke:
+    post:
+      tags:
+        - Media
+        - Publisher
+      operationId: revokePublisherMedia
+      summary: Revoke media rights
+      description: Revokes rights and returns the impacted publication report.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/RevokeImpactReport"
+              examples:
+                valid:
+                  value:
+                    assetId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    affectedArticles: []
+                    status: REVOKED
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevokeRequest"
+            examples:
+              valid:
+                value:
+                  reason: rights expired
+      x-idempotent: true
+      x-optimistic-lock: If-Match
+      x-required-roles:
+        - PUBLISHER
+  /api/v1/editor/taxonomy:
+    post:
+      tags:
+        - Editorial
+      operationId: createEditorTaxonomy
+      summary: Create a taxonomy term
+      description: Creates a taxonomy term with a stable type and slug.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "201":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaxonomyTerm"
+              examples:
+                valid:
+                  value:
+                    termId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    type: topic
+                    slug: tpbl
+                    name: TPBL
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaxonomyInput"
+            examples:
+              valid:
+                value:
+                  type: topic
+                  slug: tpbl
+                  name: TPBL
+      x-idempotent: true
+      x-required-roles:
+        - EDITOR
+    get:
+      tags:
+        - Editorial
+      operationId: listEditorTaxonomy
+      summary: List taxonomy terms
+      description: Lists taxonomy terms visible to the editorial actor.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaxonomyPage"
+              examples:
+                valid:
+                  value:
+                    items: []
+                    page:
+                      nextCursor: null
+                      limit: 20
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-required-roles:
+        - EDITOR
+    patch:
+      tags:
+        - Editorial
+      operationId: patchEditorTaxonomy
+      summary: Patch a taxonomy term
+      description: Updates a taxonomy term with optimistic locking.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TaxonomyTerm"
+              examples:
+                valid:
+                  value:
+                    termId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    type: topic
+                    slug: tpbl
+                    name: TPBL
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/TaxonomyPatch"
+            examples:
+              valid:
+                value:
+                  termId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                  changes:
+                    name: TPBL
+      x-idempotent: true
+      x-optimistic-lock: If-Match
+      x-required-roles:
+        - EDITOR
+components:
+  securitySchemes:
+    oidcBearer:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: OIDC issuer/audience validated JWT for Spring Security.
+    bffSession:
+      type: apiKey
+      in: cookie
+      name: __Host-courtside_session
+      description: Secure, HttpOnly, SameSite BFF session cookie.
+  parameters:
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      description: Opaque cursor returned by the previous page.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 256
+    Limit:
+      name: limit
+      in: query
+      required: false
+      description: Bounded page size.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    IssueSlug:
+      name: issueSlug
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+    ArticleSlug:
+      name: articleSlug
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+    ArticleId:
+      name: articleId
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/Uuid"
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/Uuid"
+    Type:
+      name: type
+      in: path
+      required: true
+      schema:
+        type: string
+        enum:
+          - league
+          - season
+          - team
+          - player
+          - topic
+    ChainNamespace:
+      name: chainNamespace
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^[a-z0-9][a-z0-9-]{1,31}$
+    Address:
+      name: address
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^0x[0-9a-fA-F]{40}$
+    IfMatch:
+      name: If-Match
+      in: header
+      required: true
+      description: Optimistic-lock version or ETag. The server rejects stale values with 409 VERSION_CONFLICT.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 200
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      required: true
+      description: Stable retry key. Replays return the original operation result.
+      schema:
+        type: string
+        format: uuid
+        minLength: 36
+        maxLength: 200
+  headers:
+    XRequestId:
+      description: Trace/request identifier. Never contains tokens or article content.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 100
+    RetryAfter:
+      description: Seconds until the caller may retry.
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 3600
+  schemas:
+    Uuid:
+      type: string
+      format: uuid
+      description: Stable public identifier.
+    UuidV7:
+      type: string
+      pattern: ^[0-9a-f]{8}-[0-9a-f]{4}-7[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$
+      description: Time-sortable UUIDv7 identifier.
+    ProblemDetails:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - title
+        - status
+        - detail
+        - instance
+        - requestId
+        - code
+      properties:
+        type:
+          type: string
+          format: uri-reference
+        title:
+          type: string
+          minLength: 1
+        status:
+          type: integer
+          minimum: 400
+          maximum: 599
+        detail:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        instance:
+          type: string
+          format: uri-reference
+        requestId:
+          type: string
+          minLength: 1
+          maxLength: 100
+        code:
+          type: string
+          enum:
+            - INVALID_REQUEST
+            - AUTHENTICATION_REQUIRED
+            - FORBIDDEN
+            - RESOURCE_NOT_FOUND
+            - VERSION_CONFLICT
+            - RIGHTS_OR_CONTENT_GATE
+            - RATE_LIMITED
+        errors:
+          type: array
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/FieldError"
+    FieldError:
+      type: object
+      additionalProperties: false
+      required:
+        - path
+        - code
+        - message
+      properties:
+        path:
+          type: string
+          minLength: 1
+          maxLength: 200
+        code:
+          type: string
+          minLength: 1
+          maxLength: 80
+        message:
+          type: string
+          minLength: 1
+          maxLength: 500
+    PageMeta:
+      type: object
+      additionalProperties: false
+      required:
+        - nextCursor
+        - limit
+      properties:
+        nextCursor:
+          type:
+            - string
+            - "null"
+          maxLength: 256
+        limit:
+          type: integer
+          minimum: 1
+          maximum: 100
+    ContentDocument:
+      $ref: ./content-document.schema.json
+    IssueSummary:
+      type: object
+      additionalProperties: false
+      required:
+        - issueId
+        - slug
+        - title
+        - publishedAt
+        - articleCount
+      properties:
+        issueId:
+          $ref: "#/components/schemas/Uuid"
+        slug:
+          type: string
+        title:
+          type: string
+        publishedAt:
+          type: string
+          format: date-time
+        articleCount:
+          type: integer
+          minimum: 0
+    IssueSummaryPage:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - page
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/IssueSummary"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+    IssueDetail:
+      type: object
+      additionalProperties: false
+      required:
+        - issueId
+        - slug
+        - title
+        - sections
+      properties:
+        issueId:
+          $ref: "#/components/schemas/Uuid"
+        slug:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        publishedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+        sections:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - title
+              - position
+              - articles
+            properties:
+              title:
+                type: string
+              position:
+                type: integer
+                minimum: 1
+              articles:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ArticleSummary"
+    ArticleSummary:
+      type: object
+      additionalProperties: false
+      required:
+        - articleId
+        - slug
+        - title
+        - position
+      properties:
+        articleId:
+          $ref: "#/components/schemas/Uuid"
+        slug:
+          type: string
+        title:
+          type: string
+        position:
+          type: integer
+          minimum: 1
+    ArticleProjection:
+      type: object
+      additionalProperties: false
+      required:
+        - articleId
+        - slug
+        - title
+        - content
+        - issueNavigation
+      properties:
+        articleId:
+          $ref: "#/components/schemas/Uuid"
+        slug:
+          type: string
+        title:
+          type: string
+        dek:
+          type: string
+        content:
+          $ref: "#/components/schemas/ContentDocument"
+        issueNavigation:
+          type: object
+          additionalProperties: false
+          required:
+            - issueSlug
+            - previous
+            - next
+          properties:
+            issueSlug:
+              type: string
+            previous:
+              type:
+                - object
+                - "null"
+            next:
+              type:
+                - object
+                - "null"
+    SearchResult:
+      type: object
+      additionalProperties: false
+      required:
+        - articleId
+        - slug
+        - title
+        - snippet
+      properties:
+        articleId:
+          $ref: "#/components/schemas/Uuid"
+        slug:
+          type: string
+        title:
+          type: string
+        snippet:
+          type: string
+        issueSlug:
+          type: string
+        publishedAt:
+          type: string
+          format: date-time
+    SearchResultPage:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - page
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/SearchResult"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+    TaxonomyTerm:
+      type: object
+      additionalProperties: false
+      required:
+        - termId
+        - type
+        - slug
+        - name
+      properties:
+        termId:
+          $ref: "#/components/schemas/Uuid"
+        type:
+          type: string
+        slug:
+          type: string
+        name:
+          type: string
+    TaxonomyPage:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - page
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/TaxonomyTerm"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+    Bookmark:
+      type: object
+      additionalProperties: false
+      required:
+        - articleId
+        - createdAt
+      properties:
+        articleId:
+          $ref: "#/components/schemas/Uuid"
+        createdAt:
+          type: string
+          format: date-time
+    BookmarkPage:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - page
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/Bookmark"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+    ReadingProgress:
+      type: object
+      additionalProperties: false
+      required:
+        - articleId
+        - revisionId
+        - blockId
+        - percent
+        - updatedAt
+      properties:
+        articleId:
+          $ref: "#/components/schemas/Uuid"
+        revisionId:
+          $ref: "#/components/schemas/Uuid"
+        blockId:
+          $ref: "#/components/schemas/Uuid"
+        percent:
+          type: number
+          minimum: 0
+          maximum: 100
+        updatedAt:
+          type: string
+          format: date-time
+    ProgressPage:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - page
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReadingProgress"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+    ProgressUpsert:
+      type: object
+      additionalProperties: false
+      required:
+        - revisionId
+        - blockId
+        - percent
+      properties:
+        revisionId:
+          $ref: "#/components/schemas/Uuid"
+        blockId:
+          $ref: "#/components/schemas/Uuid"
+        percent:
+          type: number
+          minimum: 0
+          maximum: 100
+    ProgressMergeRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - mode
+      properties:
+        mode:
+          type: string
+          enum:
+            - preview
+            - apply
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/ReadingProgress"
+    ProgressMergeResult:
+      type: object
+      additionalProperties: false
+      required:
+        - mode
+        - accepted
+        - conflicts
+      properties:
+        mode:
+          type: string
+          enum:
+            - preview
+            - apply
+        accepted:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReadingProgress"
+        conflicts:
+          type: array
+          items:
+            $ref: "#/components/schemas/ProblemDetails"
+    SiweChallengeRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - domain
+        - address
+        - chainId
+        - uri
+      properties:
+        domain:
+          type: string
+          minLength: 1
+          maxLength: 253
+        address:
+          type: string
+          pattern: ^0x[0-9a-fA-F]{40}$
+        chainId:
+          type: string
+          pattern: ^eip155:[0-9]+$
+        uri:
+          type: string
+          format: uri
+    SiweChallenge:
+      type: object
+      additionalProperties: false
+      required:
+        - nonce
+        - message
+        - expiresAt
+        - domain
+        - chainId
+      properties:
+        nonce:
+          type: string
+          minLength: 16
+          maxLength: 128
+        message:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        expiresAt:
+          type: string
+          format: date-time
+        domain:
+          type: string
+        chainId:
+          type: string
+    SiweVerifyRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - message
+        - signature
+      properties:
+        message:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        signature:
+          type: string
+          pattern: ^0x[0-9a-fA-F]+$
+    SiweVerifyResult:
+      type: object
+      additionalProperties: false
+      required:
+        - verified
+        - sessionLinked
+      properties:
+        verified:
+          type: boolean
+        sessionLinked:
+          type: boolean
+        expiresAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+    DeletionRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - confirm
+      properties:
+        confirm:
+          const: true
+    DeletionWorkflow:
+      type: object
+      additionalProperties: false
+      required:
+        - requestId
+        - status
+      properties:
+        requestId:
+          type: string
+        status:
+          type: string
+          enum:
+            - QUEUED
+            - PROCESSING
+            - COMPLETED
+    IssueDraftInput:
+      type: object
+      additionalProperties: false
+      required:
+        - title
+        - slug
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        slug:
+          type: string
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        description:
+          type: string
+          maxLength: 1000
+    IssuePatch:
+      type: object
+      additionalProperties: false
+      required:
+        - issueId
+        - changes
+      properties:
+        issueId:
+          $ref: "#/components/schemas/Uuid"
+        changes:
+          type: object
+          minProperties: 1
+          additionalProperties: true
+    IssueDraft:
+      type: object
+      additionalProperties: false
+      required:
+        - issueId
+        - version
+        - title
+        - slug
+        - state
+      properties:
+        issueId:
+          $ref: "#/components/schemas/Uuid"
+        version:
+          type: integer
+          minimum: 1
+        title:
+          type: string
+        slug:
+          type: string
+        state:
+          type: string
+          enum:
+            - DRAFT
+            - IN_REVIEW
+            - APPROVED
+            - SCHEDULED
+            - PUBLISHED
+            - ARCHIVED
+    IssueDraftPage:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - page
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/IssueDraft"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+    ArticleDraftInput:
+      type: object
+      additionalProperties: false
+      required:
+        - title
+        - slug
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+        slug:
+          type: string
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        content:
+          $ref: "#/components/schemas/ContentDocument"
+    ArticlePatch:
+      type: object
+      additionalProperties: false
+      required:
+        - articleId
+        - changes
+      properties:
+        articleId:
+          $ref: "#/components/schemas/Uuid"
+        changes:
+          type: object
+          minProperties: 1
+          additionalProperties: true
+    ArticleDraft:
+      type: object
+      additionalProperties: false
+      required:
+        - articleId
+        - version
+        - title
+        - slug
+        - state
+      properties:
+        articleId:
+          $ref: "#/components/schemas/Uuid"
+        version:
+          type: integer
+          minimum: 1
+        title:
+          type: string
+        slug:
+          type: string
+        state:
+          type: string
+          enum:
+            - DRAFT
+            - IN_REVIEW
+            - APPROVED
+            - PUBLISHED
+            - WITHDRAWN
+    SubmitRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - revisionId
+      properties:
+        revisionId:
+          $ref: "#/components/schemas/Uuid"
+    WorkflowResult:
+      type: object
+      additionalProperties: false
+      required:
+        - operationId
+        - status
+        - version
+      properties:
+        operationId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+            - ACCEPTED
+            - APPROVED
+            - PUBLISHED
+            - SCHEDULED
+            - WITHDRAWN
+            - BLOCKED
+        version:
+          type: integer
+          minimum: 1
+        blockingCodes:
+          type: array
+          items:
+            type: string
+    ScheduleRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - publishAt
+        - timezone
+      properties:
+        publishAt:
+          type: string
+          format: date-time
+        timezone:
+          type: string
+          pattern: ^[A-Za-z_]+/[A-Za-z_]+$
+    MediaUploadRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - filename
+        - contentType
+        - sizeBytes
+        - checksumSha256
+      properties:
+        filename:
+          type: string
+          minLength: 1
+          maxLength: 255
+        contentType:
+          type: string
+          enum:
+            - image/jpeg
+            - image/png
+            - image/webp
+            - video/mp4
+        sizeBytes:
+          type: integer
+          minimum: 1
+          maximum: 52428800
+        checksumSha256:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+    MediaUploadIntent:
+      type: object
+      additionalProperties: false
+      required:
+        - assetId
+        - uploadUrl
+        - expiresAt
+        - maxSizeBytes
+      properties:
+        assetId:
+          $ref: "#/components/schemas/UuidV7"
+        uploadUrl:
+          type: string
+          format: uri
+        expiresAt:
+          type: string
+          format: date-time
+        maxSizeBytes:
+          type: integer
+          minimum: 1
+    MediaCompleteRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - checksumSha256
+        - contentType
+      properties:
+        checksumSha256:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        contentType:
+          type: string
+    RevokeImpactReport:
+      type: object
+      additionalProperties: false
+      required:
+        - assetId
+        - affectedArticles
+        - status
+      properties:
+        assetId:
+          $ref: "#/components/schemas/Uuid"
+        affectedArticles:
+          type: array
+          items:
+            $ref: "#/components/schemas/Uuid"
+        status:
+          type: string
+          enum:
+            - REVOKED
+            - BLOCKED
+            - NO_IMPACT
+    OfflineManifest:
+      type: object
+      additionalProperties: false
+      required:
+        - issueSlug
+        - manifestVersion
+        - checksum
+        - articles
+      properties:
+        issueSlug:
+          type: string
+        manifestVersion:
+          type: integer
+          minimum: 1
+        checksum:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        articles:
+          type: array
+          items:
+            $ref: "#/components/schemas/ArticleSummary"
+        expiresAt:
+          type: string
+          format: date-time
+    WithdrawalManifest:
+      type: object
+      additionalProperties: false
+      required:
+        - version
+        - generatedAt
+        - withdrawals
+      properties:
+        version:
+          type: integer
+          minimum: 1
+        generatedAt:
+          type: string
+          format: date-time
+        withdrawals:
+          type: array
+          items:
+            $ref: "#/components/schemas/Uuid"
+    ProvenanceManifest:
+      type: object
+      additionalProperties: false
+      required:
+        - snapshotId
+        - schemaVersion
+        - digest
+        - status
+      properties:
+        snapshotId:
+          $ref: "#/components/schemas/Uuid"
+        schemaVersion:
+          type: integer
+          minimum: 1
+        digest:
+          type: string
+          pattern: ^sha256:[0-9a-f]{64}$
+        cid:
+          type:
+            - string
+            - "null"
+        attestation:
+          type:
+            - object
+            - "null"
+        status:
+          type: string
+          enum:
+            - PENDING
+            - VERIFIED
+            - FAILED
+            - SUPERSEDED
+            - WITHDRAWN
+    TaxonomyInput:
+      type: object
+      additionalProperties: false
+      required:
+        - type
+        - slug
+        - name
+      properties:
+        type:
+          type: string
+        slug:
+          type: string
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+    TaxonomyPatch:
+      type: object
+      additionalProperties: false
+      required:
+        - termId
+        - changes
+      properties:
+        termId:
+          $ref: "#/components/schemas/Uuid"
+        changes:
+          type: object
+          minProperties: 1
+          additionalProperties: true
+    WithdrawRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - reason
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+    RevokeRequest:
+      type: object
+      additionalProperties: false
+      required:
+        - reason
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+    ArticleDraftPage:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - page
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/ArticleDraft"
+        page:
+          $ref: "#/components/schemas/PageMeta"
+  responses:
+    Problem400:
+      description: Invalid request (400).
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/XRequestId"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+          examples:
+            stable:
+              summary: INVALID_REQUEST example
+              value:
+                type: https://courtside.tw/problems/invalid_request
+                title: Invalid request
+                status: 400
+                detail: The request is invalid.
+                instance: /api/v1/example
+                requestId: req_t009_t011_example
+                code: INVALID_REQUEST
+      x-stable-error-code: INVALID_REQUEST
+    Problem401:
+      description: Authentication required (401).
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/XRequestId"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+          examples:
+            stable:
+              summary: AUTHENTICATION_REQUIRED example
+              value:
+                type: https://courtside.tw/problems/authentication_required
+                title: Authentication required
+                status: 401
+                detail: Authentication is required.
+                instance: /api/v1/example
+                requestId: req_t009_t011_example
+                code: AUTHENTICATION_REQUIRED
+      x-stable-error-code: AUTHENTICATION_REQUIRED
+    Problem403:
+      description: Forbidden (403).
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/XRequestId"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+          examples:
+            stable:
+              summary: FORBIDDEN example
+              value:
+                type: https://courtside.tw/problems/forbidden
+                title: Forbidden
+                status: 403
+                detail: The actor is not allowed to perform this operation.
+                instance: /api/v1/example
+                requestId: req_t009_t011_example
+                code: FORBIDDEN
+      x-stable-error-code: FORBIDDEN
+    Problem404:
+      description: Not found (404).
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/XRequestId"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+          examples:
+            stable:
+              summary: RESOURCE_NOT_FOUND example
+              value:
+                type: https://courtside.tw/problems/resource_not_found
+                title: Not found
+                status: 404
+                detail: The requested resource was not found.
+                instance: /api/v1/example
+                requestId: req_t009_t011_example
+                code: RESOURCE_NOT_FOUND
+      x-stable-error-code: RESOURCE_NOT_FOUND
+    Problem409:
+      description: Conflict (409).
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/XRequestId"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+          examples:
+            stable:
+              summary: VERSION_CONFLICT example
+              value:
+                type: https://courtside.tw/problems/version_conflict
+                title: Conflict
+                status: 409
+                detail: The resource version is stale or the state conflicts.
+                instance: /api/v1/example
+                requestId: req_t009_t011_example
+                code: VERSION_CONFLICT
+      x-stable-error-code: VERSION_CONFLICT
+    Problem422:
+      description: Unprocessable content (422).
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/XRequestId"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+          examples:
+            stable:
+              summary: RIGHTS_OR_CONTENT_GATE example
+              value:
+                type: https://courtside.tw/problems/rights_or_content_gate
+                title: Unprocessable content
+                status: 422
+                detail: The content or rights gate blocks this operation.
+                instance: /api/v1/example
+                requestId: req_t009_t011_example
+                code: RIGHTS_OR_CONTENT_GATE
+      x-stable-error-code: RIGHTS_OR_CONTENT_GATE
+    Problem429:
+      description: Too many requests (429).
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/XRequestId"
+        Retry-After:
+          $ref: "#/components/headers/RetryAfter"
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+          examples:
+            stable:
+              summary: RATE_LIMITED example
+              value:
+                type: https://courtside.tw/problems/rate_limited
+                title: Too many requests
+                status: 429
+                detail: The request rate is limited.
+                instance: /api/v1/example
+                requestId: req_t009_t011_example
+                code: RATE_LIMITED
+      x-stable-error-code: RATE_LIMITED
+x-contract-rules:
+  problemMediaType: application/problem+json
+  stableErrorStatuses:
+    - 400
+    - 401
+    - 403
+    - 404
+    - 409
+    - 422
+    - 429
+  idempotencyHeader: Idempotency-Key
+  optimisticLockHeader: If-Match
+  pagination: Opaque cursor plus bounded limit
+  canonicalContentSchema: ./content-document.schema.json
+  optionalWeb3: SIWE is optional and never grants editor/publisher authority.
