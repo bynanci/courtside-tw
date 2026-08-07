@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "documentId": "00000000-0000-4000-8000-000000000017",
+  "blocks": [
+    {
+      "id": "00000000-0000-4000-8000-000000000018",
+      "type": "video",
+      "version": 1,
+      "payload": {
+        "providerId": "custom",
+        "embedUrl": "https://evil.example/embed/123",
+        "title": "未核准影片"
+      }
+    }
+  ]
+}
