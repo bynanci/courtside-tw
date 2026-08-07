@@ -1,0 +1,28 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t004-review-approval-pending-20260807",
+  "generated_at": "2026-08-07T03:39:44Z",
+  "actor": "codex-supervisor",
+  "subject": "T004 review and protected merge gate",
+  "repository": "bynanci/courtside-tw",
+  "human_gate": {
+    "approver": "human-mark",
+    "required": true,
+    "scope": "Review the four-file Nuxt scaffold, reproducibility lockfile, security/audit receipt, SSR proof and remote PR read-back before protected main merge and T004 checkbox completion."
+  },
+  "pull_request": {
+    "number": 15,
+    "base": "main",
+    "head_branch": "ticket/t004-nuxt-ssr-scaffold",
+    "status": "open_draft"
+  },
+  "automated_code_review": {
+    "evidence_path": ".loop/evidence/t004-code-review.json",
+    "decision": "PASS",
+    "protected_merge_gate": "NEEDS_HUMAN"
+  },
+  "decision": "NEEDS_HUMAN",
+  "result": "needs_human",
+  "confidence": 1.0,
+  "next_action": "Review the implementation PR and Code Review PASS, then wait for explicit protected merge and T004 checkbox completion approval."
+}

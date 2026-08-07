@@ -1,0 +1,48 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t004-baseline-20260807",
+  "generated_at": "2026-08-07T03:21:22Z",
+  "actor": "codex-supervisor",
+  "subject": "T004 Nuxt SSR scaffold baseline and dispatch",
+  "repository": "bynanci/courtside-tw",
+  "main": {
+    "commit": "32f9e5bb3b90f637fe969563e05a4ee0d84c768b",
+    "t005_checked": true,
+    "t097_checked": true,
+    "t004_checked": false,
+    "alignment_readback": "pass"
+  },
+  "task": {
+    "id": "T004",
+    "text": "Scaffold the Nuxt 4.5 application with Node.js 24 LTS in four named apps/web paths and verify SSR returns HTML from a smoke route.",
+    "allowed_runtime_paths": [
+      "apps/web/package.json",
+      "apps/web/nuxt.config.ts",
+      "apps/web/tsconfig.json",
+      "apps/web/app/app.vue"
+    ]
+  },
+  "remote_absence_proof": {
+    "result": "pass",
+    "paths": [
+      "apps/web/package.json",
+      "apps/web/nuxt.config.ts",
+      "apps/web/tsconfig.json",
+      "apps/web/app/app.vue"
+    ],
+    "observations": "Each target path returned GitHub API 404 on main; no T004 runtime scaffold exists before this change."
+  },
+  "pull_requests": {
+    "open_t004": [],
+    "competing_t004_source_of_truth": false
+  },
+  "guardrails": {
+    "no_spec_or_design_change": true,
+    "no_later_ticket_dispatch": true,
+    "no_database_provider_secret_web3_change": true,
+    "merge_and_checkbox_gate": "needs_human"
+  },
+  "result": "pass",
+  "confidence": 0.99,
+  "next_action": "Implement only the four T004 paths and run independent Nuxt SSR proof."
+}

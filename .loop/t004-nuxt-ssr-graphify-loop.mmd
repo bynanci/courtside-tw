@@ -1,0 +1,50 @@
+flowchart TD
+  subgraph G_EXTERNAL["External Evidence"]
+    N0[/"[EXTERNAL] external · T097 main read-back and approved T004 task"/]
+  end
+  subgraph G_L3["L3 · Human Direction"]
+    N9(["[L3] trigger · T004 scaffold review and protected merge requested"])
+    N10["[L3] action · Review T004 scope, SSR proof and merge readiness"]
+    N11{{"[L3] proof · Explicit T004 review and merge approval"}}
+    N12{"[L3] gate · T004 scope, proof and protected merge gate"}
+    N13[("[L3] memory · T004 human decision ledger")]
+  end
+  subgraph G_L2["L2 · Supervisor"]
+    N1(["[L2] trigger · T004 implementation and scope reconciliation requested"])
+    N2["[L2] action · Reconcile T004 authority, dependencies and exact file scope"]
+    N3{{"[L2] proof · T004 authoritative scope reconciliation proof"}}
+    N4[("[L2] memory · T004 supervisor reconciliation ledger")]
+  end
+  subgraph G_L1["L1 · Execution"]
+    N5(["[L1] trigger · Approved T004 Nuxt SSR scaffold is ready"])
+    N6["[L1] action · Implement the four-file Nuxt 4.5.1 SSR scaffold with reproducible dependencies"]
+    N7{{"[L1] proof · T004 Nuxt dependency, typecheck, build and SSR smoke proof"}}
+    N8[("[L1] memory · T004 execution ledger")]
+  end
+  subgraph G_GLOBAL["Global Policy"]
+    N14(["[GLOBAL] stop · T004 named terminal-state policy"])
+  end
+  N0 -.->|"feedback · 5000t"| N2
+  N1 -->|"enables · 8000t"| N2
+  N2 -->|"verifies · 6000t"| N3
+  N3 -->|"enables · 7000t"| N5
+  N2 -.->|"records · 2500t"| N4
+  N3 -.->|"records · 2500t"| N4
+  N4 -.->|"reads · 3000t"| N2
+  N4 -.->|"feedback · 3000t"| N2
+  N5 -->|"enables · 12000t"| N6
+  N6 -->|"verifies · 9000t"| N7
+  N6 -.->|"records · 2500t"| N8
+  N7 -.->|"records · 2500t"| N8
+  N8 -.->|"reads · 3500t"| N6
+  N8 -.->|"feedback · 3500t"| N6
+  N7 -.->|"feedback · 6000t"| N9
+  N7 -->|"enables · 4000t"| N14
+  N9 -->|"enables · 6000t"| N10
+  N10 -->|"verifies · 6000t"| N11
+  N11 -->|"requires_approval · 5000t"| N12
+  N12 -->|"approves · 4000t"| N14
+  N10 -.->|"records · 2500t"| N13
+  N11 -.->|"records · 2500t"| N13
+  N13 -.->|"reads · 3000t"| N10
+  N13 -.->|"feedback · 3000t"| N10

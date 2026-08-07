@@ -1,0 +1,131 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-ticket-implementation-t004",
+  "graph_version": 4,
+  "run_id": "courtside-tw-t004-nuxt-ssr-20260807",
+  "status": "needs_human",
+  "iteration": 4,
+  "started_at": "2026-08-07T03:18:00Z",
+  "updated_at": "2026-08-07T03:39:44Z",
+  "current_frontier": ["t-human-review"],
+  "blocked_nodes": [],
+  "terminal_state": "needs_human",
+  "next_action": "Review the Code Review PASS and bounded T004 PR; explicit protected merge and checkbox completion remain human-gated.",
+  "events": [
+    {
+      "event_id": "evt-t004-nuxt-ssr-001-baseline",
+      "at": "2026-08-07T03:18:00Z",
+      "actor": "codex-supervisor",
+      "type": "baseline_and_dispatch_reconciled",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {"op": "add", "path": "main.readback", "after": "32f9e5bb3b90f637fe969563e05a4ee0d84c768b"},
+          {"op": "add", "path": "tasks.md/T004", "after": "T004 is the only authorized next implementation task and remains unchecked."},
+          {"op": "add", "path": "remote.target_paths", "after": "All four apps/web target paths return 404 on main."},
+          {"op": "add", "path": "graph.frontier", "after": "t-t004-ready"}
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t004-baseline.json"],
+      "proof_receipts": [
+        {"proof": "main and task read-back", "level": "P2", "result": "pass", "details": "T005/T097 are complete, T004 is unchecked and no open T004 PR exists."},
+        {"proof": "target path absence", "level": "P2", "result": "pass", "details": "Each authorized apps/web runtime path returned GitHub API 404 on main."}
+      ],
+      "failure_signature": null,
+      "decision": "Start one bounded T004 implementation slice from main 32f9e5b; do not modify task completion state.",
+      "token_usage": {"estimated": 5000, "input": 0, "output": 0, "total": 5000},
+      "terminal_reason": null,
+      "memory_receipt": {"memory_status": "NO_OP", "memory_id": null, "version": null, "retrieval_ids": [], "evidence_refs": [".loop/evidence/t004-baseline.json"], "next_review_at": null, "blocker": null}
+    },
+    {
+      "event_id": "evt-t004-nuxt-ssr-002-implementation-proof",
+      "at": "2026-08-07T03:21:22Z",
+      "actor": "codex-agent",
+      "type": "implementation_and_ssr_proof",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {"op": "add", "path": "apps/web/package.json", "after": "Nuxt 4.5.0 package with Node 24 and exact typecheck dependencies."},
+          {"op": "add", "path": "apps/web/nuxt.config.ts", "after": "Explicit SSR, Nuxt 4 compatibility and zh-Hant-TW document metadata."},
+          {"op": "add", "path": "apps/web/tsconfig.json", "after": "Generated Nuxt strict TypeScript configuration extension."},
+          {"op": "add", "path": "apps/web/app/app.vue", "after": "Accessible SSR smoke route with deterministic markers."},
+          {"op": "replace", "path": "graph.nodes/a-nuxt-scaffold/status", "before": "planned", "after": "done"},
+          {"op": "replace", "path": "graph.nodes/p-nuxt-ssr/status", "before": "planned", "after": "done"},
+          {"op": "replace", "path": "graph.current_frontier", "before": ["t-t004-ready"], "after": ["t-human-review"]}
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t004-baseline.json", ".loop/evidence/t004-implementation-proof.json"],
+      "proof_receipts": [
+        {"proof": "toolchain", "level": "P2", "result": "pass", "details": "Node 24.14.0 and pnpm 11.7.0 matched the repository baseline."},
+        {"proof": "typecheck", "level": "P2", "result": "pass", "details": "nuxt typecheck completed after adding exact typescript/vue-tsc dev dependencies."},
+        {"proof": "production build", "level": "P2", "result": "pass", "details": "Nuxt 4.5.0 built the node-server output."},
+        {"proof": "SSR smoke route", "level": "P2", "result": "pass", "details": "Live GET / returned the expected SSR marker, title, h1 and scaffold text."},
+        {"proof": "root verification", "level": "P2", "result": "pass", "details": "make verify passed."},
+        {"proof": "scope", "level": "P2", "result": "pass", "details": "Only the four authorized runtime paths were created; no lockfile or later runtime files were added."}
+      ],
+      "failure_signature": null,
+      "decision": "T004 implementation and required proof pass; create the reviewable PR and stop at the protected human gate.",
+      "token_usage": {"estimated": 12000, "input": 0, "output": 0, "total": 12000},
+      "terminal_reason": "L1 proof is complete; protected merge and T004 completion are explicitly human-gated.",
+      "memory_receipt": {"memory_status": "NO_OP", "memory_id": null, "version": null, "retrieval_ids": [], "evidence_refs": [".loop/evidence/t004-implementation-proof.json"], "next_review_at": null, "blocker": null}
+    },
+    {
+      "event_id": "evt-t004-nuxt-ssr-003-security-repair-proof",
+      "at": "2026-08-07T03:34:12Z",
+      "actor": "codex-agent",
+      "type": "dependency_security_repair_and_proof",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {"op": "add", "path": "pnpm-lock.yaml", "after": "Root dependency lockfile generated for reproducible T004 installation."},
+          {"op": "replace", "path": "apps/web/package.json/dependencies/nuxt", "before": "4.5.0", "after": "4.5.1"},
+          {"op": "replace", "path": "graph.nodes/p-nuxt-ssr/status", "before": "done", "after": "done"},
+          {"op": "replace", "path": "graph.current_frontier", "before": ["t-human-review"], "after": ["t-human-review"]}
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t004-baseline.json", ".loop/evidence/t004-implementation-proof.json"],
+      "proof_receipts": [
+        {"proof": "dependency repair", "level": "P2", "result": "pass", "details": "Six Nuxt 4.5.0 advisories were resolved by exact Nuxt 4.5.1 and a committed root lockfile."},
+        {"proof": "frozen install", "level": "P2", "result": "pass", "details": "pnpm install --frozen-lockfile passed and the lockfile passed the supply-chain policy check."},
+        {"proof": "production audit", "level": "P2", "result": "pass", "details": "pnpm audit --prod reported zero vulnerabilities across the production dependency graph."},
+        {"proof": "regression proof", "level": "P2", "result": "pass", "details": "Nuxt typecheck, build, live SSR HTML assertions and make verify all passed after the repair."},
+        {"proof": "scope", "level": "P2", "result": "pass", "details": "The only additions beyond the four runtime paths are the root reproducibility lockfile and append-only T004 evidence updates."}
+      ],
+      "failure_signature": {"initial": "pnpm audit was unavailable without a lockfile and then identified six Nuxt 4.5.0 advisories", "resolution": "Nuxt 4.5.1 and frozen lockfile audit pass"},
+      "decision": "Security and reproducibility repair is proven; keep the graph at the explicit human review and protected merge gate.",
+      "token_usage": {"estimated": 10000, "input": 0, "output": 0, "total": 10000},
+      "terminal_reason": "L1 dependency, build and SSR proof is complete; protected merge and T004 completion are explicitly human-gated.",
+      "memory_receipt": {"memory_status": "NO_OP", "memory_id": null, "version": null, "retrieval_ids": [], "evidence_refs": [".loop/evidence/t004-implementation-proof.json"], "next_review_at": null, "blocker": null}
+    },
+    {
+      "event_id": "evt-t004-nuxt-ssr-004-code-review-readback",
+      "at": "2026-08-07T03:39:44Z",
+      "actor": "codex-supervisor",
+      "type": "code_review_and_remote_readback",
+      "base_graph_version": 3,
+      "new_graph_version": 4,
+      "graph_delta": {
+        "operations": [
+          {"op": "add", "path": ".loop/evidence/t004-code-review.json", "after": "T2 code review, security matrix and remote PR read-back receipt."},
+          {"op": "replace", "path": "remote.pr/15/head_sha", "before": "8e020ee1f538a7bc74eb1e5bcabccdff817bbb21", "after": "c60e466bfca9c95cdad284932c700fffd81cbe76"},
+          {"op": "replace", "path": "review.decision", "before": "PENDING_SECURITY_REPAIR", "after": "PASS"},
+          {"op": "replace", "path": "protected_merge_gate", "before": "needs_human", "after": "needs_human"}
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t004-code-review.json", ".loop/evidence/t004-review-approval.json"],
+      "proof_receipts": [
+        {"proof": "review scope", "level": "P2", "result": "pass", "details": "The T2 review found no findings across intent/scope, behavior, contract/data, security/dependencies, reliability/rollback or verification."},
+        {"proof": "remote PR read-back", "level": "P2", "result": "pass", "details": "All 11 changed paths at head c60e466b matched the intended blob SHAs; PR #15 is open, draft, unmerged and mergeable."},
+        {"proof": "status checks", "level": "P2", "result": "not_configured", "details": "No repository CI status entries or workflow runs exist; CI remains outside T004 scope."}
+      ],
+      "failure_signature": null,
+      "decision": "Code Review PASS; retain the explicit human terminal state for draft readiness, protected merge and T004 checkbox completion.",
+      "token_usage": {"estimated": 8000, "input": 0, "output": 0, "total": 8000},
+      "terminal_reason": "Automated review and remote content proof are complete; only the accountable human protected merge gate remains.",
+      "memory_receipt": {"memory_status": "NO_OP", "memory_id": null, "version": null, "retrieval_ids": [], "evidence_refs": [".loop/evidence/t004-code-review.json", ".loop/evidence/t004-review-approval.json"], "next_review_at": null, "blocker": null}
+    }
+  ]
+}
