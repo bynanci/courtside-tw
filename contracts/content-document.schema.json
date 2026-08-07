@@ -349,6 +349,7 @@
           "then": {
             "properties": {
               "videoId": {
+                "type": "string",
                 "pattern": "^[A-Za-z0-9_-]{11}$"
               }
             }
@@ -365,6 +366,7 @@
           "then": {
             "properties": {
               "videoId": {
+                "type": "string",
                 "pattern": "^[0-9]{6,12}$"
               }
             }
