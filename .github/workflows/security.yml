@@ -82,6 +82,35 @@ jobs:
           set -o pipefail
           gradle --no-daemon --console=plain -p apps/api dependencies --configuration runtimeClasspath 2>&1 | tee artifacts/dependency-audit/gradle-runtime-classpath.log
 
+      - name: Build Java dependencies for security scanning
+        run: |
+          set -o pipefail
+          gradle --no-daemon --console=plain -p apps/api test 2>&1 | tee artifacts/dependency-audit/gradle-security-resolution.log
+
+      - name: Collect resolved Gradle artifacts
+        run: |
+          set -euo pipefail
+          gradle_cache_dir="${GRADLE_USER_HOME:-$HOME/.gradle}/caches/modules-2/files-2.1"
+          mkdir -p artifacts/dependency-audit/gradle-jars
+          find "$gradle_cache_dir" -type f -name '*.jar' -print0 |
+            while IFS= read -r -d '' jar; do
+              digest="$(sha256sum "$jar" | cut -d' ' -f1)"
+              cp "$jar" "artifacts/dependency-audit/gradle-jars/${digest}-$(basename "$jar")"
+            done
+
+      - name: Scan resolved Gradle artifacts
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
+        with:
+          scan-type: fs
+          scan-ref: artifacts/dependency-audit/gradle-jars
+          scanners: vuln
+          format: sarif
+          output: artifacts/dependency-audit/trivy-gradle.sarif
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+          cache: true
+
       - name: Enforce dependency audit result
         if: ${{ always() }}
         run: |
@@ -149,7 +178,7 @@ jobs:
         with:
           category: /language:${{ matrix.language }}
           output: ${{ github.workspace }}/artifacts/codeql/${{ matrix.language }}
-          upload: never
+          upload: always
 
       - name: Upload CodeQL reports
         if: ${{ always() }}
