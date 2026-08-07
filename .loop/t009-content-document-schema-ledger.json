@@ -1,18 +1,18 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t009",
-  "graph_version": 6,
+  "graph_version": 7,
   "run_id": "courtside-tw-t009-content-document-schema-20260807",
   "status": "needs_human",
-  "iteration": 6,
+  "iteration": 7,
   "started_at": "2026-08-07T10:50:00Z",
-  "updated_at": "2026-08-07T12:48:41Z",
+  "updated_at": "2026-08-07T13:03:55Z",
   "current_frontier": [
     "g-t009-review-merge"
   ],
   "blocked_nodes": [],
   "terminal_state": "needs_human",
-  "next_action": "Await CI/Security on the current boundary-hardening head, complete current-head review, then await explicit merge authority; keep T009 unchecked.",
+  "next_action": "CI/Security and current-head review pass; await explicit human merge authority, then read back main. Keep T009 unchecked.",
   "events": [
     {
       "event_id": "evt-t009-001-dispatched",
@@ -484,6 +484,83 @@
       },
       "decision": "P2 boundary findings remediated; retain the human review/merge gate.",
       "follow_up": "Wait for current-head CI/Security and review-thread resolution; merge and T009 completion remain human-gated."
+    },
+    {
+      "event_id": "evt-t009-007-ci-security-pass",
+      "at": "2026-08-07T13:03:55Z",
+      "actor": "verifier",
+      "type": "current_head_ci_security_pass",
+      "base_graph_version": 6,
+      "new_graph_version": 7,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "proof_receipts/-",
+            "after": ".loop/evidence/t009-ci-security-20260807.json"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes.g-t009-review-merge.confidence.basis",
+            "before": "Latest Ajv and focused boundary proof passed; merge still requires current-head review and explicit user authority.",
+            "after": "Latest Ajv, focused boundary proof, CI/Security and current-head review threads pass; merge still requires explicit human authority and main read-back."
+          },
+          {
+            "op": "add",
+            "path": "graph.nodes.g-t009-review-merge.confidence.evidence_refs/-",
+            "after": ".loop/evidence/t009-ci-security-20260807.json"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t009-ci-security-20260807.json",
+        "PR #32 current-head checks",
+        ".loop/t009-content-document-schema-graphify-loop.yaml"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "CI",
+          "level": "P2",
+          "result": "pass",
+          "details": "CI workflow run #43 completed successfully on the current T009 head."
+        },
+        {
+          "proof": "Security",
+          "level": "P2",
+          "result": "pass",
+          "details": "Security workflow run #43 completed successfully on the current T009 head."
+        },
+        {
+          "proof": "review thread closure",
+          "level": "P2",
+          "result": "pass",
+          "details": "All 11 current-head review threads are resolved; this does not imply merge approval."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:t009-content-document-schema",
+        "version": 5,
+        "retrieval_ids": [
+          "wm:project:courtside-tw:phase1-review",
+          "wm:project:courtside-tw:t008-ci-pipelines"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t009-schema-proof.json#boundary_revalidation",
+          ".loop/evidence/t009-ci-security-20260807.json",
+          ".loop/memory/t009-content-document-schema.json"
+        ],
+        "next_review_at": "2026-08-08",
+        "blocker": "human merge and main read-back"
+      },
+      "failure_signature": null,
+      "token_usage": {
+        "estimated_tokens": 1500,
+        "validator_runtime_seconds": 0,
+        "notes": "Workflow and current-head review read-back only; no implementation change."
+      },
+      "decision": "PASS_WITH_HUMAN_MERGE_GATE",
+      "follow_up": "Do not merge or mark T009 checked without explicit human authority and main read-back."
     }
   ],
   "proof": [
@@ -521,21 +598,29 @@
       "result": "pass",
       "evidence_ref": ".loop/evidence/t009-schema-proof.json#boundary_revalidation",
       "recorded_at": "2026-08-07T12:48:41Z"
+    },
+    {
+      "proof_id": "t009-ci-security-20260807",
+      "level": "P2",
+      "result": "pass",
+      "evidence_ref": ".loop/evidence/t009-ci-security-20260807.json",
+      "recorded_at": "2026-08-07T13:03:55Z"
     }
   ],
   "memory_receipt": {
     "memory_status": "UPDATED",
     "memory_id": "wm:project:courtside-tw:t009-content-document-schema",
-    "version": 4,
+    "version": 5,
     "retrieval_ids": [
       "wm:project:courtside-tw:phase1-review",
       "wm:project:courtside-tw:t008-ci-pipelines"
     ],
     "evidence_refs": [
       ".loop/evidence/t009-schema-proof.json#boundary_revalidation",
+      ".loop/evidence/t009-ci-security-20260807.json",
       ".loop/memory/t009-content-document-schema.json"
     ],
-    "next_review_at": "2026-08-14",
-    "blocker": null
+    "next_review_at": "2026-08-08",
+    "blocker": "human merge and main read-back"
   }
 }
