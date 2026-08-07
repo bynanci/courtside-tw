@@ -1,10 +1,19 @@
 # Courtside TW
 
-台灣籃球雜誌電子書的 monorepo。產品先以公開閱讀、SSR、可追溯出版與媒體權利為核心；付費牆、token gate、錢包登入與公鏈寫入不屬於 MVP。
+Courtside TW 是以台灣籃球為核心的 mobile-first 數位雜誌與文化檔案平台。產品能力分成：
 
-## T003 root baseline
+- **Magazine**：Issue → TOC → Article 的 anonymous-first、free-first、SSR-first 公開閱讀。
+- **Taiwan Hoops Archive**：中華隊、旅外球員、TPBL、P. LEAGUE+、SBL 與跨賽季證據時間線。
+- **Fan Season Passport**：以 off-chain Reader Stamp、活動與文化貢獻形成球迷季節年鑑。
 
-這一輪只建立根目錄的可重現命令契約，尚未建立 Nuxt、Spring Boot、資料庫、合約、基礎設施或 CI。這些工作依序由 T004 及後續票據負責，避免在 root scaffold 偷渡實作。
+Web3 是可選的出版來源驗證與 credential delivery 基礎設施，不是閱讀門檻、金融資產或產品本身。
+
+## Current status
+
+- T001、T003、T005 已完成並由 `main` read-back 驗證。
+- T005 canonical implementation 為 PR #10；completion receipt 為 PR #11。
+- T004 Nuxt SSR scaffold 尚未開始；必須先完成並合併本輪 product/domain/passport alignment。
+- ADR-0001～0006 的既有 decision content 維持不變；其 repository approval bookkeeping 仍由 T002 管理。ADR-0007、0008 為本輪 draft。
 
 根目錄固定：
 
@@ -13,7 +22,7 @@
 - workspace packages：`apps/*`、`packages/*`
 - strict engines、strict peer dependencies、exact dependency saves
 
-目前 workspace 尚無 app/package，因此 workspace scripts 會安全地 no-op；T004／T005 加入 package script 後，同一組 root commands 會遞迴執行各 package 的同名命令。
+目前 workspace 已有 T005 Spring Boot bootstrap；Nuxt app 與其餘 domain/runtime implementation 仍依 tasks.md 的 ticket 順序建立。root commands 會遞迴執行各 package 的同名命令。
 
 ## Commands
 
@@ -52,6 +61,24 @@ make verify
 
 任何 implementation task 都必須維持 contract-first、immutable publication、rights-before-release、WCAG 2.2 AA、Core Web Vitals、progressive enhancement 與 Web3 least-agency 邊界。
 
-## T003 scope
+## Documentation
 
-本輪允許的 implementation files 是：`pnpm-workspace.yaml`、`package.json`、`.node-version`、`.npmrc`、`Makefile`、`README.md`。T003 完成前不應 dispatch T004；完成後仍需獨立 review／merge，再進入 Nuxt 或 Spring scaffold。
+### Product
+
+- [`docs/product/vision.md`](./docs/product/vision.md)
+- [`docs/product/taiwan-basketball-content-map.md`](./docs/product/taiwan-basketball-content-map.md)
+- [`docs/product/basketball-domain.md`](./docs/product/basketball-domain.md)
+- [`docs/product/evidence-policy.md`](./docs/product/evidence-policy.md)
+- [`docs/product/fan-season-passport.md`](./docs/product/fan-season-passport.md)
+- [`docs/product/alignment.md`](./docs/product/alignment.md)
+
+### Architecture and governance
+
+- [`DESIGN.md`](./DESIGN.md)
+- [`docs/adr/`](./docs/adr/)
+- [`docs/adr/0007-basketball-domain-and-evidence-graph.md`](./docs/adr/0007-basketball-domain-and-evidence-graph.md)
+- [`docs/adr/0008-fan-passport-and-credential-boundary.md`](./docs/adr/0008-fan-passport-and-credential-boundary.md)
+- [`specs/001-taiwan-basketball-magazine-ebook/`](./specs/001-taiwan-basketball-magazine-ebook/)
+- [`.loop/`](./.loop/)
+
+任何新 implementation 都必須先對應 User Story、FR、ADR、task 與 future test；本輪 alignment 不建立 UI、migration、API、wallet 或 provider SDK。
