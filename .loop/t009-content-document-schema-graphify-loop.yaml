@@ -46,7 +46,7 @@ acceptance:
   - heading levels are bounded to h2-h4, with focused lower-bound coverage
   - stat blocks require label, value, unit and context
   - schema is closed-world at document, block and payload boundaries
-  - T009 remains unchecked until implementation proof and main read-back
+  - T009 is checked on main after implementation proof and authoritative read-back
 
 budgets:
   max_iterations: 10
@@ -88,7 +88,7 @@ memory_workflow:
 graph:
   entry_nodes: [x-phase1-main-readback, t-t009-ready]
   terminal_nodes: [s-t009-terminal]
-  current_frontier: [g-t009-review-merge]
+  current_frontier: [s-t009-terminal]
   blocked_nodes: []
   nodes:
     - id: x-phase1-main-readback
@@ -241,12 +241,12 @@ graph:
       layer: L2
       label: T009 PR review and merge gate
       owner: human-mark
-      status: ready
+      status: done
       risk: critical
       confidence:
         score: 0.98
-        basis: Latest Ajv/Prettier replay, strict boundary proof, repository validator wiring, CI/Security run #65 and all current review threads pass; explicit human merge authority and main read-back remain.
-        evidence_refs: [.loop/evidence/t009-schema-proof.json, .loop/evidence/t009-ci-security-20260807.json]
+        basis: T009 implementation merged at main@6387a2f; CI/Security run #66 passed, all review threads resolved and canonical schema read back from main.
+        evidence_refs: [.loop/evidence/t009-schema-proof.json, .loop/evidence/t009-ci-security-20260807.json, .loop/evidence/t009-main-readback-20260807.json]
       budget:
         effort_hours: 0.5
         tokens: 3000
@@ -284,12 +284,12 @@ graph:
       layer: GLOBAL
       label: T009 named terminal policy
       owner: policy
-      status: planned
+      status: done
       risk: critical
       confidence:
-        score: 0.6
-        basis: Success requires both schema proof and negative-fixture proof, then merge/read-back and completion state.
-        evidence_refs: []
+        score: 1.0
+        basis: Schema/negative proof passed, PR #32 merged and main read-back confirms T009 checked.
+        evidence_refs: [.loop/evidence/t009-main-readback-20260807.json]
       budget:
         effort_hours: 0.1
         tokens: 500
