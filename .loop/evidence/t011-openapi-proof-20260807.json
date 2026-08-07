@@ -88,5 +88,12 @@
     "OpenAPI security and optimistic-lock declarations are contract requirements; runtime enforcement remains later implementation scope.",
     "SIWE is optional and never grants editor/publisher authority."
   ],
-  "next_gate": "Run repository CI/Security and current-head review, then use expected-head human merge authority; keep T011 unchecked until main read-back."
+  "next_gate": "PASS WITH FOLLOW-UP: CI #70 and Security #70 pass with no review threads; use expected-head human merge authority and keep T011 unchecked until main read-back.",
+  "review": {
+    "pr": 35,
+    "head": "98626b8c9c198ecada69acf307ab12bf3dc27355",
+    "ci_run": 31188910511,
+    "security_run": 31188911425,
+    "unresolved_review_threads": 0
+  }
 }
