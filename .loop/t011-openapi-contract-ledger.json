@@ -1,18 +1,18 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t011",
-  "graph_version": 5,
+  "graph_version": 6,
   "run_id": "courtside-tw-t011-openapi-contract-20260807",
   "status": "needs_human",
-  "iteration": 5,
+  "iteration": 6,
   "started_at": "2026-08-07T12:56:56Z",
-  "updated_at": "2026-08-07T14:50:00Z",
+  "updated_at": "2026-08-07T14:48:03.040Z",
   "current_frontier": [
     "g-t011-review-merge"
   ],
   "blocked_nodes": [],
   "terminal_state": "needs_human",
-  "next_action": "T009 is checked on main@70c9e71. OpenAPI independent proof passes; await T011 CI/Security and current-head review, then explicit expected-head human merge. Keep T011 unchecked until main read-back.",
+  "next_action": "T011 OpenAPI proof, CI #70, Security #70 and current-head review pass; use expected-head human merge authority. Keep T011 unchecked until main read-back.",
   "events": [
     {
       "event_id": "evt-t011-001-dispatched-blocked",
@@ -446,6 +446,78 @@
       },
       "decision": "PASS_WITH_FOLLOW_UP",
       "follow_up": "Run repository CI/Security and current-head review before human merge."
+    },
+    {
+      "event_id": "evt-t011-006-ci-security-review-pass",
+      "at": "2026-08-07T14:48:03.040Z",
+      "actor": "codex-supervisor",
+      "type": "t011_ci_security_review_pass",
+      "base_graph_version": 5,
+      "new_graph_version": 6,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "g-t011-review-merge.confidence",
+            "before": "0.85 / CI and review pending",
+            "after": "0.95 / CI #70, Security #70 and zero unresolved review threads"
+          },
+          {
+            "op": "replace",
+            "path": "ledger.next_action",
+            "before": "Await T011 CI/Security and current-head review",
+            "after": "Use expected-head human merge authority; keep T011 unchecked until main read-back"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t011-openapi-proof-20260807.json",
+        ".loop/evidence/t011-ci-security-20260807.json",
+        "PR #35"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "T011 CI",
+          "level": "P2",
+          "result": "pass",
+          "details": "CI #70 completed successfully; frontend/contract verification, Java quality and Docker Compose dependency health all passed."
+        },
+        {
+          "proof": "T011 Security",
+          "level": "P2",
+          "result": "pass",
+          "details": "Security #70 completed successfully; CodeQL, dependency audit and all filesystem/image scans passed."
+        },
+        {
+          "proof": "T011 current-head review",
+          "level": "P2",
+          "result": "pass",
+          "details": "PR #35 head 98626b8 has zero unresolved review threads."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:t011-openapi-contract",
+        "version": 6,
+        "retrieval_ids": [
+          "wm:project:courtside-tw:t009-content-document-schema"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t011-openapi-proof-20260807.json",
+          ".loop/evidence/t011-ci-security-20260807.json",
+          ".loop/memory/t011-openapi-contract.json"
+        ],
+        "next_review_at": "2026-08-08",
+        "blocker": "explicit human merge and main read-back"
+      },
+      "failure_signature": null,
+      "token_usage": {
+        "estimated_tokens": 2400,
+        "validator_runtime_seconds": 15,
+        "notes": "Current-head CI/Security and review read-back; no scope expansion."
+      },
+      "decision": "REVIEW_PASS_NEEDS_HUMAN_MERGE",
+      "follow_up": "Merge PR #35 with expected head, then perform authoritative main read-back and T011 completion update."
     }
   ],
   "proof": [
@@ -469,20 +541,28 @@
       "result": "pass",
       "evidence_ref": ".loop/evidence/t011-openapi-proof-20260807.json",
       "recorded_at": "2026-08-07T14:50:00Z"
+    },
+    {
+      "proof_id": "t011-ci-security-review-20260807",
+      "level": "P2",
+      "result": "pass",
+      "evidence_ref": ".loop/evidence/t011-ci-security-20260807.json",
+      "recorded_at": "2026-08-07T14:48:03.040Z"
     }
   ],
   "memory_receipt": {
     "memory_status": "UPDATED",
     "memory_id": "wm:project:courtside-tw:t011-openapi-contract",
-    "version": 5,
+    "version": 6,
     "retrieval_ids": [
       "wm:project:courtside-tw:t009-content-document-schema"
     ],
     "evidence_refs": [
       ".loop/evidence/t011-openapi-proof-20260807.json",
+      ".loop/evidence/t011-ci-security-20260807.json",
       ".loop/memory/t011-openapi-contract.json"
     ],
     "next_review_at": "2026-08-08",
-    "blocker": "CI/Security and review gate"
+    "blocker": "explicit human merge and main read-back"
   }
 }
