@@ -3,8 +3,8 @@
   "memory_id": "wm:project:courtside-tw:t009-content-document-schema",
   "scope": "project",
   "kind": "task_state",
-  "title": "T009 ContentDocument v1 schema verified",
-  "summary": "T009 defines a closed-world ContentDocument v1 schema and bounded fixtures. Independent strict Ajv validation passed the complete 11-block fixture and rejected all five negative fixtures; validators, generated types and runtime consumers remain deferred.",
+  "title": "T009 ContentDocument v1 contract proof updated",
+  "summary": "T009 defines a closed-world ContentDocument v1 schema and bounded fixtures. The contract keeps video providerId at a rights-pending sentinel until ADR-0003 approval, enumerates the approved court-dusk palette, covers focused invalid fixtures for all 11 block types, and records a duplicate block-ID semantic invariant.",
   "claims": [
     {
       "text": "T009 was dispatched from main@a75f1c2 after Phase 1 PASS read-back.",
@@ -30,6 +30,21 @@
       "text": "Independent Ajv 8 strict validation accepted the complete fixture and rejected all five invalid fixtures.",
       "class": "CONFIRMED",
       "confidence": "high"
+    },
+    {
+      "text": "T009 does not authorize an external video provider; providerId is the rights-pending sentinel until ADR-0003 publisher/rights-owner approval.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Every approved block type has a focused invalid fixture, and generative code, shader and remote URL fields are tested independently.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Block IDs must be unique even when payloads differ; this semantic invariant is declared in the contract and must be enforced by T010 validators.",
+      "class": "CONFIRMED",
+      "confidence": "high"
     }
   ],
   "status": "stable",
@@ -39,7 +54,8 @@
     "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T009",
     "docs/adr/0003-content-document-and-media-policy.md",
     "docs/adr/0005-motion-and-generative-runtime.md",
-    ".loop/evidence/t009-schema-proof.json"
+    ".loop/evidence/t009-schema-proof.json",
+    ".loop/evidence/t009-schema-proof.json#latest_revalidation"
   ],
   "volatility": "medium",
   "as_of": "2026-08-07",
@@ -50,7 +66,8 @@
     "docs/adr/0005-motion-and-generative-runtime.md",
     "main@a75f1c2",
     ".loop/evidence/t009-schema-proof.json",
-    "ticket/t009-content-document-schema@ce07740a4c5966f1ac11374e1b8ce4835581ba06"
+    "ticket/t009-content-document-schema@ce07740a4c5966f1ac11374e1b8ce4835581ba06",
+    "ticket/t009-content-document-schema@cf2d48d44d025e06a19d52e3912a85663211c75a"
   ],
   "entities": [
     "T009",
@@ -77,10 +94,11 @@
     ],
     "tradeoffs": [
       "Schema is safer and reviewable at the boundary.",
-      "Provider allowlists and runtime parity still require T010/T011 evidence."
+      "Provider allowlists and runtime parity still require T010/T011 evidence.",
+      "Rights-pending video sentinel preserves the ADR rights gate; approved provider values remain a later decision."
     ],
     "invalidation": "If ADR-0003/0005 or tasks.md changes the allowed block/preset contract, mark this record needs_update and stop T009.",
-    "proof": "Schema compile, valid fixture acceptance, five negative fixture rejections, Graphify strict validation and both memory-record validations passed."
+    "proof": "Ajv strict validation passed the valid fixture and 17 focused invalid fixtures; Prettier passed; the duplicate block-ID semantic invariant was rejected independently; Graphify and memory validation remain required gates."
   },
   "next_review_at": "2026-08-14",
   "sensitivity": "internal",
