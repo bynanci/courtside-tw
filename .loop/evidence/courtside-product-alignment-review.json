@@ -1,7 +1,7 @@
 {
   "evidence_type": "code_review_merge_gate",
-  "status": "pending_readback",
-  "as_of": "2026-08-07T02:40:00Z",
+  "status": "pass",
+  "as_of": "2026-08-07T03:12:00Z",
   "repository": "bynanci/courtside-tw",
   "risk_tier": "T2",
   "scope": {
@@ -22,13 +22,20 @@
     "provenance_vs_fan_passport_boundary": "pass",
     "modular_monolith_preserved": "pass",
     "rights_privacy_web3_controls": "pass",
-    "strict_graphify_loop": "pending_until_run",
-    "exact_pr_scope": "pending_until_pr_readback",
-    "main_readback": "pending_until_merge"
+    "strict_graphify_loop": "pass: 17 nodes / 25 edges / 0 warnings / 0 errors",
+    "exact_pr_scope": "pass: 19 changed files, all within allowlist",
+    "main_readback": "pass: PR #12 merged at fa0ed10b9c4c8c03f37bee810c1a8605f9aa9682; T005/T097 checked and T004 unchecked"
   },
   "findings": [],
-  "review_decision": "PENDING",
-  "merge_gate": "PENDING",
+  "review_decision": "PASS_WITH_CONTROLS",
+  "merge_gate": "PASS",
+  "pull_request": {
+    "number": 12,
+    "url": "https://github.com/bynanci/courtside-tw/pull/12",
+    "head_sha": "f01d86261c1cac79dcf36191c5452e00d809f69b",
+    "merge_sha": "fa0ed10b9c4c8c03f37bee810c1a8605f9aa9682",
+    "review_submission": "COMMENT review; self-approval is not claimed"
+  },
   "notes": [
     "ADR-0007 and ADR-0008 are proposed drafts, not accepted runtime architecture.",
     "T002 checkbox discrepancy is pre-existing and outside this slice.",
