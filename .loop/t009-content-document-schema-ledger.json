@@ -1,22 +1,22 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t009",
-  "graph_version": 3,
+  "graph_version": 4,
   "run_id": "courtside-tw-t009-content-document-schema-20260807",
   "status": "needs_human",
-  "iteration": 3,
-  "started_at": "2026-08-07T11:20:00Z",
-  "updated_at": "2026-08-07T11:01:00Z",
+  "iteration": 4,
+  "started_at": "2026-08-07T10:50:00Z",
+  "updated_at": "2026-08-07T11:07:00Z",
   "current_frontier": [
     "g-t009-review-merge"
   ],
   "blocked_nodes": [],
   "terminal_state": "needs_human",
-  "next_action": "Await CI and Security for the formatting-follow-up head, then inspect the current-head review gate; keep T009 unchecked.",
+  "next_action": "Await CI and Security for the current follow-up head, inspect the current-head review gate, then await explicit merge authority; keep T009 unchecked.",
   "events": [
     {
       "event_id": "evt-t009-001-dispatched",
-      "at": "2026-08-07T11:20:00Z",
+      "at": "2026-08-07T10:51:00Z",
       "actor": "codex-supervisor",
       "type": "t009_dispatched",
       "base_graph_version": 0,
@@ -258,6 +258,102 @@
       },
       "decision": "PASS WITH FOLLOW-UP",
       "follow_up": "Wait for CI/Security on the new head, then complete current-head code review and retain the explicit merge gate."
+    },
+    {
+      "event_id": "evt-t009-004-review-remediation",
+      "at": "2026-08-07T11:07:00Z",
+      "actor": "codex-supervisor",
+      "type": "code_review_findings_remediated",
+      "base_graph_version": 3,
+      "new_graph_version": 4,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes.a-t009-define-contract.confidence.basis",
+            "before": "Schema and fixture proof passed under strict Ajv; schema-validator parity is intentionally deferred to T010.",
+            "after": "Schema and fixture proof passed under strict Ajv; provider rights approval, ID uniqueness enforcement and validator parity remain gated follow-ups."
+          },
+          {
+            "op": "add",
+            "path": "graph.acceptance/-",
+            "after": "All 11 block types have focused negative fixtures; video remains rights-pending; palette is enumerated; duplicate block IDs are a semantic invariant."
+          },
+          {
+            "op": "add",
+            "path": "proof_receipts/-",
+            "after": ".loop/evidence/t009-schema-proof.json#latest_revalidation"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t009-schema-proof.json",
+        ".loop/t009-content-document-schema-graphify-loop.yaml",
+        ".loop/memory/t009-content-document-schema.json",
+        "PR #32 review comments"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "provider rights gate",
+          "level": "P2",
+          "result": "pass",
+          "details": "No external provider is authorized; valid fixture uses providerId=rights-pending and youtube is independently rejected."
+        },
+        {
+          "proof": "palette enum",
+          "level": "P2",
+          "result": "pass",
+          "details": "court-dusk is the only approved court-pulse-v1 palette in T009; an unknown palette fixture is rejected."
+        },
+        {
+          "proof": "focused negative fixtures",
+          "level": "P2",
+          "result": "pass",
+          "details": "17 schema-invalid fixtures cover every block type and independently reject generative code, shader and remoteUrl."
+        },
+        {
+          "proof": "duplicate block ID invariant",
+          "level": "P2",
+          "result": "pass",
+          "details": "A fixture with duplicate blocks[*].id and different payloads is rejected by the declared semantic invariant check."
+        },
+        {
+          "proof": "timestamp and memory receipt reconciliation",
+          "level": "P2",
+          "result": "pass",
+          "details": "Ledger events are monotonic and root memory receipt is updated to version 3."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:t009-content-document-schema",
+        "version": 3,
+        "retrieval_ids": [
+          "wm:project:courtside-tw:phase1-review",
+          "wm:project:courtside-tw:t008-ci-pipelines"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t009-dispatch-20260807.json",
+          ".loop/evidence/t009-schema-proof.json",
+          ".loop/memory/t009-content-document-schema.json"
+        ],
+        "next_review_at": "2026-08-14",
+        "blocker": null
+      },
+      "failure_signature": {
+        "code": "CODE_REVIEW_P2_FINDINGS",
+        "message": "Review identified provider authorization, palette enum, focused negative coverage, duplicate-ID, timestamp and root-memory-receipt gaps.",
+        "resolution": "Applied rights-pending provider sentinel, court-dusk enum, focused fixtures for all 11 blocks, independent duplicate-ID invariant, monotonic timestamps and version-3 root receipt.",
+        "status": "resolved",
+        "observed_iteration": 4
+      },
+      "token_usage": {
+        "estimated_tokens": 7200,
+        "validator_runtime_seconds": 2.1,
+        "notes": "Review remediation stayed within T009 schema, fixture, evidence, graph, ledger and memory scope."
+      },
+      "decision": "PASS WITH FOLLOW-UP",
+      "follow_up": "Await current-head CI/Security and repeat the code-review gate; merge and T009 completion remain human-gated."
     }
   ],
   "proof": [
@@ -274,18 +370,26 @@
       "result": "pass",
       "evidence_ref": ".loop/evidence/t009-schema-proof.json#post_format_revalidation",
       "recorded_at": "2026-08-07T11:01:00Z"
+    },
+    {
+      "proof_id": "t009-review-remediation-20260807",
+      "level": "P2",
+      "result": "pass",
+      "evidence_ref": ".loop/evidence/t009-schema-proof.json#latest_revalidation",
+      "recorded_at": "2026-08-07T11:07:00Z"
     }
   ],
   "memory_receipt": {
-    "memory_status": "SAVED",
+    "memory_status": "UPDATED",
     "memory_id": "wm:project:courtside-tw:t009-content-document-schema",
-    "version": 1,
+    "version": 3,
     "retrieval_ids": [
       "wm:project:courtside-tw:phase1-review",
       "wm:project:courtside-tw:t008-ci-pipelines"
     ],
     "evidence_refs": [
       ".loop/evidence/t009-dispatch-20260807.json",
+      ".loop/evidence/t009-schema-proof.json",
       ".loop/memory/t009-content-document-schema.json"
     ],
     "next_review_at": "2026-08-14",
