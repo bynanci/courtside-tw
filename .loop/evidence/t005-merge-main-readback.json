@@ -1,0 +1,45 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t005-merge-main-readback-20260807",
+  "generated_at": "2026-08-07T01:55:38Z",
+  "actor": "codex-supervisor",
+  "subject": "T005 PR #10 merge and main read-back",
+  "repository": "bynanci/courtside-tw",
+  "pull_request": {
+    "number": 10,
+    "url": "https://github.com/bynanci/courtside-tw/pull/10",
+    "state": "closed",
+    "merged": true,
+    "merge_commit": "07e9d25c6f28d7bcdb2bde902a5315a25dddfe52",
+    "base": "main",
+    "base_before_merge": "5a08ca3a721f13bb9dbdc195e9174527ecdc195e9174527ec753722",
+    "head_before_merge": "999332ff22e775e56044ac4308adf527f5bb10bd"
+  },
+  "main_readback": {
+    "result": "pass",
+    "commit": "07e9d25c6f28d7bcdb2bde902a5315a25dddfe52",
+    "paths": [
+      "apps/api/build.gradle.kts",
+      "apps/api/settings.gradle.kts",
+      "apps/api/src/main/java/tw/basketball/magazine/MagazineApplication.java",
+      "apps/api/src/main/resources/application.yml",
+      ".loop/t005-spring-bootstrap-graphify-loop.yaml",
+      ".loop/t005-spring-bootstrap-ledger.json",
+      ".loop/evidence/t005-implementation-proof.json",
+      ".loop/evidence/t005-review-approval.json"
+    ],
+    "changed_scope": "PR #10 contains only the four T005 implementation paths and their loop/evidence artifacts; no T004/T006+, database, provider, credentials, deployment or Web3 files were merged."
+  },
+  "review": {
+    "scope_result": "pass",
+    "gradle_clean_build_result": "pass",
+    "api_profile_result": "pass",
+    "worker_profile_result": "pass",
+    "strict_graph_result": "pass",
+    "strict_graph_details": "15 nodes / 21 edges / 0 warnings / 0 errors"
+  },
+  "decision": "MERGED",
+  "result": "pass",
+  "confidence": 0.99,
+  "next_action": "Keep T005 checkbox completion and later-ticket dispatch separately gated; do not dispatch T004/T006/later work from this receipt."
+}
