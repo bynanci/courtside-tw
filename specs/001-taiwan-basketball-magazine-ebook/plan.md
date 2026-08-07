@@ -48,7 +48,7 @@ MVP 採三個可獨立驗收的 P1 slice：
 
 ## Constitution Check
 
-目前工作區沒有正式 `constitution.md`。以下為本 feature 的 provisional gates；`tasks.md` 的第一個 blocking task 必須把它們落為專案 constitution，核准後才能進入功能實作。
+目前 `.specify/memory/constitution.md` 已正式存在，狀態為 `RATIFIED`、版本 `0.1.0`，並由 T001／PR #2 的明確核准與 main read-back 生效。T002 的 ADR-0001～0006 亦已由 PR #4 合併並標記為 `ACCEPTED`；其 approval gate 與 rights-owner／provider 等尚未具體化的內容，仍是後續 production publish 的明確前置條件，不是可被程式碼默認的例外。
 
 | Gate | Rule | Status |
 | --- | --- | --- |
