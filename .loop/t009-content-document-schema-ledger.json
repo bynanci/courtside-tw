@@ -1,18 +1,18 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t009",
-  "graph_version": 8,
+  "graph_version": 10,
   "run_id": "courtside-tw-t009-content-document-schema-20260807",
   "status": "needs_human",
-  "iteration": 8,
+  "iteration": 10,
   "started_at": "2026-08-07T10:50:00Z",
-  "updated_at": "2026-08-07T14:05:00Z",
+  "updated_at": "2026-08-07T14:21:00Z",
   "current_frontier": [
     "g-t009-review-merge"
   ],
   "blocked_nodes": [],
   "terminal_state": "needs_human",
-  "next_action": "Current-head contract hardening is independently replayed; await GitHub CI/Security and current-head review revalidation, then explicit human merge authority and main read-back. Keep T009 unchecked.",
+  "next_action": "T009 schema proof, CI/Security run #65 and all review threads pass. Use the user's explicit merge authority with expected-head protection, then read back main and keep T009 unchecked until that read-back confirms the canonical schema.",
   "events": [
     {
       "event_id": "evt-t009-001-dispatched",
@@ -639,6 +639,192 @@
       },
       "decision": "REMEDIATED_PENDING_CURRENT_HEAD_GATE",
       "follow_up": "Await current-head CI/Security and review-thread revalidation; then merge only with expected-head protection and read back main."
+    },
+    {
+      "event_id": "evt-t009-009-schema-boundary-hardening",
+      "at": "2026-08-07T14:20:00Z",
+      "actor": "codex-supervisor",
+      "type": "schema_boundary_hardening",
+      "base_graph_version": 8,
+      "new_graph_version": 9,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "$defs.headingPayload.properties.level.minimum",
+            "before": 1,
+            "after": 2
+          },
+          {
+            "op": "replace",
+            "path": "$defs.headingPayload.properties.level.maximum",
+            "before": 6,
+            "after": 4
+          },
+          {
+            "op": "add",
+            "path": "$defs.statPayload.required/-",
+            "after": "unit"
+          },
+          {
+            "op": "add",
+            "path": "$defs.statPayload.required/-",
+            "after": "context"
+          },
+          {
+            "op": "add",
+            "path": "packages/content-schema/fixtures/invalid/-",
+            "after": "heading-invalid-level-low.json"
+          },
+          {
+            "op": "add",
+            "path": "packages/content-schema/fixtures/invalid/-",
+            "after": "stat-missing-unit-context.json"
+          },
+          {
+            "op": "replace",
+            "path": "scripts/validate-content-schema.mjs/schema_invalid_count",
+            "before": 21,
+            "after": 23
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t009-schema-proof.json#latest_revalidation",
+        ".loop/evidence/t009-schema-proof.json#boundary_revalidation",
+        "PR #32 current-head review"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "heading hierarchy boundary",
+          "level": "P2",
+          "result": "pass",
+          "details": "h2-h4 is enforced; level 1 and level 7 focused fixtures are rejected."
+        },
+        {
+          "proof": "stat interpretation boundary",
+          "level": "P2",
+          "result": "pass",
+          "details": "Stat unit and context are required and independently covered by an invalid fixture."
+        },
+        {
+          "proof": "independent replay",
+          "level": "P2",
+          "result": "pass",
+          "details": "Ajv2020 strict replay accepted the valid fixture and rejected 23 schema-invalid fixtures."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:t009-content-document-schema",
+        "version": 7,
+        "retrieval_ids": [
+          "wm:project:courtside-tw:phase1-review",
+          "wm:project:courtside-tw:t008-ci-pipelines"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t009-schema-proof.json#latest_revalidation",
+          ".loop/memory/t009-content-document-schema.json"
+        ],
+        "next_review_at": "2026-08-08",
+        "blocker": "current-head CI/Security and review revalidation"
+      },
+      "failure_signature": {
+        "code": "CODE_REVIEW_P2_CONTENT_BOUNDARY",
+        "message": "Current-head review identified an unbounded heading hierarchy and optional stat unit/context.",
+        "resolution": "Bounded headings to h2-h4, required stat unit/context, added isolated fixtures, and reran strict validation.",
+        "status": "resolved",
+        "observed_iteration": 9
+      },
+      "token_usage": {
+        "estimated_tokens": 2400,
+        "validator_runtime_seconds": 0.9,
+        "notes": "T009-only schema and fixture hardening; no runtime or T010 scope added."
+      },
+      "decision": "PASS_WITH_FOLLOW_UP",
+      "follow_up": "Await the final current-head CI/Security and review-thread gate, then use explicit human merge authority."
+    },
+    {
+      "event_id": "evt-t009-010-current-head-ci-security-review-pass",
+      "at": "2026-08-07T14:21:00Z",
+      "actor": "verifier",
+      "type": "current_head_ci_security_review_pass",
+      "base_graph_version": 9,
+      "new_graph_version": 10,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes.g-t009-review-merge.confidence.score",
+            "before": 0.85,
+            "after": 0.98
+          },
+          {
+            "op": "add",
+            "path": "graph.nodes.g-t009-review-merge.confidence.evidence_refs/-",
+            "after": ".loop/evidence/t009-ci-security-20260807.json"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [
+              "g-t009-review-merge"
+            ],
+            "after": [
+              "g-t009-review-merge"
+            ]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t009-ci-security-20260807.json",
+        "PR #32 current-head checks",
+        ".loop/t009-content-document-schema-graphify-loop.yaml"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "CI",
+          "level": "P2",
+          "result": "pass",
+          "details": "CI workflow run #65 completed successfully on T009 head 60e1ea0."
+        },
+        {
+          "proof": "Security",
+          "level": "P2",
+          "result": "pass",
+          "details": "Security workflow run #65 completed successfully on T009 head 60e1ea0."
+        },
+        {
+          "proof": "review thread closure",
+          "level": "P2",
+          "result": "pass",
+          "details": "All 10 previously unresolved current-head review threads are resolved; no unresolved review thread remains at receipt time."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:t009-content-document-schema",
+        "version": 8,
+        "retrieval_ids": [
+          "wm:project:courtside-tw:phase1-review",
+          "wm:project:courtside-tw:t008-ci-pipelines"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t009-schema-proof.json#latest_revalidation",
+          ".loop/evidence/t009-ci-security-20260807.json",
+          ".loop/memory/t009-content-document-schema.json"
+        ],
+        "next_review_at": "2026-08-08",
+        "blocker": "explicit human merge and main read-back"
+      },
+      "failure_signature": null,
+      "token_usage": {
+        "estimated_tokens": 1200,
+        "validator_runtime_seconds": 0,
+        "notes": "GitHub CI/Security and review-thread read-back; no implementation scope added."
+      },
+      "decision": "PASS_WITH_HUMAN_MERGE_GATE",
+      "follow_up": "Use expected-head merge authority now; after merge, read back main before marking T009 checked."
     }
   ],
   "proof": [
@@ -690,22 +876,36 @@
       "result": "pass",
       "evidence_ref": ".loop/evidence/t009-schema-proof.json#latest_revalidation",
       "recorded_at": "2026-08-07T14:05:00Z"
+    },
+    {
+      "proof_id": "t009-boundary-coverage-hardening-20260807",
+      "level": "P2",
+      "result": "pass",
+      "evidence_ref": ".loop/evidence/t009-schema-proof.json#latest_revalidation",
+      "recorded_at": "2026-08-07T14:20:00Z"
+    },
+    {
+      "proof_id": "t009-ci-security-review-20260807",
+      "level": "P2",
+      "result": "pass",
+      "evidence_ref": ".loop/evidence/t009-ci-security-20260807.json",
+      "recorded_at": "2026-08-07T14:21:00Z"
     }
   ],
   "memory_receipt": {
     "memory_status": "UPDATED",
     "memory_id": "wm:project:courtside-tw:t009-content-document-schema",
-    "version": 6,
+    "version": 8,
     "retrieval_ids": [
       "wm:project:courtside-tw:phase1-review",
       "wm:project:courtside-tw:t008-ci-pipelines"
     ],
     "evidence_refs": [
       ".loop/evidence/t009-schema-proof.json#latest_revalidation",
-      ".loop/memory/t009-content-document-schema.json",
-      "scripts/validate-content-schema.mjs"
+      ".loop/evidence/t009-ci-security-20260807.json",
+      ".loop/memory/t009-content-document-schema.json"
     ],
     "next_review_at": "2026-08-08",
-    "blocker": "current-head CI/Security, review-thread revalidation, human merge and main read-back"
+    "blocker": "explicit human merge and main read-back"
   }
 }
