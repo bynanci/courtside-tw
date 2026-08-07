@@ -282,12 +282,12 @@ graph:
       layer: L3
       label: T005 bootstrap review requested
       owner: human-mark
-      status: ready
+      status: done
       risk: high
       confidence:
         score: 0.98
-        basis: Implementation and both profile boot proofs are complete; explicit human review and merge approval remain required.
-        evidence_refs: [.loop/evidence/t005-implementation-proof.json]
+        basis: Code Review and Merge Gate inspected the bounded patch and passing proof; Mark approved PR #8 for merge while keeping task completion separate.
+        evidence_refs: [.loop/evidence/t005-implementation-proof.json, .loop/evidence/t005-review-approval.json]
       budget:
         effort_hours: 0.0
         tokens: 0
@@ -301,12 +301,12 @@ graph:
       layer: L3
       label: Review T005 scope, profile proof and merge readiness
       owner: human-mark
-      status: needs_human
+      status: done
       risk: high
       confidence:
         score: 0.98
-        basis: Human must inspect the implementation patch, passing profile proof and PR read-back before merge or task completion.
-        evidence_refs: [.loop/evidence/t005-implementation-proof.json]
+        basis: The bounded implementation, passing build/profile receipts and PR read-back were reviewed; merge approval was explicitly recorded.
+        evidence_refs: [.loop/evidence/t005-implementation-proof.json, .loop/evidence/t005-review-approval.json]
       budget:
         effort_hours: 0.25
         tokens: 3500
@@ -321,12 +321,12 @@ graph:
       layer: L3
       label: Explicit T005 review and merge approval
       owner: human-mark
-      status: needs_human
+      status: done
       risk: critical
       confidence:
-        score: 0.0
-        basis: No T005 implementation approval exists in this dispatch receipt.
-        evidence_refs: []
+        score: 0.98
+        basis: Mark explicitly approved PR #8 for merge after the passing Code Review and Merge Gate; task checkbox completion remains separate.
+        evidence_refs: [.loop/evidence/t005-review-approval.json]
       budget:
         effort_hours: 0.25
         tokens: 2500
@@ -343,12 +343,12 @@ graph:
       layer: L3
       label: T005 scope, profile and merge approval gate
       owner: human-mark
-      status: needs_human
+      status: done
       risk: critical
       confidence:
-        score: 0.0
-        basis: T005 implementation and merge remain protected human decisions after the dispatch.
-        evidence_refs: []
+        score: 0.98
+        basis: Merge approval is recorded for PR #8; the remaining terminal action is the remote merge and main read-back.
+        evidence_refs: [.loop/evidence/t005-review-approval.json]
       budget:
         effort_hours: 0.0
         tokens: 0
@@ -362,12 +362,12 @@ graph:
       layer: L3
       label: T005 human decision ledger
       owner: human-mark
-      status: planned
+      status: done
       risk: low
       confidence:
-        score: 0.0
-        basis: The memory path is reserved for a future T005 review decision and remains empty until approval.
-        evidence_refs: []
+        score: 0.98
+        basis: The review decision and bounded follow-up are recorded before the remote merge.
+        evidence_refs: [.loop/evidence/t005-review-approval.json]
       budget:
         effort_hours: 0.05
         tokens: 800
@@ -387,7 +387,7 @@ graph:
       confidence:
         score: 0.9
         basis: Dispatch is complete and the next safe terminal states are implementation proof, bounded block, or human review; no completion is claimed.
-        evidence_refs: [.loop/t005-spring-bootstrap-ledger.json]
+        evidence_refs: [.loop/t005-spring-bootstrap-ledger.json, .loop/evidence/t005-review-approval.json]
       budget:
         effort_hours: 0.0
         tokens: 0
