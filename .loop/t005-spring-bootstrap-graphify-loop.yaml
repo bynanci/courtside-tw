@@ -286,8 +286,8 @@ graph:
       risk: high
       confidence:
         score: 0.98
-        basis: Code Review and Merge Gate inspected the bounded patch and passing proof; Mark approved PR #8 for merge while keeping task completion separate.
-        evidence_refs: [.loop/evidence/t005-implementation-proof.json, .loop/evidence/t005-review-approval.json]
+        basis: Code Review and Merge Gate inspected the bounded patch and passing proof; Mark approved the reviewed content, which was carried into clean PR #10 and merged while keeping task completion separate.
+        evidence_refs: [.loop/evidence/t005-implementation-proof.json, .loop/evidence/t005-review-approval.json, .loop/evidence/t005-merge-main-readback.json]
       budget:
         effort_hours: 0.0
         tokens: 0
@@ -305,8 +305,8 @@ graph:
       risk: high
       confidence:
         score: 0.98
-        basis: The bounded implementation, passing build/profile receipts and PR read-back were reviewed; merge approval was explicitly recorded.
-        evidence_refs: [.loop/evidence/t005-implementation-proof.json, .loop/evidence/t005-review-approval.json]
+        basis: The bounded implementation, passing build/profile receipts and PR read-back were reviewed; approval was carried into clean PR #10 and the merged result was read back from main.
+        evidence_refs: [.loop/evidence/t005-implementation-proof.json, .loop/evidence/t005-review-approval.json, .loop/evidence/t005-merge-main-readback.json]
       budget:
         effort_hours: 0.25
         tokens: 3500
@@ -325,16 +325,16 @@ graph:
       risk: critical
       confidence:
         score: 0.98
-        basis: Mark explicitly approved PR #8 for merge after the passing Code Review and Merge Gate; task checkbox completion remains separate.
-        evidence_refs: [.loop/evidence/t005-review-approval.json]
+        basis: Mark explicitly approved the reviewed T005 content for merge after the passing Code Review and Merge Gate; clean PR #10 carried that approval and task checkbox completion remains separate.
+        evidence_refs: [.loop/evidence/t005-review-approval.json, .loop/evidence/t005-merge-main-readback.json]
       budget:
         effort_hours: 0.25
         tokens: 2500
       config:
         level: P3
-        claim: T005 is implemented, remotely read back and explicitly approved for merge and task completion.
+        claim: T005 is implemented, reviewed, merged through clean PR #10 and read back from main; task checkbox completion remains separately gated.
         method: Human review receipt naming branch/PR, four-file diff, profile boot proof, merge decision and bounded follow-up.
-        evidence_path: .loop/evidence/t005-completion-receipt.json
+        evidence_path: .loop/evidence/t005-review-approval.json
         required: true
         baseline_required: false
 
@@ -347,8 +347,8 @@ graph:
       risk: critical
       confidence:
         score: 0.98
-        basis: Merge approval is recorded for PR #8; the remaining terminal action is the remote merge and main read-back.
-        evidence_refs: [.loop/evidence/t005-review-approval.json]
+        basis: Approval was recorded for the reviewed T005 content, carried into clean PR #10 and merged; only the separately gated task checkbox and later-ticket dispatch remain pending.
+        evidence_refs: [.loop/evidence/t005-review-approval.json, .loop/evidence/t005-merge-main-readback.json]
       budget:
         effort_hours: 0.0
         tokens: 0
@@ -366,8 +366,8 @@ graph:
       risk: low
       confidence:
         score: 0.98
-        basis: The review decision and bounded follow-up are recorded before the remote merge.
-        evidence_refs: [.loop/evidence/t005-review-approval.json]
+        basis: The review decision, clean PR #10 merge and bounded follow-up are recorded; task completion remains separately gated.
+        evidence_refs: [.loop/evidence/t005-review-approval.json, .loop/evidence/t005-merge-main-readback.json]
       budget:
         effort_hours: 0.05
         tokens: 800
@@ -385,9 +385,9 @@ graph:
       status: needs_human
       risk: critical
       confidence:
-        score: 0.9
-        basis: Dispatch is complete and the next safe terminal states are implementation proof, bounded block, or human review; no completion is claimed.
-        evidence_refs: [.loop/t005-spring-bootstrap-ledger.json, .loop/evidence/t005-review-approval.json]
+        score: 0.99
+        basis: PR #10 is merged and main read-back is verified; the named policy remains needs_human only for the separately gated T005 checkbox and later-ticket dispatch.
+        evidence_refs: [.loop/t005-spring-bootstrap-ledger.json, .loop/evidence/t005-review-approval.json, .loop/evidence/t005-merge-main-readback.json]
       budget:
         effort_hours: 0.0
         tokens: 0
