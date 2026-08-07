@@ -14,7 +14,7 @@ scope:
     - Nuxt T004, T006 or later tasks, packages, contracts, databases, Compose, CI, deployment, providers, secrets or Web3 writes.
     - Modifying spec.md, plan.md, constitution.md, ADRs or DESIGN.md during this implementation slice.
     - Adding controllers, persistence, migrations, authentication, infrastructure, provider SDKs or production configuration beyond the four T005 paths.
-    - Marking T005 complete, merging its PR, dispatching T004 or any later ticket from this graph.
+    - Dispatching T004 or any later ticket from this graph.
 
 policy:
   authority:
@@ -24,7 +24,6 @@ policy:
       - Write the four T005 implementation paths and T005 loop evidence on the ticket branch.
       - Run deterministic Java/Gradle profile boot checks and create a reviewable PR.
     requires_approval:
-      - Merge the T005 PR or mark T005 checked.
       - Dispatch T004, T006 or any later ticket.
       - Change the approved design, architecture, provider, rights, access or Web3 boundary.
     forbidden:
@@ -151,7 +150,7 @@ graph:
       config:
         workflow: [read main read-back, read task and plan, confirm four-file scope, confirm Java 21/Spring Boot 4.1 profiles, open dispatch branch]
         allowed: [read state, append dispatch evidence, route T005]
-        requires_approval: [merge T005, mark T005 checked, dispatch later tickets, expand scope]
+        requires_approval: [dispatch later tickets, expand scope]
         forbidden: [alter approved design, infer provider or rights approval, start T004 or later task]
 
     - id: p-reconciliation
@@ -232,7 +231,7 @@ graph:
       config:
         workflow: [create Gradle settings/build files, create minimal Spring application, define api/worker profiles, run both profile boot proofs, record evidence]
         allowed: [write four T005 paths, write T005 loop evidence, run local Java/Gradle commands]
-        requires_approval: [merge, mark T005 checked, dispatch T004 or later task, add provider/database/infrastructure scope]
+        requires_approval: [dispatch T004 or later task, add provider/database/infrastructure scope]
         forbidden: [create Nuxt or later-task files, add controllers/persistence/auth/DB/migrations/providers/secrets/Web3, weaken profile boot checks]
 
     - id: p-spring-boot
@@ -313,7 +312,7 @@ graph:
       config:
         workflow: [inspect diff, read profile proof, verify branch and PR scope, approve or request bounded changes]
         allowed: [human review and explicit approval decision]
-        requires_approval: [merge T005, mark T005 checked, dispatch the next ticket]
+        requires_approval: [dispatch the next ticket]
         forbidden: [silently broaden scope, waive failed proof, approve missing remote evidence]
 
     - id: p-human-approval
@@ -382,12 +381,12 @@ graph:
       layer: GLOBAL
       label: T005 named terminal-state policy
       owner: policy
-      status: needs_human
+      status: done
       risk: critical
       confidence:
         score: 0.99
-        basis: PR #10 is merged and main read-back is verified; the named policy remains needs_human only for the separately gated T005 checkbox and later-ticket dispatch.
-        evidence_refs: [.loop/t005-spring-bootstrap-ledger.json, .loop/evidence/t005-review-approval.json, .loop/evidence/t005-merge-main-readback.json]
+        basis: PR #10 is merged, main read-back is verified and Mark explicitly authorized T005 completion; only the separate alignment gate and later-ticket dispatch remain pending.
+        evidence_refs: [.loop/t005-spring-bootstrap-ledger.json, .loop/evidence/t005-review-approval.json, .loop/evidence/t005-merge-main-readback.json, .loop/evidence/t005-completion-receipt.json]
       budget:
         effort_hours: 0.0
         tokens: 0
@@ -398,7 +397,7 @@ graph:
           blocked: Required source, Java/Gradle runtime, permission, branch or review evidence is unavailable.
           stalled: Same failure or no-evidence-delta limit is reached.
           exhausted: Iteration, time, graph-change or token budget is reached.
-          needs_human: T005 dispatch or implementation proof is ready but review, merge or task completion approval is pending.
+          needs_human: Product alignment or later-ticket dispatch approval is pending.
           cancelled: User cancels or governing artifacts become invalid.
 
   edges:
