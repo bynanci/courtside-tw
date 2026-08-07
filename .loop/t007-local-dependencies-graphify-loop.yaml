@@ -10,7 +10,7 @@ scope:
     - scripts/dev/check-dependencies.sh
     - T007 implementation, static proof, runtime proof and append-only Graphify evidence
   out:
-    - T007 checkbox or README status until merge and main read-back
+    - T007 runtime health revalidation remains a follow-up owned by T008 CI
     - T008 CI or security workflows
     - production providers, credentials, secrets, deployments or Web3 writes
     - database schema, migrations, application integration or User Story implementation
@@ -49,9 +49,9 @@ memory_workflow:
 graph:
   entry_nodes: [x-main-readback, t-supervisor, t-human-review]
   terminal_nodes: [s-terminal-policy]
-  current_frontier: [p-runtime-proof]
+  current_frontier: [g-t007-merge]
   blocked_nodes: [p-runtime-proof, s-terminal-policy]
-  terminal_state: blocked
+  terminal_state: needs_human
 
   loops:
     - id: l2-t007-supervision
@@ -316,12 +316,12 @@ graph:
       layer: L3
       label: T007 review and merge decision
       owner: human-mark
-      status: planned
+      status: done
       risk: high
       confidence:
-        score: 0.75
-        basis: Review can begin after runtime proof is available or Mark explicitly accepts the named blocker.
-        evidence_refs: [.loop/evidence/t007-implementation-proof.json]
+        score: 1.0
+        basis: Mark's current direction explicitly accepts the named runtime blocker for this merge and requires T008 CI revalidation.
+        evidence_refs: [.loop/evidence/t007-human-acceptance.json]
       budget:
         effort_hours: 0.0
         tokens: 0
@@ -335,12 +335,12 @@ graph:
       layer: L3
       label: Review T007 scope, health checks and blocker
       owner: human-mark
-      status: planned
+      status: done
       risk: high
       confidence:
-        score: 0.75
-        basis: The merge decision must distinguish static correctness from unexecuted container behavior.
-        evidence_refs: [.loop/evidence/t007-compose-static-proof.json, .loop/evidence/t007-implementation-proof.json]
+        score: 1.0
+        basis: Current-head review distinguishes static correctness from unexecuted container behavior; Mark accepted the bounded follow-up explicitly.
+        evidence_refs: [.loop/evidence/t007-compose-static-proof.json, .loop/evidence/t007-implementation-proof.json, .loop/evidence/t007-human-acceptance.json]
       budget:
         effort_hours: 0.25
         tokens: 3500
@@ -355,12 +355,12 @@ graph:
       layer: L3
       label: Explicit T007 merge acceptance
       owner: human-mark
-      status: planned
+      status: done
       risk: critical
       confidence:
-        score: 0.8
-        basis: A current-head human decision is required because the runtime proof is unavailable in this environment.
-        evidence_refs: [.loop/evidence/t007-implementation-proof.json]
+        score: 1.0
+        basis: Mark explicitly accepted the missing Docker runtime proof as a bounded follow-up owned by T008 CI.
+        evidence_refs: [.loop/evidence/t007-human-acceptance.json]
       budget:
         effort_hours: 0.25
         tokens: 2500
@@ -377,12 +377,12 @@ graph:
       layer: L3
       label: T007 review and merge gate
       owner: human-mark
-      status: needs_human
+      status: ready
       risk: critical
       confidence:
-        score: 0.98
-        basis: Protected-branch merge and acceptance of a missing runtime proof require current Mark approval.
-        evidence_refs: [.loop/evidence/t007-implementation-proof.json]
+        score: 1.0
+        basis: Mark's explicit current instruction supplies the required acceptance; merge remains guarded by final current-head review and expected-head SHA.
+        evidence_refs: [.loop/evidence/t007-human-acceptance.json]
       budget:
         effort_hours: 0.0
         tokens: 0
@@ -420,12 +420,12 @@ graph:
       layer: GLOBAL
       label: T007 named terminal-state policy
       owner: policy
-      status: blocked
+      status: needs_human
       risk: critical
       confidence:
-        score: 0.98
-        basis: Static proof is complete, but required container bring-up proof is blocked by the missing Docker runtime; T007 is not complete and no checkbox change is authorized yet.
-        evidence_refs: [.loop/t007-local-dependencies-ledger.json, .loop/evidence/t007-compose-static-proof.json, .loop/evidence/t007-implementation-proof.json]
+        score: 1.0
+        basis: Static proof is complete and Mark authorized checkbox/merge with runtime health retained as an explicit T008 follow-up; main read-back is still pending.
+        evidence_refs: [.loop/t007-local-dependencies-ledger.json, .loop/evidence/t007-compose-static-proof.json, .loop/evidence/t007-implementation-proof.json, .loop/evidence/t007-human-acceptance.json]
       budget:
         effort_hours: 0.0
         tokens: 0
