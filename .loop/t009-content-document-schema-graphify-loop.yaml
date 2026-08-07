@@ -43,6 +43,8 @@ acceptance:
   - all persisted string fields reject NUL characters before JSONB persistence
   - repository CI runs the locked ContentDocument validator before merge
   - UUIDv7 identifiers accepted by the data model are accepted by the contract
+  - heading levels are bounded to h2-h4, with focused lower-bound coverage
+  - stat blocks require label, value, unit and context
   - schema is closed-world at document, block and payload boundaries
   - T009 remains unchecked until implementation proof and main read-back
 
@@ -221,14 +223,14 @@ graph:
       risk: high
       confidence:
         score: 0.98
-        basis: Twenty-one focused schema-invalid fixtures and the duplicate-ID semantic invariant were rejected for the intended constraints.
+        basis: Twenty-three focused schema-invalid fixtures and the duplicate-ID semantic invariant were rejected for the intended constraints.
         evidence_refs: [.loop/evidence/t009-schema-proof.json, .loop/evidence/t009-ci-security-20260807.json]
       budget:
         effort_hours: 0.5
         tokens: 5000
       config:
         level: P2
-        claim: Twenty-one schema-invalid fixtures and the duplicate-ID semantic invariant are rejected without weakening the contract.
+        claim: Twenty-three schema-invalid fixtures and the duplicate-ID semantic invariant are rejected without weakening the contract.
         method: Independent Ajv validator with per-fixture receipts plus a structural uniqueness assertion.
         evidence_path: .loop/evidence/t009-schema-proof.json
         required: true
@@ -242,9 +244,9 @@ graph:
       status: ready
       risk: critical
       confidence:
-        score: 0.85
-        basis: Latest Ajv/Prettier replay, strict boundary proof and repository validator wiring pass; current-head CI/Security and review must still pass before explicit human merge authority and main read-back.
-        evidence_refs: [.loop/evidence/t009-schema-proof.json]
+        score: 0.98
+        basis: Latest Ajv/Prettier replay, strict boundary proof, repository validator wiring, CI/Security run #65 and all current review threads pass; explicit human merge authority and main read-back remain.
+        evidence_refs: [.loop/evidence/t009-schema-proof.json, .loop/evidence/t009-ci-security-20260807.json]
       budget:
         effort_hours: 0.5
         tokens: 3000
