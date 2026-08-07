@@ -1,18 +1,18 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t009",
-  "graph_version": 4,
+  "graph_version": 5,
   "run_id": "courtside-tw-t009-content-document-schema-20260807",
   "status": "needs_human",
-  "iteration": 4,
+  "iteration": 5,
   "started_at": "2026-08-07T10:50:00Z",
-  "updated_at": "2026-08-07T11:07:00Z",
+  "updated_at": "2026-08-07T11:08:00Z",
   "current_frontier": [
     "g-t009-review-merge"
   ],
   "blocked_nodes": [],
   "terminal_state": "needs_human",
-  "next_action": "Await CI and Security for the current follow-up head, inspect the current-head review gate, then await explicit merge authority; keep T009 unchecked.",
+  "next_action": "Await CI and Security for the final proof-metadata head, complete current-head review, then await explicit merge authority; keep T009 unchecked.",
   "events": [
     {
       "event_id": "evt-t009-001-dispatched",
@@ -354,6 +354,58 @@
       },
       "decision": "PASS WITH FOLLOW-UP",
       "follow_up": "Await current-head CI/Security and repeat the code-review gate; merge and T009 completion remain human-gated."
+    },
+    {
+      "event_id": "evt-t009-005-proof-method-refinement",
+      "at": "2026-08-07T11:08:00Z",
+      "actor": "codex-supervisor",
+      "type": "proof_method_refined",
+      "base_graph_version": 4,
+      "new_graph_version": 5,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes.p-t009-negative-fixtures.config.method",
+            "before": "Independent validator with per-fixture rejection receipts.",
+            "after": "Independent Ajv validator with per-fixture receipts plus a structural uniqueness assertion."
+          },
+          {
+            "op": "add",
+            "path": "proof_receipts/-",
+            "after": ".loop/evidence/t009-schema-proof.json#semantic_invariants"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t009-schema-proof.json",
+        ".loop/t009-content-document-schema-graphify-loop.yaml"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "duplicate ID method traceability",
+          "level": "P2",
+          "result": "pass",
+          "details": "Graph now names the independent structural uniqueness assertion alongside Ajv fixture validation."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UNCHANGED",
+        "memory_id": "wm:project:courtside-tw:t009-content-document-schema",
+        "version": 3,
+        "evidence_refs": [
+          ".loop/evidence/t009-schema-proof.json#latest_revalidation"
+        ],
+        "blocker": null
+      },
+      "failure_signature": null,
+      "token_usage": {
+        "estimated_tokens": 1100,
+        "validator_runtime_seconds": 0.2,
+        "notes": "Metadata-only graph/ledger alignment; no contract scope change."
+      },
+      "decision": "PASS WITH FOLLOW-UP",
+      "follow_up": "Await final CI/Security and complete current-head review; merge and T009 completion remain human-gated."
     }
   ],
   "proof": [
@@ -377,10 +429,17 @@
       "result": "pass",
       "evidence_ref": ".loop/evidence/t009-schema-proof.json#latest_revalidation",
       "recorded_at": "2026-08-07T11:07:00Z"
+    },
+    {
+      "proof_id": "t009-proof-method-traceability-20260807",
+      "level": "P2",
+      "result": "pass",
+      "evidence_ref": ".loop/evidence/t009-schema-proof.json#semantic_invariants",
+      "recorded_at": "2026-08-07T11:08:00Z"
     }
   ],
   "memory_receipt": {
-    "memory_status": "UPDATED",
+    "memory_status": "UNCHANGED",
     "memory_id": "wm:project:courtside-tw:t009-content-document-schema",
     "version": 3,
     "retrieval_ids": [
@@ -388,8 +447,8 @@
       "wm:project:courtside-tw:t008-ci-pipelines"
     ],
     "evidence_refs": [
-      ".loop/evidence/t009-dispatch-20260807.json",
       ".loop/evidence/t009-schema-proof.json",
+      ".loop/evidence/t009-schema-proof.json#latest_revalidation",
       ".loop/memory/t009-content-document-schema.json"
     ],
     "next_review_at": "2026-08-14",
