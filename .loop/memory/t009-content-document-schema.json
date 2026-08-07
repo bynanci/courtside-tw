@@ -3,8 +3,8 @@
   "memory_id": "wm:project:courtside-tw:t009-content-document-schema",
   "scope": "project",
   "kind": "task_state",
-  "title": "T009 ContentDocument v1 contract proof updated",
-  "summary": "T009 defines a closed-world ContentDocument v1 schema and bounded fixtures. The contract keeps video providerId at a rights-pending sentinel until ADR-0003 approval, enumerates the approved court-dusk palette, accepts UUIDv7 identifiers, rejects malformed HTTPS authority/ports and NUL characters, covers 21 focused schema-invalid fixtures across all 11 block types, and records a duplicate block-ID semantic invariant. Independent Ajv/Prettier replay passes; current-head GitHub CI/Security and review-thread revalidation remain pending, followed by human merge and main read-back.",
+  "title": "T009 ContentDocument v1 contract proof ready for merge",
+  "summary": "T009 defines a closed-world ContentDocument v1 schema and bounded fixtures. The contract keeps video providerId at a rights-pending sentinel until ADR-0003 approval, enumerates the approved court-dusk palette, accepts UUIDv7 identifiers, bounds headings to h2-h4, requires stat unit/context, rejects malformed HTTPS authority/ports and NUL characters, covers 23 focused schema-invalid fixtures across all 11 block types, and records a duplicate block-ID semantic invariant. Independent Ajv/Prettier replay and GitHub CI/Security run #65 pass; all review threads are resolved, with expected-head human merge and main read-back pending.",
   "claims": [
     {
       "text": "T009 was dispatched from main@a75f1c2 after Phase 1 PASS read-back.",
@@ -27,7 +27,7 @@
       "confidence": "high"
     },
     {
-      "text": "Independent Ajv 8 strict validation accepted the complete fixture and rejected all 21 schema-invalid fixtures; the duplicate-ID semantic fixture was detected separately.",
+      "text": "Independent Ajv 8 strict validation accepted the complete fixture and rejected all 23 schema-invalid fixtures; the duplicate-ID semantic fixture was detected separately.",
       "class": "CONFIRMED",
       "confidence": "high"
     },
@@ -57,7 +57,7 @@
       "confidence": "high"
     },
     {
-      "text": "The locked repository validator was replayed independently with Node 24.14.0, Ajv 8.20.0 and ajv-formats 3.0.1; current-head GitHub CI/Security and review-thread revalidation are pending.",
+      "text": "The locked repository validator was replayed independently with Node 24.14.0, Ajv 8.20.0 and ajv-formats 3.0.1; GitHub CI/Security run #65 passed on head 60e1ea0 and all current review threads are resolved.",
       "class": "CONFIRMED",
       "confidence": "high"
     },
@@ -75,6 +75,21 @@
       "text": "Repository CI runs scripts/validate-content-schema.mjs through pnpm run contract:schema.",
       "class": "CONFIRMED",
       "confidence": "high"
+    },
+    {
+      "text": "Heading levels are bounded to h2-h4 and lower-bound coverage is isolated in a rejected fixture.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Stat blocks require label, value, unit and context; missing unit/context is isolated in a rejected fixture.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "GitHub CI/Security run #65 passed on head 60e1ea0; all 10 previously unresolved review threads are resolved; expected-head merge and main read-back remain.",
+      "class": "CONFIRMED",
+      "confidence": "high"
     }
   ],
   "status": "stable",
@@ -87,7 +102,8 @@
     ".loop/evidence/t009-schema-proof.json",
     ".loop/evidence/t009-schema-proof.json#latest_revalidation",
     ".loop/evidence/t009-schema-proof.json#boundary_revalidation",
-    ".loop/evidence/t009-ci-security-20260807.json"
+    ".loop/evidence/t009-ci-security-20260807.json",
+    "ticket/t009-content-document-schema@60e1ea0cc4f8eb65f1fbc84637e115dc1aa7ec1d"
   ],
   "volatility": "medium",
   "as_of": "2026-08-07",
@@ -108,7 +124,8 @@
     "Makefile",
     ".github/workflows/ci.yml",
     "ticket/t009-content-document-schema@6cd31d85b6a0dea6479e6809f02fe2015f8e3ddc",
-    ".loop/evidence/t009-schema-proof.json#latest_revalidation"
+    ".loop/evidence/t009-schema-proof.json#latest_revalidation",
+    "ticket/t009-content-document-schema@60e1ea0cc4f8eb65f1fbc84637e115dc1aa7ec1d"
   ],
   "entities": [
     "T009",
@@ -128,7 +145,7 @@
   },
   "decision": {
     "context": "Phase 1 setup/governance and CI/security baseline are complete; dependent implementation requires a versioned content contract first.",
-    "chosen": "Define a closed-world JSON Schema and fixtures before implementing validators or renderers.",
+    "chosen": "Define and verify the closed-world JSON Schema and fixtures before implementing validators, renderers or API consumers.",
     "alternatives": [
       "Start T010 validator code without a canonical schema.",
       "Define permissive payloads and enforce safety only in renderers."
@@ -139,7 +156,7 @@
       "Rights-pending video sentinel preserves the ADR rights gate; approved provider values remain a later decision."
     ],
     "invalidation": "If ADR-0003/0005 or tasks.md changes the allowed block/preset contract, mark this record needs_update and stop T009.",
-    "proof": "Ajv strict validation passed the valid fixture and rejected 19 focused schema-invalid fixtures; the duplicate block-ID semantic invariant, non-whitespace text boundary and host-required HTTPS boundary were independently checked; Graphify and memory validation remain required gates. Current-head CI and Security pass, and review threads are resolved; this is not a merge or main read-back proof."
+    "proof": "Ajv strict validation and Prettier replay passed the valid fixture, rejected 23 focused schema-invalid fixtures, and detected the duplicate block-ID semantic invariant; heading h2-h4 and stat unit/context boundaries are covered. Graphify and work-memory validators pass. GitHub CI/Security run #65 passed on head 60e1ea0 and all current review threads are resolved; expected-head human merge and main read-back remain."
   },
   "next_review_at": "2026-08-08",
   "sensitivity": "internal",
