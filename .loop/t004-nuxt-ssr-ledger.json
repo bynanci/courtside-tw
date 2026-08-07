@@ -126,7 +126,6 @@
       "token_usage": {"estimated": 8000, "input": 0, "output": 0, "total": 8000},
       "terminal_reason": "Automated review and remote content proof are complete; only the accountable human protected merge gate remains.",
       "memory_receipt": {"memory_status": "NO_OP", "memory_id": null, "version": null, "retrieval_ids": [], "evidence_refs": [".loop/evidence/t004-code-review.json", ".loop/evidence/t004-review-approval.json"], "next_review_at": null, "blocker": null}
-    }
     },
     {
       "event_id": "evt-t004-nuxt-ssr-005-completion-readback",
