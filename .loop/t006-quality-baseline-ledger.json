@@ -1,18 +1,18 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t006",
-  "graph_version": 6,
+  "graph_version": 7,
   "run_id": "courtside-tw-t006-quality-baseline-20260807",
   "status": "needs_human",
   "iteration": 4,
   "started_at": "2026-08-07T05:08:32Z",
-  "updated_at": "2026-08-07T06:18:00Z",
+  "updated_at": "2026-08-07T06:20:00Z",
   "current_frontier": [
-    "t-human-review"
+    "g-t006-merge"
   ],
   "blocked_nodes": [],
   "terminal_state": "needs_human",
-  "next_action": "Review the final T006 head and current diff, then merge with an expected-head guard; perform the separate T006 completion and main read-back gate without dispatching T007.",
+  "next_action": "Merge PR #20 with an expected-head guard, then perform the separate T006 completion and main read-back gate without dispatching T007.",
   "events": [
     {
       "event_id": "evt-t006-quality-baseline-001-graph-initialized",
@@ -362,10 +362,88 @@
         "total": 1800
       },
       "terminal_reason": "All required implementation and proof receipts are present; review and merge remain the only open gates."
+    },
+    {
+      "event_id": "evt-t006-quality-baseline-007-current-head-review-pass",
+      "at": "2026-08-07T06:20:00Z",
+      "actor": "codex-agent",
+      "type": "current_head_review",
+      "base_graph_version": 6,
+      "new_graph_version": 7,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/t-human-review/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-review-t006/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-human-approval/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/m-l3-t006-decisions/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [
+              "t-human-review"
+            ],
+            "after": [
+              "g-t006-merge"
+            ]
+          },
+          {
+            "op": "add",
+            "path": ".loop/evidence/t006-review-proof.json",
+            "after": "Current-head T006 review PASS at reviewed head 22e6623462e9d367c5e364088c5832f8b1c03290."
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t006-review-proof.json",
+        ".loop/evidence/t006-java-quality-proof.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "current-head scope review",
+          "level": "P3",
+          "result": "pass",
+          "details": "Review ID 4880398361 recorded PASS for the bounded current-head diff; no blocking findings or forbidden-scope paths were found."
+        },
+        {
+          "proof": "status check",
+          "level": "P2",
+          "result": "pass",
+          "details": "No CI status checks are configured, and no CI pass was inferred."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Current-head review passed; retain only the merge gate and the separate post-merge checkbox completion/read-back gate.",
+      "token_usage": {
+        "estimated": 3500,
+        "input": 0,
+        "output": 0,
+        "total": 3500
+      },
+      "terminal_reason": "Scope, Node, Java and Graphify proofs are complete; expected-head merge is the next controlled action."
     }
   ],
   "proof": {
-    "claim": "T006 shared quality configuration and deterministic Node and Java Gradle enforcement are implemented within scope; current-head review, merge and checkbox completion remain separately gated.",
+    "claim": "T006 shared quality configuration and deterministic Node and Java Gradle enforcement are implemented, current-head review passed, and only merge plus separate checkbox completion/read-back remain.",
     "result": "needs_human",
     "confidence": 0.99
   }
