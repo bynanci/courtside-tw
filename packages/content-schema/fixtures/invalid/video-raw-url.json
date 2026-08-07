@@ -7,9 +7,10 @@
       "type": "video",
       "version": 1,
       "payload": {
-        "providerId": "custom",
+        "providerId": "rights-pending",
         "embedUrl": "https://evil.example/embed/123",
-        "title": "未核准影片"
+        "title": "未核准影片",
+        "videoId": "video-raw-url"
       }
     }
   ]
