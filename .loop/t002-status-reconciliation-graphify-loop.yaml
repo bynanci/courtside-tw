@@ -295,12 +295,12 @@ graph:
       layer: L3
       label: T002 reconciliation review and merge gate
       owner: human-mark
-      status: ready
+      status: done
       risk: high
       confidence:
         score: 1.0
         basis: A protected merge and task-state correction remain accountable human decisions.
-        evidence_refs: [.loop/evidence/t002-status-reconciliation-acceptance.json]
+        evidence_refs: [.loop/evidence/t002-status-reconciliation-acceptance.json, .loop/evidence/t002-main-readback.json]
       budget:
         effort_hours: 0.0
         tokens: 0
