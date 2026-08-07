@@ -1,0 +1,29 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t007-runtime-proof-20260807",
+  "generated_at": "2026-08-07T07:17:14Z",
+  "actor": "codex-agent",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T007",
+  "branch": "ticket/t007-local-dependencies",
+  "proof_level": "P2",
+  "command": "scripts/dev/check-dependencies.sh check",
+  "result": "BLOCKED",
+  "observed": {
+    "docker_cli": "not found",
+    "docker_info_exit_code": 127,
+    "container_bring_up": "NOT_RUN",
+    "postgres_health": "UNKNOWN",
+    "s3_health": "UNKNOWN",
+    "oidc_health": "UNKNOWN"
+  },
+  "failure_signature": "docker-runtime-unavailable",
+  "interpretation": "The repository probe fails closed before any container claim can be made. This is an environment blocker, not a container health pass.",
+  "required_to_clear": [
+    "Docker or compatible Compose runtime",
+    "docker compose config --quiet pass",
+    "scripts/dev/check-dependencies.sh check pass",
+    "healthy receipts for postgres, s3 and oidc"
+  ],
+  "rollback": "No containers were created; no rollback action is required."
+}

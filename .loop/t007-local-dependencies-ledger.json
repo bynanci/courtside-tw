@@ -1,0 +1,199 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-ticket-implementation-t007",
+  "graph_version": 3,
+  "run_id": "courtside-tw-t007-local-dependencies-20260807",
+  "status": "blocked",
+  "iteration": 2,
+  "started_at": "2026-08-07T07:17:14Z",
+  "updated_at": "2026-08-07T07:17:14Z",
+  "current_frontier": ["p-runtime-proof"],
+  "blocked_nodes": ["p-runtime-proof", "s-terminal-policy"],
+  "terminal_state": "blocked",
+  "next_action": "Run the T007 runtime proof on a Docker/Compose-capable runner, then perform a current-head review before any merge or checkbox update.",
+  "events": [
+    {
+      "event_id": "evt-t007-local-dependencies-001-dispatched",
+      "at": "2026-08-07T07:17:14Z",
+      "actor": "codex-supervisor",
+      "type": "t007_dispatched",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "external.github.branch/ticket/t007-local-dependencies",
+            "after": "T007 branch created from main@74b03ec43493ca205590ac4e3da80659fa66a0e4."
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [],
+            "after": ["a-implement-t007"]
+          }
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t007-dispatch.json"],
+      "proof_receipts": [
+        {
+          "proof": "authorization and scope",
+          "level": "P3",
+          "result": "pass",
+          "details": "Current Mark direction authorizes processing T007 after PR 23 merge; scope is limited to the task contract and evidence."
+        },
+        {
+          "proof": "main base",
+          "level": "P2",
+          "result": "pass",
+          "details": "Branch is based on the authoritative post-merge main commit 74b03ec4."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "SAVED",
+        "memory_id": "wm:project:courtside-tw:t007-local-dependencies",
+        "version": 1,
+        "retrieval_ids": [".loop/t006-quality-baseline-ledger.json", ".loop/evidence/t006-evidence-reconciliation.json"],
+        "evidence_refs": [".loop/evidence/t007-dispatch.json"],
+        "next_review_at": "2026-08-14",
+        "blocker": null
+      },
+      "failure_signature": null,
+      "decision": "Dispatch exactly one T007 implementation slice; do not dispatch T008.",
+      "token_usage": {"estimated": 4200, "input": 0, "output": 0, "total": 4200},
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-t007-local-dependencies-002-static-proof",
+      "at": "2026-08-07T07:17:14Z",
+      "actor": "codex-agent",
+      "type": "implementation_and_static_proof",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "T007 implementation paths",
+            "after": "Compose services for PostgreSQL 18, S3Mock and OIDC stub; local env template; fail-closed probe."
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-implement-t007/status",
+            "before": "ready",
+            "after": "verifying"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-static-proof/status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": ["a-implement-t007"],
+            "after": ["p-runtime-proof"]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t007-compose-static-proof.json",
+        ".loop/evidence/t007-implementation-proof.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Compose and shell static proof",
+          "level": "P2",
+          "result": "pass",
+          "details": "YAML parse, service/image assertions, health/network/port checks, shell syntax, help contract and fail-closed negative test passed."
+        },
+        {
+          "proof": "local secret and host-boundary scan",
+          "level": "P2",
+          "result": "pass",
+          "details": "Only explicit local placeholders exist; published ports are loopback-only and the network is internal."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "SAVED",
+        "memory_id": "wm:project:courtside-tw:t007-local-dependencies",
+        "version": 1,
+        "retrieval_ids": ["wm:project:courtside-tw:t007-local-dependencies"],
+        "evidence_refs": [".loop/evidence/t007-compose-static-proof.json"],
+        "next_review_at": "2026-08-14",
+        "blocker": null
+      },
+      "failure_signature": null,
+      "decision": "Static proof passes; retain runtime proof as a required separate frontier.",
+      "token_usage": {"estimated": 9200, "input": 0, "output": 0, "total": 9200},
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-t007-local-dependencies-003-runtime-blocked",
+      "at": "2026-08-07T07:17:14Z",
+      "actor": "codex-agent",
+      "type": "runtime_proof_blocked",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-runtime-proof/status",
+            "before": "planned",
+            "after": "blocked"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/s-terminal-policy/status",
+            "before": "planned",
+            "after": "blocked"
+          },
+          {
+            "op": "replace",
+            "path": "graph.blocked_nodes",
+            "before": [],
+            "after": ["p-runtime-proof", "s-terminal-policy"]
+          }
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t007-runtime-proof.json", ".loop/evidence/t007-implementation-proof.json"],
+      "proof_receipts": [
+        {
+          "proof": "Docker runtime availability",
+          "level": "P2",
+          "result": "blocked",
+          "details": "docker command is unavailable; container bring-up and health checks were not run."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:t007-local-dependencies",
+        "version": 1,
+        "retrieval_ids": ["wm:project:courtside-tw:t007-local-dependencies"],
+        "evidence_refs": [".loop/evidence/t007-runtime-proof.json"],
+        "next_review_at": "2026-08-14",
+        "blocker": "docker-runtime-unavailable"
+      },
+      "failure_signature": "docker-runtime-unavailable",
+      "decision": "Stop before merge and checkbox completion; obtain runtime proof or request explicit human acceptance of the bounded blocker.",
+      "token_usage": {"estimated": 5200, "input": 0, "output": 0, "total": 5200},
+      "terminal_reason": "Required runtime health proof is unavailable in the current environment."
+    }
+  ],
+  "proof": {
+    "claim": "T007 local dependency artifacts are implemented and statically verified, but container health is not verified because Docker is unavailable.",
+    "result": "blocked",
+    "confidence": 0.96
+  },
+  "memory_receipt": {
+    "memory_status": "UPDATED",
+    "memory_id": "wm:project:courtside-tw:t007-local-dependencies",
+    "version": 1,
+    "retrieval_ids": [".loop/t006-quality-baseline-ledger.json", ".loop/evidence/t006-evidence-reconciliation.json"],
+    "evidence_refs": [".loop/evidence/t007-compose-static-proof.json", ".loop/evidence/t007-runtime-proof.json"],
+    "next_review_at": "2026-08-14",
+    "blocker": "docker-runtime-unavailable"
+  }
+}
