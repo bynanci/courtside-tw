@@ -3,8 +3,8 @@
   "memory_id": "wm:project:courtside-tw:t008-ci-pipelines",
   "scope": "project",
   "kind": "task_state",
-  "title": "T008 CI pipelines and security gate passed; main read-back pending",
-  "summary": "T008 CI, Security, Docker Compose health and image vulnerability gates passed on the reviewed implementation head; PR #25 is merged and the separate completion slice checks T008 while final main read-back remains open.",
+  "title": "T008 CI pipelines and security gate complete; main read-back passed",
+  "summary": "T008 CI, Security, Docker Compose health and image vulnerability gates passed on the reviewed implementation head; PR #25 and the completion slice are merged, and authoritative main read-back confirms T008 complete while T009 remains undispatched.",
   "claims": [
     {
       "text": "T008 frontend contract, Java quality/unit and Docker Compose integration jobs completed successfully.",
@@ -32,18 +32,20 @@
       "confidence": "high"
     },
     {
-      "text": "Authoritative final main read-back after the completion slice merge is still required before T009 dispatch.",
-      "class": "INFERRED",
+      "text": "Authoritative main read-back at 65f406c confirms T008 checked, T009 unchecked and undispatched.",
+      "class": "CONFIRMED",
       "confidence": "high"
     }
   ],
-  "status": "verified",
+  "status": "stable",
   "confidence": "high",
   "confidence_basis": [
     ".loop/evidence/t008-runtime-verification-final.json",
     ".loop/evidence/t008-completion-receipt.json",
+    ".loop/evidence/t008-main-readback.json",
     "PR #25",
-    "main@e857d504b3c6cd61b4be5bf7989a19aa1a6b8ea3"
+    "PR #28",
+    "main@65f406ccf7cc893d1c51ad8b42324fabd4fb0ceb"
   ],
   "volatility": "medium",
   "as_of": "2026-08-07",
@@ -53,7 +55,9 @@
     ".github/workflows/security.yml",
     ".github/dependabot.yml",
     ".loop/evidence/t008-runtime-verification-final.json",
-    ".loop/evidence/t008-completion-receipt.json"
+    ".loop/evidence/t008-completion-receipt.json",
+    ".loop/evidence/t008-main-readback.json",
+    "PR #28"
   ],
   "entities": [
     "T008",
@@ -69,23 +73,21 @@
     "supersedes": [
       "wm:project:courtside-tw:t008-security-remediation"
     ],
-    "blocks": [
-      "wm:project:courtside-tw:t008-main-readback"
-    ],
+    "blocks": [],
     "invalidates": []
   },
   "decision": {
-    "context": "T008 implementation was security-blocked once, then remediated and rerun successfully before merge.",
-    "chosen": "Merge the T008 completion slice and perform final main read-back; do not dispatch T009 until the checkbox and evidence lineage are confirmed on main.",
+    "context": "T008 implementation was security-blocked once, remediated, rerun successfully, merged and then verified on main.",
+    "chosen": "Record T008 as complete on main; keep T009 unchecked and undispatched until a new explicit dispatch authorizes that separate implementation slice.",
     "alternatives": [
-      "Mark T008 complete from the pre-remediation or stale receipt."
+      "Dispatch T009 immediately without preserving the completed T008 main read-back."
     ],
     "tradeoffs": [
       "All required CI/Security gates are green.",
-      "The completion state remains auditable and separate from implementation merge.",
-      "A final main read-back adds one governance step before T009."
+      "The completion and final read-back state are auditable on main.",
+      "T009 remains an explicit future implementation boundary."
     ],
-    "invalidation": "If final main read-back does not show the checked T008 line, final receipt or unchanged T009 frontier, keep T008 open and reconcile the evidence."
+    "invalidation": "If a later main read-back contradicts the T008 checkbox, evidence lineage or T009 dispatch state, reopen T008 reconciliation before proceeding."
   },
   "next_review_at": "2026-08-14",
   "sensitivity": "internal",

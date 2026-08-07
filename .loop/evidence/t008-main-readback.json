@@ -1,0 +1,86 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t008-main-readback-20260807",
+  "generated_at": "2026-08-07T10:05:00Z",
+  "actor": "codex-supervisor",
+  "subject": "T008 authoritative main read-back",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T008",
+  "branch": "ticket/t008-main-readback",
+  "supersedes": [
+    ".loop/evidence/t008-completion-receipt.json"
+  ],
+  "readback_target": {
+    "ref": "main",
+    "sha": "65f406ccf7cc893d1c51ad8b42324fabd4fb0ceb",
+    "url": "https://github.com/bynanci/courtside-tw/commit/65f406ccf7cc893d1c51ad8b42324fabd4fb0ceb",
+    "method": "GitHub contents read-back from main before this receipt merge"
+  },
+  "authorization": {
+    "claim_status": "CONFIRMED",
+    "approved_by": "Mark",
+    "source": "current user direction: @GitHub 請繼續上一步",
+    "scope": "Complete the already-authorized T008 flow after implementation, security remediation, completion merge and main verification."
+  },
+  "checks": [
+    {
+      "claim": "T008 task checkbox is present on main",
+      "result": "PASS",
+      "evidence_refs": [
+        "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+      ],
+      "details": "The T008 line is checked on main@65f406c."
+    },
+    {
+      "claim": "T009 remains a separate future ticket",
+      "result": "PASS",
+      "evidence_refs": [
+        "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+        "README.md"
+      ],
+      "details": "T009 remains unchecked and the README records that it has not been dispatched."
+    },
+    {
+      "claim": "Implementation and completion merges are present",
+      "result": "PASS",
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/pull/25",
+        "https://github.com/bynanci/courtside-tw/pull/28",
+        "main@e857d504b3c6cd61b4be5bf7989a19aa1a6b8ea3",
+        "main@65f406ccf7cc893d1c51ad8b42324fabd4fb0ceb"
+      ],
+      "details": "PR #25 merged the implementation at e857d50; PR #28 merged the completion/governance slice at 65f406c."
+    },
+    {
+      "claim": "Runtime and security receipts remain authoritative",
+      "result": "PASS",
+      "evidence_refs": [
+        ".loop/evidence/t008-runtime-verification-final.json",
+        ".loop/evidence/t008-completion-receipt.json"
+      ],
+      "details": "CI run #14 and Security run #14 passed, including PostgreSQL, S3 and OIDC image scans; no security exception was used."
+    },
+    {
+      "claim": "Final read-back branch scope is governance-only",
+      "result": "PASS",
+      "evidence_refs": [
+        ".loop/evidence/t008-main-readback.json",
+        "README.md",
+        ".loop/t008-ci-pipelines-graphify-loop.yaml",
+        ".loop/t008-ci-pipelines-ledger.json",
+        ".loop/memory/t008-ci-pipelines.json"
+      ],
+      "details": "The final read-back slice changes evidence, task-state documentation and loop memory only; it does not implement T009 or change runtime, database, credential, deployment or Web3 paths."
+    }
+  ],
+  "task_state": {
+    "t008_checked": true,
+    "t009_checked": false,
+    "t009_dispatched": false,
+    "later_tickets_checked": false,
+    "result": "PASS"
+  },
+  "result": "PASS",
+  "decision": "T008 is complete on main. Keep T009 unchecked and undispatched until a new explicit dispatch authorizes that separate implementation slice.",
+  "next_action": "Close the T008 Graphify terminal state after merging this final read-back receipt; wait for explicit T009 dispatch."
+}

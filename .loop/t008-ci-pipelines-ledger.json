@@ -1,21 +1,16 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t008",
-  "graph_version": 3,
+  "graph_version": 4,
   "run_id": "courtside-tw-t008-ci-pipelines-20260807",
-  "status": "needs_human",
-  "iteration": 3,
+  "status": "success",
+  "iteration": 4,
   "started_at": "2026-08-07T08:11:31Z",
-  "updated_at": "2026-08-07T09:48:00Z",
-  "current_frontier": [
-    "p-final-main-readback"
-  ],
-  "blocked_nodes": [
-    "p-final-main-readback",
-    "s-terminal-policy"
-  ],
-  "terminal_state": "needs_human",
-  "next_action": "Merge the T008 completion slice with expected-head protection, then perform final main read-back; keep T009 unchecked and undispatched until the read-back passes.",
+  "updated_at": "2026-08-07T10:05:00Z",
+  "current_frontier": [],
+  "blocked_nodes": [],
+  "terminal_state": "success",
+  "next_action": "T008 is complete; keep T009 unchecked and undispatched until a new explicit dispatch and main read-back authorize it.",
   "events": [
     {
       "event_id": "evt-t008-ci-pipelines-001-dispatched",
@@ -339,22 +334,127 @@
         "total": 6500
       },
       "terminal_reason": "T008 implementation and runtime/security proofs pass; the final main read-back gate remains open."
+    },
+    {
+      "event_id": "evt-t008-ci-pipelines-005-final-main-readback",
+      "at": "2026-08-07T10:05:00Z",
+      "actor": "codex-supervisor",
+      "type": "final_main_readback",
+      "base_graph_version": 3,
+      "new_graph_version": 4,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": ".loop/evidence/t008-main-readback.json",
+            "after": "Authoritative read-back of main@65f406c confirms T008 checked, T009 unchecked and undispatched."
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-final-main-readback/status",
+            "before": "ready",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-final-main-readback/confidence/score",
+            "before": 0.5,
+            "after": 1
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/s-terminal-policy/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [
+              "p-final-main-readback"
+            ],
+            "after": []
+          },
+          {
+            "op": "replace",
+            "path": "graph.blocked_nodes",
+            "before": [
+              "p-final-main-readback",
+              "s-terminal-policy"
+            ],
+            "after": []
+          },
+          {
+            "op": "replace",
+            "path": "graph.terminal_state",
+            "before": "needs_human",
+            "after": "success"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t008-main-readback.json",
+        ".loop/evidence/t008-completion-receipt.json",
+        ".loop/evidence/t008-runtime-verification-final.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "authoritative main task-state read-back",
+          "level": "P3",
+          "result": "pass",
+          "details": "main@65f406c shows T008 checked, T009 unchecked and no T009 dispatch."
+        },
+        {
+          "proof": "implementation and completion lineage",
+          "level": "P3",
+          "result": "pass",
+          "details": "PR #25 merged at e857d50 and PR #28 merged at 65f406c; the final read-back receipt is based on that authoritative main state."
+        },
+        {
+          "proof": "runtime and security gates",
+          "level": "P2",
+          "result": "pass",
+          "details": "CI #14 and Security #14 passed on reviewed head 15f8317; PostgreSQL, S3 and OIDC image scans passed without an exception."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:t008-ci-pipelines",
+        "version": 3,
+        "evidence_refs": [
+          ".loop/evidence/t008-main-readback.json",
+          ".loop/evidence/t008-completion-receipt.json",
+          ".loop/evidence/t008-runtime-verification-final.json"
+        ],
+        "next_review_at": "2026-08-14",
+        "blocker": null
+      },
+      "failure_signature": null,
+      "decision": "T008 is complete on main. Keep T009 unchecked and undispatched until a new explicit dispatch authorizes that separate implementation slice.",
+      "token_usage": {
+        "estimated": 3000,
+        "input": 0,
+        "output": 0,
+        "total": 3000
+      },
+      "terminal_reason": "Final main read-back passed; T008 terminal policy is satisfied and T009 remains a separate undispatched ticket."
     }
   ],
   "proof": {
-    "claim": "T008 CI, security, dependency automation and T007 runtime revalidation are implemented, security-verified, merged and checked in a separate completion slice; final main read-back remains.",
-    "result": "completion_pending_main_readback",
+    "claim": "T008 CI, security, dependency automation and T007 runtime revalidation are implemented, security-verified, merged and checked on main@65f406c; final main read-back passed.",
+    "result": "success",
     "confidence": 1
   },
   "memory_receipt": {
     "memory_status": "UPDATED",
     "memory_id": "wm:project:courtside-tw:t008-ci-pipelines",
-    "version": 2,
+    "version": 3,
     "evidence_refs": [
+      ".loop/evidence/t008-main-readback.json",
       ".loop/evidence/t008-completion-receipt.json",
       ".loop/evidence/t008-runtime-verification-final.json"
     ],
     "next_review_at": "2026-08-14",
-    "blocker": "main-readback-pending"
+    "blocker": null
   }
 }

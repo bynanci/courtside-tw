@@ -13,7 +13,7 @@ scope:
     - production credentials, deployments or release publishing
     - database migrations or application feature code
     - Web3 writes
-    - marking T008 checked before final main read-back
+    - T009 implementation or dispatch without a new explicit authorization and main read-back
 
 policy:
   human_gates:
@@ -48,9 +48,9 @@ memory_workflow:
 graph:
   entry_nodes: [x-main-readback, t-t008-ready]
   terminal_nodes: [s-terminal-policy]
-  current_frontier: [p-final-main-readback]
-  blocked_nodes: [p-final-main-readback, s-terminal-policy]
-  terminal_state: needs_human
+  current_frontier: []
+  blocked_nodes: []
+  terminal_state: success
 
   nodes:
     - id: x-main-readback
@@ -130,12 +130,12 @@ graph:
       layer: GLOBAL
       label: T008 named terminal-state policy
       owner: policy
-      status: needs_human
+      status: done
       risk: critical
       confidence:
-        score: 0.95
-        basis: Implementation, security, merge and completion-slice proof pass; final main read-back is the remaining terminal gate.
-        evidence_refs: [.loop/t008-ci-pipelines-ledger.json, .loop/evidence/t008-completion-receipt.json]
+        score: 1.0
+        basis: Authoritative main read-back confirms T008 checked, T009 unchecked and undispatched; all implementation, security and merge proofs pass.
+        evidence_refs: [.loop/evidence/t008-main-readback.json, .loop/evidence/t008-runtime-verification-final.json, .loop/t008-ci-pipelines-ledger.json]
 
     - id: p-security-gate
       kind: proof
@@ -154,12 +154,12 @@ graph:
       layer: L2
       label: Final main read-back after T008 completion merge
       owner: verifier
-      status: ready
+      status: done
       risk: medium
       confidence:
-        score: 0.5
-        basis: Completion slice is prepared on main@e857d50; final main checkbox and evidence lineage read-back remains pending.
-        evidence_refs: [.loop/evidence/t008-completion-receipt.json]
+        score: 1.0
+        basis: Authoritative read-back of main@65f406c confirms T008 checked, T009 unchecked and undispatched, with runtime and completion evidence present.
+        evidence_refs: [.loop/evidence/t008-main-readback.json, .loop/evidence/t008-completion-receipt.json, .loop/evidence/t008-runtime-verification-final.json]
 
   edges:
     - {id: e-main-ready, from: x-main-readback, to: t-t008-ready, type: enables, required: true, confidence: 1.0, token_capacity: 4000}
