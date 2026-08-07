@@ -5,10 +5,10 @@ flowchart TD
   p2 --> t1["T006 ready"]
   t1 --> a1["Implement quality baseline"]
   a1 --> p1["Quality proof\nJava Gradle passed"]
-  p1 -.-> t3["Human review"]
+  p1 -.-> t3["Review PASS"]
   p1 -.-> stop["Stop: needs_human\nreview/merge pending"]
-  t3 --> a3["Review current head"]
-  a3 --> p3["Approval proof"]
+  t3 --> a3["Review PASS"]
+  a3 --> p3["Approval PASS"]
   p3 --> gate["Merge gate"]
   gate --> stop
   a2 -.-> m2[("L2 ledger")]
