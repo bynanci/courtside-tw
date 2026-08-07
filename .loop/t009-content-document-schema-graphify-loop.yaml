@@ -74,7 +74,7 @@ memory_workflow:
 graph:
   entry_nodes: [x-phase1-main-readback, t-t009-ready]
   terminal_nodes: [s-t009-terminal]
-  current_frontier: [a-t009-define-contract]
+  current_frontier: [g-t009-review-merge]
   blocked_nodes: []
   nodes:
     - id: x-phase1-main-readback
@@ -163,12 +163,12 @@ graph:
       layer: L1
       label: Define ContentDocument v1 schema and bounded fixtures
       owner: codex-agent
-      status: ready
+      status: done
       risk: high
       confidence:
-        score: 0.82
-        basis: Spec, plan, ADR-0003 and ADR-0005 define the 11 blocks and security constraints; schema-validator parity is intentionally deferred to T010.
-        evidence_refs: [specs/001-taiwan-basketball-magazine-ebook/tasks.md#T009, docs/adr/0003-content-document-and-media-policy.md, docs/adr/0005-motion-and-generative-runtime.md]
+        score: 0.95
+        basis: Schema and fixture proof passed under strict Ajv; schema-validator parity is intentionally deferred to T010.
+        evidence_refs: [specs/001-taiwan-basketball-magazine-ebook/tasks.md#T009, docs/adr/0003-content-document-and-media-policy.md, docs/adr/0005-motion-and-generative-runtime.md, .loop/evidence/t009-schema-proof.json]
       budget:
         effort_hours: 3.0
         tokens: 18000
@@ -183,12 +183,12 @@ graph:
       layer: L1
       label: JSON Schema parses and validates all fixture expectations
       owner: verifier
-      status: planned
+      status: done
       risk: high
       confidence:
-        score: 0.75
-        basis: Validation will run after schema and fixtures are written.
-        evidence_refs: []
+        score: 0.98
+        basis: Ajv2020 strict compilation and valid fixture acceptance passed.
+        evidence_refs: [.loop/evidence/t009-schema-proof.json]
       budget:
         effort_hours: 0.5
         tokens: 5000
@@ -205,12 +205,12 @@ graph:
       layer: L1
       label: Negative fixtures fail for the intended unsafe reason
       owner: verifier
-      status: planned
+      status: done
       risk: high
       confidence:
-        score: 0.75
-        basis: Negative fixtures cover arbitrary type/property, unsafe link, raw URL and generative executable fields.
-        evidence_refs: []
+        score: 0.98
+        basis: All five invalid fixtures were rejected for the intended closed-world, URL, provider or enum constraints.
+        evidence_refs: [.loop/evidence/t009-schema-proof.json]
       budget:
         effort_hours: 0.5
         tokens: 5000
@@ -227,12 +227,12 @@ graph:
       layer: L2
       label: T009 PR review and merge gate
       owner: human-mark
-      status: planned
+      status: ready
       risk: critical
       confidence:
-        score: 0.7
-        basis: Merge requires current-head diff review, proof receipts and explicit user authority.
-        evidence_refs: []
+        score: 0.85
+        basis: Required schema and negative-fixture proof passed; merge still requires current-head review and explicit user authority.
+        evidence_refs: [.loop/evidence/t009-schema-proof.json]
       budget:
         effort_hours: 0.5
         tokens: 3000
@@ -246,12 +246,12 @@ graph:
       layer: L1
       label: Durable T009 task state and constraints
       owner: codex-supervisor
-      status: planned
+      status: done
       risk: medium
       confidence:
-        score: 0.6
-        basis: Dispatch state is written; implementation state awaits proof.
-        evidence_refs: [.loop/evidence/t009-dispatch-20260807.json]
+        score: 0.95
+        basis: Durable T009 state was updated with the independent proof receipt.
+        evidence_refs: [.loop/evidence/t009-dispatch-20260807.json, .loop/evidence/t009-schema-proof.json, .loop/memory/t009-content-document-schema.json]
       budget:
         effort_hours: 0.2
         tokens: 2000
