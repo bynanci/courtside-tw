@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "documentId": "00000000-0000-4000-8000-000000000017",
+  "blocks": [
+    {
+      "id": "00000000-0000-4000-8000-000000000018",
+      "type": "related-reading",
+      "version": 1,
+      "payload": {
+        "articleSlug": "Not-A-Slug",
+        "label": "延伸閱讀"
+      }
+    }
+  ]
+}
