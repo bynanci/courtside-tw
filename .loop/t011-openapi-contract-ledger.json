@@ -1,0 +1,307 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-ticket-implementation-t011",
+  "graph_version": 3,
+  "run_id": "courtside-tw-t011-openapi-contract-20260807",
+  "status": "blocked",
+  "iteration": 3,
+  "started_at": "2026-08-07T12:56:56Z",
+  "updated_at": "2026-08-07T13:07:22Z",
+  "current_frontier": [
+    "x-t009-contract-state"
+  ],
+  "blocked_nodes": [
+    "a-t011-define-openapi",
+    "p-t011-openapi-proof",
+    "g-t011-review-merge"
+  ],
+  "terminal_state": "blocked",
+  "next_action": "Await explicit human merge authority and main read-back for T009; then implement only contracts/openapi.yaml and rerun T011 proof.",
+  "events": [
+    {
+      "event_id": "evt-t011-001-dispatched-blocked",
+      "at": "2026-08-07T12:56:56Z",
+      "actor": "codex-supervisor",
+      "type": "t011_dispatched_blocked_on_t009",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "external.github.branch/ticket/t011-openapi-contract",
+            "after": "Branch created from main@a75f1c2."
+          },
+          {
+            "op": "add",
+            "path": "graph.current_frontier",
+            "after": [
+              "x-t009-contract-state"
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes.a-t011-define-openapi.status",
+            "before": "planned",
+            "after": "blocked"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes.g-t011-review-merge.status",
+            "before": "planned",
+            "after": "blocked"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t011-dispatch-20260807.json",
+        ".loop/evidence/t011-governance-review.json",
+        ".loop/t011-openapi-contract-graphify-loop.yaml",
+        "PR #32"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Phase 1 main read-back",
+          "level": "P3",
+          "result": "pass",
+          "details": "PR #31 merged and main read-back confirms T001-T008 checked; T009 and T011 remain unchecked."
+        },
+        {
+          "proof": "T009 dependency read-back",
+          "level": "P3",
+          "result": "blocked",
+          "details": "T009 current head contains the canonical ContentDocument schema and proof, but the schema is not on main and current-head CI/Security plus human merge/read-back are pending."
+        },
+        {
+          "proof": "scope authorization",
+          "level": "P3",
+          "result": "pass",
+          "details": "Current user direction authorizes starting Phase 2; no merge or checkbox authority was inferred."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "SAVED",
+        "memory_id": "wm:project:courtside-tw:t011-openapi-contract",
+        "version": 1,
+        "retrieval_ids": [
+          "wm:project:courtside-tw:phase1-review",
+          "wm:project:courtside-tw:t009-content-document-schema"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t011-dispatch-20260807.json",
+          ".loop/evidence/t011-governance-review.json",
+          ".loop/memory/t011-openapi-contract.json"
+        ],
+        "next_review_at": "2026-08-08",
+        "blocker": "T009 main read-back"
+      },
+      "failure_signature": {
+        "code": "DEPENDENCY_NOT_ON_MAIN",
+        "message": "T011 cannot create a self-contained canonical ContentDocument $ref while T009 is only on an unmerged branch.",
+        "resolution": "Created a bounded dispatch-only PR with explicit dependency, governance controls, graph frontier and memory receipt; no permissive duplicate schema was added.",
+        "status": "open",
+        "observed_iteration": 1
+      },
+      "token_usage": {
+        "estimated_tokens": 12000,
+        "validator_runtime_seconds": 0,
+        "notes": "Dispatch, dependency analysis, governance mapping and Graphify/memory artifact creation only."
+      },
+      "decision": "DISPATCHED_BLOCKED",
+      "follow_up": "After T009 main read-back, implement contracts/openapi.yaml and independently validate the contract before requesting human review."
+    },
+    {
+      "event_id": "evt-t011-002-graph-structure-repair",
+      "at": "2026-08-07T13:01:47Z",
+      "actor": "codex-supervisor",
+      "type": "graph_strict_validation_repaired",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "graph.nodes.g-t009-main-readback",
+            "after": "L3 human gate for T009 main read-back before T011 implementation."
+          },
+          {
+            "op": "replace",
+            "path": "graph.edges.e-t009-blocks-action",
+            "before": "EXTERNAL -> L1 direct block",
+            "after": "EXTERNAL -> L3 gate -> T011 trigger."
+          },
+          {
+            "op": "add",
+            "path": "graph.loops/-",
+            "after": "l1-execution covers the T011 trigger/action/proof/memory/stop chain."
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t011-graph-proof-20260807.json",
+        ".loop/t011-openapi-contract-graphify-loop.yaml"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Graphify strict validation",
+          "level": "P2",
+          "result": "pass",
+          "details": "Strict validator passed with 10 nodes, 12 edges, one covered action, no errors and no warnings."
+        },
+        {
+          "proof": "external evidence routing",
+          "level": "P2",
+          "result": "pass",
+          "details": "T009 external state now routes through g-t009-main-readback at L3 before the L1 T011 action."
+        },
+        {
+          "proof": "memory workflow coverage",
+          "level": "P2",
+          "result": "pass",
+          "details": "The graph loop includes required trigger/action/proof/memory/stop nodes and memory read/record edges."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:t011-openapi-contract",
+        "version": 2,
+        "retrieval_ids": [
+          "wm:project:courtside-tw:phase1-review",
+          "wm:project:courtside-tw:t009-content-document-schema"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t011-dispatch-20260807.json",
+          ".loop/evidence/t011-graph-proof-20260807.json",
+          ".loop/memory/t011-openapi-contract.json"
+        ],
+        "next_review_at": "2026-08-08",
+        "blocker": "T009 main read-back"
+      },
+      "failure_signature": {
+        "code": "GRAPH_STRICT_STRUCTURE",
+        "message": "Initial graph lacked graph.loops and routed external T009 state directly to an L1 action.",
+        "resolution": "Added the required loop registry and L3 dependency gate; strict validation now passes.",
+        "status": "resolved",
+        "observed_iteration": 2
+      },
+      "token_usage": {
+        "estimated_tokens": 2200,
+        "validator_runtime_seconds": 0.2,
+        "notes": "Graph-only repair and strict revalidation; no API or runtime scope added."
+      },
+      "decision": "GRAPH_VALID_DISPATCH_BLOCKED",
+      "follow_up": "Keep the T009 main read-back gate and do not implement T011 until it opens."
+    },
+    {
+      "event_id": "evt-t011-003-t009-dependency-readback",
+      "at": "2026-08-07T13:07:22Z",
+      "actor": "codex-supervisor",
+      "type": "t009_dependency_workflow_readback",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes.x-t009-contract-state.confidence.basis",
+            "before": "PR #32 has the current schema on its branch, but it is not merged to main.",
+            "after": "PR #32 current-head CI/Security and review threads pass; the schema is still not merged to main."
+          },
+          {
+            "op": "add",
+            "path": "graph.nodes.x-t009-contract-state.config.evidence_refs/-",
+            "after": ".loop/evidence/t011-t009-dependency-readback-20260807.json"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes.x-t009-contract-state.config.limitations",
+            "before": "PR checks and human merge/read-back are unavailable for a self-contained T011 implementation.",
+            "after": "CI/Security and current-head review pass; human merge and main read-back remain unavailable."
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t011-t009-dependency-readback-20260807.json",
+        ".loop/t011-openapi-contract-graphify-loop.yaml",
+        "PR #32",
+        "PR #33"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "T009 CI/Security dependency read-back",
+          "level": "P2",
+          "result": "pass",
+          "details": "T009 CI #43 and Security #43 completed successfully on the current head."
+        },
+        {
+          "proof": "T009 merge/read-back gate",
+          "level": "P3",
+          "result": "blocked",
+          "details": "PR #32 remains open and T009 is unchecked; main does not yet contain the canonical schema."
+        },
+        {
+          "proof": "T011 baseline workflow read-back",
+          "level": "P2",
+          "result": "pass",
+          "details": "PR #33 CI #44 and Security #44 completed successfully before this dependency receipt update."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:t011-openapi-contract",
+        "version": 3,
+        "retrieval_ids": [
+          "wm:project:courtside-tw:phase1-review",
+          "wm:project:courtside-tw:t009-content-document-schema"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t011-graph-proof-20260807.json",
+          ".loop/evidence/t011-t009-dependency-readback-20260807.json",
+          ".loop/memory/t011-openapi-contract.json"
+        ],
+        "next_review_at": "2026-08-08",
+        "blocker": "T009 human merge and main read-back"
+      },
+      "failure_signature": null,
+      "token_usage": {
+        "estimated_tokens": 1800,
+        "validator_runtime_seconds": 0,
+        "notes": "Dependency/workflow read-back and graph frontier update; no OpenAPI implementation."
+      },
+      "decision": "DEPENDENCY_STILL_BLOCKED",
+      "follow_up": "Keep T011 unchecked and do not implement contracts/openapi.yaml until T009 is merged and read back from main."
+    }
+  ],
+  "proof": [
+    {
+      "proof_id": "t011-graph-proof-20260807",
+      "level": "P2",
+      "result": "pass",
+      "evidence_ref": ".loop/evidence/t011-graph-proof-20260807.json",
+      "recorded_at": "2026-08-07T13:01:47Z"
+    },
+    {
+      "proof_id": "t011-t009-dependency-readback-20260807",
+      "level": "P2",
+      "result": "pass",
+      "evidence_ref": ".loop/evidence/t011-t009-dependency-readback-20260807.json",
+      "recorded_at": "2026-08-07T13:07:22Z"
+    }
+  ],
+  "memory_receipt": {
+    "memory_status": "UPDATED",
+    "memory_id": "wm:project:courtside-tw:t011-openapi-contract",
+    "version": 3,
+    "retrieval_ids": [
+      "wm:project:courtside-tw:phase1-review",
+      "wm:project:courtside-tw:t009-content-document-schema"
+    ],
+    "evidence_refs": [
+      ".loop/evidence/t011-graph-proof-20260807.json",
+      ".loop/evidence/t011-t009-dependency-readback-20260807.json",
+      ".loop/memory/t011-openapi-contract.json"
+    ],
+    "next_review_at": "2026-08-08",
+    "blocker": "T009 human merge and main read-back"
+  }
+}
