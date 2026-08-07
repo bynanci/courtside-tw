@@ -1,0 +1,489 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-ticket-implementation-t007
+objective: Establish a reproducible local PostgreSQL 18, S3 emulator and OIDC stub stack with bounded host exposure and fail-closed dependency probes.
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - infra/compose/compose.yaml
+    - infra/compose/.env.example
+    - scripts/dev/check-dependencies.sh
+    - T007 implementation, static proof, runtime proof and append-only Graphify evidence
+  out:
+    - T007 runtime health revalidation remains a follow-up owned by T008 CI
+    - T008 CI or security workflows
+    - production providers, credentials, secrets, deployments or Web3 writes
+    - database schema, migrations, application integration or User Story implementation
+
+policy:
+  human_gates:
+    - merge the T007 implementation PR
+    - accept a missing Docker runtime or any failed container health proof
+    - change the approved dependency versions, ports or task acceptance
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+memory_workflow:
+  contract: work-memory/v1
+  control_ledger: Append Graphify deltas, proof receipts, blocker signatures and token usage every iteration.
+  semantic_memory: Capture only durable T007 constraints and verified or explicitly unknown runtime facts.
+  modes: [recall, capture, update, forget, no_op]
+  retrieval:
+    levels: [index, timeline_relations, details]
+    max_index_results: 10
+    stop_on_sufficient_evidence: true
+  capture:
+    allowed_kinds: [constraint, fact, attempt, task_state, evidence]
+    requires_downstream_proof: true
+    requires_write_receipt: true
+  lifecycle: [seed, verified, stable, needs_update, disputed, archived]
+  failure_policy:
+    write_pending: blocked
+    stale_or_disputed: needs_human
+    redact_secrets: true
+
+graph:
+  entry_nodes: [x-main-readback, t-supervisor, t-human-review]
+  terminal_nodes: [s-terminal-policy]
+  current_frontier: [g-t007-merge]
+  blocked_nodes: [p-runtime-proof, s-terminal-policy]
+  terminal_state: needs_human
+
+  loops:
+    - id: l2-t007-supervision
+      layer: L2
+      owner: codex-supervisor
+      trigger_nodes: [t-supervisor]
+      action_nodes: [a-reconcile]
+      proof_nodes: [p-reconciliation]
+      memory_nodes: [m-l2-ledger]
+      stop_nodes: [s-terminal-policy]
+      budgets:
+        max_iterations: 2
+        max_minutes: 20
+        max_same_failure: 2
+        max_graph_changes: 8
+        max_tokens: 18000
+
+    - id: l1-t007-execution
+      layer: L1
+      owner: codex-agent
+      trigger_nodes: [t-t007-ready]
+      action_nodes: [a-implement-t007]
+      proof_nodes: [p-static-proof, p-runtime-proof]
+      memory_nodes: [m-l1-ledger]
+      stop_nodes: [s-terminal-policy]
+      budgets:
+        max_iterations: 3
+        max_minutes: 60
+        max_same_failure: 2
+        max_graph_changes: 12
+        max_tokens: 36000
+
+    - id: l3-t007-merge
+      layer: L3
+      owner: human-mark
+      trigger_nodes: [t-human-review]
+      action_nodes: [a-review-t007]
+      proof_nodes: [p-human-approval]
+      memory_nodes: [m-l3-decisions]
+      stop_nodes: [s-terminal-policy]
+      budgets:
+        max_iterations: 2
+        max_minutes: 60
+        max_same_failure: 2
+        max_graph_changes: 8
+        max_tokens: 18000
+
+  nodes:
+    - id: x-main-readback
+      kind: external
+      layer: EXTERNAL
+      label: Authoritative main read-back after PR 23 merge
+      owner: github-and-project-state
+      status: done
+      risk: medium
+      confidence:
+        score: 1.0
+        basis: PR 23 is merged at main@74b03ec4; T001-T006 are checked, T007 is unchecked and no T007 branch or open PR existed before dispatch.
+        evidence_refs: [.loop/evidence/t007-dispatch.json]
+      budget:
+        effort_hours: 0.1
+        tokens: 1800
+      config:
+        source_type: repository-and-approved-user-direction
+        freshness: Read from the post-merge main commit 74b03ec43493ca205590ac4e3da80659fa66a0e4.
+        limitations: GitHub status checks are not configured; no CI pass is inferred.
+
+    - id: t-supervisor
+      kind: trigger
+      layer: L2
+      label: T007 is the next dependency-foundation frontier
+      owner: codex-supervisor
+      status: done
+      risk: low
+      confidence:
+        score: 1.0
+        basis: Current user direction explicitly requests merging PR 23 and processing T007; the task contract names one bounded implementation slice.
+        evidence_refs: [specs/001-taiwan-basketball-magazine-ebook/tasks.md#T007]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: T006 evidence reconciliation is merged and a fresh main read-back makes T007 eligible.
+        inputs_required: [main read-back, T007 task contract, ADR-0001, ADR-0002]
+        dedupe: T007 plus main@74b03ec4 plus no-competing-branch
+
+    - id: a-reconcile
+      kind: action
+      layer: L2
+      label: Reconcile T007 scope, versions, ports and exclusions
+      owner: codex-supervisor
+      status: done
+      risk: medium
+      confidence:
+        score: 0.98
+        basis: T007 is limited to three named files; provider-neutral local stubs and loopback-only ports preserve the accepted architecture boundary.
+        evidence_refs: [.loop/evidence/t007-dispatch.json]
+      budget:
+        effort_hours: 0.25
+        tokens: 3500
+      config:
+        workflow: [read main and task contract, confirm image and endpoint choices, create isolated branch, preserve exclusions]
+        allowed: [read state, select local-only image tags, record dispatch evidence]
+        requires_approval: [merge T007, accept blocked runtime proof, change dependency versions or task acceptance]
+        forbidden: [production credentials, vendor SDKs, CI, migrations, application integration, Web3 writes]
+
+    - id: p-reconciliation
+      kind: proof
+      layer: L2
+      label: T007 authoritative scope and base proof
+      owner: verifier
+      status: done
+      risk: low
+      confidence:
+        score: 0.99
+        basis: Dispatch receipt binds the branch to main@74b03ec4, exact task paths, dependency image choices and forbidden scope.
+        evidence_refs: [.loop/evidence/t007-dispatch.json]
+      budget:
+        effort_hours: 0.15
+        tokens: 2500
+      config:
+        level: P2
+        claim: T007 is authorized as one local-dependency slice from the authoritative main read-back.
+        method: Compare tasks.md, README, ADR boundaries, main SHA, branch and dispatch scope.
+        evidence_path: .loop/evidence/t007-dispatch.json
+        required: true
+        baseline_required: true
+
+    - id: m-l2-ledger
+      kind: memory
+      layer: L2
+      label: T007 supervisor dispatch ledger
+      owner: codex-supervisor
+      status: done
+      risk: low
+      confidence:
+        score: 0.95
+        basis: The T007 ledger records the bounded dispatch, base SHA and current runtime-proof blocker without closing the task.
+        evidence_refs: [.loop/t007-local-dependencies-ledger.json]
+      budget:
+        effort_hours: 0.05
+        tokens: 800
+      config:
+        path: .loop/t007-local-dependencies-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: work-memory/v1
+        memory_role: hybrid
+        receipt_required: true
+        write_failure_state: blocked
+
+    - id: t-t007-ready
+      kind: trigger
+      layer: L1
+      label: T007 branch is isolated from authoritative main
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        score: 1.0
+        basis: Branch ticket/t007-local-dependencies was created from main@74b03ec4 with no competing T007 branch.
+        evidence_refs: [.loop/evidence/t007-dispatch.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: T007 dispatch proof exists and the exact three implementation paths are available for a bounded change.
+        inputs_required: [T007 task, dispatch receipt, base SHA, toolchain and ADR boundaries]
+        dedupe: T007 plus main@74b03ec4 plus local-dependency-path-set
+
+    - id: a-implement-t007
+      kind: action
+      layer: L1
+      label: Implement local Compose dependencies and fail-closed probe
+      owner: codex-agent
+      status: verifying
+      risk: medium
+      confidence:
+        score: 0.93
+        basis: The three T007 implementation files exist and static checks pass; container behavior remains unverified because this runner has no Docker CLI or daemon.
+        evidence_refs: [.loop/evidence/t007-compose-static-proof.json, .loop/evidence/t007-implementation-proof.json]
+      budget:
+        effort_hours: 1.5
+        tokens: 16000
+      config:
+        workflow: [write Compose and local env template, add health checks, add probe, run static proof, run container proof when runtime exists]
+        allowed: [write T007 paths, write T007 evidence and Graphify records]
+        requires_approval: [accept missing runtime proof, merge T007, mark T007 checked, dispatch T008]
+        forbidden: [production secrets, broad host binds, external network access, provider SDKs, CI, migrations or product code]
+
+    - id: p-static-proof
+      kind: proof
+      layer: L1
+      label: Compose and shell static proof
+      owner: verifier
+      status: done
+      risk: medium
+      confidence:
+        score: 0.99
+        basis: YAML parsing, service/image/health/network/port assertions, shell syntax, help contract and fail-closed behavior passed in the staging proof.
+        evidence_refs: [.loop/evidence/t007-compose-static-proof.json]
+      budget:
+        effort_hours: 0.4
+        tokens: 4500
+      config:
+        level: P2
+        claim: T007 artifacts are syntactically valid, bounded to local development and fail closed without Docker.
+        method: PyYAML parse, deterministic assertions, sh -n, --help execution and missing-runtime negative test.
+        evidence_path: .loop/evidence/t007-compose-static-proof.json
+        required: true
+        baseline_required: true
+
+    - id: p-runtime-proof
+      kind: proof
+      layer: L1
+      label: Container bring-up and health proof
+      owner: verifier
+      status: blocked
+      risk: high
+      confidence:
+        score: 0.99
+        basis: The current runner reports docker command not found; no container start or health result is available.
+        evidence_refs: [.loop/evidence/t007-implementation-proof.json]
+      budget:
+        effort_hours: 0.75
+        tokens: 7000
+      config:
+        level: P2
+        claim: PostgreSQL, S3Mock and mock-oauth2-server start and report healthy through their declared probes.
+        method: Run scripts/dev/check-dependencies.sh check on a Docker/Compose-capable runner and retain service health output.
+        evidence_path: .loop/evidence/t007-runtime-proof.json
+        required: true
+        baseline_required: true
+
+    - id: m-l1-ledger
+      kind: memory
+      layer: L1
+      label: T007 execution and proof ledger
+      owner: codex-agent
+      status: done
+      risk: low
+      confidence:
+        score: 0.92
+        basis: Semantic memory and the append-only ledger record static proof plus the explicit Docker runtime unknown without claiming container success.
+        evidence_refs: [.loop/t007-local-dependencies-ledger.json, .loop/memory/t007-local-dependencies.json]
+      budget:
+        effort_hours: 0.05
+        tokens: 1000
+      config:
+        path: .loop/t007-local-dependencies-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: work-memory/v1
+        memory_role: hybrid
+        receipt_required: true
+        write_failure_state: blocked
+
+    - id: t-human-review
+      kind: trigger
+      layer: L3
+      label: T007 review and merge decision
+      owner: human-mark
+      status: done
+      risk: high
+      confidence:
+        score: 1.0
+        basis: Mark's current direction explicitly accepts the named runtime blocker for this merge and requires T008 CI revalidation.
+        evidence_refs: [.loop/evidence/t007-human-acceptance.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: Inspect the final T007 head, proof receipts and runtime blocker before merge.
+        inputs_required: [T007 diff, static proof, runtime proof, Graphify ledger, branch and PR read-back]
+        dedupe: T007 implementation fingerprint plus current-head review-run-id
+
+    - id: a-review-t007
+      kind: action
+      layer: L3
+      label: Review T007 scope, health checks and blocker
+      owner: human-mark
+      status: done
+      risk: high
+      confidence:
+        score: 1.0
+        basis: Current-head review distinguishes static correctness from unexecuted container behavior; Mark accepted the bounded follow-up explicitly.
+        evidence_refs: [.loop/evidence/t007-compose-static-proof.json, .loop/evidence/t007-implementation-proof.json, .loop/evidence/t007-human-acceptance.json]
+      budget:
+        effort_hours: 0.25
+        tokens: 3500
+      config:
+        workflow: [inspect current-head diff, verify exact scope, read static/runtime receipts, decide merge or bounded follow-up]
+        allowed: [human review, bounded follow-up request and explicit merge decision]
+        requires_approval: [accept blocked runtime proof, merge T007, mark T007 checked, dispatch T008]
+        forbidden: [waive missing proof silently, broaden scope, claim health without runtime receipt]
+
+    - id: p-human-approval
+      kind: proof
+      layer: L3
+      label: Explicit T007 merge acceptance
+      owner: human-mark
+      status: done
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: Mark explicitly accepted the missing Docker runtime proof as a bounded follow-up owned by T008 CI.
+        evidence_refs: [.loop/evidence/t007-human-acceptance.json]
+      budget:
+        effort_hours: 0.25
+        tokens: 2500
+      config:
+        level: P3
+        claim: T007 is accepted for merge only with complete runtime proof or explicit bounded acceptance of the missing runtime proof.
+        method: Human current-head review, exact scope check, runtime receipt or explicit blocker decision and rollback plan.
+        evidence_path: .loop/evidence/t007-review-proof.json
+        required: true
+        baseline_required: false
+
+    - id: g-t007-merge
+      kind: gate
+      layer: L3
+      label: T007 review and merge gate
+      owner: human-mark
+      status: ready
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: Mark's explicit current instruction supplies the required acceptance; merge remains guarded by final current-head review and expected-head SHA.
+        evidence_refs: [.loop/evidence/t007-human-acceptance.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: Explicitly accept the current-head T007 proof and merge decision after runtime evidence is complete or the blocker is bounded.
+        approver: human-mark
+        required: true
+
+    - id: m-l3-decisions
+      kind: memory
+      layer: L3
+      label: T007 human decision ledger
+      owner: human-mark
+      status: ready
+      risk: low
+      confidence:
+        score: 0.9
+        basis: The decision record is pending the current-head review and must not be inferred from silence.
+        evidence_refs: [.loop/t007-local-dependencies-ledger.json]
+      budget:
+        effort_hours: 0.05
+        tokens: 800
+      config:
+        path: .loop/t007-local-dependencies-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: work-memory/v1
+        memory_role: semantic_memory
+        receipt_required: true
+        write_failure_state: needs_human
+
+    - id: s-terminal-policy
+      kind: stop
+      layer: GLOBAL
+      label: T007 named terminal-state policy
+      owner: policy
+      status: needs_human
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: Static proof is complete and Mark authorized checkbox/merge with runtime health retained as an explicit T008 follow-up; main read-back is still pending.
+        evidence_refs: [.loop/t007-local-dependencies-ledger.json, .loop/evidence/t007-compose-static-proof.json, .loop/evidence/t007-implementation-proof.json, .loop/evidence/t007-human-acceptance.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        states:
+          success: Static and runtime health proof pass, current-head review/merge is complete, main read-back passes and T007 is checked.
+          no_op: An equivalent reproducible dependency stack already exists and no safe change is required.
+          blocked: Docker/Compose runtime or required health proof is unavailable.
+          stalled: The same failure or no-evidence-delta limit is reached.
+          exhausted: An iteration, time, graph-change or token budget is reached.
+          needs_human: Runtime-proof acceptance, review, merge, checkbox or dispatch authorization is pending.
+          cancelled: The user cancels or governing artifacts become invalid.
+
+  edges:
+    - {id: e-main-feedback, from: x-main-readback, to: a-reconcile, type: feedback, required: true, confidence: 1.0, token_capacity: 5000}
+    - {id: e-supervisor-action, from: t-supervisor, to: a-reconcile, type: enables, required: true, confidence: 1.0, token_capacity: 8000}
+    - {id: e-reconcile-proof, from: a-reconcile, to: p-reconciliation, type: verifies, required: true, confidence: 0.99, token_capacity: 6000}
+    - {id: e-reconcile-ready, from: p-reconciliation, to: t-t007-ready, type: enables, required: true, confidence: 0.99, token_capacity: 7000}
+    - {id: e-l2-memory-action, from: a-reconcile, to: m-l2-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-l2-memory-proof, from: p-reconciliation, to: m-l2-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-l2-memory-read, from: m-l2-ledger, to: a-reconcile, type: reads, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-l2-memory-feedback, from: m-l2-ledger, to: a-reconcile, type: feedback, required: true, confidence: 0.95, token_capacity: 3000}
+
+    - {id: e-ready-implementation, from: t-t007-ready, to: a-implement-t007, type: enables, required: true, confidence: 1.0, token_capacity: 12000}
+    - {id: e-implementation-static, from: a-implement-t007, to: p-static-proof, type: verifies, required: true, confidence: 0.99, token_capacity: 7000}
+    - {id: e-implementation-runtime, from: a-implement-t007, to: p-runtime-proof, type: verifies, required: true, confidence: 0.95, token_capacity: 9000}
+    - {id: e-static-memory, from: p-static-proof, to: m-l1-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-runtime-memory, from: p-runtime-proof, to: m-l1-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-l1-memory-read, from: m-l1-ledger, to: a-implement-t007, type: reads, required: true, confidence: 0.92, token_capacity: 4000}
+    - {id: e-l1-memory-feedback, from: m-l1-ledger, to: a-implement-t007, type: feedback, required: true, confidence: 0.92, token_capacity: 4000}
+    - {id: e-runtime-review-feedback, from: p-runtime-proof, to: t-human-review, type: feedback, required: true, confidence: 0.9, token_capacity: 6000}
+    - {id: e-runtime-stop, from: p-runtime-proof, to: s-terminal-policy, type: enables, required: false, confidence: 0.9, token_capacity: 4000}
+
+    - {id: e-human-action, from: t-human-review, to: a-review-t007, type: enables, required: true, confidence: 1.0, token_capacity: 6000}
+    - {id: e-human-proof, from: a-review-t007, to: p-human-approval, type: verifies, required: true, confidence: 1.0, token_capacity: 5000}
+    - {id: e-human-gate, from: p-human-approval, to: g-t007-merge, type: requires_approval, required: true, confidence: 1.0, token_capacity: 4000}
+    - {id: e-gate-terminal, from: g-t007-merge, to: s-terminal-policy, type: approves, required: true, confidence: 1.0, token_capacity: 3000}
+    - {id: e-l3-memory-action, from: a-review-t007, to: m-l3-decisions, type: records, required: true, confidence: 0.9, token_capacity: 2000}
+    - {id: e-l3-memory-proof, from: p-human-approval, to: m-l3-decisions, type: records, required: true, confidence: 0.9, token_capacity: 2000}
+    - {id: e-l3-memory-read, from: m-l3-decisions, to: a-review-t007, type: reads, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-l3-memory-feedback, from: m-l3-decisions, to: a-review-t007, type: feedback, required: true, confidence: 0.9, token_capacity: 2500}
+
+flow:
+  source: t-supervisor
+  sink: s-terminal-policy
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - memory_receipt
+  - next_action

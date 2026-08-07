@@ -1,0 +1,74 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t007-compose-static-proof-20260807",
+  "generated_at": "2026-08-07T07:17:14Z",
+  "actor": "codex-agent",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T007",
+  "branch": "ticket/t007-local-dependencies",
+  "proof_level": "P2",
+  "checks": [
+    {
+      "id": "yaml-parse",
+      "method": "PyYAML safe_load of infra/compose/compose.yaml",
+      "result": "PASS",
+      "observed": "Three services, local internal network and volume declarations parsed successfully."
+    },
+    {
+      "id": "service-contract",
+      "method": "Deterministic assertions over service names and pinned images",
+      "result": "PASS",
+      "observed": "postgres, s3 and oidc are present with PostgreSQL 18.4, S3Mock 5.1.0 and mock-oauth2-server 5.0.2 image references."
+    },
+    {
+      "id": "health-and-network-contract",
+      "method": "Static inspection of healthcheck, port and network fields",
+      "result": "PASS",
+      "observed": "All services declare healthchecks; host ports bind to 127.0.0.1; the Compose network is internal; readiness endpoints are /favicon.ico and /isalive."
+    },
+    {
+      "id": "s3-v5-environment-contract",
+      "method": "Static assertion of S3Mock 5.x COM_ADOBE_TESTING_S3MOCK_* environment names",
+      "result": "PASS",
+      "observed": "Initial buckets, root and retain-files settings use the documented 5.x property names."
+    },
+    {
+      "id": "shell-syntax",
+      "method": "sh -n scripts/dev/check-dependencies.sh",
+      "result": "PASS",
+      "observed": "POSIX shell syntax is valid."
+    },
+    {
+      "id": "help-contract",
+      "method": "scripts/dev/check-dependencies.sh --help",
+      "result": "PASS",
+      "observed": "check, up, config, status, down and help commands are documented."
+    },
+    {
+      "id": "fail-closed",
+      "method": "scripts/dev/check-dependencies.sh config without Docker CLI",
+      "result": "PASS",
+      "observed": "Exit is non-zero with an explicit Docker CLI requirement; no fallback or fake healthy state is emitted."
+    },
+    {
+      "id": "local-secrets",
+      "method": "Scan Compose and env template for production credentials or unbounded host exposure",
+      "result": "PASS",
+      "observed": "Only an explicitly local-only PostgreSQL placeholder is present; no token, private key, production endpoint or non-loopback published port is present."
+    }
+  ],
+  "source_refs": [
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T007",
+    "docs/adr/0001-application-topology.md",
+    "docs/adr/0002-identity-and-hosting-providers.md",
+    "https://github.com/adobe/S3Mock#health-check",
+    "https://github.com/navikt/mock-oauth2-server#standalone--docker",
+    "https://hub.docker.com/_/postgres#pgdata"
+  ],
+  "result": "success",
+  "confidence": 0.99,
+  "limitations": [
+    "Static proof cannot establish that image tags are pullable or that containers become healthy on this runner."
+  ],
+  "next_action": "Run the runtime proof on a Docker/Compose-capable runner."
+}

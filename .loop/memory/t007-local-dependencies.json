@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "memory_id": "wm:project:courtside-tw:t007-local-dependencies",
+  "scope": "project",
+  "kind": "task_state",
+  "title": "T007 local dependency stack has static proof but runtime proof is pending",
+  "summary": "T007 is dispatched from main@74b03ec4 with provider-neutral local PostgreSQL, S3Mock and OIDC Compose contracts. Static safeguards pass; the current runner has no Docker CLI, so container health remains unknown and T007 must stay unchecked.",
+  "claims": [
+    {
+      "text": "T007 uses loopback-only published ports, an internal Compose network, local placeholder values and pinned local-test images.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Compose parsing, shell syntax, help behavior and fail-closed behavior pass the available static proof.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "PostgreSQL, S3Mock and mock-oauth2-server container health on this runner is unknown because Docker is unavailable.",
+      "class": "UNKNOWN",
+      "confidence": "high"
+    }
+  ],
+  "status": "verified",
+  "confidence": "medium",
+  "confidence_basis": [
+    ".loop/evidence/t007-compose-static-proof.json",
+    ".loop/evidence/t007-runtime-proof.json",
+    ".loop/evidence/t007-implementation-proof.json"
+  ],
+  "volatility": "medium",
+  "as_of": "2026-08-07",
+  "source_refs": [
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T007",
+    "docs/adr/0001-application-topology.md",
+    "docs/adr/0002-identity-and-hosting-providers.md",
+    ".loop/evidence/t007-compose-static-proof.json",
+    ".loop/evidence/t007-runtime-proof.json"
+  ],
+  "entities": [
+    "T007",
+    "PostgreSQL 18",
+    "S3Mock",
+    "mock-oauth2-server",
+    "Docker Compose"
+  ],
+  "relations": {
+    "supports": [],
+    "contradicts": [],
+    "supersedes": [],
+    "blocks": [
+      "wm:project:courtside-tw:t008-ci"
+    ],
+    "invalidates": []
+  },
+  "next_review_at": "2026-08-14",
+  "sensitivity": "internal",
+  "retention": "until_superseded"
+}

@@ -1,0 +1,70 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t007-dispatch-20260807",
+  "generated_at": "2026-08-07T07:17:14Z",
+  "actor": "codex-supervisor",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T007",
+  "base_main": "74b03ec43493ca205590ac4e3da80659fa66a0e4",
+  "branch": "ticket/t007-local-dependencies",
+  "authority": {
+    "source": "current Mark direction",
+    "decision": "dispatch exactly one bounded T007 implementation slice after merging PR #23 and reading back main",
+    "approval_scope": "create branch, write T007 files and evidence, run bounded verification, open a reviewable PR",
+    "not_authorized": [
+      "merge T007",
+      "accept missing container proof",
+      "check T007",
+      "dispatch T008",
+      "add production credentials or provider configuration"
+    ]
+  },
+  "task_contract": {
+    "source": "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T007",
+    "paths": [
+      "infra/compose/compose.yaml",
+      "infra/compose/.env.example",
+      "scripts/dev/check-dependencies.sh"
+    ],
+    "requirements": [
+      "PostgreSQL 18",
+      "S3 emulator",
+      "OIDC stub",
+      "health checks",
+      "no production secrets"
+    ]
+  },
+  "dependency_choices": {
+    "postgres": "postgres:18.4-alpine3.24",
+    "s3": "adobe/s3mock:5.1.0",
+    "oidc": "ghcr.io/navikt/mock-oauth2-server:5.0.2"
+  },
+  "scope_guard": {
+    "runtime_paths": [
+      "infra/compose/compose.yaml",
+      "infra/compose/.env.example",
+      "scripts/dev/check-dependencies.sh"
+    ],
+    "evidence_paths": [
+      ".loop/evidence/t007-dispatch.json",
+      ".loop/evidence/t007-compose-static-proof.json",
+      ".loop/evidence/t007-runtime-proof.json",
+      ".loop/evidence/t007-implementation-proof.json",
+      ".loop/t007-local-dependencies-graphify-loop.yaml",
+      ".loop/t007-local-dependencies-ledger.json",
+      ".loop/memory/t007-local-dependencies.json"
+    ],
+    "forbidden": [
+      "T008 CI",
+      "database migrations",
+      "application integration",
+      "production provider selection",
+      "credentials and secrets",
+      "Web3 writes",
+      "tasks.md checkbox"
+    ]
+  },
+  "result": "dispatched",
+  "confidence": 1.0,
+  "next_action": "Implement the three T007 paths and obtain independent static and runtime proof before any merge or checkbox update."
+}

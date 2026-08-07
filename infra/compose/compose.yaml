@@ -1,0 +1,70 @@
+name: ${COMPOSE_PROJECT_NAME:-courtside-tw-local}
+
+services:
+  postgres:
+    image: postgres:18.4-alpine3.24
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-courtside}
+      POSTGRES_USER: ${POSTGRES_USER:-courtside}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-courtside-local-only}
+      PGDATA: /var/lib/postgresql/18/docker
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$${POSTGRES_USER}" -d "$${POSTGRES_DB}" -h 127.0.0.1
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    networks:
+      - local
+
+  s3:
+    image: adobe/s3mock:5.1.0
+    environment:
+      COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS: ${S3_INITIAL_BUCKETS:-courtside-local}
+      COM_ADOBE_TESTING_S3MOCK_STORE_RETAIN_FILES_ON_EXIT: ${S3_RETAIN_FILES_ON_EXIT:-false}
+      COM_ADOBE_TESTING_S3MOCK_STORE_ROOT: /data
+    ports:
+      - "127.0.0.1:${S3_PORT:-9090}:9090"
+    volumes:
+      - s3-data:/data
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget --no-verbose --tries=1 --spider http://127.0.0.1:9090/favicon.ico || exit 1
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    networks:
+      - local
+
+  oidc:
+    image: ghcr.io/navikt/mock-oauth2-server:5.0.2
+    environment:
+      SERVER_PORT: 8080
+    ports:
+      - "127.0.0.1:${OIDC_PORT:-8080}:8080"
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - wget --no-verbose --tries=1 --spider http://127.0.0.1:8080/isalive || exit 1
+      interval: 5s
+      timeout: 5s
+      retries: 12
+      start_period: 10s
+    networks:
+      - local
+
+networks:
+  local:
+    internal: true
+
+volumes:
+  postgres-data:
+  s3-data:

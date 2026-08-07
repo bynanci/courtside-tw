@@ -1,0 +1,8 @@
+flowchart TD
+  MAIN["main read-back 74b03ec4"] --> RECON["reconcile T007 scope"]
+  RECON --> STATIC["static proof"]
+  STATIC --> RUNTIME["runtime health proof"]
+  RUNTIME --> REVIEW["human review / merge gate"]
+  REVIEW --> TERMINAL["T007 terminal state"]
+  RUNTIME -. "Docker unavailable" .-> BLOCKED["blocked: run on Docker-capable runner"]
+  BLOCKED --> RUNTIME

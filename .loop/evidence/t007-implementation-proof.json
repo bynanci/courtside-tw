@@ -1,0 +1,54 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t007-implementation-proof-20260807",
+  "generated_at": "2026-08-07T07:17:14Z",
+  "actor": "codex-supervisor",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T007",
+  "branch": "ticket/t007-local-dependencies",
+  "base_main": "74b03ec43493ca205590ac4e3da80659fa66a0e4",
+  "implementation_paths": [
+    "infra/compose/compose.yaml",
+    "infra/compose/.env.example",
+    "scripts/dev/check-dependencies.sh"
+  ],
+  "implementation_contract": {
+    "postgres": {
+      "image": "postgres:18.4-alpine3.24",
+      "host_bind": "127.0.0.1:${POSTGRES_PORT:-5432}:5432",
+      "data_mount": "/var/lib/postgresql",
+      "pgdata": "/var/lib/postgresql/18/docker",
+      "health_endpoint": "pg_isready"
+    },
+    "s3": {
+      "image": "adobe/s3mock:5.1.0",
+      "host_bind": "127.0.0.1:${S3_PORT:-9090}:9090",
+      "health_endpoint": "/favicon.ico",
+      "environment_contract": "COM_ADOBE_TESTING_S3MOCK_STORE_*"
+    },
+    "oidc": {
+      "image": "ghcr.io/navikt/mock-oauth2-server:5.0.2",
+      "host_bind": "127.0.0.1:${OIDC_PORT:-8080}:8080",
+      "health_endpoint": "/isalive"
+    }
+  },
+  "proof_refs": [
+    ".loop/evidence/t007-compose-static-proof.json",
+    ".loop/evidence/t007-runtime-proof.json"
+  ],
+  "scope_review": {
+    "runtime_changed": false,
+    "application_code_changed": false,
+    "database_or_migrations_changed": false,
+    "ci_changed": false,
+    "production_credentials_changed": false,
+    "production_deployment": false,
+    "tasks_checkbox_changed": false
+  },
+  "result": "BLOCKED",
+  "static_proof": "PASS",
+  "runtime_proof": "BLOCKED",
+  "confidence": 0.96,
+  "decision": "Keep T007 unchecked and stop at the runtime-proof/merge gate until a Docker-capable runner produces actual health receipts or Mark explicitly accepts the bounded blocker.",
+  "rollback": "Revert the T007 implementation commit or close the draft PR; named volumes are not removed by the probe's down command."
+}

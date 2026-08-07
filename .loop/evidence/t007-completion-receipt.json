@@ -1,0 +1,63 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t007-completion-20260807",
+  "generated_at": "2026-08-07T07:53:11.016Z",
+  "actor": "codex-supervisor",
+  "subject": "T007 checkbox completion candidate and merge gate",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T007",
+  "authorization": {
+    "claim_status": "CONFIRMED",
+    "approved_by": "Mark",
+    "source": "current user direction",
+    "scope": "Check T007 and merge PR #24 before starting T008"
+  },
+  "completion": {
+    "checkbox_path": "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    "t007_checked": true,
+    "t008_checked": false,
+    "t008_dispatched": false,
+    "readback_required": true
+  },
+  "proof": [
+    {
+      "claim": "Static proof",
+      "result": "PASS",
+      "evidence_ref": ".loop/evidence/t007-compose-static-proof.json"
+    },
+    {
+      "claim": "Runtime health proof",
+      "result": "BLOCKED",
+      "evidence_ref": ".loop/evidence/t007-runtime-proof.json"
+    },
+    {
+      "claim": "Human bounded-risk acceptance",
+      "result": "PASS_WITH_FOLLOW_UP",
+      "evidence_ref": ".loop/evidence/t007-human-acceptance.json"
+    }
+  ],
+  "scope_guard": {
+    "changed_runtime_paths": [
+      "infra/compose/compose.yaml",
+      "infra/compose/.env.example",
+      "scripts/dev/check-dependencies.sh"
+    ],
+    "completion_paths": [
+      "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+      "README.md",
+      ".loop/evidence/t007-human-acceptance.json",
+      ".loop/evidence/t007-completion-receipt.json",
+      ".loop/memory/t007-merge-acceptance.json"
+    ],
+    "forbidden": [
+      "T008 implementation before main read-back",
+      "production credentials",
+      "database migrations",
+      "application integration",
+      "Web3 writes"
+    ]
+  },
+  "result": "accepted_with_follow_up",
+  "decision": "Merge PR #24 only after current-head review; do not claim container health; perform main read-back before T008 dispatch.",
+  "rollback": "Revert the T007 implementation merge commit; runtime proof follow-up remains independently executable through T008 CI."
+}

@@ -1,0 +1,60 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t007-human-acceptance-20260807",
+  "generated_at": "2026-08-07T07:53:11.016Z",
+  "actor": "codex-supervisor",
+  "subject": "T007 merge and checkbox acceptance with bounded runtime-proof follow-up",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T007",
+  "authorization": {
+    "claim_status": "CONFIRMED",
+    "instruction": "先幫我打[x]勾選任務並merge，再幫我執行T008",
+    "approved_by": "Mark",
+    "approval_scope": [
+      "check T007 in specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+      "merge PR #24 after current-head review",
+      "proceed to T008 only after main read-back"
+    ],
+    "explicit_risk_acceptance": "Accept the known docker-runtime-unavailable blocker as bounded follow-up; do not represent container health as verified."
+  },
+  "canonical_source": {
+    "pull_request": 24,
+    "url": "https://github.com/bynanci/courtside-tw/pull/24",
+    "branch": "ticket/t007-local-dependencies",
+    "implementation_paths": [
+      "infra/compose/compose.yaml",
+      "infra/compose/.env.example",
+      "scripts/dev/check-dependencies.sh"
+    ]
+  },
+  "evidence": [
+    {
+      "claim": "Static Compose and shell proof",
+      "result": "PASS",
+      "evidence_ref": ".loop/evidence/t007-compose-static-proof.json"
+    },
+    {
+      "claim": "Container bring-up and health proof",
+      "result": "BLOCKED",
+      "evidence_ref": ".loop/evidence/t007-runtime-proof.json",
+      "residual_risk": "PostgreSQL, S3Mock and OIDC health remain UNKNOWN until a Docker/Compose-capable CI runner executes the probe."
+    },
+    {
+      "claim": "Current human acceptance",
+      "result": "PASS_WITH_FOLLOW_UP",
+      "evidence_ref": ".loop/evidence/t007-human-acceptance.json"
+    }
+  ],
+  "scope_guard": {
+    "runtime_implementation_changed": false,
+    "database_or_migrations_changed": false,
+    "providers_or_credentials_changed": false,
+    "production_deployment": false,
+    "Web3_writes": false,
+    "T008_implementation": false
+  },
+  "decision": "T007_CHECKBOX_AND_MERGE_AUTHORIZED_WITH_RUNTIME_PROOF_FOLLOW_UP",
+  "result": "accepted_with_follow_up",
+  "confidence": 1,
+  "next_action": "Review and merge PR #24 with expected head, read back main, then dispatch exactly one T008 implementation slice; T008 CI must revalidate the T007 Compose stack."
+}

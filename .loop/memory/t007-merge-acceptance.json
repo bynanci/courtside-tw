@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "memory_id": "wm:project:courtside-tw:t007-merge-acceptance",
+  "scope": "project",
+  "kind": "decision",
+  "title": "T007 merge accepted with bounded Docker runtime-proof follow-up",
+  "summary": "Mark explicitly authorized checking and merging T007 before T008. Static proof passes; Docker container health remains UNKNOWN and must be revalidated by T008 CI.",
+  "claims": [
+    {
+      "text": "Mark explicitly approved T007 checkbox completion and PR #24 merge before T008 dispatch.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "T007 static Compose, network, port, healthcheck, shell and fail-closed proof passes.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "PostgreSQL, S3Mock and mock-oauth2-server runtime health remains UNKNOWN because the current runner has no Docker CLI.",
+      "class": "UNKNOWN",
+      "confidence": "high"
+    },
+    {
+      "text": "T008 CI must revalidate the T007 dependency stack before its runtime proof is treated as complete.",
+      "class": "INFERRED",
+      "confidence": "medium"
+    }
+  ],
+  "status": "verified",
+  "confidence": "high",
+  "confidence_basis": [
+    ".loop/evidence/t007-human-acceptance.json",
+    ".loop/evidence/t007-compose-static-proof.json",
+    ".loop/evidence/t007-runtime-proof.json"
+  ],
+  "volatility": "medium",
+  "as_of": "2026-08-07",
+  "source_refs": [
+    "https://github.com/bynanci/courtside-tw/pull/24",
+    ".loop/evidence/t007-human-acceptance.json",
+    ".loop/evidence/t007-runtime-proof.json"
+  ],
+  "entities": [
+    "T007",
+    "T008",
+    "Docker Compose",
+    "PostgreSQL",
+    "S3Mock",
+    "OIDC"
+  ],
+  "relations": {
+    "supports": [],
+    "contradicts": [],
+    "supersedes": [
+      "wm:project:courtside-tw:t007-local-dependencies"
+    ],
+    "blocks": [],
+    "invalidates": []
+  },
+  "decision": {
+    "context": "The user explicitly requested T007 checkbox completion and merge before T008, while the current runner cannot execute Docker.",
+    "chosen": "Accept T007 for merge with a bounded runtime-proof follow-up owned by T008 CI.",
+    "alternatives": [
+      "Keep T007 blocked until an external Docker runner is available"
+    ],
+    "tradeoffs": [
+      "Earlier T008 progress",
+      "Runtime health remains unverified until CI"
+    ],
+    "invalidation": "If T008 CI cannot start or health-check the three services, reopen T007 and block dependent integration work."
+  },
+  "next_review_at": "2026-08-14",
+  "sensitivity": "internal",
+  "retention": "until_superseded"
+}
