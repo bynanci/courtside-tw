@@ -1,0 +1,119 @@
+{
+  "schema_version": "courtside-tw-governance-review/v1",
+  "evidence_id": "t011-governance-review",
+  "generated_at": "2026-08-07T12:56:56Z",
+  "actor": "codex-supervisor",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T011",
+  "decision": "REVIEW_REQUIRED",
+  "scope": {
+    "subject": "OpenAPI 3.1 API v1 contract",
+    "stage": "dispatch blocked before implementation",
+    "mutation_class": "contract-only repository change; no runtime or external side effect"
+  },
+  "risk": {
+    "inherent_tier": "G2",
+    "residual_tier": "G2",
+    "operational_state": "ELEVATED",
+    "rationale": "The contract covers public data, reader identity, editorial/publisher actions, optional SIWE and error/security boundaries. Runtime authorization, provider policy and generated-client parity are not verified in this slice.",
+    "hard_overrides": [
+      "Do not approve or merge without human review.",
+      "Do not infer runtime authorization from an OpenAPI document.",
+      "Do not add credentials, production writes or provider side effects."
+    ],
+    "unknowns": [
+      "T009 canonical ContentDocument schema is not available on main.",
+      "T010 validator parity and T012 generated-client parity are not yet implemented.",
+      "Runtime auth, rate limiting, optimistic locking and audit behavior remain unverified."
+    ]
+  },
+  "controls": [
+    {
+      "id": "GOV-001",
+      "status": "PLANNED",
+      "note": "System card and API inventory are represented by the bounded T011 scope and operation list."
+    },
+    {
+      "id": "GOV-002",
+      "status": "PLANNED",
+      "note": "Human merge/checkbox authority is separated from contract drafting."
+    },
+    {
+      "id": "GOV-003",
+      "status": "PLANNED",
+      "note": "T011 is gated on T009 main read-back and current-head proof."
+    },
+    {
+      "id": "DAT-001",
+      "status": "PLANNED",
+      "note": "Contract examples must minimize fields and avoid secrets or draft content."
+    },
+    {
+      "id": "DAT-003",
+      "status": "PLANNED",
+      "note": "No secret values or credential material are permitted in the contract."
+    },
+    {
+      "id": "DAT-004",
+      "status": "PLANNED",
+      "note": "Reader/editorial operations must express pre-retrieval authorization requirements."
+    },
+    {
+      "id": "MOD-003",
+      "status": "PLANNED",
+      "note": "ContentDocument responses require canonical schema references and evidence-bound examples."
+    },
+    {
+      "id": "APP-002",
+      "status": "PLANNED",
+      "note": "Lint, $ref resolution and representative problem responses are required before review."
+    },
+    {
+      "id": "AGT-001",
+      "status": "PLANNED",
+      "note": "The operation allowlist is limited to T011 tasks.md scope."
+    },
+    {
+      "id": "AGT-003",
+      "status": "PLANNED",
+      "note": "Publisher transitions and media revoke operations remain human/runtime protected actions."
+    },
+    {
+      "id": "OPS-001",
+      "status": "PLANNED",
+      "note": "requestId, audit and stable error fields must be contract-visible without claiming runtime proof."
+    },
+    {
+      "id": "HUM-001",
+      "status": "REQUIRED",
+      "note": "Human final authority is required for merge and task completion."
+    }
+  ],
+  "authority": {
+    "dispatch": "CONFIRMED by current user direction to start Phase 2 tickets",
+    "implementation": "BOUNDED after T009 canonical schema is read back from main",
+    "merge": "REQUIRES explicit human approval",
+    "task_checkbox": "REQUIRES explicit human approval"
+  },
+  "verification": {
+    "current_level": "P3",
+    "required_before_review": [
+      "T009 main read-back",
+      "OpenAPI 3.1 parse/lint",
+      "local ContentDocument $ref resolution",
+      "representative examples for success and 400/401/403/404/409/422/429 problem responses",
+      "CI/Security and review pass"
+    ],
+    "final_level": "P2",
+    "status": "BLOCKED"
+  },
+  "trails": [
+    "main@a75f1c250155216ec0b3f9f1f3a130bf4ff1c43e",
+    "PR #31",
+    "PR #32",
+    ".loop/evidence/t011-dispatch-20260807.json",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T011",
+    "specs/001-taiwan-basketball-magazine-ebook/plan.md#API Contract Surface"
+  ],
+  "next_action": "Keep T011 blocked and unchecked until T009 is merged/read back on main; then implement only the OpenAPI contract and run the stated proof."
+}
