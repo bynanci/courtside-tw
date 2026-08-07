@@ -1,0 +1,46 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t008-static-proof-20260807",
+  "generated_at": "2026-08-07T08:11:31Z",
+  "actor": "codex-agent",
+  "subject": "T008 workflow static proof",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T008",
+  "branch": "ticket/t008-ci-pipelines",
+  "proof": [
+    {
+      "claim": "YAML structure",
+      "result": "PASS",
+      "method": "PyYAML safe_load for ci.yml, security.yml and dependabot.yml"
+    },
+    {
+      "claim": "Action immutability",
+      "result": "PASS",
+      "method": "Every workflow uses reference is a 40-character lowercase commit SHA"
+    },
+    {
+      "claim": "Least privilege",
+      "result": "PASS",
+      "method": "Workflow and job permissions are explicitly scoped to read, with CodeQL security-events write only"
+    },
+    {
+      "claim": "Required verification coverage",
+      "result": "PASS",
+      "method": "CI includes frontend contract checks, Java quality/unit checks and Docker Compose health; security includes dependency, secret, container and CodeQL scans"
+    },
+    {
+      "claim": "Report retention",
+      "result": "PASS",
+      "method": "Upload-artifact steps run always and retain logs/reports for 14 days"
+    },
+    {
+      "claim": "Dependency automation",
+      "result": "PASS",
+      "method": "Dependabot covers npm, Gradle, Docker Compose and GitHub Actions"
+    }
+  ],
+  "status": "pass",
+  "limitations": [
+    "GitHub Actions jobs have not completed yet; Docker health and repository checks remain runtime-pending."
+  ]
+}
