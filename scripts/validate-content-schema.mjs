@@ -30,7 +30,7 @@ assert.match(validFixture.documentId, /-7[0-9a-f]{3}-/i)
 
 const duplicateFile = "duplicate-block-id.json"
 const schemaInvalidFiles = invalidFiles.filter((file) => file !== duplicateFile)
-assert.equal(schemaInvalidFiles.length, 21, "unexpected schema-invalid fixture count")
+assert.equal(schemaInvalidFiles.length, 23, "unexpected schema-invalid fixture count")
 
 for (const file of schemaInvalidFiles) {
   const fixture = JSON.parse(fs.readFileSync(path.join(invalidDir, file), "utf8"))
