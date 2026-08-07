@@ -250,12 +250,12 @@ graph:
       layer: L1
       label: T006 quality gate verification receipt
       owner: verifier
-      status: blocked
+      status: done
       risk: high
       confidence:
-        score: 0.9
+        score: 0.99
         basis: Node installation, formatting, lint, typecheck, root verify, build, SSR smoke, XML parsing and Java Gradle quality tasks pass on the compatible proof runner.
-        evidence_refs: [.loop/evidence/t006-implementation-proof.json]
+        evidence_refs: [.loop/evidence/t006-implementation-proof.json, .loop/evidence/t006-java-quality-proof.json]
       budget:
         effort_hours: 0.75
         tokens: 9000
