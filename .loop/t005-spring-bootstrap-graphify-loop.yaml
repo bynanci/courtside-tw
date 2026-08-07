@@ -253,7 +253,7 @@ graph:
         level: P2
         claim: Both api and worker Spring profiles start successfully from a clean T005 checkout without later-task dependencies or secrets.
         method: Run the pinned Gradle test/build contract and start each profile with bounded local settings; inspect changed files and shutdown cleanly.
-        evidence_path: .loop/evidence/t005-profile-boot.json
+        evidence_path: .loop/evidence/t005-implementation-proof.json
         required: true
         baseline_required: true
 
