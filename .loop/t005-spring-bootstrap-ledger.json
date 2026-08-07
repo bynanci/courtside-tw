@@ -1,25 +1,20 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t005",
-  "graph_version": 3,
+  "graph_version": 7,
   "run_id": "courtside-tw-t005-spring-bootstrap-20260806",
-  "status": "ready",
-  "iteration": 2,
+  "status": "needs_human",
+  "iteration": 4,
   "started_at": "2026-08-06T23:44:00Z",
-  "updated_at": "2026-08-06T23:48:36Z",
+  "updated_at": "2026-08-07T01:48:10Z",
   "current_frontier": [
-    "a-spring-scaffold"
+    "t-human-review"
   ],
   "blocked_nodes": [
-    "p-spring-boot",
-    "t-human-review",
-    "a-review-t005",
-    "p-human-approval",
-    "g-t005-approval",
     "s-terminal-policy"
   ],
-  "terminal_state": "running",
-  "next_action": "Implement only the four T005 Java/Spring files on ticket/t005-spring-bootstrap, then run both api and worker profile boot proofs.",
+  "terminal_state": "needs_human",
+  "next_action": "Merge PR #8 with the approved head SHA, read back main, and append the merge receipt before marking T005 complete.",
   "events": [
     {
       "event_id": "evt-t005-spring-bootstrap-001-graph-initialized",
@@ -179,10 +174,297 @@
         "total": 2500
       },
       "terminal_reason": "Branch and draft PR are read back; no T005 implementation files have been added."
+    },
+    {
+      "event_id": "evt-t005-spring-bootstrap-004-implementation-proof",
+      "at": "2026-08-07T01:19:49Z",
+      "actor": "codex-agent",
+      "type": "implementation_and_proof_attempt",
+      "base_graph_version": 3,
+      "new_graph_version": 4,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "apps/api/build.gradle.kts",
+            "after": "Java 21 Gradle build with Spring Boot 4.1 web/test dependencies."
+          },
+          {
+            "op": "add",
+            "path": "apps/api/settings.gradle.kts",
+            "after": "Reproducible plugin and dependency repository settings for the API artifact."
+          },
+          {
+            "op": "add",
+            "path": "apps/api/src/main/java/tw/basketball/magazine/MagazineApplication.java",
+            "after": "Minimal shared Spring Boot entry point."
+          },
+          {
+            "op": "add",
+            "path": "apps/api/src/main/resources/application.yml",
+            "after": "Bounded api servlet and worker non-web profiles."
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/t-t005-ready/status",
+            "before": "ready",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-spring-scaffold/status",
+            "before": "ready",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-spring-boot/status",
+            "before": "planned",
+            "after": "blocked"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": ["a-spring-scaffold"],
+            "after": ["p-spring-boot"]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t005-dispatch.json",
+        ".loop/evidence/t005-implementation-proof.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "implementation inventory",
+          "level": "P2",
+          "result": "pass",
+          "details": "Exactly the four paths authorized by T005 are present; no later-task or provider/database files were added."
+        },
+        {
+          "proof": "static source contract",
+          "level": "P2",
+          "result": "pass",
+          "details": "YAML parses as three documents with api/worker selectors; Java source contains the required package, SpringBootApplication annotation and SpringApplication.run entry point."
+        },
+        {
+          "proof": "profile boot",
+          "level": "P2",
+          "result": "blocked",
+          "details": "Gradle 8.14 with isolated Temurin 21.0.12 started, but Java dependency resolution failed because the runner could not connect to the configured proxy; neither api nor worker boot is claimed."
+        }
+      ],
+      "failure_signature": "java-gradle-dependency-resolution-network-unavailable",
+      "decision": "The bounded T005 implementation is ready for review, but Merge Gate is BLOCKED until both profile boot proofs run on a dependency-resolution-capable Java 21/Gradle runner; do not merge or mark T005 complete.",
+      "token_usage": {
+        "estimated": 9000,
+        "input": 0,
+        "output": 0,
+        "total": 9000
+      },
+      "terminal_reason": "Required profile proof is unavailable in the current runner; the next safe action is a proof-capable rerun followed by human review."
+    },
+    {
+      "event_id": "evt-t005-spring-bootstrap-005-proof-path-reconciled",
+      "at": "2026-08-07T01:21:43Z",
+      "actor": "codex-agent",
+      "type": "evidence_path_reconciled",
+      "base_graph_version": 4,
+      "new_graph_version": 5,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-spring-boot/config/evidence_path",
+            "before": ".loop/evidence/t005-profile-boot.json",
+            "after": ".loop/evidence/t005-implementation-proof.json"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t005-implementation-proof.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "evidence path existence",
+          "level": "P2",
+          "result": "pass",
+          "details": "The blocked profile proof node now points to the append-only implementation-proof receipt that records the attempted checks and environment blocker."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Keep the Merge Gate blocked; reconcile the proof node to an existing evidence receipt without changing the acceptance requirement for both profile boots.",
+      "token_usage": {
+        "estimated": 1000,
+        "input": 0,
+        "output": 0,
+        "total": 1000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-t005-spring-bootstrap-006-fix-and-profile-proof-pass",
+      "at": "2026-08-07T01:46:24Z",
+      "actor": "codex-agent",
+      "type": "implementation_fix_and_profile_proof",
+      "base_graph_version": 5,
+      "new_graph_version": 6,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "apps/api/build.gradle.kts/repository-policy",
+            "before": "Project repositories declared while settings uses FAIL_ON_PROJECT_REPOS; dependency versions were managed implicitly.",
+            "after": "Project repository block removed; Spring Boot web starter pinned to 4.1.0 and unused dependency-management/test scaffolding removed from this setup slice."
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-spring-scaffold/confidence",
+            "before": 0.94,
+            "after": 0.98
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-spring-boot/status",
+            "before": "blocked",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-spring-boot/confidence",
+            "before": 0.86,
+            "after": 0.98
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/t-human-review/status",
+            "before": "planned",
+            "after": "ready"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": ["p-spring-boot"],
+            "after": ["t-human-review"]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t005-implementation-proof.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Gradle clean build",
+          "level": "P2",
+          "result": "pass",
+          "details": "Gradle 8.14 with Java 21 completed clean build; compileJava, bootJar, check and test (no test sources) succeeded against a temporary Maven mirror."
+        },
+        {
+          "proof": "api profile boot",
+          "level": "P2",
+          "result": "pass",
+          "details": "bootRun started the api profile, initialized and started Tomcat on bounded port 18081, then was stopped by the timeout guard."
+        },
+        {
+          "proof": "worker profile boot",
+          "level": "P2",
+          "result": "pass",
+          "details": "bootRun started the worker profile as a non-web process and logged Started MagazineApplication before clean task completion."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "T005 implementation and required profile proof pass; open the human review/merge gate. Do not mark T005 checked until explicit approval is recorded.",
+      "token_usage": {
+        "estimated": 7500,
+        "input": 0,
+        "output": 0,
+        "total": 7500
+      },
+      "terminal_reason": "L1 proof is complete; L3 review and explicit merge/completion approval are pending."
+    },
+    {
+      "event_id": "evt-t005-spring-bootstrap-007-review-merge-approved",
+      "at": "2026-08-07T01:48:10Z",
+      "actor": "codex-supervisor",
+      "type": "review_and_merge_approval",
+      "base_graph_version": 6,
+      "new_graph_version": 7,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": ".loop/evidence/t005-review-approval.json",
+            "after": "Mark's explicit approval for PR #8 merge after passing scope, build, profile and strict graph review."
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/t-human-review/status",
+            "before": "ready",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-review-t005/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-human-approval/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/g-t005-approval/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/m-l3-t005-decisions/status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": ["t-human-review"],
+            "after": ["s-terminal-policy"]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t005-review-approval.json",
+        ".loop/evidence/t005-implementation-proof.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Code Review and Merge Gate",
+          "level": "P3",
+          "result": "pass",
+          "details": "PR #8 scope is bounded to T005, static and strict graph checks pass, and Gradle clean build plus both profile boot proofs pass."
+        },
+        {
+          "proof": "human merge approval",
+          "level": "P3",
+          "result": "pass",
+          "details": "Mark approved PR #8 for merge; task checkbox completion remains a separate receipt after main read-back."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Merge PR #8 with the reviewed head SHA, then read back main and record the merge receipt; do not dispatch later tickets yet.",
+      "token_usage": {
+        "estimated": 3500,
+        "input": 0,
+        "output": 0,
+        "total": 3500
+      },
+      "terminal_reason": "Review and merge approval are complete; the remote merge and main read-back are the final terminal action."
     }
   ],
   "proof": {
-    "claim": "T005 is dispatched from the verified T003 completion baseline with a strict graph and bounded four-file implementation scope; no implementation is claimed.",
+    "claim": "T005 four-file implementation passes static scope checks, Gradle clean build, both api/worker profile boots and explicit merge approval; remote merge and main read-back remain to be recorded.",
     "result": "pass",
     "confidence": 0.98
   }
