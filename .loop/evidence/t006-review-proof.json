@@ -1,0 +1,40 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t006-review-proof-20260807",
+  "generated_at": "2026-08-07T06:20:00Z",
+  "actor": "codex-agent",
+  "subject": "T006 current-head code review and merge readiness",
+  "repository": "bynanci/courtside-tw",
+  "pull_request": 20,
+  "reviewed_head": "22e6623462e9d367c5e364088c5832f8b1c03290",
+  "base_commit": "a1afadb1ff45028627d5d84ad5a114aca85411e4",
+  "review_id": 4880398361,
+  "decision": "PASS",
+  "risk_tier": "T2",
+  "findings": [],
+  "scope_review": {
+    "changed_files": 19,
+    "allowed_scope": "T006 quality configuration, root enforcement support, lockfile and append-only evidence",
+    "forbidden_scope_absent": [
+      "T007_or_later",
+      "CI_workflows",
+      "databases",
+      "providers",
+      "credentials",
+      "deployments",
+      "Web3_writes"
+    ]
+  },
+  "gate_receipts": [
+    ".loop/evidence/t006-implementation-proof.json",
+    ".loop/evidence/t006-java-quality-proof.json",
+    ".loop/evidence/t006-graph-validation-v2.json"
+  ],
+  "status_checks": {
+    "configured": false,
+    "result": "none",
+    "interpretation": "No CI status is configured; no CI pass is inferred."
+  },
+  "residual_risk": "T006 checkbox completion remains a separate post-merge governance and main read-back gate.",
+  "next_action": "Merge PR #20 with expected head 22e6623462e9d367c5e364088c5832f8b1c03290, then perform the separate completion/read-back gate."
+}
