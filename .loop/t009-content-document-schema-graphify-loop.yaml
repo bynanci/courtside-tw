@@ -194,7 +194,7 @@ graph:
       confidence:
         score: 0.98
         basis: Ajv2020 strict compilation and valid fixture acceptance passed.
-        evidence_refs: [.loop/evidence/t009-schema-proof.json]
+        evidence_refs: [.loop/evidence/t009-schema-proof.json, .loop/evidence/t009-ci-security-20260807.json]
       budget:
         effort_hours: 0.5
         tokens: 5000
@@ -237,7 +237,7 @@ graph:
       risk: critical
       confidence:
         score: 0.85
-        basis: Latest Ajv and focused boundary proof passed; merge still requires current-head review and explicit user authority.
+        basis: Latest Ajv, focused boundary proof, CI/Security and current-head review threads pass; merge still requires explicit human authority and main read-back.
         evidence_refs: [.loop/evidence/t009-schema-proof.json]
       budget:
         effort_hours: 0.5
