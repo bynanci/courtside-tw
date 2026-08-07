@@ -1,0 +1,48 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t006-evidence-reconciliation-20260807",
+  "generated_at": "2026-08-07T06:59:11.016Z",
+  "actor": "codex-supervisor",
+  "subject": "T006 evidence conflict reconciliation before T007 dispatch",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T006",
+  "branch": "ticket/t006-evidence-reconciliation",
+  "base_main": "62bbf64b460072a88126fe845b528a22f8cf9f9d",
+  "findings": [
+    {
+      "id": "scope-overclaim",
+      "prior_receipt": ".loop/evidence/t006-main-readback.json",
+      "prior_claim": "T007 and later remain unchecked and undispatched",
+      "correction": "Narrow the assertion to T007 and explicitly enumerate T097 as a prior completed alignment slice.",
+      "status": "corrected"
+    },
+    {
+      "id": "merged-head-mismatch",
+      "prior_receipt": ".loop/evidence/t006-review-proof.json",
+      "prior_reviewed_head": "22e6623462e9d367c5e364088c5832f8b1c03290",
+      "actual_pr20_head": "99afeaf4a344000d80f4dc4b67e149c20a5f7092",
+      "correction": "Attach .loop/evidence/t006-merged-head-reconciliation.json as an independent actual-head scope re-read.",
+      "status": "corrected"
+    },
+    {
+      "id": "incomplete-graph-delta",
+      "prior_event": "evt-t006-quality-baseline-010-final-main-readback",
+      "prior_graph_transition": "9->10",
+      "correction": "Append event 011 with the omitted x-main-readback and s-terminal-policy evidence, freshness, limitation and basis changes.",
+      "status": "corrected"
+    }
+  ],
+  "corrections": {
+    "readback_scope": ".loop/evidence/t006-main-readback.json",
+    "actual_merged_head": ".loop/evidence/t006-merged-head-reconciliation.json",
+    "graph_delta": "evt-t006-quality-baseline-011-evidence-reconciliation",
+    "graph_version_after_correction": 11
+  },
+  "runtime_changed": false,
+  "database_or_migrations_changed": false,
+  "providers_or_credentials_changed": false,
+  "production_deployment": false,
+  "result": "success",
+  "confidence": 0.99,
+  "next_action": "Merge this bounded reconciliation, read back main at the resulting SHA, then dispatch exactly T007 if its task contract still matches."
+}
