@@ -40,6 +40,11 @@
       "text": "The repaired T011 Graphify graph passes strict validation with 10 nodes, 12 edges, a complete loop registry and an L3 route for the external T009 dependency.",
       "class": "CONFIRMED",
       "confidence": "high"
+    },
+    {
+      "text": "T009 current-head CI/Security and review threads pass, while the canonical schema remains absent from main; T011's implementation gate is still blocked.",
+      "class": "CONFIRMED",
+      "confidence": "high"
     }
   ],
   "status": "verified",
@@ -51,7 +56,8 @@
     "specs/001-taiwan-basketball-magazine-ebook/plan.md#API Contract Surface",
     "main@a75f1c250155216ec0b3f9f1f3a130bf4ff1c43e",
     "PR #32",
-    ".loop/evidence/t011-graph-proof-20260807.json"
+    ".loop/evidence/t011-graph-proof-20260807.json",
+    ".loop/evidence/t011-t009-dependency-readback-20260807.json"
   ],
   "volatility": "medium",
   "as_of": "2026-08-07",
@@ -64,7 +70,8 @@
     "docs/adr/0004-identity-wallet-and-entitlements.md",
     "main@a75f1c250155216ec0b3f9f1f3a130bf4ff1c43e",
     "ticket/t009-content-document-schema@8584c914b771c2e45e372a0fad1e9e98ee148209",
-    ".loop/evidence/t011-graph-proof-20260807.json"
+    ".loop/evidence/t011-graph-proof-20260807.json",
+    ".loop/evidence/t011-t009-dependency-readback-20260807.json"
   ],
   "entities": [
     "T011",
@@ -94,10 +101,11 @@
     "tradeoffs": [
       "The dispatch PR is useful and auditable but does not yet deliver contracts/openapi.yaml.",
       "T011 waits on T009, preserving a single source of truth and a resolvable local $ref.",
-      "Runtime authorization, rate limiting, audit, provider rights and generated-client parity remain later proofs."
+      "Runtime authorization, rate limiting, audit, provider rights and generated-client parity remain later proofs.",
+      "Workflow-clean T009 reduces implementation uncertainty but does not replace the main read-back or human merge gate."
     ],
     "invalidation": "If tasks.md, the API Contract Surface plan, ADR-0003/0004, or T009 canonical schema changes, mark this record needs_update and stop before implementing T011.",
-    "proof": "Phase 1 main read-back and the T009 PR/dependency state were read back from GitHub; the dispatch, governance, graph, ledger and memory artifacts are saved on the T011 branch. OpenAPI lint and example proof remain blocked. Strict Graphify and work-memory validators pass; the OpenAPI implementation proof remains blocked on T009 main read-back."
+    "proof": "Phase 1 main read-back and the T009 PR/dependency state were read back from GitHub; the dispatch, governance, graph, ledger and memory artifacts are saved on the T011 branch. OpenAPI lint and example proof remain blocked. Strict Graphify and work-memory validators pass; the OpenAPI implementation proof remains blocked on T009 main read-back. T009 CI/Security and T011 baseline CI/Security were read back as pass; the canonical schema is still not on main."
   },
   "next_review_at": "2026-08-08",
   "sensitivity": "internal",
