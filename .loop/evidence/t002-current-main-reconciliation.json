@@ -1,0 +1,63 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t002-current-main-reconciliation-20260807",
+  "generated_at": "2026-08-07T04:20:55Z",
+  "actor": "codex-supervisor",
+  "subject": "T002 current-main status reconciliation baseline",
+  "repository": "bynanci/courtside-tw",
+  "authoritative_state": {
+    "ref": "main",
+    "commit_sha": "a4d43ed42203953eac8add12c58ca3527d1c6356",
+    "tasks_path": "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    "tasks_blob_sha": "5b7a7b4fa01e2801e8b6884ed77293e20f27f4ba",
+    "current_t002_checkbox": "[ ]",
+    "current_t004_checkbox": "[x]",
+    "current_t005_checkbox": "[x]",
+    "current_t006_checkbox": "[ ]",
+    "open_pull_requests": [],
+    "t002_branches": ["ticket/t002-architecture-decisions"]
+  },
+  "historical_acceptance": {
+    "pull_request": 4,
+    "merge_commit": "0a41d715748551989bc91bc38e521f0951498235",
+    "accepted_adr_count": 6,
+    "adr_statuses": "ACCEPTED",
+    "historical_t002_checked": true,
+    "receipt": ".loop/evidence/t002-merge-readback.json"
+  },
+  "conflict": {
+    "class": "STATUS_DRIFT",
+    "confirmed_facts": [
+      "PR #4 merged the six ADR decision documents and recorded them as ACCEPTED.",
+      "The historical T002 main read-back recorded T002 checked at that time.",
+      "Current main at a4d43ed records T002 unchecked.",
+      "T004 is complete and T006 is still unchecked and undispatched."
+    ],
+    "inferred_cause": "A later branch carried a stale tasks.md state forward; the exact introducing commit is not required to repair the present state.",
+    "impact": "The Phase 1 checkpoint and next-task frontier are ambiguous; dispatching T006 would bypass an unresolved repository state conflict."
+  },
+  "decision": {
+    "result": "REVIEW_REQUIRED",
+    "chosen_action": "Create one governance-only T002 status reconciliation PR from current main.",
+    "deferred_action": "Do not dispatch T006 until the reconciliation is reviewed, merged and read back.",
+    "reason": "SAFE-006 record conflict and the task checkpoint require authoritative reconciliation before new implementation."
+  },
+  "allowed_paths": [
+    "README.md",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    ".loop/evidence/t002-current-main-reconciliation.json",
+    ".loop/evidence/t002-status-reconciliation-acceptance.json",
+    ".loop/t002-status-reconciliation-graphify-loop.yaml",
+    ".loop/t002-status-reconciliation-graphify-loop.mmd",
+    ".loop/t002-status-reconciliation-ledger.json",
+    ".loop/memory/t002-status-reconciliation.json"
+  ],
+  "forbidden_paths": ["apps/**", "packages/**", "contracts/**", "infra/**", ".github/**", "docs/adr/0001-0006"],
+  "limitations": [
+    "No current CI workflow or status checks are configured.",
+    "This receipt is a baseline before the proposed branch commit and is not a final main read-back.",
+    "The historical T002 receipt is preserved and not rewritten."
+  ],
+  "result": "pass",
+  "confidence": 0.98
+}
