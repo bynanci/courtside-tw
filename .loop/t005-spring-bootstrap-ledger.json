@@ -1,14 +1,14 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t005",
-  "graph_version": 3,
+  "graph_version": 4,
   "run_id": "courtside-tw-t005-spring-bootstrap-20260806",
-  "status": "ready",
-  "iteration": 2,
+  "status": "blocked",
+  "iteration": 3,
   "started_at": "2026-08-06T23:44:00Z",
-  "updated_at": "2026-08-06T23:48:36Z",
+  "updated_at": "2026-08-07T01:19:49Z",
   "current_frontier": [
-    "a-spring-scaffold"
+    "p-spring-boot"
   ],
   "blocked_nodes": [
     "p-spring-boot",
@@ -18,8 +18,8 @@
     "g-t005-approval",
     "s-terminal-policy"
   ],
-  "terminal_state": "running",
-  "next_action": "Implement only the four T005 Java/Spring files on ticket/t005-spring-bootstrap, then run both api and worker profile boot proofs.",
+  "terminal_state": "blocked",
+  "next_action": "Provide a Java 21/Gradle runner with dependency-resolution access, rerun both api and worker profile boot proofs, then open the review gate; do not mark T005 complete.",
   "events": [
     {
       "event_id": "evt-t005-spring-bootstrap-001-graph-initialized",
@@ -179,11 +179,100 @@
         "total": 2500
       },
       "terminal_reason": "Branch and draft PR are read back; no T005 implementation files have been added."
+    },
+    {
+      "event_id": "evt-t005-spring-bootstrap-004-implementation-proof",
+      "at": "2026-08-07T01:19:49Z",
+      "actor": "codex-agent",
+      "type": "implementation_and_proof_attempt",
+      "base_graph_version": 3,
+      "new_graph_version": 4,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "apps/api/build.gradle.kts",
+            "after": "Java 21 Gradle build with Spring Boot 4.1 web/test dependencies."
+          },
+          {
+            "op": "add",
+            "path": "apps/api/settings.gradle.kts",
+            "after": "Reproducible plugin and dependency repository settings for the API artifact."
+          },
+          {
+            "op": "add",
+            "path": "apps/api/src/main/java/tw/basketball/magazine/MagazineApplication.java",
+            "after": "Minimal shared Spring Boot entry point."
+          },
+          {
+            "op": "add",
+            "path": "apps/api/src/main/resources/application.yml",
+            "after": "Bounded api servlet and worker non-web profiles."
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/t-t005-ready/status",
+            "before": "ready",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-spring-scaffold/status",
+            "before": "ready",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-spring-boot/status",
+            "before": "planned",
+            "after": "blocked"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": ["a-spring-scaffold"],
+            "after": ["p-spring-boot"]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t005-dispatch.json",
+        ".loop/evidence/t005-implementation-proof.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "implementation inventory",
+          "level": "P2",
+          "result": "pass",
+          "details": "Exactly the four paths authorized by T005 are present; no later-task or provider/database files were added."
+        },
+        {
+          "proof": "static source contract",
+          "level": "P2",
+          "result": "pass",
+          "details": "YAML parses as three documents with api/worker selectors; Java source contains the required package, SpringBootApplication annotation and SpringApplication.run entry point."
+        },
+        {
+          "proof": "profile boot",
+          "level": "P2",
+          "result": "blocked",
+          "details": "Gradle 8.14 with isolated Temurin 21.0.12 started, but Java dependency resolution failed because the runner could not connect to the configured proxy; neither api nor worker boot is claimed."
+        }
+      ],
+      "failure_signature": "java-gradle-dependency-resolution-network-unavailable",
+      "decision": "The bounded T005 implementation is ready for review, but Merge Gate is BLOCKED until both profile boot proofs run on a dependency-resolution-capable Java 21/Gradle runner; do not merge or mark T005 complete.",
+      "token_usage": {
+        "estimated": 9000,
+        "input": 0,
+        "output": 0,
+        "total": 9000
+      },
+      "terminal_reason": "Required profile proof is unavailable in the current runner; the next safe action is a proof-capable rerun followed by human review."
     }
   ],
   "proof": {
-    "claim": "T005 is dispatched from the verified T003 completion baseline with a strict graph and bounded four-file implementation scope; no implementation is claimed.",
-    "result": "pass",
-    "confidence": 0.98
+    "claim": "T005 four-file implementation passes static scope checks, but both api/worker profile boots remain unproven because Java/Gradle dependency resolution is blocked in the runner.",
+    "result": "blocked",
+    "confidence": 0.86
   }
 }
