@@ -70,7 +70,7 @@
     "completion_paths": [
       "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
       "README.md",
-      ".loop/evidence/t008-completion-20260807.json",
+      ".loop/evidence/t008-completion-receipt.json",
       ".loop/t008-ci-pipelines-graphify-loop.yaml",
       ".loop/t008-ci-pipelines-ledger.json",
       ".loop/memory/t008-ci-pipelines.json"
