@@ -1,24 +1,99 @@
 {
   "schema_version": "courtside-tw-loop-evidence/v1",
   "evidence_id": "t011-ci-security-20260807",
-  "generated_at": "2026-08-07T14:50:00Z",
+  "generated_at": "2026-08-07T14:48:03.040Z",
   "actor": "verifier",
   "subject": "T011 current-head CI and Security",
   "repository": "bynanci/courtside-tw",
   "ticket": "T011",
   "head": {
     "branch": "ticket/t011-openapi-contract-implementation",
-    "sha": "11e70c353a1a97578548e118e62e7e520e8e30b7",
-    "pr": null,
-    "state": "implementation",
+    "sha": "98626b8c9c198ecada69acf307ab12bf3dc27355",
+    "pr": 35,
+    "state": "review_ready",
     "t011_checked": false
   },
-  "workflows": [],
+  "workflows": [
+    {
+      "id": 31188910511,
+      "name": "CI",
+      "run_number": 70,
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 92900422619,
+          "name": "Frontend and contract verification",
+          "conclusion": "success"
+        },
+        {
+          "id": 92900422634,
+          "name": "Java quality and unit verification",
+          "conclusion": "success"
+        },
+        {
+          "id": 92900422694,
+          "name": "Docker Compose dependency health",
+          "conclusion": "success"
+        }
+      ]
+    },
+    {
+      "id": 31188911425,
+      "name": "Security",
+      "run_number": 70,
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 92900425820,
+          "name": "CodeQL (java-kotlin)",
+          "conclusion": "success"
+        },
+        {
+          "id": 92900425824,
+          "name": "Dependency audit and reports",
+          "conclusion": "success"
+        },
+        {
+          "id": 92900425839,
+          "name": "CodeQL (javascript-typescript)",
+          "conclusion": "success"
+        },
+        {
+          "id": 92900425853,
+          "name": "Trivy (filesystem)",
+          "conclusion": "success"
+        },
+        {
+          "id": 92900426089,
+          "name": "Resolve Compose images",
+          "conclusion": "success"
+        },
+        {
+          "id": 92900522399,
+          "name": "Trivy (image s3)",
+          "conclusion": "success"
+        },
+        {
+          "id": 92900522469,
+          "name": "Trivy (image postgres)",
+          "conclusion": "success"
+        },
+        {
+          "id": 92900522474,
+          "name": "Trivy (image oidc)",
+          "conclusion": "success"
+        }
+      ]
+    }
+  ],
   "review_threads": {
-    "current_head_threads_resolved": false,
-    "unresolved_count": null,
+    "current_head_threads_resolved": true,
+    "unresolved_count": 0,
+    "total_count": 0,
     "merge_authority": "human-required"
   },
-  "result": "PENDING",
-  "next_action": "Await CI/Security and current-head review after OpenAPI implementation; then update this receipt before merge."
+  "result": "PASS",
+  "next_action": "Use expected-head human merge authority; after merge perform main read-back and T011 completion update. Keep T011 unchecked until main read-back."
 }
