@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "documentId": "00000000-0000-4000-8000-00000000001b",
+  "blocks": [
+    {
+      "id": "00000000-0000-4000-8000-00000000001c",
+      "type": "paragraph",
+      "version": 1,
+      "payload": {
+        "content": [
+          {
+            "kind": "link",
+            "text": "broken link",
+            "href": "https:///"
+          }
+        ]
+      }
+    }
+  ]
+}
