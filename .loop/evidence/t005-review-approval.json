@@ -1,0 +1,43 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t005-review-approval-20260807",
+  "generated_at": "2026-08-07T01:48:10Z",
+  "actor": "codex-supervisor",
+  "subject": "T005 Code Review and Merge Gate decision",
+  "repository": "bynanci/courtside-tw",
+  "branch": "ticket/t005-spring-bootstrap",
+  "pull_request": {
+    "number": 8,
+    "url": "https://github.com/bynanci/courtside-tw/pull/8",
+    "head_sha": "dd6c2d4ff775d454d1354a323c7635068aba1e71",
+    "base": "main"
+  },
+  "review": {
+    "scope_result": "pass",
+    "implementation_result": "pass",
+    "static_checks_result": "pass",
+    "gradle_clean_build_result": "pass",
+    "api_profile_result": "pass",
+    "worker_profile_result": "pass",
+    "strict_graph_result": "pass",
+    "strict_graph_details": "15 nodes / 21 edges / 0 warnings / 0 errors"
+  },
+  "authority": {
+    "approver": "Mark",
+    "approval_status": "APPROVED_FOR_MERGE",
+    "approval_source": "Latest user direction requests Code Review & Merge Gate completion and merge after bounded implementation improvements.",
+    "scope": [
+      "merge PR #8 after the passing review gate",
+      "preserve T005 scope and evidence boundaries"
+    ],
+    "excluded": [
+      "mark T005 checked without a separate completion receipt",
+      "dispatch T004, T006 or later",
+      "change DESIGN/ADR/provider/Web3 boundaries"
+    ]
+  },
+  "decision": "APPROVE_MERGE",
+  "result": "pass",
+  "confidence": 0.98,
+  "next_action": "Merge PR #8 with the reviewed head SHA, then read back main and record the merge receipt."
+}
