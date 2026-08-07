@@ -1,0 +1,54 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t004-main-readback-20260807",
+  "generated_at": "2026-08-07T04:06:25Z",
+  "actor": "codex-supervisor",
+  "subject": "T004 final main read-back and status reconciliation",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T004",
+  "main_readback": {
+    "commit_before_readback": "bf00db709b2fdf1603877117b3d4ad828cfce7d9",
+    "source": "main after PR #16 completion merge",
+    "t004_checked": true,
+    "t006_checked": false,
+    "runtime_paths_present": [
+      "apps/web/package.json",
+      "apps/web/nuxt.config.ts",
+      "apps/web/tsconfig.json",
+      "apps/web/app/app.vue"
+    ],
+    "dependency_artifact_present": "pnpm-lock.yaml",
+    "ssr_marker_present": true,
+    "graph_terminal_state": "success",
+    "graph_version": 5
+  },
+  "merges": [
+    {
+      "pull_request": 15,
+      "head_sha": "ccccdc7d721409cb1ee145b0ff39cebf61985d4d",
+      "merge_sha": "dec6368ab432fcaa549c67b5f2738ea57085221e",
+      "scope": "Nuxt SSR implementation"
+    },
+    {
+      "pull_request": 16,
+      "head_sha": "b22d8eebec69060def1edc741296aca15560db51",
+      "merge_sha": "bf00db709b2fdf1603877117b3d4ad828cfce7d9",
+      "scope": "T004 checkbox and Graphify completion"
+    }
+  ],
+  "status_reconciliation": {
+    "issue": "README.md still described T004 as not started after the completion merge.",
+    "correction": "README.md status line is updated in this read-back slice.",
+    "runtime_changed": false
+  },
+  "verification": {
+    "strict Graphify validation": "PASS — 15 nodes / 24 edges / 0 warnings / 0 errors",
+    "T004 task checkbox": "PASS — [x] on main",
+    "T006 and later dispatch": "PASS — remain unchecked/undispatched",
+    "Nuxt SSR implementation": "PASS — runtime files and pnpm-lock.yaml present on main",
+    "status checks": "NOT_CONFIGURED — no GitHub status entries or workflow runs"
+  },
+  "result": "success",
+  "confidence": 1,
+  "next_action": "Stop T004; do not dispatch T006 in this read-back slice."
+}
