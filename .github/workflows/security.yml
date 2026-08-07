@@ -192,6 +192,9 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Prepare scan output directory
+        run: mkdir -p artifacts
+
       - name: Scan filesystem for vulnerabilities, secrets and misconfiguration
         if: ${{ matrix.scan-type == 'fs' }}
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
