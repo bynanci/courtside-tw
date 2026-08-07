@@ -111,15 +111,15 @@ graph:
       risk: medium
       confidence:
         score: 0.99
-        basis: Main read-back confirms the reconciliation merge, checked T001-T005, unchecked T006 and no competing T006 frontier.
-        evidence_refs: [.loop/evidence/t002-main-readback.json]
+        basis: Final main read-back confirms PR #20/#21 merges, checked T001-T006, unchecked and undispatched T007, and no competing T006 frontier.
+        evidence_refs: [.loop/evidence/t002-main-readback.json, .loop/evidence/t006-main-readback.json]
       budget:
         effort_hours: 0.1
         tokens: 1800
       config:
         source_type: repository-and-approved-user-direction
-        freshness: Read after the final reconciliation merge at main@a1afadb1.
-        limitations: Java Gradle quality tasks still require a compatible dependency-resolution-capable runner.
+        freshness: Read at main@9d97573 after PR #21 completion merge.
+        limitations: Java Gradle execution is covered by .loop/evidence/t006-java-quality-proof.json.
 
     - id: t-supervisor
       kind: trigger
@@ -400,12 +400,12 @@ graph:
       layer: GLOBAL
       label: T006 named terminal-state policy
       owner: policy
-      status: needs_human
+      status: done
       risk: critical
       confidence:
         score: 0.98
-        basis: PR #20 is merged, the T006 completion slice checks the task and records the required proof; final main read-back is the remaining governance receipt.
-        evidence_refs: [.loop/t006-quality-baseline-ledger.json, .loop/evidence/t006-implementation-proof.json, .loop/evidence/t006-completion-receipt.json]
+        basis: PR #20 and PR #21 are merged, final main read-back confirms T006 is checked and T007 remains unchecked and undispatched.
+        evidence_refs: [.loop/t006-quality-baseline-ledger.json, .loop/evidence/t006-implementation-proof.json, .loop/evidence/t006-completion-receipt.json, .loop/evidence/t006-main-readback.json]
       budget:
         effort_hours: 0.0
         tokens: 0
