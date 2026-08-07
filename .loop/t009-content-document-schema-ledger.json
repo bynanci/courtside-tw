@@ -1,18 +1,18 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t009",
-  "graph_version": 5,
+  "graph_version": 6,
   "run_id": "courtside-tw-t009-content-document-schema-20260807",
   "status": "needs_human",
-  "iteration": 5,
+  "iteration": 6,
   "started_at": "2026-08-07T10:50:00Z",
-  "updated_at": "2026-08-07T11:08:00Z",
+  "updated_at": "2026-08-07T12:48:41Z",
   "current_frontier": [
     "g-t009-review-merge"
   ],
   "blocked_nodes": [],
   "terminal_state": "needs_human",
-  "next_action": "Await CI and Security for the final proof-metadata head, complete current-head review, then await explicit merge authority; keep T009 unchecked.",
+  "next_action": "Await CI/Security on the current boundary-hardening head, complete current-head review, then await explicit merge authority; keep T009 unchecked.",
   "events": [
     {
       "event_id": "evt-t009-001-dispatched",
@@ -406,6 +406,84 @@
       },
       "decision": "PASS WITH FOLLOW-UP",
       "follow_up": "Await final CI/Security and complete current-head review; merge and T009 completion remain human-gated."
+    },
+    {
+      "event_id": "evt-t009-006-boundary-hardening",
+      "at": "2026-08-07T12:48:41Z",
+      "actor": "codex-agent",
+      "type": "code_review_boundary_remediation",
+      "base_graph_version": 5,
+      "new_graph_version": 6,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes.p-t009-negative-fixtures.config.claim",
+            "before": "Seventeen schema-invalid fixtures and the duplicate-ID semantic invariant are rejected without weakening the contract.",
+            "after": "Nineteen schema-invalid fixtures and the duplicate-ID semantic invariant are rejected without weakening the contract."
+          },
+          {
+            "op": "add",
+            "path": "graph.acceptance/-",
+            "after": "Required human-readable strings reject whitespace-only values and HTTPS hrefs require a non-empty host."
+          },
+          {
+            "op": "add",
+            "path": "proof_receipts/-",
+            "after": ".loop/evidence/t009-schema-proof.json#boundary_revalidation"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t009-schema-proof.json#boundary_revalidation",
+        ".loop/t009-content-document-schema-graphify-loop.yaml",
+        "PR #32 current-head review"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "strict content boundary revalidation",
+          "level": "P2",
+          "result": "pass",
+          "details": "Ajv2020 strict mode accepted the valid fixture and rejected 19 focused schema-invalid fixtures."
+        },
+        {
+          "proof": "focused fixture isolation",
+          "level": "P2",
+          "result": "pass",
+          "details": "Generative code and raw embed URL fixtures now fail only for their intended closed-world constraints."
+        },
+        {
+          "proof": "URL/text boundary hardening",
+          "level": "P2",
+          "result": "pass",
+          "details": "Whitespace-only required text and HTTPS hrefs without a host are rejected."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:t009-content-document-schema",
+        "version": 4,
+        "evidence_refs": [
+          ".loop/evidence/t009-schema-proof.json#boundary_revalidation",
+          ".loop/memory/t009-content-document-schema.json"
+        ],
+        "next_review_at": "2026-08-14",
+        "blocker": null
+      },
+      "failure_signature": {
+        "code": "CODE_REVIEW_P2_BOUNDARY_FINDINGS",
+        "message": "Current-head review found masked generative/video fixtures, whitespace-only required text acceptance, and malformed HTTPS href acceptance.",
+        "resolution": "Corrected fixture isolation, added non-whitespace constraints, required a non-empty HTTPS host, and revalidated the complete fixture set.",
+        "status": "resolved",
+        "observed_iteration": 6
+      },
+      "token_usage": {
+        "estimated_tokens": 5200,
+        "validator_runtime_seconds": 0,
+        "notes": "Independent strict Ajv revalidation was run before receipt update; no runtime scope was added."
+      },
+      "decision": "P2 boundary findings remediated; retain the human review/merge gate.",
+      "follow_up": "Wait for current-head CI/Security and review-thread resolution; merge and T009 completion remain human-gated."
     }
   ],
   "proof": [
@@ -436,19 +514,25 @@
       "result": "pass",
       "evidence_ref": ".loop/evidence/t009-schema-proof.json#semantic_invariants",
       "recorded_at": "2026-08-07T11:08:00Z"
+    },
+    {
+      "proof_id": "t009-boundary-hardening-20260807",
+      "level": "P2",
+      "result": "pass",
+      "evidence_ref": ".loop/evidence/t009-schema-proof.json#boundary_revalidation",
+      "recorded_at": "2026-08-07T12:48:41Z"
     }
   ],
   "memory_receipt": {
-    "memory_status": "UNCHANGED",
+    "memory_status": "UPDATED",
     "memory_id": "wm:project:courtside-tw:t009-content-document-schema",
-    "version": 3,
+    "version": 4,
     "retrieval_ids": [
       "wm:project:courtside-tw:phase1-review",
       "wm:project:courtside-tw:t008-ci-pipelines"
     ],
     "evidence_refs": [
-      ".loop/evidence/t009-schema-proof.json",
-      ".loop/evidence/t009-schema-proof.json#latest_revalidation",
+      ".loop/evidence/t009-schema-proof.json#boundary_revalidation",
       ".loop/memory/t009-content-document-schema.json"
     ],
     "next_review_at": "2026-08-14",
