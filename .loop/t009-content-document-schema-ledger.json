@@ -1,18 +1,18 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t009",
-  "graph_version": 7,
+  "graph_version": 8,
   "run_id": "courtside-tw-t009-content-document-schema-20260807",
   "status": "needs_human",
-  "iteration": 7,
+  "iteration": 8,
   "started_at": "2026-08-07T10:50:00Z",
-  "updated_at": "2026-08-07T13:03:55Z",
+  "updated_at": "2026-08-07T14:05:00Z",
   "current_frontier": [
     "g-t009-review-merge"
   ],
   "blocked_nodes": [],
   "terminal_state": "needs_human",
-  "next_action": "CI/Security and current-head review pass; await explicit human merge authority, then read back main. Keep T009 unchecked.",
+  "next_action": "Current-head contract hardening is independently replayed; await GitHub CI/Security and current-head review revalidation, then explicit human merge authority and main read-back. Keep T009 unchecked.",
   "events": [
     {
       "event_id": "evt-t009-001-dispatched",
@@ -561,6 +561,84 @@
       },
       "decision": "PASS_WITH_HUMAN_MERGE_GATE",
       "follow_up": "Do not merge or mark T009 checked without explicit human authority and main read-back."
+    },
+    {
+      "event_id": "evt-t009-008-current-head-contract-hardening",
+      "at": "2026-08-07T14:05:00Z",
+      "actor": "codex-supervisor",
+      "type": "current_head_contract_hardening",
+      "base_graph_version": 7,
+      "new_graph_version": 8,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "graph.acceptance/-",
+            "after": "UUIDv7 identifiers, malformed HTTPS authority/port and NUL-free persisted strings are covered by schema and fixtures."
+          },
+          {
+            "op": "add",
+            "path": "graph.scope/-",
+            "after": "scripts/validate-content-schema.mjs plus locked Ajv dependencies are wired into Makefile and CI."
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes.g-t009-review-merge.confidence.evidence_refs/-",
+            "after": ".loop/evidence/t009-ci-security-20260807.json"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t009-schema-proof.json#latest_revalidation",
+        ".loop/evidence/t009-ci-security-20260807.json",
+        ".loop/t009-content-document-schema-graphify-loop.yaml",
+        ".loop/memory/t009-content-document-schema.json",
+        "PR #32"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "independent repository validator replay",
+          "level": "P2",
+          "result": "pass",
+          "details": "Node 24.14.0 with Ajv 8.20.0 and ajv-formats 3.0.1 accepted the UUIDv7 valid fixture, rejected 21 schema-invalid fixtures and detected duplicate block IDs."
+        },
+        {
+          "proof": "Prettier 3.9.6",
+          "level": "P2",
+          "result": "pass",
+          "details": "Touched schema, fixtures and validator are formatted."
+        },
+        {
+          "proof": "GitHub current-head gate",
+          "level": "P3",
+          "result": "pending",
+          "details": "CI/Security and current-head review must be revalidated after this remediation."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:t009-content-document-schema",
+        "version": 6,
+        "retrieval_ids": [
+          "wm:project:courtside-tw:phase1-review",
+          "wm:project:courtside-tw:t008-ci-pipelines"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t009-schema-proof.json#latest_revalidation",
+          ".loop/memory/t009-content-document-schema.json",
+          "scripts/validate-content-schema.mjs"
+        ],
+        "next_review_at": "2026-08-08",
+        "blocker": "current-head CI/Security, review-thread revalidation, human merge and main read-back"
+      },
+      "failure_signature": null,
+      "token_usage": {
+        "estimated_tokens": 6500,
+        "validator_runtime_seconds": 1.6,
+        "notes": "Current-head review remediation, isolated fixture additions, locked Ajv validator wiring, independent replay and proof reconciliation."
+      },
+      "decision": "REMEDIATED_PENDING_CURRENT_HEAD_GATE",
+      "follow_up": "Await current-head CI/Security and review-thread revalidation; then merge only with expected-head protection and read back main."
     }
   ],
   "proof": [
@@ -605,22 +683,29 @@
       "result": "pass",
       "evidence_ref": ".loop/evidence/t009-ci-security-20260807.json",
       "recorded_at": "2026-08-07T13:03:55Z"
+    },
+    {
+      "proof_id": "t009-current-head-hardening-20260807",
+      "level": "P2",
+      "result": "pass",
+      "evidence_ref": ".loop/evidence/t009-schema-proof.json#latest_revalidation",
+      "recorded_at": "2026-08-07T14:05:00Z"
     }
   ],
   "memory_receipt": {
     "memory_status": "UPDATED",
     "memory_id": "wm:project:courtside-tw:t009-content-document-schema",
-    "version": 5,
+    "version": 6,
     "retrieval_ids": [
       "wm:project:courtside-tw:phase1-review",
       "wm:project:courtside-tw:t008-ci-pipelines"
     ],
     "evidence_refs": [
-      ".loop/evidence/t009-schema-proof.json#boundary_revalidation",
-      ".loop/evidence/t009-ci-security-20260807.json",
-      ".loop/memory/t009-content-document-schema.json"
+      ".loop/evidence/t009-schema-proof.json#latest_revalidation",
+      ".loop/memory/t009-content-document-schema.json",
+      "scripts/validate-content-schema.mjs"
     ],
     "next_review_at": "2026-08-08",
-    "blocker": "human merge and main read-back"
+    "blocker": "current-head CI/Security, review-thread revalidation, human merge and main read-back"
   }
 }
