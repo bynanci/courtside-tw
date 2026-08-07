@@ -1,0 +1,170 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-ticket-implementation-t008",
+  "graph_version": 1,
+  "run_id": "courtside-tw-t008-ci-pipelines-20260807",
+  "status": "in_progress",
+  "iteration": 1,
+  "started_at": "2026-08-07T08:11:31Z",
+  "updated_at": "2026-08-07T08:11:31Z",
+  "current_frontier": [
+    "p-ci-runtime-proof"
+  ],
+  "blocked_nodes": [],
+  "terminal_state": "needs_human",
+  "next_action": "Open the T008 PR, wait for CI/security workflows, read back runs and artifacts, then decide checkbox and merge state.",
+  "events": [
+    {
+      "event_id": "evt-t008-ci-pipelines-001-dispatched",
+      "at": "2026-08-07T08:11:31Z",
+      "actor": "codex-supervisor",
+      "type": "t008_dispatched",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "external.github.branch/ticket/t008-ci-pipelines",
+            "after": "Branch created from main@ee21f9bad425ebbac90cda58951d5ca0956f7ea2."
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [],
+            "after": [
+              "a-implement-t008"
+            ]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t008-dispatch.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "authorization and scope",
+          "level": "P3",
+          "result": "pass",
+          "details": "Current direction asks to execute T008 after T007 is checked and merged; implementation is bounded to the task contract."
+        },
+        {
+          "proof": "main base",
+          "level": "P2",
+          "result": "pass",
+          "details": "Branch starts from the authoritative post-merge main commit ee21f9b."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "SAVED",
+        "memory_id": "wm:project:courtside-tw:t008-ci-pipelines",
+        "version": 1,
+        "evidence_refs": [
+          ".loop/evidence/t008-dispatch.json"
+        ],
+        "next_review_at": "2026-08-14",
+        "blocker": null
+      },
+      "failure_signature": null,
+      "decision": "Implement exactly the T008 workflow/config slice; do not mark T008 checked from static proof alone.",
+      "token_usage": {
+        "estimated": 12000,
+        "input": 0,
+        "output": 0,
+        "total": 12000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-t008-ci-pipelines-002-static-proof",
+      "at": "2026-08-07T08:11:31Z",
+      "actor": "codex-agent",
+      "type": "implementation_and_static_proof",
+      "base_graph_version": 1,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "T008 implementation paths",
+            "after": "CI, security and Dependabot configuration created with SHA-pinned actions and retained reports."
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-implement-t008/status",
+            "before": "ready",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-static-proof/status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [
+              "a-implement-t008"
+            ],
+            "after": [
+              "p-ci-runtime-proof"
+            ]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t008-static-proof.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "workflow static proof",
+          "level": "P2",
+          "result": "pass",
+          "details": "YAML parse, SHA pin, permissions, required job coverage and report retention checks passed."
+        },
+        {
+          "proof": "runtime proof",
+          "level": "P2",
+          "result": "pending",
+          "details": "Remote GitHub Actions run and Docker health receipt are not available until the PR is opened."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:t008-ci-pipelines",
+        "version": 1,
+        "evidence_refs": [
+          ".loop/evidence/t008-static-proof.json"
+        ],
+        "next_review_at": "2026-08-14",
+        "blocker": "ci-runtime-pending"
+      },
+      "failure_signature": null,
+      "decision": "Open a ready PR and use GitHub Actions as the runtime verifier; preserve T008 unchecked pending receipts.",
+      "token_usage": {
+        "estimated": 9000,
+        "input": 0,
+        "output": 0,
+        "total": 9000
+      },
+      "terminal_reason": null
+    }
+  ],
+  "proof": {
+    "claim": "T008 workflow/config implementation is statically valid; runtime proof is pending.",
+    "result": "static_pass_runtime_pending",
+    "confidence": 0.92
+  },
+  "memory_receipt": {
+    "memory_status": "SAVED",
+    "memory_id": "wm:project:courtside-tw:t008-ci-pipelines",
+    "version": 1,
+    "evidence_refs": [
+      ".loop/evidence/t008-static-proof.json",
+      ".loop/evidence/t008-runtime-proof.json"
+    ],
+    "next_review_at": "2026-08-14",
+    "blocker": "ci-runtime-pending"
+  }
+}
