@@ -63,12 +63,12 @@
     {
       "name": "remote_branch_readback",
       "result": "PASS",
-      "details": "Branch head db7991cccaede38c55f5823280af6d7539093554 was read back; T002 checkbox, T006 gate, graph, ledger and memory paths are present."
+      "details": "Read-back at branch commit 38470ca5269c90b19e2842277b0a145906e567e6, 12 commits ahead of main with 9 changed paths, confirmed T002 checked, T006 unchecked, graph, ledger and memory paths; this acceptance-closure write is append-only."
     },
     {
       "name": "semantic_memory_write_receipt",
       "result": "PASS",
-      "details": "Work Memory record is readable from the branch; ledger version is db7991cccaede38c55f5823280af6d7539093554."
+      "details": "Work Memory record is readable from the branch; semantic-memory receipt version remains db7991cccaede38c55f5823280af6d7539093554, and the later graph/ledger closure remains append-only."
     }
   ],
   "human_gate": {
@@ -97,5 +97,16 @@
     ]
   },
   "result": "PASS_WITH_CONTROLS",
-  "confidence": 0.95
+  "confidence": 0.95,
+  "remote_readback": {
+    "observed_branch_head_before_closure": "38470ca5269c90b19e2842277b0a145906e567e6",
+    "base_commit": "a4d43ed42203953eac8add12c58ca3527d1c6356",
+    "compare": {
+      "status": "ahead",
+      "ahead_by": 12,
+      "behind_by": 0,
+      "changed_path_count": 9
+    },
+    "note": "This receipt update closes the acceptance evidence after the remote graph and ledger writes; protected merge and final main read-back remain pending."
+  }
 }
