@@ -1,16 +1,21 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t007",
-  "graph_version": 3,
+  "graph_version": 4,
   "run_id": "courtside-tw-t007-local-dependencies-20260807",
-  "status": "blocked",
-  "iteration": 2,
+  "status": "needs_human",
+  "iteration": 3,
   "started_at": "2026-08-07T07:17:14Z",
-  "updated_at": "2026-08-07T07:17:14Z",
-  "current_frontier": ["p-runtime-proof"],
-  "blocked_nodes": ["p-runtime-proof", "s-terminal-policy"],
-  "terminal_state": "blocked",
-  "next_action": "Run the T007 runtime proof on a Docker/Compose-capable runner, then perform a current-head review before any merge or checkbox update.",
+  "updated_at": "2026-08-07T07:53:11.016Z",
+  "current_frontier": [
+    "g-t007-merge"
+  ],
+  "blocked_nodes": [
+    "p-runtime-proof",
+    "s-terminal-policy"
+  ],
+  "terminal_state": "needs_human",
+  "next_action": "Run final current-head review, merge PR #24 with expected head, then read back main before dispatching T008; retain Docker health as a T008 CI follow-up.",
   "events": [
     {
       "event_id": "evt-t007-local-dependencies-001-dispatched",
@@ -30,11 +35,15 @@
             "op": "replace",
             "path": "graph.current_frontier",
             "before": [],
-            "after": ["a-implement-t007"]
+            "after": [
+              "a-implement-t007"
+            ]
           }
         ]
       },
-      "evidence_refs": [".loop/evidence/t007-dispatch.json"],
+      "evidence_refs": [
+        ".loop/evidence/t007-dispatch.json"
+      ],
       "proof_receipts": [
         {
           "proof": "authorization and scope",
@@ -53,14 +62,24 @@
         "memory_status": "SAVED",
         "memory_id": "wm:project:courtside-tw:t007-local-dependencies",
         "version": 1,
-        "retrieval_ids": [".loop/t006-quality-baseline-ledger.json", ".loop/evidence/t006-evidence-reconciliation.json"],
-        "evidence_refs": [".loop/evidence/t007-dispatch.json"],
+        "retrieval_ids": [
+          ".loop/t006-quality-baseline-ledger.json",
+          ".loop/evidence/t006-evidence-reconciliation.json"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t007-dispatch.json"
+        ],
         "next_review_at": "2026-08-14",
         "blocker": null
       },
       "failure_signature": null,
       "decision": "Dispatch exactly one T007 implementation slice; do not dispatch T008.",
-      "token_usage": {"estimated": 4200, "input": 0, "output": 0, "total": 4200},
+      "token_usage": {
+        "estimated": 4200,
+        "input": 0,
+        "output": 0,
+        "total": 4200
+      },
       "terminal_reason": null
     },
     {
@@ -92,8 +111,12 @@
           {
             "op": "replace",
             "path": "graph.current_frontier",
-            "before": ["a-implement-t007"],
-            "after": ["p-runtime-proof"]
+            "before": [
+              "a-implement-t007"
+            ],
+            "after": [
+              "p-runtime-proof"
+            ]
           }
         ]
       },
@@ -119,14 +142,23 @@
         "memory_status": "SAVED",
         "memory_id": "wm:project:courtside-tw:t007-local-dependencies",
         "version": 1,
-        "retrieval_ids": ["wm:project:courtside-tw:t007-local-dependencies"],
-        "evidence_refs": [".loop/evidence/t007-compose-static-proof.json"],
+        "retrieval_ids": [
+          "wm:project:courtside-tw:t007-local-dependencies"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t007-compose-static-proof.json"
+        ],
         "next_review_at": "2026-08-14",
         "blocker": null
       },
       "failure_signature": null,
       "decision": "Static proof passes; retain runtime proof as a required separate frontier.",
-      "token_usage": {"estimated": 9200, "input": 0, "output": 0, "total": 9200},
+      "token_usage": {
+        "estimated": 9200,
+        "input": 0,
+        "output": 0,
+        "total": 9200
+      },
       "terminal_reason": null
     },
     {
@@ -154,11 +186,17 @@
             "op": "replace",
             "path": "graph.blocked_nodes",
             "before": [],
-            "after": ["p-runtime-proof", "s-terminal-policy"]
+            "after": [
+              "p-runtime-proof",
+              "s-terminal-policy"
+            ]
           }
         ]
       },
-      "evidence_refs": [".loop/evidence/t007-runtime-proof.json", ".loop/evidence/t007-implementation-proof.json"],
+      "evidence_refs": [
+        ".loop/evidence/t007-runtime-proof.json",
+        ".loop/evidence/t007-implementation-proof.json"
+      ],
       "proof_receipts": [
         {
           "proof": "Docker runtime availability",
@@ -171,29 +209,124 @@
         "memory_status": "UPDATED",
         "memory_id": "wm:project:courtside-tw:t007-local-dependencies",
         "version": 1,
-        "retrieval_ids": ["wm:project:courtside-tw:t007-local-dependencies"],
-        "evidence_refs": [".loop/evidence/t007-runtime-proof.json"],
+        "retrieval_ids": [
+          "wm:project:courtside-tw:t007-local-dependencies"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t007-runtime-proof.json"
+        ],
         "next_review_at": "2026-08-14",
         "blocker": "docker-runtime-unavailable"
       },
       "failure_signature": "docker-runtime-unavailable",
       "decision": "Stop before merge and checkbox completion; obtain runtime proof or request explicit human acceptance of the bounded blocker.",
-      "token_usage": {"estimated": 5200, "input": 0, "output": 0, "total": 5200},
+      "token_usage": {
+        "estimated": 5200,
+        "input": 0,
+        "output": 0,
+        "total": 5200
+      },
       "terminal_reason": "Required runtime health proof is unavailable in the current environment."
+    },
+    {
+      "event_id": "evt-t007-local-dependencies-004-human-acceptance",
+      "at": "2026-08-07T07:53:11.016Z",
+      "actor": "codex-supervisor",
+      "type": "human_acceptance_for_merge",
+      "base_graph_version": 3,
+      "new_graph_version": 4,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": ".loop/evidence/t007-human-acceptance.json",
+            "after": "Mark explicitly accepts T007 checkbox/merge with bounded runtime-proof follow-up."
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [
+              "p-runtime-proof"
+            ],
+            "after": [
+              "g-t007-merge"
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "graph.terminal_state",
+            "before": "blocked",
+            "after": "needs_human"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t007-human-acceptance.json",
+        ".loop/evidence/t007-completion-receipt.json",
+        ".loop/evidence/t007-runtime-proof.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "current Mark direction",
+          "level": "P3",
+          "result": "pass",
+          "details": "The current user instruction explicitly authorizes checking and merging T007 before T008."
+        },
+        {
+          "proof": "static implementation proof",
+          "level": "P2",
+          "result": "pass",
+          "details": "Compose, shell, local-boundary and fail-closed static checks pass."
+        },
+        {
+          "proof": "runtime proof limitation",
+          "level": "P2",
+          "result": "blocked",
+          "details": "Docker CLI is unavailable; no container health claim is made."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "SAVED",
+        "memory_id": "wm:project:courtside-tw:t007-merge-acceptance",
+        "version": 1,
+        "retrieval_ids": [
+          "wm:project:courtside-tw:t007-local-dependencies"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t007-human-acceptance.json",
+          ".loop/evidence/t007-runtime-proof.json"
+        ],
+        "next_review_at": "2026-08-14",
+        "blocker": "docker-runtime-unavailable-follow-up"
+      },
+      "failure_signature": "docker-runtime-unavailable",
+      "decision": "Accept T007 checkbox completion and merge with explicit runtime-proof follow-up; do not dispatch T008 until main read-back.",
+      "token_usage": {
+        "estimated": 4200,
+        "input": 0,
+        "output": 0,
+        "total": 4200
+      },
+      "terminal_reason": null
     }
   ],
   "proof": {
-    "claim": "T007 local dependency artifacts are implemented and statically verified, but container health is not verified because Docker is unavailable.",
-    "result": "blocked",
-    "confidence": 0.96
+    "claim": "T007 is accepted for merge by current Mark direction with static proof complete and runtime health explicitly unverified.",
+    "result": "accepted_with_follow_up",
+    "confidence": 1
   },
   "memory_receipt": {
-    "memory_status": "UPDATED",
-    "memory_id": "wm:project:courtside-tw:t007-local-dependencies",
+    "memory_status": "SAVED",
+    "memory_id": "wm:project:courtside-tw:t007-merge-acceptance",
     "version": 1,
-    "retrieval_ids": [".loop/t006-quality-baseline-ledger.json", ".loop/evidence/t006-evidence-reconciliation.json"],
-    "evidence_refs": [".loop/evidence/t007-compose-static-proof.json", ".loop/evidence/t007-runtime-proof.json"],
+    "retrieval_ids": [
+      "wm:project:courtside-tw:t007-local-dependencies"
+    ],
+    "evidence_refs": [
+      ".loop/evidence/t007-human-acceptance.json",
+      ".loop/evidence/t007-runtime-proof.json"
+    ],
     "next_review_at": "2026-08-14",
-    "blocker": "docker-runtime-unavailable"
+    "blocker": "docker-runtime-unavailable-follow-up"
   }
 }
