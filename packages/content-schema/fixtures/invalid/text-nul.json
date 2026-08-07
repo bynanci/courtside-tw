@@ -150,11 +150,7 @@
           "tempo": 0.8,
           "lineWeight": 1.5,
           "paletteId": "court-dusk",
-          "numericSequence": [
-            0.1,
-            0.4,
-            0.9
-          ]
+          "numericSequence": [0.1, 0.4, 0.9]
         },
         "posterAssetId": "00000000-0000-4000-8000-000000000016",
         "altText": "以球場線條與投籃落點構成的抽象視覺",
