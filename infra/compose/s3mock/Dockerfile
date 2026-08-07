@@ -18,6 +18,11 @@ WORKDIR /src
 
 RUN mvn -B -ntp -pl server -am -DskipTests -DskipDocker=true package
 
+RUN set -eux; \
+    jar="$(find server/target -maxdepth 1 -type f -name 's3mock-*-exec.jar' -print -quit)"; \
+    test -n "$jar"; \
+    cp "$jar" /tmp/s3mock-exec.jar
+
 # The final image keeps root so the Compose named volume can be initialized
 # by the local stub; the build stage still verifies non-root execution.
 USER nobody
@@ -28,7 +33,7 @@ RUN apk --no-cache add openjdk25-jdk openjdk25-jmods unzip
 
 ENV JAVA_MINIMAL="/opt/java-minimal"
 
-COPY --from=s3mock-build /src/server/target/s3mock-exec.jar s3mock.jar
+COPY --from=s3mock-build /tmp/s3mock-exec.jar s3mock.jar
 
 ENV TMP_DIR="/tmp/app-jar"
 
@@ -58,7 +63,7 @@ ENV JAVA_HOME=/opt/java-minimal
 ENV PATH="$PATH:$JAVA_HOME/bin"
 
 COPY --from=staging_area "$JAVA_HOME" "$JAVA_HOME"
-COPY --from=s3mock-build /src/server/target/s3mock-exec.jar /opt/s3mock.jar
+COPY --from=s3mock-build /tmp/s3mock-exec.jar /opt/s3mock.jar
 
 ENV LANG=en_US.UTF-8
 ENV LANGUAGE=en_US:en
