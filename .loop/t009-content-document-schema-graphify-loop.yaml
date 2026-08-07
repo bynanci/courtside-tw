@@ -93,7 +93,8 @@ graph:
         tokens: 1500
       config:
         source_type: github-main
-        freshness: 2026-08-07T11:10:00Z
+        freshness: "2026-08-07T11:10:00Z"
+        limitations: "GitHub connector read-back; no private repository secrets or hidden session state."
 
     - id: t-t009-ready
       kind: trigger
@@ -113,6 +114,25 @@ graph:
         condition: Phase 1 PASS and T009 remains the first unchecked task.
         inputs_required: [tasks.md, plan.md, constitution, phase1 main read-back]
         dedupe: ticket plus main SHA
+
+    - id: g-phase1-dispatch
+      kind: gate
+      layer: L3
+      label: Phase 1 read-back authorizes T009 dispatch
+      owner: human-mark
+      status: done
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: Current user direction and PR #31 main read-back authorize starting Phase 2 while T009 remains unchecked.
+        evidence_refs: [.loop/evidence/t009-dispatch-20260807.json, "PR #31"]
+      budget:
+        effort_hours: 0.1
+        tokens: 1000
+      config:
+        condition: Phase 1 PASS and T009 is the first unchecked bounded task.
+        approver: human-mark
+        required: true
 
     - id: m-phase1-review
       kind: memory
@@ -155,6 +175,7 @@ graph:
       config:
         workflow: [read current contract, define schema, add valid fixture, add negative fixtures, run independent validation]
         allowed: [T009 paths, evidence and memory paths]
+        requires_approval: [open review PR, merge implementation PR, mark T009 checked]
         forbidden: [T010 implementation, API/database/UI/runtime changes, external writes]
 
     - id: p-t009-schema-validation
@@ -263,6 +284,7 @@ graph:
           success: Schema and fixtures pass, PR is merged, T009 completion is read back on main.
           blocked: Required validator, authority or evidence is unavailable.
           needs_human: Merge or completion approval is pending.
+          no_op: No authoritative T009 change is required or the task is already satisfied.
           stalled: Evidence delta does not change after the configured retry budget.
           exhausted: Graph budget is reached.
   edges:
@@ -273,10 +295,17 @@ graph:
       required: true
       confidence: 0.95
       token_capacity: 12000
-    - id: e-main-trigger
+    - id: e-main-dispatch
       from: x-phase1-main-readback
-      to: t-t009-ready
+      to: g-phase1-dispatch
       type: enables
+      required: true
+      confidence: 1.0
+      token_capacity: 12000
+    - id: e-dispatch-trigger
+      from: g-phase1-dispatch
+      to: t-t009-ready
+      type: approves
       required: true
       confidence: 1.0
       token_capacity: 12000
@@ -343,36 +372,36 @@ graph:
       required: true
       confidence: 0.7
       token_capacity: 4000
-  flow:
-    source: t-t009-ready
-    sink: s-t009-terminal
-    capacity_unit: tokens
-    interpretation: planning-proxy
-  output_required:
-    - decision
-    - terminal_state
-    - graph_summary
-    - ready_frontier
-    - critical_path
-    - token_flow
-    - min_cut
-    - proof_coverage
-    - blockers_or_gates
-    - graph_delta
-    - memory_receipt
-    - next_action
-  loops:
-    - id: l1-execution
-      layer: L1
-      owner: agent
-      trigger_nodes: [t-t009-ready]
-      action_nodes: [a-t009-define-contract]
-      proof_nodes: [p-t009-schema-validation, p-t009-negative-fixtures]
-      memory_nodes: [m-phase1-review, m-t009]
-      stop_nodes: [s-t009-terminal]
-      budgets:
-        max_iterations: 5
-        max_minutes: 60
-        max_same_failure: 2
-        max_graph_changes: 12
-        max_tokens: 40000
+flow:
+  source: t-t009-ready
+  sink: s-t009-terminal
+  capacity_unit: tokens
+  interpretation: planning-proxy
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - memory_receipt
+  - next_action
+loops:
+  - id: l1-execution
+    layer: L1
+    owner: agent
+    trigger_nodes: [t-t009-ready]
+    action_nodes: [a-t009-define-contract]
+    proof_nodes: [p-t009-schema-validation, p-t009-negative-fixtures]
+    memory_nodes: [m-phase1-review, m-t009]
+    stop_nodes: [s-t009-terminal]
+    budgets:
+      max_iterations: 5
+      max_minutes: 60
+      max_same_failure: 2
+      max_graph_changes: 12
+      max_tokens: 40000
