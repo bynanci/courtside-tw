@@ -400,7 +400,7 @@ graph:
       layer: GLOBAL
       label: T006 named terminal-state policy
       owner: policy
-      status: done
+      status: needs_human
       risk: critical
       confidence:
         score: 0.98
