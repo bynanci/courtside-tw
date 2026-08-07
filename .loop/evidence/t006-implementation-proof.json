@@ -1,0 +1,115 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t006-implementation-proof-20260807",
+  "generated_at": "2026-08-07T05:08:32Z",
+  "actor": "codex-agent",
+  "subject": "T006 shared quality baseline implementation and verification",
+  "repository": "bynanci/courtside-tw",
+  "branch": "ticket/t006-quality-baseline",
+  "base_commit": "a1afadb1ff45028627d5d84ad5a114aca85411e4",
+  "implementation_paths": [
+    "eslint.config.mjs",
+    "prettier.config.mjs",
+    "packages/tsconfig/base.json",
+    "apps/api/config/checkstyle/checkstyle.xml",
+    "apps/api/config/spotbugs/exclude.xml"
+  ],
+  "supporting_paths": [
+    ".prettierignore",
+    "Makefile",
+    "package.json",
+    "pnpm-lock.yaml",
+    "apps/web/package.json",
+    "apps/api/build.gradle.kts"
+  ],
+  "inventory": {
+    "result": "pass",
+    "details": "The tracked implementation and supporting paths are limited to the T006 quality baseline; generated node_modules, Nuxt output and Gradle state were not staged."
+  },
+  "checks": [
+    {
+      "check": "frozen dependency install",
+      "command": "pnpm install --frozen-lockfile --ignore-scripts",
+      "result": "pass",
+      "details": "The lockfile is up to date and installation completed against the isolated pnpm store."
+    },
+    {
+      "check": "peer dependency audit",
+      "command": "pnpm peers check",
+      "result": "pass",
+      "details": "No peer dependency issues were reported."
+    },
+    {
+      "check": "production dependency audit",
+      "command": "pnpm audit --prod",
+      "result": "pass",
+      "details": "No known production dependency vulnerabilities were reported by the local audit."
+    },
+    {
+      "check": "format",
+      "command": "make format-check",
+      "result": "pass",
+      "details": "All matched source and configuration files use the committed Prettier policy."
+    },
+    {
+      "check": "lint",
+      "command": "make lint",
+      "result": "pass",
+      "details": "ESLint completed with --max-warnings=0; no warnings or errors were emitted."
+    },
+    {
+      "check": "strict typecheck",
+      "command": "make typecheck",
+      "result": "pass",
+      "details": "Nuxt typecheck completed successfully with the repository toolchain."
+    },
+    {
+      "check": "root verification",
+      "command": "make verify",
+      "result": "pass",
+      "details": "Root contract, format-check, lint, typecheck, test and contract no-op checks passed."
+    },
+    {
+      "check": "web production build",
+      "command": "pnpm --filter @courtside/web build",
+      "result": "pass",
+      "details": "Nuxt production build completed; Nitro/Rollup emitted one non-blocking annotation warning from an upstream dependency."
+    },
+    {
+      "check": "SSR smoke",
+      "command": "start generated Nuxt server and curl the root route",
+      "result": "pass",
+      "details": "Rendered HTML contains Courtside TW, Taiwan Hoops Archive and the SSR smoke marker."
+    },
+    {
+      "check": "Checkstyle configuration parse",
+      "command": "Python XML parse of apps/api/config/checkstyle/checkstyle.xml",
+      "result": "pass",
+      "details": "The committed Checkstyle XML is well formed and has error severity."
+    },
+    {
+      "check": "SpotBugs exclusion configuration parse",
+      "command": "Python XML parse of apps/api/config/spotbugs/exclude.xml",
+      "result": "pass",
+      "details": "The committed SpotBugs filter is well formed and contains no untracked exclusions."
+    },
+    {
+      "check": "Java Gradle quality tasks",
+      "command": "apps/api Gradle tasks for checkstyle and SpotBugs",
+      "result": "blocked",
+      "details": "The available runner could not resolve the pre-existing Spring Boot 4.1.0 plugin and the isolated SpotBugs probe could not resolve its plugin marker through the configured Gradle environment. A compatible Java 21/Gradle runner is required before merge; no Java task pass is claimed."
+    }
+  ],
+  "scope_guard": {
+    "T007_or_later": false,
+    "CI_workflows": false,
+    "database_or_migrations": false,
+    "providers_or_credentials": false,
+    "external_web3_writes": false,
+    "production_deployment": false
+  },
+  "implementation_result": "pass",
+  "verification_result": "needs_human",
+  "confidence": 0.9,
+  "next_action": "Run the Java quality tasks on a dependency-resolution-capable Java 21/Gradle runner, then review the bounded PR; do not mark T006 checked until that receipt and merge read-back exist."
+}

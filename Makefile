@@ -7,7 +7,7 @@ NODE_VERSION := 24.14.0
 PNPM_VERSION := 11.7.0
 PNPM_STORE_DIR ?= /tmp/courtside-tw-pnpm-store
 
-.PHONY: setup dev lint typecheck test contract verify check-toolchain check-root-contract _run-workspace
+.PHONY: setup dev format format-check lint typecheck test contract verify check-toolchain check-root-contract _run-workspace
 
 setup: check-toolchain
 	@if test -f pnpm-lock.yaml; then \
@@ -21,6 +21,12 @@ setup: check-toolchain
 dev: check-toolchain
 	@$(MAKE) --no-print-directory _run-workspace SCRIPT=dev
 
+format:
+	@$(PNPM) run format
+
+format-check: check-toolchain
+	@$(PNPM) run format:check
+
 lint: check-toolchain
 	@$(MAKE) --no-print-directory _run-workspace SCRIPT=lint
 
@@ -33,7 +39,7 @@ test: check-toolchain
 contract: check-toolchain
 	@$(MAKE) --no-print-directory _run-workspace SCRIPT=contract
 
-verify: check-toolchain check-root-contract lint typecheck test contract
+verify: check-toolchain check-root-contract format-check lint typecheck test contract
 	@echo "verify: pass (root contract and available workspace checks)"
 
 check-toolchain:

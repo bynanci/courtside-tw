@@ -1,6 +1,8 @@
 plugins {
     java
+    checkstyle
     id("org.springframework.boot") version "4.1.0"
+    id("com.github.spotbugs") version "6.5.10"
 }
 
 group = "tw.basketball"
@@ -18,4 +20,29 @@ dependencies {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+}
+
+tasks.withType<JavaCompile>().configureEach {
+    options.compilerArgs.addAll(listOf("-Xlint:all", "-Werror"))
+}
+
+checkstyle {
+    toolVersion = "13.9.0"
+    configFile = file("$projectDir/config/checkstyle/checkstyle.xml")
+    isIgnoreFailures = false
+}
+
+tasks.withType<Checkstyle>().configureEach {
+    isIgnoreFailures = false
+}
+
+spotbugs {
+    effort.set(com.github.spotbugs.snom.Effort.MAX)
+    reportLevel.set(com.github.spotbugs.snom.Confidence.LOW)
+    excludeFilter = file("$projectDir/config/spotbugs/exclude.xml")
+    ignoreFailures = false
+}
+
+tasks.withType<com.github.spotbugs.snom.SpotBugsTask>().configureEach {
+    ignoreFailures = false
 }

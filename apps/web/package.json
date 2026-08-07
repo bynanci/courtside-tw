@@ -10,6 +10,7 @@
   },
   "scripts": {
     "dev": "nuxt dev",
+    "lint": "eslint --max-warnings=0 .",
     "build": "nuxt build",
     "start": "node .output/server/index.mjs",
     "preview": "nuxt preview",

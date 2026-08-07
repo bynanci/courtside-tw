@@ -1,0 +1,50 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t006-graph-validation-v3-20260807",
+  "generated_at": "2026-08-07T06:21:00Z",
+  "actor": "codex-supervisor",
+  "subject": "T006 final Graphify LOOP strict validation before merge",
+  "repository": "bynanci/courtside-tw",
+  "branch": "ticket/t006-quality-baseline",
+  "graph_path": ".loop/t006-quality-baseline-graphify-loop.yaml",
+  "graph_commit": "c833de22eccbea9c805d6d0310b3883c508e36d2",
+  "command": "python3 validate_graphify_loop.py final-graph-check.yaml --strict --json",
+  "result": "pass",
+  "summary": {
+    "nodes": 15,
+    "edges": 21,
+    "warnings": 0,
+    "errors": 0,
+    "ready_frontier": [],
+    "blockers_or_gates": [
+      "g-t006-merge",
+      "s-terminal-policy"
+    ],
+    "proof_coverage": {
+      "action_count": 3,
+      "covered_actions": [
+        "a-quality-baseline",
+        "a-reconcile",
+        "a-review-t006"
+      ],
+      "uncovered_actions": []
+    },
+    "critical_path": [
+      "t-supervisor",
+      "a-reconcile",
+      "p-reconciliation",
+      "t-t006-ready",
+      "a-quality-baseline",
+      "p-quality-verification",
+      "s-terminal-policy"
+    ],
+    "min_cut": [
+      {
+        "id": "e-l1-stop",
+        "capacity": 4000
+      }
+    ]
+  },
+  "decision": "Final graph is strict-valid; Node and Java proof plus current-head review are complete, with only the requested merge and separate post-merge completion/read-back gate remaining.",
+  "confidence": 0.99
+}
