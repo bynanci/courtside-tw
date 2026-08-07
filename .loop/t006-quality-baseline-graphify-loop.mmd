@@ -1,0 +1,22 @@
+flowchart TD
+  x["Final main read-back"] --> a2["L2 reconcile T006"]
+  t2["T006 dispatch"] --> a2
+  a2 --> p2["Scope proof"]
+  p2 --> t1["T006 ready"]
+  t1 --> a1["Implement quality baseline"]
+  a1 --> p1["Quality proof\nJava Gradle blocked"]
+  p1 -.-> t3["Human review"]
+  p1 -.-> stop["Stop: needs_human"]
+  t3 --> a3["Review current head"]
+  a3 --> p3["Approval proof"]
+  p3 --> gate["Merge gate"]
+  gate --> stop
+  a2 -.-> m2[("L2 ledger")]
+  p2 -.-> m2
+  m2 -.-> a2
+  a1 -.-> m1[("L1 ledger")]
+  p1 -.-> m1
+  m1 -.-> a1
+  a3 -.-> m3[("L3 decisions")]
+  p3 -.-> m3
+  m3 -.-> a3
