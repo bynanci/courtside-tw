@@ -1,0 +1,62 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t005-implementation-proof-20260807",
+  "generated_at": "2026-08-07T01:19:49Z",
+  "actor": "codex-agent",
+  "subject": "T005 Java 21/Spring Boot implementation and profile-proof attempt",
+  "repository": "bynanci/courtside-tw",
+  "branch": "ticket/t005-spring-bootstrap",
+  "implementation_paths": [
+    "apps/api/build.gradle.kts",
+    "apps/api/settings.gradle.kts",
+    "apps/api/src/main/java/tw/basketball/magazine/MagazineApplication.java",
+    "apps/api/src/main/resources/application.yml"
+  ],
+  "inventory": {
+    "result": "pass",
+    "details": "The ticket branch contains exactly the four implementation paths authorized by T005; no T004/later-task, provider, database, secret or Web3 files were added."
+  },
+  "static_checks": [
+    {
+      "check": "YAML parse",
+      "result": "pass",
+      "details": "application.yml parses as three documents and defines the api servlet and worker non-web profile selectors."
+    },
+    {
+      "check": "Java source contract",
+      "result": "pass",
+      "details": "MagazineApplication.java has the tw.basketball.magazine package, required Spring imports, @SpringBootApplication and SpringApplication.run."
+    },
+    {
+      "check": "Java 21 runtime",
+      "result": "pass",
+      "details": "Temurin 21.0.12 was downloaded into an isolated temporary tool directory for the proof attempt."
+    },
+    {
+      "check": "Gradle invocation",
+      "result": "blocked",
+      "details": "Gradle 8.14 started, but plugin/dependency resolution failed with Java connection errors to the configured proxy; no build or boot result is inferred."
+    },
+    {
+      "check": "api profile boot",
+      "result": "blocked",
+      "details": "Requires the unresolved Gradle dependency graph; not claimed."
+    },
+    {
+      "check": "worker profile boot",
+      "result": "blocked",
+      "details": "Requires the unresolved Gradle dependency graph; not claimed."
+    }
+  ],
+  "scope_guard": {
+    "T004": false,
+    "T006_or_later": false,
+    "database_or_migrations": false,
+    "providers_or_credentials": false,
+    "external_web3_writes": false,
+    "production_deployment": false
+  },
+  "result": "blocked",
+  "confidence": 0.86,
+  "next_action": "Rerun Gradle test/build and bounded api/worker profile starts on a runner with Java 21 and dependency-resolution access; only then request merge and T005 completion approval."
+}
