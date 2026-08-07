@@ -1,0 +1,42 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t002-status-reconciliation-remote-write-20260807",
+  "generated_at": "2026-08-07T04:31:00Z",
+  "actor": "codex-supervisor",
+  "subject": "T002 status reconciliation branch write receipt",
+  "repository": "bynanci/courtside-tw",
+  "branch": "agent/t002-status-reconciliation",
+  "base_commit": "a4d43ed42203953eac8add12c58ca3527d1c6356",
+  "head_commit": "fed2db539c0d175c95d8f95ecfc6efed5e452fdd",
+  "commits": [
+    "94a015ce80f9d3202e77b6e5ed2a5684206db095",
+    "bc3436f14ac537bd2681334d45fe895227367ed6",
+    "0e3cbbb7a1d7a2cc36b9b104534b404eff81b881",
+    "c22566a75fecb34291da97a2285a90d927a832af",
+    "cb58c54e45007d0eb398dbbc1c04f76a2ab2998b",
+    "99d65bf4a315944d3e1caf757eca0d2a290db452",
+    "3ab57f481a3c5bf6bdf23c055ece729e7e7747eb",
+    "fed2db539c0d175c95d8f95ecfc6efed5e452fdd"
+  ],
+  "remote_blob_shas": {
+    ".loop/evidence/t002-current-main-reconciliation.json": "3d217ef287d2b41645ecceede10f94bd445fba87",
+    ".loop/evidence/t002-status-reconciliation-acceptance.json": "1615c52184bcbce7baceb7bcddb125478deb3d9d",
+    ".loop/t002-status-reconciliation-graphify-loop.yaml": "4b6d0307a2383e73f3fc1d2e7b890ed4e1cb6eb0",
+    ".loop/t002-status-reconciliation-graphify-loop.mmd": "b2ae63e99d156af4fbd872540ec63b139c31f5f1",
+    ".loop/t002-status-reconciliation-ledger.json": "66aa8138abbaae6f1f1ff1bb316bd81a1912e80e",
+    ".loop/memory/t002-status-reconciliation.json": "84439c7d7edf8ec9f445bcd86c7dcf7b9ac8c46c",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md": "2fe752465b90dbd75b7f5e05e557d23967b85e41",
+    "README.md": "0ef10ae3636fe76d27e8e8063f40da92dfe45a56"
+  },
+  "verification": {
+    "t002_checkbox": "PASS — [x] on branch",
+    "t006_checkbox": "PASS — [ ] on branch",
+    "memory_record_readback": "PASS — exact Work Memory record fetched from branch",
+    "graph_artifact_readback": "PASS — YAML and rendered Mermaid fetched from branch",
+    "scope": "PASS — no runtime implementation path added",
+    "main_changed": false,
+    "final_main_readback": "PENDING — branch is not merged"
+  },
+  "result": "pass_with_human_gate",
+  "next_action": "Open a draft PR and wait for Mark review/merge; do not dispatch T006."
+}

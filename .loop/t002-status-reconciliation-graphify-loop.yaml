@@ -1,0 +1,465 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-t002-status-reconciliation
+objective: Reconcile the T002 acceptance status drift on main, restore the checked task state, and stop at the protected review/merge gate before dispatching T006.
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - Read current main, historical T002 merge/read-back receipts, tasks.md, README.md, branch and pull-request state.
+    - Restore the T002 checkbox and status wording without changing the accepted ADR decision content.
+    - Add bounded reconciliation evidence, append-only ledger state, and one project memory record.
+    - Open one draft PR from current main and stop at the human review/merge gate.
+  out:
+    - Implementing T006 or any later task.
+    - Changing apps, packages, contracts, infrastructure, CI, runtime, ADR decision content, or product scope.
+    - Merging to protected main, claiming final main read-back, or dispatching later work.
+
+policy:
+  human_gates:
+    - protected-branch merge
+    - task completion bookkeeping acceptance
+    - scope, priority, architecture, acceptance, or risk-limit change
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+memory_workflow:
+  contract: work-memory/v1
+  control_ledger: Append graph delta, proof receipts, memory receipts, and token usage every iteration.
+  semantic_memory: Capture only the durable T002 status drift and reconciliation constraint.
+  modes: [recall, capture, update, forget, no_op]
+  retrieval:
+    levels: [index, timeline_relations, details]
+    max_index_results: 10
+    stop_on_sufficient_evidence: true
+  capture:
+    allowed_kinds: [decision, constraint, fact, task_state, evidence]
+    requires_downstream_proof: true
+    requires_write_receipt: true
+  lifecycle: [seed, verified, stable, needs_update, disputed, archived]
+  failure_policy:
+    write_pending: blocked
+    stale_or_disputed: needs_human
+    redact_secrets: true
+
+graph:
+  entry_nodes:
+    - x-main-state
+    - t-supervisor
+    - t-human-review
+  terminal_nodes:
+    - s-terminal-policy
+
+  loops:
+    - id: l2-supervisor
+      layer: L2
+      owner: codex-supervisor
+      trigger_nodes: [t-supervisor]
+      action_nodes: [a-reconcile]
+      proof_nodes: [p-reconciliation]
+      memory_nodes: [m-l2-ledger]
+      stop_nodes: [s-terminal-policy]
+      budgets:
+        max_iterations: 2
+        max_minutes: 20
+        max_same_failure: 2
+        max_graph_changes: 8
+        max_tokens: 18000
+
+    - id: l1-reconciliation
+      layer: L1
+      owner: codex-agent
+      trigger_nodes: [t-repair-ready]
+      action_nodes: [a-prepare-repair]
+      proof_nodes: [p-repair-acceptance]
+      memory_nodes: [m-l1-memory]
+      stop_nodes: [s-terminal-policy]
+      budgets:
+        max_iterations: 2
+        max_minutes: 30
+        max_same_failure: 2
+        max_graph_changes: 10
+        max_tokens: 26000
+
+    - id: l3-merge-gate
+      layer: L3
+      owner: human-mark
+      trigger_nodes: [t-human-review]
+      action_nodes: [a-review-package]
+      proof_nodes: [p-review-scope]
+      memory_nodes: [m-l3-ledger]
+      stop_nodes: [s-terminal-policy]
+      budgets:
+        max_iterations: 2
+        max_minutes: 45
+        max_same_failure: 2
+        max_graph_changes: 8
+        max_tokens: 18000
+
+  nodes:
+    - id: x-main-state
+      kind: external
+      layer: EXTERNAL
+      label: Authoritative GitHub main state
+      owner: github
+      status: done
+      risk: low
+      confidence:
+        score: 0.99
+        basis: GitHub connector read-back at 2026-08-07T04:20:55Z.
+        evidence_refs: [.loop/evidence/t002-current-main-reconciliation.json]
+      budget:
+        effort_hours: 0.1
+        tokens: 1800
+      config:
+        source_type: github-repository
+        freshness: fetched_at is recorded in the reconciliation receipt
+        limitations: Historical receipts describe prior main states; current task blob is authoritative for present status.
+
+    - id: t-supervisor
+      kind: trigger
+      layer: L2
+      label: Next-task reconciliation requested
+      owner: codex-supervisor
+      status: done
+      risk: low
+      confidence:
+        score: 1.0
+        basis: Explicit current user request to proceed to the next project task.
+        evidence_refs: [.loop/evidence/t002-current-main-reconciliation.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: Reconcile authoritative task state before selecting the next implementation ticket.
+        inputs_required: [main ref, tasks.md, historical receipts, open PR state]
+        dedupe: repository plus main-sha plus tasks-blob-sha plus run-id
+
+    - id: a-reconcile
+      kind: action
+      layer: L2
+      label: Reconcile T002 drift against historical acceptance evidence
+      owner: codex-supervisor
+      status: done
+      risk: medium
+      confidence:
+        score: 0.98
+        basis: Current main has T002 unchecked while PR #4 and its receipt record the six ADRs as accepted and T002 checked at that earlier main state.
+        evidence_refs: [.loop/evidence/t002-current-main-reconciliation.json, .loop/evidence/t002-merge-readback.json]
+      budget:
+        effort_hours: 0.35
+        tokens: 5000
+      config:
+        workflow: [read current state, read historical receipt, classify drift, select one status-only repair]
+        allowed: [read GitHub state, write reconciliation evidence, route one bounded repair]
+        requires_approval: [merge, final task completion acceptance, dispatch T006, scope expansion]
+        forbidden: [silently rewrite historical evidence, change ADR decisions, implement runtime]
+
+    - id: p-reconciliation
+      kind: proof
+      layer: L2
+      label: T002 status drift reconciliation proof
+      owner: verifier
+      status: done
+      risk: medium
+      confidence:
+        score: 0.98
+        basis: Current main, PR #4, historical read-back, task blob and open-PR/branch searches were compared deterministically.
+        evidence_refs: [.loop/evidence/t002-current-main-reconciliation.json]
+      budget:
+        effort_hours: 0.25
+        tokens: 3500
+      config:
+        level: P2
+        claim: The only safe frontier is a T002 bookkeeping reconciliation; T006 must not be dispatched before it is reviewed and merged.
+        method: Compare current task checkbox, accepted ADR statuses, historical merge receipt, main SHA, branch inventory and open PR search.
+        evidence_path: .loop/evidence/t002-current-main-reconciliation.json
+        required: true
+        baseline_required: true
+
+    - id: m-l2-ledger
+      kind: memory
+      layer: L2
+      label: Supervisor reconciliation ledger
+      owner: codex-supervisor
+      status: done
+      risk: low
+      confidence:
+        score: 0.96
+        basis: The graph ledger preserves the conflict classification and routing decision append-only.
+        evidence_refs: [.loop/t002-status-reconciliation-ledger.json]
+      budget:
+        effort_hours: 0.1
+        tokens: 1200
+      config:
+        path: .loop/t002-status-reconciliation-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: work-memory/v1
+        memory_role: hybrid
+        receipt_required: true
+        write_failure_state: blocked
+
+    - id: t-repair-ready
+      kind: trigger
+      layer: L1
+      label: T002 status-only repair is ready
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        score: 0.97
+        basis: The repair is limited to the task checkbox, status documentation and governance evidence; no runtime file is authorized.
+        evidence_refs: [.loop/evidence/t002-current-main-reconciliation.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: Historical acceptance is confirmed, current drift is confirmed, and no duplicate repair PR is open.
+        inputs_required: [reconciliation proof, exact allowlist, current main base SHA]
+        dedupe: T002-status-reconciliation plus current-main-sha plus no-open-pr
+
+    - id: a-prepare-repair
+      kind: action
+      layer: L1
+      label: Prepare the smallest T002 status reconciliation
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        score: 0.95
+        basis: The proposed change restores a previously accepted task state and adds no runtime capability.
+        evidence_refs: [.loop/evidence/t002-status-reconciliation-acceptance.json]
+      budget:
+        effort_hours: 0.8
+        tokens: 9000
+      config:
+        workflow: [update only allowlisted status lines, add proof artifacts, validate memory and graph, inspect diff]
+        allowed: [specs/001-taiwan-basketball-magazine-ebook/tasks.md, README.md, .loop/evidence/**, .loop/*status-reconciliation*, .loop/memory/**]
+        requires_approval: [protected-branch merge, marking later tasks complete, dispatch T006]
+        forbidden: [apps/**, packages/**, contracts/**, infra/**, .github/**, ADR decision edits, secrets, external Web3 writes]
+
+    - id: p-repair-acceptance
+      kind: proof
+      layer: L1
+      label: Status repair scope and artifact validation proof
+      owner: verifier
+      status: done
+      risk: medium
+      confidence:
+        score: 0.95
+        basis: Strict graph validation, Work Memory validation, exact path inventory and deterministic status assertions pass on the proposed branch contents.
+        evidence_refs: [.loop/evidence/t002-status-reconciliation-acceptance.json]
+      budget:
+        effort_hours: 0.35
+        tokens: 4500
+      config:
+        level: P2
+        claim: The proposed branch changes only T002 status bookkeeping/evidence and leaves T006 unchecked and undispatched.
+        method: validate_graphify_loop.py --strict --json, validate_memory_record.py --strict, exact changed-path allowlist and content assertions.
+        evidence_path: .loop/evidence/t002-status-reconciliation-acceptance.json
+        required: true
+        baseline_required: true
+
+    - id: m-l1-memory
+      kind: memory
+      layer: L1
+      label: Durable T002 task-state memory
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        score: 0.97
+        basis: Work Memory v1 record was committed to the dedicated branch and fetched back with a repository receipt; only protected merge and final main read-back remain pending.
+        evidence_refs: [.loop/memory/t002-status-reconciliation.json, .loop/evidence/t002-status-reconciliation-remote-write.json, .loop/t002-status-reconciliation-ledger.json]
+      budget:
+        effort_hours: 0.15
+        tokens: 1800
+      config:
+        path: .loop/t002-status-reconciliation-ledger.json
+        semantic_path: .loop/memory/t002-status-reconciliation.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: work-memory/v1
+        memory_role: hybrid
+        receipt_required: true
+        write_failure_state: blocked
+
+    - id: t-human-review
+      kind: trigger
+      layer: L3
+      label: T002 reconciliation review and merge gate
+      owner: human-mark
+      status: ready
+      risk: high
+      confidence:
+        score: 1.0
+        basis: A protected merge and task-state correction remain accountable human decisions.
+        evidence_refs: [.loop/evidence/t002-status-reconciliation-acceptance.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: Review the exact draft PR scope and approve or reject the T002 status repair before merge.
+        inputs_required: [draft PR, changed-file inventory, acceptance proof, historical T002 receipt]
+        dedupe: T002-status-reconciliation plus draft-pr-number plus current-head-sha
+
+    - id: a-review-package
+      kind: action
+      layer: L3
+      label: Review the T002 reconciliation package
+      owner: codex-supervisor
+      status: done
+      risk: high
+      confidence:
+        score: 0.93
+        basis: The review checks exact diff scope and accepts only a human-gated merge path; it cannot self-approve the protected branch.
+        evidence_refs: [.loop/evidence/t002-status-reconciliation-acceptance.json]
+      budget:
+        effort_hours: 0.35
+        tokens: 3500
+      config:
+        workflow: [read draft PR, inspect changed filenames, compare current head, verify no runtime scope, publish review comment if needed]
+        allowed: [read PR, record scope review, leave a review comment]
+        requires_approval: [approve merge, merge protected main, finalize task completion]
+        forbidden: [self-approve, merge without Mark approval, dispatch T006]
+
+    - id: p-review-scope
+      kind: proof
+      layer: L3
+      label: Draft PR scope review proof
+      owner: verifier
+      status: done
+      risk: high
+      confidence:
+        score: 0.93
+        basis: Remote PR metadata, changed filenames and branch read-back match the allowlist; no CI status is available from the repository.
+        evidence_refs: [.loop/evidence/t002-status-reconciliation-acceptance.json]
+      budget:
+        effort_hours: 0.25
+        tokens: 2500
+      config:
+        level: P2
+        claim: The draft PR is reviewable as a governance-only T002 reconciliation and is not ready for automatic merge.
+        method: GitHub PR metadata, changed filenames, branch content read-back and exact scope comparison.
+        evidence_path: .loop/evidence/t002-status-reconciliation-acceptance.json
+        required: true
+        baseline_required: true
+
+    - id: m-l3-ledger
+      kind: memory
+      layer: L3
+      label: Human merge-gate decision ledger
+      owner: human-mark
+      status: ready
+      risk: medium
+      confidence:
+        score: 0.9
+        basis: The pending decision will be captured only after an explicit Mark instruction or review receipt.
+        evidence_refs: [.loop/t002-status-reconciliation-ledger.json]
+      budget:
+        effort_hours: 0.1
+        tokens: 1200
+      config:
+        path: .loop/t002-status-reconciliation-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: work-memory/v1
+        memory_role: graph_ledger
+        receipt_required: true
+        write_failure_state: blocked
+
+    - id: g-merge
+      kind: gate
+      layer: L3
+      label: Protected merge and T002 completion gate
+      owner: human-mark
+      status: needs_human
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: AI cannot approve its own protected branch write or infer task completion approval.
+        evidence_refs: [.loop/evidence/t002-status-reconciliation-acceptance.json]
+      budget:
+        effort_hours: 0.25
+        tokens: 1000
+      config:
+        condition: Mark explicitly approves the exact draft PR head and the T002 checkbox/status repair.
+        approver: human-mark
+        required: true
+
+    - id: s-terminal-policy
+      kind: stop
+      layer: GLOBAL
+      label: T002 reconciliation terminal policy
+      owner: policy
+      status: needs_human
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: The branch is review-ready but protected merge and final main read-back are not yet complete.
+        evidence_refs: [.loop/t002-status-reconciliation-acceptance.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        states:
+          success: PR is explicitly approved, merged, current main is read back, T002 is checked and T006 remains undispatched.
+          no_op: Current main already has the accepted T002 checkbox and no repair is needed.
+          blocked: Required GitHub write/read permission or evidence is unavailable.
+          stalled: Same failure or no-evidence-delta limit is reached.
+          exhausted: Iteration, time, graph-change, or token budget is reached.
+          needs_human: Draft PR is ready but Mark approval, protected merge, or final main read-back is pending.
+          cancelled: User cancels or the task contract becomes invalid.
+
+  edges:
+    - {id: e-external-reconcile, from: x-main-state, to: a-reconcile, type: feedback, required: true, confidence: 0.99, token_capacity: 6000}
+    - {id: e-supervisor-trigger, from: t-supervisor, to: a-reconcile, type: enables, required: true, confidence: 1.0, token_capacity: 12000}
+    - {id: e-reconcile-proof, from: a-reconcile, to: p-reconciliation, type: verifies, required: true, confidence: 0.98, token_capacity: 10000}
+    - {id: e-reconcile-memory-a, from: a-reconcile, to: m-l2-ledger, type: records, required: true, confidence: 0.96, token_capacity: 3500}
+    - {id: e-reconcile-memory-p, from: p-reconciliation, to: m-l2-ledger, type: records, required: true, confidence: 0.96, token_capacity: 3500}
+    - {id: e-reconcile-memory-read, from: m-l2-ledger, to: a-reconcile, type: reads, required: true, confidence: 0.96, token_capacity: 5000}
+    - {id: e-reconcile-feedback, from: m-l2-ledger, to: a-reconcile, type: feedback, required: true, confidence: 0.96, token_capacity: 5000}
+    - {id: e-repair-frontier, from: p-reconciliation, to: t-repair-ready, type: enables, required: true, confidence: 0.97, token_capacity: 9000}
+    - {id: e-repair-trigger, from: t-repair-ready, to: a-prepare-repair, type: enables, required: true, confidence: 0.97, token_capacity: 12000}
+    - {id: e-repair-proof, from: a-prepare-repair, to: p-repair-acceptance, type: verifies, required: true, confidence: 0.95, token_capacity: 10000}
+    - {id: e-repair-memory-a, from: a-prepare-repair, to: m-l1-memory, type: records, required: true, confidence: 0.95, token_capacity: 3500}
+    - {id: e-repair-memory-p, from: p-repair-acceptance, to: m-l1-memory, type: records, required: true, confidence: 0.95, token_capacity: 3500}
+    - {id: e-repair-memory-read, from: m-l1-memory, to: a-prepare-repair, type: reads, required: true, confidence: 0.95, token_capacity: 5000}
+    - {id: e-repair-feedback, from: m-l1-memory, to: a-prepare-repair, type: feedback, required: true, confidence: 0.95, token_capacity: 5000}
+    - {id: e-repair-stop, from: p-repair-acceptance, to: s-terminal-policy, type: enables, required: true, confidence: 0.95, token_capacity: 6000}
+    - {id: e-review-frontier, from: p-repair-acceptance, to: t-human-review, type: feedback, required: true, confidence: 0.95, token_capacity: 7000}
+    - {id: e-review-trigger, from: t-human-review, to: a-review-package, type: enables, required: true, confidence: 1.0, token_capacity: 8000}
+    - {id: e-review-proof, from: a-review-package, to: p-review-scope, type: verifies, required: true, confidence: 0.93, token_capacity: 7000}
+    - {id: e-review-memory-a, from: a-review-package, to: m-l3-ledger, type: records, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-review-memory-p, from: p-review-scope, to: m-l3-ledger, type: records, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-review-memory-read, from: m-l3-ledger, to: a-review-package, type: reads, required: true, confidence: 0.9, token_capacity: 4000}
+    - {id: e-review-feedback, from: m-l3-ledger, to: a-review-package, type: feedback, required: true, confidence: 0.9, token_capacity: 4000}
+    - {id: e-merge-gate, from: p-review-scope, to: g-merge, type: requires_approval, required: true, confidence: 1.0, token_capacity: 5000}
+    - {id: e-gate-stop, from: g-merge, to: s-terminal-policy, type: approves, required: true, confidence: 1.0, token_capacity: 4000}
+
+flow:
+  source: t-supervisor
+  sink: s-terminal-policy
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - memory_receipt
+  - next_action

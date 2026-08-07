@@ -1,0 +1,50 @@
+flowchart TD
+  subgraph G_EXTERNAL["External Evidence"]
+    N0[/"[EXTERNAL] external · Authoritative GitHub main state"/]
+  end
+  subgraph G_L3["L3 · Human Direction"]
+    N9(["[L3] trigger · T002 reconciliation review and merge gate"])
+    N10["[L3] action · Review the T002 reconciliation package"]
+    N11{{"[L3] proof · Draft PR scope review proof"}}
+    N12[("[L3] memory · Human merge-gate decision ledger")]
+    N13{"[L3] gate · Protected merge and T002 completion gate"}
+  end
+  subgraph G_L2["L2 · Supervisor"]
+    N1(["[L2] trigger · Next-task reconciliation requested"])
+    N2["[L2] action · Reconcile T002 drift against historical acceptance evidence"]
+    N3{{"[L2] proof · T002 status drift reconciliation proof"}}
+    N4[("[L2] memory · Supervisor reconciliation ledger")]
+  end
+  subgraph G_L1["L1 · Execution"]
+    N5(["[L1] trigger · T002 status-only repair is ready"])
+    N6["[L1] action · Prepare the smallest T002 status reconciliation"]
+    N7{{"[L1] proof · Status repair scope and artifact validation proof"}}
+    N8[("[L1] memory · Durable T002 task-state memory")]
+  end
+  subgraph G_GLOBAL["Global Policy"]
+    N14(["[GLOBAL] stop · T002 reconciliation terminal policy"])
+  end
+  N0 -.->|"feedback · 6000t"| N2
+  N1 -->|"enables · 12000t"| N2
+  N2 -->|"verifies · 10000t"| N3
+  N2 -.->|"records · 3500t"| N4
+  N3 -.->|"records · 3500t"| N4
+  N4 -.->|"reads · 5000t"| N2
+  N4 -.->|"feedback · 5000t"| N2
+  N3 -->|"enables · 9000t"| N5
+  N5 -->|"enables · 12000t"| N6
+  N6 -->|"verifies · 10000t"| N7
+  N6 -.->|"records · 3500t"| N8
+  N7 -.->|"records · 3500t"| N8
+  N8 -.->|"reads · 5000t"| N6
+  N8 -.->|"feedback · 5000t"| N6
+  N7 -->|"enables · 6000t"| N14
+  N7 -.->|"feedback · 7000t"| N9
+  N9 -->|"enables · 8000t"| N10
+  N10 -->|"verifies · 7000t"| N11
+  N10 -.->|"records · 2500t"| N12
+  N11 -.->|"records · 2500t"| N12
+  N12 -.->|"reads · 4000t"| N10
+  N12 -.->|"feedback · 4000t"| N10
+  N11 -->|"requires_approval · 5000t"| N13
+  N13 -->|"approves · 4000t"| N14

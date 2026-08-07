@@ -1,0 +1,41 @@
+{
+  "schema_version": 1,
+  "memory_id": "wm:project:courtside-tw:t002-status-reconciliation",
+  "scope": "project",
+  "kind": "task_state",
+  "title": "T002 ADR acceptance exists but current main checkbox drift requires reconciliation",
+  "summary": "The six T002 ADR decisions were accepted and merged in PR #4, but current main at a4d43ed marks T002 unchecked. The next safe action is a governance-only status reconciliation; T006 remains blocked until review, merge, and main read-back.",
+  "claims": [
+    {"text": "PR #4 merged six T002 ADR decision documents with ACCEPTED status.", "class": "CONFIRMED", "confidence": "high"},
+    {"text": "The historical T002 read-back recorded T002 checked at that main state.", "class": "CONFIRMED", "confidence": "high"},
+    {"text": "Current main commit a4d43ed records T002 unchecked in tasks.md.", "class": "CONFIRMED", "confidence": "high"},
+    {"text": "T006 must not be dispatched until the current T002 status conflict is reviewed and reconciled.", "class": "CONFIRMED", "confidence": "high"}
+  ],
+  "status": "verified",
+  "confidence": "high",
+  "confidence_basis": [
+    "GitHub PR #4 metadata and merge commit",
+    ".loop/evidence/t002-merge-readback.json",
+    "Current main tasks.md blob and commit read-back",
+    "Current open PR and branch search"
+  ],
+  "volatility": "medium",
+  "as_of": "2026-08-07",
+  "source_refs": [
+    "https://github.com/bynanci/courtside-tw/pull/4",
+    ".loop/evidence/t002-merge-readback.json",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md@main",
+    ".loop/evidence/t002-current-main-reconciliation.json"
+  ],
+  "entities": ["courtside-tw", "T002", "T006", "ADR-0001", "ADR-0002", "ADR-0003", "ADR-0004", "ADR-0005", "ADR-0006"],
+  "relations": {
+    "supports": ["wm:project:courtside-tw:task-frontier"],
+    "contradicts": [],
+    "supersedes": [],
+    "blocks": ["wm:project:courtside-tw:t006-dispatch"],
+    "invalidates": []
+  },
+  "next_review_at": "2026-08-08",
+  "sensitivity": "internal",
+  "retention": "until_superseded"
+}

@@ -1,0 +1,112 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t002-status-reconciliation-acceptance-20260807",
+  "generated_at": "2026-08-07T04:20:55Z",
+  "actor": "verifier",
+  "subject": "T002 status reconciliation branch acceptance",
+  "ticket": "T002",
+  "base": {
+    "ref": "main",
+    "commit_sha": "a4d43ed42203953eac8add12c58ca3527d1c6356",
+    "historical_acceptance_pr": 4
+  },
+  "proposed_changes": {
+    "tasks_checkbox": {
+      "before": "[ ] T002",
+      "after": "[x] T002"
+    },
+    "tasks_proof": "Bind T002 to PR #4 accepted ADRs and the current-main drift receipt.",
+    "readme_status": "Describe T002 as accepted and this status repair as the current reconciliation.",
+    "runtime_files_changed": false,
+    "adr_decision_content_changed": false,
+    "t006_dispatch": false
+  },
+  "changed_path_allowlist": [
+    "README.md",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    ".loop/evidence/t002-current-main-reconciliation.json",
+    ".loop/evidence/t002-status-reconciliation-acceptance.json",
+    ".loop/t002-status-reconciliation-graphify-loop.yaml",
+    ".loop/t002-status-reconciliation-graphify-loop.mmd",
+    ".loop/t002-status-reconciliation-ledger.json",
+    ".loop/memory/t002-status-reconciliation.json",
+    ".loop/evidence/t002-status-reconciliation-remote-write.json"
+  ],
+  "checks": [
+    {
+      "name": "strict_graph_validation",
+      "command": "python3 scripts/validate_graphify_loop.py .loop/t002-status-reconciliation-graphify-loop.yaml --strict --json",
+      "result": "PASS",
+      "details": "15 nodes / 24 edges / 0 warnings / 0 errors; all 3 actions have downstream proof."
+    },
+    {
+      "name": "memory_validation",
+      "command": "python3 scripts/validate_memory_record.py .loop/memory/t002-status-reconciliation.json --strict",
+      "result": "PASS",
+      "details": "Work Memory v1 record validates as wm:project:courtside-tw:t002-status-reconciliation."
+    },
+    {
+      "name": "status_assertions",
+      "result": "PASS",
+      "details": "T002 is proposed checked, T004/T005 remain checked, T006 remains unchecked and no later task is dispatched."
+    },
+    {
+      "name": "scope_assertions",
+      "result": "PASS",
+      "details": "Allowlist contains no apps, packages, contracts, infrastructure, CI, provider or runtime implementation path."
+    },
+    {
+      "name": "historical_evidence_integrity",
+      "result": "PASS",
+      "details": "PR #4 and .loop/evidence/t002-merge-readback.json are referenced without modification."
+    },
+    {
+      "name": "remote_branch_readback",
+      "result": "PASS",
+      "details": "Read-back at branch commit 38470ca5269c90b19e2842277b0a145906e567e6, 12 commits ahead of main with 9 changed paths, confirmed T002 checked, T006 unchecked, graph, ledger and memory paths; this acceptance-closure write is append-only."
+    },
+    {
+      "name": "semantic_memory_write_receipt",
+      "result": "PASS",
+      "details": "Work Memory record is readable from the branch; semantic-memory receipt version remains db7991cccaede38c55f5823280af6d7539093554, and the later graph/ledger closure remains append-only."
+    }
+  ],
+  "human_gate": {
+    "required": true,
+    "action": "Review and merge the draft PR; final main read-back and T006 dispatch remain separate."
+  },
+  "graph_analysis": {
+    "ready_frontier": [
+      "t-human-review"
+    ],
+    "critical_path": [
+      "t-supervisor",
+      "a-reconcile",
+      "p-reconciliation",
+      "t-repair-ready",
+      "a-prepare-repair",
+      "p-repair-acceptance",
+      "s-terminal-policy"
+    ],
+    "critical_path_effort_hours": 1.75,
+    "critical_path_estimated_tokens": 22000,
+    "confidence_floor": 0.95,
+    "token_max_flow": 6000,
+    "min_cut": [
+      "e-repair-stop"
+    ]
+  },
+  "result": "PASS_WITH_CONTROLS",
+  "confidence": 0.95,
+  "remote_readback": {
+    "observed_branch_head_before_closure": "38470ca5269c90b19e2842277b0a145906e567e6",
+    "base_commit": "a4d43ed42203953eac8add12c58ca3527d1c6356",
+    "compare": {
+      "status": "ahead",
+      "ahead_by": 12,
+      "behind_by": 0,
+      "changed_path_count": 9
+    },
+    "note": "This receipt update closes the acceptance evidence after the remote graph and ledger writes; protected merge and final main read-back remain pending."
+  }
+}

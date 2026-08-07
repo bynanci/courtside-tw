@@ -1,0 +1,153 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-t002-status-reconciliation",
+  "graph_version": 2,
+  "run_id": "courtside-tw-t002-status-reconciliation-20260807",
+  "status": "needs_human",
+  "iteration": 1,
+  "started_at": "2026-08-07T04:20:55Z",
+  "updated_at": "2026-08-07T04:31:00Z",
+  "current_frontier": [
+    "g-merge"
+  ],
+  "blocked_nodes": [
+    "g-merge"
+  ],
+  "terminal_state": "needs_human",
+  "next_action": "Create the bounded draft PR, read back its exact head, then wait for Mark review/merge approval; do not dispatch T006.",
+  "memory_receipt": {
+    "memory_status": "SAVED",
+    "memory_id": "wm:project:courtside-tw:t002-status-reconciliation",
+    "version": "db7991cccaede38c55f5823280af6d7539093554",
+    "retrieval_ids": [
+      "t002-merge-readback-20260806",
+      "t004-main-readback-20260807"
+    ],
+    "evidence_refs": [
+      ".loop/evidence/t002-current-main-reconciliation.json",
+      ".loop/evidence/t002-status-reconciliation-remote-write.json",
+      ".loop/memory/t002-status-reconciliation.json"
+    ],
+    "next_review_at": "2026-08-08",
+    "blocker": "Mark review/merge approval and final main read-back are pending."
+  },
+  "events": [
+    {
+      "event_id": "evt-t002-status-001-reconciled",
+      "at": "2026-08-07T04:20:55Z",
+      "actor": "codex-supervisor",
+      "type": "authoritative_state_reconciled",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "t002-status-drift",
+            "after": "Current main task state conflicts with historical accepted T002 read-back."
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t002-current-main-reconciliation.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "historical/current comparison",
+          "level": "P2",
+          "result": "pass"
+        }
+      ],
+      "failure_signature": "T002_CHECKBOX_DRIFT",
+      "decision": "Route one governance-only status repair; do not dispatch T006.",
+      "token_usage": {
+        "estimated": 4200,
+        "input": 0,
+        "output": 0,
+        "total": 4200
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-t002-status-002-acceptance-prepared",
+      "at": "2026-08-07T04:20:55Z",
+      "actor": "codex-agent",
+      "type": "bounded_repair_prepared",
+      "base_graph_version": 1,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "draft-pr-scope",
+            "after": "T002 checkbox/status/evidence only; runtime scope excluded."
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t002-status-reconciliation-acceptance.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "allowlist and status assertions",
+          "level": "P2",
+          "result": "pass"
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Prepare branch and stop at human merge gate.",
+      "token_usage": {
+        "estimated": 6000,
+        "input": 0,
+        "output": 0,
+        "total": 6000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-t002-status-003-semantic-memory-write-verified",
+      "at": "2026-08-07T04:31:00Z",
+      "actor": "codex-supervisor",
+      "type": "semantic_memory_write_verified",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "memory_receipt.memory_status",
+            "before": "MEMORY_WRITE_PENDING",
+            "after": "SAVED"
+          },
+          {
+            "op": "replace",
+            "path": "memory_receipt.version",
+            "before": "pending-remote-branch-commit",
+            "after": "db7991cccaede38c55f5823280af6d7539093554"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t002-status-reconciliation-remote-write.json",
+        ".loop/memory/t002-status-reconciliation.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "repository backend write and read-back",
+          "level": "P2",
+          "result": "pass",
+          "details": "Work Memory record was committed to and fetched from the dedicated branch."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Memory is durably recorded; retain the human merge gate and do not dispatch T006.",
+      "token_usage": {
+        "estimated": 2200,
+        "input": 0,
+        "output": 0,
+        "total": 2200
+      },
+      "terminal_reason": null
+    }
+  ]
+}
