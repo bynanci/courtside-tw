@@ -1,0 +1,24 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t008-runtime-proof-20260807",
+  "generated_at": "2026-08-07T08:11:31Z",
+  "actor": "codex-supervisor",
+  "subject": "T008 GitHub Actions runtime proof",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T008",
+  "branch": "ticket/t008-ci-pipelines",
+  "status": "pending",
+  "checks": {
+    "ci_workflow": "PENDING",
+    "security_workflow": "PENDING",
+    "docker_compose_health": "PENDING",
+    "reports": "PENDING"
+  },
+  "required_receipts": [
+    "GitHub Actions workflow run IDs and conclusions",
+    "Docker Compose health-check log for postgres, s3 and oidc",
+    "frontend and Java verification logs",
+    "security scan reports and conclusions"
+  ],
+  "decision": "Do not mark T008 checked or claim runtime proof until GitHub Actions completes and evidence is read back."
+}
