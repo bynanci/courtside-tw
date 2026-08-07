@@ -31,23 +31,29 @@
   "$defs": {
     "uuid": {
       "type": "string",
-      "not": { "pattern": "\\u0000" },
+      "not": {
+        "pattern": "\\u0000"
+      },
       "format": "uuid",
       "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-57][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
     },
     "slug": {
       "type": "string",
-      "not": { "pattern": "\\u0000" },
+      "not": {
+        "pattern": "\\u0000"
+      },
       "minLength": 1,
       "maxLength": 160,
       "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$"
     },
     "secureHref": {
       "type": "string",
-      "not": { "pattern": "\\u0000" },
+      "not": {
+        "pattern": "\\u0000"
+      },
       "maxLength": 2048,
       "format": "uri",
-      "pattern": "^(https://(?:[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?(?::[0-9]{1,5})?|\\\\[[0-9A-Fa-f:.]+\\\\])(?:[/?#][^\\s]*)?|mailto:[^\\s@]+@[^\\s@]+)$"
+      "pattern": "^(https://(?:[A-Za-z0-9](?:[A-Za-z0-9.-]*[A-Za-z0-9])?(?::[0-9]{1,5})?|\\[[0-9A-Fa-f:.]+\\])(?:[/?#][^\\s]*)?|mailto:[^\\s@]+@[^\\s@]+)$"
     },
     "inlineTextRun": {
       "type": "object",
@@ -62,7 +68,9 @@
         },
         "text": {
           "type": "string",
-          "not": { "pattern": "\\u0000" },
+          "not": {
+            "pattern": "\\u0000"
+          },
           "minLength": 1,
           "maxLength": 4000,
           "pattern": "\\S"
@@ -83,7 +91,9 @@
         },
         "text": {
           "type": "string",
-          "not": { "pattern": "\\u0000" },
+          "not": {
+            "pattern": "\\u0000"
+          },
           "minLength": 1,
           "maxLength": 1000,
           "pattern": "\\S"
@@ -135,7 +145,9 @@
         },
         "text": {
           "type": "string",
-          "not": { "pattern": "\\u0000" },
+          "not": {
+            "pattern": "\\u0000"
+          },
           "minLength": 1,
           "maxLength": 500,
           "pattern": "\\S"
@@ -187,7 +199,9 @@
         },
         "attribution": {
           "type": "string",
-          "not": { "pattern": "\\u0000" },
+          "not": {
+            "pattern": "\\u0000"
+          },
           "maxLength": 300
         }
       }
@@ -198,7 +212,9 @@
       "properties": {
         "style": {
           "type": "string",
-          "not": { "pattern": "\\u0000" },
+          "not": {
+            "pattern": "\\u0000"
+          },
           "enum": [
             "solid",
             "space"
@@ -219,14 +235,18 @@
         },
         "altText": {
           "type": "string",
-          "not": { "pattern": "\\u0000" },
+          "not": {
+            "pattern": "\\u0000"
+          },
           "minLength": 1,
           "maxLength": 500,
           "pattern": "\\S"
         },
         "variant": {
           "type": "string",
-          "not": { "pattern": "\\u0000" },
+          "not": {
+            "pattern": "\\u0000"
+          },
           "enum": [
             "hero",
             "wide",
@@ -236,12 +256,16 @@
         },
         "caption": {
           "type": "string",
-          "not": { "pattern": "\\u0000" },
+          "not": {
+            "pattern": "\\u0000"
+          },
           "maxLength": 1000
         },
         "credit": {
           "type": "string",
-          "not": { "pattern": "\\u0000" },
+          "not": {
+            "pattern": "\\u0000"
+          },
           "maxLength": 500
         }
       }
@@ -259,19 +283,25 @@
         },
         "altText": {
           "type": "string",
-          "not": { "pattern": "\\u0000" },
+          "not": {
+            "pattern": "\\u0000"
+          },
           "minLength": 1,
           "maxLength": 500,
           "pattern": "\\S"
         },
         "caption": {
           "type": "string",
-          "not": { "pattern": "\\u0000" },
+          "not": {
+            "pattern": "\\u0000"
+          },
           "maxLength": 1000
         },
         "credit": {
           "type": "string",
-          "not": { "pattern": "\\u0000" },
+          "not": {
+            "pattern": "\\u0000"
+          },
           "maxLength": 500
         }
       }
@@ -285,7 +315,9 @@
       "properties": {
         "layout": {
           "type": "string",
-          "not": { "pattern": "\\u0000" },
+          "not": {
+            "pattern": "\\u0000"
+          },
           "enum": [
             "grid",
             "stack"
@@ -311,26 +343,34 @@
       "properties": {
         "label": {
           "type": "string",
-          "not": { "pattern": "\\u0000" },
+          "not": {
+            "pattern": "\\u0000"
+          },
           "minLength": 1,
           "maxLength": 200,
           "pattern": "\\S"
         },
         "value": {
           "type": "string",
-          "not": { "pattern": "\\u0000" },
+          "not": {
+            "pattern": "\\u0000"
+          },
           "minLength": 1,
           "maxLength": 200,
           "pattern": "\\S"
         },
         "unit": {
           "type": "string",
-          "not": { "pattern": "\\u0000" },
+          "not": {
+            "pattern": "\\u0000"
+          },
           "maxLength": 50
         },
         "context": {
           "type": "string",
-          "not": { "pattern": "\\u0000" },
+          "not": {
+            "pattern": "\\u0000"
+          },
           "maxLength": 500
         }
       }
@@ -346,27 +386,35 @@
       "properties": {
         "providerId": {
           "type": "string",
-          "not": { "pattern": "\\u0000" },
+          "not": {
+            "pattern": "\\u0000"
+          },
           "const": "rights-pending",
           "description": "No external video provider is authorized until ADR-0003 rights-owner approval is recorded."
         },
         "videoId": {
           "type": "string",
-          "not": { "pattern": "\\u0000" },
+          "not": {
+            "pattern": "\\u0000"
+          },
           "minLength": 1,
           "maxLength": 64,
           "pattern": "^[A-Za-z0-9_-]+$"
         },
         "title": {
           "type": "string",
-          "not": { "pattern": "\\u0000" },
+          "not": {
+            "pattern": "\\u0000"
+          },
           "minLength": 1,
           "maxLength": 300,
           "pattern": "\\S"
         },
         "caption": {
           "type": "string",
-          "not": { "pattern": "\\u0000" },
+          "not": {
+            "pattern": "\\u0000"
+          },
           "maxLength": 1000
         }
       }
@@ -384,7 +432,9 @@
         },
         "label": {
           "type": "string",
-          "not": { "pattern": "\\u0000" },
+          "not": {
+            "pattern": "\\u0000"
+          },
           "minLength": 1,
           "maxLength": 300,
           "pattern": "\\S"
@@ -439,7 +489,9 @@
             },
             "paletteId": {
               "type": "string",
-              "not": { "pattern": "\\u0000" },
+              "not": {
+                "pattern": "\\u0000"
+              },
               "enum": [
                 "court-dusk"
               ]
@@ -460,14 +512,18 @@
         },
         "altText": {
           "type": "string",
-          "not": { "pattern": "\\u0000" },
+          "not": {
+            "pattern": "\\u0000"
+          },
           "minLength": 1,
           "maxLength": 500,
           "pattern": "\\S"
         },
         "dataSummary": {
           "type": "string",
-          "not": { "pattern": "\\u0000" },
+          "not": {
+            "pattern": "\\u0000"
+          },
           "minLength": 1,
           "maxLength": 1000,
           "pattern": "\\S"
@@ -489,7 +545,9 @@
         },
         "type": {
           "type": "string",
-          "not": { "pattern": "\\u0000" },
+          "not": {
+            "pattern": "\\u0000"
+          },
           "enum": [
             "paragraph",
             "heading",
