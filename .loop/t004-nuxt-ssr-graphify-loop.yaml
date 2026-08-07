@@ -388,7 +388,7 @@ graph:
       confidence:
         score: 1.0
         basis: PR #15 is merged, main read-back is verified and T004 is checked; the named terminal policy is complete and T006 remains a separate undispatched ticket.
-        evidence_refs: [.loop/t004-nuxt-ssr-ledger.json, .loop/evidence/t004-code-review.json, .loop/evidence/t004-review-approval.json, .loop/evidence/t004-completion-receipt.json]
+        evidence_refs: [.loop/t004-nuxt-ssr-ledger.json, .loop/evidence/t004-code-review.json, .loop/evidence/t004-review-approval.json, .loop/evidence/t004-completion-receipt.json, .loop/evidence/t004-main-readback.json]
       budget:
         effort_hours: 0.0
         tokens: 0
