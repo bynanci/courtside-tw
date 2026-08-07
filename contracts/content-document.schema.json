@@ -316,15 +316,13 @@
       "properties": {
         "providerId": {
           "type": "string",
-          "enum": [
-            "youtube",
-            "vimeo"
-          ]
+          "const": "rights-pending",
+          "description": "No external video provider is authorized until ADR-0003 rights-owner approval is recorded."
         },
         "videoId": {
           "type": "string",
           "minLength": 1,
-          "maxLength": 32,
+          "maxLength": 64,
           "pattern": "^[A-Za-z0-9_-]+$"
         },
         "title": {
@@ -336,43 +334,7 @@
           "type": "string",
           "maxLength": 1000
         }
-      },
-      "allOf": [
-        {
-          "if": {
-            "properties": {
-              "providerId": {
-                "const": "youtube"
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "videoId": {
-                "type": "string",
-                "pattern": "^[A-Za-z0-9_-]{11}$"
-              }
-            }
-          }
-        },
-        {
-          "if": {
-            "properties": {
-              "providerId": {
-                "const": "vimeo"
-              }
-            }
-          },
-          "then": {
-            "properties": {
-              "videoId": {
-                "type": "string",
-                "pattern": "^[0-9]{6,12}$"
-              }
-            }
-          }
-        }
-      ]
+      }
     },
     "relatedReadingPayload": {
       "type": "object",
@@ -440,9 +402,9 @@
             },
             "paletteId": {
               "type": "string",
-              "minLength": 1,
-              "maxLength": 64,
-              "pattern": "^[a-z0-9-]+$"
+              "enum": [
+                "court-dusk"
+              ]
             },
             "numericSequence": {
               "type": "array",
