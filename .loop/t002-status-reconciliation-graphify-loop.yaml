@@ -356,12 +356,12 @@ graph:
       layer: L3
       label: Human merge-gate decision ledger
       owner: human-mark
-      status: ready
+      status: done
       risk: medium
       confidence:
         score: 0.9
         basis: The pending decision will be captured only after an explicit Mark instruction or review receipt.
-        evidence_refs: [.loop/t002-status-reconciliation-ledger.json]
+        evidence_refs: [.loop/t002-status-reconciliation-ledger.json, .loop/evidence/t002-main-readback.json, .loop/memory/t002-main-readback.json]
       budget:
         effort_hours: 0.1
         tokens: 1200
@@ -380,12 +380,12 @@ graph:
       layer: L3
       label: Protected merge and T002 completion gate
       owner: human-mark
-      status: needs_human
+      status: done
       risk: critical
       confidence:
         score: 1.0
         basis: AI cannot approve its own protected branch write or infer task completion approval.
-        evidence_refs: [.loop/evidence/t002-status-reconciliation-acceptance.json]
+        evidence_refs: [.loop/evidence/t002-status-reconciliation-acceptance.json, .loop/evidence/t002-main-readback.json]
       budget:
         effort_hours: 0.25
         tokens: 1000
@@ -399,7 +399,7 @@ graph:
       layer: GLOBAL
       label: T002 reconciliation terminal policy
       owner: policy
-      status: needs_human
+      status: done
       risk: critical
       confidence:
         score: 1.0
