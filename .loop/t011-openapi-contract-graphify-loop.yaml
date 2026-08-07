@@ -193,8 +193,8 @@ graph:
       status: ready
       risk: critical
       confidence:
-        score: 0.85
-        basis: "T009 main read-back, OpenAPI proof and implementation scope are complete; CI/Security, current-head review and explicit human merge remain."
+        score: 0.95
+        basis: "T009 main read-back, OpenAPI proof, CI/Security #70 and current-head review pass; explicit human merge remains."
         evidence_refs: [".loop/evidence/t009-main-readback-20260807.json", ".loop/evidence/t011-openapi-proof-20260807.json", ".loop/evidence/t011-ci-security-20260807.json"]
       budget: {effort_hours: 0.5, tokens: 3000}
       config:
@@ -231,7 +231,7 @@ graph:
       risk: critical
       confidence:
         score: 0.8
-        basis: "T011 contract proof is complete; terminal success still requires merge and main read-back."
+        basis: "T011 contract proof plus CI/Security/current-head review are complete; terminal success still requires merge and main read-back."
         evidence_refs: [".loop/evidence/t011-openapi-proof-20260807.json"]
       budget: {effort_hours: 0.1, tokens: 500}
       config:
