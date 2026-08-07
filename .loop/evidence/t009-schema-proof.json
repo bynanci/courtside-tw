@@ -4,7 +4,7 @@
   "task": "T009",
   "recorded_at": "2026-08-07T10:56:31Z",
   "validated_ref": "ticket/t009-content-document-schema",
-  "validated_commit": "90a803347c73cec8f1f785efff1e0bed2d7ffe9f",
+  "validated_commit": "cf2d48d44d025e06a19d52e3912a85663211c75a",
   "scope": {
     "contract": "contracts/content-document.schema.json",
     "valid_fixture": "packages/content-schema/fixtures/valid/content-document-v1-all-blocks.json",
@@ -182,9 +182,10 @@
     }
   },
   "latest_revalidation": {
-    "input_commit": "90a803347c73cec8f1f785efff1e0bed2d7ffe9f",
+    "input_commit": "cf2d48d44d025e06a19d52e3912a85663211c75a",
     "result": "PASS",
     "observed": "Ajv2020 strict compile accepted the rights-pending valid fixture and rejected 17 focused invalid fixtures; Prettier check passed for all fixture JSON; duplicate block ID semantic invariant was rejected.",
-    "scope": "Schema enum/rights gate, palette enum, per-block negative fixtures and duplicate-ID evidence."
+    "scope": "Schema enum/rights gate, palette enum, per-block negative fixtures and duplicate-ID evidence.",
+    "recorded_at": "2026-08-07T11:07:00Z"
   }
 }
