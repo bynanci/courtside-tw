@@ -1,0 +1,91 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t008-completion-20260807",
+  "generated_at": "2026-08-07T09:48:00Z",
+  "actor": "codex-supervisor",
+  "subject": "T008 post-merge completion candidate",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T008",
+  "implementation_pr": {
+    "number": 25,
+    "merged": true,
+    "merge_commit_sha": "e857d504b3c6cd61b4be5bf7989a19aa1a6b8ea3",
+    "merge_url": "https://github.com/bynanci/courtside-tw/pull/25"
+  },
+  "authorization": {
+    "claim_status": "CONFIRMED",
+    "approved_by": "Mark",
+    "source": "current user direction: @GitHub 請繼續上一步",
+    "scope": "Continue the previously authorized T008 flow after image remediation, final CI/Security pass and PR #25 merge."
+  },
+  "completion": {
+    "checkbox_path": "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    "t008_checked": true,
+    "t009_checked": false,
+    "later_tickets_checked": false,
+    "main_readback_required": true
+  },
+  "proof": [
+    {
+      "claim": "Implementation and security remediation",
+      "result": "PASS",
+      "evidence_refs": [
+        ".loop/evidence/t008-runtime-verification-final.json",
+        "PR #25"
+      ],
+      "details": "CI run #14 and Security run #14 passed on reviewed head 15f8317; PostgreSQL, S3 and OIDC image scans passed without an exception."
+    },
+    {
+      "claim": "PR merge",
+      "result": "PASS",
+      "evidence_refs": [
+        "PR #25",
+        "main@e857d504b3c6cd61b4be5bf7989a19aa1a6b8ea3"
+      ],
+      "details": "PR #25 was merged with expected head protection using squash merge."
+    },
+    {
+      "claim": "Completion slice scope",
+      "result": "PASS",
+      "evidence_refs": [
+        "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+        "README.md",
+        ".loop/t008-ci-pipelines-graphify-loop.yaml",
+        ".loop/t008-ci-pipelines-ledger.json",
+        ".loop/memory/t008-ci-pipelines.json"
+      ],
+      "details": "This branch changes only T008 task/governance state; no runtime, database, provider, credential, deployment or Web3 paths are changed."
+    }
+  ],
+  "scope_guard": {
+    "implementation_paths_already_merged": [
+      ".github/workflows/ci.yml",
+      ".github/workflows/security.yml",
+      ".github/dependabot.yml",
+      "infra/compose/compose.yaml",
+      "infra/compose/postgres/Dockerfile",
+      "infra/compose/s3mock/Dockerfile",
+      "scripts/dev/check-dependencies.sh"
+    ],
+    "completion_paths": [
+      "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+      "README.md",
+      ".loop/evidence/t008-completion-20260807.json",
+      ".loop/t008-ci-pipelines-graphify-loop.yaml",
+      ".loop/t008-ci-pipelines-ledger.json",
+      ".loop/memory/t008-ci-pipelines.json"
+    ],
+    "forbidden": [
+      "T009 implementation",
+      "database migrations",
+      "production credentials",
+      "provider SDK writes",
+      "deployment or release publishing",
+      "Web3 writes"
+    ]
+  },
+  "result": "accepted_pending_main_readback",
+  "decision": "T008 is checked in the separate completion slice after merged implementation and passing CI/Security receipts. Merge this slice, then perform an authoritative main read-back before dispatching T009.",
+  "rollback": "Revert the completion/governance merge if main read-back does not show the expected T008 checkbox and evidence lineage; the already-merged implementation PR can be reverted independently.",
+  "next_action": "Merge the completion slice with expected-head protection, then record final main read-back and keep T009 undispatched until that read-back passes."
+}
