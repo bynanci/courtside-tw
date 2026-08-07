@@ -5,6 +5,8 @@ feedback_updates_next_action: true
 scope:
   in:
     - contracts/openapi.yaml
+    - scripts/validate-openapi.mjs
+    - package.json, pnpm-lock.yaml, Makefile and CI contract wiring
     - T011 dispatch, governance evidence, Graphify ledger and semantic memory
   out:
     - T009 ContentDocument schema/fixtures
@@ -59,11 +61,12 @@ acceptance:
   - "Problem responses use application/problem+json with stable code and field-error rules for 400/401/403/404/409/422/429."
   - "ContentDocument is referenced from the T009 canonical schema; no duplicate permissive content object is allowed."
   - "Independent parse/lint, example and local $ref proof passes before review."
+  - "Cursor pagination, Idempotency-Key and If-Match semantics are explicit and linted."
 graph:
   entry_nodes: [x-phase1-main-readback, x-t009-contract-state, t-t011-ready]
   terminal_nodes: [s-t011-terminal]
-  current_frontier: [x-t009-contract-state]
-  blocked_nodes: [g-t009-main-readback, a-t011-define-openapi, p-t011-openapi-proof, g-t011-review-merge]
+  current_frontier: [g-t011-review-merge]
+  blocked_nodes: []
   nodes:
     - id: x-phase1-main-readback
       kind: external
@@ -79,35 +82,35 @@ graph:
       budget: {effort_hours: 0.2, tokens: 1500}
       config:
         source_type: github-main
-        freshness: "2026-08-07T12:56:56Z"
-        limitations: "Main is authoritative; no T009 schema on main."
+        freshness: "2026-08-07T14:40:00Z"
+        limitations: "Main is authoritative; T009 is checked and the canonical schema is available on main."
     - id: x-t009-contract-state
       kind: external
       layer: EXTERNAL
       label: "T009 ContentDocument canonical schema state"
       owner: github
-      status: blocked
+      status: done
       risk: high
       confidence:
         score: 0.99
-        basis: "PR #32 current-head CI/Security and review threads pass; the schema is still not merged to main."
-        evidence_refs: ["PR #32", "contracts/content-document.schema.json@ticket/t009-content-document-schema", ".loop/evidence/t009-schema-proof.json", ".loop/evidence/t009-ci-security-20260807.json", ".loop/evidence/t011-t009-dependency-readback-20260807.json"]
+        basis: "PR #32 and completion PR #34 are merged; main@70c9e71 read-back confirms T009 checked and the canonical schema is present."
+        evidence_refs: ["PR #32", "PR #34", "main@70c9e71", ".loop/evidence/t009-main-readback-20260807.json", ".loop/evidence/t009-schema-proof.json"]
       budget: {effort_hours: 0.2, tokens: 2000}
       config:
         source_type: github-pr
-        freshness: "2026-08-07T12:56:56Z"
-        limitations: "CI/Security and current-head review pass; human merge and main read-back remain unavailable."
+        freshness: "2026-08-07T14:40:00Z"
+        limitations: "T009 CI/Security/review pass and completion read-back are available on main."
     - id: g-t009-main-readback
       kind: gate
       layer: L3
       label: "T009 main read-back gate before T011"
       owner: human-mark
-      status: blocked
+      status: done
       risk: critical
       confidence:
         score: 0.99
-        basis: "T011 must not implement a self-contained ContentDocument reference until T009 is merged and read back from main."
-        evidence_refs: ["PR #32", ".loop/evidence/t011-dispatch-20260807.json"]
+        basis: "T009 is merged and checked after authoritative main read-back at main@70c9e71."
+        evidence_refs: ["PR #32", "PR #34", ".loop/evidence/t009-main-readback-20260807.json"]
       budget: {effort_hours: 0.2, tokens: 2500}
       config:
         condition: "T009 PR #32 is merged and main contains the canonical ContentDocument schema with current-head proof read back."
@@ -133,14 +136,14 @@ graph:
     - id: t-t011-ready
       kind: trigger
       layer: L1
-      label: "T011 OpenAPI contract is dispatched but waits for T009 main readback"
+      label: "T011 OpenAPI contract implementation is unblocked after T009 main readback"
       owner: codex-supervisor
-      status: blocked
+      status: done
       risk: high
       confidence:
         score: 0.99
-        basis: "T011 API surface is specified, but article content responses must reference the T009 canonical schema."
-        evidence_refs: ["specs/001-taiwan-basketball-magazine-ebook/tasks.md#T011", "specs/001-taiwan-basketball-magazine-ebook/plan.md#API Contract Surface", "PR #32"]
+        basis: "T009 canonical schema is checked on main@70c9e71 and is referenced by the implementation contract."
+        evidence_refs: ["specs/001-taiwan-basketball-magazine-ebook/tasks.md#T011", "specs/001-taiwan-basketball-magazine-ebook/plan.md#API Contract Surface", "main@70c9e71", ".loop/evidence/t009-main-readback-20260807.json"]
       budget: {effort_hours: 0.1, tokens: 1000}
       config:
         condition: "T009 canonical ContentDocument schema exists on main and current PR proof is read back."
@@ -151,15 +154,15 @@ graph:
       layer: L1
       label: "Define complete OpenAPI 3.1 v1 contract"
       owner: codex-agent
-      status: blocked
+      status: done
       risk: high
       confidence:
-        score: 0.72
-        basis: "API surface and error contract are specified; canonical ContentDocument dependency is not on main."
-        evidence_refs: ["specs/001-taiwan-basketball-magazine-ebook/tasks.md#T011", "specs/001-taiwan-basketball-magazine-ebook/plan.md#API Contract Surface"]
+        score: 0.95
+        basis: "OpenAPI 3.1 contract, security/concurrency rules, examples and canonical ContentDocument ref are implemented on the T011 branch."
+        evidence_refs: ["specs/001-taiwan-basketball-magazine-ebook/tasks.md#T011", "specs/001-taiwan-basketball-magazine-ebook/plan.md#API Contract Surface", ".loop/evidence/t011-openapi-proof-20260807.json"]
       budget: {effort_hours: 2.5, tokens: 16000}
       config:
-        workflow: [read T009 canonical schema, define paths/components/security/errors, lint OpenAPI/examples]
+        workflow: [read T009 canonical schema, define paths/components/security/errors, lint OpenAPI/examples, wire CI]
         allowed: [contracts/openapi.yaml, T011 evidence/ledger/memory]
         requires_approval: [merge T011, mark T011 checked, auth/provider scope expansion]
         forbidden: [duplicate ContentDocument schema, T012 generated client, runtime implementation, secrets]
@@ -168,18 +171,18 @@ graph:
       layer: L1
       label: "OpenAPI lint and example contract proof"
       owner: verifier
-      status: planned
+      status: done
       risk: high
       confidence:
-        score: 0.4
-        basis: "Final proof cannot run until T009 schema is on main."
-        evidence_refs: []
+        score: 0.98
+        basis: "Independent YAML parse, operation inventory, examples, stable error catalog, concurrency headers and local ContentDocument ref checks pass."
+        evidence_refs: [".loop/evidence/t011-openapi-proof-20260807.json"]
       budget: {effort_hours: 0.5, tokens: 5000}
       config:
         level: P2
         claim: "OpenAPI 3.1 parses/lints, all operations have stable security/error/parameter examples, and ContentDocument ref resolves locally."
-        method: "Redocly/OpenAPI parser plus example request/response validation and local $ref resolution."
-        evidence_path: .loop/evidence/t011-openapi-proof.json
+        method: "yaml 2.9.0 parser plus deterministic OpenAPI operation, example, stable-error, security, concurrency and local $ref checks."
+        evidence_path: .loop/evidence/t011-openapi-proof-20260807.json
         required: true
         baseline_required: true
     - id: g-t011-review-merge
@@ -187,12 +190,12 @@ graph:
       layer: L2
       label: "T011 review and merge gate"
       owner: human-mark
-      status: blocked
+      status: ready
       risk: critical
       confidence:
-        score: 0.4
-        basis: "No implementation or proof can be accepted before T009 main readback."
-        evidence_refs: ["PR #32"]
+        score: 0.85
+        basis: "T009 main read-back, OpenAPI proof and implementation scope are complete; CI/Security, current-head review and explicit human merge remain."
+        evidence_refs: [".loop/evidence/t009-main-readback-20260807.json", ".loop/evidence/t011-openapi-proof-20260807.json", ".loop/evidence/t011-ci-security-20260807.json"]
       budget: {effort_hours: 0.5, tokens: 3000}
       config:
         condition: "T011 OpenAPI file, lint/examples proof, CI/Security and review pass; T009 main readback is complete."
@@ -207,8 +210,8 @@ graph:
       risk: medium
       confidence:
         score: 0.95
-        basis: "Dispatch blocker is confirmed by main/PR readback and stored with a write receipt."
-        evidence_refs: [".loop/evidence/t011-dispatch-20260807.json", ".loop/memory/t011-openapi-contract.json"]
+        basis: "T009 dependency is read back from main; implementation and proof receipts are stored for the T011 merge gate."
+        evidence_refs: [".loop/evidence/t011-dispatch-20260807.json", ".loop/evidence/t011-openapi-proof-20260807.json", ".loop/memory/t011-openapi-contract.json"]
       budget: {effort_hours: 0.2, tokens: 2000}
       config:
         path: .loop/memory/t011-openapi-contract.json
@@ -224,12 +227,12 @@ graph:
       layer: GLOBAL
       label: "T011 named terminal policy"
       owner: policy
-      status: blocked
+      status: planned
       risk: critical
       confidence:
         score: 0.8
-        basis: "T011 is dispatched but its canonical contract dependency is unavailable."
-        evidence_refs: ["PR #32"]
+        basis: "T011 contract proof is complete; terminal success still requires merge and main read-back."
+        evidence_refs: [".loop/evidence/t011-openapi-proof-20260807.json"]
       budget: {effort_hours: 0.1, tokens: 500}
       config:
         states:
@@ -262,7 +265,7 @@ graph:
       memory_nodes: [m-t011]
       stop_nodes: [s-t011-terminal]
       budgets:
-        max_iterations: 5
+        max_iterations: 10
         max_minutes: 60
         max_same_failure: 2
         max_graph_changes: 12
