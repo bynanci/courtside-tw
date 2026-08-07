@@ -201,7 +201,7 @@ graph:
       layer: L1
       label: Approved T005 Java/Spring baseline is ready
       owner: codex-agent
-      status: ready
+      status: done
       risk: medium
       confidence:
         score: 0.99
@@ -220,12 +220,12 @@ graph:
       layer: L1
       label: Implement four T005 Java/Spring bootstrap files
       owner: codex-agent
-      status: ready
+      status: done
       risk: medium
       confidence:
-        score: 0.88
-        basis: The branch and proof contract are dispatched; implementation has not started in this dispatch-only iteration.
-        evidence_refs: [.loop/evidence/t005-dispatch.json]
+        score: 0.94
+        basis: The four scoped implementation files are present on the ticket branch and pass inventory, YAML and Java contract checks; profile boot remains a separate blocked proof.
+        evidence_refs: [.loop/evidence/t005-dispatch.json, .loop/evidence/t005-implementation-proof.json]
       budget:
         effort_hours: 1.5
         tokens: 16000
@@ -240,12 +240,12 @@ graph:
       layer: L1
       label: T005 api/worker profile boot proof
       owner: verifier
-      status: planned
+      status: blocked
       risk: medium
       confidence:
-        score: 0.0
-        basis: Profile boot commands are pending implementation on the dispatched branch.
-        evidence_refs: []
+        score: 0.86
+        basis: The implementation is ready, but Gradle dependency resolution could not complete because Java network access to the configured proxy was unavailable in this runner; neither profile boot is claimed.
+        evidence_refs: [.loop/evidence/t005-implementation-proof.json]
       budget:
         effort_hours: 0.5
         tokens: 7000
@@ -262,12 +262,12 @@ graph:
       layer: L1
       label: T005 execution ledger
       owner: codex-agent
-      status: planned
+      status: done
       risk: low
       confidence:
-        score: 0.0
-        basis: The implementation ledger will append implementation and profile-proof receipts after the action runs.
-        evidence_refs: []
+        score: 0.86
+        basis: The implementation and blocked-proof receipts were appended without rewriting the dispatch history.
+        evidence_refs: [.loop/t005-spring-bootstrap-ledger.json, .loop/evidence/t005-implementation-proof.json]
       budget:
         effort_hours: 0.05
         tokens: 1000
