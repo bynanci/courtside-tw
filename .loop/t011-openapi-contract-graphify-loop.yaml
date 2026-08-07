@@ -36,22 +36,7 @@ policy:
   mutation:
     append_only_evidence: true
     require_graph_delta: true
-memory_work  loops:
-    - id: l1-execution
-      layer: L1
-      owner: agent
-      trigger_nodes: [t-t011-ready]
-      action_nodes: [a-t011-define-openapi]
-      proof_nodes: [p-t011-openapi-proof]
-      memory_nodes: [m-t011]
-      stop_nodes: [s-t011-terminal]
-      budgets:
-        max_iterations: 5
-        max_minutes: 60
-        max_same_failure: 2
-        max_graph_changes: 12
-        max_tokens: 40000
-flow:
+memory_workflow:
   contract: work-memory/v1
   control_ledger: "Append graph delta, proof receipts, blocker signatures and token usage every iteration."
   semantic_memory: "Capture only durable T011 state, constraints and dependency decisions."
@@ -267,6 +252,21 @@ graph:
     - {id: e-memory-read, from: m-t011, to: a-t011-define-openapi, type: reads, required: true, confidence: 0.95, token_capacity: 4000}
     - {id: e-memory-feedback, from: m-t011, to: a-t011-define-openapi, type: feedback, required: true, confidence: 0.7, token_capacity: 4000}
     - {id: e-proof-memory, from: p-t011-openapi-proof, to: m-t011, type: records, required: true, confidence: 0.7, token_capacity: 4000}
+  loops:
+    - id: l1-execution
+      layer: L1
+      owner: agent
+      trigger_nodes: [t-t011-ready]
+      action_nodes: [a-t011-define-openapi]
+      proof_nodes: [p-t011-openapi-proof]
+      memory_nodes: [m-t011]
+      stop_nodes: [s-t011-terminal]
+      budgets:
+        max_iterations: 5
+        max_minutes: 60
+        max_same_failure: 2
+        max_graph_changes: 12
+        max_tokens: 40000
 flow:
   source: t-t011-ready
   sink: s-t011-terminal
