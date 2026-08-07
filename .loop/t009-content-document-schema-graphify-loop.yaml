@@ -30,7 +30,11 @@ authority:
 
 acceptance:
   - schema validates one fixture covering all 11 MVP block types
-  - invalid fixtures reject unsafe links, arbitrary block types/properties, raw video URLs and generative code/shader/remote URL
+  - each approved block type has a focused invalid fixture for its payload boundary
+  - invalid fixtures reject unsafe links, arbitrary block types/properties, raw video URLs, unapproved video providers and generative code/shader/remote URL
+  - video remains a rights-pending sentinel until ADR-0003 publisher/rights-owner approval; no external provider is authorized
+  - paletteId is an enum for the approved court-pulse-v1 palette
+  - duplicate blocks[*].id is rejected by the declared semantic uniqueness invariant
   - schema is closed-world at document, block and payload boundaries
   - T009 remains unchecked until implementation proof and main read-back
 
@@ -93,7 +97,7 @@ graph:
         tokens: 1500
       config:
         source_type: github-main
-        freshness: "2026-08-07T11:10:00Z"
+        freshness: "2026-08-07T10:50:00Z"
         limitations: "GitHub connector read-back; no private repository secrets or hidden session state."
 
     - id: t-t009-ready
@@ -167,7 +171,7 @@ graph:
       risk: high
       confidence:
         score: 0.95
-        basis: Schema and fixture proof passed under strict Ajv; schema-validator parity is intentionally deferred to T010.
+        basis: Schema and fixture proof passed under strict Ajv; provider rights approval, ID uniqueness enforcement and validator parity remain gated follow-ups.
         evidence_refs: [specs/001-taiwan-basketball-magazine-ebook/tasks.md#T009, docs/adr/0003-content-document-and-media-policy.md, docs/adr/0005-motion-and-generative-runtime.md, .loop/evidence/t009-schema-proof.json]
       budget:
         effort_hours: 3.0
@@ -203,13 +207,13 @@ graph:
     - id: p-t009-negative-fixtures
       kind: proof
       layer: L1
-      label: Negative fixtures fail for the intended unsafe reason
+      label: Focused negative fixtures fail for each block and security boundary
       owner: verifier
       status: done
       risk: high
       confidence:
         score: 0.98
-        basis: All five invalid fixtures were rejected for the intended closed-world, URL, provider or enum constraints.
+        basis: Seventeen focused schema-invalid fixtures and the duplicate-ID semantic invariant were rejected for the intended constraints.
         evidence_refs: [.loop/evidence/t009-schema-proof.json]
       budget:
         effort_hours: 0.5
