@@ -15,7 +15,7 @@ MVP 採三個可獨立驗收的 P1 slice：
 2. 讀者完成具靜態 fallback、reduced-motion 與基礎生成式視覺的長篇文章閱讀與期刊內導覽。
 3. 編輯團隊完成草稿到發布／下架的受控工作流。
 
-搜尋、帳號收藏／續讀與可選 Web3 provenance／wallet 列為 P2；離線期刊列為 P3。付款、付費牆、NFT、代幣、token gate、留言、即時比分與原生 App 不進入此 feature。
+搜尋、帳號收藏／續讀、Taiwan Basketball Domain、Evidence、Fan Season Passport 與可選 Web3 provenance／credential 列為分離的 P2 increments；離線期刊與 Season Recap 列為 P3。付款、付費牆、NFT、代幣、token gate、留言、即時比分與原生 App 不進入此 feature。
 
 ## Technical Context
 
@@ -96,7 +96,7 @@ flowchart TD
 
 #### Spring Boot API
 
-- 擁有 Publication、Content、Media、Taxonomy、Identity、Reader Library、Search、Audit 模組。
+- 擁有 Publication、Content、Media、Taxonomy、Basketball、Evidence、Identity、Reader Library、Fan Passport、Search、Provenance、Audit 模組。
 - 驗證狀態轉換、角色權限、媒體權利、樂觀鎖與發布交易。
 - 建立不可變 ArticleRevision 與公開 revision pointer。
 - 產生簽章上傳意圖、確認 checksum／MIME／尺寸與媒體處理狀態。
@@ -120,11 +120,14 @@ flowchart TD
 | `publication` | issues、sections、issue ordering、state transitions、publication jobs | content、media、identity、audit、outbox |
 | `content` | articles、revisions、content validation、contributors | taxonomy、media、audit |
 | `media` | assets、variants、rights records、upload lifecycle、revocation impact | identity、audit、outbox |
-| `taxonomy` | terms、aliases、historical labels、relationships | audit |
+| `taxonomy` | content classification terms、aliases、historical labels、relationships | audit |
+| `basketball` | canonical league／season／team／player identity、aliases、stints、national-team campaigns、competition／game | taxonomy、evidence、audit |
+| `evidence` | sources、immutable snapshots、EvidenceRef、status、freshness、contradiction review | basketball、audit、outbox |
 | `search` | public search projection、query normalization、ranking | publication events、taxonomy |
 | `readerlibrary` | bookmarks、reading progress、account erasure | identity、publication |
 | `analytics` | consent-aware minimal product events and retention controls | identity、publication |
-| `provenance` | canonical manifests、CID／chain attestations、SIWE challenge、wallet links | publication、identity、media、audit、outbox |
+| `fanpassport` | Reader Stamp、Issue Stamp、event／archive contribution、claim、revoke、supersede、season recap、wallet link | identity、publication、basketball、rights、audit、outbox |
+| `provenance` | Edition Provenance：canonical publication manifests、CID／chain attestation status | publication、media、rights、audit、outbox |
 | `audit` | append-only security and publication events | none |
 | `outbox` | durable domain event delivery and worker lease | none |
 
@@ -163,9 +166,10 @@ flowchart TD
 | `search_document` | 已發布搜尋投影 | no draft content; versioned source checksum |
 | `outbox_event` | durable async work | unique idempotency key; lease and retry fields |
 | `audit_event` | append-only audit trail | no update/delete app permission |
-| `publication_provenance` | manifest digest、CID、chain reference、verification／withdrawal state | unique `(snapshot_id, manifest_version)`; no body or PII |
-| `wallet_identity_link` | optional off-chain reader／wallet relation | unique normalized chain namespace + address; explicit consent and revocation |
-| `siwe_challenge` | short-lived sign-in nonce | hashed nonce; single use; domain／chain／expiry binding |
+| `publication_provenance` | Edition Provenance manifest digest、CID、chain reference、verification／withdrawal state | unique `(snapshot_id, manifest_version)`; no body or PII |
+| `fan_passport` / `reader_stamp` | off-chain Fan Season Passport entitlement、stamp、claim and lifecycle | identity／season／condition idempotency; no P1 gate |
+| `wallet_identity_link` | optional, consented and revocable fanpassport／identity relation | unique normalized chain namespace + address; identifiable information |
+| `siwe_challenge` | optional fanpassport identity delivery nonce | hashed nonce; single use; domain／chain／expiry binding; never editor authorization |
 
 ### Content Document Contract
 
@@ -305,14 +309,14 @@ stateDiagram-v2
 
 ### Editorial experience direction
 
-視覺定位採「當代運動編輯設計」，不套用常見的加密貨幣霓虹 dashboard。Web3 資訊只出現在次要的 Edition Passport／來源抽屜，封面、目錄、正文與閱讀 CTA 仍以籃球內容為主。
+視覺定位採「當代運動編輯設計」，不套用常見的加密貨幣霓虹 dashboard。Edition Provenance 與 optional Fan Passport status 只出現在次要的來源／身份抽屜，封面、目錄、正文與閱讀 CTA 仍以籃球內容為主。
 
 | Surface | Layout / visual role | Motion baseline | p5.js baseline | Static / reduced fallback |
 | --- | --- | --- | --- | --- |
 | Home / latest issue | 大型封面、非對稱標題、3 個以下主入口 | cover reveal + restrained stagger | none by default | 完整 SSR cover and links |
 | Issue detail | 封面、期號、主題、分章 TOC | cover-to-detail shared layout | optional `court-pulse-v1` poster hero | fixed poster + semantic TOC |
 | Article | 窄正文欄、寬媒體 breakout、sticky progress | progress interpolation + intentional block reveal | editorial-insert `generative-canvas` only | poster、alt text、data summary |
-| Edition Passport | digest／CID／chain status 的 compact evidence panel | status transition only | none | text status + copyable references |
+| Edition Provenance | digest／CID／chain status 的 compact evidence panel | status transition only | none | text status + copyable references |
 | Studio preview | 與公開 renderer 同源、參數表單在旁 | no decorative route motion | fixed-seed preview with explicit play/pause | generated poster preview |
 
 首個候選 preset 為 `court-pulse-v1`：以球場線條、投籃落點／文章數據與雜誌色票生成可重現的抽象圖。允許參數只包含 `density`、`tempo`、`lineWeight`、`paletteId` 與經 server 驗證的非個資數值序列；發布時以同 seed 產生 poster，preset 未通過 ADR／效能驗證則只交付 poster，不啟動 animation。
@@ -631,6 +635,64 @@ specs/001-taiwan-basketball-magazine-ebook/
 | Structured content schema | 支援可驗證的雜誌 block、SSR、安全與 migration | 任意 HTML 開發快，但 XSS、跨端 rendering 與版本演進成本不可控 |
 | Client-only Motion／p5 runtime | 數位雜誌需要受控的節奏與生成式視覺，同時保留 SSR／SEO／a11y | 純靜態最簡單但無法滿足新體驗目標；全站 WebGL／canvas 又會犧牲內容語意、效能與維護性 |
 | Optional provenance adapters | 讓已發布 snapshot 可做內容定址與外部存證，但不污染 publication domain | 直接把內容與流程搬上鏈會增加 gas、隱私、撤回與可用性風險；完全不設 boundary 則未來會把 provider SDK 滲入核心模組 |
+
+## Product / Architecture Alignment Addendum v0.3
+
+本 addendum 依 `docs/product/alignment.md`、ADR-0007 與 ADR-0008 將產品願景接回既有 implementation plan。它不改變 ADR-0001 的 deployment topology，也不授權本輪 runtime implementation。
+
+### Delivery slices
+
+| Slice | Scope | Explicit exclusion |
+| --- | --- | --- |
+| P1 | Issue、TOC、Article、Studio、rights、immutable publication、revision、SEO、SSR、a11y、Motion、bounded p5 poster | Passport claim、wallet、token、NFT、payment、chain write |
+| P2A | League、Season、Team、Player、aliases、TeamSeason、PlayerTeamStint、NationalTeamCampaign／Roster、Competition／Tournament／Game | 即時比分與 microservice split |
+| P2B | Source、SourceSnapshot、EvidenceRef、status、freshness、contradiction policy | silent overwrite、無來源 canonical fact |
+| P2C | FIBA／CTBA／TPBL／PLG／SBL／overseas adapter ports、snapshot ingest、normalize、validation | 外部來源直接寫 production entity |
+| P2D | OIDC／email Reader Stamp、off-chain entitlement、idempotent claim、revoke、supersede、unlink、delete | P1 reading gate、金融資產語意 |
+| P2E | opt-in wallet、credential adapter、sponsored transaction、gas ceiling、signer custody、chain attestation、revocation registry | speculation、marketplace、staking、yield、governance token |
+| P3 | Season Recap、p5 `season-recap-v1`、Archive Contributor、歷史照片／票根／口述歷史 | 私人閱讀歷史直接上鏈、無 rights asset |
+
+### Module boundary addendum
+
+- `taxonomy` 只負責分類／navigation；不可擁有 League／Team／Player canonical facts。
+- `basketball` 擁有 stable identity、alias、valid period、TeamSeason、PlayerTeamStint、NationalTeamCampaign／Roster 與 Competition／Game。
+- `evidence` 擁有 Source、SourceSnapshot、EvidenceRef、status、freshness 與 contradiction review；不能由抓取器直接覆寫 basketball。
+- `fanpassport` 擁有 claim condition、off-chain entitlement、Reader Stamp、revoke／supersede、wallet unlink 與 season recap eligibility。
+- `provenance` 只擁有 Edition Provenance；不擁有 Fan Passport、Reader Stamp 或 wallet identity lifecycle。
+- `identity` 擁有 OIDC／email account lifecycle；`WalletIdentityLink` 是 fanpassport 的可撤銷輔助關係，不是唯一身份。
+- All modules remain inside Spring modular monolith and use application／domain ports；future adapters remain worker/outbox jobs until a new ADR proves another topology.
+
+### Alignment gate and dependency order
+
+T097（本輪 product／domain／passport alignment）必須在 T004 dispatch 前合併。T004 仍只負責 Nuxt SSR scaffold，不帶入 P2 domain 或 Passport runtime。後續依序：
+
+```text
+T097 alignment → T004 Nuxt scaffold → P1 contracts／reader/publication
+                                      ↓
+                           P2A → P2B → P2C
+                                      ↓
+                                   P2D → P2E
+                                      ↓
+                                      P3
+```
+
+P2D 必須依賴 identity foundation、immutable publication 與 rights／audit boundary；P2E 必須依賴 P2D 的 off-chain eligibility 與 ADR-0008 activation gate；P3 必須依賴 P2A／P2B、p5 controls、privacy 與 rights owner。
+
+### Alignment traceability
+
+| User story | Requirements | ADR | Task range | Acceptance evidence |
+| --- | --- | --- | --- | --- |
+| US8 Taiwan Basketball Domain | FR-054–FR-060 | ADR-0007 | T098–T100 | identity／alias／timeline／roster fixtures |
+| US9 Evidence Layer | FR-061–FR-064 | ADR-0007 | T101–T104 | snapshot／freshness／conflict／adapter contracts |
+| US10 Off-chain Passport | FR-066–FR-069 | ADR-0008 | T105–T106 | claim idempotency／revoke／delete tests |
+| US11 Optional Credential | FR-065、FR-068、FR-070–FR-072、FR-074 | ADR-0008 | T107–T109 | privacy／rights／outage／wallet tests |
+| US12 Season Recap | FR-072–FR-074 | ADR-0005、ADR-0008 | T110–T112 | deterministic poster／SSR／a11y／withdrawal tests |
+
+### Migration and implementation guard
+
+這是 non-breaking specification evolution。`Edition Passport` → `Edition Provenance` 是 terminology／contract rename；本輪不做 column、endpoint、content 或 database migration。Taxonomy existing data、SourceSnapshot tables、Player identity resolution、Reader Stamp records、WalletIdentityLink 與 credential status 都留給 future implementation task，必須先產生 migration plan、backfill／rollback evidence 與 compatibility tests。
+
+禁止將以下大 ticket 加入 backlog：`Implement Basketball`、`Implement Web3`、`Build Passport`。每一個 future task 必須只有一個可驗證 contract／boundary，且明確列出 source、rights、privacy 與 fallback evidence。
 
 ## Decisions Required Before Implementation
 
