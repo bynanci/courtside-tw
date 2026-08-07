@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "documentId": "00000000-0000-4000-8000-000000000017",
+  "blocks": [
+    {
+      "id": "00000000-0000-4000-8000-000000000018",
+      "type": "video",
+      "version": 1,
+      "payload": {
+        "providerId": "youtube",
+        "videoId": "dQw4w9WgXcQ",
+        "title": "尚未通過 rights gate 的影片"
+      }
+    }
+  ]
+}
