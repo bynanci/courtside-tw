@@ -62,7 +62,6 @@
     "state": "open",
     "draft": true,
     "merged": false,
-    "head": "e80881c2a4946491f9923324de6862356b3b0664",
     "changed_files": [
       ".loop/evidence/t005-dispatch.json",
       ".loop/t005-spring-bootstrap-graphify-loop.mmd",
