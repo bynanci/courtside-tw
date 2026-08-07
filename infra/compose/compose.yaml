@@ -2,7 +2,12 @@ name: ${COMPOSE_PROJECT_NAME:-courtside-tw-local}
 
 services:
   postgres:
-    image: postgres:18.4-alpine3.24
+    image: courtside-tw/postgres:18.4-alpine3.24-gosu-go1.25.7
+    build:
+      context: ./postgres
+      args:
+        GOSU_COMMIT: 40506998e34a7a679e6dae41374c1b7aa37eb73f
+        GOSU_X_SYS_VERSION: 0.44.0
     environment:
       POSTGRES_DB: ${POSTGRES_DB:-courtside}
       POSTGRES_USER: ${POSTGRES_USER:-courtside}
@@ -24,7 +29,11 @@ services:
       - local
 
   s3:
-    image: adobe/s3mock:5.1.0
+    image: courtside-tw/s3mock:5.2.0-upstream-627bf8d
+    build:
+      context: ./s3mock
+      args:
+        S3MOCK_COMMIT: 627bf8d37938a5eb89e5775391c0b475c2686f98
     environment:
       COM_ADOBE_TESTING_S3MOCK_STORE_INITIAL_BUCKETS: ${S3_INITIAL_BUCKETS:-courtside-local}
       COM_ADOBE_TESTING_S3MOCK_STORE_RETAIN_FILES_ON_EXIT: ${S3_RETAIN_FILES_ON_EXIT:-false}
@@ -45,7 +54,7 @@ services:
       - local
 
   oidc:
-    image: ghcr.io/navikt/mock-oauth2-server:5.0.2
+    image: ghcr.io/navikt/mock-oauth2-server:6.0.0
     environment:
       SERVER_PORT: 8080
     ports:
