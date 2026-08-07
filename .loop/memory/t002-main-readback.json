@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "memory_id": "wm:project:courtside-tw:t002-main-readback",
+  "scope": "project",
+  "kind": "task_state",
+  "title": "T002 reconciliation is merged and main read-back enables the T006 frontier",
+  "summary": "PR #18 reconciled the T002 checkbox and evidence on main. Final read-back at 52e159e confirms T002, T004 and T005 are checked, T006 remains unchecked, and no competing T006 PR or branch exists; T006 is the single next bounded implementation slice.",
+  "claims": [
+    {
+      "text": "PR #18 squash-merged the T002 status reconciliation into main at 52e159e239ae21469cbe0d19d91d6984b5e92426.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "main tasks.md records T002, T004 and T005 checked while T006 remains unchecked.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "No open pull request or T006 branch existed at the final read-back.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "T006 is the single ready implementation frontier after the T002 reconciliation.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    }
+  ],
+  "status": "verified",
+  "confidence": "high",
+  "confidence_basis": [
+    "GitHub PR #18 merged metadata",
+    ".loop/evidence/t002-main-readback.json",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md@main",
+    "GitHub open PR and branch searches"
+  ],
+  "volatility": "medium",
+  "as_of": "2026-08-07",
+  "source_refs": [
+    "https://github.com/bynanci/courtside-tw/pull/18",
+    ".loop/evidence/t002-main-readback.json",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md@main"
+  ],
+  "entities": [
+    "courtside-tw",
+    "T002",
+    "T004",
+    "T005",
+    "T006"
+  ],
+  "relations": {
+    "supports": [
+      "wm:project:courtside-tw:task-frontier"
+    ],
+    "contradicts": [],
+    "supersedes": [
+      "wm:project:courtside-tw:t002-status-reconciliation"
+    ],
+    "blocks": [],
+    "invalidates": []
+  },
+  "next_review_at": "2026-08-08",
+  "sensitivity": "internal",
+  "retention": "until_superseded"
+}

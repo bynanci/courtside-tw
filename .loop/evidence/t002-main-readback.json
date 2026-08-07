@@ -1,0 +1,82 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t002-main-readback-20260807",
+  "generated_at": "2026-08-07T04:44:44Z",
+  "actor": "verifier",
+  "subject": "T002 reconciliation final main read-back",
+  "repository": "bynanci/courtside-tw",
+  "authoritative_state": {
+    "ref": "main",
+    "commit_sha": "52e159e239ae21469cbe0d19d91d6984b5e92426",
+    "merge_pull_request": 18,
+    "merge_head_sha": "e01216f6febe4f17bfdc142a62daa3b8b4e89c6e",
+    "tasks_path": "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    "tasks_blob_sha": "2fe752465b90dbd75b7f5e05e557d23967b85e41",
+    "checkboxes": {
+      "T001": "[x]",
+      "T002": "[x]",
+      "T003": "[x]",
+      "T004": "[x]",
+      "T005": "[x]",
+      "T006": "[ ]"
+    },
+    "open_pull_requests": [],
+    "t006_branches": [],
+    "runtime_changes_in_merge": false
+  },
+  "confirmed_facts": [
+    "PR #18 was squash-merged into main at 52e159e239ae21469cbe0d19d91d6984b5e92426.",
+    "The merged change contains only the nine reviewed governance, status and evidence paths.",
+    "main tasks.md records T002, T004 and T005 checked; T006 remains unchecked.",
+    "No open pull request or T006 branch exists at the time of this read-back.",
+    "The T002 reconciliation evidence and Work Memory record are readable from main."
+  ],
+  "decision": {
+    "result": "ALLOW_WITH_CONTROLS",
+    "chosen_action": "Dispatch exactly one bounded T006 implementation slice from main.",
+    "controls": [
+      "Keep T006 limited to shared formatting, linting and strict type-check configuration.",
+      "Do not dispatch T007 or later work in the same slice.",
+      "Preserve contract-first, warning-free and deterministic verification gates.",
+      "Stop at the T006 review/merge gate after independent proof."
+    ]
+  },
+  "verification": [
+    {
+      "name": "pr_merge",
+      "result": "PASS",
+      "evidence": "PR #18 is closed/merged with merge commit 52e159e239ae21469cbe0d19d91d6984b5e92426."
+    },
+    {
+      "name": "main_head",
+      "result": "PASS",
+      "evidence": "Recent main commit read-back resolves to 52e159e239ae21469cbe0d19d91d6984b5e92426."
+    },
+    {
+      "name": "task_state",
+      "result": "PASS",
+      "evidence": "tasks.md blob 2fe752465b90dbd75b7f5e05e557d23967b85e41 contains T002/T004/T005 [x] and T006 [ ]."
+    },
+    {
+      "name": "competition",
+      "result": "PASS",
+      "evidence": "Open PR search returned no items and T006 branch search returned no branches."
+    },
+    {
+      "name": "runtime_scope",
+      "result": "PASS",
+      "evidence": "PR #18 changed-file inventory contains no runtime implementation path."
+    },
+    {
+      "name": "status_checks",
+      "result": "NOT_CONFIGURED",
+      "evidence": "Combined status for merge commit returned no configured status checks."
+    }
+  ],
+  "limitations": [
+    "This receipt verifies the repository state after PR #18; it does not claim T006 implementation is complete.",
+    "Repository CI/status checks are not configured yet; T008 is the later CI task."
+  ],
+  "result": "pass",
+  "confidence": 0.99
+}
