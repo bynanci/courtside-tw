@@ -1,12 +1,12 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t005",
-  "graph_version": 4,
+  "graph_version": 5,
   "run_id": "courtside-tw-t005-spring-bootstrap-20260806",
   "status": "blocked",
   "iteration": 3,
   "started_at": "2026-08-06T23:44:00Z",
-  "updated_at": "2026-08-07T01:19:49Z",
+  "updated_at": "2026-08-07T01:21:43Z",
   "current_frontier": [
     "p-spring-boot"
   ],
@@ -268,6 +268,44 @@
         "total": 9000
       },
       "terminal_reason": "Required profile proof is unavailable in the current runner; the next safe action is a proof-capable rerun followed by human review."
+    },
+    {
+      "event_id": "evt-t005-spring-bootstrap-005-proof-path-reconciled",
+      "at": "2026-08-07T01:21:43Z",
+      "actor": "codex-agent",
+      "type": "evidence_path_reconciled",
+      "base_graph_version": 4,
+      "new_graph_version": 5,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-spring-boot/config/evidence_path",
+            "before": ".loop/evidence/t005-profile-boot.json",
+            "after": ".loop/evidence/t005-implementation-proof.json"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t005-implementation-proof.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "evidence path existence",
+          "level": "P2",
+          "result": "pass",
+          "details": "The blocked profile proof node now points to the append-only implementation-proof receipt that records the attempted checks and environment blocker."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Keep the Merge Gate blocked; reconcile the proof node to an existing evidence receipt without changing the acceptance requirement for both profile boots.",
+      "token_usage": {
+        "estimated": 1000,
+        "input": 0,
+        "output": 0,
+        "total": 1000
+      },
+      "terminal_reason": null
     }
   ],
   "proof": {
