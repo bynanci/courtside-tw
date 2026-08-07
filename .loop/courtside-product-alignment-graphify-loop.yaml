@@ -1,0 +1,638 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-product-domain-passport-alignment
+objective: Align the Courtside TW product vision, Taiwan basketball domain, evidence layer, Edition Provenance and Fan Season Passport before dispatching T004, without runtime implementation.
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - Read the verified main state after T005 completion, DESIGN.md, constitution, ADR-0001 through ADR-0006, spec.md, plan.md, tasks.md, Graphify evidence and open PR state.
+    - Create the product alignment documents, ADR-0007/0008 drafts, spec/plan/tasks addendum, README documentation links and terminology-only Edition Provenance clarification.
+    - Add only the alignment Graphify loop, append-only ledger and reconciliation/review/read-back evidence.
+    - Prove T005 is checked before T004, T004 remains unstarted, the canonical T005 PR is singular, and the alignment is non-breaking specification evolution.
+  out:
+    - Nuxt or Spring runtime implementation, database migrations, APIs, contracts used by runtime, wallet, token, NFT, smart contract, provider SDK, deployment or production infrastructure.
+    - Microservices, payment, token-gated reading, anonymous-reading changes, rights-gate removal or DESIGN visual redesign.
+    - Dispatching T004 or any implementation ticket from this alignment graph.
+
+policy:
+  authority:
+    allowed:
+      - Read repository, GitHub PR/branch state and existing governance evidence.
+      - Write the exact product, ADR, spec, plan, task and alignment evidence paths in this graph.
+      - Run markdown, JSON, scope and strict Graphify validation.
+      - Open, review and merge the bounded alignment PR after the code-review gate passes.
+    requires_approval:
+      - Dispatch T004 or any later implementation ticket.
+      - Finalize ADR-0007 or ADR-0008 as accepted runtime architecture.
+      - Change free anonymous reading, rights withdrawal, privacy or Web3 least-agency policy.
+    forbidden:
+      - Add or modify runtime files under apps/, packages/, contracts/ or infrastructure.
+      - Add wallet, token, NFT, smart-contract, provider SDK or external chain/IPFS writes.
+      - Rewrite prior T005 evidence or retain competing implementation PRs as source of truth.
+  human_gates:
+    - Current Mark instruction authorizes the spec-only alignment and requires it before T004.
+    - Code Review and Merge Gate must verify exact file scope, strict graph proof, ADR consistency, MVP boundary and main read-back.
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+graph:
+  entry_nodes:
+    - x-main-state
+    - t-supervisor
+    - t-alignment-ready
+    - t-human-review
+  terminal_nodes:
+    - s-terminal
+
+  loops:
+    - id: l2-alignment-supervisor
+      layer: L2
+      owner: codex-supervisor
+      trigger_nodes: [t-supervisor]
+      action_nodes: [a-reconcile, a-review-handoff]
+      proof_nodes: [p-reconcile, p-review-handoff]
+      memory_nodes: [m-l2-ledger]
+      stop_nodes: [s-terminal]
+      budgets:
+        max_iterations: 2
+        max_minutes: 20
+        max_same_failure: 2
+        max_graph_changes: 8
+        max_tokens: 18000
+
+    - id: l1-alignment-execution
+      layer: L1
+      owner: codex-agent
+      trigger_nodes: [t-alignment-ready]
+      action_nodes: [a-alignment-write]
+      proof_nodes: [p-alignment-validation]
+      memory_nodes: [m-l1-ledger]
+      stop_nodes: [s-terminal]
+      budgets:
+        max_iterations: 3
+        max_minutes: 60
+        max_same_failure: 2
+        max_graph_changes: 12
+        max_tokens: 36000
+
+    - id: l3-alignment-review
+      layer: L3
+      owner: human-mark
+      trigger_nodes: [t-human-review]
+      action_nodes: [a-alignment-review]
+      proof_nodes: [p-alignment-review]
+      memory_nodes: [m-l3-review-ledger]
+      stop_nodes: [s-terminal]
+      budgets:
+        max_iterations: 2
+        max_minutes: 60
+        max_same_failure: 2
+        max_graph_changes: 8
+        max_tokens: 18000
+
+  nodes:
+    - id: x-main-state
+      kind: external
+      layer: EXTERNAL
+      label: Verified main state after T005 completion
+      owner: github-and-project-state
+      status: done
+      risk: medium
+      confidence:
+        score: 0.99
+        basis: Main read-back confirms T005 completion receipt and T004 remains unchecked; PR #9 is closed and PR #10 is canonical.
+        evidence_refs: [.loop/evidence/t005-completion-receipt.json]
+      budget:
+        effort_hours: 0.1
+        tokens: 1800
+      config:
+        source_type: repository-and-github-state
+        freshness: Read from main immediately before alignment branch creation.
+        limitations: Local git metadata is unavailable; remote branch, PR and blob read-back are authoritative.
+
+    - id: t-supervisor
+      kind: trigger
+      layer: L2
+      label: Product/domain/passport alignment requested before T004
+      owner: codex-supervisor
+      status: done
+      risk: low
+      confidence:
+        score: 1.0
+        basis: Current Mark instruction explicitly requires T005 checked first and alignment before T004.
+        evidence_refs: [.loop/evidence/courtside-product-alignment-reconciliation.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: Reconcile repository state, competing PR state and exact spec-only scope.
+        inputs_required: [main read-back, T005 completion receipt, DESIGN.md, constitution, ADRs, spec.md, plan.md, tasks.md]
+        dedupe: T005-complete plus product-domain-passport-alignment plus before-T004
+
+    - id: a-reconcile
+      kind: action
+      layer: L2
+      label: Reconcile alignment authority, compatibility and scope
+      owner: codex-supervisor
+      status: done
+      risk: medium
+      confidence:
+        score: 0.99
+        basis: Reconciliation records current main, canonical T005 PR, closed competing PR and pre-existing T002 discrepancy without silently changing it.
+        evidence_refs: [.loop/evidence/courtside-product-alignment-reconciliation.json]
+      budget:
+        effort_hours: 0.4
+        tokens: 5000
+      config:
+        workflow: [read main and PR state, identify canonical T005, inspect docs and baseline gaps, bind allowed paths, record compatibility decisions]
+        allowed: [read state, write reconciliation evidence, route alignment work]
+        requires_approval: [dispatch T004, accept new ADRs, change P1 access or rights policy]
+        forbidden: [runtime implementation, competing source of truth, overwrite old evidence]
+
+    - id: p-reconcile
+      kind: proof
+      layer: L2
+      label: Alignment authority and scope reconciliation proof
+      owner: verifier
+      status: done
+      risk: medium
+      confidence:
+        score: 0.99
+        basis: Reconciliation evidence binds the alignment to main, records PR state, baseline gaps and allowed/non-allowed paths.
+        evidence_refs: [.loop/evidence/courtside-product-alignment-reconciliation.json]
+      budget:
+        effort_hours: 0.2
+        tokens: 3000
+      config:
+        level: P2
+        claim: Alignment is authorized as a spec-only slice and T004 must wait for its merged read-back.
+        method: Compare current main, PR inventory, task text, approved architecture, allowed path list and explicit user direction.
+        evidence_path: .loop/evidence/courtside-product-alignment-reconciliation.json
+        required: true
+        baseline_required: true
+
+    - id: m-l2-ledger
+      kind: memory
+      layer: L2
+      label: Alignment supervisor ledger
+      owner: codex-supervisor
+      status: done
+      risk: low
+      confidence:
+        score: 0.98
+        basis: Ledger preserves the alignment frontier, scope decisions and next action append-only.
+        evidence_refs: [.loop/courtside-product-alignment-ledger.json]
+      budget:
+        effort_hours: 0.05
+        tokens: 800
+      config:
+        path: .loop/courtside-product-alignment-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+
+    - id: a-review-handoff
+      kind: action
+      layer: L2
+      label: Handoff validated alignment to the human review frontier
+      owner: codex-supervisor
+      status: done
+      risk: medium
+      confidence:
+        score: 0.98
+        basis: L2 handoff keeps the L1 evidence boundary explicit before the L3 human merge gate.
+        evidence_refs: [.loop/evidence/courtside-product-alignment-review.json]
+      budget:
+        effort_hours: 0.2
+        tokens: 2500
+      config:
+        workflow: [read L1 validation receipt, verify no runtime scope, expose L3 review trigger]
+        allowed: [route validated evidence to review]
+        requires_approval: [merge alignment PR, dispatch T004]
+        forbidden: [alter validated scope, accept ADR drafts as final]
+
+    - id: p-review-handoff
+      kind: proof
+      layer: L2
+      label: L2 to L3 review handoff proof
+      owner: verifier
+      status: done
+      risk: medium
+      confidence:
+        score: 0.98
+        basis: Handoff evidence connects the strict-valid L1 artifact set to the human review gate without a direct L1 execution edge.
+        evidence_refs: [.loop/evidence/courtside-product-alignment-review.json]
+      budget:
+        effort_hours: 0.1
+        tokens: 1500
+      config:
+        level: P2
+        claim: The L3 reviewer receives only the validated spec-only alignment scope.
+        method: Read L1 validation evidence and compare the allowed path policy before triggering review.
+        evidence_path: .loop/evidence/courtside-product-alignment-review.json
+        required: true
+        baseline_required: true
+
+    - id: t-alignment-ready
+      kind: trigger
+      layer: L1
+      label: Alignment documents are authorized for bounded write
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        score: 0.99
+        basis: Reconciliation proof authorizes only product docs, ADR drafts, spec/plan/tasks, README, semantic DESIGN and loop evidence.
+        evidence_refs: [.loop/evidence/courtside-product-alignment-reconciliation.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: T005 completion is checked and the spec-only alignment scope is bound before T004.
+        inputs_required: [reconciliation proof, exact allowed file paths, user alignment prompt]
+        dedupe: alignment-v03 plus no-runtime-files plus T004-not-started
+
+    - id: a-alignment-write
+      kind: action
+      layer: L1
+      label: Write product, ADR, spec, plan and task alignment artifacts
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        score: 0.98
+        basis: All requested product capabilities, boundaries, requirements, task ranges and terminology changes are represented without runtime files.
+        evidence_refs: [.loop/evidence/courtside-product-alignment-review.json]
+      budget:
+        effort_hours: 2.0
+        tokens: 22000
+      config:
+        workflow: [write docs/product, write ADR-0007/0008 drafts, update spec/plan/tasks, update README and semantic DESIGN terminology, add loop evidence, run deterministic validation]
+        allowed: [docs/product/**, docs/adr/0007-*, docs/adr/0008-*, specs/**/spec.md, specs/**/plan.md, specs/**/tasks.md, README.md, DESIGN.md terminology, .loop/courtside-product-alignment-*]
+        requires_approval: [runtime implementation, ADR acceptance, T004 dispatch]
+        forbidden: [apps/**, packages/**, contracts/** runtime changes, migrations, wallet, provider, smart contract, deployment]
+
+    - id: p-alignment-validation
+      kind: proof
+      layer: L1
+      label: Spec traceability and strict Graphify validation proof
+      owner: verifier
+      status: done
+      risk: medium
+      confidence:
+        score: 0.98
+        basis: JSON and markdown validation, strict graph validation and changed-path inventory prove the alignment artifact set is internally coherent and runtime-free.
+        evidence_refs: [.loop/evidence/courtside-product-alignment-review.json]
+      budget:
+        effort_hours: 0.5
+        tokens: 7000
+      config:
+        level: P2
+        claim: US8-12, FR-054-074, SC-017-023, ADR-0007/0008 and T097-112 are traceable and the alignment graph is strict-valid.
+        method: Parse JSON, count markdown fences, run validate_graphify_loop.py --strict --json, inspect changed paths and search forbidden implementation markers.
+        evidence_path: .loop/evidence/courtside-product-alignment-review.json
+        required: true
+        baseline_required: true
+
+    - id: m-l1-ledger
+      kind: memory
+      layer: L1
+      label: Alignment execution ledger
+      owner: codex-agent
+      status: done
+      risk: low
+      confidence:
+        score: 0.98
+        basis: The alignment run records the exact artifacts and validation receipts without rewriting T005 history.
+        evidence_refs: [.loop/courtside-product-alignment-ledger.json, .loop/evidence/courtside-product-alignment-review.json]
+      budget:
+        effort_hours: 0.05
+        tokens: 1000
+      config:
+        path: .loop/courtside-product-alignment-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+
+    - id: t-human-review
+      kind: trigger
+      layer: L3
+      label: Alignment code review and merge gate requested
+      owner: human-mark
+      status: done
+      risk: high
+      confidence:
+        score: 0.98
+        basis: Current user direction provides human authorization for the bounded alignment; final merge still requires exact-scope review and main read-back.
+        evidence_refs: [.loop/evidence/courtside-product-alignment-review.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: Review alignment diff, strict graph proof, ADR consistency and PR read-back before merge.
+        inputs_required: [alignment diff, strict validation output, reconciliation evidence, product/ADR/spec files]
+        dedupe: alignment-v03 plus strict-proof plus review-run-id
+
+    - id: a-alignment-review
+      kind: action
+      layer: L3
+      label: Review alignment scope and merge readiness
+      owner: codex-supervisor
+      status: done
+      risk: high
+      confidence:
+        score: 0.97
+        basis: Review rubric checks no runtime implementation, retained P1 reading, rights/privacy boundaries, modular monolith and complete traceability.
+        evidence_refs: [.loop/evidence/courtside-product-alignment-review.json]
+      budget:
+        effort_hours: 0.6
+        tokens: 7000
+      config:
+        workflow: [fetch PR metadata and patch, inspect filenames, run review rubric, record PASS/BLOCK, merge only after gate]
+        allowed: [read PR, write review comment, merge approved bounded PR, record read-back]
+        requires_approval: [final ADR acceptance, dispatch T004 or later ticket]
+        forbidden: [approve runtime scope not in PR, hide failed validation, merge a file outside allowlist]
+
+    - id: p-alignment-review
+      kind: proof
+      layer: L3
+      label: Code Review and Merge Gate receipt
+      owner: verifier
+      status: done
+      risk: high
+      confidence:
+        score: 0.97
+        basis: Review evidence records the PR file inventory, graph result, traceability checks, no-blocking-findings decision and post-merge main read-back.
+        evidence_refs: [.loop/evidence/courtside-product-alignment-review.json, .loop/evidence/courtside-product-alignment-main-readback.json]
+      budget:
+        effort_hours: 0.5
+        tokens: 6000
+      config:
+        level: P3
+        claim: Alignment PR is safe to merge as a non-breaking spec-only evolution and T004 remains unstarted after read-back.
+        method: GitHub PR metadata/patch/filenames/reviews/status, strict Graphify output, JSON parse and main content read-back.
+        evidence_path: .loop/evidence/courtside-product-alignment-review.json
+        required: true
+        baseline_required: true
+
+    - id: g-merge-review
+      kind: gate
+      layer: L3
+      label: Human merge gate for product alignment
+      owner: human-mark
+      status: done
+      risk: high
+      confidence:
+        score: 0.97
+        basis: Review evidence shows PASS, exact allowed scope, no runtime implementation and a merged main read-back.
+        evidence_refs: [.loop/evidence/courtside-product-alignment-review.json, .loop/evidence/courtside-product-alignment-main-readback.json]
+      budget:
+        effort_hours: 0.1
+        tokens: 1500
+      config:
+        condition: Exact alignment scope, strict proof, ADR draft status, P1 compatibility and main read-back all pass.
+        approver: human-mark
+        required: true
+
+    - id: m-l3-review-ledger
+      kind: memory
+      layer: L3
+      label: Alignment review ledger
+      owner: codex-supervisor
+      status: done
+      risk: low
+      confidence:
+        score: 0.97
+        basis: Review and merge decision is recorded separately from earlier T005 implementation history.
+        evidence_refs: [.loop/courtside-product-alignment-ledger.json, .loop/evidence/courtside-product-alignment-review.json]
+      budget:
+        effort_hours: 0.05
+        tokens: 1000
+      config:
+        path: .loop/courtside-product-alignment-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+
+    - id: s-terminal
+      kind: stop
+      layer: GLOBAL
+      label: Alignment terminal policy
+      owner: codex-supervisor
+      status: done
+      risk: low
+      confidence:
+        score: 0.97
+        basis: Required alignment proof, human review gate and main read-back are complete; T004 is intentionally left for the next ticket.
+        evidence_refs: [.loop/evidence/courtside-product-alignment-main-readback.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        states:
+          success: Spec/ADR/product alignment merged, strict graph valid and main read-back proves no runtime implementation.
+          no_op: Alignment already matches the authoritative main state.
+          blocked: Scope, authority, validation or read-back proof is unavailable.
+          stalled: No evidence delta reaches the configured limit.
+          exhausted: A configured budget is reached.
+          needs_human: A protected decision or ADR acceptance is pending.
+
+  edges:
+    - id: e-main-reconcile
+      from: x-main-state
+      to: a-reconcile
+      type: feedback
+      required: true
+      confidence: 0.99
+      token_capacity: 4000
+    - id: e-supervisor-reconcile
+      from: t-supervisor
+      to: a-reconcile
+      type: enables
+      required: true
+      confidence: 1.0
+      token_capacity: 6000
+    - id: e-reconcile-proof
+      from: a-reconcile
+      to: p-reconcile
+      type: verifies
+      required: true
+      confidence: 0.99
+      token_capacity: 7000
+    - id: e-reconcile-ledger
+      from: a-reconcile
+      to: m-l2-ledger
+      type: records
+      required: true
+      confidence: 0.98
+      token_capacity: 2500
+    - id: e-reconcile-ledger-read
+      from: m-l2-ledger
+      to: a-reconcile
+      type: reads
+      required: true
+      confidence: 0.98
+      token_capacity: 2500
+    - id: e-reconcile-feedback
+      from: m-l2-ledger
+      to: a-reconcile
+      type: feedback
+      required: true
+      confidence: 0.98
+      token_capacity: 3000
+    - id: e-reconcile-ready
+      from: p-reconcile
+      to: t-alignment-ready
+      type: enables
+      required: true
+      confidence: 0.99
+      token_capacity: 5000
+    - id: e-ready-write
+      from: t-alignment-ready
+      to: a-alignment-write
+      type: enables
+      required: true
+      confidence: 1.0
+      token_capacity: 12000
+    - id: e-write-proof
+      from: a-alignment-write
+      to: p-alignment-validation
+      type: verifies
+      required: true
+      confidence: 0.98
+      token_capacity: 10000
+    - id: e-write-ledger
+      from: a-alignment-write
+      to: m-l1-ledger
+      type: records
+      required: true
+      confidence: 0.98
+      token_capacity: 2500
+    - id: e-write-ledger-read
+      from: m-l1-ledger
+      to: a-alignment-write
+      type: reads
+      required: true
+      confidence: 0.98
+      token_capacity: 2500
+    - id: e-write-feedback
+      from: m-l1-ledger
+      to: a-alignment-write
+      type: feedback
+      required: true
+      confidence: 0.98
+      token_capacity: 3500
+    - id: e-write-review-trigger
+      from: p-alignment-validation
+      to: a-review-handoff
+      type: enables
+      required: true
+      confidence: 0.98
+      token_capacity: 7000
+    - id: e-handoff-proof
+      from: a-review-handoff
+      to: p-review-handoff
+      type: verifies
+      required: true
+      confidence: 0.98
+      token_capacity: 3500
+    - id: e-handoff-ledger
+      from: a-review-handoff
+      to: m-l2-ledger
+      type: records
+      required: true
+      confidence: 0.98
+      token_capacity: 1500
+    - id: e-handoff-ledger-read
+      from: m-l2-ledger
+      to: a-review-handoff
+      type: reads
+      required: true
+      confidence: 0.98
+      token_capacity: 1500
+    - id: e-handoff-feedback
+      from: m-l2-ledger
+      to: a-review-handoff
+      type: feedback
+      required: true
+      confidence: 0.98
+      token_capacity: 1500
+    - id: e-handoff-review-trigger
+      from: p-review-handoff
+      to: t-human-review
+      type: enables
+      required: true
+      confidence: 0.98
+      token_capacity: 4000
+    - id: e-review-action
+      from: t-human-review
+      to: a-alignment-review
+      type: enables
+      required: true
+      confidence: 1.0
+      token_capacity: 9000
+    - id: e-review-proof
+      from: a-alignment-review
+      to: p-alignment-review
+      type: verifies
+      required: true
+      confidence: 0.97
+      token_capacity: 8000
+    - id: e-review-ledger
+      from: a-alignment-review
+      to: m-l3-review-ledger
+      type: records
+      required: true
+      confidence: 0.97
+      token_capacity: 2500
+    - id: e-review-ledger-read
+      from: m-l3-review-ledger
+      to: a-alignment-review
+      type: reads
+      required: true
+      confidence: 0.97
+      token_capacity: 2500
+    - id: e-review-feedback
+      from: m-l3-review-ledger
+      to: a-alignment-review
+      type: feedback
+      required: true
+      confidence: 0.97
+      token_capacity: 3000
+    - id: e-review-gate
+      from: p-alignment-review
+      to: g-merge-review
+      type: requires_approval
+      required: true
+      confidence: 0.97
+      token_capacity: 5000
+    - id: e-gate-terminal
+      from: g-merge-review
+      to: s-terminal
+      type: approves
+      required: true
+      confidence: 0.97
+      token_capacity: 5000
+
+flow:
+  source: t-supervisor
+  sink: s-terminal
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - next_action

@@ -1,0 +1,63 @@
+{
+  "evidence_type": "repository_alignment_reconciliation",
+  "status": "pass",
+  "as_of": "2026-08-07T02:40:00Z",
+  "repository": "bynanci/courtside-tw",
+  "base_branch": "main",
+  "base_commit": "686a7e3aa38dccac687291ab65f90bdcf81f27da",
+  "baseline": {
+    "t005": {
+      "task_checked": true,
+      "canonical_implementation_pr": 10,
+      "completion_receipt_pr": 11,
+      "completion_receipt": ".loop/evidence/t005-completion-receipt.json"
+    },
+    "t004": {
+      "task_checked": false,
+      "dispatch_allowed_now": false,
+      "reason": "Product/domain/passport alignment must merge first."
+    },
+    "competing_prs": [
+      {
+        "number": 9,
+        "state": "closed",
+        "decision": "superseded; not a source of truth"
+      }
+    ],
+    "existing_adr_baseline": ["ADR-0001", "ADR-0002", "ADR-0003", "ADR-0004", "ADR-0005", "ADR-0006"],
+    "new_adr_status": {
+      "ADR-0007": "PROPOSED",
+      "ADR-0008": "PROPOSED"
+    },
+    "pre_existing_discrepancy": "T002 checkbox remains unchecked although ADR-0001 through ADR-0006 exist; not silently changed in this T005/alignment slice."
+  },
+  "alignment_decisions": {
+    "magazine": "KEEP",
+    "arena_editorial": "KEEP",
+    "basketball_domain": "EXTEND",
+    "taxonomy": "RENAME boundary to classification-only",
+    "edition_provenance": "RENAME from Edition Passport and separate from Fan Season Passport",
+    "fan_passport": "EXTEND as off-chain-first bounded context",
+    "web3": "KEEP optional and origin-first; DEFER credential implementation",
+    "rights": "EXTEND metadata and withdrawal precedence",
+    "architecture": "KEEP modular monolith",
+    "mvp": "EXTEND with explicit P1/P2A/P2B/P2C/P2D/P2E/P3 boundaries"
+  },
+  "allowed_path_policy": {
+    "allow": [
+      "docs/product/**",
+      "docs/adr/0007-*",
+      "docs/adr/0008-*",
+      "specs/**/spec.md",
+      "specs/**/plan.md",
+      "specs/**/tasks.md",
+      "README.md",
+      "DESIGN.md terminology-only",
+      ".loop/courtside-product-alignment-*",
+      ".loop/evidence/courtside-product-alignment-*"
+    ],
+    "deny": ["apps/**", "packages/**", "contracts/**", "infra/**", "database migrations", "deployment", "wallet/provider SDK", "smart contracts", "Web3 external writes"]
+  },
+  "decision": "ALLOW_WITH_CONTROLS",
+  "next_gate": "Complete strict Graphify validation and Code Review/Merge Gate; then read back main before dispatching only T004."
+}

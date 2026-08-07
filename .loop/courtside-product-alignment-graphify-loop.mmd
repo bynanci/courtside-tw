@@ -1,0 +1,53 @@
+flowchart TD
+  subgraph G_EXTERNAL["External Evidence"]
+    N0[/"[EXTERNAL] external · Verified main state after T005 completion"/]
+  end
+  subgraph G_L3["L3 · Human Direction"]
+    N11(["[L3] trigger · Alignment code review and merge gate requested"])
+    N12["[L3] action · Review alignment scope and merge readiness"]
+    N13{{"[L3] proof · Code Review and Merge Gate receipt"}}
+    N14{"[L3] gate · Human merge gate for product alignment"}
+    N15[("[L3] memory · Alignment review ledger")]
+  end
+  subgraph G_L2["L2 · Supervisor"]
+    N1(["[L2] trigger · Product/domain/passport alignment requested before T004"])
+    N2["[L2] action · Reconcile alignment authority, compatibility and scope"]
+    N3{{"[L2] proof · Alignment authority and scope reconciliation proof"}}
+    N4[("[L2] memory · Alignment supervisor ledger")]
+    N5["[L2] action · Handoff validated alignment to the human review frontier"]
+    N6{{"[L2] proof · L2 to L3 review handoff proof"}}
+  end
+  subgraph G_L1["L1 · Execution"]
+    N7(["[L1] trigger · Alignment documents are authorized for bounded write"])
+    N8["[L1] action · Write product, ADR, spec, plan and task alignment artifacts"]
+    N9{{"[L1] proof · Spec traceability and strict Graphify validation proof"}}
+    N10[("[L1] memory · Alignment execution ledger")]
+  end
+  subgraph G_GLOBAL["Global Policy"]
+    N16(["[GLOBAL] stop · Alignment terminal policy"])
+  end
+  N0 -.->|"feedback · 4000t"| N2
+  N1 -->|"enables · 6000t"| N2
+  N2 -->|"verifies · 7000t"| N3
+  N2 -.->|"records · 2500t"| N4
+  N4 -.->|"reads · 2500t"| N2
+  N4 -.->|"feedback · 3000t"| N2
+  N3 -->|"enables · 5000t"| N7
+  N7 -->|"enables · 12000t"| N8
+  N8 -->|"verifies · 10000t"| N9
+  N8 -.->|"records · 2500t"| N10
+  N10 -.->|"reads · 2500t"| N8
+  N10 -.->|"feedback · 3500t"| N8
+  N9 -->|"enables · 7000t"| N5
+  N5 -->|"verifies · 3500t"| N6
+  N5 -.->|"records · 1500t"| N4
+  N4 -.->|"reads · 1500t"| N5
+  N4 -.->|"feedback · 1500t"| N5
+  N6 -->|"enables · 4000t"| N11
+  N11 -->|"enables · 9000t"| N12
+  N12 -->|"verifies · 8000t"| N13
+  N12 -.->|"records · 2500t"| N15
+  N15 -.->|"reads · 2500t"| N12
+  N15 -.->|"feedback · 3000t"| N12
+  N13 -->|"requires_approval · 5000t"| N14
+  N14 -->|"approves · 5000t"| N16

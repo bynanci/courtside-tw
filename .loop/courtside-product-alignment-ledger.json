@@ -1,0 +1,161 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-product-domain-passport-alignment",
+  "graph_version": 1,
+  "run_id": "courtside-tw-alignment-20260807",
+  "status": "success",
+  "iteration": 1,
+  "started_at": "2026-08-07T02:40:00Z",
+  "updated_at": "2026-08-07T02:40:00Z",
+  "current_frontier": [
+    "s-terminal"
+  ],
+  "blocked_nodes": [],
+  "terminal_state": "success",
+  "next_action": "After alignment merge and main read-back, dispatch only T004 with fresh human authorization; do not dispatch P2 implementation tickets.",
+  "events": [
+    {
+      "event_id": "evt-courtside-alignment-001-reconciled",
+      "at": "2026-08-07T02:40:00Z",
+      "actor": "codex-supervisor",
+      "type": "alignment_scope_reconciled",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": ".loop/courtside-product-alignment-graphify-loop.yaml",
+            "after": "Strict-valid L2/L1/L3 graph for product, domain, evidence, passport and provenance alignment."
+          },
+          {
+            "op": "add",
+            "path": ".loop/evidence/courtside-product-alignment-reconciliation.json",
+            "after": "Repository, PR and scope reconciliation receipt."
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/courtside-product-alignment-reconciliation.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "T005 checkbox before T004",
+          "result": "pass",
+          "details": "main read-back has T005 checked and T004 unchecked; alignment is the required gate before T004."
+        },
+        {
+          "proof": "canonical T005 PR",
+          "result": "pass",
+          "details": "PR #10 is canonical; competing PR #9 is closed as superseded; T005 completion receipt is PR #11."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Allow the bounded spec-only alignment; preserve existing architecture and keep T004 unstarted.",
+      "token_usage": {
+        "estimated": 9000,
+        "input": 0,
+        "output": 0,
+        "total": 9000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-courtside-alignment-002-artifacts-written",
+      "at": "2026-08-07T02:40:00Z",
+      "actor": "codex-agent",
+      "type": "spec_product_adr_alignment_written",
+      "base_graph_version": 1,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "docs/product/**",
+            "after": "Vision, content map, basketball domain, evidence policy, Fan Passport and alignment matrix."
+          },
+          {
+            "op": "add",
+            "path": "docs/adr/0007-*.md and docs/adr/0008-*.md",
+            "after": "Proposed Basketball Domain/Evidence and Fan Passport/Credential boundary ADRs."
+          },
+          {
+            "op": "replace",
+            "path": "specs/001-taiwan-basketball-magazine-ebook/{spec,plan,tasks}.md",
+            "after": "US8-12, FR-054-074, SC-017-023 and T097-112 traceability; no runtime implementation."
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/courtside-product-alignment-review.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "P1 compatibility",
+          "result": "pass",
+          "details": "Home -> Issue -> TOC -> Article remains anonymous, free, SSR, SEO and mobile-first; Web3 failure falls back to origin reading."
+        },
+        {
+          "proof": "bounded contexts",
+          "result": "pass",
+          "details": "Taxonomy, Basketball, Evidence, Fan Passport and Edition Provenance have explicit responsibilities and dependencies."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Use additive specification evolution; leave ADR-0007/0008 proposed and defer P2 runtime work.",
+      "token_usage": {
+        "estimated": 22000,
+        "input": 0,
+        "output": 0,
+        "total": 22000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-courtside-alignment-003-review-ready",
+      "at": "2026-08-07T02:40:00Z",
+      "actor": "codex-supervisor",
+      "type": "strict_validation_and_review_ready",
+      "base_graph_version": 1,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": ".loop/evidence/courtside-product-alignment-review.json",
+            "after": "Scope, traceability, JSON and strict Graphify review receipt."
+          },
+          {
+            "op": "add",
+            "path": ".loop/evidence/courtside-product-alignment-main-readback.json",
+            "after": "Post-merge main read-back receipt; to be finalized after alignment PR merge."
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/courtside-product-alignment-review.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "strict graph validation",
+          "result": "pending_until_run",
+          "details": "Run validate_graphify_loop.py --strict --json after all graph artifacts are present."
+        },
+        {
+          "proof": "merge gate",
+          "result": "pending_until_pr_readback",
+          "details": "Review exact PR filename inventory and read back main after merge."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Open a reviewable alignment PR; merge only if the exact scope and strict proof pass.",
+      "token_usage": {
+        "estimated": 8000,
+        "input": 0,
+        "output": 0,
+        "total": 8000
+      },
+      "terminal_reason": "The graph is ready for deterministic validation and human merge review."
+    }
+  ]
+}
