@@ -220,8 +220,8 @@ graph:
         tokens: 5000
       config:
         level: P2
-        claim: Every invalid fixture is rejected without weakening the schema.
-        method: Independent validator with per-fixture rejection receipts.
+        claim: Seventeen schema-invalid fixtures and the duplicate-ID semantic invariant are rejected without weakening the contract.
+        method: Independent Ajv validator with per-fixture receipts plus a structural uniqueness assertion.
         evidence_path: .loop/evidence/t009-schema-proof.json
         required: true
         baseline_required: true
