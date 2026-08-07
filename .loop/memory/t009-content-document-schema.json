@@ -4,7 +4,7 @@
   "scope": "project",
   "kind": "task_state",
   "title": "T009 ContentDocument v1 contract proof updated",
-  "summary": "T009 defines a closed-world ContentDocument v1 schema and bounded fixtures. The contract keeps video providerId at a rights-pending sentinel until ADR-0003 approval, enumerates the approved court-dusk palette, covers focused invalid fixtures for all 11 block types, and records a duplicate block-ID semantic invariant.",
+  "summary": "T009 defines a closed-world ContentDocument v1 schema and bounded fixtures. The contract keeps video providerId at a rights-pending sentinel until ADR-0003 approval, enumerates the approved court-dusk palette, covers focused invalid fixtures for all 11 block types, rejects whitespace-only required text and hostless HTTPS hrefs, and records a duplicate block-ID semantic invariant.",
   "claims": [
     {
       "text": "T009 was dispatched from main@a75f1c2 after Phase 1 PASS read-back.",
@@ -45,6 +45,16 @@
       "text": "Block IDs must be unique even when payloads differ; this semantic invariant is declared in the contract and must be enforced by T010 validators.",
       "class": "CONFIRMED",
       "confidence": "high"
+    },
+    {
+      "text": "Required human-readable strings reject whitespace-only values through a non-whitespace schema pattern.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "HTTPS hrefs require a non-empty host; malformed values such as https:/// are rejected.",
+      "class": "CONFIRMED",
+      "confidence": "high"
     }
   ],
   "status": "stable",
@@ -55,7 +65,8 @@
     "docs/adr/0003-content-document-and-media-policy.md",
     "docs/adr/0005-motion-and-generative-runtime.md",
     ".loop/evidence/t009-schema-proof.json",
-    ".loop/evidence/t009-schema-proof.json#latest_revalidation"
+    ".loop/evidence/t009-schema-proof.json#latest_revalidation",
+    ".loop/evidence/t009-schema-proof.json#boundary_revalidation"
   ],
   "volatility": "medium",
   "as_of": "2026-08-07",
@@ -67,7 +78,8 @@
     "main@a75f1c2",
     ".loop/evidence/t009-schema-proof.json",
     "ticket/t009-content-document-schema@ce07740a4c5966f1ac11374e1b8ce4835581ba06",
-    "ticket/t009-content-document-schema@cf2d48d44d025e06a19d52e3912a85663211c75a"
+    "ticket/t009-content-document-schema@cf2d48d44d025e06a19d52e3912a85663211c75a",
+    ".loop/evidence/t009-schema-proof.json#boundary_revalidation"
   ],
   "entities": [
     "T009",
@@ -98,7 +110,7 @@
       "Rights-pending video sentinel preserves the ADR rights gate; approved provider values remain a later decision."
     ],
     "invalidation": "If ADR-0003/0005 or tasks.md changes the allowed block/preset contract, mark this record needs_update and stop T009.",
-    "proof": "Ajv strict validation passed the valid fixture and 17 focused invalid fixtures; Prettier passed; the duplicate block-ID semantic invariant was rejected independently; Graphify and memory validation remain required gates."
+    "proof": "Ajv strict validation passed the valid fixture and rejected 19 focused schema-invalid fixtures; the duplicate block-ID semantic invariant, non-whitespace text boundary and host-required HTTPS boundary were independently checked; Graphify and memory validation remain required gates."
   },
   "next_review_at": "2026-08-14",
   "sensitivity": "internal",
