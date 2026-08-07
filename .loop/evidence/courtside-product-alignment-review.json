@@ -1,0 +1,38 @@
+{
+  "evidence_type": "code_review_merge_gate",
+  "status": "pending_readback",
+  "as_of": "2026-08-07T02:40:00Z",
+  "repository": "bynanci/courtside-tw",
+  "risk_tier": "T2",
+  "scope": {
+    "change_class": "spec/product/ADR alignment only",
+    "runtime_implementation": false,
+    "database_migration": false,
+    "deployment": false,
+    "web3_external_write": false,
+    "design_visual_redesign": false,
+    "design_change": "Edition Passport terminology only -> Edition Provenance; Fan Season Passport explicitly separate"
+  },
+  "required_checks": {
+    "repository_readback": "pass",
+    "compatibility_matrix": "pass",
+    "us_fr_adr_task_traceability": "pass",
+    "p1_anonymous_free_ssr_seo_mobile_boundary": "pass",
+    "taxonomy_vs_basketball_boundary": "pass",
+    "provenance_vs_fan_passport_boundary": "pass",
+    "modular_monolith_preserved": "pass",
+    "rights_privacy_web3_controls": "pass",
+    "strict_graphify_loop": "pending_until_run",
+    "exact_pr_scope": "pending_until_pr_readback",
+    "main_readback": "pending_until_merge"
+  },
+  "findings": [],
+  "review_decision": "PENDING",
+  "merge_gate": "PENDING",
+  "notes": [
+    "ADR-0007 and ADR-0008 are proposed drafts, not accepted runtime architecture.",
+    "T002 checkbox discrepancy is pre-existing and outside this slice.",
+    "T004 must not be dispatched until the alignment PR and read-back are complete.",
+    "No runtime implementation is authorized by this evidence receipt."
+  ]
+}
