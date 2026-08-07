@@ -1,0 +1,54 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t011-t009-dependency-readback-20260807",
+  "generated_at": "2026-08-07T13:06:29Z",
+  "actor": "codex-supervisor",
+  "subject": "T011 dependency read-back for T009 canonical ContentDocument",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T011",
+  "t009": {
+    "pr": 32,
+    "branch": "ticket/t009-content-document-schema",
+    "head": "8584c914b771c2e45e372a0fad1e9e98ee148209",
+    "state": "open",
+    "mergeable": true,
+    "t009_checked": false,
+    "ci_run": {
+      "id": 31179811597,
+      "run_number": 43,
+      "name": "CI",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    "security_run": {
+      "id": 31179814498,
+      "run_number": 43,
+      "name": "Security",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    "current_head_review_threads_resolved": true,
+    "canonical_schema_on_main": false
+  },
+  "t011_baseline": {
+    "pr": 33,
+    "head": "b7c8227ac6787d4ec200831961983fe03b107f3b",
+    "ci_run": {
+      "id": 31180824394,
+      "run_number": 44,
+      "name": "CI",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    "security_run": {
+      "id": 31180824795,
+      "run_number": 44,
+      "name": "Security",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  },
+  "result": "DEPENDENCY_STILL_BLOCKED",
+  "claim": "T009's current branch is workflow-clean and review threads are resolved, but its canonical schema is not on main; T011 must remain blocked until explicit human merge and authoritative main read-back.",
+  "next_action": "Await T009 human merge authority and main read-back; then update T011's graph frontier and implement the OpenAPI contract."
+}
