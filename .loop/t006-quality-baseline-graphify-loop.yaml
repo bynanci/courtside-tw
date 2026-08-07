@@ -1,0 +1,465 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-ticket-implementation-t006
+objective: Dispatch and independently verify one bounded shared quality baseline, then stop at the T006 review and merge gate.
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - Read the final main reconciliation and the exact T006 task before implementation.
+    - Configure shared Prettier, ESLint, strict TypeScript, Checkstyle and SpotBugs quality policy.
+    - Wire deterministic format, lint and typecheck commands into the existing root verification contract.
+    - Run independent Node quality checks and static Java quality configuration checks.
+    - Expose a reviewable T006 branch and PR without merging it or checking T006.
+  out:
+    - T007 or later tasks, CI workflows, local dependency services, database or provider implementation.
+    - Product, domain, rights, authentication, secret, payment or Web3 boundary changes.
+    - Treating an unavailable Java Gradle quality runner as a passed proof.
+
+policy:
+  human_gates:
+    - merge the protected main branch
+    - accept or waive the blocked Java Gradle quality proof
+    - change T006 scope or dispatch T007 or later work
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+memory_workflow:
+  contract: work-memory/v1
+  control_ledger: Append graph delta, proof receipts, blockers and token usage every iteration.
+  semantic_memory: Capture only durable T006 quality-gate facts that can change later verification or dispatch.
+  modes: [recall, capture, update, forget, no_op]
+  retrieval:
+    levels: [index, timeline_relations, details]
+    max_index_results: 10
+    stop_on_sufficient_evidence: true
+  capture:
+    allowed_kinds: [decision, constraint, preference, fact, attempt, task_state, pattern, evidence]
+    requires_downstream_proof: true
+    requires_write_receipt: true
+  lifecycle: [seed, verified, stable, needs_update, disputed, archived]
+  failure_policy:
+    write_pending: blocked
+    stale_or_disputed: needs_human
+    redact_secrets: true
+
+graph:
+  entry_nodes:
+    - x-main-readback
+    - t-supervisor
+    - t-t006-ready
+    - t-human-review
+  terminal_nodes:
+    - s-terminal-policy
+
+  loops:
+    - id: l2-t006-supervisor
+      layer: L2
+      owner: codex-supervisor
+      trigger_nodes: [t-supervisor]
+      action_nodes: [a-reconcile]
+      proof_nodes: [p-reconciliation]
+      memory_nodes: [m-l2-t006-ledger]
+      stop_nodes: [s-terminal-policy]
+      budgets:
+        max_iterations: 2
+        max_minutes: 20
+        max_same_failure: 2
+        max_graph_changes: 8
+        max_tokens: 18000
+
+    - id: l1-t006-execution
+      layer: L1
+      owner: codex-agent
+      trigger_nodes: [t-t006-ready]
+      action_nodes: [a-quality-baseline]
+      proof_nodes: [p-quality-verification]
+      memory_nodes: [m-l1-t006-ledger]
+      stop_nodes: [s-terminal-policy]
+      budgets:
+        max_iterations: 3
+        max_minutes: 60
+        max_same_failure: 2
+        max_graph_changes: 12
+        max_tokens: 36000
+
+    - id: l3-t006-review
+      layer: L3
+      owner: human-mark
+      trigger_nodes: [t-human-review]
+      action_nodes: [a-review-t006]
+      proof_nodes: [p-human-approval]
+      memory_nodes: [m-l3-t006-decisions]
+      stop_nodes: [s-terminal-policy]
+      budgets:
+        max_iterations: 2
+        max_minutes: 60
+        max_same_failure: 2
+        max_graph_changes: 8
+        max_tokens: 18000
+
+  nodes:
+    - id: x-main-readback
+      kind: external
+      layer: EXTERNAL
+      label: Final main read-back after reconciliation merge
+      owner: github-and-project-state
+      status: done
+      risk: medium
+      confidence:
+        score: 0.99
+        basis: Main read-back confirms the reconciliation merge, checked T001-T005, unchecked T006 and no competing T006 frontier.
+        evidence_refs: [.loop/evidence/t002-main-readback.json]
+      budget:
+        effort_hours: 0.1
+        tokens: 1800
+      config:
+        source_type: repository-and-approved-user-direction
+        freshness: Read after the final reconciliation merge at main@a1afadb1.
+        limitations: Java Gradle quality tasks still require a compatible dependency-resolution-capable runner.
+
+    - id: t-supervisor
+      kind: trigger
+      layer: L2
+      label: T006 dispatch is explicitly requested
+      owner: codex-supervisor
+      status: done
+      risk: low
+      confidence:
+        score: 1.0
+        basis: The current user direction explicitly orders merge, main read-back and T006 dispatch.
+        evidence_refs: [.loop/evidence/t006-dispatch.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: Reconcile the final main state and route exactly one T006 implementation frontier.
+        inputs_required: [main read-back, T006 task text, toolchain contract, dispatch evidence]
+        dedupe: T006 plus final-main-readback plus quality-baseline-path-set
+
+    - id: a-reconcile
+      kind: action
+      layer: L2
+      label: Reconcile T006 authority, scope and base commit
+      owner: codex-supervisor
+      status: done
+      risk: low
+      confidence:
+        score: 0.99
+        basis: T006 is the only unchecked ready slice and its implementation paths and exclusions are explicit.
+        evidence_refs: [.loop/evidence/t006-dispatch.json]
+      budget:
+        effort_hours: 0.2
+        tokens: 3500
+      config:
+        workflow: [read final main read-back, read T006 task, confirm exact quality paths, create isolated branch]
+        allowed: [read state, append dispatch evidence, route T006]
+        requires_approval: [merge T006, accept blocked Java proof, dispatch later tickets, expand scope]
+        forbidden: [alter approved product or security boundaries, start T007 or later work]
+
+    - id: p-reconciliation
+      kind: proof
+      layer: L2
+      label: T006 authoritative scope reconciliation proof
+      owner: verifier
+      status: done
+      risk: low
+      confidence:
+        score: 0.99
+        basis: The dispatch receipt binds T006 to the final main SHA, exact task paths, support paths and explicit exclusions.
+        evidence_refs: [.loop/evidence/t006-dispatch.json]
+      budget:
+        effort_hours: 0.15
+        tokens: 2500
+      config:
+        level: P2
+        claim: T006 is authorized as one shared quality-baseline slice from the final main read-back.
+        method: Compare tasks.md, main read-back, README toolchain contract, branch base SHA and dispatch scope.
+        evidence_path: .loop/evidence/t006-dispatch.json
+        required: true
+        baseline_required: true
+
+    - id: m-l2-t006-ledger
+      kind: memory
+      layer: L2
+      label: T006 supervisor dispatch ledger
+      owner: codex-supervisor
+      status: done
+      risk: low
+      confidence:
+        score: 0.95
+        basis: The T006 ledger records the final baseline, dispatch decision and guarded next action without closing the task.
+        evidence_refs: [.loop/t006-quality-baseline-ledger.json]
+      budget:
+        effort_hours: 0.05
+        tokens: 800
+      config:
+        path: .loop/t006-quality-baseline-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: work-memory/v1
+        memory_role: hybrid
+        receipt_required: true
+        write_failure_state: blocked
+
+    - id: t-t006-ready
+      kind: trigger
+      layer: L1
+      label: T006 quality baseline is ready on an isolated branch
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        score: 0.98
+        basis: The branch is based on the final main read-back and contains only the bounded quality baseline plus enforcement support.
+        evidence_refs: [.loop/evidence/t006-dispatch.json, .loop/evidence/t006-implementation-proof.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: T006 branch exists from main@a1afadb1 and the quality path set is recorded.
+        inputs_required: [T006 task, dispatch receipt, base SHA, implementation inventory]
+        dedupe: T006 plus final-main-readback plus quality-baseline-path-set
+
+    - id: a-quality-baseline
+      kind: action
+      layer: L1
+      label: Implement shared formatting linting and strict type gates
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        score: 0.93
+        basis: The bounded configuration and enforcement support are implemented; Java task execution remains separately blocked by the available Gradle environment.
+        evidence_refs: [.loop/evidence/t006-implementation-proof.json]
+      budget:
+        effort_hours: 1.5
+        tokens: 16000
+      config:
+        workflow: [add shared JS/TS/Vue quality configs, add Java quality configs, wire root commands, install frozen dependencies, run deterministic checks]
+        allowed: [write T006 paths, write supporting enforcement files, write T006 evidence and ledger]
+        requires_approval: [dispatch T007 or later, change CI, expand to product or provider scope]
+        forbidden: [add database, credentials, CI workflows, deployments, Web3 writes or user-story implementation]
+
+    - id: p-quality-verification
+      kind: proof
+      layer: L1
+      label: T006 quality gate verification receipt
+      owner: verifier
+      status: blocked
+      risk: high
+      confidence:
+        score: 0.9
+        basis: Node installation, formatting, lint, typecheck, root verify, build, SSR smoke and XML parsing pass; Java Gradle quality tasks could not run in the available environment.
+        evidence_refs: [.loop/evidence/t006-implementation-proof.json]
+      budget:
+        effort_hours: 0.75
+        tokens: 9000
+      config:
+        level: P2
+        claim: The T006 quality baseline is deterministic and warning-free, with Java quality tasks also executed before merge.
+        method: Run frozen install, format-check, lint, typecheck, verify, web build, SSR smoke and Java Checkstyle/SpotBugs tasks; retain blocked results.
+        evidence_path: .loop/evidence/t006-implementation-proof.json
+        required: true
+        baseline_required: true
+
+    - id: m-l1-t006-ledger
+      kind: memory
+      layer: L1
+      label: T006 execution and proof ledger
+      owner: codex-agent
+      status: done
+      risk: low
+      confidence:
+        score: 0.96
+        basis: The implementation result and the Java proof blocker are recorded as durable facts for the review gate.
+        evidence_refs: [.loop/t006-quality-baseline-ledger.json, .loop/evidence/t006-implementation-proof.json]
+      budget:
+        effort_hours: 0.05
+        tokens: 1000
+      config:
+        path: .loop/t006-quality-baseline-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: work-memory/v1
+        memory_role: graph_ledger
+        receipt_required: true
+        write_failure_state: blocked
+
+    - id: t-human-review
+      kind: trigger
+      layer: L3
+      label: T006 quality baseline review and merge decision
+      owner: human-mark
+      status: needs_human
+      risk: high
+      confidence:
+        score: 0.92
+        basis: The branch is reviewable, but merge requires an explicit decision on the blocked Java Gradle proof and current-head diff.
+        evidence_refs: [.loop/evidence/t006-implementation-proof.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: Review the bounded T006 diff, independent proof receipt, Java blocker and remote PR state.
+        inputs_required: [T006 diff, implementation proof, Graphify ledger, branch and PR read-back]
+        dedupe: T006 implementation fingerprint plus current-head review-run-id
+
+    - id: a-review-t006
+      kind: action
+      layer: L3
+      label: Review T006 scope proof and merge readiness
+      owner: human-mark
+      status: needs_human
+      risk: high
+      confidence:
+        score: 0.9
+        basis: Review must decide whether the Java environment blocker is resolved or an explicit bounded follow-up is acceptable.
+        evidence_refs: [.loop/evidence/t006-implementation-proof.json]
+      budget:
+        effort_hours: 0.25
+        tokens: 3500
+      config:
+        workflow: [inspect current-head diff, verify changed-file scope, read proof receipt, check status and threads, record approve or block decision]
+        allowed: [human review, bounded follow-up request and explicit merge decision]
+        requires_approval: [accept blocked proof, merge T006, mark T006 checked, dispatch later work]
+        forbidden: [waive missing evidence silently, broaden scope, claim Java tasks passed without a receipt]
+
+    - id: p-human-approval
+      kind: proof
+      layer: L3
+      label: Explicit T006 review and merge approval
+      owner: human-mark
+      status: needs_human
+      risk: critical
+      confidence:
+        score: 0.92
+        basis: No merge or checkbox completion is inferred from implementation success; it requires a current-head review and explicit approval.
+        evidence_refs: [.loop/evidence/t006-implementation-proof.json]
+      budget:
+        effort_hours: 0.25
+        tokens: 2500
+      config:
+        level: P3
+        claim: T006 is accepted for merge only after scope, deterministic gates, Java quality proof or explicit bounded follow-up and remote read-back are reviewed.
+        method: Human current-head review plus review receipt and merge/read-back evidence.
+        evidence_path: .loop/evidence/t006-implementation-proof.json
+        required: true
+        baseline_required: false
+
+    - id: g-t006-merge
+      kind: gate
+      layer: L3
+      label: T006 review and merge gate
+      owner: human-mark
+      status: needs_human
+      risk: critical
+      confidence:
+        score: 0.92
+        basis: The gate is intentionally open for human decision because Java Gradle quality execution is not yet proven in this runner.
+        evidence_refs: [.loop/evidence/t006-implementation-proof.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: Explicitly accept the current-head T006 proof and merge decision after all important blockers are resolved or bounded.
+        approver: human-mark
+        required: true
+
+    - id: m-l3-t006-decisions
+      kind: memory
+      layer: L3
+      label: T006 human decision ledger
+      owner: human-mark
+      status: needs_human
+      risk: low
+      confidence:
+        score: 0.9
+        basis: The decision ledger remains open until review, merge and task completion are separately evidenced.
+        evidence_refs: [.loop/t006-quality-baseline-ledger.json]
+      budget:
+        effort_hours: 0.05
+        tokens: 800
+      config:
+        path: .loop/t006-quality-baseline-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: work-memory/v1
+        memory_role: semantic_memory
+        receipt_required: true
+        write_failure_state: needs_human
+
+    - id: s-terminal-policy
+      kind: stop
+      layer: GLOBAL
+      label: T006 named terminal-state policy
+      owner: policy
+      status: needs_human
+      risk: critical
+      confidence:
+        score: 0.98
+        basis: T006 implementation is bounded and independently proven for Node/static checks, while Java Gradle proof and merge remain explicitly gated.
+        evidence_refs: [.loop/t006-quality-baseline-ledger.json, .loop/evidence/t006-implementation-proof.json]
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        states:
+          success: T006 quality paths pass all required checks, are reviewed, merged, read back and T006 is checked.
+          no_op: An equivalent quality baseline already exists and no safe change is required.
+          blocked: A required Java/Gradle quality proof or remote review artifact is unavailable.
+          stalled: The same failure or no-evidence-delta limit is reached.
+          exhausted: An iteration, time, graph-change or token budget is reached.
+          needs_human: Review, proof acceptance, merge or checkbox authorization is pending.
+          cancelled: The user cancels or governing artifacts become invalid.
+
+  edges:
+    - {id: e-external-l2, from: x-main-readback, to: a-reconcile, type: feedback, required: true, confidence: 0.99, token_capacity: 5000}
+    - {id: e-l2-trigger, from: t-supervisor, to: a-reconcile, type: enables, required: true, confidence: 1.0, token_capacity: 8000}
+    - {id: e-l2-proof, from: a-reconcile, to: p-reconciliation, type: verifies, required: true, confidence: 0.99, token_capacity: 6000}
+    - {id: e-l2-work, from: p-reconciliation, to: t-t006-ready, type: enables, required: true, confidence: 0.99, token_capacity: 7000}
+    - {id: e-l2-memory-a, from: a-reconcile, to: m-l2-t006-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-l2-memory-p, from: p-reconciliation, to: m-l2-t006-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-l2-feedback, from: m-l2-t006-ledger, to: a-reconcile, type: feedback, required: true, confidence: 0.95, token_capacity: 3000}
+
+    - {id: e-l1-trigger, from: t-t006-ready, to: a-quality-baseline, type: enables, required: true, confidence: 0.98, token_capacity: 12000}
+    - {id: e-l1-proof, from: a-quality-baseline, to: p-quality-verification, type: verifies, required: true, confidence: 0.93, token_capacity: 9000}
+    - {id: e-l1-memory-a, from: a-quality-baseline, to: m-l1-t006-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-l1-memory-p, from: p-quality-verification, to: m-l1-t006-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-l1-feedback, from: m-l1-t006-ledger, to: a-quality-baseline, type: feedback, required: true, confidence: 0.95, token_capacity: 3500}
+    - {id: e-l1-review-feedback, from: p-quality-verification, to: t-human-review, type: feedback, required: true, confidence: 0.9, token_capacity: 6000}
+    - {id: e-l1-stop, from: p-quality-verification, to: s-terminal-policy, type: enables, required: false, confidence: 0.9, token_capacity: 4000}
+
+    - {id: e-l3-trigger, from: t-human-review, to: a-review-t006, type: enables, required: true, confidence: 1.0, token_capacity: 6000}
+    - {id: e-l3-proof, from: a-review-t006, to: p-human-approval, type: verifies, required: true, confidence: 1.0, token_capacity: 5000}
+    - {id: e-l3-gate, from: p-human-approval, to: g-t006-merge, type: requires_approval, required: true, confidence: 1.0, token_capacity: 4000}
+    - {id: e-gate-stop, from: g-t006-merge, to: s-terminal-policy, type: approves, required: true, confidence: 1.0, token_capacity: 3000}
+    - {id: e-l3-memory-a, from: a-review-t006, to: m-l3-t006-decisions, type: records, required: true, confidence: 0.9, token_capacity: 2000}
+    - {id: e-l3-memory-p, from: p-human-approval, to: m-l3-t006-decisions, type: records, required: true, confidence: 0.9, token_capacity: 2000}
+    - {id: e-l3-feedback, from: m-l3-t006-decisions, to: a-review-t006, type: feedback, required: true, confidence: 0.9, token_capacity: 2500}
+
+flow:
+  source: t-supervisor
+  sink: s-terminal-policy
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - next_action
+  - memory_receipt
