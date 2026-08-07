@@ -5,11 +5,7 @@
   "description": "Versioned, deny-by-default content blocks for published magazine articles. Canonical content is structured JSON; arbitrary HTML, scripts, shaders, callbacks and remote code are not part of this contract.",
   "type": "object",
   "additionalProperties": false,
-  "required": [
-    "schemaVersion",
-    "documentId",
-    "blocks"
-  ],
+  "required": ["schemaVersion", "documentId", "blocks"],
   "properties": {
     "schemaVersion": {
       "const": 1
@@ -58,10 +54,7 @@
     "inlineTextRun": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "kind",
-        "text"
-      ],
+      "required": ["kind", "text"],
       "properties": {
         "kind": {
           "const": "text"
@@ -80,11 +73,7 @@
     "inlineLinkRun": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "kind",
-        "text",
-        "href"
-      ],
+      "required": ["kind", "text", "href"],
       "properties": {
         "kind": {
           "const": "link"
@@ -121,9 +110,7 @@
     "paragraphPayload": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "content"
-      ],
+      "required": ["content"],
       "properties": {
         "content": {
           "$ref": "#/$defs/inlineContent"
@@ -133,10 +120,7 @@
     "headingPayload": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "level",
-        "text"
-      ],
+      "required": ["level", "text"],
       "properties": {
         "level": {
           "type": "integer",
@@ -157,9 +141,7 @@
     "listItem": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "content"
-      ],
+      "required": ["content"],
       "properties": {
         "content": {
           "$ref": "#/$defs/inlineContent"
@@ -169,10 +151,7 @@
     "listPayload": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "ordered",
-        "items"
-      ],
+      "required": ["ordered", "items"],
       "properties": {
         "ordered": {
           "type": "boolean"
@@ -190,9 +169,7 @@
     "quotePayload": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "content"
-      ],
+      "required": ["content"],
       "properties": {
         "content": {
           "$ref": "#/$defs/inlineContent"
@@ -215,20 +192,14 @@
           "not": {
             "pattern": "\\u0000"
           },
-          "enum": [
-            "solid",
-            "space"
-          ]
+          "enum": ["solid", "space"]
         }
       }
     },
     "imagePayload": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "assetId",
-        "altText"
-      ],
+      "required": ["assetId", "altText"],
       "properties": {
         "assetId": {
           "$ref": "#/$defs/uuid"
@@ -247,12 +218,7 @@
           "not": {
             "pattern": "\\u0000"
           },
-          "enum": [
-            "hero",
-            "wide",
-            "inline",
-            "card"
-          ]
+          "enum": ["hero", "wide", "inline", "card"]
         },
         "caption": {
           "type": "string",
@@ -273,10 +239,7 @@
     "galleryItem": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "assetId",
-        "altText"
-      ],
+      "required": ["assetId", "altText"],
       "properties": {
         "assetId": {
           "$ref": "#/$defs/uuid"
@@ -309,19 +272,14 @@
     "galleryPayload": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "items"
-      ],
+      "required": ["items"],
       "properties": {
         "layout": {
           "type": "string",
           "not": {
             "pattern": "\\u0000"
           },
-          "enum": [
-            "grid",
-            "stack"
-          ]
+          "enum": ["grid", "stack"]
         },
         "items": {
           "type": "array",
@@ -336,10 +294,7 @@
     "statPayload": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "label",
-        "value"
-      ],
+      "required": ["label", "value"],
       "properties": {
         "label": {
           "type": "string",
@@ -378,11 +333,7 @@
     "videoPayload": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "providerId",
-        "videoId",
-        "title"
-      ],
+      "required": ["providerId", "videoId", "title"],
       "properties": {
         "providerId": {
           "type": "string",
@@ -422,10 +373,7 @@
     "relatedReadingPayload": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "articleSlug",
-        "label"
-      ],
+      "required": ["articleSlug", "label"],
       "properties": {
         "articleSlug": {
           "$ref": "#/$defs/slug"
@@ -492,9 +440,7 @@
               "not": {
                 "pattern": "\\u0000"
               },
-              "enum": [
-                "court-dusk"
-              ]
+              "enum": ["court-dusk"]
             },
             "numericSequence": {
               "type": "array",
@@ -533,12 +479,7 @@
     "block": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "id",
-        "type",
-        "version",
-        "payload"
-      ],
+      "required": ["id", "type", "version", "payload"],
       "properties": {
         "id": {
           "$ref": "#/$defs/uuid"
