@@ -1,0 +1,43 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t006-graph-validation-20260807",
+  "generated_at": "2026-08-07T05:08:32Z",
+  "actor": "codex-supervisor",
+  "subject": "T006 Graphify LOOP strict validation",
+  "repository": "bynanci/courtside-tw",
+  "graph_path": ".loop/t006-quality-baseline-graphify-loop.yaml",
+  "command": "python3 validate_graphify_loop.py .loop/t006-quality-baseline-graphify-loop.yaml --strict --json",
+  "result": "pass",
+  "summary": {
+    "nodes": 15,
+    "edges": 21,
+    "warnings": 0,
+    "errors": 0,
+    "ready_frontier": [],
+    "blocked_or_gated": [
+      "p-quality-verification",
+      "t-human-review",
+      "a-review-t006",
+      "p-human-approval",
+      "g-t006-merge",
+      "s-terminal-policy"
+    ],
+    "proof_coverage": {
+      "action_count": 3,
+      "covered_actions": [
+        "a-quality-baseline",
+        "a-reconcile",
+        "a-review-t006"
+      ],
+      "uncovered_actions": []
+    },
+    "min_cut": [
+      {
+        "edge": "e-l1-stop",
+        "capacity": 4000
+      }
+    ]
+  },
+  "decision": "Graph is strict-valid; keep the T006 frontier stopped at Java proof and human merge gates.",
+  "confidence": 0.99
+}
