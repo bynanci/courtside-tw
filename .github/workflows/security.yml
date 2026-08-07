@@ -30,13 +30,13 @@ jobs:
     timeout-minutes: 25
     steps:
       - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
           persist-credentials: false
 
       - name: Set up pnpm and Node.js
-        uses: pnpm/setup@5d160c5bc68a09337ad0d5654e237e03253b5879 # v1
+        uses: pnpm/setup@c9883cc79df532ad1a7b81bf9ab944ceb090d65c # v2.0.0
         with:
           version: ${{ env.PNPM_VERSION }}
           runtime: node@${{ env.NODE_VERSION }}
@@ -61,7 +61,7 @@ jobs:
             apps/api/gradle.properties
 
       - name: Set up Gradle
-        uses: gradle/actions/setup-gradle@748248ddd2a24f49513d8f472f81c3a07d4d50e1 # v4.4.4
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
         with:
           gradle-version: ${{ env.GRADLE_VERSION }}
 
@@ -140,7 +140,7 @@ jobs:
           cp "$runtime_classpath" artifacts/dependency-audit/runtime-classpath.txt
 
       - name: Scan resolved Gradle artifacts
-        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: fs
           scan-ref: artifacts/dependency-audit/gradle-jars
@@ -163,7 +163,7 @@ jobs:
 
       - name: Upload dependency reports
         if: ${{ always() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: security-dependency-reports
           path: artifacts/dependency-audit
@@ -188,12 +188,12 @@ jobs:
             build-mode: manual
     steps:
       - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@60c9c77c33f2cd66390a3778d54de88b735b2526 # v3.28.10
+        uses: github/codeql-action/init@7d9249f5a57288b8a472ddd9cc3ece1921f7dc38 # v3.28.10
         with:
           languages: ${{ matrix.language }}
           build-mode: ${{ matrix.build-mode }}
@@ -207,7 +207,7 @@ jobs:
 
       - name: Set up Gradle
         if: ${{ matrix.language == 'java-kotlin' }}
-        uses: gradle/actions/setup-gradle@748248ddd2a24f49513d8f472f81c3a07d4d50e1 # v4.4.4
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
         with:
           gradle-version: ${{ env.GRADLE_VERSION }}
 
@@ -216,7 +216,7 @@ jobs:
         run: gradle --no-daemon --console=plain -p apps/api compileJava
 
       - name: Analyze with CodeQL
-        uses: github/codeql-action/analyze@60c9c77c33f2cd66390a3778d54de88b735b2526 # v3.28.10
+        uses: github/codeql-action/analyze@7d9249f5a57288b8a472ddd9cc3ece1921f7dc38 # v3.28.10
         with:
           category: /language:${{ matrix.language }}
           output: ${{ github.workspace }}/artifacts/codeql/${{ matrix.language }}
@@ -224,7 +224,7 @@ jobs:
 
       - name: Upload CodeQL reports
         if: ${{ always() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: security-codeql-${{ matrix.language }}
           path: artifacts/codeql/${{ matrix.language }}
@@ -239,7 +239,7 @@ jobs:
       matrix: ${{ steps.resolve.outputs.matrix }}
     steps:
       - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -256,7 +256,7 @@ jobs:
           echo "matrix=$matrix" >> "$GITHUB_OUTPUT"
 
       - name: Upload resolved Compose image list
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: security-compose-images
           path: artifacts/compose-images.json
@@ -270,7 +270,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -278,7 +278,7 @@ jobs:
         run: mkdir -p artifacts
 
       - name: Scan filesystem for vulnerabilities, secrets and misconfiguration
-        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: fs
           scan-ref: .
@@ -293,7 +293,7 @@ jobs:
 
       - name: Upload Trivy report
         if: ${{ always() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: security-trivy-filesystem
           path: artifacts/trivy-filesystem.sarif
@@ -313,7 +313,7 @@ jobs:
         include: ${{ fromJSON(needs.compose-images.outputs.matrix) }}
     steps:
       - name: Checkout
-        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -325,7 +325,7 @@ jobs:
         run: docker compose --env-file infra/compose/.env.example --file infra/compose/compose.yaml build --pull "${{ matrix.service }}"
 
       - name: Scan Compose container image
-        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           scan-type: image
           image-ref: ${{ matrix.image }}
@@ -340,7 +340,7 @@ jobs:
 
       - name: Upload Trivy report
         if: ${{ always() }}
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: security-trivy-${{ matrix.name }}
           path: ${{ matrix.output }}
