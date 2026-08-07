@@ -2,9 +2,9 @@
   "schema_version": 1,
   "evidence_id": "t009-schema-proof-20260807",
   "task": "T009",
-  "recorded_at": "2026-08-07T10:56:31Z",
+  "recorded_at": "2026-08-07T12:48:41Z",
   "validated_ref": "ticket/t009-content-document-schema",
-  "validated_commit": "cf2d48d44d025e06a19d52e3912a85663211c75a",
+  "validated_commit": "bdb92b162f43ce153d6946b035fea5f7f949dc07",
   "scope": {
     "contract": "contracts/content-document.schema.json",
     "valid_fixture": "packages/content-schema/fixtures/valid/content-document-v1-all-blocks.json",
@@ -115,12 +115,22 @@
         "path": "packages/content-schema/fixtures/invalid/video-unapproved-provider.json",
         "result": "REJECTED",
         "intended_reason": "rights-pending provider const rejects youtube before rights-owner approval."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/heading-whitespace-text.json",
+        "result": "REJECTED",
+        "intended_reason": "Required human-readable text rejects whitespace-only values."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/https-link-missing-host.json",
+        "result": "REJECTED",
+        "intended_reason": "HTTPS href requires a non-empty host."
       }
     ]
   },
   "independent_validation": {
     "command": "Ajv2020 strict compile plus validate(validFixture) and validate(eachInvalidFixture), exit 0 iff valid passes and every invalid fixture is rejected.",
-    "observed": "valid=true; 17 schema-invalid fixtures all valid=false; process exit code 0",
+    "observed": "valid=true; 19 schema-invalid fixtures all valid=false; process exit code 0",
     "output_digest": {
       "block-unknown-property.json": "additionalProperties",
       "divider-invalid-style.json": "enum",
@@ -168,7 +178,7 @@
     },
     "strict_ajv_recheck": {
       "result": "PASS",
-      "observed": "valid fixture accepted and all five invalid fixtures rejected"
+      "observed": "valid fixture accepted and all nineteen schema-invalid fixtures rejected"
     },
     "scope_unchanged": true
   },
@@ -184,8 +194,43 @@
   "latest_revalidation": {
     "input_commit": "cf2d48d44d025e06a19d52e3912a85663211c75a",
     "result": "PASS",
-    "observed": "Ajv2020 strict compile accepted the rights-pending valid fixture and rejected 17 focused invalid fixtures; Prettier check passed for all fixture JSON; duplicate block ID semantic invariant was rejected.",
+    "observed": "Ajv2020 strict compile accepted the rights-pending valid fixture and rejected 19 focused invalid fixtures; Prettier check passed for all fixture JSON; duplicate block ID semantic invariant was rejected.",
     "scope": "Schema enum/rights gate, palette enum, per-block negative fixtures and duplicate-ID evidence.",
     "recorded_at": "2026-08-07T11:07:00Z"
+  },
+  "boundary_revalidation": {
+    "input_commit": "bdb92b162f43ce153d6946b035fea5f7f949dc07",
+    "recorded_at": "2026-08-07T12:48:41Z",
+    "strict_ajv_recheck": {
+      "result": "PASS",
+      "observed": "Valid fixture accepted; 19 schema-invalid fixtures rejected under Ajv2020 strict mode."
+    },
+    "semantic_invariant": {
+      "result": "PASS",
+      "observed": "Duplicate block ID fixture remains rejected by the independent structural assertion."
+    },
+    "focused_security_cases": [
+      {
+        "path": "packages/content-schema/fixtures/invalid/generative-canvas-unsafe.json",
+        "result": "REJECTED",
+        "reason": "code is the sole invalid field after the approved palette correction."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/video-raw-url.json",
+        "result": "REJECTED",
+        "reason": "embedUrl is the sole invalid field on an otherwise-valid rights-pending video payload."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/heading-whitespace-text.json",
+        "result": "REJECTED",
+        "reason": "pattern \\\\S rejects whitespace-only required text."
+      },
+      {
+        "path": "packages/content-schema/fixtures/invalid/https-link-missing-host.json",
+        "result": "REJECTED",
+        "reason": "secureHref requires a non-empty HTTPS host."
+      }
+    ],
+    "scope_unchanged": true
   }
 }
