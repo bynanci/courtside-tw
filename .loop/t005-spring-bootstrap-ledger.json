@@ -1,24 +1,20 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t005",
-  "graph_version": 6,
+  "graph_version": 7,
   "run_id": "courtside-tw-t005-spring-bootstrap-20260806",
   "status": "needs_human",
   "iteration": 4,
   "started_at": "2026-08-06T23:44:00Z",
-  "updated_at": "2026-08-07T01:46:24Z",
+  "updated_at": "2026-08-07T01:48:10Z",
   "current_frontier": [
     "t-human-review"
   ],
   "blocked_nodes": [
-    "t-human-review",
-    "a-review-t005",
-    "p-human-approval",
-    "g-t005-approval",
     "s-terminal-policy"
   ],
   "terminal_state": "needs_human",
-  "next_action": "Review PR #8, verify the four-file diff and passing Gradle/profile receipts, then explicitly approve or reject merge; do not mark T005 checked without that decision.",
+  "next_action": "Merge PR #8 with the approved head SHA, read back main, and append the merge receipt before marking T005 complete.",
   "events": [
     {
       "event_id": "evt-t005-spring-bootstrap-001-graph-initialized",
@@ -385,10 +381,90 @@
         "total": 7500
       },
       "terminal_reason": "L1 proof is complete; L3 review and explicit merge/completion approval are pending."
+    },
+    {
+      "event_id": "evt-t005-spring-bootstrap-007-review-merge-approved",
+      "at": "2026-08-07T01:48:10Z",
+      "actor": "codex-supervisor",
+      "type": "review_and_merge_approval",
+      "base_graph_version": 6,
+      "new_graph_version": 7,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": ".loop/evidence/t005-review-approval.json",
+            "after": "Mark's explicit approval for PR #8 merge after passing scope, build, profile and strict graph review."
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/t-human-review/status",
+            "before": "ready",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-review-t005/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-human-approval/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/g-t005-approval/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/m-l3-t005-decisions/status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": ["t-human-review"],
+            "after": ["s-terminal-policy"]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t005-review-approval.json",
+        ".loop/evidence/t005-implementation-proof.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Code Review and Merge Gate",
+          "level": "P3",
+          "result": "pass",
+          "details": "PR #8 scope is bounded to T005, static and strict graph checks pass, and Gradle clean build plus both profile boot proofs pass."
+        },
+        {
+          "proof": "human merge approval",
+          "level": "P3",
+          "result": "pass",
+          "details": "Mark approved PR #8 for merge; task checkbox completion remains a separate receipt after main read-back."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Merge PR #8 with the reviewed head SHA, then read back main and record the merge receipt; do not dispatch later tickets yet.",
+      "token_usage": {
+        "estimated": 3500,
+        "input": 0,
+        "output": 0,
+        "total": 3500
+      },
+      "terminal_reason": "Review and merge approval are complete; the remote merge and main read-back are the final terminal action."
     }
   ],
   "proof": {
-    "claim": "T005 four-file implementation passes static scope checks, Gradle clean build, and both api/worker profile boots; explicit human review and merge approval remain pending.",
+    "claim": "T005 four-file implementation passes static scope checks, Gradle clean build, both api/worker profile boots and explicit merge approval; remote merge and main read-back remain to be recorded.",
     "result": "pass",
     "confidence": 0.98
   }
