@@ -8,6 +8,8 @@ scope:
     - contracts/content-document.schema.json
     - packages/content-schema/fixtures/valid/
     - packages/content-schema/fixtures/invalid/
+    - scripts/validate-content-schema.mjs
+    - package.json, pnpm-lock.yaml, Makefile and CI contract wiring
     - T009 dispatch, evidence, ledger and semantic memory
   out:
     - T010 validators and generated TypeScript/Java types
@@ -37,11 +39,15 @@ acceptance:
   - duplicate blocks[*].id is rejected by the declared semantic uniqueness invariant
   - required human-readable strings reject whitespace-only values
   - HTTPS links require a non-empty host
+  - HTTPS links reject malformed authority and port values through URI format and a bounded authority pattern
+  - all persisted string fields reject NUL characters before JSONB persistence
+  - repository CI runs the locked ContentDocument validator before merge
+  - UUIDv7 identifiers accepted by the data model are accepted by the contract
   - schema is closed-world at document, block and payload boundaries
   - T009 remains unchecked until implementation proof and main read-back
 
 budgets:
-  max_iterations: 5
+  max_iterations: 10
   max_minutes: 60
   max_same_failure: 2
   max_graph_changes: 12
@@ -193,7 +199,7 @@ graph:
       risk: high
       confidence:
         score: 0.98
-        basis: Ajv2020 strict compilation and valid fixture acceptance passed.
+        basis: Ajv2020 strict compilation, UUIDv7 fixture acceptance and reproducible repository validator replay passed.
         evidence_refs: [.loop/evidence/t009-schema-proof.json, .loop/evidence/t009-ci-security-20260807.json]
       budget:
         effort_hours: 0.5
@@ -215,14 +221,14 @@ graph:
       risk: high
       confidence:
         score: 0.98
-        basis: Seventeen focused schema-invalid fixtures and the duplicate-ID semantic invariant were rejected for the intended constraints.
-        evidence_refs: [.loop/evidence/t009-schema-proof.json]
+        basis: Twenty-one focused schema-invalid fixtures and the duplicate-ID semantic invariant were rejected for the intended constraints.
+        evidence_refs: [.loop/evidence/t009-schema-proof.json, .loop/evidence/t009-ci-security-20260807.json]
       budget:
         effort_hours: 0.5
         tokens: 5000
       config:
         level: P2
-        claim: Nineteen schema-invalid fixtures and the duplicate-ID semantic invariant are rejected without weakening the contract.
+        claim: Twenty-one schema-invalid fixtures and the duplicate-ID semantic invariant are rejected without weakening the contract.
         method: Independent Ajv validator with per-fixture receipts plus a structural uniqueness assertion.
         evidence_path: .loop/evidence/t009-schema-proof.json
         required: true
@@ -237,7 +243,7 @@ graph:
       risk: critical
       confidence:
         score: 0.85
-        basis: Latest Ajv, focused boundary proof, CI/Security and current-head review threads pass; merge still requires explicit human authority and main read-back.
+        basis: Latest Ajv/Prettier replay, strict boundary proof and repository validator wiring pass; current-head CI/Security and review must still pass before explicit human merge authority and main read-back.
         evidence_refs: [.loop/evidence/t009-schema-proof.json]
       budget:
         effort_hours: 0.5
@@ -388,7 +394,7 @@ graph:
       memory_nodes: [m-phase1-review, m-t009]
       stop_nodes: [s-t009-terminal]
       budgets:
-        max_iterations: 5
+        max_iterations: 10
         max_minutes: 60
         max_same_failure: 2
         max_graph_changes: 12
@@ -421,7 +427,7 @@ loops:
     memory_nodes: [m-phase1-review, m-t009]
     stop_nodes: [s-t009-terminal]
     budgets:
-      max_iterations: 5
+      max_iterations: 10
       max_minutes: 60
       max_same_failure: 2
       max_graph_changes: 12
