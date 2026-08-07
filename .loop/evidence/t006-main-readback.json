@@ -1,0 +1,79 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t006-main-readback-20260807",
+  "generated_at": "2026-08-07T06:27:00Z",
+  "actor": "codex-supervisor",
+  "subject": "T006 final main read-back and status reconciliation",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T006",
+  "main_readback": {
+    "commit_before_readback": "9d97573a10f767c1d6fbe32eacbbb92579c9d1f4",
+    "source": "main after PR #20 implementation merge and PR #21 completion merge",
+    "t001_checked": true,
+    "t002_checked": true,
+    "t003_checked": true,
+    "t004_checked": true,
+    "t005_checked": true,
+    "t006_checked": true,
+    "t007_checked": false,
+    "t007_dispatched": false,
+    "next_unchecked_ready_slice": "T007",
+    "runtime_paths_present": [
+      "eslint.config.mjs",
+      "prettier.config.mjs",
+      "packages/tsconfig/base.json",
+      "apps/api/build.gradle.kts",
+      "apps/api/config/checkstyle/checkstyle.xml",
+      "apps/api/config/spotbugs/exclude.xml",
+      "Makefile",
+      "apps/web/package.json",
+      "package.json",
+      "pnpm-lock.yaml"
+    ],
+    "completion_paths_present": [
+      ".loop/evidence/t006-java-quality-proof.json",
+      ".loop/evidence/t006-completion-receipt.json",
+      ".loop/t006-quality-baseline-graphify-loop.yaml",
+      ".loop/t006-quality-baseline-ledger.json"
+    ]
+  },
+  "merges": [
+    {
+      "pull_request": 20,
+      "head_sha": "99afeaf4a344000d80f4dc4b67e149c20a5f7092",
+      "merge_sha": "6ab687e4077550864580f95cc557331bd131aa9f",
+      "scope": "T006 shared quality baseline implementation and proof"
+    },
+    {
+      "pull_request": 21,
+      "head_sha": "dbfe62f85a30e4cdd64d2272759f9aecb91e72b4",
+      "merge_sha": "9d97573a10f767c1d6fbe32eacbbb92579c9d1f4",
+      "scope": "T006 checkbox and completion Graphify state"
+    }
+  ],
+  "verification": {
+    "T006 task checkbox": "PASS — [x] on main",
+    "T007 and later": "PASS — remain unchecked and undispatched",
+    "implementation merge": "PASS — PR #20",
+    "completion merge": "PASS — PR #21",
+    "strict Graphify": "PASS — 15 nodes / 21 edges / 0 warnings / 0 errors",
+    "Java quality": "PASS — Java 21 / Gradle 8.14 checkstyleMain and spotbugsMain",
+    "status checks": "NOT_CONFIGURED — no GitHub status entries or workflow runs"
+  },
+  "status_reconciliation": {
+    "issue": "README.md still described T006 as not dispatched after the implementation and completion merges.",
+    "correction": "README.md now records T006 complete, points to this final read-back, and keeps T007 undispatched.",
+    "runtime_changed": false
+  },
+  "scope": {
+    "readback_slice": "final main read-back, status reconciliation and append-only evidence/Graphify closure",
+    "runtime_implementation_changed": false,
+    "database_or_migrations_changed": false,
+    "providers_or_credentials_changed": false,
+    "external_web3_writes": false,
+    "production_deployment": false
+  },
+  "result": "success",
+  "confidence": 1,
+  "next_action": "Stop T006. Do not dispatch T007 or later work from this read-back."
+}
