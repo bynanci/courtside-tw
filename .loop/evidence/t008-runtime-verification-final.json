@@ -1,0 +1,161 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t008-runtime-verification-final-20260807",
+  "generated_at": "2026-08-07T09:24:30Z",
+  "actor": "codex-supervisor",
+  "subject": "T008 final GitHub Actions runtime verification and security gate",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T008",
+  "branch": "ticket/t008-ci-pipelines",
+  "head_sha": "15f83178d010553bb339043c8afac971d228ebe0",
+  "supersedes": [
+    ".loop/evidence/t008-runtime-proof.json",
+    ".loop/evidence/t008-runtime-verification.json"
+  ],
+  "verification_scope": {
+    "source_commit": "15f83178d010553bb339043c8afac971d228ebe0",
+    "source_commit_url": "https://github.com/bynanci/courtside-tw/commit/15f83178d010553bb339043c8afac971d228ebe0",
+    "note": "This receipt is an append-only superseding record. The earlier blocked receipt remains historical evidence of the pre-remediation failure."
+  },
+  "workflow_runs": [
+    {
+      "name": "CI",
+      "run_id": 31165512729,
+      "run_number": 14,
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "Frontend and contract verification",
+          "job_id": 92825265970,
+          "conclusion": "success",
+          "artifact": "ci-frontend-reports",
+          "artifact_id": 8988795876
+        },
+        {
+          "name": "Java quality and unit verification",
+          "job_id": 92825266015,
+          "conclusion": "success",
+          "artifact": "ci-java-reports",
+          "artifact_id": 8988796992
+        },
+        {
+          "name": "Docker Compose dependency health",
+          "job_id": 92825265968,
+          "conclusion": "success",
+          "artifact": "ci-dependency-reports",
+          "artifact_id": 8988839624
+        }
+      ]
+    },
+    {
+      "name": "Security",
+      "run_id": 31165512727,
+      "run_number": 14,
+      "status": "completed",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "name": "Dependency audit and reports",
+          "job_id": 92825266434,
+          "conclusion": "success",
+          "artifact": "security-dependency-reports",
+          "artifact_id": 8988825405
+        },
+        {
+          "name": "CodeQL (javascript-typescript)",
+          "job_id": 92825266402,
+          "conclusion": "success",
+          "artifact": "security-codeql-javascript-typescript",
+          "artifact_id": 8988816398
+        },
+        {
+          "name": "CodeQL (java-kotlin)",
+          "job_id": 92825266431,
+          "conclusion": "success",
+          "artifact": "security-codeql-java-kotlin",
+          "artifact_id": 8988850772
+        },
+        {
+          "name": "Trivy (filesystem)",
+          "job_id": 92825266428,
+          "conclusion": "success",
+          "artifact": "security-trivy-filesystem",
+          "artifact_id": 8988787524
+        },
+        {
+          "name": "Resolve Compose images",
+          "job_id": 92825266409,
+          "conclusion": "success",
+          "artifact": "security-compose-images",
+          "artifact_id": 8988784916
+        },
+        {
+          "name": "Trivy (image postgres)",
+          "job_id": 92825305189,
+          "conclusion": "success",
+          "artifact": "security-trivy-postgres",
+          "artifact_id": 8988808968
+        },
+        {
+          "name": "Trivy (image s3)",
+          "job_id": 92825305166,
+          "conclusion": "success",
+          "artifact": "security-trivy-s3",
+          "artifact_id": 8988837756
+        },
+        {
+          "name": "Trivy (image oidc)",
+          "job_id": 92825305127,
+          "conclusion": "success",
+          "artifact": "security-trivy-oidc",
+          "artifact_id": 8988804487
+        }
+      ]
+    }
+  ],
+  "docker_compose_health": {
+    "result": "PASS",
+    "artifact_id": 8988839624,
+    "services": {
+      "postgres": "healthy",
+      "s3": "healthy",
+      "oidc": "healthy"
+    },
+    "receipt": "check-dependencies: local PostgreSQL, S3 and OIDC dependencies are healthy",
+    "cleanup": "containers and internal network removed successfully"
+  },
+  "security_gate": {
+    "result": "PASS",
+    "policy": "Trivy image scans fail on HIGH or CRITICAL findings, including unfixed findings; SARIF severity is limited to HIGH,CRITICAL.",
+    "scans": {
+      "dependency_audit": "PASS",
+      "codeql_javascript_typescript": "PASS",
+      "codeql_java_kotlin": "PASS",
+      "filesystem_vulnerability_secret_misconfiguration": "PASS",
+      "postgres_image": "PASS",
+      "s3_image": "PASS",
+      "oidc_image": "PASS"
+    },
+    "image_remediation": {
+      "postgres": [
+        "Rebuild gosu from pinned upstream source with Go 1.25.12 and golang.org/x/sys 0.44.0.",
+        "Upgrade runtime c-ares to 1.34.8-r0."
+      ],
+      "s3": [
+        "Build the executable from pinned Adobe S3Mock commit 627bf8d.",
+        "Copy the versioned executable artifact into both staging and final image layers."
+      ],
+      "oidc": [
+        "Use the pinned ghcr.io/navikt/mock-oauth2-server:6.0.0 image."
+      ]
+    },
+    "security_exception": false
+  },
+  "task_state": {
+    "t008_checked": false,
+    "merge_authorized": false,
+    "result": "runtime_verified_ready_for_merge_gate",
+    "decision": "The final CI and Security receipts pass on the reviewed PR head. Keep T008 unchecked until the human merge gate is explicitly completed; after merge, perform main read-back and record the completion receipt."
+  }
+}
