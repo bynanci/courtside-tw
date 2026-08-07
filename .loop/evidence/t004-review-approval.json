@@ -1,7 +1,7 @@
 {
   "schema_version": "courtside-tw-loop-evidence/v1",
   "evidence_id": "t004-review-approval-pending-20260807",
-  "generated_at": "2026-08-07T03:34:12Z",
+  "generated_at": "2026-08-07T03:39:44Z",
   "actor": "codex-supervisor",
   "subject": "T004 review and protected merge gate",
   "repository": "bynanci/courtside-tw",
@@ -16,8 +16,13 @@
     "head_branch": "ticket/t004-nuxt-ssr-scaffold",
     "status": "open_draft"
   },
+  "automated_code_review": {
+    "evidence_path": ".loop/evidence/t004-code-review.json",
+    "decision": "PASS",
+    "protected_merge_gate": "NEEDS_HUMAN"
+  },
   "decision": "NEEDS_HUMAN",
   "result": "needs_human",
   "confidence": 1.0,
-  "next_action": "Open the implementation PR, perform Code Review and Merge Gate, then wait for explicit merge/completion approval."
+  "next_action": "Review the implementation PR and Code Review PASS, then wait for explicit protected merge and T004 checkbox completion approval."
 }

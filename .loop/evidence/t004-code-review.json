@@ -1,0 +1,56 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t004-code-review-20260807",
+  "generated_at": "2026-08-07T03:39:44Z",
+  "actor": "codex-supervisor",
+  "subject": "T004 code review and remote merge-readiness assessment",
+  "repository": "bynanci/courtside-tw",
+  "pull_request": {
+    "number": 15,
+    "base": "main",
+    "base_sha": "32f9e5bb3b90f637fe969563e05a4ee0d84c768b",
+    "head_branch": "ticket/t004-nuxt-ssr-scaffold",
+    "head_sha": "c60e466bfca9c95cdad284932c700fffd81cbe76",
+    "state": "open",
+    "draft": true,
+    "merged": false,
+    "mergeable": true,
+    "changed_files": 11
+  },
+  "risk_tier": "T2",
+  "risk_basis": "The slice adds a runtime dependency and a reproducibility lockfile; no external side effects, credentials or data migrations are present.",
+  "review_matrix": {
+    "intent_and_scope": {
+      "decision": "PASS",
+      "evidence": "The PR contains the four T004 runtime paths, one root dependency lockfile and T004 loop receipts; no spec, task checkbox or later-ticket runtime scope changed."
+    },
+    "behavior_and_correctness": {
+      "decision": "PASS",
+      "evidence": "Nuxt typecheck, production node-server build and live GET / assertions passed for the SSR marker, title, h1 and scaffold text."
+    },
+    "contract_and_data": {
+      "decision": "PASS",
+      "evidence": "make setup and make verify passed; no API, database, auth, provider, Web3 or persistence contract was introduced."
+    },
+    "security_and_dependencies": {
+      "decision": "PASS",
+      "evidence": "Nuxt is pinned to 4.5.1, install is frozen against pnpm-lock.yaml, and pnpm audit --prod reports zero vulnerabilities."
+    },
+    "reliability_and_rollback": {
+      "decision": "PASS",
+      "evidence": "The change is additive, has no migrations or external writes, and can be reverted as the two-commit PR."
+    },
+    "remote_readback": {
+      "decision": "PASS",
+      "evidence": "All 11 PR paths were fetched at head c60e466b and each fetched blob SHA matched the intended content."
+    },
+    "status_checks": {
+      "decision": "NOT_CONFIGURED",
+      "evidence": "The repository returned no commit status entries and no pull-request workflow runs; CI is outside T004 scope."
+    }
+  },
+  "findings": [],
+  "decision": "PASS",
+  "protected_merge_gate": "NEEDS_HUMAN",
+  "next_action": "Mark the draft ready only with explicit approval, then perform the protected main merge and T004 checkbox completion as a separate human-gated action."
+}

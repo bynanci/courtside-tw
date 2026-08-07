@@ -1,16 +1,16 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t004",
-  "graph_version": 3,
+  "graph_version": 4,
   "run_id": "courtside-tw-t004-nuxt-ssr-20260807",
   "status": "needs_human",
-  "iteration": 3,
+  "iteration": 4,
   "started_at": "2026-08-07T03:18:00Z",
-  "updated_at": "2026-08-07T03:34:12Z",
+  "updated_at": "2026-08-07T03:39:44Z",
   "current_frontier": ["t-human-review"],
   "blocked_nodes": [],
   "terminal_state": "needs_human",
-  "next_action": "Review the bounded T004 PR with its dependency lockfile and security receipt; protected merge and checkbox completion remain human-gated.",
+  "next_action": "Review the Code Review PASS and bounded T004 PR; explicit protected merge and checkbox completion remain human-gated.",
   "events": [
     {
       "event_id": "evt-t004-nuxt-ssr-001-baseline",
@@ -99,6 +99,33 @@
       "token_usage": {"estimated": 10000, "input": 0, "output": 0, "total": 10000},
       "terminal_reason": "L1 dependency, build and SSR proof is complete; protected merge and T004 completion are explicitly human-gated.",
       "memory_receipt": {"memory_status": "NO_OP", "memory_id": null, "version": null, "retrieval_ids": [], "evidence_refs": [".loop/evidence/t004-implementation-proof.json"], "next_review_at": null, "blocker": null}
+    },
+    {
+      "event_id": "evt-t004-nuxt-ssr-004-code-review-readback",
+      "at": "2026-08-07T03:39:44Z",
+      "actor": "codex-supervisor",
+      "type": "code_review_and_remote_readback",
+      "base_graph_version": 3,
+      "new_graph_version": 4,
+      "graph_delta": {
+        "operations": [
+          {"op": "add", "path": ".loop/evidence/t004-code-review.json", "after": "T2 code review, security matrix and remote PR read-back receipt."},
+          {"op": "replace", "path": "remote.pr/15/head_sha", "before": "8e020ee1f538a7bc74eb1e5bcabccdff817bbb21", "after": "c60e466bfca9c95cdad284932c700fffd81cbe76"},
+          {"op": "replace", "path": "review.decision", "before": "PENDING_SECURITY_REPAIR", "after": "PASS"},
+          {"op": "replace", "path": "protected_merge_gate", "before": "needs_human", "after": "needs_human"}
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t004-code-review.json", ".loop/evidence/t004-review-approval.json"],
+      "proof_receipts": [
+        {"proof": "review scope", "level": "P2", "result": "pass", "details": "The T2 review found no findings across intent/scope, behavior, contract/data, security/dependencies, reliability/rollback or verification."},
+        {"proof": "remote PR read-back", "level": "P2", "result": "pass", "details": "All 11 changed paths at head c60e466b matched the intended blob SHAs; PR #15 is open, draft, unmerged and mergeable."},
+        {"proof": "status checks", "level": "P2", "result": "not_configured", "details": "No repository CI status entries or workflow runs exist; CI remains outside T004 scope."}
+      ],
+      "failure_signature": null,
+      "decision": "Code Review PASS; retain the explicit human terminal state for draft readiness, protected merge and T004 checkbox completion.",
+      "token_usage": {"estimated": 8000, "input": 0, "output": 0, "total": 8000},
+      "terminal_reason": "Automated review and remote content proof are complete; only the accountable human protected merge gate remains.",
+      "memory_receipt": {"memory_status": "NO_OP", "memory_id": null, "version": null, "retrieval_ids": [], "evidence_refs": [".loop/evidence/t004-code-review.json", ".loop/evidence/t004-review-approval.json"], "next_review_at": null, "blocker": null}
     }
   ]
 }

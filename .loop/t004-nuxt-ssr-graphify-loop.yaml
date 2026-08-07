@@ -287,7 +287,7 @@ graph:
       confidence:
         score: 0.98
         basis: Runtime, dependency integrity and remote PR proof are complete, but protected-branch merge and T004 checkbox completion remain explicit human gates.
-        evidence_refs: [.loop/evidence/t004-implementation-proof.json, .loop/evidence/t004-review-approval.json]
+        evidence_refs: [.loop/evidence/t004-implementation-proof.json, .loop/evidence/t004-code-review.json, .loop/evidence/t004-review-approval.json]
       budget:
         effort_hours: 0.0
         tokens: 0
@@ -306,7 +306,7 @@ graph:
       confidence:
         score: 0.9
         basis: Automated proof passes, but human review must confirm no later-task scope or architecture drift.
-        evidence_refs: [.loop/evidence/t004-implementation-proof.json]
+        evidence_refs: [.loop/evidence/t004-implementation-proof.json, .loop/evidence/t004-code-review.json]
       budget:
         effort_hours: 0.3
         tokens: 3500
@@ -387,7 +387,7 @@ graph:
       confidence:
         score: 0.99
         basis: Implementation, dependency integrity and SSR proof pass; the graph stops at the named human review/merge gate.
-        evidence_refs: [.loop/t004-nuxt-ssr-ledger.json, .loop/evidence/t004-review-approval.json]
+        evidence_refs: [.loop/t004-nuxt-ssr-ledger.json, .loop/evidence/t004-code-review.json, .loop/evidence/t004-review-approval.json]
       budget:
         effort_hours: 0.0
         tokens: 0
