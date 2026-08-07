@@ -8,7 +8,7 @@ scope:
     - Read the final main reconciliation and the exact T006 task before implementation.
     - Configure shared Prettier, ESLint, strict TypeScript, Checkstyle and SpotBugs quality policy.
     - Wire deterministic format, lint and typecheck commands into the existing root verification contract.
-    - Run independent Node quality checks and static Java quality configuration checks.
+    - Run independent Node quality checks and Java Gradle quality task checks.
     - Expose a reviewable T006 branch and PR without merging it or checking T006.
   out:
     - T007 or later tasks, CI workflows, local dependency services, database or provider implementation.
@@ -234,7 +234,7 @@ graph:
       risk: medium
       confidence:
         score: 0.93
-        basis: The bounded configuration and enforcement support are implemented; Java task execution remains separately blocked by the available Gradle environment.
+        basis: The bounded configuration and enforcement support are implemented; Java Checkstyle and SpotBugs Gradle tasks pass on the compatible proof runner.
         evidence_refs: [.loop/evidence/t006-implementation-proof.json]
       budget:
         effort_hours: 1.5
@@ -254,7 +254,7 @@ graph:
       risk: high
       confidence:
         score: 0.9
-        basis: Node installation, formatting, lint, typecheck, root verify, build, SSR smoke and XML parsing pass; Java Gradle quality tasks could not run in the available environment.
+        basis: Node installation, formatting, lint, typecheck, root verify, build, SSR smoke, XML parsing and Java Gradle quality tasks pass on the compatible proof runner.
         evidence_refs: [.loop/evidence/t006-implementation-proof.json]
       budget:
         effort_hours: 0.75
@@ -262,7 +262,7 @@ graph:
       config:
         level: P2
         claim: The T006 quality baseline is deterministic and warning-free, with Java quality tasks also executed before merge.
-        method: Run frozen install, format-check, lint, typecheck, verify, web build, SSR smoke and Java Checkstyle/SpotBugs tasks; retain blocked results.
+        method: Run frozen install, format-check, lint, typecheck, verify, web build, SSR smoke and Java Checkstyle/SpotBugs tasks; retain task receipts.
         evidence_path: .loop/evidence/t006-implementation-proof.json
         required: true
         baseline_required: true
@@ -276,7 +276,7 @@ graph:
       risk: low
       confidence:
         score: 0.96
-        basis: The implementation result and the Java proof blocker are recorded as durable facts for the review gate.
+        basis: The implementation result and the Java quality receipt are recorded as durable facts for the review gate.
         evidence_refs: [.loop/t006-quality-baseline-ledger.json, .loop/evidence/t006-implementation-proof.json]
       budget:
         effort_hours: 0.05
@@ -319,7 +319,7 @@ graph:
       risk: high
       confidence:
         score: 0.9
-        basis: Review must decide whether the Java environment blocker is resolved or an explicit bounded follow-up is acceptable.
+        basis: Review must confirm the bounded current-head diff and the completed Java quality receipt.
         evidence_refs: [.loop/evidence/t006-implementation-proof.json]
       budget:
         effort_hours: 0.25
@@ -361,7 +361,7 @@ graph:
       risk: critical
       confidence:
         score: 0.92
-        basis: The gate is intentionally open for human decision because Java Gradle quality execution is not yet proven in this runner.
+        basis: The gate is intentionally open for the current-head human merge decision; the required Java Gradle quality receipt is complete.
         evidence_refs: [.loop/evidence/t006-implementation-proof.json]
       budget:
         effort_hours: 0.0
@@ -404,7 +404,7 @@ graph:
       risk: critical
       confidence:
         score: 0.98
-        basis: T006 implementation is bounded and independently proven for Node/static checks, while Java Gradle proof and merge remain explicitly gated.
+        basis: T006 implementation is bounded and independently proven for Node and Java Gradle checks, while review, merge and completion remain explicitly gated.
         evidence_refs: [.loop/t006-quality-baseline-ledger.json, .loop/evidence/t006-implementation-proof.json]
       budget:
         effort_hours: 0.0
