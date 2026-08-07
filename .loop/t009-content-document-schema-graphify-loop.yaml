@@ -372,6 +372,21 @@ graph:
       required: true
       confidence: 0.7
       token_capacity: 4000
+  loops:
+    - id: l1-execution
+      layer: L1
+      owner: agent
+      trigger_nodes: [t-t009-ready]
+      action_nodes: [a-t009-define-contract]
+      proof_nodes: [p-t009-schema-validation, p-t009-negative-fixtures]
+      memory_nodes: [m-phase1-review, m-t009]
+      stop_nodes: [s-t009-terminal]
+      budgets:
+        max_iterations: 5
+        max_minutes: 60
+        max_same_failure: 2
+        max_graph_changes: 12
+        max_tokens: 40000
 flow:
   source: t-t009-ready
   sink: s-t009-terminal
