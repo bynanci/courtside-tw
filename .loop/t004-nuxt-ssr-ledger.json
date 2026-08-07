@@ -1,12 +1,12 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t004",
-  "graph_version": 5,
+  "graph_version": 6,
   "run_id": "courtside-tw-t004-nuxt-ssr-20260807",
   "status": "success",
   "iteration": 5,
   "started_at": "2026-08-07T03:18:00Z",
-  "updated_at": "2026-08-07T03:57:01Z",
+  "updated_at": "2026-08-07T04:06:25Z",
   "current_frontier": ["s-terminal-policy"],
   "blocked_nodes": [],
   "terminal_state": "success",
@@ -164,6 +164,36 @@
       "decision": "Mark T004 complete after PR #15 merge and main read-back; stop the graph and do not dispatch T006.",
       "token_usage": {"estimated": 2200, "input": 0, "output": 0, "total": 2200},
       "terminal_reason": "T004 implementation, independent proof, code review, merge, main read-back and checkbox completion are complete."
+    },
+    {
+      "event_id": "evt-t004-nuxt-ssr-006-final-main-readback",
+      "at": "2026-08-07T04:06:25Z",
+      "actor": "codex-supervisor",
+      "type": "final_main_readback_and_status_reconciliation",
+      "base_graph_version": 5,
+      "new_graph_version": 6,
+      "graph_delta": {
+        "operations": [
+          {"op": "add", "path": ".loop/evidence/t004-main-readback.json", "after": "Final main read-back receipt binds PR #15 implementation merge, PR #16 completion merge, checked T004 and runtime presence."},
+          {"op": "replace", "path": "README.md/T004-status", "before": "T004 Nuxt SSR scaffold 尚未開始", "after": "T004 Nuxt SSR scaffold 已完成"},
+          {"op": "replace", "path": "specs/001-taiwan-basketball-magazine-ebook/tasks.md/T004-proof", "before": "PR #15 only", "after": "PR #15 + PR #16 + final main read-back"}
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t004-main-readback.json",
+        ".loop/evidence/t004-completion-receipt.json",
+        "README.md",
+        "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+      ],
+      "proof_receipts": [
+        {"proof": "final main state", "level": "P2", "result": "pass", "details": "main at bf00db contains the merged Nuxt runtime, checked T004 and success ledger."},
+        {"proof": "status reconciliation", "level": "P2", "result": "pass", "details": "README's stale T004 not-started line was identified and corrected without changing runtime."},
+        {"proof": "scope guard", "level": "P2", "result": "pass", "details": "The read-back slice changes only status documentation, task proof wording and append-only governance evidence; T006 remains undispatched."}
+      ],
+      "failure_signature": null,
+      "decision": "Record final main state and reconcile the stale README status; keep T004 terminal success and stop.",
+      "token_usage": {"estimated": 1800, "input": 0, "output": 0, "total": 1800},
+      "terminal_reason": "T004 implementation, review, both merges, checkbox completion and final main status reconciliation are complete."
     }
   ]
 }
