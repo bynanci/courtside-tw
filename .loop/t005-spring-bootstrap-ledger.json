@@ -1,20 +1,18 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t005",
-  "graph_version": 7,
+  "graph_version": 8,
   "run_id": "courtside-tw-t005-spring-bootstrap-20260806",
   "status": "needs_human",
-  "iteration": 4,
+  "iteration": 5,
   "started_at": "2026-08-06T23:44:00Z",
-  "updated_at": "2026-08-07T01:48:10Z",
+  "updated_at": "2026-08-07T01:55:38Z",
   "current_frontier": [
-    "t-human-review"
-  ],
-  "blocked_nodes": [
     "s-terminal-policy"
   ],
+  "blocked_nodes": [],
   "terminal_state": "needs_human",
-  "next_action": "Merge PR #8 with the approved head SHA, read back main, and append the merge receipt before marking T005 complete.",
+  "next_action": "PR #10 is merged and main read-back is verified; obtain separate explicit authorization before marking T005 checked or dispatching T004/T006/later work.",
   "events": [
     {
       "event_id": "evt-t005-spring-bootstrap-001-graph-initialized",
@@ -461,11 +459,73 @@
         "total": 3500
       },
       "terminal_reason": "Review and merge approval are complete; the remote merge and main read-back are the final terminal action."
+    },
+    {
+      "event_id": "evt-t005-spring-bootstrap-008-merge-and-main-readback",
+      "at": "2026-08-07T01:55:38Z",
+      "actor": "codex-supervisor",
+      "type": "external_merge_and_main_readback",
+      "base_graph_version": 7,
+      "new_graph_version": 8,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "external.github.pull_request/10",
+            "after": "Clean T005 implementation PR #10 was squash-merged into main at 07e9d25c6f28d7bcdb2bde902a5315a25dddfe52 after PR #8 was closed as a history-conflict superseded PR."
+          },
+          {
+            "op": "add",
+            "path": ".loop/evidence/t005-merge-main-readback.json",
+            "after": "Post-merge receipt confirms PR #10, main commit, exact T005 paths and bounded scope."
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/s-terminal-policy/confidence",
+            "before": 0.9,
+            "after": 0.99
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t005-merge-main-readback.json",
+        ".loop/evidence/t005-review-approval.json",
+        ".loop/evidence/t005-implementation-proof.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "remote merge",
+          "level": "P2",
+          "result": "pass",
+          "details": "PR #10 is closed with merged=true and merge commit 07e9d25c6f28d7bcdb2bde902a5315a25dddfe52."
+        },
+        {
+          "proof": "main read-back",
+          "level": "P2",
+          "result": "pass",
+          "details": "main contains the four T005 implementation paths and loop/evidence artifacts at the merge commit; no later-task implementation files are in the merged scope."
+        },
+        {
+          "proof": "terminal policy",
+          "level": "P3",
+          "result": "pass",
+          "details": "Merge is complete; the named policy remains needs_human only for the separately gated T005 checkbox and later-ticket dispatch."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Merge PR #10 and record the main read-back; keep T005 completion and later-ticket dispatch separately gated.",
+      "token_usage": {
+        "estimated": 3500,
+        "input": 0,
+        "output": 0,
+        "total": 3500
+      },
+      "terminal_reason": "Remote merge and main read-back are complete; the named terminal policy remains human-gated for task checkbox completion."
     }
   ],
   "proof": {
-    "claim": "T005 four-file implementation passes static scope checks, Gradle clean build, both api/worker profile boots and explicit merge approval; remote merge and main read-back remain to be recorded.",
+    "claim": "T005 four-file implementation passes static scope checks, Gradle clean build, both api/worker profile boots and explicit merge approval; PR #10 is merged and main read-back is verified.",
     "result": "pass",
-    "confidence": 0.98
+    "confidence": 0.99
   }
 }
