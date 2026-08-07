@@ -1,0 +1,102 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t005-dispatch-20260806",
+  "generated_at": "2026-08-06T23:44:00Z",
+  "actor": "codex-supervisor",
+  "subject": "T005 Java 21/Spring Boot 4.1 dispatch",
+  "request": "核准 T003 完成，dispatch T005",
+  "repository": "bynanci/courtside-tw",
+  "authority": {
+    "approver": "Mark",
+    "approval_status": "APPROVED",
+    "approved_at": "2026-08-06T23:37:02Z",
+    "scope": [
+      "dispatch T005",
+      "create ticket/t005-spring-bootstrap from the latest main read-back"
+    ],
+    "excluded": [
+      "implement T004",
+      "implement or merge T005",
+      "dispatch T006 or later",
+      "change DESIGN/ADR/provider/Web3 boundaries"
+    ]
+  },
+  "source_evidence": [
+    {
+      "path": ".loop/evidence/t003-completion-main-readback.json",
+      "claim_status": "CONFIRMED",
+      "proof_level": "P2",
+      "details": "T003 completion PR #6 is merged and main read-back shows T003 checked and the T003 ledger terminal state success."
+    },
+    {
+      "path": "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+      "claim_status": "CONFIRMED",
+      "proof_level": "P1",
+      "details": "T005 is the next parallel setup task after T003; its four implementation paths are explicit."
+    },
+    {
+      "path": "specs/001-taiwan-basketball-magazine-ebook/plan.md",
+      "claim_status": "CONFIRMED",
+      "proof_level": "P1",
+      "details": "The approved runtime baseline names Java 21 and Spring Boot 4.1 for the API/worker boundary."
+    }
+  ],
+  "dispatch": {
+    "task_id": "T005",
+    "title": "Scaffold the Java 21/Spring Boot 4.1 application and api/worker profiles",
+    "branch": "ticket/t005-spring-bootstrap",
+    "base_ref": "main",
+    "base_commit": "ec4740b01be442444aa99809e245b7880677ffef",
+    "paths": [
+      "apps/api/build.gradle.kts",
+      "apps/api/settings.gradle.kts",
+      "apps/api/src/main/java/tw/basketball/magazine/MagazineApplication.java",
+      "apps/api/src/main/resources/application.yml"
+    ],
+    "verification": "Both api and worker profiles must boot from a clean checkout before T005 can be marked complete.",
+    "implementation_started": false
+  },
+  "pull_request": {
+    "number": 7,
+    "url": "https://github.com/bynanci/courtside-tw/pull/7",
+    "state": "open",
+    "draft": true,
+    "merged": false,
+    "changed_files": [
+      ".loop/evidence/t005-dispatch.json",
+      ".loop/t005-spring-bootstrap-graphify-loop.mmd",
+      ".loop/t005-spring-bootstrap-graphify-loop.yaml",
+      ".loop/t005-spring-bootstrap-ledger.json"
+    ]
+  },
+  "governance": {
+    "inherent_tier": "G2",
+    "decision": "ALLOW_WITH_CONTROLS",
+    "controls": [
+      "GOV-002",
+      "GOV-003",
+      "AGT-001",
+      "AGT-004",
+      "AGT-007",
+      "AGT-008",
+      "OPS-001"
+    ],
+    "residual_risk": "T005 implementation, profile proof, review, merge and task completion remain separately gated."
+  },
+  "scope_guard": {
+    "allowed": [
+      "four T005 Java/Spring files",
+      "T005 graph, ledger and evidence",
+      "local Java/Gradle profile boot checks"
+    ],
+    "forbidden": [
+      "T004 or later tickets",
+      "database/migrations",
+      "provider SDKs or credentials",
+      "Web3/signing/gas writes",
+      "production deployment"
+    ]
+  },
+  "result": "pass",
+  "confidence": 0.98
+}
