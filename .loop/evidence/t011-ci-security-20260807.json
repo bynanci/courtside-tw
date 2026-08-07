@@ -1,0 +1,24 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t011-ci-security-20260807",
+  "generated_at": "2026-08-07T14:50:00Z",
+  "actor": "verifier",
+  "subject": "T011 current-head CI and Security",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T011",
+  "head": {
+    "branch": "ticket/t011-openapi-contract-implementation",
+    "sha": "11e70c353a1a97578548e118e62e7e520e8e30b7",
+    "pr": null,
+    "state": "implementation",
+    "t011_checked": false
+  },
+  "workflows": [],
+  "review_threads": {
+    "current_head_threads_resolved": false,
+    "unresolved_count": null,
+    "merge_authority": "human-required"
+  },
+  "result": "PENDING",
+  "next_action": "Await CI/Security and current-head review after OpenAPI implementation; then update this receipt before merge."
+}
