@@ -48,9 +48,9 @@ memory_workflow:
 graph:
   entry_nodes: [x-main-readback, t-t008-ready]
   terminal_nodes: [s-terminal-policy]
-  current_frontier: [p-ci-runtime-proof]
-  blocked_nodes: []
-  terminal_state: needs_human
+  current_frontier: [p-security-gate]
+  blocked_nodes: [p-security-gate, g-t008-review, s-terminal-policy]
+  terminal_state: blocked
 
   nodes:
     - id: x-main-readback
@@ -106,7 +106,7 @@ graph:
       layer: L1
       label: GitHub Actions and Docker runtime proof
       owner: verifier
-      status: ready
+      status: blocked
       risk: high
       confidence:
         score: 0.5
@@ -130,12 +130,24 @@ graph:
       layer: GLOBAL
       label: T008 named terminal-state policy
       owner: policy
-      status: needs_human
+      status: blocked
       risk: critical
       confidence:
         score: 0.9
         basis: Static proof passes but runtime proof is pending; T008 remains unchecked.
         evidence_refs: [.loop/t008-ci-pipelines-ledger.json]
+
+    - id: p-security-gate
+      kind: proof
+      layer: L1
+      label: Image vulnerability security gate
+      owner: verifier
+      status: blocked
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: Trivy image reports contain HIGH/CRITICAL findings for the pinned postgres, s3mock and oidc images; no exception was approved.
+        evidence_refs: [.loop/evidence/t008-runtime-verification.json]
 
   edges:
     - {id: e-main-ready, from: x-main-readback, to: t-t008-ready, type: enables, required: true, confidence: 1.0, token_capacity: 4000}
@@ -143,7 +155,8 @@ graph:
     - {id: e-implementation-static, from: a-implement-t008, to: p-static-proof, type: verifies, required: true, confidence: 0.99, token_capacity: 6000}
     - {id: e-implementation-runtime, from: a-implement-t008, to: p-ci-runtime-proof, type: verifies, required: true, confidence: 0.9, token_capacity: 9000}
     - {id: e-static-runtime, from: p-static-proof, to: p-ci-runtime-proof, type: enables, required: true, confidence: 0.95, token_capacity: 4000}
-    - {id: e-runtime-gate, from: p-ci-runtime-proof, to: g-t008-review, type: requires_approval, required: true, confidence: 1.0, token_capacity: 5000}
+    - {id: e-ci-security, from: p-ci-runtime-proof, to: p-security-gate, type: verifies, required: true, confidence: 1.0, token_capacity: 5000}
+    - {id: e-runtime-gate, from: p-security-gate, to: g-t008-review, type: requires_approval, required: true, confidence: 1.0, token_capacity: 5000}
     - {id: e-gate-terminal, from: g-t008-review, to: s-terminal-policy, type: approves, required: true, confidence: 1.0, token_capacity: 3000}
 
 flow:
