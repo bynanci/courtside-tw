@@ -37,8 +37,8 @@ tasks.withType<Checkstyle>().configureEach {
 }
 
 spotbugs {
-    effort = "max"
-    reportLevel = "low"
+    effort.set(com.github.spotbugs.snom.Effort.MAX)
+    reportLevel.set(com.github.spotbugs.snom.Confidence.LOW)
     excludeFilter = file("$projectDir/config/spotbugs/exclude.xml")
     ignoreFailures = false
 }
