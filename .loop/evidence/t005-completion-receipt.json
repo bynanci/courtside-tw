@@ -1,0 +1,60 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t005-completion-20260807",
+  "generated_at": "2026-08-07T02:39:40Z",
+  "actor": "codex-supervisor",
+  "subject": "T005 completion after canonical implementation merge and main read-back",
+  "repository": "bynanci/courtside-tw",
+  "authorization": {
+    "claim_status": "CONFIRMED",
+    "instruction": "T005 checkbox 幫我勾選，在開始T004以前先執行 product/architecture alignment",
+    "approved_by": "Mark",
+    "approval_scope": "Mark T005 complete after PR #10 merge/read-back; do not dispatch T004 in this completion slice"
+  },
+  "canonical_source": {
+    "pull_request": 10,
+    "url": "https://github.com/bynanci/courtside-tw/pull/10",
+    "merge_commit": "07e9d25c6f28d7bcdb2bde902a5315a25dddfe52",
+    "implementation_paths": [
+      "apps/api/build.gradle.kts",
+      "apps/api/settings.gradle.kts",
+      "apps/api/src/main/java/tw/basketball/magazine/MagazineApplication.java",
+      "apps/api/src/main/resources/application.yml"
+    ]
+  },
+  "proof": [
+    {
+      "claim": "T005 Java 21/Spring Boot 4.1 source scope is complete",
+      "result": "PASS",
+      "evidence_ref": ".loop/evidence/t005-implementation-proof.json"
+    },
+    {
+      "claim": "api and worker profiles boot",
+      "result": "PASS",
+      "evidence_ref": ".loop/evidence/t005-implementation-proof.json"
+    },
+    {
+      "claim": "canonical implementation was reviewed, merged and read back from main",
+      "result": "PASS",
+      "evidence_ref": ".loop/evidence/t005-merge-main-readback.json"
+    },
+    {
+      "claim": "T005 task checkbox is checked in this completion slice",
+      "result": "PASS",
+      "path": "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+    }
+  ],
+  "scope_guard": {
+    "T004_started": false,
+    "T006_or_later_started": false,
+    "product_alignment_started": false,
+    "database_or_migrations_changed": false,
+    "providers_or_credentials_changed": false,
+    "external_web3_writes": false,
+    "production_deployment": false
+  },
+  "decision": "T005_COMPLETE",
+  "result": "pass",
+  "confidence": 0.99,
+  "next_gate": "Create and merge the separate spec-only Courtside product/domain/passport alignment slice before dispatching T004."
+}
