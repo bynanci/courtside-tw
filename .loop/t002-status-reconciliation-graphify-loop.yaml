@@ -270,12 +270,12 @@ graph:
       layer: L1
       label: Durable T002 task-state memory
       owner: codex-agent
-      status: needs_human
+      status: done
       risk: medium
       confidence:
-        score: 0.95
-        basis: Candidate semantic record is validated locally; canonical repository write receipt is pending branch commit read-back.
-        evidence_refs: [.loop/memory/t002-status-reconciliation.json, .loop/t002-status-reconciliation-ledger.json]
+        score: 0.97
+        basis: Work Memory v1 record was committed to the dedicated branch and fetched back with a repository receipt; only protected merge and final main read-back remain pending.
+        evidence_refs: [.loop/memory/t002-status-reconciliation.json, .loop/evidence/t002-status-reconciliation-remote-write.json, .loop/t002-status-reconciliation-ledger.json]
       budget:
         effort_hours: 0.15
         tokens: 1800
