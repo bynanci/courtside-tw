@@ -87,7 +87,7 @@ graph:
       confidence:
         score: 1.0
         basis: PR #31 main read-back confirms Phase 1 gate PASS and T009 is the next unchecked task.
-        evidence_refs: [PR #31, .loop/evidence/phase1-review-20260807.json]
+        evidence_refs: ["PR #31", .loop/evidence/phase1-review-20260807.json]
       budget:
         effort_hours: 0.2
         tokens: 1500
@@ -124,7 +124,7 @@ graph:
       confidence:
         score: 0.95
         basis: Repository memory record was corrected to satisfy work-memory/v1 source reference requirements.
-        evidence_refs: [.loop/memory/phase1-review.json, PR #31]
+        evidence_refs: [.loop/memory/phase1-review.json, "PR #31"]
       budget:
         effort_hours: 0.1
         tokens: 1200
