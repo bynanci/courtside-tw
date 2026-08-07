@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: courtside-tw-api
+
+---
+spring:
+  config:
+    activate:
+      on-profile: api
+  main:
+    web-application-type: servlet
+  application:
+    name: courtside-tw-api
+
+server:
+  port: ${SERVER_PORT:8080}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: worker
+  main:
+    web-application-type: none
+  application:
+    name: courtside-tw-worker
