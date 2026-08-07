@@ -1,18 +1,18 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t006",
-  "graph_version": 7,
+  "graph_version": 8,
   "run_id": "courtside-tw-t006-quality-baseline-20260807",
   "status": "needs_human",
   "iteration": 4,
   "started_at": "2026-08-07T05:08:32Z",
-  "updated_at": "2026-08-07T06:20:00Z",
+  "updated_at": "2026-08-07T06:21:00Z",
   "current_frontier": [
     "g-t006-merge"
   ],
   "blocked_nodes": [],
   "terminal_state": "needs_human",
-  "next_action": "Merge PR #20 with an expected-head guard, then perform the separate T006 completion and main read-back gate without dispatching T007.",
+  "next_action": "Merge PR #20 with expected head after final evidence publication, then perform the separate T006 completion and main read-back gate.",
   "events": [
     {
       "event_id": "evt-t006-quality-baseline-001-graph-initialized",
@@ -440,10 +440,48 @@
         "total": 3500
       },
       "terminal_reason": "Scope, Node, Java and Graphify proofs are complete; expected-head merge is the next controlled action."
+    },
+    {
+      "event_id": "evt-t006-quality-baseline-008-final-graph-validation",
+      "at": "2026-08-07T06:21:00Z",
+      "actor": "codex-supervisor",
+      "type": "graph_validation",
+      "base_graph_version": 7,
+      "new_graph_version": 8,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": ".loop/evidence/t006-graph-validation-v3.json",
+            "after": "Final strict Graphify validation: 15 nodes, 21 edges, 0 warnings and 0 errors."
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t006-graph-validation-v3.json",
+        ".loop/evidence/t006-review-proof.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "final strict graph validation",
+          "level": "P2",
+          "result": "pass",
+          "details": "The final graph remains strict-valid with complete action proof coverage and only the explicit merge and terminal policy gates open."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Final graph proof is complete; proceed with expected-head merge and then the separately evidenced T006 checkbox completion and main read-back.",
+      "token_usage": {
+        "estimated": 1800,
+        "input": 0,
+        "output": 0,
+        "total": 1800
+      },
+      "terminal_reason": "All implementation, Node, Java, Graphify and current-head review receipts are present; merge and post-merge completion remain gated."
     }
   ],
   "proof": {
-    "claim": "T006 shared quality configuration and deterministic Node and Java Gradle enforcement are implemented, current-head review passed, and only merge plus separate checkbox completion/read-back remain.",
+    "claim": "T006 shared quality configuration and deterministic Node and Java Gradle enforcement are implemented, final Graphify validation and current-head review passed, and only merge plus separate checkbox completion/read-back remain.",
     "result": "needs_human",
     "confidence": 0.99
   }
