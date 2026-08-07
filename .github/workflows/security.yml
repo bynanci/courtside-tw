@@ -1,0 +1,230 @@
+name: Security
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+  schedule:
+    - cron: '17 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: security-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: 24.14.0
+  PNPM_VERSION: 11.7.0
+  GRADLE_VERSION: 8.14.3
+
+jobs:
+  dependency-audit:
+    name: Dependency audit and reports
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up pnpm and Node.js
+        uses: pnpm/setup@5d160c5bc68a09337ad0d5654e237e03253b5879 # v1
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          runtime: node@${{ env.NODE_VERSION }}
+          cache: true
+          cache-dependency-path: pnpm-lock.yaml
+          install: false
+
+      - name: Install JavaScript dependencies
+        run: |
+          set -o pipefail
+          mkdir -p artifacts/dependency-audit
+          pnpm install --frozen-lockfile --ignore-scripts 2>&1 | tee artifacts/dependency-audit/pnpm-install.log
+
+      - name: Set up Java
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+          cache-dependency-path: |
+            apps/api/**/*.gradle*
+            apps/api/gradle.properties
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@748248ddd2a24f49513d8f472f81c3a07d4d50e1 # v4.4.4
+        with:
+          gradle-version: ${{ env.GRADLE_VERSION }}
+
+      - name: Audit pnpm dependencies
+        id: pnpm-audit
+        continue-on-error: true
+        run: |
+          mkdir -p artifacts/dependency-audit
+          set +e
+          pnpm audit --audit-level=high --json > artifacts/dependency-audit/pnpm-audit.json 2>&1
+          status=$?
+          cat artifacts/dependency-audit/pnpm-audit.json
+          echo "exit_code=$status" >> "$GITHUB_OUTPUT"
+          exit "$status"
+
+      - name: Resolve Gradle runtime dependency report
+        run: |
+          set -o pipefail
+          gradle --no-daemon --console=plain -p apps/api dependencies --configuration runtimeClasspath 2>&1 | tee artifacts/dependency-audit/gradle-runtime-classpath.log
+
+      - name: Enforce dependency audit result
+        if: ${{ always() }}
+        run: |
+          if [ "${{ steps.pnpm-audit.outcome }}" != "success" ]; then
+            echo "pnpm audit reported high or critical findings"
+            exit 1
+          fi
+
+      - name: Upload dependency reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: security-dependency-reports
+          path: artifacts/dependency-audit
+          if-no-files-found: warn
+          retention-days: 14
+
+  codeql:
+    name: CodeQL (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - language: javascript-typescript
+            build-mode: none
+          - language: java-kotlin
+            build-mode: manual
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@60c9c77c33f2cd66390a3778d54de88b735b2526 # v3.28.10
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+
+      - name: Set up Java
+        if: ${{ matrix.language == 'java-kotlin' }}
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Set up Gradle
+        if: ${{ matrix.language == 'java-kotlin' }}
+        uses: gradle/actions/setup-gradle@748248ddd2a24f49513d8f472f81c3a07d4d50e1 # v4.4.4
+        with:
+          gradle-version: ${{ env.GRADLE_VERSION }}
+
+      - name: Build Java for CodeQL tracing
+        if: ${{ matrix.language == 'java-kotlin' }}
+        run: gradle --no-daemon --console=plain -p apps/api compileJava
+
+      - name: Analyze with CodeQL
+        uses: github/codeql-action/analyze@60c9c77c33f2cd66390a3778d54de88b735b2526 # v3.28.10
+        with:
+          category: /language:${{ matrix.language }}
+          output: ${{ github.workspace }}/artifacts/codeql/${{ matrix.language }}
+          upload: never
+
+      - name: Upload CodeQL reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: security-codeql-${{ matrix.language }}
+          path: artifacts/codeql/${{ matrix.language }}
+          if-no-files-found: warn
+          retention-days: 14
+
+  trivy:
+    name: Trivy (${{ matrix.name }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: filesystem
+            scan-type: fs
+            scan-ref: .
+            output: artifacts/trivy-filesystem.sarif
+          - name: postgres
+            scan-type: image
+            image-ref: postgres:18.4-alpine3.24
+            output: artifacts/trivy-postgres.sarif
+          - name: s3mock
+            scan-type: image
+            image-ref: adobe/s3mock:5.1.0
+            output: artifacts/trivy-s3mock.sarif
+          - name: oidc
+            scan-type: image
+            image-ref: ghcr.io/navikt/mock-oauth2-server:5.0.2
+            output: artifacts/trivy-oidc.sarif
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - name: Scan filesystem for vulnerabilities, secrets and misconfiguration
+        if: ${{ matrix.scan-type == 'fs' }}
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
+        with:
+          scan-type: ${{ matrix.scan-type }}
+          scan-ref: ${{ matrix.scan-ref }}
+          scanners: vuln,secret,misconfig
+          format: sarif
+          output: ${{ matrix.output }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+          cache: true
+
+      - name: Scan Compose container image
+        if: ${{ matrix.scan-type == 'image' }}
+        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0
+        with:
+          scan-type: ${{ matrix.scan-type }}
+          image-ref: ${{ matrix.image-ref }}
+          scanners: vuln
+          format: sarif
+          output: ${{ matrix.output }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: '1'
+          cache: true
+
+      - name: Upload Trivy report
+        if: ${{ always() }}
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: security-trivy-${{ matrix.name }}
+          path: ${{ matrix.output }}
+          if-no-files-found: warn
+          retention-days: 14
