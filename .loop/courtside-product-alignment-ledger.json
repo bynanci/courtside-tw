@@ -1,12 +1,12 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-product-domain-passport-alignment",
-  "graph_version": 1,
+  "graph_version": 2,
   "run_id": "courtside-tw-alignment-20260807",
   "status": "success",
   "iteration": 1,
   "started_at": "2026-08-07T02:40:00Z",
-  "updated_at": "2026-08-07T02:40:00Z",
+  "updated_at": "2026-08-07T03:12:00Z",
   "current_frontier": [
     "s-terminal"
   ],
@@ -156,6 +156,64 @@
         "total": 8000
       },
       "terminal_reason": "The graph is ready for deterministic validation and human merge review."
+    },
+    {
+      "event_id": "evt-courtside-alignment-004-merged-readback",
+      "at": "2026-08-07T03:12:00Z",
+      "actor": "codex-supervisor",
+      "type": "alignment_pr_merged_and_main_readback",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/g-merge-review/status",
+            "before": "done",
+            "after": "done"
+          },
+          {
+            "op": "add",
+            "path": "external.github.pull_request/12",
+            "after": "Alignment PR #12 passed scope review and squash-merged at fa0ed10b9c4c8c03f37bee810c1a8605f9aa9682."
+          },
+          {
+            "op": "add",
+            "path": "main.readback",
+            "after": "T005 and T097 are checked; T004 remains unchecked; no runtime files entered the alignment PR."
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/courtside-product-alignment-review.json",
+        ".loop/evidence/courtside-product-alignment-main-readback.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "strict graph validation",
+          "result": "pass",
+          "details": "17 nodes / 25 edges / 0 warnings / 0 errors."
+        },
+        {
+          "proof": "PR scope and merge",
+          "result": "pass",
+          "details": "PR #12 changed 19 allowlisted paths only and was squash-merged with expected head f01d86261c1cac79dcf36191c5452e00d809f69b."
+        },
+        {
+          "proof": "main read-back",
+          "result": "pass",
+          "details": "main at fa0ed10b9c4c8c03f37bee810c1a8605f9aa9682 contains T005/T097 checked, T004 unchecked, ADR-0007/0008 proposed and no runtime implementation."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "PASS_WITH_CONTROLS: complete the spec-only alignment; recommend T004 only as the next ticket and do not dispatch it here.",
+      "token_usage": {
+        "estimated": 5000,
+        "input": 0,
+        "output": 0,
+        "total": 5000
+      },
+      "terminal_reason": "Alignment merge and main read-back are complete; T004 remains a separate future dispatch gate."
     }
   ]
 }
