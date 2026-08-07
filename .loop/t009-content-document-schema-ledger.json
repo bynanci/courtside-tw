@@ -1,18 +1,18 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t009",
-  "graph_version": 10,
+  "graph_version": 11,
   "run_id": "courtside-tw-t009-content-document-schema-20260807",
-  "status": "needs_human",
+  "status": "completed",
   "iteration": 10,
   "started_at": "2026-08-07T10:50:00Z",
-  "updated_at": "2026-08-07T14:21:00Z",
+  "updated_at": "2026-08-07T14:36:00Z",
   "current_frontier": [
-    "g-t009-review-merge"
+    "s-t009-terminal"
   ],
   "blocked_nodes": [],
-  "terminal_state": "needs_human",
-  "next_action": "T009 schema proof, CI/Security run #65 and all review threads pass. Use the user's explicit merge authority with expected-head protection, then read back main and keep T009 unchecked until that read-back confirms the canonical schema.",
+  "terminal_state": "success",
+  "next_action": "T009 is complete on main after implementation merge and authoritative read-back; keep T010 and T011 independently gated.",
   "events": [
     {
       "event_id": "evt-t009-001-dispatched",
@@ -825,6 +825,94 @@
       },
       "decision": "PASS_WITH_HUMAN_MERGE_GATE",
       "follow_up": "Use expected-head merge authority now; after merge, read back main before marking T009 checked."
+    },
+    {
+      "event_id": "evt-t009-011-main-readback-complete",
+      "at": "2026-08-07T14:36:00Z",
+      "actor": "codex-supervisor",
+      "type": "t009_main_readback_complete",
+      "base_graph_version": 10,
+      "new_graph_version": 11,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [
+              "g-t009-review-merge"
+            ],
+            "after": [
+              "s-t009-terminal"
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes.g-t009-review-merge.status",
+            "before": "ready",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes.s-t009-terminal.status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T009",
+            "before": "unchecked",
+            "after": "checked"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t009-main-readback-20260807.json",
+        "PR #32",
+        "main@6387a2fe292fe805fdc37ded42d2c301d1e5cc40"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "implementation merge",
+          "level": "P3",
+          "result": "pass",
+          "details": "PR #32 squash-merged at main@6387a2f after the T009 PASS WITH FOLLOW-UP gate."
+        },
+        {
+          "proof": "canonical main read-back",
+          "level": "P3",
+          "result": "pass",
+          "details": "Schema, valid fixture, 23 invalid fixtures and locked validator are present on main; the valid fixture has 11 block types and UUIDv7 document ID."
+        },
+        {
+          "proof": "task-state completion",
+          "level": "P3",
+          "result": "pass",
+          "details": "T009 checkbox is checked in the post-merge read-back branch after the main read-back target passed."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:t009-content-document-schema",
+        "version": 9,
+        "retrieval_ids": [
+          "wm:project:courtside-tw:phase1-review",
+          "wm:project:courtside-tw:t008-ci-pipelines"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t009-main-readback-20260807.json",
+          ".loop/memory/t009-content-document-schema.json"
+        ],
+        "next_review_at": "2026-08-14",
+        "blocker": null
+      },
+      "failure_signature": null,
+      "token_usage": {
+        "estimated_tokens": 900,
+        "validator_runtime_seconds": 0,
+        "notes": "Post-merge main contents read-back and task-state completion only."
+      },
+      "decision": "COMPLETE",
+      "follow_up": "T010 and T011 remain separate tasks; T011 may now resolve its T009 canonical-schema dependency."
     }
   ],
   "proof": [
@@ -890,22 +978,28 @@
       "result": "pass",
       "evidence_ref": ".loop/evidence/t009-ci-security-20260807.json",
       "recorded_at": "2026-08-07T14:21:00Z"
+    },
+    {
+      "proof_id": "t009-main-readback-20260807",
+      "level": "P3",
+      "result": "pass",
+      "evidence_ref": ".loop/evidence/t009-main-readback-20260807.json",
+      "recorded_at": "2026-08-07T14:36:00Z"
     }
   ],
   "memory_receipt": {
     "memory_status": "UPDATED",
     "memory_id": "wm:project:courtside-tw:t009-content-document-schema",
-    "version": 8,
+    "version": 9,
     "retrieval_ids": [
       "wm:project:courtside-tw:phase1-review",
       "wm:project:courtside-tw:t008-ci-pipelines"
     ],
     "evidence_refs": [
-      ".loop/evidence/t009-schema-proof.json#latest_revalidation",
-      ".loop/evidence/t009-ci-security-20260807.json",
+      ".loop/evidence/t009-main-readback-20260807.json",
       ".loop/memory/t009-content-document-schema.json"
     ],
-    "next_review_at": "2026-08-08",
-    "blocker": "explicit human merge and main read-back"
+    "next_review_at": "2026-08-14",
+    "blocker": null
   }
 }
