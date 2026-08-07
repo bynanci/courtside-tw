@@ -1,7 +1,7 @@
 {
   "schema_version": "courtside-tw-loop-evidence/v1",
   "evidence_id": "t009-dispatch-20260807",
-  "generated_at": "2026-08-07T11:20:00Z",
+  "generated_at": "2026-08-07T10:51:00Z",
   "actor": "codex-supervisor",
   "subject": "T009 ContentDocument v1 schema dispatch",
   "repository": "bynanci/courtside-tw",
@@ -69,5 +69,10 @@
     ]
   },
   "result": "DISPATCHED",
-  "next_action": "Implement the schema and fixtures, then run independent static and negative validation before review."
+  "next_action": "Implement the schema and fixtures, then run independent static and negative validation before review.",
+  "timeline": {
+    "started_at": "2026-08-07T10:50:00Z",
+    "dispatch_at": "2026-08-07T10:51:00Z",
+    "note": "Timestamp corrected to preserve monotonic dispatch/implementation/proof ledger ordering."
+  }
 }
