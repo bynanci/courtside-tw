@@ -1,0 +1,21 @@
+{
+  "evidence_type": "main_readback",
+  "status": "pending_merge",
+  "as_of": "2026-08-07T02:40:00Z",
+  "repository": "bynanci/courtside-tw",
+  "branch": "main",
+  "main_commit_before_alignment": "686a7e3aa38dccac687291ab65f90bdcf81f27da",
+  "alignment_pr": null,
+  "main_commit_after_alignment": null,
+  "readback_assertions": {
+    "t005_checked": true,
+    "t004_checked": false,
+    "adr_0007_present": true,
+    "adr_0007_status": "PROPOSED",
+    "adr_0008_present": true,
+    "adr_0008_status": "PROPOSED",
+    "no_runtime_files_in_alignment_pr": null,
+    "strict_graph_valid": null
+  },
+  "next_action": "Finalize this receipt after the alignment PR is merged; do not dispatch T004 in the same operation."
+}
