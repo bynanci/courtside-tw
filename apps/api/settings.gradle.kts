@@ -9,9 +9,6 @@ pluginManagement {
             if (requested.id.id == "org.springframework.boot") {
                 useModule("org.springframework.boot:spring-boot-gradle-plugin:${requested.version}")
             }
-            if (requested.id.id == "io.spring.dependency-management") {
-                useModule("io.spring.gradle:dependency-management-plugin:${requested.version}")
-            }
         }
     }
 }
