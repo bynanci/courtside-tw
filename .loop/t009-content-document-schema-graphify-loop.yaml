@@ -35,6 +35,8 @@ acceptance:
   - video remains a rights-pending sentinel until ADR-0003 publisher/rights-owner approval; no external provider is authorized
   - paletteId is an enum for the approved court-pulse-v1 palette
   - duplicate blocks[*].id is rejected by the declared semantic uniqueness invariant
+  - required human-readable strings reject whitespace-only values
+  - HTTPS links require a non-empty host
   - schema is closed-world at document, block and payload boundaries
   - T009 remains unchecked until implementation proof and main read-back
 
@@ -220,7 +222,7 @@ graph:
         tokens: 5000
       config:
         level: P2
-        claim: Seventeen schema-invalid fixtures and the duplicate-ID semantic invariant are rejected without weakening the contract.
+        claim: Nineteen schema-invalid fixtures and the duplicate-ID semantic invariant are rejected without weakening the contract.
         method: Independent Ajv validator with per-fixture receipts plus a structural uniqueness assertion.
         evidence_path: .loop/evidence/t009-schema-proof.json
         required: true
@@ -235,7 +237,7 @@ graph:
       risk: critical
       confidence:
         score: 0.85
-        basis: Required schema and negative-fixture proof passed; merge still requires current-head review and explicit user authority.
+        basis: Latest Ajv and focused boundary proof passed; merge still requires current-head review and explicit user authority.
         evidence_refs: [.loop/evidence/t009-schema-proof.json]
       budget:
         effort_hours: 0.5
