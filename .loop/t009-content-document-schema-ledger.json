@@ -1,18 +1,18 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t009",
-  "graph_version": 2,
+  "graph_version": 3,
   "run_id": "courtside-tw-t009-content-document-schema-20260807",
   "status": "needs_human",
-  "iteration": 2,
+  "iteration": 3,
   "started_at": "2026-08-07T11:20:00Z",
-  "updated_at": "2026-08-07T10:56:31Z",
+  "updated_at": "2026-08-07T11:01:00Z",
   "current_frontier": [
     "g-t009-review-merge"
   ],
   "blocked_nodes": [],
   "terminal_state": "needs_human",
-  "next_action": "Open the T009 review PR, inspect the current-head diff and checks, then await explicit merge authority; keep T009 unchecked.",
+  "next_action": "Await CI and Security for the formatting-follow-up head, then inspect the current-head review gate; keep T009 unchecked.",
   "events": [
     {
       "event_id": "evt-t009-001-dispatched",
@@ -191,6 +191,73 @@
       },
       "decision": "PASS WITH FOLLOW-UP",
       "follow_up": "Open and review the T009 PR; do not merge or mark T009 checked until the current-head gate and main read-back pass."
+    },
+    {
+      "event_id": "evt-t009-003-format-repair",
+      "at": "2026-08-07T11:01:00Z",
+      "actor": "codex-supervisor",
+      "type": "ci_format_failure_repaired",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "proof_receipts/-",
+            "after": ".loop/evidence/t009-schema-proof.json#post_format_revalidation"
+          },
+          {
+            "op": "replace",
+            "path": "graph.ready_frontier",
+            "before": [
+              "g-t009-review-merge"
+            ],
+            "after": [
+              "g-t009-review-merge"
+            ]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t009-schema-proof.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "CI format check",
+          "level": "P2",
+          "result": "pass",
+          "details": "Prettier 3.9.6 check passes for the complete valid fixture after formatting-only repair."
+        },
+        {
+          "proof": "strict schema recheck",
+          "level": "P2",
+          "result": "pass",
+          "details": "Ajv2020 strict compile still accepts the valid fixture and rejects all five invalid fixtures."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UNCHANGED",
+        "memory_id": "wm:project:courtside-tw:t009-content-document-schema",
+        "version": 2,
+        "evidence_refs": [
+          ".loop/evidence/t009-schema-proof.json#post_format_revalidation"
+        ],
+        "blocker": null
+      },
+      "failure_signature": {
+        "code": "CI_FORMAT_CHECK",
+        "message": "Frontend and contract verification rejected the complete valid fixture because it was not formatted with Prettier.",
+        "resolution": "Applied Prettier formatting to the fixture only; local Prettier check and strict Ajv recheck pass.",
+        "status": "resolved",
+        "observed_iteration": 3
+      },
+      "token_usage": {
+        "estimated_tokens": 2600,
+        "validator_runtime_seconds": 1.8,
+        "notes": "Formatting-only remediation and local revalidation; no scope expansion."
+      },
+      "decision": "PASS WITH FOLLOW-UP",
+      "follow_up": "Wait for CI/Security on the new head, then complete current-head code review and retain the explicit merge gate."
     }
   ],
   "proof": [
@@ -200,6 +267,13 @@
       "result": "pass",
       "evidence_ref": ".loop/evidence/t009-schema-proof.json",
       "recorded_at": "2026-08-07T10:56:31Z"
+    },
+    {
+      "proof_id": "t009-format-follow-up-20260807",
+      "level": "P2",
+      "result": "pass",
+      "evidence_ref": ".loop/evidence/t009-schema-proof.json#post_format_revalidation",
+      "recorded_at": "2026-08-07T11:01:00Z"
     }
   ],
   "memory_receipt": {
