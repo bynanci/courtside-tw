@@ -201,7 +201,7 @@ graph:
       layer: L1
       label: Approved T005 Java/Spring baseline is ready
       owner: codex-agent
-      status: ready
+      status: done
       risk: medium
       confidence:
         score: 0.99
@@ -220,12 +220,12 @@ graph:
       layer: L1
       label: Implement four T005 Java/Spring bootstrap files
       owner: codex-agent
-      status: ready
+      status: done
       risk: medium
       confidence:
-        score: 0.88
-        basis: The branch and proof contract are dispatched; implementation has not started in this dispatch-only iteration.
-        evidence_refs: [.loop/evidence/t005-dispatch.json]
+        score: 0.98
+        basis: The four scoped implementation files pass inventory, static contracts, Gradle clean build and both bounded profile boot checks; repository policy was corrected before proof completion.
+        evidence_refs: [.loop/evidence/t005-dispatch.json, .loop/evidence/t005-implementation-proof.json]
       budget:
         effort_hours: 1.5
         tokens: 16000
@@ -240,12 +240,12 @@ graph:
       layer: L1
       label: T005 api/worker profile boot proof
       owner: verifier
-      status: planned
+      status: done
       risk: medium
       confidence:
-        score: 0.0
-        basis: Profile boot commands are pending implementation on the dispatched branch.
-        evidence_refs: []
+        score: 0.98
+        basis: Gradle 8.14 clean build passed against a temporary Maven mirror and both api and worker bootRun processes started successfully from the exact four-file source set.
+        evidence_refs: [.loop/evidence/t005-implementation-proof.json]
       budget:
         effort_hours: 0.5
         tokens: 7000
@@ -253,7 +253,7 @@ graph:
         level: P2
         claim: Both api and worker Spring profiles start successfully from a clean T005 checkout without later-task dependencies or secrets.
         method: Run the pinned Gradle test/build contract and start each profile with bounded local settings; inspect changed files and shutdown cleanly.
-        evidence_path: .loop/evidence/t005-profile-boot.json
+        evidence_path: .loop/evidence/t005-implementation-proof.json
         required: true
         baseline_required: true
 
@@ -262,12 +262,12 @@ graph:
       layer: L1
       label: T005 execution ledger
       owner: codex-agent
-      status: planned
+      status: done
       risk: low
       confidence:
-        score: 0.0
-        basis: The implementation ledger will append implementation and profile-proof receipts after the action runs.
-        evidence_refs: []
+        score: 0.98
+        basis: The implementation fix and passing profile-proof receipts were appended without rewriting the dispatch history.
+        evidence_refs: [.loop/t005-spring-bootstrap-ledger.json, .loop/evidence/t005-implementation-proof.json]
       budget:
         effort_hours: 0.05
         tokens: 1000
@@ -282,12 +282,12 @@ graph:
       layer: L3
       label: T005 bootstrap review requested
       owner: human-mark
-      status: planned
+      status: done
       risk: high
       confidence:
-        score: 0.0
-        basis: Human review follows implementation and both profile boot proofs; it is not part of dispatch.
-        evidence_refs: []
+        score: 0.98
+        basis: Code Review and Merge Gate inspected the bounded patch and passing proof; Mark approved PR #8 for merge while keeping task completion separate.
+        evidence_refs: [.loop/evidence/t005-implementation-proof.json, .loop/evidence/t005-review-approval.json]
       budget:
         effort_hours: 0.0
         tokens: 0
@@ -301,12 +301,12 @@ graph:
       layer: L3
       label: Review T005 scope, profile proof and merge readiness
       owner: human-mark
-      status: needs_human
+      status: done
       risk: high
       confidence:
-        score: 0.0
-        basis: Human must inspect the implementation patch and profile proof before merge or task completion.
-        evidence_refs: []
+        score: 0.98
+        basis: The bounded implementation, passing build/profile receipts and PR read-back were reviewed; merge approval was explicitly recorded.
+        evidence_refs: [.loop/evidence/t005-implementation-proof.json, .loop/evidence/t005-review-approval.json]
       budget:
         effort_hours: 0.25
         tokens: 3500
@@ -321,12 +321,12 @@ graph:
       layer: L3
       label: Explicit T005 review and merge approval
       owner: human-mark
-      status: needs_human
+      status: done
       risk: critical
       confidence:
-        score: 0.0
-        basis: No T005 implementation approval exists in this dispatch receipt.
-        evidence_refs: []
+        score: 0.98
+        basis: Mark explicitly approved PR #8 for merge after the passing Code Review and Merge Gate; task checkbox completion remains separate.
+        evidence_refs: [.loop/evidence/t005-review-approval.json]
       budget:
         effort_hours: 0.25
         tokens: 2500
@@ -343,12 +343,12 @@ graph:
       layer: L3
       label: T005 scope, profile and merge approval gate
       owner: human-mark
-      status: needs_human
+      status: done
       risk: critical
       confidence:
-        score: 0.0
-        basis: T005 implementation and merge remain protected human decisions after the dispatch.
-        evidence_refs: []
+        score: 0.98
+        basis: Merge approval is recorded for PR #8; the remaining terminal action is the remote merge and main read-back.
+        evidence_refs: [.loop/evidence/t005-review-approval.json]
       budget:
         effort_hours: 0.0
         tokens: 0
@@ -362,12 +362,12 @@ graph:
       layer: L3
       label: T005 human decision ledger
       owner: human-mark
-      status: planned
+      status: done
       risk: low
       confidence:
-        score: 0.0
-        basis: The memory path is reserved for a future T005 review decision and remains empty until approval.
-        evidence_refs: []
+        score: 0.98
+        basis: The review decision and bounded follow-up are recorded before the remote merge.
+        evidence_refs: [.loop/evidence/t005-review-approval.json]
       budget:
         effort_hours: 0.05
         tokens: 800
@@ -387,7 +387,7 @@ graph:
       confidence:
         score: 0.9
         basis: Dispatch is complete and the next safe terminal states are implementation proof, bounded block, or human review; no completion is claimed.
-        evidence_refs: [.loop/t005-spring-bootstrap-ledger.json]
+        evidence_refs: [.loop/t005-spring-bootstrap-ledger.json, .loop/evidence/t005-review-approval.json]
       budget:
         effort_hours: 0.0
         tokens: 0
