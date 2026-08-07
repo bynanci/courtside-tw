@@ -1,0 +1,258 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-ticket-implementation-t006",
+  "graph_version": 3,
+  "run_id": "courtside-tw-t006-quality-baseline-20260807",
+  "status": "needs_human",
+  "iteration": 3,
+  "started_at": "2026-08-07T05:08:32Z",
+  "updated_at": "2026-08-07T05:08:32Z",
+  "current_frontier": [
+    "p-quality-verification",
+    "t-human-review"
+  ],
+  "blocked_nodes": [
+    "p-quality-verification"
+  ],
+  "terminal_state": "needs_human",
+  "next_action": "Publish the bounded branch and PR, then run the Java Checkstyle/SpotBugs tasks on a compatible Java 21/Gradle runner before any T006 merge or checkbox completion decision.",
+  "events": [
+    {
+      "event_id": "evt-t006-quality-baseline-001-graph-initialized",
+      "at": "2026-08-07T05:08:32Z",
+      "actor": "codex-supervisor",
+      "type": "graph_initialized",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": ".loop/t006-quality-baseline-graphify-loop.yaml",
+            "after": "Strict-valid T006 L2/L1/L3 graph with a bounded quality implementation frontier and protected merge gate."
+          },
+          {
+            "op": "add",
+            "path": ".loop/t006-quality-baseline-graphify-loop.mmd",
+            "after": "Rendered T006 graph view."
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t006-dispatch.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "strict graph validation",
+          "result": "pending",
+          "details": "Run the Graphify validator after the bounded evidence files are added."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Keep T006 as one implementation slice with independent proof and a human merge gate.",
+      "token_usage": {
+        "estimated": 6500,
+        "input": 0,
+        "output": 0,
+        "total": 6500
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-t006-quality-baseline-002-dispatched",
+      "at": "2026-08-07T05:08:32Z",
+      "actor": "codex-supervisor",
+      "type": "t006_dispatched",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "external.github.branch/ticket/t006-quality-baseline",
+            "after": "T006 branch is based on final main read-back commit a1afadb1ff45028627d5d84ad5a114aca85411e4."
+          },
+          {
+            "op": "add",
+            "path": ".loop/evidence/t006-dispatch.json",
+            "after": "Explicit dispatch receipt for exactly one bounded T006 quality-baseline slice."
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/t-t006-ready/status",
+            "before": "planned",
+            "after": "ready"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-quality-baseline/status",
+            "before": "planned",
+            "after": "ready"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [],
+            "after": [
+              "a-quality-baseline"
+            ]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t002-main-readback.json",
+        ".loop/evidence/t006-dispatch.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "authorization",
+          "level": "P3",
+          "result": "pass",
+          "details": "Current user direction explicitly requests merge, main read-back and T006 dispatch."
+        },
+        {
+          "proof": "base commit",
+          "level": "P2",
+          "result": "pass",
+          "details": "The T006 branch is isolated from final main read-back commit a1afadb1ff45028627d5d84ad5a114aca85411e4."
+        },
+        {
+          "proof": "scope containment",
+          "level": "P2",
+          "result": "pass",
+          "details": "The dispatch permits shared quality configuration and enforcement support only; T007, CI, databases, providers, credentials and Web3 writes are excluded."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Dispatch T006 only; do not dispatch T007 or mark T006 complete in the dispatch receipt.",
+      "token_usage": {
+        "estimated": 5000,
+        "input": 0,
+        "output": 0,
+        "total": 5000
+      },
+      "terminal_reason": "Dispatch proof is complete; implementation proof and the merge gate are the next bounded frontiers."
+    },
+    {
+      "event_id": "evt-t006-quality-baseline-003-implementation-proof",
+      "at": "2026-08-07T05:08:32Z",
+      "actor": "codex-agent",
+      "type": "implementation_and_proof_attempt",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "T006 implementation paths",
+            "after": "Shared Prettier, ESLint, strict TypeScript, Checkstyle and SpotBugs configuration plus bounded root enforcement support."
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/t-t006-ready/status",
+            "before": "ready",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-quality-baseline/status",
+            "before": "ready",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-quality-verification/status",
+            "before": "planned",
+            "after": "blocked"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [
+              "a-quality-baseline"
+            ],
+            "after": [
+              "p-quality-verification",
+              "t-human-review"
+            ]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t006-dispatch.json",
+        ".loop/evidence/t006-implementation-proof.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Node quality gates",
+          "level": "P2",
+          "result": "pass",
+          "details": "Frozen install, peer check, production audit, format-check, lint, typecheck, root verify, web build and SSR smoke passed."
+        },
+        {
+          "proof": "Java quality configuration",
+          "level": "P2",
+          "result": "pass",
+          "details": "Checkstyle and SpotBugs XML files parse and the Gradle build is configured to fail on quality errors."
+        },
+        {
+          "proof": "Java Gradle execution",
+          "level": "P2",
+          "result": "blocked",
+          "details": "The available runner could not resolve the pre-existing Spring Boot plugin and the isolated SpotBugs probe could not resolve its plugin marker; no Java task pass is claimed."
+        }
+      ],
+      "failure_signature": "java-gradle-quality-runner-unavailable",
+      "decision": "The bounded T006 implementation is ready for remote review, but merge is blocked until Java Checkstyle/SpotBugs tasks run on a compatible runner or a human records a bounded follow-up decision.",
+      "token_usage": {
+        "estimated": 11000,
+        "input": 0,
+        "output": 0,
+        "total": 11000
+      },
+      "terminal_reason": "Implementation and independent Node/static proof are complete; Java quality execution and human review remain open."
+    },
+    {
+      "event_id": "evt-t006-quality-baseline-004-graph-validation",
+      "at": "2026-08-07T05:08:32Z",
+      "actor": "codex-supervisor",
+      "type": "graph_validation",
+      "base_graph_version": 3,
+      "new_graph_version": 4,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": ".loop/evidence/t006-graph-validation.json",
+            "after": "Strict Graphify validation receipt: 15 nodes, 21 edges, 0 warnings and 0 errors."
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t006-graph-validation.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "strict graph validation",
+          "level": "P2",
+          "result": "pass",
+          "details": "The T006 graph is strict-valid with complete action proof coverage and the Java proof/merge min-cut preserved."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Graph validation passes; preserve the needs_human terminal state until Java quality execution and current-head review are complete.",
+      "token_usage": {
+        "estimated": 1800,
+        "input": 0,
+        "output": 0,
+        "total": 1800
+      },
+      "terminal_reason": "Strict graph proof is complete; remote publication and human merge gate remain open."
+    }
+  ],
+  "proof": {
+    "claim": "T006 shared quality configuration and deterministic Node enforcement are implemented within scope; Java Gradle quality execution remains a recorded blocker.",
+    "result": "needs_human",
+    "confidence": 0.9
+  }
+}
