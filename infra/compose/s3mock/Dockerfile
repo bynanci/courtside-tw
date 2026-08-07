@@ -18,6 +18,10 @@ WORKDIR /src
 
 RUN mvn -B -ntp -pl server -am -DskipTests -DskipDocker=true package
 
+# The final image keeps root so the Compose named volume can be initialized
+# by the local stub; the build stage still verifies non-root execution.
+USER nobody
+
 FROM alpine:3.24.1@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b AS staging_area
 
 RUN apk --no-cache add openjdk25-jdk openjdk25-jmods unzip
