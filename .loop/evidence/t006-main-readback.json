@@ -35,7 +35,10 @@
       ".loop/evidence/t006-completion-receipt.json",
       ".loop/t006-quality-baseline-graphify-loop.yaml",
       ".loop/t006-quality-baseline-ledger.json"
-    ]
+    ],
+    "readback_after_pr22_merge": "62bbf64b460072a88126fe845b528a22f8cf9f9d",
+    "t097_checked": true,
+    "t097_status": "completed prior alignment slice; not part of the T006/T007 frontier"
   },
   "merges": [
     {
@@ -53,12 +56,14 @@
   ],
   "verification": {
     "T006 task checkbox": "PASS — [x] on main",
-    "T007 and later": "PASS — remain unchecked and undispatched",
     "implementation merge": "PASS — PR #20",
     "completion merge": "PASS — PR #21",
     "strict Graphify": "PASS — 15 nodes / 21 edges / 0 warnings / 0 errors",
     "Java quality": "PASS — Java 21 / Gradle 8.14 checkstyleMain and spotbugsMain",
-    "status checks": "NOT_CONFIGURED — no GitHub status entries or workflow runs"
+    "status checks": "NOT_CONFIGURED — no GitHub status entries or workflow runs",
+    "T007": "PASS — unchecked and undispatched on main at the source read-back; it is the next eligible slice.",
+    "T097": "PASS — completed prior alignment slice; explicitly excluded from the T006 frontier.",
+    "scope_note": "This receipt verifies T007 specifically; it does not assert that every later ticket is unchecked."
   },
   "status_reconciliation": {
     "issue": "README.md still described T006 as not dispatched after the implementation and completion merges.",
@@ -75,5 +80,12 @@
   },
   "result": "success",
   "confidence": 1,
-  "next_action": "Stop T006. Do not dispatch T007 or later work from this read-back."
+  "next_action": "Stop T006. T007 is the next eligible slice, but dispatch follows the bounded evidence reconciliation merge and fresh main read-back.",
+  "reconciliation": {
+    "receipt": ".loop/evidence/t006-evidence-reconciliation.json",
+    "actual_pr20_head_receipt": ".loop/evidence/t006-merged-head-reconciliation.json",
+    "ledger_event": "evt-t006-quality-baseline-011-evidence-reconciliation",
+    "historical_source_readback": "9d97573a10f767c1d6fbe32eacbbb92579c9d1f4",
+    "post_pr22_main": "62bbf64b460072a88126fe845b528a22f8cf9f9d"
+  }
 }
