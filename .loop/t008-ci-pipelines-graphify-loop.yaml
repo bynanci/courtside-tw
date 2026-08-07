@@ -1,0 +1,167 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-ticket-implementation-t008
+objective: Add reproducible CI, security and dependency-update automation and use GitHub Actions to revalidate T007 runtime health.
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - .github/workflows/ci.yml
+    - .github/workflows/security.yml
+    - .github/dependabot.yml
+    - T008 evidence, ledger, graph and memory records
+  out:
+    - production credentials, deployments or release publishing
+    - database migrations or application feature code
+    - Web3 writes
+    - marking T008 checked before runtime evidence is read back
+
+policy:
+  human_gates:
+    - mark T008 checked
+    - merge T008
+    - waive a failed CI/security or Docker health proof
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+memory_workflow:
+  contract: work-memory/v1
+  control_ledger: Append Graphify deltas, proof receipts, blocker signatures and token usage every iteration.
+  semantic_memory: Capture only durable CI constraints and verified or explicitly unknown runtime facts.
+  retrieval:
+    levels: [index, timeline_relations, details]
+    max_index_results: 10
+    stop_on_sufficient_evidence: true
+  capture:
+    allowed_kinds: [constraint, fact, attempt, task_state, evidence]
+    requires_downstream_proof: true
+    requires_write_receipt: true
+  lifecycle: [seed, verified, stable, needs_update, disputed, archived]
+  failure_policy:
+    write_pending: blocked
+    stale_or_disputed: needs_human
+    redact_secrets: true
+
+graph:
+  entry_nodes: [x-main-readback, t-t008-ready]
+  terminal_nodes: [s-terminal-policy]
+  current_frontier: [p-ci-runtime-proof]
+  blocked_nodes: []
+  terminal_state: needs_human
+
+  nodes:
+    - id: x-main-readback
+      kind: external
+      layer: EXTERNAL
+      label: Authoritative post-T007 main read-back
+      owner: github-and-project-state
+      status: done
+      risk: medium
+      confidence:
+        score: 1.0
+        basis: Main contains merged T007 at ee21f9b and leaves T008 unchecked.
+        evidence_refs: [.loop/evidence/t008-dispatch.json]
+
+    - id: t-t008-ready
+      kind: trigger
+      layer: L2
+      label: T008 is the next authorized implementation slice
+      owner: codex-supervisor
+      status: done
+      risk: low
+      confidence:
+        score: 1.0
+        basis: The task contract and current direction authorize CI/security/Dependabot implementation after T007 main read-back.
+        evidence_refs: [specs/001-taiwan-basketball-magazine-ebook/tasks.md#T008]
+
+    - id: a-implement-t008
+      kind: action
+      layer: L1
+      label: Implement CI, security and Dependabot configuration
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        score: 0.92
+        basis: All three required files are present and use fixed action commit SHAs, least-privilege permissions and retained reports.
+        evidence_refs: [.loop/evidence/t008-static-proof.json]
+
+    - id: p-static-proof
+      kind: proof
+      layer: L1
+      label: Workflow/config static proof
+      owner: verifier
+      status: done
+      risk: medium
+      confidence:
+        score: 0.99
+        basis: YAML parse and deterministic workflow coverage checks pass.
+        evidence_refs: [.loop/evidence/t008-static-proof.json]
+
+    - id: p-ci-runtime-proof
+      kind: proof
+      layer: L1
+      label: GitHub Actions and Docker runtime proof
+      owner: verifier
+      status: ready
+      risk: high
+      confidence:
+        score: 0.5
+        basis: The PR has not yet run; no workflow conclusion or Docker health receipt is claimed.
+        evidence_refs: [.loop/evidence/t008-runtime-proof.json]
+
+    - id: g-t008-review
+      kind: gate
+      layer: L3
+      label: T008 review, checkbox and merge gate
+      owner: human-mark
+      status: needs_human
+      risk: critical
+      confidence:
+        score: 0.5
+        basis: T008 merge and checkbox decisions are intentionally deferred until runtime receipts are read back.
+        evidence_refs: [.loop/evidence/t008-runtime-proof.json]
+
+    - id: s-terminal-policy
+      kind: stop
+      layer: GLOBAL
+      label: T008 named terminal-state policy
+      owner: policy
+      status: needs_human
+      risk: critical
+      confidence:
+        score: 0.9
+        basis: Static proof passes but runtime proof is pending; T008 remains unchecked.
+        evidence_refs: [.loop/t008-ci-pipelines-ledger.json]
+
+  edges:
+    - {id: e-main-ready, from: x-main-readback, to: t-t008-ready, type: enables, required: true, confidence: 1.0, token_capacity: 4000}
+    - {id: e-ready-implementation, from: t-t008-ready, to: a-implement-t008, type: enables, required: true, confidence: 1.0, token_capacity: 10000}
+    - {id: e-implementation-static, from: a-implement-t008, to: p-static-proof, type: verifies, required: true, confidence: 0.99, token_capacity: 6000}
+    - {id: e-implementation-runtime, from: a-implement-t008, to: p-ci-runtime-proof, type: verifies, required: true, confidence: 0.9, token_capacity: 9000}
+    - {id: e-static-runtime, from: p-static-proof, to: p-ci-runtime-proof, type: enables, required: true, confidence: 0.95, token_capacity: 4000}
+    - {id: e-runtime-gate, from: p-ci-runtime-proof, to: g-t008-review, type: requires_approval, required: true, confidence: 1.0, token_capacity: 5000}
+    - {id: e-gate-terminal, from: g-t008-review, to: s-terminal-policy, type: approves, required: true, confidence: 1.0, token_capacity: 3000}
+
+flow:
+  source: t-t008-ready
+  sink: s-terminal-policy
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - memory_receipt
+  - next_action
