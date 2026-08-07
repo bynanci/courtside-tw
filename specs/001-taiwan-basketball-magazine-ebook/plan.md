@@ -48,7 +48,7 @@ MVP 採三個可獨立驗收的 P1 slice：
 
 ## Constitution Check
 
-目前工作區沒有正式 `constitution.md`。以下為本 feature 的 provisional gates；`tasks.md` 的第一個 blocking task 必須把它們落為專案 constitution，核准後才能進入功能實作。
+目前 `.specify/memory/constitution.md` 已正式存在，狀態為 `RATIFIED`、版本 `0.1.0`，並由 T001／PR #2 的明確核准與 main read-back 生效。T002 的 ADR-0001～0006 亦已由 PR #4 合併並標記為 `ACCEPTED`；其 approval gate 與 rights-owner／provider 等尚未具體化的內容，仍是後續 production publish 的明確前置條件，不是可被程式碼默認的例外。
 
 | Gate | Rule | Status |
 | --- | --- | --- |
@@ -64,7 +64,7 @@ MVP 採三個可獨立驗收的 P1 slice：
 | Operational recovery | 冪等 worker、可觀測性、RPO 24h／RTO 4h 與還原演練必須在 GA 前驗證 | PASS |
 | Simplicity budget | MVP 不引入 message broker、專用搜尋叢集、microservices 或付費系統 | PASS |
 
-**Gate result**: `PASS WITH BLOCKING ACTION`。T001 constitution 與 T002 ADR approval 完成後，才可開始 T009 之後的 implementation tasks。
+**Gate result**: `PASS`. T001 constitution 與 T002 ADR approval 已完成；Phase 1（T001–T008）可進入 Phase 2，但每個後續 contract／implementation task 仍必須逐項通過其自己的 evidence-backed gate。
 
 ## Architecture
 
@@ -694,17 +694,16 @@ P2D 必須依賴 identity foundation、immutable publication 與 rights／audit 
 
 禁止將以下大 ticket 加入 backlog：`Implement Basketball`、`Implement Web3`、`Build Passport`。每一個 future task 必須只有一個可驗證 contract／boundary，且明確列出 source、rights、privacy 與 fallback evidence。
 
-## Decisions Required Before Implementation
+## Decisions Still Required Before Production Publish or Optional Features
 
-T001–T002 的治理與 ADR 應在兩個工作日內定稿，否則停止功能實作：
+T001–T002 的治理與 ADR 已完成；以下決策仍是對應 production publish、P1 runtime 或 P2 optional feature 的明確前置條件：
 
-1. 核准 provisional constitution 與 release gates。
-2. 選定 OIDC provider、email provider 與 production hosting；保留 contract，不把 provider SDK 滲入 domain。
-3. 定義首期實際內容樣本、最多 11 種 block、圖片上限與允許 video providers；第 11 種固定為受限 `generative-canvas`。
-4. 確認品牌名稱、合法字體／媒體素材與至少一位 `PUBLISHER` content owner。
-5. 確認 P1 全部免費；若不是，退回 spec 先補 entitlement/commerce，而不是直接開始開發。
-6. 核准 3–5 組 motion patterns、首個 p5 preset、poster 產生流程、reduced-motion 規則與 representative Android 效能裝置。
-7. 決定 P2 Web3 scope（manifest-only／IPFS／chain／SIWE）、network、contract ownership、signer custody、gas ceiling、RPC/pinning provider 與退出方案；未核准前所有 external write flags 保持關閉。
+1. 選定 OIDC provider、email provider 與 production hosting；保留 contract，不把 provider SDK 滲入 domain。
+2. 定義首期實際內容樣本、最多 11 種 block、圖片上限與允許 video providers；第 11 種固定為受限 `generative-canvas`。
+3. 確認品牌名稱、合法字體／媒體素材與至少一位 `PUBLISHER` content owner；未完成前不得 production publish。
+4. 確認 P1 全部免費；若不是，先修改 `spec.md` 並補 entitlement／commerce contract，不得直接改成付費或 token gate。
+5. 核准 3–5 組 motion patterns、首個 p5 preset、poster 產生流程、reduced-motion 規則與 representative Android 效能裝置，再啟用 creative runtime。
+6. 決定 P2 Web3 scope（manifest-only／IPFS／chain／SIWE）、network、contract ownership、signer custody、gas ceiling、RPC/pinning provider 與退出方案；未核准前所有 external write flags 保持關閉。
 
 ## Source Baseline
 

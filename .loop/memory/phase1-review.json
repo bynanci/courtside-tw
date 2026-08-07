@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "memory_id": "wm:project:courtside-tw:phase1-review",
+  "scope": "project",
+  "kind": "task_state",
+  "title": "Phase 1 review passed; T009 is next",
+  "summary": "T001-T008 are checked on main with implementation, quality, dependency health and security evidence. A stale plan.md constitution gate was identified and reconciled before Phase 2 dispatch. T009 remains the next unchecked bounded slice.",
+  "claims": [
+    {
+      "text": "T001-T008 are checked on main@fa20527.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "T009-T023 remain unchecked and T009 was not yet dispatched at review time.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "T008 CI/Security and Compose health receipts pass on the reviewed head.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "plan.md had stale provisional constitution wording and requires the reconciliation commit before T009 dispatch.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    }
+  ],
+  "status": "stable",
+  "confidence": "high",
+  "confidence_basis": [
+    ".loop/evidence/phase1-review-20260807.json",
+    ".loop/evidence/t008-main-readback.json",
+    ".specify/memory/constitution.md",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+  ],
+  "volatility": "medium",
+  "as_of": "2026-08-07",
+  "relations": {
+    "supports": [
+      "wm:project:courtside-tw:t008-ci-pipelines"
+    ],
+    "contradicts": [],
+    "supersedes": [],
+    "blocks": [],
+    "invalidates": []
+  },
+  "decision": {
+    "chosen": "Merge the bounded governance correction, then start T009; do not mark T009 complete from dispatch alone.",
+    "invalidation": "If main read-back shows any T001-T008 checkbox, constitution/ADR status or T008 security receipt contradiction, stop T009 and reopen Phase 1 reconciliation."
+  },
+  "next_review_at": "2026-08-14",
+  "sensitivity": "internal",
+  "retention": "until_superseded"
+}

@@ -1,0 +1,145 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "phase1-review-20260807",
+  "generated_at": "2026-08-07T11:00:00Z",
+  "actor": "codex-supervisor",
+  "subject": "Phase 1 (T001-T008) code review and readiness assessment",
+  "repository": "bynanci/courtside-tw",
+  "review_branch": "governance/phase1-review-reconciliation",
+  "main_readback": {
+    "ref": "main",
+    "sha": "fa20527c1b309f8d3da0f02c6ba085ab41972d80",
+    "source": "GitHub commit search and contents read-back",
+    "open_pull_requests": 0
+  },
+  "scope": {
+    "phase": "Phase 1 — Setup and Governance",
+    "tasks": [
+      "T001",
+      "T002",
+      "T003",
+      "T004",
+      "T005",
+      "T006",
+      "T007",
+      "T008"
+    ],
+    "next_phase": "Phase 2 — Foundational Contracts and Infrastructure",
+    "next_task": "T009",
+    "invariants": [
+      "T001-T008 must remain checked only with attached evidence.",
+      "T009-T023 remain unchecked until their own implementation and verification gates pass.",
+      "No production credentials, migrations, provider writes, Web3 writes or release publishing are included in this review."
+    ]
+  },
+  "task_state": {
+    "checked": [
+      "T001",
+      "T002",
+      "T003",
+      "T004",
+      "T005",
+      "T006",
+      "T007",
+      "T008"
+    ],
+    "unchecked": [
+      "T009",
+      "T010",
+      "T011",
+      "T012",
+      "T013",
+      "T014",
+      "T015",
+      "T016",
+      "T017",
+      "T018",
+      "T019",
+      "T020",
+      "T021",
+      "T022",
+      "T023"
+    ],
+    "t009_dispatched": false
+  },
+  "gates": {
+    "intent_scope": {
+      "result": "PASS",
+      "evidence": [
+        "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+        "specs/001-taiwan-basketball-magazine-ebook/plan.md",
+        ".specify/memory/constitution.md",
+        "docs/adr/0001-application-topology.md through docs/adr/0006-web3-provenance-boundary.md"
+      ],
+      "note": "Phase 1 is limited to governance, runtime scaffolds, shared quality gates, local dependencies and CI/security automation."
+    },
+    "behavior_correctness": {
+      "result": "PASS",
+      "evidence": [
+        ".loop/evidence/t004-main-readback.json",
+        ".loop/evidence/t005-completion-receipt.json",
+        ".loop/evidence/t006-main-readback.json",
+        ".loop/evidence/t007-completion-receipt.json",
+        ".loop/evidence/t008-runtime-verification-final.json"
+      ],
+      "note": "Nuxt SSR marker, Java api/worker profile proof, shared quality proof, Compose health and security remediation are recorded."
+    },
+    "contract_data": {
+      "result": "PASS",
+      "evidence": [
+        "pnpm-workspace.yaml",
+        "package.json",
+        "Makefile",
+        "apps/web/package.json",
+        "apps/api/application.yml",
+        ".loop/evidence/t008-main-readback.json"
+      ],
+      "residual_risk": "Phase 2 content and API contracts are intentionally not implemented; T009 is the first contract slice."
+    },
+    "security": {
+      "result": "PASS",
+      "evidence": [
+        ".github/workflows/security.yml",
+        ".loop/evidence/t008-runtime-verification-final.json",
+        "PR #25 Security run #14",
+        "PR #27 Security run #22",
+        "PR #29 Security run #19"
+      ],
+      "note": "The T008 image HIGH/CRITICAL gate passed after remediation; dependency-only updates were separately checked before merge."
+    },
+    "reliability_rollback": {
+      "result": "PASS",
+      "evidence": [
+        "scripts/dev/check-dependencies.sh",
+        ".loop/evidence/t007-completion-receipt.json",
+        ".loop/evidence/t008-runtime-verification-final.json"
+      ],
+      "note": "Compose health has cleanup proof; T007's runner limitation was explicitly carried as a bounded follow-up and revalidated by T008."
+    },
+    "verification": {
+      "result": "PASS",
+      "evidence": [
+        "CI run #14: frontend/contract, Java quality/unit and Compose health all success",
+        "Security run #14: dependency audit, CodeQL, filesystem and three image scans all success",
+        "PR #27 and PR #29 dependency updates passed their current-head CI/Security gates before merge"
+      ],
+      "limitation": "The connector does not expose the post-merge push run list for main; no success is inferred from that missing endpoint."
+    }
+  },
+  "findings": [
+    {
+      "severity": "important",
+      "path": "specs/001-taiwan-basketball-magazine-ebook/plan.md",
+      "finding": "The plan claimed that no formal constitution existed and retained a blocking provisional-gate status even though the RATIFIED constitution and accepted ADRs were already on main.",
+      "impact": "A Phase 2 reviewer could read an obsolete governance state and incorrectly treat T009 as blocked or bypass the actual constitution.",
+      "correction": "Reconcile the Constitution Check wording and gate result in this governance branch before T009 dispatch.",
+      "verification": "Fetch plan.md from the merged main commit and confirm it references RATIFIED constitution 0.1.0, accepted ADR-0001..0006 and a PASS gate."
+    }
+  ],
+  "rollback": {
+    "procedure": "Revert the governance reconciliation commit if the plan correction does not match the current constitution/ADR read-back; no runtime or data rollback is required.",
+    "irreversible_changes": false
+  },
+  "decision": "PASS",
+  "next_action": "Merge this documentation-only reconciliation, read back main, then dispatch T009 as a new bounded contract slice. Keep T009 unchecked until schema and fixture verification pass."
+}
