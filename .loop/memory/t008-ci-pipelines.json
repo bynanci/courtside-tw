@@ -3,31 +3,36 @@
   "memory_id": "wm:project:courtside-tw:t008-ci-pipelines",
   "scope": "project",
   "kind": "task_state",
-  "title": "T008 CI pipelines dispatched with runtime proof pending",
-  "summary": "GitHub Actions proved the CI checks and T007 Docker Compose health, while the security workflow correctly blocked on HIGH/CRITICAL findings in the pinned Compose images.",
+  "title": "T008 CI pipelines and security gate passed; main read-back pending",
+  "summary": "T008 CI, Security, Docker Compose health and image vulnerability gates passed on the reviewed implementation head; PR #25 is merged and the separate completion slice checks T008 while final main read-back remains open.",
   "claims": [
     {
-      "text": "T008 CI frontend contract, Java quality/unit and Docker Compose integration jobs completed successfully.",
+      "text": "T008 frontend contract, Java quality/unit and Docker Compose integration jobs completed successfully.",
       "class": "CONFIRMED",
       "confidence": "high"
     },
     {
-      "text": "T007 PostgreSQL, S3Mock and OIDC containers each reported healthy on the GitHub runner.",
+      "text": "PostgreSQL, S3Mock and OIDC containers each reported healthy on the GitHub runner.",
       "class": "CONFIRMED",
       "confidence": "high"
     },
     {
-      "text": "Dependency audit, CodeQL and filesystem Trivy scans completed successfully.",
+      "text": "Dependency audit, CodeQL, filesystem Trivy and all three Compose image Trivy scans completed successfully on reviewed head 15f8317.",
       "class": "CONFIRMED",
       "confidence": "high"
     },
     {
-      "text": "Trivy image scans reported HIGH/CRITICAL findings for postgres, s3mock and oidc, so the security gate is blocked.",
+      "text": "The HIGH/CRITICAL image findings were remediated without a security exception; the final security gate passed.",
       "class": "CONFIRMED",
       "confidence": "high"
     },
     {
-      "text": "T008 must remain unchecked and unmerged until the findings are remediated or an explicitly approved security exception is recorded.",
+      "text": "PR #25 merged to main at e857d50, and T008 is checked on the separate completion slice.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Authoritative final main read-back after the completion slice merge is still required before T009 dispatch.",
       "class": "INFERRED",
       "confidence": "high"
     }
@@ -35,9 +40,10 @@
   "status": "verified",
   "confidence": "high",
   "confidence_basis": [
-    ".loop/evidence/t008-dispatch.json",
-    ".loop/evidence/t008-static-proof.json",
-    ".loop/evidence/t008-runtime-verification.json"
+    ".loop/evidence/t008-runtime-verification-final.json",
+    ".loop/evidence/t008-completion-receipt.json",
+    "PR #25",
+    "main@e857d504b3c6cd61b4be5bf7989a19aa1a6b8ea3"
   ],
   "volatility": "medium",
   "as_of": "2026-08-07",
@@ -46,7 +52,8 @@
     ".github/workflows/ci.yml",
     ".github/workflows/security.yml",
     ".github/dependabot.yml",
-    ".loop/evidence/t008-runtime-verification.json"
+    ".loop/evidence/t008-runtime-verification-final.json",
+    ".loop/evidence/t008-completion-receipt.json"
   ],
   "entities": [
     "T008",
@@ -59,24 +66,26 @@
   "relations": {
     "supports": [],
     "contradicts": [],
-    "supersedes": [],
-    "blocks": [
+    "supersedes": [
       "wm:project:courtside-tw:t008-security-remediation"
+    ],
+    "blocks": [
+      "wm:project:courtside-tw:t008-main-readback"
     ],
     "invalidates": []
   },
   "decision": {
-    "context": "T007 was merged with explicit runtime-proof follow-up assigned to T008.",
-    "chosen": "Keep T008 unchecked and PR #25 unmerged; remediate the pinned Compose image findings or obtain explicit project-owner security approval.",
+    "context": "T008 implementation was security-blocked once, then remediated and rerun successfully before merge.",
+    "chosen": "Merge the T008 completion slice and perform final main read-back; do not dispatch T009 until the checkbox and evidence lineage are confirmed on main.",
     "alternatives": [
-      "Mark T008 complete from static inspection only"
+      "Mark T008 complete from the pre-remediation or stale receipt."
     ],
     "tradeoffs": [
-      "T007 runtime proof is now available",
-      "The security gate prevents falsely declaring T008 complete",
-      "A separate image-remediation decision is required"
+      "All required CI/Security gates are green.",
+      "The completion state remains auditable and separate from implementation merge.",
+      "A final main read-back adds one governance step before T009."
     ],
-    "invalidation": "If the security findings are fixed and the full workflow rerun passes, update this record and reassess the T008 checkbox/merge gate."
+    "invalidation": "If final main read-back does not show the checked T008 line, final receipt or unchanged T009 frontier, keep T008 open and reconcile the evidence."
   },
   "next_review_at": "2026-08-14",
   "sensitivity": "internal",

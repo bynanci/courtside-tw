@@ -13,7 +13,7 @@ scope:
     - production credentials, deployments or release publishing
     - database migrations or application feature code
     - Web3 writes
-    - marking T008 checked before runtime evidence is read back
+    - marking T008 checked before final main read-back
 
 policy:
   human_gates:
@@ -48,9 +48,9 @@ memory_workflow:
 graph:
   entry_nodes: [x-main-readback, t-t008-ready]
   terminal_nodes: [s-terminal-policy]
-  current_frontier: [p-security-gate]
-  blocked_nodes: [p-security-gate, g-t008-review, s-terminal-policy]
-  terminal_state: blocked
+  current_frontier: [p-final-main-readback]
+  blocked_nodes: [p-final-main-readback, s-terminal-policy]
+  terminal_state: needs_human
 
   nodes:
     - id: x-main-readback
@@ -106,48 +106,60 @@ graph:
       layer: L1
       label: GitHub Actions and Docker runtime proof
       owner: verifier
-      status: blocked
+      status: done
       risk: high
       confidence:
-        score: 0.5
-        basis: The PR has not yet run; no workflow conclusion or Docker health receipt is claimed.
-        evidence_refs: [.loop/evidence/t008-runtime-proof.json]
+        score: 0.99
+        basis: Final CI run #14 and Security run #14 pass on reviewed head 15f8317; Docker Compose health and all required security scans are evidenced.
+        evidence_refs: [.loop/evidence/t008-runtime-verification-final.json]
 
     - id: g-t008-review
       kind: gate
       layer: L3
       label: T008 review, checkbox and merge gate
       owner: human-mark
-      status: needs_human
+      status: done
       risk: critical
       confidence:
-        score: 0.5
-        basis: T008 merge and checkbox decisions are intentionally deferred until runtime receipts are read back.
-        evidence_refs: [.loop/evidence/t008-runtime-proof.json]
+        score: 1.0
+        basis: PR #25 passed current-head review, all review threads are resolved, and the implementation merged at e857d50 after final CI/Security proof.
+        evidence_refs: [.loop/evidence/t008-completion-receipt.json, .loop/evidence/t008-runtime-verification-final.json]
 
     - id: s-terminal-policy
       kind: stop
       layer: GLOBAL
       label: T008 named terminal-state policy
       owner: policy
-      status: blocked
+      status: needs_human
       risk: critical
       confidence:
-        score: 0.9
-        basis: Static proof passes but runtime proof is pending; T008 remains unchecked.
-        evidence_refs: [.loop/t008-ci-pipelines-ledger.json]
+        score: 0.95
+        basis: Implementation, security, merge and completion-slice proof pass; final main read-back is the remaining terminal gate.
+        evidence_refs: [.loop/t008-ci-pipelines-ledger.json, .loop/evidence/t008-completion-receipt.json]
 
     - id: p-security-gate
       kind: proof
       layer: L1
       label: Image vulnerability security gate
       owner: verifier
-      status: blocked
+      status: done
       risk: critical
       confidence:
         score: 1.0
-        basis: Trivy image reports contain HIGH/CRITICAL findings for the pinned postgres, s3mock and oidc images; no exception was approved.
-        evidence_refs: [.loop/evidence/t008-runtime-verification.json]
+        basis: Trivy PostgreSQL, S3 and OIDC image scans pass at HIGH/CRITICAL with unfixed findings enforced and no exception.
+        evidence_refs: [.loop/evidence/t008-runtime-verification-final.json]
+
+    - id: p-final-main-readback
+      kind: proof
+      layer: L2
+      label: Final main read-back after T008 completion merge
+      owner: verifier
+      status: ready
+      risk: medium
+      confidence:
+        score: 0.5
+        basis: Completion slice is prepared on main@e857d50; final main checkbox and evidence lineage read-back remains pending.
+        evidence_refs: [.loop/evidence/t008-completion-receipt.json]
 
   edges:
     - {id: e-main-ready, from: x-main-readback, to: t-t008-ready, type: enables, required: true, confidence: 1.0, token_capacity: 4000}
@@ -157,7 +169,8 @@ graph:
     - {id: e-static-runtime, from: p-static-proof, to: p-ci-runtime-proof, type: enables, required: true, confidence: 0.95, token_capacity: 4000}
     - {id: e-ci-security, from: p-ci-runtime-proof, to: p-security-gate, type: verifies, required: true, confidence: 1.0, token_capacity: 5000}
     - {id: e-runtime-gate, from: p-security-gate, to: g-t008-review, type: requires_approval, required: true, confidence: 1.0, token_capacity: 5000}
-    - {id: e-gate-terminal, from: g-t008-review, to: s-terminal-policy, type: approves, required: true, confidence: 1.0, token_capacity: 3000}
+    - {id: e-gate-main-readback, from: g-t008-review, to: p-final-main-readback, type: requires_approval, required: true, confidence: 1.0, token_capacity: 3000}
+    - {id: e-main-readback-terminal, from: p-final-main-readback, to: s-terminal-policy, type: verifies, required: true, confidence: 1.0, token_capacity: 3000}
 
 flow:
   source: t-t008-ready

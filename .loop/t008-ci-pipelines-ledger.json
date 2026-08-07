@@ -1,22 +1,21 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t008",
-  "graph_version": 2,
+  "graph_version": 3,
   "run_id": "courtside-tw-t008-ci-pipelines-20260807",
-  "status": "blocked",
-  "iteration": 2,
+  "status": "needs_human",
+  "iteration": 3,
   "started_at": "2026-08-07T08:11:31Z",
-  "updated_at": "2026-08-07T08:19:19Z",
+  "updated_at": "2026-08-07T09:48:00Z",
   "current_frontier": [
-    "p-security-gate"
+    "p-final-main-readback"
   ],
   "blocked_nodes": [
-    "p-security-gate",
-    "g-t008-review",
+    "p-final-main-readback",
     "s-terminal-policy"
   ],
-  "terminal_state": "blocked",
-  "next_action": "Remediate HIGH/CRITICAL findings in the pinned Compose images or obtain an explicitly approved exception; keep T008 unchecked and PR #25 unmerged.",
+  "terminal_state": "needs_human",
+  "next_action": "Merge the T008 completion slice with expected-head protection, then perform final main read-back; keep T009 unchecked and undispatched until the read-back passes.",
   "events": [
     {
       "event_id": "evt-t008-ci-pipelines-001-dispatched",
@@ -240,22 +239,122 @@
         "total": 8500
       },
       "terminal_reason": "The required security gate is blocked by HIGH/CRITICAL image findings."
+    },
+    {
+      "event_id": "evt-t008-ci-pipelines-004-completion-slice",
+      "at": "2026-08-07T09:48:00Z",
+      "actor": "codex-supervisor",
+      "type": "completion_slice",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": ".loop/evidence/t008-completion-receipt.json",
+            "after": "T008 completion receipt records the merged implementation, passing final CI/Security proof and checked completion branch state."
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-ci-runtime-proof/status",
+            "before": "blocked",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-security-gate/status",
+            "before": "blocked",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/g-t008-review/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "add",
+            "path": "graph.nodes/p-final-main-readback",
+            "after": "Final main read-back remains the only open terminal proof."
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [
+              "p-security-gate"
+            ],
+            "after": [
+              "p-final-main-readback"
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "graph.terminal_state",
+            "before": "blocked",
+            "after": "needs_human"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t008-completion-receipt.json",
+        ".loop/evidence/t008-runtime-verification-final.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "final CI/Security verification",
+          "level": "P2",
+          "result": "pass",
+          "details": "CI #14 and Security #14 passed on reviewed head 15f8317; all required image and runtime checks are green."
+        },
+        {
+          "proof": "implementation merge",
+          "level": "P3",
+          "result": "pass",
+          "details": "PR #25 merged to main at e857d50 with expected-head protection."
+        },
+        {
+          "proof": "post-merge completion state",
+          "level": "P3",
+          "result": "pass",
+          "details": "T008 is checked on the separate completion branch; final main read-back is intentionally pending."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:t008-ci-pipelines",
+        "version": 2,
+        "evidence_refs": [
+          ".loop/evidence/t008-completion-receipt.json",
+          ".loop/evidence/t008-runtime-verification-final.json"
+        ],
+        "next_review_at": "2026-08-14",
+        "blocker": "main-readback-pending"
+      },
+      "failure_signature": null,
+      "decision": "The implementation and security gates are complete and T008 is checked in the separate completion slice; merge this slice and read back main before dispatching T009.",
+      "token_usage": {
+        "estimated": 6500,
+        "input": 0,
+        "output": 0,
+        "total": 6500
+      },
+      "terminal_reason": "T008 implementation and runtime/security proofs pass; the final main read-back gate remains open."
     }
   ],
   "proof": {
-    "claim": "T008 CI executes and proves T007 runtime health, but the required security gate blocks completion.",
-    "result": "runtime_pass_security_blocked",
+    "claim": "T008 CI, security, dependency automation and T007 runtime revalidation are implemented, security-verified, merged and checked in a separate completion slice; final main read-back remains.",
+    "result": "completion_pending_main_readback",
     "confidence": 1
   },
   "memory_receipt": {
     "memory_status": "UPDATED",
     "memory_id": "wm:project:courtside-tw:t008-ci-pipelines",
-    "version": 1,
+    "version": 2,
     "evidence_refs": [
-      ".loop/evidence/t008-static-proof.json",
-      ".loop/evidence/t008-runtime-verification.json"
+      ".loop/evidence/t008-completion-receipt.json",
+      ".loop/evidence/t008-runtime-verification-final.json"
     ],
     "next_review_at": "2026-08-14",
-    "blocker": "trivy-high-critical-compose-images"
+    "blocker": "main-readback-pending"
   }
 }
