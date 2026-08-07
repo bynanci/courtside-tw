@@ -4,7 +4,7 @@
   "scope": "project",
   "kind": "task_state",
   "title": "T011 OpenAPI contract dispatch blocked on T009 main read-back",
-  "summary": "T011 is authorized and dispatched on a branch from Phase 1 PASS main, but implementation is intentionally blocked until T009's canonical ContentDocument schema is merged and read back from main. The future contract must cover the bounded API v1 surface, RFC 9457 Problem Details, explicit security and concurrency semantics, and a local canonical schema reference without duplicating or weakening ContentDocument.",
+  "summary": "T011 is authorized and dispatched on a branch from Phase 1 PASS main, but implementation is intentionally blocked until T009's canonical ContentDocument schema is merged and read back from main. The future contract must cover the bounded API v1 surface, RFC 9457 Problem Details, explicit security and concurrency semantics, and a local canonical schema reference without duplicating or weakening ContentDocument. Strict Graphify validation and work-memory validation now pass for the bounded dispatch graph.",
   "claims": [
     {
       "text": "Phase 1 PR #31 is merged and main@a75f1c2 confirms T001-T008 checked while T009 and T011 remain unchecked.",
@@ -35,6 +35,11 @@
       "text": "OpenAPI implementation and final proof are blocked until T009 main read-back; the dispatch-only artifacts are reviewable without weakening the contract boundary.",
       "class": "INFERRED",
       "confidence": "high"
+    },
+    {
+      "text": "The repaired T011 Graphify graph passes strict validation with 10 nodes, 12 edges, a complete loop registry and an L3 route for the external T009 dependency.",
+      "class": "CONFIRMED",
+      "confidence": "high"
     }
   ],
   "status": "verified",
@@ -45,7 +50,8 @@
     "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T011",
     "specs/001-taiwan-basketball-magazine-ebook/plan.md#API Contract Surface",
     "main@a75f1c250155216ec0b3f9f1f3a130bf4ff1c43e",
-    "PR #32"
+    "PR #32",
+    ".loop/evidence/t011-graph-proof-20260807.json"
   ],
   "volatility": "medium",
   "as_of": "2026-08-07",
@@ -57,7 +63,8 @@
     "docs/adr/0003-content-document-and-media-policy.md",
     "docs/adr/0004-identity-wallet-and-entitlements.md",
     "main@a75f1c250155216ec0b3f9f1f3a130bf4ff1c43e",
-    "ticket/t009-content-document-schema@8584c914b771c2e45e372a0fad1e9e98ee148209"
+    "ticket/t009-content-document-schema@8584c914b771c2e45e372a0fad1e9e98ee148209",
+    ".loop/evidence/t011-graph-proof-20260807.json"
   ],
   "entities": [
     "T011",
@@ -90,7 +97,7 @@
       "Runtime authorization, rate limiting, audit, provider rights and generated-client parity remain later proofs."
     ],
     "invalidation": "If tasks.md, the API Contract Surface plan, ADR-0003/0004, or T009 canonical schema changes, mark this record needs_update and stop before implementing T011.",
-    "proof": "Phase 1 main read-back and the T009 PR/dependency state were read back from GitHub; the dispatch, governance, graph, ledger and memory artifacts are saved on the T011 branch. OpenAPI lint and example proof remain blocked."
+    "proof": "Phase 1 main read-back and the T009 PR/dependency state were read back from GitHub; the dispatch, governance, graph, ledger and memory artifacts are saved on the T011 branch. OpenAPI lint and example proof remain blocked. Strict Graphify and work-memory validators pass; the OpenAPI implementation proof remains blocked on T009 main read-back."
   },
   "next_review_at": "2026-08-08",
   "sensitivity": "internal",
