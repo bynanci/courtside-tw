@@ -1,0 +1,54 @@
+{
+  "schema_version": "courtside-tw-evidence/v1",
+  "evidence_id": "t014-ci-security-final-20260808",
+  "recorded_at": "2026-08-08T05:06:10Z",
+  "actor": "verifier",
+  "repository": "bynanci/courtside-tw",
+  "task": "T014",
+  "kind": "ci-security-final",
+  "result": "PASS",
+  "verified_head_sha": "1a2076846bfd511f8b9480f8c1497e118186a057",
+  "runs": [
+    {
+      "workflow": "CI",
+      "run_number": 96,
+      "run_id": 31240712952,
+      "conclusion": "success",
+      "jobs": {
+        "frontend_and_contract": 93061080519,
+        "java_quality_and_unit": 93061080521,
+        "docker_compose_dependency_health": 93061080491
+      }
+    },
+    {
+      "workflow": "Security",
+      "run_number": 96,
+      "run_id": 31240712975,
+      "conclusion": "success",
+      "jobs": {
+        "dependency_audit": 93061080406,
+        "codeql_java_kotlin": 93061080361,
+        "codeql_javascript_typescript": 93061080378,
+        "trivy_filesystem": 93061080397,
+        "resolve_compose_images": 93061080381,
+        "trivy_image_s3": 93061105359,
+        "trivy_image_postgres": 93061105369,
+        "trivy_image_oidc": 93061105371
+      }
+    }
+  ],
+  "repaired_findings": [
+    "Java Version serializability warning under -Werror",
+    "preserve current version in 409 conflict response",
+    "reject control characters before If-Match trimming",
+    "reject Unicode control characters and noncanonical ETags"
+  ],
+  "limitations": [
+    "Local Java 21/Gradle execution is unavailable; repository runner is authoritative."
+  ],
+  "evidence_refs": [
+    ".loop/evidence/t014-codeql-failure-20260808.json",
+    ".loop/evidence/t014-review-feedback-20260808.json"
+  ],
+  "next_action": "Use the merged main implementation as the dependency for T015; no production identity action was executed."
+}
