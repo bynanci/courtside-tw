@@ -64,7 +64,7 @@ policy:
 graph:
   entry_nodes: [x-main-readback, t-t015-ready]
   terminal_nodes: [s-t015-terminal]
-  current_frontier: [a-t015-implementation]
+  current_frontier: [g-t015-review-merge]
   blocked_nodes: []
   nodes:
     - id: x-main-readback
@@ -161,12 +161,12 @@ graph:
       layer: L1
       label: "Implement bounded OIDC decoder, canonical role converter and deny-by-default route policy"
       owner: codex-agent
-      status: running
+      status: done
       risk: high
       confidence:
-        score: 0.82
-        basis: "Spring Security's documented JwtDecoder, issuer/timestamp validators and custom audience validator match the repository's provider-neutral contract."
-        evidence_refs: []
+        score: 0.98
+        basis: "Implementation and hardening are complete; exact-head Java/CI/security proof passes and the diff remains inside the T015 authorization boundary."
+        evidence_refs: [.loop/evidence/t015-static-proof-20260808.json, .loop/evidence/t015-ci-security-final-20260808.json]
       budget: {effort_hours: 2.5, tokens: 18000}
       config:
         workflow: [add pinned starter, implement properties/validator/converter/policy/filter-chain, run static checks, hand exact source to CI]
@@ -179,12 +179,12 @@ graph:
       layer: L1
       label: "T015 bounded diff and source hygiene proof"
       owner: verifier
-      status: planned
+      status: done
       risk: medium
       confidence:
-        score: 0.85
-        basis: "The planned diff is limited to one dependency, identity source/tests and T015 evidence."
-        evidence_refs: []
+        score: 0.98
+        basis: "Exact PR file inventory and diff review confirm the dependency, identity package/tests and governance-only evidence boundary."
+        evidence_refs: [.loop/evidence/t015-static-proof-20260808.json]
       budget: {effort_hours: 0.2, tokens: 3000}
       config:
         level: P1
@@ -199,18 +199,18 @@ graph:
       layer: L1
       label: "T015 Java, CI and security behavioral proof"
       owner: verifier
-      status: planned
+      status: done
       risk: high
       confidence:
-        score: 0.7
-        basis: "The exact PR head must prove compiler compatibility, role denial behavior and repository security gates under Java 21."
-        evidence_refs: []
+        score: 1.0
+        basis: "Exact-head CI #111 and Security #111 pass Java quality/unit, contract, Compose, CodeQL, dependency, filesystem and image gates."
+        evidence_refs: [.loop/evidence/t015-ci-security-final-20260808.json]
       budget: {effort_hours: 1.0, tokens: 9000}
       config:
         level: P2
         claim: "Issuer, audience, timestamp, canonical-role and exact-route authorization acceptance passes on the exact PR head with Java quality and security scans."
         method: "GitHub CI Java quality/unit, frontend/contract and dependency integration jobs plus Security CodeQL/dependency/Trivy jobs."
-        evidence_path: .loop/evidence/t015-ci-security.json
+        evidence_path: .loop/evidence/t015-ci-security-final-20260808.json
         required: true
         baseline_required: true
 
@@ -219,12 +219,12 @@ graph:
       layer: L2
       label: "T015 review, CI/security and protected merge gate"
       owner: human-mark
-      status: planned
+      status: needs_human
       risk: high
       confidence:
-        score: 0.5
-        basis: "Protected action is intentionally pending; agent review cannot self-approve the authentication/security change."
-        evidence_refs: []
+        score: 0.9
+        basis: "P1 scope proof and P2 exact-head CI/security pass; protected human review and merge remain intentionally pending."
+        evidence_refs: [.loop/evidence/t015-static-proof-20260808.json, .loop/evidence/t015-ci-security-final-20260808.json]
       budget: {effort_hours: 0.8, tokens: 5000}
       config:
         condition: "T015 acceptance, exact-head P2 CI/security, source scope, review findings and main read-back all pass."
@@ -236,12 +236,12 @@ graph:
       layer: L1
       label: "T015 append-only Graphify control ledger"
       owner: codex-supervisor
-      status: planned
+      status: done
       risk: medium
       confidence:
-        score: 0.85
-        basis: "The ledger will retain dispatch, baseline failures, repair deltas and the protected gate without replacing proof."
-        evidence_refs: []
+        score: 0.95
+        basis: "Append-only ledger records dispatch, baseline, implementation hardening, exact-head proof and the protected human gate."
+        evidence_refs: [.loop/t015-oidc-security-foundation-ledger.json]
       budget: {effort_hours: 0.2, tokens: 2500}
       config:
         path: .loop/t015-oidc-security-foundation-ledger.json
@@ -259,9 +259,9 @@ graph:
       status: needs_human
       risk: high
       confidence:
-        score: 0.5
-        basis: "Implementation and proof are not yet complete; protected review/merge/checkbox/read-back remains a named human gate."
-        evidence_refs: []
+        score: 0.9
+        basis: "Implementation, P1 scope proof and P2 exact-head proof pass; protected review/merge/checkbox/read-back remains a named human gate."
+        evidence_refs: [.loop/evidence/t015-static-proof-20260808.json, .loop/evidence/t015-ci-security-final-20260808.json]
       budget: {effort_hours: 0.1, tokens: 600}
       config:
         states:
