@@ -38,6 +38,7 @@ acceptance:
   - T016, T017 and T018 remain unchecked and their implementation files are untouched.
   - The receipt PR passes exact-head repository CI/Security before merge.
   - A post-merge main read-back confirms the checked T015 state before downstream dispatch.
+  - The final reconciliation artifact records main 4e2782c and opens only T018/T016 as downstream frontiers.
 
 budgets:
   max_iterations: 4
@@ -60,7 +61,7 @@ policy:
 graph:
   entry_nodes: [x-t015-main-after-hardening, p-t015-review-merge]
   terminal_nodes: [s-t015-reconciled]
-  current_frontier: [g-t015-receipt-merge]
+  current_frontier: [s-t015-reconciled]
   blocked_nodes: []
   nodes:
     - id: x-t015-main-after-hardening
@@ -101,9 +102,9 @@ graph:
       layer: L2
       label: "Completion receipt protected merge and main read-back"
       owner: human-mark
-      status: needs_human
+      status: done
       risk: high
-      confidence: {score: 0.9, basis: "Checkbox is prepared but main must pass receipt CI/Security and post-merge read-back", evidence_refs: [.loop/t015-completion-reconciliation-ledger.json]}
+      confidence: {score: 1.0, basis: "Receipt PR #47 passed CI/Security #122, merged at 4e2782c, and post-merge main read-back confirms T015 checked", evidence_refs: [.loop/evidence/t015-post-receipt-main-readback-20260808.json]}
       config:
         condition: "Merge PR #47 only after exact-head CI/Security pass; then read back main and confirm T015 checked."
         required: true
@@ -122,16 +123,16 @@ graph:
       layer: L2
       label: "T015 reconciled on authoritative main"
       owner: codex-supervisor
-      status: planned
+      status: done
       risk: high
-      confidence: {score: 0.5, basis: "Becomes done only after PR #47 merge and post-merge main read-back", evidence_refs: [.loop/evidence/t015-completion-reconciliation-20260808.json]}
+      confidence: {score: 1.0, basis: "T015 checkbox and reconciliation are present on authoritative main 4e2782c", evidence_refs: [.loop/evidence/t015-post-receipt-main-readback-20260808.json]}
 
   edges:
     - {id: e-main-proof, from: x-t015-main-after-hardening, to: p-t015-review-merge, type: verifies, required: true, confidence: 1.0, token_capacity: 4000}
     - {id: e-proof-receipt, from: p-t015-review-merge, to: a-t015-receipt, type: enables, required: true, confidence: 1.0, token_capacity: 6000}
     - {id: e-receipt-gate, from: a-t015-receipt, to: g-t015-receipt-merge, type: requires_approval, required: true, confidence: 0.9, token_capacity: 5000}
     - {id: e-ledger-read, from: m-t015-reconciliation-ledger, to: g-t015-receipt-merge, type: reads, required: true, confidence: 0.9, token_capacity: 3000}
-    - {id: e-gate-terminal, from: g-t015-receipt-merge, to: s-t015-reconciled, type: approves, required: true, confidence: 0.5, token_capacity: 4000}
+    - {id: e-gate-terminal, from: g-t015-receipt-merge, to: s-t015-reconciled, type: approves, required: true, confidence: 1.0, token_capacity: 4000}
 
 flow:
   source: x-t015-main-after-hardening
