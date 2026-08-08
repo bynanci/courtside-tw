@@ -1,18 +1,18 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t015",
-  "graph_version": 1,
+  "graph_version": 2,
   "run_id": "courtside-tw-t015-20260808",
   "status": "running",
-  "iteration": 1,
+  "iteration": 2,
   "started_at": "2026-08-08T05:20:39Z",
-  "updated_at": "2026-08-08T05:20:39Z",
+  "updated_at": "2026-08-08T05:26:10Z",
   "current_frontier": [
-    "a-t015-tests-first"
+    "a-t015-implementation"
   ],
   "blocked_nodes": [],
   "terminal_state": "in_progress",
-  "next_action": "Write and run T015 issuer/audience/time/role denial tests before implementation; record the exact baseline.",
+  "next_action": "Implement the pinned Spring Security resource-server dependency, exact issuer/audience/time validator, canonical role converter and deny-by-default exact-role policy; preserve the tests-first acceptance.",
   "events": [
     {
       "event_id": "evt-t015-001-dispatch",
@@ -60,6 +60,60 @@
       ],
       "failure_signature": null,
       "decision": "Implement only bounded provider-neutral OIDC resource-server validation and exact role policy; keep T016/T017 and production identity actions separate."
+    },
+    {
+      "event_id": "evt-t015-002-baseline-observed",
+      "at": "2026-08-08T05:26:10Z",
+      "actor": "codex-agent",
+      "type": "t015_tests_first_baseline",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-t015-tests-first/status",
+            "before": "ready",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-t015-baseline/status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [
+              "a-t015-tests-first"
+            ],
+            "after": [
+              "a-t015-implementation"
+            ]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t015-tests-first-baseline-20260808.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "tests-first baseline",
+          "level": "P2",
+          "result": "pass",
+          "ci_run": 31241624338,
+          "ci_java_job": 93063490094,
+          "security_run": 31241624368,
+          "security_dependency_job": 93063490162,
+          "failure_signature": "T015_BASELINE_MISSING_IDENTITY_IMPLEMENTATION_AND_RESOURCE_SERVER_DEPENDENCY",
+          "frontend_contract": "pass",
+          "acceptance_changed": false,
+          "tests_skipped": false
+        }
+      ],
+      "failure_signature": "T015_BASELINE_MISSING_IDENTITY_IMPLEMENTATION_AND_RESOURCE_SERVER_DEPENDENCY",
+      "decision": "Baseline is valid evidence for the intended missing boundary; repair the test-only RoleCode import, then implement the smallest supported identity package and dependency."
     }
   ]
 }
