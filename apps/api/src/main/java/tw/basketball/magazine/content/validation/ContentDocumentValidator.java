@@ -89,5 +89,13 @@ public final class ContentDocumentValidator {
     }
 
     public record ValidationResult(boolean valid, List<String> errors) {
+        public ValidationResult {
+            errors = List.copyOf(errors);
+        }
+
+        @Override
+        public List<String> errors() {
+            return List.copyOf(errors);
+        }
     }
 }
