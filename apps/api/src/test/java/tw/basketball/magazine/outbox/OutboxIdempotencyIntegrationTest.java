@@ -6,8 +6,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
-import java.util.HashSet;
-import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -16,20 +14,24 @@ import org.junit.jupiter.api.Test;
 
 final class OutboxIdempotencyIntegrationTest extends OutboxIntegrationTestSupport {
     @Test
-    void retriesAfterAHandlerCrashWithoutRepeatingTheIdempotentEffect() {
+    void retriesAfterAHandlerCrashWithoutRepeatingTheDurableEffect() {
         Instant initialTime = Instant.parse("2026-08-08T12:00:00Z");
         UUID eventId = repository.enqueue(draft("idempotent-delivery", initialTime));
         MutableClock clock = new MutableClock(initialTime);
-        Set<String> appliedIdempotencyKeys = new HashSet<>();
         AtomicInteger effectiveSideEffects = new AtomicInteger();
         AtomicBoolean failFirstAttempt = new AtomicBoolean(true);
 
         OutboxEventHandler handler = event -> {
-            if (appliedIdempotencyKeys.add(event.idempotencyKey())) {
+            int inserted = jdbcTemplate.update("""
+                    INSERT INTO outbox_test_side_effect (idempotency_key)
+                    VALUES (?)
+                    ON CONFLICT (idempotency_key) DO NOTHING
+                    """, event.idempotencyKey());
+            if (inserted == 1) {
                 effectiveSideEffects.incrementAndGet();
             }
             if (failFirstAttempt.getAndSet(false)) {
-                throw new IllegalStateException("simulated crash after side effect");
+                throw new IllegalStateException("simulated crash after durable side effect");
             }
         };
         OutboxProperties properties = properties(
@@ -60,6 +62,14 @@ final class OutboxIdempotencyIntegrationTest extends OutboxIntegrationTestSuppor
         assertEquals(
                 OutboxStatus.COMPLETED,
                 repository.findById(eventId).orElseThrow().status()
+        );
+        assertEquals(
+                1,
+                jdbcTemplate.queryForObject(
+                        "SELECT count(*) FROM outbox_test_side_effect WHERE idempotency_key = ?",
+                        Integer.class,
+                        "idempotent-delivery"
+                )
         );
     }
 
