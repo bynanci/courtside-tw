@@ -1,0 +1,49 @@
+{
+  "schema_version": "courtside-tw-evidence/v1",
+  "task": "T013",
+  "kind": "main-readback",
+  "recorded_at": "2026-08-08T02:24:05Z",
+  "repository": "bynanci/courtside-tw",
+  "implementation": {
+    "pr": 40,
+    "head_sha": "ea5f7ce92b2bbd2e6f2069a5b023bb1ca9456d09",
+    "merge_commit": "7737099bbe4cafd788a9c8702018d5e838ac17d7",
+    "merge_method": "squash",
+    "ci_run": 31234806839,
+    "security_run": 31234806845,
+    "review_threads_unresolved": 0
+  },
+  "main_readback": {
+    "ref": "main",
+    "sha": "7737099bbe4cafd788a9c8702018d5e838ac17d7",
+    "t013_checked_before_completion": false,
+    "t014_checked": false,
+    "v001_present": true,
+    "v001_blob_sha": "ad5b11babc313ae2fd95bf9196d0adc53235fcc7",
+    "tasks_blob_sha_before_completion": "299e52de2b210ea1ed72ad2cfa6bb664de148b9f"
+  },
+  "scope": {
+    "implementation_paths_already_merged": [
+      ".github/workflows/ci.yml",
+      "apps/api/src/main/resources/db/migration/V001__foundation.sql",
+      "scripts/test/verify-database-foundation.sh",
+      ".loop/t013-database-foundation-graphify-loop.yaml",
+      ".loop/t013-database-foundation-ledger.json",
+      ".loop/evidence/t013-dispatch-20260808.json",
+      ".loop/evidence/t013-static-proof-20260808.json",
+      ".loop/evidence/t013-db-runtime-blocker-20260808.json",
+      ".loop/evidence/t013-governance-review.json"
+    ],
+    "completion_slice_only": [
+      "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+      ".loop/evidence/t013-db-runtime-proof-20260808.json",
+      ".loop/evidence/t013-ci-security-20260808.json",
+      ".loop/evidence/t013-main-readback-20260808.json",
+      ".loop/evidence/t013-completion-receipt.json",
+      ".loop/t013-database-foundation-graphify-loop.yaml",
+      ".loop/t013-database-foundation-ledger.json"
+    ],
+    "later_ticket_dispatch": false
+  },
+  "result": "PASS"
+}
