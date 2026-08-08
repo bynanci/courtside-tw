@@ -1,20 +1,20 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t018-outbox-operationalisation",
-  "graph_version": 4,
+  "graph_version": 5,
   "run_id": "courtside-tw-t018-operationalisation-20260808",
   "status": "needs_human",
-  "iteration": 4,
+  "iteration": 5,
   "started_at": "2026-08-08T12:00:00Z",
-  "updated_at": "2026-08-08T12:24:55Z",
+  "updated_at": "2026-08-08T12:27:32Z",
   "current_frontier": ["g-production-review"],
   "blocked_nodes": [],
   "terminal_state": "needs_human",
   "next_action": "Human production-readiness review and protected merge decision; do not activate deployment configuration or management endpoints.",
   "memory_receipt": {
-    "memory_status": "MEMORY_WRITE_PENDING",
+    "memory_status": "UPDATED",
     "memory_id": "wm:project:courtside-tw:t018-outbox-operationalisation",
-    "version": "pending-remote-branch-commit",
+    "version": "c95c89e7e403815a0699ba6d8459bb6d89266862",
     "retrieval_ids": ["t018-outbox-operationalisation-20260808"],
     "evidence_refs": [
       ".loop/evidence/t018-operationalisation-tests-first-20260808.json",
@@ -22,7 +22,7 @@
       ".loop/memory/t018-outbox-operationalisation.json"
     ],
     "next_review_at": "2026-08-15",
-    "blocker": "Repository backend write receipt is pending the next remote branch commit and read-back."
+    "blocker": "none"
   },
   "events": [
     {
@@ -150,6 +150,33 @@
       "decision": "Allow the bounded enhancement to stop at a proof-ready draft; require Mark's production-readiness review and protected merge before any activation or main read-back.",
       "token_usage": {"estimated": 6500, "input": 0, "output": 0, "total": 6500},
       "terminal_reason": "needs_human: exact-head proof passed; protected merge and deployment activation remain unauthorized"
+    },
+    {
+      "event_id": "evt-t018-operationalisation-005-memory-update-verified",
+      "at": "2026-08-08T12:27:32Z",
+      "actor": "codex-supervisor",
+      "type": "semantic_memory_update_verified",
+      "base_graph_version": 4,
+      "new_graph_version": 5,
+      "graph_delta": {
+        "operations": [
+          {"op": "replace", "path": "memory_receipt.memory_status", "before": "MEMORY_WRITE_PENDING", "after": "UPDATED"},
+          {"op": "replace", "path": "memory_receipt.version", "before": "pending-remote-branch-commit", "after": "c95c89e7e403815a0699ba6d8459bb6d89266862"},
+          {"op": "replace", "path": "memory_receipt.blocker", "before": "Repository backend write receipt is pending the next remote branch commit and read-back.", "after": "none"}
+        ]
+      },
+      "evidence_refs": [
+        ".loop/memory/t018-outbox-operationalisation.json",
+        ".loop/evidence/t018-operationalisation-implementation-20260808.json",
+        "https://github.com/bynanci/courtside-tw/commit/c95c89e7e403815a0699ba6d8459bb6d89266862"
+      ],
+      "proof_receipts": [
+        {"proof": "repository memory backend write and read-back", "level": "P2", "result": "pass", "commit": "c95c89e7e403815a0699ba6d8459bb6d89266862"}
+      ],
+      "failure_signature": null,
+      "decision": "Persist the final proof-ready constraint and retain the human merge/activation gate.",
+      "token_usage": {"estimated": 1800, "input": 0, "output": 0, "total": 1800},
+      "terminal_reason": "needs_human: memory update verified; protected merge and deployment activation remain unauthorized"
     }
   ]
 }
