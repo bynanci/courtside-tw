@@ -1,0 +1,108 @@
+{
+  "evaluation_id": "eval-t015-ci-security-final-20260808",
+  "system_id": "courtside-tw-api-identity",
+  "as_of": "2026-08-08T05:48:04Z",
+  "artifact_fingerprint": "git:0fab5a1ec99060a011b8af8e1f6d5506714a0b95",
+  "environment": "test",
+  "claim": "The bounded T015 OIDC security foundation passes exact-head repository CI and security verification.",
+  "threat_refs": [
+    "ASI03 Identity and Privilege Abuse",
+    "ASI04 Model and Data Poisoning"
+  ],
+  "control_ids": [
+    "GOV-003",
+    "AGT-001",
+    "AGT-002",
+    "SEC-005"
+  ],
+  "proof_level": "P2",
+  "method": "GitHub Actions exact-head CI #111 (Java quality/unit, frontend/contract, Compose dependency health) and Security #111 (Java/JS CodeQL, dependency audit, Trivy filesystem, Compose image scans and resolver).",
+  "expected": "The exact PR head compiles and tests under Java 21, preserves repository contracts, and passes configured security/dependency/image gates.",
+  "observed": {
+    "head_sha": "0fab5a1ec99060a011b8af8e1f6d5506714a0b95",
+    "base_sha": "3dd8d00a7c6b3f38d74a6c611b546fd311720f5d",
+    "ci": {
+      "run_id": 31242331858,
+      "run_number": 111,
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 93065267816,
+          "name": "Java quality and unit verification",
+          "conclusion": "success"
+        },
+        {
+          "id": 93065267831,
+          "name": "Frontend and contract verification",
+          "conclusion": "success"
+        },
+        {
+          "id": 93065267835,
+          "name": "Docker Compose dependency health",
+          "conclusion": "success"
+        }
+      ]
+    },
+    "security": {
+      "run_id": 31242331853,
+      "run_number": 111,
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 93065311982,
+          "name": "Trivy (filesystem)",
+          "conclusion": "success"
+        },
+        {
+          "id": 93065311997,
+          "name": "Resolve Compose images",
+          "conclusion": "success"
+        },
+        {
+          "id": 93065311999,
+          "name": "CodeQL (javascript-typescript)",
+          "conclusion": "success"
+        },
+        {
+          "id": 93065312000,
+          "name": "CodeQL (java-kotlin)",
+          "conclusion": "success"
+        },
+        {
+          "id": 93065312004,
+          "name": "Dependency audit and reports",
+          "conclusion": "success"
+        },
+        {
+          "id": 93065327473,
+          "name": "Trivy (image s3)",
+          "conclusion": "success"
+        },
+        {
+          "id": 93065327484,
+          "name": "Trivy (image oidc)",
+          "conclusion": "success"
+        },
+        {
+          "id": 93065327487,
+          "name": "Trivy (image postgres)",
+          "conclusion": "success"
+        }
+      ]
+    },
+    "hardening": "The exact head replaces global CSRF disablement with bearer-header-only CSRF ignoring; Java CodeQL completed successfully."
+  },
+  "result": "PASS",
+  "evidence_refs": [
+    "https://github.com/bynanci/courtside-tw/actions/runs/31242331858",
+    "https://github.com/bynanci/courtside-tw/actions/runs/31242331853",
+    "https://github.com/bynanci/courtside-tw/pull/45/commits/0fab5a1ec99060a011b8af8e1f6d5506714a0b95"
+  ],
+  "limitations": [
+    "P2 CI/security proof does not replace human code review, protected merge, T015 checkbox or authoritative main read-back.",
+    "T016 BFF authorization-code/PKCE session cookies and its end-to-end CSRF policy remain out of scope.",
+    "No production IdP, credentials, tokens, cookies, private keys or production data were accessed."
+  ],
+  "owner": "codex-agent",
+  "next_review_at": "2026-08-08T06:48:04Z"
+}
