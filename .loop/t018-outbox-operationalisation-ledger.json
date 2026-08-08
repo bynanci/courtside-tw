@@ -1,27 +1,28 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t018-outbox-operationalisation",
-  "graph_version": 3,
+  "graph_version": 4,
   "run_id": "courtside-tw-t018-operationalisation-20260808",
-  "status": "running",
-  "iteration": 3,
+  "status": "needs_human",
+  "iteration": 4,
   "started_at": "2026-08-08T12:00:00Z",
-  "updated_at": "2026-08-08T12:19:07Z",
-  "current_frontier": ["a-implementation"],
+  "updated_at": "2026-08-08T12:24:55Z",
+  "current_frontier": ["g-production-review"],
   "blocked_nodes": [],
-  "terminal_state": null,
-  "next_action": "Implement the bounded registration, worker scheduling and redacted metrics runtime boundary, then rerun focused tests on a new exact head.",
+  "terminal_state": "needs_human",
+  "next_action": "Human production-readiness review and protected merge decision; do not activate deployment configuration or management endpoints.",
   "memory_receipt": {
-    "memory_status": "SAVED",
+    "memory_status": "MEMORY_WRITE_PENDING",
     "memory_id": "wm:project:courtside-tw:t018-outbox-operationalisation",
-    "version": "b83b6a5d50d2891e0739e4f1aa274c12946d9135",
+    "version": "pending-remote-branch-commit",
     "retrieval_ids": ["t018-outbox-operationalisation-20260808"],
     "evidence_refs": [
       ".loop/evidence/t018-operationalisation-tests-first-20260808.json",
+      ".loop/evidence/t018-operationalisation-implementation-20260808.json",
       ".loop/memory/t018-outbox-operationalisation.json"
     ],
-    "next_review_at": "2026-08-08",
-    "blocker": "none"
+    "next_review_at": "2026-08-15",
+    "blocker": "Repository backend write receipt is pending the next remote branch commit and read-back."
   },
   "events": [
     {
@@ -117,6 +118,38 @@
       "decision": "Apply one narrow SpotBugs-compatible repair and rerun the exact head; do not weaken SpotBugs or alter acceptance.",
       "token_usage": {"estimated": 3500, "input": 0, "output": 0, "total": 3500},
       "terminal_reason": null
+    },
+    {
+      "event_id": "evt-t018-operationalisation-004-production-proof",
+      "at": "2026-08-08T12:24:55Z",
+      "actor": "codex-supervisor",
+      "type": "exact_head_proof_reconciled",
+      "base_graph_version": 3,
+      "new_graph_version": 4,
+      "graph_delta": {
+        "operations": [
+          {"op": "replace", "path": "a-implementation/status", "before": "running", "after": "done"},
+          {"op": "replace", "path": "p-production-proof/status", "before": "planned", "after": "done"},
+          {"op": "replace", "path": "current_frontier", "before": ["a-implementation"], "after": ["g-production-review"]},
+          {"op": "replace", "path": "terminal_state", "before": null, "after": "needs_human"}
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t018-operationalisation-implementation-20260808.json",
+        ".loop/memory/t018-outbox-operationalisation.json",
+        "https://github.com/bynanci/courtside-tw/pull/52",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31257041406",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31257041402"
+      ],
+      "proof_receipts": [
+        {"proof": "CI #158 all jobs", "level": "P2", "result": "pass", "run_id": "31257041406", "java_job_id": "93101899781", "compose_job_id": "93101899747"},
+        {"proof": "Security #158 all jobs", "level": "P2", "result": "pass", "run_id": "31257041402", "dependency_job_id": "93101899650", "java_codeql_job_id": "93101899664"},
+        {"proof": "changed-file inventory and review-thread read-back", "level": "P2", "result": "pass", "changed_files": 26, "review_threads": 0, "review_comments": 0}
+      ],
+      "failure_signature": null,
+      "decision": "Allow the bounded enhancement to stop at a proof-ready draft; require Mark's production-readiness review and protected merge before any activation or main read-back.",
+      "token_usage": {"estimated": 6500, "input": 0, "output": 0, "total": 6500},
+      "terminal_reason": "needs_human: exact-head proof passed; protected merge and deployment activation remain unauthorized"
     }
   ]
 }

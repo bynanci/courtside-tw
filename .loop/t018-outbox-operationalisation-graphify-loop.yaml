@@ -85,7 +85,7 @@ memory_workflow:
 graph:
   entry_nodes: [x-t018-main, t-direction, t-operationalisation-request, t-supervisor]
   terminal_nodes: [s-operationalisation-proof]
-  current_frontier: [a-implementation]
+  current_frontier: [g-production-review]
   blocked_nodes: [s-operationalisation-proof, g-production-review]
   loops:
     - id: l1-execution
@@ -223,7 +223,7 @@ graph:
       layer: L1
       label: "Implement explicit handler registry, worker scheduler and Micrometer adapter"
       owner: codex-agent
-      status: running
+      status: done
       risk: high
       confidence: {score: 0.9, basis: "Implementation is bounded by the charter and the tests-first proof; no schema change is required", evidence_refs: [.loop/evidence/t018-operationalisation-charter-20260808.json, .loop/evidence/t018-operationalisation-tests-first-20260808.json]}
       budget: {effort_hours: 4.0, tokens: 18000}
@@ -234,9 +234,9 @@ graph:
       layer: L1
       label: "Exact-head production-readiness proof"
       owner: verifier
-      status: planned
+      status: done
       risk: high
-      confidence: {score: 0.75, basis: "CI/Security must independently verify runtime and scope claims", evidence_refs: []}
+      confidence: {score: 0.95, basis: "Exact-head CI/Security #158, changed-file inventory and review-thread read-back pass", evidence_refs: [.loop/evidence/t018-operationalisation-implementation-20260808.json]}
       budget: {effort_hours: 2.5, tokens: 12000}
       config: {level: P2, claim: "Feature flag boundaries, handler dispatch, scheduling lifecycle, metrics redaction and existing T018 behavior pass.", method: "Focused Java tests, Java quality, CI/Security, changed-file and review-thread read-back", evidence_path: .loop/evidence/t018-operationalisation-implementation-20260808.json, required: true, baseline_required: true}
 
@@ -245,9 +245,9 @@ graph:
       layer: L2
       label: "CI or review evidence changes the next action"
       owner: supervisor-agent
-      status: planned
+      status: done
       risk: high
-      confidence: {score: 0.8, basis: "Each exact-head failure or proof delta must update the bounded route", evidence_refs: []}
+      confidence: {score: 0.9, basis: "Baseline and SpotBugs failure were classified, repaired once and reverified on a new exact head", evidence_refs: [.loop/evidence/t018-operationalisation-ci-spotbugs-20260808.json, .loop/evidence/t018-operationalisation-implementation-20260808.json]}
       budget: {effort_hours: 0.0, tokens: 1000}
       config: {condition: "A baseline, CI, Security, scope or review evidence delta is available.", inputs_required: [exact head, job result, changed-file inventory], dedupe: "branch head + evidence fingerprint"}
 
@@ -256,9 +256,9 @@ graph:
       layer: L2
       label: "Reconcile exact-head evidence and choose one bounded repair"
       owner: supervisor-agent
-      status: planned
+      status: done
       risk: high
-      confidence: {score: 0.8, basis: "The loop limits retries to two identical failures and preserves evidence history", evidence_refs: []}
+      confidence: {score: 0.9, basis: "One bounded SpotBugs repair was applied and the exact head passed; evidence history remains append-only", evidence_refs: [.loop/evidence/t018-operationalisation-ci-spotbugs-20260808.json, .loop/evidence/t018-operationalisation-implementation-20260808.json]}
       budget: {effort_hours: 1.0, tokens: 5000}
       config: {workflow: [classify failure, inspect raw evidence, update graph ledger, select one repair or stop], allowed: [read CI/Security, update evidence/ledger, request bounded code repair], requires_approval: [merge, activation, scope change], forbidden: [blind rerun, weaken acceptance, hide failed evidence]}
 
@@ -267,9 +267,9 @@ graph:
       layer: L2
       label: "Reconciliation proof and stop decision"
       owner: verifier
-      status: planned
+      status: done
       risk: high
-      confidence: {score: 0.75, basis: "A repair is accepted only when the exact head changes and the relevant proof reruns", evidence_refs: []}
+      confidence: {score: 0.95, basis: "The repaired exact head 411dfe3 passed CI/Security #158 and scope/review read-back", evidence_refs: [.loop/evidence/t018-operationalisation-implementation-20260808.json]}
       budget: {effort_hours: 0.5, tokens: 4000}
       config: {level: P2, claim: "The next action is supported by a new evidence delta and remains inside scope.", method: "Append-only ledger and exact-head read-back", evidence_path: .loop/t018-outbox-operationalisation-ledger.json, required: true, baseline_required: false}
 
@@ -278,9 +278,9 @@ graph:
       layer: L1
       label: "L1 outbox implementation ledger"
       owner: codex-agent
-      status: running
+      status: done
       risk: medium
-      confidence: {score: 0.95, basis: "Append-only evidence is required for tests-first and implementation iterations", evidence_refs: [.loop/t018-outbox-operationalisation-ledger.json]}
+      confidence: {score: 0.95, basis: "Append-only baseline, failure and final proof events are recorded with a semantic-memory update", evidence_refs: [.loop/t018-outbox-operationalisation-ledger.json, .loop/evidence/t018-operationalisation-implementation-20260808.json]}
       budget: {effort_hours: 0.1, tokens: 1200}
       config: {path: .loop/t018-outbox-operationalisation-ledger.json, read_before_action: true, write_after_iteration: true, append_only: true, contract: work-memory/v1, memory_role: hybrid, receipt_required: true, write_failure_state: blocked}
 
@@ -289,9 +289,9 @@ graph:
       layer: L2
       label: "Supervisor reconciliation ledger"
       owner: supervisor-agent
-      status: running
+      status: done
       risk: medium
-      confidence: {score: 0.95, basis: "Failure signatures and proof receipts are append-only", evidence_refs: [.loop/t018-outbox-operationalisation-ledger.json]}
+      confidence: {score: 0.95, basis: "Failure signature, bounded repair and exact-head proof receipts are append-only", evidence_refs: [.loop/t018-outbox-operationalisation-ledger.json, .loop/evidence/t018-operationalisation-implementation-20260808.json]}
       budget: {effort_hours: 0.1, tokens: 1200}
       config: {path: .loop/t018-outbox-operationalisation-ledger.json, read_before_action: true, write_after_iteration: true, append_only: true, contract: work-memory/v1, memory_role: hybrid, receipt_required: true, write_failure_state: blocked}
 
@@ -302,7 +302,7 @@ graph:
       owner: human-mark
       status: needs_human
       risk: critical
-      confidence: {score: 0.85, basis: "Runtime activation and security/observability control changes require human review before merge", evidence_refs: []}
+      confidence: {score: 0.95, basis: "Exact-head CI/Security and scope proof pass; runtime activation and security/observability control changes still require human review before merge", evidence_refs: [.loop/evidence/t018-operationalisation-implementation-20260808.json]}
       budget: {effort_hours: 0.25, tokens: 1500}
       config: {condition: "Exact-head tests and CI/Security pass; scope excludes activation, schema, provider and endpoint changes.", approver: human-mark, required: true}
 
