@@ -55,7 +55,7 @@ abstract class OutboxIntegrationTestSupport {
 
     @BeforeEach
     void createRepositoryAndCleanOutbox() {
-        jdbcTemplate.update("TRUNCATE TABLE outbox_event");
+        jdbcTemplate.update("TRUNCATE TABLE outbox_event, outbox_test_side_effect");
         repository = new OutboxRepository(jdbcTemplate);
     }
 
@@ -101,6 +101,12 @@ abstract class OutboxIntegrationTestSupport {
              Statement statement = connection.createStatement()) {
             String migration = new String(input.readAllBytes(), StandardCharsets.UTF_8);
             statement.execute(migration);
+            statement.execute("""
+                    CREATE TABLE IF NOT EXISTS outbox_test_side_effect (
+                        idempotency_key text PRIMARY KEY,
+                        applied_at timestamptz NOT NULL DEFAULT transaction_timestamp()
+                    )
+                    """);
         } catch (IOException | SQLException exception) {
             fail("Unable to apply V001 foundation migration: " + exception.getMessage());
         }
