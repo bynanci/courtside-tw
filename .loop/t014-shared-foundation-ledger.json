@@ -1,16 +1,16 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t014",
-  "graph_version": 3,
+  "graph_version": 4,
   "run_id": "courtside-tw-t014-20260808",
   "status": "running",
-  "iteration": 2,
+  "iteration": 3,
   "started_at": "2026-08-08T03:00:00Z",
-  "updated_at": "2026-08-08T03:26:15Z",
-  "current_frontier": ["p-t014-ci-unit"],
+  "updated_at": "2026-08-08T03:33:00Z",
+  "current_frontier": ["a-t014-shared"],
   "blocked_nodes": [],
   "terminal_state": "needs_human",
-  "next_action": "Publish the exact T014 PR head and obtain Java 21/Gradle CI and Security proof before review/merge.",
+  "next_action": "Repair Version serializability, publish the new exact T014 PR head, and obtain Java 21/Gradle CI and Security proof before review/merge.",
   "events": [
     {
       "event_id": "evt-t014-001-main-reconciled",
@@ -91,6 +91,40 @@
       ],
       "failure_signature": "LOCAL_JAVA21_GRADLE_UNAVAILABLE",
       "decision": "Do not substitute Java 17, H2 or a model claim; hand the exact source/tests to Java 21 CI."
+    },
+    {
+      "event_id": "evt-t014-003-java-warning-repaired",
+      "at": "2026-08-08T03:33:00Z",
+      "actor": "codex-agent",
+      "type": "failure_feedback",
+      "base_graph_version": 3,
+      "new_graph_version": 4,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-t014-shared/status",
+            "before": "done",
+            "after": "running"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-t014-ci-unit/status",
+            "before": "ready",
+            "after": "blocked"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": ["p-t014-ci-unit"],
+            "after": ["a-t014-shared"]
+          }
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t014-codeql-failure-20260808.json"],
+      "proof_receipts": [],
+      "failure_signature": "JAVAC_SERIAL_WARNING_WERROR_VERSION_CONFLICT_FIELDS",
+      "decision": "Make Version serializable with explicit serialVersionUID; preserve conflict state and rerun the exact-head gates."
     }
   ]
 }

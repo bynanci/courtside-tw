@@ -60,7 +60,7 @@ policy:
 graph:
   entry_nodes: [x-main-readback, t-t014-ready]
   terminal_nodes: [s-t014-terminal]
-  current_frontier: [p-t014-ci-unit]
+  current_frontier: [a-t014-shared]
   blocked_nodes: []
   nodes:
     - id: x-main-readback
@@ -119,12 +119,12 @@ graph:
       layer: L1
       label: "Implement shared IDs, clock, actor, version and RFC 9457 boundary"
       owner: codex-agent
-      status: done
+      status: running
       risk: high
       confidence:
-        score: 0.82
-        basis: "The bounded Java source and tests are present and static diff checks pass; Java 21 runtime proof is intentionally delegated to CI because this workspace has no JDK compiler or Gradle executable."
-        evidence_refs: [.loop/evidence/t014-tests-first-local-20260808.json, .loop/evidence/t014-static-proof-20260808.json]
+        score: 0.78
+        basis: "The bounded Java source and tests are present, but exact-head Java 21 compilation failed on a serializability warning promoted to an error; the repair keeps Version state serializable and is delegated to CI for proof."
+        evidence_refs: [.loop/evidence/t014-tests-first-local-20260808.json, .loop/evidence/t014-static-proof-20260808.json, .loop/evidence/t014-codeql-failure-20260808.json]
       budget: {effort_hours: 2.5, tokens: 18000}
       config:
         workflow: [read T014 contract, write tests first, implement immutable shared types, run static checks, hand off Java proof to CI]
@@ -177,12 +177,12 @@ graph:
       layer: L1
       label: "Java 21 unit, quality and repository verification"
       owner: verifier
-      status: ready
+      status: blocked
       risk: high
       confidence:
-        score: 0.75
-        basis: "The PR runner is the first available environment with the repository-pinned Java/Gradle toolchain; no CI result exists until the exact PR head is published."
-        evidence_refs: []
+        score: 0.7
+        basis: "The first exact-head Java 21 compile reached the repository runner but failed because javac -Werror promoted non-serializable Version fields in VersionConflictException; rerun is required after the bounded repair."
+        evidence_refs: [.loop/evidence/t014-codeql-failure-20260808.json]
       budget: {effort_hours: 0.8, tokens: 7000}
       config:
         level: P2

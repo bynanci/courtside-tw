@@ -1,7 +1,11 @@
 package tw.basketball.magazine.shared;
 
+import java.io.Serializable;
+
 /** Immutable non-negative optimistic-lock version. */
-public record Version(long value) {
+public record Version(long value) implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     public Version {
         if (value < 0) {
             throw new IllegalArgumentException("version must be non-negative");

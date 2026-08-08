@@ -1,0 +1,31 @@
+{
+  "schema_version": "courtside-tw-evidence/v1",
+  "evidence_id": "t014-codeql-failure-20260808",
+  "recorded_at": "2026-08-08T03:32:06Z",
+  "actor": "verifier",
+  "repository": "bynanci/courtside-tw",
+  "task": "T014",
+  "kind": "ci-failure",
+  "workflow": "Security",
+  "run_number": 90,
+  "job": "CodeQL (java-kotlin)",
+  "job_id": 93052269232,
+  "head_sha": "3b4492fd2232d5f11612a3234fc4a3989c12b1b6",
+  "result": "FAIL",
+  "failure_signature": "JAVAC_SERIAL_WARNING_WERROR_VERSION_CONFLICT_FIELDS",
+  "classification": "implementation_quality",
+  "command": "gradle --no-daemon --console=plain -p apps/api compileJava",
+  "observed": [
+    "VersionConflictException.expected field warned as non-serializable instance field.",
+    "VersionConflictException.current field warned as non-serializable instance field.",
+    "warnings found and -Werror specified.",
+    "CodeQL job reported configuration error only because the required build step failed; the underlying failure is javac source quality."
+  ],
+  "repair": "Make the immutable Version record implement Serializable with serialVersionUID=1L; keep exception state available after serialization.",
+  "scope": "T014 shared foundation only",
+  "evidence_refs": [
+    "https://github.com/bynanci/courtside-tw/actions/runs/31237369596",
+    ".loop/t014-shared-foundation-graphify-loop.yaml"
+  ],
+  "next_action": "Publish the repair and rerun Java quality/unit, CodeQL Java and the remaining exact-head gates."
+}
