@@ -1,0 +1,73 @@
+{
+  "evaluation_id": "implementation-proof-t018-20260808",
+  "system_id": "courtside-tw-api-outbox",
+  "as_of": "2026-08-08T10:45:01.414Z",
+  "artifact_fingerprint": "git:a70cb9d67e7dea9f2a06e9b7ee4f6e60489dbf25",
+  "environment": "exact-head-ci-security-review",
+  "claim": "T018 transactional outbox implementation and Testcontainers proofs pass the exact implementation-head CI/Security gates while the draft PR remains human-gated.",
+  "proof_level": "P3",
+  "method": "Tests-first baseline was executed before implementation; the repaired implementation was verified by repository CI and Security workflows at exact head a70cb9d67e7dea9f2a06e9b7ee4f6e60489dbf25, then checked for scope and review-thread state.",
+  "observed": {
+    "pull_request": 49,
+    "draft": true,
+    "merged": false,
+    "base_sha": "05e891d19eac2439cadee92eea0b4612cb356306",
+    "implementation_head": "a70cb9d67e7dea9f2a06e9b7ee4f6e60489dbf25",
+    "changed_files_before_receipt": 24,
+    "scope": [
+      "T018 loop governance/evidence artifacts",
+      "apps/api/build.gradle.kts",
+      "apps/api/src/main/java/tw/basketball/magazine/outbox/",
+      "apps/api/src/test/java/tw/basketball/magazine/outbox/",
+      "apps/api/src/test/resources/application.yml"
+    ],
+    "non_scope_verified": [
+      "no V001 migration change",
+      "no T016/T017/T019/T020 implementation",
+      "no message broker, credentials, production database or deployment action"
+    ],
+    "tests_first": {
+      "ci_run_number": 132,
+      "baseline_head": "83ec7edc0fa756e73d970b93408d6da22dddb6b3",
+      "result": "expected_red_missing_implementation_boundary",
+      "evidence": "compileTestJava reported missing Outbox runtime symbols before implementation"
+    },
+    "ci": {
+      "run_number": 142,
+      "run_id": 31253275149,
+      "url": "https://github.com/bynanci/courtside-tw/actions/runs/31253275149",
+      "result": "success",
+      "jobs": [
+        "Frontend and contract verification",
+        "Java quality and unit verification",
+        "Docker Compose dependency health"
+      ]
+    },
+    "security": {
+      "run_number": 142,
+      "run_id": 31253275150,
+      "url": "https://github.com/bynanci/courtside-tw/actions/runs/31253275150",
+      "result": "success",
+      "jobs": [
+        "Dependency audit and reports",
+        "CodeQL (java-kotlin)",
+        "CodeQL (javascript-typescript)",
+        "Trivy (filesystem)",
+        "Trivy (image postgres)",
+        "Trivy (image s3)",
+        "Trivy (image oidc)"
+      ]
+    },
+    "review_threads": 0,
+    "submitted_reviews": 0,
+    "t018_checked": false
+  },
+  "result": "PASS_WITH_FOLLOW_UP",
+  "limitations": [
+    "The receipt proves implementation and automated gates; human code review, protected merge and the T018 checkbox remain pending.",
+    "The worker exposes a runOnce trigger and provider-neutral handler boundary; downstream handler wiring and operational scheduling are follow-up integration work.",
+    "No production database, credentials, external provider or deployment action was used."
+  ],
+  "owner": "codex-agent",
+  "next_review_at": "2026-08-08T10:45:01.414Z"
+}
