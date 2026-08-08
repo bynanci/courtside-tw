@@ -64,7 +64,7 @@ policy:
 graph:
   entry_nodes: [x-main-readback, t-t015-ready]
   terminal_nodes: [s-t015-terminal]
-  current_frontier: [a-t015-tests-first]
+  current_frontier: [a-t015-implementation]
   blocked_nodes: []
   nodes:
     - id: x-main-readback
@@ -106,10 +106,10 @@ graph:
       layer: L1
       label: "T015 OIDC security foundation is ready after main reconciliation"
       owner: codex-supervisor
-      status: ready
+      status: done
       risk: high
       confidence:
-        score: 0.98
+        score: 0.958
         basis: "T014 is complete on main; build, ADR, OpenAPI and database role contracts are available; no identity package exists yet."
         evidence_refs: [.loop/evidence/t015-dispatch-20260808.json]
       budget: {effort_hours: 0.1, tokens: 1200}
@@ -128,7 +128,7 @@ graph:
       confidence:
         score: 0.9
         basis: "Acceptance is fixed from tasks.md, OpenAPI x-required-roles and the provider-neutral identity ADR before implementation."
-        evidence_refs: [.loop/evidence/t015-dispatch-20260808.json]
+        evidence_refs: [.loop/evidence/t015-dispatch-20260808.json, .loop/evidence/t015-tests-first-baseline-20260808.json]
       budget: {effort_hours: 0.8, tokens: 8000}
       config:
         workflow: [read T015 contract, write issuer/audience/time/role denial tests, run baseline, record exact failure]
@@ -141,12 +141,12 @@ graph:
       layer: L1
       label: "T015 tests-first baseline and intended failure proof"
       owner: verifier
-      status: planned
+      status: done
       risk: high
       confidence:
         score: 0.75
         basis: "The workspace has no Java 21/Gradle toolchain; exact-head CI is the authoritative baseline proof."
-        evidence_refs: []
+        evidence_refs: [.loop/evidence/t015-tests-first-baseline-20260808.json]
       budget: {effort_hours: 0.3, tokens: 3500}
       config:
         level: P2
@@ -161,7 +161,7 @@ graph:
       layer: L1
       label: "Implement bounded OIDC decoder, canonical role converter and deny-by-default route policy"
       owner: codex-agent
-      status: planned
+      status: running
       risk: high
       confidence:
         score: 0.82
