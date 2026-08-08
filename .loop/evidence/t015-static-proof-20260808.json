@@ -1,0 +1,64 @@
+{
+  "evaluation_id": "eval-t015-static-scope-20260808",
+  "system_id": "courtside-tw-api-identity",
+  "as_of": "2026-08-08T05:48:04Z",
+  "artifact_fingerprint": "git:0fab5a1ec99060a011b8af8e1f6d5506714a0b95",
+  "environment": "review",
+  "claim": "T015 source changes are bounded to the Spring Security resource-server dependency, identity package, deterministic security tests and governance evidence; no contract, schema, provider or secret scope drift is present.",
+  "threat_refs": [
+    "ASI03 Identity and Privilege Abuse",
+    "ASI08 Excessive Agency"
+  ],
+  "control_ids": [
+    "GOV-003",
+    "AGT-001",
+    "SEC-005"
+  ],
+  "proof_level": "P1",
+  "method": "Exact PR changed-file inventory plus full diff review of the T015 implementation and test files.",
+  "expected": "Only the authorized T015 files change; issuer/audience/time validation, canonical roles, exact route policy and fail-closed behavior remain explicit; production credentials and unrelated contracts are absent.",
+  "observed": {
+    "implementation_files": [
+      "apps/api/build.gradle.kts",
+      "apps/api/src/main/java/tw/basketball/magazine/identity/OidcRoleConverter.java",
+      "apps/api/src/main/java/tw/basketball/magazine/identity/OidcRolePolicy.java",
+      "apps/api/src/main/java/tw/basketball/magazine/identity/OidcSecurityConfiguration.java",
+      "apps/api/src/main/java/tw/basketball/magazine/identity/OidcSecurityProperties.java",
+      "apps/api/src/test/java/tw/basketball/magazine/identity/OidcSecurityFoundationTest.java"
+    ],
+    "governance_files": [
+      ".loop/evidence/t015-dispatch-20260808.json",
+      ".loop/evidence/t015-tests-first-baseline-20260808.json",
+      ".loop/evidence/t015-ci-security-final-20260808.json",
+      ".loop/t015-oidc-security-foundation-graphify-loop.yaml",
+      ".loop/t015-oidc-security-foundation-ledger.json"
+    ],
+    "absent_out_of_scope": [
+      "application.yml and production provider binding",
+      "Nuxt BFF authorization-code/PKCE/session-cookie implementation",
+      "database migrations or role-assignment repository changes",
+      "OpenAPI contract or generated-client changes",
+      "SIWE, wallet, payment, entitlement or deployment changes"
+    ],
+    "controls_reviewed": [
+      "NimbusJwtDecoder issuer discovery is activated only when an explicit issuer property is configured.",
+      "Default issuer and timestamp validators are combined with a required audience validator.",
+      "Only array-valued canonical roles map to ROLE_ authorities; scope/groups and prefixed/unknown roles fail closed.",
+      "Protected route families require exact authorities and unmatched routes deny by default.",
+      "CSRF is ignored only for bearer-token requests; global CSRF disablement is absent."
+    ]
+  },
+  "result": "PASS",
+  "evidence_refs": [
+    "https://github.com/bynanci/courtside-tw/pull/45",
+    "https://github.com/bynanci/courtside-tw/pull/45/files",
+    "https://github.com/bynanci/courtside-tw/commit/0fab5a1ec99060a011b8af8e1f6d5506714a0b95"
+  ],
+  "limitations": [
+    "P1 scope proof does not replace P2 CI/security proof or human review.",
+    "The resource-server chain is intentionally not the T016 BFF/session-cookie implementation.",
+    "No production IdP, credentials, tokens, cookies, private keys or production data were accessed."
+  ],
+  "owner": "codex-agent",
+  "next_review_at": "2026-08-08T06:48:04Z"
+}
