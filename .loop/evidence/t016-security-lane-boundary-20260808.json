@@ -1,0 +1,44 @@
+{
+  "evaluation_id": "charter-t016-security-lane-boundary-20260808",
+  "system_id": "courtside-tw-web-bff-identity",
+  "as_of": "2026-08-08T09:28:47.897Z",
+  "artifact_fingerprint": "git:05e891d19eac2439cadee92eea0b4612cb356306",
+  "environment": "security-plan",
+  "claim": "The T016 lane has a bounded security acceptance charter and explicit no-go conditions before runtime implementation.",
+  "proof_level": "P3",
+  "method": "Derive controls from T016 task, ADR-0002 and the T015 stable JWT/role contract.",
+  "acceptance": [
+    "authorization-code redirect validates state, nonce, exact redirect URI and PKCE code_verifier",
+    "tokens stay server-side; browser receives only Secure/HttpOnly/SameSite session cookies",
+    "session rotation occurs after login and privilege/context changes; logout revokes/clears server session",
+    "CSRF protection covers cookie-authenticated state-changing requests and is tested for missing/invalid/replayed tokens",
+    "auth middleware preserves anonymous public SSR reading and never leaks token/error details",
+    "provider outage blocks login only and returns a safe stable problem; anonymous published reading remains available",
+    "integration tests cover replay, fixation, open redirect, cookie flags, CSRF and role mapping using a local OIDC stub",
+    "no production IdP, client secret, token, cookie, private key or personal data is accessed"
+  ],
+  "planned_files": [
+    "apps/web/server/auth/",
+    "apps/web/server/middleware/auth.ts",
+    "apps/web/tests/integration/auth-session.test.ts"
+  ],
+  "dependency_edges": [
+    "T015 terminal main -> T016 issuer/audience/role contract",
+    "T016 security review -> implementation",
+    "T016 lane || T018 outbox lane (parallel, non-blocking)"
+  ],
+  "stop_conditions": [
+    "any request to contact production IdP or use a production secret",
+    "any browser token storage or cookie without Secure/HttpOnly/SameSite policy",
+    "any attempt to weaken T015 role or public-route fail-closed behavior",
+    "any change outside allowed T016 paths or loop artifacts"
+  ],
+  "result": "READY_FOR_CONTROLLED_SECURITY_WORK",
+  "evidence_refs": [
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md:T016",
+    "docs/adr/0002-identity-and-hosting-providers.md",
+    ".loop/evidence/t015-post-receipt-main-readback-20260808.json"
+  ],
+  "owner": "security-reviewer",
+  "next_review_at": "2026-08-08T09:28:47.897Z"
+}
