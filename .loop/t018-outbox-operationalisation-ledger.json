@@ -1,12 +1,12 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t018-outbox-operationalisation",
-  "graph_version": 2,
+  "graph_version": 3,
   "run_id": "courtside-tw-t018-operationalisation-20260808",
   "status": "running",
-  "iteration": 2,
+  "iteration": 3,
   "started_at": "2026-08-08T12:00:00Z",
-  "updated_at": "2026-08-08T12:02:36Z",
+  "updated_at": "2026-08-08T12:19:07Z",
   "current_frontier": ["a-implementation"],
   "blocked_nodes": [],
   "terminal_state": null,
@@ -88,6 +88,34 @@
       "failure_signature": "T018_OPERATIONALISATION_RUNTIME_BOUNDARY_ABSENT",
       "decision": "Proceed with one bounded implementation iteration; preserve the red baseline and keep schema, provider, credentials, deployment, endpoint exposure and activation out of scope.",
       "token_usage": {"estimated": 9000, "input": 0, "output": 0, "total": 9000},
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-t018-operationalisation-003-spotbugs-repair",
+      "at": "2026-08-08T12:19:07Z",
+      "actor": "codex-supervisor",
+      "type": "implementation_proof_reconciled",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {"op": "add", "path": "implementation-repair", "after": "Replace analyzer-triggering explicit rethrows with finally-based natural propagation while retaining failure metrics."}
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t018-operationalisation-ci-spotbugs-20260808.json",
+        "https://github.com/bynanci/courtside-tw/pull/52",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31256915341"
+      ],
+      "proof_receipts": [
+        {"proof": "compileJava", "level": "P2", "result": "pass", "job_id": "93101577905"},
+        {"proof": "compileTestJava", "level": "P2", "result": "pass", "job_id": "93101577905"},
+        {"proof": "checkstyleMain and tests", "level": "P2", "result": "pass", "job_id": "93101577905"},
+        {"proof": "spotbugsMain", "level": "P2", "result": "fail", "job_id": "93101577905", "failure_signature": "T018_SPOTBUGS_INTENTIONAL_RETHROW"}
+      ],
+      "failure_signature": "T018_SPOTBUGS_INTENTIONAL_RETHROW",
+      "decision": "Apply one narrow SpotBugs-compatible repair and rerun the exact head; do not weaken SpotBugs or alter acceptance.",
+      "token_usage": {"estimated": 3500, "input": 0, "output": 0, "total": 3500},
       "terminal_reason": null
     }
   ]

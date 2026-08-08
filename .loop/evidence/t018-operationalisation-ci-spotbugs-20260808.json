@@ -1,0 +1,54 @@
+{
+  "evaluation_id": "t018-operationalisation-ci-spotbugs-20260808",
+  "system_id": "courtside-tw-api-outbox",
+  "as_of": "2026-08-08T12:19:07Z",
+  "artifact_fingerprint": "git:f755729014748147bf3ef3bc5a86ce029d83aa57",
+  "environment": "exact-head-ci-157",
+  "claim": "The implementation head compiles and tests successfully; Java quality is blocked only by two SpotBugs THROWS findings caused by metrics instrumentation around naturally propagated RuntimeExceptions.",
+  "threat_refs": [
+    "ASI02 Tool Misuse and Exploitation",
+    "ASI08 Cascading Failures"
+  ],
+  "control_ids": [
+    "GOV-003",
+    "AGT-004",
+    "AGT-007",
+    "OPS-001"
+  ],
+  "proof_level": "P2",
+  "method": "Read back exact-head CI #157 Java quality job output and reduced the result to the failing analyzer checks without storing raw logs.",
+  "expected": "The implementation head passes compilation, tests and static quality after the runtime boundary is added.",
+  "observed": {
+    "pull_request": 52,
+    "head_sha": "f755729014748147bf3ef3bc5a86ce029d83aa57",
+    "ci_run": 157,
+    "ci_run_id": "31256915341",
+    "java_job_id": "93101577905",
+    "compile_java": "PASS",
+    "compile_test_java": "PASS",
+    "checkstyle_main": "PASS",
+    "unit_and_integration_tests": "PASS",
+    "spotbugs_main": "FAIL",
+    "failure_signature": "T018_SPOTBUGS_INTENTIONAL_RETHROW",
+    "findings": [
+      "OutboxWorker.runOnce RuntimeException rethrow after recordRunFailure",
+      "OutboxScheduler.start RuntimeException rethrow after recordSchedulerFailure"
+    ],
+    "security_filesystem": "PASS",
+    "security_javascript_codeql": "PASS"
+  },
+  "result": "FAIL",
+  "evidence_refs": [
+    "https://github.com/bynanci/courtside-tw/actions/runs/31256915341",
+    "https://github.com/bynanci/courtside-tw/pull/52",
+    "apps/api/src/main/java/tw/basketball/magazine/outbox/OutboxWorker.java",
+    "apps/api/src/main/java/tw/basketball/magazine/outbox/OutboxScheduler.java"
+  ],
+  "limitations": [
+    "This is a narrow analyzer failure; the remote job did not provide a local Gradle result.",
+    "Security #157 and Compose health were still running at this evidence timestamp.",
+    "No production database, provider, credential, deployment or activation value was accessed or changed."
+  ],
+  "owner": "codex-agent",
+  "next_review_at": "2026-08-08T14:00:00Z"
+}

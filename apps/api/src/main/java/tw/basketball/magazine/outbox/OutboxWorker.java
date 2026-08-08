@@ -52,11 +52,16 @@ public final class OutboxWorker {
 
     public OutboxRunResult runOnce() {
         Instant startedAt = clock.instant();
+        OutboxRunResult result = null;
         try {
-            return runOnceStartedAt(startedAt);
-        } catch (RuntimeException failure) {
-            metrics.recordRunFailure(elapsedSince(startedAt));
-            throw failure;
+            result = runOnceStartedAt(startedAt);
+            return result;
+        } finally {
+            if (result == null) {
+                metrics.recordRunFailure(elapsedSince(startedAt));
+            } else {
+                metrics.recordRun(result, elapsedSince(startedAt));
+            }
         }
     }
 
@@ -104,7 +109,6 @@ public final class OutboxWorker {
                 retryScheduled,
                 deadLettered
         );
-        metrics.recordRun(result, elapsedSince(startedAt));
         return result;
     }
 

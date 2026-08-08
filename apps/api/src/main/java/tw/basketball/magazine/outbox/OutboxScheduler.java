@@ -41,16 +41,19 @@ public final class OutboxScheduler implements SmartLifecycle {
         }
         running.set(true);
         Instant firstRun = clock.instant().plus(properties.initialDelay());
+        boolean scheduled = false;
         try {
             scheduledTask = taskScheduler.scheduleWithFixedDelay(
                     this::runSafely,
                     firstRun,
                     properties.pollInterval()
             );
-        } catch (RuntimeException failure) {
-            running.set(false);
-            metrics.recordSchedulerFailure();
-            throw failure;
+            scheduled = true;
+        } finally {
+            if (!scheduled) {
+                running.set(false);
+                metrics.recordSchedulerFailure();
+            }
         }
     }
 
