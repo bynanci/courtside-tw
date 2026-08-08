@@ -122,9 +122,9 @@ graph:
       status: running
       risk: high
       confidence:
-        score: 0.78
-        basis: "The bounded Java source and tests are present, but exact-head Java 21 compilation failed on a serializability warning promoted to an error; the repair keeps Version state serializable and is delegated to CI for proof."
-        evidence_refs: [.loop/evidence/t014-tests-first-local-20260808.json, .loop/evidence/t014-static-proof-20260808.json, .loop/evidence/t014-codeql-failure-20260808.json]
+        score: 0.75
+        basis: "The bounded Java source and tests are present; the serializability CI failure and two P2 review findings were repaired without expanding beyond T014, and the new exact-head proof is still pending."
+        evidence_refs: [.loop/evidence/t014-tests-first-local-20260808.json, .loop/evidence/t014-static-proof-20260808.json, .loop/evidence/t014-codeql-failure-20260808.json, .loop/evidence/t014-review-feedback-20260808.json]
       budget: {effort_hours: 2.5, tokens: 18000}
       config:
         workflow: [read T014 contract, write tests first, implement immutable shared types, run static checks, hand off Java proof to CI]
@@ -180,9 +180,9 @@ graph:
       status: blocked
       risk: high
       confidence:
-        score: 0.7
-        basis: "The first exact-head Java 21 compile reached the repository runner but failed because javac -Werror promoted non-serializable Version fields in VersionConflictException; rerun is required after the bounded repair."
-        evidence_refs: [.loop/evidence/t014-codeql-failure-20260808.json]
+        score: 0.68
+        basis: "The first exact-head Java 21 compile failed on serializability and review found two P2 boundary issues; both repairs are present, but Java/CI/Security proof must be rerun on the new head."
+        evidence_refs: [.loop/evidence/t014-codeql-failure-20260808.json, .loop/evidence/t014-review-feedback-20260808.json]
       budget: {effort_hours: 0.8, tokens: 7000}
       config:
         level: P2

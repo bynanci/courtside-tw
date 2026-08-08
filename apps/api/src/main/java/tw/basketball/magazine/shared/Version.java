@@ -20,7 +20,7 @@ public record Version(long value) implements Serializable {
         if (rawValue == null) {
             throw new IllegalArgumentException("If-Match is required");
         }
-        String value = rawValue.trim();
+        String value = stripOptionalWhitespace(rawValue);
         if (value.equals("*") || value.startsWith("W/")) {
             throw new IllegalArgumentException("If-Match must be an exact version");
         }
@@ -47,5 +47,26 @@ public record Version(long value) implements Serializable {
 
     public String toIfMatch() {
         return '"' + Long.toString(value) + '"';
+    }
+
+    private static String stripOptionalWhitespace(String rawValue) {
+        if (rawValue.chars().anyMatch(character -> Character.isISOControl(character)
+                && character != ' '
+                && character != '\t')) {
+            throw new IllegalArgumentException("If-Match contains unsupported control characters");
+        }
+        int start = 0;
+        int end = rawValue.length();
+        while (start < end && isOptionalWhitespace(rawValue.charAt(start))) {
+            start++;
+        }
+        while (end > start && isOptionalWhitespace(rawValue.charAt(end - 1))) {
+            end--;
+        }
+        return rawValue.substring(start, end);
+    }
+
+    private static boolean isOptionalWhitespace(char character) {
+        return character == ' ' || character == '\t';
     }
 }

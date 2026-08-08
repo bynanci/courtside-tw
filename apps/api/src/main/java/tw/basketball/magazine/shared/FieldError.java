@@ -9,6 +9,10 @@ public record FieldError(String path, String code, String message) {
         message = bounded(message, "message", 500);
     }
 
+    public static FieldError currentVersion(Version version) {
+        return new FieldError("/version", "current_version", Objects.requireNonNull(version, "version").toIfMatch());
+    }
+
     private static String bounded(String value, String name, int maximumLength) {
         Objects.requireNonNull(value, name);
         if (value.isBlank() || value.length() > maximumLength || containsControlCharacter(value)) {

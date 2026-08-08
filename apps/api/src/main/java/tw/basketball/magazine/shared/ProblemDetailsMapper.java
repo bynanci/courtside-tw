@@ -33,7 +33,12 @@ public final class ProblemDetailsMapper {
             RequestId requestId
     ) {
         Objects.requireNonNull(exception, "exception");
-        return from(ProblemCode.VERSION_CONFLICT, instance, requestId, List.of());
+        return from(
+                ProblemCode.VERSION_CONFLICT,
+                instance,
+                requestId,
+                List.of(FieldError.currentVersion(exception.current()))
+        );
     }
 
     public static ProblemDetails invalidRequest(

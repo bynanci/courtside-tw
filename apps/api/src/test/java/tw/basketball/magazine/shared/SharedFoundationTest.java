@@ -83,6 +83,9 @@ final class SharedFoundationTest {
         assertThrows(IllegalArgumentException.class, () -> Version.parseIfMatch("W/\"2\""));
         assertThrows(IllegalArgumentException.class, () -> Version.parseIfMatch("\"two\""));
         assertThrows(IllegalArgumentException.class, () -> Version.parseIfMatch("-1"));
+        assertThrows(IllegalArgumentException.class, () -> Version.parseIfMatch("\"2\"\r\n"));
+        assertThrows(IllegalArgumentException.class, () -> Version.parseIfMatch("\0\"2\""));
+        assertEquals(new Version(2), Version.parseIfMatch(" \t\"2\"\t "));
         assertThrows(IllegalArgumentException.class, () -> Version.parseIfMatch("\"2\"\nX-Injected: true"));
     }
 
@@ -104,7 +107,7 @@ final class SharedFoundationTest {
         assertEquals("/api/v1/editor/issues/issue-1", problem.instance());
         assertEquals(requestId.value(), problem.requestId());
         assertEquals("VERSION_CONFLICT", problem.code());
-        assertTrue(problem.errors().isEmpty());
+        assertEquals(List.of(new FieldError("/version", "current_version", "\"2\"")), problem.errors());
         assertFalse(problem.detail().contains(conflict.getMessage()));
     }
 

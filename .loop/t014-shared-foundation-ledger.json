@@ -1,16 +1,16 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t014",
-  "graph_version": 4,
+  "graph_version": 5,
   "run_id": "courtside-tw-t014-20260808",
   "status": "running",
-  "iteration": 3,
+  "iteration": 4,
   "started_at": "2026-08-08T03:00:00Z",
-  "updated_at": "2026-08-08T03:33:00Z",
+  "updated_at": "2026-08-08T03:42:40Z",
   "current_frontier": ["a-t014-shared"],
   "blocked_nodes": [],
   "terminal_state": "needs_human",
-  "next_action": "Repair Version serializability, publish the new exact T014 PR head, and obtain Java 21/Gradle CI and Security proof before review/merge.",
+  "next_action": "Publish the repaired exact T014 PR head and obtain Java 21/Gradle CI, Security and fresh review-thread proof before review/merge.",
   "events": [
     {
       "event_id": "evt-t014-001-main-reconciled",
@@ -125,6 +125,34 @@
       "proof_receipts": [],
       "failure_signature": "JAVAC_SERIAL_WARNING_WERROR_VERSION_CONFLICT_FIELDS",
       "decision": "Make Version serializable with explicit serialVersionUID; preserve conflict state and rerun the exact-head gates."
+    },
+    {
+      "event_id": "evt-t014-004-review-feedback-repaired",
+      "at": "2026-08-08T03:42:40Z",
+      "actor": "codex-agent",
+      "type": "failure_feedback",
+      "base_graph_version": 4,
+      "new_graph_version": 5,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-t014-shared/confidence/score",
+            "before": 0.78,
+            "after": 0.75
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-t014-ci-unit/confidence/score",
+            "before": 0.7,
+            "after": 0.68
+          }
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t014-review-feedback-20260808.json"],
+      "proof_receipts": [],
+      "failure_signature": "PR43_P2_CURRENT_VERSION_AND_IF_MATCH_CONTROL_BOUNDARY",
+      "decision": "Return the current version through the existing bounded errors contract and reject all disallowed If-Match edge controls before optional whitespace removal."
     }
   ]
 }
