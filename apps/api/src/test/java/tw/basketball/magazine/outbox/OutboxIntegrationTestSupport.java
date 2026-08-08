@@ -27,8 +27,8 @@ abstract class OutboxIntegrationTestSupport {
     private static final UUID AGGREGATE_ID =
             UUID.fromString("00000000-0000-4000-8000-000000000001");
 
-    private static final PostgreSQLContainer<?> POSTGRES =
-            new PostgreSQLContainer<>(POSTGRES_IMAGE)
+    private static final PostgreSQLContainer POSTGRES =
+            new PostgreSQLContainer(POSTGRES_IMAGE)
                     .withDatabaseName("courtside")
                     .withUsername("courtside")
                     .withPassword("courtside-test");
