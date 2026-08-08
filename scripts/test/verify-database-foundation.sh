@@ -10,8 +10,6 @@ ENV_FILE="${COMPOSE_ENV_FILE:-$COMPOSE_DIR/.env.example}"
 MIGRATION_FILE="$REPO_ROOT/apps/api/src/main/resources/db/migration/V001__foundation.sql"
 PROJECT_NAME="courtside-t013-$$"
 TIMEOUT_SECONDS="${T013_TIMEOUT_SECONDS:-120}"
-DB_NAME="${POSTGRES_DB:-courtside}"
-DB_USER="${POSTGRES_USER:-courtside}"
 
 fail() {
   echo "verify-database-foundation: $*" >&2
@@ -64,7 +62,7 @@ wait_for_healthy() {
 }
 
 sql() {
-  compose exec -T postgres psql -X -v ON_ERROR_STOP=1 -U "$DB_USER" -d "$DB_NAME" "$@"
+  compose exec -T postgres sh -c 'exec psql -X -v ON_ERROR_STOP=1 -U "$POSTGRES_USER" -d "$POSTGRES_DB" "$@"' -- "$@"
 }
 
 scalar() {
@@ -197,6 +195,7 @@ echo "verify-database-foundation: valid identity/media/rights/outbox/audit rows 
 expect_failure "duplicate OIDC issuer/subject" "INSERT INTO reader_profile (issuer, subject) VALUES ('https://issuer.example.test', 'reader-1');"
 expect_failure "duplicate active role assignment" "INSERT INTO role_assignment (reader_id, role_code) VALUES ('00000000-0000-4000-8000-000000000001', 'READER');"
 expect_failure "invalid media MIME" "INSERT INTO media_asset (private_storage_key, checksum_sha256, mime_type, byte_size) VALUES ('private/originals/bad', repeat('c', 64), 'application/pdf', 10);"
+expect_failure "partially specified media dimensions" "INSERT INTO media_asset (private_storage_key, checksum_sha256, mime_type, byte_size, width) VALUES ('private/originals/partial-dimensions', repeat('e', 64), 'image/jpeg', 10, 1);"
 expect_failure "invalid rights channel" "INSERT INTO rights_record (asset_id, rights_owner, license_name, allowed_channels, valid_from, valid_until, credit, withdrawal_terms) VALUES ('00000000-0000-4000-8000-000000000003', 'owner', 'license', ARRAY['UNKNOWN'], now(), now() + interval '1 day', 'credit', 'terms');"
 expect_failure "invalid rights validity window" "INSERT INTO rights_record (asset_id, rights_owner, license_name, allowed_channels, valid_from, valid_until, credit, withdrawal_terms) VALUES ('00000000-0000-4000-8000-000000000003', 'owner', 'license', ARRAY['PUBLIC_WEB'], now(), now() - interval '1 second', 'credit', 'terms');"
 expect_failure "duplicate media variant" "INSERT INTO media_variant (asset_id, variant, public_storage_key, checksum_sha256, mime_type, byte_size, width, height) VALUES ('00000000-0000-4000-8000-000000000003', 'hero', 'public/variants/asset-1/hero-duplicate.avif', repeat('d', 64), 'image/avif', 10, 1, 1);"
