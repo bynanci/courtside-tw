@@ -62,7 +62,7 @@ policy:
     require_graph_delta: true
 
 graph:
-  entry_nodes: [x-main-readback, g-t015-dispatch]
+  entry_nodes: [x-main-readback]
   terminal_nodes: [s-t015-terminal]
   current_frontier: [a-t015-tests-first]
   blocked_nodes: []
