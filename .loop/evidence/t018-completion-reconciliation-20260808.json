@@ -1,0 +1,61 @@
+{
+  "evaluation_id": "completion-reconciliation-t018-20260808",
+  "system_id": "courtside-tw-api-outbox",
+  "as_of": "2026-08-08T11:31:06Z",
+  "artifact_fingerprint": "git:61265f5467d058fa4c10aede95a1c9b7eaee7758",
+  "environment": "post-merge-main-readback",
+  "claim": "T018 outbox claim/lease/retry/dead-letter implementation is production-ready to merge as an opt-in foundation and is reconciled after protected merge.",
+  "proof_level": "P3",
+  "method": "Review the exact implementation head, run the bounded hardening loop, verify exact-head CI/Security, confirm PR #49 protected squash merge, then read back main and the T018 runtime path before preparing the completion reconciliation.",
+  "observed": {
+    "pull_request": 49,
+    "base_sha": "05e891d19eac2439cadee92eea0b4612cb356306",
+    "reviewed_head": "0e1fb06afaf8ce81bbd3bd35f296409470d0c212",
+    "merge_sha": "61265f5467d058fa4c10aede95a1c9b7eaee7758",
+    "main_readback_sha": "61265f5467d058fa4c10aede95a1c9b7eaee7758",
+    "changed_files": 26,
+    "scope": [
+      "T018 governance/evidence artifacts",
+      "apps/api/build.gradle.kts",
+      "apps/api/src/main/java/tw/basketball/magazine/outbox/",
+      "apps/api/src/test/java/tw/basketball/magazine/outbox/",
+      "apps/api/src/test/resources/application.yml"
+    ],
+    "non_scope_verified": [
+      "no V001 migration change",
+      "no T016/T017/T019/T020 implementation",
+      "no message broker, credentials, production database, provider or deployment action"
+    ],
+    "hardening": [
+      "expired max-attempt cleanup bounded by claim batchSize",
+      "concurrent worker claim race covered by Testcontainers",
+      "duplicate delivery verified against durable PostgreSQL unique-key fixture",
+      "Bearer and Basic authorization value redaction regression added"
+    ],
+    "ci": {
+      "run_number": 151,
+      "result": "success",
+      "url": "https://github.com/bynanci/courtside-tw/actions/runs/31254990076"
+    },
+    "security": {
+      "run_number": 151,
+      "result": "success",
+      "url": "https://github.com/bynanci/courtside-tw/actions/runs/31254990073"
+    },
+    "review": {
+      "review_id": 4888725470,
+      "decision": "PASS_WITH_FOLLOW_UP",
+      "review_threads": 0
+    },
+    "task_checkbox": "updated to checked in the completion reconciliation branch",
+    "feature_activation": "courtside.outbox.enabled remains opt-in"
+  },
+  "result": "PASS_WITH_FOLLOW_UP",
+  "limitations": [
+    "Downstream concrete handler registration, scheduling and operational metrics are intentionally outside T018 and remain follow-up integration work.",
+    "No production database, provider or deployment action was performed."
+  ],
+  "rollback": "Revert the merge commit before enabling the opt-in outbox feature; no schema rollback is required because this reconciliation did not change V001.",
+  "owner": "codex-supervisor",
+  "next_review_at": "2026-08-08T11:31:06Z"
+}
