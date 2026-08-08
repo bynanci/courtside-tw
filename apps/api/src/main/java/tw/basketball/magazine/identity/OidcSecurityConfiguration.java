@@ -10,10 +10,10 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2Error;
 import org.springframework.security.oauth2.core.OAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2TokenValidatorResult;
-import org.springframework.security.oauth2.jwt.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
@@ -34,7 +34,7 @@ import tw.basketball.magazine.shared.RoleCode;
 @EnableMethodSecurity
 @ConditionalOnProperty(prefix = "courtside.security.oidc", name = "issuer")
 @EnableConfigurationProperties(OidcSecurityProperties.class)
-public class OidcSecurityConfiguration {
+public final class OidcSecurityConfiguration {
     @Bean
     public JwtDecoder oidcJwtDecoder(OidcSecurityProperties properties) {
         NimbusJwtDecoder decoder = NimbusJwtDecoder
