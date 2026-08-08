@@ -55,29 +55,33 @@ public final class OidcSecurityConfiguration {
     public SecurityFilterChain oidcResourceServerSecurityFilterChain(
             HttpSecurity http,
             JwtAuthenticationConverter converter
-    ) throws Exception {
-        http
-                .csrf(AbstractHttpConfigurer::disable)
-                .sessionManagement(session -> session.sessionCreationPolicy(
-                        SessionCreationPolicy.STATELESS
-                ))
-                .authorizeHttpRequests(authorize -> authorize
-                        .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
-                        .requestMatchers("/api/v1/public/**").permitAll()
-                        .requestMatchers("/api/v1/me/**")
-                        .hasAuthority(OidcRolePolicy.authority(RoleCode.READER))
-                        .requestMatchers("/api/v1/editor/**")
-                        .hasAuthority(OidcRolePolicy.authority(RoleCode.EDITOR))
-                        .requestMatchers("/api/v1/publisher/**")
-                        .hasAuthority(OidcRolePolicy.authority(RoleCode.PUBLISHER))
-                        .requestMatchers("/api/v1/admin/**")
-                        .hasAuthority(OidcRolePolicy.authority(RoleCode.ADMIN))
-                        .anyRequest().denyAll()
-                )
-                .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt
-                        .jwtAuthenticationConverter(converter)
-                ));
-        return http.build();
+    ) {
+        try {
+            http
+                    .csrf(AbstractHttpConfigurer::disable)
+                    .sessionManagement(session -> session.sessionCreationPolicy(
+                            SessionCreationPolicy.STATELESS
+                    ))
+                    .authorizeHttpRequests(authorize -> authorize
+                            .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                            .requestMatchers("/api/v1/public/**").permitAll()
+                            .requestMatchers("/api/v1/me/**")
+                            .hasAuthority(OidcRolePolicy.authority(RoleCode.READER))
+                            .requestMatchers("/api/v1/editor/**")
+                            .hasAuthority(OidcRolePolicy.authority(RoleCode.EDITOR))
+                            .requestMatchers("/api/v1/publisher/**")
+                            .hasAuthority(OidcRolePolicy.authority(RoleCode.PUBLISHER))
+                            .requestMatchers("/api/v1/admin/**")
+                            .hasAuthority(OidcRolePolicy.authority(RoleCode.ADMIN))
+                            .anyRequest().denyAll()
+                    )
+                    .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt
+                            .jwtAuthenticationConverter(converter)
+                    ));
+            return http.build();
+        } catch (Exception exception) {
+            throw new IllegalStateException("Unable to build OIDC resource-server security chain", exception);
+        }
     }
 
     static OAuth2TokenValidator<Jwt> tokenValidator(String issuer, String audience) {
@@ -93,8 +97,11 @@ public final class OidcSecurityConfiguration {
                 "The required OIDC audience is missing.",
                 null
         );
-        return jwt -> jwt.getAudience().contains(audience)
-                ? OAuth2TokenValidatorResult.success()
-                : OAuth2TokenValidatorResult.failure(error);
+        return jwt -> {
+            var audiences = jwt.getAudience();
+            return audiences != null && audiences.contains(audience)
+                    ? OAuth2TokenValidatorResult.success()
+                    : OAuth2TokenValidatorResult.failure(error);
+        };
     }
 }
