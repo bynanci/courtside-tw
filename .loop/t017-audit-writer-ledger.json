@@ -1,0 +1,70 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-t017-append-only-audit-writer",
+  "graph_version": 1,
+  "run_id": "courtside-tw-t017-20260808",
+  "status": "verifying",
+  "iteration": 2,
+  "started_at": "2026-08-08T15:20:00Z",
+  "updated_at": "2026-08-08T15:35:00Z",
+  "current_frontier": ["p-t017-runtime-proof"],
+  "blocked_nodes": [],
+  "terminal_state": "running",
+  "next_action": "Run exact-head Java/Testcontainers, Checkstyle, SpotBugs, CodeQL and Security proof for the T017 implementation; keep the PR draft and preserve the human review gate.",
+  "memory_receipt": {
+    "memory_status": "SAVED",
+    "memory_id": "wm:project:courtside-tw:t017-audit-writer",
+    "version": "1",
+    "retrieval_ids": ["wm:project:courtside-tw:t018-outbox-operationalisation"],
+    "evidence_refs": [
+      ".loop/evidence/t017-lane-boundary-20260808.json",
+      ".loop/evidence/t017-tests-first-baseline-20260808.json"
+    ],
+    "next_review_at": "2026-08-08",
+    "blocker": "Runtime proof and independent security/privacy review are pending."
+  },
+  "events": [
+    {
+      "event_id": "evt-t017-001-lane-dispatch",
+      "at": "2026-08-08T15:20:00Z",
+      "actor": "codex-supervisor",
+      "type": "t017_audit_lane_dispatched",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {"op": "add", "path": "graph.nodes/t-t017-ready", "after": "T017 parallel lane after T013 main"},
+          {"op": "add", "path": "graph.nodes/g-t017-review", "after": "Security/privacy review and protected merge are named gates"},
+          {"op": "replace", "path": "graph.current_frontier", "before": [], "after": ["a-t017-tests-first"]}
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t017-lane-boundary-20260808.json"],
+      "proof_receipts": [
+        {"proof": "T013 prerequisite", "level": "P3", "result": "pass", "main_sha": "63e6ea3cad59c98e992e2f02f7acb739ac28cf67", "t017": "unchecked", "t018": "checked"}
+      ],
+      "failure_signature": null,
+      "decision": "Open T017 as an isolated append-only audit lane; do not wait for or merge T016."
+    },
+    {
+      "event_id": "evt-t017-002-tests-first-baseline",
+      "at": "2026-08-08T15:28:00Z",
+      "actor": "codex-agent",
+      "type": "t017_tests_first_baseline",
+      "base_graph_version": 1,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {"op": "replace", "path": "graph.nodes/a-t017-tests-first.status", "before": "ready", "after": "done"},
+          {"op": "replace", "path": "graph.nodes/p-t017-baseline.status", "before": "planned", "after": "done"},
+          {"op": "replace", "path": "graph.current_frontier", "before": ["a-t017-tests-first"], "after": ["a-t017-implementation"]}
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t017-tests-first-baseline-20260808.json"],
+      "proof_receipts": [
+        {"proof": "CI #171 compileTestJava", "level": "P2", "result": "intentional_failure", "missing_symbols": ["AuditWriter", "AuditEventDraft", "JdbcAuditWriter", "AuditMetadataSanitizer"]}
+      ],
+      "failure_signature": "T017_RUNTIME_BOUNDARY_ABSENT",
+      "decision": "Baseline is valid; implement only the bounded audit package and preserve the red receipt."
+    }
+  ]
+}

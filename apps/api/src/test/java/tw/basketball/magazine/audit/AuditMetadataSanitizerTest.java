@@ -20,6 +20,7 @@ final class AuditMetadataSanitizerTest {
 
         Map<String, Object> metadata = new LinkedHashMap<>();
         metadata.put("authorization", "Bearer top-secret-token");
+        metadata.put("email", "editor@example.test");
         metadata.put("article_body", "A private article body must never enter audit metadata.");
         metadata.put(
                 "assetUrl",
@@ -31,6 +32,7 @@ final class AuditMetadataSanitizerTest {
         Map<String, Object> sanitized = AuditMetadataSanitizer.sanitize(metadata);
 
         assertEquals(REDACTED, sanitized.get("authorization"));
+        assertEquals(REDACTED, sanitized.get("email"));
         assertEquals(REDACTED, sanitized.get("article_body"));
         assertEquals(REDACTED, sanitized.get("assetUrl"));
         Map<?, ?> sanitizedTarget = assertInstanceOf(Map.class, sanitized.get("target"));
@@ -40,6 +42,7 @@ final class AuditMetadataSanitizerTest {
 
         String serialized = sanitized.toString();
         assertFalse(serialized.contains("top-secret-token"));
+        assertFalse(serialized.contains("editor@example.test"));
         assertFalse(serialized.contains("private article body"));
         assertFalse(serialized.contains("top-signed-secret"));
         assertFalse(serialized.contains("private/originals/secret.jpg"));
@@ -56,5 +59,11 @@ final class AuditMetadataSanitizerTest {
         assertEquals("result", sanitized.keySet().iterator().next());
         assertEquals("ok value", sanitized.get("result"));
         assertEquals("[REDACTED_UNSUPPORTED]", sanitized.get("unsupported"));
+    }
+
+    @Test
+    void redactsEmailLikeActorSubjectButKeepsOpaqueSubject() {
+        assertEquals(REDACTED, AuditMetadataSanitizer.sanitizeActorSubject("editor@example.test"));
+        assertEquals("oidc|editor-1", AuditMetadataSanitizer.sanitizeActorSubject("oidc|editor-1"));
     }
 }

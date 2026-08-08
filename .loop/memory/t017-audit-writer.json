@@ -1,0 +1,57 @@
+{
+  "schema_version": 1,
+  "memory_id": "wm:project:courtside-tw:t017-audit-writer",
+  "scope": "project",
+  "kind": "task_state",
+  "title": "T017 audit writer is isolated and currently awaiting runtime proof",
+  "summary": "T017 runs as a separate append-only audit lane from main 63e6ea3. The tests-first baseline is confirmed red only for missing audit runtime symbols; the implementation is bounded to sanitized INSERT-only writing and remains unmerged until exact-head proof and human security/privacy review.",
+  "claims": [
+    {
+      "text": "T013 provides an audit_event table whose application role may insert/read but may not update/delete/truncate.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The T017 tests-first baseline fails at compileTestJava only because the audit runtime symbols are absent.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The T017 runtime implementation has not yet passed exact-head Java/Testcontainers and Security proof.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    }
+  ],
+  "status": "verified",
+  "confidence": "high",
+  "confidence_basis": [
+    ".loop/evidence/t017-lane-boundary-20260808.json",
+    ".loop/evidence/t017-tests-first-baseline-20260808.json"
+  ],
+  "volatility": "medium",
+  "as_of": "2026-08-08",
+  "source_refs": [
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md:T017",
+    "apps/api/src/main/resources/db/migration/V001__foundation.sql",
+    ".loop/evidence/t017-lane-boundary-20260808.json",
+    ".loop/evidence/t017-tests-first-baseline-20260808.json"
+  ],
+  "entities": ["courtside-tw", "T017", "audit_event", "append-only-audit"],
+  "relations": {
+    "supports": ["wm:project:courtside-tw:t018-outbox-operationalisation"],
+    "contradicts": [],
+    "supersedes": [],
+    "blocks": [],
+    "invalidates": []
+  },
+  "decision": {
+    "context": "T017 is parallel after T013 and must not inherit the unmerged T016 branch.",
+    "chosen": "Implement a sanitized INSERT-only JDBC writer with no schema or production activation changes.",
+    "alternatives": ["Wait for T016 merge", "Add audit schema changes in T017"],
+    "tradeoffs": ["No domain event integration yet", "Smaller review and rollback surface"],
+    "invalidation": "Re-evaluate if the T013 audit_event contract or protected database grants change."
+  },
+  "next_review_at": "2026-08-08",
+  "sensitivity": "internal",
+  "retention": "until_superseded"
+}
