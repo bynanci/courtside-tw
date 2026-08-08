@@ -1,5 +1,6 @@
 package tw.basketball.magazine.shared.observability;
 
+import java.io.IOException;
 import java.time.Duration;
 import java.util.UUID;
 
@@ -28,7 +29,7 @@ public final class RequestTraceFilter extends OncePerRequestFilter {
             HttpServletRequest request,
             HttpServletResponse response,
             FilterChain filterChain
-    ) throws ServletException {
+    ) throws ServletException, IOException {
         String requestId = safeRequestId(request.getHeader(REQUEST_ID_HEADER));
         String traceId = safeRequestId(request.getHeader(TRACE_ID_HEADER));
         long startedAt = System.nanoTime();
