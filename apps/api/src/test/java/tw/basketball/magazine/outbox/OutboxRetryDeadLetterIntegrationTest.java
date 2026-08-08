@@ -44,6 +44,11 @@ final class OutboxRetryDeadLetterIntegrationTest extends OutboxIntegrationTestSu
         assertFalse(firstFailure.lastError().contains("top-secret"));
         assertFalse(firstFailure.lastError().contains("json-secret"));
         assertFalse(firstFailure.lastError().contains("\n"));
+        assertFalse(
+                OutboxErrorSanitizer.sanitize(
+                        new IllegalStateException("request failed with Bearer top-secret")
+                ).contains("top-secret")
+        );
 
         Instant secondClaimTime = firstFailure.availableAt();
         OutboxClaim secondClaim = repository.claim(
