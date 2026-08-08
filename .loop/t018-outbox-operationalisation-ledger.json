@@ -1,0 +1,210 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-t018-outbox-operationalisation",
+  "graph_version": 6,
+  "run_id": "courtside-tw-t018-operationalisation-20260808",
+  "status": "needs_human",
+  "iteration": 6,
+  "started_at": "2026-08-08T12:00:00Z",
+  "updated_at": "2026-08-08T12:36:40Z",
+  "current_frontier": ["g-production-review"],
+  "blocked_nodes": [],
+  "terminal_state": "needs_human",
+  "next_action": "Human production-readiness review and protected merge decision; do not activate deployment configuration or management endpoints.",
+  "memory_receipt": {
+    "memory_status": "UPDATED",
+    "memory_id": "wm:project:courtside-tw:t018-outbox-operationalisation",
+    "version": "c95c89e7e403815a0699ba6d8459bb6d89266862",
+    "retrieval_ids": ["t018-outbox-operationalisation-20260808"],
+    "evidence_refs": [
+      ".loop/evidence/t018-operationalisation-tests-first-20260808.json",
+      ".loop/evidence/t018-operationalisation-implementation-20260808.json",
+      ".loop/memory/t018-outbox-operationalisation.json"
+    ],
+    "next_review_at": "2026-08-15",
+    "blocker": "none"
+  },
+  "events": [
+    {
+      "event_id": "evt-t018-operationalisation-001-dispatch",
+      "at": "2026-08-08T12:00:00Z",
+      "actor": "codex-supervisor",
+      "type": "enhancement_dispatched",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {"op": "add", "path": "graph", "after": "Bounded handler registration, worker scheduling and metrics loop from main aa59a4a."},
+          {"op": "add", "path": "graph.nodes/a-tests-first/status", "after": "running"}
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t018-operationalisation-charter-20260808.json",
+        "https://github.com/bynanci/courtside-tw/commit/aa59a4a6cd7ebc575d04da147521fb14e8256a8a"
+      ],
+      "proof_receipts": [],
+      "failure_signature": null,
+      "decision": "Implement only the opt-in operational boundary; keep T016, schema, provider, deployment and activation out of scope.",
+      "token_usage": {"estimated": 8000, "input": 0, "output": 0, "total": 8000},
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-t018-operationalisation-002-tests-first-baseline",
+      "at": "2026-08-08T12:02:36Z",
+      "actor": "codex-agent",
+      "type": "tests_first_baseline_recorded",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {"op": "replace", "path": "a-tests-first/status", "before": "running", "after": "done"},
+          {"op": "replace", "path": "p-tests-first/status", "before": "planned", "after": "done"},
+          {"op": "replace", "path": "a-implementation/status", "before": "planned", "after": "ready"},
+          {"op": "replace", "path": "current_frontier", "before": ["a-tests-first"], "after": ["a-implementation"]}
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t018-operationalisation-tests-first-20260808.json",
+        ".loop/memory/t018-outbox-operationalisation.json",
+        "https://github.com/bynanci/courtside-tw/pull/52",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31256283782",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31256283795"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "CI #155 Java quality exact-head compileTestJava",
+          "level": "P2",
+          "result": "expected_red_missing_runtime_boundary",
+          "job_id": "93099991193",
+          "failure_signature": "T018_OPERATIONALISATION_RUNTIME_BOUNDARY_ABSENT"
+        },
+        {
+          "proof": "Security #155 dependency-audit exact-head gradle test",
+          "level": "P2",
+          "result": "expected_red_missing_runtime_boundary",
+          "job_id": "93099991390",
+          "failure_signature": "T018_OPERATIONALISATION_RUNTIME_BOUNDARY_ABSENT"
+        }
+      ],
+      "failure_signature": "T018_OPERATIONALISATION_RUNTIME_BOUNDARY_ABSENT",
+      "decision": "Proceed with one bounded implementation iteration; preserve the red baseline and keep schema, provider, credentials, deployment, endpoint exposure and activation out of scope.",
+      "token_usage": {"estimated": 9000, "input": 0, "output": 0, "total": 9000},
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-t018-operationalisation-003-spotbugs-repair",
+      "at": "2026-08-08T12:19:07Z",
+      "actor": "codex-supervisor",
+      "type": "implementation_proof_reconciled",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {"op": "add", "path": "implementation-repair", "after": "Replace analyzer-triggering explicit rethrows with finally-based natural propagation while retaining failure metrics."}
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t018-operationalisation-ci-spotbugs-20260808.json",
+        "https://github.com/bynanci/courtside-tw/pull/52",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31256915341"
+      ],
+      "proof_receipts": [
+        {"proof": "compileJava", "level": "P2", "result": "pass", "job_id": "93101577905"},
+        {"proof": "compileTestJava", "level": "P2", "result": "pass", "job_id": "93101577905"},
+        {"proof": "checkstyleMain and tests", "level": "P2", "result": "pass", "job_id": "93101577905"},
+        {"proof": "spotbugsMain", "level": "P2", "result": "fail", "job_id": "93101577905", "failure_signature": "T018_SPOTBUGS_INTENTIONAL_RETHROW"}
+      ],
+      "failure_signature": "T018_SPOTBUGS_INTENTIONAL_RETHROW",
+      "decision": "Apply one narrow SpotBugs-compatible repair and rerun the exact head; do not weaken SpotBugs or alter acceptance.",
+      "token_usage": {"estimated": 3500, "input": 0, "output": 0, "total": 3500},
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-t018-operationalisation-004-production-proof",
+      "at": "2026-08-08T12:24:55Z",
+      "actor": "codex-supervisor",
+      "type": "exact_head_proof_reconciled",
+      "base_graph_version": 3,
+      "new_graph_version": 4,
+      "graph_delta": {
+        "operations": [
+          {"op": "replace", "path": "a-implementation/status", "before": "running", "after": "done"},
+          {"op": "replace", "path": "p-production-proof/status", "before": "planned", "after": "done"},
+          {"op": "replace", "path": "current_frontier", "before": ["a-implementation"], "after": ["g-production-review"]},
+          {"op": "replace", "path": "terminal_state", "before": null, "after": "needs_human"}
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t018-operationalisation-implementation-20260808.json",
+        ".loop/memory/t018-outbox-operationalisation.json",
+        "https://github.com/bynanci/courtside-tw/pull/52",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31257041406",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31257041402"
+      ],
+      "proof_receipts": [
+        {"proof": "CI #158 all jobs", "level": "P2", "result": "pass", "run_id": "31257041406", "java_job_id": "93101899781", "compose_job_id": "93101899747"},
+        {"proof": "Security #158 all jobs", "level": "P2", "result": "pass", "run_id": "31257041402", "dependency_job_id": "93101899650", "java_codeql_job_id": "93101899664"},
+        {"proof": "changed-file inventory and review-thread read-back", "level": "P2", "result": "pass", "changed_files": 26, "review_threads": 0, "review_comments": 0}
+      ],
+      "failure_signature": null,
+      "decision": "Allow the bounded enhancement to stop at a proof-ready draft; require Mark's production-readiness review and protected merge before any activation or main read-back.",
+      "token_usage": {"estimated": 6500, "input": 0, "output": 0, "total": 6500},
+      "terminal_reason": "needs_human: exact-head proof passed; protected merge and deployment activation remain unauthorized"
+    },
+    {
+      "event_id": "evt-t018-operationalisation-005-memory-update-verified",
+      "at": "2026-08-08T12:27:32Z",
+      "actor": "codex-supervisor",
+      "type": "semantic_memory_update_verified",
+      "base_graph_version": 4,
+      "new_graph_version": 5,
+      "graph_delta": {
+        "operations": [
+          {"op": "replace", "path": "memory_receipt.memory_status", "before": "MEMORY_WRITE_PENDING", "after": "UPDATED"},
+          {"op": "replace", "path": "memory_receipt.version", "before": "pending-remote-branch-commit", "after": "c95c89e7e403815a0699ba6d8459bb6d89266862"},
+          {"op": "replace", "path": "memory_receipt.blocker", "before": "Repository backend write receipt is pending the next remote branch commit and read-back.", "after": "none"}
+        ]
+      },
+      "evidence_refs": [
+        ".loop/memory/t018-outbox-operationalisation.json",
+        ".loop/evidence/t018-operationalisation-implementation-20260808.json",
+        "https://github.com/bynanci/courtside-tw/commit/c95c89e7e403815a0699ba6d8459bb6d89266862"
+      ],
+      "proof_receipts": [
+        {"proof": "repository memory backend write and read-back", "level": "P2", "result": "pass", "commit": "c95c89e7e403815a0699ba6d8459bb6d89266862"}
+      ],
+      "failure_signature": null,
+      "decision": "Persist the final proof-ready constraint and retain the human merge/activation gate.",
+      "token_usage": {"estimated": 1800, "input": 0, "output": 0, "total": 1800},
+      "terminal_reason": "needs_human: memory update verified; protected merge and deployment activation remain unauthorized"
+    },
+    {
+      "event_id": "evt-t018-operationalisation-006-final-head-proof-refresh",
+      "at": "2026-08-08T12:36:40Z",
+      "actor": "codex-supervisor",
+      "type": "final_exact_head_proof_refresh",
+      "base_graph_version": 5,
+      "new_graph_version": 6,
+      "graph_delta": {
+        "operations": [
+          {"op": "replace", "path": "p-production-proof/artifact_fingerprint", "before": "git:411dfe39241bb6df65d4c973a246ef8dfe18956f", "after": "git:b2036fa6291d6b587e2d021138e62b84caed1b94"},
+          {"op": "replace", "path": "p-production-proof/ci_security_runs", "before": 158, "after": 160}
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t018-operationalisation-implementation-20260808.json",
+        "https://github.com/bynanci/courtside-tw/pull/52",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31257309746",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31257309764"
+      ],
+      "proof_receipts": [
+        {"proof": "CI #160 all jobs", "level": "P2", "result": "pass", "run_id": "31257309746", "java_job_id": "93102597627", "compose_job_id": "93102597641"},
+        {"proof": "Security #160 all jobs", "level": "P2", "result": "pass", "run_id": "31257309764", "dependency_job_id": "93102598816", "java_codeql_job_id": "93102598825"}
+      ],
+      "failure_signature": null,
+      "decision": "Keep the proof-ready draft stopped at the human production-readiness and protected-merge gate.",
+      "token_usage": {"estimated": 2200, "input": 0, "output": 0, "total": 2200},
+      "terminal_reason": "needs_human: final exact-head proof refreshed; protected merge and deployment activation remain unauthorized"
+    }
+  ]
+}

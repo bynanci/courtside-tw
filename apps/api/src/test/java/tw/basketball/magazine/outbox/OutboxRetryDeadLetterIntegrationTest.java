@@ -4,13 +4,52 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
 final class OutboxRetryDeadLetterIntegrationTest extends OutboxIntegrationTestSupport {
+    @Test
+    void unknownEventTypeIsDeadLetteredWithoutRetry() {
+        Instant initialTime = Instant.parse("2026-08-08T10:30:00Z");
+        UUID eventId = repository.enqueue(
+                draft("publication.issue.unknown", "unknown-event", initialTime)
+        );
+        OutboxHandlerRegistry registry = new OutboxHandlerRegistry(List.of(
+                new OutboxHandlerRegistration("publication.issue.published", event -> { })
+        ));
+        OutboxWorker worker = new OutboxWorker(
+                repository,
+                properties(
+                        "worker-unknown-event",
+                        5,
+                        new DurationValues(
+                                Duration.ofSeconds(30),
+                                Duration.ofSeconds(1),
+                                Duration.ofSeconds(4)
+                        )
+                ),
+                Clock.fixed(initialTime, ZoneOffset.UTC),
+                registry,
+                NoopOutboxMetrics.INSTANCE
+        );
+
+        OutboxRunResult result = worker.runOnce();
+
+        assertEquals(1, result.claimed());
+        assertEquals(0, result.completed());
+        assertEquals(0, result.retryScheduled());
+        assertEquals(1, result.deadLettered());
+        OutboxEvent deadLetter = repository.findById(eventId).orElseThrow();
+        assertEquals(OutboxStatus.DEAD_LETTER, deadLetter.status());
+        assertEquals(initialTime, deadLetter.deadLetteredAt());
+    }
+
     @Test
     void schedulesBoundedRetriesAndDeadLettersAtTheAttemptLimit() {
         Instant initialTime = Instant.parse("2026-08-08T11:00:00Z");

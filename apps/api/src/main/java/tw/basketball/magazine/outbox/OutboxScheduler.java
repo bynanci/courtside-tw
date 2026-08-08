@@ -1,0 +1,131 @@
+package tw.basketball.magazine.outbox;
+
+import java.time.Clock;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import org.springframework.context.SmartLifecycle;
+import org.springframework.scheduling.TaskScheduler;
+
+/** One-thread, lifecycle-aware scheduler for the worker's bounded runOnce loop. */
+public final class OutboxScheduler implements SmartLifecycle {
+    private final TaskScheduler taskScheduler;
+    private final Runnable task;
+    private final OutboxProperties properties;
+    private final Clock clock;
+    private final OutboxMetrics metrics;
+    private final AtomicBoolean running = new AtomicBoolean();
+    private final AtomicBoolean taskRunning = new AtomicBoolean();
+    private final List<Runnable> stopCallbacks = new ArrayList<>();
+    private ScheduledFuture<?> scheduledTask;
+
+    public OutboxScheduler(
+            TaskScheduler taskScheduler,
+            Runnable task,
+            OutboxProperties properties,
+            Clock clock,
+            OutboxMetrics metrics
+    ) {
+        this.taskScheduler = Objects.requireNonNull(taskScheduler, "taskScheduler");
+        this.task = Objects.requireNonNull(task, "task");
+        this.properties = Objects.requireNonNull(properties, "properties");
+        this.clock = Objects.requireNonNull(clock, "clock");
+        this.metrics = Objects.requireNonNull(metrics, "metrics");
+    }
+
+    @Override
+    public synchronized void start() {
+        if (running.get()) {
+            return;
+        }
+        running.set(true);
+        Instant firstRun = clock.instant().plus(properties.initialDelay());
+        boolean scheduled = false;
+        try {
+            scheduledTask = taskScheduler.scheduleWithFixedDelay(
+                    this::runSafely,
+                    firstRun,
+                    properties.pollInterval()
+            );
+            scheduled = true;
+        } finally {
+            if (!scheduled) {
+                running.set(false);
+                metrics.recordSchedulerFailure();
+            }
+        }
+    }
+
+    @Override
+    public synchronized void stop() {
+        running.set(false);
+        if (scheduledTask != null) {
+            scheduledTask.cancel(false);
+            scheduledTask = null;
+        }
+    }
+
+    @Override
+    public void stop(Runnable callback) {
+        Objects.requireNonNull(callback, "callback");
+        boolean invokeImmediately;
+        synchronized (this) {
+            stop();
+            invokeImmediately = !taskRunning.get();
+            if (!invokeImmediately) {
+                stopCallbacks.add(callback);
+            }
+        }
+        if (invokeImmediately) {
+            callback.run();
+        }
+    }
+
+    @Override
+    public boolean isRunning() {
+        return running.get();
+    }
+
+    @Override
+    public boolean isAutoStartup() {
+        return true;
+    }
+
+    private void runSafely() {
+        if (!running.get() || !taskRunning.compareAndSet(false, true)) {
+            if (running.get()) {
+                metrics.recordSchedulerSkipped();
+            }
+            return;
+        }
+        if (!running.get()) {
+            taskRunning.set(false);
+            completeStopCallbacks();
+            return;
+        }
+        try {
+            task.run();
+        } catch (RuntimeException failure) {
+            metrics.recordSchedulerFailure();
+        } finally {
+            taskRunning.set(false);
+            completeStopCallbacks();
+        }
+    }
+
+    private void completeStopCallbacks() {
+        List<Runnable> callbacks;
+        synchronized (this) {
+            if (taskRunning.get() || stopCallbacks.isEmpty()) {
+                return;
+            }
+            callbacks = new ArrayList<>(stopCallbacks);
+            stopCallbacks.clear();
+        }
+        callbacks.forEach(Runnable::run);
+    }
+}
