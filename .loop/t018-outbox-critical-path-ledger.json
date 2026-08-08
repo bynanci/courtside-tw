@@ -1,0 +1,64 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-t018-outbox-critical-path",
+  "graph_version": 1,
+  "run_id": "courtside-tw-t018-20260808",
+  "status": "ready",
+  "iteration": 1,
+  "started_at": "2026-08-08T09:28:47.897Z",
+  "updated_at": "2026-08-08T09:28:47.897Z",
+  "current_frontier": [
+    "a-t018-tests-first"
+  ],
+  "blocked_nodes": [],
+  "terminal_state": "ready_for_tests_first",
+  "next_action": "Write and run the T018 Testcontainers claim/lease/retry/dead-letter/idempotency baseline from main 05e891d; record the first failure before implementation.",
+  "events": [
+    {
+      "event_id": "evt-t018-001-dispatch",
+      "at": "2026-08-08T09:28:47.897Z",
+      "actor": "codex-supervisor",
+      "type": "t018_dispatched",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "graph.nodes/t-t018-ready",
+            "after": "T018 is the next critical-path frontier after T015 terminal main"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [],
+            "after": [
+              "a-t018-tests-first"
+            ]
+          },
+          {
+            "op": "add",
+            "path": "policy.human_gates/t018-merge-checkbox",
+            "after": "Implementation proof, protected merge and checkbox remain pending"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t018-dispatch-20260808.json",
+        ".loop/evidence/t018-tests-first-charter-20260808.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "T015 main prerequisite",
+          "level": "P3",
+          "result": "pass",
+          "main_sha": "05e891d19eac2439cadee92eea0b4612cb356306",
+          "t015": "checked",
+          "t018": "unchecked"
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Dispatch T018 as the P1 critical-path outbox lane; preserve durable idempotency and bounded recovery as non-negotiable gates."
+    }
+  ]
+}
