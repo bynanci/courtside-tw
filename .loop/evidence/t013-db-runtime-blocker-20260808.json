@@ -1,0 +1,18 @@
+{
+  "schema_version": "courtside-tw-evidence/v1",
+  "task": "T013",
+  "kind": "blocker",
+  "recorded_at": "2026-08-08T00:00:00Z",
+  "status": "blocked",
+  "failure_signature": "LOCAL_POSTGRES_RUNTIME_UNAVAILABLE",
+  "observations": [
+    "docker CLI is not installed in the current workspace runtime",
+    "Docker Compose v2 is unavailable",
+    "psql is unavailable",
+    "Java is present only as OpenJDK 17, while the repository toolchain requires Java 21",
+    "pnpm is 11.16.0, while the repository pins pnpm 11.7.0"
+  ],
+  "exact_verification_command": "scripts/test/verify-database-foundation.sh",
+  "safe_next_step": "Run the exact script in GitHub CI or an isolated local Docker Compose environment; do not use H2, a shared persistent volume or production credentials.",
+  "scope_impact": "Implementation remains reviewable, but P2 PostgreSQL proof and completion/merge read-back are not claimed by this receipt."
+}

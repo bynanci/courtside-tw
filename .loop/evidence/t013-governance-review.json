@@ -1,0 +1,116 @@
+{
+  "schema_version": "courtside-tw-governance-review/v1",
+  "evidence_id": "t013-governance-review",
+  "generated_at": "2026-08-08T00:00:00Z",
+  "actor": "codex-supervisor",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T013",
+  "decision": "REVIEW_REQUIRED",
+  "scope": {
+    "subject": "PostgreSQL 18 V001 database foundation and application/audit role boundary",
+    "stage": "implementation ready; runtime proof and protected merge pending",
+    "mutation_class": "G3-sensitive database/authentication/authorization foundation; isolated test-only runtime execution"
+  },
+  "risk": {
+    "inherent_tier": "G3",
+    "residual_tier": "G3",
+    "operational_state": "RESTRICTED",
+    "rationale": "The migration creates persistent identity, role, rights, audit and outbox structures and changes database permissions. Production/identity hard override SAFE-005 applies. No unverified static result is used to lower the residual tier.",
+    "hard_overrides": [
+      "SAFE-005 Production and Identity: no production DB execution or role provisioning in this run.",
+      "SAFE-002 Destructive Action: temporary test-volume cleanup is limited to the exact generated Compose project.",
+      "SAFE-010 Self-approval: CI/review/merge and T013 checkbox remain separate human gates."
+    ],
+    "unknowns": [
+      "PostgreSQL 18 migration execution is pending because Docker Compose and psql are unavailable locally.",
+      "The production login role and membership provisioning are intentionally outside V001 and require a later deployment decision.",
+      "Spring/Flyway runtime wiring and worker behavior are future tasks, not T013 proof."
+    ]
+  },
+  "controls": [
+    {
+      "id": "GOV-002",
+      "status": "IMPLEMENTED",
+      "note": "Implementation, verification and merge/read-back are separate graph nodes; merge and checkbox require explicit human approval."
+    },
+    {
+      "id": "GOV-003",
+      "status": "IMPLEMENTED",
+      "note": "The patch is limited to V001, its PostgreSQL verification harness, CI wiring and T013 evidence; V002+ and runtime are excluded."
+    },
+    {
+      "id": "DAT-001",
+      "status": "IMPLEMENTED",
+      "note": "The migration stores OIDC issuer/subject and rights metadata only; fixtures use synthetic identifiers and no real user/media data."
+    },
+    {
+      "id": "DAT-003",
+      "status": "VERIFIED",
+      "note": "No credentials, passwords, tokens or production connection values are present in the migration, script or evidence."
+    },
+    {
+      "id": "APP-002",
+      "status": "PLANNED",
+      "note": "The exact SQL/privilege assertion harness is implemented; P2 execution in PostgreSQL 18 is still required before this control can reduce residual risk."
+    },
+    {
+      "id": "AGT-001",
+      "status": "IMPLEMENTED",
+      "note": "The coding-agent patch allowlist is explicit and the verification script uses one isolated Compose service/project with no production target."
+    },
+    {
+      "id": "AGT-003",
+      "status": "PLANNED",
+      "note": "Protected merge, task completion and any production role/migration action remain human gates."
+    },
+    {
+      "id": "AGT-004",
+      "status": "IMPLEMENTED",
+      "note": "The test is isolated, bounded, idempotency-aware and cleans only its exact temporary project/volume; production execution is not attempted."
+    },
+    {
+      "id": "AGT-007",
+      "status": "VERIFIED",
+      "note": "The workflow stops and records a blocker when Docker/psql is absent rather than substituting H2 or a shared database."
+    },
+    {
+      "id": "OPS-001",
+      "status": "IMPLEMENTED",
+      "note": "audit_event ownership and app grants are explicit; the test asserts app append succeeds while UPDATE/DELETE/TRUNCATE fail."
+    },
+    {
+      "id": "OPS-003",
+      "status": "PLANNED",
+      "note": "Production backup/restore and expand-contract rollback belong to T082; T013 only guarantees no production execution and disposable-test cleanup."
+    }
+  ],
+  "authority": {
+    "dispatch": "CONFIRMED by current user direction to start T013",
+    "implementation": "BOUNDED to T013 migration, PostgreSQL-specific test harness, CI step and evidence",
+    "merge": "REQUIRES explicit human review and passing CI/Security",
+    "task_checkbox": "REQUIRES explicit human approval after main read-back",
+    "production_database": "NOT AUTHORIZED in this run"
+  },
+  "verification": {
+    "current_level": "P1",
+    "required_before_review": [
+      "PostgreSQL 18 isolated forward migration proof",
+      "negative privilege proof for application audit UPDATE/DELETE/TRUNCATE",
+      "CI/Security and code review pass",
+      "authoritative main read-back at the merged head"
+    ],
+    "final_level": "P2",
+    "status": "BLOCKED"
+  },
+  "trails": [
+    "main@3aa40da09558e3d107d172b49382941e02c95290",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T013",
+    "specs/001-taiwan-basketball-magazine-ebook/plan.md#Tables",
+    "docs/adr/0001-application-topology.md",
+    "docs/adr/0002-identity-and-hosting-providers.md",
+    "docs/adr/0003-content-document-and-media-policy.md",
+    ".loop/evidence/t013-dispatch-20260808.json",
+    ".loop/evidence/t013-db-runtime-blocker-20260808.json"
+  ],
+  "next_action": "Run the exact isolated PostgreSQL verification in CI, review the migration/permission diff, and keep T013 unchecked until merge and current-head main read-back succeed."
+}

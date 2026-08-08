@@ -1,0 +1,284 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-ticket-implementation-t013
+objective: "Produce a review-ready PostgreSQL 18 foundation migration with an explicit application/audit-role boundary and reproducible isolated verification, then stop at the merge/read-back gate."
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - apps/api/src/main/resources/db/migration/V001__foundation.sql
+    - scripts/test/verify-database-foundation.sh
+    - .github/workflows/ci.yml database-foundation verification wiring
+    - T013 implementation, proof, governance graph and ledger artifacts
+  out:
+    - V002 publication/content schema and all later migrations
+    - Flyway/runtime service wiring, OIDC runtime authorization and worker implementation
+    - T014 shared API error/version contracts
+    - T018 worker claim/retry implementation beyond foundation columns
+    - production database execution, credentials, destructive reset and deployment
+
+authority:
+  allowed:
+    - read the reviewed specification, plan, ADRs and authoritative main state
+    - create the T013 migration and isolated PostgreSQL verification harness
+    - wire the bounded verification into CI and run static checks
+    - open a review pull request
+  requires_approval:
+    - merge T013 and mark T013 checked
+    - execute or provision any production database role or migration
+    - change access policy, rights policy or task scope
+  forbidden:
+    - use H2 or another substitute as proof of PostgreSQL behavior
+    - run a migration against production or a shared persistent database
+    - add V002+, application runtime, provider SDK, credentials or Web3 behavior
+    - weaken append-only audit permissions to make tests pass
+
+acceptance:
+  - V001 creates pgcrypto, UUIDv7-backed foundation identifiers, OIDC subject mapping and four role codes.
+  - media_asset stores only a private original key; media_variant stores public derived keys; rights channels and validity are constrained.
+  - outbox_event has a unique idempotency key plus claim/lease/retry/dead-letter fields.
+  - audit_event is owned by a dedicated no-login role and courtside_app can SELECT/INSERT but not UPDATE/DELETE/TRUNCATE.
+  - isolated PostgreSQL verification accepts valid rows and rejects the named uniqueness, rights, media, JSON and privilege-negative cases.
+  - CI runs the T013 verification without touching the normal local dependency volume.
+  - T013 remains unchecked until CI/security/review and authoritative main read-back pass.
+
+budgets:
+  max_iterations: 8
+  max_minutes: 60
+  max_same_failure: 2
+  max_graph_changes: 12
+  max_tokens: 40000
+
+policy:
+  human_gates:
+    - T013 PR review and protected-branch merge
+    - T013 checkbox and main read-back
+    - production database role/migration execution
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+graph:
+  entry_nodes: [x-main-readback, t-t013-ready]
+  terminal_nodes: [s-t013-terminal]
+  current_frontier: [p-t013-db-integration, g-t013-review-merge]
+  blocked_nodes: [p-t013-db-integration]
+  nodes:
+    - id: x-main-readback
+      kind: external
+      layer: EXTERNAL
+      label: "Authoritative main read-back before T013"
+      owner: github
+      status: done
+      risk: high
+      confidence:
+        score: 1.0
+        basis: "main and origin/main both resolve to 3aa40da; T010/T012 are merged and T013 is the next unchecked foundation task."
+        evidence_refs: [.loop/evidence/t013-dispatch-20260808.json]
+      budget: {effort_hours: 0.2, tokens: 1800}
+      config:
+        source_type: github-main
+        freshness: "2026-08-08T00:00:00Z"
+        limitations: "Repository state is authoritative; local container runtime is not available in this work environment."
+
+    - id: t-t013-ready
+      kind: trigger
+      layer: L1
+      label: "T013 Database Foundation is explicitly dispatched"
+      owner: codex-supervisor
+      status: done
+      risk: high
+      confidence:
+        score: 1.0
+        basis: "The user explicitly requested the next task T013 after the T012 main read-back."
+        evidence_refs: [.loop/evidence/t013-dispatch-20260808.json]
+      budget: {effort_hours: 0.1, tokens: 1000}
+      config:
+        condition: "T013 is the first unchecked task after T010/T011/T012 main read-back and has a bounded migration path."
+        inputs_required: [tasks.md, plan.md, ADR-0001, ADR-0002, ADR-0003, current main read-back]
+        dedupe: "T013 plus main SHA plus migration path"
+
+    - id: g-t013-dispatch
+      kind: gate
+      layer: L3
+      label: "Explicit user authorization for T013 dispatch"
+      owner: human-mark
+      status: done
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: "The user explicitly requested the next task T013 Database Foundation."
+        evidence_refs: [.loop/evidence/t013-dispatch-20260808.json]
+      budget: {effort_hours: 0.1, tokens: 1000}
+      config:
+        condition: "User direction authorizes implementation within the bounded T013 migration scope."
+        approver: human-mark
+        required: true
+
+    - id: a-t013-foundation
+      kind: action
+      layer: L1
+      label: "Implement V001 foundation and isolated verification"
+      owner: codex-agent
+      status: done
+      risk: critical
+      confidence:
+        score: 0.9
+        basis: "Migration, permission boundary, negative verification script and CI wiring are implemented; PostgreSQL execution awaits CI because Docker/psql are absent locally."
+        evidence_refs: [.loop/evidence/t013-static-proof-20260808.json, .loop/evidence/t013-db-runtime-blocker-20260808.json]
+      budget: {effort_hours: 3.0, tokens: 22000}
+      config:
+        workflow: [read T013 contract, implement forward SQL, add negative PostgreSQL checks, run static verification, hand off CI]
+        allowed: [V001 migration, T013 verification script, T013 CI step, T013 graph/ledger/evidence]
+        requires_approval: [merge T013, mark T013 checked, production database execution]
+        forbidden: [H2 substitute proof, V002+, runtime OIDC/worker implementation, production secrets]
+
+    - id: p-t013-static
+      kind: proof
+      layer: L1
+      label: "Migration and verification harness static proof"
+      owner: verifier
+      status: done
+      risk: medium
+      confidence:
+        score: 0.98
+        basis: "bash -n and git diff --check pass; scoped files and no generated artifacts are present."
+        evidence_refs: [.loop/evidence/t013-static-proof-20260808.json]
+      budget: {effort_hours: 0.2, tokens: 2500}
+      config:
+        level: P1
+        claim: "The T013 migration/script/CI patch is syntactically clean and bounded."
+        method: "bash -n scripts/test/verify-database-foundation.sh; git diff --check; scoped diff review."
+        evidence_path: .loop/evidence/t013-static-proof-20260808.json
+        required: true
+        baseline_required: true
+
+    - id: p-t013-db-integration
+      kind: proof
+      layer: L1
+      label: "PostgreSQL 18 forward and negative security verification"
+      owner: verifier
+      status: blocked
+      risk: critical
+      confidence:
+        score: 0.65
+        basis: "The exact reproducible script is ready, but the local environment has neither Docker Compose nor psql; CI is the first runnable PostgreSQL proof."
+        evidence_refs: [.loop/evidence/t013-db-runtime-blocker-20260808.json]
+      budget: {effort_hours: 0.8, tokens: 7000}
+      config:
+        level: P2
+        claim: "A fresh PostgreSQL 18 instance applies V001 and rejects duplicate identity/role/media/outbox/rights/audit writes, including app UPDATE/DELETE/TRUNCATE."
+        method: "scripts/test/verify-database-foundation.sh using an isolated Compose project and temporary volume."
+        evidence_path: .loop/evidence/t013-db-runtime-proof-20260808.json
+        required: true
+        baseline_required: true
+
+    - id: g-t013-review-merge
+      kind: gate
+      layer: L2
+      label: "T013 review, CI/security and protected merge gate"
+      owner: human-mark
+      status: needs_human
+      risk: critical
+      confidence:
+        score: 0.5
+        basis: "Implementation is ready for review; merge, task checkbox and authoritative main read-back are intentionally not inferred."
+        evidence_refs: [.loop/evidence/t013-static-proof-20260808.json]
+      budget: {effort_hours: 0.7, tokens: 4000}
+      config:
+        condition: "CI/security, PostgreSQL proof, code review, merge and current-head main read-back all pass."
+        approver: human-mark
+        required: true
+
+    - id: m-t013-ledger
+      kind: memory
+      layer: L1
+      label: "T013 append-only Graphify control ledger"
+      owner: codex-supervisor
+      status: done
+      risk: medium
+      confidence:
+        score: 0.95
+        basis: "The graph and ledger record the bounded implementation, proof levels and current local-runtime blocker without claiming CI success."
+        evidence_refs: [.loop/t013-database-foundation-ledger.json]
+      budget: {effort_hours: 0.2, tokens: 1800}
+      config:
+        path: .loop/t013-database-foundation-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        memory_role: graph_ledger
+        receipt_required: false
+
+    - id: s-t013-terminal
+      kind: stop
+      layer: GLOBAL
+      label: "T013 named terminal policy"
+      owner: policy
+      status: blocked
+      risk: critical
+      confidence:
+        score: 0.6
+        basis: "Local static proof is complete, but PostgreSQL CI proof and protected merge/read-back remain open."
+        evidence_refs: [.loop/evidence/t013-db-runtime-blocker-20260808.json]
+      budget: {effort_hours: 0.1, tokens: 500}
+      config:
+        states:
+          success: "V001, isolated PostgreSQL proof, CI/security and review pass; T013 is merged, checked and read back from main."
+          blocked: "Docker/psql or CI PostgreSQL proof is unavailable, or a named dependency/security finding blocks the migration."
+          needs_human: "Review, protected merge, task checkbox or production-role decision is pending."
+          stalled: "No evidence delta reaches the configured retry limit."
+          exhausted: "A configured graph budget is reached."
+          no_op: "Main already contains an equivalent reviewed T013 migration."
+
+  edges:
+    - {id: e-main-dispatch, from: x-main-readback, to: g-t013-dispatch, type: enables, required: true, confidence: 0.95, token_capacity: 4000}
+    - {id: e-dispatch-trigger, from: g-t013-dispatch, to: t-t013-ready, type: approves, required: true, confidence: 1.0, token_capacity: 4000}
+    - {id: e-trigger-action, from: t-t013-ready, to: a-t013-foundation, type: enables, required: true, confidence: 1.0, token_capacity: 18000}
+    - {id: e-action-static, from: a-t013-foundation, to: p-t013-static, type: verifies, required: true, confidence: 0.95, token_capacity: 5000}
+    - {id: e-action-db, from: a-t013-foundation, to: p-t013-db-integration, type: verifies, required: true, confidence: 0.8, token_capacity: 10000}
+    - {id: e-static-gate, from: p-t013-static, to: g-t013-review-merge, type: requires_approval, required: true, confidence: 0.9, token_capacity: 6000}
+    - {id: e-db-gate, from: p-t013-db-integration, to: g-t013-review-merge, type: requires_approval, required: true, confidence: 0.8, token_capacity: 8000}
+    - {id: e-gate-stop, from: g-t013-review-merge, to: s-t013-terminal, type: approves, required: true, confidence: 0.5, token_capacity: 4000}
+    - {id: e-action-ledger, from: a-t013-foundation, to: m-t013-ledger, type: records, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-ledger-read, from: m-t013-ledger, to: a-t013-foundation, type: reads, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-ledger-feedback, from: m-t013-ledger, to: a-t013-foundation, type: feedback, required: true, confidence: 0.7, token_capacity: 3000}
+    - {id: e-db-ledger, from: p-t013-db-integration, to: m-t013-ledger, type: records, required: true, confidence: 0.8, token_capacity: 3000}
+    - {id: e-db-feedback, from: p-t013-db-integration, to: a-t013-foundation, type: feedback, required: true, confidence: 0.7, token_capacity: 3000}
+
+  loops:
+    - id: l1-t013-execution
+      layer: L1
+      owner: codex-agent
+      trigger_nodes: [t-t013-ready]
+      action_nodes: [a-t013-foundation]
+      proof_nodes: [p-t013-static, p-t013-db-integration]
+      memory_nodes: [m-t013-ledger]
+      stop_nodes: [s-t013-terminal]
+      budgets:
+        max_iterations: 8
+        max_minutes: 60
+        max_same_failure: 2
+        max_graph_changes: 12
+        max_tokens: 40000
+
+flow:
+  source: t-t013-ready
+  sink: s-t013-terminal
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - next_action

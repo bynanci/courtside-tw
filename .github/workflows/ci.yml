@@ -130,6 +130,11 @@ jobs:
           mkdir -p artifacts/dependencies
           DEPENDENCY_TIMEOUT_SECONDS=120 scripts/dev/check-dependencies.sh check 2>&1 | tee artifacts/dependencies/health-check.log
 
+      - name: Verify T013 database foundation
+        run: |
+          set -o pipefail
+          scripts/test/verify-database-foundation.sh 2>&1 | tee artifacts/dependencies/database-foundation.log
+
       - name: Capture dependency status and clean up
         if: ${{ always() }}
         run: |
