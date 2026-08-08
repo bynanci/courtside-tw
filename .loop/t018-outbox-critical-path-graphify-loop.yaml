@@ -64,8 +64,8 @@ policy:
 graph:
   entry_nodes: [x-t015-terminal-main, t-t018-ready]
   terminal_nodes: [s-t018-proof-gate]
-  current_frontier: [a-t018-tests-first]
-  blocked_nodes: []
+  current_frontier: [g-t018-review-merge]
+  blocked_nodes: [s-t018-proof-gate]
   nodes:
     - id: x-t015-terminal-main
       kind: external
@@ -93,9 +93,9 @@ graph:
       layer: L1
       label: "Write failing T018 claim/lease/retry/dead-letter tests first"
       owner: codex-agent
-      status: ready
+      status: done
       risk: high
-      confidence: {score: 0.9, basis: "Acceptance charter is derived from the existing V001 fields and worker profile rules", evidence_refs: [.loop/evidence/t018-tests-first-charter-20260808.json]}
+      confidence: {score: 1.0, basis: "tests-first baseline run #132 recorded missing Outbox runtime symbols before implementation", evidence_refs: [.loop/evidence/t018-tests-first-charter-20260808.json]}
       config:
         workflow: [write Testcontainers claim race tests, write retry/dead-letter tests, write idempotency/crash recovery tests, run baseline, record exact failure]
         allowed: [apps/api/src/test/java/tw/basketball/magazine/outbox/, T018 governance artifacts]
@@ -107,9 +107,9 @@ graph:
       layer: L1
       label: "T018 intended missing-boundary baseline"
       owner: verifier
-      status: planned
+      status: pass
       risk: high
-      confidence: {score: 0.65, basis: "No tests-first run is claimed in this dispatch receipt", evidence_refs: [.loop/evidence/t018-tests-first-charter-20260808.json]}
+      confidence: {score: 1.0, basis: "baseline failure was the intended absent-runtime boundary; implementation follow-up was then executed", evidence_refs: [.loop/evidence/t018-tests-first-charter-20260808.json]}
       config:
         level: P2
         claim: "The first red result is caused by the absent outbox implementation/dependency boundary, not a malformed test harness."
@@ -120,9 +120,9 @@ graph:
       layer: L1
       label: "Implement atomic outbox repository and worker profile"
       owner: codex-agent
-      status: planned
+      status: done
       risk: high
-      confidence: {score: 0.7, basis: "V001 contract is fixed; runtime design remains to be implemented", evidence_refs: [.loop/evidence/t018-dispatch-20260808.json]}
+      confidence: {score: 1.0, basis: "JDBC repository, fenced worker, bounded retry/dead-letter logic and Testcontainers tests are present on the implementation head", evidence_refs: [.loop/evidence/t018-dispatch-20260808.json]}
       config:
         allowed: [apps/api/src/main/java/tw/basketball/magazine/outbox/, apps/api/src/test/java/tw/basketball/magazine/outbox/]
         forbidden: [apps/web/, identity policy changes, audit persistence, message broker, production provider]
@@ -132,9 +132,9 @@ graph:
       layer: L1
       label: "T018 exact-head Java/integration/CI/Security proof"
       owner: verifier
-      status: planned
+      status: pass
       risk: high
-      confidence: {score: 0.5, basis: "No implementation exists on this dispatch branch", evidence_refs: [.loop/evidence/t018-tests-first-charter-20260808.json]}
+      confidence: {score: 1.0, basis: "CI #142 and Security #142 passed on exact implementation head a70cb9d; scope and review-thread checks are clean", evidence_refs: [.loop/evidence/t018-tests-first-charter-20260808.json]}
       config: {level: P2, required: true, method: "Java quality, Testcontainers, CI/Security and scope inventory on exact head"}
 
     - id: g-t018-review-merge
@@ -142,9 +142,9 @@ graph:
       layer: L2
       label: "T018 review, protected merge and checkbox gate"
       owner: human-mark
-      status: planned
+      status: ready
       risk: critical
-      confidence: {score: 0.4, basis: "Implementation and proof are not started", evidence_refs: [.loop/evidence/t018-dispatch-20260808.json]}
+      confidence: {score: 0.9, basis: "implementation and automated proof pass; protected merge and T018 checkbox remain human-gated", evidence_refs: [.loop/evidence/t018-dispatch-20260808.json]}
       config: {condition: "Implementation, crash/idempotency proof, exact-head CI/Security and scope review all pass", required: true}
 
     - id: s-t018-proof-gate
@@ -152,9 +152,9 @@ graph:
       layer: GLOBAL
       label: "Stop before T018 merge/checkbox"
       owner: policy
-      status: planned
+      status: blocked
       risk: critical
-      confidence: {score: 1.0, basis: "Dispatch must not imply completion", evidence_refs: [.loop/evidence/t018-dispatch-20260808.json]}
+      confidence: {score: 1.0, basis: "policy stop remains active until human review, protected merge and checkbox approval", evidence_refs: [.loop/evidence/t018-dispatch-20260808.json]}
 
     - id: m-t018-ledger
       kind: memory
