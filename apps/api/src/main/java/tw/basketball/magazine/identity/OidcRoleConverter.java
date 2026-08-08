@@ -33,7 +33,8 @@ public final class OidcRoleConverter implements Converter<Jwt, Collection<Grante
         if (claim == null) {
             return List.of();
         }
-        if (!(claim instanceof Collection<?> values)) {
+        if (!(claim instanceof Collection<?> values)
+                || values.size() > RoleCode.values().length) {
             throw invalidRolesClaim();
         }
 
