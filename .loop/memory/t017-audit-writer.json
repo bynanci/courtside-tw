@@ -3,8 +3,8 @@
   "memory_id": "wm:project:courtside-tw:t017-audit-writer",
   "scope": "project",
   "kind": "task_state",
-  "title": "T017 audit writer is isolated and currently awaiting runtime proof",
-  "summary": "T017 runs as a separate append-only audit lane from main 63e6ea3. The tests-first baseline is confirmed red only for missing audit runtime symbols; the implementation is bounded to sanitized INSERT-only writing and remains unmerged until exact-head proof and human security/privacy review.",
+  "title": "T017 audit writer passed exact-head proof and awaits human review",
+  "summary": "T017 runs as a separate append-only audit lane from main 63e6ea3. The tests-first baseline was confirmed red only for missing audit runtime symbols; the bounded sanitized INSERT-only implementation now passes exact-head CI/Security #173 and remains an unmerged draft until independent security/privacy review.",
   "claims": [
     {
       "text": "T013 provides an audit_event table whose application role may insert/read but may not update/delete/truncate.",
@@ -17,7 +17,17 @@
       "confidence": "high"
     },
     {
-      "text": "The T017 runtime implementation has not yet passed exact-head Java/Testcontainers and Security proof.",
+      "text": "Before the final receipt, the T017 runtime implementation was awaiting exact-head Java/Testcontainers and Security proof.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The bounded T017 implementation passes exact-head CI/Security #173, including Java quality, Testcontainers, CodeQL, dependency audit and Trivy lanes.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Independent security/privacy review and protected merge approval remain pending; production activation is not authorized.",
       "class": "CONFIRMED",
       "confidence": "high"
     }
@@ -26,7 +36,8 @@
   "confidence": "high",
   "confidence_basis": [
     ".loop/evidence/t017-lane-boundary-20260808.json",
-    ".loop/evidence/t017-tests-first-baseline-20260808.json"
+    ".loop/evidence/t017-tests-first-baseline-20260808.json",
+    ".loop/evidence/t017-ci-security-final-20260808.json"
   ],
   "volatility": "medium",
   "as_of": "2026-08-08",
@@ -34,7 +45,8 @@
     "specs/001-taiwan-basketball-magazine-ebook/tasks.md:T017",
     "apps/api/src/main/resources/db/migration/V001__foundation.sql",
     ".loop/evidence/t017-lane-boundary-20260808.json",
-    ".loop/evidence/t017-tests-first-baseline-20260808.json"
+    ".loop/evidence/t017-tests-first-baseline-20260808.json",
+    ".loop/evidence/t017-ci-security-final-20260808.json"
   ],
   "entities": ["courtside-tw", "T017", "audit_event", "append-only-audit"],
   "relations": {
@@ -51,7 +63,7 @@
     "tradeoffs": ["No domain event integration yet", "Smaller review and rollback surface"],
     "invalidation": "Re-evaluate if the T013 audit_event contract or protected database grants change."
   },
-  "next_review_at": "2026-08-08",
+  "next_review_at": "2026-08-08T16:30:00Z",
   "sensitivity": "internal",
   "retention": "until_superseded"
 }

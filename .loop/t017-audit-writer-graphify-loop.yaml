@@ -81,7 +81,7 @@ memory_workflow:
 graph:
   entry_nodes: [x-t013-main]
   terminal_nodes: [s-t017-stop]
-  current_frontier: [p-t017-runtime-proof]
+  current_frontier: [g-t017-review]
   blocked_nodes: []
   loops:
     - id: l1-t017-execution
@@ -187,9 +187,9 @@ graph:
       layer: L1
       label: "Implement bounded INSERT-only sanitized audit writer"
       owner: codex-agent
-      status: verifying
+      status: done
       risk: critical
-      confidence: {score: 0.82, basis: "Runtime implementation is written in the isolated audit package; exact-head Java/Testcontainers proof is pending", evidence_refs: [.loop/evidence/t017-lane-boundary-20260808.json]}
+      confidence: {score: 0.98, basis: "Implementation is isolated to the audit package and exact-head CI/Security proof passed", evidence_refs: [.loop/evidence/t017-lane-boundary-20260808.json, .loop/evidence/t017-ci-security-final-20260808.json]}
       budget:
         effort_hours: 2.0
         tokens: 14000
@@ -204,9 +204,9 @@ graph:
       layer: L1
       label: "T017 runtime, privacy and append-only proof"
       owner: github
-      status: planned
+      status: done
       risk: critical
-      confidence: {score: 0.65, basis: "Tests define the acceptance but implementation has not yet passed exact-head CI", evidence_refs: [.loop/evidence/t017-tests-first-baseline-20260808.json]}
+      confidence: {score: 0.98, basis: "Exact-head CI #173 and Security #173 passed Java quality, Testcontainers, CodeQL, dependency and image scanning", evidence_refs: [.loop/evidence/t017-ci-security-final-20260808.json]}
       budget:
         effort_hours: 1.0
         tokens: 7000
@@ -225,7 +225,7 @@ graph:
       owner: security-reviewer
       status: needs_human
       risk: critical
-      confidence: {score: 0.7, basis: "No runtime proof or independent review receipt exists yet", evidence_refs: [.loop/evidence/t017-lane-boundary-20260808.json]}
+      confidence: {score: 0.9, basis: "Exact-head proof passed; independent human security/privacy review and protected merge remain pending", evidence_refs: [.loop/evidence/t017-ci-security-final-20260808.json, .loop/evidence/t017-lane-boundary-20260808.json]}
       budget:
         effort_hours: 0.5
         tokens: 3000
@@ -261,7 +261,7 @@ graph:
       owner: codex-supervisor
       status: done
       risk: medium
-      confidence: {score: 0.9, basis: "Boundary and baseline are recorded; runtime claim remains unverified until proof receipt", evidence_refs: [.loop/t017-audit-writer-ledger.json, .loop/memory/t017-audit-writer.json]}
+      confidence: {score: 0.98, basis: "Boundary, baseline, implementation proof and exact-head security receipts are recorded", evidence_refs: [.loop/t017-audit-writer-ledger.json, .loop/memory/t017-audit-writer.json, .loop/evidence/t017-ci-security-final-20260808.json]}
       budget:
         effort_hours: 0.1
         tokens: 1500
