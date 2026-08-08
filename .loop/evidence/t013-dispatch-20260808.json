@@ -1,0 +1,24 @@
+{
+  "schema_version": "courtside-tw-evidence/v1",
+  "task": "T013",
+  "kind": "dispatch",
+  "recorded_at": "2026-08-08T00:00:00Z",
+  "repository": "bynanci/courtside-tw",
+  "base_ref": "main",
+  "base_sha": "3aa40da09558e3d107d172b49382941e02c95290",
+  "authoritative_state": {
+    "local_branch": "main before implementation branch",
+    "origin_main": "3aa40da09558e3d107d172b49382941e02c95290",
+    "working_tree": "clean before T013 edits",
+    "open_pull_requests": 0,
+    "next_unchecked_task": "T013"
+  },
+  "authorization": "User explicitly requested the next task: T013 Database Foundation.",
+  "dependencies": [
+    "T010 and T011 merged and checked",
+    "T012 generated client merged and checked",
+    "PostgreSQL 18.4 Compose dependency baseline on main"
+  ],
+  "risk_class": "G3",
+  "production_boundary": "No production database, role provisioning, secret, or persistent/shared database write is authorized in this run."
+}

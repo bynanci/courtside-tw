@@ -1,0 +1,130 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-ticket-implementation-t013",
+  "graph_version": 4,
+  "run_id": "courtside-tw-t013-database-foundation-20260808",
+  "status": "blocked",
+  "iteration": 3,
+  "started_at": "2026-08-08T00:00:00Z",
+  "updated_at": "2026-08-08T00:00:00Z",
+  "current_frontier": [
+    "p-t013-db-integration",
+    "g-t013-review-merge"
+  ],
+  "blocked_nodes": [
+    "p-t013-db-integration"
+  ],
+  "terminal_state": "blocked",
+  "next_action": "Run scripts/test/verify-database-foundation.sh in CI or a local environment with Docker Compose; do not substitute H2 or run against a shared persistent database.",
+  "events": [
+    {
+      "event_id": "evt-t013-001-dispatched",
+      "at": "2026-08-08T00:00:00Z",
+      "actor": "codex-supervisor",
+      "type": "t013_dispatched",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "graph.nodes/t-t013-ready",
+            "after": "T013 is next after T010/T011/T012 main read-back at 3aa40da."
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [],
+            "after": ["a-t013-foundation"]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t013-dispatch-20260808.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "main read-back",
+          "level": "P3",
+          "result": "pass",
+          "details": "main and origin/main both resolve to 3aa40da; T013 remains unchecked."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Implement only T013 foundation migration and its PostgreSQL-specific verification boundary."
+    },
+    {
+      "event_id": "evt-t013-002-implementation-static",
+      "at": "2026-08-08T00:00:00Z",
+      "actor": "codex-agent",
+      "type": "t013_implementation_static_proof",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-t013-foundation/status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": ["a-t013-foundation"],
+            "after": ["p-t013-static", "p-t013-db-integration"]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t013-static-proof-20260808.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "shell and diff static checks",
+          "level": "P1",
+          "result": "pass",
+          "details": "bash -n scripts/test/verify-database-foundation.sh and git diff --check pass."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Keep PostgreSQL behavior proof separate and do not claim it from static analysis."
+    },
+    {
+      "event_id": "evt-t013-003-local-runtime-blocked",
+      "at": "2026-08-08T00:00:00Z",
+      "actor": "codex-agent",
+      "type": "runtime_verification_blocked",
+      "base_graph_version": 2,
+      "new_graph_version": 4,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-t013-db-integration/status",
+            "before": "planned",
+            "after": "blocked"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/g-t013-review-merge/status",
+            "before": "planned",
+            "after": "needs_human"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/s-t013-terminal/status",
+            "before": "planned",
+            "after": "blocked"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t013-db-runtime-blocker-20260808.json"
+      ],
+      "proof_receipts": [],
+      "failure_signature": "LOCAL_POSTGRES_RUNTIME_UNAVAILABLE",
+      "decision": "Hand the exact integration test to CI; no substitute database and no persistent/shared DB execution."
+    }
+  ]
+}
