@@ -3,6 +3,23 @@ export default defineNuxtConfig({
   devtools: { enabled: false },
   future: { compatibilityVersion: 4 },
   typescript: { strict: true },
+  runtimeConfig: {
+    oidc: {
+      issuer: "",
+      authorizationEndpoint: "",
+      tokenEndpoint: "",
+      jwksUri: "",
+      revocationEndpoint: "",
+      clientId: "",
+      clientSecret: "",
+      redirectUri: "",
+      scope: "openid profile email",
+      sessionTtlSeconds: 900,
+      transactionTtlSeconds: 300,
+      allowInsecureHttp: false,
+      sessionStore: "memory"
+    }
+  },
   app: {
     head: {
       htmlAttrs: { lang: "zh-Hant-TW" },

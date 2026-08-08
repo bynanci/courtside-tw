@@ -1,0 +1,69 @@
+{
+  "evaluation_id": "implementation-t016-bff-session-20260808",
+  "system_id": "courtside-tw-web-bff-identity",
+  "as_of": "2026-08-08T14:39:27Z",
+  "artifact_fingerprint": "git:fc6e2082376e790926af30d69227553a26fe2e63",
+  "environment": "local-exact-implementation-head",
+  "claim": "The bounded T016 Nuxt BFF OIDC session implementation passes local security, type, lint, build-contract and anonymous-read checks while remaining human-gated for protected merge and production activation.",
+  "proof_level": "P3",
+  "method": "Run tests-first follow-up, a real local OIDC JWT/JWKS/token/revocation stub, Nuxt typecheck/lint, root make verify and a production-mode anonymous/protected HTTP smoke check on the implementation commit.",
+  "observed": {
+    "base_sha": "63e6ea3cad59c98e992e2f02f7acb739ac28cf67",
+    "implementation_head": "fc6e2082376e790926af30d69227553a26fe2e63",
+    "tests": {
+      "command": "pnpm --filter @courtside/web test",
+      "result": "pass",
+      "cases": 7,
+      "coverage": [
+        "state/nonce/PKCE binding",
+        "replay/fixation/open redirect/expiry",
+        "session rotation and CSRF",
+        "logout with refresh/access revocation",
+        "unknown and missing role denial",
+        "provider outage safe failure",
+        "local signed JWT/JWKS/token endpoint"
+      ]
+    },
+    "root_verify": {
+      "command": "make PNPM='corepack pnpm' verify",
+      "result": "pass",
+      "checks": ["format", "lint", "typecheck", "workspace tests", "content schema", "OpenAPI contract"]
+    },
+    "remote_ci_security": {
+      "head_sha": "d37336b76678960dafb684a81301c05d2e0a8d18",
+      "ci_run": 31262879519,
+      "security_run": 31262879512,
+      "result": "pass"
+    },
+    "production_mode_smoke": {
+      "command": "NODE_ENV=production node .output/server/index.mjs; GET /; GET /api/v1/me",
+      "result": "pass",
+      "public_status": 200,
+      "protected_status": 503,
+      "meaning": "Published anonymous SSR remains available while the unconfigured memory auth store fails closed for protected access."
+    },
+    "changed_scope": [
+      "apps/web/nuxt.config.ts",
+      "apps/web/package.json",
+      "apps/web/server/auth/",
+      "apps/web/server/middleware/auth.ts",
+      "apps/web/tests/integration/auth-session.test.ts",
+      "pnpm-lock.yaml"
+    ],
+    "out_of_scope_absence": [
+      "no T017 audit writer",
+      "no T018 outbox or database change",
+      "no OpenAPI or API role-taxonomy change",
+      "no production IdP, credential, private key or deployment action",
+      "no browser localStorage/sessionStorage token path"
+    ]
+  },
+  "result": "PASS_WITH_FOLLOW_UP",
+  "limitations": [
+    "The implementation uses an in-memory AuthStore only for local/CI proof and deliberately fails closed in NODE_ENV=production; durable production session storage requires a separate approved design and gate.",
+    "Human threat-model review, protected merge, T016 checkbox reconciliation and production identity activation remain pending; CI/Security are recorded separately in the exact-head receipt.",
+    "No real provider, real user, real token or production secret was accessed."
+  ],
+  "owner": "codex-agent",
+  "next_review_at": "2026-08-08T14:39:27Z"
+}

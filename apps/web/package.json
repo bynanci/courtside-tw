@@ -12,11 +12,14 @@
     "dev": "nuxt dev",
     "lint": "eslint --max-warnings=0 .",
     "build": "nuxt build",
+    "test": "node --experimental-strip-types --test tests/integration/auth-session.test.ts",
     "start": "node .output/server/index.mjs",
     "preview": "nuxt preview",
     "typecheck": "nuxt typecheck"
   },
   "dependencies": {
+    "h3": "1.15.11",
+    "jose": "6.2.4",
     "nuxt": "4.5.1"
   },
   "devDependencies": {
