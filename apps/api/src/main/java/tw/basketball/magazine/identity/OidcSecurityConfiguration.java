@@ -2,14 +2,16 @@ package tw.basketball.magazine.identity;
 
 import java.util.Objects;
 
+import jakarta.servlet.http.HttpServletRequest;
+
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.http.HttpMethod;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.oauth2.core.DelegatingOAuth2TokenValidator;
 import org.springframework.security.oauth2.core.OAuth2Error;
@@ -21,6 +23,7 @@ import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import tw.basketball.magazine.shared.RoleCode;
 
@@ -36,6 +39,8 @@ import tw.basketball.magazine.shared.RoleCode;
 @ConditionalOnProperty(prefix = "courtside.security.oidc", name = "issuer")
 @EnableConfigurationProperties(OidcSecurityProperties.class)
 public final class OidcSecurityConfiguration {
+    private static final RequestMatcher BEARER_TOKEN_REQUEST = OidcSecurityConfiguration::hasBearerToken;
+
     @Bean
     public JwtDecoder oidcJwtDecoder(OidcSecurityProperties properties) {
         NimbusJwtDecoder decoder = NimbusJwtDecoder
@@ -59,7 +64,7 @@ public final class OidcSecurityConfiguration {
     ) {
         try {
             http
-                    .csrf(AbstractHttpConfigurer::disable)
+                    .csrf(csrf -> csrf.ignoringRequestMatchers(BEARER_TOKEN_REQUEST))
                     .sessionManagement(session -> session.sessionCreationPolicy(
                             SessionCreationPolicy.STATELESS
                     ))
@@ -90,6 +95,11 @@ public final class OidcSecurityConfiguration {
         Objects.requireNonNull(audience, "audience");
         OAuth2TokenValidator<Jwt> issuerAndTime = JwtValidators.createDefaultWithIssuer(issuer);
         return new DelegatingOAuth2TokenValidator<>(issuerAndTime, audienceValidator(audience));
+    }
+
+    private static boolean hasBearerToken(HttpServletRequest request) {
+        String authorization = request.getHeader(HttpHeaders.AUTHORIZATION);
+        return authorization != null && authorization.regionMatches(true, 0, "Bearer ", 0, 7);
     }
 
     private static OAuth2TokenValidator<Jwt> audienceValidator(String audience) {
