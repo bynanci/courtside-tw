@@ -76,7 +76,7 @@ final class ObservabilityMetricsTest {
         assertEquals(
                 1.0,
                 registry.get("courtside.media.processing")
-                        .tag("outcome", "unknown")
+                        .tag("outcome", "FAILED")
                         .tag("reason", "unknown")
                         .counter()
                         .count()
