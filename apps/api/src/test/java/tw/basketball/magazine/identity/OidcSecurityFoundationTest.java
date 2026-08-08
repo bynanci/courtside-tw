@@ -43,8 +43,7 @@ final class OidcSecurityFoundationTest {
     void rejectsExpiredToken() {
         OAuth2TokenValidator<Jwt> validator = OidcSecurityConfiguration.tokenValidator(ISSUER, AUDIENCE);
 
-        assertTrue(validator.validate(token(ISSUER, AUDIENCE, Instant.now().minusSeconds(300)))
-                .hasErrors());
+        assertTrue(validator.validate(expiredToken()).hasErrors());
     }
 
     @Test
@@ -91,6 +90,18 @@ final class OidcSecurityFoundationTest {
         );
         assertTrue(scopeOnly.isEmpty());
         assertFalse(OidcRolePolicy.allows(scopeOnly, RoleCode.PUBLISHER));
+    }
+
+    private static Jwt expiredToken() {
+        Instant now = Instant.now();
+        return Jwt.withTokenValue("test-only-token")
+                .header("alg", "RS256")
+                .claim("iss", ISSUER)
+                .claim("sub", "reader-1")
+                .claim("aud", List.of(AUDIENCE))
+                .issuedAt(now.minusSeconds(600))
+                .expiresAt(now.minusSeconds(300))
+                .build();
     }
 
     private static Jwt token(String issuer, String audience, Instant expiresAt) {
