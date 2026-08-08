@@ -1,0 +1,197 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-t018-outbox-critical-path
+objective: "Dispatch T018 from the authoritative T015-complete main and prove transactional outbox claim/lease/retry/dead-letter behavior before downstream publication and media work."
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - apps/api/src/main/java/tw/basketball/magazine/outbox/
+    - apps/api/src/test/java/tw/basketball/magazine/outbox/
+    - required API build/test dependency changes for JDBC and Testcontainers
+    - T018 Graphify governance, evidence and ledger artifacts
+  out:
+    - T016 Nuxt BFF authorization-code/PKCE and session-cookie implementation
+    - T017 append-only audit writer
+    - T019 storage port and signed upload constraints
+    - T020 media processing implementation
+    - database migration changes unless a separately approved schema reconciliation is required
+    - message broker, production database, credentials, provider or deployment actions
+
+authority:
+  allowed:
+    - read T015 terminal proof, V001 schema, plan and ADR topology
+    - add bounded outbox worker source and deterministic tests
+    - use local/CI PostgreSQL Testcontainers and existing local fixtures
+    - open a draft implementation pull request
+  requires_approval:
+    - change V001 or add a migration
+    - merge T018 or mark the task checked
+    - add a message broker or production provider
+  forbidden:
+    - bypass idempotency or lease ownership
+    - use unbounded retries or in-memory-only delivery state
+    - access production databases, credentials or external services
+
+acceptance:
+  - outbox rows are claimed atomically only when available or lease-expired, with bounded owner and lease timestamps.
+  - claim/complete/fail transitions preserve the V001 status and attempt invariants.
+  - duplicate delivery is idempotent by the durable idempotency boundary.
+  - handler failure schedules bounded retry and records bounded error data; threshold transitions to DEAD_LETTER and stops automatic claims.
+  - worker crash and lease expiry recover without double-applying the same idempotent operation.
+  - PostgreSQL Testcontainers tests cover claim races, retry, dead-letter, crash recovery and duplicate delivery.
+  - worker profile remains non-web and does not require the T016 BFF or production provider.
+  - Java quality, integration tests, repository CI/Security and scope proof pass on the exact implementation head.
+
+budgets:
+  max_iterations: 6
+  max_minutes: 120
+  max_same_failure: 2
+  max_graph_changes: 12
+  max_tokens: 42000
+
+policy:
+  human_gates:
+    - T018 implementation review and protected merge
+    - any schema change or message-broker decision
+    - T018 checkbox completion
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+graph:
+  entry_nodes: [x-t015-terminal-main, t-t018-ready]
+  terminal_nodes: [s-t018-proof-gate]
+  current_frontier: [g-t018-review-merge]
+  blocked_nodes: [s-t018-proof-gate]
+  nodes:
+    - id: x-t015-terminal-main
+      kind: external
+      layer: EXTERNAL
+      label: "T015 terminal main read-back"
+      owner: github
+      status: done
+      risk: high
+      confidence: {score: 1.0, basis: "main 05e891d has T015 checked and reconciliation ledger terminal", evidence_refs: [.loop/evidence/t015-post-receipt-main-readback-20260808.json]}
+
+    - id: t-t018-ready
+      kind: trigger
+      layer: L1
+      label: "T018 critical-path frontier is authorized"
+      owner: codex-supervisor
+      status: done
+      risk: high
+      confidence: {score: 0.99, basis: "T018 is the next unchecked task on the documented P1 critical path after T013 and T015 reconciliation", evidence_refs: [.loop/evidence/t018-dispatch-20260808.json]}
+      config:
+        condition: "T015 terminal proof is present on latest main and V001 outbox contract is readable."
+        dedupe: "T018 + main 05e891d + V001 outbox contract"
+
+    - id: a-t018-tests-first
+      kind: action
+      layer: L1
+      label: "Write failing T018 claim/lease/retry/dead-letter tests first"
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence: {score: 1.0, basis: "tests-first baseline run #132 recorded missing Outbox runtime symbols before implementation", evidence_refs: [.loop/evidence/t018-tests-first-charter-20260808.json]}
+      config:
+        workflow: [write Testcontainers claim race tests, write retry/dead-letter tests, write idempotency/crash recovery tests, run baseline, record exact failure]
+        allowed: [apps/api/src/test/java/tw/basketball/magazine/outbox/, T018 governance artifacts]
+        requires_approval: [schema change, merge, mark T018 complete]
+        forbidden: [message broker, production database, credentials, external provider]
+
+    - id: p-t018-tests-first
+      kind: proof
+      layer: L1
+      label: "T018 intended missing-boundary baseline"
+      owner: verifier
+      status: pass
+      risk: high
+      confidence: {score: 1.0, basis: "baseline failure was the intended absent-runtime boundary; implementation follow-up was then executed", evidence_refs: [.loop/evidence/t018-tests-first-charter-20260808.json]}
+      config:
+        level: P2
+        claim: "The first red result is caused by the absent outbox implementation/dependency boundary, not a malformed test harness."
+        required: true
+
+    - id: a-t018-implementation
+      kind: action
+      layer: L1
+      label: "Implement atomic outbox repository and worker profile"
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence: {score: 1.0, basis: "JDBC repository, fenced worker, bounded retry/dead-letter logic and Testcontainers tests are present on the implementation head", evidence_refs: [.loop/evidence/t018-dispatch-20260808.json]}
+      config:
+        allowed: [apps/api/src/main/java/tw/basketball/magazine/outbox/, apps/api/src/test/java/tw/basketball/magazine/outbox/]
+        forbidden: [apps/web/, identity policy changes, audit persistence, message broker, production provider]
+
+    - id: p-t018-ci-security
+      kind: proof
+      layer: L1
+      label: "T018 exact-head Java/integration/CI/Security proof"
+      owner: verifier
+      status: pass
+      risk: high
+      confidence: {score: 1.0, basis: "CI #142 and Security #142 passed on exact implementation head a70cb9d; scope and review-thread checks are clean", evidence_refs: [.loop/evidence/t018-tests-first-charter-20260808.json]}
+      config: {level: P2, required: true, method: "Java quality, Testcontainers, CI/Security and scope inventory on exact head"}
+
+    - id: g-t018-review-merge
+      kind: gate
+      layer: L2
+      label: "T018 review, protected merge and checkbox gate"
+      owner: human-mark
+      status: ready
+      risk: critical
+      confidence: {score: 0.9, basis: "implementation and automated proof pass; protected merge and T018 checkbox remain human-gated", evidence_refs: [.loop/evidence/t018-dispatch-20260808.json]}
+      config: {condition: "Implementation, crash/idempotency proof, exact-head CI/Security and scope review all pass", required: true}
+
+    - id: s-t018-proof-gate
+      kind: stop
+      layer: GLOBAL
+      label: "Stop before T018 merge/checkbox"
+      owner: policy
+      status: blocked
+      risk: critical
+      confidence: {score: 1.0, basis: "policy stop remains active until human review, protected merge and checkbox approval", evidence_refs: [.loop/evidence/t018-dispatch-20260808.json]}
+
+    - id: m-t018-ledger
+      kind: memory
+      layer: L1
+      label: "Append-only T018 critical-path ledger"
+      owner: codex-supervisor
+      status: done
+      risk: medium
+      confidence: {score: 0.95, basis: "Dispatch and tests-first charter are recorded before implementation", evidence_refs: [.loop/t018-outbox-critical-path-ledger.json]}
+
+  edges:
+    - {id: e-main-ready, from: x-t015-terminal-main, to: t-t018-ready, type: enables, required: true, confidence: 1.0, token_capacity: 4000}
+    - {id: e-trigger-tests, from: t-t018-ready, to: a-t018-tests-first, type: enables, required: true, confidence: 0.99, token_capacity: 10000}
+    - {id: e-tests-proof, from: a-t018-tests-first, to: p-t018-tests-first, type: verifies, required: true, confidence: 0.9, token_capacity: 7000}
+    - {id: e-proof-implementation, from: p-t018-tests-first, to: a-t018-implementation, type: enables, required: true, confidence: 0.8, token_capacity: 16000}
+    - {id: e-implementation-ci, from: a-t018-implementation, to: p-t018-ci-security, type: verifies, required: true, confidence: 0.8, token_capacity: 9000}
+    - {id: e-ci-gate, from: p-t018-ci-security, to: g-t018-review-merge, type: requires_approval, required: true, confidence: 0.75, token_capacity: 9000}
+    - {id: e-gate-stop, from: g-t018-review-merge, to: s-t018-proof-gate, type: approves, required: true, confidence: 0.4, token_capacity: 5000}
+    - {id: e-tests-ledger, from: a-t018-tests-first, to: m-t018-ledger, type: records, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-implementation-ledger, from: a-t018-implementation, to: m-t018-ledger, type: records, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-ledger-read, from: m-t018-ledger, to: a-t018-tests-first, type: reads, required: true, confidence: 0.9, token_capacity: 3000}
+
+flow:
+  source: t-t018-ready
+  sink: s-t018-proof-gate
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - memory_receipt
+  - next_action

@@ -1,0 +1,37 @@
+{
+  "evaluation_id": "charter-t018-tests-first-20260808",
+  "system_id": "courtside-tw-api-outbox",
+  "as_of": "2026-08-08T09:28:47.897Z",
+  "artifact_fingerprint": "git:05e891d19eac2439cadee92eea0b4612cb356306",
+  "environment": "test-plan",
+  "claim": "T018 has a tests-first acceptance charter with an explicit missing-implementation boundary; no test result is claimed before the implementation action.",
+  "proof_level": "P3",
+  "method": "Derive deterministic integration cases from V001 constraints, the T018 task and Worker Profile design; execute only after the test/implementation action is committed.",
+  "expected": [
+    "atomic claim returns only available PENDING/FAILED rows or expired CLAIMED rows",
+    "claim sets owner/lease and increments attempt without double-claiming the same row",
+    "completion is idempotent by idempotency_key and cannot replay a completed row",
+    "handler failure stores bounded last_error and schedules bounded retry",
+    "attempt threshold transitions to DEAD_LETTER with dead_lettered_at and no further claims",
+    "worker crash or lease expiry allows safe recovery",
+    "duplicate delivery produces one effective side effect through the idempotency boundary"
+  ],
+  "planned_files": [
+    "apps/api/src/test/java/tw/basketball/magazine/outbox/OutboxClaimLeaseIntegrationTest.java",
+    "apps/api/src/test/java/tw/basketball/magazine/outbox/OutboxRetryDeadLetterIntegrationTest.java",
+    "apps/api/src/test/java/tw/basketball/magazine/outbox/OutboxIdempotencyIntegrationTest.java"
+  ],
+  "fixtures": "PostgreSQL Testcontainers with V001 foundation migration; deterministic clock and fake handler; no external broker.",
+  "result": "READY_FOR_TESTS_FIRST",
+  "evidence_refs": [
+    "apps/api/src/main/resources/db/migration/V001__foundation.sql",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md:T018",
+    "specs/001-taiwan-basketball-magazine-ebook/plan.md:107-113"
+  ],
+  "limitations": [
+    "No failing baseline was run because this dispatch receipt intentionally contains no runtime or test source changes.",
+    "The first implementation iteration must record exact compile/test failures before repair."
+  ],
+  "owner": "codex-agent",
+  "next_review_at": "2026-08-08T09:28:47.897Z"
+}

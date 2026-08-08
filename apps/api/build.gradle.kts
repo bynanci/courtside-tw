@@ -18,9 +18,13 @@ java {
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web:4.1.0")
+    implementation("org.springframework.boot:spring-boot-starter-jdbc:4.1.0")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server:4.1.0")
     implementation("com.networknt:json-schema-validator:1.5.9")
+    runtimeOnly("org.postgresql:postgresql:42.7.13")
     testImplementation("org.springframework.boot:spring-boot-starter-test:4.1.0")
+    testImplementation("org.testcontainers:testcontainers-junit-jupiter:2.0.5")
+    testImplementation("org.testcontainers:testcontainers-postgresql:2.0.5")
 }
 
 tasks.withType<Test> {
