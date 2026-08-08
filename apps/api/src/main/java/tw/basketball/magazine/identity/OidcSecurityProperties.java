@@ -8,43 +8,79 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 /**
  * Provider-neutral OIDC resource-server settings.
  *
- * <p>Production configuration must use an HTTPS issuer. HTTP is available only
- * when explicitly enabled for an isolated local OIDC stub; no provider
- * credential or token is represented by these properties.</p>
+ * <p>Production configuration must use HTTPS issuer/JWKS endpoints. HTTP is
+ * available only when explicitly enabled for an isolated local OIDC stub; no
+ * provider credential or token is represented by these properties.</p>
  */
 @ConfigurationProperties(prefix = "courtside.security.oidc")
 public record OidcSecurityProperties(
         String issuer,
         String audience,
+        String jwkSetUri,
         boolean allowInsecureHttp
 ) {
     public OidcSecurityProperties {
-        issuer = validateIssuer(issuer, allowInsecureHttp);
-        audience = validateText("audience", audience, 256);
+        issuer = issuer == null
+                ? null
+                : validateHttpUri("issuer", issuer, allowInsecureHttp, true);
+        audience = validateOptionalText("audience", audience, 256);
+        jwkSetUri = jwkSetUri == null
+                ? null
+                : validateHttpUri("jwkSetUri", jwkSetUri, allowInsecureHttp, false);
     }
 
-    private static String validateIssuer(String value, boolean allowHttp) {
-        String issuerValue = validateText("issuer", value, 2048);
-        URI issuerUri;
+    public String requireIssuer() {
+        return requireConfigured("issuer", issuer);
+    }
+
+    public String requireAudience() {
+        return requireConfigured("audience", audience);
+    }
+
+    public String requireJwkSetUri() {
+        return requireConfigured("jwkSetUri", jwkSetUri);
+    }
+
+    private static String requireConfigured(String name, String value) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalArgumentException(name + " is required when OIDC is configured");
+        }
+        return value;
+    }
+
+    private static String validateHttpUri(
+            String name,
+            String value,
+            boolean allowHttp,
+            boolean rejectQuery
+    ) {
+        String text = validateText(name, value, 2048);
+        URI uri;
         try {
-            issuerUri = URI.create(issuerValue);
+            uri = URI.create(text);
         } catch (IllegalArgumentException exception) {
-            throw new IllegalArgumentException("OIDC issuer must be a valid absolute URI", exception);
+            throw new IllegalArgumentException(name + " must be a valid absolute URI", exception);
         }
 
-        String scheme = issuerUri.getScheme();
-        if (issuerUri.getHost() == null
+        String scheme = uri.getScheme();
+        if (uri.getHost() == null
                 || (!"https".equalsIgnoreCase(scheme)
                 && !"http".equalsIgnoreCase(scheme))
-                || issuerUri.getUserInfo() != null
-                || issuerUri.getQuery() != null
-                || issuerUri.getFragment() != null) {
-            throw new IllegalArgumentException("OIDC issuer must be a public absolute HTTP(S) URI");
+                || uri.getUserInfo() != null
+                || uri.getFragment() != null
+                || (rejectQuery && uri.getQuery() != null)) {
+            throw new IllegalArgumentException(name + " must be a public absolute HTTP(S) URI");
         }
         if ("http".equalsIgnoreCase(scheme) && !allowHttp) {
-            throw new IllegalArgumentException("OIDC issuer must use HTTPS unless local HTTP is explicitly enabled");
+            throw new IllegalArgumentException(
+                    name + " must use HTTPS unless local HTTP is explicitly enabled"
+            );
         }
-        return issuerValue;
+        return text;
+    }
+
+    private static String validateOptionalText(String name, String value, int maxLength) {
+        return value == null ? null : validateText(name, value, maxLength);
     }
 
     private static String validateText(String name, String value, int maxLength) {
