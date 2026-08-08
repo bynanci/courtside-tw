@@ -37,7 +37,10 @@ final class SecurityBoundaryTest {
     @Test
     void rejectsOversizedRequestContentBeforeApplicationChain() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest();
-        request.setContentLength((int) SecurityBoundaryPolicy.MAX_REQUEST_BODY_BYTES + 1);
+        request.addHeader(
+                "Content-Length",
+                Long.toString(SecurityBoundaryPolicy.MAX_REQUEST_BODY_BYTES + 1)
+        );
         MockHttpServletResponse response = new MockHttpServletResponse();
         AtomicBoolean reachedChain = new AtomicBoolean();
 
