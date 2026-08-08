@@ -1,0 +1,65 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-ticket-implementation-t015",
+  "graph_version": 1,
+  "run_id": "courtside-tw-t015-20260808",
+  "status": "running",
+  "iteration": 1,
+  "started_at": "2026-08-08T05:20:39Z",
+  "updated_at": "2026-08-08T05:20:39Z",
+  "current_frontier": [
+    "a-t015-tests-first"
+  ],
+  "blocked_nodes": [],
+  "terminal_state": "in_progress",
+  "next_action": "Write and run T015 issuer/audience/time/role denial tests before implementation; record the exact baseline.",
+  "events": [
+    {
+      "event_id": "evt-t015-001-dispatch",
+      "at": "2026-08-08T05:20:39Z",
+      "actor": "codex-supervisor",
+      "type": "t015_dispatched",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "graph.nodes/t-t015-ready",
+            "after": "T015 is the authorized first identity/security foundation frontier after T014."
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [],
+            "after": [
+              "a-t015-tests-first"
+            ]
+          },
+          {
+            "op": "add",
+            "path": "policy.human_gates/t015-protected-release",
+            "after": "Review, protected merge, checkbox and main read-back remain pending human gate."
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t015-dispatch-20260808.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "authoritative main read-back and user dispatch",
+          "level": "P3",
+          "result": "pass",
+          "main_sha": "3dd8d00a7c6b3f38d74a6c611b546fd311720f5d",
+          "t014": "checked",
+          "t015": "unchecked",
+          "production_idp_accessed": false,
+          "credentials_accessed": false
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Implement only bounded provider-neutral OIDC resource-server validation and exact role policy; keep T016/T017 and production identity actions separate."
+    }
+  ]
+}
