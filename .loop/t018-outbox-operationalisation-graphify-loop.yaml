@@ -1,0 +1,371 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-t018-outbox-operationalisation
+objective: "Make courtside.outbox.enabled a bounded operational switch with explicit handler registration, worker-only scheduling and redacted Micrometer observability."
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - apps/api/src/main/java/tw/basketball/magazine/outbox/
+    - apps/api/src/test/java/tw/basketball/magazine/outbox/
+    - apps/api/build.gradle.kts actuator dependency required for outbox metrics
+    - T018 operationalisation Graphify, evidence and ledger artifacts
+  out:
+    - T016 Nuxt BFF authorization-code/PKCE and session-cookie implementation
+    - T017 append-only audit writer
+    - T019/T020 storage and media processing
+    - V001 or any database migration/schema change
+    - message broker, concrete external provider, production credentials or deployment
+    - shared T021 observability platform beyond the outbox-specific metrics contract
+
+authority:
+  allowed:
+    - read authoritative main aa59a4a and the merged T018 implementation
+    - add explicit event-type registration and worker-only scheduling
+    - add bounded Micrometer metrics and actuator runtime dependency
+    - add unit/context tests and local/CI verification
+    - open a draft pull request from the latest main
+  requires_approval:
+    - merge this enhancement or change production activation values
+    - change V001/schema, add a broker/provider or expose new management endpoints
+    - mark a later task or T021 complete
+  forbidden:
+    - silently enable courtside.outbox.enabled in deployment configuration
+    - use payload, aggregate ID, idempotency key, lease token or credentials as metric/log labels
+    - fall back to a catch-all handler in the production registry
+    - access production databases, providers or secrets
+
+acceptance:
+  - disabled outbox creates no repository, handler registry, scheduler or metrics infrastructure.
+  - enabled api profile provides enqueue persistence but never starts a scheduler or worker thread.
+  - enabled worker profile requires at least one explicit OutboxHandlerRegistration and rejects duplicate event types at startup.
+  - the registry routes only exact event types; an unknown event is a bounded permanent failure and is dead-lettered without retry.
+  - worker scheduling uses validated initial-delay and poll-interval values, one bounded scheduler thread, overlap protection and graceful shutdown.
+  - Micrometer metrics cover run outcomes, handler outcomes, duration and scheduler failures/skips without sensitive or unbounded labels.
+  - worker remains non-web and the feature remains opt-in; no migration, broker, provider or deployment change is included.
+  - tests, Java quality, repository CI/Security and exact-head scope/review proof pass.
+
+budgets:
+  max_iterations: 8
+  max_minutes: 150
+  max_same_failure: 2
+  max_graph_changes: 14
+  max_tokens: 52000
+
+policy:
+  human_gates:
+    - production-readiness review and protected merge
+    - any management endpoint exposure, schema/provider change or activation change
+    - completion reconciliation after authoritative main read-back
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+memory_workflow:
+  contract: work-memory/v1
+  control_ledger: Append graph delta, proof receipts and token usage every iteration.
+  semantic_memory: Capture only durable operational constraints and verified proof references.
+  modes: [recall, capture, update, forget, no_op]
+  retrieval:
+    levels: [index, timeline_relations, details]
+    max_index_results: 10
+    stop_on_sufficient_evidence: true
+  capture:
+    allowed_kinds: [decision, constraint, fact, attempt, task_state, pattern, evidence]
+    requires_downstream_proof: true
+    requires_write_receipt: true
+  lifecycle: [seed, verified, stable, needs_update, disputed, archived]
+  failure_policy:
+    write_pending: blocked
+    stale_or_disputed: needs_human
+    redact_secrets: true
+
+graph:
+  entry_nodes: [x-t018-main, t-direction, t-operationalisation-request, t-supervisor]
+  terminal_nodes: [s-operationalisation-proof]
+  current_frontier: [a-tests-first]
+  blocked_nodes: [s-operationalisation-proof, g-production-review]
+  loops:
+    - id: l1-execution
+      layer: L1
+      owner: agent
+      trigger_nodes: [t-operationalisation-request]
+      action_nodes: [a-tests-first, a-implementation]
+      proof_nodes: [p-tests-first, p-production-proof]
+      memory_nodes: [m-l1-ledger]
+      stop_nodes: [s-operationalisation-proof]
+      budgets: {max_iterations: 6, max_minutes: 120, max_same_failure: 2, max_graph_changes: 10, max_tokens: 42000}
+
+    - id: l2-supervisor
+      layer: L2
+      owner: supervisor-agent
+      trigger_nodes: [t-supervisor]
+      action_nodes: [a-reconcile]
+      proof_nodes: [p-reconcile]
+      memory_nodes: [m-l2-ledger]
+      stop_nodes: [s-operationalisation-proof]
+      budgets: {max_iterations: 4, max_minutes: 60, max_same_failure: 2, max_graph_changes: 8, max_tokens: 18000}
+
+    - id: l3-direction
+      layer: L3
+      owner: human-mark
+      trigger_nodes: [t-direction]
+      action_nodes: [a-direction]
+      proof_nodes: [p-direction]
+      memory_nodes: [m-l3-decisions]
+      stop_nodes: [s-operationalisation-proof]
+      budgets: {max_iterations: 2, max_minutes: 30, max_same_failure: 2, max_graph_changes: 4, max_tokens: 9000}
+
+  nodes:
+    - id: x-t018-main
+      kind: external
+      layer: EXTERNAL
+      label: "T018 merged main read-back"
+      owner: github
+      status: done
+      risk: high
+      confidence: {score: 1.0, basis: "main aa59a4a contains T018 and records handler/scheduling/metrics as explicit follow-up boundaries", evidence_refs: [.loop/evidence/t018-completion-reconciliation-20260808.json]}
+      budget: {effort_hours: 0.1, tokens: 1500}
+      config: {source_type: github-main, freshness: "commit SHA aa59a4a", limitations: "No production database/provider state is inferred."}
+
+    - id: t-direction
+      kind: trigger
+      layer: L3
+      label: "Operationalisation direction is explicitly requested"
+      owner: human-mark
+      status: done
+      risk: high
+      confidence: {score: 1.0, basis: "Current user request names handler registration, scheduling and observability enhancement", evidence_refs: [.loop/evidence/t018-operationalisation-charter-20260808.json]}
+      budget: {effort_hours: 0.0, tokens: 500}
+      config: {condition: "Mark requests a bounded T018 operationalisation enhancement.", inputs_required: [user direction, current main read-back, T018 follow-up receipt], dedupe: "T018 operationalisation + main aa59a4a"}
+
+    - id: a-direction
+      kind: action
+      layer: L3
+      label: "Fix the operational boundary and risk rubric"
+      owner: codex-supervisor
+      status: done
+      risk: high
+      confidence: {score: 0.95, basis: "Scope separates opt-in runtime wiring from activation, schema and provider changes", evidence_refs: [.loop/evidence/t018-operationalisation-charter-20260808.json]}
+      budget: {effort_hours: 0.5, tokens: 3500}
+      config: {workflow: [separate confirmed main facts, define acceptance, set authority and stop conditions], allowed: [read main, define bounded code/test scope], requires_approval: [merge, activation change, endpoint exposure], forbidden: [infer production enablement]}
+
+    - id: p-direction
+      kind: proof
+      layer: L3
+      label: "Bounded operationalisation charter"
+      owner: verifier
+      status: done
+      risk: high
+      confidence: {score: 0.95, basis: "Static scope and acceptance receipt is committed before implementation", evidence_refs: [.loop/evidence/t018-operationalisation-charter-20260808.json]}
+      budget: {effort_hours: 0.25, tokens: 1500}
+      config: {level: P1, claim: "The enhancement has a bounded scope, authority and acceptance contract.", method: "Main read-back plus machine-readable charter", evidence_path: .loop/evidence/t018-operationalisation-charter-20260808.json, required: true, baseline_required: false}
+
+    - id: g-direction
+      kind: gate
+      layer: L3
+      label: "Direction gate for this requested enhancement"
+      owner: human-mark
+      status: done
+      risk: critical
+      confidence: {score: 1.0, basis: "The user request is the current explicit direction; merge and activation remain separate gates", evidence_refs: [.loop/evidence/t018-operationalisation-charter-20260808.json]}
+      budget: {effort_hours: 0.0, tokens: 500}
+      config: {condition: "Proceed with implementation only inside the bounded charter.", approver: human-mark, required: true}
+
+    - id: m-l3-decisions
+      kind: memory
+      layer: L3
+      label: "Direction decision ledger"
+      owner: human-mark
+      status: done
+      risk: medium
+      confidence: {score: 0.95, basis: "Charter captures the current direction and its non-goals", evidence_refs: [.loop/evidence/t018-operationalisation-charter-20260808.json]}
+      budget: {effort_hours: 0.1, tokens: 800}
+      config: {path: .loop/t018-outbox-operationalisation-ledger.json, read_before_action: true, write_after_iteration: true, append_only: true, contract: work-memory/v1, memory_role: hybrid, receipt_required: true, write_failure_state: blocked}
+
+    - id: t-operationalisation-request
+      kind: trigger
+      layer: L1
+      label: "T018 operationalisation implementation is ready"
+      owner: codex-supervisor
+      status: ready
+      risk: high
+      confidence: {score: 0.95, basis: "L3 direction gate is done and main read-back is fixed", evidence_refs: [.loop/evidence/t018-operationalisation-charter-20260808.json]}
+      budget: {effort_hours: 0.0, tokens: 500}
+      config: {condition: "T018 is merged on latest main and its opt-in follow-up boundaries are explicit.", inputs_required: [main SHA, T018 completion receipt, acceptance charter], dedupe: "T018 operationalisation + main aa59a4a + charter v1"}
+
+    - id: a-tests-first
+      kind: action
+      layer: L1
+      label: "Write failing registration, scheduling and metrics tests first"
+      owner: codex-agent
+      status: running
+      risk: high
+      confidence: {score: 0.95, basis: "Tests target the missing runtime boundary without changing production behavior", evidence_refs: [.loop/evidence/t018-operationalisation-charter-20260808.json]}
+      budget: {effort_hours: 1.0, tokens: 9000}
+      config: {workflow: [write registry tests, write feature-flag context tests, write scheduler/metrics tests, run baseline, record exact failure], allowed: [outbox tests, operationalisation evidence], requires_approval: [merge, production activation, endpoint exposure], forbidden: [weaken acceptance, add catch-all handler, access production data]}
+
+    - id: p-tests-first
+      kind: proof
+      layer: L1
+      label: "Tests-first missing-boundary baseline"
+      owner: verifier
+      status: planned
+      risk: high
+      confidence: {score: 0.7, basis: "Expected compile/test failure must be confirmed by exact CI output", evidence_refs: []}
+      budget: {effort_hours: 0.5, tokens: 5000}
+      config: {level: P2, claim: "The new tests fail for the intended missing registration/scheduler/metrics symbols before implementation.", method: "Exact-head Java quality job and raw failure log", evidence_path: .loop/evidence/t018-operationalisation-tests-first-20260808.json, required: true, baseline_required: true}
+
+    - id: a-implementation
+      kind: action
+      layer: L1
+      label: "Implement explicit handler registry, worker scheduler and Micrometer adapter"
+      owner: codex-agent
+      status: planned
+      risk: high
+      confidence: {score: 0.8, basis: "Bounded design is derived from current T018 API and worker profile; no schema change is required", evidence_refs: [.loop/evidence/t018-operationalisation-charter-20260808.json]}
+      budget: {effort_hours: 4.0, tokens: 18000}
+      config: {workflow: [add explicit registrations, split worker configuration, add validated scheduling, add metrics adapter, preserve legacy direct worker test constructor, run focused tests], allowed: [outbox runtime package, API build dependency, outbox tests], requires_approval: [merge, endpoint exposure, activation change], forbidden: [schema migration, broker/provider, deployment, secret/payload labels]}
+
+    - id: p-production-proof
+      kind: proof
+      layer: L1
+      label: "Exact-head production-readiness proof"
+      owner: verifier
+      status: planned
+      risk: high
+      confidence: {score: 0.75, basis: "CI/Security must independently verify runtime and scope claims", evidence_refs: []}
+      budget: {effort_hours: 2.5, tokens: 12000}
+      config: {level: P2, claim: "Feature flag boundaries, handler dispatch, scheduling lifecycle, metrics redaction and existing T018 behavior pass.", method: "Focused Java tests, Java quality, CI/Security, changed-file and review-thread read-back", evidence_path: .loop/evidence/t018-operationalisation-implementation-20260808.json, required: true, baseline_required: true}
+
+    - id: t-supervisor
+      kind: trigger
+      layer: L2
+      label: "CI or review evidence changes the next action"
+      owner: supervisor-agent
+      status: planned
+      risk: high
+      confidence: {score: 0.8, basis: "Each exact-head failure or proof delta must update the bounded route", evidence_refs: []}
+      budget: {effort_hours: 0.0, tokens: 1000}
+      config: {condition: "A baseline, CI, Security, scope or review evidence delta is available.", inputs_required: [exact head, job result, changed-file inventory], dedupe: "branch head + evidence fingerprint"}
+
+    - id: a-reconcile
+      kind: action
+      layer: L2
+      label: "Reconcile exact-head evidence and choose one bounded repair"
+      owner: supervisor-agent
+      status: planned
+      risk: high
+      confidence: {score: 0.8, basis: "The loop limits retries to two identical failures and preserves evidence history", evidence_refs: []}
+      budget: {effort_hours: 1.0, tokens: 5000}
+      config: {workflow: [classify failure, inspect raw evidence, update graph ledger, select one repair or stop], allowed: [read CI/Security, update evidence/ledger, request bounded code repair], requires_approval: [merge, activation, scope change], forbidden: [blind rerun, weaken acceptance, hide failed evidence]}
+
+    - id: p-reconcile
+      kind: proof
+      layer: L2
+      label: "Reconciliation proof and stop decision"
+      owner: verifier
+      status: planned
+      risk: high
+      confidence: {score: 0.75, basis: "A repair is accepted only when the exact head changes and the relevant proof reruns", evidence_refs: []}
+      budget: {effort_hours: 0.5, tokens: 4000}
+      config: {level: P2, claim: "The next action is supported by a new evidence delta and remains inside scope.", method: "Append-only ledger and exact-head read-back", evidence_path: .loop/t018-outbox-operationalisation-ledger.json, required: true, baseline_required: false}
+
+    - id: m-l1-ledger
+      kind: memory
+      layer: L1
+      label: "L1 outbox implementation ledger"
+      owner: codex-agent
+      status: running
+      risk: medium
+      confidence: {score: 0.95, basis: "Append-only evidence is required for tests-first and implementation iterations", evidence_refs: [.loop/t018-outbox-operationalisation-ledger.json]}
+      budget: {effort_hours: 0.1, tokens: 1200}
+      config: {path: .loop/t018-outbox-operationalisation-ledger.json, read_before_action: true, write_after_iteration: true, append_only: true, contract: work-memory/v1, memory_role: hybrid, receipt_required: true, write_failure_state: blocked}
+
+    - id: m-l2-ledger
+      kind: memory
+      layer: L2
+      label: "Supervisor reconciliation ledger"
+      owner: supervisor-agent
+      status: running
+      risk: medium
+      confidence: {score: 0.95, basis: "Failure signatures and proof receipts are append-only", evidence_refs: [.loop/t018-outbox-operationalisation-ledger.json]}
+      budget: {effort_hours: 0.1, tokens: 1200}
+      config: {path: .loop/t018-outbox-operationalisation-ledger.json, read_before_action: true, write_after_iteration: true, append_only: true, contract: work-memory/v1, memory_role: hybrid, receipt_required: true, write_failure_state: blocked}
+
+    - id: g-production-review
+      kind: gate
+      layer: L2
+      label: "Human production-readiness and protected-merge gate"
+      owner: human-mark
+      status: needs_human
+      risk: critical
+      confidence: {score: 0.85, basis: "Runtime activation and security/observability control changes require human review before merge", evidence_refs: []}
+      budget: {effort_hours: 0.25, tokens: 1500}
+      config: {condition: "Exact-head tests and CI/Security pass; scope excludes activation, schema, provider and endpoint changes.", approver: human-mark, required: true}
+
+    - id: s-operationalisation-proof
+      kind: stop
+      layer: GLOBAL
+      label: "Stop at proof-ready draft until human merge decision"
+      owner: policy
+      status: blocked
+      risk: critical
+      confidence: {score: 1.0, basis: "Draft PR is not authoritative production enablement and must not be self-merged", evidence_refs: [.loop/evidence/t018-operationalisation-charter-20260808.json]}
+      budget: {effort_hours: 0.0, tokens: 1000}
+      config: {states: {success: "Required proof and human merge gate pass, followed by main read-back.", no_op: "No new operational boundary is required.", blocked: "Runtime proof or required human gate is unavailable.", stalled: "Same failure or no evidence delta reaches the configured limit.", exhausted: "Graph budget is reached.", needs_human: "Draft PR is ready and awaits human production-readiness/merge decision."}}
+
+  edges:
+    - {id: e-main-direction, from: x-t018-main, to: t-direction, type: feedback, required: true, confidence: 1.0, token_capacity: 5000}
+    - {id: e-direction-action, from: t-direction, to: a-direction, type: enables, required: true, confidence: 1.0, token_capacity: 3500}
+    - {id: e-direction-proof, from: a-direction, to: p-direction, type: verifies, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-direction-gate, from: p-direction, to: g-direction, type: requires_approval, required: true, confidence: 1.0, token_capacity: 1500}
+    - {id: e-direction-approve, from: g-direction, to: t-operationalisation-request, type: approves, required: true, confidence: 1.0, token_capacity: 2500}
+    - {id: e-direction-memory-read, from: m-l3-decisions, to: a-direction, type: reads, required: true, confidence: 0.9, token_capacity: 800}
+    - {id: e-direction-memory-a, from: a-direction, to: m-l3-decisions, type: records, required: true, confidence: 0.9, token_capacity: 800}
+    - {id: e-direction-memory-p, from: p-direction, to: m-l3-decisions, type: records, required: true, confidence: 0.9, token_capacity: 800}
+    - {id: e-direction-feedback, from: m-l3-decisions, to: a-direction, type: feedback, required: true, confidence: 0.9, token_capacity: 800}
+
+    - {id: e-request-tests, from: t-operationalisation-request, to: a-tests-first, type: enables, required: true, confidence: 0.95, token_capacity: 9000}
+    - {id: e-l1-memory-read, from: m-l1-ledger, to: a-tests-first, type: reads, required: true, confidence: 0.95, token_capacity: 1200}
+    - {id: e-tests-proof, from: a-tests-first, to: p-tests-first, type: verifies, required: true, confidence: 0.9, token_capacity: 5000}
+    - {id: e-tests-ledger, from: a-tests-first, to: m-l1-ledger, type: records, required: true, confidence: 0.9, token_capacity: 1200}
+    - {id: e-proof-implementation, from: p-tests-first, to: a-implementation, type: enables, required: true, confidence: 0.85, token_capacity: 16000}
+    - {id: e-implementation-proof, from: a-implementation, to: p-production-proof, type: verifies, required: true, confidence: 0.85, token_capacity: 12000}
+    - {id: e-implementation-ledger, from: a-implementation, to: m-l1-ledger, type: records, required: true, confidence: 0.9, token_capacity: 1200}
+    - {id: e-production-ledger, from: p-production-proof, to: m-l1-ledger, type: records, required: true, confidence: 0.9, token_capacity: 1200}
+    - {id: e-production-review, from: p-production-proof, to: g-production-review, type: requires_approval, required: true, confidence: 0.8, token_capacity: 5000}
+    - {id: e-production-feedback, from: p-production-proof, to: t-supervisor, type: feedback, required: true, confidence: 0.85, token_capacity: 4000}
+    - {id: e-l1-memory-feedback, from: m-l1-ledger, to: a-tests-first, type: feedback, required: true, confidence: 0.9, token_capacity: 1500}
+
+    - {id: e-supervisor-action, from: t-supervisor, to: a-reconcile, type: enables, required: true, confidence: 0.85, token_capacity: 5000}
+    - {id: e-l2-memory-read, from: m-l2-ledger, to: a-reconcile, type: reads, required: true, confidence: 0.9, token_capacity: 1200}
+    - {id: e-supervisor-proof, from: a-reconcile, to: p-reconcile, type: verifies, required: true, confidence: 0.85, token_capacity: 4000}
+    - {id: e-supervisor-ledger-a, from: a-reconcile, to: m-l2-ledger, type: records, required: true, confidence: 0.9, token_capacity: 1200}
+    - {id: e-supervisor-ledger-p, from: p-reconcile, to: m-l2-ledger, type: records, required: true, confidence: 0.9, token_capacity: 1200}
+    - {id: e-supervisor-review, from: p-reconcile, to: g-production-review, type: requires_approval, required: true, confidence: 0.8, token_capacity: 5000}
+    - {id: e-l2-memory-feedback, from: m-l2-ledger, to: a-reconcile, type: feedback, required: true, confidence: 0.9, token_capacity: 1500}
+    - {id: e-review-stop, from: g-production-review, to: s-operationalisation-proof, type: approves, required: true, confidence: 0.8, token_capacity: 5000}
+
+
+flow:
+  source: t-operationalisation-request
+  sink: s-operationalisation-proof
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - memory_receipt
+  - next_action

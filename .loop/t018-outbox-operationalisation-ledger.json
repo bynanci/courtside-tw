@@ -1,0 +1,39 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-t018-outbox-operationalisation",
+  "graph_version": 1,
+  "run_id": "courtside-tw-t018-operationalisation-20260808",
+  "status": "running",
+  "iteration": 1,
+  "started_at": "2026-08-08T12:00:00Z",
+  "updated_at": "2026-08-08T12:00:00Z",
+  "current_frontier": ["a-tests-first"],
+  "blocked_nodes": [],
+  "terminal_state": null,
+  "next_action": "Run the tests-first baseline on the exact branch head and record the intended missing-boundary failure.",
+  "events": [
+    {
+      "event_id": "evt-t018-operationalisation-001-dispatch",
+      "at": "2026-08-08T12:00:00Z",
+      "actor": "codex-supervisor",
+      "type": "enhancement_dispatched",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {"op": "add", "path": "graph", "after": "Bounded handler registration, worker scheduling and metrics loop from main aa59a4a."},
+          {"op": "add", "path": "graph.nodes/a-tests-first/status", "after": "running"}
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t018-operationalisation-charter-20260808.json",
+        "https://github.com/bynanci/courtside-tw/commit/aa59a4a6cd7ebc575d04da147521fb14e8256a8a"
+      ],
+      "proof_receipts": [],
+      "failure_signature": null,
+      "decision": "Implement only the opt-in operational boundary; keep T016, schema, provider, deployment and activation out of scope.",
+      "token_usage": {"estimated": 8000, "input": 0, "output": 0, "total": 8000},
+      "terminal_reason": null
+    }
+  ]
+}

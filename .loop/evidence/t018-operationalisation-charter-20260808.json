@@ -1,0 +1,33 @@
+{
+  "evaluation_id": "t018-operationalisation-charter-20260808",
+  "system_id": "courtside-tw-api-outbox",
+  "as_of": "2026-08-08T12:00:00Z",
+  "artifact_fingerprint": "git:aa59a4a6cd7ebc575d04da147521fb14e8256a8a",
+  "environment": "review",
+  "claim": "T018 follow-up scope is bounded to explicit handler registration, worker-only scheduling and redacted operational metrics behind courtside.outbox.enabled.",
+  "threat_refs": ["ASI02 Tool Misuse and Exploitation", "ASI08 Cascading Failures"],
+  "control_ids": ["GOV-003", "AGT-001", "AGT-004", "AGT-007", "OPS-001", "OPS-002", "DAT-007"],
+  "proof_level": "P1",
+  "method": "Authoritative main read-back, T018 completion receipt, outbox source inspection and bounded acceptance definition before implementation.",
+  "expected": "enabled=false remains safe and inert; API profile only persists; worker profile requires explicit registrations and bounded scheduling; metrics cannot contain payload or credentials.",
+  "observed": {
+    "main_sha": "aa59a4a6cd7ebc575d04da147521fb14e8256a8a",
+    "t018_status": "checked",
+    "current_follow_up": "OutboxConfiguration creates repository and optional runOnce worker; handler registration, scheduling and operational metrics are absent.",
+    "schema_change": false,
+    "provider_or_secret_access": false,
+    "activation_change": false
+  },
+  "result": "PASS",
+  "evidence_refs": [
+    "https://github.com/bynanci/courtside-tw/commit/aa59a4a6cd7ebc575d04da147521fb14e8256a8a",
+    ".loop/evidence/t018-completion-reconciliation-20260808.json",
+    "apps/api/src/main/java/tw/basketball/magazine/outbox/OutboxConfiguration.java"
+  ],
+  "limitations": [
+    "This is a static scope/acceptance receipt; runtime control claims remain unverified until the tests-first and exact-head proof runs.",
+    "No concrete domain handler is invented because publication/application ports are not yet implemented."
+  ],
+  "owner": "codex-supervisor",
+  "next_review_at": "2026-08-08T14:00:00Z"
+}
