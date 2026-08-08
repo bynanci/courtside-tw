@@ -22,7 +22,12 @@
       "confidence": "high"
     },
     {
-      "text": "The next required action is human threat-model review plus exact-head remote CI/Security and protected merge/checkbox gating; do not activate a production IdP or durable session store in this lane.",
+      "text": "PR #53 implementation head d37336b passes CI #169 and Security #169 with the T016 changed-file scope; the PR remains draft and unmerged.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Exact-head remote CI/Security proof has passed; the next required action is human threat-model review plus protected merge/checkbox gating. Do not activate a production IdP or durable session store in this lane.",
       "class": "INFERRED",
       "confidence": "high"
     }
@@ -33,6 +38,7 @@
     ".loop/evidence/t016-tests-first-baseline-20260808.json",
     ".loop/evidence/t016-implementation-proof-20260808.json",
     ".loop/evidence/t016-static-scope-20260808.json",
+    ".loop/evidence/t016-ci-security-final-20260808.json",
     "git:fc6e2082376e790926af30d69227553a26fe2e63"
   ],
   "volatility": "medium",
@@ -43,7 +49,10 @@
     "apps/web/server/auth/session-service.ts",
     "apps/web/server/middleware/auth.ts",
     "apps/web/tests/integration/auth-session.test.ts",
-    "specs/001-taiwan-basketball-magazine-ebook/tasks.md:T016"
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md:T016",
+    "PR #53",
+    "CI #169",
+    "Security #169"
   ],
   "entities": [
     "T016",

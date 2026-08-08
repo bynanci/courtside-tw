@@ -167,7 +167,7 @@ graph:
       status: done
       risk: critical
       budget: {effort_hours: 0.8, tokens: 7000}
-      confidence: {score: 0.9, basis: "Seven auth tests, root verify and production-mode public/protected smoke pass on implementation head fc6e208", evidence_refs: [.loop/evidence/t016-implementation-proof-20260808.json, .loop/evidence/t016-static-scope-20260808.json]}
+      confidence: {score: 0.95, basis: "Seven auth tests, root verify, production-mode public/protected smoke and exact-head CI/Security pass for d37336b", evidence_refs: [.loop/evidence/t016-implementation-proof-20260808.json, .loop/evidence/t016-static-scope-20260808.json, .loop/evidence/t016-ci-security-final-20260808.json]}
       config:
         level: P3
         claim: "T016 local security and repository proof passes without exposing bearer tokens or blocking anonymous public SSR."
@@ -184,7 +184,7 @@ graph:
       status: needs_human
       risk: critical
       budget: {effort_hours: 1, tokens: 5000}
-      confidence: {score: 0.8, basis: "Local proof is pass-with-follow-up; threat-model, exact-head remote gates and protected merge remain human decisions", evidence_refs: [.loop/evidence/t016-implementation-proof-20260808.json]}
+      confidence: {score: 0.85, basis: "Local proof and exact-head CI/Security pass; threat-model review, protected merge and checkbox remain human decisions", evidence_refs: [.loop/evidence/t016-implementation-proof-20260808.json, .loop/evidence/t016-ci-security-final-20260808.json]}
       config:
         condition: "Threat-model proof, cookie/CSRF/session tests, exact-head CI/Security and scope inventory pass; durable store and provider activation remain separately approved."
         approver: "human security reviewer and protected repository workflow"
@@ -206,7 +206,7 @@ graph:
           blocked: "Provider, durable store, DB, OpenAPI or unrelated task scope is requested."
           stalled: "Required security or repository proof does not advance within the bounded loop budget."
           exhausted: "The same failure repeats beyond max_same_failure or evidence does not change."
-          needs_human: "Human threat-model, exact-head CI/Security, protected merge and checkbox review is pending."
+          needs_human: "Human threat-model, protected merge and checkbox review is pending; exact-head CI/Security proof has passed."
 
     - id: m-t016-ledger
       kind: memory

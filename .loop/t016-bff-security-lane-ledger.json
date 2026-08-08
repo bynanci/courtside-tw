@@ -1,12 +1,12 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t016-bff-controlled-security-lane",
-  "graph_version": 2,
+  "graph_version": 3,
   "run_id": "courtside-tw-t016-20260808",
   "status": "needs_human",
-  "iteration": 2,
+  "iteration": 3,
   "started_at": "2026-08-08T09:28:47.897Z",
-  "updated_at": "2026-08-08T14:39:27Z",
+  "updated_at": "2026-08-08T14:52:35Z",
   "current_frontier": [
     "g-t016-security-review"
   ],
@@ -153,6 +153,55 @@
       ],
       "failure_signature": "Initial tests failed only because the T016 session-service runtime boundary was absent; no provider or credential was contacted.",
       "decision": "The bounded T016 implementation and local proof pass. Preserve human threat-model review, exact-head remote CI/Security, protected merge, checkbox and production session-store/IdP activation as explicit gates; leave the lane at needs_human."
+    },
+    {
+      "event_id": "evt-t016-003-exact-head-ci-security",
+      "at": "2026-08-08T14:52:35Z",
+      "actor": "codex-agent",
+      "type": "t016_exact_head_ci_security_proof",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "evidence/t016-ci-security-final-20260808.json",
+            "after": "CI #169 and Security #169 pass on exact implementation head d37336b."
+          },
+          {
+            "op": "replace",
+            "path": "nodes/p-t016-implementation-proof.confidence.score",
+            "before": 0.9,
+            "after": 0.95
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t016-ci-security-final-20260808.json",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31262879519",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31262879512",
+        "PR #53@d37336b76678960dafb684a81301c05d2e0a8d18"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Exact-head repository CI",
+          "level": "P3",
+          "result": "pass",
+          "run_number": 169,
+          "run_id": 31262879519,
+          "head_sha": "d37336b76678960dafb684a81301c05d2e0a8d18"
+        },
+        {
+          "proof": "Exact-head repository Security",
+          "level": "P3",
+          "result": "pass",
+          "run_number": 169,
+          "run_id": 31262879512,
+          "head_sha": "d37336b76678960dafb684a81301c05d2e0a8d18"
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Remote exact-head CI/Security proof passes. The lane remains needs_human: do not self-approve, merge, mark T016 checked or activate production identity/session infrastructure."
     }
   ]
 }

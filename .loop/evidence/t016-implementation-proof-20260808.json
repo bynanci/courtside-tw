@@ -29,6 +29,12 @@
       "result": "pass",
       "checks": ["format", "lint", "typecheck", "workspace tests", "content schema", "OpenAPI contract"]
     },
+    "remote_ci_security": {
+      "head_sha": "d37336b76678960dafb684a81301c05d2e0a8d18",
+      "ci_run": 31262879519,
+      "security_run": 31262879512,
+      "result": "pass"
+    },
     "production_mode_smoke": {
       "command": "NODE_ENV=production node .output/server/index.mjs; GET /; GET /api/v1/me",
       "result": "pass",
@@ -55,7 +61,7 @@
   "result": "PASS_WITH_FOLLOW_UP",
   "limitations": [
     "The implementation uses an in-memory AuthStore only for local/CI proof and deliberately fails closed in NODE_ENV=production; durable production session storage requires a separate approved design and gate.",
-    "Human threat-model review, exact-head CI/Security workflows, protected merge, T016 checkbox reconciliation and production identity activation remain pending.",
+    "Human threat-model review, protected merge, T016 checkbox reconciliation and production identity activation remain pending; CI/Security are recorded separately in the exact-head receipt.",
     "No real provider, real user, real token or production secret was accessed."
   ],
   "owner": "codex-agent",
