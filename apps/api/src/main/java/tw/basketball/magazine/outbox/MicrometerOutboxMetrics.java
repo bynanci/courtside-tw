@@ -3,6 +3,7 @@ package tw.basketball.magazine.outbox;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
 
 import io.micrometer.core.instrument.Counter;
@@ -18,12 +19,22 @@ public final class MicrometerOutboxMetrics implements OutboxMetrics {
     private static final String SCHEDULER_EVENTS = "courtside.outbox.scheduler.events";
     private static final String LAST_RUN = "courtside.outbox.last.run.epoch.seconds";
     private static final int MAX_METRIC_EVENT_TYPE_LENGTH = 64;
+    private static final int MAX_METRIC_EVENT_TYPES = 100;
 
     private final MeterRegistry registry;
+    private final Set<String> allowedEventTypes;
     private final AtomicLong lastRunEpochSeconds = new AtomicLong();
 
     public MicrometerOutboxMetrics(MeterRegistry registry) {
+        this(registry, Set.of());
+    }
+
+    public MicrometerOutboxMetrics(
+            MeterRegistry registry,
+            Set<String> allowedEventTypes
+    ) {
         this.registry = Objects.requireNonNull(registry, "registry");
+        this.allowedEventTypes = boundedEventTypes(allowedEventTypes);
         registry.gauge(LAST_RUN, lastRunEpochSeconds);
     }
 
@@ -122,13 +133,24 @@ public final class MicrometerOutboxMetrics implements OutboxMetrics {
         builder.register(registry).record(duration);
     }
 
-    private static String metricEventType(String eventType) {
+    private String metricEventType(String eventType) {
         if (eventType == null
+                || !allowedEventTypes.contains(eventType)
                 || !OutboxHandlerRegistration.isSafeEventType(eventType)
                 || eventType.length() > MAX_METRIC_EVENT_TYPE_LENGTH
                 || eventType.codePoints().anyMatch(Character::isISOControl)) {
             return "unknown";
         }
         return eventType;
+    }
+
+    private static Set<String> boundedEventTypes(Set<String> eventTypes) {
+        Objects.requireNonNull(eventTypes, "allowedEventTypes");
+        if (eventTypes.size() > MAX_METRIC_EVENT_TYPES) {
+            throw new IllegalArgumentException(
+                    "allowed event types exceed the bounded metric limit"
+            );
+        }
+        return Set.copyOf(eventTypes);
     }
 }
