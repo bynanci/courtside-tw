@@ -24,7 +24,7 @@ public record Version(long value) implements Serializable {
         if (value.equals("*") || value.startsWith("W/")) {
             throw new IllegalArgumentException("If-Match must be an exact version");
         }
-        if (value.length() >= 2 && value.startsWith(""") && value.endsWith(""")) {
+        if (value.length() >= 2 && value.startsWith("\"") && value.endsWith("\"")) {
             value = value.substring(1, value.length() - 1);
         }
         if (value.isEmpty()
