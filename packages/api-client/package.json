@@ -1,0 +1,28 @@
+{
+  "name": "@courtside/api-client",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Generated, type-safe TypeScript client for the Courtside TW API contract.",
+  "engines": {
+    "node": "24.14.x",
+    "pnpm": "11.7.x"
+  },
+  "scripts": {
+    "generate": "node scripts/generate-client.mjs",
+    "generate:check": "node scripts/generate-client.mjs && git diff --exit-code -- src/generated/openapi.d.ts",
+    "lint": "eslint --max-warnings=0 src scripts tests",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test tests/generated-client.test.ts",
+    "contract": "node scripts/generate-client.mjs && git diff --exit-code -- src/generated/openapi.d.ts && node --experimental-strip-types --test tests/generated-client.test.ts"
+  },
+  "dependencies": {
+    "openapi-fetch": "0.17.0"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "openapi-typescript": "7.13.0",
+    "prettier": "3.9.6",
+    "typescript": "5.9.3"
+  }
+}

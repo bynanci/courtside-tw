@@ -8,3 +8,5 @@ saveExact: true
 sharedWorkspaceLockfile: true
 managePackageManagerVersions: false
 verifyDepsBeforeRun: false
+overrides:
+  js-yaml: 4.3.1
