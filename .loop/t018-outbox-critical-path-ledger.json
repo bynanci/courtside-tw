@@ -3,16 +3,18 @@
   "graph_name": "courtside-tw-t018-outbox-critical-path",
   "graph_version": 1,
   "run_id": "courtside-tw-t018-20260808",
-  "status": "ready",
-  "iteration": 1,
+  "status": "proof_ready_pending_human_gate",
+  "iteration": 2,
   "started_at": "2026-08-08T09:28:47.897Z",
-  "updated_at": "2026-08-08T09:28:47.897Z",
+  "updated_at": "2026-08-08T10:45:01.414Z",
   "current_frontier": [
-    "a-t018-tests-first"
+    "g-t018-review-merge"
   ],
-  "blocked_nodes": [],
-  "terminal_state": "ready_for_tests_first",
-  "next_action": "Write and run the T018 Testcontainers claim/lease/retry/dead-letter/idempotency baseline from main 05e891d; record the first failure before implementation.",
+  "blocked_nodes": [
+    "s-t018-proof-gate"
+  ],
+  "terminal_state": "proof_ready_pending_human_gate",
+  "next_action": "Human review and protected merge decision; keep T018 unchecked and the pull request draft.",
   "events": [
     {
       "event_id": "evt-t018-001-dispatch",
@@ -59,6 +61,90 @@
       ],
       "failure_signature": null,
       "decision": "Dispatch T018 as the P1 critical-path outbox lane; preserve durable idempotency and bounded recovery as non-negotiable gates."
+    },
+    {
+      "event_id": "evt-t018-002-implementation-proof",
+      "at": "2026-08-08T10:45:01.414Z",
+      "actor": "codex-agent",
+      "type": "t018_implementation_proof",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [
+              "a-t018-tests-first"
+            ],
+            "after": [
+              "g-t018-review-merge"
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "nodes/a-t018-tests-first.status",
+            "before": "ready",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "nodes/p-t018-tests-first.status",
+            "before": "planned",
+            "after": "pass"
+          },
+          {
+            "op": "replace",
+            "path": "nodes/a-t018-implementation.status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "nodes/p-t018-ci-security.status",
+            "before": "planned",
+            "after": "pass"
+          },
+          {
+            "op": "replace",
+            "path": "nodes/g-t018-review-merge.status",
+            "before": "planned",
+            "after": "ready"
+          },
+          {
+            "op": "add",
+            "path": "graph.blocked_nodes",
+            "after": [
+              "s-t018-proof-gate"
+            ]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t018-implementation-proof-20260808.json",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31253275149",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31253275150"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "tests-first missing-implementation boundary",
+          "level": "P2",
+          "result": "pass_with_follow_up",
+          "baseline_head": "83ec7edc0fa756e73d970b93408d6da22dddb6b3",
+          "ci_run_number": 132
+        },
+        {
+          "proof": "implementation plus exact-head CI/Security",
+          "level": "P3",
+          "result": "pass",
+          "implementation_head": "a70cb9d67e7dea9f2a06e9b7ee4f6e60489dbf25",
+          "ci_run_number": 142,
+          "security_run_number": 142,
+          "review_threads": 0
+        }
+      ],
+      "failure_signature": "Initial implementation CI exposed strict -Werror, deprecated Testcontainers API, one test argument mismatch, and a SpotBugs generic throws warning; each was repaired with subsequent green exact-head validation.",
+      "decision": "Implementation and automated proof pass. Preserve the human review/protected merge and T018 checkbox gates; leave the PR draft and do not merge."
     }
   ]
 }
