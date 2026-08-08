@@ -32,11 +32,14 @@ public final class OutboxWorkerConfiguration {
 
     @Bean
     @ConditionalOnMissingBean(OutboxMetrics.class)
-    public OutboxMetrics outboxMetrics(ObjectProvider<MeterRegistry> meterRegistries) {
+    public OutboxMetrics outboxMetrics(
+            ObjectProvider<MeterRegistry> meterRegistries,
+            OutboxHandlerRegistry handlerRegistry
+    ) {
         MeterRegistry registry = meterRegistries.getIfAvailable();
         return registry == null
                 ? NoopOutboxMetrics.INSTANCE
-                : new MicrometerOutboxMetrics(registry);
+                : new MicrometerOutboxMetrics(registry, handlerRegistry.eventTypes());
     }
 
     @Bean
