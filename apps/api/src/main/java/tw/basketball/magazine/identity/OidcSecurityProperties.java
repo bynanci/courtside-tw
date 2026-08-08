@@ -19,12 +19,10 @@ public record OidcSecurityProperties(
         String jwkSetUri,
         boolean allowInsecureHttp
 ) {
-    public OidcSecurityProperties(String issuer, String audience, boolean allowInsecureHttp) {
-        this(issuer, audience, null, allowInsecureHttp);
-    }
-
     public OidcSecurityProperties {
-        issuer = validateOptionalText("issuer", issuer, 2048);
+        issuer = issuer == null
+                ? null
+                : validateHttpUri("issuer", issuer, allowInsecureHttp, true);
         audience = validateOptionalText("audience", audience, 256);
         jwkSetUri = jwkSetUri == null
                 ? null
