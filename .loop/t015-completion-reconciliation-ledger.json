@@ -1,18 +1,18 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t015-completion-reconciliation",
-  "graph_version": 1,
+  "graph_version": 2,
   "run_id": "courtside-tw-t015-completion-reconciliation-20260808",
-  "status": "needs_human",
-  "iteration": 1,
+  "status": "completed",
+  "iteration": 2,
   "started_at": "2026-08-08T09:15:44.005Z",
-  "updated_at": "2026-08-08T09:15:44.005Z",
+  "updated_at": "2026-08-08T09:20:22.764Z",
   "current_frontier": [
-    "g-t015-receipt-merge"
+    "s-t015-reconciled"
   ],
   "blocked_nodes": [],
-  "terminal_state": "needs_human",
-  "next_action": "Run exact-head CI/Security on PR #47, merge the isolated receipt, then perform authoritative main read-back before dispatching T018 or T016.",
+  "terminal_state": "completed",
+  "next_action": "Dispatch T018 critical path and T016 controlled parallel security lane from authoritative main 4e2782ce957f221053b09e0ff5c49c2f368643cf.",
   "events": [
     {
       "event_id": "evt-t015-reconcile-001-pre-merge",
@@ -73,6 +73,61 @@
       ],
       "failure_signature": null,
       "decision": "Reconcile T015 in a metadata-only receipt; keep T016/T017/T018 implementation lanes separate until the receipt is authoritative on main."
+    },
+    {
+      "event_id": "evt-t015-reconcile-002-post-merge-readback",
+      "at": "2026-08-08T09:20:22.764Z",
+      "actor": "codex-supervisor",
+      "type": "t015_completion_reconciled",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/g-t015-receipt-merge/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/s-t015-reconciled/status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [
+              "g-t015-receipt-merge"
+            ],
+            "after": [
+              "s-t015-reconciled"
+            ]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t015-post-receipt-main-readback-20260808.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "receipt merge and main read-back",
+          "level": "P3",
+          "result": "pass",
+          "receipt_pr": 47,
+          "receipt_head": "dacde4c458fd8d644f9ac9d58f5c1ec1374b6cc1",
+          "main_sha": "4e2782ce957f221053b09e0ff5c49c2f368643cf",
+          "ci_run": 31250194382,
+          "security_run": 31250194383,
+          "t015": "checked",
+          "t016": "unchecked",
+          "t017": "unchecked",
+          "t018": "unchecked"
+        }
+      ],
+      "failure_signature": null,
+      "decision": "T015 is complete on main. Open separate T018 critical-path and T016 controlled security-lane dispatches; do not mix their implementation scopes."
     }
   ]
 }
