@@ -1,0 +1,66 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-t016-bff-controlled-security-lane",
+  "graph_version": 1,
+  "run_id": "courtside-tw-t016-20260808",
+  "status": "ready_parallel",
+  "iteration": 1,
+  "started_at": "2026-08-08T09:28:47.897Z",
+  "updated_at": "2026-08-08T09:28:47.897Z",
+  "current_frontier": [
+    "g-t016-security-review"
+  ],
+  "blocked_nodes": [],
+  "terminal_state": "ready_parallel",
+  "next_action": "Run the T016 threat-model/security review and write the auth-session integration charter/tests against the local OIDC stub; keep this lane parallel and non-blocking for T018.",
+  "events": [
+    {
+      "event_id": "evt-t016-001-controlled-parallel-dispatch",
+      "at": "2026-08-08T09:28:47.897Z",
+      "actor": "codex-supervisor",
+      "type": "t016_security_lane_dispatched",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "graph.nodes/t-t016-lane-ready",
+            "after": "T016 is ready only after T015 terminal main"
+          },
+          {
+            "op": "add",
+            "path": "graph.nodes/g-t016-security-review",
+            "after": "Security review is a named human gate"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [],
+            "after": [
+              "g-t016-security-review"
+            ]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t016-security-lane-dispatch-20260808.json",
+        ".loop/evidence/t016-security-lane-boundary-20260808.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "T015 prerequisite",
+          "level": "P3",
+          "result": "pass",
+          "main_sha": "05e891d19eac2439cadee92eea0b4612cb356306",
+          "t015": "checked",
+          "t016": "unchecked",
+          "t018": "unchecked",
+          "parallel_with": "T018"
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Open T016 as a separate security lane with local/CI stub only; it may proceed in parallel with T018 but cannot alter or block the outbox lane."
+    }
+  ]
+}
