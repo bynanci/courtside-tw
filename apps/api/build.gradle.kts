@@ -24,6 +24,7 @@ dependencies {
     implementation("com.networknt:json-schema-validator:1.5.9")
     runtimeOnly("org.postgresql:postgresql:42.7.13")
     testImplementation("org.springframework.boot:spring-boot-starter-test:4.1.0")
+    testImplementation("com.tngtech.archunit:archunit-junit5:1.4.1")
     testImplementation("org.testcontainers:testcontainers-junit-jupiter:2.0.5")
     testImplementation("org.testcontainers:testcontainers-postgresql:2.0.5")
 }
