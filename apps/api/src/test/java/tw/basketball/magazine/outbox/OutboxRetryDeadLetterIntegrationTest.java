@@ -31,7 +31,7 @@ final class OutboxRetryDeadLetterIntegrationTest extends OutboxIntegrationTestSu
         repository.fail(
                 firstClaim,
                 new IllegalStateException(
-                        "Authorization=Bearer top-secret\nprivate payload must not be logged"
+                        "Authorization=Bearer top-secret\n{\"token\":\"json-secret\"}"
                 ),
                 initialTime.plusSeconds(1),
                 retryPolicy
@@ -42,6 +42,7 @@ final class OutboxRetryDeadLetterIntegrationTest extends OutboxIntegrationTestSu
         assertEquals(initialTime.plusSeconds(2), firstFailure.availableAt());
         assertTrue(firstFailure.lastError().contains("Authorization=[REDACTED]"));
         assertFalse(firstFailure.lastError().contains("top-secret"));
+        assertFalse(firstFailure.lastError().contains("json-secret"));
         assertFalse(firstFailure.lastError().contains("\n"));
 
         Instant secondClaimTime = firstFailure.availableAt();
