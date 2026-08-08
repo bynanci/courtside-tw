@@ -327,6 +327,27 @@ public final class OutboxRepository {
         }
     }
 
+    /** Permanently dead-letters a non-retryable handler failure immediately. */
+    public void deadLetter(OutboxClaim claim, Throwable failure, Instant now) {
+        Objects.requireNonNull(claim, "claim");
+        Objects.requireNonNull(failure, "failure");
+        Objects.requireNonNull(now, "now");
+        int updated = jdbcTemplate.update(
+                FAIL_SQL,
+                OutboxStatus.DEAD_LETTER.name(),
+                timestamp(now),
+                OutboxErrorSanitizer.sanitize(failure),
+                timestamp(now),
+                timestamp(now),
+                claim.event().id(),
+                claim.leaseOwner(),
+                timestamp(now)
+        );
+        if (updated != 1) {
+            throw new OutboxClaimLostException(claim.event().id());
+        }
+    }
+
     private static OutboxClaim mapClaim(ResultSet resultSet, int rowNumber) throws SQLException {
         OutboxEvent event = mapEvent(resultSet, rowNumber);
         return new OutboxClaim(

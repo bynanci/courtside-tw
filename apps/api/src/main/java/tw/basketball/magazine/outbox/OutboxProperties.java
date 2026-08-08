@@ -14,7 +14,9 @@ public record OutboxProperties(
         Duration leaseDuration,
         int maxAttempts,
         Duration retryInitialDelay,
-        Duration retryMaxDelay
+        Duration retryMaxDelay,
+        Duration pollInterval,
+        Duration initialDelay
 ) {
     public OutboxProperties {
         workerId = workerId == null ? "courtside-worker" : workerId;
@@ -27,6 +29,8 @@ public record OutboxProperties(
         retryMaxDelay = retryMaxDelay == null
                 ? Duration.ofMinutes(5)
                 : retryMaxDelay;
+        pollInterval = pollInterval == null ? Duration.ofSeconds(5) : pollInterval;
+        initialDelay = initialDelay == null ? Duration.ZERO : initialDelay;
 
         workerId = boundedWorkerId(workerId);
         if (batchSize < 1 || batchSize > 100) {
@@ -38,6 +42,13 @@ public record OutboxProperties(
         }
         Objects.requireNonNull(retryInitialDelay, "retryInitialDelay");
         Objects.requireNonNull(retryMaxDelay, "retryMaxDelay");
+        if (pollInterval.isNegative() || pollInterval.isZero()
+                || pollInterval.compareTo(Duration.ofHours(1)) > 0) {
+            throw new IllegalArgumentException("pollInterval must be between 1ms and 1 hour");
+        }
+        if (initialDelay.isNegative() || initialDelay.compareTo(Duration.ofHours(1)) > 0) {
+            throw new IllegalArgumentException("initialDelay must be between 0 and 1 hour");
+        }
         new OutboxRetryPolicy(maxAttempts, retryInitialDelay, retryMaxDelay);
     }
 

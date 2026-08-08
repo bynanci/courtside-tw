@@ -85,7 +85,7 @@ memory_workflow:
 graph:
   entry_nodes: [x-t018-main, t-direction, t-operationalisation-request, t-supervisor]
   terminal_nodes: [s-operationalisation-proof]
-  current_frontier: [a-tests-first]
+  current_frontier: [a-implementation]
   blocked_nodes: [s-operationalisation-proof, g-production-review]
   loops:
     - id: l1-execution
@@ -201,7 +201,7 @@ graph:
       layer: L1
       label: "Write failing registration, scheduling and metrics tests first"
       owner: codex-agent
-      status: running
+      status: done
       risk: high
       confidence: {score: 0.95, basis: "Tests target the missing runtime boundary without changing production behavior", evidence_refs: [.loop/evidence/t018-operationalisation-charter-20260808.json]}
       budget: {effort_hours: 1.0, tokens: 9000}
@@ -212,9 +212,9 @@ graph:
       layer: L1
       label: "Tests-first missing-boundary baseline"
       owner: verifier
-      status: planned
+      status: done
       risk: high
-      confidence: {score: 0.7, basis: "Expected compile/test failure must be confirmed by exact CI output", evidence_refs: []}
+      confidence: {score: 0.95, basis: "Exact-head CI/Security logs confirm the intended missing-runtime-symbol boundary", evidence_refs: [.loop/evidence/t018-operationalisation-tests-first-20260808.json]}
       budget: {effort_hours: 0.5, tokens: 5000}
       config: {level: P2, claim: "The new tests fail for the intended missing registration/scheduler/metrics symbols before implementation.", method: "Exact-head Java quality job and raw failure log", evidence_path: .loop/evidence/t018-operationalisation-tests-first-20260808.json, required: true, baseline_required: true}
 
@@ -223,9 +223,9 @@ graph:
       layer: L1
       label: "Implement explicit handler registry, worker scheduler and Micrometer adapter"
       owner: codex-agent
-      status: planned
+      status: running
       risk: high
-      confidence: {score: 0.8, basis: "Bounded design is derived from current T018 API and worker profile; no schema change is required", evidence_refs: [.loop/evidence/t018-operationalisation-charter-20260808.json]}
+      confidence: {score: 0.9, basis: "Implementation is bounded by the charter and the tests-first proof; no schema change is required", evidence_refs: [.loop/evidence/t018-operationalisation-charter-20260808.json, .loop/evidence/t018-operationalisation-tests-first-20260808.json]}
       budget: {effort_hours: 4.0, tokens: 18000}
       config: {workflow: [add explicit registrations, split worker configuration, add validated scheduling, add metrics adapter, preserve legacy direct worker test constructor, run focused tests], allowed: [outbox runtime package, API build dependency, outbox tests], requires_approval: [merge, endpoint exposure, activation change], forbidden: [schema migration, broker/provider, deployment, secret/payload labels]}
 

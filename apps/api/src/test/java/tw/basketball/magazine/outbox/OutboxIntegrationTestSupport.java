@@ -60,8 +60,16 @@ abstract class OutboxIntegrationTestSupport {
     }
 
     protected static OutboxEventDraft draft(String idempotencyKey, Instant availableAt) {
+        return draft("publication.issue.published", idempotencyKey, availableAt);
+    }
+
+    protected static OutboxEventDraft draft(
+            String eventType,
+            String idempotencyKey,
+            Instant availableAt
+    ) {
         return new OutboxEventDraft(
-                "publication.issue.published",
+                eventType,
                 "publication_issue",
                 AGGREGATE_ID,
                 idempotencyKey,
@@ -82,7 +90,9 @@ abstract class OutboxIntegrationTestSupport {
                 durationValues.leaseDuration(),
                 maxAttempts,
                 durationValues.retryInitialDelay(),
-                durationValues.retryMaxDelay()
+                durationValues.retryMaxDelay(),
+                java.time.Duration.ofSeconds(5),
+                java.time.Duration.ZERO
         );
     }
 

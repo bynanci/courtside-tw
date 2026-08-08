@@ -9,11 +9,13 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 final class OutboxConfigurationTest {
     private final ApplicationContextRunner contextRunner = new ApplicationContextRunner()
             .withUserConfiguration(OutboxConfiguration.class, OutboxWorkerConfiguration.class)
-            .withBean(DataSource.class, () -> mock(DataSource.class));
+            .withBean(DataSource.class, () -> mock(DataSource.class))
+            .withBean(JdbcTemplate.class, () -> mock(JdbcTemplate.class));
 
     @Test
     void disabledOutboxDoesNotCreateWorkerInfrastructure() {
@@ -27,6 +29,7 @@ final class OutboxConfigurationTest {
                     assertThat(context).doesNotHaveBean(OutboxRepository.class);
                     assertThat(context).doesNotHaveBean(OutboxHandlerRegistry.class);
                     assertThat(context).doesNotHaveBean(OutboxScheduler.class);
+                    assertThat(context).doesNotHaveBean(OutboxMetrics.class);
                 });
     }
 
@@ -41,6 +44,7 @@ final class OutboxConfigurationTest {
                     assertThat(context).hasNotFailed();
                     assertThat(context).hasSingleBean(OutboxRepository.class);
                     assertThat(context).doesNotHaveBean(OutboxScheduler.class);
+                    assertThat(context).doesNotHaveBean(OutboxMetrics.class);
                 });
     }
 

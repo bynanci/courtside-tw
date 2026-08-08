@@ -12,16 +12,16 @@
   "terminal_state": null,
   "next_action": "Implement the bounded registration, worker scheduling and redacted metrics runtime boundary, then rerun focused tests on a new exact head.",
   "memory_receipt": {
-    "memory_status": "MEMORY_WRITE_PENDING",
+    "memory_status": "SAVED",
     "memory_id": "wm:project:courtside-tw:t018-outbox-operationalisation",
-    "version": "pending-remote-branch-commit",
+    "version": "b83b6a5d50d2891e0739e4f1aa274c12946d9135",
     "retrieval_ids": ["t018-outbox-operationalisation-20260808"],
     "evidence_refs": [
       ".loop/evidence/t018-operationalisation-tests-first-20260808.json",
       ".loop/memory/t018-outbox-operationalisation.json"
     ],
     "next_review_at": "2026-08-08",
-    "blocker": "Repository backend write receipt is pending the next remote branch commit and read-back."
+    "blocker": "none"
   },
   "events": [
     {
