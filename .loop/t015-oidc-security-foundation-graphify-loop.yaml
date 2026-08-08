@@ -62,7 +62,7 @@ policy:
     require_graph_delta: true
 
 graph:
-  entry_nodes: [x-main-readback]
+  entry_nodes: [x-main-readback, t-t015-ready]
   terminal_nodes: [s-t015-terminal]
   current_frontier: [a-t015-tests-first]
   blocked_nodes: []
@@ -81,7 +81,7 @@ graph:
       budget: {effort_hours: 0.2, tokens: 1800}
       config:
         source_type: github-main
-        freshness: 2026-08-08T05:20:39Z
+        freshness: "2026-08-08T05:20:39Z"
         limitations: "No production identity provider, credentials, tokens or runtime data were accessed."
 
     - id: g-t015-dispatch
@@ -277,7 +277,7 @@ graph:
     - {id: e-dispatch-trigger, from: g-t015-dispatch, to: t-t015-ready, type: approves, required: true, confidence: 1.0, token_capacity: 4000}
     - {id: e-trigger-tests, from: t-t015-ready, to: a-t015-tests-first, type: enables, required: true, confidence: 1.0, token_capacity: 8000}
     - {id: e-tests-baseline, from: a-t015-tests-first, to: p-t015-baseline, type: verifies, required: true, confidence: 0.9, token_capacity: 5000}
-    - {id: e-baseline-implementation, from: p-t015-baseline, to: a-t015-implementation, type: feedback, required: true, confidence: 0.85, token_capacity: 18000}
+    - {id: e-baseline-implementation, from: p-t015-baseline, to: a-t015-implementation, type: enables, required: true, confidence: 0.85, token_capacity: 18000}
     - {id: e-implementation-static, from: a-t015-implementation, to: p-t015-static, type: verifies, required: true, confidence: 0.9, token_capacity: 4500}
     - {id: e-implementation-ci, from: a-t015-implementation, to: p-t015-ci, type: verifies, required: true, confidence: 0.75, token_capacity: 10000}
     - {id: e-static-gate, from: p-t015-static, to: g-t015-review-merge, type: requires_approval, required: true, confidence: 0.9, token_capacity: 6000}
