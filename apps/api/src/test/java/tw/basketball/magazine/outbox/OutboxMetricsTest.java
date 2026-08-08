@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Duration;
+import java.util.Set;
 
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.junit.jupiter.api.Test;
@@ -12,7 +13,10 @@ final class OutboxMetricsTest {
     @Test
     void recordsBoundedOperationalSignalsWithoutPayloadLabels() {
         SimpleMeterRegistry registry = new SimpleMeterRegistry();
-        MicrometerOutboxMetrics metrics = new MicrometerOutboxMetrics(registry);
+        MicrometerOutboxMetrics metrics = new MicrometerOutboxMetrics(
+                registry,
+                Set.of("publication.issue.published")
+        );
 
         metrics.recordRun(
                 new OutboxRunResult(3, 1, 1, 1),
@@ -24,6 +28,16 @@ final class OutboxMetricsTest {
         );
         metrics.recordHandlerFailure(
                 "publication.issue.published",
+                true,
+                Duration.ofMillis(8)
+        );
+        metrics.recordHandlerFailure(
+                "unregistered.event.one",
+                true,
+                Duration.ofMillis(8)
+        );
+        metrics.recordHandlerFailure(
+                "unregistered.event.two",
                 true,
                 Duration.ofMillis(8)
         );
@@ -51,6 +65,21 @@ final class OutboxMetricsTest {
                         .tag("outcome", "dead_lettered")
                         .counter()
                         .count()
+        );
+        assertEquals(
+                2.0,
+                registry.get("courtside.outbox.handler.events")
+                        .tag("event_type", "unknown")
+                        .tag("outcome", "dead_lettered")
+                        .counter()
+                        .count()
+        );
+        assertEquals(
+                0,
+                registry.find("courtside.outbox.handler.events")
+                        .tag("event_type", "unregistered.event.one")
+                        .meters()
+                        .size()
         );
         assertEquals(
                 1.0,
