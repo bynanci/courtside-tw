@@ -100,7 +100,7 @@ final class ObservabilityMetricsTest {
         assertEquals(
                 1.0,
                 registry.get("courtside.provenance.jobs")
-                        .tag("state", "unknown")
+                        .tag("state", "FAILED")
                         .tag("provider", "unknown")
                         .counter()
                         .count()
