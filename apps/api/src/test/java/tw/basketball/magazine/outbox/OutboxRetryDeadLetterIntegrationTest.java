@@ -85,7 +85,7 @@ final class OutboxRetryDeadLetterIntegrationTest extends OutboxIntegrationTestSu
         assertTrue(repository.claim(
                 "worker-retry",
                 1,
-                thirdClaimTime.plus(Duration.ofDays(1)),
+                Duration.ofDays(1),
                 thirdClaimTime.plus(Duration.ofDays(1)),
                 retryPolicy.maxAttempts()
         ).isEmpty());
