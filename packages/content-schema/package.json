@@ -1,0 +1,28 @@
+{
+  "name": "@courtside/content-schema",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Canonical ContentDocument v1 TypeScript types and runtime validation.",
+  "engines": {
+    "node": "24.14.x",
+    "pnpm": "11.7.x"
+  },
+  "scripts": {
+    "generate": "node --experimental-strip-types scripts/generate-types.ts",
+    "generate:check": "node --experimental-strip-types scripts/generate-types.ts && git diff --exit-code -- src/generated/content-document.ts",
+    "lint": "eslint --max-warnings=0 src scripts tests",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test tests/content-document.test.ts",
+    "contract": "node --experimental-strip-types scripts/generate-types.ts && git diff --exit-code -- src/generated/content-document.ts && node --experimental-strip-types --test tests/content-document.test.ts"
+  },
+  "dependencies": {
+    "ajv": "8.20.0",
+    "ajv-formats": "3.0.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "prettier": "3.9.6",
+    "typescript": "5.9.3"
+  }
+}
