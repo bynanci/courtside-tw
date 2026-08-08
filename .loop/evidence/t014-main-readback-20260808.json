@@ -1,0 +1,23 @@
+{
+  "schema_version": "courtside-tw-evidence/v1",
+  "evidence_id": "t014-main-readback-20260808",
+  "recorded_at": "2026-08-08T05:06:10Z",
+  "actor": "verifier",
+  "repository": "bynanci/courtside-tw",
+  "task": "T014",
+  "kind": "main-readback",
+  "result": "PASS",
+  "main_sha": "79b89d6746429fe31309ab29699f10cd16ce0282",
+  "confirmed": [
+    "PR #43 is merged into main.",
+    "T014 shared Java source and deterministic tests are present on main.",
+    "No T015 identity runtime files were included in the T014 merge.",
+    "Before the separate completion receipt, tasks.md intentionally still showed T014 unchecked."
+  ],
+  "source_paths": [
+    "apps/api/src/main/java/tw/basketball/magazine/shared/ActorContext.java",
+    "apps/api/src/main/java/tw/basketball/magazine/shared/Version.java",
+    "apps/api/src/test/java/tw/basketball/magazine/shared/SharedFoundationTest.java"
+  ],
+  "limitation": "This receipt records the implementation main read-back; the completion checkbox is delivered by the separate completion PR."
+}
