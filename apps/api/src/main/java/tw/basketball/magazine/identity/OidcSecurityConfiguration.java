@@ -3,6 +3,7 @@ package tw.basketball.magazine.identity;
 import java.util.Objects;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.http.HttpMethod;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -63,8 +64,8 @@ public final class OidcSecurityConfiguration {
                             SessionCreationPolicy.STATELESS
                     ))
                     .authorizeHttpRequests(authorize -> authorize
-                            .requestMatchers("/actuator/health", "/actuator/health/**").permitAll()
-                            .requestMatchers("/api/v1/public/**").permitAll()
+                            .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**").permitAll()
+                            .requestMatchers(HttpMethod.GET, "/api/v1/public/**").permitAll()
                             .requestMatchers("/api/v1/me/**")
                             .hasAuthority(OidcRolePolicy.authority(RoleCode.READER))
                             .requestMatchers("/api/v1/editor/**")
