@@ -1,5 +1,6 @@
 package tw.basketball.magazine.identity;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -44,6 +45,17 @@ final class OidcSecurityFoundationTest {
         OAuth2TokenValidator<Jwt> validator = OidcSecurityConfiguration.tokenValidator(ISSUER, AUDIENCE);
 
         assertTrue(validator.validate(expiredToken()).hasErrors());
+    }
+
+    @Test
+    void requiresExplicitOptInForLocalHttpIssuer() {
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new OidcSecurityProperties("http://oidc:8080/default", AUDIENCE, false)
+        );
+        assertDoesNotThrow(
+                () -> new OidcSecurityProperties("http://oidc:8080/default", AUDIENCE, true)
+        );
     }
 
     @Test
