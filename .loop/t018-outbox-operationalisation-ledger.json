@@ -1,12 +1,12 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t018-outbox-operationalisation",
-  "graph_version": 5,
+  "graph_version": 6,
   "run_id": "courtside-tw-t018-operationalisation-20260808",
   "status": "needs_human",
-  "iteration": 5,
+  "iteration": 6,
   "started_at": "2026-08-08T12:00:00Z",
-  "updated_at": "2026-08-08T12:27:32Z",
+  "updated_at": "2026-08-08T12:36:40Z",
   "current_frontier": ["g-production-review"],
   "blocked_nodes": [],
   "terminal_state": "needs_human",
@@ -177,6 +177,34 @@
       "decision": "Persist the final proof-ready constraint and retain the human merge/activation gate.",
       "token_usage": {"estimated": 1800, "input": 0, "output": 0, "total": 1800},
       "terminal_reason": "needs_human: memory update verified; protected merge and deployment activation remain unauthorized"
+    },
+    {
+      "event_id": "evt-t018-operationalisation-006-final-head-proof-refresh",
+      "at": "2026-08-08T12:36:40Z",
+      "actor": "codex-supervisor",
+      "type": "final_exact_head_proof_refresh",
+      "base_graph_version": 5,
+      "new_graph_version": 6,
+      "graph_delta": {
+        "operations": [
+          {"op": "replace", "path": "p-production-proof/artifact_fingerprint", "before": "git:411dfe39241bb6df65d4c973a246ef8dfe18956f", "after": "git:b2036fa6291d6b587e2d021138e62b84caed1b94"},
+          {"op": "replace", "path": "p-production-proof/ci_security_runs", "before": 158, "after": 160}
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t018-operationalisation-implementation-20260808.json",
+        "https://github.com/bynanci/courtside-tw/pull/52",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31257309746",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31257309764"
+      ],
+      "proof_receipts": [
+        {"proof": "CI #160 all jobs", "level": "P2", "result": "pass", "run_id": "31257309746", "java_job_id": "93102597627", "compose_job_id": "93102597641"},
+        {"proof": "Security #160 all jobs", "level": "P2", "result": "pass", "run_id": "31257309764", "dependency_job_id": "93102598816", "java_codeql_job_id": "93102598825"}
+      ],
+      "failure_signature": null,
+      "decision": "Keep the proof-ready draft stopped at the human production-readiness and protected-merge gate.",
+      "token_usage": {"estimated": 2200, "input": 0, "output": 0, "total": 2200},
+      "terminal_reason": "needs_human: final exact-head proof refreshed; protected merge and deployment activation remain unauthorized"
     }
   ]
 }
