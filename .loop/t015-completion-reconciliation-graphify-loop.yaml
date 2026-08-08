@@ -1,0 +1,152 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-t015-completion-reconciliation
+objective: "Reconcile T015 implementation, hardening, exact-head proof and protected merge into a separate completion receipt; stop before T018/T016 dispatch until the receipt is authoritative on main."
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - specs/001-taiwan-basketball-magazine-ebook/tasks.md T015 checkbox
+    - .loop/evidence/t015-completion-reconciliation-20260808.json
+    - .loop/evidence/t015-main-readback-20260808.json
+    - .loop/evidence/t015-review-merge-final-20260808.json
+    - T015 completion graph and ledger
+  out:
+    - T016 Nuxt BFF authorization-code/PKCE, session cookies and CSRF implementation
+    - T017 audit writer
+    - T018 transactional outbox implementation
+    - database, OpenAPI, provider credentials, production IdP or deployment changes
+
+authority:
+  allowed:
+    - read authoritative main and merged PR evidence
+    - add the bounded T015 checkbox and completion receipt artifacts
+    - run non-destructive CI/Security verification on the receipt branch
+    - open a metadata-only completion pull request
+  requires_approval:
+    - merge the completion receipt
+    - dispatch T018 implementation
+    - dispatch T016 security lane
+  forbidden:
+    - modify T016, T017 or T018 implementation files
+    - access production identity providers, credentials, tokens, cookies or private data
+
+acceptance:
+  - PR #45 foundation and PR #46 hardening are merged on main.
+  - PR #46 exact head 59ffd879 passed CI/Security #120 with no review threads.
+  - Main read-back at 35d5d6a contains the bounded identity implementation and tests.
+  - The only product-plan mutation is T015 changing from unchecked to checked.
+  - T016, T017 and T018 remain unchecked and their implementation files are untouched.
+  - The receipt PR passes exact-head repository CI/Security before merge.
+  - A post-merge main read-back confirms the checked T015 state before downstream dispatch.
+
+budgets:
+  max_iterations: 4
+  max_minutes: 60
+  max_same_failure: 2
+  max_graph_changes: 8
+  max_tokens: 18000
+
+policy:
+  human_gates:
+    - receipt PR review and protected merge
+    - post-merge authoritative main read-back
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+graph:
+  entry_nodes: [x-t015-main-after-hardening, p-t015-review-merge]
+  terminal_nodes: [s-t015-reconciled]
+  current_frontier: [g-t015-receipt-merge]
+  blocked_nodes: []
+  nodes:
+    - id: x-t015-main-after-hardening
+      kind: external
+      layer: EXTERNAL
+      label: "Authoritative main after PR #46"
+      owner: github
+      status: done
+      risk: high
+      confidence: {score: 1.0, basis: "main is 35d5d6a after PR #46 merge", evidence_refs: [.loop/evidence/t015-main-readback-20260808.json]}
+      config: {source_type: github-main, main_sha: 35d5d6a47414980c4277f92f08d3443b500604a0}
+
+    - id: p-t015-review-merge
+      kind: proof
+      layer: L1
+      label: "T015 hardening review and exact-head merge proof"
+      owner: verifier
+      status: done
+      risk: high
+      confidence: {score: 1.0, basis: "PR #46 exact head passed CI/Security #120 and had zero review threads", evidence_refs: [.loop/evidence/t015-review-merge-final-20260808.json]}
+      config: {level: P2, pr: 46, head_sha: 59ffd879fd33902573c58ed7113b663d9b32b81c, merge_sha: 35d5d6a47414980c4277f92f08d3443b500604a0}
+
+    - id: a-t015-receipt
+      kind: action
+      layer: L1
+      label: "Create isolated T015 completion checkbox and receipt"
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence: {score: 0.99, basis: "Changed-file inventory is limited to tasks.md and loop artifacts", evidence_refs: [.loop/evidence/t015-completion-reconciliation-20260808.json]}
+      config:
+        allowed: [specs/001-taiwan-basketball-magazine-ebook/tasks.md, .loop/evidence/, .loop/t015-completion-reconciliation-graphify-loop.yaml, .loop/t015-completion-reconciliation-ledger.json]
+        forbidden: [apps/api/, apps/web/, contracts/, database migrations]
+        receipt_pr: 47
+
+    - id: g-t015-receipt-merge
+      kind: gate
+      layer: L2
+      label: "Completion receipt protected merge and main read-back"
+      owner: human-mark
+      status: needs_human
+      risk: high
+      confidence: {score: 0.9, basis: "Checkbox is prepared but main must pass receipt CI/Security and post-merge read-back", evidence_refs: [.loop/t015-completion-reconciliation-ledger.json]}
+      config:
+        condition: "Merge PR #47 only after exact-head CI/Security pass; then read back main and confirm T015 checked."
+        required: true
+
+    - id: m-t015-reconciliation-ledger
+      kind: memory
+      layer: L1
+      label: "Append-only T015 completion reconciliation ledger"
+      owner: codex-supervisor
+      status: done
+      risk: medium
+      confidence: {score: 0.95, basis: "Receipt state and downstream gate are recorded", evidence_refs: [.loop/t015-completion-reconciliation-ledger.json]}
+
+    - id: s-t015-reconciled
+      kind: terminal
+      layer: L2
+      label: "T015 reconciled on authoritative main"
+      owner: codex-supervisor
+      status: planned
+      risk: high
+      confidence: {score: 0.5, basis: "Becomes done only after PR #47 merge and post-merge main read-back", evidence_refs: [.loop/evidence/t015-completion-reconciliation-20260808.json]}
+
+  edges:
+    - {id: e-main-proof, from: x-t015-main-after-hardening, to: p-t015-review-merge, type: verifies, required: true, confidence: 1.0, token_capacity: 4000}
+    - {id: e-proof-receipt, from: p-t015-review-merge, to: a-t015-receipt, type: enables, required: true, confidence: 1.0, token_capacity: 6000}
+    - {id: e-receipt-gate, from: a-t015-receipt, to: g-t015-receipt-merge, type: requires_approval, required: true, confidence: 0.9, token_capacity: 5000}
+    - {id: e-ledger-read, from: m-t015-reconciliation-ledger, to: g-t015-receipt-merge, type: reads, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-gate-terminal, from: g-t015-receipt-merge, to: s-t015-reconciled, type: approves, required: true, confidence: 0.5, token_capacity: 4000}
+
+flow:
+  source: x-t015-main-after-hardening
+  sink: s-t015-reconciled
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - next_action

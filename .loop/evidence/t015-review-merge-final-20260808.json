@@ -1,0 +1,52 @@
+{
+  "evaluation_id": "eval-t015-review-merge-final-20260808",
+  "system_id": "courtside-tw-api-identity",
+  "as_of": "2026-08-08T09:15:44.005Z",
+  "artifact_fingerprint": "git:59ffd879fd33902573c58ed7113b663d9b32b81c",
+  "environment": "review",
+  "claim": "T015 hardening PR #46 passed the protected merge gate before completion reconciliation.",
+  "proof_level": "P2",
+  "method": "PR metadata, exact-head workflow runs, changed-file inventory and GraphQL review-thread read-back.",
+  "expected": "Exact PR head passes CI/Security; changed files stay within T015; no unresolved review threads or scope drift remain.",
+  "observed": {
+    "pr": 46,
+    "head_sha": "59ffd879fd33902573c58ed7113b663d9b32b81c",
+    "base_sha": "2e364d42dc8655706119d56f21f66e956416714e",
+    "merge_sha": "35d5d6a47414980c4277f92f08d3443b500604a0",
+    "ci": {
+      "run_id": 31249940103,
+      "run_number": 120,
+      "conclusion": "success",
+      "jobs": "all success"
+    },
+    "security": {
+      "run_id": 31249940102,
+      "run_number": 120,
+      "conclusion": "success",
+      "jobs": "all success"
+    },
+    "review_threads": [],
+    "reviews": [],
+    "changed_files": [
+      "apps/api/src/main/java/tw/basketball/magazine/identity/OidcSecurityConfiguration.java",
+      "apps/api/src/main/java/tw/basketball/magazine/identity/OidcSecurityProperties.java",
+      "apps/api/src/test/java/tw/basketball/magazine/identity/OidcSecurityFallbackTest.java",
+      "apps/api/src/test/java/tw/basketball/magazine/identity/OidcSecurityFoundationTest.java",
+      "apps/api/src/test/java/tw/basketball/magazine/identity/OidcSecurityProblemDetailsTest.java",
+      "apps/api/src/test/java/tw/basketball/magazine/identity/OidcWorkerSecurityConditionTest.java"
+    ],
+    "scope_guard": "No T016 BFF/PKCE/session, T017 audit, T018 outbox, DB, OpenAPI, credentials, provider or deployment changes."
+  },
+  "result": "PASS",
+  "evidence_refs": [
+    "https://github.com/bynanci/courtside-tw/pull/46",
+    "https://github.com/bynanci/courtside-tw/actions/runs/31249940103",
+    "https://github.com/bynanci/courtside-tw/actions/runs/31249940102"
+  ],
+  "limitations": [
+    "CI/Security proof does not replace the separate completion checkbox receipt.",
+    "No production IdP, credentials, tokens, cookies, private keys or production data were accessed."
+  ],
+  "owner": "verifier",
+  "next_review_at": "2026-08-08T09:15:44.005Z"
+}

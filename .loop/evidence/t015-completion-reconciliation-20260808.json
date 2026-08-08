@@ -1,0 +1,81 @@
+{
+  "evaluation_id": "eval-t015-completion-reconciliation-20260808",
+  "system_id": "courtside-tw-api-identity",
+  "as_of": "2026-08-08T09:15:44.005Z",
+  "artifact_fingerprint": "git:35d5d6a47414980c4277f92f08d3443b500604a0",
+  "environment": "review",
+  "claim": "T015 implementation and bounded security hardening are complete on main; the checkbox mutation is isolated in completion reconciliation PR #47.",
+  "threat_refs": [
+    "ASI03 Identity and Privilege Abuse",
+    "ASI08 Excessive Agency"
+  ],
+  "control_ids": [
+    "GOV-003",
+    "AGT-001",
+    "AGT-002",
+    "SEC-005"
+  ],
+  "proof_level": "P3",
+  "method": "Authoritative main read-back after PR #46 merge, exact PR metadata, exact-head CI/Security run #120, changed-file inventory and review-thread read-back; no production identity-provider access.",
+  "expected": "PR #45 establishes the resource-server foundation; PR #46 closes the bounded hardening findings; T015 checkbox changes only in this metadata-only reconciliation PR; T016/T017/T018 remain unchecked and out of scope.",
+  "observed": {
+    "main_before_receipt_sha": "35d5d6a47414980c4277f92f08d3443b500604a0",
+    "task_state_before_receipt": {
+      "T014": "checked",
+      "T015": "unchecked",
+      "T016": "unchecked",
+      "T017": "unchecked",
+      "T018": "unchecked"
+    },
+    "pr_45": {
+      "number": 45,
+      "state": "merged",
+      "head_sha": "6f5cdaed90c42f9d3679a3a034597aa962b5a12a",
+      "merge_sha": "2e364d42dc8655706119d56f21f66e956416714e"
+    },
+    "pr_46": {
+      "number": 46,
+      "state": "merged",
+      "head_sha": "59ffd879fd33902573c58ed7113b663d9b32b81c",
+      "merge_sha": "35d5d6a47414980c4277f92f08d3443b500604a0",
+      "changed_files": 6,
+      "scope": "T015 resource-server hardening only"
+    },
+    "exact_head_verification": {
+      "ci": {
+        "run_number": 120,
+        "run_id": 31249940103,
+        "conclusion": "success"
+      },
+      "security": {
+        "run_number": 120,
+        "run_id": 31249940102,
+        "conclusion": "success"
+      },
+      "review_threads": 0,
+      "reviews": 0
+    },
+    "receipt_pr": {
+      "number": 47,
+      "branch": "agent/t015-completion-reconciliation",
+      "mutation": "T015 checkbox plus loop receipt artifacts only"
+    }
+  },
+  "result": "PASS_WITH_RECEIPT_MERGE_GATE",
+  "evidence_refs": [
+    "https://github.com/bynanci/courtside-tw/pull/45",
+    "https://github.com/bynanci/courtside-tw/pull/46",
+    "https://github.com/bynanci/courtside-tw/actions/runs/31249940103",
+    "https://github.com/bynanci/courtside-tw/actions/runs/31249940102",
+    "https://github.com/bynanci/courtside-tw/commit/35d5d6a47414980c4277f92f08d3443b500604a0",
+    ".loop/evidence/t015-main-readback-20260808.json",
+    ".loop/evidence/t015-review-merge-final-20260808.json"
+  ],
+  "limitations": [
+    "The receipt PR must pass its own exact-head CI/Security and be merged before T015 is authoritative as checked on main.",
+    "T016 BFF authorization-code/PKCE session cookies and its end-to-end CSRF policy remain out of scope.",
+    "No production IdP, credentials, tokens, cookies, private keys or production data were accessed."
+  ],
+  "owner": "codex-supervisor",
+  "next_review_at": "2026-08-08T09:15:44.005Z"
+}

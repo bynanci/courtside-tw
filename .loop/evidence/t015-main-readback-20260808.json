@@ -1,0 +1,48 @@
+{
+  "evaluation_id": "eval-t015-main-readback-after-hardening-20260808",
+  "system_id": "courtside-tw-api-identity",
+  "as_of": "2026-08-08T09:15:44.005Z",
+  "artifact_fingerprint": "git:35d5d6a47414980c4277f92f08d3443b500604a0",
+  "environment": "review",
+  "claim": "Latest main after PR #46 contains the bounded T015 OIDC resource-server hardening before the completion checkbox receipt.",
+  "proof_level": "P2",
+  "method": "Remote GitHub main read-back of the merge commit and representative implementation/test files, cross-checked against PR #46 exact-head verification.",
+  "expected": "Main resolves to the #46 merge; OIDC servlet security, explicit JWKS configuration, bounded subject/expiration validation and MockMvc security tests are present; T015 is still unchecked until the receipt PR.",
+  "observed": {
+    "main_sha": "35d5d6a47414980c4277f92f08d3443b500604a0",
+    "source_pr": 46,
+    "representative_files": [
+      "apps/api/src/main/java/tw/basketball/magazine/identity/OidcSecurityConfiguration.java",
+      "apps/api/src/main/java/tw/basketball/magazine/identity/OidcSecurityProperties.java",
+      "apps/api/src/test/java/tw/basketball/magazine/identity/OidcSecurityFoundationTest.java",
+      "apps/api/src/test/java/tw/basketball/magazine/identity/OidcSecurityFallbackTest.java",
+      "apps/api/src/test/java/tw/basketball/magazine/identity/OidcSecurityProblemDetailsTest.java",
+      "apps/api/src/test/java/tw/basketball/magazine/identity/OidcWorkerSecurityConditionTest.java"
+    ],
+    "controls_read_back": [
+      "servlet-only security condition protects the non-web worker profile",
+      "explicit JWKS URI avoids eager issuer metadata discovery",
+      "unconfigured servlet fallback preserves anonymous public routes and protects other routes",
+      "required bounded sub and exp validators are present",
+      "RFC9457 problem responses and non-session CSRF repository are tested"
+    ],
+    "task_state": {
+      "T014": "checked",
+      "T015": "unchecked",
+      "T016": "unchecked",
+      "T017": "unchecked",
+      "T018": "unchecked"
+    }
+  },
+  "result": "PASS",
+  "evidence_refs": [
+    "https://github.com/bynanci/courtside-tw/commit/35d5d6a47414980c4277f92f08d3443b500604a0",
+    "https://github.com/bynanci/courtside-tw/pull/46"
+  ],
+  "limitations": [
+    "This read-back precedes the checkbox receipt; it is not itself the completion mutation.",
+    "No production provider, credentials, tokens or runtime data were accessed."
+  ],
+  "owner": "verifier",
+  "next_review_at": "2026-08-08T09:15:44.005Z"
+}
