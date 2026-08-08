@@ -6,8 +6,8 @@ final class OutboxErrorSanitizer {
     private static final int MAX_ERROR_LENGTH = 4000;
     private static final Pattern SECRET_PATTERN = Pattern.compile(
             "(?i)((?:authorization|cookie|token|password|secret|signed[-_ ]?url)"
-                    + "\\s*["']?\\s*[:=]\\s*["']?)"
-                    + "([^\\r\\n,;}\\]]+?)(?=["']?(?:[\\r\\n,;}\\]]|$))"
+                    + "\\s*[\"']?\\s*[:=]\\s*[\"']?)"
+                    + "([^\\r\\n,;}\\]]+?)(?=[\"']?(?:[\\r\\n,;}\\]]|$))"
     );
     private static final Pattern AUTHORIZATION_SCHEME_PATTERN = Pattern.compile(
             "(?i)\\b(?:bearer|basic)\\s+[A-Za-z0-9._~+/=-]{8,}"
