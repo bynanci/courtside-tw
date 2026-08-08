@@ -67,8 +67,18 @@ public final class OutboxRepository {
             """;
 
     private static final String CLAIM_SQL = """
-            WITH expired AS (
-                UPDATE outbox_event
+            WITH expired_candidates AS (
+                SELECT event.id
+                FROM outbox_event event
+                WHERE event.status = 'CLAIMED'
+                  AND event.lease_until <= ?
+                  AND event.attempt_count >= ?
+                ORDER BY event.lease_until, event.id
+                FOR UPDATE SKIP LOCKED
+                LIMIT ?
+            ),
+            expired AS (
+                UPDATE outbox_event event
                 SET status = 'DEAD_LETTER',
                     lease_owner = NULL,
                     lease_until = NULL,
@@ -78,10 +88,9 @@ public final class OutboxRepository {
                     ),
                     dead_lettered_at = COALESCE(dead_lettered_at, ?),
                     updated_at = ?
-                WHERE status = 'CLAIMED'
-                  AND lease_until <= ?
-                  AND attempt_count >= ?
-                RETURNING id
+                FROM expired_candidates
+                WHERE event.id = expired_candidates.id
+                RETURNING event.id
             ),
             candidates AS (
                 SELECT event.id
@@ -240,9 +249,10 @@ public final class OutboxRepository {
                 CLAIM_SQL,
                 CLAIM_ROW_MAPPER,
                 timestamp(now),
-                timestamp(now),
-                timestamp(now),
                 maxAttempts,
+                batchSize,
+                timestamp(now),
+                timestamp(now),
                 timestamp(now),
                 timestamp(now),
                 maxAttempts,
