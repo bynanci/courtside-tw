@@ -22,7 +22,7 @@
       "confidence": "high"
     },
     {
-      "text": "The bounded T017 implementation passes exact-head CI/Security #173, including Java quality, Testcontainers, CodeQL, dependency audit and Trivy lanes.",
+      "text": "The bounded T017 implementation passes exact-head CI/Security #174, including Java quality, Testcontainers, CodeQL, dependency audit and Trivy lanes.",
       "class": "CONFIRMED",
       "confidence": "high"
     },

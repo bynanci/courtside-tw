@@ -1,12 +1,12 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t017-append-only-audit-writer",
-  "graph_version": 2,
+  "graph_version": 3,
   "run_id": "courtside-tw-t017-20260808",
   "status": "needs_human",
   "iteration": 3,
   "started_at": "2026-08-08T15:20:00Z",
-  "updated_at": "2026-08-08T15:46:42Z",
+  "updated_at": "2026-08-08T15:52:40Z",
   "current_frontier": ["g-t017-review"],
   "blocked_nodes": [],
   "terminal_state": "needs_human",
@@ -14,7 +14,7 @@
   "memory_receipt": {
     "memory_status": "SAVED",
     "memory_id": "wm:project:courtside-tw:t017-audit-writer",
-    "version": "2",
+    "version": "3",
     "retrieval_ids": ["wm:project:courtside-tw:t018-outbox-operationalisation"],
     "evidence_refs": [
       ".loop/evidence/t017-lane-boundary-20260808.json",
@@ -88,6 +88,27 @@
       ],
       "failure_signature": null,
       "decision": "Runtime proof is complete. Keep T017 draft-only until independent security/privacy review and protected merge approval are recorded."
+    },
+    {
+      "event_id": "evt-t017-004-final-head-receipt",
+      "at": "2026-08-08T15:52:40Z",
+      "actor": "codex-agent",
+      "type": "t017_final_receipt_fingerprint",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {"op": "replace", "path": "graph.nodes/p-t017-runtime-proof.confidence", "before": 0.98, "after": 0.99},
+          {"op": "add", "path": "graph.nodes/p-t017-runtime-proof.config.verified_head", "after": "330ddf2f01e9019be1bae45a066c418efaae69d6"}
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t017-ci-security-final-20260808.json"],
+      "proof_receipts": [
+        {"proof": "GitHub CI #174", "level": "P2", "result": "pass", "head_sha": "330ddf2f01e9019be1bae45a066c418efaae69d6"},
+        {"proof": "GitHub Security #174", "level": "P2", "result": "pass", "head_sha": "330ddf2f01e9019be1bae45a066c418efaae69d6"}
+      ],
+      "failure_signature": null,
+      "decision": "The final receipt fingerprint now names the exact evidence commit; retain the human review gate."
     }
   ]
 }

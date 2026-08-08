@@ -206,7 +206,7 @@ graph:
       owner: github
       status: done
       risk: critical
-      confidence: {score: 0.98, basis: "Exact-head CI #173 and Security #173 passed Java quality, Testcontainers, CodeQL, dependency and image scanning", evidence_refs: [.loop/evidence/t017-ci-security-final-20260808.json]}
+      confidence: {score: 0.99, basis: "Exact final head CI #174 and Security #174 passed Java quality, Testcontainers, CodeQL, dependency and image scanning", evidence_refs: [.loop/evidence/t017-ci-security-final-20260808.json]}
       budget:
         effort_hours: 1.0
         tokens: 7000
@@ -215,6 +215,7 @@ graph:
         claim: "Audit writes append sanitized metadata, preserve prior rows and never persist prohibited values."
         method: "Java unit tests, PostgreSQL/Testcontainers integration, Checkstyle, SpotBugs, CodeQL and Security workflows"
         evidence_path: .loop/evidence/t017-ci-security-final-20260808.json
+        verified_head: "330ddf2f01e9019be1bae45a066c418efaae69d6"
         required: true
         baseline_required: true
 

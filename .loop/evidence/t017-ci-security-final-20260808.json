@@ -1,10 +1,10 @@
 {
   "evaluation_id": "t017-ci-security-final-20260808",
   "system_id": "courtside-tw-api-audit",
-  "as_of": "2026-08-08T15:46:42Z",
-  "artifact_fingerprint": "git:d3e47456f57f33c42cc3787935e4bce5c5787d67",
+  "as_of": "2026-08-08T15:52:40Z",
+  "artifact_fingerprint": "git:330ddf2f01e9019be1bae45a066c418efaae69d6",
   "environment": "github-actions",
-  "claim": "The exact T017 head passes Java quality/Testcontainers and the repository Security workflow without schema or permission changes.",
+  "claim": "The exact final T017 head passes Java quality/Testcontainers and the repository Security workflow without schema or permission changes.",
   "threat_refs": [
     "ASI03 Identity and Privilege Abuse",
     "LLM02 Sensitive Information Disclosure",
@@ -17,16 +17,16 @@
     "GOV-003"
   ],
   "proof_level": "P2",
-  "method": "Read exact-head GitHub Actions workflow runs and job conclusions for PR #54 after the sanitizer-key and SpotBugs fixes.",
-  "expected": "CI and Security run #173 pass; Java compile, Checkstyle, SpotBugs, unit/Testcontainers tests, CodeQL, dependency audit and Trivy lanes are green.",
+  "method": "Read exact-head GitHub Actions workflow runs and job conclusions for PR #54 after the sanitizer-key, SpotBugs and evidence-receipt fixes.",
+  "expected": "CI and Security run #174 pass; Java compile, Checkstyle, SpotBugs, unit/Testcontainers tests, CodeQL, dependency audit and Trivy lanes are green.",
   "observed": {
     "pull_request": "https://github.com/bynanci/courtside-tw/pull/54",
-    "head_sha": "d3e47456f57f33c42cc3787935e4bce5c5787d67",
+    "head_sha": "330ddf2f01e9019be1bae45a066c418efaae69d6",
     "base_sha": "63e6ea3cad59c98e992e2f02f7acb739ac28cf67",
     "ci_run": {
-      "run_number": 173,
-      "run_id": 31265116113,
-      "url": "https://github.com/bynanci/courtside-tw/actions/runs/31265116113",
+      "run_number": 174,
+      "run_id": 31265432775,
+      "url": "https://github.com/bynanci/courtside-tw/actions/runs/31265432775",
       "conclusion": "success",
       "jobs": {
         "Docker Compose dependency health": "success",
@@ -35,9 +35,9 @@
       }
     },
     "security_run": {
-      "run_number": 173,
-      "run_id": 31265116112,
-      "url": "https://github.com/bynanci/courtside-tw/actions/runs/31265116112",
+      "run_number": 174,
+      "run_id": 31265432779,
+      "url": "https://github.com/bynanci/courtside-tw/actions/runs/31265432779",
       "conclusion": "success",
       "jobs": {
         "CodeQL (java-kotlin)": "success",
@@ -48,6 +48,13 @@
         "Trivy (image oidc)": "success",
         "Trivy (image s3)": "success"
       }
+    },
+    "previous_pass": {
+      "head_sha": "d3e47456f57f33c42cc3787935e4bce5c5787d67",
+      "ci_run": "https://github.com/bynanci/courtside-tw/actions/runs/31265116113",
+      "security_run": "https://github.com/bynanci/courtside-tw/actions/runs/31265116112",
+      "result": "PASS",
+      "scope": "Implementation and governance artifacts before final receipt fingerprint update."
     },
     "prior_attempt": {
       "head_sha": "9f85daaee9014896c2e93634683244ec2e3b8d8d",
