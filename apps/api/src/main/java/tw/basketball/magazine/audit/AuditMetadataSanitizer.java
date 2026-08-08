@@ -238,7 +238,7 @@ final class AuditMetadataSanitizer {
     }
 
     private static boolean isSensitiveKey(String key) {
-        String normalized = key.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9_]", "");
+        String normalized = key.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
         return SENSITIVE_KEYS.stream()
                 .map(value -> value.replace("_", ""))
                 .anyMatch(normalized::equals);

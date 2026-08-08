@@ -23,6 +23,11 @@ public record AuditEventDraft(
         metadata = immutableMetadata(metadata);
     }
 
+    @Override
+    public Map<String, ?> metadata() {
+        return Collections.unmodifiableMap(new LinkedHashMap<>(metadata));
+    }
+
     private static Map<String, ?> immutableMetadata(Map<String, ?> value) {
         Objects.requireNonNull(value, "metadata");
         Map<String, Object> copy = new LinkedHashMap<>();
