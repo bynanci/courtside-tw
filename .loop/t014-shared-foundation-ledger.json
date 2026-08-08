@@ -1,16 +1,18 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t014",
-  "graph_version": 6,
+  "graph_version": 7,
   "run_id": "courtside-tw-t014-20260808",
-  "status": "running",
+  "status": "success",
   "iteration": 5,
   "started_at": "2026-08-08T03:00:00Z",
-  "updated_at": "2026-08-08T03:48:57Z",
-  "current_frontier": ["g-t014-review-merge"],
+  "updated_at": "2026-08-08T05:06:10Z",
+  "current_frontier": [
+    "s-t014-terminal"
+  ],
   "blocked_nodes": [],
-  "terminal_state": "needs_human",
-  "next_action": "Confirm the evidence/graph metadata-only PR head is green, then obtain human protected-merge approval and authoritative main read-back; do not mark T014 checked before both.",
+  "terminal_state": "success",
+  "next_action": "T014 complete; dispatch T015 OIDC security foundation from main@79b89d6.",
   "events": [
     {
       "event_id": "evt-t014-001-main-reconciled",
@@ -30,11 +32,15 @@
             "op": "replace",
             "path": "graph.current_frontier",
             "before": [],
-            "after": ["a-t014-shared"]
+            "after": [
+              "a-t014-shared"
+            ]
           }
         ]
       },
-      "evidence_refs": [".loop/evidence/t014-dispatch-20260808.json"],
+      "evidence_refs": [
+        ".loop/evidence/t014-dispatch-20260808.json"
+      ],
       "proof_receipts": [
         {
           "proof": "remote main read-back",
@@ -66,8 +72,12 @@
           {
             "op": "replace",
             "path": "graph.current_frontier",
-            "before": ["a-t014-shared"],
-            "after": ["p-t014-ci-unit"]
+            "before": [
+              "a-t014-shared"
+            ],
+            "after": [
+              "p-t014-ci-unit"
+            ]
           },
           {
             "op": "replace",
@@ -116,12 +126,18 @@
           {
             "op": "replace",
             "path": "graph.current_frontier",
-            "before": ["p-t014-ci-unit"],
-            "after": ["a-t014-shared"]
+            "before": [
+              "p-t014-ci-unit"
+            ],
+            "after": [
+              "a-t014-shared"
+            ]
           }
         ]
       },
-      "evidence_refs": [".loop/evidence/t014-codeql-failure-20260808.json"],
+      "evidence_refs": [
+        ".loop/evidence/t014-codeql-failure-20260808.json"
+      ],
       "proof_receipts": [],
       "failure_signature": "JAVAC_SERIAL_WARNING_WERROR_VERSION_CONFLICT_FIELDS",
       "decision": "Make Version serializable with explicit serialVersionUID; preserve conflict state and rerun the exact-head gates."
@@ -149,7 +165,9 @@
           }
         ]
       },
-      "evidence_refs": [".loop/evidence/t014-review-feedback-20260808.json"],
+      "evidence_refs": [
+        ".loop/evidence/t014-review-feedback-20260808.json"
+      ],
       "proof_receipts": [],
       "failure_signature": "PR43_P2_CURRENT_VERSION_AND_IF_MATCH_CONTROL_BOUNDARY",
       "decision": "Return the current version through the existing bounded errors contract and reject all disallowed If-Match edge controls before optional whitespace removal."
@@ -178,12 +196,18 @@
           {
             "op": "replace",
             "path": "graph.current_frontier",
-            "before": ["a-t014-shared"],
-            "after": ["g-t014-review-merge"]
+            "before": [
+              "a-t014-shared"
+            ],
+            "after": [
+              "g-t014-review-merge"
+            ]
           }
         ]
       },
-      "evidence_refs": [".loop/evidence/t014-ci-security-20260808.json"],
+      "evidence_refs": [
+        ".loop/evidence/t014-ci-security-20260808.json"
+      ],
       "proof_receipts": [
         {
           "proof": "CI run #92",
@@ -200,6 +224,92 @@
       ],
       "failure_signature": null,
       "decision": "Advance to the protected human review/merge gate; the final metadata-only PR head must also be green before merge."
+    },
+    {
+      "event_id": "evt-t014-006-completion-merge-main-readback",
+      "at": "2026-08-08T05:06:10Z",
+      "actor": "codex-supervisor",
+      "type": "completion_receipt",
+      "base_graph_version": 6,
+      "new_graph_version": 7,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-t014-ci-unit/status",
+            "before": "blocked",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/g-t014-review-merge/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/s-t014-terminal/status",
+            "before": "needs_human",
+            "after": "success"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [
+              "g-t014-review-merge"
+            ],
+            "after": [
+              "s-t014-terminal"
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "ledger.terminal_state",
+            "before": "needs_human",
+            "after": "success"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t014-ci-security-final-20260808.json",
+        ".loop/evidence/t014-review-merge-final-20260808.json",
+        ".loop/evidence/t014-main-readback-20260808.json",
+        ".loop/evidence/t014-completion-receipt-20260808.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "CI #96",
+          "level": "P2",
+          "result": "pass",
+          "head_sha": "1a2076846bfd511f8b9480f8c1497e118186a057"
+        },
+        {
+          "proof": "Security #96",
+          "level": "P2",
+          "result": "pass",
+          "head_sha": "1a2076846bfd511f8b9480f8c1497e118186a057"
+        },
+        {
+          "proof": "code-review",
+          "level": "P3",
+          "result": "pass",
+          "review_id": 4888170983
+        },
+        {
+          "proof": "PR #43 merge",
+          "level": "P3",
+          "result": "pass",
+          "merge_sha": "79b89d6746429fe31309ab29699f10cd16ce0282"
+        },
+        {
+          "proof": "main implementation read-back",
+          "level": "P3",
+          "result": "pass",
+          "main_sha": "79b89d6746429fe31309ab29699f10cd16ce0282"
+        }
+      ],
+      "failure_signature": null,
+      "decision": "T014 is complete and the next bounded frontier is T015 OIDC security foundation."
     }
   ]
 }
