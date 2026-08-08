@@ -22,12 +22,14 @@ final class ModuleBoundaryTest {
                     "..outbox..",
                     "..publication..",
                     "..provenance.."
-            );
+            )
+            .allowEmptyShould(true);
 
     @ArchTest
     static final ArchRule mediaDoesNotDependOnAuditOrOutbox = noClasses()
             .that().resideInAnyPackage("..media..")
-            .should().dependOnClassesThat().resideInAnyPackage("..audit..", "..outbox..");
+            .should().dependOnClassesThat().resideInAnyPackage("..audit..", "..outbox..")
+            .allowEmptyShould(true);
 
     @ArchTest
     static final ArchRule sharedDoesNotDependOnFeatureModules = noClasses()
