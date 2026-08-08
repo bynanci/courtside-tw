@@ -61,12 +61,31 @@ final class SharedFoundationTest {
     }
 
     @Test
+    void actorAndProblemMetadataRejectUnicodeControlCharacters() {
+        assertThrows(IllegalArgumentException.class, () -> ActorContext.user(
+                "oidc|editor--1",
+                Set.of(RoleCode.EDITOR),
+                RequestId.of("req_t014_unicode_actor")
+        ));
+        assertThrows(IllegalArgumentException.class, () -> new FieldError(
+                "/title",
+                "invalid",
+                "message"
+        ));
+        assertThrows(IllegalArgumentException.class, () -> ProblemDetailsMapper.invalidRequest(
+                "/api/v1/editor/issues",
+                RequestId.of("req_t014_unicode_problem"),
+                List.of()
+        ));
+    }
+
+    @Test
     void optimisticLockAdvancesOnlyWhenTheExpectedVersionMatches() {
         Version current = new Version(2);
 
         assertEquals(new Version(3), OptimisticLock.advance(current, new Version(2)));
-        assertEquals("\"2\"", current.toIfMatch());
-        assertEquals(new Version(2), Version.parseIfMatch("\"2\""));
+        assertEquals(""2"", current.toIfMatch());
+        assertEquals(new Version(2), Version.parseIfMatch(""2""));
         assertEquals(new Version(2), Version.parseIfMatch("2"));
 
         VersionConflictException conflict = assertThrows(
@@ -80,13 +99,16 @@ final class SharedFoundationTest {
     @Test
     void ifMatchRejectsWildcardWeakTagsAndMalformedVersions() {
         assertThrows(IllegalArgumentException.class, () -> Version.parseIfMatch("*"));
-        assertThrows(IllegalArgumentException.class, () -> Version.parseIfMatch("W/\"2\""));
-        assertThrows(IllegalArgumentException.class, () -> Version.parseIfMatch("\"two\""));
+        assertThrows(IllegalArgumentException.class, () -> Version.parseIfMatch("W/"2""));
+        assertThrows(IllegalArgumentException.class, () -> Version.parseIfMatch(""two""));
         assertThrows(IllegalArgumentException.class, () -> Version.parseIfMatch("-1"));
-        assertThrows(IllegalArgumentException.class, () -> Version.parseIfMatch("\"2\"\r\n"));
-        assertThrows(IllegalArgumentException.class, () -> Version.parseIfMatch("\0\"2\""));
-        assertEquals(new Version(2), Version.parseIfMatch(" \t\"2\"\t "));
-        assertThrows(IllegalArgumentException.class, () -> Version.parseIfMatch("\"2\"\nX-Injected: true"));
+        assertThrows(IllegalArgumentException.class, () -> Version.parseIfMatch(""2"\r\n"));
+        assertThrows(IllegalArgumentException.class, () -> Version.parseIfMatch("\0"2""));
+        assertThrows(IllegalArgumentException.class, () -> Version.parseIfMatch(""02""));
+        assertThrows(IllegalArgumentException.class, () -> Version.parseIfMatch("02"));
+        assertEquals(new Version(0), Version.parseIfMatch(""0""));
+        assertEquals(new Version(2), Version.parseIfMatch(" \t"2"\t "));
+        assertThrows(IllegalArgumentException.class, () -> Version.parseIfMatch(""2"\nX-Injected: true"));
     }
 
     @Test
@@ -107,7 +129,7 @@ final class SharedFoundationTest {
         assertEquals("/api/v1/editor/issues/issue-1", problem.instance());
         assertEquals(requestId.value(), problem.requestId());
         assertEquals("VERSION_CONFLICT", problem.code());
-        assertEquals(List.of(new FieldError("/version", "current_version", "\"2\"")), problem.errors());
+        assertEquals(List.of(new FieldError("/version", "current_version", ""2"")), problem.errors());
         assertFalse(problem.detail().contains(conflict.getMessage()));
     }
 
@@ -125,7 +147,8 @@ final class SharedFoundationTest {
         assertThrows(UnsupportedOperationException.class, () -> problem.errors().add(
                 new FieldError("/slug", "invalid", "Slug is invalid.")
         ));
-        assertThrows(IllegalArgumentException.class, () -> new FieldError("/title\n", "bad", "message"));
+        assertThrows(IllegalArgumentException.class, () -> new FieldError("/title
+", "bad", "message"));
     }
 
     private static final class SeededRandom extends Random {
