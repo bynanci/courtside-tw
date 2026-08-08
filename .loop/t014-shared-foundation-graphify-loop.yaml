@@ -36,7 +36,7 @@ acceptance:
   - Version and OptimisticLock reject negative, malformed, wildcard, weak and stale If-Match values and never silently apply last-write-wins.
   - ProblemDetailsMapper emits the seven OpenAPI stable error codes with RFC 9457 fields, bounded field errors and safe default detail text.
   - Java 21 unit, Checkstyle, SpotBugs and repository CI/security checks pass on the exact PR head.
-  - T014 remains unchecked until code review, CI/security and authoritative main read-back pass.
+  - T014 is checked only after code review, CI/security, merge and authoritative main read-back pass.
 
 budgets:
   max_iterations: 6
@@ -60,7 +60,7 @@ policy:
 graph:
   entry_nodes: [x-main-readback, t-t014-ready]
   terminal_nodes: [s-t014-terminal]
-  current_frontier: [g-t014-review-merge]
+  current_frontier: [s-t014-terminal]
   blocked_nodes: []
   nodes:
     - id: x-main-readback
@@ -123,8 +123,8 @@ graph:
       risk: high
       confidence:
         score: 0.95
-        basis: "The bounded Java source and tests, including the serializability and two P2 boundary repairs, pass the exact code-head Java/CI/Security proof; final PR metadata-only rerun remains a merge-readiness check."
-        evidence_refs: [.loop/evidence/t014-tests-first-local-20260808.json, .loop/evidence/t014-static-proof-20260808.json, .loop/evidence/t014-codeql-failure-20260808.json, .loop/evidence/t014-review-feedback-20260808.json, .loop/evidence/t014-ci-security-20260808.json]
+        basis: "The bounded Java source and tests, including serializability, Unicode-control and canonical-ETag repairs, pass exact-head CI/Security #96; PR #43 is merged to main."
+        evidence_refs: [.loop/evidence/t014-tests-first-local-20260808.json, .loop/evidence/t014-static-proof-20260808.json, .loop/evidence/t014-codeql-failure-20260808.json, .loop/evidence/t014-review-feedback-20260808.json, .loop/evidence/t014-ci-security-20260808.json, .loop/evidence/t014-ci-security-final-20260808.json]
       budget: {effort_hours: 2.5, tokens: 18000}
       config:
         workflow: [read T014 contract, write tests first, implement immutable shared types, run static checks, hand off Java proof to CI]
@@ -177,12 +177,12 @@ graph:
       layer: L1
       label: "Java 21 unit, quality and repository verification"
       owner: verifier
-      status: blocked
+      status: done
       risk: high
       confidence:
-        score: 0.98
-        basis: "CI/Security run #92 passed on exact code head 8093bfe; Java quality/unit, CodeQL Java, dependency audit, Compose health and all Trivy jobs are green. The following commit changes only graph/evidence metadata and is awaiting its automatic rerun."
-        evidence_refs: [.loop/evidence/t014-codeql-failure-20260808.json, .loop/evidence/t014-review-feedback-20260808.json, .loop/evidence/t014-ci-security-20260808.json]
+        score: 1.0
+        basis: "CI/Security #96 passed on exact PR head 1a207684; Java quality/unit, CodeQL Java, dependency audit, Compose health and all Trivy jobs are green."
+        evidence_refs: [.loop/evidence/t014-codeql-failure-20260808.json, .loop/evidence/t014-review-feedback-20260808.json, .loop/evidence/t014-ci-security-20260808.json, .loop/evidence/t014-ci-security-final-20260808.json]
       budget: {effort_hours: 0.8, tokens: 7000}
       config:
         level: P2
@@ -197,12 +197,12 @@ graph:
       layer: L2
       label: "T014 review, CI/security and protected merge gate"
       owner: human-mark
-      status: needs_human
+      status: done
       risk: high
       confidence:
-        score: 0.75
-        basis: "Exact code-head CI/Security passed and the two P2 review threads are outdated and resolved; protected human merge approval and current-head main read-back remain required."
-        evidence_refs: [.loop/evidence/t014-ci-security-20260808.json, .loop/evidence/t014-review-feedback-20260808.json]
+        score: 1.0
+        basis: "Exact-head CI/Security #96 passed, all four review threads are resolved, review decision is PASS, and PR #43 merged to main at 79b89d6."
+        evidence_refs: [.loop/evidence/t014-ci-security-final-20260808.json, .loop/evidence/t014-review-merge-final-20260808.json, .loop/evidence/t014-main-readback-20260808.json]
       budget: {effort_hours: 0.7, tokens: 4000}
       config:
         condition: "T014 acceptance, Java proof, security checks, code review and current-head main read-back all pass."
@@ -234,12 +234,12 @@ graph:
       layer: GLOBAL
       label: "T014 named terminal policy"
       owner: policy
-      status: needs_human
+      status: success
       risk: high
       confidence:
-        score: 0.4
-        basis: "The code is review-ready but required Java 21 CI proof, protected merge and authoritative read-back are pending."
-        evidence_refs: []
+        score: 1.0
+        basis: "T014 implementation, exact-head CI/Security, review, merge and main implementation read-back are complete; the task checkbox is recorded in the completion receipt."
+        evidence_refs: [.loop/evidence/t014-completion-receipt-20260808.json, .loop/evidence/t014-main-readback-20260808.json]
       budget: {effort_hours: 0.1, tokens: 500}
       config:
         states:

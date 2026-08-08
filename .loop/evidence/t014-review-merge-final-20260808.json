@@ -1,0 +1,20 @@
+{
+  "schema_version": "courtside-tw-evidence/v1",
+  "evidence_id": "t014-review-merge-final-20260808",
+  "recorded_at": "2026-08-08T05:06:10Z",
+  "actor": "codex-supervisor",
+  "repository": "bynanci/courtside-tw",
+  "task": "T014",
+  "kind": "review-merge",
+  "result": "PASS",
+  "pull_request": 43,
+  "reviewed_head": "1a2076846bfd511f8b9480f8c1497e118186a057",
+  "review_id": 4888170983,
+  "decision": "PASS",
+  "review_mode": "COMMENT, not self-approval",
+  "resolved_threads": 4,
+  "merge_sha": "79b89d6746429fe31309ab29699f10cd16ce0282",
+  "merge_method": "squash",
+  "scope": "T014 shared Java source/tests and graph/evidence only; no auth runtime, migration, OpenAPI or production action.",
+  "rollback": "Revert merge commit 79b89d6; no production data or external identity side effect exists."
+}

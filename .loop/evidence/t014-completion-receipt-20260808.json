@@ -1,0 +1,22 @@
+{
+  "schema_version": "courtside-tw-evidence/v1",
+  "evidence_id": "t014-completion-receipt-20260808",
+  "recorded_at": "2026-08-08T05:06:10Z",
+  "actor": "codex-supervisor",
+  "repository": "bynanci/courtside-tw",
+  "task": "T014",
+  "kind": "completion-receipt",
+  "result": "PASS",
+  "implementation_pr": 43,
+  "implementation_merge_sha": "79b89d6746429fe31309ab29699f10cd16ce0282",
+  "checkbox_path": "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+  "checkbox_state": "[x] T014",
+  "graph_version": 7,
+  "graph_terminal_state": "success",
+  "evidence_refs": [
+    ".loop/evidence/t014-ci-security-final-20260808.json",
+    ".loop/evidence/t014-review-merge-final-20260808.json",
+    ".loop/evidence/t014-main-readback-20260808.json"
+  ],
+  "next_action": "Dispatch T015 OIDC security foundation from main after this completion receipt is merged."
+}
