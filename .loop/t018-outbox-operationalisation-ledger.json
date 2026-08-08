@@ -1,16 +1,28 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t018-outbox-operationalisation",
-  "graph_version": 1,
+  "graph_version": 2,
   "run_id": "courtside-tw-t018-operationalisation-20260808",
   "status": "running",
-  "iteration": 1,
+  "iteration": 2,
   "started_at": "2026-08-08T12:00:00Z",
-  "updated_at": "2026-08-08T12:00:00Z",
-  "current_frontier": ["a-tests-first"],
+  "updated_at": "2026-08-08T12:02:36Z",
+  "current_frontier": ["a-implementation"],
   "blocked_nodes": [],
   "terminal_state": null,
-  "next_action": "Run the tests-first baseline on the exact branch head and record the intended missing-boundary failure.",
+  "next_action": "Implement the bounded registration, worker scheduling and redacted metrics runtime boundary, then rerun focused tests on a new exact head.",
+  "memory_receipt": {
+    "memory_status": "MEMORY_WRITE_PENDING",
+    "memory_id": "wm:project:courtside-tw:t018-outbox-operationalisation",
+    "version": "pending-remote-branch-commit",
+    "retrieval_ids": ["t018-outbox-operationalisation-20260808"],
+    "evidence_refs": [
+      ".loop/evidence/t018-operationalisation-tests-first-20260808.json",
+      ".loop/memory/t018-outbox-operationalisation.json"
+    ],
+    "next_review_at": "2026-08-08",
+    "blocker": "Repository backend write receipt is pending the next remote branch commit and read-back."
+  },
   "events": [
     {
       "event_id": "evt-t018-operationalisation-001-dispatch",
@@ -33,6 +45,49 @@
       "failure_signature": null,
       "decision": "Implement only the opt-in operational boundary; keep T016, schema, provider, deployment and activation out of scope.",
       "token_usage": {"estimated": 8000, "input": 0, "output": 0, "total": 8000},
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-t018-operationalisation-002-tests-first-baseline",
+      "at": "2026-08-08T12:02:36Z",
+      "actor": "codex-agent",
+      "type": "tests_first_baseline_recorded",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {"op": "replace", "path": "a-tests-first/status", "before": "running", "after": "done"},
+          {"op": "replace", "path": "p-tests-first/status", "before": "planned", "after": "done"},
+          {"op": "replace", "path": "a-implementation/status", "before": "planned", "after": "ready"},
+          {"op": "replace", "path": "current_frontier", "before": ["a-tests-first"], "after": ["a-implementation"]}
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t018-operationalisation-tests-first-20260808.json",
+        ".loop/memory/t018-outbox-operationalisation.json",
+        "https://github.com/bynanci/courtside-tw/pull/52",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31256283782",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31256283795"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "CI #155 Java quality exact-head compileTestJava",
+          "level": "P2",
+          "result": "expected_red_missing_runtime_boundary",
+          "job_id": "93099991193",
+          "failure_signature": "T018_OPERATIONALISATION_RUNTIME_BOUNDARY_ABSENT"
+        },
+        {
+          "proof": "Security #155 dependency-audit exact-head gradle test",
+          "level": "P2",
+          "result": "expected_red_missing_runtime_boundary",
+          "job_id": "93099991390",
+          "failure_signature": "T018_OPERATIONALISATION_RUNTIME_BOUNDARY_ABSENT"
+        }
+      ],
+      "failure_signature": "T018_OPERATIONALISATION_RUNTIME_BOUNDARY_ABSENT",
+      "decision": "Proceed with one bounded implementation iteration; preserve the red baseline and keep schema, provider, credentials, deployment, endpoint exposure and activation out of scope.",
+      "token_usage": {"estimated": 9000, "input": 0, "output": 0, "total": 9000},
       "terminal_reason": null
     }
   ]

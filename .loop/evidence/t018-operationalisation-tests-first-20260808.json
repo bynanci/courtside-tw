@@ -1,0 +1,69 @@
+{
+  "evaluation_id": "t018-operationalisation-tests-first-20260808",
+  "system_id": "courtside-tw-api-outbox",
+  "as_of": "2026-08-08T12:02:36Z",
+  "artifact_fingerprint": "git:2abbe882562e5ba4342e024b6aa073f7199b076b",
+  "environment": "tests-first-baseline",
+  "claim": "The new registration, scheduling and metrics tests fail because the intended runtime boundary is absent on the baseline branch; the failure is not a test-harness or workflow-setup failure.",
+  "threat_refs": [
+    "ASI02 Tool Misuse and Exploitation",
+    "ASI08 Cascading Failures"
+  ],
+  "control_ids": [
+    "GOV-003",
+    "AGT-001",
+    "AGT-004",
+    "AGT-007",
+    "OPS-001",
+    "OPS-002",
+    "DAT-007"
+  ],
+  "proof_level": "P2",
+  "method": "Exact-head GitHub CI #155 Java quality compileTestJava output and Security #155 dependency-audit gradle test output were read back and reduced to a stable failure signature.",
+  "expected": "The tests-first branch is red at compilation because explicit handler registration, worker scheduling, metrics adapters, the worker configuration split and the actuator/Micrometer dependency have not yet been implemented.",
+  "observed": {
+    "pull_request": 52,
+    "head_sha": "2abbe882562e5ba4342e024b6aa073f7199b076b",
+    "ci_run": 155,
+    "ci_run_id": "31256283782",
+    "ci_java_job_id": "93099991193",
+    "security_run": 155,
+    "security_run_id": "31256283795",
+    "security_dependency_job_id": "93099991390",
+    "failure_signature": "T018_OPERATIONALISATION_RUNTIME_BOUNDARY_ABSENT",
+    "missing_symbols": [
+      "OutboxHandlerRegistration",
+      "OutboxHandlerRegistry",
+      "UnknownOutboxEventTypeException",
+      "OutboxScheduler",
+      "NoopOutboxMetrics",
+      "MicrometerOutboxMetrics",
+      "OutboxWorkerConfiguration",
+      "io.micrometer.core.instrument.*",
+      "OutboxProperties pollInterval/initialDelay constructor components"
+    ],
+    "boundary": ":compileTestJava FAILED / gradle test stopped at the same compile boundary",
+    "other_signal": {
+      "frontend_contract": "PASS",
+      "security_filesystem": "PASS",
+      "security_js_codeql": "PASS"
+    }
+  },
+  "result": "FAIL",
+  "evidence_refs": [
+    "https://github.com/bynanci/courtside-tw/actions/runs/31256283782",
+    "https://github.com/bynanci/courtside-tw/actions/runs/31256283795",
+    "https://github.com/bynanci/courtside-tw/pull/52",
+    "apps/api/src/test/java/tw/basketball/magazine/outbox/OutboxHandlerRegistryTest.java",
+    "apps/api/src/test/java/tw/basketball/magazine/outbox/OutboxConfigurationTest.java",
+    "apps/api/src/test/java/tw/basketball/magazine/outbox/OutboxSchedulerTest.java",
+    "apps/api/src/test/java/tw/basketball/magazine/outbox/OutboxMetricsTest.java"
+  ],
+  "limitations": [
+    "This is an intentional red baseline; it does not claim runtime readiness.",
+    "The local environment has no Gradle executable, so the proof uses repository CI/Security exact-head jobs.",
+    "No production database, provider, credential, deployment or activation value was accessed or changed."
+  ],
+  "owner": "codex-agent",
+  "next_review_at": "2026-08-08T14:00:00Z"
+}

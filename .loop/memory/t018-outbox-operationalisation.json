@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "memory_id": "wm:project:courtside-tw:t018-outbox-operationalisation",
+  "scope": "project",
+  "kind": "task_state",
+  "title": "T018 outbox operationalisation tests-first boundary",
+  "summary": "The T018 operationalisation slice is bounded to explicit event-type registration, worker-only scheduling and redacted outbox metrics behind courtside.outbox.enabled. The tests-first branch is confirmed red at PR #52 head 2abbe88 because the new runtime boundary is not implemented yet; implementation remains the next action and production activation/merge remain human gates.",
+  "claims": [
+    {
+      "text": "PR #52 head 2abbe882 fails the intended tests-first compilation boundary because the explicit handler registry, scheduler, metrics adapters, worker configuration split and Micrometer dependency are absent.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The T018 enhancement must not invent a concrete domain handler, change V001/schema, add a broker/provider, access credentials, expose management endpoints or enable courtside.outbox.enabled in deployment configuration.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The next bounded action is to implement exact event-type registration, worker-profile scheduling with lifecycle controls and redacted Micrometer metrics while preserving the existing direct OutboxWorker test constructor.",
+      "class": "INFERRED",
+      "confidence": "medium"
+    }
+  ],
+  "status": "verified",
+  "confidence": "high",
+  "confidence_basis": [
+    ".loop/evidence/t018-operationalisation-tests-first-20260808.json",
+    "PR #52@2abbe882562e5ba4342e024b6aa073f7199b076b",
+    "CI #155 Java quality",
+    "Security #155 dependency audit"
+  ],
+  "volatility": "medium",
+  "as_of": "2026-08-08",
+  "source_refs": [
+    ".loop/evidence/t018-operationalisation-charter-20260808.json",
+    ".loop/evidence/t018-operationalisation-tests-first-20260808.json",
+    ".loop/t018-outbox-operationalisation-graphify-loop.yaml",
+    "apps/api/src/main/java/tw/basketball/magazine/outbox/OutboxConfiguration.java",
+    "apps/api/src/main/java/tw/basketball/magazine/outbox/OutboxWorker.java",
+    "PR #52"
+  ],
+  "entities": [
+    "T018",
+    "courtside.outbox.enabled",
+    "OutboxHandlerRegistry",
+    "OutboxScheduler",
+    "Micrometer"
+  ],
+  "relations": {
+    "supports": [],
+    "contradicts": [],
+    "supersedes": [],
+    "blocks": [],
+    "invalidates": []
+  },
+  "decision": {
+    "context": "T018 is merged on main but its completion receipt explicitly leaves handler registration, scheduling and operational metrics as follow-up boundaries.",
+    "chosen": "Implement only the opt-in operational boundary and require exact-head CI/Security plus human protected-merge review before treating it as production-ready.",
+    "alternatives": [
+      "Add a catch-all handler or silently dispatch unknown event types.",
+      "Enable the worker or management endpoints through deployment configuration.",
+      "Combine this slice with schema, broker, provider or T021 shared observability work."
+    ],
+    "tradeoffs": [
+      "The runtime wiring is explicit and auditable but requires each concrete domain handler to register separately later.",
+      "The worker can be enabled only with deliberate profile/configuration choices; this slice does not activate it.",
+      "Outbox-specific metrics improve diagnosis without making payload, aggregate or credential data observable."
+    ],
+    "invalidation": "If the T018 API, V001 schema, task scope or security policy changes, mark this record needs_update and stop before widening the implementation boundary.",
+    "proof": "CI #155 and Security #155 independently stop at the expected missing-runtime-symbol compile boundary on PR #52 head 2abbe882; the failure is recorded without storing raw logs."
+  },
+  "next_review_at": "2026-08-08",
+  "sensitivity": "internal",
+  "retention": "until_superseded"
+}
