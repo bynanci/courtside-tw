@@ -1,0 +1,28 @@
+{
+  "schema_version": "courtside-tw-evidence/v1",
+  "evidence_id": "t014-tests-first-local-20260808",
+  "recorded_at": "2026-08-08T03:26:15Z",
+  "actor": "codex-agent",
+  "repository": "bynanci/courtside-tw",
+  "task": "T014",
+  "kind": "test-first-baseline",
+  "result": "BLOCKED",
+  "failure_signature": "LOCAL_JAVA21_GRADLE_UNAVAILABLE",
+  "method": "Attempted gradle test --no-daemon from apps/api before local Java execution was available.",
+  "observed": {
+    "gradle": "unavailable",
+    "java": "OpenJDK 17.0.19",
+    "javac": "unavailable",
+    "repository_requirement": "Java 21 and Gradle CI"
+  },
+  "test_order": {
+    "tests_written_before_implementation": true,
+    "implementation_source_present_at_record_time": true,
+    "intended_failure_observed": false
+  },
+  "limitations": [
+    "This is an environment blocker, not a passing baseline proof.",
+    "No substitute compiler, H2 database or Java 17 claim is used."
+  ],
+  "next_action": "Use the exact PR head in the repository Java 21 CI job to obtain the independent unit/quality proof."
+}

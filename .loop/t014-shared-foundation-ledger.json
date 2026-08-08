@@ -1,0 +1,205 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-ticket-implementation-t014",
+  "graph_version": 6,
+  "run_id": "courtside-tw-t014-20260808",
+  "status": "running",
+  "iteration": 5,
+  "started_at": "2026-08-08T03:00:00Z",
+  "updated_at": "2026-08-08T03:48:57Z",
+  "current_frontier": ["g-t014-review-merge"],
+  "blocked_nodes": [],
+  "terminal_state": "needs_human",
+  "next_action": "Confirm the evidence/graph metadata-only PR head is green, then obtain human protected-merge approval and authoritative main read-back; do not mark T014 checked before both.",
+  "events": [
+    {
+      "event_id": "evt-t014-001-main-reconciled",
+      "at": "2026-08-08T03:00:00Z",
+      "actor": "codex-supervisor",
+      "type": "t014_dispatched",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "graph.nodes/t-t014-ready",
+            "after": "T014 is the first unchecked task after T013 main@8a3a71d."
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [],
+            "after": ["a-t014-shared"]
+          }
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t014-dispatch-20260808.json"],
+      "proof_receipts": [
+        {
+          "proof": "remote main read-back",
+          "level": "P3",
+          "result": "pass",
+          "main_sha": "8a3a71d5453bd9719bf44d08bce5758c80ee6499",
+          "t013": "checked",
+          "t014": "unchecked"
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Implement only T014 shared foundation; keep T015/T016 and later tasks separate."
+    },
+    {
+      "event_id": "evt-t014-002-local-proof-limited",
+      "at": "2026-08-08T03:26:15Z",
+      "actor": "codex-agent",
+      "type": "t014_implementation_local_proof",
+      "base_graph_version": 1,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-t014-shared/status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": ["a-t014-shared"],
+            "after": ["p-t014-ci-unit"]
+          },
+          {
+            "op": "replace",
+            "path": "ledger.terminal_state",
+            "before": null,
+            "after": "needs_human"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t014-tests-first-local-20260808.json",
+        ".loop/evidence/t014-static-proof-20260808.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "scoped static checks",
+          "level": "P1",
+          "result": "partial",
+          "details": "git diff --check passed; local Java/Gradle execution is unavailable and remains an explicit CI proof gap."
+        }
+      ],
+      "failure_signature": "LOCAL_JAVA21_GRADLE_UNAVAILABLE",
+      "decision": "Do not substitute Java 17, H2 or a model claim; hand the exact source/tests to Java 21 CI."
+    },
+    {
+      "event_id": "evt-t014-003-java-warning-repaired",
+      "at": "2026-08-08T03:33:00Z",
+      "actor": "codex-agent",
+      "type": "failure_feedback",
+      "base_graph_version": 3,
+      "new_graph_version": 4,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-t014-shared/status",
+            "before": "done",
+            "after": "running"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-t014-ci-unit/status",
+            "before": "ready",
+            "after": "blocked"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": ["p-t014-ci-unit"],
+            "after": ["a-t014-shared"]
+          }
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t014-codeql-failure-20260808.json"],
+      "proof_receipts": [],
+      "failure_signature": "JAVAC_SERIAL_WARNING_WERROR_VERSION_CONFLICT_FIELDS",
+      "decision": "Make Version serializable with explicit serialVersionUID; preserve conflict state and rerun the exact-head gates."
+    },
+    {
+      "event_id": "evt-t014-004-review-feedback-repaired",
+      "at": "2026-08-08T03:42:40Z",
+      "actor": "codex-agent",
+      "type": "failure_feedback",
+      "base_graph_version": 4,
+      "new_graph_version": 5,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-t014-shared/confidence/score",
+            "before": 0.78,
+            "after": 0.75
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-t014-ci-unit/confidence/score",
+            "before": 0.7,
+            "after": 0.68
+          }
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t014-review-feedback-20260808.json"],
+      "proof_receipts": [],
+      "failure_signature": "PR43_P2_CURRENT_VERSION_AND_IF_MATCH_CONTROL_BOUNDARY",
+      "decision": "Return the current version through the existing bounded errors contract and reject all disallowed If-Match edge controls before optional whitespace removal."
+    },
+    {
+      "event_id": "evt-t014-005-ci-security-pass",
+      "at": "2026-08-08T03:48:57Z",
+      "actor": "verifier",
+      "type": "proof_pass",
+      "base_graph_version": 5,
+      "new_graph_version": 6,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-t014-shared/status",
+            "before": "running",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-t014-ci-unit/status",
+            "before": "blocked",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": ["a-t014-shared"],
+            "after": ["g-t014-review-merge"]
+          }
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t014-ci-security-20260808.json"],
+      "proof_receipts": [
+        {
+          "proof": "CI run #92",
+          "level": "P2",
+          "result": "pass",
+          "head_sha": "8093bfe9bf07ca8a58d7a2375aeffc5c7312a0a9"
+        },
+        {
+          "proof": "Security run #92",
+          "level": "P2",
+          "result": "pass",
+          "head_sha": "8093bfe9bf07ca8a58d7a2375aeffc5c7312a0a9"
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Advance to the protected human review/merge gate; the final metadata-only PR head must also be green before merge."
+    }
+  ]
+}

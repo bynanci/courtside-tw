@@ -1,0 +1,86 @@
+{
+  "schema_version": "courtside-tw-governance-review/v1",
+  "evidence_id": "t014-governance-review",
+  "generated_at": "2026-08-08T03:26:15Z",
+  "actor": "codex-supervisor",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T014",
+  "decision": "REVIEW_REQUIRED",
+  "scope": {
+    "subject": "Shared IDs, deterministic clock, actor metadata, optimistic locking and RFC 9457 problem boundary",
+    "stage": "implementation ready; Java 21 proof and protected merge pending",
+    "mutation_class": "G2 shared API/state foundation; no production identity or database execution"
+  },
+  "risk": {
+    "inherent_tier": "G2",
+    "residual_tier": "G2",
+    "operational_state": "ELEVATED",
+    "rationale": "The patch defines shared values used by API, authorization and audit consumers. It does not yet authenticate users, grant roles, write production data or change deployment identity. Shared-state and error-boundary compatibility require independent tests and review.",
+    "hard_overrides": [
+      "SAFE-010 Self-approval: the agent cannot approve or merge its own shared foundation.",
+      "SAFE-005 Production and Identity: no production/auth-provider/database action is included; any such expansion raises the tier.",
+      "SAFE-007 Untrusted Supply Chain: no new model, MCP, remote script or unreviewed dependency is introduced."
+    ],
+    "unknowns": [
+      "Java 21/Gradle compilation, Checkstyle and SpotBugs are not available locally and require exact-head CI proof.",
+      "Spring MVC exception-handler wiring and OIDC claim mapping are deliberately future tasks; T014 does not prove those runtime paths."
+    ]
+  },
+  "controls": [
+    {
+      "id": "GOV-002",
+      "status": "IMPLEMENTED",
+      "note": "Implementation, proof, code review, merge and checkbox are separate graph nodes and gates."
+    },
+    {
+      "id": "GOV-003",
+      "status": "IMPLEMENTED",
+      "note": "The patch is limited to shared Java source/tests and T014 evidence; T015+ and production wiring are excluded."
+    },
+    {
+      "id": "DAT-007",
+      "status": "IMPLEMENTED",
+      "note": "Request IDs, actor subjects and problem fields are bounded and reject control characters; no credentials are accepted by the value objects."
+    },
+    {
+      "id": "APP-002",
+      "status": "PLANNED",
+      "note": "The problem mapper and exact version parser are implemented, but Java 21 unit/quality proof is pending."
+    },
+    {
+      "id": "AGT-001",
+      "status": "IMPLEMENTED",
+      "note": "The coding-agent edit allowlist is explicit and does not include production or identity-provider actions."
+    },
+    {
+      "id": "AGT-003",
+      "status": "PLANNED",
+      "note": "Protected merge, task checkbox and any later identity action remain human gates."
+    }
+  ],
+  "authority": {
+    "dispatch": "CONFIRMED by current user direction",
+    "implementation": "BOUNDED to T014 shared source, tests and evidence",
+    "merge": "REQUIRES explicit code review, passing CI/Security and current-head main read-back",
+    "production_identity": "NOT AUTHORIZED in this run"
+  },
+  "verification": {
+    "current_level": "P1_PARTIAL",
+    "required_before_merge": [
+      "Java 21 unit and quality proof",
+      "Checkstyle and SpotBugs proof",
+      "CI/Security exact-head proof",
+      "code review with no blocking finding",
+      "authoritative main read-back"
+    ],
+    "status": "PENDING"
+  },
+  "trails": [
+    "main@8a3a71d5453bd9719bf44d08bce5758c80ee6499",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T014",
+    "specs/001-taiwan-basketball-magazine-ebook/plan.md#Critical Data Design",
+    "contracts/openapi.yaml#components/schemas/ProblemDetails",
+    ".loop/evidence/t014-tests-first-local-20260808.json"
+  ],
+  "next_action": "Publish the exact T014 branch and obtain independent Java 21/Gradle CI and Security proof; do not mark T014 checked yet."
+}

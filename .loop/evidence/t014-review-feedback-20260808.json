@@ -1,0 +1,30 @@
+{
+  "schema_version": "courtside-tw-evidence/v1",
+  "evidence_id": "t014-review-feedback-20260808",
+  "recorded_at": "2026-08-08T03:42:40Z",
+  "actor": "verifier",
+  "repository": "bynanci/courtside-tw",
+  "task": "T014",
+  "kind": "review-feedback",
+  "pull_request": 43,
+  "reviewed_head": "3b4492fd2232d5f11612a3234fc4a3989c12b1b6",
+  "result": "REPAIRED",
+  "findings": [
+    {
+      "id": "PR43-P2-CURRENT-VERSION",
+      "path": "apps/api/src/main/java/tw/basketball/magazine/shared/ProblemDetailsMapper.java",
+      "severity": "P2",
+      "impact": "A stale-write 409 discarded the current version, so a client could not reconcile or retry from the response alone.",
+      "repair": "Return the current version as the bounded contract-compatible FieldError /version with stable code current_version and an exact quoted version value."
+    },
+    {
+      "id": "PR43-P2-IF-MATCH-CONTROL",
+      "path": "apps/api/src/main/java/tw/basketball/magazine/shared/Version.java",
+      "severity": "P2",
+      "impact": "String.trim() could remove edge control characters before exact If-Match validation.",
+      "repair": "Reject ISO control characters before removing only permitted outer SP/HTAB optional whitespace; add CR/LF/NUL edge tests."
+    }
+  ],
+  "scope": "T014 shared foundation only; no OpenAPI or downstream task expansion.",
+  "next_action": "Publish the repair and rerun the exact-head Java, CI and Security gates; re-check review threads on the new head."
+}

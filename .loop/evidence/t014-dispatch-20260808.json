@@ -1,0 +1,49 @@
+{
+  "schema_version": "courtside-tw-evidence/v1",
+  "evidence_id": "t014-dispatch-20260808",
+  "recorded_at": "2026-08-08T03:00:00Z",
+  "actor": "codex-supervisor",
+  "repository": "bynanci/courtside-tw",
+  "task": "T014",
+  "kind": "dispatch",
+  "decision": "ALLOW_WITH_CONTROLS",
+  "main_sha": "8a3a71d5453bd9719bf44d08bce5758c80ee6499",
+  "confirmed": [
+    "T013 is checked on main.",
+    "T014 is the first unchecked task in Phase 2.",
+    "T015/T016/T017/T018/T019/T020/T021/T022/T023 remain unchecked and are not dispatched by this artifact."
+  ],
+  "scope": {
+    "in": [
+      "shared Java IDs, clock, actor context, optimistic version and RFC 9457 mapper",
+      "deterministic unit tests",
+      "T014 Graphify/governance/evidence artifacts"
+    ],
+    "out": [
+      "OIDC runtime authorization",
+      "BFF session",
+      "audit writer",
+      "outbox worker",
+      "database migrations",
+      "production identity/database/provider actions"
+    ]
+  },
+  "authority": {
+    "dispatch": "CONFIRMED by current user direction to continue next tasks and optimize",
+    "implementation": "BOUNDED to T014 source/tests and evidence",
+    "merge": "REQUIRES code review, CI/Security and current-head main read-back",
+    "production": "NOT AUTHORIZED"
+  },
+  "evidence_refs": [
+    "https://github.com/bynanci/courtside-tw/commit/8a3a71d5453bd9719bf44d08bce5758c80ee6499",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T014",
+    "specs/001-taiwan-basketball-magazine-ebook/plan.md#Critical Data Design",
+    "contracts/openapi.yaml#components/schemas/ProblemDetails"
+  ],
+  "limitations": [
+    "The local checkout initially referenced an older T013 branch and was aligned to main before implementation.",
+    "The local environment has OpenJDK 17 but no javac and no Gradle executable; Java 21 proof is delegated to CI.",
+    "No local Java result is represented as PASS by this receipt."
+  ],
+  "next_action": "Publish the exact T014 branch and run Java 21/Gradle CI and Security checks."
+}

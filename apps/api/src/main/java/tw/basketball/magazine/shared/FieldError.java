@@ -1,0 +1,27 @@
+package tw.basketball.magazine.shared;
+
+import java.util.Objects;
+
+public record FieldError(String path, String code, String message) {
+    public FieldError {
+        path = bounded(path, "path", 200);
+        code = bounded(code, "code", 80);
+        message = bounded(message, "message", 500);
+    }
+
+    public static FieldError currentVersion(Version version) {
+        return new FieldError("/version", "current_version", Objects.requireNonNull(version, "version").toIfMatch());
+    }
+
+    private static String bounded(String value, String name, int maximumLength) {
+        Objects.requireNonNull(value, name);
+        if (value.isBlank() || value.length() > maximumLength || containsControlCharacter(value)) {
+            throw new IllegalArgumentException(name + " must be bounded and free of control characters");
+        }
+        return value;
+    }
+
+    private static boolean containsControlCharacter(String value) {
+        return value.codePoints().anyMatch(codePoint -> Character.isISOControl(codePoint));
+    }
+}
