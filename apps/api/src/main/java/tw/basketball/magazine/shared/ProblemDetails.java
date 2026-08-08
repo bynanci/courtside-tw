@@ -46,6 +46,6 @@ public record ProblemDetails(
     }
 
     private static boolean containsControlCharacter(String value) {
-        return value.chars().anyMatch(character -> character < 0x20 || character == 0x7F);
+        return value.codePoints().anyMatch(codePoint -> Character.isISOControl(codePoint));
     }
 }
