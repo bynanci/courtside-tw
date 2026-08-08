@@ -28,6 +28,11 @@ public record StorageUploadPolicy(
         allowedMimeTypes = canonicalMimeTypes(allowedMimeTypes);
     }
 
+    @Override
+    public Set<String> allowedMimeTypes() {
+        return Set.copyOf(allowedMimeTypes);
+    }
+
     public static StorageUploadPolicy standard() {
         return new StorageUploadPolicy(
                 Duration.ofMinutes(5),
