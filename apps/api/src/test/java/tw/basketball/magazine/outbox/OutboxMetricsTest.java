@@ -27,6 +27,8 @@ final class OutboxMetricsTest {
                 true,
                 Duration.ofMillis(8)
         );
+        metrics.recordSchedulerSkipped();
+        metrics.recordSchedulerFailure();
 
         assertEquals(
                 3.0,
@@ -47,6 +49,20 @@ final class OutboxMetricsTest {
                 registry.get("courtside.outbox.handler.events")
                         .tag("event_type", "publication.issue.published")
                         .tag("outcome", "dead_lettered")
+                        .counter()
+                        .count()
+        );
+        assertEquals(
+                1.0,
+                registry.get("courtside.outbox.scheduler.events")
+                        .tag("outcome", "skipped")
+                        .counter()
+                        .count()
+        );
+        assertEquals(
+                1.0,
+                registry.get("courtside.outbox.scheduler.events")
+                        .tag("outcome", "failed")
                         .counter()
                         .count()
         );

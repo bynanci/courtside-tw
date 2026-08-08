@@ -18,6 +18,10 @@ public record OutboxProperties(
         Duration pollInterval,
         Duration initialDelay
 ) {
+    private static final Duration MINIMUM_SCHEDULING_INTERVAL = Duration.ofMillis(1);
+    private static final Duration MAXIMUM_POLL_INTERVAL = Duration.ofHours(1);
+    private static final Duration MAXIMUM_INITIAL_DELAY = Duration.ofHours(1);
+
     public OutboxProperties {
         workerId = workerId == null ? "courtside-worker" : workerId;
         batchSize = batchSize == 0 ? 10 : batchSize;
@@ -42,11 +46,14 @@ public record OutboxProperties(
         }
         Objects.requireNonNull(retryInitialDelay, "retryInitialDelay");
         Objects.requireNonNull(retryMaxDelay, "retryMaxDelay");
-        if (pollInterval.isNegative() || pollInterval.isZero()
-                || pollInterval.compareTo(Duration.ofHours(1)) > 0) {
+        if (pollInterval.compareTo(MINIMUM_SCHEDULING_INTERVAL) < 0
+                || pollInterval.compareTo(MAXIMUM_POLL_INTERVAL) > 0) {
             throw new IllegalArgumentException("pollInterval must be between 1ms and 1 hour");
         }
-        if (initialDelay.isNegative() || initialDelay.compareTo(Duration.ofHours(1)) > 0) {
+        if ((!initialDelay.isZero()
+                    && initialDelay.compareTo(MINIMUM_SCHEDULING_INTERVAL) < 0)
+                || initialDelay.isNegative()
+                || initialDelay.compareTo(MAXIMUM_INITIAL_DELAY) > 0) {
             throw new IllegalArgumentException("initialDelay must be between 0 and 1 hour");
         }
         new OutboxRetryPolicy(maxAttempts, retryInitialDelay, retryMaxDelay);

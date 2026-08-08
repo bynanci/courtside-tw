@@ -2,6 +2,8 @@ package tw.basketball.magazine.outbox;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -18,6 +20,7 @@ public final class OutboxScheduler implements SmartLifecycle {
     private final OutboxMetrics metrics;
     private final AtomicBoolean running = new AtomicBoolean();
     private final AtomicBoolean taskRunning = new AtomicBoolean();
+    private final List<Runnable> stopCallbacks = new ArrayList<>();
     private ScheduledFuture<?> scheduledTask;
 
     public OutboxScheduler(
@@ -69,8 +72,17 @@ public final class OutboxScheduler implements SmartLifecycle {
     @Override
     public void stop(Runnable callback) {
         Objects.requireNonNull(callback, "callback");
-        stop();
-        callback.run();
+        boolean invokeImmediately;
+        synchronized (this) {
+            stop();
+            invokeImmediately = !taskRunning.get();
+            if (!invokeImmediately) {
+                stopCallbacks.add(callback);
+            }
+        }
+        if (invokeImmediately) {
+            callback.run();
+        }
     }
 
     @Override
@@ -90,12 +102,30 @@ public final class OutboxScheduler implements SmartLifecycle {
             }
             return;
         }
+        if (!running.get()) {
+            taskRunning.set(false);
+            completeStopCallbacks();
+            return;
+        }
         try {
             task.run();
         } catch (RuntimeException failure) {
             metrics.recordSchedulerFailure();
         } finally {
             taskRunning.set(false);
+            completeStopCallbacks();
         }
+    }
+
+    private void completeStopCallbacks() {
+        List<Runnable> callbacks;
+        synchronized (this) {
+            if (taskRunning.get() || stopCallbacks.isEmpty()) {
+                return;
+            }
+            callbacks = new ArrayList<>(stopCallbacks);
+            stopCallbacks.clear();
+        }
+        callbacks.forEach(Runnable::run);
     }
 }
