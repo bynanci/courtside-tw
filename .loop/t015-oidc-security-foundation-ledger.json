@@ -1,18 +1,18 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t015",
-  "graph_version": 2,
+  "graph_version": 4,
   "run_id": "courtside-tw-t015-20260808",
-  "status": "running",
-  "iteration": 2,
+  "status": "needs_human",
+  "iteration": 4,
   "started_at": "2026-08-08T05:20:39Z",
-  "updated_at": "2026-08-08T05:26:10Z",
+  "updated_at": "2026-08-08T05:49:10Z",
   "current_frontier": [
-    "a-t015-implementation"
+    "g-t015-review-merge"
   ],
   "blocked_nodes": [],
-  "terminal_state": "in_progress",
-  "next_action": "Implement the pinned Spring Security resource-server dependency, exact issuer/audience/time validator, canonical role converter and deny-by-default exact-role policy; preserve the tests-first acceptance.",
+  "terminal_state": "needs_human",
+  "next_action": "Human reviewer must inspect PR #45, perform protected merge if accepted, mark T015 checked, and read back current main; agent must not self-approve, merge or mark the checkbox.",
   "events": [
     {
       "event_id": "evt-t015-001-dispatch",
@@ -114,6 +114,138 @@
       ],
       "failure_signature": "T015_BASELINE_MISSING_IDENTITY_IMPLEMENTATION_AND_RESOURCE_SERVER_DEPENDENCY",
       "decision": "Baseline is valid evidence for the intended missing boundary; repair the test-only RoleCode import, then implement the smallest supported identity package and dependency."
+    },
+    {
+      "event_id": "evt-t015-003-proof-complete",
+      "at": "2026-08-08T05:48:04Z",
+      "actor": "codex-agent",
+      "type": "t015_implementation_and_proof_complete",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-t015-implementation/status",
+            "before": "running",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-t015-static/status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-t015-ci/status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [
+              "a-t015-implementation"
+            ],
+            "after": [
+              "g-t015-review-merge"
+            ]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t015-static-proof-20260808.json",
+        ".loop/evidence/t015-ci-security-final-20260808.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "bounded T015 source scope",
+          "level": "P1",
+          "result": "pass",
+          "source_head": "0fab5a1ec99060a011b8af8e1f6d5506714a0b95",
+          "changed_implementation_files": 6,
+          "out_of_scope_contracts_changed": false,
+          "production_credentials_or_tokens_accessed": false
+        },
+        {
+          "proof": "exact implementation head CI and security",
+          "level": "P2",
+          "result": "pass",
+          "source_head": "0fab5a1ec99060a011b8af8e1f6d5506714a0b95",
+          "ci_run": 31242331858,
+          "security_run": 31242331853,
+          "java_quality": "pass",
+          "security_codeql": "pass",
+          "dependency_audit": "pass",
+          "image_and_filesystem_scans": "pass"
+        }
+      ],
+      "failure_signature": null,
+      "decision": "T015 implementation and P1/P2 proof pass. Preserve the named human review, protected merge, checkbox and main read-back gate."
+    },
+    {
+      "event_id": "evt-t015-004-human-gate-handoff",
+      "at": "2026-08-08T05:49:10Z",
+      "actor": "codex-supervisor",
+      "type": "t015_needs_human",
+      "base_graph_version": 3,
+      "new_graph_version": 4,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/g-t015-review-merge/status",
+            "before": "planned",
+            "after": "needs_human"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/m-t015-ledger/status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [
+              "a-t015-implementation"
+            ],
+            "after": [
+              "g-t015-review-merge"
+            ]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t015-static-proof-20260808.json",
+        ".loop/evidence/t015-ci-security-final-20260808.json",
+        ".loop/t015-oidc-security-foundation-graphify-loop.yaml"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "protected human gate",
+          "level": "P3",
+          "result": "needs_human",
+          "pr": 45,
+          "pr_state": "open",
+          "draft": true,
+          "merged": false,
+          "t015_checkbox": "unchecked",
+          "required_actions": [
+            "human code review",
+            "protected-branch merge",
+            "authoritative main read-back"
+          ],
+          "agent_may_not": [
+            "self-approve",
+            "merge",
+            "mark T015 checked"
+          ]
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Stop at REVIEW_REQUIRED / NEEDS_HUMAN. No merge or checklist mutation is performed by the agent."
     }
   ]
 }
