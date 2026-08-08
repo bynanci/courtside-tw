@@ -81,10 +81,20 @@ final class OidcSecurityFoundationTest {
     void requiresExplicitOptInForLocalHttpIssuer() {
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new OidcSecurityProperties("http://oidc:8080/default", AUDIENCE, false)
+                () -> new OidcSecurityProperties(
+                        "http://oidc:8080/default",
+                        AUDIENCE,
+                        "http://oidc:8080/keys",
+                        false
+                )
         );
         assertDoesNotThrow(
-                () -> new OidcSecurityProperties("http://oidc:8080/default", AUDIENCE, true)
+                () -> new OidcSecurityProperties(
+                        "http://oidc:8080/default",
+                        AUDIENCE,
+                        "http://oidc:8080/keys",
+                        true
+                )
         );
         assertEquals(
                 "https://issuer.example.test/keys",
@@ -97,7 +107,7 @@ final class OidcSecurityFoundationTest {
         );
         assertThrows(
                 IllegalArgumentException.class,
-                () -> new OidcSecurityProperties(ISSUER, AUDIENCE, false).requireJwkSetUri()
+                () -> new OidcSecurityProperties(ISSUER, AUDIENCE, null, false).requireJwkSetUri()
         );
     }
 
