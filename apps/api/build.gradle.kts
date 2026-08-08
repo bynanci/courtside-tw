@@ -18,6 +18,7 @@ java {
 
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web:4.1.0")
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server:4.1.0")
     implementation("com.networknt:json-schema-validator:1.5.9")
     testImplementation("org.springframework.boot:spring-boot-starter-test:4.1.0")
 }

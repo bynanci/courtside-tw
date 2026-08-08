@@ -1,0 +1,33 @@
+{
+  "evaluation_id": "eval-t015-tests-first-baseline-20260808",
+  "system_id": "courtside-tw-api-identity",
+  "as_of": "2026-08-08T05:26:10Z",
+  "artifact_fingerprint": "git:973df5efb0f8e0b79f7c9889d7c11d7bc705ad33",
+  "environment": "test",
+  "claim": "The T015 acceptance tests were written first and fail because the resource-server dependency and identity implementation are absent.",
+  "threat_refs": [
+    "ASI03 Identity and Privilege Abuse"
+  ],
+  "control_ids": [
+    "GOV-003",
+    "AGT-001",
+    "AGT-002"
+  ],
+  "proof_level": "P2",
+  "method": "GitHub Actions CI #100 Java quality/unit job 93063490094 and Security dependency job 93063490162; no acceptance change or test skip.",
+  "expected": "Java compile fails at the intended missing implementation/dependency boundary before T015 source exists; frontend and contract checks remain unaffected.",
+  "observed": "Java quality/unit failed with missing Spring Security packages and OidcSecurityConfiguration/OidcRoleConverter/OidcRolePolicy symbols; frontend-contract completed successfully. Security dependency resolution reached the same Java test compilation failure. The baseline test also exposed a missing shared RoleCode import, repaired in the next test-only commit.",
+  "result": "PASS",
+  "evidence_refs": [
+    "https://github.com/bynanci/courtside-tw/actions/runs/31241624338",
+    "https://github.com/bynanci/courtside-tw/actions/runs/31241624368",
+    "apps/api/src/test/java/tw/basketball/magazine/identity/OidcSecurityFoundationTest.java"
+  ],
+  "limitations": [
+    "This is a tests-first baseline, not runtime security proof.",
+    "Security image scans were still in progress at observation time.",
+    "The baseline commit did not contain production credentials, tokens, cookies or external IdP access."
+  ],
+  "owner": "codex-agent",
+  "next_review_at": "2026-08-08T06:26:10Z"
+}

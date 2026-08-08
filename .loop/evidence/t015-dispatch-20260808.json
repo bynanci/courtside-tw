@@ -1,0 +1,36 @@
+{
+  "evaluation_id": "dispatch-t015-20260808",
+  "system_id": "courtside-tw-api-identity",
+  "as_of": "2026-08-08T05:20:39Z",
+  "artifact_fingerprint": "git:3dd8d00a7c6b3f38d74a6c611b546fd311720f5d",
+  "environment": "test",
+  "claim": "T015 may begin as a bounded provider-neutral OIDC resource-server foundation.",
+  "threat_refs": [
+    "ASI03 Identity and Privilege Abuse",
+    "LLM02 Sensitive Information Disclosure"
+  ],
+  "control_ids": [
+    "GOV-002",
+    "DAT-003",
+    "AGT-001",
+    "AGT-002"
+  ],
+  "proof_level": "P3",
+  "method": "Authoritative main read-back plus explicit user direction; no production IdP or credential access.",
+  "expected": "T014 checked on main; T015 first unchecked task; T015 scope excludes BFF, audit, DB, secrets and production identity actions.",
+  "observed": "main resolves to 3dd8d00; T014 is checked, T015 is unchecked, identity package is absent, and the repository has only provider-neutral OIDC contracts/stub.",
+  "result": "PASS",
+  "evidence_refs": [
+    "tasks.md:T014/T015",
+    "docs/adr/0002-identity-and-hosting-providers.md",
+    "contracts/openapi.yaml",
+    "apps/api/src/main/resources/db/migration/V001__foundation.sql"
+  ],
+  "limitations": [
+    "No production IdP selected or contacted.",
+    "No token, cookie, private key, password or production data was accessed.",
+    "P3 dispatch does not approve protected merge or release."
+  ],
+  "owner": "human-mark",
+  "next_review_at": "2026-08-08T06:20:39Z"
+}
