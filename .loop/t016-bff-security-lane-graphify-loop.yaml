@@ -1,6 +1,6 @@
 schema_version: mark-graphify-loop/v2
 name: courtside-tw-t016-bff-controlled-security-lane
-objective: "Run T016 as a controlled parallel security lane consuming T015's stable OIDC contract without touching T018, DB, OpenAPI or production identity systems."
+objective: "Run T016 as a controlled parallel security lane consuming T015's stable OIDC contract without touching T017, T018, DB, OpenAPI or production identity systems."
 feedback_updates_next_action: true
 
 scope:
@@ -8,10 +8,13 @@ scope:
     - apps/web/server/auth/
     - apps/web/server/middleware/auth.ts
     - apps/web/tests/integration/auth-session.test.ts
-    - T016 Graphify governance, evidence and ledger artifacts
+    - apps/web/nuxt.config.ts
+    - apps/web/package.json
+    - pnpm-lock.yaml
+    - T016 Graphify governance, evidence, ledger and semantic-memory artifacts
   out:
-    - T018 transactional outbox implementation
-    - T017 audit writer
+    - T017 append-only audit writer
+    - T018 transactional outbox implementation or activation
     - API OIDC role taxonomy or JWT validator changes
     - database migrations and OpenAPI changes
     - production IdP, credentials, tokens, private keys or deployment
@@ -21,21 +24,23 @@ authority:
     - read T015 terminal proof and ADR-0002
     - write local/CI OIDC-stub tests and bounded Nuxt BFF session code
     - run non-destructive security tests and open a draft PR
+    - write append-only evidence, graph delta, ledger and semantic-memory receipts
   requires_approval:
     - change the T015 identity contract
+    - choose or activate a durable production session store
     - merge T016 or mark the checkbox complete
     - contact any production provider or use production secrets
   forbidden:
     - store tokens in browser storage
     - weaken Secure/HttpOnly/SameSite/CSRF/session-rotation controls
-    - touch T018 outbox or database files
+    - touch T017/T018 implementation, database, OpenAPI or provider files
 
 acceptance:
-  - authorization-code/PKCE, state, nonce, redirect and code-verifier validation are explicit.
+  - authorization-code/PKCE, state, nonce, exact redirect and code-verifier handling are explicit.
   - access/refresh tokens remain server-side; browser receives only secure session cookies.
   - session fixation, replay, logout/revocation and rotation are covered.
-  - CSRF is enforced for cookie-authenticated mutations and safe public SSR remains anonymous.
-  - role mapping consumes the T015 canonical role contract and rejects unknown/escalating claims.
+  - CSRF is enforced for cookie-authenticated state-changing requests and safe public SSR remains anonymous.
+  - role mapping consumes the T015 canonical role contract and rejects unknown, missing or escalating claims.
   - local/CI OIDC stub integration tests cover provider outage without blocking published anonymous reading.
   - exact-head frontend/contract/security checks and scope inventory pass before merge.
 
@@ -48,9 +53,13 @@ budgets:
 
 policy:
   human_gates:
-    - T016 threat-model/security review
+    - T016 threat-model and security review
     - T016 exact-head integration/security proof
+    - durable production session-store and IdP activation decision
     - protected merge and checkbox completion
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
   mutation:
     append_only_evidence: true
     require_graph_delta: true
@@ -59,7 +68,7 @@ graph:
   entry_nodes: [x-t015-terminal-main, t-t016-lane-ready]
   terminal_nodes: [s-t016-security-stop]
   current_frontier: [g-t016-security-review]
-  blocked_nodes: []
+  blocked_nodes: [s-t016-security-stop]
   nodes:
     - id: x-t015-terminal-main
       kind: external
@@ -68,7 +77,26 @@ graph:
       owner: github
       status: done
       risk: high
-      confidence: {score: 1.0, basis: "main 05e891d has T015 checked", evidence_refs: [.loop/evidence/t015-post-receipt-main-readback-20260808.json]}
+      budget: {effort_hours: 0, tokens: 500}
+      confidence: {score: 1.0, basis: "authoritative origin/main 63e6ea3 contains T015 checked and the T016 dispatch", evidence_refs: [.loop/evidence/t015-post-receipt-main-readback-20260808.json]}
+      config: {source_type: github_main_readback, freshness: "2026-08-08 main read-back", limitations: "No production identity or provider access."}
+
+    - id: r-t016-contract-readback
+      kind: proof
+      layer: L3
+      label: "T015 issuer/audience/canonical-role contract read-back"
+      owner: security-reviewer
+      status: done
+      risk: high
+      budget: {effort_hours: 0.2, tokens: 1000}
+      confidence: {score: 1.0, basis: "T015 contract and public anonymous-read boundary were read before T016 implementation", evidence_refs: [.loop/evidence/t016-security-lane-boundary-20260808.json]}
+      config:
+        level: P3
+        claim: "T016 consumes the stable T015 issuer/audience and canonical READER/EDITOR/PUBLISHER/ADMIN role contract."
+        method: "Read T015 proof, tasks.md, ADR-0002 and the public-read policy before writing T016 tests."
+        evidence_path: ".loop/evidence/t016-security-lane-boundary-20260808.json"
+        required: true
+        baseline_required: true
 
     - id: t-t016-lane-ready
       kind: trigger
@@ -77,56 +105,89 @@ graph:
       owner: codex-supervisor
       status: done
       risk: critical
-      confidence: {score: 0.98, basis: "T015 stable issuer/audience/role contract is available and T016 scope is separate", evidence_refs: [.loop/evidence/t016-security-lane-dispatch-20260808.json]}
+      budget: {effort_hours: 0.1, tokens: 500}
+      confidence: {score: 0.98, basis: "T015 terminal main read-back exists and the lane is explicitly separated from T017/T018", evidence_refs: [.loop/evidence/t016-security-lane-dispatch-20260808.json]}
       config:
         condition: "T015 terminal main read-back exists; local/CI OIDC stub is the only provider boundary."
-        dedupe: "T016 + main 05e891d + BFF/PKCE/cookie/CSRF scope"
+        inputs_required: [T015 terminal proof, T016 task, ADR-0002, public anonymous-read policy]
+        dedupe: "T016 + main 63e6ea3 + BFF/PKCE/cookie/CSRF scope"
 
     - id: a-t016-security-charter
       kind: action
       layer: L1
       label: "Write T016 threat-model and integration tests first"
-      owner: security-reviewer
-      status: ready
+      owner: codex-agent
+      status: done
       risk: critical
-      confidence: {score: 0.9, basis: "Security acceptance and no-go conditions are recorded before runtime code", evidence_refs: [.loop/evidence/t016-security-lane-boundary-20260808.json]}
+      budget: {effort_hours: 0.5, tokens: 4500}
+      confidence: {score: 1.0, basis: "Tests-first baseline captured the intended missing runtime boundary before implementation", evidence_refs: [.loop/evidence/t016-tests-first-baseline-20260808.json]}
       config:
+        workflow: [read T015 contract, write auth-session tests, run red baseline, record exact failure]
         allowed: [apps/web/tests/integration/auth-session.test.ts, T016 governance artifacts]
-        requires_approval: [runtime cookie/session policy, merge, checkbox]
-        forbidden: [production IdP, secrets, browser token storage, T018/API/DB scope]
+        requires_approval: [runtime cookie/session policy, merge, checkbox, production activation]
+        forbidden: [production IdP, secrets, browser token storage, T017, T018, DB, OpenAPI]
 
-    - id: p-t016-security-review
+    - id: p-t016-tests-first
       kind: proof
-      layer: L2
-      label: "T016 threat-model and security acceptance proof"
-      owner: security-reviewer
-      status: planned
-      risk: critical
-      confidence: {score: 0.7, basis: "Lane is controlled but no implementation proof exists yet", evidence_refs: [.loop/evidence/t016-security-lane-boundary-20260808.json]}
-      config: {level: P3, required: true, method: "Threat-model review plus local/CI OIDC-stub integration security tests"}
+      layer: L1
+      label: "T016 intended missing-boundary baseline"
+      owner: verifier
+      status: done
+      risk: high
+      budget: {effort_hours: 0.2, tokens: 2000}
+      confidence: {score: 1.0, basis: "The first red result was the absent session-service runtime boundary, then the same tests passed after implementation", evidence_refs: [.loop/evidence/t016-tests-first-baseline-20260808.json]}
+      config:
+        level: P2
+        claim: "The tests-first red result is caused by the absent T016 runtime boundary, not by a malformed test harness."
+        method: "Run the auth-session test before and after the bounded runtime implementation."
+        evidence_path: ".loop/evidence/t016-tests-first-baseline-20260808.json"
+        required: true
+        baseline_required: true
 
     - id: id-t016-implementation
       kind: action
       layer: L1
       label: "Implement bounded Nuxt BFF authorization-code/PKCE session"
       owner: codex-agent
-      status: planned
+      status: done
       risk: critical
-      confidence: {score: 0.7, basis: "Implementation is gated by security charter and T015 contract read-back", evidence_refs: [.loop/evidence/t016-security-lane-dispatch-20260808.json]}
+      budget: {effort_hours: 2.5, tokens: 12000}
+      confidence: {score: 0.95, basis: "Implementation commit contains provider-neutral OIDC, session, cookie, CSRF, middleware and local-stub proof within the authorized paths", evidence_refs: [.loop/evidence/t016-implementation-proof-20260808.json]}
       config:
-        allowed: [apps/web/server/auth/, apps/web/server/middleware/auth/, apps/web/tests/integration/auth-session.test.ts]
-        forbidden: [apps/api/, database/, contracts/openapi.yaml, production provider]
+        workflow: [add private OIDC runtime config, add server-side AuthStore/session service, add auth middleware, add local JWT/JWKS/token/revocation stub, run local proof]
+        allowed: [apps/web/server/auth/, apps/web/server/middleware/auth.ts, apps/web/tests/integration/auth-session.test.ts, apps/web/nuxt.config.ts, apps/web/package.json, pnpm-lock.yaml]
+        requires_approval: [T016 threat-model review, exact-head CI/Security, merge, checkbox, durable production store, production IdP]
+        forbidden: [apps/api/, T017 audit, T018 outbox, database/, contracts/openapi.yaml, production provider]
+
+    - id: p-t016-implementation-proof
+      kind: proof
+      layer: L1
+      label: "T016 local implementation, contract and anonymous-read proof"
+      owner: verifier
+      status: done
+      risk: critical
+      budget: {effort_hours: 0.8, tokens: 7000}
+      confidence: {score: 0.9, basis: "Seven auth tests, root verify and production-mode public/protected smoke pass on implementation head fc6e208", evidence_refs: [.loop/evidence/t016-implementation-proof-20260808.json, .loop/evidence/t016-static-scope-20260808.json]}
+      config:
+        level: P3
+        claim: "T016 local security and repository proof passes without exposing bearer tokens or blocking anonymous public SSR."
+        method: "Run exact-head local auth tests, signed local OIDC stub, root verify, production-mode HTTP smoke and changed-file scope review."
+        evidence_path: ".loop/evidence/t016-implementation-proof-20260808.json"
+        required: true
+        baseline_required: true
 
     - id: g-t016-security-review
       kind: gate
       layer: L2
       label: "T016 controlled security review and merge gate"
-      owner: security-reviewer
+      owner: human-security-reviewer
       status: needs_human
       risk: critical
-      confidence: {score: 0.8, basis: "Parallel lane is ready but security review and implementation proof are pending", evidence_refs: [.loop/evidence/t016-security-lane-boundary-20260808.json]}
+      budget: {effort_hours: 1, tokens: 5000}
+      confidence: {score: 0.8, basis: "Local proof is pass-with-follow-up; threat-model, exact-head remote gates and protected merge remain human decisions", evidence_refs: [.loop/evidence/t016-implementation-proof-20260808.json]}
       config:
-        condition: "Threat-model proof, cookie/CSRF/session tests, exact-head checks and scope inventory pass."
+        condition: "Threat-model proof, cookie/CSRF/session tests, exact-head CI/Security and scope inventory pass; durable store and provider activation remain separately approved."
+        approver: "human security reviewer and protected repository workflow"
         required: true
 
     - id: s-t016-security-stop
@@ -134,27 +195,63 @@ graph:
       layer: GLOBAL
       label: "Stop T016 before provider or protected merge actions"
       owner: policy
-      status: planned
+      status: needs_human
       risk: critical
-      confidence: {score: 1.0, basis: "T016 dispatch must not imply auth implementation or production-provider approval", evidence_refs: [.loop/evidence/t016-security-lane-dispatch-20260808.json]}
+      budget: {effort_hours: 0, tokens: 1000}
+      confidence: {score: 1.0, basis: "The dispatch forbids production provider access and protected merge/checkbox actions remain human-gated", evidence_refs: [.loop/evidence/t016-security-lane-dispatch-20260808.json]}
+      config:
+        states:
+          success: "T016 is merged only after human review, exact-head proof and protected workflow approval."
+          no_op: "Equivalent reviewed T016 implementation already exists on authoritative main."
+          blocked: "Provider, durable store, DB, OpenAPI or unrelated task scope is requested."
+          stalled: "Required security or repository proof does not advance within the bounded loop budget."
+          exhausted: "The same failure repeats beyond max_same_failure or evidence does not change."
+          needs_human: "Human threat-model, exact-head CI/Security, protected merge and checkbox review is pending."
 
     - id: m-t016-ledger
       kind: memory
       layer: L1
-      label: "Append-only T016 controlled security ledger"
+      label: "Append-only T016 controlled security ledger and semantic memory"
       owner: codex-supervisor
       status: done
       risk: medium
-      confidence: {score: 0.95, basis: "Lane boundary and next action are recorded before implementation", evidence_refs: [.loop/t016-bff-security-lane-ledger.json]}
+      budget: {effort_hours: 0.2, tokens: 2500}
+      confidence: {score: 0.95, basis: "Baseline, implementation proof, scope receipt and verified semantic memory are recorded before the human gate", evidence_refs: [.loop/t016-bff-security-lane-ledger.json, .loop/memory/t016-bff-oidc-session.json]}
+      config:
+        contract: work-memory/v1
+        memory_role: hybrid
+        receipt_required: true
+        write_failure_state: needs_human
+        path: .loop/memory/t016-bff-oidc-session.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
 
   edges:
-    - {id: e-t015-t016, from: x-t015-terminal-main, to: t-t016-lane-ready, type: enables, required: true, confidence: 1.0, token_capacity: 4000}
-    - {id: e-trigger-charter, from: t-t016-lane-ready, to: a-t016-security-charter, type: enables, required: true, confidence: 0.95, token_capacity: 9000}
-    - {id: e-charter-proof, from: a-t016-security-charter, to: p-t016-security-review, type: verifies, required: true, confidence: 0.8, token_capacity: 7000}
-    - {id: e-proof-implementation, from: p-t016-security-review, to: id-t016-implementation, type: enables, required: true, confidence: 0.8, token_capacity: 14000}
-    - {id: e-implementation-gate, from: id-t016-implementation, to: g-t016-security-review, type: requires_approval, required: true, confidence: 0.8, token_capacity: 7000}
-    - {id: e-stop, from: g-t016-security-review, to: s-t016-security-stop, type: approves, required: true, confidence: 0.4, token_capacity: 4000}
-    - {id: e-memory, from: m-t016-ledger, to: a-t016-security-charter, type: reads, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-t015-contract, from: x-t015-terminal-main, to: r-t016-contract-readback, type: verifies, required: true, confidence: 1.0, token_capacity: 2000}
+    - {id: e-contract-trigger, from: r-t016-contract-readback, to: t-t016-lane-ready, type: enables, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-trigger-charter, from: t-t016-lane-ready, to: a-t016-security-charter, type: enables, required: true, confidence: 0.95, token_capacity: 5000}
+    - {id: e-charter-baseline, from: a-t016-security-charter, to: p-t016-tests-first, type: verifies, required: true, confidence: 0.95, token_capacity: 3500}
+    - {id: e-baseline-implementation, from: p-t016-tests-first, to: id-t016-implementation, type: enables, required: true, confidence: 0.9, token_capacity: 12000}
+    - {id: e-implementation-proof, from: id-t016-implementation, to: p-t016-implementation-proof, type: verifies, required: true, confidence: 0.9, token_capacity: 7000}
+    - {id: e-proof-review, from: p-t016-implementation-proof, to: g-t016-security-review, type: requires_approval, required: true, confidence: 0.8, token_capacity: 5000}
+    - {id: e-review-stop, from: g-t016-security-review, to: s-t016-security-stop, type: approves, required: true, confidence: 0.8, token_capacity: 1000}
+    - {id: e-charter-ledger, from: a-t016-security-charter, to: m-t016-ledger, type: records, required: true, confidence: 0.9, token_capacity: 1500}
+    - {id: e-implementation-ledger, from: id-t016-implementation, to: m-t016-ledger, type: records, required: true, confidence: 0.9, token_capacity: 1500}
+    - {id: e-proof-ledger, from: p-t016-implementation-proof, to: m-t016-ledger, type: records, required: true, confidence: 0.9, token_capacity: 1500}
+    - {id: e-ledger-read, from: m-t016-ledger, to: a-t016-security-charter, type: reads, required: true, confidence: 0.9, token_capacity: 1500}
+    - {id: e-ledger-feedback, from: m-t016-ledger, to: a-t016-security-charter, type: feedback, required: true, confidence: 0.9, token_capacity: 1500}
+
+  loops:
+    - id: loop-t016-bff-l1
+      layer: L1
+      owner: codex-agent
+      trigger_nodes: [t-t016-lane-ready]
+      action_nodes: [a-t016-security-charter, id-t016-implementation]
+      proof_nodes: [p-t016-tests-first, p-t016-implementation-proof]
+      memory_nodes: [m-t016-ledger]
+      stop_nodes: [s-t016-security-stop]
+      budgets: {max_iterations: 5, max_minutes: 90, max_same_failure: 2, max_graph_changes: 10, max_tokens: 30000}
 
 flow:
   source: t-t016-lane-ready
@@ -162,12 +259,32 @@ flow:
   capacity_unit: tokens
   interpretation: planning-proxy
 
+memory_workflow:
+  contract: work-memory/v1
+  control_ledger: .loop/t016-bff-security-lane-ledger.json
+  semantic_memory: .loop/memory/t016-bff-oidc-session.json
+  modes: [recall, capture, update, forget, no_op]
+  retrieval:
+    levels: [index, timeline_relations, details]
+    max_index_results: 10
+    stop_on_sufficient_evidence: true
+  capture:
+    allowed_kinds: [decision, constraint, preference, fact, attempt, task_state, pattern, evidence]
+    requires_downstream_proof: true
+    requires_write_receipt: true
+  lifecycle: [seed, verified, stable, needs_update, disputed, archived]
+  failure_policy:
+    write_pending: needs_human
+    stale_or_disputed: blocked
+    redact_secrets: true
+
 output_required:
   - decision
   - terminal_state
   - graph_summary
   - ready_frontier
   - critical_path
+  - token_flow
   - min_cut
   - proof_coverage
   - blockers_or_gates

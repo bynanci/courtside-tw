@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "memory_id": "wm:project:courtside-tw:t016-bff-oidc-session",
+  "scope": "project",
+  "kind": "task_state",
+  "title": "T016 bounded BFF OIDC session implementation is proof-ready but human-gated",
+  "summary": "The Nuxt BFF T016 slice now has provider-neutral authorization-code/PKCE, state and nonce binding, opaque server-side sessions, Secure/HttpOnly/SameSite cookies, CSRF enforcement, canonical role denial, logout revocation hooks and local OIDC stub proof. It is intentionally not production-activated or merged.",
+  "claims": [
+    {
+      "text": "Tests-first T016 auth-session coverage initially failed only at the absent session-service runtime boundary, then passed after the bounded implementation was added.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The local OIDC stub verifies a signed RS256 JWT through JWKS, checks issuer/audience/nonce/roles, exchanges the authorization code server-side and revokes refresh/access tokens without exposing bearer material to the browser session view.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Published anonymous SSR remains available when auth is unconfigured; protected routes fail closed and provider outage returns a safe authentication error.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The next required action is human threat-model review plus exact-head remote CI/Security and protected merge/checkbox gating; do not activate a production IdP or durable session store in this lane.",
+      "class": "INFERRED",
+      "confidence": "high"
+    }
+  ],
+  "status": "verified",
+  "confidence": "high",
+  "confidence_basis": [
+    ".loop/evidence/t016-tests-first-baseline-20260808.json",
+    ".loop/evidence/t016-implementation-proof-20260808.json",
+    ".loop/evidence/t016-static-scope-20260808.json",
+    "git:fc6e2082376e790926af30d69227553a26fe2e63"
+  ],
+  "volatility": "medium",
+  "as_of": "2026-08-08",
+  "source_refs": [
+    ".loop/t016-bff-security-lane-graphify-loop.yaml",
+    ".loop/t016-bff-security-lane-ledger.json",
+    "apps/web/server/auth/session-service.ts",
+    "apps/web/server/middleware/auth.ts",
+    "apps/web/tests/integration/auth-session.test.ts",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md:T016"
+  ],
+  "entities": [
+    "T016",
+    "Nuxt BFF",
+    "OIDC",
+    "PKCE",
+    "session cookie",
+    "CSRF"
+  ],
+  "relations": {
+    "supports": [],
+    "contradicts": [],
+    "supersedes": [],
+    "blocks": ["T016 protected merge and checkbox reconciliation"],
+    "invalidates": []
+  },
+  "decision": {
+    "context": "T016 must provide optional login/session support without making anonymous Courtside TW reading depend on Web3 or an external identity provider.",
+    "chosen": "Use a provider-neutral BFF authorization-code/PKCE boundary with server-side token storage, opaque cookies, CSRF and explicit local/CI stub parity; fail closed for protected routes while public SSR remains anonymous.",
+    "alternatives": [
+      "Store access or refresh tokens in browser storage.",
+      "Make login a prerequisite for public article reading.",
+      "Contact or configure a production IdP and durable session store in the implementation lane."
+    ],
+    "tradeoffs": [
+      "The local/CI memory store makes the proof deterministic but is deliberately rejected for production activation.",
+      "Explicit revocation and session rotation add server-side state but reduce bearer and fixation risk.",
+      "The provider-neutral port leaves durable store/provider wiring for a separate human-approved gate."
+    ],
+    "invalidation": "If the T015 issuer/audience/role contract, public anonymous-read policy, threat model or session-store decision changes, mark this record needs_update and stop before widening T016."
+  },
+  "next_review_at": "2026-08-15",
+  "sensitivity": "internal",
+  "retention": "until_superseded"
+}

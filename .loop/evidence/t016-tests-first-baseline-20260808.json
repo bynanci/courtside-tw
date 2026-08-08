@@ -1,0 +1,30 @@
+{
+  "evaluation_id": "tests-first-t016-bff-session-20260808",
+  "system_id": "courtside-tw-web-bff-identity",
+  "as_of": "2026-08-08T14:39:27Z",
+  "artifact_fingerprint": "git:ac57f4f10c4c18b9c43d2848ed46371de909c02b",
+  "environment": "local-tests-first",
+  "claim": "T016 tests were written before the BFF runtime boundary and fail at the intended missing-session-service boundary.",
+  "proof_level": "P2",
+  "method": "Run the web auth-session integration test immediately after the tests-first commit and before adding the runtime implementation.",
+  "expected": "The test harness reaches the absent apps/web/server/auth/session-service.ts import and does not silently pass or contact a provider.",
+  "observed": {
+    "command": "node --experimental-strip-types --test tests/integration/auth-session.test.ts",
+    "result": "expected_red_missing_runtime_boundary",
+    "failure": "ERR_MODULE_NOT_FOUND for apps/web/server/auth/session-service.ts",
+    "provider_contacted": false,
+    "production_credentials_used": false
+  },
+  "result": "PASS_WITH_FOLLOW_UP",
+  "evidence_refs": [
+    "apps/web/tests/integration/auth-session.test.ts",
+    "git:ac57f4f10c4c18b9c43d2848ed46371de909c02b",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md:T016"
+  ],
+  "limitations": [
+    "The red baseline proves only the intended missing implementation boundary; it is not a runtime security approval.",
+    "The local memory store is not a production activation or horizontal-session-store decision."
+  ],
+  "owner": "codex-agent",
+  "next_review_at": "2026-08-08T14:39:27Z"
+}
