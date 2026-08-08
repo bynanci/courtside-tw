@@ -48,6 +48,36 @@ final class OidcSecurityFoundationTest {
     }
 
     @Test
+    void rejectsTokenWithoutSubject() {
+        Jwt token = Jwt.withTokenValue("test-only-token")
+                .header("alg", "RS256")
+                .claim("iss", ISSUER)
+                .claim("aud", List.of(AUDIENCE))
+                .issuedAt(Instant.now().minusSeconds(60))
+                .expiresAt(Instant.now().plusSeconds(300))
+                .build();
+
+        assertTrue(OidcSecurityConfiguration.tokenValidator(ISSUER, AUDIENCE)
+                .validate(token)
+                .hasErrors());
+    }
+
+    @Test
+    void rejectsTokenWithoutExpiration() {
+        Jwt token = Jwt.withTokenValue("test-only-token")
+                .header("alg", "RS256")
+                .claim("iss", ISSUER)
+                .claim("sub", "reader-1")
+                .claim("aud", List.of(AUDIENCE))
+                .issuedAt(Instant.now().minusSeconds(60))
+                .build();
+
+        assertTrue(OidcSecurityConfiguration.tokenValidator(ISSUER, AUDIENCE)
+                .validate(token)
+                .hasErrors());
+    }
+
+    @Test
     void requiresExplicitOptInForLocalHttpIssuer() {
         assertThrows(
                 IllegalArgumentException.class,
@@ -55,6 +85,19 @@ final class OidcSecurityFoundationTest {
         );
         assertDoesNotThrow(
                 () -> new OidcSecurityProperties("http://oidc:8080/default", AUDIENCE, true)
+        );
+        assertEquals(
+                "https://issuer.example.test/keys",
+                new OidcSecurityProperties(
+                        ISSUER,
+                        AUDIENCE,
+                        "https://issuer.example.test/keys",
+                        false
+                ).requireJwkSetUri()
+        );
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> new OidcSecurityProperties(ISSUER, AUDIENCE, false).requireJwkSetUri()
         );
     }
 
