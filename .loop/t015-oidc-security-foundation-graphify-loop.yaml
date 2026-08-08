@@ -1,0 +1,327 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-ticket-implementation-t015
+objective: "Produce a provider-neutral Spring Security OIDC resource-server foundation with deny-by-default role policy, then stop at the protected review and merge gate."
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - apps/api/build.gradle.kts
+    - apps/api/src/main/java/tw/basketball/magazine/identity/
+    - apps/api/src/test/java/tw/basketball/magazine/identity/
+    - T015 Graphify governance, evidence and ledger artifacts
+  out:
+    - Nuxt BFF authorization-code/PKCE flow, session cookies and CSRF in T016
+    - audit writer and sanitized audit persistence in T017
+    - database migration or role-assignment repository changes
+    - OpenAPI contract or generated client changes
+    - SIWE, wallet linking, Fan Passport, payment or entitlement gates
+    - production IdP selection, credentials, tokens, deployment or external writes
+
+authority:
+  allowed:
+    - read the reviewed specification, plan, OpenAPI contract, ADRs and authoritative main state
+    - add the bounded Spring Security resource-server dependency, identity source and deterministic tests
+    - run non-destructive static checks and hand Java proof to repository CI/security
+    - open a review pull request
+  requires_approval:
+    - merge T015 and mark T015 checked
+    - change the OpenAPI contract, BFF/session policy, role taxonomy or database schema
+    - execute production identity-provider, credential, deployment or external-provider actions
+  forbidden:
+    - store, inspect or generate production tokens, cookies, private keys, passwords or provider credentials
+    - contact a production IdP or use production data
+    - accept scope/groups claims as editorial roles or infer role hierarchy
+    - weaken issuer, audience, timestamp, canonical-role or deny-by-default checks
+
+acceptance:
+  - Spring Security resource-server/JWT support is available without a production provider binding.
+  - Configured issuer is validated exactly; configured audience is required; exp/nbf timestamp validation remains enabled.
+  - Only a canonical array-valued roles claim with READER, EDITOR, PUBLISHER or ADMIN values becomes ROLE_ authorities; unknown, scalar, prefixed or scope-only claims fail closed.
+  - Public routes are anonymous; reader, editor, publisher and admin route families require their exact role with no implicit role hierarchy or privilege escalation.
+  - Tests cover issuer mismatch, audience mismatch, missing role, expired token and privilege-escalation rejection.
+  - Java 21 unit, Checkstyle, SpotBugs, CodeQL, dependency audit and repository CI/security checks pass on the exact PR head.
+  - T015 is checked only after code review, protected merge and authoritative main read-back pass.
+
+budgets:
+  max_iterations: 6
+  max_minutes: 90
+  max_same_failure: 2
+  max_graph_changes: 12
+  max_tokens: 42000
+
+policy:
+  human_gates:
+    - T015 code review and protected-branch merge
+    - T015 checkbox and current-head main read-back
+    - any production authentication, credential, identity-provider or deployment action
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+graph:
+  entry_nodes: [x-main-readback, g-t015-dispatch]
+  terminal_nodes: [s-t015-terminal]
+  current_frontier: [a-t015-tests-first]
+  blocked_nodes: []
+  nodes:
+    - id: x-main-readback
+      kind: external
+      layer: EXTERNAL
+      label: "Authoritative main read-back before T015"
+      owner: github
+      status: done
+      risk: high
+      confidence:
+        score: 1.0
+        basis: "Remote main is 3dd8d00; T014 is checked and T015 is the first unchecked identity/security foundation task."
+        evidence_refs: [.loop/evidence/t015-dispatch-20260808.json]
+      budget: {effort_hours: 0.2, tokens: 1800}
+      config:
+        source_type: github-main
+        freshness: 2026-08-08T05:20:39Z
+        limitations: "No production identity provider, credentials, tokens or runtime data were accessed."
+
+    - id: g-t015-dispatch
+      kind: gate
+      layer: L3
+      label: "Explicit authorization to dispatch bounded T015"
+      owner: human-mark
+      status: done
+      risk: high
+      confidence:
+        score: 1.0
+        basis: "The user explicitly requested merging the prior PR and entering T015 OIDC security foundation."
+        evidence_refs: [.loop/evidence/t015-dispatch-20260808.json]
+      budget: {effort_hours: 0.1, tokens: 1200}
+      config:
+        condition: "User direction authorizes only the bounded T015 resource-server and role-policy scope."
+        approver: human-mark
+        required: true
+
+    - id: t-t015-ready
+      kind: trigger
+      layer: L1
+      label: "T015 OIDC security foundation is ready after main reconciliation"
+      owner: codex-supervisor
+      status: ready
+      risk: high
+      confidence:
+        score: 0.98
+        basis: "T014 is complete on main; build, ADR, OpenAPI and database role contracts are available; no identity package exists yet."
+        evidence_refs: [.loop/evidence/t015-dispatch-20260808.json]
+      budget: {effort_hours: 0.1, tokens: 1200}
+      config:
+        condition: "T015 is the authorized ready frontier after T014 main read-back."
+        inputs_required: [tasks.md, plan.md, docs/adr/0002-identity-and-hosting-providers.md, contracts/openapi.yaml, V001__foundation.sql, T014 main read-back]
+        dedupe: "T015 plus main SHA plus OIDC issuer/audience/roles boundary"
+
+    - id: a-t015-tests-first
+      kind: action
+      layer: L1
+      label: "Write deterministic T015 security acceptance tests first"
+      owner: codex-agent
+      status: ready
+      risk: high
+      confidence:
+        score: 0.9
+        basis: "Acceptance is fixed from tasks.md, OpenAPI x-required-roles and the provider-neutral identity ADR before implementation."
+        evidence_refs: [.loop/evidence/t015-dispatch-20260808.json]
+      budget: {effort_hours: 0.8, tokens: 8000}
+      config:
+        workflow: [read T015 contract, write issuer/audience/time/role denial tests, run baseline, record exact failure]
+        allowed: [T015 Java tests, T015 graph/ledger/evidence]
+        requires_approval: [merge T015, mark T015 checked, any production identity-provider action]
+        forbidden: [weaken acceptance, add production credentials, implement T016 BFF or T017 audit]
+
+    - id: p-t015-baseline
+      kind: proof
+      layer: L1
+      label: "T015 tests-first baseline and intended failure proof"
+      owner: verifier
+      status: planned
+      risk: high
+      confidence:
+        score: 0.75
+        basis: "The workspace has no Java 21/Gradle toolchain; exact-head CI is the authoritative baseline proof."
+        evidence_refs: []
+      budget: {effort_hours: 0.3, tokens: 3500}
+      config:
+        level: P2
+        claim: "The acceptance tests fail only because the T015 identity implementation is absent, without changing acceptance."
+        method: "Java 21 Gradle test or exact-head CI output; classify any environment/toolchain gap separately."
+        evidence_path: .loop/evidence/t015-tests-first-baseline-20260808.json
+        required: true
+        baseline_required: true
+
+    - id: a-t015-implementation
+      kind: action
+      layer: L1
+      label: "Implement bounded OIDC decoder, canonical role converter and deny-by-default route policy"
+      owner: codex-agent
+      status: planned
+      risk: high
+      confidence:
+        score: 0.82
+        basis: "Spring Security's documented JwtDecoder, issuer/timestamp validators and custom audience validator match the repository's provider-neutral contract."
+        evidence_refs: []
+      budget: {effort_hours: 2.5, tokens: 18000}
+      config:
+        workflow: [add pinned starter, implement properties/validator/converter/policy/filter-chain, run static checks, hand exact source to CI]
+        allowed: [apps/api/build.gradle.kts, apps/api/src/main/java/tw/basketball/magazine/identity/, apps/api/src/test/java/tw/basketball/magazine/identity/, T015 graph/ledger/evidence]
+        requires_approval: [merge T015, mark T015 checked, any auth-policy widening or production provider action]
+        forbidden: [T016 BFF cookies/PKCE/CSRF, T017 audit writes, DB/OpenAPI changes, scope/groups fallback, secrets]
+
+    - id: p-t015-static
+      kind: proof
+      layer: L1
+      label: "T015 bounded diff and source hygiene proof"
+      owner: verifier
+      status: planned
+      risk: medium
+      confidence:
+        score: 0.85
+        basis: "The planned diff is limited to one dependency, identity source/tests and T015 evidence."
+        evidence_refs: []
+      budget: {effort_hours: 0.2, tokens: 3000}
+      config:
+        level: P1
+        claim: "T015 contains no production credentials, broad unrelated modules or contract drift."
+        method: "Changed-file inventory, diff check, secret/scope scan and exact dependency review."
+        evidence_path: .loop/evidence/t015-static-proof-20260808.json
+        required: true
+        baseline_required: true
+
+    - id: p-t015-ci
+      kind: proof
+      layer: L1
+      label: "T015 Java, CI and security behavioral proof"
+      owner: verifier
+      status: planned
+      risk: high
+      confidence:
+        score: 0.7
+        basis: "The exact PR head must prove compiler compatibility, role denial behavior and repository security gates under Java 21."
+        evidence_refs: []
+      budget: {effort_hours: 1.0, tokens: 9000}
+      config:
+        level: P2
+        claim: "Issuer, audience, timestamp, canonical-role and exact-route authorization acceptance passes on the exact PR head with Java quality and security scans."
+        method: "GitHub CI Java quality/unit, frontend/contract and dependency integration jobs plus Security CodeQL/dependency/Trivy jobs."
+        evidence_path: .loop/evidence/t015-ci-security.json
+        required: true
+        baseline_required: true
+
+    - id: g-t015-review-merge
+      kind: gate
+      layer: L2
+      label: "T015 review, CI/security and protected merge gate"
+      owner: human-mark
+      status: planned
+      risk: high
+      confidence:
+        score: 0.5
+        basis: "Protected action is intentionally pending; agent review cannot self-approve the authentication/security change."
+        evidence_refs: []
+      budget: {effort_hours: 0.8, tokens: 5000}
+      config:
+        condition: "T015 acceptance, exact-head P2 CI/security, source scope, review findings and main read-back all pass."
+        approver: human-mark
+        required: true
+
+    - id: m-t015-ledger
+      kind: memory
+      layer: L1
+      label: "T015 append-only Graphify control ledger"
+      owner: codex-supervisor
+      status: planned
+      risk: medium
+      confidence:
+        score: 0.85
+        basis: "The ledger will retain dispatch, baseline failures, repair deltas and the protected gate without replacing proof."
+        evidence_refs: []
+      budget: {effort_hours: 0.2, tokens: 2500}
+      config:
+        path: .loop/t015-oidc-security-foundation-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        memory_role: graph_ledger
+        receipt_required: false
+
+    - id: s-t015-terminal
+      kind: stop
+      layer: GLOBAL
+      label: "T015 named terminal policy"
+      owner: policy
+      status: needs_human
+      risk: high
+      confidence:
+        score: 0.5
+        basis: "Implementation and proof are not yet complete; protected review/merge/checkbox/read-back remains a named human gate."
+        evidence_refs: []
+      budget: {effort_hours: 0.1, tokens: 600}
+      config:
+        states:
+          success: "T015 source/tests, exact-head CI/security, review, protected merge, checkbox and main read-back all pass."
+          blocked: "Required Java/CI proof, authority or dependency is unavailable, or a named security finding blocks progress."
+          needs_human: "Protected review/merge, checkbox/read-back or a policy decision is pending."
+          stalled: "The same failure or no-evidence-delta reaches the configured limit."
+          exhausted: "A configured graph budget is reached."
+          no_op: "Main already contains an equivalent reviewed T015 identity foundation."
+
+  edges:
+    - {id: e-main-dispatch, from: x-main-readback, to: g-t015-dispatch, type: enables, required: true, confidence: 0.95, token_capacity: 4000}
+    - {id: e-dispatch-trigger, from: g-t015-dispatch, to: t-t015-ready, type: approves, required: true, confidence: 1.0, token_capacity: 4000}
+    - {id: e-trigger-tests, from: t-t015-ready, to: a-t015-tests-first, type: enables, required: true, confidence: 1.0, token_capacity: 8000}
+    - {id: e-tests-baseline, from: a-t015-tests-first, to: p-t015-baseline, type: verifies, required: true, confidence: 0.9, token_capacity: 5000}
+    - {id: e-baseline-implementation, from: p-t015-baseline, to: a-t015-implementation, type: feedback, required: true, confidence: 0.85, token_capacity: 18000}
+    - {id: e-implementation-static, from: a-t015-implementation, to: p-t015-static, type: verifies, required: true, confidence: 0.9, token_capacity: 4500}
+    - {id: e-implementation-ci, from: a-t015-implementation, to: p-t015-ci, type: verifies, required: true, confidence: 0.75, token_capacity: 10000}
+    - {id: e-static-gate, from: p-t015-static, to: g-t015-review-merge, type: requires_approval, required: true, confidence: 0.9, token_capacity: 6000}
+    - {id: e-ci-gate, from: p-t015-ci, to: g-t015-review-merge, type: requires_approval, required: true, confidence: 0.75, token_capacity: 9000}
+    - {id: e-gate-stop, from: g-t015-review-merge, to: s-t015-terminal, type: approves, required: true, confidence: 0.5, token_capacity: 5000}
+    - {id: e-tests-ledger, from: a-t015-tests-first, to: m-t015-ledger, type: records, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-implementation-ledger, from: a-t015-implementation, to: m-t015-ledger, type: records, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-ledger-read-tests, from: m-t015-ledger, to: a-t015-tests-first, type: reads, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-ledger-read-implementation, from: m-t015-ledger, to: a-t015-implementation, type: reads, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-baseline-ledger, from: p-t015-baseline, to: m-t015-ledger, type: records, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-ci-ledger, from: p-t015-ci, to: m-t015-ledger, type: records, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-ci-feedback, from: p-t015-ci, to: a-t015-implementation, type: feedback, required: true, confidence: 0.7, token_capacity: 5000}
+
+  loops:
+    - id: l1-t015-execution
+      layer: L1
+      owner: codex-agent
+      trigger_nodes: [t-t015-ready]
+      action_nodes: [a-t015-tests-first, a-t015-implementation]
+      proof_nodes: [p-t015-baseline, p-t015-static, p-t015-ci]
+      memory_nodes: [m-t015-ledger]
+      stop_nodes: [s-t015-terminal]
+      budgets:
+        max_iterations: 6
+        max_minutes: 90
+        max_same_failure: 2
+        max_graph_changes: 12
+        max_tokens: 42000
+
+flow:
+  source: t-t015-ready
+  sink: s-t015-terminal
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - next_action
