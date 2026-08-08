@@ -1,0 +1,313 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-t017-append-only-audit-writer
+objective: "Implement and verify a bounded append-only audit writer that records only sanitized actor/target metadata against the T013 database boundary."
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - apps/api/src/main/java/tw/basketball/magazine/audit/
+    - apps/api/src/test/java/tw/basketball/magazine/audit/
+    - T017 Graphify governance, evidence, ledger and semantic-memory artifacts
+  out:
+    - T016 Nuxt BFF implementation or merge state
+    - T018 outbox implementation or activation
+    - database migrations, permissions or schema changes
+    - OpenAPI, media storage/processing and observability implementation
+    - provider credentials, production data, deployment or production activation
+
+authority:
+  allowed:
+    - read T013 main proof, T017 spec/plan and T016 draft metadata as untrusted context
+    - write the isolated audit package and PostgreSQL integration tests
+    - run local static checks and GitHub CI/Security verification
+    - create and maintain a draft PR
+  requires_approval:
+    - alter audit_event schema or database permissions
+    - merge T017, mark the T017 checkbox complete or activate production wiring
+    - add domain event integrations or retain new sensitive data classes
+  forbidden:
+    - record tokens, cookies, session material, signed URLs, storage keys or article bodies
+    - change T016, T018, media, OpenAPI or deployment files
+    - weaken acceptance, database append-only permissions or sanitizer rules to obtain green CI
+
+acceptance:
+  - Tests-first CI baseline fails only on the missing T017 runtime symbols.
+  - AuditEventDraft is immutable and bounded; actor input is the shared ActorContext only.
+  - Metadata is recursively bounded and redacts credentials, signed URLs, storage keys and article content before serialization.
+  - JdbcAuditWriter exposes INSERT-only append behavior and returns the database-generated audit event ID.
+  - PostgreSQL integration proof shows two events append without overwrite and no prohibited value is persisted.
+  - Spring wiring is conditional on JDBC and does not contact a provider or enable production activation.
+  - Exact-head CI/Security, scope inventory and independent review are required before merge.
+
+budgets:
+  max_iterations: 5
+  max_minutes: 90
+  max_same_failure: 2
+  max_no_evidence_delta: 2
+  max_graph_changes: 12
+  max_tokens: 32000
+
+policy:
+  human_gates:
+    - T017 security/privacy review of redaction and append-only boundary
+    - exact-head Java/Testcontainers/CodeQL/Security proof
+    - protected merge and T017 checkbox reconciliation
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+memory_workflow:
+  contract: work-memory/v1
+  control_ledger: "Append graph delta, proof receipts, failure signatures and token usage every iteration."
+  semantic_memory: "Capture only durable T017 boundary, proof and next-frontier deltas."
+  modes: [recall, capture, update, forget, no_op]
+  retrieval:
+    levels: [index, timeline_relations, details]
+    max_index_results: 10
+    stop_on_sufficient_evidence: true
+  capture:
+    allowed_kinds: [decision, constraint, fact, attempt, task_state, evidence]
+    requires_downstream_proof: true
+    requires_write_receipt: true
+  lifecycle: [seed, verified, stable, needs_update, disputed, archived]
+  failure_policy:
+    write_pending: blocked
+    stale_or_disputed: needs_human
+    redact_secrets: true
+
+graph:
+  entry_nodes: [x-t013-main]
+  terminal_nodes: [s-t017-stop]
+  current_frontier: [g-t017-review]
+  blocked_nodes: []
+  loops:
+    - id: l1-t017-execution
+      layer: L1
+      owner: codex-agent
+      trigger_nodes: [t-t017-ready]
+      action_nodes: [a-t017-tests-first, a-t017-implementation]
+      proof_nodes: [p-t017-baseline, p-t017-runtime-proof]
+      memory_nodes: [m-t017-memory]
+      stop_nodes: [s-t017-stop]
+      budgets:
+        max_iterations: 5
+        max_minutes: 90
+        max_same_failure: 2
+        max_graph_changes: 12
+        max_tokens: 32000
+  nodes:
+    - id: x-t013-main
+      kind: external
+      layer: EXTERNAL
+      label: "T013 database foundation on main"
+      owner: github
+      status: done
+      risk: high
+      confidence: {score: 1.0, basis: "Main read-back and T013 runtime proof confirm audit_event INSERT-only application grants", evidence_refs: [.loop/evidence/t013-db-runtime-proof-20260808.json, .loop/evidence/t017-lane-boundary-20260808.json]}
+      budget:
+        effort_hours: 0.1
+        tokens: 1000
+      config:
+        source_type: "merged main and migration proof"
+        freshness: "RECENT"
+        limitations: "Does not prove T017 writer behavior"
+
+    - id: d-t017-direction
+      kind: decision
+      layer: L3
+      label: "Keep T017 inside the established database boundary"
+      owner: human-mark
+      status: done
+      risk: high
+      confidence: {score: 1.0, basis: "The task request and T013 boundary define a bounded writer with no schema or permission changes", evidence_refs: [.loop/evidence/t017-lane-boundary-20260808.json]}
+      budget:
+        effort_hours: 0.1
+        tokens: 1000
+      config:
+        question: "Which bounded T017 implementation direction is authorized?"
+        options: ["implement-only-in-existing-audit-package", "change-schema-or-permissions"]
+
+    - id: t-t017-ready
+      kind: trigger
+      layer: L1
+      label: "T017 isolated audit lane ready"
+      owner: codex-supervisor
+      status: done
+      risk: critical
+      confidence: {score: 0.98, basis: "T017 is parallel after T013 and its forbidden scope is explicit", evidence_refs: [.loop/evidence/t017-lane-boundary-20260808.json]}
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        condition: "T013 terminal main is available and T017 paths are absent from the implementation tree."
+        inputs_required: ["T013 migration proof", "T017 task/spec/plan", "current PR/main read-back"]
+        dedupe: "T017 + main 63e6ea3 + audit writer/sanitizer scope"
+
+    - id: a-t017-tests-first
+      kind: action
+      layer: L1
+      label: "Write T017 sanitizer and PostgreSQL integration tests first"
+      owner: codex-agent
+      status: done
+      risk: critical
+      confidence: {score: 1.0, basis: "CI #171 compileTestJava reproduced the intended missing runtime symbols", evidence_refs: [.loop/evidence/t017-tests-first-baseline-20260808.json]}
+      budget:
+        effort_hours: 0.5
+        tokens: 5000
+      config:
+        workflow: ["write negative and append-only tests", "run exact-head CI", "record failure signature"]
+        allowed: ["apps/api/src/test/java/tw/basketball/magazine/audit/", ".loop/evidence/t017-tests-first-baseline-20260808.json"]
+        requires_approval: ["merge", "checkbox completion"]
+        forbidden: ["weaken tests", "store secrets", "touch schema or unrelated modules"]
+
+    - id: p-t017-baseline
+      kind: proof
+      layer: L1
+      label: "T017 tests-first missing-boundary proof"
+      owner: github
+      status: done
+      risk: critical
+      confidence: {score: 1.0, basis: "CI #171 Java logs identify only the missing T017 symbols at compileTestJava", evidence_refs: [.loop/evidence/t017-tests-first-baseline-20260808.json]}
+      budget:
+        effort_hours: 0.2
+        tokens: 2500
+      config:
+        level: P2
+        claim: "The baseline is intentionally red only because T017 runtime symbols are absent."
+        method: "CI #171 Java quality job and job log read-back"
+        evidence_path: .loop/evidence/t017-tests-first-baseline-20260808.json
+        required: true
+        baseline_required: true
+
+    - id: a-t017-implementation
+      kind: action
+      layer: L1
+      label: "Implement bounded INSERT-only sanitized audit writer"
+      owner: codex-agent
+      status: done
+      risk: critical
+      confidence: {score: 0.98, basis: "Implementation is isolated to the audit package and exact-head CI/Security proof passed", evidence_refs: [.loop/evidence/t017-lane-boundary-20260808.json, .loop/evidence/t017-ci-security-final-20260808.json]}
+      budget:
+        effort_hours: 2.0
+        tokens: 14000
+      config:
+        workflow: ["implement immutable draft", "sanitize trusted-code metadata", "insert through JDBC", "wire conditionally", "run proof"]
+        allowed: ["apps/api/src/main/java/tw/basketball/magazine/audit/"]
+        requires_approval: ["schema/permission change", "merge", "production activation"]
+        forbidden: ["update/delete audit rows", "record tokens or article content", "touch T016/T018/media/observability"]
+
+    - id: p-t017-runtime-proof
+      kind: proof
+      layer: L1
+      label: "T017 runtime, privacy and append-only proof"
+      owner: github
+      status: done
+      risk: critical
+      confidence: {score: 0.99, basis: "Exact final head CI #174 and Security #174 passed Java quality, Testcontainers, CodeQL, dependency and image scanning", evidence_refs: [.loop/evidence/t017-ci-security-final-20260808.json]}
+      budget:
+        effort_hours: 1.0
+        tokens: 7000
+      config:
+        level: P2
+        claim: "Audit writes append sanitized metadata, preserve prior rows and never persist prohibited values."
+        method: "Java unit tests, PostgreSQL/Testcontainers integration, Checkstyle, SpotBugs, CodeQL and Security workflows"
+        evidence_path: .loop/evidence/t017-ci-security-final-20260808.json
+        verified_head: "330ddf2f01e9019be1bae45a066c418efaae69d6"
+        required: true
+        baseline_required: true
+
+    - id: g-t017-review
+      kind: gate
+      layer: L2
+      label: "T017 security/privacy review and protected merge gate"
+      owner: security-reviewer
+      status: needs_human
+      risk: critical
+      confidence: {score: 0.9, basis: "Exact-head proof passed; independent human security/privacy review and protected merge remain pending", evidence_refs: [.loop/evidence/t017-ci-security-final-20260808.json, .loop/evidence/t017-lane-boundary-20260808.json]}
+      budget:
+        effort_hours: 0.5
+        tokens: 3000
+      config:
+        condition: "Exact-head runtime proof, scope guard, sanitizer review and rollback/read-back evidence pass."
+        approver: human-mark
+        required: true
+
+    - id: s-t017-stop
+      kind: stop
+      layer: GLOBAL
+      label: "Stop T017 before schema, production or protected merge actions"
+      owner: policy
+      status: planned
+      risk: critical
+      confidence: {score: 1.0, basis: "T017 cannot authorize schema changes, production activation or self-approval", evidence_refs: [.loop/evidence/t017-lane-boundary-20260808.json]}
+      budget:
+        effort_hours: 0.0
+        tokens: 0
+      config:
+        states:
+          success: "Required runtime proof and human gate pass."
+          no_op: "No authoritative T017 change requires action."
+          blocked: "Named CI, Testcontainers or memory receipt dependency is unavailable."
+          needs_human: "Security/privacy review or protected merge is pending."
+          stalled: "No new evidence delta after bounded attempts."
+          exhausted: "Configured loop budget is reached."
+
+    - id: m-t017-memory
+      kind: memory
+      layer: L1
+      label: "Append-only T017 graph ledger and semantic memory"
+      owner: codex-supervisor
+      status: done
+      risk: medium
+      confidence: {score: 0.98, basis: "Boundary, baseline, implementation proof and exact-head security receipts are recorded", evidence_refs: [.loop/t017-audit-writer-ledger.json, .loop/memory/t017-audit-writer.json, .loop/evidence/t017-ci-security-final-20260808.json]}
+      budget:
+        effort_hours: 0.1
+        tokens: 1500
+      config:
+        path: .loop/t017-audit-writer-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: work-memory/v1
+        memory_role: hybrid
+        receipt_required: true
+        write_failure_state: blocked
+
+  edges:
+    - {id: e-t013-direction, from: x-t013-main, to: d-t017-direction, type: enables, required: true, confidence: 1.0, token_capacity: 4000}
+    - {id: e-direction-ready, from: d-t017-direction, to: t-t017-ready, type: enables, required: true, confidence: 1.0, token_capacity: 4000}
+    - {id: e-trigger-tests, from: t-t017-ready, to: a-t017-tests-first, type: enables, required: true, confidence: 0.98, token_capacity: 8000}
+    - {id: e-tests-baseline, from: a-t017-tests-first, to: p-t017-baseline, type: verifies, required: true, confidence: 1.0, token_capacity: 7000}
+    - {id: e-baseline-implementation, from: p-t017-baseline, to: a-t017-implementation, type: enables, required: true, confidence: 1.0, token_capacity: 14000}
+    - {id: e-implementation-proof, from: a-t017-implementation, to: p-t017-runtime-proof, type: verifies, required: true, confidence: 0.85, token_capacity: 14000}
+    - {id: e-proof-review, from: p-t017-runtime-proof, to: g-t017-review, type: requires_approval, required: true, confidence: 0.8, token_capacity: 7000}
+    - {id: e-review-stop, from: g-t017-review, to: s-t017-stop, type: approves, required: true, confidence: 0.4, token_capacity: 4000}
+    - {id: e-memory-tests, from: m-t017-memory, to: a-t017-tests-first, type: reads, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-memory-implementation, from: m-t017-memory, to: a-t017-implementation, type: reads, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-tests-memory, from: a-t017-tests-first, to: m-t017-memory, type: records, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-implementation-memory, from: a-t017-implementation, to: m-t017-memory, type: records, required: true, confidence: 0.8, token_capacity: 4000}
+    - {id: e-proof-memory, from: p-t017-runtime-proof, to: m-t017-memory, type: records, required: true, confidence: 0.8, token_capacity: 4000}
+    - {id: e-memory-feedback, from: m-t017-memory, to: a-t017-implementation, type: feedback, required: true, confidence: 0.8, token_capacity: 3000}
+
+flow:
+  source: x-t013-main
+  sink: s-t017-stop
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - min_cut
+  - token_flow
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - memory_receipt
+  - next_action

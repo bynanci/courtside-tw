@@ -1,0 +1,85 @@
+{
+  "evaluation_id": "t017-ci-security-final-20260808",
+  "system_id": "courtside-tw-api-audit",
+  "as_of": "2026-08-08T15:52:40Z",
+  "artifact_fingerprint": "git:330ddf2f01e9019be1bae45a066c418efaae69d6",
+  "environment": "github-actions",
+  "claim": "The exact final T017 head passes Java quality/Testcontainers and the repository Security workflow without schema or permission changes.",
+  "threat_refs": [
+    "ASI03 Identity and Privilege Abuse",
+    "LLM02 Sensitive Information Disclosure",
+    "LLM10 Improper Output Handling"
+  ],
+  "control_ids": [
+    "DAT-007",
+    "APP-002",
+    "OPS-001",
+    "GOV-003"
+  ],
+  "proof_level": "P2",
+  "method": "Read exact-head GitHub Actions workflow runs and job conclusions for PR #54 after the sanitizer-key, SpotBugs and evidence-receipt fixes.",
+  "expected": "CI and Security run #174 pass; Java compile, Checkstyle, SpotBugs, unit/Testcontainers tests, CodeQL, dependency audit and Trivy lanes are green.",
+  "observed": {
+    "pull_request": "https://github.com/bynanci/courtside-tw/pull/54",
+    "head_sha": "330ddf2f01e9019be1bae45a066c418efaae69d6",
+    "base_sha": "63e6ea3cad59c98e992e2f02f7acb739ac28cf67",
+    "ci_run": {
+      "run_number": 174,
+      "run_id": 31265432775,
+      "url": "https://github.com/bynanci/courtside-tw/actions/runs/31265432775",
+      "conclusion": "success",
+      "jobs": {
+        "Docker Compose dependency health": "success",
+        "Frontend and contract verification": "success",
+        "Java quality and unit verification": "success"
+      }
+    },
+    "security_run": {
+      "run_number": 174,
+      "run_id": 31265432779,
+      "url": "https://github.com/bynanci/courtside-tw/actions/runs/31265432779",
+      "conclusion": "success",
+      "jobs": {
+        "CodeQL (java-kotlin)": "success",
+        "CodeQL (javascript-typescript)": "success",
+        "Dependency audit and reports": "success",
+        "Trivy (filesystem)": "success",
+        "Trivy (image postgres)": "success",
+        "Trivy (image oidc)": "success",
+        "Trivy (image s3)": "success"
+      }
+    },
+    "previous_pass": {
+      "head_sha": "d3e47456f57f33c42cc3787935e4bce5c5787d67",
+      "ci_run": "https://github.com/bynanci/courtside-tw/actions/runs/31265116113",
+      "security_run": "https://github.com/bynanci/courtside-tw/actions/runs/31265116112",
+      "result": "PASS",
+      "scope": "Implementation and governance artifacts before final receipt fingerprint update."
+    },
+    "prior_attempt": {
+      "head_sha": "9f85daaee9014896c2e93634683244ec2e3b8d8d",
+      "ci_run": "https://github.com/bynanci/courtside-tw/actions/runs/31264994773",
+      "security_run": "https://github.com/bynanci/courtside-tw/actions/runs/31264994763",
+      "failure_signature": [
+        "article_body key normalization missed underscore removal",
+        "SpotBugs EI exposed AuditEventDraft.metadata internal representation"
+      ],
+      "remediation": "Canonicalize sensitive keys without punctuation and return a fresh unmodifiable metadata snapshot."
+    }
+  },
+  "result": "PASS",
+  "limitations": [
+    "Local workspace lacks Gradle and javac; Java proof is from exact-head CI.",
+    "T013 schema and grants were consumed as an existing boundary; no new permission proof or migration change is claimed.",
+    "Independent human security/privacy review, protected merge and production activation remain gated."
+  ],
+  "evidence_refs": [
+    "https://github.com/bynanci/courtside-tw/pull/54",
+    "https://github.com/bynanci/courtside-tw/actions/runs/31265116113",
+    "https://github.com/bynanci/courtside-tw/actions/runs/31265116112",
+    ".loop/evidence/t017-lane-boundary-20260808.json",
+    ".loop/evidence/t017-tests-first-baseline-20260808.json"
+  ],
+  "owner": "codex-agent",
+  "next_review_at": "2026-08-08T16:30:00Z"
+}
