@@ -1,21 +1,16 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t013",
-  "graph_version": 4,
+  "graph_version": 5,
   "run_id": "courtside-tw-t013-database-foundation-20260808",
-  "status": "blocked",
-  "iteration": 3,
+  "status": "success",
+  "iteration": 4,
   "started_at": "2026-08-08T00:00:00Z",
-  "updated_at": "2026-08-08T00:00:00Z",
-  "current_frontier": [
-    "p-t013-db-integration",
-    "g-t013-review-merge"
-  ],
-  "blocked_nodes": [
-    "p-t013-db-integration"
-  ],
-  "terminal_state": "blocked",
-  "next_action": "Run scripts/test/verify-database-foundation.sh in CI or a local environment with Docker Compose; do not substitute H2 or run against a shared persistent database.",
+  "updated_at": "2026-08-08T02:24:05Z",
+  "current_frontier": ["s-t013-terminal"],
+  "blocked_nodes": [],
+  "terminal_state": "success",
+  "next_action": "T013 is complete on main; reconcile the next unchecked frontier before dispatching a new bounded task.",
   "events": [
     {
       "event_id": "evt-t013-001-dispatched",
@@ -125,6 +120,71 @@
       "proof_receipts": [],
       "failure_signature": "LOCAL_POSTGRES_RUNTIME_UNAVAILABLE",
       "decision": "Hand the exact integration test to CI; no substitute database and no persistent/shared DB execution."
+    },
+    {
+      "event_id": "evt-t013-004-ci-merge-completion",
+      "at": "2026-08-08T02:24:05Z",
+      "actor": "codex-supervisor",
+      "type": "t013_completed",
+      "base_graph_version": 4,
+      "new_graph_version": 5,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-t013-db-integration/status",
+            "before": "blocked",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/g-t013-review-merge/status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/s-t013-terminal/status",
+            "before": "blocked",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": ["p-t013-db-integration", "g-t013-review-merge"],
+            "after": ["s-t013-terminal"]
+          },
+          {
+            "op": "replace",
+            "path": "graph.blocked_nodes",
+            "before": ["p-t013-db-integration"],
+            "after": []
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t013-db-runtime-proof-20260808.json",
+        ".loop/evidence/t013-ci-security-20260808.json",
+        ".loop/evidence/t013-main-readback-20260808.json",
+        ".loop/evidence/t013-completion-receipt.json",
+        "PR #40"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "PostgreSQL 18 forward and negative privilege verification",
+          "level": "P2",
+          "result": "pass",
+          "details": "CI #84 executed the exact isolated Compose script; app audit UPDATE/DELETE/TRUNCATE were denied."
+        },
+        {
+          "proof": "protected merge and current-head main read-back",
+          "level": "P3",
+          "result": "pass",
+          "details": "PR #40 merged with expected head ea5f7ce; main read-back is 7737099 and T013 is checked in the completion slice."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Mark T013 complete after independent P2/P3 proof; keep T014 and later tickets separately gated."
     }
   ]
 }

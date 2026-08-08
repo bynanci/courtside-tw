@@ -1,0 +1,43 @@
+{
+  "schema_version": "courtside-tw-evidence/v1",
+  "task": "T013",
+  "kind": "ci-security",
+  "recorded_at": "2026-08-08T02:24:05Z",
+  "repository": "bynanci/courtside-tw",
+  "head_sha": "ea5f7ce92b2bbd2e6f2069a5b023bb1ca9456d09",
+  "pull_request": 40,
+  "runs": {
+    "ci": {
+      "run_number": 84,
+      "run_id": 31234806839,
+      "conclusion": "success",
+      "jobs": [
+        "Frontend and contract verification",
+        "Java quality and unit verification",
+        "Docker Compose dependency health"
+      ]
+    },
+    "security": {
+      "run_number": 84,
+      "run_id": 31234806845,
+      "conclusion": "success",
+      "jobs": [
+        "Resolve Compose images",
+        "CodeQL (java-kotlin)",
+        "CodeQL (javascript-typescript)",
+        "Dependency audit and reports",
+        "Trivy (filesystem)",
+        "Trivy (image postgres)",
+        "Trivy (image s3)",
+        "Trivy (image oidc)"
+      ]
+    }
+  },
+  "review": {
+    "review_threads": 0,
+    "review_submissions": 0,
+    "blocking_findings": 0,
+    "result": "PASS"
+  },
+  "result": "PASS"
+}

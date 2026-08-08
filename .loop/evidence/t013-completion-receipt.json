@@ -1,0 +1,67 @@
+{
+  "schema_version": "courtside-tw-loop-evidence/v1",
+  "evidence_id": "t013-completion-20260808",
+  "generated_at": "2026-08-08T02:24:05Z",
+  "actor": "codex-supervisor",
+  "subject": "T013 completion after implementation merge, PostgreSQL proof and main read-back",
+  "repository": "bynanci/courtside-tw",
+  "ticket": "T013",
+  "authorization": {
+    "claim_status": "CONFIRMED",
+    "approved_by": "Mark",
+    "source": "current user direction to continue T013 and prior merge authorization",
+    "approval_scope": "Merge the reviewed T013 implementation, check T013 after CI/Security and main read-back, and do not dispatch a later task in this completion slice."
+  },
+  "canonical_source": {
+    "pull_request": 40,
+    "url": "https://github.com/bynanci/courtside-tw/pull/40",
+    "implementation_head": "ea5f7ce92b2bbd2e6f2069a5b023bb1ca9456d09",
+    "merge_commit": "7737099bbe4cafd788a9c8702018d5e838ac17d7",
+    "implementation_paths": [
+      ".github/workflows/ci.yml",
+      "apps/api/src/main/resources/db/migration/V001__foundation.sql",
+      "scripts/test/verify-database-foundation.sh"
+    ]
+  },
+  "proof": [
+    {
+      "claim": "PostgreSQL 18 forward and negative privilege proof",
+      "result": "PASS",
+      "evidence_ref": ".loop/evidence/t013-db-runtime-proof-20260808.json"
+    },
+    {
+      "claim": "CI/Security and code review",
+      "result": "PASS",
+      "evidence_ref": ".loop/evidence/t013-ci-security-20260808.json"
+    },
+    {
+      "claim": "Implementation merge and current-head main read-back",
+      "result": "PASS",
+      "evidence_ref": ".loop/evidence/t013-main-readback-20260808.json"
+    },
+    {
+      "claim": "T013 task checkbox is checked in this separate completion slice",
+      "result": "PASS",
+      "path": "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+    }
+  ],
+  "scope_guard": {
+    "runtime_implementation_changed": false,
+    "database_migration_changed_in_completion_slice": false,
+    "generated_types_or_clients_changed": false,
+    "providers_or_credentials_changed": false,
+    "production_database_executed": false,
+    "later_ticket_dispatch": false
+  },
+  "completion": {
+    "checkbox_path": "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    "t013_checked": true,
+    "t014_checked": false,
+    "next_frontier": ["T014", "T015", "T017", "T019", "T021"],
+    "t018_note": "T018 remains a later worker implementation after the foundation proof; no worker code is included here."
+  },
+  "decision": "T013_COMPLETE",
+  "result": "pass",
+  "confidence": 0.99,
+  "next_action": "Perform the next authoritative ticket reconciliation; do not infer or implement T014/T015/T017/T019/T021 from this completion receipt without a new bounded dispatch."
+}

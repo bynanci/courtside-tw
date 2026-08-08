@@ -63,8 +63,8 @@ policy:
 graph:
   entry_nodes: [x-main-readback, t-t013-ready]
   terminal_nodes: [s-t013-terminal]
-  current_frontier: [p-t013-db-integration, g-t013-review-merge]
-  blocked_nodes: [p-t013-db-integration]
+  current_frontier: [s-t013-terminal]
+  blocked_nodes: []
   nodes:
     - id: x-main-readback
       kind: external
@@ -126,8 +126,8 @@ graph:
       risk: critical
       confidence:
         score: 0.9
-        basis: "Migration, permission boundary, negative verification script and CI wiring are implemented; PostgreSQL execution awaits CI because Docker/psql are absent locally."
-        evidence_refs: [.loop/evidence/t013-static-proof-20260808.json, .loop/evidence/t013-db-runtime-blocker-20260808.json]
+        basis: "Migration, permission boundary, negative verification script and CI wiring are implemented; CI #84 supplied the PostgreSQL execution proof while the local environment remained container-free."
+        evidence_refs: [.loop/evidence/t013-static-proof-20260808.json, .loop/evidence/t013-db-runtime-proof-20260808.json]
       budget: {effort_hours: 3.0, tokens: 22000}
       config:
         workflow: [read T013 contract, implement forward SQL, add negative PostgreSQL checks, run static verification, hand off CI]
@@ -160,12 +160,12 @@ graph:
       layer: L1
       label: "PostgreSQL 18 forward and negative security verification"
       owner: verifier
-      status: blocked
+      status: done
       risk: critical
       confidence:
-        score: 0.65
-        basis: "The exact reproducible script is ready, but the local environment has neither Docker Compose nor psql; CI is the first runnable PostgreSQL proof."
-        evidence_refs: [.loop/evidence/t013-db-runtime-blocker-20260808.json]
+        score: 0.99
+        basis: "CI #84 ran the exact script on the pinned PostgreSQL 18 Compose image and passed all forward, constraint and application-audit privilege assertions."
+        evidence_refs: [.loop/evidence/t013-db-runtime-proof-20260808.json, .loop/evidence/t013-ci-security-20260808.json]
       budget: {effort_hours: 0.8, tokens: 7000}
       config:
         level: P2
@@ -180,12 +180,12 @@ graph:
       layer: L2
       label: "T013 review, CI/security and protected merge gate"
       owner: human-mark
-      status: needs_human
+      status: done
       risk: critical
       confidence:
-        score: 0.5
-        basis: "Implementation is ready for review; merge, task checkbox and authoritative main read-back are intentionally not inferred."
-        evidence_refs: [.loop/evidence/t013-static-proof-20260808.json]
+        score: 0.99
+        basis: "PR #40 passed CI/Security, had no review threads, merged with expected head protection, and main read-back confirmed V001."
+        evidence_refs: [.loop/evidence/t013-ci-security-20260808.json, .loop/evidence/t013-main-readback-20260808.json, "PR #40"]
       budget: {effort_hours: 0.7, tokens: 4000}
       config:
         condition: "CI/security, PostgreSQL proof, code review, merge and current-head main read-back all pass."
@@ -201,8 +201,8 @@ graph:
       risk: medium
       confidence:
         score: 0.95
-        basis: "The graph and ledger record the bounded implementation, proof levels and current local-runtime blocker without claiming CI success."
-        evidence_refs: [.loop/t013-database-foundation-ledger.json]
+        basis: "The graph and ledger record the bounded implementation, CI proof, merge/read-back and unchanged next-task frontier."
+        evidence_refs: [.loop/t013-database-foundation-ledger.json, .loop/evidence/t013-completion-receipt.json]
       budget: {effort_hours: 0.2, tokens: 1800}
       config:
         path: .loop/t013-database-foundation-ledger.json
@@ -217,12 +217,12 @@ graph:
       layer: GLOBAL
       label: "T013 named terminal policy"
       owner: policy
-      status: blocked
+      status: done
       risk: critical
       confidence:
-        score: 0.6
-        basis: "Local static proof is complete, but PostgreSQL CI proof and protected merge/read-back remain open."
-        evidence_refs: [.loop/evidence/t013-db-runtime-blocker-20260808.json]
+        score: 0.99
+        basis: "T013 implementation, PostgreSQL proof, CI/Security, review, merge and current-head main read-back all passed; the checkbox is checked in the completion slice."
+        evidence_refs: [.loop/evidence/t013-completion-receipt.json, .loop/evidence/t013-main-readback-20260808.json]
       budget: {effort_hours: 0.1, tokens: 500}
       config:
         states:

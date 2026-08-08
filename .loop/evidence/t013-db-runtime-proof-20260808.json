@@ -1,0 +1,44 @@
+{
+  "schema_version": "courtside-tw-evidence/v1",
+  "task": "T013",
+  "kind": "postgresql-runtime-proof",
+  "recorded_at": "2026-08-08T02:24:05Z",
+  "status": "pass",
+  "runner": {
+    "workflow": "CI",
+    "run_number": 84,
+    "job": "Docker Compose dependency health",
+    "job_id": 93045239446,
+    "image": "courtside-tw/postgres:18.4-alpine3.24-gosu-go1.25.12",
+    "project_scope": "isolated generated Compose project with temporary volume"
+  },
+  "command": "scripts/test/verify-database-foundation.sh",
+  "forward_proof": [
+    "isolated postgres became healthy",
+    "V001 applied",
+    "pgcrypto extension present",
+    "native UUIDv7 default returned version 7",
+    "seven foundation tables present",
+    "audit_event owner is courtside_audit_owner",
+    "valid identity/media/rights/outbox/audit rows accepted"
+  ],
+  "negative_proof": [
+    "duplicate OIDC issuer/subject rejected",
+    "duplicate active role assignment rejected",
+    "invalid media MIME rejected",
+    "invalid rights channel rejected",
+    "invalid rights validity window rejected",
+    "duplicate media variant rejected",
+    "duplicate outbox idempotency key rejected",
+    "non-object audit metadata rejected",
+    "courtside_app UPDATE audit_event rejected",
+    "courtside_app DELETE audit_event rejected",
+    "courtside_app TRUNCATE audit_event rejected",
+    "append-only audit rows retained"
+  ],
+  "result": "PASS",
+  "limitations": [
+    "This proves the migration and grant boundary on the pinned local/CI PostgreSQL image; it is not production database execution.",
+    "Application login membership provisioning remains outside V001 and is a later deployment/identity gate."
+  ]
+}
