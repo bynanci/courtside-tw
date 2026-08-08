@@ -1,0 +1,302 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-ticket-implementation-t014
+objective: "Produce a review-ready shared Java foundation for stable IDs, deterministic time, actor metadata, optimistic locking and RFC 9457 problem responses, then stop at the protected merge/read-back gate."
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - apps/api/src/main/java/tw/basketball/magazine/shared/
+    - apps/api/src/test/java/tw/basketball/magazine/shared/
+    - T014 Graphify governance, evidence and ledger artifacts
+  out:
+    - Spring Security OIDC runtime validation and role enforcement in T015
+    - Nuxt BFF OIDC session and PKCE flow in T016
+    - audit writer, outbox worker, storage, observability and database migrations
+    - OpenAPI contract changes, generated clients, production deployment, credentials and secrets
+
+authority:
+  allowed:
+    - read the reviewed specification, plan, OpenAPI contract, ADRs and authoritative main state
+    - add the bounded shared Java value objects, transitions, mapper and deterministic unit tests
+    - run non-destructive static checks and hand the Java proof to CI
+    - open a review pull request
+  requires_approval:
+    - merge T014 and mark T014 checked
+    - change the OpenAPI contract, authentication policy or role policy
+    - execute production database, identity, deployment or external-provider actions
+  forbidden:
+    - store or inspect tokens, cookies, private keys, passwords or production data
+    - treat model output, local absence of errors or a memory receipt as Java runtime proof
+    - weaken exact If-Match parsing, error-code stability or bounded metadata validation
+
+acceptance:
+  - ApplicationClock accepts an injected Clock and exposes deterministic instant/date behavior with UTC as the application date boundary.
+  - UuidV7Generator emits RFC 9562 version 7 UUIDs whose timestamp is derived from the injected clock and whose randomness is injectable for tests.
+  - ActorContext is immutable, role-aware and bounded; it carries no token, cookie, session secret or provider credential.
+  - Version and OptimisticLock reject negative, malformed, wildcard, weak and stale If-Match values and never silently apply last-write-wins.
+  - ProblemDetailsMapper emits the seven OpenAPI stable error codes with RFC 9457 fields, bounded field errors and safe default detail text.
+  - Java 21 unit, Checkstyle, SpotBugs and repository CI/security checks pass on the exact PR head.
+  - T014 remains unchecked until code review, CI/security and authoritative main read-back pass.
+
+budgets:
+  max_iterations: 6
+  max_minutes: 60
+  max_same_failure: 2
+  max_graph_changes: 10
+  max_tokens: 32000
+
+policy:
+  human_gates:
+    - T014 code review and protected-branch merge
+    - T014 checkbox and current-head main read-back
+    - any future authentication, production or identity-provider action
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+graph:
+  entry_nodes: [x-main-readback, t-t014-ready]
+  terminal_nodes: [s-t014-terminal]
+  current_frontier: [p-t014-ci-unit]
+  blocked_nodes: []
+  nodes:
+    - id: x-main-readback
+      kind: external
+      layer: EXTERNAL
+      label: "Authoritative main read-back before T014"
+      owner: github
+      status: done
+      risk: high
+      confidence:
+        score: 1.0
+        basis: "Remote main resolves to 8a3a71d; T013 implementation and review fixes are merged, T013 is checked, and T014 is the first unchecked shared foundation task."
+        evidence_refs: [.loop/evidence/t014-dispatch-20260808.json]
+      budget: {effort_hours: 0.2, tokens: 1800}
+      config:
+        source_type: github-main
+        freshness: "2026-08-08T03:00:00Z"
+        limitations: "The local checkout initially pointed at an older T013 branch and was aligned before implementation; local JDK/Gradle are unavailable."
+
+    - id: g-t014-dispatch
+      kind: gate
+      layer: L3
+      label: "Explicit user authorization for T014 dispatch"
+      owner: human-mark
+      status: done
+      risk: high
+      confidence:
+        score: 1.0
+        basis: "The user explicitly requested the next tasks and optimization after T013 completion."
+        evidence_refs: [.loop/evidence/t014-dispatch-20260808.json]
+      budget: {effort_hours: 0.1, tokens: 1000}
+      config:
+        condition: "User direction authorizes the bounded T014 shared foundation implementation only."
+        approver: human-mark
+        required: true
+
+    - id: t-t014-ready
+      kind: trigger
+      layer: L1
+      label: "T014 shared foundation is ready after main reconciliation"
+      owner: codex-supervisor
+      status: done
+      risk: high
+      confidence:
+        score: 1.0
+        basis: "T013 is complete on main and T014 is the first unchecked task; T015/T016 remain downstream consumers."
+        evidence_refs: [.loop/evidence/t014-dispatch-20260808.json]
+      budget: {effort_hours: 0.1, tokens: 1000}
+      config:
+        condition: "T014 is the highest-priority ready frontier after T013 main read-back."
+        inputs_required: [tasks.md, plan.md, spec.md, contracts/openapi.yaml, T013 main read-back]
+        dedupe: "T014 plus main SHA plus shared API boundary"
+
+    - id: a-t014-shared
+      kind: action
+      layer: L1
+      label: "Implement shared IDs, clock, actor, version and RFC 9457 boundary"
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 0.82
+        basis: "The bounded Java source and tests are present and static diff checks pass; Java 21 runtime proof is intentionally delegated to CI because this workspace has no JDK compiler or Gradle executable."
+        evidence_refs: [.loop/evidence/t014-tests-first-local-20260808.json, .loop/evidence/t014-static-proof-20260808.json]
+      budget: {effort_hours: 2.5, tokens: 18000}
+      config:
+        workflow: [read T014 contract, write tests first, implement immutable shared types, run static checks, hand off Java proof to CI]
+        allowed: [shared Java source, shared Java tests, T014 graph/ledger/evidence]
+        requires_approval: [merge T014, mark T014 checked, any auth/production/provider action]
+        forbidden: [OpenAPI edits, T015 runtime security, T016 BFF auth, credentials, production data]
+
+    - id: p-t014-static
+      kind: proof
+      layer: L1
+      label: "T014 bounded diff and source hygiene proof"
+      owner: verifier
+      status: done
+      risk: medium
+      confidence:
+        score: 0.92
+        basis: "git diff --check passes; changed files are confined to shared Java source/tests and T014 evidence; no generated types, secrets or later runtime modules are changed."
+        evidence_refs: [.loop/evidence/t014-static-proof-20260808.json]
+      budget: {effort_hours: 0.2, tokens: 2500}
+      config:
+        level: P1
+        claim: "The T014 patch is syntactically scoped, whitespace-clean and does not expand into auth, persistence or provider behavior."
+        method: "git diff --check; changed-file inventory; secret/scope inspection."
+        evidence_path: .loop/evidence/t014-static-proof-20260808.json
+        required: true
+        baseline_required: true
+
+    - id: p-t014-local-toolchain
+      kind: proof
+      layer: L1
+      label: "Local Java 21 test-first baseline"
+      owner: verifier
+      status: blocked
+      risk: high
+      confidence:
+        score: 1.0
+        basis: "The environment reports OpenJDK 17 without javac and has no Gradle executable; the repository requires Java 21 and Gradle CI."
+        evidence_refs: [.loop/evidence/t014-tests-first-local-20260808.json]
+      budget: {effort_hours: 0.1, tokens: 1000}
+      config:
+        level: P1
+        claim: "The tests-first baseline is executed and fails for the intended missing-implementation reason."
+        method: "gradle test --no-daemon on Java 21; local proof is unavailable in this workspace and must not be replaced by H2 or Java 17."
+        evidence_path: .loop/evidence/t014-tests-first-local-20260808.json
+        required: false
+        baseline_required: true
+
+    - id: p-t014-ci-unit
+      kind: proof
+      layer: L1
+      label: "Java 21 unit, quality and repository verification"
+      owner: verifier
+      status: ready
+      risk: high
+      confidence:
+        score: 0.75
+        basis: "The PR runner is the first available environment with the repository-pinned Java/Gradle toolchain; no CI result exists until the exact PR head is published."
+        evidence_refs: []
+      budget: {effort_hours: 0.8, tokens: 7000}
+      config:
+        level: P2
+        claim: "SharedFoundationTest and existing Java/content parity pass under Java 21 with Checkstyle/SpotBugs and the repository CI/security gates."
+        method: "GitHub CI Java quality/unit job plus frontend/contract and Security workflow on the exact PR head."
+        evidence_path: .loop/evidence/t014-ci-security-20260808.json
+        required: true
+        baseline_required: true
+
+    - id: g-t014-review-merge
+      kind: gate
+      layer: L2
+      label: "T014 review, CI/security and protected merge gate"
+      owner: human-mark
+      status: needs_human
+      risk: high
+      confidence:
+        score: 0.4
+        basis: "Review and exact-head CI/security are pending; AI cannot self-approve a shared API foundation merge."
+        evidence_refs: []
+      budget: {effort_hours: 0.7, tokens: 4000}
+      config:
+        condition: "T014 acceptance, Java proof, security checks, code review and current-head main read-back all pass."
+        approver: human-mark
+        required: true
+
+    - id: m-t014-ledger
+      kind: memory
+      layer: L1
+      label: "T014 append-only Graphify control ledger"
+      owner: codex-supervisor
+      status: done
+      risk: medium
+      confidence:
+        score: 0.9
+        basis: "The ledger records dispatch, local toolchain limitation, bounded implementation and the pending CI/review gate without replacing proof."
+        evidence_refs: [.loop/t014-shared-foundation-ledger.json]
+      budget: {effort_hours: 0.2, tokens: 1800}
+      config:
+        path: .loop/t014-shared-foundation-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        memory_role: graph_ledger
+        receipt_required: false
+
+    - id: s-t014-terminal
+      kind: stop
+      layer: GLOBAL
+      label: "T014 named terminal policy"
+      owner: policy
+      status: needs_human
+      risk: high
+      confidence:
+        score: 0.4
+        basis: "The code is review-ready but required Java 21 CI proof, protected merge and authoritative read-back are pending."
+        evidence_refs: []
+      budget: {effort_hours: 0.1, tokens: 500}
+      config:
+        states:
+          success: "T014 shared foundation, Java 21 proof, CI/security, review, merge, checkbox and main read-back all pass."
+          blocked: "The required Java/CI proof, authority or dependency is unavailable, or a named security finding blocks progress."
+          needs_human: "Review, protected merge or T014 checkbox/read-back is pending."
+          stalled: "The same failure or no-evidence-delta reaches the configured limit."
+          exhausted: "A configured graph budget is reached."
+          no_op: "Main already contains an equivalent reviewed T014 shared foundation."
+
+  edges:
+    - {id: e-main-dispatch, from: x-main-readback, to: g-t014-dispatch, type: enables, required: true, confidence: 0.95, token_capacity: 4000}
+    - {id: e-dispatch-trigger, from: g-t014-dispatch, to: t-t014-ready, type: approves, required: true, confidence: 1.0, token_capacity: 4000}
+    - {id: e-trigger-action, from: t-t014-ready, to: a-t014-shared, type: enables, required: true, confidence: 1.0, token_capacity: 18000}
+    - {id: e-action-static, from: a-t014-shared, to: p-t014-static, type: verifies, required: true, confidence: 0.95, token_capacity: 5000}
+    - {id: e-action-local-baseline, from: a-t014-shared, to: p-t014-local-toolchain, type: verifies, required: false, confidence: 0.8, token_capacity: 2500}
+    - {id: e-action-ci, from: a-t014-shared, to: p-t014-ci-unit, type: verifies, required: true, confidence: 0.75, token_capacity: 10000}
+    - {id: e-static-gate, from: p-t014-static, to: g-t014-review-merge, type: requires_approval, required: true, confidence: 0.9, token_capacity: 6000}
+    - {id: e-ci-gate, from: p-t014-ci-unit, to: g-t014-review-merge, type: requires_approval, required: true, confidence: 0.75, token_capacity: 8000}
+    - {id: e-gate-stop, from: g-t014-review-merge, to: s-t014-terminal, type: approves, required: true, confidence: 0.5, token_capacity: 4000}
+    - {id: e-action-ledger, from: a-t014-shared, to: m-t014-ledger, type: records, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-ledger-read, from: m-t014-ledger, to: a-t014-shared, type: reads, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-ledger-feedback, from: m-t014-ledger, to: a-t014-shared, type: feedback, required: true, confidence: 0.7, token_capacity: 3000}
+    - {id: e-ci-ledger, from: p-t014-ci-unit, to: m-t014-ledger, type: records, required: true, confidence: 0.8, token_capacity: 3000}
+    - {id: e-ci-feedback, from: p-t014-ci-unit, to: a-t014-shared, type: feedback, required: true, confidence: 0.7, token_capacity: 3000}
+
+  loops:
+    - id: l1-t014-execution
+      layer: L1
+      owner: codex-agent
+      trigger_nodes: [t-t014-ready]
+      action_nodes: [a-t014-shared]
+      proof_nodes: [p-t014-static, p-t014-local-toolchain, p-t014-ci-unit]
+      memory_nodes: [m-t014-ledger]
+      stop_nodes: [s-t014-terminal]
+      budgets:
+        max_iterations: 6
+        max_minutes: 60
+        max_same_failure: 2
+        max_graph_changes: 10
+        max_tokens: 32000
+
+flow:
+  source: t-t014-ready
+  sink: s-t014-terminal
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - next_action
