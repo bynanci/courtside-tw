@@ -63,9 +63,9 @@ policy:
 
 graph:
   entry_nodes: [x-t015-terminal-main, t-t018-ready]
-  terminal_nodes: [s-t018-proof-gate]
-  current_frontier: [g-t018-review-merge]
-  blocked_nodes: [s-t018-proof-gate]
+  terminal_nodes: [x-t018-main-readback]
+  current_frontier: [x-t018-main-readback]
+  blocked_nodes: []
   nodes:
     - id: x-t015-terminal-main
       kind: external
@@ -134,7 +134,7 @@ graph:
       owner: verifier
       status: pass
       risk: high
-      confidence: {score: 1.0, basis: "CI #142 and Security #142 passed on exact implementation head a70cb9d; scope and review-thread checks are clean", evidence_refs: [.loop/evidence/t018-tests-first-charter-20260808.json]}
+      confidence: {score: 1.0, basis: "CI #151 and Security #151 passed on exact review head 0e1fb06; scope and review-thread checks are clean", evidence_refs: [.loop/evidence/t018-completion-reconciliation-20260808.json]}
       config: {level: P2, required: true, method: "Java quality, Testcontainers, CI/Security and scope inventory on exact head"}
 
     - id: g-t018-review-merge
@@ -142,19 +142,28 @@ graph:
       layer: L2
       label: "T018 review, protected merge and checkbox gate"
       owner: human-mark
-      status: ready
+      status: done
       risk: critical
-      confidence: {score: 0.9, basis: "implementation and automated proof pass; protected merge and T018 checkbox remain human-gated", evidence_refs: [.loop/evidence/t018-dispatch-20260808.json]}
+      confidence: {score: 1.0, basis: "PR #49 was reviewed at exact head, protected-merged at 61265f5, and T018 completion reconciliation is recorded", evidence_refs: [.loop/evidence/t018-completion-reconciliation-20260808.json]}
       config: {condition: "Implementation, crash/idempotency proof, exact-head CI/Security and scope review all pass", required: true}
 
     - id: s-t018-proof-gate
       kind: stop
       layer: GLOBAL
-      label: "Stop before T018 merge/checkbox"
+      label: "T018 proof gate closed after protected merge and checkbox reconciliation"
       owner: policy
-      status: blocked
+      status: done
       risk: critical
-      confidence: {score: 1.0, basis: "policy stop remains active until human review, protected merge and checkbox approval", evidence_refs: [.loop/evidence/t018-dispatch-20260808.json]}
+      confidence: {score: 1.0, basis: "PR #49 merged and T018 checkbox reconciliation is recorded after authoritative main read-back", evidence_refs: [.loop/evidence/t018-completion-reconciliation-20260808.json]}
+
+    - id: x-t018-main-readback
+      kind: external
+      layer: EXTERNAL
+      label: "T018 merged main read-back"
+      owner: github
+      status: done
+      risk: high
+      confidence: {score: 1.0, basis: "main 61265f5 contains the T018 implementation; completion reconciliation records the checked task state", evidence_refs: [.loop/evidence/t018-completion-reconciliation-20260808.json]}
 
     - id: m-t018-ledger
       kind: memory
@@ -172,14 +181,15 @@ graph:
     - {id: e-proof-implementation, from: p-t018-tests-first, to: a-t018-implementation, type: enables, required: true, confidence: 0.8, token_capacity: 16000}
     - {id: e-implementation-ci, from: a-t018-implementation, to: p-t018-ci-security, type: verifies, required: true, confidence: 0.8, token_capacity: 9000}
     - {id: e-ci-gate, from: p-t018-ci-security, to: g-t018-review-merge, type: requires_approval, required: true, confidence: 0.75, token_capacity: 9000}
-    - {id: e-gate-stop, from: g-t018-review-merge, to: s-t018-proof-gate, type: approves, required: true, confidence: 0.4, token_capacity: 5000}
+    - {id: e-gate-stop, from: g-t018-review-merge, to: s-t018-proof-gate, type: approves, required: true, confidence: 1.0, token_capacity: 5000}
+    - {id: e-merge-readback, from: s-t018-proof-gate, to: x-t018-main-readback, type: verifies, required: true, confidence: 1.0, token_capacity: 5000}
     - {id: e-tests-ledger, from: a-t018-tests-first, to: m-t018-ledger, type: records, required: true, confidence: 0.9, token_capacity: 3000}
     - {id: e-implementation-ledger, from: a-t018-implementation, to: m-t018-ledger, type: records, required: true, confidence: 0.9, token_capacity: 3000}
     - {id: e-ledger-read, from: m-t018-ledger, to: a-t018-tests-first, type: reads, required: true, confidence: 0.9, token_capacity: 3000}
 
 flow:
   source: t-t018-ready
-  sink: s-t018-proof-gate
+  sink: x-t018-main-readback
   capacity_unit: tokens
   interpretation: planning-proxy
 
