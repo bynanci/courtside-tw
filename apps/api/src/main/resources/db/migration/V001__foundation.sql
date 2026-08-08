@@ -78,7 +78,10 @@ CREATE TABLE media_asset (
     CONSTRAINT media_asset_checksum_sha256_ck CHECK (checksum_sha256 ~ '^[0-9a-fA-F]{64}$'),
     CONSTRAINT media_asset_mime_type_ck CHECK (mime_type IN ('image/avif', 'image/jpeg', 'image/png', 'image/webp')),
     CONSTRAINT media_asset_byte_size_ck CHECK (byte_size > 0 AND byte_size <= 20971520),
-    CONSTRAINT media_asset_dimensions_ck CHECK ((width IS NULL AND height IS NULL) OR (width > 0 AND height > 0)),
+    CONSTRAINT media_asset_dimensions_ck CHECK (
+        (width IS NULL AND height IS NULL)
+        OR (width IS NOT NULL AND height IS NOT NULL AND width > 0 AND height > 0)
+    ),
     CONSTRAINT media_asset_alt_text_ck CHECK (alt_text IS NULL OR length(alt_text) <= 1000),
     CONSTRAINT media_asset_processing_state_ck CHECK (processing_state IN ('PENDING', 'PROCESSING', 'READY', 'FAILED', 'REVOKED')),
     CONSTRAINT media_asset_ready_alt_text_ck CHECK (processing_state <> 'READY' OR (alt_text IS NOT NULL AND btrim(alt_text) <> '')),
