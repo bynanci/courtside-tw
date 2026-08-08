@@ -1,0 +1,54 @@
+{
+  "schema_version": "courtside-tw-evidence/v1",
+  "evidence_id": "t014-ci-security-20260808",
+  "recorded_at": "2026-08-08T03:48:57Z",
+  "actor": "verifier",
+  "repository": "bynanci/courtside-tw",
+  "task": "T014",
+  "kind": "ci-security",
+  "result": "PASS",
+  "verified_head_sha": "8093bfe9bf07ca8a58d7a2375aeffc5c7312a0a9",
+  "source_scope": "T014 shared Java source/tests plus Graphify evidence; no OpenAPI, generated client, auth runtime or production files.",
+  "runs": [
+    {
+      "workflow": "CI",
+      "run_number": 92,
+      "run_id": 31237861464,
+      "url": "https://github.com/bynanci/courtside-tw/actions/runs/31237861464",
+      "conclusion": "success",
+      "jobs": {
+        "frontend_and_contract": 93053650912,
+        "java_quality_and_unit": 93053650941,
+        "docker_compose_dependency_health": 93053650945
+      }
+    },
+    {
+      "workflow": "Security",
+      "run_number": 92,
+      "run_id": 31237861461,
+      "url": "https://github.com/bynanci/courtside-tw/actions/runs/31237861461",
+      "conclusion": "success",
+      "jobs": {
+        "dependency_audit": 93053650963,
+        "codeql_java_kotlin": 93053651015,
+        "codeql_javascript_typescript": 93053651024,
+        "trivy_filesystem": 93053651034,
+        "resolve_compose_images": 93053651044,
+        "trivy_image_postgres": 93053674703,
+        "trivy_image_oidc": 93053674726,
+        "trivy_image_s3": 93053674728
+      }
+    }
+  ],
+  "review_feedback": {
+    "p2_findings_repaired": 2,
+    "threads_outdated_and_resolved": 2,
+    "reviewed_commit": "3b4492fd2232d5f11612a3234fc4a3989c12b1b6",
+    "repair_commit": "8c9cc06"
+  },
+  "limitations": [
+    "Java 21/Gradle execution remains unavailable locally; the PASS is from the repository runner.",
+    "The next PR commit is evidence/graph metadata only; its exact head must complete the automatic CI/Security rerun before merge."
+  ],
+  "next_action": "Confirm the metadata-only final PR head is green, then stop for human protected-merge approval and main read-back."
+}

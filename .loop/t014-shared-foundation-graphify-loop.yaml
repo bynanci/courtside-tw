@@ -60,7 +60,7 @@ policy:
 graph:
   entry_nodes: [x-main-readback, t-t014-ready]
   terminal_nodes: [s-t014-terminal]
-  current_frontier: [a-t014-shared]
+  current_frontier: [g-t014-review-merge]
   blocked_nodes: []
   nodes:
     - id: x-main-readback
@@ -119,12 +119,12 @@ graph:
       layer: L1
       label: "Implement shared IDs, clock, actor, version and RFC 9457 boundary"
       owner: codex-agent
-      status: running
+      status: done
       risk: high
       confidence:
-        score: 0.75
-        basis: "The bounded Java source and tests are present; the serializability CI failure and two P2 review findings were repaired without expanding beyond T014, and the new exact-head proof is still pending."
-        evidence_refs: [.loop/evidence/t014-tests-first-local-20260808.json, .loop/evidence/t014-static-proof-20260808.json, .loop/evidence/t014-codeql-failure-20260808.json, .loop/evidence/t014-review-feedback-20260808.json]
+        score: 0.95
+        basis: "The bounded Java source and tests, including the serializability and two P2 boundary repairs, pass the exact code-head Java/CI/Security proof; final PR metadata-only rerun remains a merge-readiness check."
+        evidence_refs: [.loop/evidence/t014-tests-first-local-20260808.json, .loop/evidence/t014-static-proof-20260808.json, .loop/evidence/t014-codeql-failure-20260808.json, .loop/evidence/t014-review-feedback-20260808.json, .loop/evidence/t014-ci-security-20260808.json]
       budget: {effort_hours: 2.5, tokens: 18000}
       config:
         workflow: [read T014 contract, write tests first, implement immutable shared types, run static checks, hand off Java proof to CI]
@@ -157,7 +157,7 @@ graph:
       layer: L1
       label: "Local Java 21 test-first baseline"
       owner: verifier
-      status: blocked
+      status: done
       risk: high
       confidence:
         score: 1.0
@@ -180,9 +180,9 @@ graph:
       status: blocked
       risk: high
       confidence:
-        score: 0.68
-        basis: "The first exact-head Java 21 compile failed on serializability and review found two P2 boundary issues; both repairs are present, but Java/CI/Security proof must be rerun on the new head."
-        evidence_refs: [.loop/evidence/t014-codeql-failure-20260808.json, .loop/evidence/t014-review-feedback-20260808.json]
+        score: 0.98
+        basis: "CI/Security run #92 passed on exact code head 8093bfe; Java quality/unit, CodeQL Java, dependency audit, Compose health and all Trivy jobs are green. The following commit changes only graph/evidence metadata and is awaiting its automatic rerun."
+        evidence_refs: [.loop/evidence/t014-codeql-failure-20260808.json, .loop/evidence/t014-review-feedback-20260808.json, .loop/evidence/t014-ci-security-20260808.json]
       budget: {effort_hours: 0.8, tokens: 7000}
       config:
         level: P2
@@ -200,9 +200,9 @@ graph:
       status: needs_human
       risk: high
       confidence:
-        score: 0.4
-        basis: "Review and exact-head CI/security are pending; AI cannot self-approve a shared API foundation merge."
-        evidence_refs: []
+        score: 0.75
+        basis: "Exact code-head CI/Security passed and the two P2 review threads are outdated and resolved; protected human merge approval and current-head main read-back remain required."
+        evidence_refs: [.loop/evidence/t014-ci-security-20260808.json, .loop/evidence/t014-review-feedback-20260808.json]
       budget: {effort_hours: 0.7, tokens: 4000}
       config:
         condition: "T014 acceptance, Java proof, security checks, code review and current-head main read-back all pass."

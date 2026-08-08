@@ -1,16 +1,16 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-ticket-implementation-t014",
-  "graph_version": 5,
+  "graph_version": 6,
   "run_id": "courtside-tw-t014-20260808",
   "status": "running",
-  "iteration": 4,
+  "iteration": 5,
   "started_at": "2026-08-08T03:00:00Z",
-  "updated_at": "2026-08-08T03:42:40Z",
-  "current_frontier": ["a-t014-shared"],
+  "updated_at": "2026-08-08T03:48:57Z",
+  "current_frontier": ["g-t014-review-merge"],
   "blocked_nodes": [],
   "terminal_state": "needs_human",
-  "next_action": "Publish the repaired exact T014 PR head and obtain Java 21/Gradle CI, Security and fresh review-thread proof before review/merge.",
+  "next_action": "Confirm the evidence/graph metadata-only PR head is green, then obtain human protected-merge approval and authoritative main read-back; do not mark T014 checked before both.",
   "events": [
     {
       "event_id": "evt-t014-001-main-reconciled",
@@ -153,6 +153,53 @@
       "proof_receipts": [],
       "failure_signature": "PR43_P2_CURRENT_VERSION_AND_IF_MATCH_CONTROL_BOUNDARY",
       "decision": "Return the current version through the existing bounded errors contract and reject all disallowed If-Match edge controls before optional whitespace removal."
+    },
+    {
+      "event_id": "evt-t014-005-ci-security-pass",
+      "at": "2026-08-08T03:48:57Z",
+      "actor": "verifier",
+      "type": "proof_pass",
+      "base_graph_version": 5,
+      "new_graph_version": 6,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-t014-shared/status",
+            "before": "running",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-t014-ci-unit/status",
+            "before": "blocked",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": ["a-t014-shared"],
+            "after": ["g-t014-review-merge"]
+          }
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t014-ci-security-20260808.json"],
+      "proof_receipts": [
+        {
+          "proof": "CI run #92",
+          "level": "P2",
+          "result": "pass",
+          "head_sha": "8093bfe9bf07ca8a58d7a2375aeffc5c7312a0a9"
+        },
+        {
+          "proof": "Security run #92",
+          "level": "P2",
+          "result": "pass",
+          "head_sha": "8093bfe9bf07ca8a58d7a2375aeffc5c7312a0a9"
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Advance to the protected human review/merge gate; the final metadata-only PR head must also be green before merge."
     }
   ]
 }
