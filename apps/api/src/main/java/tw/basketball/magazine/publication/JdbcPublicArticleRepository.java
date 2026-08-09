@@ -17,6 +17,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+import tw.basketball.magazine.content.validation.ContentDocumentValidator;
 import tw.basketball.magazine.publication.PublicArticleModels.ArticleProjection;
 import tw.basketball.magazine.publication.PublicArticleModels.IssueNavigation;
 import tw.basketball.magazine.publication.PublicIssueModels.ArticleSummary;
@@ -67,6 +68,7 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
             SELECT article.id AS article_id,
                    article.slug,
                    revision.title,
+                   revision.content_document,
                    issue_article.position,
                    section.position AS section_position
             FROM issue_article
@@ -111,14 +113,27 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
 
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
+    private final ContentDocumentValidator contentDocumentValidator;
 
     public JdbcPublicArticleRepository(JdbcTemplate jdbcTemplate) {
-        this(jdbcTemplate, new ObjectMapper());
+        this(jdbcTemplate, new ObjectMapper(), new ContentDocumentValidator());
     }
 
     JdbcPublicArticleRepository(JdbcTemplate jdbcTemplate, ObjectMapper objectMapper) {
+        this(jdbcTemplate, objectMapper, new ContentDocumentValidator());
+    }
+
+    JdbcPublicArticleRepository(
+            JdbcTemplate jdbcTemplate,
+            ObjectMapper objectMapper,
+            ContentDocumentValidator contentDocumentValidator
+    ) {
         this.jdbcTemplate = Objects.requireNonNull(jdbcTemplate, "jdbcTemplate");
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
+        this.contentDocumentValidator = Objects.requireNonNull(
+                contentDocumentValidator,
+                "contentDocumentValidator"
+        );
     }
 
     @Override
@@ -133,13 +148,18 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
             return Optional.empty();
         }
 
-        List<ArticleRow> rows = jdbcTemplate.query(
-                ARTICLE_SQL,
-                (resultSet, rowNumber) -> mapArticle(resultSet),
-                articleSlug,
-                Timestamp.from(now),
-                Timestamp.from(now)
-        );
+        List<ArticleRow> rows;
+        try {
+            rows = jdbcTemplate.query(
+                    ARTICLE_SQL,
+                    (resultSet, rowNumber) -> mapArticle(resultSet),
+                    articleSlug,
+                    Timestamp.from(now),
+                    Timestamp.from(now)
+            );
+        } catch (InvalidPublishedContentException exception) {
+            return Optional.empty();
+        }
         if (rows.isEmpty()) {
             return Optional.empty();
         }
@@ -149,12 +169,18 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
             return Optional.empty();
         }
 
-        List<ArticleSummary> navigationItems = jdbcTemplate.query(
+        List<NavigationRow> navigationRows = jdbcTemplate.query(
                 NAVIGATION_SQL,
                 (resultSet, rowNumber) -> mapNavigationItem(resultSet),
                 article.issueId(),
                 Timestamp.from(now)
         );
+        List<ArticleSummary> navigationItems = navigationRows.stream()
+                .filter(Objects::nonNull)
+                .filter(row -> isValidContent(row.content()))
+                .filter(row -> hasPublicMediaRights(row.content(), now))
+                .map(NavigationRow::summary)
+                .toList();
         int currentIndex = findArticleIndex(navigationItems, article.articleId());
         if (currentIndex < 0) {
             return Optional.empty();
@@ -180,7 +206,10 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
         try {
             JsonNode content = objectMapper.readTree(resultSet.getString("content_document"));
             if (content == null || !content.isObject()) {
-                throw new IllegalStateException("published content document must be a JSON object");
+                throw new InvalidPublishedContentException("published content document must be a JSON object");
+            }
+            if (!isValidContent(content)) {
+                throw new InvalidPublishedContentException("published ContentDocument failed canonical validation");
             }
             return new ArticleRow(
                     resultSet.getObject("article_id", UUID.class),
@@ -193,18 +222,35 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
                     resultSet.getObject("issue_id", UUID.class),
                     resultSet.getString("issue_slug")
             );
+        } catch (InvalidPublishedContentException exception) {
+            throw exception;
         } catch (RuntimeException exception) {
-            throw new IllegalStateException("published Article content is not valid JSON", exception);
+            throw new InvalidPublishedContentException("published Article content is not valid JSON", exception);
         }
     }
 
-    private static ArticleSummary mapNavigationItem(ResultSet resultSet) throws SQLException {
-        return new ArticleSummary(
-                resultSet.getObject("article_id", UUID.class),
-                resultSet.getString("slug"),
-                resultSet.getString("title"),
-                resultSet.getInt("position")
-        );
+    private NavigationRow mapNavigationItem(ResultSet resultSet) throws SQLException {
+        try {
+            JsonNode content = objectMapper.readTree(resultSet.getString("content_document"));
+            if (content == null || !content.isObject()) {
+                return null;
+            }
+            return new NavigationRow(
+                    new ArticleSummary(
+                            resultSet.getObject("article_id", UUID.class),
+                            resultSet.getString("slug"),
+                            resultSet.getString("title"),
+                            resultSet.getInt("position")
+                    ),
+                    content
+            );
+        } catch (RuntimeException exception) {
+            return null;
+        }
+    }
+
+    private boolean isValidContent(JsonNode content) {
+        return content != null && contentDocumentValidator.validate(content.toString()).valid();
     }
 
     private static int findArticleIndex(List<ArticleSummary> items, UUID articleId) {
@@ -272,6 +318,19 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
                 }
             }
             collectAssetIds(value, assetIds);
+        }
+    }
+
+    private record NavigationRow(ArticleSummary summary, JsonNode content) {
+    }
+
+    private static final class InvalidPublishedContentException extends RuntimeException {
+        private InvalidPublishedContentException(String message) {
+            super(message);
+        }
+
+        private InvalidPublishedContentException(String message, Throwable cause) {
+            super(message, cause);
         }
     }
 
