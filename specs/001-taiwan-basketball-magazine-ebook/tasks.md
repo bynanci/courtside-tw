@@ -120,7 +120,7 @@
 
 ### Implementation for User Story 3
 
-- [ ] T045 [US3] Add workflow reviews, rights references, publication snapshots, jobs, idempotency records and impact links in `apps/api/src/main/resources/db/migration/V003__editorial_publication_workflow.sql`; enforce immutable snapshot and unique idempotency constraints.
+- [ ] T045 [US3] Add workflow reviews, rights references, publication snapshots, jobs, idempotency records and impact links in `apps/api/src/main/resources/db/migration/V004__editorial_publication_workflow.sql`; enforce immutable snapshot and unique idempotency constraints.
 - [ ] T046 [US3] Implement allowed state transitions, role checks, frozen review revisions and conflict responses in `apps/api/src/main/java/tw/basketball/magazine/publication/domain/` and `publication/application/EditorialWorkflowService.java`.
 - [ ] T047 [US3] Implement the content/media publication gate in `apps/api/src/main/java/tw/basketball/magazine/media/domain/RightsPolicy.java` and `publication/application/PublicationReadinessService.java`; return exact stable blocking codes for missing, expired, revoked or wrong-channel rights.
 - [ ] T048 [US3] Implement signed upload intent/completion endpoints and worker dispatch in `apps/api/src/main/java/tw/basketball/magazine/media/api/EditorialMediaController.java` and `media/application/`; re-check size, checksum, magic bytes and processing state server-side.
@@ -149,7 +149,7 @@
 
 ### Implementation for User Story 4
 
-- [ ] T058 [US4] Add taxonomy terms/aliases/validity, article taxonomy and public search projection with `pg_trgm` indexes in `apps/api/src/main/resources/db/migration/V004__taxonomy_and_search.sql`.
+- [ ] T058 [US4] Add taxonomy terms/aliases/validity, article taxonomy and public search projection with `pg_trgm` indexes in `apps/api/src/main/resources/db/migration/V005__taxonomy_and_search.sql`.
 - [ ] T059 [P] [US4] Implement taxonomy domain/API and Studio taxonomy management in `apps/api/src/main/java/tw/basketball/magazine/taxonomy/` and `apps/web/app/features/studio/taxonomy/`; names are attributes, never identifiers.
 - [ ] T060 [US4] Implement versioned search projection updates from publication/withdrawal outbox events in `apps/api/src/main/java/tw/basketball/magazine/search/worker/SearchProjectionHandler.java`; reject any draft source and record source checksum.
 - [ ] T061 [US4] Implement normalized, weighted, cursor-based `GET /api/v1/public/search` and taxonomy filter endpoints in `apps/api/src/main/java/tw/basketball/magazine/search/api/PublicSearchController.java` and `search/application/SearchService.java`.
@@ -172,7 +172,7 @@
 
 ### Implementation for User Story 5
 
-- [ ] T065 [US5] Add reader profile, bookmarks, revision-aware progress and erasure-job tables in `apps/api/src/main/resources/db/migration/V005__reader_library.sql`; enforce unique bookmarks and bounded progress.
+- [ ] T065 [US5] Add reader profile, bookmarks, revision-aware progress and erasure-job tables in `apps/api/src/main/resources/db/migration/V006__reader_library.sql`; enforce unique bookmarks and bounded progress.
 - [ ] T066 [US5] Implement idempotent bookmark and progress APIs in `apps/api/src/main/java/tw/basketball/magazine/readerlibrary/api/` and `readerlibrary/application/`; do not return withdrawn article bodies or stale revision positions.
 - [ ] T067 [US5] Implement local/server merge preview and apply logic in `apps/api/src/main/java/tw/basketball/magazine/readerlibrary/domain/ProgressMergePolicy.java` and `apps/web/app/features/library/composables/useProgressMerge.ts`; preserve the newer valid update and require explicit user confirmation.
 - [ ] T068 [P] [US5] Add bookmark and signed-in progress controls to `apps/web/app/features/reader/` and build `/library` in `apps/web/app/pages/library.vue` with components under `apps/web/app/features/library/`; include unavailable-content states.
@@ -236,7 +236,7 @@
 ### Implementation for User Story 7
 
 - [ ] T089 [US7] Implement versioned canonical manifest schema/types and RFC 8785 JCS over I-JSON UTF-8 bytes in `contracts/provenance-manifest.schema.json`, `packages/web3-adapter/src/manifest/`, and `apps/api/src/main/java/tw/basketball/magazine/provenance/manifest/`; include stable snapshot/revision IDs, public asset digests, rights scope and published timestamp, represent precision-sensitive values as schema-defined strings, then run the same fixtures in TypeScript and Java.
-- [ ] T090 [US7] Add `publication_provenance`, `wallet_identity_link` and single-use `siwe_challenge` tables plus domain/application ports in `apps/api/src/main/resources/db/migration/V006__publication_provenance.sql` and `apps/api/src/main/java/tw/basketball/magazine/provenance/`; enforce immutable manifest versions, normalized address uniqueness, hashed nonce TTL and append-only status history.
+- [ ] T090 [US7] Add `publication_provenance`, `wallet_identity_link` and single-use `siwe_challenge` tables plus domain/application ports in `apps/api/src/main/resources/db/migration/V007__publication_provenance.sql` and `apps/api/src/main/java/tw/basketball/magazine/provenance/`; enforce immutable manifest versions, normalized address uniqueness, hashed nonce TTL and append-only status history.
 - [ ] T091 [P] [US7] Implement `DecentralizedMirrorPort` and worker adapter in `apps/api/src/main/java/tw/basketball/magazine/provenance/ipfs/`; create `CIDv1 + raw multicodec + sha2-256` directly from rights-eligible canonical bytes without provider-default UnixFS/chunking, verify upload/download block and digest round-trip, support bounded retry/two gateway reads and degrade to digest-only when pinning is unavailable.
 - [ ] T092 [P] [US7] Implement `ChainAttestationPort`, allowlisted minimal registry contract interface and managed-signer worker in `packages/web3-adapter/src/chain/`, `contracts/evm/`, and `apps/api/src/main/java/tw/basketball/magazine/provenance/chain/`; pin network/contract/method/gas ceiling, use idempotency keys and verify confirmations without exposing signer material.
 - [ ] T093 [P] [US7] Implement ERC-4361 challenge/verify/unlink endpoints and BFF session bridge in `apps/api/src/main/java/tw/basketball/magazine/provenance/identity/`, `apps/web/server/api/auth/siwe/`, and `packages/web3-adapter/src/siwe/`; validate domain, URI, chain, nonce, issued-at, expiration and signature, and never make wallet identity an editor authorization source.
