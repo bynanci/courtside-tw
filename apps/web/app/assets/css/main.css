@@ -2,8 +2,7 @@
   --accent: #ae3828;
   --muted: #5b554d;
   color-scheme: light;
-  font-family:
-    "Noto Serif TC", "Source Han Serif TC", Georgia, serif;
+  font-family: "Noto Serif TC", "Source Han Serif TC", Georgia, serif;
   background: #f5f1e9;
   color: #191916;
   font-synthesis: none;
@@ -375,7 +374,6 @@ a:focus-visible {
   }
 }
 
-
 .article-reader {
   max-width: 64rem;
 }
@@ -643,9 +641,7 @@ a:focus-visible {
   display: grid;
   place-items: center;
   padding: 1.5rem;
-  background:
-    linear-gradient(135deg, rgba(174, 56, 40, 0.82), rgba(25, 25, 22, 0.92)),
-    #191916;
+  background: linear-gradient(135deg, rgba(174, 56, 40, 0.82), rgba(25, 25, 22, 0.92)), #191916;
   color: #f5f1e9;
   line-height: 1.6;
   text-align: center;
@@ -670,7 +666,6 @@ a:focus-visible {
 .article-generative [data-runtime-state=\"running\"] {
   border-color: var(--accent);
 }
-
 
 .article-generative-poster {
   display: block;
