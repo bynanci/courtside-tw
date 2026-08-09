@@ -597,7 +597,6 @@ onMounted(() => {
   stopCreativeWatch = watch(
     () => article.value?.revisionId,
     async () => {
-      interactiveEnabled.value = motionMode.value === "full"
       creativeInView.value = false
       runtimeState.value = "paused"
       creativeObserver?.disconnect()
@@ -845,26 +844,25 @@ onBeforeUnmount(() => {
             </aside>
 
             <section v-else-if="block.type === 'generative-canvas'" class="article-generative">
-              <img
-                v-if="
-                  assetMediaUrl(payloadFor(block).posterAssetId, 'poster') &&
-                  !failedAssets.has(block.id + '-poster')
-                "
-                data-testid="generative-poster-image"
-                class="article-generative-poster"
-                :src="assetMediaUrl(payloadFor(block).posterAssetId, 'poster')"
-                :alt="stringValue(payloadFor(block).altText)"
-                loading="lazy"
-                @error="markAssetFailed(block.id + '-poster')"
-              />
               <div
-                v-else
                 data-testid="generative-poster"
                 data-fallback="true"
                 role="img"
                 :aria-label="stringValue(payloadFor(block).altText)"
               >
-                {{ stringValue(payloadFor(block).dataSummary) }}
+                <img
+                  v-if="
+                    assetMediaUrl(payloadFor(block).posterAssetId, 'poster') &&
+                    !failedAssets.has(block.id + '-poster')
+                  "
+                  data-testid="generative-poster-image"
+                  class="article-generative-poster"
+                  :src="assetMediaUrl(payloadFor(block).posterAssetId, 'poster')"
+                  :alt="stringValue(payloadFor(block).altText)"
+                  loading="lazy"
+                  @error="markAssetFailed(block.id + '-poster')"
+                />
+                <span>{{ stringValue(payloadFor(block).dataSummary) }}</span>
               </div>
               <button
                 v-if="motionMode === 'reduced' && !interactiveEnabled"
