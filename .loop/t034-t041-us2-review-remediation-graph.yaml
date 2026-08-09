@@ -1,0 +1,275 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-t034-t041-us2-review-remediation
+objective: >-
+  Close the bounded US2 public Article reader and projection remediation while
+  stopping at protected media, contributor and generative-runtime gates.
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - PR #67 public Article reader correctness and fail-closed projection fixes
+    - Rights-filtered issue navigation and canonical ContentDocument validation
+    - SSR malformed-slug handling, progress persistence, share fallback and semantic renderer behavior
+    - Exact-head CI/Security proof and append-only graph, evidence and memory receipts
+  out:
+    - Invented media URLs or activation of a media-storage resolver
+    - Contributor/byline persistence or ArticleProjection contract expansion without approval
+    - p5.js dependency/runtime approval, production activation, deployment or protected merge
+    - Web3, wallet, token, Passport, migration or public content publication
+
+authority:
+  allowed:
+    - Read main, PR #65/#66/#67, review threads, tasks, OpenAPI, schema, ADRs and tests
+    - Create and update a draft remediation branch and bounded proof artifacts
+    - Run exact-head CI, Security and browser verification
+  requires_approval:
+    - Media storage-key resolver or public media contract
+    - Contributor source/contract decision
+    - p5.js runtime/dependency or production activation
+    - Protected merge, task checkbox update, schema or rights-policy change
+  forbidden:
+    - Claim pending or disputed proof as success
+    - Weaken acceptance tests to hide a missing runtime
+    - Expose draft, withdrawn, historical or non-PUBLIC_WEB content
+    - Add undeclared compatibility fields or external provider dependencies
+
+acceptance:
+  - PR #67 remains draft-only and based on main@c45c1fd7e93699f4626e2ceab6b5fb6f52f38842.
+  - Reader/API changes are limited to the five review-remediation files plus proof artifacts.
+  - Canonical ContentDocument validation fails closed and issue navigation applies the public rights gate.
+  - Latest exact-head CI and Security are read back; any pending browser or human gate remains needs_human.
+  - Media URL resolution, contributor metadata and p5.js runtime are separately named human gates.
+  - No task checkbox, merge, deployment or production state is changed by this lane.
+
+budgets:
+  max_iterations: 5
+  max_minutes: 180
+  max_same_failure: 2
+  max_no_evidence_delta: 2
+  max_graph_changes: 20
+  max_tokens: 80000
+
+policy:
+  human_gates:
+    - Public media URL must resolve from selected media_variant.public_storage_key
+    - Contributor/byline source and public ArticleProjection contract
+    - Approved p5.js 2.x runtime, dependency and bounded lifecycle proof
+    - Protected merge and task checkbox updates
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+memory_workflow:
+  contract: work-memory/v1
+  control_ledger: Append graph deltas, proof receipts, failure signatures and token usage every iteration.
+  semantic_memory: Capture only durable implementation constraints and verified state deltas.
+  modes: [recall, capture, update, forget, no_op]
+  retrieval:
+    levels: [index, timeline_relations, details]
+    max_index_results: 10
+    stop_on_sufficient_evidence: true
+  capture:
+    allowed_kinds: [decision, constraint, fact, attempt, task_state, pattern, evidence]
+    requires_downstream_proof: true
+    requires_write_receipt: true
+  lifecycle: [seed, verified, stable, needs_update, disputed, archived]
+  failure_policy:
+    write_pending: blocked
+    stale_or_disputed: needs_human
+    redact_secrets: true
+
+graph:
+  entry_nodes: [t-review-readback]
+  terminal_nodes: [s-review-terminal]
+  current_frontier: [p-exact-head, g-protected-p1]
+  blocked_nodes: [g-protected-p1]
+
+  loops:
+    - id: l1-us2-review-remediation
+      layer: L1
+      owner: codex-agent
+      trigger_nodes: [t-review-readback]
+      action_nodes: [a-bounded-remediation]
+      proof_nodes: [p-exact-head]
+      memory_nodes: [m-control-ledger, m-semantic-lane]
+      stop_nodes: [s-review-terminal]
+      budgets:
+        max_iterations: 5
+        max_minutes: 180
+        max_same_failure: 2
+        max_graph_changes: 20
+        max_tokens: 80000
+
+  nodes:
+    - id: t-review-readback
+      kind: trigger
+      layer: L1
+      label: Read back PR #67 review frontier and current exact head
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 1.0
+        basis: "PR #65 review threads, PR #67 branch state, tasks and contract sources were read back."
+        evidence_refs: ["https://github.com/bynanci/courtside-tw/pull/67", "https://github.com/bynanci/courtside-tw/pull/65"]
+      budget: {effort_hours: 0.5, tokens: 5000}
+      config:
+        condition: "A merged US2 projection has actionable review findings and a bounded remediation lane is requested."
+        inputs_required: ["PR #65 review threads", "tasks.md T034-T041", "main SHA", "contract sources"]
+        dedupe: "PR #67 plus current branch head SHA"
+
+    - id: a-bounded-remediation
+      kind: action
+      layer: L1
+      label: Implement reader/API correctness fixes and focused integration proof
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 0.9
+        basis: "The branch contains bounded reader semantics, fail-closed ContentDocument validation, rights-filtered navigation and focused tests."
+        evidence_refs: ["https://github.com/bynanci/courtside-tw/pull/67", ".loop/evidence/t034-t041-us2-review-remediation-baseline-20260809.json"]
+      budget: {effort_hours: 5.0, tokens: 30000}
+      config:
+        workflow: ["read exact review findings", "apply minimal scoped changes", "add focused proof", "run CI/Security", "record blockers"]
+        allowed: ["public article reader", "public article repository", "focused API/e2e tests", "CSS required by renderer semantics", "loop artifacts"]
+        requires_approval: ["media resolver", "contributors contract", "p5 runtime", "protected merge"]
+        forbidden: ["task checkbox edits", "production activation", "Web3 or wallet dependency"]
+
+    - id: p-exact-head
+      kind: proof
+      layer: L1
+      label: Exact-head CI, Security and browser verification
+      owner: verifier
+      status: needs_human
+      risk: high
+      confidence:
+        score: 0.85
+        basis: "At the prior exact head core CI and Security passed but browser proof failed; the latest synchronization commit has no workflow receipt yet."
+        evidence_refs: [".loop/evidence/t034-t041-us2-review-remediation-baseline-20260809.json"]
+      budget: {effort_hours: 1.5, tokens: 12000}
+      config:
+        level: P3
+        claim: "The latest PR #67 head has reproducible CI/Security/browser results, with no pending failure hidden."
+        method: "Fetch workflow runs by exact head SHA and inspect all job conclusions and failure logs."
+        evidence_path: ".loop/evidence/t034-t041-us2-review-remediation-baseline-20260809.json"
+        required: true
+        baseline_required: true
+
+    - id: g-protected-p1
+      kind: gate
+      layer: L1
+      label: Human closure of media, contributor and p5 runtime gates
+      owner: human-mark
+      status: needs_human
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: "The repository has no contributor source or approved public media resolver in this projection, and ADR-0005 requires p5.js 2.x runtime proof."
+        evidence_refs: ["https://github.com/bynanci/courtside-tw/pull/65", "specs/001-taiwan-basketball-magazine-ebook/adr/ADR-0005-motion-and-court-pulse-v1.md"]
+      budget: {effort_hours: 0.5, tokens: 2500}
+      config:
+        condition: "Approve the storage-key resolver, contributor/source contract and p5.js runtime/dependency path before protected merge or production activation."
+        approver: human-mark
+        required: true
+
+    - id: m-control-ledger
+      kind: memory
+      layer: L1
+      label: Append-only remediation control ledger
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        score: 0.9
+        basis: "The ledger records the graph delta, exact-head proof receipts, failure signature and next action."
+        evidence_refs: [".loop/t034-t041-us2-review-remediation-ledger.json"]
+      budget: {effort_hours: 0.2, tokens: 2500}
+      config:
+        path: ".loop/t034-t041-us2-review-remediation-ledger.json"
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: work-memory/v1
+        memory_role: graph_ledger
+        receipt_required: true
+        write_failure_state: blocked
+
+    - id: m-semantic-lane
+      kind: memory
+      layer: L1
+      label: Durable remediation constraints and disputed state
+      owner: codex-agent
+      status: needs_human
+      risk: high
+      confidence:
+        score: 0.9
+        basis: "The semantic record preserves verified core checks and explicitly disputed/pending browser and protected-gate state."
+        evidence_refs: [".loop/memory/t034-t041-us2-review-remediation.json"]
+      budget: {effort_hours: 0.2, tokens: 2500}
+      config:
+        path: ".loop/memory/t034-t041-us2-review-remediation.json"
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: work-memory/v1
+        memory_role: semantic_memory
+        receipt_required: true
+        write_failure_state: needs_human
+
+    - id: s-review-terminal
+      kind: stop
+      layer: GLOBAL
+      label: Stop bounded remediation at proof or protected human gates
+      owner: codex-supervisor
+      status: needs_human
+      risk: high
+      confidence:
+        score: 1.0
+        basis: "The lane must stop at needs_human while latest exact-head proof and protected product/runtime decisions are not fully closed."
+        evidence_refs: [".loop/evidence/t034-t041-us2-review-remediation-baseline-20260809.json"]
+      budget: {effort_hours: 0.1, tokens: 500}
+      config:
+        states:
+          success: "Required exact-head proof and all protected gates pass."
+          no_op: "No authoritative change requires action."
+          blocked: "A required branch, source, proof or authority is unavailable."
+          stalled: "The same failure repeats without an evidence delta."
+          exhausted: "The bounded iteration, time, graph-change or token budget is reached."
+          needs_human: "Latest browser proof or a protected media, contributor or p5 decision is pending."
+
+  edges:
+    - {id: e-readback-remediation, from: t-review-readback, to: a-bounded-remediation, type: enables, required: true, confidence: 1.0, token_capacity: 30000}
+    - {id: e-remediation-proof, from: a-bounded-remediation, to: p-exact-head, type: verifies, required: true, confidence: 0.9, token_capacity: 12000}
+    - {id: e-remediation-ledger, from: a-bounded-remediation, to: m-control-ledger, type: records, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-proof-ledger, from: p-exact-head, to: m-control-ledger, type: records, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-ledger-read, from: m-control-ledger, to: a-bounded-remediation, type: reads, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-remediation-semantic, from: a-bounded-remediation, to: m-semantic-lane, type: records, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-semantic-read, from: m-semantic-lane, to: a-bounded-remediation, type: reads, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-proof-feedback, from: p-exact-head, to: a-bounded-remediation, type: feedback, required: true, confidence: 0.85, token_capacity: 6000}
+    - {id: e-protected-gate, from: a-bounded-remediation, to: g-protected-p1, type: requires_approval, required: true, confidence: 1.0, token_capacity: 4000}
+    - {id: e-proof-terminal, from: p-exact-head, to: s-review-terminal, type: enables, required: true, confidence: 0.9, token_capacity: 4000}
+    - {id: e-gate-terminal, from: g-protected-p1, to: s-review-terminal, type: enables, required: true, confidence: 1.0, token_capacity: 4000}
+
+flow:
+  source: t-review-readback
+  sink: s-review-terminal
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - next_action
+  - memory_receipt
