@@ -86,18 +86,36 @@ test.describe("US2 long-form public article", () => {
   })
 
   test("keeps the final block when scrolling into article navigation", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" })
     await page.goto("/articles/opening-night?issue=issue-2026-01", {
       waitUntil: "domcontentloaded"
     })
     await expect(page.getByTestId("article-document")).toBeVisible()
     await expect(page.getByTestId("article-document")).toHaveAttribute("data-client-ready", "true")
+    await page.waitForLoadState("networkidle")
 
-    const lastBlockId = await page.locator("[data-block-id]").last().getAttribute("data-block-id")
+    const lastBlock = page.locator("[data-block-id]").last()
+    const lastBlockId = await lastBlock.getAttribute("data-block-id")
     expect(lastBlockId).toBeTruthy()
+    await lastBlock.evaluate((element) => {
+      element.scrollIntoView({ block: "end", behavior: "auto" })
+    })
+    await page.waitForLoadState("networkidle")
     await page.evaluate(() => {
       window.scrollTo(0, document.documentElement.scrollHeight)
-      window.dispatchEvent(new Event("scroll"))
     })
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const documentBottom = Math.max(
+            document.documentElement.scrollHeight,
+            document.body?.scrollHeight ?? 0
+          )
+          return window.scrollY + window.innerHeight >= documentBottom - 2
+        })
+      )
+      .toBe(true)
+    await page.evaluate(() => window.dispatchEvent(new Event("scroll")))
 
     await expect
       .poll(async () =>
