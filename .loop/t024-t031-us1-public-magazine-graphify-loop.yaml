@@ -67,7 +67,7 @@ policy:
 graph:
   entry_nodes: [x-main-readback, x-immersion-review, t-us1-ready]
   terminal_nodes: [s-us1-terminal]
-  current_frontier: [p-us1-merge-gate]
+  current_frontier: []
   blocked_nodes: []
 
   loops:
@@ -95,12 +95,12 @@ graph:
       risk: high
       confidence:
         score: 1.0
-        basis: Phase 2 T009-T023 are checked on main 9b2c6eaf; T024 is the first unchecked implementation frontier.
-        evidence_refs: [specs/001-taiwan-basketball-magazine-ebook/tasks.md, .loop/evidence/t014-main-readback-20260808.json]
+        basis: PR #61 is merged to main at 170a2de; exact-head CI/Security and review-thread read-back pass.
+        evidence_refs: [.loop/evidence/t024-t031-post-merge-readback-20260809.json, specs/001-taiwan-basketball-magazine-ebook/tasks.md]
       budget: {effort_hours: 0.25, tokens: 2500}
       config:
         source_type: github-main-readback
-        freshness: "2026-08-09T09:00:00Z"
+        freshness: "2026-08-09T07:32:18Z"
         limitations: Local Java 21/Gradle proof is unavailable; CI remains the Java authority.
 
     - id: x-immersion-review
@@ -215,12 +215,12 @@ graph:
       layer: L1
       label: US1 public API, migration and contract proof
       owner: verifier
-      status: verifying
+      status: done
       risk: high
       confidence:
-        score: 0.85
+        score: 0.99
         basis: Local contract/client verification passed and source review found no remaining local blocker; Java 21/Testcontainers is pending on exact CI.
-        evidence_refs: [.loop/evidence/t024-t028-backend-proof-20260809.json]
+        evidence_refs: [.loop/evidence/t024-t031-post-merge-readback-20260809.json]
       budget: {effort_hours: 1.0, tokens: 8500}
       config:
         level: P2
@@ -253,12 +253,12 @@ graph:
       layer: L1
       label: US1 mobile SSR and accessibility proof
       owner: verifier
-      status: verifying
+      status: done
       risk: high
       confidence:
-        score: 0.85
+        score: 0.99
         basis: Native tests, production SSR build and Playwright discovery pass; the Chromium/a11y execution is explicitly deferred to exact CI.
-        evidence_refs: [.loop/evidence/t025-t031-web-proof-20260809.json]
+        evidence_refs: [.loop/evidence/t024-t031-post-merge-readback-20260809.json]
       budget: {effort_hours: 1.0, tokens: 8000}
       config:
         level: P2
@@ -273,12 +273,12 @@ graph:
       layer: L1
       label: US1 performance and progressive enhancement proof
       owner: verifier
-      status: verifying
+      status: done
       risk: high
       confidence:
-        score: 0.85
+        score: 0.99
         basis: The production bundle scan is clean and cover geometry is reserved; the mobile browser trace remains CI evidence.
-        evidence_refs: [.loop/evidence/t024-t031-performance-proof-20260809.json]
+        evidence_refs: [.loop/evidence/t024-t031-post-merge-readback-20260809.json]
       budget: {effort_hours: 0.75, tokens: 6500}
       config:
         level: P2
@@ -311,12 +311,12 @@ graph:
       layer: L1
       label: Exact-head review, CI and Security evidence
       owner: verifier
-      status: ready
+      status: done
       risk: high
       confidence:
-        score: 0.85
+        score: 1
         basis: The final local review is clean enough to create a draft PR; this proof remains incomplete until GitHub reports the exact commit checks.
-        evidence_refs: [.loop/evidence/t024-t031-local-review-20260809.json]
+        evidence_refs: [.loop/evidence/t024-t031-post-merge-readback-20260809.json]
       budget: {effort_hours: 0.75, tokens: 7000}
       config:
         level: P2
@@ -331,12 +331,12 @@ graph:
       layer: L1
       label: US1 append-only execution ledger
       owner: codex-supervisor
-      status: ready
+      status: done
       risk: medium
       confidence:
-        score: 0.9
+        score: 0.99
         basis: Existing project Graphify artifacts use an append-only control ledger; the current tasks/spec/design remain the semantic source of truth until a verified US1 outcome exists.
-        evidence_refs: [.loop/t014-shared-foundation-ledger.json, specs/001-taiwan-basketball-magazine-ebook/tasks.md]
+        evidence_refs: [.loop/t024-t031-us1-public-magazine-ledger.json, .loop/memory/t024-t031-us1-completion.json, .loop/evidence/t024-t031-post-merge-readback-20260809.json]
       budget: {effort_hours: 0.25, tokens: 2500}
       config:
         path: .loop/t024-t031-us1-public-magazine-ledger.json
@@ -351,12 +351,12 @@ graph:
       layer: L1
       label: Human review and protected merge gate
       owner: human-mark
-      status: needs_human
+      status: done
       risk: high
       confidence:
-        score: 1.0
-        basis: A user request to implement does not authorize automatic protected-branch merge or task checkbox updates.
-        evidence_refs: []
+        score: 1
+        basis: PR #61 is merged and the exact-head protected-merge evidence is complete.
+        evidence_refs: [.loop/evidence/t024-t031-post-merge-readback-20260809.json]
       budget: {effort_hours: 0.5, tokens: 4000}
       config:
         condition: Exact-head review, CI/Security and human approval all pass before merge.
@@ -368,12 +368,12 @@ graph:
       layer: GLOBAL
       label: US1 terminal policy
       owner: policy
-      status: planned
+      status: done
       risk: high
       confidence:
-        score: 0.95
-        basis: Terminal state must follow proof and human gate status rather than implementation claims.
-        evidence_refs: []
+        score: 1
+        basis: T024-T031 are checked only after merged-main read-back; T032/T033 remain the next independent frontier.
+        evidence_refs: [.loop/evidence/t024-t031-post-merge-readback-20260809.json]
       budget: {effort_hours: 0.1, tokens: 500}
       config:
         states:
