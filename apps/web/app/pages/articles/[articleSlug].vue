@@ -304,7 +304,7 @@ const CONTRIBUTOR_ROLE_LABELS: Record<string, string> = {
 }
 
 function contributorRoleLabel(value: unknown): string {
-  return typeof value === "string" ? CONTRIBUTOR_ROLE_LABELS[value] ?? "貢獻者" : "貢獻者"
+  return typeof value === "string" ? (CONTRIBUTOR_ROLE_LABELS[value] ?? "貢獻者") : "貢獻者"
 }
 
 function canvasParameters(value: unknown): CourtPulseParameters {
@@ -732,7 +732,11 @@ onBeforeUnmount(() => {
           <h1 id="article-heading">{{ article.title }}</h1>
           <p v-if="article.dek" class="article-dek">{{ article.dek }}</p>
           <div class="article-meta">
-            <span v-if="article.contributors.length > 0" data-testid="article-byline" class="article-byline">
+            <span
+              v-if="article.contributors.length > 0"
+              data-testid="article-byline"
+              class="article-byline"
+            >
               <span
                 v-for="contributor in article.contributors"
                 :key="contributor.contributorId + ':' + contributor.role"
@@ -740,7 +744,9 @@ onBeforeUnmount(() => {
                 data-testid="article-credit"
               >
                 <span>{{ contributor.displayName }}</span>
-                <span class="article-credit-role">（{{ contributorRoleLabel(contributor.role) }}）</span>
+                <span class="article-credit-role"
+                  >（{{ contributorRoleLabel(contributor.role) }}）</span
+                >
               </span>
             </span>
             <span v-else data-testid="article-byline">署名未提供</span>
