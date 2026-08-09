@@ -142,8 +142,6 @@ paths:
                 valid:
                   value:
                     articleId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
-                    revisionId: 0190f7b0-7c4b-7e3a-8f12-123456789abd
-                    revisionNumber: 1
                     slug: article-1
                     title: Article 1
                     content:
@@ -153,11 +151,7 @@ paths:
                     issueNavigation:
                       issueSlug: issue-1
                       previous: null
-                      next:
-                        articleId: 0190f7b0-7c4b-7e3a-8f12-123456789abe
-                        slug: article-2
-                        title: Article 2
-                        position: 2
+                      next: null
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -2053,8 +2047,6 @@ components:
       additionalProperties: false
       required:
         - articleId
-        - revisionId
-        - revisionNumber
         - slug
         - title
         - content
@@ -2062,11 +2054,6 @@ components:
       properties:
         articleId:
           $ref: "#/components/schemas/Uuid"
-        revisionId:
-          $ref: "#/components/schemas/Uuid"
-        revisionNumber:
-          type: integer
-          minimum: 1
         slug:
           type: string
         title:
@@ -2086,13 +2073,13 @@ components:
             issueSlug:
               type: string
             previous:
-              oneOf:
-                - $ref: "#/components/schemas/ArticleSummary"
-                - type: "null"
+              type:
+                - object
+                - "null"
             next:
-              oneOf:
-                - $ref: "#/components/schemas/ArticleSummary"
-                - type: "null"
+              type:
+                - object
+                - "null"
     SearchResult:
       type: object
       additionalProperties: false
