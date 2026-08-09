@@ -1,0 +1,331 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-post-merge-review-fixes
+objective: >-
+  Close the bounded post-merge review findings from PR #67 through a draft PR
+  with exact-head API, reader, runtime and security proof while stopping at
+  protected human gates.
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - PR #67 post-merge review findings for the public Article API and reader
+    - Standard wide generative poster resolution and contributor failure semantics
+    - Role-aware byline/JSON-LD, final-block progress and hydration-safe controls
+    - Per-canvas visibility/runtime state and localStorage failure safety
+    - Focused API/browser regression proof and exact-head CI/Security receipts
+    - Append-only graph, evidence, ledger and semantic memory receipts
+  out:
+    - Protected merge, production migration execution, activation or deployment
+    - Task checkbox changes or unrelated PR/task work
+    - Web3, wallet, Passport, provider credential or public publication changes
+
+authority:
+  allowed:
+    - Read main, PR #67 review findings, PR #69, source contracts and tests
+    - Create and update the bounded PR #69 branch and LOOP receipts
+    - Run exact-head CI, Security and browser verification
+  requires_approval:
+    - Protected merge and task-state changes
+    - Production migration execution, activation or deployment
+  forbidden:
+    - Claim pending or disputed proof as success
+    - Weaken acceptance tests to hide a runtime or projection failure
+    - Change schema, rights policy or production activation behavior outside this lane
+    - Expose secrets or add undeclared provider dependencies
+
+acceptance:
+  - PR #69 remains draft-only and is based on main@d86d59eade447ad79f927079735d1efa48ebad38.
+  - Generative-canvas poster lookup uses the standard wide variant produced by the public pipeline.
+  - Contributor database failures remain server failures; only expected projection validation maps to not-found.
+  - Reader credits and JSON-LD authors respect contributor role, progress preserves the final block, and creative opt-in is hydration-safe.
+  - Multiple generative canvases have independent visibility/runtime state and resume storage failures do not break reading.
+  - Exact-head CI, Security and browser verification have no pending failure.
+  - No merge, production activation or task checkbox update is changed by this lane.
+
+budgets:
+  max_iterations: 5
+  max_minutes: 120
+  max_same_failure: 2
+  max_no_evidence_delta: 2
+  max_graph_changes: 20
+  max_tokens: 60000
+
+policy:
+  human_gates:
+    - Protected merge and task checkbox updates
+    - Production migration execution, activation and deployment
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+memory_workflow:
+  contract: work-memory/v1
+  control_ledger: Append graph deltas, proof receipts, failure signatures and token usage every iteration.
+  semantic_memory: Capture only durable implementation constraints and verified state deltas.
+  modes: [recall, capture, update, forget, no_op]
+  retrieval:
+    levels: [index, timeline_relations, details]
+    max_index_results: 10
+    stop_on_sufficient_evidence: true
+  capture:
+    allowed_kinds: [decision, constraint, fact, attempt, task_state, pattern, evidence]
+    requires_downstream_proof: true
+    requires_write_receipt: true
+  lifecycle: [seed, verified, stable, needs_update, disputed, archived]
+  failure_policy:
+    write_pending: blocked
+    stale_or_disputed: needs_human
+    redact_secrets: true
+
+graph:
+  entry_nodes: [t-post-merge-review-readback]
+  terminal_nodes: [s-post-merge-review-terminal]
+  current_frontier: [g-protected-closure]
+  blocked_nodes: [g-protected-closure]
+
+  loops:
+    - id: l1-post-merge-review-fixes
+      layer: L1
+      owner: codex-agent
+      trigger_nodes: [t-post-merge-review-readback]
+      action_nodes: [a-api-review-fixes, a-reader-review-fixes, a-focused-regression-proof]
+      proof_nodes: [p-exact-head]
+      memory_nodes: [m-control-ledger, m-semantic-review-state]
+      stop_nodes: [s-post-merge-review-terminal]
+      budgets:
+        max_iterations: 5
+        max_minutes: 120
+        max_same_failure: 2
+        max_graph_changes: 20
+        max_tokens: 60000
+
+  nodes:
+    - id: t-post-merge-review-readback
+      kind: trigger
+      layer: L1
+      label: Read back PR #67 review frontier and current PR #69 head
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 1.0
+        basis: "The merged PR #67 review threads, main baseline, source contracts, fixtures and tests were read back."
+        evidence_refs:
+          - "https://github.com/bynanci/courtside-tw/pull/67"
+          - "https://github.com/bynanci/courtside-tw/pull/69"
+      budget: {effort_hours: 0.5, tokens: 5000}
+      config:
+        condition: "A merged public-reader change has actionable post-merge findings and a bounded follow-up branch is requested."
+        inputs_required: ["PR #67 review threads", "main SHA", "source contracts", "focused tests"]
+        dedupe: "PR #67 review frontier plus PR #69 head SHA"
+
+    - id: a-api-review-fixes
+      kind: action
+      layer: L1
+      label: Correct public generative media resolution and contributor failure propagation
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 0.98
+        basis: "The API selects the standard wide variant and narrows the not-found catch so database failures propagate."
+        evidence_refs:
+          - ".loop/evidence/t042-t048-post-merge-review-fixes-20260809.json"
+      budget: {effort_hours: 1.5, tokens: 10000}
+      config:
+        workflow: ["read review and repository contract", "apply minimal API changes", "add API integration proof"]
+        allowed: ["public article repository", "focused API integration test"]
+        requires_approval: ["schema or rights-policy changes", "production migration or activation"]
+        forbidden: ["swallowing database failures", "inventing poster variants", "task checkbox edits"]
+
+    - id: a-reader-review-fixes
+      kind: action
+      layer: L1
+      label: Correct role-aware reader metadata, progress, hydration, storage and canvas lifecycle
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 0.98
+        basis: "The reader now preserves contributor roles, prioritizes the final block at document end, gates opt-in on client readiness, handles storage exceptions and isolates canvas state per block."
+        evidence_refs:
+          - ".loop/evidence/t042-t048-post-merge-review-fixes-20260809.json"
+      budget: {effort_hours: 3.0, tokens: 18000}
+      config:
+        workflow: ["read the post-merge findings", "apply bounded reader changes", "format and lint the changed Vue source", "verify browser behavior"]
+        allowed: ["public Article page", "focused browser fixtures and tests"]
+        requires_approval: ["protected merge", "production activation"]
+        forbidden: ["removing readable SSR fallback", "globalizing per-canvas state", "unhandled localStorage access"]
+
+    - id: a-focused-regression-proof
+      kind: action
+      layer: L1
+      label: Add focused API and browser regression proof for every review finding
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        score: 1.0
+        basis: "API, schema, OpenAPI, browser and security workflows all passed at the exact implementation head."
+        evidence_refs:
+          - ".loop/evidence/t042-t048-post-merge-review-fixes-20260809.json"
+      budget: {effort_hours: 1.5, tokens: 12000}
+      config:
+        workflow: ["extend fixtures", "assert failure and role semantics", "assert final progress and storage safety", "assert multi-canvas lifecycle", "run exact-head checks"]
+        allowed: ["focused tests and fixtures", "append-only LOOP receipts"]
+        requires_approval: ["protected merge"]
+        forbidden: ["weakening assertions to accommodate a failure"]
+
+    - id: p-exact-head
+      kind: proof
+      layer: L1
+      label: Exact-head CI, Security and browser verification for PR #69
+      owner: verifier
+      status: done
+      risk: high
+      confidence:
+        score: 1.0
+        basis: "Implementation head 86cba75a48b15469358ec62e88ff032fbad6e2d6 has successful CI #333, Security #333 and 11/11 browser tests."
+        evidence_refs:
+          - ".loop/evidence/t042-t048-post-merge-review-fixes-20260809.json"
+      budget: {effort_hours: 1.0, tokens: 10000}
+      config:
+        level: P3
+        claim: "Every required exact-head workflow job and browser test passes with no pending failure hidden."
+        method: "Fetch workflow runs by exact head SHA and inspect every job conclusion plus browser logs."
+        evidence_path: ".loop/evidence/t042-t048-post-merge-review-fixes-20260809.json"
+        required: true
+        baseline_required: true
+
+    - id: m-control-ledger
+      kind: memory
+      layer: L1
+      label: Append-only post-merge remediation control ledger
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        score: 1.0
+        basis: "The ledger records the review frontier, implementation delta, prior browser failure signature, exact-head receipts and next human gate."
+        evidence_refs:
+          - ".loop/t042-t048-post-merge-review-fixes-ledger.json"
+      budget: {effort_hours: 0.2, tokens: 2500}
+      config:
+        path: ".loop/t042-t048-post-merge-review-fixes-ledger.json"
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: work-memory/v1
+        memory_role: graph_ledger
+        receipt_required: true
+        write_failure_state: blocked
+
+    - id: m-semantic-review-state
+      kind: memory
+      layer: L1
+      label: Durable post-merge review constraints and verified state
+      owner: codex-agent
+      status: needs_human
+      risk: high
+      confidence:
+        score: 0.98
+        basis: "The semantic record captures verified API and reader constraints while protected merge and production gates remain pending."
+        evidence_refs:
+          - ".loop/memory/t042-t048-post-merge-review-fixes.json"
+          - ".loop/evidence/t042-t048-post-merge-review-fixes-20260809.json"
+      budget: {effort_hours: 0.2, tokens: 2500}
+      config:
+        path: ".loop/memory/t042-t048-post-merge-review-fixes.json"
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: work-memory/v1
+        memory_role: semantic_memory
+        receipt_required: true
+        write_failure_state: needs_human
+
+    - id: g-protected-closure
+      kind: gate
+      layer: L1
+      label: Human closure of protected merge, production activation and task state
+      owner: human-mark
+      status: needs_human
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: "All implementation and proof requirements are closed; protected merge, production activation and task state remain outside the lane."
+        evidence_refs:
+          - ".loop/evidence/t042-t048-post-merge-review-fixes-20260809.json"
+      budget: {effort_hours: 0.5, tokens: 2500}
+      config:
+        condition: "Review PR #69 and decide protected merge, production migration/activation and task-state changes separately."
+        approver: human-mark
+        required: true
+
+    - id: s-post-merge-review-terminal
+      kind: stop
+      layer: GLOBAL
+      label: Stop bounded review remediation at proof or protected human gates
+      owner: codex-supervisor
+      status: needs_human
+      risk: high
+      confidence:
+        score: 1.0
+        basis: "The exact-head proof passed and the only remaining frontier is protected human closure."
+        evidence_refs:
+          - ".loop/evidence/t042-t048-post-merge-review-fixes-20260809.json"
+      budget: {effort_hours: 0.1, tokens: 500}
+      config:
+        states:
+          success: "Required exact-head proof and all protected gates pass."
+          no_op: "No authoritative change requires action."
+          blocked: "A required branch, source, proof or authority is unavailable."
+          stalled: "The same failure repeats without an evidence delta."
+          exhausted: "The bounded iteration, time, graph-change or token budget is reached."
+          needs_human: "Protected merge, production activation or task-state approval is pending."
+
+  edges:
+    - {id: e-readback-api, from: t-post-merge-review-readback, to: a-api-review-fixes, type: enables, required: true, confidence: 1.0, token_capacity: 10000}
+    - {id: e-readback-reader, from: t-post-merge-review-readback, to: a-reader-review-fixes, type: enables, required: true, confidence: 1.0, token_capacity: 18000}
+    - {id: e-readback-proof, from: t-post-merge-review-readback, to: a-focused-regression-proof, type: enables, required: true, confidence: 1.0, token_capacity: 12000}
+    - {id: e-api-proof, from: a-api-review-fixes, to: p-exact-head, type: verifies, required: true, confidence: 0.98, token_capacity: 5000}
+    - {id: e-reader-proof, from: a-reader-review-fixes, to: p-exact-head, type: verifies, required: true, confidence: 0.98, token_capacity: 8000}
+    - {id: e-focused-proof, from: a-focused-regression-proof, to: p-exact-head, type: verifies, required: true, confidence: 1.0, token_capacity: 7000}
+    - {id: e-api-ledger, from: a-api-review-fixes, to: m-control-ledger, type: records, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-reader-ledger, from: a-reader-review-fixes, to: m-control-ledger, type: records, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-focused-ledger, from: a-focused-regression-proof, to: m-control-ledger, type: records, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-proof-ledger, from: p-exact-head, to: m-control-ledger, type: records, required: true, confidence: 1.0, token_capacity: 2500}
+    - {id: e-proof-semantic, from: p-exact-head, to: m-semantic-review-state, type: records, required: true, confidence: 0.98, token_capacity: 2500}
+    - {id: e-ledger-read-api, from: m-control-ledger, to: a-api-review-fixes, type: reads, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-ledger-read-reader, from: m-control-ledger, to: a-reader-review-fixes, type: reads, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-ledger-read-proof, from: m-control-ledger, to: a-focused-regression-proof, type: reads, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-semantic-read-reader, from: m-semantic-review-state, to: a-reader-review-fixes, type: reads, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-proof-feedback, from: p-exact-head, to: a-focused-regression-proof, type: feedback, required: true, confidence: 0.85, token_capacity: 5000}
+    - {id: e-api-gate, from: a-api-review-fixes, to: g-protected-closure, type: requires_approval, required: true, confidence: 1.0, token_capacity: 2000}
+    - {id: e-reader-gate, from: a-reader-review-fixes, to: g-protected-closure, type: requires_approval, required: true, confidence: 1.0, token_capacity: 2000}
+    - {id: e-proof-gate, from: p-exact-head, to: g-protected-closure, type: requires_approval, required: true, confidence: 1.0, token_capacity: 2500}
+    - {id: e-proof-terminal, from: p-exact-head, to: s-post-merge-review-terminal, type: enables, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-gate-terminal, from: g-protected-closure, to: s-post-merge-review-terminal, type: enables, required: true, confidence: 1.0, token_capacity: 2500}
+
+flow:
+  source: t-post-merge-review-readback
+  sink: s-post-merge-review-terminal
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - next_action
+  - memory_receipt
