@@ -22,7 +22,10 @@ test.describe("US2 long-form public article", () => {
     })
 
     await expect(page.getByTestId("article-document")).toBeVisible()
-    await expect(page.getByTestId("article-byline")).toContainText("Courtside TW")
+    await expect(page.getByTestId("article-byline")).toContainText("Courtside TW 編輯部")
+    await expect(
+      page.locator('[data-testid="article-document"] .article-image img').first()
+    ).toHaveAttribute("src", /\/media\/published\/opening-wide\.webp$/)
     await expect(page.getByTestId("article-reading-time")).toContainText("分鐘")
     await expect(page.getByTestId("article-issue-link")).toHaveAttribute(
       "href",
