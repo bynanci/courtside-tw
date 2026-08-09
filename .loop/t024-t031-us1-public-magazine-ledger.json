@@ -1,16 +1,16 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t024-t031-us1-public-magazine",
-  "graph_version": 3,
+  "graph_version": 4,
   "run_id": "courtside-tw-us1-20260809",
-  "status": "running",
-  "iteration": 3,
+  "status": "success",
+  "iteration": 4,
   "started_at": "2026-08-09T09:00:00Z",
-  "updated_at": "2026-08-09T09:45:00Z",
-  "current_frontier": ["p-us1-merge-gate"],
-  "blocked_nodes": ["g-us1-protected-merge"],
-  "terminal_state": null,
-  "next_action": "Commit the reviewed US1 slice, create a draft PR and use exact-head CI/Security as the authority for Java and Chromium proof.",
+  "updated_at": "2026-08-09T07:32:18Z",
+  "current_frontier": [],
+  "blocked_nodes": [],
+  "terminal_state": "success",
+  "next_action": "Dispatch Phase 4 T032/T033 tests-first on a new bounded graph.",
   "events": [
     {
       "event_id": "evt-us1-001-dispatch",
@@ -67,7 +67,12 @@
       },
       "failure_signature": null,
       "decision": "GRAPH_LOOP",
-      "token_usage": {"estimated": 85000, "input": 0, "output": 0, "total": 0},
+      "token_usage": {
+        "estimated": 85000,
+        "input": 0,
+        "output": 0,
+        "total": 0
+      },
       "terminal_reason": null
     },
     {
@@ -121,13 +126,20 @@
           ".loop/t024-t031-us1-public-magazine-ledger.json",
           "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
         ],
-        "evidence_refs": [".loop/evidence/t024-t025-tests-first-baseline-20260809.json"],
+        "evidence_refs": [
+          ".loop/evidence/t024-t025-tests-first-baseline-20260809.json"
+        ],
         "next_review_at": "2026-08-09",
         "blocker": null
       },
       "failure_signature": "ERR_MODULE_NOT_FOUND: apps/web/app/features/issues/public-issue-contract.ts",
       "decision": "IMPLEMENT_US1_PUBLICATION_BOUNDARY",
-      "token_usage": {"estimated": 85000, "input": 0, "output": 0, "total": 0},
+      "token_usage": {
+        "estimated": 85000,
+        "input": 0,
+        "output": 0,
+        "total": 0
+      },
       "terminal_reason": null
     },
     {
@@ -216,8 +228,178 @@
       },
       "failure_signature": null,
       "decision": "CREATE_DRAFT_PR_FOR_EXACT_HEAD_CI",
-      "token_usage": {"estimated": 85000, "input": 0, "output": 0, "total": 0},
+      "token_usage": {
+        "estimated": 85000,
+        "input": 0,
+        "output": 0,
+        "total": 0
+      },
       "terminal_reason": null
+    },
+    {
+      "event_id": "evt-us1-004-post-merge-readback",
+      "at": "2026-08-09T07:32:18Z",
+      "actor": "codex-supervisor",
+      "type": "terminal_success",
+      "base_graph_version": 3,
+      "new_graph_version": 4,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [
+              "p-us1-merge-gate"
+            ],
+            "after": []
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-us1-backend.status",
+            "before": "verifying",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-us1-web.status",
+            "before": "verifying",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-us1-performance.status",
+            "before": "verifying",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-us1-merge-gate.status",
+            "before": "ready",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/g-us1-protected-merge.status",
+            "before": "needs_human",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/s-us1-terminal.status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/m-us1-ledger.status",
+            "before": "ready",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "specs/001-taiwan-basketball-magazine-ebook/tasks.md/T024-T031",
+            "before": "unchecked",
+            "after": "checked"
+          },
+          {
+            "op": "replace",
+            "path": "ledger.status",
+            "before": "running",
+            "after": "success"
+          },
+          {
+            "op": "replace",
+            "path": "ledger.terminal_state",
+            "before": null,
+            "after": "success"
+          },
+          {
+            "op": "replace",
+            "path": "ledger.next_action",
+            "before": "Commit the reviewed US1 slice, create a draft PR and use exact-head CI/Security as the authority for Java and Chromium proof.",
+            "after": "Dispatch Phase 4 T032/T033 tests-first on a new bounded graph."
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t024-t031-post-merge-readback-20260809.json",
+        "https://github.com/bynanci/courtside-tw/pull/61",
+        "https://github.com/bynanci/courtside-tw/commit/170a2de61d5d3c62071db674c9c97259fca9ac49",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31300262754",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31300262758",
+        "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "PR #61 merged-main read-back",
+          "level": "P3",
+          "result": "pass",
+          "head_sha": "752a309d7d2f9a0b95a2eb43f4b1fb58724d4140",
+          "merge_commit_sha": "170a2de61d5d3c62071db674c9c97259fca9ac49"
+        },
+        {
+          "proof": "CI #221 exact-head workflow",
+          "level": "P2",
+          "result": "pass",
+          "successful_jobs": 4,
+          "browser_tests": "3 passed"
+        },
+        {
+          "proof": "Security #221 exact-head workflow",
+          "level": "P2",
+          "result": "pass",
+          "successful_jobs": 8
+        },
+        {
+          "proof": "review thread read-back",
+          "level": "P2",
+          "result": "pass",
+          "unresolved_count": 0
+        },
+        {
+          "proof": "tasks.md main read-back",
+          "level": "P2",
+          "result": "pass",
+          "checked": [
+            "T024",
+            "T025",
+            "T026",
+            "T027",
+            "T028",
+            "T029",
+            "T030",
+            "T031"
+          ],
+          "unchecked": [
+            "T032",
+            "T033"
+          ]
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "SAVED",
+        "memory_id": "wm:project:courtside-tw:us1-t024-t031-completion",
+        "version": "main-readback-170a2de",
+        "retrieval_ids": [
+          ".loop/t024-t031-us1-public-magazine-ledger.json",
+          "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+        ],
+        "evidence_refs": [
+          ".loop/memory/t024-t031-us1-completion.json",
+          ".loop/evidence/t024-t031-post-merge-readback-20260809.json"
+        ],
+        "next_review_at": "2026-09-09",
+        "blocker": null
+      },
+      "failure_signature": null,
+      "decision": "US1 reached terminal success; start Phase 4 from the next unchecked tests-first tasks.",
+      "token_usage": {
+        "estimated": 9500,
+        "input": 0,
+        "output": 0,
+        "total": 9500
+      },
+      "terminal_reason": "PR #61 is merged at main@170a2de with exact-head CI/Security success, zero unresolved review threads, and task checkbox read-back."
     }
   ]
 }
