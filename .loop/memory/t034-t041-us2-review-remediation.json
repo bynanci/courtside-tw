@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "memory_id": "wm:project:courtside-tw:us2-t034-t041-review-remediation",
+  "scope": "project",
+  "kind": "task_state",
+  "title": "US2 public Article remediation is bounded and stops at human gates",
+  "summary": "PR #67 contains reader/API correctness remediation and focused fail-closed proof. The latest synchronization commit is awaiting exact-head workflow proof. Public media storage-key resolution, contributor source/contract and the approved p5.js runtime remain protected human gates.",
+  "claims": [
+    {
+      "text": "PR #67 is a draft branch from main@c45c1fd7e93699f4626e2ceab6b5fb6f52f38842 and does not merge or change task checkboxes.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "At exact head 9851bf7e9189995aaf46e34904ef698393108a39, frontend, Java quality, compose and Security passed; browser proof failed on the pre-hydration image fallback assertion.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Head 06992568be46a5b0dbf6a52e9b3ab14913e6c16 adds hydration-safe image fallback synchronization and async creative observation, but its workflow receipt is pending.",
+      "class": "PENDING",
+      "confidence": "high"
+    },
+    {
+      "text": "The repository still lacks an approved public media resolver, contributor source/contract and actual p5.js 2.x runtime dependency/proof.",
+      "class": "NEEDS_HUMAN",
+      "confidence": "high"
+    }
+  ],
+  "status": "needs_update",
+  "confidence": "high",
+  "confidence_basis": [
+    "https://github.com/bynanci/courtside-tw/pull/67",
+    "https://github.com/bynanci/courtside-tw/pull/65",
+    ".loop/evidence/t034-t041-us2-review-remediation-baseline-20260809.json"
+  ],
+  "volatility": "medium",
+  "as_of": "2026-08-09",
+  "source_refs": [
+    "https://github.com/bynanci/courtside-tw/pull/67",
+    "https://github.com/bynanci/courtside-tw/pull/65",
+    "https://github.com/bynanci/courtside-tw/blob/main/apps/api/src/main/resources/db/migration/V001__foundation.sql",
+    "specs/001-taiwan-basketball-magazine-ebook/adr/ADR-0005-motion-and-court-pulse-v1.md"
+  ],
+  "entities": [
+    "courtside-tw",
+    "US2",
+    "T034",
+    "T035",
+    "T036",
+    "T037",
+    "T038",
+    "T039",
+    "T040",
+    "T041",
+    "ArticleProjection",
+    "media_variant.public_storage_key",
+    "contributors",
+    "p5.js 2.x"
+  ],
+  "relations": {
+    "supports": ["wm:project:courtside-tw:us2-t034-t041-implementation-lane"],
+    "contradicts": [],
+    "supersedes": [],
+    "blocks": ["wm:project:courtside-tw:us2-t034-t041-implementation-lane"],
+    "invalidates": []
+  },
+  "next_review_at": "2026-08-09",
+  "sensitivity": "internal",
+  "retention": "until_superseded",
+  "write_receipt": {
+    "status": "SAVED",
+    "version": "review-remediation-v1",
+    "written_by": "codex-supervisor"
+  }
+}
