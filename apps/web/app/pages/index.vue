@@ -12,7 +12,9 @@ const {
 } = await useAsyncData("public-home-issues", () =>
   fetchPublicIssuePage(config.public.apiBaseUrl, 20)
 )
-const featuredIssue = computed(() => page.value?.items[0] ?? null)
+const featuredIssue = computed(
+  () => page.value?.items.find((issue) => issue.articleCount > 0) ?? null
+)
 const canonical = canonicalUrl(config.public.siteUrl, "/")
 
 useHead(() => ({
