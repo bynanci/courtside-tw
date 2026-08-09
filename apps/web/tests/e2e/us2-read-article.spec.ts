@@ -28,9 +28,7 @@ test.describe("US2 long-form public article", () => {
     const structuredData = JSON.parse(
       (await page.locator('script[type="application/ld+json"]').textContent()) ?? "{}"
     ) as { author?: unknown }
-    expect(structuredData.author).toEqual([
-      { "@type": "Person", name: "Courtside TW 主筆" }
-    ])
+    expect(structuredData.author).toEqual([{ "@type": "Person", name: "Courtside TW 主筆" }])
     await expect(
       page.locator('[data-testid="article-document"] .article-image img').first()
     ).toHaveAttribute("src", /\/media\/published\/opening-wide\.webp$/)
@@ -86,7 +84,7 @@ test.describe("US2 long-form public article", () => {
     await expect(page).toHaveURL(/\/articles\/courtside-notes\?issue=issue-2026-01$/)
     await expect(page.getByTestId("article-toc")).toBeVisible()
   })
-  
+
   test("keeps the final block when scrolling into article navigation", async ({ page }) => {
     await page.goto("/articles/opening-night?issue=issue-2026-01", {
       waitUntil: "domcontentloaded"
@@ -127,5 +125,4 @@ test.describe("US2 long-form public article", () => {
     await page.evaluate(() => window.dispatchEvent(new Event("scroll")))
     expect(pageErrors).toEqual([])
   })
-
 })
