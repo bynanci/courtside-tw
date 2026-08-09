@@ -79,7 +79,7 @@ memory_workflow:
 graph:
   entry_nodes: [x-main-readback]
   terminal_nodes: [s-us2-terminal]
-  current_frontier: [a-t032-tests, a-t033-tests]
+  current_frontier: [p-t032-red, p-t033-red]
   blocked_nodes: []
 
   loops:
@@ -256,7 +256,7 @@ graph:
       confidence:
         score: 0.85
         basis: "Static scope is bounded; exact red failure signatures and CI/Security results remain to be recorded."
-        evidence_refs: [" .loop/evidence/t032-t033-dispatch-20260809.json"]
+        evidence_refs: [".loop/evidence/t032-t033-dispatch-20260809.json"]
       budget: {effort_hours: 0.75, tokens: 8000}
       config:
         workflow: [inspect changed files, validate fixture, classify exact red failures, confirm no production code, preserve draft-only stop]
@@ -274,7 +274,7 @@ graph:
       confidence:
         score: 0.8
         basis: "Dispatch is reviewable after the draft PR exists and the exact red baseline is classified."
-        evidence_refs: [" .loop/evidence/t032-t033-dispatch-20260809.json"]
+        evidence_refs: [".loop/evidence/t032-t033-dispatch-20260809.json"]
       budget: {effort_hours: 0.5, tokens: 4500}
       config:
         level: P2
