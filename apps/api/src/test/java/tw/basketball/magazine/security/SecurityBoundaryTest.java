@@ -1,10 +1,12 @@
 package tw.basketball.magazine.security;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -51,6 +53,48 @@ final class SecurityBoundaryTest {
 
         assertEquals(413, response.getStatus());
         assertFalse(reachedChain.get());
+    }
+
+    @Test
+    void rejectsOversizedChunkedRequestBeforeApplicationChain() throws Exception {
+        byte[] body = new byte[(int) SecurityBoundaryPolicy.MAX_REQUEST_BODY_BYTES + 1];
+        MockHttpServletRequest request = new MockHttpServletRequest() {
+            @Override
+            public long getContentLengthLong() {
+                return -1;
+            }
+        };
+        request.setContent(body);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        AtomicBoolean reachedChain = new AtomicBoolean();
+
+        new RequestPayloadLimitFilter().doFilter(request, response, (ignoredRequest, ignoredResponse) ->
+                reachedChain.set(true)
+        );
+
+        assertEquals(413, response.getStatus());
+        assertFalse(reachedChain.get());
+    }
+
+    @Test
+    void replaysAcceptedChunkedBodyToApplicationChain() throws Exception {
+        byte[] body = "{"ok":true}".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        MockHttpServletRequest request = new MockHttpServletRequest() {
+            @Override
+            public long getContentLengthLong() {
+                return -1;
+            }
+        };
+        request.setContent(body);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        AtomicReference<byte[]> observedBody = new AtomicReference<>();
+
+        new RequestPayloadLimitFilter().doFilter(request, response, (wrappedRequest, ignoredResponse) ->
+                observedBody.set(wrappedRequest.getInputStream().readAllBytes())
+        );
+
+        assertArrayEquals(body, observedBody.get());
+        assertEquals(200, response.getStatus());
     }
 
     @Test
