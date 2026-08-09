@@ -112,7 +112,6 @@ const failedAssets = ref(new Set<string>())
 const motionMode = ref<"reduced" | "full">("reduced")
 const creativeInView = ref(false)
 const runtimeState = ref<"paused" | "running">("paused")
-const creativeElement = ref<HTMLElement | null>(null)
 let creativeObserver: IntersectionObserver | null = null
 
 useHead(() => {
@@ -326,10 +325,9 @@ function syncRuntimeState(): void {
 
 function observeCreative(): void {
   const target =
-    creativeElement.value ??
-    (typeof document !== "undefined"
+    typeof document !== "undefined"
       ? document.querySelector<HTMLElement>('[data-testid="generative-canvas"]')
-      : null)
+      : null
   if (!target) {
     return
   }
@@ -352,6 +350,7 @@ function observeCreative(): void {
 }
 
 async function shareArticle(): Promise<void> {
+  shareStatus.value = "分享連結已準備好"
   const url = canonical.value
   const title = article.value?.title ?? "Courtside TW"
   if (typeof navigator !== "undefined") {
@@ -395,16 +394,15 @@ function loadResumeProgress(): void {
 
 let stopResumeWatch: (() => void) | null = null
 
-onMounted(async () => {
+onMounted(() => {
   if (typeof window !== "undefined") {
     motionMode.value = window.matchMedia("(prefers-reduced-motion: reduce)").matches
       ? "reduced"
       : "full"
   }
   document.addEventListener("visibilitychange", syncRuntimeState)
-  await nextTick()
   stopResumeWatch = watch(resumeStorageKey, loadResumeProgress, { immediate: true })
-  observeCreative()
+  void nextTick().then(() => observeCreative())
 })
 
 onBeforeUnmount(() => {
@@ -616,7 +614,6 @@ onBeforeUnmount(() => {
                 {{ stringValue(payloadFor(block).dataSummary) }}
               </div>
               <div
-                ref="creativeElement"
                 data-testid="generative-canvas"
                 :data-seed="String(numberValue(payloadFor(block).seed))"
                 :data-render-hash="renderHash(block)"
