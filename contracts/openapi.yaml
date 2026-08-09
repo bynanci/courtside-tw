@@ -131,6 +131,7 @@ paths:
       security: []
       parameters:
         - $ref: "#/components/parameters/ArticleSlug"
+        - $ref: "#/components/parameters/IfNoneMatch"
       responses:
         "200":
           description: Successful response.
@@ -142,6 +143,8 @@ paths:
                 valid:
                   value:
                     articleId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    revisionId: 0190f7b0-7c4b-7e3a-8f12-123456789abd
+                    revisionNumber: 1
                     slug: article-1
                     title: Article 1
                     content:
@@ -151,7 +154,11 @@ paths:
                     issueNavigation:
                       issueSlug: issue-1
                       previous: null
-                      next: null
+                      next:
+                        articleId: 0190f7b0-7c4b-7e3a-8f12-123456789abe
+                        slug: article-2
+                        title: Article 2
+                        position: 2
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -159,6 +166,13 @@ paths:
           $ref: "#/components/responses/Problem400"
         "404":
           $ref: "#/components/responses/Problem404"
+        "304":
+          description: The current representation matches If-None-Match.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+            ETag:
+              $ref: "#/components/headers/ETag"
         "429":
           $ref: "#/components/responses/Problem429"
   /api/v1/public/search:
@@ -2047,6 +2061,8 @@ components:
       additionalProperties: false
       required:
         - articleId
+        - revisionId
+        - revisionNumber
         - slug
         - title
         - content
@@ -2054,6 +2070,11 @@ components:
       properties:
         articleId:
           $ref: "#/components/schemas/Uuid"
+        revisionId:
+          $ref: "#/components/schemas/Uuid"
+        revisionNumber:
+          type: integer
+          minimum: 1
         slug:
           type: string
         title:
@@ -2073,13 +2094,13 @@ components:
             issueSlug:
               type: string
             previous:
-              type:
-                - object
-                - "null"
+              oneOf:
+                - $ref: "#/components/schemas/ArticleSummary"
+                - type: "null"
             next:
-              type:
-                - object
-                - "null"
+              oneOf:
+                - $ref: "#/components/schemas/ArticleSummary"
+                - type: "null"
     SearchResult:
       type: object
       additionalProperties: false
