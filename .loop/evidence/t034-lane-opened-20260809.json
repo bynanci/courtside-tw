@@ -1,0 +1,36 @@
+{
+  "schema_version": "courtside-proof/v1",
+  "proof_id": "t034-lane-opened-20260809",
+  "recorded_at": "2026-08-09T08:24:55Z",
+  "result": "STACKED_IMPLEMENTATION_LANE_OPENED",
+  "repository": "bynanci/courtside-tw",
+  "base": {
+    "branch": "codex/t032-t033-us2-tests-first-20260809",
+    "head_sha": "49e3a1ccf2e154243a8533d12fde902160a3c2e7",
+    "pull_request": 63
+  },
+  "lane": {
+    "branch": "codex/t034-t041-us2-implementation-lane-20260809",
+    "head_sha": "a83771642afbc607620f7eb6b363fe572c81b0d7",
+    "pull_request": 65,
+    "draft": true,
+    "changed_files": 5,
+    "production_runtime_changed": false,
+    "task_checkboxes_changed": false
+  },
+  "scope": {
+    "first_slice": ["T034", "T035"],
+    "deferred": ["T036", "T037", "T038", "T039", "T040", "T041"],
+    "web3_wallet_passport_changed": false
+  },
+  "gate": {
+    "status": "needs_human",
+    "blocker": "CONTRACT_DRIFT_ARTICLE_PROJECTION_FIELDS",
+    "next_action": "Approve the canonical ArticleProjection field shape before runtime implementation."
+  },
+  "refs": {
+    "pull_request": "https://github.com/bynanci/courtside-tw/pull/65",
+    "base_commit": "https://github.com/bynanci/courtside-tw/commit/49e3a1ccf2e154243a8533d12fde902160a3c2e7",
+    "lane_commit": "https://github.com/bynanci/courtside-tw/commit/a83771642afbc607620f7eb6b363fe572c81b0d7"
+  }
+}
