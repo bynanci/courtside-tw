@@ -1,0 +1,53 @@
+{
+  "schema_version": "courtside-proof/v1",
+  "proof_id": "t034-contract-drift-20260809",
+  "recorded_at": "2026-08-09T08:16:20Z",
+  "result": "DISPUTED_CONTRACT",
+  "sources": [
+    {
+      "kind": "tests_first",
+      "ref": "apps/api/src/test/java/tw/basketball/magazine/publication/PublicArticleApiIT.java",
+      "claims": [
+        "revisionNumber is required by the positive projection assertion",
+        "issue.slug is required by the positive projection assertion",
+        "navigation.next.slug is required by the positive projection assertion"
+      ]
+    },
+    {
+      "kind": "canonical_api_contract",
+      "ref": "contracts/openapi.yaml#/components/schemas/ArticleProjection",
+      "claims": [
+        "issueNavigation.issueSlug is the declared navigation field",
+        "previous and next are declared inside issueNavigation",
+        "revisionNumber is not declared",
+        "additionalProperties is false"
+      ]
+    },
+    {
+      "kind": "task_scope",
+      "ref": "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T034-T035",
+      "claims": [
+        "T034 owns published projection logic",
+        "T035 owns the public Article endpoint, ETag, media variants and issue navigation"
+      ]
+    }
+  ],
+  "options_requiring_human_decision": [
+    {
+      "id": "canonical-openapi",
+      "description": "Keep issueNavigation as canonical, then update the T032 assertion in the tests-first lane and record the test correction.",
+      "tradeoff": "Preserves the already-approved contract but changes the red test artifact."
+    },
+    {
+      "id": "canonical-tests",
+      "description": "Treat the T032 field names as canonical, update OpenAPI/generated client and explicitly approve the public contract expansion.",
+      "tradeoff": "Preserves the current test but changes the API contract and its compatibility surface."
+    },
+    {
+      "id": "temporary-compatibility",
+      "description": "Return both shapes only if a time-bounded compatibility policy and schema update are approved.",
+      "tradeoff": "Adds duplicate public fields and must not bypass additionalProperties=false or generated-client checks."
+    }
+  ],
+  "guard": "No production T034/T035 code is added until one option is explicitly approved."
+}
