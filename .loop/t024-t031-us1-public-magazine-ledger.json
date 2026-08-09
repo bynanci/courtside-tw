@@ -1,0 +1,134 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-t024-t031-us1-public-magazine",
+  "graph_version": 1,
+  "run_id": "courtside-tw-us1-20260809",
+  "status": "running",
+  "iteration": 2,
+  "started_at": "2026-08-09T09:00:00Z",
+  "updated_at": "2026-08-09T09:15:00Z",
+  "current_frontier": ["a-us1-publication"],
+  "blocked_nodes": ["g-us1-protected-merge"],
+  "terminal_state": null,
+  "next_action": "Implement the bounded V002 public publication read projection and OpenAPI alignment, then rerun the same T024 tests.",
+  "events": [
+    {
+      "event_id": "evt-us1-001-dispatch",
+      "at": "2026-08-09T09:00:00Z",
+      "actor": "codex-supervisor",
+      "type": "us1_dispatched",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "graph.nodes/t-us1-ready",
+            "after": "Phase 2 is complete and T024/T025 are the first unchecked P1 tasks."
+          },
+          {
+            "op": "add",
+            "path": "graph.nodes/a-us1-tests-first",
+            "after": "User direction and the immersion review require the public Magazine journey to be proven before Passport/Web3 work."
+          }
+        ]
+      },
+      "evidence_refs": [
+        "specs/001-taiwan-basketball-magazine-ebook/tasks.md:T024-T031",
+        "specs/001-taiwan-basketball-magazine-ebook/spec.md:FR-001-FR-003",
+        "project_sources/03-03-courtside-tw-user-immersion-review-1-1.pptx",
+        "user:2026-08-09:phase-2-tasks-and-optimise"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "authoritative main reconciliation",
+          "level": "P3",
+          "result": "pass",
+          "main_sha": "9b2c6eaf59ae8425f5838ec2ba90ad1ff02fbb2e",
+          "phase_2": "T009-T023 checked",
+          "next_frontier": "T024-T031"
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": null,
+        "version": null,
+        "retrieval_ids": [
+          ".loop/t014-shared-foundation-ledger.json",
+          ".loop/memory/t017-audit-writer.json",
+          "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+        ],
+        "evidence_refs": [
+          "specs/001-taiwan-basketball-magazine-ebook/tasks.md:T024-T031",
+          "project_sources/03-03-courtside-tw-user-immersion-review-1-1.pptx"
+        ],
+        "next_review_at": "2026-08-09",
+        "blocker": null
+      },
+      "failure_signature": null,
+      "decision": "GRAPH_LOOP",
+      "token_usage": {"estimated": 85000, "input": 0, "output": 0, "total": 0},
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-us1-002-tests-first-red",
+      "at": "2026-08-09T09:15:00Z",
+      "actor": "codex-agent",
+      "type": "tests_first_baseline",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": "a-us1-tests-first",
+            "after": "a-us1-publication"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-us1-red-baseline.status",
+            "before": "planned",
+            "after": "done"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t024-t025-tests-first-baseline-20260809.json",
+        "apps/web/tests/unit/public-issue-contract.test.ts",
+        "apps/api/src/test/java/tw/basketball/magazine/publication/PublicIssueApiIT.java"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "focused public-Issue web contract test",
+          "level": "P1",
+          "result": "expected_red",
+          "failure_signature": "ERR_MODULE_NOT_FOUND: apps/web/app/features/issues/public-issue-contract.ts",
+          "classification": "intended_missing_us1_runtime_boundary"
+        },
+        {
+          "proof": "focused Java integration test",
+          "level": "P1",
+          "result": "deferred_to_ci",
+          "reason": "Local runner lacks Java 21 and Gradle 8.14.3; no substitute toolchain was used."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": null,
+        "version": null,
+        "retrieval_ids": [
+          ".loop/t024-t031-us1-public-magazine-ledger.json",
+          "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+        ],
+        "evidence_refs": [".loop/evidence/t024-t025-tests-first-baseline-20260809.json"],
+        "next_review_at": "2026-08-09",
+        "blocker": null
+      },
+      "failure_signature": "ERR_MODULE_NOT_FOUND: apps/web/app/features/issues/public-issue-contract.ts",
+      "decision": "IMPLEMENT_US1_PUBLICATION_BOUNDARY",
+      "token_usage": {"estimated": 85000, "input": 0, "output": 0, "total": 0},
+      "terminal_reason": null
+    }
+  ]
+}
