@@ -50,20 +50,22 @@ const issueDetail = {
 }
 
 const apiServer = createServer((request, response) => {
+  const requestUrl = new URL(request.url ?? "/", webOrigin)
+
   response.setHeader("access-control-allow-origin", webOrigin)
   response.setHeader("access-control-allow-credentials", "true")
   response.setHeader("x-request-id", "e2e-public-api")
   response.setHeader("cache-control", "public, max-age=60, must-revalidate")
 
-  if (request.url === "/api/v1/public/issues") {
+  if (requestUrl.pathname === "/api/v1/public/issues") {
     writeJson(response, 200, { items: [issue], page: { nextCursor: null, limit: 20 } })
     return
   }
-  if (request.url === "/api/v1/public/issues/issue-2026-01") {
+  if (requestUrl.pathname === "/api/v1/public/issues/issue-2026-01") {
     writeJson(response, 200, issueDetail)
     return
   }
-  if (request.url?.startsWith("/media/")) {
+  if (requestUrl.pathname.startsWith("/media/")) {
     response.writeHead(204)
     response.end()
     return
