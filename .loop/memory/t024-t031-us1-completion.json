@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "memory_id": "wm:project:courtside-tw:us1-t024-t031-completion",
+  "scope": "project",
+  "kind": "task_state",
+  "title": "US1 public magazine T024-T031 completed on main",
+  "summary": "The bounded US1 public magazine slice is merged and verified on main; T032/T033 remain the next tests-first frontier.",
+  "claims": [
+    {
+      "text": "PR #61 head 752a309 was merged into main as 170a2de after exact-head CI #221, Security #221, and zero unresolved review threads.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "T024 through T031 are checked in tasks.md only after the merged-main read-back; T032 and T033 remain unchecked.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The remaining US1 follow-ups are production API-origin/CSP alignment and sitemap pagination; neither expands the Phase 4 tests-first scope.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    }
+  ],
+  "status": "verified",
+  "confidence": "high",
+  "confidence_basis": [
+    "main read-back at 170a2de61d5d3c62071db674c9c97259fca9ac49",
+    "CI run 31300262754",
+    "Security run 31300262758",
+    ".loop/evidence/t024-t031-post-merge-readback-20260809.json"
+  ],
+  "volatility": "medium",
+  "as_of": "2026-08-09",
+  "source_refs": [
+    "https://github.com/bynanci/courtside-tw/pull/61",
+    "https://github.com/bynanci/courtside-tw/commit/170a2de61d5d3c62071db674c9c97259fca9ac49",
+    ".loop/evidence/t024-t031-post-merge-readback-20260809.json",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+  ],
+  "entities": [
+    "courtside-tw",
+    "US1",
+    "T024",
+    "T025",
+    "T026",
+    "T027",
+    "T028",
+    "T029",
+    "T030",
+    "T031",
+    "T032",
+    "T033"
+  ],
+  "relations": {
+    "supports": [],
+    "contradicts": [],
+    "supersedes": [],
+    "blocks": [],
+    "invalidates": []
+  },
+  "next_review_at": "2026-09-09",
+  "sensitivity": "internal",
+  "retention": "until_superseded"
+}
