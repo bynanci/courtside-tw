@@ -1,0 +1,42 @@
+{
+  "schema_version": "courtside-tw/task-completion-reconciliation/v2",
+  "as_of": "2026-08-09",
+  "kind": "task_completion_reconciliation",
+  "decision": "COMPLETED",
+  "scope": {
+    "repository": "bynanci/courtside-tw",
+    "base_sha": "b49bbf030887d3d490aab60997696e647cf703f4",
+    "branch": "chore/reconcile-t032-t033-after-v003-20260809",
+    "changed_runtime_files": false,
+    "changed_database_files": false
+  },
+  "completed_tasks": [
+    {
+      "id": "T032",
+      "status": "completed",
+      "evidence": [
+        "PR #65 public Article API implementation and published/draft/withdrawn/history/media-rights/navigation assertions",
+        "PR #67 merged reader/API remediation and exact public contract proof",
+        "CI #316 and Security #316 passed on the merged implementation head"
+      ]
+    },
+    {
+      "id": "T033",
+      "status": "completed",
+      "evidence": [
+        "PR #65/PR #67 mobile SSR, no-JS, reduced-motion, resume, navigation, media fallback and creative lifecycle tests",
+        "CI #316 browser verification passed"
+      ]
+    }
+  ],
+  "scope_guard": [
+    "Only T032 and T033 checkboxes changed.",
+    "T034-T041 remain unchecked because task-level completion requires separate reconciliation.",
+    "No production migration execution, public activation, Web3, Wallet, Passport or deployment state is claimed."
+  ],
+  "verification": {
+    "task_diff": "T032/T033 only",
+    "implementation_base": "b49bbf030887d3d490aab60997696e647cf703f4"
+  },
+  "terminal_state": "COMPLETED"
+}

@@ -88,8 +88,8 @@
 
 ### Tests for User Story 2 — write first
 
-- [ ] T032 [P] [US2] Write failing article projection and authorization tests for FR-004–FR-010 in `apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java`; cover published revision selection, withdrawn/draft/history denial, media rights and issue navigation.
-- [ ] T033 [P] [US2] Write failing reader E2E tests in `apps/web/tests/e2e/us2-read-article.spec.ts`, `apps/web/tests/e2e/us2-no-js.spec.ts`, `apps/web/tests/e2e/us2-reduced-motion.spec.ts`, and visual fixtures in `apps/web/tests/fixtures/content-document-v1.json`; include image failure, reload resume, previous/next navigation, SSR generative poster, lazy p5 load, fixed-seed output, visibility pause and route-unmount disposal.
+- [x] T032 [P] [US2] Write failing article projection and authorization tests for FR-004–FR-010 in `apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java`; cover published revision selection, withdrawn/draft/history denial, media rights and issue navigation.
+- [x] T033 [P] [US2] Write failing reader E2E tests in `apps/web/tests/e2e/us2-read-article.spec.ts`, `apps/web/tests/e2e/us2-no-js.spec.ts`, `apps/web/tests/e2e/us2-reduced-motion.spec.ts`, and visual fixtures in `apps/web/tests/fixtures/content-document-v1.json`; include image failure, reload resume, previous/next navigation, SSR generative poster, lazy p5 load, fixed-seed output, visibility pause and route-unmount disposal.
 
 ### Implementation for User Story 2
 
