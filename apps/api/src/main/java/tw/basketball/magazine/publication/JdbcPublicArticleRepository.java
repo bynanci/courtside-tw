@@ -262,11 +262,11 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
             String fieldName = field.getKey();
             JsonNode value = field.getValue();
             if (fieldName.equals("assetId") || fieldName.equals("posterAssetId")) {
-                if (value == null || !value.isTextual()) {
+                if (value == null || !value.isString()) {
                     throw new IllegalArgumentException("asset id must be a string");
                 }
                 try {
-                    assetIds.add(UUID.fromString(value.asText()));
+                    assetIds.add(UUID.fromString(value.asString()));
                 } catch (IllegalArgumentException exception) {
                     throw new IllegalArgumentException("asset id must be a UUID", exception);
                 }
