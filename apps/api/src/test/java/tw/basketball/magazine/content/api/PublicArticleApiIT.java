@@ -50,8 +50,8 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.slug").value("opening-night"))
                 .andExpect(jsonPath("$.revisionNumber").value(1))
-                .andExpect(jsonPath("$.issue.slug").value(issue.slug()))
-                .andExpect(jsonPath("$.navigation.next.slug").value("courtside-notes"))
+                .andExpect(jsonPath("$.issueNavigation.issueSlug").value(issue.slug()))
+                .andExpect(jsonPath("$.issueNavigation.next.slug").value("courtside-notes"))
                 .andExpect(jsonPath("$.content.blocks[0].type").value("paragraph"));
     }
 
