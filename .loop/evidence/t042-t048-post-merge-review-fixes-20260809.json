@@ -1,0 +1,203 @@
+{
+  "schema_version": "courtside-tw/us2-post-merge-review-fixes-proof/v1",
+  "as_of": "2026-08-09",
+  "kind": "implementation_and_verification",
+  "decision": "BOUNDED_IMPLEMENTATION_VERIFIED",
+  "scope": {
+    "repository": "bynanci/courtside-tw",
+    "pull_request": 69,
+    "branch": "fix/us2-review-findings-20260809",
+    "base_sha": "d86d59eade447ad79f927079735d1efa48ebad38",
+    "implementation_head_sha": "86cba75a48b15469358ec62e88ff032fbad6e2d6",
+    "draft": true,
+    "merge_requested": false
+  },
+  "decisions": [
+    {
+      "id": "GENERATIVE_POSTER_STANDARD_VARIANT",
+      "status": "implemented_and_verified",
+      "source": "public media pipeline standard variant",
+      "contract": "Generative-canvas poster projection requests wide, the variant emitted by the standard public pipeline.",
+      "behavior": [
+        "The API no longer requests the non-standard poster variant for generative-canvas blocks.",
+        "The browser fixture exposes the public wide asset and the browser proof asserts its selected URL."
+      ],
+      "files": [
+        "apps/api/src/main/java/tw/basketball/magazine/publication/JdbcPublicArticleRepository.java",
+        "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java",
+        "apps/web/app/pages/articles/[articleSlug].vue",
+        "apps/web/tests/e2e/start-server.mjs",
+        "apps/web/tests/e2e/us2-no-js.spec.ts",
+        "apps/web/tests/e2e/us2-read-article.spec.ts"
+      ]
+    },
+    {
+      "id": "CONTRIBUTOR_DB_FAILURE_PROPAGATION",
+      "status": "implemented_and_verified",
+      "source": "JdbcPublicArticleRepository contributor projection",
+      "contract": "Contributor database failures propagate to the API error boundary instead of being converted to article not-found.",
+      "behavior": [
+        "Only IllegalArgumentException from projection validation is handled as an empty contributor projection.",
+        "The API integration proof makes article_contributor unavailable and asserts DataAccessException."
+      ],
+      "files": [
+        "apps/api/src/main/java/tw/basketball/magazine/publication/JdbcPublicArticleRepository.java",
+        "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java"
+      ]
+    },
+    {
+      "id": "ROLE_AWARE_BYLINE_AND_JSONLD",
+      "status": "implemented_and_verified",
+      "source": "ArticleProjection.contributors[].role",
+      "contract": "Reader credits show contributor roles, while JSON-LD author contains AUTHOR contributors only.",
+      "behavior": [
+        "The browser fixture contains AUTHOR, EDITOR and PHOTOGRAPHER contributors.",
+        "The browser proof asserts all role credits and exactly one JSON-LD author."
+      ],
+      "files": [
+        "apps/web/app/pages/articles/[articleSlug].vue",
+        "apps/web/tests/e2e/start-server.mjs",
+        "apps/web/tests/e2e/us2-read-article.spec.ts"
+      ]
+    },
+    {
+      "id": "FINAL_BLOCK_PROGRESS",
+      "status": "implemented_and_verified",
+      "source": "Article reader scroll and resume persistence",
+      "contract": "When the viewport reaches document bottom or final navigation, progress persists the final rendered block rather than blocks[0].",
+      "behavior": [
+        "The reader has no blocks[0] fallback.",
+        "At document end, the last data-block-id is selected before visible-block scanning.",
+        "The browser proof reaches document bottom and asserts the stored block ID equals the final fixture block."
+      ],
+      "files": [
+        "apps/web/app/pages/articles/[articleSlug].vue",
+        "apps/web/tests/e2e/us2-read-article.spec.ts"
+      ]
+    },
+    {
+      "id": "HYDRATION_SAFE_CREATIVE_OPT_IN",
+      "status": "implemented_and_verified",
+      "source": "clientReady and motionMode state",
+      "contract": "Reduced-motion creative opt-in is not rendered until client hydration has completed.",
+      "behavior": [
+        "The opt-in button requires clientReady, reduced motion and interactiveEnabled=false.",
+        "The browser reduced-motion proof waits for hydration, then verifies opt-in creates the runtime."
+      ],
+      "files": [
+        "apps/web/app/pages/articles/[articleSlug].vue",
+        "apps/web/tests/e2e/us2-reduced-motion.spec.ts"
+      ]
+    },
+    {
+      "id": "PER_CANVAS_VISIBILITY_RUNTIME",
+      "status": "implemented_and_verified",
+      "source": "per-block creative visibility and runtime maps",
+      "contract": "Each generative canvas has independent visibility and paused/running lifecycle state.",
+      "behavior": [
+        "Visibility is tracked by block ID with separate observers and a bounded visibility watch.",
+        "The browser proof uses two generative blocks and verifies independent runtime state while scrolling and hiding the document."
+      ],
+      "files": [
+        "apps/web/app/pages/articles/[articleSlug].vue",
+        "apps/web/tests/fixtures/content-document-v1.json",
+        "apps/web/tests/e2e/us2-reduced-motion.spec.ts"
+      ]
+    },
+    {
+      "id": "LOCAL_STORAGE_FAIL_SAFE",
+      "status": "implemented_and_verified",
+      "source": "resume storage wrappers",
+      "contract": "localStorage get/set exceptions disable resume persistence without breaking article reading.",
+      "behavior": [
+        "All resume localStorage reads and writes are guarded by try/catch.",
+        "The browser proof replaces localStorage with a throwing getter and asserts no page error."
+      ],
+      "files": [
+        "apps/web/app/pages/articles/[articleSlug].vue",
+        "apps/web/tests/e2e/us2-read-article.spec.ts"
+      ]
+    }
+  ],
+  "verification": {
+    "ci_run": {
+      "run_number": 333,
+      "run_id": 31322183085,
+      "conclusion": "success",
+      "jobs": {
+        "frontend_and_contract_verification": "success",
+        "docker_compose_dependency_health": "success",
+        "java_quality_and_unit_verification": "success",
+        "public_magazine_browser_verification": "success"
+      }
+    },
+    "security_run": {
+      "run_number": 333,
+      "run_id": 31322183089,
+      "conclusion": "success",
+      "jobs": {
+        "dependency_audit_and_reports": "success",
+        "codeql_javascript_typescript": "success",
+        "codeql_java_kotlin": "success",
+        "trivy_filesystem": "success",
+        "trivy_image_oidc": "success",
+        "trivy_image_postgres": "success",
+        "trivy_image_s3": "success"
+      }
+    },
+    "browser": {
+      "job_id": 93266881906,
+      "tests": 11,
+      "passed": 11,
+      "conclusion": "success",
+      "targeted_proof": [
+        "SSR article blocks and standard wide generative poster without JavaScript",
+        "Contributor role labels and AUTHOR-only JSON-LD",
+        "Final block progress after reaching document bottom",
+        "localStorage get/set failure safety",
+        "Hydration-gated reduced-motion creative opt-in",
+        "Independent visibility/runtime state for multiple generative canvases"
+      ]
+    },
+    "contract_and_integration": {
+      "content_document": "success",
+      "openapi": "success",
+      "public_article_api_integration": "success",
+      "contributor_database_failure_propagation": "success",
+      "dependency_lock_install": "success",
+      "prettier_and_lint": "success"
+    }
+  },
+  "failure_signatures": [
+    {
+      "signature": "BROWSER_SCROLL_LAYOUT_SHIFT_WRITES_MIDDLE_BLOCK",
+      "status": "resolved",
+      "resolution": "Production progress selection prioritizes the last block at document end; the browser proof stabilizes reduced-motion layout and waits for the true document bottom before asserting."
+    },
+    {
+      "signature": "PRETTIER_FOLLOWUP_FILES_UNFORMATTED",
+      "status": "resolved",
+      "resolution": "The changed Vue and browser test files were formatted with Prettier 3.9.6 before the passing exact-head run."
+    }
+  ],
+  "human_gates": [
+    {
+      "id": "PROTECTED_MERGE",
+      "status": "needs_human",
+      "reason": "PR #69 remains draft and this lane does not merge."
+    },
+    {
+      "id": "PRODUCTION_MIGRATION_AND_ACTIVATION",
+      "status": "needs_human",
+      "reason": "No production migration execution, activation or deployment was performed."
+    },
+    {
+      "id": "TASK_CHECKBOX_UPDATE",
+      "status": "needs_human",
+      "reason": "No task checkbox or protected project state was changed."
+    }
+  ],
+  "terminal_state": "needs_human",
+  "next_action": "Human review of PR #69; if approved, use the protected workflow for merge and separately decide production migration/activation and task state."
+}
+
