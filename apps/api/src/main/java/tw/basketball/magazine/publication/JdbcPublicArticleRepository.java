@@ -4,7 +4,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -157,15 +156,7 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
                 article.issueId(),
                 Timestamp.from(now)
         );
-        int currentIndex = navigationItems.indexOf(new ArticleSummary(
-                article.articleId(),
-                article.slug(),
-                article.title(),
-                0
-        ));
-        if (currentIndex < 0) {
-            currentIndex = findArticleIndex(navigationItems, article.articleId());
-        }
+        int currentIndex = findArticleIndex(navigationItems, article.articleId());
         if (currentIndex < 0) {
             return Optional.empty();
         }
