@@ -129,6 +129,7 @@ const resumeProgress = ref<ResumeProgress | null>(null)
 const shareStatus = ref("")
 const failedAssets = ref(new Set<string>())
 const motionMode = ref<"reduced" | "full">("reduced")
+const clientReady = ref(false)
 const interactiveEnabled = ref(false)
 const creativeInView = ref(false)
 const runtimeState = ref<"paused" | "running">("paused")
@@ -606,6 +607,9 @@ onMounted(() => {
     },
     { immediate: true }
   )
+  void nextTick().then(() => {
+    clientReady.value = true
+  })
 })
 
 onBeforeUnmount(() => {
@@ -641,6 +645,7 @@ onBeforeUnmount(() => {
         v-if="article"
         data-testid="article-document"
         :data-motion="motionMode"
+        :data-client-ready="String(clientReady)"
         aria-labelledby="article-heading"
       >
         <header class="article-header" data-testid="article-header">
