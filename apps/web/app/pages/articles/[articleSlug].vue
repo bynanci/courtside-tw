@@ -675,7 +675,7 @@ onMounted(() => {
     window.addEventListener("beforeunload", saveReadingProgress)
   }
   document.addEventListener("scroll", handleReaderScroll, { passive: true, capture: true })
-  document.addEventListener("visibilitychange", syncRuntimeState)
+  document.addEventListener("visibilitychange", syncRuntimeStates)
   stopResumeWatch = watch(resumeStorageKey, loadResumeProgress, { immediate: true })
   stopCreativeWatch = watch(
     () => article.value?.revisionId,
@@ -697,7 +697,7 @@ onBeforeUnmount(() => {
   stopResumeWatch?.()
   stopCreativeWatch?.()
   document.removeEventListener("scroll", handleReaderScroll, true)
-  document.removeEventListener("visibilitychange", syncRuntimeState)
+  document.removeEventListener("visibilitychange", syncRuntimeStates)
   window.removeEventListener("scroll", handleReaderScroll)
   window.removeEventListener("beforeunload", saveReadingProgress)
   stopCreativeVisibilityWatch()
