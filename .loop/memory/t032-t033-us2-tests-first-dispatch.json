@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "memory_id": "wm:project:courtside-tw:us2-t032-t033-tests-first-dispatch",
+  "scope": "project",
+  "kind": "task_state",
+  "title": "Phase 4 T032/T033 tests-first dispatch",
+  "summary": "Phase 4 starts with bounded T032/T033 red tests and an all-block reader fixture; T034+ implementation remains out of scope until the red baseline is classified.",
+  "claims": [
+    {
+      "text": "Main at 2ae2a5e contains completed T024-T031 and leaves T032/T033 unchecked.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "T032/T033 tests and the named fixture are dispatched on a separate branch without production runtime changes.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The exact CI red failure signatures are pending and must be classified before the dispatch can reach its terminal success state.",
+      "class": "UNKNOWN",
+      "confidence": "medium"
+    }
+  ],
+  "status": "verified",
+  "confidence": "high",
+  "confidence_basis": [
+    "main read-back at 2ae2a5eeef9bc7ec3098b75205a7250e3a397960",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    ".loop/evidence/t032-t033-dispatch-20260809.json"
+  ],
+  "volatility": "medium",
+  "as_of": "2026-08-09",
+  "source_refs": [
+    "https://github.com/bynanci/courtside-tw/commit/2ae2a5eeef9bc7ec3098b75205a7250e3a397960",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    ".loop/evidence/t032-t033-dispatch-20260809.json",
+    "conversation:2026-08-09:dispatch-t032-t033"
+  ],
+  "entities": [
+    "courtside-tw",
+    "Phase4",
+    "US2",
+    "T032",
+    "T033",
+    "ContentDocument",
+    "public-article-reader"
+  ],
+  "relations": {
+    "supports": [],
+    "contradicts": [],
+    "supersedes": [],
+    "blocks": [],
+    "invalidates": []
+  },
+  "next_review_at": "2026-08-10",
+  "sensitivity": "internal",
+  "retention": "until_superseded"
+}
