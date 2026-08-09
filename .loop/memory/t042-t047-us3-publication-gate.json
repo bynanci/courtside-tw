@@ -1,0 +1,36 @@
+{
+  "memory_id": "courtside-us3-publication-gate-20260809-v1",
+  "memory_type": "project_state",
+  "status": "DRAFT",
+  "confidence": "MEDIUM",
+  "project": "bynanci/courtside-tw",
+  "title": "US3 editorial publication gate frontier",
+  "source_refs": [
+    "repo:main@fcc18d948073433d2a6e2397329391ef125c091c",
+    "repo:specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    "attachment:courtside-montage(1).png"
+  ],
+  "claims": [
+    {
+      "claim_id": "direction",
+      "classification": "INFERRED",
+      "text": "The supplied immersion review supports magazine-first reading, human-language provenance, Reader Stamp after value, and wallet-optional sequencing.",
+      "evidence": "attachment:courtside-montage(1).png"
+    },
+    {
+      "claim_id": "frontier",
+      "classification": "CONFIRMED",
+      "text": "US3 editorial workflow tasks T042-T056 remain the next implementation lane after the merged US2 public reader fixes.",
+      "evidence": "repo:specs/001-taiwan-basketball-magazine-ebook/tasks.md; repo:main@fcc18d948073433d2a6e2397329391ef125c091c"
+    },
+    {
+      "claim_id": "proof",
+      "classification": "UNKNOWN",
+      "text": "The new domain and V004 implementation has not yet passed exact-head CI or security proof.",
+      "evidence": "This receipt is written before implementation-head workflow completion."
+    }
+  ],
+  "supersedes": [],
+  "next_action": "Run exact-head Java, migration, browser/API scope, and security checks; update this receipt only with durable proof.",
+  "next_review": "After the draft pull request head and CI/Security runs are available"
+}
