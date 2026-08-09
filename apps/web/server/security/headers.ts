@@ -8,10 +8,17 @@ export const SECURITY_HEADERS = {
   "Strict-Transport-Security": "max-age=31536000; includeSubDomains"
 } as const
 
-export function applySecurityHeaders(response: {
-  setHeader(name: string, value: string): void
-}): void {
+export function applySecurityHeaders(
+  response: { setHeader(name: string, value: string): void },
+  nonce?: string
+): void {
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
-    response.setHeader(name, value)
+    const headerValue =
+      name === "Content-Security-Policy" && nonce
+        ? value
+            .replace("script-src 'self'", "script-src 'self' 'nonce-" + nonce + "'")
+            .replace("style-src 'self'", "style-src 'self' 'nonce-" + nonce + "'")
+        : value
+    response.setHeader(name, headerValue)
   }
 }
