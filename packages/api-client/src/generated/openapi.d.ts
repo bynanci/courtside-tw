@@ -677,14 +677,16 @@ export interface components {
     }
     ArticleProjection: {
       articleId: components["schemas"]["Uuid"]
+      revisionId: components["schemas"]["Uuid"]
+      revisionNumber: number
       slug: string
       title: string
       dek?: string
       content: components["schemas"]["content-document.schema"]
       issueNavigation: {
         issueSlug: string
-        previous: Record<string, never> | null
-        next: Record<string, never> | null
+        previous: components["schemas"]["ArticleSummary"] | null
+        next: components["schemas"]["ArticleSummary"] | null
       }
     }
     SearchResult: {
