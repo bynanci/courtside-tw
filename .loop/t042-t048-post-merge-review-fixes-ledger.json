@@ -1,0 +1,209 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-post-merge-review-fixes",
+  "graph_version": 2,
+  "run_id": "courtside-tw-post-merge-review-fixes-20260809",
+  "status": "needs_human",
+  "iteration": 2,
+  "started_at": "2026-08-09",
+  "updated_at": "2026-08-09",
+  "current_frontier": [
+    "g-protected-closure"
+  ],
+  "blocked_nodes": [
+    "g-protected-closure"
+  ],
+  "terminal_state": "needs_human",
+  "next_action": "Human review of verified PR #69, then decide protected merge, production migration/activation and task-state changes.",
+  "events": [
+    {
+      "event_id": "evt-post-merge-review-fixes-001",
+      "at": "2026-08-09",
+      "actor": "codex-supervisor",
+      "type": "review_frontier_readback",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "lane",
+            "value": "PR #67 post-merge review fixes"
+          },
+          {
+            "op": "add",
+            "path": "findings",
+            "value": [
+              "standard wide generative poster variant",
+              "contributor database failures remain 5xx",
+              "role-aware byline and JSON-LD authors",
+              "final-block progress at document end",
+              "hydration-safe creative opt-in",
+              "per-canvas visibility and localStorage failure safety"
+            ]
+          },
+          {
+            "op": "add",
+            "path": "frontier",
+            "value": [
+              "a-api-review-fixes",
+              "a-reader-review-fixes",
+              "a-focused-regression-proof",
+              "g-protected-closure"
+            ]
+          }
+        ]
+      },
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/pull/67",
+        "https://github.com/bynanci/courtside-tw/pull/69"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "PR #69 branch created from main@d86d59eade447ad79f927079735d1efa48ebad38",
+          "level": "P2",
+          "result": "scoped",
+          "ci_run": null,
+          "security_run": null
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "SAVED",
+        "memory_id": "wm:project:courtside-tw:us2-post-merge-review-fixes",
+        "version": "post-merge-review-fixes-v1",
+        "retrieval_ids": [
+          "wm:project:courtside-tw:us2-t034-t041-review-remediation"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t042-t048-post-merge-review-fixes-20260809.json"
+        ],
+        "next_review_at": "2026-08-09",
+        "blocker": "Implementation and exact-head proof were not yet available at readback."
+      },
+      "failure_signature": null,
+      "decision": "BOUNDED_REVIEW_SCOPE_LOCKED",
+      "token_usage": {
+        "estimated": 16000,
+        "input": 0,
+        "output": 0,
+        "total": 16000
+      },
+      "terminal_reason": "The lane is bounded to PR #69 and stops before protected human actions."
+    },
+    {
+      "event_id": "evt-post-merge-review-fixes-002",
+      "at": "2026-08-09",
+      "actor": "codex-supervisor",
+      "type": "implementation_proof_receipt",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "value": [
+              "g-protected-closure"
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "graph.blocked_nodes",
+            "value": [
+              "g-protected-closure"
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "proof_node",
+            "value": "p-exact-head=done"
+          },
+          {
+            "op": "add",
+            "path": "human_gates",
+            "value": [
+              "protected_merge",
+              "production_migration_activation",
+              "task_checkbox_update"
+            ]
+          },
+          {
+            "op": "add",
+            "path": "resolved_failure",
+            "value": "BROWSER_SCROLL_LAYOUT_SHIFT_WRITES_MIDDLE_BLOCK"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t042-t048-post-merge-review-fixes-20260809.json",
+        "https://github.com/bynanci/courtside-tw/pull/69"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Implementation head 86cba75a48b15469358ec62e88ff032fbad6e2d6",
+          "level": "P3",
+          "result": "success",
+          "ci_run": 31322183085,
+          "ci_conclusion": "success",
+          "ci_jobs": {
+            "frontend_and_contract_verification": "success",
+            "docker_compose_dependency_health": "success",
+            "java_quality_and_unit_verification": "success",
+            "public_magazine_browser_verification": "success"
+          },
+          "security_run": 31322183089,
+          "security_conclusion": "success",
+          "security_jobs": {
+            "dependency_audit_and_reports": "success",
+            "codeql_javascript_typescript": "success",
+            "codeql_java_kotlin": "success",
+            "trivy_filesystem": "success",
+            "trivy_image_oidc": "success",
+            "trivy_image_postgres": "success",
+            "trivy_image_s3": "success"
+          }
+        },
+        {
+          "proof": "Public magazine browser verification",
+          "level": "P3",
+          "result": "success",
+          "job_id": 93266881906,
+          "tests": 11,
+          "passed": 11,
+          "conclusion": "success",
+          "targeted_lifecycle": [
+            "standard wide generative poster resolution",
+            "role-aware credits and JSON-LD author filtering",
+            "final block progress at document end",
+            "localStorage exception safety",
+            "hydration-gated creative opt-in",
+            "independent multi-canvas visibility/runtime states"
+          ]
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "SAVED",
+        "memory_id": "wm:project:courtside-tw:us2-post-merge-review-fixes",
+        "version": "post-merge-review-fixes-v2",
+        "retrieval_ids": [
+          "wm:project:courtside-tw:us2-t034-t041-review-remediation"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t042-t048-post-merge-review-fixes-20260809.json"
+        ],
+        "next_review_at": "2026-08-09",
+        "blocker": "Protected merge, production activation and task-state approval remain human gates."
+      },
+      "failure_signature": "BROWSER_SCROLL_LAYOUT_SHIFT_WRITES_MIDDLE_BLOCK",
+      "decision": "BOUNDED_IMPLEMENTATION_VERIFIED_NEEDS_HUMAN",
+      "token_usage": {
+        "estimated": 42000,
+        "input": 0,
+        "output": 0,
+        "total": 42000
+      },
+      "terminal_reason": "All requested review fixes and exact-head proof are closed; the lane stops at protected human gates."
+    }
+  ]
+}
+

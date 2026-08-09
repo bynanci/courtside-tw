@@ -183,7 +183,7 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
         List<Contributor> contributors;
         try {
             contributors = findContributors(article.revisionId());
-        } catch (RuntimeException exception) {
+        } catch (IllegalArgumentException exception) {
             return Optional.empty();
         }
 
@@ -317,7 +317,7 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
             switch (typeNode.asString()) {
                 case "image" -> references.add(reference(payload, "assetId", variant(payload, "inline")));
                 case "gallery" -> addGalleryReferences(references, payload);
-                case "generative-canvas" -> references.add(reference(payload, "posterAssetId", "poster"));
+                case "generative-canvas" -> references.add(reference(payload, "posterAssetId", "wide"));
                 default -> {
                     // Non-media blocks do not require a public media resolution.
                 }

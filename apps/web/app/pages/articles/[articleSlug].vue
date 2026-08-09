@@ -131,15 +131,31 @@ const failedAssets = ref(new Set<string>())
 const motionMode = ref<"reduced" | "full">("reduced")
 const clientReady = ref(false)
 const interactiveEnabled = ref(false)
-const creativeInView = ref(false)
-const runtimeState = ref<"paused" | "running">("paused")
-let creativeObserver: IntersectionObserver | null = null
+const creativeInViewByBlock = ref<Record<string, boolean>>({})
+const runtimeStateByBlock = ref<Record<string, "paused" | "running">>({})
+const resumeStorageDisabled = ref(false)
+const creativeObservers = new Map<string, IntersectionObserver>()
 let creativeVisibilityTimer: number | null = null
 
 useHead(() => {
   const current = article.value
   const title = current ? current.title + " — Courtside TW" : "文章閱讀頁 — Courtside TW"
   const description = current?.dek ?? "Courtside TW 的公開文章閱讀頁。"
+  const structuredData: Record<string, unknown> = {
+    "@context": "https://schema.org",
+    "@type": "Article",
+    headline: current?.title,
+    description,
+    url: canonical.value,
+    inLanguage: "zh-Hant-TW"
+  }
+  const authors = current?.contributors.filter((contributor) => contributor.role === "AUTHOR") ?? []
+  if (authors.length > 0) {
+    structuredData.author = authors.map((contributor) => ({
+      "@type": "Person",
+      name: contributor.displayName
+    }))
+  }
   return {
     title,
     meta: [
@@ -155,18 +171,7 @@ useHead(() => {
           {
             key: "courtside-article-jsonld",
             type: "application/ld+json",
-            innerHTML: jsonLd({
-              "@context": "https://schema.org",
-              "@type": "Article",
-              headline: current.title,
-              description,
-              url: canonical.value,
-              inLanguage: "zh-Hant-TW",
-              author: current.contributors.map((contributor) => ({
-                "@type": "Person",
-                name: contributor.displayName
-              }))
-            })
+            innerHTML: jsonLd(structuredData)
           }
         ]
       : []
@@ -289,10 +294,17 @@ function assetMediaUrl(assetId: unknown, variant = "inline"): string {
   }
 }
 
-function contributorNames(contributors: PublicArticleProjection["contributors"]): string {
-  return contributors.length > 0
-    ? contributors.map((contributor) => contributor.displayName).join("、")
-    : "署名未提供"
+const CONTRIBUTOR_ROLE_LABELS: Record<string, string> = {
+  AUTHOR: "作者",
+  EDITOR: "編輯",
+  PHOTOGRAPHER: "攝影",
+  ILLUSTRATOR: "插畫",
+  TRANSLATOR: "翻譯",
+  DESIGNER: "設計"
+}
+
+function contributorRoleLabel(value: unknown): string {
+  return typeof value === "string" ? (CONTRIBUTOR_ROLE_LABELS[value] ?? "貢獻者") : "貢獻者"
 }
 
 function canvasParameters(value: unknown): CourtPulseParameters {
@@ -384,43 +396,70 @@ function renderHash(block: ArticleBlock): string {
   return "court-pulse-v1-" + String(numberValue(payload.seed)) + "-stable"
 }
 
-function syncRuntimeState(): void {
-  runtimeState.value =
-    creativeInView.value &&
-    interactiveEnabled.value &&
-    motionMode.value === "full" &&
-    typeof document !== "undefined" &&
-    !document.hidden
-      ? "running"
-      : "paused"
+function generativeBlockIds(): string[] {
+  return articleBlocks.value
+    .filter((block) => block.type === "generative-canvas")
+    .map((block) => block.id)
 }
 
-function creativeTarget(): HTMLElement | null {
-  return typeof document !== "undefined"
-    ? document.querySelector<HTMLElement>('[data-testid="generative-canvas"]')
-    : null
+function runtimeStateFor(blockId: string): "paused" | "running" {
+  return runtimeStateByBlock.value[blockId] ?? "paused"
+}
+
+function syncRuntimeStates(): void {
+  const nextStates: Record<string, "paused" | "running"> = {}
+  for (const blockId of generativeBlockIds()) {
+    nextStates[blockId] =
+      creativeInViewByBlock.value[blockId] === true &&
+      interactiveEnabled.value &&
+      motionMode.value === "full" &&
+      typeof document !== "undefined" &&
+      !document.hidden
+        ? "running"
+        : "paused"
+  }
+  runtimeStateByBlock.value = nextStates
+}
+
+function creativeTarget(blockId: string): HTMLElement | null {
+  if (typeof document === "undefined") {
+    return null
+  }
+  return (
+    Array.from(document.querySelectorAll<HTMLElement>('[data-testid="generative-canvas"]')).find(
+      (target) => target.dataset.creativeBlockId === blockId
+    ) ?? null
+  )
+}
+
+function disconnectCreativeObservers(): void {
+  for (const observer of creativeObservers.values()) {
+    observer.disconnect()
+  }
+  creativeObservers.clear()
 }
 
 function stopCreativeVisibilityWatch(): void {
-  if (typeof window === "undefined") {
-    return
-  }
-  if (creativeVisibilityTimer !== null) {
+  if (typeof window !== "undefined" && creativeVisibilityTimer !== null) {
     window.clearInterval(creativeVisibilityTimer)
-    creativeVisibilityTimer = null
   }
+  creativeVisibilityTimer = null
+  disconnectCreativeObservers()
 }
 
 function updateCreativeVisibility(): void {
-  const target = creativeTarget()
-  if (!target || typeof window === "undefined") {
-    creativeInView.value = false
-    syncRuntimeState()
-    return
+  const nextVisibility: Record<string, boolean> = {}
+  for (const blockId of generativeBlockIds()) {
+    const target = creativeTarget(blockId)
+    if (!target || typeof window === "undefined") {
+      nextVisibility[blockId] = false
+      continue
+    }
+    const { top, bottom } = target.getBoundingClientRect()
+    nextVisibility[blockId] = top < window.innerHeight && bottom > 0
   }
-  const { top, bottom } = target.getBoundingClientRect()
-  creativeInView.value = top < window.innerHeight && bottom > 0
-  syncRuntimeState()
+  creativeInViewByBlock.value = nextVisibility
+  syncRuntimeStates()
 }
 
 function startCreativeVisibilityWatch(): void {
@@ -441,33 +480,42 @@ function handleReaderScroll(): void {
 }
 
 function observeCreative(): void {
-  creativeObserver?.disconnect()
-  const target = creativeTarget()
-  if (!target) {
-    creativeInView.value = false
-    syncRuntimeState()
+  disconnectCreativeObservers()
+  const blockIds = generativeBlockIds()
+  if (blockIds.length === 0) {
+    creativeInViewByBlock.value = {}
+    runtimeStateByBlock.value = {}
     return
   }
   if (typeof IntersectionObserver === "undefined") {
-    creativeInView.value = true
-    syncRuntimeState()
+    updateCreativeVisibility()
     startCreativeVisibilityWatch()
     return
   }
-  creativeObserver = new IntersectionObserver(
-    (entries) => {
-      creativeInView.value = entries.some((entry) => entry.isIntersecting)
-      syncRuntimeState()
-    },
-    { threshold: 0.01 }
-  )
-  creativeObserver.observe(target)
+  for (const blockId of blockIds) {
+    const target = creativeTarget(blockId)
+    if (!target) {
+      continue
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        creativeInViewByBlock.value = {
+          ...creativeInViewByBlock.value,
+          [blockId]: entries[0]?.isIntersecting === true
+        }
+        syncRuntimeStates()
+      },
+      { threshold: 0.01 }
+    )
+    observer.observe(target)
+    creativeObservers.set(blockId, observer)
+  }
   startCreativeVisibilityWatch()
 }
 
 async function enableCreative(): Promise<void> {
   interactiveEnabled.value = true
-  syncRuntimeState()
+  syncRuntimeStates()
   await nextTick()
   observeCreative()
 }
@@ -528,21 +576,64 @@ function restoreResumeProgress(): void {
   window.scrollTo({ top: Math.max(0, targetTop), behavior: "auto" })
 }
 
+function readResumeStorage(key: string): string | null {
+  if (resumeStorageDisabled.value || typeof window === "undefined") {
+    return null
+  }
+  try {
+    return window.localStorage.getItem(key)
+  } catch {
+    resumeStorageDisabled.value = true
+    return null
+  }
+}
+
+function writeResumeStorage(key: string, value: string): boolean {
+  if (resumeStorageDisabled.value || typeof window === "undefined") {
+    return false
+  }
+  try {
+    window.localStorage.setItem(key, value)
+    return true
+  } catch {
+    resumeStorageDisabled.value = true
+    return false
+  }
+}
+
 function saveReadingProgress(): void {
-  if (typeof window === "undefined" || !resumeStorageKey.value) {
+  if (typeof window === "undefined" || !resumeStorageKey.value || resumeStorageDisabled.value) {
     return
   }
   const blocks = Array.from(document.querySelectorAll<HTMLElement>("[data-block-id]"))
   if (blocks.length === 0) {
     return
   }
-  const current =
-    blocks.find((block) => {
-      const rect = block.getBoundingClientRect()
-      return rect.bottom > 0 && rect.top < window.innerHeight * 0.6
-    }) ?? blocks[0]
+  const lastBlock = blocks.at(-1)
+  const lastRect = lastBlock?.getBoundingClientRect()
+  const documentBottom = Math.max(
+    document.documentElement.scrollHeight,
+    document.body?.scrollHeight ?? 0
+  )
+  const atDocumentEnd = window.scrollY + window.innerHeight >= documentBottom - 2
+  let current =
+    atDocumentEnd && lastBlock
+      ? lastBlock
+      : blocks.find((block) => {
+          const rect = block.getBoundingClientRect()
+          return rect.bottom > 0 && rect.top < window.innerHeight * 0.6
+        })
   if (!current) {
-    return
+    const previousBlock = resumeProgress.value?.blockId
+      ? blocks.find((block) => block.dataset.blockId === resumeProgress.value?.blockId)
+      : null
+    if (lastBlock && lastRect && lastRect.bottom <= window.innerHeight * 0.25) {
+      current = lastBlock
+    } else if (previousBlock) {
+      current = previousBlock
+    } else {
+      return
+    }
   }
   const rect = current.getBoundingClientRect()
   const offset = Math.min(
@@ -550,10 +641,9 @@ function saveReadingProgress(): void {
     Math.max(0, (window.innerHeight * 0.25 - rect.top) / Math.max(rect.height, 1))
   )
   const progress = { blockId: current.dataset.blockId ?? "", offset }
-  if (!progress.blockId) {
+  if (!progress.blockId || !writeResumeStorage(resumeStorageKey.value, JSON.stringify(progress))) {
     return
   }
-  window.localStorage.setItem(resumeStorageKey.value, JSON.stringify(progress))
   resumeProgress.value = progress
   resumeAvailable.value = true
 }
@@ -564,7 +654,7 @@ function loadResumeProgress(): void {
   if (typeof window === "undefined" || !resumeStorageKey.value) {
     return
   }
-  const saved = window.localStorage.getItem(resumeStorageKey.value)
+  const saved = readResumeStorage(resumeStorageKey.value)
   if (!saved) {
     return
   }
@@ -593,14 +683,13 @@ onMounted(() => {
     window.addEventListener("beforeunload", saveReadingProgress)
   }
   document.addEventListener("scroll", handleReaderScroll, { passive: true, capture: true })
-  document.addEventListener("visibilitychange", syncRuntimeState)
+  document.addEventListener("visibilitychange", syncRuntimeStates)
   stopResumeWatch = watch(resumeStorageKey, loadResumeProgress, { immediate: true })
   stopCreativeWatch = watch(
     () => article.value?.revisionId,
     async () => {
-      creativeInView.value = false
-      runtimeState.value = "paused"
-      creativeObserver?.disconnect()
+      creativeInViewByBlock.value = {}
+      runtimeStateByBlock.value = {}
       stopCreativeVisibilityWatch()
       await nextTick()
       observeCreative()
@@ -616,12 +705,10 @@ onBeforeUnmount(() => {
   stopResumeWatch?.()
   stopCreativeWatch?.()
   document.removeEventListener("scroll", handleReaderScroll, true)
-  document.removeEventListener("visibilitychange", syncRuntimeState)
+  document.removeEventListener("visibilitychange", syncRuntimeStates)
   window.removeEventListener("scroll", handleReaderScroll)
   window.removeEventListener("beforeunload", saveReadingProgress)
   stopCreativeVisibilityWatch()
-  creativeObserver?.disconnect()
-  creativeObserver = null
 })
 </script>
 
@@ -653,7 +740,24 @@ onBeforeUnmount(() => {
           <h1 id="article-heading">{{ article.title }}</h1>
           <p v-if="article.dek" class="article-dek">{{ article.dek }}</p>
           <div class="article-meta">
-            <span data-testid="article-byline">{{ contributorNames(article.contributors) }}</span>
+            <span
+              v-if="article.contributors.length > 0"
+              data-testid="article-byline"
+              class="article-byline"
+            >
+              <span
+                v-for="contributor in article.contributors"
+                :key="contributor.contributorId + ':' + contributor.role"
+                class="article-credit"
+                data-testid="article-credit"
+              >
+                <span>{{ contributor.displayName }}</span>
+                <span class="article-credit-role"
+                  >（{{ contributorRoleLabel(contributor.role) }}）</span
+                >
+              </span>
+            </span>
+            <span v-else data-testid="article-byline">署名未提供</span>
             <span data-testid="article-reading-time">{{ readingTimeMinutes }} 分鐘閱讀</span>
             <NuxtLink
               :to="issueRoute(articleIssueSlug)"
@@ -857,12 +961,12 @@ onBeforeUnmount(() => {
               >
                 <img
                   v-if="
-                    assetMediaUrl(payloadFor(block).posterAssetId, 'poster') &&
+                    assetMediaUrl(payloadFor(block).posterAssetId, 'wide') &&
                     !failedAssets.has(block.id + '-poster')
                   "
                   data-testid="generative-poster-image"
                   class="article-generative-poster"
-                  :src="assetMediaUrl(payloadFor(block).posterAssetId, 'poster')"
+                  :src="assetMediaUrl(payloadFor(block).posterAssetId, 'wide')"
                   :alt="stringValue(payloadFor(block).altText)"
                   loading="lazy"
                   @error="markAssetFailed(block.id + '-poster')"
@@ -870,7 +974,7 @@ onBeforeUnmount(() => {
                 <span>{{ stringValue(payloadFor(block).dataSummary) }}</span>
               </div>
               <button
-                v-if="motionMode === 'reduced' && !interactiveEnabled"
+                v-if="clientReady && motionMode === 'reduced' && !interactiveEnabled"
                 type="button"
                 class="button-link creative-enable"
                 data-testid="creative-enable"
@@ -880,9 +984,10 @@ onBeforeUnmount(() => {
               </button>
               <div
                 data-testid="generative-canvas"
+                :data-creative-block-id="block.id"
                 :data-seed="String(numberValue(payloadFor(block).seed))"
                 :data-render-hash="renderHash(block)"
-                :data-runtime-state="runtimeState"
+                :data-runtime-state="runtimeStateFor(block.id)"
                 :data-runtime-enabled="String(interactiveEnabled)"
                 role="img"
                 :aria-label="stringValue(payloadFor(block).altText)"
@@ -894,7 +999,7 @@ onBeforeUnmount(() => {
                   :parameters="canvasParameters(payloadFor(block).parameters)"
                   :alt-text="stringValue(payloadFor(block).altText)"
                   :active="interactiveEnabled"
-                  :paused="runtimeState !== 'running'"
+                  :paused="runtimeStateFor(block.id) !== 'running'"
                   :reduced-motion="motionMode === 'reduced'"
                 />
                 <span v-else data-testid="creative-runtime-placeholder">

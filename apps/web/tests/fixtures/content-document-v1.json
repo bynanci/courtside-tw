@@ -156,6 +156,25 @@
         "altText": "以球場線條與投籃落點構成的抽象視覺",
         "dataSummary": "視覺使用固定 seed 與文章數據摘要產生，互動失敗時仍以 poster 呈現。"
       }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000017",
+      "type": "generative-canvas",
+      "version": 1,
+      "payload": {
+        "presetId": "court-pulse-v1",
+        "seed": 20260808,
+        "parameters": {
+          "density": 26,
+          "tempo": 0.65,
+          "lineWeight": 1.25,
+          "paletteId": "court-dusk",
+          "numericSequence": [0.2, 0.7, 0.95]
+        },
+        "posterAssetId": "00000000-0000-4000-8000-000000000016",
+        "altText": "第二個以球場落點構成的抽象視覺",
+        "dataSummary": "第二個生成視覺區塊使用獨立 visibility 與 lifecycle state。"
+      }
     }
   ]
 }

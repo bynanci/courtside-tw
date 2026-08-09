@@ -91,8 +91,8 @@ const articleProjections = new Map([
         },
         {
           assetId: "00000000-0000-4000-8000-000000000016",
-          variant: "poster",
-          url: "/media/published/opening-poster.webp",
+          variant: "wide",
+          url: "/media/published/opening-generative-wide.webp",
           mimeType: "image/webp",
           width: 1200,
           height: 675
@@ -101,9 +101,21 @@ const articleProjections = new Map([
       contributors: [
         {
           contributorId: "00000000-0000-4000-8000-000000000021",
+          slug: "courtside-tw-author",
+          displayName: "Courtside TW 主筆",
+          role: "AUTHOR"
+        },
+        {
+          contributorId: "00000000-0000-4000-8000-000000000022",
           slug: "courtside-tw-editorial",
           displayName: "Courtside TW 編輯部",
           role: "EDITOR"
+        },
+        {
+          contributorId: "00000000-0000-4000-8000-000000000023",
+          slug: "courtside-tw-photographer",
+          displayName: "場邊攝影",
+          role: "PHOTOGRAPHER"
         }
       ],
       issueNavigation: {

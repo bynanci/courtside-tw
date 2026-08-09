@@ -23,6 +23,12 @@ test.describe("US2 long-form public article", () => {
 
     await expect(page.getByTestId("article-document")).toBeVisible()
     await expect(page.getByTestId("article-byline")).toContainText("Courtside TW 編輯部")
+    await expect(page.getByTestId("article-byline")).toContainText("攝影")
+    await expect(page.getByTestId("article-credit")).toHaveCount(3)
+    const structuredData = JSON.parse(
+      (await page.locator('script[type="application/ld+json"]').textContent()) ?? "{}"
+    ) as { author?: unknown }
+    expect(structuredData.author).toEqual([{ "@type": "Person", name: "Courtside TW 主筆" }])
     await expect(
       page.locator('[data-testid="article-document"] .article-image img').first()
     ).toHaveAttribute("src", /\/media\/published\/opening-wide\.webp$/)
@@ -77,5 +83,68 @@ test.describe("US2 long-form public article", () => {
     await page.getByTestId("article-next").click()
     await expect(page).toHaveURL(/\/articles\/courtside-notes\?issue=issue-2026-01$/)
     await expect(page.getByTestId("article-toc")).toBeVisible()
+  })
+
+  test("keeps the final block when scrolling into article navigation", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" })
+    await page.goto("/articles/opening-night?issue=issue-2026-01", {
+      waitUntil: "domcontentloaded"
+    })
+    await expect(page.getByTestId("article-document")).toBeVisible()
+    await expect(page.getByTestId("article-document")).toHaveAttribute("data-client-ready", "true")
+    await page.waitForLoadState("networkidle")
+
+    const lastBlock = page.locator("[data-block-id]").last()
+    const lastBlockId = await lastBlock.getAttribute("data-block-id")
+    expect(lastBlockId).toBeTruthy()
+    await lastBlock.evaluate((element) => {
+      element.scrollIntoView({ block: "end", behavior: "auto" })
+    })
+    await page.waitForLoadState("networkidle")
+    await page.evaluate(() => {
+      window.scrollTo(0, document.documentElement.scrollHeight)
+    })
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const documentBottom = Math.max(
+            document.documentElement.scrollHeight,
+            document.body?.scrollHeight ?? 0
+          )
+          return window.scrollY + window.innerHeight >= documentBottom - 2
+        })
+      )
+      .toBe(true)
+    await page.evaluate(() => window.dispatchEvent(new Event("scroll")))
+
+    await expect
+      .poll(async () =>
+        page.evaluate(() => {
+          const saved = window.localStorage.getItem(
+            "courtside.reader.progress:opening-night:revision-1"
+          )
+          return saved ? JSON.parse(saved).blockId : null
+        })
+      )
+      .toBe(lastBlockId)
+  })
+
+  test("keeps reading functional when browser storage is unavailable", async ({ page }) => {
+    const pageErrors: string[] = []
+    page.on("pageerror", (error) => pageErrors.push(error.message))
+    await page.addInitScript(() => {
+      Object.defineProperty(window, "localStorage", {
+        configurable: true,
+        get() {
+          throw new DOMException("blocked", "SecurityError")
+        }
+      })
+    })
+    await page.goto("/articles/opening-night?issue=issue-2026-01", {
+      waitUntil: "domcontentloaded"
+    })
+    await expect(page.getByTestId("article-document")).toBeVisible()
+    await page.evaluate(() => window.dispatchEvent(new Event("scroll")))
+    expect(pageErrors).toEqual([])
   })
 })

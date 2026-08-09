@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "memory_id": "wm:project:courtside-tw:us2-post-merge-review-fixes",
+  "scope": "project",
+  "kind": "task_state",
+  "title": "US2 post-merge review fixes are verified; protected closure remains",
+  "summary": "PR #69 is a draft branch from main. The public API now uses the standard wide generative poster variant and preserves contributor database failures as server errors. The reader is role-aware, final-block progress-safe, hydration-safe, localStorage-safe and independently tracks multiple generative canvases. Exact-head CI, Security and 11/11 browser tests pass. Protected merge, production activation and task state remain human gates.",
+  "claims": [
+    {
+      "text": "PR #69 is a draft branch from main@d86d59eade447ad79f927079735d1efa48ebad38 and no merge or task checkbox change was performed.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Generative-canvas public poster resolution requests the standard wide media variant; the browser fixture and proof assert the wide URL rather than a non-standard poster variant.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Contributor database failures propagate as DataAccessException; only expected IllegalArgumentException projection validation is handled as an empty contributor projection.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Reader credits preserve contributor roles and JSON-LD author contains AUTHOR contributors only.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "At document end, progress selects the final data-block-id before visible-block scanning and the browser proof stores the final fixture block.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Creative opt-in is hidden until clientReady, multiple generative canvases have per-block visibility/runtime state, and localStorage exceptions disable persistence without breaking the page.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Implementation head 86cba75a48b15469358ec62e88ff032fbad6e2d6 passed CI run 31322183085, Security run 31322183089 and browser job 93266881906 with 11/11 tests passing.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Protected merge, production migration execution/activation and task checkbox updates were intentionally not performed.",
+      "class": "NEEDS_HUMAN",
+      "confidence": "high"
+    }
+  ],
+  "status": "needs_update",
+  "confidence": "high",
+  "confidence_basis": [
+    "https://github.com/bynanci/courtside-tw/pull/69",
+    ".loop/evidence/t042-t048-post-merge-review-fixes-20260809.json",
+    "CI 31322183085",
+    "Security 31322183089",
+    "Browser job 93266881906"
+  ],
+  "volatility": "medium",
+  "as_of": "2026-08-09",
+  "source_refs": [
+    "https://github.com/bynanci/courtside-tw/pull/69",
+    "https://github.com/bynanci/courtside-tw/blob/fix/us2-review-findings-20260809/apps/api/src/main/java/tw/basketball/magazine/publication/JdbcPublicArticleRepository.java",
+    "https://github.com/bynanci/courtside-tw/blob/fix/us2-review-findings-20260809/apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java",
+    "https://github.com/bynanci/courtside-tw/blob/fix/us2-review-findings-20260809/apps/web/app/pages/articles/[articleSlug].vue",
+    "https://github.com/bynanci/courtside-tw/blob/fix/us2-review-findings-20260809/apps/web/tests/e2e/us2-read-article.spec.ts",
+    "https://github.com/bynanci/courtside-tw/blob/fix/us2-review-findings-20260809/apps/web/tests/e2e/us2-reduced-motion.spec.ts"
+  ],
+  "entities": [
+    "courtside-tw",
+    "US2",
+    "PR #67",
+    "PR #69",
+    "JdbcPublicArticleRepository",
+    "ArticleProjection",
+    "wide media variant",
+    "AUTHOR contributor role",
+    "final-block progress",
+    "clientReady",
+    "localStorage",
+    "per-canvas visibility"
+  ],
+  "relations": {
+    "supports": [
+      "wm:project:courtside-tw:us2-t034-t041-review-remediation"
+    ],
+    "contradicts": [],
+    "supersedes": [],
+    "blocks": [
+      "wm:project:courtside-tw:us2-post-merge-review-protected-closure"
+    ],
+    "invalidates": []
+  },
+  "next_review_at": "2026-08-09",
+  "sensitivity": "internal",
+  "retention": "until_superseded",
+  "write_receipt": {
+    "status": "SAVED",
+    "version": "post-merge-review-fixes-v2",
+    "written_by": "codex-supervisor"
+  }
+}
+
