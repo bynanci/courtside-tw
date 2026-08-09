@@ -1,7 +1,10 @@
 import { createApiClient, type components } from "@courtside/api-client"
 
 import {
-  parsePublicArticleSlug,\n  parsePublicIssueSlug,\n  publicIssueApiPath\n} from "./public-issue-contract.ts"
+  parsePublicArticleSlug,
+  parsePublicIssueSlug,
+  publicIssueApiPath
+} from "./public-issue-contract.ts"
 
 export type PublicIssuePage = components["schemas"]["IssueSummaryPage"]
 export type PublicIssueDetail = components["schemas"]["IssueDetail"]
