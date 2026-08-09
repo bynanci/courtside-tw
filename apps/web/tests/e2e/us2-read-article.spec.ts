@@ -11,7 +11,9 @@ const contentFixture = JSON.parse(
 ) as ContentFixture
 
 test.describe("US2 long-form public article", () => {
-  test("renders every v1 block, metadata, image fallback, navigation and share", async ({ page }) => {
+  test("renders every v1 block, metadata, image fallback, navigation and share", async ({
+    page
+  }) => {
     expect(new Set(contentFixture.blocks.map((block) => block.type)).size).toBe(11)
 
     await page.route("**/media/**", (route) => route.abort())
@@ -51,7 +53,9 @@ test.describe("US2 long-form public article", () => {
     await expect(page.getByTestId("reader-resume")).toContainText("繼續閱讀")
   })
 
-  test("uses the issue snapshot for previous, next and table-of-contents links", async ({ page }) => {
+  test("uses the issue snapshot for previous, next and table-of-contents links", async ({
+    page
+  }) => {
     await page.goto("/articles/opening-night?issue=issue-2026-01", {
       waitUntil: "domcontentloaded"
     })
