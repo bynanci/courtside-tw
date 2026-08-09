@@ -1,7 +1,6 @@
 package tw.basketball.magazine.publication;
 
 import java.time.Clock;
-import java.time.Instant;
 import java.util.Objects;
 import java.util.Optional;
 
