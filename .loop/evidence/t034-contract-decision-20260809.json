@@ -42,6 +42,5 @@
     "database_migration_changed": false,
     "production_activation_changed": false
   },
-  "next_action": "Implement T034/T035 projection and rerun the inherited T032/T033 exact-head gates."
-  ,"branch_target_probe": true
+  "next_action": "With canonical-openapi and canonical-tests aligned, run the latest-head CI and Security gates before ready/merge."
 }
