@@ -2,8 +2,7 @@
   --accent: #ae3828;
   --muted: #5b554d;
   color-scheme: light;
-  font-family:
-    "Noto Serif TC", "Source Han Serif TC", Georgia, serif;
+  font-family: "Noto Serif TC", "Source Han Serif TC", Georgia, serif;
   background: #f5f1e9;
   color: #191916;
   font-synthesis: none;
@@ -375,7 +374,6 @@ a:focus-visible {
   }
 }
 
-
 .article-reader {
   max-width: 64rem;
 }
@@ -482,6 +480,13 @@ a:focus-visible {
   font-size: clamp(1.4rem, 3vw, 2rem);
 }
 
+.article-block h4 {
+  margin: 0;
+  font-size: clamp(1.15rem, 2.4vw, 1.5rem);
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
 .article-paragraph,
 .article-block li,
 .article-block blockquote,
@@ -494,7 +499,8 @@ a:focus-visible {
   line-height: 1.85;
 }
 
-.article-block ul {
+.article-block ul,
+.article-block ol {
   margin: 0;
   padding-left: 1.5rem;
 }
@@ -518,9 +524,14 @@ a:focus-visible {
   font-style: normal;
 }
 
-.article-block hr {
-  border: 0;
+.article-divider {
+  min-height: 1px;
   border-top: 1px solid #d8d0c3;
+}
+
+.article-divider--space {
+  min-height: 2rem;
+  border-top: 0;
 }
 
 .article-image,
@@ -556,6 +567,10 @@ a:focus-visible {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 1rem;
+}
+
+.article-gallery--stack {
+  grid-template-columns: 1fr;
 }
 
 .article-gallery figure {
@@ -626,9 +641,7 @@ a:focus-visible {
   display: grid;
   place-items: center;
   padding: 1.5rem;
-  background:
-    linear-gradient(135deg, rgba(174, 56, 40, 0.82), rgba(25, 25, 22, 0.92)),
-    #191916;
+  background: linear-gradient(135deg, rgba(174, 56, 40, 0.82), rgba(25, 25, 22, 0.92)), #191916;
   color: #f5f1e9;
   line-height: 1.6;
   text-align: center;
@@ -652,6 +665,24 @@ a:focus-visible {
 
 .article-generative [data-runtime-state=\"running\"] {
   border-color: var(--accent);
+}
+
+.article-generative-poster {
+  display: block;
+  width: 100%;
+  min-height: 12rem;
+  object-fit: cover;
+  background: #191916;
+}
+
+.article-generative [data-testid="creative-runtime"] {
+  display: block;
+  width: 100%;
+  min-height: 11.25rem;
+}
+
+.creative-enable {
+  margin-top: 0.75rem;
 }
 
 .article-navigation {

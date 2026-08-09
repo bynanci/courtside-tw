@@ -1,0 +1,327 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-t034-t041-us2-review-remediation
+objective: >-
+  Close the bounded US2 public Article reader and projection remediation while
+  stopping at protected media, contributor and generative-runtime gates.
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - PR #67 public Article reader correctness and fail-closed projection fixes
+    - Rights-filtered issue navigation and canonical ContentDocument validation
+    - SSR malformed-slug handling, progress persistence, share fallback and semantic renderer behavior
+    - Exact-head CI/Security proof and append-only graph, evidence and memory receipts
+  out:
+    - Protected merge, production migration execution, production activation or deployment
+    - Web3, wallet, token, Passport or public content publication
+
+authority:
+  allowed:
+    - Read main, PR #65/#66/#67, review threads, tasks, OpenAPI, schema, ADRs and tests
+    - Create and update a draft remediation branch and bounded proof artifacts
+    - Implement the selected media storage-key resolver, revision-scoped contributor contract and p5.js 2.x runtime under bounded proof
+    - Run exact-head CI, Security and browser verification
+  requires_approval:
+    - Protected merge, task checkbox update, schema or rights-policy change
+    - Production migration execution, public activation or deployment
+  forbidden:
+    - Claim pending or disputed proof as success
+    - Weaken acceptance tests to hide a missing runtime
+    - Expose draft, withdrawn, historical or non-PUBLIC_WEB content
+    - Add undeclared compatibility fields or external provider dependencies
+
+acceptance:
+  - PR #67 remains draft-only and based on main@c45c1fd7e93699f4626e2ceab6b5fb6f52f38842.
+  - Reader/API, exact public media resolution, contributor source/contract and p5.js runtime changes are bounded and separately evidenced.
+  - Canonical ContentDocument validation fails closed and issue navigation applies the public rights gate.
+  - The implementation head has successful exact-head CI, Security and browser receipts with no pending test failure.
+  - The media URL is selected from media_variant.public_storage_key, contributors are revision-scoped, and p5.js lifecycle is bounded.
+  - No task checkbox, merge, production migration execution, deployment or public activation is changed by this lane.
+
+budgets:
+  max_iterations: 5
+  max_minutes: 180
+  max_same_failure: 2
+  max_no_evidence_delta: 2
+  max_graph_changes: 20
+  max_tokens: 80000
+
+policy:
+  human_gates:
+    - Protected merge and task checkbox updates
+    - Production migration execution, public activation and deployment
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+memory_workflow:
+  contract: work-memory/v1
+  control_ledger: Append graph deltas, proof receipts, failure signatures and token usage every iteration.
+  semantic_memory: Capture only durable implementation constraints and verified state deltas.
+  modes: [recall, capture, update, forget, no_op]
+  retrieval:
+    levels: [index, timeline_relations, details]
+    max_index_results: 10
+    stop_on_sufficient_evidence: true
+  capture:
+    allowed_kinds: [decision, constraint, fact, attempt, task_state, pattern, evidence]
+    requires_downstream_proof: true
+    requires_write_receipt: true
+  lifecycle: [seed, verified, stable, needs_update, disputed, archived]
+  failure_policy:
+    write_pending: blocked
+    stale_or_disputed: needs_human
+    redact_secrets: true
+
+graph:
+  entry_nodes: [t-review-readback]
+  terminal_nodes: [s-review-terminal]
+  current_frontier: [g-protected-p1]
+  blocked_nodes: [g-protected-p1]
+
+  loops:
+    - id: l1-us2-review-remediation
+      layer: L1
+      owner: codex-agent
+      trigger_nodes: [t-review-readback]
+      action_nodes: [a-bounded-remediation, a-media-resolver, a-contributor-contract, a-p5-runtime]
+      proof_nodes: [p-exact-head]
+      memory_nodes: [m-control-ledger, m-semantic-lane]
+      stop_nodes: [s-review-terminal]
+      budgets:
+        max_iterations: 5
+        max_minutes: 180
+        max_same_failure: 2
+        max_graph_changes: 20
+        max_tokens: 80000
+
+  nodes:
+    - id: t-review-readback
+      kind: trigger
+      layer: L1
+      label: Read back PR #67 review frontier and current exact head
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 1.0
+        basis: "PR #65 review threads, PR #67 branch state, tasks and contract sources were read back."
+        evidence_refs: ["https://github.com/bynanci/courtside-tw/pull/67", "https://github.com/bynanci/courtside-tw/pull/65"]
+      budget: {effort_hours: 0.5, tokens: 5000}
+      config:
+        condition: "A merged US2 projection has actionable review findings and a bounded remediation lane is requested."
+        inputs_required: ["PR #65 review threads", "tasks.md T034-T041", "main SHA", "contract sources"]
+        dedupe: "PR #67 plus current branch head SHA"
+
+    - id: a-bounded-remediation
+      kind: action
+      layer: L1
+      label: Implement reader/API correctness fixes and focused integration proof
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 0.9
+        basis: "The branch contains bounded reader semantics, fail-closed ContentDocument validation, rights-filtered navigation and focused tests."
+        evidence_refs: ["https://github.com/bynanci/courtside-tw/pull/67", ".loop/evidence/t034-t041-us2-review-remediation-baseline-20260809.json"]
+      budget: {effort_hours: 5.0, tokens: 30000}
+      config:
+        workflow: ["read exact review findings", "apply minimal scoped changes", "add focused proof", "run CI/Security", "record blockers"]
+        allowed: ["public article reader", "public article repository", "focused API/e2e tests", "CSS required by renderer semantics", "loop artifacts"]
+        requires_approval: ["media resolver", "contributors contract", "p5 runtime", "protected merge"]
+        forbidden: ["task checkbox edits", "production activation", "Web3 or wallet dependency"]
+
+    - id: a-media-resolver
+      kind: action
+      layer: L1
+      label: Resolve public media from the selected storage key and rights gate
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 0.98
+        basis: "The exact media_variant.public_storage_key path is implemented, fail-closed and covered by API integration plus browser URL proof."
+        evidence_refs: [".loop/evidence/t034-t041-media-byline-p5-implementation-20260809.json"]
+      budget: {effort_hours: 2.0, tokens: 10000}
+      config:
+        contract: "ArticleProjection.media[]"
+        invariant: "The selected public_storage_key is the only source of the public media URL."
+        forbidden: ["slug-derived paths", "asset-id-derived paths", "non-PUBLIC_WEB rights"]
+
+    - id: a-contributor-contract
+      kind: action
+      layer: L1
+      label: Persist revision-scoped contributors and expose truthful public byline metadata
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 0.98
+        basis: "V003, repository projection, OpenAPI and generated client types, API integration and browser byline proof agree on the same source and contract."
+        evidence_refs: [".loop/evidence/t034-t041-media-byline-p5-implementation-20260809.json"]
+      budget: {effort_hours: 2.0, tokens: 10000}
+      config:
+        source: "contributor + article_contributor(article_revision_id, role, position)"
+        contract: "ArticleProjection.contributors[]"
+        invariant: "Byline and JSON-LD authors come only from the requested published revision."
+
+    - id: a-p5-runtime
+      kind: action
+      layer: L1
+      label: Run p5.js 2.x in instance mode with bounded deterministic lifecycle
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 0.98
+        basis: "p5@2.3.0 is locked and installed; browser proof covers canvas creation, deterministic first frame, loop state, visibility and unmount."
+        evidence_refs: [".loop/evidence/t034-t041-media-byline-p5-implementation-20260809.json"]
+      budget: {effort_hours: 2.5, tokens: 14000}
+      config:
+        dependency: "p5@2.3.0"
+        lifecycle: ["dynamic client import", "instance mode setup", "noLoop when reduced/hidden/out-of-view", "loop when visible/full", "remove on unmount"]
+        invariant: "Reduced-motion and SSR fallback remain readable without starting the loop."
+
+    - id: p-exact-head
+      kind: proof
+      layer: L1
+      label: Exact-head CI, Security and browser verification
+      owner: verifier
+      status: done
+      risk: high
+      confidence:
+        score: 1.0
+        basis: "Implementation head eb7fc608bca82183889237c46b0f123a8555037c has CI #308, Security #308 and 9/9 browser tests passing."
+        evidence_refs: [".loop/evidence/t034-t041-media-byline-p5-implementation-20260809.json"]
+      budget: {effort_hours: 1.5, tokens: 12000}
+      config:
+        level: P3
+        claim: "The implementation head has reproducible CI/Security/browser results, with no pending failure hidden."
+        method: "Fetch workflow runs by exact head SHA and inspect every job conclusion plus browser logs."
+        evidence_path: ".loop/evidence/t034-t041-media-byline-p5-implementation-20260809.json"
+        required: true
+        baseline_required: true
+
+    - id: g-protected-p1
+      kind: gate
+      layer: L1
+      label: Human closure of protected merge, production activation and task state
+      owner: human-mark
+      status: needs_human
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: "Implementation and proof gates are closed; protected merge, production migration/activation and task checkbox state remain outside this lane."
+        evidence_refs: [".loop/evidence/t034-t041-media-byline-p5-implementation-20260809.json"]
+      budget: {effort_hours: 0.5, tokens: 2500}
+      config:
+        condition: "Review the verified implementation and approve protected merge, production migration/activation and task-state changes separately."
+        approver: human-mark
+        required: true
+
+    - id: m-control-ledger
+      kind: memory
+      layer: L1
+      label: Append-only remediation control ledger
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        score: 0.9
+        basis: "The ledger records the graph delta, exact-head proof receipts, failure signature and next action."
+        evidence_refs: [".loop/t034-t041-us2-review-remediation-ledger.json"]
+      budget: {effort_hours: 0.2, tokens: 2500}
+      config:
+        path: ".loop/t034-t041-us2-review-remediation-ledger.json"
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: work-memory/v1
+        memory_role: graph_ledger
+        receipt_required: true
+        write_failure_state: blocked
+
+    - id: m-semantic-lane
+      kind: memory
+      layer: L1
+      label: Durable remediation constraints and disputed state
+      owner: codex-agent
+      status: needs_update
+      risk: high
+      confidence:
+        score: 0.95
+        basis: "The semantic record now contains verified media, contributor and p5 implementation facts; it remains needs_update only because protected merge and production gates are pending."
+        evidence_refs: [".loop/memory/t034-t041-us2-review-remediation.json", ".loop/evidence/t034-t041-media-byline-p5-implementation-20260809.json"]
+      budget: {effort_hours: 0.2, tokens: 2500}
+      config:
+        path: ".loop/memory/t034-t041-us2-review-remediation.json"
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: work-memory/v1
+        memory_role: semantic_memory
+        receipt_required: true
+        write_failure_state: needs_human
+
+    - id: s-review-terminal
+      kind: stop
+      layer: GLOBAL
+      label: Stop bounded remediation at proof or protected human gates
+      owner: codex-supervisor
+      status: needs_human
+      risk: high
+      confidence:
+        score: 1.0
+        basis: "Implementation proof is closed, but protected merge, production activation and task-state changes remain human decisions."
+        evidence_refs: [".loop/evidence/t034-t041-media-byline-p5-implementation-20260809.json"]
+      budget: {effort_hours: 0.1, tokens: 500}
+      config:
+        states:
+          success: "Required exact-head proof and all protected gates pass."
+          no_op: "No authoritative change requires action."
+          blocked: "A required branch, source, proof or authority is unavailable."
+          stalled: "The same failure repeats without an evidence delta."
+          exhausted: "The bounded iteration, time, graph-change or token budget is reached."
+          needs_human: "Latest browser proof or a protected media, contributor or p5 decision is pending."
+
+  edges:
+    - {id: e-readback-remediation, from: t-review-readback, to: a-bounded-remediation, type: enables, required: true, confidence: 1.0, token_capacity: 30000}
+    - {id: e-remediation-proof, from: a-bounded-remediation, to: p-exact-head, type: verifies, required: true, confidence: 0.9, token_capacity: 12000}
+    - {id: e-remediation-media, from: a-bounded-remediation, to: a-media-resolver, type: enables, required: true, confidence: 1.0, token_capacity: 10000}
+    - {id: e-remediation-contributors, from: a-bounded-remediation, to: a-contributor-contract, type: enables, required: true, confidence: 1.0, token_capacity: 10000}
+    - {id: e-remediation-p5, from: a-bounded-remediation, to: a-p5-runtime, type: enables, required: true, confidence: 1.0, token_capacity: 14000}
+    - {id: e-media-proof, from: a-media-resolver, to: p-exact-head, type: verifies, required: true, confidence: 0.98, token_capacity: 5000}
+    - {id: e-contributors-proof, from: a-contributor-contract, to: p-exact-head, type: verifies, required: true, confidence: 0.98, token_capacity: 5000}
+    - {id: e-p5-proof, from: a-p5-runtime, to: p-exact-head, type: verifies, required: true, confidence: 0.98, token_capacity: 7000}
+    - {id: e-remediation-ledger, from: a-bounded-remediation, to: m-control-ledger, type: records, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-proof-ledger, from: p-exact-head, to: m-control-ledger, type: records, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-ledger-read, from: m-control-ledger, to: a-bounded-remediation, type: reads, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-remediation-semantic, from: a-bounded-remediation, to: m-semantic-lane, type: records, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-semantic-read, from: m-semantic-lane, to: a-bounded-remediation, type: reads, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-proof-feedback, from: p-exact-head, to: a-bounded-remediation, type: feedback, required: true, confidence: 0.85, token_capacity: 6000}
+    - {id: e-protected-gate, from: a-bounded-remediation, to: g-protected-p1, type: requires_approval, required: true, confidence: 1.0, token_capacity: 4000}
+    - {id: e-proof-terminal, from: p-exact-head, to: s-review-terminal, type: enables, required: true, confidence: 0.9, token_capacity: 4000}
+    - {id: e-gate-terminal, from: g-protected-p1, to: s-review-terminal, type: enables, required: true, confidence: 1.0, token_capacity: 4000}
+
+flow:
+  source: t-review-readback
+  sink: s-review-terminal
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - next_action
+  - memory_receipt

@@ -1,0 +1,175 @@
+{
+  "schema_version": "courtside-tw/us2-review-remediation-proof/v2",
+  "as_of": "2026-08-09",
+  "kind": "implementation_and_verification",
+  "decision": "BOUNDED_IMPLEMENTATION_VERIFIED",
+  "scope": {
+    "repository": "bynanci/courtside-tw",
+    "pull_request": 67,
+    "branch": "codex/us2-review-remediation-20260809",
+    "base_sha": "c45c1fd7e93699f4626e2ceab6b5fb6f52f38842",
+    "implementation_head_sha": "eb7fc608bca82183889237c46b0f123a8555037c",
+    "draft": true,
+    "merge_requested": false
+  },
+  "decisions": [
+    {
+      "id": "MEDIA_STORAGE_KEY_RESOLUTION",
+      "status": "implemented_and_verified",
+      "source": "media_variant.public_storage_key",
+      "contract": "ArticleProjection.media[] exposes the exact selected public media URL; the web client only consumes that URL.",
+      "behavior": [
+        "The JDBC resolver joins the exact requested media asset/variant and selects public_storage_key.",
+        "Only READY media with VALID rights, PUBLIC_WEB channel and an active validity window are projected.",
+        "Unsafe or missing storage keys fail closed; the web path is not derived from article slug or asset ID.",
+        "The browser fixture proves the exact selected wide variant resolves to /media/published/opening-wide.webp."
+      ],
+      "files": [
+        "apps/api/src/main/java/com/courtside/api/issue/JdbcPublicMediaResolver.java",
+        "apps/api/src/main/java/com/courtside/api/issue/PublicArticleModels.java",
+        "apps/api/src/main/java/com/courtside/api/issue/JdbcPublicArticleRepository.java",
+        "apps/api/src/main/resources/db/migration/V003__article_contributors.sql",
+        "apps/web/app/pages/articles/[articleSlug].vue"
+      ]
+    },
+    {
+      "id": "CONTRIBUTOR_SOURCE_CONTRACT",
+      "status": "implemented_and_verified",
+      "source": "contributor plus revision-scoped article_contributor",
+      "contract": "ArticleProjection.contributors[] carries contributorId, slug, displayName and role; the public byline and JSON-LD author list are sourced from that projection.",
+      "behavior": [
+        "Contributor records are persisted independently of article revisions.",
+        "article_contributor binds a contributor to an article revision with an explicit role and position.",
+        "The repository orders contributors by position and projects only the requested published revision.",
+        "The browser fixture and API integration test assert Courtside TW 編輯部."
+      ],
+      "files": [
+        "apps/api/src/main/resources/db/migration/V003__article_contributors.sql",
+        "apps/api/src/main/java/com/courtside/api/issue/PublicArticleModels.java",
+        "apps/api/src/main/java/com/courtside/api/issue/JdbcPublicArticleRepository.java",
+        "apps/api/src/test/java/com/courtside/api/issue/PublicArticleApiIT.java",
+        "contracts/openapi.yaml",
+        "packages/api-client/src/generated/openapi.d.ts",
+        "apps/web/app/pages/articles/[articleSlug].vue"
+      ]
+    },
+    {
+      "id": "P5_RUNTIME_APPROVAL",
+      "status": "implemented_and_verified",
+      "runtime": "p5@2.3.0",
+      "behavior": [
+        "The browser loads the real p5 constructor through a client-only dynamic import in instance mode.",
+        "The setup path creates a real canvas, fixes pixel density and frame rate, seeds random/noise and draws a deterministic first frame.",
+        "Reduced motion, document hidden state and out-of-view state call noLoop; full motion while visible calls loop.",
+        "ResizeObserver redraws a paused canvas; onBeforeUnmount calls noLoop and remove, and route navigation removes the runtime.",
+        "The poster and text summary remain available for SSR/no-JS and reduced-motion users."
+      ],
+      "dependency": {
+        "package": "apps/web/package.json",
+        "version": "2.3.0",
+        "lockfile": "pnpm-lock.yaml",
+        "lockfile_install": "pnpm install --frozen-lockfile passed",
+        "resolved_runtime_dependencies": [
+          "@davepagurek/bezier-path@0.0.7",
+          "@japont/unicode-range@1.0.0",
+          "acorn@8.18.0",
+          "acorn-walk@8.3.5",
+          "colorjs.io@0.6.1",
+          "escodegen@2.1.0",
+          "gifenc@1.0.3",
+          "i18next@19.9.2",
+          "i18next-browser-languagedetector@4.3.1",
+          "libtess@1.2.2",
+          "omggif@1.0.10",
+          "pako@2.2.0",
+          "zod@4.4.3"
+        ]
+      },
+      "files": [
+        "apps/web/app/components/article/CourtPulseRuntime.vue",
+        "apps/web/app/pages/articles/[articleSlug].vue",
+        "apps/web/tests/e2e/us2-reduced-motion.spec.ts"
+      ]
+    }
+  ],
+  "verification": {
+    "ci_run": {
+      "run_number": 308,
+      "run_id": 31314690495,
+      "conclusion": "success",
+      "jobs": {
+        "frontend_and_contract_verification": "success",
+        "docker_compose_dependency_health": "success",
+        "java_quality_and_unit_verification": "success",
+        "public_magazine_browser_verification": "success"
+      }
+    },
+    "security_run": {
+      "run_number": 308,
+      "run_id": 31314690491,
+      "conclusion": "success",
+      "jobs": {
+        "dependency_audit_and_reports": "success",
+        "codeql_javascript_typescript": "success",
+        "codeql_java_kotlin": "success",
+        "trivy_filesystem": "success",
+        "trivy_image_oidc": "success",
+        "trivy_image_postgres": "success",
+        "trivy_image_s3": "success"
+      }
+    },
+    "browser": {
+      "job_id": 93248022363,
+      "tests": 9,
+      "passed": 9,
+      "conclusion": "success",
+      "targeted_proof": [
+        "SSR article blocks and generative poster without JavaScript",
+        "Exact media_variant URL and contributor/byline contract",
+        "Reduced-motion fallback, hydration readiness, opt-in p5 canvas and deterministic render hash",
+        "p5 frame count increases while visible",
+        "document visibility pauses and resumes the runtime",
+        "route change removes the p5 runtime"
+      ]
+    },
+    "contract_and_integration": {
+      "content_document": "success",
+      "openapi": "success",
+      "public_article_api_integration": "success",
+      "dependency_lock_install": "success"
+    }
+  },
+  "failure_signatures": [
+    {
+      "signature": "BROWSER_IMAGE_FALLBACK_HYDRATION_PENDING_RERUN",
+      "resolution": "SSR fallback container is always present and browser assertions wait for client readiness."
+    },
+    {
+      "signature": "BROWSER_REDUCED_OPT_IN_BEFORE_HYDRATION",
+      "resolution": "The test waits for data-client-ready=true before clicking the opt-in control."
+    },
+    {
+      "signature": "BROWSER_LITERAL_TEST_ID_DESCENDANT_SELECTOR",
+      "resolution": "The canvas assertion uses runtime.locator('canvas') and waits for data-runtime-status=paused."
+    }
+  ],
+  "human_gates": [
+    {
+      "id": "PROTECTED_MERGE",
+      "status": "needs_human",
+      "reason": "PR #67 remains draft and this lane does not merge."
+    },
+    {
+      "id": "PRODUCTION_MIGRATION_AND_ACTIVATION",
+      "status": "needs_human",
+      "reason": "V003 is committed as code, but production migration execution, public activation and deployment are not performed."
+    },
+    {
+      "id": "TASK_CHECKBOX_UPDATE",
+      "status": "needs_human",
+      "reason": "No task checkbox or protected project state is changed by this lane."
+    }
+  ],
+  "terminal_state": "needs_human",
+  "next_action": "Human review of the verified implementation, protected migration/activation policy and draft PR #67; merge only through the protected workflow."
+}

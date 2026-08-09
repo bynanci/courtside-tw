@@ -1,0 +1,193 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-t034-t041-us2-review-remediation",
+  "graph_version": 2,
+  "run_id": "courtside-tw-us2-review-remediation-20260809",
+  "status": "needs_human",
+  "iteration": 2,
+  "started_at": "2026-08-09",
+  "updated_at": "2026-08-09",
+  "current_frontier": [
+    "g-protected-p1"
+  ],
+  "blocked_nodes": [
+    "g-protected-p1"
+  ],
+  "terminal_state": "needs_human",
+  "next_action": "Human review of the verified media storage-key resolver, revision-scoped contributor contract and p5.js lifecycle proof; then decide protected migration/activation, task state and merge.",
+  "events": [
+    {
+      "event_id": "evt-us2-review-remediation-001",
+      "at": "2026-08-09",
+      "actor": "codex-supervisor",
+      "type": "bounded_remediation_receipt",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "lane",
+            "value": "PR #67 review remediation"
+          },
+          {
+            "op": "add",
+            "path": "frontier",
+            "value": [
+              "p-exact-head",
+              "g-protected-p1"
+            ]
+          },
+          {
+            "op": "add",
+            "path": "human_gates",
+            "value": [
+              "media_storage_key",
+              "contributors_contract",
+              "p5_runtime"
+            ]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t034-t041-us2-review-remediation-baseline-20260809.json",
+        "https://github.com/bynanci/courtside-tw/pull/67"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "PR #67 exact head 9851bf7e9189995aaf46e34904ef698393108a39",
+          "level": "P3",
+          "result": "partial",
+          "ci_run": 31310404375,
+          "ci_conclusion": "failure",
+          "ci_core_jobs": "frontend, Java quality, compose passed; browser failed before hydration-safe fallback synchronization",
+          "security_run": 31310404349,
+          "security_conclusion": "success"
+        },
+        {
+          "proof": "PR #67 latest head 06992568be46a5b0dbf6a52e9b3ab14913e6c16",
+          "level": "P3",
+          "result": "pending",
+          "ci_run": null,
+          "security_run": null
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "SAVED",
+        "memory_id": "wm:project:courtside-tw:us2-t034-t041-review-remediation",
+        "version": "review-remediation-v1",
+        "retrieval_ids": [
+          "wm:project:courtside-tw:us2-t034-t041-implementation-lane"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t034-t041-us2-review-remediation-baseline-20260809.json"
+        ],
+        "next_review_at": "2026-08-09",
+        "blocker": "Latest workflow proof and human closure of protected media, contributor and p5 gates are required."
+      },
+      "failure_signature": "BROWSER_IMAGE_FALLBACK_HYDRATION_PENDING_RERUN",
+      "decision": "BOUNDED_REMEDIATION_NEEDS_HUMAN",
+      "token_usage": {
+        "estimated": 42000,
+        "input": 0,
+        "output": 0,
+        "total": 42000
+      },
+      "terminal_reason": "Core correctness and security proof is strong, but the latest head has no workflow receipt and protected P1 gates remain unresolved."
+    },
+    {
+      "event_id": "evt-us2-review-remediation-002",
+      "at": "2026-08-09",
+      "actor": "codex-supervisor",
+      "type": "implementation_proof_receipt",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "value": [
+              "g-protected-p1"
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "graph.blocked_nodes",
+            "value": [
+              "g-protected-p1"
+            ]
+          },
+          {
+            "op": "add",
+            "path": "action_nodes",
+            "value": [
+              "a-media-resolver",
+              "a-contributor-contract",
+              "a-p5-runtime"
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "proof_node",
+            "value": "p-exact-head=done"
+          },
+          {
+            "op": "replace",
+            "path": "gate_scope",
+            "value": [
+              "protected_merge",
+              "production_migration_activation",
+              "task_checkbox_update"
+            ]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t034-t041-media-byline-p5-implementation-20260809.json",
+        "https://github.com/bynanci/courtside-tw/pull/67"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Implementation head eb7fc608bca82183889237c46b0f123a8555037c",
+          "level": "P3",
+          "result": "success",
+          "ci_run": 31314690495,
+          "ci_conclusion": "success",
+          "ci_jobs": {
+            "frontend_and_contract": "success",
+            "java_quality_and_unit": "success",
+            "docker_compose_dependency_health": "success",
+            "browser": "success"
+          },
+          "security_run": 31314690491,
+          "security_conclusion": "success"
+        },
+        {
+          "proof": "Public magazine browser verification",
+          "level": "P3",
+          "result": "success",
+          "job_id": 93248022363,
+          "tests": 9,
+          "passed": 9,
+          "targeted_lifecycle": [
+            "real p5 canvas after reduced-motion opt-in",
+            "deterministic render hash",
+            "frame count increases while visible",
+            "document hidden pauses and restores loop state",
+            "route change removes runtime"
+          ]
+        }
+      ],
+      "failure_signature": "BROWSER_LITERAL_TEST_ID_DESCENDANT_SELECTOR_RESOLVED",
+      "decision": "BOUNDED_IMPLEMENTATION_VERIFIED_NEEDS_HUMAN",
+      "token_usage": {
+        "estimated": 12000,
+        "input": 0,
+        "output": 0,
+        "total": 12000
+      },
+      "terminal_reason": "Media, contributor and p5 implementation/proof gates are closed; protected merge, production migration/activation and task checkbox state remain human gates."
+    }
+  ]
+}

@@ -151,6 +151,8 @@ paths:
                       schemaVersion: 1
                       documentId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
                       blocks: []
+                    media: []
+                    contributors: []
                     issueNavigation:
                       issueSlug: issue-1
                       previous: null
@@ -2056,6 +2058,67 @@ components:
         position:
           type: integer
           minimum: 1
+    Contributor:
+      type: object
+      additionalProperties: false
+      required:
+        - contributorId
+        - slug
+        - displayName
+        - role
+      properties:
+        contributorId:
+          $ref: "#/components/schemas/Uuid"
+        slug:
+          type: string
+          pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          maxLength: 128
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        role:
+          type: string
+          enum:
+            - AUTHOR
+            - EDITOR
+            - PHOTOGRAPHER
+            - ILLUSTRATOR
+            - TRANSLATOR
+            - DESIGNER
+    PublicArticleMedia:
+      type: object
+      additionalProperties: false
+      required:
+        - assetId
+        - variant
+        - url
+        - mimeType
+        - width
+        - height
+      properties:
+        assetId:
+          $ref: "#/components/schemas/Uuid"
+        variant:
+          type: string
+          pattern: "^[a-z0-9][a-z0-9-]{0,31}$"
+        url:
+          type: string
+          pattern: "^/media/[a-z0-9][a-z0-9._/-]{0,255}$"
+          maxLength: 512
+        mimeType:
+          type: string
+          enum:
+            - image/avif
+            - image/jpeg
+            - image/png
+            - image/webp
+        width:
+          type: integer
+          minimum: 1
+        height:
+          type: integer
+          minimum: 1
     ArticleProjection:
       type: object
       additionalProperties: false
@@ -2066,6 +2129,8 @@ components:
         - slug
         - title
         - content
+        - media
+        - contributors
         - issueNavigation
       properties:
         articleId:
@@ -2083,6 +2148,14 @@ components:
           type: string
         content:
           $ref: "#/components/schemas/ContentDocument"
+        media:
+          type: array
+          items:
+            $ref: "#/components/schemas/PublicArticleMedia"
+        contributors:
+          type: array
+          items:
+            $ref: "#/components/schemas/Contributor"
         issueNavigation:
           type: object
           additionalProperties: false

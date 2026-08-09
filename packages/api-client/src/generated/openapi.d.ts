@@ -675,6 +675,22 @@ export interface components {
       title: string
       position: number
     }
+    Contributor: {
+      contributorId: components["schemas"]["Uuid"]
+      slug: string
+      displayName: string
+      /** @enum {string} */
+      role: "AUTHOR" | "EDITOR" | "PHOTOGRAPHER" | "ILLUSTRATOR" | "TRANSLATOR" | "DESIGNER"
+    }
+    PublicArticleMedia: {
+      assetId: components["schemas"]["Uuid"]
+      variant: string
+      url: string
+      /** @enum {string} */
+      mimeType: "image/avif" | "image/jpeg" | "image/png" | "image/webp"
+      width: number
+      height: number
+    }
     ArticleProjection: {
       articleId: components["schemas"]["Uuid"]
       revisionId: components["schemas"]["Uuid"]
@@ -683,6 +699,8 @@ export interface components {
       title: string
       dek?: string
       content: components["schemas"]["content-document.schema"]
+      media: components["schemas"]["PublicArticleMedia"][]
+      contributors: components["schemas"]["Contributor"][]
       issueNavigation: {
         issueSlug: string
         previous: components["schemas"]["ArticleSummary"] | null
