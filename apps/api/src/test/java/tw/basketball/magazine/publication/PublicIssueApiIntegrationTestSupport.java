@@ -159,12 +159,18 @@ abstract class PublicIssueApiIntegrationTestSupport {
         jdbcTemplate.update("""
                 INSERT INTO article_revision (
                     id, article_id, revision_number, title, dek, content_document, state
-                ) VALUES (?, ?, 1, ?, ?, '{"schemaVersion":1,"blocks":[]}'::jsonb, ?)
+                ) VALUES (?, ?, 1, ?, ?, ?::jsonb, ?)
                 """,
                 revisionId,
                 articleId,
                 "Article " + articleSlug,
                 "Dek for " + articleSlug,
+                """
+                {"schemaVersion":1,"documentId":"0190f7b0-7c4b-7e3a-8f12-123456789abc","blocks":[
+                  {"id":"00000000-0000-4000-8000-000000000002","type":"paragraph","version":1,
+                   "payload":{"content":[{"kind":"text","text":"Fixture article %s"}]}}
+                ]}
+                """.formatted(articleSlug),
                 state
         );
         jdbcTemplate.update(
