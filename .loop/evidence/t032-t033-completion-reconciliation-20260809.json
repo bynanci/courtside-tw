@@ -1,0 +1,59 @@
+{
+  "schema_version": "courtside-proof/v1",
+  "proof_id": "t032-t033-completion-reconciliation-20260809",
+  "recorded_at": "2026-08-09T00:00:00Z",
+  "result": "CHECKBOX_UPDATE_T032_T033_ONLY",
+  "authoritative_base": {
+    "ref": "main",
+    "commit": "c45c1fd7e93699f4626e2ceab6b5fb6f52f38842",
+    "url": "https://github.com/bynanci/courtside-tw/commit/c45c1fd7e93699f4626e2ceab6b5fb6f52f38842"
+  },
+  "completed": {
+    "T032": {
+      "status": "complete",
+      "evidence": [
+        ".loop/evidence/t032-t033-red-baseline-20260809.json",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31307575471",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31307598571",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31307598581",
+        "https://github.com/bynanci/courtside-tw/pull/65"
+      ],
+      "verification": "The failing article projection and authorization tests were written, their intended red baseline was classified, and the implementation head passed the exact CI and Security workflows."
+    },
+    "T033": {
+      "status": "complete",
+      "evidence": [
+        ".loop/evidence/t032-t033-red-baseline-20260809.json",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31307575471",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31307598571",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31307598581",
+        "https://github.com/bynanci/courtside-tw/pull/65"
+      ],
+      "verification": "The reader, no-JS and reduced-motion tests plus the all-block fixture were written, their intended red baseline was classified, and the implementation head passed the exact CI and Security workflows."
+    }
+  },
+  "held": {
+    "T034": "Not checked: unresolved review findings include contributor-credit and public media projection concerns.",
+    "T035": "Not checked: unresolved review findings include media-variant resolution and rights-filtered issue navigation concerns.",
+    "T036-T041": "Not checked: no task-level completion proof and implementation is not separated into the task-defined renderer, runtime, reader, SEO and performance boundaries."
+  },
+  "review_readback": {
+    "pr": 65,
+    "head": "e9eb0bcfc412161ced717f72b5b94a478bdb475b",
+    "ci_run": 266,
+    "security_run": 266,
+    "review_threads": {
+      "unresolved": 16,
+      "note": "Post-merge review findings remain open; this receipt does not treat a green workflow as proof that T034+ is fully complete."
+    }
+  },
+  "scope_guard": {
+    "changed_tasks": [
+      "T032",
+      "T033"
+    ],
+    "production_runtime_changed": false,
+    "web3_wallet_passport_changed": false,
+    "database_migration_changed": false
+  }
+}
