@@ -134,7 +134,6 @@ const creativeInView = ref(false)
 const runtimeState = ref<"paused" | "running">("paused")
 let creativeObserver: IntersectionObserver | null = null
 let creativeVisibilityTimer: number | null = null
-let creativeVisibilityTimeout: number | null = null
 
 useHead(() => {
   const current = article.value
