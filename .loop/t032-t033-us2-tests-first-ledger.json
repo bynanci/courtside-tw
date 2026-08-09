@@ -1,0 +1,95 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-t032-t033-us2-tests-first",
+  "graph_version": 1,
+  "run_id": "courtside-tw-us2-t032-t033-20260809",
+  "status": "running",
+  "iteration": 1,
+  "started_at": "2026-08-09T07:45:00Z",
+  "updated_at": "2026-08-09T07:45:00Z",
+  "current_frontier": [
+    "a-t032-tests",
+    "a-t033-tests"
+  ],
+  "blocked_nodes": [],
+  "terminal_state": null,
+  "next_action": "Create a draft PR and run exact-head CI/Security to observe the T032/T033 red baseline.",
+  "events": [
+    {
+      "event_id": "evt-us2-001-dispatch",
+      "at": "2026-08-09T07:45:00Z",
+      "actor": "codex-supervisor",
+      "type": "us2_tests_first_dispatched",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "graph.nodes/a-t032-tests",
+            "after": "T032 failing public Article projection/authorization contract tests"
+          },
+          {
+            "op": "add",
+            "path": "graph.nodes/a-t033-tests",
+            "after": "T033 reader, no-JS and reduced-motion lifecycle tests"
+          },
+          {
+            "op": "add",
+            "path": "apps/web/tests/fixtures/content-document-v1.json",
+            "after": "Canonical all-11-block fixture copied for reader tests"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t032-t033-dispatch-20260809.json",
+        "https://github.com/bynanci/courtside-tw/commit/2ae2a5eeef9bc7ec3098b75205a7250e3a397960",
+        "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "main Phase 3 read-back",
+          "level": "P3",
+          "result": "pass",
+          "main_sha": "2ae2a5eeef9bc7ec3098b75205a7250e3a397960",
+          "next_frontier": [
+            "T032",
+            "T033"
+          ]
+        },
+        {
+          "proof": "static fixture source",
+          "level": "P1",
+          "result": "pass",
+          "source": "packages/content-schema/fixtures/valid/content-document-v1-all-blocks.json",
+          "block_types": 11
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "SAVED",
+        "memory_id": "wm:project:courtside-tw:us2-t032-t033-tests-first-dispatch",
+        "version": "branch-write-pending-draft-readback",
+        "retrieval_ids": [
+          ".loop/t024-t031-us1-public-magazine-ledger.json",
+          ".loop/memory/t024-t031-us1-completion.json",
+          "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+        ],
+        "evidence_refs": [
+          ".loop/memory/t032-t033-us2-tests-first-dispatch.json",
+          ".loop/evidence/t032-t033-dispatch-20260809.json"
+        ],
+        "next_review_at": "2026-08-10",
+        "blocker": null
+      },
+      "failure_signature": null,
+      "decision": "Dispatch tests-first only; do not implement T034+ in the same branch.",
+      "token_usage": {
+        "estimated": 36000,
+        "input": 0,
+        "output": 0,
+        "total": 0
+      },
+      "terminal_reason": null
+    }
+  ]
+}
