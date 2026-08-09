@@ -1,0 +1,57 @@
+{
+  "evaluation_id": "ci-security-t016-bff-session-20260808",
+  "system_id": "courtside-tw-web-bff-identity",
+  "as_of": "2026-08-08T14:52:35Z",
+  "artifact_fingerprint": "git:d37336b76678960dafb684a81301c05d2e0a8d18",
+  "environment": "github-exact-head-ci-security",
+  "claim": "The T016 implementation head passes repository CI and Security workflows with the intended changed-file scope; the PR remains a human-gated draft.",
+  "proof_level": "P3",
+  "method": "Read back PR #53 changed filenames and workflow runs associated with exact head d37336b.",
+  "observed": {
+    "pull_request": 53,
+    "draft": true,
+    "merged": false,
+    "head_sha": "d37336b76678960dafb684a81301c05d2e0a8d18",
+    "base_sha": "63e6ea3cad59c98e992e2f02f7acb739ac28cf67",
+    "changed_files": 19,
+    "scope_inventory": "matches T016 web auth, loop artifacts and lockfile boundary",
+    "ci": {
+      "run_number": 169,
+      "run_id": 31262879519,
+      "result": "success",
+      "jobs": [
+        "Frontend and contract verification",
+        "Java quality and unit verification",
+        "Docker Compose dependency health"
+      ]
+    },
+    "security": {
+      "run_number": 169,
+      "run_id": 31262879512,
+      "result": "success",
+      "jobs": [
+        "Dependency audit and reports",
+        "CodeQL (javascript-typescript)",
+        "CodeQL (java-kotlin)",
+        "Trivy (filesystem)",
+        "Trivy (image postgres)",
+        "Trivy (image oidc)",
+        "Trivy (image s3)"
+      ]
+    }
+  },
+  "result": "PASS_WITH_FOLLOW_UP",
+  "evidence_refs": [
+    "https://github.com/bynanci/courtside-tw/pull/53",
+    "https://github.com/bynanci/courtside-tw/actions/runs/31262879519",
+    "https://github.com/bynanci/courtside-tw/actions/runs/31262879512",
+    ".loop/evidence/t016-implementation-proof-20260808.json"
+  ],
+  "limitations": [
+    "CI/Security do not replace human threat-model review, protected merge or T016 checkbox reconciliation.",
+    "The in-memory session store remains local/CI proof only and is rejected for production activation.",
+    "No production IdP, credential, private key, real user, real token or deployment action was used."
+  ],
+  "owner": "codex-agent",
+  "next_review_at": "2026-08-08T14:52:35Z"
+}

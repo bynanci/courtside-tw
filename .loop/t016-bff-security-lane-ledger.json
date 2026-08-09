@@ -1,18 +1,20 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t016-bff-controlled-security-lane",
-  "graph_version": 1,
+  "graph_version": 3,
   "run_id": "courtside-tw-t016-20260808",
-  "status": "ready_parallel",
-  "iteration": 1,
+  "status": "needs_human",
+  "iteration": 3,
   "started_at": "2026-08-08T09:28:47.897Z",
-  "updated_at": "2026-08-08T09:28:47.897Z",
+  "updated_at": "2026-08-08T14:52:35Z",
   "current_frontier": [
     "g-t016-security-review"
   ],
-  "blocked_nodes": [],
-  "terminal_state": "ready_parallel",
-  "next_action": "Run the T016 threat-model/security review and write the auth-session integration charter/tests against the local OIDC stub; keep this lane parallel and non-blocking for T018.",
+  "blocked_nodes": [
+    "s-t016-security-stop"
+  ],
+  "terminal_state": "needs_human",
+  "next_action": "Human reviewer must inspect the T016 threat model and exact implementation head, then require remote CI/Security and protected merge/checkbox approval; do not activate a production IdP or durable store.",
   "events": [
     {
       "event_id": "evt-t016-001-controlled-parallel-dispatch",
@@ -61,6 +63,145 @@
       ],
       "failure_signature": null,
       "decision": "Open T016 as a separate security lane with local/CI stub only; it may proceed in parallel with T018 but cannot alter or block the outbox lane."
+    },
+    {
+      "event_id": "evt-t016-002-implementation-proof",
+      "at": "2026-08-08T14:39:27Z",
+      "actor": "codex-agent",
+      "type": "t016_implementation_proof",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "graph.nodes/r-t016-contract-readback",
+            "after": "T015 issuer/audience/canonical-role contract is read through an L3 proof node before L1 execution."
+          },
+          {
+            "op": "add",
+            "path": "graph.nodes/p-t016-implementation-proof",
+            "after": "Local implementation, contract and anonymous-read proof is pass."
+          },
+          {
+            "op": "replace",
+            "path": "nodes/a-t016-security-charter.status",
+            "before": "ready",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "nodes/p-t016-tests-first.status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "nodes/id-t016-implementation.status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "nodes/p-t016-implementation-proof.status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [
+              "g-t016-security-review"
+            ],
+            "after": [
+              "g-t016-security-review"
+            ]
+          },
+          {
+            "op": "add",
+            "path": "graph.blocked_nodes",
+            "after": [
+              "s-t016-security-stop"
+            ]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t016-tests-first-baseline-20260808.json",
+        ".loop/evidence/t016-implementation-proof-20260808.json",
+        ".loop/evidence/t016-static-scope-20260808.json",
+        ".loop/memory/t016-bff-oidc-session.json",
+        "git:fc6e2082376e790926af30d69227553a26fe2e63"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "tests-first missing-runtime boundary",
+          "level": "P2",
+          "result": "pass_with_follow_up",
+          "baseline_head": "ac57f4f10c4c18b9c43d2848ed46371de909c02b",
+          "failure": "ERR_MODULE_NOT_FOUND for apps/web/server/auth/session-service.ts"
+        },
+        {
+          "proof": "local T016 implementation and repository verification",
+          "level": "P3",
+          "result": "pass",
+          "implementation_head": "fc6e2082376e790926af30d69227553a26fe2e63",
+          "web_auth_tests": 7,
+          "root_verify": "pass",
+          "anonymous_public_smoke": "public 200; protected 503"
+        }
+      ],
+      "failure_signature": "Initial tests failed only because the T016 session-service runtime boundary was absent; no provider or credential was contacted.",
+      "decision": "The bounded T016 implementation and local proof pass. Preserve human threat-model review, exact-head remote CI/Security, protected merge, checkbox and production session-store/IdP activation as explicit gates; leave the lane at needs_human."
+    },
+    {
+      "event_id": "evt-t016-003-exact-head-ci-security",
+      "at": "2026-08-08T14:52:35Z",
+      "actor": "codex-agent",
+      "type": "t016_exact_head_ci_security_proof",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "evidence/t016-ci-security-final-20260808.json",
+            "after": "CI #169 and Security #169 pass on exact implementation head d37336b."
+          },
+          {
+            "op": "replace",
+            "path": "nodes/p-t016-implementation-proof.confidence.score",
+            "before": 0.9,
+            "after": 0.95
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t016-ci-security-final-20260808.json",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31262879519",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31262879512",
+        "PR #53@d37336b76678960dafb684a81301c05d2e0a8d18"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Exact-head repository CI",
+          "level": "P3",
+          "result": "pass",
+          "run_number": 169,
+          "run_id": 31262879519,
+          "head_sha": "d37336b76678960dafb684a81301c05d2e0a8d18"
+        },
+        {
+          "proof": "Exact-head repository Security",
+          "level": "P3",
+          "result": "pass",
+          "run_number": 169,
+          "run_id": 31262879512,
+          "head_sha": "d37336b76678960dafb684a81301c05d2e0a8d18"
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Remote exact-head CI/Security proof passes. The lane remains needs_human: do not self-approve, merge, mark T016 checked or activate production identity/session infrastructure."
     }
   ]
 }
