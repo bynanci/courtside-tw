@@ -609,22 +609,25 @@ function saveReadingProgress(): void {
   if (blocks.length === 0) {
     return
   }
-  let current = blocks.find((block) => {
-    const rect = block.getBoundingClientRect()
-    return rect.bottom > 0 && rect.top < window.innerHeight * 0.6
-  })
+  const lastBlock = blocks.at(-1)
+  const lastRect = lastBlock?.getBoundingClientRect()
+  const documentBottom = Math.max(
+    document.documentElement.scrollHeight,
+    document.body?.scrollHeight ?? 0
+  )
+  const atDocumentEnd = window.scrollY + window.innerHeight >= documentBottom - 2
+  let current =
+    atDocumentEnd && lastBlock
+      ? lastBlock
+      : blocks.find((block) => {
+          const rect = block.getBoundingClientRect()
+          return rect.bottom > 0 && rect.top < window.innerHeight * 0.6
+        })
   if (!current) {
-    const lastBlock = blocks.at(-1)
-    const lastRect = lastBlock?.getBoundingClientRect()
-    const documentBottom = Math.max(
-      document.documentElement.scrollHeight,
-      document.body?.scrollHeight ?? 0
-    )
-    const atDocumentEnd = window.scrollY + window.innerHeight >= documentBottom - 2
     const previousBlock = resumeProgress.value?.blockId
       ? blocks.find((block) => block.dataset.blockId === resumeProgress.value?.blockId)
       : null
-    if (lastBlock && lastRect && (atDocumentEnd || lastRect.bottom <= window.innerHeight * 0.25)) {
+    if (lastBlock && lastRect && lastRect.bottom <= window.innerHeight * 0.25) {
       current = lastBlock
     } else if (previousBlock) {
       current = previousBlock
