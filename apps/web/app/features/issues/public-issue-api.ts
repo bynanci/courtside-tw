@@ -1,10 +1,20 @@
 import { createApiClient, type components } from "@courtside/api-client"
 
-import { parsePublicIssueSlug, publicIssueApiPath } from "./public-issue-contract.ts"
+import {\n  parsePublicArticleSlug,\n  parsePublicIssueSlug,\n  publicIssueApiPath\n} from "./public-issue-contract.ts"
 
 export type PublicIssuePage = components["schemas"]["IssueSummaryPage"]
 export type PublicIssueDetail = components["schemas"]["IssueDetail"]
 export type PublicIssueSummary = components["schemas"]["IssueSummary"]
+
+export class PublicArticleApiError extends Error {
+  readonly statusCode: number
+
+  constructor(statusCode: number) {
+    super("The public Article projection is unavailable.")
+    this.name = "PublicArticleApiError"
+    this.statusCode = statusCode
+  }
+}
 
 export class PublicIssueApiError extends Error {
   readonly statusCode: number
@@ -56,6 +66,28 @@ export async function fetchPublicIssue(
       throw error
     }
     throw new PublicIssueApiError(503)
+  }
+}
+
+export async function fetchPublicArticle(
+  baseUrl: string,
+  articleSlug: string
+): Promise<PublicArticleProjection> {
+  const slug = parsePublicArticleSlug(articleSlug)
+  try {
+    const client = createApiClient({ baseUrl: normalizedApiBaseUrl(baseUrl) })
+    const { data, response } = await client.GET("/api/v1/public/articles/{articleSlug}", {
+      params: { path: { articleSlug: slug } }
+    })
+    if (!response.ok || !data) {
+      throw new PublicArticleApiError(response.status)
+    }
+    return data
+  } catch (error) {
+    if (error instanceof PublicArticleApiError) {
+      throw error
+    }
+    throw new PublicArticleApiError(503)
   }
 }
 
