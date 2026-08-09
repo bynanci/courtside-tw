@@ -539,6 +539,7 @@ function loadResumeProgress(): void {
 }
 
 let stopResumeWatch: (() => void) | null = null
+let stopCreativeWatch: (() => void) | null = null
 
 onMounted(() => {
   if (typeof window !== "undefined") {
@@ -551,11 +552,23 @@ onMounted(() => {
   document.addEventListener("scroll", handleReaderScroll, { passive: true, capture: true })
   document.addEventListener("visibilitychange", syncRuntimeState)
   stopResumeWatch = watch(resumeStorageKey, loadResumeProgress, { immediate: true })
-  void nextTick().then(() => observeCreative())
+  stopCreativeWatch = watch(
+    () => article.value?.revisionId,
+    async () => {
+      creativeInView.value = false
+      runtimeState.value = "paused"
+      creativeObserver?.disconnect()
+      stopCreativeVisibilityWatch()
+      await nextTick()
+      observeCreative()
+    },
+    { immediate: true }
+  )
 })
 
 onBeforeUnmount(() => {
   stopResumeWatch?.()
+  stopCreativeWatch?.()
   document.removeEventListener("scroll", handleReaderScroll, true)
   document.removeEventListener("visibilitychange", syncRuntimeState)
   window.removeEventListener("scroll", handleReaderScroll)
