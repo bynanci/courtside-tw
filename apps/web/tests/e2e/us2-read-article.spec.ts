@@ -93,7 +93,10 @@ test.describe("US2 long-form public article", () => {
 
     const lastBlockId = await page.locator("[data-block-id]").last().getAttribute("data-block-id")
     expect(lastBlockId).toBeTruthy()
-    await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight))
+    await page.evaluate(() => {
+      window.scrollTo(0, document.documentElement.scrollHeight)
+      window.dispatchEvent(new Event("scroll"))
+    })
 
     await expect
       .poll(async () =>
