@@ -1,19 +1,19 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t032-t033-us2-tests-first",
-  "graph_version": 1,
+  "graph_version": 2,
   "run_id": "courtside-tw-us2-t032-t033-20260809",
   "status": "running",
   "iteration": 1,
   "started_at": "2026-08-09T07:45:00Z",
-  "updated_at": "2026-08-09T07:45:00Z",
+  "updated_at": "2026-08-09T07:50:28Z",
   "current_frontier": [
-    "a-t032-tests",
-    "a-t033-tests"
+    "p-t032-red",
+    "p-t033-red"
   ],
   "blocked_nodes": [],
   "terminal_state": null,
-  "next_action": "Create a draft PR and run exact-head CI/Security to observe the T032/T033 red baseline.",
+  "next_action": "Run exact-head CI/Security and classify the T032/T033 intended red baseline.",
   "events": [
     {
       "event_id": "evt-us2-001-dispatch",
@@ -88,6 +88,77 @@
         "input": 0,
         "output": 0,
         "total": 0
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-us2-002-frontier-recomputed",
+      "at": "2026-08-09T07:50:28Z",
+      "actor": "codex-supervisor",
+      "type": "frontier_recomputed",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [
+              "a-t032-tests",
+              "a-t033-tests"
+            ],
+            "after": [
+              "p-t032-red",
+              "p-t033-red"
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "ledger.next_action",
+            "before": "Create a draft PR and run exact-head CI/Security to observe the T032/T033 red baseline.",
+            "after": "Run exact-head CI/Security and classify the T032/T033 intended red baseline."
+          }
+        ]
+      },
+      "evidence_refs": [
+        "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java",
+        "apps/web/tests/e2e/us2-read-article.spec.ts",
+        "apps/web/tests/e2e/us2-no-js.spec.ts",
+        "apps/web/tests/e2e/us2-reduced-motion.spec.ts"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "T032/T033 test sources present",
+          "level": "P1",
+          "result": "pass"
+        },
+        {
+          "proof": "canonical all-block fixture",
+          "level": "P1",
+          "result": "pass",
+          "block_types": 11
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": null,
+        "version": null,
+        "retrieval_ids": [
+          ".loop/memory/t032-t033-us2-tests-first-dispatch.json"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t032-t033-dispatch-20260809.json"
+        ],
+        "next_review_at": "2026-08-10",
+        "blocker": null
+      },
+      "failure_signature": null,
+      "decision": "The written-test actions are complete; the ready frontier is now the exact red proof, not additional implementation.",
+      "token_usage": {
+        "estimated": 2500,
+        "input": 0,
+        "output": 0,
+        "total": 2500
       },
       "terminal_reason": null
     }
