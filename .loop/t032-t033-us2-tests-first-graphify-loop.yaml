@@ -378,7 +378,7 @@ graph:
     - {id: e-memory-feedback, from: m-us2-semantic, to: a-dispatch-review, type: feedback, required: true, confidence: 0.9, token_capacity: 3000}
 
 flow:
-  source: t-us2-ready
+  source: x-main-readback
   sink: s-us2-terminal
   capacity_unit: tokens
   interpretation: planning-proxy
