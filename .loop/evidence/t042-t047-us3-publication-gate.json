@@ -1,0 +1,38 @@
+{
+  "schema_version": "1",
+  "evidence_id": "t042-t047-us3-publication-gate-scope-20260809",
+  "status": "IMPLEMENTATION_PENDING_VERIFICATION",
+  "classification": "INFERRED",
+  "source_of_truth": {
+    "repository": "bynanci/courtside-tw",
+    "base_ref": "main",
+    "base_commit": "fcc18d948073433d2a6e2397329391ef125c091c"
+  },
+  "scope": {
+    "included": [
+      "T042 state-machine and rights-policy unit tests",
+      "T045 V004 workflow persistence and append-only controls",
+      "T046 role/state/version transition rules",
+      "T047 stable rights/content readiness blockers"
+    ],
+    "excluded": [
+      "T043 editorial API integration",
+      "T044 Studio E2E",
+      "T048 upload worker",
+      "T049-T056 full Studio workflow",
+      "Web3, Passport, wallet, production activation, task checkbox edits"
+    ]
+  },
+  "proof": {
+    "static": "PENDING",
+    "unit": "PENDING",
+    "migration": "PENDING",
+    "security": "PENDING"
+  },
+  "human_gates": [
+    "Protected merge",
+    "Production migration/activation",
+    "Marking task checkboxes complete"
+  ],
+  "next_action": "Publish a draft branch, wait for exact-head proof, then update this evidence without claiming unverified success."
+}
