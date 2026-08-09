@@ -1,0 +1,65 @@
+{
+  "schema_version": "courtside-tw/us2-review-remediation-proof/v1",
+  "as_of": "2026-08-09",
+  "kind": "baseline",
+  "decision": "NEEDS_HUMAN",
+  "scope": {
+    "repository": "bynanci/courtside-tw",
+    "pull_request": 67,
+    "branch": "codex/us2-review-remediation-20260809",
+    "base_sha": "c45c1fd7e93699f4626e2ceab6b5fb6f52f38842",
+    "captured_head_sha": "06992568be46a5b0dbf6a52e9b3ab14913e6c16",
+    "draft": true,
+    "merge_requested": false
+  },
+  "changes": [
+    "Malformed slug no longer fetches a sentinel article.",
+    "Reader progress persists/restores by block ID.",
+    "Share success is reported only after a real share/clipboard operation, with canonical-link fallback.",
+    "Heading/list/divider/gallery/video rendering preserves declared semantics.",
+    "Published Article content is canonical-schema validated fail closed.",
+    "Issue navigation filters neighbors through the public-media rights gate.",
+    "Focused integration tests cover rights-ineligible neighbors and schema-invalid published content.",
+    "Image fallback and creative observation tests/lifecycle were synchronized with hydrated client behavior."
+  ],
+  "verification": {
+    "prior_exact_head": {
+      "sha": "9851bf7e9189995aaf46e34904ef698393108a39",
+      "ci_run": 31310404375,
+      "ci_conclusion": "failure",
+      "ci_jobs": {
+        "frontend_and_contract": "success",
+        "java_quality_and_unit": "success",
+        "docker_compose_dependency_health": "success",
+        "browser": "failure: image fallback assertion before hydration synchronization"
+      },
+      "security_run": 31310404349,
+      "security_conclusion": "success"
+    },
+    "captured_head": {
+      "sha": "06992568be46a5b0dbf6a52e9b3ab14913e6c16",
+      "ci_run": null,
+      "security_run": null,
+      "status": "pending"
+    }
+  },
+  "human_gates": [
+    {
+      "id": "MEDIA_STORAGE_KEY_RESOLUTION",
+      "status": "needs_human",
+      "reason": "Use selected media_variant.public_storage_key; do not invent /media/articles/{slug}/{assetId}.webp."
+    },
+    {
+      "id": "CONTRIBUTOR_SOURCE_CONTRACT",
+      "status": "needs_human",
+      "reason": "Projection and schema currently have no persisted contributor source for a truthful public byline."
+    },
+    {
+      "id": "P5_RUNTIME_APPROVAL",
+      "status": "needs_human",
+      "reason": "ADR-0005 requires an actual p5.js 2.x instance-mode runtime, fixed seed, bounded parameters and lifecycle proof; the current span is only a placeholder."
+    }
+  ],
+  "terminal_state": "needs_human",
+  "next_action": "Read back CI/Security for captured_head_sha; preserve failure or success truthfully, then await protected human decisions."
+}
