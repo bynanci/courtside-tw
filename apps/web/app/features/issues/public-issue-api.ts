@@ -1,10 +1,12 @@
 import { createApiClient, type components } from "@courtside/api-client"
 
-import {\n  parsePublicArticleSlug,\n  parsePublicIssueSlug,\n  publicIssueApiPath\n} from "./public-issue-contract.ts"
+import {
+  parsePublicArticleSlug,\n  parsePublicIssueSlug,\n  publicIssueApiPath\n} from "./public-issue-contract.ts"
 
 export type PublicIssuePage = components["schemas"]["IssueSummaryPage"]
 export type PublicIssueDetail = components["schemas"]["IssueDetail"]
 export type PublicIssueSummary = components["schemas"]["IssueSummary"]
+export type PublicArticleProjection = components["schemas"]["ArticleProjection"]
 
 export class PublicArticleApiError extends Error {
   readonly statusCode: number
