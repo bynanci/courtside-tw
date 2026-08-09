@@ -3,6 +3,11 @@ spring:
     name: courtside-tw-api
 
 management:
+  opentelemetry:
+    enabled: ${COURTSIDE_OTEL_ENABLED:false}
+  tracing:
+    sampling:
+      probability: ${COURTSIDE_OTEL_SAMPLING_PROBABILITY:0.0}
   endpoints:
     web:
       exposure:
