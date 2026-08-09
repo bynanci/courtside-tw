@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref } from "vue"
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 
 import { canonicalUrl, jsonLd } from "../../composables/public-seo"
 import {
@@ -325,7 +325,12 @@ function syncRuntimeState(): void {
 }
 
 function observeCreative(): void {
-  if (!creativeElement.value) {
+  const target =
+    creativeElement.value ??
+    (typeof document !== "undefined"
+      ? document.querySelector<HTMLElement>('[data-testid="generative-canvas"]')
+      : null)
+  if (!target) {
     return
   }
   if (typeof IntersectionObserver === "undefined") {
@@ -343,7 +348,7 @@ function observeCreative(): void {
     },
     { threshold: 0.01 }
   )
-  creativeObserver.observe(creativeElement.value)
+  creativeObserver.observe(target)
 }
 
 async function shareArticle(): Promise<void> {
@@ -363,37 +368,47 @@ async function shareArticle(): Promise<void> {
   shareStatus.value = "分享連結已準備好"
 }
 
+function loadResumeProgress(): void {
+  resumeAvailable.value = false
+  if (typeof window === "undefined" || !resumeStorageKey.value) {
+    return
+  }
+  const saved = window.localStorage.getItem(resumeStorageKey.value)
+  if (!saved) {
+    return
+  }
+  try {
+    const value: unknown = JSON.parse(saved)
+    if (
+      isRecord(value) &&
+      typeof value.blockId === "string" &&
+      typeof value.offset === "number" &&
+      value.offset >= 0 &&
+      value.offset <= 1
+    ) {
+      resumeAvailable.value = true
+    }
+  } catch {
+    // Ignore malformed local progress and keep the page readable.
+  }
+}
+
+let stopResumeWatch: (() => void) | null = null
+
 onMounted(async () => {
   if (typeof window !== "undefined") {
     motionMode.value = window.matchMedia("(prefers-reduced-motion: reduce)").matches
       ? "reduced"
       : "full"
   }
-  if (typeof window !== "undefined" && resumeStorageKey.value) {
-    const saved = window.localStorage.getItem(resumeStorageKey.value)
-    if (saved) {
-      try {
-        const value: unknown = JSON.parse(saved)
-        if (
-          isRecord(value) &&
-          typeof value.blockId === "string" &&
-          typeof value.offset === "number" &&
-          value.offset >= 0 &&
-          value.offset <= 1
-        ) {
-          resumeAvailable.value = true
-        }
-      } catch {
-        // Ignore malformed local progress and keep the page readable.
-      }
-    }
-  }
   document.addEventListener("visibilitychange", syncRuntimeState)
   await nextTick()
+  stopResumeWatch = watch(resumeStorageKey, loadResumeProgress, { immediate: true })
   observeCreative()
 })
 
 onBeforeUnmount(() => {
+  stopResumeWatch?.()
   document.removeEventListener("visibilitychange", syncRuntimeState)
   creativeObserver?.disconnect()
   creativeObserver = null
@@ -422,7 +437,7 @@ onBeforeUnmount(() => {
         :data-motion="motionMode"
         aria-labelledby="article-heading"
       >
-        <header class="article-header">
+        <header class="article-header" data-testid="article-header">
           <p class="eyebrow">Public Reading</p>
           <h1 id="article-heading">{{ article.title }}</h1>
           <p v-if="article.dek" class="article-dek">{{ article.dek }}</p>
@@ -540,7 +555,6 @@ onBeforeUnmount(() => {
                 @error="markAssetFailed(block.id)"
               />
               <figcaption
-                v-if="failedAssets.has(block.id)"
                 data-testid="article-image-fallback"
                 class="article-image-fallback"
               >
