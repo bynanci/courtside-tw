@@ -50,9 +50,9 @@ final class ContentPayloadBoundaryTest {
         ContentDocumentValidator validator = new ContentDocumentValidator();
 
         for (String field : List.of("eval", "shader", "remoteModule", "fetch", "sourceCode")) {
+            String injection = ",\n                    \"" + field + "\": \"blocked\"";
             ContentDocumentValidator.ValidationResult result = validator.validate(
-                    DOCUMENT_TEMPLATE.formatted(",
-                    "" + field + "": "blocked"")
+                    DOCUMENT_TEMPLATE.formatted(injection)
             );
 
             assertFalse(result.valid(), field + " unexpectedly passed");
