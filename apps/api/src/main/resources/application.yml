@@ -2,6 +2,26 @@ spring:
   application:
     name: courtside-tw-api
 
+management:
+  opentelemetry:
+    enabled: ${COURTSIDE_OTEL_ENABLED:false}
+  tracing:
+    sampling:
+      probability: ${COURTSIDE_OTEL_SAMPLING_PROBABILITY:0.0}
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+
 ---
 spring:
   config:
