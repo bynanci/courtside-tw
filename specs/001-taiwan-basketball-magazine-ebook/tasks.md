@@ -64,17 +64,17 @@
 
 ### Tests for User Story 1 — write first
 
-- [ ] T024 [P] [US1] Write failing public issue contract/integration tests for FR-001–FR-003 in `apps/api/src/test/java/tw/basketball/magazine/publication/api/PublicIssueApiIT.java`; cover cursor pagination, ordered sections, draft filtering, withdrawn issue and unknown slug.
-- [ ] T025 [P] [US1] Write a failing mobile Playwright journey in `apps/web/tests/e2e/us1-browse-issue.spec.ts` and accessibility assertions in `apps/web/tests/e2e/us1-browse-issue.a11y.spec.ts`; require three-or-fewer interactions from `/` to an article and prove route／TOC motion never hides SSR links before hydration or under reduced-motion.
+- [x] T024 [P] [US1] Write failing public issue contract/integration tests for FR-001–FR-003 in `apps/api/src/test/java/tw/basketball/magazine/publication/api/PublicIssueApiIT.java`; cover cursor pagination, ordered sections, draft filtering, withdrawn issue and unknown slug.
+- [x] T025 [P] [US1] Write a failing mobile Playwright journey in `apps/web/tests/e2e/us1-browse-issue.spec.ts` and accessibility assertions in `apps/web/tests/e2e/us1-browse-issue.a11y.spec.ts`; require three-or-fewer interactions from `/` to an article and prove route／TOC motion never hides SSR links before hydration or under reduced-motion.
 
 ### Implementation for User Story 1
 
-- [ ] T026 [US1] Add issue, section, article identity, article revision and issue ordering tables with publication-state constraints in `apps/api/src/main/resources/db/migration/V002__publication_content_core.sql`; include stable UUIDs, unique slugs, positions and optimistic versions.
-- [ ] T027 [US1] Implement issue aggregates, ordering invariants and published read repositories in `apps/api/src/main/java/tw/basketball/magazine/publication/domain/` and `apps/api/src/main/java/tw/basketball/magazine/publication/persistence/`; repository queries must not expose draft fields to public projections.
-- [ ] T028 [US1] Implement `GET /api/v1/public/issues` and `/api/v1/public/issues/{issueSlug}` in `apps/api/src/main/java/tw/basketball/magazine/publication/api/PublicIssueController.java` and application services under `publication/application/`; add ETag and bounded cursor validation.
-- [ ] T029 [P] [US1] Build issue cover, issue card, section TOC and article-summary components with component tests in `apps/web/app/features/issues/components/` and `apps/web/tests/component/issues/`; preserve image aspect ratio and semantic heading order, and use centralized `motion-v` variants only for approved cover／TOC patterns with CSS or no-motion fallback.
-- [ ] T030 [US1] Build SSR routes `/`, `/issues`, `/issues/[issueSlug]`, and a minimal `/articles/[articleSlug]` article-header handoff in `apps/web/app/pages/`, using only `packages/api-client`; handle empty catalog, not-found and withdrawn states without leaking draft metadata.
-- [ ] T031 [US1] Implement issue canonical URLs, Open Graph, JSON-LD, robots decisions and issue sitemap entries in `apps/web/app/features/issues/seo/`, `apps/web/server/routes/sitemap.xml.ts`, and `apps/web/tests/integration/issue-seo.test.ts`.
+- [x] T026 [US1] Add issue, section, article identity, article revision and issue ordering tables with publication-state constraints in `apps/api/src/main/resources/db/migration/V002__publication_content_core.sql`; include stable UUIDs, unique slugs, positions and optimistic versions.
+- [x] T027 [US1] Implement issue aggregates, ordering invariants and published read repositories in `apps/api/src/main/java/tw/basketball/magazine/publication/domain/` and `apps/api/src/main/java/tw/basketball/magazine/publication/persistence/`; repository queries must not expose draft fields to public projections.
+- [x] T028 [US1] Implement `GET /api/v1/public/issues` and `/api/v1/public/issues/{issueSlug}` in `apps/api/src/main/java/tw/basketball/magazine/publication/api/PublicIssueController.java` and application services under `publication/application/`; add ETag and bounded cursor validation.
+- [x] T029 [P] [US1] Build issue cover, issue card, section TOC and article-summary components with component tests in `apps/web/app/features/issues/components/` and `apps/web/tests/component/issues/`; preserve image aspect ratio and semantic heading order, and use centralized `motion-v` variants only for approved cover／TOC patterns with CSS or no-motion fallback.
+- [x] T030 [US1] Build SSR routes `/`, `/issues`, `/issues/[issueSlug]`, and a minimal `/articles/[articleSlug]` article-header handoff in `apps/web/app/pages/`, using only `packages/api-client`; handle empty catalog, not-found and withdrawn states without leaking draft metadata.
+- [x] T031 [US1] Implement issue canonical URLs, Open Graph, JSON-LD, robots decisions and issue sitemap entries in `apps/web/app/features/issues/seo/`, `apps/web/server/routes/sitemap.xml.ts`, and `apps/web/tests/integration/issue-seo.test.ts`.
 
 **Checkpoint**: T024/T025 pass; US1 works independently. This is a deployable catalog slice even before rich article blocks are enabled.
 
