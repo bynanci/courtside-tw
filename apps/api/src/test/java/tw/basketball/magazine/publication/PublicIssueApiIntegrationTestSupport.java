@@ -64,10 +64,9 @@ abstract class PublicIssueApiIntegrationTestSupport {
                     publication_issue, media_variant, rights_record, media_asset
                 RESTART IDENTITY CASCADE
                 """);
-        mockMvc = MockMvcBuilders.standaloneSetup(
-                new PublicIssueController(new PublicIssueService(new JdbcPublicIssueRepository(jdbcTemplate))),
-                new PublicArticleController(new PublicArticleService(new JdbcPublicArticleRepository(jdbcTemplate)))
-        ).build();
+        mockMvc = MockMvcBuilders.standaloneSetup(new PublicIssueController(
+                new PublicIssueService(new JdbcPublicIssueRepository(jdbcTemplate))
+        )).build();
     }
 
     protected IssueFixture createIssue(
