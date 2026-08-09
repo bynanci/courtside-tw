@@ -1,16 +1,13 @@
-import { spawn } from "node:child_process";
-import { createServer } from "node:http";
-import { readFileSync } from "node:fs";
+import { spawn } from "node:child_process"
+import { createServer } from "node:http"
+import { readFileSync } from "node:fs"
 
-const API_PORT = 4010;
-const WEB_PORT = 4173;
-const webOrigin = "http://127.0.0.1:" + WEB_PORT;
+const API_PORT = 4010
+const WEB_PORT = 4173
+const webOrigin = "http://127.0.0.1:" + WEB_PORT
 const contentDocument = JSON.parse(
-  readFileSync(
-    new URL("../fixtures/content-document-v1.json", import.meta.url),
-    "utf8",
-  ),
-);
+  readFileSync(new URL("../fixtures/content-document-v1.json", import.meta.url), "utf8")
+)
 const issue = {
   issueId: "0190f7b0-7c4b-7e3a-8f12-123456789abc",
   slug: "issue-2026-01",
@@ -21,11 +18,11 @@ const issue = {
     url: "/media/issues/issue-2026-01/cover.webp",
     alt: "第 1 期 Courtside TW 封面",
     width: 1200,
-    height: 1600,
+    height: 1600
   },
   publishedAt: "2026-08-01T00:00:00Z",
-  articleCount: 2,
-};
+  articleCount: 2
+}
 const issueDetail = {
   ...issue,
   sections: [
@@ -37,9 +34,9 @@ const issueDetail = {
           articleId: "0190f7b0-7c4b-7e3a-8f12-123456789abd",
           slug: "opening-night",
           title: "主場燈光亮起之前",
-          position: 1,
-        },
-      ],
+          position: 1
+        }
+      ]
     },
     {
       title: "場邊觀察",
@@ -49,12 +46,12 @@ const issueDetail = {
           articleId: "0190f7b0-7c4b-7e3a-8f12-123456789abe",
           slug: "courtside-notes",
           title: "看台上的第二種節奏",
-          position: 1,
-        },
-      ],
-    },
-  ],
-};
+          position: 1
+        }
+      ]
+    }
+  ]
+}
 
 const articleProjections = new Map([
   [
@@ -74,10 +71,10 @@ const articleProjections = new Map([
           articleId: "0190f7b0-7c4b-7e3a-8f12-123456789abe",
           slug: "courtside-notes",
           title: "看台上的第二種節奏",
-          position: 1,
-        },
-      },
-    },
+          position: 1
+        }
+      }
+    }
   ],
   [
     "courtside-notes",
@@ -100,12 +97,12 @@ const articleProjections = new Map([
               content: [
                 {
                   kind: "text",
-                  text: "看台的聲音，讓比賽在終場之後繼續留下節奏。",
-                },
-              ],
-            },
-          },
-        ],
+                  text: "看台的聲音，讓比賽在終場之後繼續留下節奏。"
+                }
+              ]
+            }
+          }
+        ]
       },
       issueNavigation: {
         issueSlug: "issue-2026-01",
@@ -113,40 +110,40 @@ const articleProjections = new Map([
           articleId: "0190f7b0-7c4b-7e3a-8f12-123456789abd",
           slug: "opening-night",
           title: "主場燈光亮起之前",
-          position: 1,
+          position: 1
         },
-        next: null,
-      },
-    },
-  ],
-]);
+        next: null
+      }
+    }
+  ]
+])
 
 const apiServer = createServer((request, response) => {
-  const requestUrl = new URL(request.url ?? "/", webOrigin);
+  const requestUrl = new URL(request.url ?? "/", webOrigin)
 
-  response.setHeader("access-control-allow-origin", webOrigin);
-  response.setHeader("access-control-allow-credentials", "true");
-  response.setHeader("x-request-id", "e2e-public-api");
-  response.setHeader("cache-control", "public, max-age=60, must-revalidate");
+  response.setHeader("access-control-allow-origin", webOrigin)
+  response.setHeader("access-control-allow-credentials", "true")
+  response.setHeader("x-request-id", "e2e-public-api")
+  response.setHeader("cache-control", "public, max-age=60, must-revalidate")
 
   if (requestUrl.pathname === "/api/v1/public/issues") {
     writeJson(response, 200, {
       items: [issue],
-      page: { nextCursor: null, limit: 20 },
-    });
-    return;
+      page: { nextCursor: null, limit: 20 }
+    })
+    return
   }
   if (requestUrl.pathname === "/api/v1/public/issues/issue-2026-01") {
-    writeJson(response, 200, issueDetail);
-    return;
+    writeJson(response, 200, issueDetail)
+    return
   }
 
-  const articlePrefix = "/api/v1/public/articles/";
+  const articlePrefix = "/api/v1/public/articles/"
   if (requestUrl.pathname.startsWith(articlePrefix)) {
-    const articleSlug = requestUrl.pathname.slice(articlePrefix.length);
-    const article = articleProjections.get(articleSlug);
+    const articleSlug = requestUrl.pathname.slice(articlePrefix.length)
+    const article = articleProjections.get(articleSlug)
     if (article) {
-      writeJson(response, 200, article);
+      writeJson(response, 200, article)
     } else {
       writeJson(response, 404, {
         type: "https://courtside.tw/problems/resource_not_found",
@@ -156,15 +153,15 @@ const apiServer = createServer((request, response) => {
         instance: requestUrl.pathname,
         requestId: "e2e-public-api",
         code: "RESOURCE_NOT_FOUND",
-        errors: [],
-      });
+        errors: []
+      })
     }
-    return;
+    return
   }
   if (requestUrl.pathname.startsWith("/media/")) {
-    response.writeHead(204);
-    response.end();
-    return;
+    response.writeHead(204)
+    response.end()
+    return
   }
   writeJson(response, 404, {
     type: "https://courtside.tw/problems/resource_not_found",
@@ -174,12 +171,12 @@ const apiServer = createServer((request, response) => {
     instance: "/api/v1/public/issues",
     requestId: "e2e-public-api",
     code: "RESOURCE_NOT_FOUND",
-    errors: [],
-  });
-});
+    errors: []
+  })
+})
 
 apiServer.listen(API_PORT, "127.0.0.1", () => {
-  const command = process.platform === "win32" ? "pnpm.cmd" : "pnpm";
+  const command = process.platform === "win32" ? "pnpm.cmd" : "pnpm"
   const webServer = spawn(
     command,
     ["exec", "nuxt", "dev", "--host", "127.0.0.1", "--port", String(WEB_PORT)],
@@ -189,26 +186,26 @@ apiServer.listen(API_PORT, "127.0.0.1", () => {
         ...process.env,
         NUXT_PUBLIC_API_BASE_URL: "http://127.0.0.1:" + API_PORT,
         NUXT_PUBLIC_SITE_URL: "https://courtside.test",
-        NUXT_TELEMETRY_DISABLED: "1",
+        NUXT_TELEMETRY_DISABLED: "1"
       },
-      stdio: "inherit",
-    },
-  );
+      stdio: "inherit"
+    }
+  )
 
   const stop = () => {
-    webServer.kill("SIGTERM");
-    apiServer.close(() => process.exit(0));
-  };
-  process.once("SIGINT", stop);
-  process.once("SIGTERM", stop);
+    webServer.kill("SIGTERM")
+    apiServer.close(() => process.exit(0))
+  }
+  process.once("SIGINT", stop)
+  process.once("SIGTERM", stop)
   webServer.once("exit", (code) => {
-    apiServer.close(() => process.exit(code ?? 1));
-  });
-});
+    apiServer.close(() => process.exit(code ?? 1))
+  })
+})
 
 function writeJson(response, status, body) {
-  response.setHeader("content-type", "application/json; charset=utf-8");
-  response.setHeader("etag", '"e2e-public-issue"');
-  response.writeHead(status);
-  response.end(JSON.stringify(body));
+  response.setHeader("content-type", "application/json; charset=utf-8")
+  response.setHeader("etag", '"e2e-public-issue"')
+  response.writeHead(status)
+  response.end(JSON.stringify(body))
 }
