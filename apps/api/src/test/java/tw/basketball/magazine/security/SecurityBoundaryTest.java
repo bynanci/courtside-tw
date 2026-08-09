@@ -57,7 +57,7 @@ final class SecurityBoundaryTest {
 
     @Test
     void rejectsOversizedChunkedRequestBeforeApplicationChain() throws Exception {
-        byte[] body = "{\"ok\":true}".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        byte[] body = new byte[(int) SecurityBoundaryPolicy.MAX_REQUEST_BODY_BYTES + 1];
         MockHttpServletRequest request = new MockHttpServletRequest() {
             @Override
             public long getContentLengthLong() {
@@ -78,7 +78,7 @@ final class SecurityBoundaryTest {
 
     @Test
     void replaysAcceptedChunkedBodyToApplicationChain() throws Exception {
-        byte[] body = "{"ok":true}".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+        byte[] body = "{\"ok\":true}".getBytes(java.nio.charset.StandardCharsets.UTF_8);
         MockHttpServletRequest request = new MockHttpServletRequest() {
             @Override
             public long getContentLengthLong() {
