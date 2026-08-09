@@ -64,6 +64,48 @@ const articleProjections = new Map([
       title: "主場燈光亮起之前",
       dek: "一篇從球場入口開始，記錄主場如何成為共同記憶的長文。",
       content: contentDocument,
+      media: [
+        {
+          assetId: "00000000-0000-4000-8000-000000000011",
+          variant: "wide",
+          url: "/media/published/opening-wide.webp",
+          mimeType: "image/webp",
+          width: 1600,
+          height: 900
+        },
+        {
+          assetId: "00000000-0000-4000-8000-000000000012",
+          variant: "inline",
+          url: "/media/published/opening-gallery-1.webp",
+          mimeType: "image/webp",
+          width: 1200,
+          height: 800
+        },
+        {
+          assetId: "00000000-0000-4000-8000-000000000013",
+          variant: "inline",
+          url: "/media/published/opening-gallery-2.webp",
+          mimeType: "image/webp",
+          width: 1200,
+          height: 800
+        },
+        {
+          assetId: "00000000-0000-4000-8000-000000000016",
+          variant: "poster",
+          url: "/media/published/opening-poster.webp",
+          mimeType: "image/webp",
+          width: 1200,
+          height: 675
+        }
+      ],
+      contributors: [
+        {
+          contributorId: "00000000-0000-4000-8000-000000000021",
+          slug: "courtside-tw-editorial",
+          displayName: "Courtside TW 編輯部",
+          role: "EDITOR"
+        }
+      ],
       issueNavigation: {
         issueSlug: "issue-2026-01",
         previous: null,
@@ -104,9 +146,16 @@ const articleProjections = new Map([
           }
         ]
       },
+      media: [],
+      contributors: [
+        {
+          contributorId: "00000000-0000-4000-8000-000000000022",
+          slug: "courtside-tw-editorial",
+          displayName: "Courtside TW 編輯部",
+          role: "EDITOR"
+        }
+      ],
       issueNavigation: {
-        issueSlug: "issue-2026-01",
-        previous: {
           articleId: "0190f7b0-7c4b-7e3a-8f12-123456789abd",
           slug: "opening-night",
           title: "主場燈光亮起之前",
