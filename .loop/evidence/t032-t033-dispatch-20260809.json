@@ -1,0 +1,84 @@
+{
+  "schema_version": "courtside-proof/v1",
+  "proof_id": "t032-t033-dispatch-20260809",
+  "recorded_at": "2026-08-09T07:45:00Z",
+  "result": "DISPATCHED_RED_BASELINE_PENDING",
+  "scope": [
+    "T032",
+    "T033",
+    "US2",
+    "FR-004",
+    "FR-005",
+    "FR-006",
+    "FR-007",
+    "FR-008",
+    "FR-009",
+    "FR-010",
+    "FR-047",
+    "SC-014"
+  ],
+  "authoritative_base": {
+    "ref": "main",
+    "commit": "2ae2a5eeef9bc7ec3098b75205a7250e3a397960",
+    "url": "https://github.com/bynanci/courtside-tw/commit/2ae2a5eeef9bc7ec3098b75205a7250e3a397960",
+    "task_readback": {
+      "checked": [
+        "T024",
+        "T025",
+        "T026",
+        "T027",
+        "T028",
+        "T029",
+        "T030",
+        "T031"
+      ],
+      "unchecked": [
+        "T032",
+        "T033"
+      ]
+    }
+  },
+  "tests_first": {
+    "t032": {
+      "source": "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java",
+      "covers": [
+        "published revision selection",
+        "issue snapshot navigation",
+        "draft denial",
+        "withdrawn denial",
+        "historical revision denial",
+        "private media rights denial"
+      ],
+      "expected_red_boundary": "The current main public router has no /api/v1/public/articles/{articleSlug} projection."
+    },
+    "t033": {
+      "sources": [
+        "apps/web/tests/e2e/us2-read-article.spec.ts",
+        "apps/web/tests/e2e/us2-no-js.spec.ts",
+        "apps/web/tests/e2e/us2-reduced-motion.spec.ts"
+      ],
+      "fixture": "apps/web/tests/fixtures/content-document-v1.json",
+      "block_types": 11,
+      "covers": [
+        "image failure",
+        "reload resume",
+        "previous/next/TOC",
+        "SSR generative poster",
+        "no-JS",
+        "reduced motion",
+        "fixed seed",
+        "lazy runtime",
+        "visibility pause",
+        "route-unmount disposal"
+      ],
+      "expected_red_boundary": "The current article route is an intentional shell and has no article document or creative runtime."
+    }
+  },
+  "scope_guard": {
+    "production_runtime_changed": false,
+    "task_checkboxes_changed": false,
+    "web3_wallet_passport_changed": false,
+    "deployment_or_provider_changed": false
+  },
+  "next_action": "Create the draft PR, run exact-head CI/Security, and classify only the intended missing-Article/runtime failures."
+}

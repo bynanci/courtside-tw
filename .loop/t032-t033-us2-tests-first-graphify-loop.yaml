@@ -1,0 +1,398 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-t032-t033-us2-tests-first
+objective: >-
+  Produce a reviewable Phase 4 tests-first dispatch for T032 and T033 in which
+  the public Article API and long-form reader acceptance boundaries are expressed
+  as independently observable red tests before article production implementation.
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - T032 public Article projection and authorization tests for FR-004 through FR-010
+    - T033 reader E2E, no-JS, reduced-motion and all-block fixture coverage
+    - Tests-first evidence, Graphify ledger and semantic dispatch memory
+  out:
+    - T034 through T041 production article projection, renderer, reader and creative runtime implementation
+    - Any task checkbox update for T032/T033 before their described verification passes
+    - Web3, Wallet, Passport, provider activation, production deployment or external content publication
+
+authority:
+  allowed:
+    - Read current main, spec, plan, schema, ADRs, existing tests and current public route
+    - Add only T032/T033 tests, the named fixture and bounded Graphify artifacts
+    - Run focused/static verification and create a draft pull request
+  requires_approval:
+    - Protected merge, T032/T033 checkbox updates and production/runtime implementation
+    - Any change to acceptance, architecture, rights policy or public API contract
+  forbidden:
+    - Add production article/runtime code in the tests-first dispatch
+    - Weaken, skip or mark an expected-red test as passing
+    - Expose draft, withdrawn, historical or non-PUBLIC_WEB media content
+    - Add arbitrary HTML, remote code, shader, wallet or credential behavior
+
+acceptance:
+  - Main read-back proves T024-T031 are checked and T032/T033 are the next unchecked Phase 4 tasks.
+  - The fixture contains all 11 ContentDocument v1 block types and remains schema-valid.
+  - T032 expresses published revision selection, issue snapshot navigation and deny-by-default draft/withdrawn/history/private-rights cases.
+  - T033 expresses image failure, reload resume, issue navigation, SSR poster, no-JS, fixed-seed, lazy runtime, visibility pause and route-unmount disposal.
+  - The exact red baseline is limited to the absent public Article projection/reader runtime boundary; no unrelated lint, type, schema or security regression is accepted.
+  - The draft PR remains unmerged until the tests are paired with T034+ implementation and all required gates pass.
+
+budgets:
+  max_iterations: 5
+  max_minutes: 150
+  max_same_failure: 2
+  max_no_evidence_delta: 2
+  max_graph_changes: 16
+  max_tokens: 65000
+
+policy:
+  human_gates:
+    - Protected merge and task checkbox updates
+    - Any production/runtime implementation or acceptance/scope change
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+memory_workflow:
+  contract: work-memory/v1
+  control_ledger: Append graph delta, proof receipts, and token usage every iteration.
+  semantic_memory: Capture only durable dispatch and evidence deltas.
+  modes: [recall, capture, update, forget, no_op]
+  retrieval:
+    levels: [index, timeline_relations, details]
+    max_index_results: 10
+    stop_on_sufficient_evidence: true
+  capture:
+    allowed_kinds: [decision, constraint, fact, attempt, task_state, pattern, evidence]
+    requires_downstream_proof: true
+    requires_write_receipt: true
+  lifecycle: [seed, verified, stable, needs_update, disputed, archived]
+  failure_policy:
+    write_pending: blocked
+    stale_or_disputed: needs_human
+    redact_secrets: true
+
+graph:
+  entry_nodes: [x-main-readback]
+  terminal_nodes: [s-us2-terminal]
+  current_frontier: []
+  blocked_nodes: []
+
+  loops:
+    - id: l1-us2-tests-first
+      layer: L1
+      owner: codex-agent
+      trigger_nodes: [t-us2-ready]
+      action_nodes: [a-t032-tests, a-t033-tests, a-dispatch-review]
+      proof_nodes: [p-t032-red, p-t033-red, p-fixture, p-dispatch-gate]
+      memory_nodes: [m-us2-ledger, m-us2-semantic]
+      stop_nodes: [s-us2-terminal]
+      budgets:
+        max_iterations: 5
+        max_minutes: 150
+        max_same_failure: 2
+        max_graph_changes: 16
+        max_tokens: 65000
+
+  nodes:
+    - id: x-main-readback
+      kind: external
+      layer: EXTERNAL
+      label: Main read-back after US1 terminal success
+      owner: github
+      status: done
+      risk: medium
+      confidence:
+        score: 1.0
+        basis: Main is 2ae2a5e; T024-T031 are checked and T032/T033 are unchecked.
+        evidence_refs: [".loop/evidence/t024-t031-post-merge-readback-20260809.json", "specs/001-taiwan-basketball-magazine-ebook/tasks.md"]
+      budget: {effort_hours: 0.2, tokens: 2000}
+      config:
+        source_type: github-main-readback
+        freshness: "2026-08-09T07:45:00Z"
+        limitations: "The new US2 article runtime is intentionally absent from main."
+
+    - id: g-us2-direction
+      kind: gate
+      layer: L3
+      label: Mark direction to dispatch Phase 4 tests-first
+      owner: human-mark
+      status: done
+      risk: high
+      confidence:
+        score: 1.0
+        basis: "Current user request explicitly authorizes T032/T033 tests-first dispatch after US1 reconciliation."
+        evidence_refs: ["conversation:2026-08-09:dispatch-t032-t033"]
+      budget: {effort_hours: 0.1, tokens: 800}
+      config:
+        condition: "Approve a bounded tests-only Phase 4 dispatch while keeping T032/T033 unchecked."
+        approver: human-mark
+        required: true
+
+    - id: t-us2-ready
+      kind: trigger
+      layer: L1
+      label: T032/T033 are ready as the next unchecked Phase 4 tests
+      owner: codex-supervisor
+      status: done
+      risk: high
+      confidence:
+        score: 0.98
+        basis: "Phase 3 US1 is terminal-success on main; T032/T033 are the next independent tests-first tasks."
+        evidence_refs: ["specs/001-taiwan-basketball-magazine-ebook/tasks.md", ".loop/evidence/t032-t033-dispatch-20260809.json"]
+      budget: {effort_hours: 0.1, tokens: 1000}
+      config:
+        condition: "Main read-back and current direction agree on T032/T033 as the ready frontier."
+        inputs_required: [tasks.md, spec.md, plan.md, contracts/content-document.schema.json]
+        dedupe: "T032-T033 plus main SHA plus US2 tests-first graph version"
+
+    - id: a-t032-tests
+      kind: action
+      layer: L1
+      label: Write T032 failing public Article projection and authorization tests
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 0.9
+        basis: "The test source is present and intentionally expects the missing public Article route to return the US2 contract."
+        evidence_refs: ["apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java", ".loop/evidence/t032-t033-dispatch-20260809.json"]
+      budget: {effort_hours: 1.5, tokens: 12000}
+      config:
+        workflow: [read current harness, write red contract, cover positive and deny-by-default cases, run exact CI baseline]
+        allowed: [T032 test source and test fixtures only]
+        requires_approval: [none]
+        forbidden: [PublicArticleController implementation, migration, production content code]
+
+    - id: a-t033-tests
+      kind: action
+      layer: L1
+      label: Write T033 reader E2E and no-JS/reduced-motion tests
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 0.9
+        basis: "The three named specs and schema-complete fixture are present; assertions intentionally target the missing article reader boundary."
+        evidence_refs: ["apps/web/tests/e2e/us2-read-article.spec.ts", "apps/web/tests/e2e/us2-no-js.spec.ts", "apps/web/tests/e2e/us2-reduced-motion.spec.ts", "apps/web/tests/fixtures/content-document-v1.json", ".loop/evidence/t032-t033-dispatch-20260809.json"]
+      budget: {effort_hours: 2.0, tokens: 15000}
+      config:
+        workflow: [copy canonical all-block fixture, write reader contract assertions, write no-JS assertions, write reduced-motion lifecycle assertions, run exact CI baseline]
+        allowed: [T033 test sources and fixture only]
+        requires_approval: [none]
+        forbidden: [article route implementation, renderer, p5 runtime or test weakening]
+
+    - id: p-fixture
+      kind: proof
+      layer: L1
+      label: ContentDocument v1 all-block fixture proof
+      owner: verifier
+      status: done
+      risk: medium
+      confidence:
+        score: 0.99
+        basis: "The fixture is copied from the repository's canonical schema-valid all-block fixture and retains all 11 block types."
+        evidence_refs: ["packages/content-schema/fixtures/valid/content-document-v1-all-blocks.json", "apps/web/tests/fixtures/content-document-v1.json"]
+      budget: {effort_hours: 0.25, tokens: 2000}
+      config:
+        level: P1
+        claim: "The Phase 4 reader fixture contains all 11 schema block types without introducing a new content contract."
+        method: "Compare the new fixture with the canonical fixture and run the repository schema validator."
+        evidence_path: ".loop/evidence/t032-t033-dispatch-20260809.json"
+        required: true
+        baseline_required: true
+
+    - id: p-t032-red
+      kind: proof
+      layer: L1
+      label: T032 exact red baseline
+      owner: verifier
+      status: done
+      risk: high
+      confidence:
+        score: 0.96
+        basis: "Exact Java CI classified one expected Article projection failure; the deny-by-default test passes."
+        evidence_refs: ["apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java", ".loop/evidence/t032-t033-red-baseline-20260809.json"]
+      budget: {effort_hours: 0.75, tokens: 6500}
+      config:
+        level: P2
+        claim: "T032 fails only because the public Article projection boundary is absent; deny-by-default cases remain safe."
+        method: "Exact-head Java 21/Testcontainers CI run and failure-signature classification."
+        evidence_path: ".loop/evidence/t032-t033-red-baseline-20260809.json"
+        required: true
+        baseline_required: true
+
+    - id: p-t033-red
+      kind: proof
+      layer: L1
+      label: T033 exact red baseline
+      owner: verifier
+      status: done
+      risk: high
+      confidence:
+        score: 0.96
+        basis: "Exact Chromium CI classified five expected article-document failures while three existing browser checks pass."
+        evidence_refs: ["apps/web/tests/e2e/us2-read-article.spec.ts", "apps/web/tests/e2e/us2-no-js.spec.ts", "apps/web/tests/e2e/us2-reduced-motion.spec.ts", ".loop/evidence/t032-t033-red-baseline-20260809.json"]
+      budget: {effort_hours: 0.75, tokens: 6500}
+      config:
+        level: P2
+        claim: "T033 fails only at the missing article document/creative runtime boundary; US1 browser tests remain unaffected."
+        method: "Exact-head Playwright Chromium run and failure-signature classification."
+        evidence_path: ".loop/evidence/t032-t033-red-baseline-20260809.json"
+        required: true
+        baseline_required: true
+
+    - id: a-dispatch-review
+      kind: action
+      layer: L1
+      label: Review the tests-first dispatch scope and red-baseline readiness
+      owner: codex-supervisor
+      status: done
+      risk: high
+      confidence:
+        score: 0.96
+        basis: "Exact CI/Security failure signatures are classified; the ten current changed files are tests, fixture or bounded loop artifacts and the draft PR has no review threads."
+        evidence_refs: [".loop/evidence/t032-t033-dispatch-20260809.json", ".loop/evidence/t032-t033-red-baseline-20260809.json"]
+      budget: {effort_hours: 0.75, tokens: 8000}
+      config:
+        workflow: [inspect changed files, validate fixture, classify exact red failures, confirm no production code, preserve draft-only stop]
+        allowed: [review and append Graphify evidence]
+        requires_approval: [protected merge, task checkbox]
+        forbidden: [mark T032/T033 complete, merge red tests, implement production runtime]
+
+    - id: p-dispatch-gate
+      kind: proof
+      layer: L1
+      label: Phase 4 draft dispatch gate
+      owner: verifier
+      status: done
+      risk: high
+      confidence:
+        score: 0.96
+        basis: "Draft PR #63 is open, mergeable and unmerged; the exact red baseline is classified with zero review threads."
+        evidence_refs: [".loop/evidence/t032-t033-dispatch-20260809.json", ".loop/evidence/t032-t033-red-baseline-20260809.json"]
+      budget: {effort_hours: 0.5, tokens: 4500}
+      config:
+        level: P2
+        claim: "T032/T033 are reviewable tests-first work with bounded intended failures and no production implementation."
+        method: "Draft PR metadata, changed-file scope, fixture proof, exact CI/Security output and review-thread read-back."
+        evidence_path: ".loop/evidence/t032-t033-red-baseline-20260809.json"
+        required: true
+        baseline_required: true
+
+    - id: m-us2-ledger
+      kind: memory
+      layer: L1
+      label: Phase 4 control-plane graph ledger
+      owner: codex-supervisor
+      status: done
+      risk: medium
+      confidence:
+        score: 0.9
+        basis: "The dispatch graph and append-only ledger are stored in the branch before any production implementation."
+        evidence_refs: [".loop/t032-t033-us2-tests-first-ledger.json"]
+      budget: {effort_hours: 0.2, tokens: 2500}
+      config:
+        path: ".loop/t032-t033-us2-tests-first-ledger.json"
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: "work-memory/v1"
+        memory_role: graph_ledger
+        receipt_required: true
+        write_failure_state: blocked
+
+    - id: m-us2-semantic
+      kind: memory
+      layer: L1
+      label: Phase 4 semantic dispatch memory
+      owner: codex-supervisor
+      status: done
+      risk: medium
+      confidence:
+        score: 0.9
+        basis: "The durable task-state record distinguishes verified main facts from pending red-baseline evidence."
+        evidence_refs: [".loop/memory/t032-t033-us2-tests-first-dispatch.json"]
+      budget: {effort_hours: 0.2, tokens: 2500}
+      config:
+        path: ".loop/memory/t032-t033-us2-tests-first-dispatch.json"
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: "work-memory/v1"
+        memory_role: semantic_memory
+        receipt_required: true
+        write_failure_state: blocked
+
+    - id: s-us2-terminal
+      kind: stop
+      layer: GLOBAL
+      label: Phase 4 tests-first terminal policy
+      owner: policy
+      status: success
+      risk: high
+      confidence:
+        score: 1.0
+        basis: "The T032/T033 red baselines are classified, the draft PR is reviewable and no production implementation is merged."
+        evidence_refs: [".loop/evidence/t032-t033-red-baseline-20260809.json", "https://github.com/bynanci/courtside-tw/pull/63"]
+      budget: {effort_hours: 0.1, tokens: 500}
+      config:
+        states:
+          success: "T032/T033 red baselines are observed, draft PR is reviewable, and no production implementation is merged."
+          no_op: "Main already contains the same tests-first dispatch and no new evidence changes the frontier."
+          blocked: "A required toolchain, CI result, permission or fixture validation is unavailable."
+          stalled: "The same failure or no-evidence-delta limit is reached."
+          exhausted: "The configured iteration, time, graph-change or token budget is reached."
+          needs_human: "A request to merge tests or change acceptance/scope is pending."
+          cancelled: "The user cancels Phase 4 or the governing specification changes."
+
+  edges:
+    - {id: e-main-direction, from: x-main-readback, to: g-us2-direction, type: enables, required: true, confidence: 1.0, token_capacity: 4000}
+    - {id: e-direction-trigger, from: g-us2-direction, to: t-us2-ready, type: approves, required: true, confidence: 1.0, token_capacity: 5000}
+    - {id: e-trigger-t032, from: t-us2-ready, to: a-t032-tests, type: enables, required: true, confidence: 1.0, token_capacity: 12000}
+    - {id: e-trigger-t033, from: t-us2-ready, to: a-t033-tests, type: enables, required: true, confidence: 1.0, token_capacity: 12000}
+    - {id: e-t032-proof, from: a-t032-tests, to: p-t032-red, type: verifies, required: true, confidence: 0.9, token_capacity: 9000}
+    - {id: e-t033-proof, from: a-t033-tests, to: p-t033-red, type: verifies, required: true, confidence: 0.9, token_capacity: 9000}
+    - {id: e-t033-fixture, from: a-t033-tests, to: p-fixture, type: verifies, required: true, confidence: 0.99, token_capacity: 4000}
+    - {id: e-t032-review, from: p-t032-red, to: a-dispatch-review, type: enables, required: true, confidence: 0.9, token_capacity: 8000}
+    - {id: e-t033-review, from: p-t033-red, to: a-dispatch-review, type: enables, required: true, confidence: 0.9, token_capacity: 8000}
+    - {id: e-fixture-review, from: p-fixture, to: a-dispatch-review, type: enables, required: true, confidence: 0.99, token_capacity: 4000}
+    - {id: e-dispatch-proof, from: a-dispatch-review, to: p-dispatch-gate, type: verifies, required: true, confidence: 0.85, token_capacity: 7000}
+    - {id: e-dispatch-stop, from: p-dispatch-gate, to: s-us2-terminal, type: enables, required: true, confidence: 0.9, token_capacity: 4000}
+    - {id: e-t032-ledger, from: a-t032-tests, to: m-us2-ledger, type: records, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-t033-ledger, from: a-t033-tests, to: m-us2-ledger, type: records, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-review-ledger, from: a-dispatch-review, to: m-us2-ledger, type: records, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-t032-semantic, from: p-t032-red, to: m-us2-semantic, type: records, required: true, confidence: 0.85, token_capacity: 3000}
+    - {id: e-t033-semantic, from: p-t033-red, to: m-us2-semantic, type: records, required: true, confidence: 0.85, token_capacity: 3000}
+    - {id: e-fixture-semantic, from: p-fixture, to: m-us2-semantic, type: records, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-ledger-read-t032, from: m-us2-ledger, to: a-t032-tests, type: reads, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-ledger-read-t033, from: m-us2-ledger, to: a-t033-tests, type: reads, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-ledger-read-review, from: m-us2-ledger, to: a-dispatch-review, type: reads, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-semantic-read-t032, from: m-us2-semantic, to: a-t032-tests, type: reads, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-semantic-read-t033, from: m-us2-semantic, to: a-t033-tests, type: reads, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-semantic-read-review, from: m-us2-semantic, to: a-dispatch-review, type: reads, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-memory-feedback, from: m-us2-semantic, to: a-dispatch-review, type: feedback, required: true, confidence: 0.9, token_capacity: 3000}
+
+flow:
+  source: x-main-readback
+  sink: s-us2-terminal
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - next_action
+  - memory_receipt

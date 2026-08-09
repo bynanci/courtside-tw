@@ -1,0 +1,127 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-t034-t041-us2-implementation-lane",
+  "graph_version": 1,
+  "run_id": "courtside-tw-us2-implementation-20260809",
+  "status": "needs_human",
+  "iteration": 1,
+  "started_at": "2026-08-09T08:16:20Z",
+  "updated_at": "2026-08-09T08:24:55Z",
+  "current_frontier": ["g-article-contract-approval"],
+  "blocked_nodes": [
+    "t-implementation-ready",
+    "a-t034",
+    "a-t035",
+    "a-t036",
+    "a-t037",
+    "a-t038",
+    "a-t039",
+    "a-t040",
+    "a-t041"
+  ],
+  "terminal_state": "needs_human",
+  "next_action": "Resolve the ArticleProjection contract drift before production implementation.",
+  "events": [
+    {
+      "event_id": "evt-us2-impl-001-lane-opened",
+      "at": "2026-08-09T08:16:20Z",
+      "actor": "codex-supervisor",
+      "type": "graph_initialized",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "graph",
+            "value": "T034-T041 implementation lane with T034/T035 first slice"
+          },
+          {
+            "op": "add",
+            "path": "gates/article-projection-contract",
+            "value": "needs_human"
+          },
+          {
+            "op": "add",
+            "path": "frontier",
+            "value": "g-article-contract-approval"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t034-latest-head-baseline-20260809.json",
+        ".loop/evidence/t034-contract-drift-20260809.json",
+        "https://github.com/bynanci/courtside-tw/pull/63"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "PR #63 latest-head read-back",
+          "level": "P3",
+          "result": "pass",
+          "head_sha": "49e3a1ccf2e154243a8533d12fde902160a3c2e7",
+          "ci_run": 31302575472,
+          "security_run": 31302575478,
+          "review_threads": 0
+        },
+        {
+          "proof": "ArticleProjection contract comparison",
+          "level": "P2",
+          "result": "disputed",
+          "test_shape": "revisionNumber + issue + navigation",
+          "openapi_shape": "issueNavigation without revisionNumber"
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "SAVED",
+        "memory_id": "wm:project:courtside-tw:us2-t034-t041-implementation-lane",
+        "version": "lane-artifact-v1",
+        "retrieval_ids": [
+          "wm:project:courtside-tw:us2-t032-t033-tests-first-dispatch",
+          "wm:project:courtside-tw:us1-t024-t031-completion"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t034-latest-head-baseline-20260809.json",
+          ".loop/evidence/t034-contract-drift-20260809.json"
+        ],
+        "next_review_at": "2026-08-09",
+        "blocker": "Explicit ArticleProjection contract decision required."
+      },
+      "failure_signature": "CONTRACT_DRIFT_ARTICLE_PROJECTION_FIELDS",
+      "decision": "OPEN_LANE_BUT_STOP_BEFORE_RUNTIME_CODE",
+      "token_usage": {
+        "estimated": 18000,
+        "input": 0,
+        "output": 0,
+        "total": 18000
+      },
+      "terminal_reason": "The lane is reviewable, but T034/T035 cannot safely implement conflicting public field shapes without an explicit contract decision."
+    },
+    {
+      "event_id": "evt-us2-impl-002-lane-receipt",
+      "at": "2026-08-09T08:24:55Z",
+      "actor": "codex-supervisor",
+      "type": "lane_opened",
+      "graph_version": 1,
+      "proof_receipts": [
+        {
+          "proof": "T034+ stacked implementation lane",
+          "level": "P3",
+          "result": "pass",
+          "pull_request": 65,
+          "branch": "codex/t034-t041-us2-implementation-lane-20260809",
+          "head_sha": "a83771642afbc607620f7eb6b363fe572c81b0d7",
+          "base_pull_request": 63,
+          "base_head_sha": "49e3a1ccf2e154243a8533d12fde902160a3c2e7",
+          "draft": true,
+          "changed_files": 5
+        }
+      ],
+      "evidence_refs": [
+        ".loop/evidence/t034-lane-opened-20260809.json",
+        "https://github.com/bynanci/courtside-tw/pull/65"
+      ],
+      "decision": "LANE_OPENED_REMAIN_NEEDS_HUMAN",
+      "terminal_reason": "The implementation lane exists and is reviewable; runtime work remains blocked by the unresolved ArticleProjection contract."
+    }
+  ]
+}

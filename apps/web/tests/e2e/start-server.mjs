@@ -1,9 +1,13 @@
 import { spawn } from "node:child_process"
 import { createServer } from "node:http"
+import { readFileSync } from "node:fs"
 
 const API_PORT = 4010
 const WEB_PORT = 4173
 const webOrigin = "http://127.0.0.1:" + WEB_PORT
+const contentDocument = JSON.parse(
+  readFileSync(new URL("../fixtures/content-document-v1.json", import.meta.url), "utf8")
+)
 const issue = {
   issueId: "0190f7b0-7c4b-7e3a-8f12-123456789abc",
   slug: "issue-2026-01",
@@ -49,6 +53,71 @@ const issueDetail = {
   ]
 }
 
+const articleProjections = new Map([
+  [
+    "opening-night",
+    {
+      articleId: "0190f7b0-7c4b-7e3a-8f12-123456789abd",
+      revisionId: "0190f7b0-7c4b-7e3a-8f12-123456789ab1",
+      revisionNumber: 1,
+      slug: "opening-night",
+      title: "主場燈光亮起之前",
+      dek: "一篇從球場入口開始，記錄主場如何成為共同記憶的長文。",
+      content: contentDocument,
+      issueNavigation: {
+        issueSlug: "issue-2026-01",
+        previous: null,
+        next: {
+          articleId: "0190f7b0-7c4b-7e3a-8f12-123456789abe",
+          slug: "courtside-notes",
+          title: "看台上的第二種節奏",
+          position: 1
+        }
+      }
+    }
+  ],
+  [
+    "courtside-notes",
+    {
+      articleId: "0190f7b0-7c4b-7e3a-8f12-123456789abe",
+      revisionId: "0190f7b0-7c4b-7e3a-8f12-123456789ab2",
+      revisionNumber: 1,
+      slug: "courtside-notes",
+      title: "看台上的第二種節奏",
+      dek: "從觀眾席回望比賽，讀懂主場之外的節奏。",
+      content: {
+        schemaVersion: 1,
+        documentId: "0190f7b0-7c4b-7e3a-8f12-123456789ab3",
+        blocks: [
+          {
+            id: "00000000-0000-4000-8000-000000000101",
+            type: "paragraph",
+            version: 1,
+            payload: {
+              content: [
+                {
+                  kind: "text",
+                  text: "看台的聲音，讓比賽在終場之後繼續留下節奏。"
+                }
+              ]
+            }
+          }
+        ]
+      },
+      issueNavigation: {
+        issueSlug: "issue-2026-01",
+        previous: {
+          articleId: "0190f7b0-7c4b-7e3a-8f12-123456789abd",
+          slug: "opening-night",
+          title: "主場燈光亮起之前",
+          position: 1
+        },
+        next: null
+      }
+    }
+  ]
+])
+
 const apiServer = createServer((request, response) => {
   const requestUrl = new URL(request.url ?? "/", webOrigin)
 
@@ -58,11 +127,35 @@ const apiServer = createServer((request, response) => {
   response.setHeader("cache-control", "public, max-age=60, must-revalidate")
 
   if (requestUrl.pathname === "/api/v1/public/issues") {
-    writeJson(response, 200, { items: [issue], page: { nextCursor: null, limit: 20 } })
+    writeJson(response, 200, {
+      items: [issue],
+      page: { nextCursor: null, limit: 20 }
+    })
     return
   }
   if (requestUrl.pathname === "/api/v1/public/issues/issue-2026-01") {
     writeJson(response, 200, issueDetail)
+    return
+  }
+
+  const articlePrefix = "/api/v1/public/articles/"
+  if (requestUrl.pathname.startsWith(articlePrefix)) {
+    const articleSlug = requestUrl.pathname.slice(articlePrefix.length)
+    const article = articleProjections.get(articleSlug)
+    if (article) {
+      writeJson(response, 200, article)
+    } else {
+      writeJson(response, 404, {
+        type: "https://courtside.tw/problems/resource_not_found",
+        title: "Not found",
+        status: 404,
+        detail: "The requested resource was not found.",
+        instance: requestUrl.pathname,
+        requestId: "e2e-public-api",
+        code: "RESOURCE_NOT_FOUND",
+        errors: []
+      })
+    }
     return
   }
   if (requestUrl.pathname.startsWith("/media/")) {

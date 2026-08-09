@@ -1,0 +1,107 @@
+{
+  "schema_version": "courtside-proof/v1",
+  "proof_id": "t034-latest-head-baseline-20260809",
+  "recorded_at": "2026-08-09T08:16:20Z",
+  "result": "LATEST_HEAD_BASELINE_READ_BACK",
+  "scope": [
+    "T034",
+    "T035",
+    "T036",
+    "T037",
+    "T038",
+    "T039",
+    "T040",
+    "T041",
+    "US2",
+    "FR-004",
+    "FR-010"
+  ],
+  "authoritative_base": {
+    "main": {
+      "ref": "main",
+      "commit": "2ae2a5eeef9bc7ec3098b75205a7250e3a397960",
+      "url": "https://github.com/bynanci/courtside-tw/commit/2ae2a5eeef9bc7ec3098b75205a7250e3a397960"
+    },
+    "tests_first": {
+      "pull_request": 63,
+      "branch": "codex/t032-t033-us2-tests-first-20260809",
+      "head_sha": "49e3a1ccf2e154243a8533d12fde902160a3c2e7",
+      "merge_ref_sha": "e64200b3859f8c8ccb9713e8143135697f9fc171",
+      "draft": true,
+      "merged": false,
+      "review_threads": 0
+    }
+  },
+  "checks": {
+    "ci": {
+      "run_number": 232,
+      "run_id": 31302575472,
+      "conclusion": "failure",
+      "jobs": {
+        "Docker Compose dependency health": "success",
+        "Frontend and contract verification": "success",
+        "Java quality and unit verification": "failure",
+        "Public magazine browser verification": "failure"
+      },
+      "java_failure": {
+        "tests_completed": 77,
+        "tests_failed": 1,
+        "test": "PublicArticleApiIT.returnsPublishedRevisionAndSnapshotIssueNavigation",
+        "signature": "AssertionError at PublicArticleApiIT.java:49",
+        "classification": "expected_red",
+        "reason": "The public Article projection route is not implemented on the tests-first base."
+      },
+      "browser_failure": {
+        "tests_failed": 5,
+        "tests_passed": 3,
+        "signature": "article-document test id is absent",
+        "classification": "expected_red",
+        "tests": [
+          "us2-no-js.spec.ts: SSR renders article blocks and generative poster without JavaScript",
+          "us2-read-article.spec.ts: renders every v1 block, metadata, image fallback, navigation and share",
+          "us2-read-article.spec.ts: resumes the last stable block anchor after reload",
+          "us2-read-article.spec.ts: uses the issue snapshot for previous, next and table-of-contents links",
+          "us2-reduced-motion.spec.ts: reduced motion keeps content visible and creative runtime bounded"
+        ]
+      }
+    },
+    "security": {
+      "run_number": 232,
+      "run_id": 31302575478,
+      "conclusion": "failure",
+      "jobs": {
+        "Resolve Compose images": "success",
+        "Trivy (filesystem)": "success",
+        "CodeQL (javascript-typescript)": "success",
+        "CodeQL (java-kotlin)": "success",
+        "Trivy (image postgres)": "success",
+        "Trivy (image s3)": "success",
+        "Trivy (image oidc)": "success",
+        "Dependency audit and reports": "failure"
+      },
+      "classification": "The dependency job reran the same expected T032 test failure; dependency resolution and security scanners passed."
+    }
+  },
+  "scope_guard": {
+    "production_runtime_changed": false,
+    "task_checkboxes_changed": false,
+    "web3_wallet_passport_changed": false,
+    "deployment_or_provider_changed": false,
+    "unrelated_lint_type_schema_security_regression": false
+  },
+  "implementation_lane": {
+    "branch": "codex/t034-t041-us2-implementation-lane-20260809",
+    "base": "codex/t032-t033-us2-tests-first-20260809@49e3a1ccf2e154243a8533d12fde902160a3c2e7",
+    "stacked_pr_base": 63,
+    "first_slice": ["T034", "T035"],
+    "deferred": ["T036", "T037", "T038", "T039", "T040", "T041"]
+  },
+  "decision": "BLOCK_BEFORE_RUNTIME_IMPLEMENTATION",
+  "blocker": {
+    "code": "CONTRACT_DRIFT_ARTICLE_PROJECTION_FIELDS",
+    "test_contract": "T032 PublicArticleApiIT asserts revisionNumber, issue.slug and navigation.next.slug.",
+    "canonical_contract": "contracts/openapi.yaml ArticleProjection requires issueNavigation and does not define revisionNumber.",
+    "risk": "Choosing one shape silently would either weaken tests-first evidence or expand the public API without approval."
+  },
+  "next_action": "Obtain one explicit decision on the canonical ArticleProjection field names before adding T034/T035 production runtime code."
+}
