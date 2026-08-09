@@ -120,7 +120,7 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
         replaceDocument("generative-wide", """
                 {"schemaVersion":1,"documentId":"0190f7b0-7c4b-7e3a-8f12-123456789abc","blocks":[
                   {"id":"00000000-0000-4000-8000-000000000019","type":"generative-canvas","version":1,
-                   "payload":{"posterAssetId":"%s","altText":"公開生成視覺","dataSummary":"wide fixture"}}
+                   "payload":{"presetId":"court-pulse-v1","seed":20260808,"parameters":{"density":42,"tempo":0.8,"lineWeight":1.5,"paletteId":"court-dusk","numericSequence":[0.1,0.4,0.9]},"posterAssetId":"%s","altText":"公開生成視覺","dataSummary":"wide fixture"}}
                 ]}
                 """.formatted(assetId));
 
