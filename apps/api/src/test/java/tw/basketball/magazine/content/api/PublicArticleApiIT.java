@@ -15,12 +15,10 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
 
 /**
- * Tests-first contract for the public Article projection.
+ * Contract tests for the public Article projection.
  *
- * <p>The source path is reserved for US2 content/api work while the existing
- * publication Testcontainers harness keeps this red baseline deterministic.
- * The first assertion is expected to fail until PublicArticleController and
- * its published-only projection are implemented.</p>
+ * <p>The publication Testcontainers harness verifies published-only projection,
+ * rights-filtered issue navigation, and fail-closed content validation.</p>
  */
 final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
     private static final String CHECKSUM = "b".repeat(64);
