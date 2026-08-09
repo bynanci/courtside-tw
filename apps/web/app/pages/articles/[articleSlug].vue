@@ -660,10 +660,7 @@ onBeforeUnmount(() => {
               {{ stringValue(payloadFor(block).text) }}
             </component>
 
-            <component
-              v-else-if="block.type === 'list'"
-              :is="listTag(payloadFor(block).ordered)"
-            >
+            <component v-else-if="block.type === 'list'" :is="listTag(payloadFor(block).ordered)">
               <li v-for="(runs, itemIndex) in listItems(payloadFor(block).items)" :key="itemIndex">
                 <template v-for="(run, runIndex) in runs" :key="runIndex">
                   <a
