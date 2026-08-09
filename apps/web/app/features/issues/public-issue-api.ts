@@ -82,7 +82,7 @@ export async function fetchPublicArticle(
   try {
     const client = createApiClient({ baseUrl: normalizedApiBaseUrl(baseUrl) })
     const { data, response } = await client.GET("/api/v1/public/articles/{articleSlug}", {
-      params: { path: { articleSlug: slug } }
+      params: { header: {}, path: { articleSlug: slug } }
     })
     if (!response.ok || !data) {
       throw new PublicArticleApiError(response.status)
