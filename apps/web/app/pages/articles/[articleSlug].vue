@@ -554,10 +554,7 @@ onBeforeUnmount(() => {
                 loading="lazy"
                 @error="markAssetFailed(block.id)"
               />
-              <figcaption
-                data-testid="article-image-fallback"
-                class="article-image-fallback"
-              >
+              <figcaption data-testid="article-image-fallback" class="article-image-fallback">
                 圖片目前無法載入，已保留文字備援：{{ stringValue(payloadFor(block).altText) }}
               </figcaption>
               <figcaption v-if="payloadFor(block).caption">
