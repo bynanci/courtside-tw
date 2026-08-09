@@ -1,0 +1,56 @@
+{
+  "fixtureVersion": 1,
+  "fixedSeed": 424242,
+  "scenarios": [
+    {
+      "id": "published",
+      "publicationState": "PUBLISHED",
+      "rightsState": "VALID",
+      "reducedMotion": false
+    },
+    {
+      "id": "draft",
+      "publicationState": "DRAFT",
+      "rightsState": "VALID",
+      "reducedMotion": false
+    },
+    {
+      "id": "withdrawn",
+      "publicationState": "WITHDRAWN",
+      "rightsState": "WITHDRAWN",
+      "reducedMotion": false
+    },
+    {
+      "id": "expired-rights",
+      "publicationState": "PUBLISHED",
+      "rightsState": "EXPIRED",
+      "reducedMotion": false
+    },
+    {
+      "id": "reduced-motion",
+      "publicationState": "PUBLISHED",
+      "rightsState": "VALID",
+      "reducedMotion": true
+    }
+  ],
+  "generativeCanvas": {
+    "valid": {
+      "presetId": "court-pulse-v1",
+      "seed": 424242,
+      "parameters": {
+        "density": 0.35,
+        "amplitude": 0.6
+      },
+      "validationCode": "valid"
+    },
+    "invalid": {
+      "presetId": "court-pulse-v1",
+      "seed": 424242,
+      "parameters": {
+        "density": 101,
+        "amplitude": 0.6
+      },
+      "validationCode": "parameter-out-of-range"
+    }
+  }
+}
