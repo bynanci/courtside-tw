@@ -106,13 +106,13 @@ const articleProjections = new Map([
           role: "AUTHOR"
         },
         {
-          contributorId: "00000000-0000-0000-0000-000000000022",
+          contributorId: "00000000-0000-4000-8000-000000000022",
           slug: "courtside-tw-editorial",
           displayName: "Courtside TW 編輯部",
           role: "EDITOR"
         },
         {
-          contributorId: "00000000-0000-0000-0000-000000000023",
+          contributorId: "00000000-0000-4000-8000-000000000023",
           slug: "courtside-tw-photographer",
           displayName: "場邊攝影",
           role: "PHOTOGRAPHER"
