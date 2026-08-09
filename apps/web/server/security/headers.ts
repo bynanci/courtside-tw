@@ -10,15 +10,23 @@ export const SECURITY_HEADERS = {
 
 export function applySecurityHeaders(
   response: { setHeader(name: string, value: string): void },
-  nonce?: string
+  nonce?: string,
+  apiOrigin?: string
 ): void {
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
-    const headerValue =
-      name === "Content-Security-Policy" && nonce
-        ? value
-            .replace("script-src 'self'", "script-src 'self' 'nonce-" + nonce + "'")
-            .replace("style-src 'self'", "style-src 'self' 'nonce-" + nonce + "'")
-        : value
+    let headerValue = value
+    if (name === "Content-Security-Policy") {
+      if (nonce) {
+        headerValue = headerValue
+          .replace("script-src 'self'", "script-src 'self' 'nonce-" + nonce + "'")
+          .replace("style-src 'self'", "style-src 'self' 'nonce-" + nonce + "'")
+      }
+      if (apiOrigin) {
+        headerValue = headerValue
+          .replace("img-src 'self' https: data:", "img-src 'self' https: data: " + apiOrigin)
+          .replace("connect-src 'self'", "connect-src 'self' " + apiOrigin)
+      }
+    }
     response.setHeader(name, headerValue)
   }
 }
