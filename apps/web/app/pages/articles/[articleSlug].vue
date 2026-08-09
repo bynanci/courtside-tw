@@ -14,6 +14,7 @@ import {
   parsePublicArticleSlug,
   parsePublicIssueSlug
 } from "../../features/issues/public-issue-contract"
+import CourtPulseRuntime from "../../components/article/CourtPulseRuntime.vue"
 
 type ContentRun = {
   kind: "text" | "link"
@@ -44,6 +45,14 @@ type GalleryItem = {
 type ResumeProgress = {
   blockId: string
   offset: number
+}
+
+type CourtPulseParameters = {
+  density: number
+  tempo: number
+  lineWeight: number
+  paletteId: "court-dusk"
+  numericSequence: number[]
 }
 
 const route = useRoute()
@@ -120,6 +129,7 @@ const resumeProgress = ref<ResumeProgress | null>(null)
 const shareStatus = ref("")
 const failedAssets = ref(new Set<string>())
 const motionMode = ref<"reduced" | "full">("reduced")
+const interactiveEnabled = ref(false)
 const creativeInView = ref(false)
 const runtimeState = ref<"paused" | "running">("paused")
 let creativeObserver: IntersectionObserver | null = null
@@ -151,7 +161,11 @@ useHead(() => {
               headline: current.title,
               description,
               url: canonical.value,
-              inLanguage: "zh-Hant-TW"
+              inLanguage: "zh-Hant-TW",
+              author: current.contributors.map((contributor) => ({
+                "@type": "Person",
+                name: contributor.displayName
+              }))
             })
           }
         ]
@@ -258,17 +272,43 @@ function safeInlineHref(value: unknown): string | null {
   }
 }
 
-function assetMediaUrl(assetId: unknown): string {
-  if (typeof assetId !== "string" || !articleSlug) {
+function assetMediaUrl(assetId: unknown, variant = "inline"): string {
+  if (typeof assetId !== "string" || !article.value) {
+    return ""
+  }
+  const media = article.value.media.find(
+    (candidate) => candidate.assetId === assetId && candidate.variant === variant
+  )
+  if (!media) {
     return ""
   }
   try {
-    return publicMediaUrl(
-      config.public.apiBaseUrl,
-      "/media/articles/" + articleSlug + "/" + assetId + ".webp"
-    )
+    return publicMediaUrl(config.public.apiBaseUrl, media.url)
   } catch {
     return ""
+  }
+}
+
+function contributorNames(contributors: PublicArticleProjection["contributors"]): string {
+  return contributors.length > 0
+    ? contributors.map((contributor) => contributor.displayName).join("、")
+    : "署名未提供"
+}
+
+function canvasParameters(value: unknown): CourtPulseParameters {
+  const parameters = isRecord(value) ? value : {}
+  const numericSequence = Array.isArray(parameters.numericSequence)
+    ? parameters.numericSequence
+        .filter((entry): entry is number => typeof entry === "number" && Number.isFinite(entry))
+        .map((entry) => Math.min(1, Math.max(0, entry)))
+        .slice(0, 256)
+    : []
+  return {
+    density: Math.min(100, Math.max(1, numberValue(parameters.density, 42))),
+    tempo: Math.min(2, Math.max(0, numberValue(parameters.tempo, 0.8))),
+    lineWeight: Math.min(10, Math.max(0.5, numberValue(parameters.lineWeight, 1.5))),
+    paletteId: "court-dusk",
+    numericSequence
   }
 }
 
@@ -346,7 +386,11 @@ function renderHash(block: ArticleBlock): string {
 
 function syncRuntimeState(): void {
   runtimeState.value =
-    creativeInView.value && typeof document !== "undefined" && !document.hidden
+    creativeInView.value &&
+    interactiveEnabled.value &&
+    motionMode.value === "full" &&
+    typeof document !== "undefined" &&
+    !document.hidden
       ? "running"
       : "paused"
 }
@@ -365,36 +409,26 @@ function stopCreativeVisibilityWatch(): void {
     window.clearInterval(creativeVisibilityTimer)
     creativeVisibilityTimer = null
   }
-  if (creativeVisibilityTimeout !== null) {
-    window.clearTimeout(creativeVisibilityTimeout)
-    creativeVisibilityTimeout = null
-  }
 }
 
 function updateCreativeVisibility(): void {
   const target = creativeTarget()
   if (!target || typeof window === "undefined") {
+    creativeInView.value = false
+    syncRuntimeState()
     return
   }
   const { top, bottom } = target.getBoundingClientRect()
-  if (top < window.innerHeight && bottom > 0) {
-    creativeInView.value = true
-    syncRuntimeState()
-    creativeObserver?.disconnect()
-    stopCreativeVisibilityWatch()
-  }
+  creativeInView.value = top < window.innerHeight && bottom > 0
+  syncRuntimeState()
 }
 
 function startCreativeVisibilityWatch(): void {
-  if (typeof window === "undefined" || creativeInView.value) {
+  if (typeof window === "undefined" || creativeVisibilityTimer !== null) {
     return
   }
   updateCreativeVisibility()
-  if (creativeInView.value) {
-    return
-  }
-  creativeVisibilityTimer = window.setInterval(updateCreativeVisibility, 50)
-  creativeVisibilityTimeout = window.setTimeout(stopCreativeVisibilityWatch, 5000)
+  creativeVisibilityTimer = window.setInterval(updateCreativeVisibility, 100)
 }
 
 function handleCreativeScroll(): void {
@@ -407,27 +441,35 @@ function handleReaderScroll(): void {
 }
 
 function observeCreative(): void {
+  creativeObserver?.disconnect()
   const target = creativeTarget()
   if (!target) {
+    creativeInView.value = false
+    syncRuntimeState()
     return
   }
   if (typeof IntersectionObserver === "undefined") {
     creativeInView.value = true
     syncRuntimeState()
+    startCreativeVisibilityWatch()
     return
   }
   creativeObserver = new IntersectionObserver(
     (entries) => {
-      if (entries.some((entry) => entry.isIntersecting)) {
-        creativeInView.value = true
-        syncRuntimeState()
-        creativeObserver?.disconnect()
-      }
+      creativeInView.value = entries.some((entry) => entry.isIntersecting)
+      syncRuntimeState()
     },
     { threshold: 0.01 }
   )
   creativeObserver.observe(target)
   startCreativeVisibilityWatch()
+}
+
+async function enableCreative(): Promise<void> {
+  interactiveEnabled.value = true
+  syncRuntimeState()
+  await nextTick()
+  observeCreative()
 }
 
 async function shareArticle(): Promise<void> {
@@ -546,6 +588,7 @@ onMounted(() => {
     motionMode.value = window.matchMedia("(prefers-reduced-motion: reduce)").matches
       ? "reduced"
       : "full"
+    interactiveEnabled.value = motionMode.value === "full"
     window.addEventListener("scroll", handleReaderScroll, { passive: true })
     window.addEventListener("beforeunload", saveReadingProgress)
   }
@@ -555,6 +598,7 @@ onMounted(() => {
   stopCreativeWatch = watch(
     () => article.value?.revisionId,
     async () => {
+      interactiveEnabled.value = motionMode.value === "full"
       creativeInView.value = false
       runtimeState.value = "paused"
       creativeObserver?.disconnect()
@@ -606,7 +650,7 @@ onBeforeUnmount(() => {
           <h1 id="article-heading">{{ article.title }}</h1>
           <p v-if="article.dek" class="article-dek">{{ article.dek }}</p>
           <div class="article-meta">
-            <span data-testid="article-byline">Courtside TW 編輯部</span>
+            <span data-testid="article-byline">{{ contributorNames(article.contributors) }}</span>
             <span data-testid="article-reading-time">{{ readingTimeMinutes }} 分鐘閱讀</span>
             <NuxtLink
               :to="issueRoute(articleIssueSlug)"
@@ -720,8 +764,18 @@ onBeforeUnmount(() => {
 
             <figure v-else-if="block.type === 'image'" class="article-image">
               <img
-                v-if="assetMediaUrl(payloadFor(block).assetId)"
-                :src="assetMediaUrl(payloadFor(block).assetId)"
+                v-if="
+                  assetMediaUrl(
+                    payloadFor(block).assetId,
+                    stringValue(payloadFor(block).variant) || "inline"
+                  )
+                "
+                :src="
+                  assetMediaUrl(
+                    payloadFor(block).assetId,
+                    stringValue(payloadFor(block).variant) || "inline"
+                  )
+                "
                 :alt="stringValue(payloadFor(block).altText)"
                 loading="lazy"
                 @error="markAssetFailed(block.id)"
@@ -750,8 +804,8 @@ onBeforeUnmount(() => {
                 :key="block.id + '-' + itemIndex"
               >
                 <img
-                  v-if="assetMediaUrl(item.assetId)"
-                  :src="assetMediaUrl(item.assetId)"
+                  v-if="assetMediaUrl(item.assetId, "inline")"
+                  :src="assetMediaUrl(item.assetId, "inline")"
                   :alt="item.altText"
                   loading="lazy"
                   @error="markAssetFailed(block.id + '-' + itemIndex)"
@@ -792,7 +846,20 @@ onBeforeUnmount(() => {
             </aside>
 
             <section v-else-if="block.type === 'generative-canvas'" class="article-generative">
+              <img
+                v-if="
+                  assetMediaUrl(payloadFor(block).posterAssetId, "poster") &&
+                  !failedAssets.has(block.id + "-poster")
+                "
+                data-testid="generative-poster-image"
+                class="article-generative-poster"
+                :src="assetMediaUrl(payloadFor(block).posterAssetId, "poster")"
+                :alt="stringValue(payloadFor(block).altText)"
+                loading="lazy"
+                @error="markAssetFailed(block.id + "-poster")"
+              />
               <div
+                v-else
                 data-testid="generative-poster"
                 data-fallback="true"
                 role="img"
@@ -800,16 +867,36 @@ onBeforeUnmount(() => {
               >
                 {{ stringValue(payloadFor(block).dataSummary) }}
               </div>
+              <button
+                v-if="motionMode === "reduced" && !interactiveEnabled"
+                type="button"
+                class="button-link creative-enable"
+                data-testid="creative-enable"
+                @click="enableCreative"
+              >
+                顯示互動視覺
+              </button>
               <div
                 data-testid="generative-canvas"
                 :data-seed="String(numberValue(payloadFor(block).seed))"
                 :data-render-hash="renderHash(block)"
                 :data-runtime-state="runtimeState"
+                :data-runtime-enabled="String(interactiveEnabled)"
                 role="img"
                 :aria-label="stringValue(payloadFor(block).altText)"
               >
-                <span v-if="creativeInView" data-testid="creative-runtime">
-                  bounded creative runtime
+                <CourtPulseRuntime
+                  v-if="interactiveEnabled"
+                  :key="article.revisionId + ":" + block.id"
+                  :seed="numberValue(payloadFor(block).seed)"
+                  :parameters="canvasParameters(payloadFor(block).parameters)"
+                  :alt-text="stringValue(payloadFor(block).altText)"
+                  :active="interactiveEnabled"
+                  :paused="runtimeState !== "running""
+                  :reduced-motion="motionMode === "reduced""
+                />
+                <span v-else data-testid="creative-runtime-placeholder">
+                  互動視覺預設停用；{{ stringValue(payloadFor(block).dataSummary) }}
                 </span>
               </div>
               <p>{{ stringValue(payloadFor(block).dataSummary) }}</p>
