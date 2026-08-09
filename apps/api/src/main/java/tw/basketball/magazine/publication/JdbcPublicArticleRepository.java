@@ -4,7 +4,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -259,9 +258,7 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
             return;
         }
 
-        Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
-        while (fields.hasNext()) {
-            Map.Entry<String, JsonNode> field = fields.next();
+        for (Map.Entry<String, JsonNode> field : node.properties()) {
             String fieldName = field.getKey();
             JsonNode value = field.getValue();
             if (fieldName.equals("assetId") || fieldName.equals("posterAssetId")) {
