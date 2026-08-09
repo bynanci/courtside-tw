@@ -1361,8 +1361,8 @@ export interface operations {
   getPublicArticle: {
     parameters: {
       query?: never
-      header: {
-        /** @description Conditional representation validator. */
+      header?: {
+        /** @description Current entity tag for a conditional public GET. */
         "If-None-Match"?: components["parameters"]["IfNoneMatch"]
       }
       path: {
@@ -1382,14 +1382,16 @@ export interface operations {
           "application/json": components["schemas"]["ArticleProjection"]
         }
       }
-      400: components["responses"]["Problem400"]
+      /** @description The current representation matches If-None-Match. */
       304: {
         headers: {
           "X-Request-Id": components["headers"]["XRequestId"]
           ETag: components["headers"]["ETag"]
           [name: string]: unknown
         }
+        content?: never
       }
+      400: components["responses"]["Problem400"]
       404: components["responses"]["Problem404"]
       429: components["responses"]["Problem429"]
     }
