@@ -616,10 +616,16 @@ function saveReadingProgress(): void {
   if (!current) {
     const lastBlock = blocks.at(-1)
     const lastRect = lastBlock?.getBoundingClientRect()
+    const documentBottom = Math.max(
+      document.documentElement.scrollHeight,
+      document.body?.scrollHeight ?? 0
+    )
+    const atDocumentEnd =
+      window.scrollY + window.innerHeight >= documentBottom - 2
     const previousBlock = resumeProgress.value?.blockId
       ? blocks.find((block) => block.dataset.blockId === resumeProgress.value?.blockId)
       : null
-    if (lastBlock && lastRect && lastRect.bottom <= window.innerHeight * 0.25) {
+    if (lastBlock && lastRect && (atDocumentEnd || lastRect.bottom <= window.innerHeight * 0.25)) {
       current = lastBlock
     } else if (previousBlock) {
       current = previousBlock
