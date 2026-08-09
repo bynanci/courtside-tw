@@ -1,0 +1,161 @@
+{
+  "schemaVersion": 1,
+  "documentId": "0190f7b0-7c4b-7e3a-8f12-123456789abc",
+  "blocks": [
+    {
+      "id": "00000000-0000-4000-8000-000000000002",
+      "type": "paragraph",
+      "version": 1,
+      "payload": {
+        "content": [
+          {
+            "kind": "text",
+            "text": "這是一份涵蓋台籃雜誌 MVP 內容區塊的固定 fixture。"
+          },
+          {
+            "kind": "link",
+            "text": "官方資料",
+            "href": "https://example.com/official"
+          }
+        ]
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000003",
+      "type": "heading",
+      "version": 1,
+      "payload": {
+        "level": 2,
+        "text": "本期觀察"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000004",
+      "type": "list",
+      "version": 1,
+      "payload": {
+        "ordered": false,
+        "items": [
+          {
+            "content": [
+              {
+                "kind": "text",
+                "text": "第一個重點"
+              }
+            ]
+          },
+          {
+            "content": [
+              {
+                "kind": "text",
+                "text": "第二個重點"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000005",
+      "type": "quote",
+      "version": 1,
+      "payload": {
+        "content": [
+          {
+            "kind": "text",
+            "text": "比賽之外，也要記得文化如何被保存。"
+          }
+        ],
+        "attribution": "Courtside TW"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000006",
+      "type": "divider",
+      "version": 1,
+      "payload": {
+        "style": "solid"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000007",
+      "type": "image",
+      "version": 1,
+      "payload": {
+        "assetId": "00000000-0000-4000-8000-000000000011",
+        "altText": "球場在夜間燈光下的全景",
+        "variant": "wide",
+        "caption": "首期 fixture 的示意圖片",
+        "credit": "Courtside TW"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000008",
+      "type": "gallery",
+      "version": 1,
+      "payload": {
+        "layout": "grid",
+        "items": [
+          {
+            "assetId": "00000000-0000-4000-8000-000000000012",
+            "altText": "球員在場上傳球"
+          },
+          {
+            "assetId": "00000000-0000-4000-8000-000000000013",
+            "altText": "觀眾席的主場應援",
+            "caption": "主場文化示意"
+          }
+        ]
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000009",
+      "type": "stat",
+      "version": 1,
+      "payload": {
+        "label": "本期文章數",
+        "value": "11",
+        "unit": "blocks",
+        "context": "固定 schema coverage fixture"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000010",
+      "type": "video",
+      "version": 1,
+      "payload": {
+        "providerId": "rights-pending",
+        "videoId": "T009-demo-video",
+        "title": "比賽精華示意"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000014",
+      "type": "related-reading",
+      "version": 1,
+      "payload": {
+        "articleSlug": "season-opening-notes",
+        "label": "延伸閱讀：賽季開幕觀察"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000015",
+      "type": "generative-canvas",
+      "version": 1,
+      "payload": {
+        "presetId": "court-pulse-v1",
+        "seed": 20260807,
+        "parameters": {
+          "density": 42,
+          "tempo": 0.8,
+          "lineWeight": 1.5,
+          "paletteId": "court-dusk",
+          "numericSequence": [0.1, 0.4, 0.9]
+        },
+        "posterAssetId": "00000000-0000-4000-8000-000000000016",
+        "altText": "以球場線條與投籃落點構成的抽象視覺",
+        "dataSummary": "視覺使用固定 seed 與文章數據摘要產生，互動失敗時仍以 poster 呈現。"
+      }
+    }
+  ]
+}
