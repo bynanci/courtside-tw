@@ -5,7 +5,9 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 import tw.basketball.magazine.publication.PublicArticleModels.ArticleProjection;
+import tw.basketball.magazine.publication.PublicArticleModels.Contributor;
 import tw.basketball.magazine.publication.PublicArticleModels.IssueNavigation;
+import tw.basketball.magazine.publication.PublicArticleModels.PublicArticleMedia;
 import tw.basketball.magazine.publication.PublicIssueModels.ArticleSummary;
 
 /** Stable representation-specific SHA-256 validator for Article GETs. */
@@ -14,7 +16,7 @@ final class PublicArticleEtag {
     }
 
     static String forProjection(ArticleProjection article) {
-        StringBuilder input = new StringBuilder("public-article-v1\n");
+        StringBuilder input = new StringBuilder("public-article-v2\n");
         append(input, article.articleId());
         append(input, article.revisionId());
         append(input, article.revisionNumber());
@@ -22,6 +24,20 @@ final class PublicArticleEtag {
         append(input, article.title());
         append(input, article.dek());
         append(input, article.content());
+        for (PublicArticleMedia media : article.media()) {
+            append(input, media.assetId());
+            append(input, media.variant());
+            append(input, media.url());
+            append(input, media.mimeType());
+            append(input, media.width());
+            append(input, media.height());
+        }
+        for (Contributor contributor : article.contributors()) {
+            append(input, contributor.contributorId());
+            append(input, contributor.slug());
+            append(input, contributor.displayName());
+            append(input, contributor.role());
+        }
         appendNavigation(input, article.issueNavigation());
         return digest(input);
     }
