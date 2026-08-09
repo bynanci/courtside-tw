@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { nextTick, onBeforeUnmount, onMounted, ref } from "vue"
+
 import { canonicalUrl, jsonLd } from "../../composables/public-seo"
 import {
   fetchPublicArticle,
@@ -60,10 +62,6 @@ try {
 } catch {
   issueSlugFromQuery = null
 }
-
-definePageMeta({
-  key: (currentRoute) => currentRoute.fullPath
-})
 
 const {
   data: article,
