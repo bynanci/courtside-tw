@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
@@ -112,8 +113,8 @@ abstract class PublicIssueApiIntegrationTestSupport {
                 rightsId,
                 coverAssetId,
                 validPublicWebRights ? "{PUBLIC_WEB}" : "{READER_LIBRARY}",
-                publishedAt.minusSeconds(86_400),
-                publishedAt.plusSeconds(31_536_000)
+                Timestamp.from(publishedAt.minusSeconds(86_400)),
+                Timestamp.from(publishedAt.plusSeconds(31_536_000))
         );
         jdbcTemplate.update("""
                 INSERT INTO publication_issue (
@@ -127,7 +128,7 @@ abstract class PublicIssueApiIntegrationTestSupport {
                 "Summary for " + slug,
                 coverAssetId,
                 state,
-                publishedAt
+                Timestamp.from(publishedAt)
         );
 
         return new IssueFixture(issueId, slug);
@@ -153,7 +154,7 @@ abstract class PublicIssueApiIntegrationTestSupport {
         jdbcTemplate.update("""
                 INSERT INTO article (id, slug, state, published_at)
                 VALUES (?, ?, ?, ?)
-                """, articleId, articleSlug, state, publishedAt);
+                """, articleId, articleSlug, state, Timestamp.from(publishedAt));
         jdbcTemplate.update("""
                 INSERT INTO article_revision (
                     id, article_id, revision_number, title, dek, content_document, state
