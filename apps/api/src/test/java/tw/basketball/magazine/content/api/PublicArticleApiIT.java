@@ -91,6 +91,52 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
         assertFalse(historical.getResponse().getContentAsString().contains("history-article"));
     }
 
+    @Test
+    void skipsRightsIneligibleNeighborFromIssueNavigation() throws Exception {
+        IssueFixture issue = createIssue(
+                "issue-2026-06",
+                6,
+                Instant.parse("2026-08-08T00:00:00Z"),
+                "PUBLISHED",
+                true
+        );
+        addArticle(issue, "開場", 1, "navigation-opening", 1, "PUBLISHED");
+        addArticle(issue, "不可公開鄰居", 2, "private-neighbor", 1, "PUBLISHED");
+        addArticle(issue, "公開下一篇", 3, "public-next", 1, "PUBLISHED");
+        UUID privateAssetId = addPrivateMediaAsset("private-neighbor");
+        replaceDocument("private-neighbor", """
+                {"schemaVersion":1,"documentId":"0190f7b0-7c4b-7e3a-8f12-123456789abc","blocks":[
+                  {"id":"00000000-0000-4000-8000-000000000007","type":"image","version":1,
+                   "payload":{"assetId":"%s","altText":"不可公開的圖片"}}
+                ]}
+                """.formatted(privateAssetId));
+
+        mockMvc.perform(get("/api/v1/public/articles/navigation-opening"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.issueNavigation.next.slug").value("public-next"));
+    }
+
+    @Test
+    void deniesSchemaInvalidPublishedDocument() throws Exception {
+        IssueFixture issue = createIssue(
+                "issue-2026-07",
+                7,
+                Instant.parse("2026-08-08T00:00:00Z"),
+                "PUBLISHED",
+                true
+        );
+        addArticle(issue, "無效內容", 1, "invalid-content", 1, "PUBLISHED");
+        replaceDocument("invalid-content", """
+                {"schemaVersion":1,"documentId":"00000000-0000-4000-8000-000000000017","blocks":[
+                  {"id":"00000000-0000-4000-8000-000000000018","type":"html","version":1,
+                   "payload":{"html":"<script>alert(1)</script>"}}
+                ]}
+                """);
+
+        mockMvc.perform(get("/api/v1/public/articles/invalid-content"))
+                .andExpect(status().isNotFound());
+    }
+
     private void replaceDocument(String articleSlug, String document) {
         jdbcTemplate.update("""
                 UPDATE article_revision
