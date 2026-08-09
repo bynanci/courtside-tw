@@ -238,7 +238,8 @@
           "draft": true,
           "merged": false,
           "review_threads": 0,
-          "changed_files": 9
+          "changed_files_at_dispatch": 9,
+          "current_changed_files": 10
         }
       ],
       "memory_receipt": {
