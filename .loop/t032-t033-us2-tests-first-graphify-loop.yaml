@@ -255,7 +255,7 @@ graph:
       risk: high
       confidence:
         score: 0.96
-        basis: "Exact CI/Security failure signatures are classified; nine changed files remain tests, fixture or bounded loop artifacts and the draft PR has no review threads."
+        basis: "Exact CI/Security failure signatures are classified; the ten current changed files are tests, fixture or bounded loop artifacts and the draft PR has no review threads."
         evidence_refs: [".loop/evidence/t032-t033-dispatch-20260809.json", ".loop/evidence/t032-t033-red-baseline-20260809.json"]
       budget: {effort_hours: 0.75, tokens: 8000}
       config:
