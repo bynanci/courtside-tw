@@ -1,0 +1,44 @@
+{
+  "schema_version": "courtside-proof/v1",
+  "proof_id": "t025-t031-web-proof-20260809",
+  "recorded_at": "2026-08-09T04:30:00Z",
+  "base_commit": "73ce1da05a0eef71b9302e761004901b6f0c2d67",
+  "scope": ["T025", "T029", "T030", "T031"],
+  "result": "local_static_pass_browser_ci_required",
+  "commands": [
+    {
+      "command": "PATH=/tmp/courtside-pnpm-bin:$PATH make verify",
+      "exit_code": 0,
+      "result": "pass",
+      "coverage": ["format", "lint", "Nuxt typecheck", "14 native web tests", "generated client contract"]
+    },
+    {
+      "command": "pnpm --filter @courtside/web build",
+      "exit_code": 0,
+      "result": "pass",
+      "coverage": ["SSR production build"]
+    },
+    {
+      "command": "pnpm --filter @courtside/web exec playwright test --list",
+      "exit_code": 0,
+      "result": "pass",
+      "coverage": ["mobile Home -> Issue -> article journey", "no-JavaScript links", "robots and sitemap"]
+    },
+    {
+      "command": "pnpm --filter @courtside/web run test:e2e",
+      "result": "not_run",
+      "blocking_environment": "The local sandbox cannot install the Chromium bundle and Nitro dev-worker socket creation is denied. CI installs Chromium and runs the same test file."
+    }
+  ],
+  "source_assertions": [
+    "Home, issue index, issue detail and article handoff are SSR Nuxt routes consuming only the generated API client.",
+    "The pages render semantic Home -> Issue -> article anchors before hydration, have empty/error/not-found states and reserve a 3:4 cover geometry.",
+    "The browser suite sets a 375px viewport, reduced-motion preference, no-JavaScript context and axe accessibility scan.",
+    "Canonical, Open Graph and JSON-LD data is generated with script-context escaping; the sitemap emits only public Issue routes and robots blocks API plus the intentionally incomplete article shell.",
+    "Small text uses the reviewed high-contrast accent/muted tokens and no animation runtime is introduced."
+  ],
+  "remaining_required_proof": [
+    "Exact-head Playwright Chromium run including axe assertions and no-horizontal-overflow checks."
+  ],
+  "next_action": "Read CI's Public magazine browser verification result for the final P2 web proof."
+}

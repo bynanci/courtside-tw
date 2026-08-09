@@ -636,7 +636,10 @@ export interface components {
     IssueSummary: {
       issueId: components["schemas"]["Uuid"]
       slug: string
+      issueNumber: number
       title: string
+      summary: string
+      cover: components["schemas"]["IssueCover"]
       /** Format: date-time */
       publishedAt: string
       articleCount: number
@@ -648,15 +651,23 @@ export interface components {
     IssueDetail: {
       issueId: components["schemas"]["Uuid"]
       slug: string
+      issueNumber: number
       title: string
-      description?: string
+      summary: string
+      cover: components["schemas"]["IssueCover"]
       /** Format: date-time */
-      publishedAt?: string | null
+      publishedAt: string
       sections: {
         title: string
         position: number
         articles: components["schemas"]["ArticleSummary"][]
       }[]
+    }
+    IssueCover: {
+      url: string
+      alt: string
+      width: number
+      height: number
     }
     ArticleSummary: {
       articleId: components["schemas"]["Uuid"]
@@ -1238,6 +1249,8 @@ export interface components {
     Cursor: string
     /** @description Bounded page size. */
     Limit: number
+    /** @description Current entity tag for a conditional public GET. */
+    IfNoneMatch: string
     IssueSlug: string
     ArticleSlug: string
     ArticleId: components["schemas"]["Uuid"]
@@ -1254,6 +1267,8 @@ export interface components {
   headers: {
     /** @description Trace/request identifier. Never contains tokens or article content. */
     XRequestId: string
+    /** @description Deterministic representation validator for conditional public reads. */
+    ETag: string
     /** @description Seconds until the caller may retry. */
     RetryAfter: number
   }
@@ -1269,7 +1284,10 @@ export interface operations {
         /** @description Bounded page size. */
         limit?: components["parameters"]["Limit"]
       }
-      header?: never
+      header?: {
+        /** @description Current entity tag for a conditional public GET. */
+        "If-None-Match"?: components["parameters"]["IfNoneMatch"]
+      }
       path?: never
       cookie?: never
     }
@@ -1279,11 +1297,21 @@ export interface operations {
       200: {
         headers: {
           "X-Request-Id": components["headers"]["XRequestId"]
+          ETag: components["headers"]["ETag"]
           [name: string]: unknown
         }
         content: {
           "application/json": components["schemas"]["IssueSummaryPage"]
         }
+      }
+      /** @description The current representation matches If-None-Match. */
+      304: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          ETag: components["headers"]["ETag"]
+          [name: string]: unknown
+        }
+        content?: never
       }
       400: components["responses"]["Problem400"]
       429: components["responses"]["Problem429"]
@@ -1292,7 +1320,10 @@ export interface operations {
   getPublicIssue: {
     parameters: {
       query?: never
-      header?: never
+      header?: {
+        /** @description Current entity tag for a conditional public GET. */
+        "If-None-Match"?: components["parameters"]["IfNoneMatch"]
+      }
       path: {
         issueSlug: components["parameters"]["IssueSlug"]
       }
@@ -1304,11 +1335,21 @@ export interface operations {
       200: {
         headers: {
           "X-Request-Id": components["headers"]["XRequestId"]
+          ETag: components["headers"]["ETag"]
           [name: string]: unknown
         }
         content: {
           "application/json": components["schemas"]["IssueDetail"]
         }
+      }
+      /** @description The current representation matches If-None-Match. */
+      304: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          ETag: components["headers"]["ETag"]
+          [name: string]: unknown
+        }
+        content?: never
       }
       400: components["responses"]["Problem400"]
       404: components["responses"]["Problem404"]

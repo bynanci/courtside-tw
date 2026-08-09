@@ -1,0 +1,6 @@
+node_modules/
+apps/**/.nuxt/
+apps/**/.output/
+apps/**/coverage/
+apps/**/test-results/
+artifacts/

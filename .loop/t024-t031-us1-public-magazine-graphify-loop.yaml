@@ -1,0 +1,429 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-t024-t031-us1-public-magazine
+objective: >-
+  Produce one reviewable, anonymous-first public magazine slice in which a mobile
+  reader can reach a published article from Home through an ordered Issue/TOC in
+  three or fewer activations, while draft, withdrawn and rights-invalid content
+  remains absent from every public projection.
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - T024 through T031 for US1 public Issue, TOC, SSR routes and SEO
+    - Minimal OpenAPI alignment needed for FR-001 cover, issue number and summary
+    - Publication-content core migration, read-only public projections and tests
+    - Mobile SSR, no-hydration-hidden-links, accessibility and performance guards
+  out:
+    - T032 and later article-body, reader-progress, Studio, search and Passport work
+    - Wallet, token, SIWE, IPFS, external provider activation or production deployment
+    - Production media delivery, credentials, mutable publication workflow or schema rewrites
+
+authority:
+  allowed:
+    - Read current main, task/spec/plan/OpenAPI/design and existing Graphify records
+    - Add the bounded US1 migration, Java public-read module, Nuxt SSR UI and focused tests
+    - Correct the existing public Issue response contract only where FR-001/FR-003 require it
+    - Create a draft pull request and run non-destructive verification
+  requires_approval:
+    - Protected-branch merge and task checkbox updates
+    - Production deployment, provider activation, credentials or public content publication
+    - Any change that makes Passport, wallet or Web3 visible before reading closure
+  forbidden:
+    - Expose draft, withdrawn, rights-invalid or private-origin media through a public route
+    - Add arbitrary remote media URLs, browser token storage, PII logging or a production secret
+    - Hide SSR reading links until hydration, use a horizontal TOC carousel or introduce p5/wallet runtime
+    - Weaken failing tests, bypass generated API client or perform a destructive schema operation
+
+acceptance:
+  - T024 starts red only because US1 public publication runtime symbols are absent, then verifies cursor, order, draft/withdrawn/unknown isolation and ETag behavior.
+  - T025 proves a 375px reader can use Home -> Issue -> article header in no more than three activations, with links visible before hydration and under reduced motion.
+  - FR-001 is represented in the API by a verified Issue cover, issue number, title, summary and published time; only server-selected public media paths may be returned.
+  - FR-002 returns sections and article summaries in stable editor order.
+  - FR-003 is enforced below the controller: public reads only use PUBLISHED state, due publish time and valid PUBLIC_WEB cover rights; drafts, withdrawn issues and unknown slugs return no metadata.
+  - Public list pagination validates opaque bounded cursors and limit range, uses keyset ordering and never loads an unbounded catalog.
+  - All public responses have deterministic ETags, no cacheable draft leakage, safe 400/404 Problem Details and no persistence mutation.
+  - Nuxt routes use only packages/api-client, include loading/error/empty/not-found states, fixed cover aspect ratio, canonical/OG/JSON-LD/sitemap metadata and no page-level horizontal overflow.
+  - No passport, wallet, p5 or Motion runtime is required for the public magazine journey; CSS fallback remains semantic and focusable.
+
+budgets:
+  max_iterations: 6
+  max_minutes: 180
+  max_same_failure: 2
+  max_graph_changes: 18
+  max_tokens: 85000
+
+policy:
+  human_gates:
+    - PR review and protected merge
+    - Checklist updates after exact-head CI/Security and authoritative main read-back
+    - Any new production media origin, identity, provider or deployment decision
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+graph:
+  entry_nodes: [x-main-readback, x-immersion-review, t-us1-ready]
+  terminal_nodes: [s-us1-terminal]
+  current_frontier: [p-us1-merge-gate]
+  blocked_nodes: []
+
+  loops:
+    - id: l1-us1-execution
+      layer: L1
+      owner: codex-agent
+      trigger_nodes: [t-us1-ready]
+      action_nodes: [a-us1-tests-first, a-us1-publication, a-us1-web, a-us1-review]
+      proof_nodes: [p-us1-red-baseline, p-us1-backend, p-us1-web, p-us1-performance, p-us1-merge-gate]
+      memory_nodes: [m-us1-ledger]
+      stop_nodes: [s-us1-terminal]
+      budgets:
+        max_iterations: 6
+        max_minutes: 180
+        max_same_failure: 2
+        max_graph_changes: 18
+        max_tokens: 85000
+  nodes:
+    - id: x-main-readback
+      kind: external
+      layer: EXTERNAL
+      label: Current main and Phase 2 reconciliation
+      owner: github
+      status: done
+      risk: high
+      confidence:
+        score: 1.0
+        basis: Phase 2 T009-T023 are checked on main 9b2c6eaf; T024 is the first unchecked implementation frontier.
+        evidence_refs: [specs/001-taiwan-basketball-magazine-ebook/tasks.md, .loop/evidence/t014-main-readback-20260808.json]
+      budget: {effort_hours: 0.25, tokens: 2500}
+      config:
+        source_type: github-main-readback
+        freshness: "2026-08-09T09:00:00Z"
+        limitations: Local Java 21/Gradle proof is unavailable; CI remains the Java authority.
+
+    - id: x-immersion-review
+      kind: external
+      layer: EXTERNAL
+      label: User immersion review and design acceptance evidence
+      owner: user-provided-review
+      status: done
+      risk: medium
+      confidence:
+        score: 0.85
+        basis: The deck is a product-design simulation, not production telemetry; it makes P1 and the reading-first constraints explicit.
+        evidence_refs: [project_sources/03-03-courtside-tw-user-immersion-review-1-1.pptx, DESIGN.md]
+      budget: {effort_hours: 0.25, tokens: 2500}
+      config:
+        source_type: product-review-deck
+        freshness: "2026-08-09T09:00:00Z"
+        limitations: Proposed UX copy and scores are not measured usability data.
+
+    - id: g-us1-direction
+      kind: gate
+      layer: L3
+      label: Explicit direction to optimize the next public magazine slice
+      owner: human-mark
+      status: done
+      risk: medium
+      confidence:
+        score: 1.0
+        basis: The user explicitly requested Phase 2 task continuation and optimization with bug and performance prevention.
+        evidence_refs: [user:2026-08-09:phase-2-tasks-and-optimise]
+      budget: {effort_hours: 0.1, tokens: 800}
+      config:
+        condition: The next bounded task is the P1 public Magazine slice; visibility of Passport/Web3 remains deferred.
+        approver: human-mark
+        required: true
+
+    - id: t-us1-ready
+      kind: trigger
+      layer: L1
+      label: US1 public Issue slice is ready
+      owner: codex-supervisor
+      status: done
+      risk: high
+      confidence:
+        score: 0.95
+        basis: T024/T025 are the first unchecked tests after the completed Phase 2 foundation and are independent of later user stories.
+        evidence_refs: [specs/001-taiwan-basketball-magazine-ebook/tasks.md:T024-T031]
+      budget: {effort_hours: 0.1, tokens: 1000}
+      config:
+        condition: Current main, user direction and task dependencies agree on US1 as the first P1 frontier.
+        inputs_required: [tasks.md, spec.md, plan.md, contracts/openapi.yaml, DESIGN.md]
+        dedupe: T024-T031 plus main SHA plus public-issue-contract revision
+
+    - id: a-us1-tests-first
+      kind: action
+      layer: L1
+      label: Write and observe bounded US1 red tests
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 0.95
+        basis: The focused web acceptance test failed only because the intended public-Issue boundary does not exist; the Java acceptance source is in place for CI's Java 21 authority.
+        evidence_refs: [.loop/evidence/t024-t025-tests-first-baseline-20260809.json, specs/001-taiwan-basketball-magazine-ebook/tasks.md:T024-T025]
+      budget: {effort_hours: 1.5, tokens: 14000}
+      config:
+        workflow: [add public contract tests, add mobile/a11y SSR journey tests, run focused baseline, record intended missing-boundary failure]
+        allowed: [US1 tests, test fixtures, Graphify evidence]
+        requires_approval: [none]
+        forbidden: [production implementation before a failing test exists, bypassing semantic/a11y assertions]
+
+    - id: p-us1-red-baseline
+      kind: proof
+      layer: L1
+      label: T024/T025 intended red baseline
+      owner: verifier
+      status: done
+      risk: high
+      confidence:
+        score: 0.9
+        basis: The observed Node test failure is exactly ERR_MODULE_NOT_FOUND for the deliberately absent public-Issue contract module; Java 21 execution is deferred only to exact CI.
+        evidence_refs: [.loop/evidence/t024-t025-tests-first-baseline-20260809.json]
+      budget: {effort_hours: 0.5, tokens: 3500}
+      config:
+        level: P1
+        claim: Tests fail only at the intended absence of the US1 public publication/runtime boundary.
+        method: Focused Java test compile/run and web journey/component test invocation.
+        evidence_path: .loop/evidence/t024-t025-tests-first-baseline-20260809.json
+        required: true
+        baseline_required: true
+
+    - id: a-us1-publication
+      kind: action
+      layer: L1
+      label: Implement bounded public publication read projection
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 0.9
+        basis: The bounded V002 projection, API contract and error/ETag boundary are implemented and locally reviewed; Java/Testcontainers execution remains exact-CI work.
+        evidence_refs: [.loop/evidence/t024-t028-backend-proof-20260809.json, .loop/evidence/t024-t031-local-review-20260809.json]
+      budget: {effort_hours: 3.0, tokens: 24000}
+      config:
+        workflow: [align Issue summary contract, add forward-only V002 migration, create read-only repositories and service, expose ETag/cursor API, run focused tests]
+        allowed: [contracts/openapi.yaml, generated client regeneration, V002 migration, publication module, T024 tests, Graphify artifacts]
+        requires_approval: [protected merge]
+        forbidden: [editorial write API, publication workflow, unbounded SQL, draft query reuse, arbitrary cover URL]
+
+    - id: p-us1-backend
+      kind: proof
+      layer: L1
+      label: US1 public API, migration and contract proof
+      owner: verifier
+      status: verifying
+      risk: high
+      confidence:
+        score: 0.85
+        basis: Local contract/client verification passed and source review found no remaining local blocker; Java 21/Testcontainers is pending on exact CI.
+        evidence_refs: [.loop/evidence/t024-t028-backend-proof-20260809.json]
+      budget: {effort_hours: 1.0, tokens: 8500}
+      config:
+        level: P2
+        claim: Published-only pagination, section ordering, rights isolation, ETag and error behavior meet T024/FR-001-003.
+        method: Focused Java/Testcontainers, OpenAPI generator and contract assertions.
+        evidence_path: .loop/evidence/t024-t028-backend-proof-20260809.json
+        required: true
+        baseline_required: true
+
+    - id: a-us1-web
+      kind: action
+      layer: L1
+      label: Implement SSR issue pages, SEO and mobile reading handoff
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 0.9
+        basis: SSR routes, public components, safe client boundary, SEO and browser test configuration are implemented without a wallet, Motion or p5 runtime.
+        evidence_refs: [.loop/evidence/t025-t031-web-proof-20260809.json, .loop/evidence/t024-t031-performance-proof-20260809.json]
+      budget: {effort_hours: 3.0, tokens: 24000}
+      config:
+        workflow: [add typed API composable, semantic components/routes, SSR metadata/sitemap, component/E2E/a11y tests, enforce fixed media geometry]
+        allowed: [apps/web public issue files, web test configuration, package lock, generated client consumption, Graphify artifacts]
+        requires_approval: [protected merge]
+        forbidden: [wallet/Passport UI, horizontal TOC carousel, hydration-hidden content, arbitrary direct fetch contract]
+
+    - id: p-us1-web
+      kind: proof
+      layer: L1
+      label: US1 mobile SSR and accessibility proof
+      owner: verifier
+      status: verifying
+      risk: high
+      confidence:
+        score: 0.85
+        basis: Native tests, production SSR build and Playwright discovery pass; the Chromium/a11y execution is explicitly deferred to exact CI.
+        evidence_refs: [.loop/evidence/t025-t031-web-proof-20260809.json]
+      budget: {effort_hours: 1.0, tokens: 8000}
+      config:
+        level: P2
+        claim: Home -> Issue -> Article handoff works in three actions on mobile without horizontal overflow or hidden SSR links.
+        method: Component tests, Playwright 375px journey and axe scan.
+        evidence_path: .loop/evidence/t025-t031-web-proof-20260809.json
+        required: true
+        baseline_required: true
+
+    - id: p-us1-performance
+      kind: proof
+      layer: L1
+      label: US1 performance and progressive enhancement proof
+      owner: verifier
+      status: verifying
+      risk: high
+      confidence:
+        score: 0.85
+        basis: The production bundle scan is clean and cover geometry is reserved; the mobile browser trace remains CI evidence.
+        evidence_refs: [.loop/evidence/t024-t031-performance-proof-20260809.json]
+      budget: {effort_hours: 0.75, tokens: 6500}
+      config:
+        level: P2
+        claim: No P1 route loads Web3/p5 runtime, cover geometry is reserved and navigation does not create long-running client work.
+        method: Build/bundle inspection, route assertions and fixed aspect-ratio/source audit.
+        evidence_path: .loop/evidence/t024-t031-performance-proof-20260809.json
+        required: true
+        baseline_required: true
+
+    - id: a-us1-review
+      kind: action
+      layer: L1
+      label: Run code-review and merge-readiness gate
+      owner: codex-supervisor
+      status: done
+      risk: high
+      confidence:
+        score: 0.9
+        basis: Changed-file, public boundary, dependency, a11y and rollback review completed with all local findings fixed before exact-head CI.
+        evidence_refs: [.loop/evidence/t024-t031-local-review-20260809.json]
+      budget: {effort_hours: 1.0, tokens: 12000}
+      config:
+        workflow: [inspect diff, trace acceptance to proof, audit error/authorization/performance paths, record PASS or BLOCK]
+        allowed: [review, draft PR creation, exact-head status readback]
+        requires_approval: [merge, task checkbox]
+        forbidden: [self-approve protected merge, infer unrun checks]
+
+    - id: p-us1-merge-gate
+      kind: proof
+      layer: L1
+      label: Exact-head review, CI and Security evidence
+      owner: verifier
+      status: ready
+      risk: high
+      confidence:
+        score: 0.85
+        basis: The final local review is clean enough to create a draft PR; this proof remains incomplete until GitHub reports the exact commit checks.
+        evidence_refs: [.loop/evidence/t024-t031-local-review-20260809.json]
+      budget: {effort_hours: 0.75, tokens: 7000}
+      config:
+        level: P2
+        claim: The reviewable US1 PR passes the required CI/Security gates with no unresolved blocking finding.
+        method: GitHub exact-head workflow jobs, changed-file review and review-thread readback.
+        evidence_path: .loop/evidence/t024-t031-final-gate-20260809.json
+        required: true
+        baseline_required: true
+
+    - id: m-us1-ledger
+      kind: memory
+      layer: L1
+      label: US1 append-only execution ledger
+      owner: codex-supervisor
+      status: ready
+      risk: medium
+      confidence:
+        score: 0.9
+        basis: Existing project Graphify artifacts use an append-only control ledger; the current tasks/spec/design remain the semantic source of truth until a verified US1 outcome exists.
+        evidence_refs: [.loop/t014-shared-foundation-ledger.json, specs/001-taiwan-basketball-magazine-ebook/tasks.md]
+      budget: {effort_hours: 0.25, tokens: 2500}
+      config:
+        path: .loop/t024-t031-us1-public-magazine-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        memory_role: graph_ledger
+        receipt_required: false
+
+    - id: g-us1-protected-merge
+      kind: gate
+      layer: L1
+      label: Human review and protected merge gate
+      owner: human-mark
+      status: needs_human
+      risk: high
+      confidence:
+        score: 1.0
+        basis: A user request to implement does not authorize automatic protected-branch merge or task checkbox updates.
+        evidence_refs: []
+      budget: {effort_hours: 0.5, tokens: 4000}
+      config:
+        condition: Exact-head review, CI/Security and human approval all pass before merge.
+        approver: human-mark
+        required: true
+
+    - id: s-us1-terminal
+      kind: stop
+      layer: GLOBAL
+      label: US1 terminal policy
+      owner: policy
+      status: planned
+      risk: high
+      confidence:
+        score: 0.95
+        basis: Terminal state must follow proof and human gate status rather than implementation claims.
+        evidence_refs: []
+      budget: {effort_hours: 0.1, tokens: 500}
+      config:
+        states:
+          success: US1 merged, checkbox updated and main read-back proves the completed public path.
+          needs_human: Reviewable PR has exact-head proof but awaits human review or merge direction.
+          blocked: A required contract, test, security or toolchain dependency cannot be verified.
+          stalled: The same failure or no evidence delta reaches the configured limit.
+          exhausted: The configured budget is reached.
+          no_op: Current main already contains the equivalent reviewed US1 behavior.
+
+  edges:
+    - {id: e-main-direction, from: x-main-readback, to: g-us1-direction, type: enables, required: true, confidence: 0.95, token_capacity: 4000}
+    - {id: e-review-direction, from: x-immersion-review, to: g-us1-direction, type: enables, required: true, confidence: 0.85, token_capacity: 4000}
+    - {id: e-direction-trigger, from: g-us1-direction, to: t-us1-ready, type: approves, required: true, confidence: 1.0, token_capacity: 6000}
+    - {id: e-trigger-tests, from: t-us1-ready, to: a-us1-tests-first, type: enables, required: true, confidence: 1.0, token_capacity: 14000}
+    - {id: e-tests-red, from: a-us1-tests-first, to: p-us1-red-baseline, type: verifies, required: true, confidence: 0.9, token_capacity: 5000}
+    - {id: e-red-publication, from: p-us1-red-baseline, to: a-us1-publication, type: enables, required: true, confidence: 0.9, token_capacity: 20000}
+    - {id: e-publication-proof, from: a-us1-publication, to: p-us1-backend, type: verifies, required: true, confidence: 0.95, token_capacity: 10000}
+    - {id: e-backend-web, from: p-us1-backend, to: a-us1-web, type: enables, required: true, confidence: 0.9, token_capacity: 22000}
+    - {id: e-web-proof, from: a-us1-web, to: p-us1-web, type: verifies, required: true, confidence: 0.95, token_capacity: 10000}
+    - {id: e-web-performance, from: a-us1-web, to: p-us1-performance, type: verifies, required: true, confidence: 0.9, token_capacity: 8000}
+    - {id: e-backend-review, from: p-us1-backend, to: a-us1-review, type: enables, required: true, confidence: 0.9, token_capacity: 8000}
+    - {id: e-web-review, from: p-us1-web, to: a-us1-review, type: enables, required: true, confidence: 0.9, token_capacity: 8000}
+    - {id: e-performance-review, from: p-us1-performance, to: a-us1-review, type: enables, required: true, confidence: 0.85, token_capacity: 7000}
+    - {id: e-review-proof, from: a-us1-review, to: p-us1-merge-gate, type: verifies, required: true, confidence: 0.9, token_capacity: 8000}
+    - {id: e-merge-gate-human, from: p-us1-merge-gate, to: g-us1-protected-merge, type: requires_approval, required: true, confidence: 0.95, token_capacity: 6000}
+    - {id: e-human-terminal, from: g-us1-protected-merge, to: s-us1-terminal, type: approves, required: true, confidence: 1.0, token_capacity: 4000}
+    - {id: e-memory-tests-read, from: m-us1-ledger, to: a-us1-tests-first, type: reads, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-memory-publication-read, from: m-us1-ledger, to: a-us1-publication, type: reads, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-memory-web-read, from: m-us1-ledger, to: a-us1-web, type: reads, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-tests-memory, from: a-us1-tests-first, to: m-us1-ledger, type: records, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-backend-memory, from: p-us1-backend, to: m-us1-ledger, type: records, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-web-memory, from: p-us1-web, to: m-us1-ledger, type: records, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-memory-next, from: m-us1-ledger, to: t-us1-ready, type: feedback, required: true, confidence: 0.85, token_capacity: 3000}
+
+flow:
+  source: t-us1-ready
+  sink: s-us1-terminal
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - next_action

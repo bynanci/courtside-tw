@@ -1,0 +1,376 @@
+:root {
+  --accent: #ae3828;
+  --muted: #5b554d;
+  color-scheme: light;
+  font-family:
+    "Noto Serif TC", "Source Han Serif TC", Georgia, serif;
+  background: #f5f1e9;
+  color: #191916;
+  font-synthesis: none;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  background: #f5f1e9;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  overflow-x: clip;
+  background: #f5f1e9;
+}
+
+a {
+  color: inherit;
+}
+
+a:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.site-page {
+  min-height: 100svh;
+}
+
+.site-header {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 76rem;
+  margin: 0 auto;
+  padding: 1.25rem 1.25rem;
+  border-bottom: 1px solid #d8d0c3;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.site-header nav {
+  display: flex;
+  min-width: 0;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 1rem;
+  font-size: 0.875rem;
+}
+
+.site-header nav a {
+  text-underline-offset: 0.25rem;
+}
+
+.site-brand {
+  flex: 0 0 auto;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  text-decoration: none;
+}
+
+.site-shell {
+  width: min(100% - 2.5rem, 76rem);
+  margin: 0 auto;
+  padding: clamp(2.5rem, 7vw, 7rem) 0;
+}
+
+.eyebrow {
+  margin: 0 0 0.75rem;
+  color: var(--accent);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.6875rem;
+  font-weight: 750;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+}
+
+.home-hero {
+  max-width: 48rem;
+  padding-block: 1rem clamp(4rem, 10vw, 8rem);
+}
+
+.home-hero h1,
+.page-intro h1,
+.issue-header h1,
+.article-shell h1 {
+  max-width: 13ch;
+  margin: 0;
+  font-size: clamp(2.8rem, 9vw, 7rem);
+  line-height: 0.98;
+  letter-spacing: -0.065em;
+  white-space: pre-line;
+}
+
+.home-hero__lede,
+.page-intro > p,
+.issue-header__copy > p,
+.article-shell article > p {
+  max-width: 42rem;
+  margin: 1.5rem 0 0;
+  color: var(--muted);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: clamp(1rem, 2vw, 1.2rem);
+  line-height: 1.75;
+}
+
+.button-link,
+.text-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.875rem;
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.button-link {
+  margin-top: 2rem;
+  padding: 0.8rem 1rem;
+}
+
+.button-link--quiet {
+  border: 1px solid #191916;
+}
+
+.home-feature,
+.issue-toc {
+  border-top: 1px solid #191916;
+  padding-top: 1.5rem;
+}
+
+.section-heading {
+  display: flex;
+  min-width: 0;
+  align-items: end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.section-heading h2,
+.reading-state h2,
+.issue-toc h2 {
+  margin: 0;
+  font-size: clamp(1.8rem, 5vw, 3.25rem);
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.issue-cover-card {
+  max-width: 59rem;
+}
+
+.issue-cover-card__link {
+  display: grid;
+  grid-template-columns: minmax(10rem, 0.8fr) minmax(0, 1fr);
+  gap: clamp(1.25rem, 5vw, 4rem);
+  align-items: center;
+  color: inherit;
+  text-decoration: none;
+}
+
+.issue-cover-card__image-frame,
+.issue-header__cover {
+  position: relative;
+  aspect-ratio: 3 / 4;
+  overflow: hidden;
+  background: #ded7ca;
+}
+
+.issue-cover-card__image-frame img,
+.issue-header__cover img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.issue-cover-card__copy {
+  min-width: 0;
+}
+
+.issue-cover-card__copy h2 {
+  margin: 0;
+  font-size: clamp(1.65rem, 4vw, 3.5rem);
+  line-height: 1.04;
+  letter-spacing: -0.05em;
+}
+
+.issue-cover-card__copy > p:not(.eyebrow) {
+  margin: 1rem 0 1.5rem;
+  color: var(--muted);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  line-height: 1.65;
+}
+
+.reading-state {
+  max-width: 42rem;
+  border: 1px solid #d8d0c3;
+  padding: 1.5rem;
+}
+
+.reading-state--error {
+  border-color: var(--accent);
+}
+
+.reading-state p:not(.eyebrow) {
+  color: var(--muted);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  line-height: 1.6;
+}
+
+.page-intro {
+  margin-bottom: clamp(2.5rem, 6vw, 5rem);
+}
+
+.issue-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 17rem), 1fr));
+  gap: 2rem;
+}
+
+.issue-grid .issue-cover-card__link {
+  grid-template-columns: 1fr;
+  align-items: start;
+}
+
+.issue-grid .issue-cover-card__image-frame {
+  max-width: 24rem;
+}
+
+.issue-grid .issue-cover-card__copy h2 {
+  font-size: clamp(1.7rem, 4vw, 2.5rem);
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: clamp(2rem, 5vw, 4rem);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.875rem;
+  text-underline-offset: 0.25rem;
+}
+
+.issue-header {
+  display: grid;
+  grid-template-columns: minmax(12rem, 0.65fr) minmax(0, 1fr);
+  gap: clamp(1.5rem, 6vw, 5rem);
+  align-items: end;
+  margin-bottom: clamp(3rem, 8vw, 7rem);
+}
+
+.issue-header__cover {
+  max-width: 27rem;
+}
+
+.issue-header__copy time {
+  display: block;
+  margin-top: 2rem;
+  color: var(--muted);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.8125rem;
+}
+
+.issue-toc__sections,
+.issue-toc__articles {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.issue-toc__section {
+  display: grid;
+  grid-template-columns: minmax(3rem, 0.15fr) minmax(0, 1fr);
+  gap: 1rem;
+  border-top: 1px solid #d8d0c3;
+  padding: 1.25rem 0 2rem;
+}
+
+.issue-toc__position {
+  margin: 0.25rem 0 0;
+  color: var(--accent);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.issue-toc h3 {
+  margin: 0;
+  font-size: clamp(1.4rem, 3vw, 2rem);
+  letter-spacing: -0.03em;
+}
+
+.issue-toc__articles {
+  margin-top: 0.75rem;
+}
+
+.issue-toc__article-link {
+  display: grid;
+  grid-template-columns: 2rem minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: baseline;
+  border-bottom: 1px solid #e2dbcf;
+  padding: 0.9rem 0;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  line-height: 1.4;
+  text-decoration: none;
+}
+
+.issue-toc__article-number {
+  color: var(--muted);
+  font-size: 0.8125rem;
+}
+
+.issue-toc__empty {
+  color: var(--muted);
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.article-shell article {
+  max-width: 48rem;
+  border-top: 1px solid #191916;
+  padding-top: 1.5rem;
+}
+
+@media (max-width: 40rem) {
+  .site-header {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .site-header nav {
+    justify-content: flex-start;
+  }
+
+  .issue-cover-card__link,
+  .issue-header {
+    grid-template-columns: 1fr;
+  }
+
+  .issue-cover-card__image-frame,
+  .issue-header__cover {
+    width: min(100%, 21rem);
+  }
+
+  .issue-toc__section {
+    grid-template-columns: 1fr;
+    gap: 0.25rem;
+  }
+
+  .issue-toc__position {
+    margin: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+  }
+}

@@ -1,7 +1,7 @@
 import { strictEqual, match } from "node:assert/strict"
 import { test } from "node:test"
 
-import { SECURITY_HEADERS } from "../../server/security/headers"
+import { SECURITY_HEADERS } from "../../server/security/headers.ts"
 
 test("CSP and browser security headers deny code execution and remote modules", () => {
   const csp = SECURITY_HEADERS["Content-Security-Policy"]

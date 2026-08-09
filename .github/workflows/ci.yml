@@ -71,6 +71,50 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  web-e2e:
+    name: Public magazine browser verification
+    needs: frontend-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up pnpm and Node.js
+        uses: pnpm/setup@c9883cc79df532ad1a7b81bf9ab944ceb090d65c # v2.0.0
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          runtime: node@${{ env.NODE_VERSION }}
+          cache: true
+          cache-dependency-path: pnpm-lock.yaml
+          install: false
+
+      - name: Install JavaScript dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter @courtside/web exec playwright install --with-deps chromium
+
+      - name: Run mobile SSR and accessibility journey
+        run: |
+          set -o pipefail
+          mkdir -p artifacts/web-e2e
+          pnpm --filter @courtside/web run test:e2e 2>&1 | tee artifacts/web-e2e/playwright.log
+
+      - name: Upload browser verification reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ci-web-e2e-reports
+          path: |
+            artifacts/web-e2e
+            apps/web/test-results
+            apps/web/playwright-report
+          if-no-files-found: warn
+          retention-days: 14
+
   java-quality:
     name: Java quality and unit verification
     runs-on: ubuntu-latest

@@ -1,0 +1,28 @@
+{
+  "schema_version": "courtside-proof/v1",
+  "proof_id": "t024-t025-tests-first-baseline-20260809",
+  "recorded_at": "2026-08-09T09:15:00Z",
+  "base_commit": "9b2c6eaf59ae8425f5838ec2ba90ad1ff02fbb2e",
+  "scope": ["T024", "T025"],
+  "claim": "US1 acceptance tests were introduced before public publication/runtime implementation; their only observed web failure is the missing public-Issue boundary.",
+  "commands": [
+    {
+      "command": "cd apps/web && node --experimental-strip-types --test tests/unit/public-issue-contract.test.ts",
+      "exit_code": 1,
+      "result": "expected red",
+      "failure_signature": "ERR_MODULE_NOT_FOUND: apps/web/app/features/issues/public-issue-contract.ts",
+      "classification": "intended_missing_us1_runtime_boundary"
+    },
+    {
+      "command": "gradle -p apps/api test --tests tw.basketball.magazine.publication.PublicIssueApiIT",
+      "result": "not_run",
+      "blocking_environment": "Local runner has Java 17 and no Gradle; repository requires Java 21 and Gradle 8.14.3. Exact Java proof remains CI authority."
+    }
+  ],
+  "source_assertions": [
+    "PublicIssueController, PublicIssueService and JdbcPublicIssueRepository are absent from apps/api/src/main/java.",
+    "The public Issue route helper is absent from apps/web/app before implementation.",
+    "The test contract covers bounded navigation, cursor/keyset pagination, order, safe 400/404, ETag, draft/withdrawn/future/rights-invalid isolation and fixed media metadata."
+  ],
+  "next_action": "Implement only the missing V002 public projection, controller/service/repository and typed SSR route boundary; rerun the same tests before expanding scope."
+}

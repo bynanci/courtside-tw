@@ -1,0 +1,35 @@
+{
+  "schema_version": "courtside-proof/v1",
+  "proof_id": "t024-t028-backend-proof-20260809",
+  "recorded_at": "2026-08-09T04:30:00Z",
+  "base_commit": "73ce1da05a0eef71b9302e761004901b6f0c2d67",
+  "scope": ["T024", "T026", "T027", "T028", "FR-001", "FR-002", "FR-003"],
+  "result": "local_contract_pass_ci_required",
+  "commands": [
+    {
+      "command": "PATH=/tmp/courtside-pnpm-bin:$PATH make verify",
+      "exit_code": 0,
+      "result": "pass",
+      "coverage": ["OpenAPI validation", "generated API client parity", "web contract tests"]
+    },
+    {
+      "command": "gradle --no-daemon --console=plain -p apps/api checkstyleMain spotbugsMain test",
+      "result": "not_run",
+      "blocking_environment": "Local runner has Java 17 and no Gradle 8.14.3; repository requires Java 21 and Gradle 8.14.3. The exact Java/Testcontainers check is required on CI."
+    }
+  ],
+  "source_assertions": [
+    "V002 is forward-only and adds stable UUIDv7 primary keys, bounded unique slugs, unique editorial positions, optimistic versions and restrictive publication-state checks.",
+    "The public SQL projection enforces PUBLISHED issue/article state, due publication time, READY media, non-empty alt text, server-selected safe cover keys and currently valid PUBLIC_WEB rights before mapping a response.",
+    "Collection pagination uses a bounded opaque cursor and the keyset predicate (published_at, id) < (?, ?), with limit + 1 rather than an unbounded offset query.",
+    "The detail projection returns only ordered public sections/articles and fails closed when its bounded TOC cap is exceeded.",
+    "Public responses use representation-specific SHA-256 ETags, 304 handling, 60-second public must-revalidate caching and no-store Problem Details.",
+    "Malformed ISO-8601 cursor timestamps are classified as INVALID_REQUEST rather than escaping as a 500 response.",
+    "The controller resolves JdbcTemplate at request time so component-scan ordering cannot suppress the endpoint before JDBC auto-configuration registers the template."
+  ],
+  "remaining_required_proof": [
+    "Run the Java 21 Testcontainers integration suite, Checkstyle and SpotBugs on the exact PR head.",
+    "Apply V002 against the CI PostgreSQL 18 image."
+  ],
+  "next_action": "Push the immutable review head and use exact-head CI as the authority for Java and migration execution."
+}
