@@ -671,6 +671,25 @@ a:focus-visible {
   border-color: var(--accent);
 }
 
+
+.article-generative-poster {
+  display: block;
+  width: 100%;
+  min-height: 12rem;
+  object-fit: cover;
+  background: #191916;
+}
+
+.article-generative [data-testid="creative-runtime"] {
+  display: block;
+  width: 100%;
+  min-height: 11.25rem;
+}
+
+.creative-enable {
+  margin-top: 0.75rem;
+}
+
 .article-navigation {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
