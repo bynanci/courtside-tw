@@ -54,6 +54,56 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
     }
 
     @Test
+    void resolvesSelectedPublicStorageVariantWithoutInventingArticlePath() throws Exception {
+        IssueFixture issue = createIssue(
+                "issue-2026-08",
+                8,
+                Instant.parse("2026-08-08T00:00:00Z"),
+                "PUBLISHED",
+                true
+        );
+        addArticle(issue, "影像", 1, "resolved-media", 1, "PUBLISHED");
+        UUID assetId = UUID.randomUUID();
+        UUID variantId = UUID.randomUUID();
+        UUID rightsId = UUID.randomUUID();
+        jdbcTemplate.update("""
+                INSERT INTO media_asset (
+                    id, private_storage_key, checksum_sha256, mime_type, byte_size,
+                    width, height, alt_text, processing_state
+                ) VALUES (?, 'private/resolved-media.bin', ?, 'image/webp', 2048, 1200, 800, 'resolved', 'READY')
+                """, assetId, CHECKSUM);
+        jdbcTemplate.update("""
+                INSERT INTO media_variant (
+                    id, asset_id, variant, public_storage_key, checksum_sha256,
+                    mime_type, byte_size, width, height
+                ) VALUES (?, ?, 'wide', 'published/actual-key.webp', ?, 'image/webp', 1024, 1200, 800)
+                """, variantId, assetId, CHECKSUM);
+        jdbcTemplate.update("""
+                INSERT INTO rights_record (
+                    id, asset_id, rights_owner, license_name, allowed_channels,
+                    territories, valid_from, valid_until, credit, withdrawal_terms, status
+                ) VALUES (?, ?, 'Courtside TW', 'Editorial license', '{PUBLIC_WEB}'::text[],
+                    ARRAY['GLOBAL']::text[], '2026-08-01T00:00:00Z', '2027-08-01T00:00:00Z',
+                    'Courtside TW', 'withdraw on notice', 'VALID')
+                """, rightsId, assetId);
+        replaceDocument("resolved-media", """
+                {"schemaVersion":1,"documentId":"0190f7b0-7c4b-7e3a-8f12-123456789abc","blocks":[
+                  {"id":"00000000-0000-4000-8000-000000000007","type":"image","version":1,
+                   "payload":{"assetId":"%s","altText":"公開圖片","variant":"wide"}}
+                ]}
+                """.formatted(assetId));
+
+        mockMvc.perform(get("/api/v1/public/articles/resolved-media"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.media[0].assetId").value(assetId.toString()))
+                .andExpect(jsonPath("$.media[0].variant").value("wide"))
+                .andExpect(jsonPath("$.media[0].url").value("/media/published/actual-key.webp"))
+                .andExpect(jsonPath("$.media[0].url").value(org.hamcrest.Matchers.not(
+                        org.hamcrest.Matchers.containsString("/media/articles/resolved-media/")
+                )));
+    }
+
+    @Test
     void deniesDraftWithdrawnHistoricalAndPrivateRightsContent() throws Exception {
         IssueFixture issue = createIssue(
                 "issue-2026-05",
