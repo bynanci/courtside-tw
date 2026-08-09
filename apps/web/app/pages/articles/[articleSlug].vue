@@ -41,6 +41,11 @@ type GalleryItem = {
   credit?: string
 }
 
+type ResumeProgress = {
+  blockId: string
+  offset: number
+}
+
 const route = useRoute()
 const config = useRuntimeConfig()
 const rawArticleSlug = Array.isArray(route.params.articleSlug)
@@ -49,11 +54,13 @@ const rawArticleSlug = Array.isArray(route.params.articleSlug)
 const rawIssueSlug = Array.isArray(route.query.issue) ? route.query.issue[0] : route.query.issue
 
 let articleSlug = "not-found"
+let articleSlugValid = true
 let issueSlugFromQuery: string | null = null
 
 try {
   articleSlug = parsePublicArticleSlug(String(rawArticleSlug))
 } catch {
+  articleSlugValid = false
   // Keep malformed input on a safe, non-reflecting not-found path.
 }
 
@@ -67,14 +74,16 @@ const {
   data: article,
   error,
   pending
-} = await useAsyncData<PublicArticleProjection>("public-article-" + articleSlug, () =>
-  fetchPublicArticle(config.public.apiBaseUrl, articleSlug)
+} = await useAsyncData<PublicArticleProjection | null>("public-article-" + articleSlug, () =>
+  articleSlugValid
+    ? fetchPublicArticle(config.public.apiBaseUrl, articleSlug)
+    : Promise.resolve(null)
 )
 
 if (
   import.meta.server &&
-  error.value instanceof PublicArticleApiError &&
-  error.value.statusCode === 404
+  (!articleSlugValid ||
+    (error.value instanceof PublicArticleApiError && error.value.statusCode === 404))
 ) {
   setResponseStatus(useRequestEvent()!, 404)
 }
@@ -107,6 +116,7 @@ const resumeStorageKey = computed(() =>
     : ""
 )
 const resumeAvailable = ref(false)
+const resumeProgress = ref<ResumeProgress | null>(null)
 const shareStatus = ref("")
 const failedAssets = ref(new Set<string>())
 const motionMode = ref<"reduced" | "full">("reduced")
@@ -231,12 +241,15 @@ function galleryItems(value: unknown): GalleryItem[] {
 }
 
 function safeInlineHref(value: unknown): string | null {
-  if (typeof value !== "string") {
+  if (typeof value !== "string" || value.length > 2048 || value.includes("\u0000")) {
     return null
+  }
+  if (/^mailto:[^\s@]+@[^\s@]+$/.test(value)) {
+    return value
   }
   try {
     const url = new URL(value)
-    if ((url.protocol !== "https:" && url.protocol !== "http:") || url.username || url.password) {
+    if (url.protocol !== "https:" || url.username || url.password || !url.hostname) {
       return null
     }
     return url.toString()
@@ -261,6 +274,19 @@ function assetMediaUrl(assetId: unknown): string {
 
 function markAssetFailed(assetKey: string): void {
   failedAssets.value = new Set(failedAssets.value).add(assetKey)
+}
+
+function headingTag(value: unknown): "h2" | "h3" | "h4" {
+  const level = numberValue(value, 2)
+  return level === 4 ? "h4" : level === 3 ? "h3" : "h2"
+}
+
+function listTag(value: unknown): "ol" | "ul" {
+  return value === true ? "ol" : "ul"
+}
+
+function dividerClass(value: unknown): string {
+  return value === "space" ? "article-divider article-divider--space" : "article-divider"
 }
 
 function relatedArticleHref(value: unknown): string | null {
@@ -375,6 +401,11 @@ function handleCreativeScroll(): void {
   updateCreativeVisibility()
 }
 
+function handleReaderScroll(): void {
+  handleCreativeScroll()
+  saveReadingProgress()
+}
+
 function observeCreative(): void {
   const target = creativeTarget()
   if (!target) {
@@ -400,25 +431,91 @@ function observeCreative(): void {
 }
 
 async function shareArticle(): Promise<void> {
-  shareStatus.value = "分享連結已準備好"
+  shareStatus.value = ""
   const url = canonical.value
   const title = article.value?.title ?? "Courtside TW"
-  if (typeof navigator !== "undefined") {
-    try {
-      if (navigator.share) {
-        await navigator.share({ title, url })
-      } else if (navigator.clipboard) {
-        await navigator.clipboard.writeText(url)
-      }
-    } catch {
-      // Sharing can be cancelled or unavailable; the reader still gets feedback.
-    }
+  if (typeof navigator === "undefined") {
+    shareStatus.value = "請使用下方文章連結。"
+    return
   }
-  shareStatus.value = "分享連結已準備好"
+  try {
+    if (navigator.share) {
+      await navigator.share({ title, url })
+      shareStatus.value = "文章已分享。"
+      return
+    }
+    if (navigator.clipboard) {
+      await navigator.clipboard.writeText(url)
+      shareStatus.value = "文章連結已複製。"
+      return
+    }
+  } catch {
+    shareStatus.value = "分享未完成，請使用下方文章連結。"
+    return
+  }
+  shareStatus.value = "請使用下方文章連結。"
+}
+
+function parseResumeProgress(value: unknown): ResumeProgress | null {
+  if (
+    !isRecord(value) ||
+    typeof value.blockId !== "string" ||
+    typeof value.offset !== "number" ||
+    value.offset < 0 ||
+    value.offset > 1
+  ) {
+    return null
+  }
+  return { blockId: value.blockId, offset: value.offset }
+}
+
+function restoreResumeProgress(): void {
+  if (typeof window === "undefined" || !resumeProgress.value) {
+    return
+  }
+  const target = document.getElementById("block-" + resumeProgress.value.blockId)
+  if (!target) {
+    return
+  }
+  const rect = target.getBoundingClientRect()
+  const targetTop =
+    window.scrollY +
+    rect.top +
+    rect.height * resumeProgress.value.offset -
+    Math.min(window.innerHeight * 0.25, 160)
+  window.scrollTo({ top: Math.max(0, targetTop), behavior: "auto" })
+}
+
+function saveReadingProgress(): void {
+  if (typeof window === "undefined" || !resumeStorageKey.value) {
+    return
+  }
+  const blocks = Array.from(document.querySelectorAll<HTMLElement>("[data-block-id]"))
+  if (blocks.length === 0) {
+    return
+  }
+  const current =
+    blocks.find((block) => {
+      const rect = block.getBoundingClientRect()
+      return rect.bottom > 0 && rect.top < window.innerHeight * 0.6
+    }) ?? blocks[0]
+  const rect = current.getBoundingClientRect()
+  const offset = Math.min(
+    1,
+    Math.max(0, (window.innerHeight * 0.25 - rect.top) / Math.max(rect.height, 1))
+  )
+  const progress = { blockId: current.dataset.blockId ?? "", offset }
+  if (!progress.blockId) {
+    return
+  }
+  window.localStorage.setItem(resumeStorageKey.value, JSON.stringify(progress))
+  resumeProgress.value = progress
+  resumeAvailable.value = true
 }
 
 function loadResumeProgress(): void {
   resumeAvailable.value = false
+  resumeProgress.value = null
   if (typeof window === "undefined" || !resumeStorageKey.value) {
     return
   }
@@ -427,15 +524,11 @@ function loadResumeProgress(): void {
     return
   }
   try {
-    const value: unknown = JSON.parse(saved)
-    if (
-      isRecord(value) &&
-      typeof value.blockId === "string" &&
-      typeof value.offset === "number" &&
-      value.offset >= 0 &&
-      value.offset <= 1
-    ) {
+    const progress = parseResumeProgress(JSON.parse(saved))
+    if (progress) {
+      resumeProgress.value = progress
       resumeAvailable.value = true
+      void nextTick().then(restoreResumeProgress)
     }
   } catch {
     // Ignore malformed local progress and keep the page readable.
@@ -449,9 +542,10 @@ onMounted(() => {
     motionMode.value = window.matchMedia("(prefers-reduced-motion: reduce)").matches
       ? "reduced"
       : "full"
-    window.addEventListener("scroll", handleCreativeScroll, { passive: true })
+    window.addEventListener("scroll", handleReaderScroll, { passive: true })
+    window.addEventListener("beforeunload", saveReadingProgress)
   }
-  document.addEventListener("scroll", handleCreativeScroll, { passive: true, capture: true })
+  document.addEventListener("scroll", handleReaderScroll, { passive: true, capture: true })
   document.addEventListener("visibilitychange", syncRuntimeState)
   stopResumeWatch = watch(resumeStorageKey, loadResumeProgress, { immediate: true })
   void nextTick().then(() => observeCreative())
@@ -459,9 +553,10 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   stopResumeWatch?.()
-  document.removeEventListener("scroll", handleCreativeScroll, true)
+  document.removeEventListener("scroll", handleReaderScroll, true)
   document.removeEventListener("visibilitychange", syncRuntimeState)
-  window.removeEventListener("scroll", handleCreativeScroll)
+  window.removeEventListener("scroll", handleReaderScroll)
+  window.removeEventListener("beforeunload", saveReadingProgress)
   stopCreativeVisibilityWatch()
   creativeObserver?.disconnect()
   creativeObserver = null
@@ -501,7 +596,7 @@ onBeforeUnmount(() => {
               :to="issueRoute(articleIssueSlug)"
               data-testid="article-issue-link"
               class="text-link"
-              >第 1 期目錄</NuxtLink
+              >返回本期目錄</NuxtLink
             >
             <button
               type="button"
@@ -511,8 +606,11 @@ onBeforeUnmount(() => {
             >
               分享文章
             </button>
-            <span data-testid="share-status" role="status">{{
-              shareStatus || "分享連結已準備好"
+            <a :href="canonical" data-testid="article-share-fallback" class="text-link">
+              開啟文章連結
+            </a>
+            <span v-if="shareStatus" data-testid="share-status" role="status">{{
+              shareStatus
             }}</span>
           </div>
         </header>
@@ -536,6 +634,7 @@ onBeforeUnmount(() => {
             :id="'block-' + block.id"
             :key="block.id"
             class="article-block"
+            :data-block-id="block.id"
             :data-block-type="block.type"
           >
             <p v-if="block.type === 'paragraph'" class="article-paragraph">
@@ -554,14 +653,17 @@ onBeforeUnmount(() => {
               </template>
             </p>
 
-            <template v-else-if="block.type === 'heading'">
-              <h2 v-if="numberValue(payloadFor(block).level, 2) === 2">
-                {{ stringValue(payloadFor(block).text) }}
-              </h2>
-              <h3 v-else>{{ stringValue(payloadFor(block).text) }}</h3>
-            </template>
+            <component
+              v-else-if="block.type === 'heading'"
+              :is="headingTag(payloadFor(block).level)"
+            >
+              {{ stringValue(payloadFor(block).text) }}
+            </component>
 
-            <ul v-else-if="block.type === 'list'">
+            <component
+              v-else-if="block.type === 'list'"
+              :is="listTag(payloadFor(block).ordered)"
+            >
               <li v-for="(runs, itemIndex) in listItems(payloadFor(block).items)" :key="itemIndex">
                 <template v-for="(run, runIndex) in runs" :key="runIndex">
                   <a
@@ -574,7 +676,7 @@ onBeforeUnmount(() => {
                   <span v-else>{{ run.text }}</span>
                 </template>
               </li>
-            </ul>
+            </component>
 
             <blockquote v-else-if="block.type === 'quote'">
               <p>
@@ -597,7 +699,11 @@ onBeforeUnmount(() => {
               }}</cite>
             </blockquote>
 
-            <hr v-else-if="block.type === 'divider'" />
+            <div
+              v-else-if="block.type === 'divider'"
+              :class="dividerClass(payloadFor(block).style)"
+              aria-hidden="true"
+            />
 
             <figure v-else-if="block.type === 'image'" class="article-image">
               <img
@@ -607,7 +713,11 @@ onBeforeUnmount(() => {
                 loading="lazy"
                 @error="markAssetFailed(block.id)"
               />
-              <figcaption data-testid="article-image-fallback" class="article-image-fallback">
+              <figcaption
+                v-if="failedAssets.has(block.id)"
+                data-testid="article-image-fallback"
+                class="article-image-fallback"
+              >
                 圖片目前無法載入，已保留文字備援：{{ stringValue(payloadFor(block).altText) }}
               </figcaption>
               <figcaption v-if="payloadFor(block).caption">
@@ -615,7 +725,13 @@ onBeforeUnmount(() => {
               </figcaption>
             </figure>
 
-            <div v-else-if="block.type === 'gallery'" class="article-gallery">
+            <div
+              v-else-if="block.type === 'gallery'"
+              class="article-gallery"
+              :class="{
+                'article-gallery--stack': payloadFor(block).layout === 'stack'
+              }"
+            >
               <figure
                 v-for="(item, itemIndex) in galleryItems(payloadFor(block).items)"
                 :key="block.id + '-' + itemIndex"
@@ -647,6 +763,9 @@ onBeforeUnmount(() => {
               <p class="eyebrow">Video</p>
               <h3>{{ stringValue(payloadFor(block).title) }}</h3>
               <p>影片權利尚未開放；本頁保留可理解的文字內容。</p>
+              <p v-if="payloadFor(block).caption">
+                {{ stringValue(payloadFor(block).caption) }}
+              </p>
             </section>
 
             <aside v-else-if="block.type === 'related-reading'" class="article-related">
