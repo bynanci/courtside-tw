@@ -1,0 +1,89 @@
+{
+  "schema_version": "courtside-proof/v1",
+  "proof_id": "t024-t031-post-merge-readback-20260809",
+  "recorded_at": "2026-08-09T07:32:18Z",
+  "result": "PASS",
+  "scope": [
+    "T024",
+    "T025",
+    "T026",
+    "T027",
+    "T028",
+    "T029",
+    "T030",
+    "T031"
+  ],
+  "authoritative_main": {
+    "ref": "main",
+    "commit": "170a2de61d5d3c62071db674c9c97259fca9ac49",
+    "commit_url": "https://github.com/bynanci/courtside-tw/commit/170a2de61d5d3c62071db674c9c97259fca9ac49",
+    "parent_commit": "9b2c6eaf59ae8425f5838ec2ba90ad1ff02fbb2e",
+    "read_back_at": "2026-08-09T07:32:18Z"
+  },
+  "pull_request": {
+    "number": 61,
+    "url": "https://github.com/bynanci/courtside-tw/pull/61",
+    "merged": true,
+    "head_sha": "752a309d7d2f9a0b95a2eb43f4b1fb58724d4140",
+    "merge_commit_sha": "170a2de61d5d3c62071db674c9c97259fca9ac49",
+    "changed_files": 50
+  },
+  "gates": {
+    "scope": {
+      "result": "pass",
+      "changed_files_are_bounded": true,
+      "web3_wallet_passport_public_reader_added": false,
+      "production_activation": false,
+      "schema_migration_scope": "V002 forward-only publication-content core; no destructive operation"
+    },
+    "ci": {
+      "run_id": 31300262754,
+      "url": "https://github.com/bynanci/courtside-tw/actions/runs/31300262754",
+      "conclusion": "success",
+      "successful_jobs": [
+        "Docker Compose dependency health",
+        "Frontend and contract verification",
+        "Java quality and unit verification",
+        "Public magazine browser verification"
+      ],
+      "browser_tests": "3 passed"
+    },
+    "security": {
+      "run_id": 31300262758,
+      "url": "https://github.com/bynanci/courtside-tw/actions/runs/31300262758",
+      "conclusion": "success",
+      "successful_jobs": [
+        "Resolve Compose images",
+        "Trivy (filesystem)",
+        "CodeQL (java-kotlin)",
+        "CodeQL (javascript-typescript)",
+        "Dependency audit and reports",
+        "Trivy (image oidc)",
+        "Trivy (image postgres)",
+        "Trivy (image s3)"
+      ]
+    },
+    "review_threads": {
+      "unresolved_count": 0,
+      "total_count": 0
+    }
+  },
+  "task_readback": {
+    "T024": true,
+    "T025": true,
+    "T026": true,
+    "T027": true,
+    "T028": true,
+    "T029": true,
+    "T030": true,
+    "T031": true,
+    "T032": false,
+    "T033": false
+  },
+  "residual_follow_up": [
+    "Before a separate production API origin is enabled, use same-origin proxy or align API CORS and web CSP, then add production-like client navigation proof.",
+    "Paginate sitemap beyond the current 100-issue bound before the public catalog can exceed it.",
+    "T032/T033 must begin with an independently observed red baseline; no article-body implementation is included in this reconciliation."
+  ],
+  "rollback": "Revert the merge commit if the public US1 slice must be removed; V002 is forward-only and has no destructive migration operation."
+}
