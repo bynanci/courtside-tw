@@ -90,6 +90,10 @@ test.describe("US2 long-form public article", () => {
       waitUntil: "domcontentloaded"
     })
     await expect(page.getByTestId("article-document")).toBeVisible()
+    await expect(page.getByTestId("article-document")).toHaveAttribute(
+      "data-client-ready",
+      "true"
+    )
 
     const lastBlockId = await page.locator("[data-block-id]").last().getAttribute("data-block-id")
     expect(lastBlockId).toBeTruthy()
