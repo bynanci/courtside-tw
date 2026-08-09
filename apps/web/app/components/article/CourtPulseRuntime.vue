@@ -53,7 +53,7 @@ function drawCourtPulse(instance: p5, frame: number): void {
 
   const points = Math.min(48, Math.max(1, Math.round(density)))
   for (let index = 0; index < points; index += 1) {
-    const ratio = sequence[index % sequence.length]
+    const ratio = sequence[index % sequence.length] ?? 0.5
     const x = 24 + ((index + 1) / (points + 1)) * (width - 48)
     const y = height / 2 + Math.sin(phase + index * 0.73) * (height * 0.28) * (0.4 + ratio * 0.6)
     const radius = 2 + ratio * 8
