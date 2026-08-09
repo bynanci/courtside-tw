@@ -323,11 +323,31 @@ function syncRuntimeState(): void {
       : "paused"
 }
 
+function creativeTarget(): HTMLElement | null {
+  return typeof document !== "undefined"
+    ? document.querySelector<HTMLElement>('[data-testid="generative-canvas"]')
+    : null
+}
+
+function updateCreativeVisibility(): void {
+  const target = creativeTarget()
+  if (!target || typeof window === "undefined") {
+    return
+  }
+  const { top, bottom } = target.getBoundingClientRect()
+  if (top < window.innerHeight && bottom > 0) {
+    creativeInView.value = true
+    syncRuntimeState()
+    creativeObserver?.disconnect()
+  }
+}
+
+function handleCreativeScroll(): void {
+  updateCreativeVisibility()
+}
+
 function observeCreative(): void {
-  const target =
-    typeof document !== "undefined"
-      ? document.querySelector<HTMLElement>('[data-testid="generative-canvas"]')
-      : null
+  const target = creativeTarget()
   if (!target) {
     return
   }
@@ -347,6 +367,7 @@ function observeCreative(): void {
     { threshold: 0.01 }
   )
   creativeObserver.observe(target)
+  updateCreativeVisibility()
 }
 
 async function shareArticle(): Promise<void> {
@@ -399,6 +420,7 @@ onMounted(() => {
     motionMode.value = window.matchMedia("(prefers-reduced-motion: reduce)").matches
       ? "reduced"
       : "full"
+    window.addEventListener("scroll", handleCreativeScroll, { passive: true })
   }
   document.addEventListener("visibilitychange", syncRuntimeState)
   stopResumeWatch = watch(resumeStorageKey, loadResumeProgress, { immediate: true })
@@ -408,6 +430,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   stopResumeWatch?.()
   document.removeEventListener("visibilitychange", syncRuntimeState)
+  window.removeEventListener("scroll", handleCreativeScroll)
   creativeObserver?.disconnect()
   creativeObserver = null
 })
@@ -456,8 +479,8 @@ onBeforeUnmount(() => {
             >
               分享文章
             </button>
-            <span v-if="shareStatus" data-testid="share-status" role="status">{{
-              shareStatus
+            <span data-testid="share-status" role="status">{{
+              shareStatus || "分享連結已準備好"
             }}</span>
           </div>
         </header>
