@@ -193,7 +193,7 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
                     resultSet.getObject("issue_id", UUID.class),
                     resultSet.getString("issue_slug")
             );
-        } catch (Exception exception) {
+        } catch (RuntimeException exception) {
             throw new IllegalStateException("published Article content is not valid JSON", exception);
         }
     }
