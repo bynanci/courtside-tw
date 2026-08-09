@@ -624,11 +624,7 @@ function saveReadingProgress(): void {
     const previousBlock = resumeProgress.value?.blockId
       ? blocks.find((block) => block.dataset.blockId === resumeProgress.value?.blockId)
       : null
-    if (
-      lastBlock &&
-      lastRect &&
-      (atDocumentEnd || lastRect.bottom <= window.innerHeight * 0.25)
-    ) {
+    if (lastBlock && lastRect && (atDocumentEnd || lastRect.bottom <= window.innerHeight * 0.25)) {
       current = lastBlock
     } else if (previousBlock) {
       current = previousBlock
