@@ -4,7 +4,7 @@
   "scope": "project",
   "kind": "task_state",
   "title": "Phase 4 T032/T033 tests-first dispatch",
-  "summary": "Phase 4 starts with bounded T032/T033 red tests and an all-block reader fixture; T034+ implementation remains out of scope until the red baseline is classified.",
+  "summary": "Phase 4 starts with bounded T032/T033 red tests and an all-block reader fixture; the exact CI/Security red baseline is classified and T034+ implementation remains out of scope until review.",
   "claims": [
     {
       "text": "Main at 2ae2a5e contains completed T024-T031 and leaves T032/T033 unchecked.",
@@ -17,17 +17,19 @@
       "confidence": "high"
     },
     {
-      "text": "The exact CI red failure signatures are pending and must be classified before the dispatch can reach its terminal success state.",
-      "class": "UNKNOWN",
-      "confidence": "medium"
+      "text": "Exact CI/Security runs classify the T032/T033 red baseline at the absent public Article projection and article-reader runtime boundary, with no unrelated lint, type, schema or scanner regression.",
+      "class": "CONFIRMED",
+      "confidence": "high"
     }
   ],
-  "status": "verified",
+  "status": "stable",
   "confidence": "high",
   "confidence_basis": [
     "main read-back at 2ae2a5eeef9bc7ec3098b75205a7250e3a397960",
-    "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
-    ".loop/evidence/t032-t033-dispatch-20260809.json"
+    "T032/T033 exact-head CI run 31302266756",
+    "T032/T033 exact-head Security run 31302266758",
+    "draft PR #63 with zero review threads",
+    ".loop/evidence/t032-t033-red-baseline-20260809.json"
   ],
   "volatility": "medium",
   "as_of": "2026-08-09",
@@ -35,6 +37,8 @@
     "https://github.com/bynanci/courtside-tw/commit/2ae2a5eeef9bc7ec3098b75205a7250e3a397960",
     "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
     ".loop/evidence/t032-t033-dispatch-20260809.json",
+    ".loop/evidence/t032-t033-red-baseline-20260809.json",
+    "https://github.com/bynanci/courtside-tw/pull/63",
     "conversation:2026-08-09:dispatch-t032-t033"
   ],
   "entities": [
@@ -50,7 +54,9 @@
     "supports": [],
     "contradicts": [],
     "supersedes": [],
-    "blocks": [],
+    "blocks": [
+      "T034+ production implementation until the red tests are paired and rerun"
+    ],
     "invalidates": []
   },
   "next_review_at": "2026-08-10",
