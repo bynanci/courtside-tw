@@ -1,0 +1,103 @@
+{
+  "schema_version": "courtside-proof/v1",
+  "proof_id": "t032-t033-red-baseline-20260809",
+  "recorded_at": "2026-08-09T07:58:45Z",
+  "result": "RED_BASELINE_CLASSIFIED",
+  "scope": [
+    "T032",
+    "T033",
+    "US2",
+    "FR-004",
+    "FR-005",
+    "FR-006",
+    "FR-007",
+    "FR-008",
+    "FR-009",
+    "FR-010",
+    "FR-047",
+    "SC-014"
+  ],
+  "authoritative_base": {
+    "ref": "main",
+    "commit": "2ae2a5eeef9bc7ec3098b75205a7250e3a397960",
+    "url": "https://github.com/bynanci/courtside-tw/commit/2ae2a5eeef9bc7ec3098b75205a7250e3a397960",
+    "pull_request": {
+      "number": 63,
+      "url": "https://github.com/bynanci/courtside-tw/pull/63",
+      "head_sha": "4eee21ee4160fcbf129a302c964a7ad018be5dcb",
+      "draft": true,
+      "merged": false,
+      "mergeable": true,
+      "changed_files": 9,
+      "review_threads": 0
+    }
+  },
+  "checks": {
+    "ci": {
+      "run_number": 226,
+      "run_id": 31302266756,
+      "conclusion": "failure",
+      "jobs": {
+        "Docker Compose dependency health": "success",
+        "Frontend and contract verification": "success",
+        "Java quality and unit verification": "failure",
+        "Public magazine browser verification": "failure"
+      },
+      "passed_surface": [
+        "ContentDocument contract validation",
+        "OpenAPI contract validation",
+        "repository verification including Prettier",
+        "Compose dependency health and T013 database foundation"
+      ]
+    },
+    "security": {
+      "run_number": 226,
+      "run_id": 31302266758,
+      "conclusion": "failure",
+      "jobs": {
+        "Resolve Compose images": "success",
+        "Trivy (filesystem)": "success",
+        "CodeQL (javascript-typescript)": "success",
+        "CodeQL (java-kotlin)": "success",
+        "Trivy (image postgres)": "success",
+        "Trivy (image s3)": "success",
+        "Trivy (image oidc)": "success",
+        "Dependency audit and reports": "failure"
+      },
+      "classification": "The dependency job's post-resolution Gradle test reran the same expected T032 failure; dependency resolution, pnpm audit and security scanners passed."
+    }
+  },
+  "failure_classification": {
+    "t032": {
+      "job": "Java quality and unit verification",
+      "test_result": "77 tests completed, 1 failed",
+      "failing_test": "PublicArticleApiIT.returnsPublishedRevisionAndSnapshotIssueNavigation",
+      "failure_signature": "AssertionError at PublicArticleApiIT.java:49",
+      "classification": "expected_red",
+      "reason": "main has no /api/v1/public/articles/{articleSlug} public Article projection; the deny-by-default test passes."
+    },
+    "t033": {
+      "job": "Public magazine browser verification",
+      "test_result": "5 failed, 3 passed",
+      "failing_tests": [
+        "us2-no-js.spec.ts: SSR renders article blocks and generative poster without JavaScript",
+        "us2-read-article.spec.ts: renders every v1 block, metadata, image fallback, navigation and share",
+        "us2-read-article.spec.ts: resumes the last stable block anchor after reload",
+        "us2-read-article.spec.ts: uses the issue snapshot for previous, next and table-of-contents links",
+        "us2-reduced-motion.spec.ts: reduced motion keeps content visible and creative runtime bounded"
+      ],
+      "failure_signature": "The expected article-document test id is absent; the reduced-motion test also cannot find article-document.",
+      "classification": "expected_red",
+      "reason": "main's article route is an intentional shell without article document blocks, SSR poster or creative runtime; existing browser coverage remains passing."
+    }
+  },
+  "scope_guard": {
+    "production_runtime_changed": false,
+    "task_checkboxes_changed": false,
+    "web3_wallet_passport_changed": false,
+    "deployment_or_provider_changed": false,
+    "unrelated_lint_type_schema_security_regression": false
+  },
+  "decision": "Classify the red tests as the bounded US2 implementation boundary and stop at the draft PR.",
+  "next_action": "Keep PR #63 draft-only; implement T034+ in a separate follow-up after review, then rerun these exact tests before changing T032/T033 checkboxes."
+}
