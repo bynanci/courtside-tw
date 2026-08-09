@@ -1,6 +1,6 @@
 export const SECURITY_HEADERS = {
   "Content-Security-Policy":
-    "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self'; img-src 'self' https: data:; font-src 'self'; connect-src 'self'; form-action 'self'",
+    "default-src 'self'; base-uri 'none'; object-src 'none'; frame-ancestors 'none'; script-src 'self'; style-src 'self' 'sha256-SANp7t6MtwJeb5mCCdYepPwPCnE+4hb/1UOdqme+bUQ='; img-src 'self' https: data:; font-src 'self'; connect-src 'self'; form-action 'self'",
   "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
   "Referrer-Policy": "no-referrer",
   "X-Content-Type-Options": "nosniff",
