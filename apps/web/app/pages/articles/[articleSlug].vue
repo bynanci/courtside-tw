@@ -560,7 +560,7 @@ onBeforeUnmount(() => {
               >
                 圖片目前無法載入，已保留文字備援：{{ stringValue(payloadFor(block).altText) }}
               </figcaption>
-              <figcaption v-else-if="payloadFor(block).caption">
+              <figcaption v-if="payloadFor(block).caption">
                 {{ stringValue(payloadFor(block).caption) }}
               </figcaption>
             </figure>
