@@ -1,0 +1,808 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-t034-t041-us2-implementation-lane
+objective: >-
+  Open a reviewable Phase 4 US2 implementation lane from the latest T032/T033
+  tests-first head, with T034/T035 as the first API vertical slice, while
+  stopping before production runtime code until the ArticleProjection contract
+  drift is explicitly resolved.
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - T034 immutable published revision and server-side article projection logic
+    - T035 public Article endpoint, ETag, visible media variants and issue navigation
+    - T036-T041 bounded reader renderer, creative runtime, SSR route, progress, navigation, SEO and performance frontier
+    - Latest-head baseline proof, contract-drift evidence, Graphify ledger and implementation-lane memory
+    - P1 Magazine-first experience from Home to Issue to Article to Closure
+  out:
+    - T032/T033 checkbox updates or merge of the red tests-first PR before implementation proof passes
+    - Any silent change to ArticleProjection field names or generated API contract
+    - Database migration, editorial Studio workflow, real content publication or production deployment in this lane
+    - Reader Stamp, Season Passport, wallet, token, NFT, IPFS, RPC, signer or external Web3 provider activation
+    - Any external service that can block anonymous article reading
+
+authority:
+  allowed:
+    - Read main, PR #63, tests, OpenAPI, schema, plan, tasks, ADRs and user-provided immersion review
+    - Create a stacked implementation branch and draft PR from PR #63 latest head
+    - Add bounded Graphify, evidence and semantic-memory artifacts
+    - After contract approval, implement only the current T034/T035 slice and its required tests
+    - Run focused checks and exact-head CI/Security
+  requires_approval:
+    - ArticleProjection contract or acceptance change
+    - Production/runtime implementation after the contract gate
+    - Protected merge, task checkbox updates, deployment or public content publication
+    - Any database schema, rights policy, security boundary or Web3 scope change
+  forbidden:
+    - Return undeclared compatibility fields to hide the contract conflict
+    - Modify or weaken T032/T033 assertions without recording an approved contract correction
+    - Expose draft, withdrawn, historical or non-PUBLIC_WEB content
+    - Dynamic module resolution, arbitrary HTML, remote code, shader, wallet or credential behavior
+
+acceptance:
+  - Latest PR #63 head, CI/Security #232 and zero review threads are read back exactly.
+  - The lane is based on PR #63 head 49e3a1c and does not alter main or task checkboxes.
+  - The contract mismatch is captured with both source references and an explicit human gate.
+  - T034/T035 cannot enter production implementation until one ArticleProjection shape is approved.
+  - Once approved, the first implementation slice must make the published positive test pass without weakening deny-by-default cases or rights filtering.
+  - T036-T041 remain downstream of T034/T035 and preserve SSR/no-JS/reduced-motion and Web3 failure isolation.
+  - The lane stops at needs_human, not success, while the contract decision is unresolved.
+
+budgets:
+  max_iterations: 5
+  max_minutes: 180
+  max_same_failure: 2
+  max_no_evidence_delta: 2
+  max_graph_changes: 20
+  max_tokens: 80000
+
+policy:
+  human_gates:
+    - ArticleProjection contract and acceptance decision
+    - Protected merge and task checkbox updates
+    - Production/runtime, schema, rights, security, deployment or Web3 changes
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+memory_workflow:
+  contract: work-memory/v1
+  control_ledger: Append graph delta, proof receipts, failure signatures and token usage every iteration.
+  semantic_memory: Capture only durable implementation-lane constraints and verified state deltas.
+  modes: [recall, capture, update, forget, no_op]
+  retrieval:
+    levels: [index, timeline_relations, details]
+    max_index_results: 10
+    stop_on_sufficient_evidence: true
+  capture:
+    allowed_kinds: [decision, constraint, fact, attempt, task_state, pattern, evidence]
+    requires_downstream_proof: true
+    requires_write_receipt: true
+  lifecycle: [seed, verified, stable, needs_update, disputed, archived]
+  failure_policy:
+    write_pending: blocked
+    stale_or_disputed: needs_human
+    redact_secrets: true
+
+graph:
+  entry_nodes: [x-main-readback, x-pr63-readback, x-immersion-review]
+  terminal_nodes: [s-us2-implementation-terminal]
+  current_frontier: [g-article-contract-approval]
+  blocked_nodes: [t-implementation-ready, a-t034, a-t035, a-t036, a-t037, a-t038, a-t039, a-t040, a-t041]
+
+  loops:
+    - id: l2-implementation-lane-supervision
+      layer: L2
+      owner: codex-supervisor
+      trigger_nodes: [t-lane-request]
+      action_nodes: [a-open-lane]
+      proof_nodes: [p-lane-scope]
+      memory_nodes: [m-l2-ledger]
+      stop_nodes: [s-us2-implementation-terminal]
+      budgets:
+        max_iterations: 3
+        max_minutes: 30
+        max_same_failure: 2
+        max_graph_changes: 8
+        max_tokens: 20000
+
+    - id: l3-article-contract-direction
+      layer: L3
+      owner: human-mark
+      trigger_nodes: [t-contract-review]
+      action_nodes: [a-frame-article-contract]
+      proof_nodes: [p-contract-review]
+      memory_nodes: [m-l3-semantic]
+      stop_nodes: [s-us2-implementation-terminal]
+      budgets:
+        max_iterations: 3
+        max_minutes: 60
+        max_same_failure: 2
+        max_graph_changes: 8
+        max_tokens: 24000
+
+    - id: l1-us2-implementation
+      layer: L1
+      owner: codex-agent
+      trigger_nodes: [t-implementation-ready]
+      action_nodes: [a-t034, a-t035, a-t036, a-t037, a-t038, a-t039, a-t040, a-t041]
+      proof_nodes: [p-t034, p-t035, p-t036, p-t037, p-t038, p-t039, p-t040, p-t041]
+      memory_nodes: [m-l1-ledger]
+      stop_nodes: [s-us2-implementation-terminal]
+      budgets:
+        max_iterations: 5
+        max_minutes: 180
+        max_same_failure: 2
+        max_graph_changes: 20
+        max_tokens: 80000
+
+  nodes:
+    - id: x-main-readback
+      kind: external
+      layer: EXTERNAL
+      label: Authoritative main read-back after US1 completion
+      owner: github
+      status: done
+      risk: high
+      confidence:
+        score: 1.0
+        basis: "main@2ae2a5e is read back; T024-T031 are checked and T032/T033 remain unchecked."
+        evidence_refs: ["https://github.com/bynanci/courtside-tw/commit/2ae2a5eeef9bc7ec3098b75205a7250e3a397960", "specs/001-taiwan-basketball-magazine-ebook/tasks.md"]
+      budget: {effort_hours: 0.2, tokens: 2000}
+      config:
+        source_type: github-main-readback
+        freshness: "2026-08-09T08:16:20Z"
+        limitations: "US2 article runtime is intentionally absent from main."
+
+    - id: x-pr63-readback
+      kind: external
+      layer: EXTERNAL
+      label: Latest PR #63 tests-first head read-back
+      owner: github
+      status: done
+      risk: high
+      confidence:
+        score: 1.0
+        basis: "PR #63 head 49e3a1c is draft, unmerged, mergeable and has zero review threads; CI/Security #232 classify only intended red tests."
+        evidence_refs: ["https://github.com/bynanci/courtside-tw/pull/63", ".loop/evidence/t034-latest-head-baseline-20260809.json"]
+      budget: {effort_hours: 0.4, tokens: 4000}
+      config:
+        source_type: github-pr-readback
+        freshness: "2026-08-09T08:16:20Z"
+        limitations: "The PR is intentionally red and must remain draft-only until implementation proof exists."
+
+    - id: x-immersion-review
+      kind: external
+      layer: EXTERNAL
+      label: User-provided immersion review and product-direction evidence
+      owner: human-mark
+      status: done
+      risk: high
+      confidence:
+        score: 0.95
+        basis: "The supplied montage and presentation consistently define Magazine-first reading and Web3 as post-value, non-blocking infrastructure; usability scores are not measured evidence."
+        evidence_refs: ["user-attachment:courtside-montage(1).png", "user-attachment:03-courtside-tw-user-immersion-review-1-1.pptx"]
+      budget: {effort_hours: 0.4, tokens: 4000}
+      config:
+        source_type: user-provided-product-review
+        freshness: "2026-08-09"
+        limitations: "The attachment is a simulated product review, not measured user research."
+
+    - id: t-lane-request
+      kind: trigger
+      layer: L2
+      label: Mark requests a separate T034+ implementation lane
+      owner: codex-supervisor
+      status: done
+      risk: high
+      confidence:
+        score: 1.0
+        basis: "The current user request explicitly authorizes opening the T034+ implementation lane."
+        evidence_refs: ["conversation:2026-08-09:open-t034-implementation-lane"]
+      budget: {effort_hours: 0.0, tokens: 500}
+      config:
+        condition: "A tests-first red baseline exists and the next implementation lane is requested."
+        inputs_required: ["main read-back", "PR #63 latest head", "tasks.md T034-T041", "user immersion direction"]
+        dedupe: "US2 plus PR #63 head SHA plus lane graph version"
+
+    - id: a-open-lane
+      kind: action
+      layer: L2
+      label: Create the bounded stacked implementation lane without touching main
+      owner: codex-supervisor
+      status: done
+      risk: high
+      confidence:
+        score: 0.95
+        basis: "The lane is restricted to a stacked branch, draft PR and evidence artifacts; no task checkbox or production code is changed before the contract gate."
+        evidence_refs: [".loop/evidence/t034-latest-head-baseline-20260809.json"]
+      budget: {effort_hours: 0.75, tokens: 8000}
+      config:
+        workflow: ["read exact PR head", "define T034/T035 first slice", "record T036-T041 downstream frontier", "create draft lane", "verify branch scope"]
+        allowed: ["create branch", "create draft PR", "add Graphify/evidence/memory artifacts"]
+        requires_approval: ["protected merge"]
+        forbidden: ["modify main", "change task checkboxes", "add runtime code before contract gate"]
+
+    - id: p-lane-scope
+      kind: proof
+      layer: L2
+      label: Stacked lane scope proof
+      owner: verifier
+      status: done
+      risk: high
+      confidence:
+        score: 0.95
+        basis: "The lane base and current frontier are explicitly recorded; the red tests-first branch remains separate and unmerged."
+        evidence_refs: [".loop/evidence/t034-latest-head-baseline-20260809.json"]
+      budget: {effort_hours: 0.3, tokens: 3500}
+      config:
+        level: P2
+        claim: "T034+ is a separate, reviewable lane based on the latest PR #63 head and does not mutate main or task checkboxes."
+        method: "Branch base, PR metadata, changed-file scope and main read-back comparison."
+        evidence_path: ".loop/evidence/t034-latest-head-baseline-20260809.json"
+        required: true
+        baseline_required: true
+
+    - id: t-contract-review
+      kind: trigger
+      layer: L3
+      label: ArticleProjection contract drift requires direction
+      owner: human-mark
+      status: ready
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: "The exact T032 assertion shape conflicts with the canonical OpenAPI ArticleProjection schema."
+        evidence_refs: [".loop/evidence/t034-contract-drift-20260809.json"]
+      budget: {effort_hours: 0.0, tokens: 500}
+      config:
+        condition: "Two authoritative contract sources disagree on public ArticleProjection field names."
+        inputs_required: ["T032 test", "contracts/openapi.yaml ArticleProjection", "T035 task scope"]
+        dedupe: "ArticleProjection field-shape conflict plus source SHAs"
+
+    - id: a-frame-article-contract
+      kind: action
+      layer: L3
+      label: Frame the smallest ArticleProjection contract decision
+      owner: codex-supervisor
+      status: done
+      risk: critical
+      confidence:
+        score: 0.98
+        basis: "The conflict and three bounded resolution options are recorded without selecting one."
+        evidence_refs: [".loop/evidence/t034-contract-drift-20260809.json"]
+      budget: {effort_hours: 0.75, tokens: 7000}
+      config:
+        workflow: ["compare test and OpenAPI shapes", "separate confirmed facts from inference", "draft bounded options", "preserve human gate"]
+        allowed: ["read contract sources", "write evidence and decision options"]
+        requires_approval: ["select canonical field shape", "change acceptance or generated contract"]
+        forbidden: ["silently return both shapes", "weaken tests", "claim implementation readiness"]
+
+    - id: p-contract-review
+      kind: proof
+      layer: L3
+      label: ArticleProjection contract comparison proof
+      owner: verifier
+      status: done
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: "The test source and OpenAPI schema are directly read back and differ on required public fields."
+        evidence_refs: [".loop/evidence/t034-contract-drift-20260809.json", "contracts/openapi.yaml", "apps/api/src/test/java/tw/basketball/magazine/publication/PublicArticleApiIT.java"]
+      budget: {effort_hours: 0.5, tokens: 5000}
+      config:
+        level: P3
+        claim: "A human decision is required before T034/T035 can implement the public Article projection."
+        method: "Direct source comparison plus explicit options and tradeoffs."
+        evidence_path: ".loop/evidence/t034-contract-drift-20260809.json"
+        required: true
+        baseline_required: true
+
+    - id: g-article-contract-approval
+      kind: gate
+      layer: L3
+      label: Human approval of canonical ArticleProjection shape
+      owner: human-mark
+      status: needs_human
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: "Acceptance and public API contract changes cannot be inferred from conflicting artifacts."
+        evidence_refs: [".loop/evidence/t034-contract-drift-20260809.json"]
+      budget: {effort_hours: 0.25, tokens: 1500}
+      config:
+        condition: "Approve canonical-openapi, canonical-tests, or a time-bounded compatibility policy with matching schema/test updates."
+        approver: human-mark
+        required: true
+
+    - id: t-implementation-ready
+      kind: trigger
+      layer: L1
+      label: T034/T035 implementation is authorized after contract decision
+      owner: codex-agent
+      status: blocked
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: "The trigger is blocked until the ArticleProjection contract gate is approved."
+        evidence_refs: [".loop/evidence/t034-contract-drift-20260809.json"]
+      budget: {effort_hours: 0.0, tokens: 500}
+      config:
+        condition: "The ArticleProjection field shape is approved and the tests-first lane is still the current base."
+        inputs_required: ["human contract decision", "PR #63 latest head", "T034/T035 acceptance"]
+        dedupe: "approved ArticleProjection contract plus PR #63 head SHA"
+
+    - id: a-t034
+      kind: action
+      layer: L1
+      label: Implement T034 immutable published revision and server-side projection logic
+      owner: codex-agent
+      status: blocked
+      risk: high
+      confidence:
+        score: 0.65
+        basis: "Existing V002 schema supports published revision pointers and ContentDocument JSON, but contributor and immutable snapshot details need implementation proof."
+        evidence_refs: ["specs/001-taiwan-basketball-magazine-ebook/tasks.md", "apps/api/src/main/resources/db/migration/V002__publication_content_core.sql"]
+      budget: {effort_hours: 4.0, tokens: 24000}
+      config:
+        workflow: ["read approved contract", "implement projection domain", "enforce published revision and rights predicates", "extract plain text and reading time", "run T032 backend tests"]
+        allowed: ["content/domain", "content/application", "content/persistence", "required bounded tests"]
+        requires_approval: ["schema change", "acceptance change"]
+        forbidden: ["draft/history/private media leakage", "editorial writes", "Web3 or Passport"]
+
+    - id: p-t034
+      kind: proof
+      layer: L1
+      label: T034 backend projection proof
+      owner: verifier
+      status: blocked
+      risk: high
+      confidence:
+        score: 0.65
+        basis: "The intended proof is defined but cannot run until the contract gate and implementation exist."
+        evidence_refs: ["apps/api/src/test/java/tw/basketball/magazine/publication/PublicArticleApiIT.java"]
+      budget: {effort_hours: 1.0, tokens: 8000}
+      config:
+        level: P2
+        claim: "Published revision selection, server extraction, rights filtering and deny-by-default cases pass without unrelated regression."
+        method: "Exact Java 21/Testcontainers run plus response contract inspection."
+        evidence_path: ".loop/evidence/t034-t035-implementation-proof.json"
+        required: true
+        baseline_required: true
+
+    - id: a-t035
+      kind: action
+      layer: L1
+      label: Implement T035 public Article endpoint and bounded navigation projection
+      owner: codex-agent
+      status: blocked
+      risk: high
+      confidence:
+        score: 0.6
+        basis: "The endpoint path is fixed, but the response shape and snapshot semantics are blocked by the contract conflict and current schema gap."
+        evidence_refs: ["specs/001-taiwan-basketball-magazine-ebook/tasks.md", "contracts/openapi.yaml#/api/v1/public/articles/{articleSlug}"]
+      budget: {effort_hours: 3.0, tokens: 20000}
+      config:
+        workflow: ["implement endpoint", "apply public predicates", "compute ETag", "return visible media variants", "derive bounded issue navigation", "run exact contract/API tests"]
+        allowed: ["content/api", "content/application", "content/persistence", "required bounded tests"]
+        requires_approval: ["ArticleProjection contract change", "snapshot schema change"]
+        forbidden: ["undeclared response aliases", "draft or private metadata", "provider or wallet dependency"]
+
+    - id: p-t035
+      kind: proof
+      layer: L1
+      label: T035 public Article endpoint proof
+      owner: verifier
+      status: blocked
+      risk: high
+      confidence:
+        score: 0.6
+        basis: "Endpoint proof is downstream of the unresolved response shape and T034 projection."
+        evidence_refs: ["apps/api/src/test/java/tw/basketball/magazine/publication/PublicArticleApiIT.java", "contracts/openapi.yaml"]
+      budget: {effort_hours: 1.0, tokens: 8000}
+      config:
+        level: P2
+        claim: "The public Article endpoint returns the approved contract, ETag and issue navigation while denying non-public content."
+        method: "Exact Java/Testcontainers contract run, If-None-Match verification and deny-by-default inspection."
+        evidence_path: ".loop/evidence/t034-t035-implementation-proof.json"
+        required: true
+        baseline_required: true
+
+    - id: a-t036
+      kind: action
+      layer: L1
+      label: Implement total deny-by-default content-block renderer registry
+      owner: codex-agent
+      status: blocked
+      risk: high
+      confidence:
+        score: 0.55
+        basis: "The schema and T033 fixture define the block universe; renderer work must follow the approved API projection."
+        evidence_refs: ["specs/001-taiwan-basketball-magazine-ebook/tasks.md", "contracts/content-document.schema.json"]
+      budget: {effort_hours: 3.0, tokens: 18000}
+      config:
+        workflow: ["implement registry", "render known blocks", "poster-summary fallback for unknowns", "add component tests"]
+        allowed: ["apps/web/app/components/content-blocks", "apps/web/tests/component/content-blocks"]
+        requires_approval: ["content schema change"]
+        forbidden: ["dynamic import from content", "v-html", "remote code"]
+
+    - id: p-t036
+      kind: proof
+      layer: L1
+      label: T036 renderer registry proof
+      owner: verifier
+      status: blocked
+      risk: high
+      confidence:
+        score: 0.55
+        basis: "Proof is downstream of T034/T035 and blocked by the current gate."
+        evidence_refs: ["apps/web/tests/e2e/us2-read-article.spec.ts"]
+      budget: {effort_hours: 0.75, tokens: 6000}
+      config:
+        level: P2
+        claim: "Known v1 blocks render and unknown block/preset versions fail closed to poster plus summary."
+        method: "Component tests and exact browser contract run."
+        evidence_path: ".loop/evidence/t036-renderer-proof.json"
+        required: true
+        baseline_required: true
+
+    - id: a-t037
+      kind: action
+      layer: L1
+      label: Implement bounded v1 media/data blocks and creative runtime
+      owner: codex-agent
+      status: blocked
+      risk: critical
+      confidence:
+        score: 0.5
+        basis: "Creative runtime must preserve poster/no-JS/reduced-motion behavior and cannot begin before the article contract is stable."
+        evidence_refs: ["specs/001-taiwan-basketball-magazine-ebook/tasks.md", "apps/web/tests/e2e/us2-reduced-motion.spec.ts"]
+      budget: {effort_hours: 4.0, tokens: 26000}
+      config:
+        workflow: ["implement approved block renderers", "client-only p5 instance mode", "fixed seed", "bounded parameters", "pause and dispose lifecycle", "component proof"]
+        allowed: ["apps/web/app/components/content-blocks", "packages/creative-runtime", "apps/web/tests/component/content-blocks"]
+        requires_approval: ["new creative preset", "runtime security or CSP change"]
+        forbidden: ["arbitrary JS/shader", "remote module resolution", "wallet or provider calls"]
+
+    - id: p-t037
+      kind: proof
+      layer: L1
+      label: T037 creative runtime proof
+      owner: verifier
+      status: blocked
+      risk: critical
+      confidence:
+        score: 0.5
+        basis: "The test contract names fixed-seed, poster fallback, visibility pause and route disposal, but implementation is not started."
+        evidence_refs: ["apps/web/tests/e2e/us2-reduced-motion.spec.ts", "apps/web/tests/e2e/us2-creative-lifecycle.spec.ts"]
+      budget: {effort_hours: 1.25, tokens: 10000}
+      config:
+        level: P2
+        claim: "Creative runtime is deterministic, reduced-motion safe, lazy, visibility-aware and disposed on route unmount."
+        method: "Playwright lifecycle tests, fixed-seed output check and bundle inspection."
+        evidence_path: ".loop/evidence/t036-t037-creative-proof.json"
+        required: true
+        baseline_required: true
+
+    - id: a-t038
+      kind: action
+      layer: L1
+      label: Build complete article SSR route and editorial reading shell
+      owner: codex-agent
+      status: blocked
+      risk: high
+      confidence:
+        score: 0.5
+        basis: "The supplied immersion review defines the Article closure and three-action magazine ritual; the runtime API is not yet available."
+        evidence_refs: ["specs/001-taiwan-basketball-magazine-ebook/tasks.md", "user-attachment:03-courtside-tw-user-immersion-review-1-1.pptx"]
+      budget: {effort_hours: 3.5, tokens: 22000}
+      config:
+        workflow: ["build SSR route", "render metadata and byline", "apply magazine typography", "preserve final-visible content before hydration", "add responsive media and motion fallback"]
+        allowed: ["apps/web/app/pages/articles/[articleSlug].vue", "apps/web/app/features/reader", "apps/web/app/features/motion", "apps/web/app/assets/css/article.css"]
+        requires_approval: ["design-system or product-flow change"]
+        forbidden: ["wallet-first entry", "infinite feed replacing issue order", "motion hiding content"]
+
+    - id: p-t038
+      kind: proof
+      layer: L1
+      label: T038 article SSR route proof
+      owner: verifier
+      status: blocked
+      risk: high
+      confidence:
+        score: 0.5
+        basis: "SSR/no-JS and reading closure assertions are defined in T033 but cannot pass before the route exists."
+        evidence_refs: ["apps/web/tests/e2e/us2-no-js.spec.ts", "apps/web/tests/e2e/us2-read-article.spec.ts"]
+      budget: {effort_hours: 1.0, tokens: 8000}
+      config:
+        level: P2
+        claim: "Article content is visible before hydration and remains complete under no-JS and reduced motion."
+        method: "SSR HTML inspection, Playwright no-JS and reduced-motion runs."
+        evidence_path: ".loop/evidence/t038-article-route-proof.json"
+        required: true
+        baseline_required: true
+
+    - id: a-t039
+      kind: action
+      layer: L1
+      label: Implement revision-aware stable block-anchor local progress
+      owner: codex-agent
+      status: blocked
+      risk: high
+      confidence:
+        score: 0.5
+        basis: "T033 defines the local progress key and resume behavior; revision invalidation still needs implementation."
+        evidence_refs: ["specs/001-taiwan-basketball-magazine-ebook/tasks.md", "apps/web/tests/e2e/us2-read-article.spec.ts"]
+      budget: {effort_hours: 2.0, tokens: 12000}
+      config:
+        workflow: ["implement local progress composable", "bound block and offset values", "invalidate stale revisions", "test viewport/font-size changes and reload resume"]
+        allowed: ["apps/web/app/features/reader/composables/useLocalReadingProgress.ts", "apps/web/tests/unit/reader"]
+        requires_approval: ["server-synced progress or identity change"]
+        forbidden: ["send exact reading history to public chain", "unbounded local storage"]
+
+    - id: p-t039
+      kind: proof
+      layer: L1
+      label: T039 local progress proof
+      owner: verifier
+      status: blocked
+      risk: high
+      confidence:
+        score: 0.5
+        basis: "Progress proof is downstream of the article route and revision metadata."
+        evidence_refs: ["apps/web/tests/e2e/us2-read-article.spec.ts"]
+      budget: {effort_hours: 0.75, tokens: 6000}
+      config:
+        level: P2
+        claim: "A stable block anchor resumes after reload and stale revision progress is ignored without leaking private reading history."
+        method: "Unit and browser tests across reload, viewport and revision changes."
+        evidence_path: ".loop/evidence/t039-progress-proof.json"
+        required: true
+        baseline_required: true
+
+    - id: a-t040
+      kind: action
+      layer: L1
+      label: Implement issue snapshot previous/next/TOC navigation and native share fallback
+      owner: codex-agent
+      status: blocked
+      risk: high
+      confidence:
+        score: 0.5
+        basis: "Navigation is required by T032/T033 but its API field shape is currently disputed."
+        evidence_refs: ["apps/web/tests/e2e/us2-read-article.spec.ts", ".loop/evidence/t034-contract-drift-20260809.json"]
+      budget: {effort_hours: 1.75, tokens: 11000}
+      config:
+        workflow: ["render issue navigation", "preserve bounded snapshot order", "native share with copy fallback", "component-test disabled and enabled states"]
+        allowed: ["apps/web/app/features/reader/components", "apps/web/tests/component/reader"]
+        requires_approval: ["navigation contract change"]
+        forbidden: ["algorithmic feed replacing issue order", "wallet or Passport CTA before closure"]
+
+    - id: p-t040
+      kind: proof
+      layer: L1
+      label: T040 navigation and share proof
+      owner: verifier
+      status: blocked
+      risk: high
+      confidence:
+        score: 0.5
+        basis: "The tests name previous/next/TOC and share behavior but the response contract is not resolved."
+        evidence_refs: ["apps/web/tests/e2e/us2-read-article.spec.ts"]
+      budget: {effort_hours: 0.75, tokens: 6000}
+      config:
+        level: P2
+        claim: "Navigation follows issue order and sharing uses the canonical article URL with a native or copy fallback."
+        method: "Component and browser contract tests."
+        evidence_path: ".loop/evidence/t040-navigation-proof.json"
+        required: true
+        baseline_required: true
+
+    - id: a-t041
+      kind: action
+      layer: L1
+      label: Add article SEO, no-JS/a11y, animation and performance gates
+      owner: codex-agent
+      status: blocked
+      risk: critical
+      confidence:
+        score: 0.45
+        basis: "The delivery contract requires Article to remain readable when creative/provenance providers fail; no implementation exists yet."
+        evidence_refs: ["specs/001-taiwan-basketball-magazine-ebook/tasks.md", "user-attachment:03-courtside-tw-user-immersion-review-1-1.pptx"]
+      budget: {effort_hours: 3.0, tokens: 20000}
+      config:
+        workflow: ["add canonical/OG/JSON-LD", "run axe", "test animation interruption", "enforce bundle and Core Web Vitals budgets", "verify no lifecycle leaks"]
+        allowed: ["apps/web/app/features/reader/seo", "apps/web/tests/e2e", "apps/web/lighthouserc.cjs"]
+        requires_approval: ["performance budget change", "public SEO policy change"]
+        forbidden: ["claim usability metrics from simulation", "let provider failure block Article"]
+
+    - id: p-t041
+      kind: proof
+      layer: L1
+      label: T041 release gate proof
+      owner: verifier
+      status: blocked
+      risk: critical
+      confidence:
+        score: 0.45
+        basis: "The required gates are defined by the task and product review, but no runtime implementation proof exists."
+        evidence_refs: ["specs/001-taiwan-basketball-magazine-ebook/tasks.md", "apps/web/tests/e2e/us2-no-js.spec.ts", "apps/web/tests/e2e/us2-reduced-motion.spec.ts"]
+      budget: {effort_hours: 1.5, tokens: 12000}
+      config:
+        level: P2
+        claim: "US2 public reading meets accessibility, progressive-enhancement, performance and lifecycle safety gates without Web3/provider dependency."
+        method: "Exact CI/Security, Playwright/a11y, Lighthouse/bundle and route-switch leak checks."
+        evidence_path: ".loop/evidence/t041-release-gate-proof.json"
+        required: true
+        baseline_required: true
+
+    - id: m-l2-ledger
+      kind: memory
+      layer: L2
+      label: Implementation lane supervisor ledger
+      owner: codex-supervisor
+      status: done
+      risk: medium
+      confidence:
+        score: 0.95
+        basis: "The lane status and exact-head baseline are recorded in the append-only ledger."
+        evidence_refs: [".loop/t034-t041-us2-implementation-ledger.json"]
+      budget: {effort_hours: 0.2, tokens: 2500}
+      config:
+        path: ".loop/t034-t041-us2-implementation-ledger.json"
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: work-memory/v1
+        memory_role: hybrid
+        receipt_required: true
+        write_failure_state: blocked
+
+    - id: m-l3-semantic
+      kind: memory
+      layer: L3
+      label: ArticleProjection contract decision memory
+      owner: human-mark
+      status: needs_human
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: "The semantic record preserves both conflicting sources and waits for Mark's explicit decision."
+        evidence_refs: [".loop/memory/t034-t041-us2-implementation-lane.json", ".loop/evidence/t034-contract-drift-20260809.json"]
+      budget: {effort_hours: 0.2, tokens: 2500}
+      config:
+        path: ".loop/memory/t034-t041-us2-implementation-lane.json"
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: work-memory/v1
+        memory_role: semantic_memory
+        receipt_required: true
+        write_failure_state: needs_human
+
+    - id: m-l1-ledger
+      kind: memory
+      layer: L1
+      label: T034-T041 execution and proof ledger
+      owner: codex-agent
+      status: blocked
+      risk: medium
+      confidence:
+        score: 0.85
+        basis: "The execution lane is defined, but implementation proof is blocked by the contract gate."
+        evidence_refs: [".loop/t034-t041-us2-implementation-ledger.json"]
+      budget: {effort_hours: 0.2, tokens: 2500}
+      config:
+        path: ".loop/t034-t041-us2-implementation-ledger.json"
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: work-memory/v1
+        memory_role: graph_ledger
+        receipt_required: true
+        write_failure_state: blocked
+
+    - id: s-us2-implementation-terminal
+      kind: stop
+      layer: GLOBAL
+      label: US2 T034+ implementation lane terminal policy
+      owner: codex-supervisor
+      status: needs_human
+      risk: high
+      confidence:
+        score: 1.0
+        basis: "The lane must stop at needs_human while the public Article contract is disputed; no runtime success is claimed."
+        evidence_refs: [".loop/evidence/t034-contract-drift-20260809.json"]
+      budget: {effort_hours: 0.1, tokens: 500}
+      config:
+        states:
+          success: "T034-T041 required proof and merge gates pass."
+          no_op: "No new authoritative evidence requires implementation."
+          blocked: "Required branch, source, proof or authority is unavailable."
+          stalled: "The same contract or implementation failure repeats without evidence delta."
+          exhausted: "The bounded iteration, time, graph-change or token budget is reached."
+          needs_human: "The ArticleProjection contract or another protected acceptance decision is pending."
+
+  edges:
+    - {id: e-main-lane, from: x-main-readback, to: t-lane-request, type: enables, required: true, confidence: 1.0, token_capacity: 5000}
+    - {id: e-pr63-lane, from: x-pr63-readback, to: t-lane-request, type: enables, required: true, confidence: 1.0, token_capacity: 5000}
+    - {id: e-lane-open, from: t-lane-request, to: a-open-lane, type: enables, required: true, confidence: 1.0, token_capacity: 8000}
+    - {id: e-lane-proof, from: a-open-lane, to: p-lane-scope, type: verifies, required: true, confidence: 0.95, token_capacity: 6000}
+    - {id: e-lane-record, from: a-open-lane, to: m-l2-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-lane-read, from: m-l2-ledger, to: a-open-lane, type: reads, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-lane-terminal, from: p-lane-scope, to: s-us2-implementation-terminal, type: enables, required: true, confidence: 0.95, token_capacity: 4000}
+
+    - {id: e-immersion-contract, from: x-immersion-review, to: t-contract-review, type: enables, required: true, confidence: 0.95, token_capacity: 6000}
+    - {id: e-contract-frame, from: t-contract-review, to: a-frame-article-contract, type: enables, required: true, confidence: 1.0, token_capacity: 7000}
+    - {id: e-contract-proof, from: a-frame-article-contract, to: p-contract-review, type: verifies, required: true, confidence: 1.0, token_capacity: 6000}
+    - {id: e-contract-record, from: a-frame-article-contract, to: m-l3-semantic, type: records, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-contract-read, from: m-l3-semantic, to: a-frame-article-contract, type: reads, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-contract-gate, from: p-contract-review, to: g-article-contract-approval, type: requires_approval, required: true, confidence: 1.0, token_capacity: 4000}
+    - {id: e-contract-feedback, from: p-contract-review, to: t-contract-review, type: feedback, required: true, confidence: 0.9, token_capacity: 4000}
+    - {id: e-contract-approve, from: g-article-contract-approval, to: t-implementation-ready, type: approves, required: true, confidence: 1.0, token_capacity: 6000}
+
+    - {id: e-t034-start, from: t-implementation-ready, to: a-t034, type: enables, required: true, confidence: 1.0, token_capacity: 12000}
+    - {id: e-t034-proof, from: a-t034, to: p-t034, type: verifies, required: true, confidence: 0.95, token_capacity: 10000}
+    - {id: e-t034-record, from: a-t034, to: m-l1-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-t034-proof-record, from: p-t034, to: m-l1-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-t034-read, from: m-l1-ledger, to: a-t034, type: reads, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-t035-start, from: p-t034, to: a-t035, type: enables, required: true, confidence: 0.9, token_capacity: 10000}
+    - {id: e-t035-proof, from: a-t035, to: p-t035, type: verifies, required: true, confidence: 0.95, token_capacity: 10000}
+    - {id: e-t035-record, from: a-t035, to: m-l1-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-t035-proof-record, from: p-t035, to: m-l1-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-t035-read, from: m-l1-ledger, to: a-t035, type: reads, required: true, confidence: 0.95, token_capacity: 3000}
+
+    - {id: e-t036-start, from: p-t035, to: a-t036, type: enables, required: true, confidence: 0.9, token_capacity: 10000}
+    - {id: e-t036-proof, from: a-t036, to: p-t036, type: verifies, required: true, confidence: 0.95, token_capacity: 9000}
+    - {id: e-t036-record, from: a-t036, to: m-l1-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-t036-proof-record, from: p-t036, to: m-l1-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-t036-read, from: m-l1-ledger, to: a-t036, type: reads, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-t037-start, from: p-t036, to: a-t037, type: enables, required: true, confidence: 0.9, token_capacity: 10000}
+    - {id: e-t037-proof, from: a-t037, to: p-t037, type: verifies, required: true, confidence: 0.95, token_capacity: 10000}
+    - {id: e-t037-record, from: a-t037, to: m-l1-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-t037-proof-record, from: p-t037, to: m-l1-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-t037-read, from: m-l1-ledger, to: a-t037, type: reads, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-t038-start, from: p-t037, to: a-t038, type: enables, required: true, confidence: 0.9, token_capacity: 10000}
+    - {id: e-t038-proof, from: a-t038, to: p-t038, type: verifies, required: true, confidence: 0.95, token_capacity: 10000}
+    - {id: e-t038-record, from: a-t038, to: m-l1-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-t038-proof-record, from: p-t038, to: m-l1-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-t038-read, from: m-l1-ledger, to: a-t038, type: reads, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-t039-start, from: p-t038, to: a-t039, type: enables, required: true, confidence: 0.9, token_capacity: 9000}
+    - {id: e-t039-proof, from: a-t039, to: p-t039, type: verifies, required: true, confidence: 0.95, token_capacity: 9000}
+    - {id: e-t039-record, from: a-t039, to: m-l1-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-t039-proof-record, from: p-t039, to: m-l1-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-t039-read, from: m-l1-ledger, to: a-t039, type: reads, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-t040-start, from: p-t039, to: a-t040, type: enables, required: true, confidence: 0.9, token_capacity: 9000}
+    - {id: e-t040-proof, from: a-t040, to: p-t040, type: verifies, required: true, confidence: 0.95, token_capacity: 9000}
+    - {id: e-t040-record, from: a-t040, to: m-l1-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-t040-proof-record, from: p-t040, to: m-l1-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-t040-read, from: m-l1-ledger, to: a-t040, type: reads, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-t041-start, from: p-t040, to: a-t041, type: enables, required: true, confidence: 0.9, token_capacity: 10000}
+    - {id: e-t041-proof, from: a-t041, to: p-t041, type: verifies, required: true, confidence: 0.95, token_capacity: 10000}
+    - {id: e-t041-record, from: a-t041, to: m-l1-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-t041-proof-record, from: p-t041, to: m-l1-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-t041-read, from: m-l1-ledger, to: a-t041, type: reads, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-terminal, from: p-t041, to: s-us2-implementation-terminal, type: enables, required: true, confidence: 0.95, token_capacity: 6000}
+
+flow:
+  source: x-main-readback
+  sink: s-us2-implementation-terminal
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - next_action
+  - memory_receipt
