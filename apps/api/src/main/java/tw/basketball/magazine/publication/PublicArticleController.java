@@ -63,7 +63,7 @@ public final class PublicArticleController {
         serviceResolver = () -> fixed;
     }
 
-    @GetMapping(produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(path = "/{articleSlug}", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<?> findBySlug(
             @PathVariable String articleSlug,
             @RequestParam(name = "revision", required = false) String requestedRevision,
