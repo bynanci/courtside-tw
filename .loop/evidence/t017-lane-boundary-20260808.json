@@ -1,0 +1,46 @@
+{
+  "evaluation_id": "t017-lane-boundary-20260808",
+  "system_id": "courtside-tw-api-audit",
+  "as_of": "2026-08-08T15:20:00Z",
+  "artifact_fingerprint": "git:63e6ea3cad59c98e992e2f02f7acb739ac28cf67",
+  "environment": "review",
+  "claim": "T017 is an isolated audit persistence lane from T018-complete main.",
+  "proof_level": "P1",
+  "method": "Read T013 migration, T017 task/spec/plan rows, current main and T016 draft scope.",
+  "expected": "T017 writes sanitized append-only audit rows without changing schema, auth, outbox, media, observability or production activation.",
+  "observed": {
+    "main_sha": "63e6ea3cad59c98e992e2f02f7acb739ac28cf67",
+    "dependencies": {
+      "T013": "checked and merged",
+      "T016": "open draft PR #53; not a completed dependency",
+      "T018": "checked and merged"
+    },
+    "database_boundary": [
+      "audit_event is owned by courtside_audit_owner",
+      "courtside_app may SELECT and INSERT audit_event",
+      "courtside_app may not UPDATE, DELETE or TRUNCATE audit_event"
+    ],
+    "allowed_paths": [
+      "apps/api/src/main/java/tw/basketball/magazine/audit/",
+      "apps/api/src/test/java/tw/basketball/magazine/audit/",
+      ".loop/evidence/",
+      ".loop/memory/",
+      ".loop/t017-audit-writer-*.yaml",
+      ".loop/t017-audit-writer-ledger.json"
+    ]
+  },
+  "result": "PASS",
+  "limitations": [
+    "T017 does not claim domain event integration or production activation.",
+    "T016 remains independently gated and is not included in this branch."
+  ],
+  "evidence_refs": [
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md:T017",
+    "specs/001-taiwan-basketball-magazine-ebook/spec.md:FR-019",
+    "specs/001-taiwan-basketball-magazine-ebook/plan.md:media/audit/controls",
+    "apps/api/src/main/resources/db/migration/V001__foundation.sql",
+    "https://github.com/bynanci/courtside-tw/commit/63e6ea3cad59c98e992e2f02f7acb739ac28cf67"
+  ],
+  "owner": "codex-supervisor",
+  "next_review_at": "2026-08-08T16:30:00Z"
+}

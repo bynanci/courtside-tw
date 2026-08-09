@@ -1,0 +1,53 @@
+{
+  "evaluation_id": "t017-tests-first-baseline-20260808",
+  "system_id": "courtside-tw-api-audit",
+  "as_of": "2026-08-08T15:28:00Z",
+  "artifact_fingerprint": "git:573996cd01a5ae9a9958fd3283be77ff8630dbb9",
+  "environment": "github-actions",
+  "claim": "The T017 tests-first baseline fails only because the append-only audit runtime boundary is absent.",
+  "threat_refs": [
+    "ASI03 Identity and Privilege Abuse",
+    "LLM02 Sensitive Information Disclosure",
+    "LLM10 Improper Output Handling"
+  ],
+  "control_ids": [
+    "DAT-007",
+    "OPS-001",
+    "GOV-003"
+  ],
+  "proof_level": "P2",
+  "method": "GitHub CI #171 Java quality job: compileJava, processResources, compileTestJava, Checkstyle and SpotBugs execution.",
+  "expected": "compileTestJava reports only missing AuditWriter, AuditEventDraft, JdbcAuditWriter and AuditMetadataSanitizer symbols; no setup or unrelated repository failure.",
+  "observed": {
+    "ci_run": "https://github.com/bynanci/courtside-tw/actions/runs/31264483060",
+    "security_run": "https://github.com/bynanci/courtside-tw/actions/runs/31264483085",
+    "java_job": "Java quality and unit verification",
+    "java_job_conclusion": "failure",
+    "failure_task": ":compileTestJava",
+    "missing_symbols": [
+      "AuditWriter",
+      "AuditEventDraft",
+      "JdbcAuditWriter",
+      "AuditMetadataSanitizer"
+    ],
+    "unrelated_ci": {
+      "frontend_and_contract": "success",
+      "compileJava": "success",
+      "checkstyleMain": "success",
+      "spotbugsMain": "success"
+    }
+  },
+  "result": "FAIL",
+  "limitations": [
+    "FAIL is intentional tests-first evidence, not an implementation regression.",
+    "The local workspace has no Gradle executable or javac; local Java execution was not claimed.",
+    "Security #171 was still converging when this receipt was recorded; exact-head final security proof is pending."
+  ],
+  "evidence_refs": [
+    "https://github.com/bynanci/courtside-tw/pull/54",
+    "https://github.com/bynanci/courtside-tw/actions/runs/31264483060",
+    "https://github.com/bynanci/courtside-tw/actions/runs/31264483085"
+  ],
+  "owner": "codex-agent",
+  "next_review_at": "2026-08-08T16:30:00Z"
+}

@@ -1,0 +1,64 @@
+{
+  "evaluation_id": "t017-ci-security-final-20260809",
+  "system_id": "courtside-tw-api-audit",
+  "as_of": "2026-08-09T02:32:50Z",
+  "artifact_fingerprint": "git:d3516fe40371c0392e8fa390bbf5c1a0da507341",
+  "environment": "github-exact-head-ci-security",
+  "claim": "PR #54 current exact head passes Java quality/Testcontainers and Security without schema or permission changes; the T017 lane remains a human-gated draft.",
+  "proof_level": "P2",
+  "method": "Read PR #54 current head, changed filenames, review state and workflow runs associated with exact head d3516fe.",
+  "observed": {
+    "pull_request": 54,
+    "draft": true,
+    "merged": false,
+    "head_sha": "d3516fe40371c0392e8fa390bbf5c1a0da507341",
+    "base_sha": "63e6ea3cad59c98e992e2f02f7acb739ac28cf67",
+    "changed_files": 14,
+    "ci": {
+      "run_number": 175,
+      "run_id": 31265620754,
+      "result": "success",
+      "jobs": [
+        "Frontend and contract verification",
+        "Docker Compose dependency health",
+        "Java quality and unit verification"
+      ]
+    },
+    "security": {
+      "run_number": 175,
+      "run_id": 31265620716,
+      "result": "success",
+      "jobs": [
+        "Dependency audit and reports",
+        "Resolve Compose images",
+        "CodeQL (java-kotlin)",
+        "CodeQL (javascript-typescript)",
+        "Trivy (filesystem)",
+        "Trivy (image postgres)",
+        "Trivy (image s3)",
+        "Trivy (image oidc)"
+      ]
+    },
+    "reviews": {
+      "review_threads": 0,
+      "review_submissions": 0
+    }
+  },
+  "result": "PASS_WITH_FOLLOW_UP",
+  "supersedes": [
+    ".loop/evidence/t017-ci-security-final-20260808.json"
+  ],
+  "limitations": [
+    "CI/Security do not replace independent privacy/security review or protected merge.",
+    "T013 audit schema/grants are consumed as-is; no migration or permission change is claimed.",
+    "No provider credentials, production data or deployment action was used."
+  ],
+  "evidence_refs": [
+    "https://github.com/bynanci/courtside-tw/pull/54",
+    "https://github.com/bynanci/courtside-tw/actions/runs/31265620754",
+    "https://github.com/bynanci/courtside-tw/actions/runs/31265620716",
+    ".loop/evidence/t017-ci-security-final-20260809.json"
+  ],
+  "owner": "codex-agent",
+  "next_review_at": "2026-08-09T03:32:50Z"
+}
