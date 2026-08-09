@@ -89,7 +89,8 @@ public final class JdbcPublicIssueRepository implements PublicIssueRepository {
                 LEFT JOIN article_revision ar ON ar.id = a.published_revision_id
                     AND ar.article_id = a.id
                     AND ar.state = 'PUBLISHED'
-                WHERE """ + PUBLIC_ISSUE_PREDICATE + cursorPredicate + """
+                WHERE
+                """ + PUBLIC_ISSUE_PREDICATE + cursorPredicate + """
                 GROUP BY pi.id, pi.issue_number, pi.slug, pi.title, pi.summary, pi.published_at,
                          mv.public_storage_key, ma.alt_text, mv.width, mv.height
                 ORDER BY pi.published_at DESC, pi.id DESC
@@ -118,7 +119,8 @@ public final class JdbcPublicIssueRepository implements PublicIssueRepository {
                 JOIN media_asset ma ON ma.id = pi.cover_asset_id
                 JOIN media_variant mv ON mv.asset_id = ma.id
                 WHERE pi.slug = ?
-                  AND """ + PUBLIC_ISSUE_PREDICATE + """
+                  AND
+                """ + PUBLIC_ISSUE_PREDICATE + """
                 LIMIT 1
                 """, (resultSet, rowNumber) -> mapIssueHeader(resultSet),
                 issueSlug,
