@@ -21,8 +21,8 @@ export default defineNitroPlugin((nitroApp) => {
       }
       html[key] = chunks.map((chunk) =>
         chunk
-          .replace(/<script\\b(?![^>]*\\bnonce=)/gi, '<script nonce="' + nonce + '"')
-          .replace(/<style\\b(?![^>]*\\bnonce=)/gi, '<style nonce="' + nonce + '"')
+          .replace(/<script\b(?![^>]*\bnonce=)/gi, '<script nonce="' + nonce + '"')
+          .replace(/<style\b(?![^>]*\bnonce=)/gi, '<style nonce="' + nonce + '"')
       )
     }
   })
