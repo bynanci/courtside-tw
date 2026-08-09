@@ -499,6 +499,9 @@ function saveReadingProgress(): void {
       const rect = block.getBoundingClientRect()
       return rect.bottom > 0 && rect.top < window.innerHeight * 0.6
     }) ?? blocks[0]
+  if (!current) {
+    return
+  }
   const rect = current.getBoundingClientRect()
   const offset = Math.min(
     1,
