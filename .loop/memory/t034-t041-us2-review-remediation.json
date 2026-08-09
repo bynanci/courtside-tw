@@ -3,8 +3,8 @@
   "memory_id": "wm:project:courtside-tw:us2-t034-t041-review-remediation",
   "scope": "project",
   "kind": "task_state",
-  "title": "US2 public Article remediation is bounded and stops at human gates",
-  "summary": "PR #67 contains reader/API correctness remediation and focused fail-closed proof. The latest synchronization commit is awaiting exact-head workflow proof. Public media storage-key resolution, contributor source/contract and the approved p5.js runtime remain protected human gates.",
+  "title": "US2 media, contributor and p5 implementation is verified; protected closure remains",
+  "summary": "PR #67 remains draft-only. The selected media_variant.public_storage_key resolver, revision-scoped contributor/byline source and public contract, and actual p5@2.3.0 instance-mode runtime are implemented and verified at the implementation head. CI, Security and 9/9 browser tests pass. Protected merge, production migration/activation and task checkbox state remain human gates.",
   "claims": [
     {
       "text": "PR #67 is a draft branch from main@c45c1fd7e93699f4626e2ceab6b5fb6f52f38842 and does not merge or change task checkboxes.",
@@ -12,17 +12,27 @@
       "confidence": "high"
     },
     {
-      "text": "At exact head 9851bf7e9189995aaf46e34904ef698393108a39, frontend, Java quality, compose and Security passed; browser proof failed on the pre-hydration image fallback assertion.",
+      "text": "Public media projection selects the exact requested media_variant.public_storage_key only after READY, VALID, PUBLIC_WEB and validity-window checks; unsafe or missing keys fail closed.",
       "class": "CONFIRMED",
       "confidence": "high"
     },
     {
-      "text": "Head 06992568be46a5b0dbf6a52e9b3ab14913e6c16 adds hydration-safe image fallback synchronization and async creative observation, but its workflow receipt is pending.",
-      "class": "PENDING",
+      "text": "The public byline source is contributor plus revision-scoped article_contributor, projected as ArticleProjection.contributors[] with role and position semantics.",
+      "class": "CONFIRMED",
       "confidence": "high"
     },
     {
-      "text": "The repository still lacks an approved public media resolver, contributor source/contract and actual p5.js 2.x runtime dependency/proof.",
+      "text": "The web dependency is p5@2.3.0 with a frozen pnpm lock; CourtPulseRuntime uses client-only instance mode, deterministic seed/first frame, noLoop/loop visibility policy and remove on unmount.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Implementation head eb7fc608bca82183889237c46b0f123a8555037c passed CI run 31314690495, Security run 31314690491 and browser job 93248022363 with 9/9 tests passing.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Protected merge, production migration execution/public activation and task checkbox changes were intentionally not performed.",
       "class": "NEEDS_HUMAN",
       "confidence": "high"
     }
@@ -31,16 +41,19 @@
   "confidence": "high",
   "confidence_basis": [
     "https://github.com/bynanci/courtside-tw/pull/67",
-    "https://github.com/bynanci/courtside-tw/pull/65",
-    ".loop/evidence/t034-t041-us2-review-remediation-baseline-20260809.json"
+    ".loop/evidence/t034-t041-media-byline-p5-implementation-20260809.json",
+    "CI 31314690495",
+    "Security 31314690491",
+    "Browser job 93248022363"
   ],
   "volatility": "medium",
   "as_of": "2026-08-09",
   "source_refs": [
     "https://github.com/bynanci/courtside-tw/pull/67",
-    "https://github.com/bynanci/courtside-tw/pull/65",
-    "https://github.com/bynanci/courtside-tw/blob/main/apps/api/src/main/resources/db/migration/V001__foundation.sql",
-    "specs/001-taiwan-basketball-magazine-ebook/adr/ADR-0005-motion-and-court-pulse-v1.md"
+    "https://github.com/bynanci/courtside-tw/blob/codex/us2-review-remediation-20260809/apps/api/src/main/java/com/courtside/api/issue/JdbcPublicMediaResolver.java",
+    "https://github.com/bynanci/courtside-tw/blob/codex/us2-review-remediation-20260809/apps/api/src/main/resources/db/migration/V003__article_contributors.sql",
+    "https://github.com/bynanci/courtside-tw/blob/codex/us2-review-remediation-20260809/apps/web/app/components/article/CourtPulseRuntime.vue",
+    ".loop/evidence/t034-t041-media-byline-p5-implementation-20260809.json"
   ],
   "entities": [
     "courtside-tw",
@@ -55,14 +68,22 @@
     "T041",
     "ArticleProjection",
     "media_variant.public_storage_key",
-    "contributors",
-    "p5.js 2.x"
+    "contributor",
+    "article_contributor",
+    "p5@2.3.0",
+    "CourtPulseRuntime"
   ],
   "relations": {
-    "supports": ["wm:project:courtside-tw:us2-t034-t041-implementation-lane"],
+    "supports": [
+      "wm:project:courtside-tw:us2-t034-t041-implementation-lane"
+    ],
     "contradicts": [],
-    "supersedes": [],
-    "blocks": ["wm:project:courtside-tw:us2-t034-t041-implementation-lane"],
+    "supersedes": [
+      "wm:project:courtside-tw:us2-t034-t041-review-remediation"
+    ],
+    "blocks": [
+      "wm:project:courtside-tw:us2-t034-t041-protected-closure"
+    ],
     "invalidates": []
   },
   "next_review_at": "2026-08-09",
@@ -70,7 +91,7 @@
   "retention": "until_superseded",
   "write_receipt": {
     "status": "SAVED",
-    "version": "review-remediation-v1",
+    "version": "review-remediation-v2",
     "written_by": "codex-supervisor"
   }
 }
