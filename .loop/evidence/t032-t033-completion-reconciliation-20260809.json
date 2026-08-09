@@ -13,7 +13,8 @@
       "status": "complete",
       "evidence": [
         ".loop/evidence/t032-t033-red-baseline-20260809.json",
-        "https://github.com/bynanci/courtside-tw/actions/runs/31307575471",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31302266756",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31302266758",
         "https://github.com/bynanci/courtside-tw/actions/runs/31307598571",
         "https://github.com/bynanci/courtside-tw/actions/runs/31307598581",
         "https://github.com/bynanci/courtside-tw/pull/65"
@@ -24,7 +25,8 @@
       "status": "complete",
       "evidence": [
         ".loop/evidence/t032-t033-red-baseline-20260809.json",
-        "https://github.com/bynanci/courtside-tw/actions/runs/31307575471",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31302266756",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31302266758",
         "https://github.com/bynanci/courtside-tw/actions/runs/31307598571",
         "https://github.com/bynanci/courtside-tw/actions/runs/31307598581",
         "https://github.com/bynanci/courtside-tw/pull/65"
