@@ -28,15 +28,15 @@ test.describe("US2 long-form public article", () => {
       "href",
       "/issues/issue-2026-01"
     )
+    await page.getByTestId("article-share").click()
+    await expect(page.getByTestId("share-status")).toBeVisible()
+
     await page
       .locator('[data-testid="article-document"] .article-image img')
       .first()
       .dispatchEvent("error")
     await expect(page.getByTestId("article-image-fallback")).toBeVisible()
     await expect(page.getByTestId("article-error-state")).toHaveCount(0)
-
-    await page.getByTestId("article-share").click()
-    await expect(page.getByTestId("share-status")).toBeVisible()
   })
 
   test("resumes the last stable block anchor after reload", async ({ page }) => {
