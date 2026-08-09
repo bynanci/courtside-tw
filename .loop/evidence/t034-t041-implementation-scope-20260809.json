@@ -1,0 +1,41 @@
+{
+  "schema_version": "courtside-proof/v1",
+  "proof_id": "t034-t041-implementation-scope-20260809",
+  "recorded_at": "2026-08-09T09:20:00Z",
+  "result": "IMPLEMENTATION_READY_FOR_GATES",
+  "branch": "codex/t034-t041-us2-implementation-lane-20260809",
+  "base": "main",
+  "contract_decision": "canonical-openapi",
+  "test_alignment": "canonical-tests",
+  "compatibility": "none",
+  "implementation": {
+    "api": [
+      "published Article revision/content projection",
+      "deny-by-default public media rights",
+      "bounded public article slug",
+      "deterministic ETag and 304 response",
+      "issue navigation snapshot"
+    ],
+    "web": [
+      "SSR ArticleProjection reader",
+      "ContentDocument v1 all-11-block renderer",
+      "no-JS generative poster fallback",
+      "image fallback and safe links",
+      "TOC, share feedback, local revision-aware resume",
+      "previous/next navigation",
+      "reduced-motion and visibility/intersection-bounded creative runtime"
+    ]
+  },
+  "scope_guard": {
+    "web3_wallet_passport_changed": false,
+    "database_migration_changed": false,
+    "production_activation_changed": false,
+    "historical_revision_served": false
+  },
+  "verification": {
+    "ci": "pending_on_latest_head",
+    "security": "pending_on_latest_head",
+    "ready_for_review": false,
+    "merge": false
+  }
+}
