@@ -10,7 +10,7 @@ export default defineConfig({
   workers: 1,
   timeout: 30_000,
   reporter: process.env.CI
-    ? [["html", { outputFolder: "test-results/html", open: "never" }], ["list"]]
+    ? [["html", { outputFolder: "playwright-report", open: "never" }], ["list"]]
     : "list",
   use: {
     baseURL: "http://127.0.0.1:" + webPort,
