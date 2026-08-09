@@ -28,6 +28,7 @@ abstract class PublicIssueApiIntegrationTestSupport {
     private static final String POSTGRES_IMAGE = "postgres:18.4-alpine";
     private static final String FOUNDATION_MIGRATION = "/db/migration/V001__foundation.sql";
     private static final String PUBLICATION_MIGRATION = "/db/migration/V002__publication_content_core.sql";
+    private static final String CONTRIBUTOR_MIGRATION = "/db/migration/V003__article_contributors.sql";
     private static final String CHECKSUM = "a".repeat(64);
 
     private static final PostgreSQLContainer POSTGRES =
@@ -49,6 +50,7 @@ abstract class PublicIssueApiIntegrationTestSupport {
         );
         applyMigration(dataSource, FOUNDATION_MIGRATION);
         applyMigration(dataSource, PUBLICATION_MIGRATION);
+        applyMigration(dataSource, CONTRIBUTOR_MIGRATION);
         jdbcTemplate = new JdbcTemplate(dataSource);
     }
 
@@ -60,7 +62,7 @@ abstract class PublicIssueApiIntegrationTestSupport {
     @BeforeEach
     void createControllerAndCleanPublicationData() {
         jdbcTemplate.update("""
-                TRUNCATE TABLE issue_article, issue_section, article_revision, article,
+                TRUNCATE TABLE article_contributor, contributor, issue_article, issue_section, article_revision, article,
                     publication_issue, media_variant, rights_record, media_asset
                 RESTART IDENTITY CASCADE
                 """);
@@ -177,6 +179,23 @@ abstract class PublicIssueApiIntegrationTestSupport {
                 "UPDATE article SET published_revision_id = ? WHERE id = ?",
                 revisionId,
                 articleId
+        );
+        UUID contributorId = UUID.randomUUID();
+        jdbcTemplate.update("""
+                INSERT INTO contributor (id, slug, display_name)
+                VALUES (?, ?, ?)
+                """,
+                contributorId,
+                "fixture-" + articleSlug,
+                "Courtside TW 編輯部"
+        );
+        jdbcTemplate.update("""
+                INSERT INTO article_contributor (
+                    article_revision_id, contributor_id, role, position
+                ) VALUES (?, ?, 'EDITOR', 1)
+                """,
+                revisionId,
+                contributorId
         );
         jdbcTemplate.update("""
                 INSERT INTO issue_article (issue_id, section_id, article_id, position)
