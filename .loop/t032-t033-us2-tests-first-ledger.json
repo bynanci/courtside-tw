@@ -1,19 +1,16 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t032-t033-us2-tests-first",
-  "graph_version": 2,
+  "graph_version": 3,
   "run_id": "courtside-tw-us2-t032-t033-20260809",
-  "status": "running",
-  "iteration": 1,
+  "status": "success",
+  "iteration": 2,
   "started_at": "2026-08-09T07:45:00Z",
-  "updated_at": "2026-08-09T07:50:28Z",
-  "current_frontier": [
-    "p-t032-red",
-    "p-t033-red"
-  ],
+  "updated_at": "2026-08-09T07:58:45Z",
+  "current_frontier": [],
   "blocked_nodes": [],
-  "terminal_state": null,
-  "next_action": "Run exact-head CI/Security and classify the T032/T033 intended red baseline.",
+  "terminal_state": "success",
+  "next_action": "Keep PR #63 draft-only; implement T034+ separately after review, then rerun the exact T032/T033 contracts before changing their checkboxes.",
   "events": [
     {
       "event_id": "evt-us2-001-dispatch",
@@ -161,6 +158,128 @@
         "total": 2500
       },
       "terminal_reason": null
+    },
+    {
+      "event_id": "evt-us2-003-red-baseline-classified",
+      "at": "2026-08-09T07:58:45Z",
+      "actor": "codex-supervisor",
+      "type": "red_baseline_classified",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": ".loop/evidence/t032-t033-red-baseline-20260809.json",
+            "after": "Exact CI/Security red baseline and scope classification"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-t032-red.status",
+            "before": "verifying",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-t033-red.status",
+            "before": "verifying",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": [
+              "p-t032-red",
+              "p-t033-red"
+            ],
+            "after": []
+          },
+          {
+            "op": "replace",
+            "path": "ledger.terminal_state",
+            "before": null,
+            "after": "success"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t032-t033-red-baseline-20260809.json",
+        "https://github.com/bynanci/courtside-tw/pull/63",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31302266756",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31302266758"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "T032 exact red baseline",
+          "level": "P2",
+          "result": "pass",
+          "run_id": 31302266756,
+          "failure": "1 expected PublicArticleApiIT failure; 77 tests completed, 1 failed"
+        },
+        {
+          "proof": "T033 exact red baseline",
+          "level": "P2",
+          "result": "pass",
+          "run_id": 31302266756,
+          "failure": "5 expected Playwright failures, 3 existing browser checks passed"
+        },
+        {
+          "proof": "security and scope guard",
+          "level": "P2",
+          "result": "pass",
+          "run_id": 31302266758,
+          "detail": "CodeQL, Trivy, pnpm audit, dependency resolution and contract/static surfaces passed; the only Security job failure reran the same expected T032 test."
+        },
+        {
+          "proof": "draft dispatch gate",
+          "level": "P2",
+          "result": "pass",
+          "pr_number": 63,
+          "draft": true,
+          "merged": false,
+          "review_threads": 0,
+          "changed_files": 9
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "SAVED",
+        "memory_id": "wm:project:courtside-tw:us2-t032-t033-tests-first-dispatch",
+        "version": "stable-20260809",
+        "retrieval_ids": [
+          ".loop/t024-t031-us1-public-magazine-ledger.json",
+          ".loop/memory/t024-t031-us1-completion.json",
+          ".loop/memory/t032-t033-us2-tests-first-dispatch.json"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t032-t033-dispatch-20260809.json",
+          ".loop/evidence/t032-t033-red-baseline-20260809.json"
+        ],
+        "next_review_at": "2026-08-10",
+        "blocker": null
+      },
+      "failure_signature": {
+        "ci": {
+          "run_id": 31302266756,
+          "conclusion": "failure",
+          "intended_red": [
+            "PublicArticleApiIT.returnsPublishedRevisionAndSnapshotIssueNavigation",
+            "article-document absent in the five US2 browser failures"
+          ]
+        },
+        "security": {
+          "run_id": 31302266758,
+          "conclusion": "failure",
+          "intended_red": "The dependency job's post-resolution Gradle test reran the same T032 expected failure."
+        }
+      },
+      "decision": "The exact red baseline is bounded and reviewable; stop at draft-only and do not change T032/T033 checkboxes or merge the tests.",
+      "token_usage": {
+        "estimated": 38300,
+        "input": 0,
+        "output": 0,
+        "total": 0
+      },
+      "terminal_reason": "Success means the tests-first red baseline is classified, the draft PR is reviewable and no production implementation is merged."
     }
   ]
 }
