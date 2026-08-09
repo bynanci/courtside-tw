@@ -654,13 +654,13 @@ onBeforeUnmount(() => {
             </p>
 
             <component
-              v-else-if="block.type === 'heading'"
               :is="headingTag(payloadFor(block).level)"
+              v-else-if="block.type === 'heading'"
             >
               {{ stringValue(payloadFor(block).text) }}
             </component>
 
-            <component v-else-if="block.type === 'list'" :is="listTag(payloadFor(block).ordered)">
+            <component :is="listTag(payloadFor(block).ordered)" v-else-if="block.type === 'list'">
               <li v-for="(runs, itemIndex) in listItems(payloadFor(block).items)" :key="itemIndex">
                 <template v-for="(run, runIndex) in runs" :key="runIndex">
                   <a
