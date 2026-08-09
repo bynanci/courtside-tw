@@ -113,6 +113,8 @@ const motionMode = ref<"reduced" | "full">("reduced")
 const creativeInView = ref(false)
 const runtimeState = ref<"paused" | "running">("paused")
 let creativeObserver: IntersectionObserver | null = null
+let creativeVisibilityTimer: number | null = null
+let creativeVisibilityTimeout: number | null = null
 
 useHead(() => {
   const current = article.value
@@ -329,6 +331,20 @@ function creativeTarget(): HTMLElement | null {
     : null
 }
 
+function stopCreativeVisibilityWatch(): void {
+  if (typeof window === "undefined") {
+    return
+  }
+  if (creativeVisibilityTimer !== null) {
+    window.clearInterval(creativeVisibilityTimer)
+    creativeVisibilityTimer = null
+  }
+  if (creativeVisibilityTimeout !== null) {
+    window.clearTimeout(creativeVisibilityTimeout)
+    creativeVisibilityTimeout = null
+  }
+}
+
 function updateCreativeVisibility(): void {
   const target = creativeTarget()
   if (!target || typeof window === "undefined") {
@@ -339,7 +355,20 @@ function updateCreativeVisibility(): void {
     creativeInView.value = true
     syncRuntimeState()
     creativeObserver?.disconnect()
+    stopCreativeVisibilityWatch()
   }
+}
+
+function startCreativeVisibilityWatch(): void {
+  if (typeof window === "undefined" || creativeInView.value) {
+    return
+  }
+  updateCreativeVisibility()
+  if (creativeInView.value) {
+    return
+  }
+  creativeVisibilityTimer = window.setInterval(updateCreativeVisibility, 50)
+  creativeVisibilityTimeout = window.setTimeout(stopCreativeVisibilityWatch, 5000)
 }
 
 function handleCreativeScroll(): void {
@@ -367,7 +396,7 @@ function observeCreative(): void {
     { threshold: 0.01 }
   )
   creativeObserver.observe(target)
-  updateCreativeVisibility()
+  startCreativeVisibilityWatch()
 }
 
 async function shareArticle(): Promise<void> {
@@ -422,6 +451,7 @@ onMounted(() => {
       : "full"
     window.addEventListener("scroll", handleCreativeScroll, { passive: true })
   }
+  document.addEventListener("scroll", handleCreativeScroll, { passive: true, capture: true })
   document.addEventListener("visibilitychange", syncRuntimeState)
   stopResumeWatch = watch(resumeStorageKey, loadResumeProgress, { immediate: true })
   void nextTick().then(() => observeCreative())
@@ -429,8 +459,10 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   stopResumeWatch?.()
+  document.removeEventListener("scroll", handleCreativeScroll, true)
   document.removeEventListener("visibilitychange", syncRuntimeState)
   window.removeEventListener("scroll", handleCreativeScroll)
+  stopCreativeVisibilityWatch()
   creativeObserver?.disconnect()
   creativeObserver = null
 })
