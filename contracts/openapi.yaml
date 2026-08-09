@@ -39,6 +39,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/Cursor"
         - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/IfNoneMatch"
       responses:
         "200":
           description: Successful response.
@@ -56,8 +57,17 @@ paths:
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
+            ETag:
+              $ref: "#/components/headers/ETag"
         "400":
           $ref: "#/components/responses/Problem400"
+        "304":
+          description: The current representation matches If-None-Match.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+            ETag:
+              $ref: "#/components/headers/ETag"
         "429":
           $ref: "#/components/responses/Problem429"
   /api/v1/public/issues/{issueSlug}:
@@ -70,6 +80,7 @@ paths:
       security: []
       parameters:
         - $ref: "#/components/parameters/IssueSlug"
+        - $ref: "#/components/parameters/IfNoneMatch"
       responses:
         "200":
           description: Successful response.
@@ -82,13 +93,30 @@ paths:
                   value:
                     issueId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
                     slug: issue-1
+                    issueNumber: 1
                     title: Issue 1
+                    summary: 台灣籃球的場邊觀察。
+                    cover:
+                      url: /media/issues/issue-1/cover.webp
+                      alt: Issue 1 封面
+                      width: 1200
+                      height: 1600
+                    publishedAt: 2026-08-01T00:00:00Z
                     sections: []
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
+            ETag:
+              $ref: "#/components/headers/ETag"
         "400":
           $ref: "#/components/responses/Problem400"
+        "304":
+          description: The current representation matches If-None-Match.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+            ETag:
+              $ref: "#/components/headers/ETag"
         "404":
           $ref: "#/components/responses/Problem404"
         "429":
@@ -1679,6 +1707,15 @@ components:
         minimum: 1
         maximum: 100
         default: 20
+    IfNoneMatch:
+      name: If-None-Match
+      in: header
+      required: false
+      description: Current entity tag for a conditional public GET.
+      schema:
+        type: string
+        minLength: 1
+        maxLength: 128
     IssueSlug:
       name: issueSlug
       in: path
@@ -1757,6 +1794,11 @@ components:
         type: string
         minLength: 1
         maxLength: 100
+    ETag:
+      description: Deterministic representation validator for conditional public reads.
+      schema:
+        type: string
+        maxLength: 128
     RetryAfter:
       description: Seconds until the caller may retry.
       schema:
@@ -1864,7 +1906,10 @@ components:
       required:
         - issueId
         - slug
+        - issueNumber
         - title
+        - summary
+        - cover
         - publishedAt
         - articleCount
       properties:
@@ -1872,8 +1917,19 @@ components:
           $ref: "#/components/schemas/Uuid"
         slug:
           type: string
+        issueNumber:
+          type: integer
+          minimum: 1
         title:
           type: string
+          minLength: 1
+          maxLength: 250
+        summary:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        cover:
+          $ref: "#/components/schemas/IssueCover"
         publishedAt:
           type: string
           format: date-time
@@ -1899,21 +1955,32 @@ components:
       required:
         - issueId
         - slug
+        - issueNumber
         - title
+        - summary
+        - cover
+        - publishedAt
         - sections
       properties:
         issueId:
           $ref: "#/components/schemas/Uuid"
         slug:
           type: string
+        issueNumber:
+          type: integer
+          minimum: 1
         title:
           type: string
-        description:
+          minLength: 1
+          maxLength: 250
+        summary:
           type: string
+          minLength: 1
+          maxLength: 1000
+        cover:
+          $ref: "#/components/schemas/IssueCover"
         publishedAt:
-          type:
-            - string
-            - "null"
+          type: string
           format: date-time
         sections:
           type: array
@@ -1934,6 +2001,29 @@ components:
                 type: array
                 items:
                   $ref: "#/components/schemas/ArticleSummary"
+    IssueCover:
+      type: object
+      additionalProperties: false
+      required:
+        - url
+        - alt
+        - width
+        - height
+      properties:
+        url:
+          type: string
+          pattern: "^/media/"
+          maxLength: 512
+        alt:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        width:
+          type: integer
+          minimum: 1
+        height:
+          type: integer
+          minimum: 1
     ArticleSummary:
       type: object
       additionalProperties: false

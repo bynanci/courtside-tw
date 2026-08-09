@@ -3,6 +3,7 @@ import eslintConfigPrettier from "eslint-config-prettier"
 import vue from "eslint-plugin-vue"
 import globals from "globals"
 import tseslint from "typescript-eslint"
+import vueParser from "vue-eslint-parser"
 
 export default tseslint.config(
   {
@@ -20,6 +21,18 @@ export default tseslint.config(
   ...tseslint.configs.recommended,
   ...vue.configs["flat/recommended"],
   {
+    files: ["**/*.vue"],
+    languageOptions: {
+      parser: vueParser,
+      parserOptions: {
+        parser: tseslint.parser,
+        extraFileExtensions: [".vue"],
+        ecmaVersion: "latest",
+        sourceType: "module"
+      }
+    }
+  },
+  {
     files: ["**/*.{js,mjs,cjs,ts,tsx,vue}"],
     languageOptions: {
       ecmaVersion: "latest",
@@ -28,7 +41,16 @@ export default tseslint.config(
         ...globals.browser,
         ...globals.node,
         defineNuxtConfig: "readonly",
-        useSeoMeta: "readonly"
+        useSeoMeta: "readonly",
+        useRuntimeConfig: "readonly",
+        useAsyncData: "readonly",
+        useHead: "readonly",
+        useRoute: "readonly",
+        useRequestEvent: "readonly",
+        setResponseStatus: "readonly",
+        computed: "readonly",
+        defineEventHandler: "readonly",
+        setHeader: "readonly"
       }
     },
     rules: {

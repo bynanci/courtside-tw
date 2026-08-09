@@ -14,10 +14,7 @@ test("public Issue navigation only builds canonical, bounded reader routes", () 
     articleRoute("courtside-opening-night", "issue-2026-01"),
     "/articles/courtside-opening-night?issue=issue-2026-01"
   )
-  equal(
-    publicIssueApiPath("issue-2026-01"),
-    "/api/v1/public/issues/issue-2026-01"
-  )
+  equal(publicIssueApiPath("issue-2026-01"), "/api/v1/public/issues/issue-2026-01")
 })
 
 test("public Issue navigation rejects traversal, controls and oversized slugs", () => {

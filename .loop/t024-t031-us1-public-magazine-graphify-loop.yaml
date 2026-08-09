@@ -67,7 +67,7 @@ policy:
 graph:
   entry_nodes: [x-main-readback, x-immersion-review, t-us1-ready]
   terminal_nodes: [s-us1-terminal]
-  current_frontier: [a-us1-publication]
+  current_frontier: [p-us1-merge-gate]
   blocked_nodes: []
 
   loops:
@@ -142,7 +142,7 @@ graph:
       layer: L1
       label: US1 public Issue slice is ready
       owner: codex-supervisor
-      status: ready
+      status: done
       risk: high
       confidence:
         score: 0.95
@@ -197,12 +197,12 @@ graph:
       layer: L1
       label: Implement bounded public publication read projection
       owner: codex-agent
-      status: ready
+      status: done
       risk: high
       confidence:
-        score: 0.75
-        basis: SQL and Java implementation remains constrained by the existing OpenAPI, media-rights and immutable-publication contracts.
-        evidence_refs: [contracts/openapi.yaml, apps/api/src/main/resources/db/migration/V001__foundation.sql]
+        score: 0.9
+        basis: The bounded V002 projection, API contract and error/ETag boundary are implemented and locally reviewed; Java/Testcontainers execution remains exact-CI work.
+        evidence_refs: [.loop/evidence/t024-t028-backend-proof-20260809.json, .loop/evidence/t024-t031-local-review-20260809.json]
       budget: {effort_hours: 3.0, tokens: 24000}
       config:
         workflow: [align Issue summary contract, add forward-only V002 migration, create read-only repositories and service, expose ETag/cursor API, run focused tests]
@@ -215,12 +215,12 @@ graph:
       layer: L1
       label: US1 public API, migration and contract proof
       owner: verifier
-      status: planned
+      status: verifying
       risk: high
       confidence:
-        score: 0.75
-        basis: Requires exact source review, Testcontainers integration evidence and generated client parity.
-        evidence_refs: []
+        score: 0.85
+        basis: Local contract/client verification passed and source review found no remaining local blocker; Java 21/Testcontainers is pending on exact CI.
+        evidence_refs: [.loop/evidence/t024-t028-backend-proof-20260809.json]
       budget: {effort_hours: 1.0, tokens: 8500}
       config:
         level: P2
@@ -235,12 +235,12 @@ graph:
       layer: L1
       label: Implement SSR issue pages, SEO and mobile reading handoff
       owner: codex-agent
-      status: planned
+      status: done
       risk: high
       confidence:
-        score: 0.75
-        basis: UI must consume generated client types and retain content before hydration under the explicit mobile contract.
-        evidence_refs: [DESIGN.md, specs/001-taiwan-basketball-magazine-ebook/tasks.md:T029-T031]
+        score: 0.9
+        basis: SSR routes, public components, safe client boundary, SEO and browser test configuration are implemented without a wallet, Motion or p5 runtime.
+        evidence_refs: [.loop/evidence/t025-t031-web-proof-20260809.json, .loop/evidence/t024-t031-performance-proof-20260809.json]
       budget: {effort_hours: 3.0, tokens: 24000}
       config:
         workflow: [add typed API composable, semantic components/routes, SSR metadata/sitemap, component/E2E/a11y tests, enforce fixed media geometry]
@@ -253,12 +253,12 @@ graph:
       layer: L1
       label: US1 mobile SSR and accessibility proof
       owner: verifier
-      status: planned
+      status: verifying
       risk: high
       confidence:
-        score: 0.75
-        basis: Requires component, Playwright, no-hydration and reduced-motion assertions.
-        evidence_refs: []
+        score: 0.85
+        basis: Native tests, production SSR build and Playwright discovery pass; the Chromium/a11y execution is explicitly deferred to exact CI.
+        evidence_refs: [.loop/evidence/t025-t031-web-proof-20260809.json]
       budget: {effort_hours: 1.0, tokens: 8000}
       config:
         level: P2
@@ -273,12 +273,12 @@ graph:
       layer: L1
       label: US1 performance and progressive enhancement proof
       owner: verifier
-      status: planned
+      status: verifying
       risk: high
       confidence:
-        score: 0.7
-        basis: Requires bundle/static analysis and mobile visual guard verification.
-        evidence_refs: []
+        score: 0.85
+        basis: The production bundle scan is clean and cover geometry is reserved; the mobile browser trace remains CI evidence.
+        evidence_refs: [.loop/evidence/t024-t031-performance-proof-20260809.json]
       budget: {effort_hours: 0.75, tokens: 6500}
       config:
         level: P2
@@ -293,12 +293,12 @@ graph:
       layer: L1
       label: Run code-review and merge-readiness gate
       owner: codex-supervisor
-      status: planned
+      status: done
       risk: high
       confidence:
-        score: 0.8
-        basis: Requires changed-file, test, security, contract and rollback inspection after implementation.
-        evidence_refs: []
+        score: 0.9
+        basis: Changed-file, public boundary, dependency, a11y and rollback review completed with all local findings fixed before exact-head CI.
+        evidence_refs: [.loop/evidence/t024-t031-local-review-20260809.json]
       budget: {effort_hours: 1.0, tokens: 12000}
       config:
         workflow: [inspect diff, trace acceptance to proof, audit error/authorization/performance paths, record PASS or BLOCK]
@@ -311,12 +311,12 @@ graph:
       layer: L1
       label: Exact-head review, CI and Security evidence
       owner: verifier
-      status: planned
+      status: ready
       risk: high
       confidence:
-        score: 0.7
-        basis: Must be read from the PR exact head after the final change.
-        evidence_refs: []
+        score: 0.85
+        basis: The final local review is clean enough to create a draft PR; this proof remains incomplete until GitHub reports the exact commit checks.
+        evidence_refs: [.loop/evidence/t024-t031-local-review-20260809.json]
       budget: {effort_hours: 0.75, tokens: 7000}
       config:
         level: P2

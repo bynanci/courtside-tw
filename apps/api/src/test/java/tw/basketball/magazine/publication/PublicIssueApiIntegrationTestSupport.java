@@ -26,7 +26,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 abstract class PublicIssueApiIntegrationTestSupport {
     private static final String POSTGRES_IMAGE = "postgres:18.4-alpine";
     private static final String FOUNDATION_MIGRATION = "/db/migration/V001__foundation.sql";
-    private static final String PUBLICATION_MIGRATION = "/db/migration/V002__publication_core.sql";
+    private static final String PUBLICATION_MIGRATION = "/db/migration/V002__publication_content_core.sql";
     private static final String CHECKSUM = "a".repeat(64);
 
     private static final PostgreSQLContainer POSTGRES =
@@ -106,7 +106,7 @@ abstract class PublicIssueApiIntegrationTestSupport {
                 INSERT INTO rights_record (
                     id, asset_id, rights_owner, license_name, allowed_channels,
                     territories, valid_from, valid_until, credit, withdrawal_terms, status
-                ) VALUES (?, ?, 'Courtside TW', 'Editorial license', ?,
+                ) VALUES (?, ?, 'Courtside TW', 'Editorial license', ?::text[],
                     ARRAY['GLOBAL']::text[], ?, ?, 'Courtside TW', 'withdraw on notice', 'VALID')
                 """,
                 rightsId,

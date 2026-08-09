@@ -4,6 +4,10 @@ export default defineNuxtConfig({
   future: { compatibilityVersion: 4 },
   typescript: { strict: true },
   runtimeConfig: {
+    public: {
+      apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8080",
+      siteUrl: process.env.NUXT_PUBLIC_SITE_URL ?? "https://courtside.tw"
+    },
     oidc: {
       issuer: "",
       authorizationEndpoint: "",
@@ -20,6 +24,7 @@ export default defineNuxtConfig({
       sessionStore: "memory"
     }
   },
+  css: ["~/assets/css/main.css"],
   app: {
     head: {
       htmlAttrs: { lang: "zh-Hant-TW" },

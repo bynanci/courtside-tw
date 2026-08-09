@@ -44,6 +44,7 @@ const expectedPaths = {
 }
 
 const expectedErrorStatuses = [400, 401, 403, 404, 409, 422, 429]
+const expectedConditionalStatuses = [304]
 const stableCodes = {
   400: "INVALID_REQUEST",
   401: "AUTHENTICATION_REQUIRED",
@@ -154,6 +155,14 @@ for (const { pathName, method, operation } of operations) {
           `success example missing for ${operation.operationId}`
         )
       }
+      continue
+    }
+    if (expectedConditionalStatuses.includes(numericStatus)) {
+      assert.equal(
+        response.content,
+        undefined,
+        "conditional response must not carry a representation for " + operation.operationId
+      )
       continue
     }
     assert.ok(

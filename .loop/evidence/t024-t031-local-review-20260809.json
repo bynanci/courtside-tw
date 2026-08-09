@@ -1,0 +1,47 @@
+{
+  "schema_version": "courtside-review/v1",
+  "review_id": "t024-t031-local-review-20260809",
+  "recorded_at": "2026-08-09T04:30:00Z",
+  "scope": ["T024-T031 public magazine slice"],
+  "decision": "PASS_WITH_FOLLOW_UP",
+  "reviewed": [
+    "Public SQL access path, rights/time/state predicates, keyset pagination, TOC cap and public error behavior",
+    "Forward-only V002 schema constraints, referential ownership and privilege boundary",
+    "OpenAPI 304/ETag/client generation parity",
+    "SSR page flow, generated-client-only API use, URL/media validation, SEO escaping and crawler surface",
+    "Mobile geometry, reduced-motion/no-JS behavior, emitted client dependency scan and focused test coverage",
+    "CI workflow coverage for Java quality, browser checks, dependency health and Security"
+  ],
+  "findings_fixed_before_review_exit": [
+    {
+      "severity": "high",
+      "finding": "A Base64-valid cursor with an invalid Instant escaped the IllegalArgumentException handler.",
+      "fix": "Catch DateTimeException and add an integration assertion for the resulting safe 400."
+    },
+    {
+      "severity": "high",
+      "finding": "ConditionalOnBean on a component-scanned controller/configuration can be evaluated before JDBC auto-configuration.",
+      "fix": "Resolve JdbcTemplate lazily at request time; when absent, retain the intentional generic 404 fallback."
+    },
+    {
+      "severity": "medium",
+      "finding": "Small accent/muted text could fail a normal-text contrast scan.",
+      "fix": "Replace the tokens with reviewed darker accent/muted values."
+    },
+    {
+      "severity": "medium",
+      "finding": "The incomplete article shell and JSON API should not be crawler targets.",
+      "fix": "Keep them out of sitemap and explicitly disallow /articles/ and /api/ in robots."
+    },
+    {
+      "severity": "medium",
+      "finding": "A manually created no-JavaScript Playwright context does not inherit the configured base URL.",
+      "fix": "Use the explicit local test origin for that context."
+    }
+  ],
+  "remaining_follow_up": [
+    "Java 21/Testcontainers/SpotBugs and full Playwright Chromium must pass on the exact PR head.",
+    "No protected merge or task checkbox update is authorized until CI, Security and human review complete."
+  ],
+  "rollback": "Revert the single feature commit. V002 has no destructive migration operation; its forward-only schema remains compatible with the existing foundation."
+}

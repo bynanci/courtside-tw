@@ -1,0 +1,35 @@
+{
+  "schema_version": "courtside-proof/v1",
+  "proof_id": "t024-t031-performance-proof-20260809",
+  "recorded_at": "2026-08-09T04:30:00Z",
+  "base_commit": "73ce1da05a0eef71b9302e761004901b6f0c2d67",
+  "scope": ["T025", "T029", "T030", "T031", "SC-013", "SC-014"],
+  "result": "static_budget_pass_browser_ci_required",
+  "build_metrics": {
+    "nuxt_build_exit_code": 0,
+    "largest_client_chunk_raw_bytes": 91314,
+    "largest_client_chunk_gzip_bytes": 35160,
+    "client_modules_transformed": 191,
+    "server_modules_transformed": 139
+  },
+  "static_checks": [
+    {
+      "check": "forbidden client runtime identifiers in emitted Nuxt client chunks",
+      "terms": ["p5", "three", "ethers", "walletconnect", "siwe", "web3", "passport"],
+      "matches": 0
+    },
+    {
+      "check": "layout stability",
+      "result": "cover images have intrinsic width/height plus fixed 3:4 aspect-ratio containers"
+    },
+    {
+      "check": "progressive enhancement",
+      "result": "No Motion, p5, wallet or Web3 runtime is in the US1 feature; reduced-motion is CSS-only and semantic links are SSR-rendered."
+    }
+  ],
+  "limits": [
+    "No browser trace, LCP, INP or CLS telemetry is claimed from the local sandbox.",
+    "Exact mobile visual/a11y proof remains the Playwright CI job."
+  ],
+  "next_action": "Use exact-head Playwright results before treating the P2 performance proof as terminal."
+}

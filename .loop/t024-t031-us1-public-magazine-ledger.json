@@ -1,16 +1,16 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t024-t031-us1-public-magazine",
-  "graph_version": 1,
+  "graph_version": 3,
   "run_id": "courtside-tw-us1-20260809",
   "status": "running",
-  "iteration": 2,
+  "iteration": 3,
   "started_at": "2026-08-09T09:00:00Z",
-  "updated_at": "2026-08-09T09:15:00Z",
-  "current_frontier": ["a-us1-publication"],
+  "updated_at": "2026-08-09T09:45:00Z",
+  "current_frontier": ["p-us1-merge-gate"],
   "blocked_nodes": ["g-us1-protected-merge"],
   "terminal_state": null,
-  "next_action": "Implement the bounded V002 public publication read projection and OpenAPI alignment, then rerun the same T024 tests.",
+  "next_action": "Commit the reviewed US1 slice, create a draft PR and use exact-head CI/Security as the authority for Java and Chromium proof.",
   "events": [
     {
       "event_id": "evt-us1-001-dispatch",
@@ -127,6 +127,95 @@
       },
       "failure_signature": "ERR_MODULE_NOT_FOUND: apps/web/app/features/issues/public-issue-contract.ts",
       "decision": "IMPLEMENT_US1_PUBLICATION_BOUNDARY",
+      "token_usage": {"estimated": 85000, "input": 0, "output": 0, "total": 0},
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-us1-003-local-implementation-review",
+      "at": "2026-08-09T09:45:00Z",
+      "actor": "codex-agent",
+      "type": "implementation_and_local_review",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-us1-publication.status",
+            "before": "ready",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-us1-web.status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-us1-review.status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.current_frontier",
+            "before": "a-us1-publication",
+            "after": "p-us1-merge-gate"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t024-t028-backend-proof-20260809.json",
+        ".loop/evidence/t025-t031-web-proof-20260809.json",
+        ".loop/evidence/t024-t031-performance-proof-20260809.json",
+        ".loop/evidence/t024-t031-local-review-20260809.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "root contract, lint, typecheck, native tests and generated client parity",
+          "level": "P1",
+          "result": "pass",
+          "command": "make verify"
+        },
+        {
+          "proof": "Nuxt production SSR build",
+          "level": "P1",
+          "result": "pass",
+          "largest_client_chunk_gzip_bytes": 35160
+        },
+        {
+          "proof": "Playwright suite registration",
+          "level": "P1",
+          "result": "pass",
+          "tests": 3
+        },
+        {
+          "proof": "exact Java 21/Testcontainers and Chromium/a11y execution",
+          "level": "P2",
+          "result": "deferred_to_exact_ci",
+          "reason": "No local Java 21/Gradle 8.14.3 or browser installation/runtime is available."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": null,
+        "version": null,
+        "retrieval_ids": [
+          ".loop/t024-t031-us1-public-magazine-ledger.json",
+          ".loop/evidence/t024-t025-tests-first-baseline-20260809.json"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t024-t028-backend-proof-20260809.json",
+          ".loop/evidence/t025-t031-web-proof-20260809.json",
+          ".loop/evidence/t024-t031-performance-proof-20260809.json",
+          ".loop/evidence/t024-t031-local-review-20260809.json"
+        ],
+        "next_review_at": "2026-08-09",
+        "blocker": "Exact-head CI/Security and human protected-merge approval remain required."
+      },
+      "failure_signature": null,
+      "decision": "CREATE_DRAFT_PR_FOR_EXACT_HEAD_CI",
       "token_usage": {"estimated": 85000, "input": 0, "output": 0, "total": 0},
       "terminal_reason": null
     }

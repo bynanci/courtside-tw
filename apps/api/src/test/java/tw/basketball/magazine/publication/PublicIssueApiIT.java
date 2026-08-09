@@ -4,10 +4,13 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.nio.charset.StandardCharsets;
 import java.time.Instant;
+import java.util.Base64;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -17,7 +20,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
 
-final class PublicIssueApiIT extends PublicIssueApiIntegrationTestSupport {
+final class PublicIssueApiIntegrationTest extends PublicIssueApiIntegrationTestSupport {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Test
@@ -86,7 +89,9 @@ final class PublicIssueApiIT extends PublicIssueApiIntegrationTestSupport {
         mockMvc.perform(get("/api/v1/public/issues")
                         .param("limit", "1")
                         .header(HttpHeaders.IF_NONE_MATCH, etag))
-                .andExpect(status().isNotModified());
+                .andExpect(status().isNotModified())
+                .andExpect(header().string(HttpHeaders.ETAG, etag))
+                .andExpect(content().string(""));
 
         mockMvc.perform(get("/api/v1/public/issues")
                         .param("limit", "1")
@@ -152,6 +157,10 @@ final class PublicIssueApiIT extends PublicIssueApiIntegrationTestSupport {
                         .param("cursor", "not-an-opaque-cursor"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+        mockMvc.perform(get("/api/v1/public/issues")
+                        .param("cursor", opaqueCursor("not-an-instant")))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
     }
 
     @Test
@@ -170,5 +179,11 @@ final class PublicIssueApiIT extends PublicIssueApiIntegrationTestSupport {
                 .andReturn();
 
         assertFalse(result.getResponse().getContentAsString().contains("future-private"));
+    }
+
+    private static String opaqueCursor(String publishedAt) {
+        String value = publishedAt + "|00000000-0000-0000-0000-000000000001";
+        return Base64.getUrlEncoder().withoutPadding()
+                .encodeToString(value.getBytes(StandardCharsets.UTF_8));
     }
 }
