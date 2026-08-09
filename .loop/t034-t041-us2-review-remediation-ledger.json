@@ -1,0 +1,74 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-t034-t041-us2-review-remediation",
+  "graph_version": 1,
+  "run_id": "courtside-tw-us2-review-remediation-20260809",
+  "status": "needs_human",
+  "iteration": 1,
+  "started_at": "2026-08-09",
+  "updated_at": "2026-08-09",
+  "current_frontier": ["p-exact-head", "g-protected-p1"],
+  "blocked_nodes": ["g-protected-p1"],
+  "terminal_state": "needs_human",
+  "next_action": "Read back the latest 06992568be46a5b0dbf6a52e9b3ab14913e6c16 workflow runs; if proof passes, stop at the named human gates.",
+  "events": [
+    {
+      "event_id": "evt-us2-review-remediation-001",
+      "at": "2026-08-09",
+      "actor": "codex-supervisor",
+      "type": "bounded_remediation_receipt",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {"op": "add", "path": "lane", "value": "PR #67 review remediation"},
+          {"op": "add", "path": "frontier", "value": ["p-exact-head", "g-protected-p1"]},
+          {"op": "add", "path": "human_gates", "value": ["media_storage_key", "contributors_contract", "p5_runtime"]}
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t034-t041-us2-review-remediation-baseline-20260809.json",
+        "https://github.com/bynanci/courtside-tw/pull/67"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "PR #67 exact head 9851bf7e9189995aaf46e34904ef698393108a39",
+          "level": "P3",
+          "result": "partial",
+          "ci_run": 31310404375,
+          "ci_conclusion": "failure",
+          "ci_core_jobs": "frontend, Java quality, compose passed; browser failed before hydration-safe fallback synchronization",
+          "security_run": 31310404349,
+          "security_conclusion": "success"
+        },
+        {
+          "proof": "PR #67 latest head 06992568be46a5b0dbf6a52e9b3ab14913e6c16",
+          "level": "P3",
+          "result": "pending",
+          "ci_run": null,
+          "security_run": null
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "SAVED",
+        "memory_id": "wm:project:courtside-tw:us2-t034-t041-review-remediation",
+        "version": "review-remediation-v1",
+        "retrieval_ids": ["wm:project:courtside-tw:us2-t034-t041-implementation-lane"],
+        "evidence_refs": [
+          ".loop/evidence/t034-t041-us2-review-remediation-baseline-20260809.json"
+        ],
+        "next_review_at": "2026-08-09",
+        "blocker": "Latest workflow proof and human closure of protected media, contributor and p5 gates are required."
+      },
+      "failure_signature": "BROWSER_IMAGE_FALLBACK_HYDRATION_PENDING_RERUN",
+      "decision": "BOUNDED_REMEDIATION_NEEDS_HUMAN",
+      "token_usage": {
+        "estimated": 42000,
+        "input": 0,
+        "output": 0,
+        "total": 42000
+      },
+      "terminal_reason": "Core correctness and security proof is strong, but the latest head has no workflow receipt and protected P1 gates remain unresolved."
+    }
+  ]
+}
