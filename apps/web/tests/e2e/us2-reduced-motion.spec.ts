@@ -7,10 +7,7 @@ test("reduced motion keeps content visible and creative runtime bounded", async 
   })
 
   await expect(page.getByTestId("article-document")).toHaveAttribute("data-motion", "reduced")
-  await expect(page.getByTestId("article-document")).toHaveAttribute(
-    "data-client-ready",
-    "true"
-  )
+  await expect(page.getByTestId("article-document")).toHaveAttribute("data-client-ready", "true")
   const creative = page.getByTestId("generative-canvas")
   await expect(creative).toHaveAttribute("data-seed", "20260807")
   await expect(page.getByTestId("generative-poster")).toHaveAttribute("data-fallback", "true")
