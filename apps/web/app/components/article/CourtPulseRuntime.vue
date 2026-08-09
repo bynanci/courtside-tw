@@ -23,6 +23,7 @@ const props = defineProps<Props>()
 
 const container = ref<HTMLDivElement | null>(null)
 const runtimeStatus = ref<"idle" | "loading" | "running" | "paused" | "error" | "removed">("idle")
+const frameTick = ref(0)
 let sketch: p5 | null = null
 let resizeObserver: ResizeObserver | null = null
 let visibilityTimer: number | null = null
@@ -135,9 +136,11 @@ async function mountSketch(): Promise<void> {
         instance.randomSeed(props.seed)
         instance.noiseSeed(props.seed)
         instance.noLoop()
+        frameTick.value = 0
         drawCourtPulse(instance, 0)
       }
       instance.draw = () => {
+        frameTick.value = instance.frameCount
         drawCourtPulse(instance, instance.frameCount)
       }
     }, host)
@@ -185,6 +188,7 @@ onBeforeUnmount(() => {
     data-runtime-engine="p5"
     :data-runtime-status="runtimeStatus"
     :data-runtime-active="String(active)"
+    :data-runtime-frame="String(frameTick)"
     role="img"
     :aria-label="altText"
   />
