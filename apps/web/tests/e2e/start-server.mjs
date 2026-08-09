@@ -156,6 +156,8 @@ const articleProjections = new Map([
         }
       ],
       issueNavigation: {
+        issueSlug: "issue-2026-01",
+        previous: {
           articleId: "0190f7b0-7c4b-7e3a-8f12-123456789abd",
           slug: "opening-night",
           title: "主場燈光亮起之前",
