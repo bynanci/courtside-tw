@@ -79,7 +79,7 @@ memory_workflow:
 graph:
   entry_nodes: [x-main-readback]
   terminal_nodes: [s-us2-terminal]
-  current_frontier: [p-t032-red, p-t033-red]
+  current_frontier: []
   blocked_nodes: []
 
   loops:
@@ -211,12 +211,12 @@ graph:
       layer: L1
       label: T032 exact red baseline
       owner: verifier
-      status: verifying
+      status: done
       risk: high
       confidence:
-        score: 0.75
-        basis: "The current main router has no /api/v1/public/articles/{articleSlug} mapping; exact Java CI output is still pending."
-        evidence_refs: ["apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java"]
+        score: 0.96
+        basis: "Exact Java CI classified one expected Article projection failure; the deny-by-default test passes."
+        evidence_refs: ["apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java", ".loop/evidence/t032-t033-red-baseline-20260809.json"]
       budget: {effort_hours: 0.75, tokens: 6500}
       config:
         level: P2
@@ -231,12 +231,12 @@ graph:
       layer: L1
       label: T033 exact red baseline
       owner: verifier
-      status: verifying
+      status: done
       risk: high
       confidence:
-        score: 0.75
-        basis: "The current article route is an intentional shell without document blocks; exact Chromium output is still pending."
-        evidence_refs: ["apps/web/tests/e2e/us2-read-article.spec.ts", "apps/web/tests/e2e/us2-no-js.spec.ts", "apps/web/tests/e2e/us2-reduced-motion.spec.ts"]
+        score: 0.96
+        basis: "Exact Chromium CI classified five expected article-document failures while three existing browser checks pass."
+        evidence_refs: ["apps/web/tests/e2e/us2-read-article.spec.ts", "apps/web/tests/e2e/us2-no-js.spec.ts", "apps/web/tests/e2e/us2-reduced-motion.spec.ts", ".loop/evidence/t032-t033-red-baseline-20260809.json"]
       budget: {effort_hours: 0.75, tokens: 6500}
       config:
         level: P2
@@ -251,12 +251,12 @@ graph:
       layer: L1
       label: Review the tests-first dispatch scope and red-baseline readiness
       owner: codex-supervisor
-      status: verifying
+      status: done
       risk: high
       confidence:
-        score: 0.85
-        basis: "Static scope is bounded; exact red failure signatures and CI/Security results remain to be recorded."
-        evidence_refs: [".loop/evidence/t032-t033-dispatch-20260809.json"]
+        score: 0.96
+        basis: "Exact CI/Security failure signatures are classified; nine changed files remain tests, fixture or bounded loop artifacts and the draft PR has no review threads."
+        evidence_refs: [".loop/evidence/t032-t033-dispatch-20260809.json", ".loop/evidence/t032-t033-red-baseline-20260809.json"]
       budget: {effort_hours: 0.75, tokens: 8000}
       config:
         workflow: [inspect changed files, validate fixture, classify exact red failures, confirm no production code, preserve draft-only stop]
@@ -269,12 +269,12 @@ graph:
       layer: L1
       label: Phase 4 draft dispatch gate
       owner: verifier
-      status: ready
+      status: done
       risk: high
       confidence:
-        score: 0.8
-        basis: "Dispatch is reviewable after the draft PR exists and the exact red baseline is classified."
-        evidence_refs: [".loop/evidence/t032-t033-dispatch-20260809.json"]
+        score: 0.96
+        basis: "Draft PR #63 is open, mergeable and unmerged; the exact red baseline is classified with zero review threads."
+        evidence_refs: [".loop/evidence/t032-t033-dispatch-20260809.json", ".loop/evidence/t032-t033-red-baseline-20260809.json"]
       budget: {effort_hours: 0.5, tokens: 4500}
       config:
         level: P2
@@ -333,12 +333,12 @@ graph:
       layer: GLOBAL
       label: Phase 4 tests-first terminal policy
       owner: policy
-      status: planned
+      status: success
       risk: high
       confidence:
-        score: 0.9
-        basis: "The dispatch must stop at draft-only until red evidence is classified; production implementation is a later bounded action."
-        evidence_refs: []
+        score: 1.0
+        basis: "The T032/T033 red baselines are classified, the draft PR is reviewable and no production implementation is merged."
+        evidence_refs: [".loop/evidence/t032-t033-red-baseline-20260809.json", "https://github.com/bynanci/courtside-tw/pull/63"]
       budget: {effort_hours: 0.1, tokens: 500}
       config:
         states:
