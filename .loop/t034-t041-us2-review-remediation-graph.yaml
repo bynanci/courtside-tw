@@ -12,21 +12,18 @@ scope:
     - SSR malformed-slug handling, progress persistence, share fallback and semantic renderer behavior
     - Exact-head CI/Security proof and append-only graph, evidence and memory receipts
   out:
-    - Invented media URLs or activation of a media-storage resolver
-    - Contributor/byline persistence or ArticleProjection contract expansion without approval
-    - p5.js dependency/runtime approval, production activation, deployment or protected merge
-    - Web3, wallet, token, Passport, migration or public content publication
+    - Protected merge, production migration execution, production activation or deployment
+    - Web3, wallet, token, Passport or public content publication
 
 authority:
   allowed:
     - Read main, PR #65/#66/#67, review threads, tasks, OpenAPI, schema, ADRs and tests
     - Create and update a draft remediation branch and bounded proof artifacts
+    - Implement the selected media storage-key resolver, revision-scoped contributor contract and p5.js 2.x runtime under bounded proof
     - Run exact-head CI, Security and browser verification
   requires_approval:
-    - Media storage-key resolver or public media contract
-    - Contributor source/contract decision
-    - p5.js runtime/dependency or production activation
     - Protected merge, task checkbox update, schema or rights-policy change
+    - Production migration execution, public activation or deployment
   forbidden:
     - Claim pending or disputed proof as success
     - Weaken acceptance tests to hide a missing runtime
@@ -35,11 +32,11 @@ authority:
 
 acceptance:
   - PR #67 remains draft-only and based on main@c45c1fd7e93699f4626e2ceab6b5fb6f52f38842.
-  - Reader/API changes are limited to the five review-remediation files plus proof artifacts.
+  - Reader/API, exact public media resolution, contributor source/contract and p5.js runtime changes are bounded and separately evidenced.
   - Canonical ContentDocument validation fails closed and issue navigation applies the public rights gate.
-  - Latest exact-head CI and Security are read back; any pending browser or human gate remains needs_human.
-  - Media URL resolution, contributor metadata and p5.js runtime are separately named human gates.
-  - No task checkbox, merge, deployment or production state is changed by this lane.
+  - The implementation head has successful exact-head CI, Security and browser receipts with no pending test failure.
+  - The media URL is selected from media_variant.public_storage_key, contributors are revision-scoped, and p5.js lifecycle is bounded.
+  - No task checkbox, merge, production migration execution, deployment or public activation is changed by this lane.
 
 budgets:
   max_iterations: 5
@@ -51,10 +48,8 @@ budgets:
 
 policy:
   human_gates:
-    - Public media URL must resolve from selected media_variant.public_storage_key
-    - Contributor/byline source and public ArticleProjection contract
-    - Approved p5.js 2.x runtime, dependency and bounded lifecycle proof
     - Protected merge and task checkbox updates
+    - Production migration execution, public activation and deployment
   no_progress:
     max_same_failure: 2
     max_no_evidence_delta: 2
@@ -84,7 +79,7 @@ memory_workflow:
 graph:
   entry_nodes: [t-review-readback]
   terminal_nodes: [s-review-terminal]
-  current_frontier: [p-exact-head, g-protected-p1]
+  current_frontier: [g-protected-p1]
   blocked_nodes: [g-protected-p1]
 
   loops:
@@ -92,7 +87,7 @@ graph:
       layer: L1
       owner: codex-agent
       trigger_nodes: [t-review-readback]
-      action_nodes: [a-bounded-remediation]
+      action_nodes: [a-bounded-remediation, a-media-resolver, a-contributor-contract, a-p5-runtime]
       proof_nodes: [p-exact-head]
       memory_nodes: [m-control-ledger, m-semantic-lane]
       stop_nodes: [s-review-terminal]
@@ -139,40 +134,91 @@ graph:
         requires_approval: ["media resolver", "contributors contract", "p5 runtime", "protected merge"]
         forbidden: ["task checkbox edits", "production activation", "Web3 or wallet dependency"]
 
+    - id: a-media-resolver
+      kind: action
+      layer: L1
+      label: Resolve public media from the selected storage key and rights gate
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 0.98
+        basis: "The exact media_variant.public_storage_key path is implemented, fail-closed and covered by API integration plus browser URL proof."
+        evidence_refs: [".loop/evidence/t034-t041-media-byline-p5-implementation-20260809.json"]
+      budget: {effort_hours: 2.0, tokens: 10000}
+      config:
+        contract: "ArticleProjection.media[]"
+        invariant: "The selected public_storage_key is the only source of the public media URL."
+        forbidden: ["slug-derived paths", "asset-id-derived paths", "non-PUBLIC_WEB rights"]
+
+    - id: a-contributor-contract
+      kind: action
+      layer: L1
+      label: Persist revision-scoped contributors and expose truthful public byline metadata
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 0.98
+        basis: "V003, repository projection, OpenAPI and generated client types, API integration and browser byline proof agree on the same source and contract."
+        evidence_refs: [".loop/evidence/t034-t041-media-byline-p5-implementation-20260809.json"]
+      budget: {effort_hours: 2.0, tokens: 10000}
+      config:
+        source: "contributor + article_contributor(article_revision_id, role, position)"
+        contract: "ArticleProjection.contributors[]"
+        invariant: "Byline and JSON-LD authors come only from the requested published revision."
+
+    - id: a-p5-runtime
+      kind: action
+      layer: L1
+      label: Run p5.js 2.x in instance mode with bounded deterministic lifecycle
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 0.98
+        basis: "p5@2.3.0 is locked and installed; browser proof covers canvas creation, deterministic first frame, loop state, visibility and unmount."
+        evidence_refs: [".loop/evidence/t034-t041-media-byline-p5-implementation-20260809.json"]
+      budget: {effort_hours: 2.5, tokens: 14000}
+      config:
+        dependency: "p5@2.3.0"
+        lifecycle: ["dynamic client import", "instance mode setup", "noLoop when reduced/hidden/out-of-view", "loop when visible/full", "remove on unmount"]
+        invariant: "Reduced-motion and SSR fallback remain readable without starting the loop."
+
     - id: p-exact-head
       kind: proof
       layer: L1
       label: Exact-head CI, Security and browser verification
       owner: verifier
-      status: needs_human
+      status: done
       risk: high
       confidence:
-        score: 0.85
-        basis: "At the prior exact head core CI and Security passed but browser proof failed; the latest synchronization commit has no workflow receipt yet."
-        evidence_refs: [".loop/evidence/t034-t041-us2-review-remediation-baseline-20260809.json"]
+        score: 1.0
+        basis: "Implementation head eb7fc608bca82183889237c46b0f123a8555037c has CI #308, Security #308 and 9/9 browser tests passing."
+        evidence_refs: [".loop/evidence/t034-t041-media-byline-p5-implementation-20260809.json"]
       budget: {effort_hours: 1.5, tokens: 12000}
       config:
         level: P3
-        claim: "The latest PR #67 head has reproducible CI/Security/browser results, with no pending failure hidden."
-        method: "Fetch workflow runs by exact head SHA and inspect all job conclusions and failure logs."
-        evidence_path: ".loop/evidence/t034-t041-us2-review-remediation-baseline-20260809.json"
+        claim: "The implementation head has reproducible CI/Security/browser results, with no pending failure hidden."
+        method: "Fetch workflow runs by exact head SHA and inspect every job conclusion plus browser logs."
+        evidence_path: ".loop/evidence/t034-t041-media-byline-p5-implementation-20260809.json"
         required: true
         baseline_required: true
 
     - id: g-protected-p1
       kind: gate
       layer: L1
-      label: Human closure of media, contributor and p5 runtime gates
+      label: Human closure of protected merge, production activation and task state
       owner: human-mark
       status: needs_human
       risk: critical
       confidence:
         score: 1.0
-        basis: "The repository has no contributor source or approved public media resolver in this projection, and ADR-0005 requires p5.js 2.x runtime proof."
-        evidence_refs: ["https://github.com/bynanci/courtside-tw/pull/65", "specs/001-taiwan-basketball-magazine-ebook/adr/ADR-0005-motion-and-court-pulse-v1.md"]
+        basis: "Implementation and proof gates are closed; protected merge, production migration/activation and task checkbox state remain outside this lane."
+        evidence_refs: [".loop/evidence/t034-t041-media-byline-p5-implementation-20260809.json"]
       budget: {effort_hours: 0.5, tokens: 2500}
       config:
-        condition: "Approve the storage-key resolver, contributor/source contract and p5.js runtime/dependency path before protected merge or production activation."
+        condition: "Review the verified implementation and approve protected merge, production migration/activation and task-state changes separately."
         approver: human-mark
         required: true
 
@@ -203,12 +249,12 @@ graph:
       layer: L1
       label: Durable remediation constraints and disputed state
       owner: codex-agent
-      status: needs_human
+      status: needs_update
       risk: high
       confidence:
-        score: 0.9
-        basis: "The semantic record preserves verified core checks and explicitly disputed/pending browser and protected-gate state."
-        evidence_refs: [".loop/memory/t034-t041-us2-review-remediation.json"]
+        score: 0.95
+        basis: "The semantic record now contains verified media, contributor and p5 implementation facts; it remains needs_update only because protected merge and production gates are pending."
+        evidence_refs: [".loop/memory/t034-t041-us2-review-remediation.json", ".loop/evidence/t034-t041-media-byline-p5-implementation-20260809.json"]
       budget: {effort_hours: 0.2, tokens: 2500}
       config:
         path: ".loop/memory/t034-t041-us2-review-remediation.json"
@@ -229,8 +275,8 @@ graph:
       risk: high
       confidence:
         score: 1.0
-        basis: "The lane must stop at needs_human while latest exact-head proof and protected product/runtime decisions are not fully closed."
-        evidence_refs: [".loop/evidence/t034-t041-us2-review-remediation-baseline-20260809.json"]
+        basis: "Implementation proof is closed, but protected merge, production activation and task-state changes remain human decisions."
+        evidence_refs: [".loop/evidence/t034-t041-media-byline-p5-implementation-20260809.json"]
       budget: {effort_hours: 0.1, tokens: 500}
       config:
         states:
@@ -244,6 +290,12 @@ graph:
   edges:
     - {id: e-readback-remediation, from: t-review-readback, to: a-bounded-remediation, type: enables, required: true, confidence: 1.0, token_capacity: 30000}
     - {id: e-remediation-proof, from: a-bounded-remediation, to: p-exact-head, type: verifies, required: true, confidence: 0.9, token_capacity: 12000}
+    - {id: e-remediation-media, from: a-bounded-remediation, to: a-media-resolver, type: enables, required: true, confidence: 1.0, token_capacity: 10000}
+    - {id: e-remediation-contributors, from: a-bounded-remediation, to: a-contributor-contract, type: enables, required: true, confidence: 1.0, token_capacity: 10000}
+    - {id: e-remediation-p5, from: a-bounded-remediation, to: a-p5-runtime, type: enables, required: true, confidence: 1.0, token_capacity: 14000}
+    - {id: e-media-proof, from: a-media-resolver, to: p-exact-head, type: verifies, required: true, confidence: 0.98, token_capacity: 5000}
+    - {id: e-contributors-proof, from: a-contributor-contract, to: p-exact-head, type: verifies, required: true, confidence: 0.98, token_capacity: 5000}
+    - {id: e-p5-proof, from: a-p5-runtime, to: p-exact-head, type: verifies, required: true, confidence: 0.98, token_capacity: 7000}
     - {id: e-remediation-ledger, from: a-bounded-remediation, to: m-control-ledger, type: records, required: true, confidence: 0.9, token_capacity: 2500}
     - {id: e-proof-ledger, from: p-exact-head, to: m-control-ledger, type: records, required: true, confidence: 0.9, token_capacity: 2500}
     - {id: e-ledger-read, from: m-control-ledger, to: a-bounded-remediation, type: reads, required: true, confidence: 0.9, token_capacity: 2500}
