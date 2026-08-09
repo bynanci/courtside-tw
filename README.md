@@ -84,3 +84,13 @@ make verify
 - [`.loop/`](./.loop/)
 
 任何新 implementation 都必須先對應 User Story、FR、ADR、task 與 future test；本輪 alignment 不建立 UI、migration、API、wallet 或 provider SDK。
+
+## Experimental user research
+
+The experimental research plan for the basketball magazine × Web3 hypothesis is maintained under [`docs/research/`](./docs/research/). It explicitly separates design simulation from measured participant evidence and keeps the product boundary:
+
+- Magazine-first, anonymous/free reading remains the P1 contract.
+- Reader Stamp and Season Passport are tested as off-chain memory/retention mechanisms first.
+- Provenance is tested for version-understanding, not truth or rights guarantees.
+- Wallet, token, marketplace, chain and external writes remain optional and non-blocking.
+- No research document is evidence of user adoption, retention or revenue until a participant study and decision receipt exist.
