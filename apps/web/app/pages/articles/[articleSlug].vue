@@ -620,8 +620,7 @@ function saveReadingProgress(): void {
       document.documentElement.scrollHeight,
       document.body?.scrollHeight ?? 0
     )
-    const atDocumentEnd =
-      window.scrollY + window.innerHeight >= documentBottom - 2
+    const atDocumentEnd = window.scrollY + window.innerHeight >= documentBottom - 2
     const previousBlock = resumeProgress.value?.blockId
       ? blocks.find((block) => block.dataset.blockId === resumeProgress.value?.blockId)
       : null
