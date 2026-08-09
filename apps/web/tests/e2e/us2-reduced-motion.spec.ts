@@ -12,11 +12,9 @@ test("reduced motion keeps content visible and creative runtime bounded", async 
   await expect(creatives).toHaveCount(2)
   const firstCreative = creatives.nth(0)
   const firstRuntime = firstCreative.getByTestId("creative-runtime")
+  const firstPoster = page.locator(".article-generative").nth(0).getByTestId("generative-poster")
   await expect(firstCreative).toHaveAttribute("data-seed", "20260807")
-  await expect(firstCreative.locator('[data-testid="generative-poster"]')).toHaveAttribute(
-    "data-fallback",
-    "true"
-  )
+  await expect(firstPoster).toHaveAttribute("data-fallback", "true")
   await expect(firstCreative.locator("img")).toHaveAttribute(
     "src",
     /\/media\/published\/opening-generative-wide\.webp$/
@@ -75,7 +73,9 @@ test("tracks visibility independently for multiple generative blocks", async ({ 
   await expect(firstRuntime).toHaveCount(1)
   await expect(secondRuntime).toHaveCount(1)
 
-  await firstCreative.scrollIntoViewIfNeeded()
+  await firstCreative.evaluate((element) =>
+    element.scrollIntoView({ block: "start", behavior: "auto" })
+  )
   await expect(firstCreative).toHaveAttribute("data-runtime-state", "running")
   await expect(secondCreative).toHaveAttribute("data-runtime-state", "paused")
   const firstFrame = Number(await firstRuntime.getAttribute("data-runtime-frame"))
@@ -83,7 +83,9 @@ test("tracks visibility independently for multiple generative blocks", async ({ 
   const secondFrame = Number(await firstRuntime.getAttribute("data-runtime-frame"))
   expect(secondFrame).toBeGreaterThan(firstFrame)
 
-  await secondCreative.scrollIntoViewIfNeeded()
+  await secondCreative.evaluate((element) =>
+    element.scrollIntoView({ block: "start", behavior: "auto" })
+  )
   await expect(secondCreative).toHaveAttribute("data-runtime-state", "running")
   await expect(firstCreative).toHaveAttribute("data-runtime-state", "paused")
   const secondCanvasFrame = Number(await secondRuntime.getAttribute("data-runtime-frame"))
