@@ -14,7 +14,6 @@ import java.util.regex.Pattern;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import tw.basketball.magazine.publication.PublicArticleModels.ArticleProjection;
 import tw.basketball.magazine.publication.PublicArticleModels.PublicArticleMedia;
 
 /**
