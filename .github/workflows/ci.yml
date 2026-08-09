@@ -179,6 +179,11 @@ jobs:
           set -o pipefail
           scripts/test/verify-database-foundation.sh 2>&1 | tee artifacts/dependencies/database-foundation.log
 
+      - name: Verify V003 article contributor migration
+        run: |
+          set -o pipefail
+          bash scripts/test/verify-article-contributors-migration.sh 2>&1 | tee artifacts/dependencies/article-contributors-migration.log
+
       - name: Capture dependency status and clean up
         if: ${{ always() }}
         run: |
