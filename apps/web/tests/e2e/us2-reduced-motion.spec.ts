@@ -15,7 +15,7 @@ test("reduced motion keeps content visible and creative runtime bounded", async 
   const firstPoster = page.locator(".article-generative").nth(0).getByTestId("generative-poster")
   await expect(firstCreative).toHaveAttribute("data-seed", "20260807")
   await expect(firstPoster).toHaveAttribute("data-fallback", "true")
-  await expect(firstCreative.locator("img")).toHaveAttribute(
+  await expect(firstPoster.locator("img")).toHaveAttribute(
     "src",
     /\/media\/published\/opening-generative-wide\.webp$/
   )
@@ -73,11 +73,19 @@ test("tracks visibility independently for multiple generative blocks", async ({ 
   await expect(firstRuntime).toHaveCount(1)
   await expect(secondRuntime).toHaveCount(1)
 
+  const expectStateToMatchViewport = async (creative: typeof firstCreative) => {
+    const expectedState = await creative.evaluate((element) => {
+      const rect = element.getBoundingClientRect()
+      return rect.top < window.innerHeight && rect.bottom > 0 ? "running" : "paused"
+    })
+    await expect(creative).toHaveAttribute("data-runtime-state", expectedState)
+  }
+
   await firstCreative.evaluate((element) =>
     element.scrollIntoView({ block: "start", behavior: "auto" })
   )
-  await expect(firstCreative).toHaveAttribute("data-runtime-state", "running")
-  await expect(secondCreative).toHaveAttribute("data-runtime-state", "paused")
+  await expectStateToMatchViewport(firstCreative)
+  await expectStateToMatchViewport(secondCreative)
   const firstFrame = Number(await firstRuntime.getAttribute("data-runtime-frame"))
   await page.waitForTimeout(250)
   const secondFrame = Number(await firstRuntime.getAttribute("data-runtime-frame"))
@@ -86,8 +94,8 @@ test("tracks visibility independently for multiple generative blocks", async ({ 
   await secondCreative.evaluate((element) =>
     element.scrollIntoView({ block: "start", behavior: "auto" })
   )
-  await expect(secondCreative).toHaveAttribute("data-runtime-state", "running")
-  await expect(firstCreative).toHaveAttribute("data-runtime-state", "paused")
+  await expectStateToMatchViewport(firstCreative)
+  await expectStateToMatchViewport(secondCreative)
   const secondCanvasFrame = Number(await secondRuntime.getAttribute("data-runtime-frame"))
   await page.waitForTimeout(250)
   expect(Number(await secondRuntime.getAttribute("data-runtime-frame"))).toBeGreaterThan(
