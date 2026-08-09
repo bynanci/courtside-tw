@@ -6,7 +6,7 @@ export default defineNitroPlugin((nitroApp) => {
   nitroApp.hooks.hook("request", (event) => {
     const nonce = randomBytes(16).toString("base64")
     event.context.cspNonce = nonce
-    applySecurityHeaders(event.node.res, nonce)
+    applySecurityHeaders(event.node.res, nonce, configuredApiOrigin())
   })
 
   nitroApp.hooks.hook("render:html", (html, { event }) => {
@@ -27,3 +27,19 @@ export default defineNitroPlugin((nitroApp) => {
     }
   })
 })
+
+function configuredApiOrigin(): string | undefined {
+  const value = process.env.NUXT_PUBLIC_API_BASE_URL
+  if (!value) {
+    return undefined
+  }
+  try {
+    const url = new URL(value)
+    if ((url.protocol !== "https:" && url.protocol !== "http:") || url.username || url.password) {
+      return undefined
+    }
+    return url.origin
+  } catch {
+    return undefined
+  }
+}
