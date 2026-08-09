@@ -1,0 +1,46 @@
+{
+  "schema_version": "courtside-proof/v1",
+  "proof_id": "t034-contract-decision-20260809",
+  "recorded_at": "2026-08-09T09:00:00Z",
+  "result": "CONTRACT_DECISION_APPROVED",
+  "decision": "canonical-openapi",
+  "canonical_shape": {
+    "article_projection": {
+      "articleId": "Uuid",
+      "revisionId": "Uuid",
+      "revisionNumber": "positive integer",
+      "slug": "string",
+      "title": "string",
+      "dek": "optional string",
+      "content": "ContentDocument",
+      "issueNavigation": {
+        "issueSlug": "string",
+        "previous": "ArticleSummary|null",
+        "next": "ArticleSummary|null"
+      }
+    }
+  },
+  "test_corrections": [
+    "Keep revisionNumber assertion.",
+    "Rename $.issue.slug to $.issueNavigation.issueSlug.",
+    "Rename $.navigation.next.slug to $.issueNavigation.next.slug."
+  ],
+  "compatibility": {
+    "mode": "none",
+    "reason": "No undeclared duplicate fields are returned; additionalProperties remains false.",
+    "generated_client": "synchronized with contracts/openapi.yaml"
+  },
+  "sources": [
+    "contracts/openapi.yaml#/components/schemas/ArticleProjection",
+    "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java",
+    "packages/api-client/src/generated/openapi.d.ts",
+    ".loop/evidence/t034-contract-drift-20260809.json",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T034-T035"
+  ],
+  "scope_guard": {
+    "web3_wallet_passport_changed": false,
+    "database_migration_changed": false,
+    "production_activation_changed": false
+  },
+  "next_action": "Implement T034/T035 projection and rerun the inherited T032/T033 exact-head gates."
+}
