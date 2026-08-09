@@ -29,6 +29,17 @@ final class PublicIssueRequest {
         }
     }
 
+    static String articleSlug(String value) {
+        if (value == null || value.length() > 128 || !ISSUE_SLUG.matcher(value).matches()) {
+            throw new PublicIssueRequestException(
+                    "/articleSlug",
+                    "invalid_article_slug",
+                    "articleSlug must be a bounded lowercase slug"
+            );
+        }
+        return value;
+    }
+
     static String issueSlug(String value) {
         if (value == null || value.length() > 128 || !ISSUE_SLUG.matcher(value).matches()) {
             throw new PublicIssueRequestException(
