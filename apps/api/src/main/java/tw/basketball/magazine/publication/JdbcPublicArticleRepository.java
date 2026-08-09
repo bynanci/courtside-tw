@@ -325,6 +325,8 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
     }
 
     private static final class InvalidPublishedContentException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
         private InvalidPublishedContentException(String message) {
             super(message);
         }
