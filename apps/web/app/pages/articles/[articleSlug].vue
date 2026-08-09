@@ -767,13 +767,13 @@ onBeforeUnmount(() => {
                 v-if="
                   assetMediaUrl(
                     payloadFor(block).assetId,
-                    stringValue(payloadFor(block).variant) || "inline"
+                    stringValue(payloadFor(block).variant) || 'inline'
                   )
                 "
                 :src="
                   assetMediaUrl(
                     payloadFor(block).assetId,
-                    stringValue(payloadFor(block).variant) || "inline"
+                    stringValue(payloadFor(block).variant) || 'inline'
                   )
                 "
                 :alt="stringValue(payloadFor(block).altText)"
@@ -804,8 +804,8 @@ onBeforeUnmount(() => {
                 :key="block.id + '-' + itemIndex"
               >
                 <img
-                  v-if="assetMediaUrl(item.assetId, "inline")"
-                  :src="assetMediaUrl(item.assetId, "inline")"
+                  v-if="assetMediaUrl(item.assetId, 'inline')"
+                  :src="assetMediaUrl(item.assetId, 'inline')"
                   :alt="item.altText"
                   loading="lazy"
                   @error="markAssetFailed(block.id + '-' + itemIndex)"
@@ -848,15 +848,15 @@ onBeforeUnmount(() => {
             <section v-else-if="block.type === 'generative-canvas'" class="article-generative">
               <img
                 v-if="
-                  assetMediaUrl(payloadFor(block).posterAssetId, "poster") &&
-                  !failedAssets.has(block.id + "-poster")
+                  assetMediaUrl(payloadFor(block).posterAssetId, 'poster') &&
+                  !failedAssets.has(block.id + '-poster')
                 "
                 data-testid="generative-poster-image"
                 class="article-generative-poster"
-                :src="assetMediaUrl(payloadFor(block).posterAssetId, "poster")"
+                :src="assetMediaUrl(payloadFor(block).posterAssetId, 'poster')"
                 :alt="stringValue(payloadFor(block).altText)"
                 loading="lazy"
-                @error="markAssetFailed(block.id + "-poster")"
+                @error="markAssetFailed(block.id + '-poster')"
               />
               <div
                 v-else
@@ -868,7 +868,7 @@ onBeforeUnmount(() => {
                 {{ stringValue(payloadFor(block).dataSummary) }}
               </div>
               <button
-                v-if="motionMode === "reduced" && !interactiveEnabled"
+                v-if="motionMode === 'reduced' && !interactiveEnabled"
                 type="button"
                 class="button-link creative-enable"
                 data-testid="creative-enable"
@@ -887,13 +887,13 @@ onBeforeUnmount(() => {
               >
                 <CourtPulseRuntime
                   v-if="interactiveEnabled"
-                  :key="article.revisionId + ":" + block.id"
+                  :key="article.revisionId + ':' + block.id"
                   :seed="numberValue(payloadFor(block).seed)"
                   :parameters="canvasParameters(payloadFor(block).parameters)"
                   :alt-text="stringValue(payloadFor(block).altText)"
                   :active="interactiveEnabled"
-                  :paused="runtimeState !== "running""
-                  :reduced-motion="motionMode === "reduced""
+                  :paused="runtimeState !== 'running'"
+                  :reduced-motion="motionMode === 'reduced'"
                 />
                 <span v-else data-testid="creative-runtime-placeholder">
                   互動視覺預設停用；{{ stringValue(payloadFor(block).dataSummary) }}
