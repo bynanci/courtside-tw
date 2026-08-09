@@ -677,14 +677,16 @@ export interface components {
     }
     ArticleProjection: {
       articleId: components["schemas"]["Uuid"]
+      revisionId: components["schemas"]["Uuid"]
+      revisionNumber: number
       slug: string
       title: string
       dek?: string
       content: components["schemas"]["content-document.schema"]
       issueNavigation: {
         issueSlug: string
-        previous: Record<string, never> | null
-        next: Record<string, never> | null
+        previous: components["schemas"]["ArticleSummary"] | null
+        next: components["schemas"]["ArticleSummary"] | null
       }
     }
     SearchResult: {
@@ -1359,7 +1361,10 @@ export interface operations {
   getPublicArticle: {
     parameters: {
       query?: never
-      header?: never
+      header: {
+        /** @description Conditional representation validator. */
+        "If-None-Match"?: components["parameters"]["IfNoneMatch"]
+      }
       path: {
         articleSlug: components["parameters"]["ArticleSlug"]
       }
@@ -1378,6 +1383,13 @@ export interface operations {
         }
       }
       400: components["responses"]["Problem400"]
+      304: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          ETag: components["headers"]["ETag"]
+          [name: string]: unknown
+        }
+      }
       404: components["responses"]["Problem404"]
       429: components["responses"]["Problem429"]
     }
