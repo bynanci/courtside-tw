@@ -54,6 +54,7 @@ test.describe("US3 Studio editorial publication", () => {
     await expect(page.getByTestId("studio-shell")).toHaveAttribute("data-hydrated", "true")
     await page.getByTestId("studio-new-article").click()
     await page.getByTestId("article-title").fill("第一次修訂")
+    await page.getByTestId("article-content").fill("第一次修訂內容。")
     await page.getByTestId("article-save").click()
     await expect(page.getByTestId("workflow-status")).toContainText("草稿已儲存")
     await page.getByTestId("article-title").fill("第二次修訂")
