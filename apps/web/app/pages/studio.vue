@@ -243,7 +243,12 @@ async function withdrawArticle(): Promise<void> {
 }
 
 function editorialSlug(): string {
-  return "studio-article-" + createIdempotencyKey("slug").replace(/[^a-z0-9-]/gi, "").toLowerCase()
+  return (
+    "studio-article-" +
+    createIdempotencyKey("slug")
+      .replace(/[^a-z0-9-]/gi, "")
+      .toLowerCase()
+  )
 }
 
 function apiErrorMessage(error: unknown): string {
