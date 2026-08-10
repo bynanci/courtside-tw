@@ -80,11 +80,12 @@ public final class JdbcMediaAssetRepository implements MediaAssetRepository {
                 || current.processingState() != MediaProcessingState.PROCESSING) {
             return false;
         }
-        MediaProcessingState nextState = result.state() == MediaProcessingState.READY
+        var resultState = result.state();
+        MediaProcessingState nextState = resultState == tw.basketball.magazine.media.processing.MediaProcessingState.READY
                 && current.altText() != null
                 && !current.altText().isBlank()
                 ? MediaProcessingState.READY
-                : result.state() == MediaProcessingState.FAILED
+                : resultState == tw.basketball.magazine.media.processing.MediaProcessingState.FAILED
                 ? MediaProcessingState.FAILED
                 : MediaProcessingState.PROCESSING;
         String checksum = result.originalSha256() == null
@@ -102,7 +103,7 @@ public final class JdbcMediaAssetRepository implements MediaAssetRepository {
         // Keep generated variants even when the worker finishes before the
         // editor has supplied required alt text. Metadata completion can then
         // promote the asset to READY without re-reading the private original.
-        if (result.state() == MediaProcessingState.READY) {
+        if (resultState == tw.basketball.magazine.media.processing.MediaProcessingState.READY) {
             for (MediaVariant variant : result.variants()) {
                 jdbcTemplate.update("""
                         INSERT INTO media_variant (

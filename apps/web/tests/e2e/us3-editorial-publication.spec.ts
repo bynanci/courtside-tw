@@ -69,7 +69,9 @@ test.describe("US3 Studio editor/publisher workflow", () => {
       waitUntil: "domcontentloaded"
     })
 
-    await expect(page.getByText(/revision|版本/i)).toBeVisible()
+    await expect(page.locator(".studio-workflow-result strong")).toHaveText(
+      /已核准 · revision \d+/i
+    )
     await page.getByRole("button", { name: /排程|schedule/i }).click()
     await page.getByLabel(/時區|timezone/i).selectOption("Asia/Taipei")
     await page.getByLabel(/發布時間|publish at/i).fill("2026-08-11T09:00")

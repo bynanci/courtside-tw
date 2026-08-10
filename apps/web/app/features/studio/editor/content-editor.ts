@@ -1,4 +1,4 @@
-import { assertValidContentDocument, type ContentDocument } from "@courtside/content-schema"
+import { assertValidContentDocument, type ContentDocument } from "@courtside/content-schema/browser"
 
 export interface ContentParseResult {
   document: ContentDocument | null

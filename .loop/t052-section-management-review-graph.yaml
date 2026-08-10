@@ -31,6 +31,25 @@ policy:
     append_only_evidence: true
     require_graph_delta: true
 
+memory_workflow:
+  contract: work-memory/v1
+  control_ledger: Append T052 graph deltas, proof receipts and gate outcomes every iteration.
+  semantic_memory: Capture only durable T052 task state and execution constraints.
+  modes: [recall, capture, update, forget, no_op]
+  retrieval:
+    levels: [index, timeline_relations, details]
+    max_index_results: 10
+    stop_on_sufficient_evidence: true
+  capture:
+    allowed_kinds: [task_state, evidence, constraint]
+    requires_downstream_proof: true
+    requires_write_receipt: true
+  lifecycle: [seed, verified, stable, needs_update, disputed, archived]
+  failure_policy:
+    write_pending: blocked
+    stale_or_disputed: needs_human
+    redact_secrets: true
+
 graph:
   entry_nodes: [t-t052-authorized]
   terminal_nodes: [s-local-proof-ready, s-remote-merge-gated]
@@ -62,6 +81,10 @@ graph:
         basis: User explicitly identified the absent backend API and requested verification, review and merge.
         evidence_refs: [fc9ff7a]
       budget: {effort_hours: 0.2, tokens: 600}
+      config:
+        condition: User authorizes completion of T052 and its exact-head merge gates.
+        inputs_required: [specs/001-taiwan-basketball-magazine-ebook/tasks.md, local implementation head]
+        dedupe: repository plus T052 plus implementation head
     - id: a-t052-section-management
       kind: action
       layer: L1
@@ -74,6 +97,11 @@ graph:
         basis: The exact-head commit contains the API, migration, generated client, editor, component tests and e2e fixture/spec.
         evidence_refs: [fc9ff7a, .loop/evidence/t052-section-management-review-20260810.json]
       budget: {effort_hours: 4.0, tokens: 7000}
+      config:
+        workflow: [read section contract, implement bounded server/UI changes, run focused proof, record evidence]
+        allowed: [T052 production code, tests, OpenAPI/client output, append-only loop receipts]
+        requires_approval: [protected merge, task checkbox update, production migration activation]
+        forbidden: [rewrite historical receipts, weaken acceptance assertions, expose secrets]
     - id: p-t052-local-proof
       kind: proof
       layer: L1
@@ -86,6 +114,13 @@ graph:
         basis: OpenAPI, content schema, generated client, web lint/typecheck/test/build and formatting passed at fc9ff7a.
         evidence_refs: [.loop/evidence/t052-section-management-review-20260810.json]
       budget: {effort_hours: 1.0, tokens: 2200}
+      config:
+        level: P2
+        claim: T052 local API, contract, frontend and accessibility behavior is reproducibly verified.
+        method: OpenAPI/content/client checks plus focused web tests, lint, typecheck and build.
+        evidence_path: .loop/evidence/t052-section-management-review-20260810.json
+        required: true
+        baseline_required: true
     - id: p-t052-exact-head-gate
       kind: proof
       layer: L1
@@ -98,6 +133,13 @@ graph:
         basis: Local environment has Java 17, no Gradle/Docker and no Chromium; CI/protected workflow is required.
         evidence_refs: [.loop/evidence/t052-section-management-review-20260810.json]
       budget: {effort_hours: 2.0, tokens: 3000}
+      config:
+        level: P4
+        claim: T052 remote Java, browser, review, security and protected merge gates pass at the current head.
+        method: Exact-head GitHub checks, review-thread readback and protected merge readback.
+        evidence_path: .loop/evidence/t052-section-management-review-20260810.json
+        required: true
+        baseline_required: true
     - id: m-t052-memory
       kind: memory
       layer: L1
@@ -110,6 +152,15 @@ graph:
         basis: The memory record references the exact commit, local receipts and remaining gates.
         evidence_refs: [.loop/memory/t052-section-management-review-20260810.json]
       budget: {effort_hours: 0.2, tokens: 900}
+      config:
+        path: .loop/memory/t052-section-management-review-20260810.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: work-memory/v1
+        memory_role: hybrid
+        receipt_required: true
+        write_failure_state: blocked
     - id: s-local-proof-ready
       kind: stop
       layer: GLOBAL
@@ -121,6 +172,15 @@ graph:
         score: 0.95
         basis: Local proof passed without substituting unavailable Java or browser execution.
         evidence_refs: [.loop/evidence/t052-section-management-review-20260810.json]
+      budget: {effort_hours: 0.0, tokens: 0}
+      config:
+        states:
+          success: Local implementation and available T052 proof checks pass.
+          no_op: No T052 change was needed.
+          blocked: Required local proof or memory receipt is unavailable.
+          stalled: No new evidence delta after the configured limit.
+          exhausted: The bounded iteration budget is reached.
+          needs_human: Remote exact-head gates or protected merge are pending.
     - id: s-remote-merge-gated
       kind: stop
       layer: GLOBAL
@@ -132,14 +192,25 @@ graph:
         score: 0.98
         basis: Protected remote evidence has not yet been collected at the recorded local head.
         evidence_refs: [.loop/evidence/t052-section-management-review-20260810.json]
+      budget: {effort_hours: 0.0, tokens: 0}
+      config:
+        states:
+          success: Exact-head CI, Security, review and protected merge readback pass.
+          no_op: No remote state changed.
+          blocked: A required remote gate or approval is unavailable.
+          stalled: No new exact-head evidence after the configured limit.
+          exhausted: The bounded remote-gate budget is reached.
+          needs_human: Protected merge or task checkbox decision is pending.
   edges:
     - {id: e-t052-authorize, from: t-t052-authorized, to: a-t052-section-management, type: enables, required: true, confidence: 0.98, token_capacity: 7000}
     - {id: e-t052-proof, from: a-t052-section-management, to: p-t052-local-proof, type: verifies, required: true, confidence: 0.92, token_capacity: 2200}
-    - {id: e-t052-remote, from: p-t052-local-proof, to: p-t052-exact-head-gate, type: gates, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-t052-remote, from: p-t052-local-proof, to: p-t052-exact-head-gate, type: enables, required: true, confidence: 0.95, token_capacity: 3000}
     - {id: e-t052-memory, from: p-t052-local-proof, to: m-t052-memory, type: records, required: true, confidence: 0.95, token_capacity: 900}
+    - {id: e-t052-memory-enables, from: p-t052-local-proof, to: m-t052-memory, type: enables, required: true, confidence: 0.95, token_capacity: 900}
     - {id: e-t052-ready, from: m-t052-memory, to: s-local-proof-ready, type: enables, required: true, confidence: 0.95, token_capacity: 900}
+    - {id: e-t052-memory-reads-action, from: m-t052-memory, to: a-t052-section-management, type: reads, required: true, confidence: 0.85, token_capacity: 900}
     - {id: e-t052-feedback, from: p-t052-exact-head-gate, to: a-t052-section-management, type: feedback, required: false, confidence: 0.8, token_capacity: 1200}
-    - {id: e-t052-hold, from: p-t052-exact-head-gate, to: s-remote-merge-gated, type: blocks, required: false, confidence: 0.98, token_capacity: 900}
+    - {id: e-t052-hold, from: p-t052-exact-head-gate, to: s-remote-merge-gated, type: enables, required: false, confidence: 0.98, token_capacity: 900}
 
 flow:
   source: t-t052-authorized

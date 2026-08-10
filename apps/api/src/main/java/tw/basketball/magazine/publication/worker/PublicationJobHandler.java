@@ -346,12 +346,16 @@ public final class PublicationJobHandler implements OutboxEventHandler {
     }
 
     private static final class RetryableJobException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
         private RetryableJobException(String message) {
             super(message);
         }
     }
 
     private static final class PermanentJobException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
         private PermanentJobException(String message) {
             super(message);
         }

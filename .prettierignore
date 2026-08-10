@@ -4,3 +4,4 @@
 **/coverage/
 **/node_modules/
 pnpm-lock.yaml
+packages/content-schema/src/generated/content-document-validator.ts
