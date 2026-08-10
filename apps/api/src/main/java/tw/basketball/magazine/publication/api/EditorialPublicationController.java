@@ -2,7 +2,10 @@ package tw.basketball.magazine.publication.api;
 
 import java.security.Principal;
 import java.time.Instant;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
@@ -324,7 +327,7 @@ public final class EditorialPublicationController {
                 code,
                 request.getRequestURI(),
                 requestId(request),
-                List.of(new FieldError("/request", code.name().toLowerCase(), safeMessage))
+                List.of(new FieldError("/request", code.name().toLowerCase(Locale.ROOT), safeMessage))
         );
     }
 
@@ -350,12 +353,21 @@ public final class EditorialPublicationController {
     }
 
     public record IssuePatch(UUID issueId, Map<String, Object> changes) {
+        public IssuePatch {
+            changes = immutableMap(changes);
+        }
     }
 
     public record ArticleInput(String title, String slug, Map<String, Object> content) {
+        public ArticleInput {
+            content = content == null ? null : immutableMap(content);
+        }
     }
 
     public record ArticlePatch(UUID articleId, Map<String, Object> changes) {
+        public ArticlePatch {
+            changes = immutableMap(changes);
+        }
     }
 
     public record SubmitRequest(UUID revisionId) {
@@ -368,8 +380,16 @@ public final class EditorialPublicationController {
     }
 
     public record EditorialPage<T>(List<T> items, PageMeta page) {
+        public EditorialPage {
+            items = List.copyOf(items);
+            page = Objects.requireNonNull(page, "page");
+        }
     }
 
     public record PageMeta(String nextCursor, int limit) {
+    }
+
+    private static Map<String, Object> immutableMap(Map<String, Object> value) {
+        return Collections.unmodifiableMap(new HashMap<>(Objects.requireNonNull(value, "value")));
     }
 }
