@@ -1,0 +1,111 @@
+{
+  "schema_version": "1",
+  "evidence_id": "t042-t047-us3-publication-gate-remediation-20260810",
+  "status": "BOUNDED_IMPLEMENTATION_VERIFIED_WITH_HUMAN_GATES",
+  "classification": "CONFIRMED",
+  "source_of_truth": {
+    "repository": "bynanci/courtside-tw",
+    "base_ref": "main",
+    "base_commit": "bcdc96efae3847f17e8c91e8a26f117dd32a2c79",
+    "prior_pr": 70,
+    "remediation_pr": 72,
+    "implementation_head": "0a007b75b5562be1def6d3a2f89dc9e485fc09ca"
+  },
+  "supersedes": [
+    ".loop/t042-t047-us3-publication-gate-graph.yaml",
+    ".loop/t042-t047-us3-publication-gate-ledger.json",
+    ".loop/evidence/t042-t047-us3-publication-gate.json"
+  ],
+  "scope": {
+    "included": [
+      "T042 state-machine, rights-policy, readiness, and idempotency regression tests",
+      "T045 forward-only V005 workflow persistence hardening",
+      "T046 role/state/version/frozen-revision transition rules",
+      "T047 media READY and stable rights/content readiness blockers",
+      "Exact-head CI/Security and isolated migration verification"
+    ],
+    "excluded": [
+      "T043 HTTP endpoints, persistence adapters, and If-Match integration",
+      "T044 Studio two-role browser flow",
+      "T048 upload worker and T049-T056 full Studio orchestration",
+      "Web3, Passport, wallet, token, provider credentials, deployment, production activation",
+      "Task checkbox edits and protected merge"
+    ]
+  },
+  "findings_closed": [
+    {
+      "code": "JOB_BLOCKED_STATE",
+      "proof": "V005 adds BLOCKED and requires a bounded last_error."
+    },
+    {
+      "code": "FROZEN_REVISION_BINDING",
+      "proof": "Review, article rights evidence, and article snapshots require the exact composite article revision."
+    },
+    {
+      "code": "REQUEST_CHANGES",
+      "proof": "The publisher can move IN_REVIEW to DRAFT with a bounded reason."
+    },
+    {
+      "code": "DIRECT_ARCHIVE",
+      "proof": "PUBLISHED can transition directly to ARCHIVED."
+    },
+    {
+      "code": "MEDIA_READY_GATE",
+      "proof": "Non-READY media blocks before rights evaluation and retains the asset id."
+    },
+    {
+      "code": "RIGHTS_EVIDENCE_IDENTITY",
+      "proof": "Allowed and non-missing rights decisions retain record id/version."
+    },
+    {
+      "code": "SCOPED_JOB_IDEMPOTENCY",
+      "proof": "Job uniqueness is scoped by requested_by, operation, and idempotency key."
+    },
+    {
+      "code": "APPLICATION_REPLAY_POLICY",
+      "proof": "The pure application policy distinguishes NEW, REPLAY, and CONFLICT by scope and request hash."
+    }
+  ],
+  "proof": {
+    "java_quality_and_unit": "PASSED",
+    "isolated_v001_to_v005_migration": "PASSED",
+    "append_only_and_privilege_checks": "PASSED",
+    "ci": "PASSED",
+    "security": "PASSED",
+    "http_persistence_if_match": "DEFERRED_T043"
+  },
+  "verification": {
+    "ci_run": {
+      "id": 31351729309,
+      "run_number": 377,
+      "conclusion": "success"
+    },
+    "security_run": {
+      "id": 31351729321,
+      "run_number": 377,
+      "conclusion": "success"
+    },
+    "jobs": [
+      "Docker Compose dependency health",
+      "Frontend and contract verification",
+      "Java quality and unit verification",
+      "Public magazine browser verification",
+      "CodeQL (java-kotlin)",
+      "CodeQL (javascript-typescript)",
+      "Dependency audit and reports",
+      "Resolve Compose images",
+      "Trivy (filesystem)",
+      "Trivy (image postgres)",
+      "Trivy (image s3)",
+      "Trivy (image oidc)"
+    ],
+    "exact_head_note": "These receipts prove implementation head 0a007b75b5562be1def6d3a2f89dc9e485fc09ca. A separate final branch-head readback is required after this receipt commit."
+  },
+  "human_gates": [
+    "Review and explicitly decide PR #72; keep it draft until authorized",
+    "Apply/activate V005 only through a separately approved production migration",
+    "Authorize T043 HTTP/persistence proof and T044 Studio E2E",
+    "Marking task checkboxes complete"
+  ],
+  "next_action": "Read back the final PR #72 head and its new CI/Security runs after the receipt commit, then leave protected closure to a human reviewer."
+}
