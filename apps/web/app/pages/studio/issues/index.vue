@@ -13,8 +13,28 @@ import StudioShell from "../../../features/studio/StudioShell.vue"
 const route = useRoute()
 const role = ref<StudioRole | null>(null)
 const issues = ref<IssueDraft[]>([])
+const nextCursor = ref<string | null>(null)
 const loading = ref(true)
 const error = ref<string | null>(null)
+
+async function loadIssues(cursor?: string, append = false): Promise<void> {
+  const page = await listEditorIssues(20, cursor)
+  issues.value = append ? [...issues.value, ...page.items] : page.items
+  nextCursor.value = page.page.nextCursor
+}
+
+async function loadMore(): Promise<void> {
+  if (!nextCursor.value || loading.value) return
+  loading.value = true
+  error.value = null
+  try {
+    await loadIssues(nextCursor.value, true)
+  } catch (cause) {
+    error.value = cause instanceof Error ? cause.message : "無法讀取更多 issue。"
+  } finally {
+    loading.value = false
+  }
+}
 
 onMounted(async () => {
   try {
@@ -28,7 +48,7 @@ onMounted(async () => {
       error.value = "目前的 OIDC session 沒有 EDITOR role。"
       return
     }
-    issues.value = (await listEditorIssues()).items
+    await loadIssues()
   } catch (cause) {
     error.value = cause instanceof Error ? cause.message : "無法讀取 issue API。"
   } finally {
@@ -85,6 +105,15 @@ const login = () => navigateTo(loginPath(route.fullPath))
         </li>
       </ul>
       <p v-else class="studio-help">目前沒有可編輯的 issue draft。</p>
+      <button
+        v-if="nextCursor"
+        class="studio-button studio-button--quiet"
+        type="button"
+        :disabled="loading"
+        @click="loadMore"
+      >
+        {{ loading ? "讀取中…" : "載入更多 issues" }}
+      </button>
     </section>
   </StudioShell>
 </template>

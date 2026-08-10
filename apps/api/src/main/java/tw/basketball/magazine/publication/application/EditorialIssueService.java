@@ -98,15 +98,20 @@ public final class EditorialIssueService {
         });
     }
 
-    public EditorialWorkflowService.OperationResult listIssues(ActorContext actor, int limit) {
+    public EditorialWorkflowService.OperationResult listIssues(
+            ActorContext actor,
+            String cursor,
+            int limit
+    ) {
         requireEditor(actor);
         int boundedLimit = Math.max(1, Math.min(limit, 100));
-        List<Map<String, Object>> items = repository.list(boundedLimit).stream()
+        EditorialIssueRepository.IssuePage issuePage = repository.list(cursor, boundedLimit);
+        List<Map<String, Object>> items = issuePage.items().stream()
                 .map(this::issueJson)
                 .toList();
         Map<String, Object> page = new LinkedHashMap<>();
-        page.put("nextCursor", null);
-        page.put("limit", boundedLimit);
+        page.put("nextCursor", issuePage.nextCursor());
+        page.put("limit", issuePage.limit());
         Map<String, Object> response = new LinkedHashMap<>();
         response.put("items", items);
         response.put("page", page);

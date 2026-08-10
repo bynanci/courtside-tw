@@ -7,7 +7,9 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
+import java.time.DateTimeException;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -27,6 +29,7 @@ import tw.basketball.magazine.publication.domain.PublicationState;
 /** PostgreSQL adapter for issue drafts and insert-only command receipts. */
 public final class JdbcEditorialIssueRepository implements EditorialIssueRepository {
     private static final String ISSUE_PUBLICATION_EVENT = "publication.issue.command";
+    private static final int MAXIMUM_CURSOR_LENGTH = 256;
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
     private final OutboxRepository outboxRepository;
@@ -59,7 +62,7 @@ public final class JdbcEditorialIssueRepository implements EditorialIssueReposit
     @Override
     public Optional<IssueRecord> find(UUID issueId) {
         return jdbcTemplate.query("""
-                SELECT id, issue_number, slug, title, summary, cover_asset_id, state, version
+                SELECT id, issue_number, slug, title, summary, cover_asset_id, state, version, updated_at
                 FROM publication_issue
                 WHERE id = ?
                 """, resultSet -> resultSet.next()
@@ -70,7 +73,7 @@ public final class JdbcEditorialIssueRepository implements EditorialIssueReposit
     @Override
     public Optional<IssueRecord> findForUpdate(UUID issueId) {
         return jdbcTemplate.query("""
-                SELECT id, issue_number, slug, title, summary, cover_asset_id, state, version
+                SELECT id, issue_number, slug, title, summary, cover_asset_id, state, version, updated_at
                 FROM publication_issue
                 WHERE id = ?
                 FOR UPDATE
@@ -80,17 +83,32 @@ public final class JdbcEditorialIssueRepository implements EditorialIssueReposit
     }
 
     @Override
-    public List<IssueRecord> list(int limit) {
+    public IssuePage list(String cursorValue, int limit) {
         if (limit < 1 || limit > 100) {
             throw new IllegalArgumentException("limit must be between 1 and 100");
         }
-        return jdbcTemplate.query("""
-                SELECT id, issue_number, slug, title, summary, cover_asset_id, state, version
+        Cursor cursor = cursorValue == null ? null : parseCursor(cursorValue);
+        String cursorPredicate = cursor == null ? "" : "AND (updated_at, id) < (?, ?)";
+        List<Object> parameters = new ArrayList<>();
+        if (cursor != null) {
+            parameters.add(Timestamp.from(cursor.updatedAt()));
+            parameters.add(cursor.issueId());
+        }
+        parameters.add(limit + 1);
+        List<IssueRecord> rows = jdbcTemplate.query("""
+                SELECT id, issue_number, slug, title, summary, cover_asset_id, state, version, updated_at
                 FROM publication_issue
                 WHERE state <> 'ARCHIVED'
+                """ + cursorPredicate + """
                 ORDER BY updated_at DESC, id DESC
                 LIMIT ?
-                """, (resultSet, rowNumber) -> mapIssue(resultSet), limit);
+                """, (resultSet, rowNumber) -> mapIssue(resultSet), parameters.toArray());
+        boolean hasNext = rows.size() > limit;
+        List<IssueRecord> items = hasNext ? List.copyOf(rows.subList(0, limit)) : List.copyOf(rows);
+        String nextCursor = hasNext
+                ? encodeCursor(items.getLast().updatedAt(), items.getLast().issueId())
+                : null;
+        return new IssuePage(items, nextCursor, limit);
     }
 
     @Override
@@ -528,6 +546,7 @@ public final class JdbcEditorialIssueRepository implements EditorialIssueReposit
     }
 
     private static IssueRecord mapIssue(ResultSet resultSet) throws SQLException {
+        Timestamp updatedAt = resultSet.getTimestamp("updated_at");
         return new IssueRecord(
                 uuid(resultSet, "id"),
                 resultSet.getInt("issue_number"),
@@ -536,8 +555,33 @@ public final class JdbcEditorialIssueRepository implements EditorialIssueReposit
                 resultSet.getString("summary"),
                 uuid(resultSet, "cover_asset_id"),
                 PublicationState.valueOf(resultSet.getString("state")),
-                resultSet.getLong("version")
+                resultSet.getLong("version"),
+                updatedAt == null ? null : updatedAt.toInstant()
         );
+    }
+
+    private static Cursor parseCursor(String value) {
+        if (value.isBlank() || value.length() > MAXIMUM_CURSOR_LENGTH) {
+            throw new IllegalArgumentException("cursor must be a bounded opaque value");
+        }
+        try {
+            String decoded = new String(Base64.getUrlDecoder().decode(value), StandardCharsets.UTF_8);
+            String[] fields = decoded.split("\\|", -1);
+            if (fields.length != 2 || decoded.length() > MAXIMUM_CURSOR_LENGTH) {
+                throw new IllegalArgumentException("cursor must be a bounded opaque value");
+            }
+            return new Cursor(Instant.parse(fields[0]), UUID.fromString(fields[1]));
+        } catch (IllegalArgumentException | DateTimeException exception) {
+            throw new IllegalArgumentException("cursor must be a bounded opaque value", exception);
+        }
+    }
+
+    private static String encodeCursor(Instant updatedAt, UUID issueId) {
+        String value = updatedAt + "|" + issueId;
+        return Base64.getUrlEncoder().withoutPadding().encodeToString(value.getBytes(StandardCharsets.UTF_8));
+    }
+
+    private record Cursor(Instant updatedAt, UUID issueId) {
     }
 
     private PublicationJobRecord mapPublicationJob(ResultSet resultSet) throws SQLException {

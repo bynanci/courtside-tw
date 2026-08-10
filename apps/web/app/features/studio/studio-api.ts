@@ -56,9 +56,9 @@ export async function getEditorArticle(articleId: string): Promise<ArticleDraft>
   return unwrap(result)
 }
 
-export async function listEditorIssues(limit = 100): Promise<IssueDraftPage> {
+export async function listEditorIssues(limit = 20, cursor?: string): Promise<IssueDraftPage> {
   const result = await createStudioApiClient().GET("/api/v1/editor/issues", {
-    params: { query: { limit } }
+    params: { query: { limit, ...(cursor ? { cursor } : {}) } }
   })
   return unwrap(result)
 }

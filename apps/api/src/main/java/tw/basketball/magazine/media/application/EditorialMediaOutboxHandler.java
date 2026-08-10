@@ -1,5 +1,7 @@
 package tw.basketball.magazine.media.application;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -77,24 +79,94 @@ public final class EditorialMediaOutboxHandler implements OutboxEventHandler {
                 )
         );
         if (result.state() == MediaProcessingState.READY) {
+            List<String> writtenKeys = new ArrayList<>();
             for (MediaVariant variant : result.variants()) {
+                MediaAssetRepository.MediaAssetRecord latest = assetRepository.find(payload.assetId())
+                        .orElseThrow(() -> new OutboxHandlerException(
+                                "media asset no longer exists", false
+                        ));
+                if (latest.processingState() != tw.basketball.magazine.media.domain.MediaProcessingState.PROCESSING
+                        || latest.version() != current.version()) {
+                    cleanupWrittenVariants(writtenKeys);
+                    if (latest.processingState() == tw.basketball.magazine.media.domain.MediaProcessingState.REVOKED
+                            || latest.processingState() == tw.basketball.magazine.media.domain.MediaProcessingState.FAILED
+                            || latest.processingState() == tw.basketball.magazine.media.domain.MediaProcessingState.READY) {
+                        return;
+                    }
+                    throw new OutboxHandlerException("media processing version changed", true);
+                }
+                String publicStorageKey = publicStorageKey(payload.assetId(), variant.name());
                 try {
                     publicVariantWriter.write(
-                            publicStorageKey(payload.assetId(), variant.name()),
+                            publicStorageKey,
                             variant.mimeType(),
                             variant.encodedBytes()
                     );
+                    writtenKeys.add(publicStorageKey);
                 } catch (RuntimeException exception) {
                     // Do not persist READY metadata until every public object exists.
+                    cleanupWrittenVariants(writtenKeys, exception);
                     throw new OutboxHandlerException(
                             "generated public variant could not be written", exception, true
                     );
                 }
             }
+            if (!assetRepository.find(payload.assetId())
+                    .filter(latest -> latest.processingState()
+                            == tw.basketball.magazine.media.domain.MediaProcessingState.PROCESSING)
+                    .filter(latest -> latest.version() == current.version())
+                    .isPresent()) {
+                cleanupWrittenVariants(writtenKeys);
+                MediaAssetRepository.MediaAssetRecord latest = assetRepository.find(payload.assetId()).orElse(null);
+                if (latest == null
+                        || latest.processingState() == tw.basketball.magazine.media.domain.MediaProcessingState.REVOKED
+                        || latest.processingState() == tw.basketball.magazine.media.domain.MediaProcessingState.FAILED
+                        || latest.processingState() == tw.basketball.magazine.media.domain.MediaProcessingState.READY) {
+                    return;
+                }
+                throw new OutboxHandlerException("media processing version changed", true);
+            }
+            if (!assetRepository.recordProcessingResult(payload.assetId(), current.version(), result)) {
+                cleanupWrittenVariants(writtenKeys);
+                throw new OutboxHandlerException("media processing version changed", true);
+            }
+            return;
         }
         if (!assetRepository.recordProcessingResult(payload.assetId(), current.version(), result)) {
             throw new OutboxHandlerException("media processing version changed", true);
         }
+    }
+
+    private void cleanupWrittenVariants(List<String> publicStorageKeys) throws OutboxHandlerException {
+        RuntimeException cleanupFailure = cleanup(publicStorageKeys);
+        if (cleanupFailure != null) {
+            throw new OutboxHandlerException(
+                    "generated public variants could not be cleaned up", cleanupFailure, true
+            );
+        }
+    }
+
+    private void cleanupWrittenVariants(List<String> publicStorageKeys, RuntimeException original) {
+        RuntimeException cleanupFailure = cleanup(publicStorageKeys);
+        if (cleanupFailure != null) {
+            original.addSuppressed(cleanupFailure);
+        }
+    }
+
+    private RuntimeException cleanup(List<String> publicStorageKeys) {
+        RuntimeException cleanupFailure = null;
+        for (int index = publicStorageKeys.size() - 1; index >= 0; index--) {
+            try {
+                publicVariantWriter.delete(publicStorageKeys.get(index));
+            } catch (RuntimeException exception) {
+                if (cleanupFailure == null) {
+                    cleanupFailure = exception;
+                } else {
+                    cleanupFailure.addSuppressed(exception);
+                }
+            }
+        }
+        return cleanupFailure;
     }
 
     private static String publicStorageKey(UUID assetId, String variantName) {

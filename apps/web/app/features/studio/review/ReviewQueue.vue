@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 
 import StudioShell from "../StudioShell.vue"
 import { canStudioAction, missingRoleMessage } from "../studio-rbac"
@@ -38,6 +38,12 @@ const busy = ref(false)
 const refreshed = ref(false)
 const apiError = ref<string | null>(null)
 const receipts = ref<string[]>([])
+
+watch(timezone, (nextTimezone, previousTimezone) => {
+  if (!scheduleOpen.value || !publishAt.value || nextTimezone === previousTimezone) return
+  const instant = localDateTimeToDate(publishAt.value, previousTimezone)
+  publishAt.value = toLocalDateTimeValue(instant, nextTimezone)
+})
 
 const rightsGate = computed(() => !current.value.readiness.ready)
 const canApprove = computed(() =>
@@ -254,6 +260,37 @@ function toLocalDateTimeValue(value: Date, zone: string): string {
   }).formatToParts(value)
   const part = (type: string) => parts.find((entry) => entry.type === type)?.value ?? "00"
   return `${part("year")}-${part("month")}-${part("day")}T${part("hour")}:${part("minute")}`
+}
+
+function localDateTimeToDate(value: string, zone: string): Date {
+  const [datePart = "", timePart = ""] = value.split("T")
+  const [year = 0, month = 1, day = 1] = datePart.split("-").map(Number)
+  const [hour = 0, minute = 0] = timePart.split(":").map(Number)
+  const localAsUtc = Date.UTC(year, month - 1, day, hour, minute)
+  let guess = localAsUtc
+  for (let attempt = 0; attempt < 3; attempt += 1) {
+    const parts = new Intl.DateTimeFormat("sv-SE", {
+      timeZone: zone,
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+      hourCycle: "h23"
+    }).formatToParts(new Date(guess))
+    const part = (type: string) => parts.find((entry) => entry.type === type)?.value ?? "00"
+    const zoneAsUtc = Date.UTC(
+      Number(part("year")),
+      Number(part("month")) - 1,
+      Number(part("day")),
+      Number(part("hour")),
+      Number(part("minute")),
+      Number(part("second"))
+    )
+    guess = localAsUtc - (zoneAsUtc - guess)
+  }
+  return new Date(guess)
 }
 </script>
 

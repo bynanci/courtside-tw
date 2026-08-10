@@ -21,6 +21,7 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tw.basketball.magazine.media.domain.MediaProcessingState;
 import tw.basketball.magazine.media.domain.RightsPolicy;
+import tw.basketball.magazine.publication.application.EditorialProblemException;
 import tw.basketball.magazine.publication.application.PublicationReadinessService;
 import tw.basketball.magazine.publication.domain.PublicationState;
 import tw.basketball.magazine.shared.UuidV7Generator;
@@ -207,6 +208,21 @@ public final class JdbcEditorialArticleRepository implements EditorialArticleRep
 
     private void syncMediaReferences(UUID revisionId, JsonNode content) {
         List<UUID> assetIds = ContentMediaReferences.extract(content);
+        if (!assetIds.isEmpty()) {
+            String placeholders = String.join(", ", java.util.Collections.nCopies(assetIds.size(), "?"));
+            List<UUID> existingAssetIds = jdbcTemplate.query(
+                    "SELECT id FROM media_asset WHERE id IN (" + placeholders + ")",
+                    (resultSet, rowNumber) -> resultSet.getObject("id", UUID.class),
+                    assetIds.toArray()
+            );
+            if (existingAssetIds.size() != assetIds.size()) {
+                throw EditorialProblemException.invalid(
+                        "/content",
+                        "MEDIA_REFERENCE_NOT_FOUND",
+                        "content references a media asset that does not exist"
+                );
+            }
+        }
         jdbcTemplate.query(
                 "SELECT replace_public_article_revision_media(?, ?::jsonb)",
                 resultSet -> null,

@@ -62,11 +62,15 @@ public final class EditorialIssueController {
 
     @GetMapping(path = "/api/v1/editor/issues", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<JsonNode> listIssues(
+            @RequestParam(required = false) String cursor,
             @RequestParam(defaultValue = "20") int limit,
             Authentication authentication,
             HttpServletRequest request
     ) {
-        return response(service.listIssues(actor(authentication, request), limit), requestId(request));
+        return response(
+                service.listIssues(actor(authentication, request), cursor, limit),
+                requestId(request)
+        );
     }
 
     @PatchMapping(path = "/api/v1/editor/issues", consumes = MediaType.APPLICATION_JSON_VALUE)

@@ -16,7 +16,7 @@ public interface EditorialIssueRepository {
 
     Optional<IssueRecord> findForUpdate(UUID issueId);
 
-    List<IssueRecord> list(int limit);
+    IssuePage list(String cursor, int limit);
 
     List<SectionRecord> listSections(UUID issueId);
 
@@ -119,8 +119,15 @@ public interface EditorialIssueRepository {
             String summary,
             UUID coverAssetId,
             PublicationState state,
-            long version
+            long version,
+            Instant updatedAt
     ) {
+    }
+
+    record IssuePage(List<IssueRecord> items, String nextCursor, int limit) {
+        public IssuePage {
+            items = List.copyOf(items);
+        }
     }
 
     record SectionRecord(
