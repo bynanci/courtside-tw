@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref, watch } from "vue"
+import { onMounted, ref, watch } from "vue"
 
 import {
   approveEditorialArticle,
@@ -45,6 +45,11 @@ const revisionId = ref<string | null>(null)
 const articleVersion = ref(1)
 const issueVersion = ref(1)
 const apiError = ref("")
+const hydrated = ref(false)
+
+onMounted(() => {
+  hydrated.value = true
+})
 
 watch(
   role,
@@ -265,7 +270,7 @@ function apiErrorMessage(error: unknown): string {
 </script>
 
 <template>
-  <div class="studio-page" data-testid="studio-shell">
+  <div class="studio-page" data-testid="studio-shell" :data-hydrated="hydrated ? \"true\" : \"false\"">
     <header class="studio-header">
       <div>
         <p class="eyebrow">Courtside TW Studio</p>
