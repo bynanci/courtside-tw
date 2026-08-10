@@ -41,6 +41,7 @@ const showConflict = ref(false)
 const selectedTimezone = ref("Asia/Taipei")
 const pendingFile = ref<File | null>(null)
 const articleId = ref<string | null>(null)
+const revisionId = ref<string | null>(null)
 const articleVersion = ref(1)
 const issueVersion = ref(1)
 const apiError = ref("")
@@ -66,6 +67,7 @@ function openArticleEditor(): void {
   saveCount.value = 0
   pendingFile.value = null
   articleId.value = null
+  revisionId.value = null
   articleVersion.value = 1
   apiError.value = ""
 }
@@ -118,6 +120,7 @@ async function persistArticle(): Promise<void> {
       input
     )
     articleId.value = article.articleId
+    revisionId.value = article.revisionId
     articleVersion.value = article.version
     return
   }
@@ -126,6 +129,7 @@ async function persistArticle(): Promise<void> {
     { articleId: articleId.value as string, changes: input },
     articleVersion.value
   )
+  revisionId.value = article.revisionId
   articleVersion.value = article.version
 }
 
@@ -138,10 +142,11 @@ async function submitForReview(): Promise<void> {
       await uploadMediaFile({ baseUrl: apiBaseUrl }, pendingFile.value)
       mediaState.value = "已驗證：" + pendingFile.value.name
     }
-    if (articleId.value) {
+    if (articleId.value && revisionId.value) {
       const result = await submitEditorialArticle(
         { baseUrl: apiBaseUrl, idempotencyKey: createIdempotencyKey("studio-submit") },
-        articleId.value
+        articleId.value,
+        revisionId.value
       )
       articleVersion.value = result.version
     }
