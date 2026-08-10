@@ -23,8 +23,18 @@ public final class JdbcMediaUploadIdempotencyRepository
         jdbcTemplate.query(
                 "SELECT pg_advisory_xact_lock(hashtextextended(?, 0))",
                 resultSet -> null,
-                actorSubject + "\u0000" + operation + "\u0000" + idempotencyKey
+                idempotencyLockKey(actorSubject, operation, idempotencyKey)
         );
+    }
+
+    private static String idempotencyLockKey(
+            String actorSubject,
+            String operation,
+            String idempotencyKey
+    ) {
+        return actorSubject.length() + ":" + actorSubject
+                + operation.length() + ":" + operation
+                + idempotencyKey.length() + ":" + idempotencyKey;
     }
 
     @Override

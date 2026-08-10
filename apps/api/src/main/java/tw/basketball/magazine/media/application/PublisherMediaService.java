@@ -180,8 +180,18 @@ public final class PublisherMediaService {
         jdbcTemplate.query(
                 "SELECT pg_advisory_xact_lock(hashtextextended(?, 0))",
                 resultSet -> null,
-                actorSubject + "\u0000" + OPERATION + "\u0000" + key
+                idempotencyLockKey(actorSubject, OPERATION, key)
         );
+    }
+
+    private static String idempotencyLockKey(
+            String actorSubject,
+            String operation,
+            String idempotencyKey
+    ) {
+        return actorSubject.length() + ":" + actorSubject
+                + operation.length() + ":" + operation
+                + idempotencyKey.length() + ":" + idempotencyKey;
     }
 
     private static String reason(JsonNode request) {
