@@ -87,6 +87,7 @@ async function installEditorialApiMock(page: Page): Promise<void> {
     if (request.method() === "POST" && requestUrl.pathname === "/api/v1/editor/articles") {
       await json(route, 201, {
         articleId: ARTICLE_ID,
+        revisionId: "00000000-0000-4000-8000-000000000705",
         version: 1,
         title: "主場燈光亮起之前",
         slug: "studio-article",
@@ -97,6 +98,7 @@ async function installEditorialApiMock(page: Page): Promise<void> {
     if (request.method() === "PATCH" && requestUrl.pathname === "/api/v1/editor/articles") {
       await json(route, 200, {
         articleId: ARTICLE_ID,
+        revisionId: "00000000-0000-4000-8000-000000000706",
         version: 2,
         title: "第二次修訂",
         slug: "studio-article",
