@@ -174,8 +174,8 @@ public final class EditorialWorkflowService {
                 WHERE id = ? AND version = ?
                 """,
                 title,
-                bounded(summary, "description", 1000),
                 slug,
+                bounded(summary, "description", 1000),
                 expected.next().value(),
                 issueId,
                 expected.value()
@@ -765,7 +765,7 @@ public final class EditorialWorkflowService {
                 sql,
                 next.state(),
                 next.version(),
-                next.state().equals("PUBLISHED") ? current.revisionId() : null,
+                current.revisionId(),
                 current.articleId(),
                 current.version()
         );
