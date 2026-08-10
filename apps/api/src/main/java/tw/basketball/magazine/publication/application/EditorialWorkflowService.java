@@ -19,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import tools.jackson.databind.ObjectMapper;
 
-import tw.basketball.magazine.media.domain.RightsPolicy;
 import tw.basketball.magazine.publication.domain.PublicationAction;
 import tw.basketball.magazine.publication.domain.PublicationState;
 import tw.basketball.magazine.publication.domain.PublicationWorkflow;
