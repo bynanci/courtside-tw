@@ -1,0 +1,137 @@
+{
+  "schema_version": "2",
+  "graph_id": "courtside-t042-t047-us3-publication-gate-remediation",
+  "status": "NEEDS_HUMAN",
+  "iteration": 2,
+  "source_of_truth": {
+    "repository": "bynanci/courtside-tw",
+    "base_ref": "main",
+    "base_commit": "bcdc96efae3847f17e8c91e8a26f117dd32a2c79",
+    "prior_pr": 70,
+    "remediation_pr": 72,
+    "task_file": "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+  },
+  "decision": "Implement the bounded publication-gate remediation before HTTP, Studio, or Web3 work proceeds.",
+  "terminal": false,
+  "ready_frontier": [
+    "stop-human-gate"
+  ],
+  "critical_path": [
+    "action-contract-lock",
+    "action-domain-hardening",
+    "action-migration-hardening",
+    "proof-exact-implementation-head",
+    "memory-remediation-receipt"
+  ],
+  "proof_coverage": {
+    "state_machine": "PASSED",
+    "revision_binding": "PASSED",
+    "rights_and_media_gate": "PASSED",
+    "v005_migration": "PASSED",
+    "idempotency_policy": "PASSED",
+    "ci_security": "PASSED",
+    "http_persistence_if_match": "DEFERRED_T043"
+  },
+  "events": [
+    {
+      "event_id": "evt-001-remediation-frontier-read",
+      "type": "trigger_readback",
+      "decision": "PR #70 was already merged, while the publication-gate review frontier still contained actionable findings; open bounded draft PR #72.",
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/pull/70",
+        "https://github.com/bynanci/courtside-tw/pull/72"
+      ],
+      "failure_signature": "MERGED_WITH_OPEN_REVIEW_FRONTIER",
+      "graph_delta": "Add a separate draft remediation lane; do not rewrite the merged history."
+    },
+    {
+      "event_id": "evt-002-domain-and-schema-remediated",
+      "type": "implementation",
+      "decision": "Add request-changes, frozen revision identity, direct archive, READY media gating, rights identity/version evidence, scoped job idempotency, BLOCKED status, and forward-only V005.",
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/pull/72"
+      ],
+      "failure_signature": null,
+      "graph_delta": "Add implementation and verifier proof without changing V004 or task state."
+    },
+    {
+      "event_id": "evt-003-exact-implementation-proof",
+      "type": "proof",
+      "decision": "Exact implementation head passed CI #377 and Security #377; every reported job concluded success.",
+      "evidence_refs": [
+        ".loop/evidence/t042-t047-us3-publication-gate-remediation.json",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31351729309",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31351729321"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "CI",
+          "run_id": 31351729309,
+          "run_number": 377,
+          "conclusion": "success"
+        },
+        {
+          "proof": "Security",
+          "run_id": 31351729321,
+          "run_number": 377,
+          "conclusion": "success"
+        }
+      ],
+      "failure_signature": null,
+      "graph_delta": "Advance to receipt memory and human gate; keep HTTP/production proof explicitly deferred."
+    },
+    {
+      "event_id": "evt-004-human-gate-open",
+      "type": "stop",
+      "decision": "Keep PR #72 draft and stop before protected merge, task edits, production migration/activation, or T043/T044.",
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/pull/72"
+      ],
+      "proof_receipts": [],
+      "failure_signature": "HUMAN_PROTECTED_CLOSURE",
+      "graph_delta": "Ready frontier is the human review gate."
+    }
+  ],
+  "memory_receipt": {
+    "status": "SAVED",
+    "memory_id": "courtside-us3-publication-gate-remediation-20260810-v1",
+    "implementation_head": "0a007b75b5562be1def6d3a2f89dc9e485fc09ca",
+    "write_after": "exact implementation-head proof",
+    "append_only": true
+  },
+  "audit": {
+    "secrets_present": false,
+    "external_content_treated_as_untrusted": true,
+    "model_self_report_used_as_proof": false,
+    "production_writes": false,
+    "task_checkbox_mutation": false,
+    "protected_merge": false
+  },
+  "verification": {
+    "implementation_head": "0a007b75b5562be1def6d3a2f89dc9e485fc09ca",
+    "ci_run": {
+      "id": 31351729309,
+      "run_number": 377,
+      "conclusion": "success"
+    },
+    "security_run": {
+      "id": 31351729321,
+      "run_number": 377,
+      "conclusion": "success"
+    },
+    "jobs": [
+      "Docker Compose dependency health",
+      "Frontend and contract verification",
+      "Java quality and unit verification",
+      "Public magazine browser verification",
+      "CodeQL (java-kotlin)",
+      "CodeQL (javascript-typescript)",
+      "Dependency audit and reports",
+      "Resolve Compose images",
+      "Trivy (filesystem)",
+      "Trivy (image postgres)",
+      "Trivy (image s3)",
+      "Trivy (image oidc)"
+    ]
+  }
+}
