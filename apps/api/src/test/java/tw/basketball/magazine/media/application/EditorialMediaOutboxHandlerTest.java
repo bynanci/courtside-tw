@@ -57,7 +57,7 @@ final class EditorialMediaOutboxHandlerTest {
                 repository,
                 reader,
                 processor(),
-                (key, mime, bytes) -> {
+                (key, mime, variantBytes) -> {
                     throw new AssertionError("failed processing must not write variants");
                 },
                 JSON
