@@ -837,6 +837,7 @@ export interface components {
     }
     ArticleDraft: {
       articleId: components["schemas"]["Uuid"]
+      revisionId: components["schemas"]["Uuid"]
       version: number
       title: string
       slug: string
