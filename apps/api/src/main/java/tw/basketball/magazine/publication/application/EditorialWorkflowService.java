@@ -14,6 +14,8 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import javax.sql.DataSource;
+
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,9 +39,8 @@ import tw.basketball.magazine.shared.VersionConflictException;
  */
 public final class EditorialWorkflowService {
     private static final long MAX_MEDIA_BYTES = 20L * 1024L * 1024L;
-    private static final String DEFAULT_CONTENT = """
-            {"schemaVersion":1,"documentId":"%s","blocks":[]}
-            """;
+    private static final String DEFAULT_CONTENT =
+            "{\"schemaVersion\":1,\"documentId\":\"%s\",\"blocks\":[]}";
     private static final List<String> MEDIA_TYPES =
             List.of("image/avif", "image/jpeg", "image/png", "image/webp");
 
@@ -54,12 +55,12 @@ public final class EditorialWorkflowService {
     private final ConcurrentMap<String, Object> memoryIdempotency = new ConcurrentHashMap<>();
 
     public EditorialWorkflowService(
-            JdbcTemplate jdbcTemplate,
+            DataSource dataSource,
             ObjectMapper objectMapper,
             Clock clock,
             URI uploadBaseUrl
     ) {
-        this.jdbcTemplate = jdbcTemplate;
+        this.jdbcTemplate = dataSource == null ? null : new JdbcTemplate(dataSource);
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
         this.clock = Objects.requireNonNull(clock, "clock");
         this.uploadBaseUrl = uploadBaseUrl;
@@ -755,11 +756,10 @@ public final class EditorialWorkflowService {
 
     private void updateJdbcArticle(ArticleRecord current, ArticleRecord next) {
         String publishedAt = next.state().equals("PUBLISHED") ? "transaction_timestamp()" : "NULL";
-        String sql = """
-                UPDATE article
-                SET state = ?, version = ?, published_at = %s, published_revision_id = ?
-                WHERE id = ? AND version = ?
-                """.formatted(publishedAt);
+        String sql = "UPDATE article\n"
+                + "SET state = ?, version = ?, published_at = " + publishedAt
+                + ", published_revision_id = ?\n"
+                + "WHERE id = ? AND version = ?";
         int updated = jdbcTemplate.update(
                 sql,
                 next.state(),
@@ -780,11 +780,10 @@ public final class EditorialWorkflowService {
 
     private void updateJdbcIssue(IssueRecord current, IssueRecord next) {
         String publishedAt = next.state().equals("PUBLISHED") ? "transaction_timestamp()" : "NULL";
-        String sql = """
-                UPDATE publication_issue
-                SET state = ?, version = ?, published_at = %s, updated_at = transaction_timestamp()
-                WHERE id = ? AND version = ?
-                """.formatted(publishedAt);
+        String sql = "UPDATE publication_issue\n"
+                + "SET state = ?, version = ?, published_at = " + publishedAt
+                + ", updated_at = transaction_timestamp()\n"
+                + "WHERE id = ? AND version = ?";
         int updated = jdbcTemplate.update(
                 sql,
                 next.state(),
@@ -905,8 +904,11 @@ public final class EditorialWorkflowService {
     ) {
         String boundedKey = bounded(key, "idempotencyKey", 512);
         if (jdbcTemplate == null) {
-            memoryIdempotency.putIfAbsent(actor + "|" + operation + "|" + boundedKey, response);
-            return response;
+            Object previous = memoryIdempotency.putIfAbsent(
+                    actor + "|" + operation + "|" + boundedKey,
+                    response
+            );
+            return previous instanceof WorkflowResult cached ? cached : response;
         }
         String responseJson = json(response);
         jdbcTemplate.update(
