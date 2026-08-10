@@ -1,8 +1,8 @@
 {
   "memory_id": "courtside-us3-publication-gate-20260809-v1",
   "memory_type": "project_state",
-  "status": "DRAFT",
-  "confidence": "MEDIUM",
+  "status": "VERIFIED_WITH_HUMAN_GATES",
+  "confidence": "HIGH",
   "project": "bynanci/courtside-tw",
   "title": "US3 editorial publication gate frontier",
   "source_refs": [
@@ -25,12 +25,17 @@
     },
     {
       "claim_id": "proof",
-      "classification": "UNKNOWN",
-      "text": "The new domain and V004 implementation has not yet passed exact-head CI or security proof.",
-      "evidence": "This receipt is written before implementation-head workflow completion."
+      "classification": "CONFIRMED",
+      "text": "The implementation head passed exact-head CI and Security proof; protected merge and production activation remain human gates.",
+      "evidence": "repo:CI run 31343385363; repo:Security run 31343385354; head:2937e5d13f24237b7a76cabe4a138abf7ce1e7f8"
     }
   ],
   "supersedes": [],
-  "next_action": "Run exact-head Java, migration, browser/API scope, and security checks; update this receipt only with durable proof.",
-  "next_review": "After the draft pull request head and CI/Security runs are available"
+  "verification": {
+    "implementation_head": "2937e5d13f24237b7a76cabe4a138abf7ce1e7f8",
+    "ci_run": {"id": 31343385363, "run_number": 337, "conclusion": "success"},
+    "security_run": {"id": 31343385354, "run_number": 337, "conclusion": "success"}
+  },
+  "next_action": "Human review of PR #70; protected merge, production migration/activation, and task checkbox changes remain out of band.",
+  "next_review": "After human review or a new US3 frontier is authorized"
 }
