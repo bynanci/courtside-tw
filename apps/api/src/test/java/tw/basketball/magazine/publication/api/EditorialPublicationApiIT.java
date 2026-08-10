@@ -124,13 +124,14 @@ final class EditorialPublicationApiIT {
                 .andReturn();
         JsonNode article = OBJECT_MAPPER.readTree(created.getResponse().getContentAsString());
         UUID articleId = UUID.fromString(article.get("articleId").asText());
+        String revisionId = article.get("revisionId").asText();
 
         MvcResult first = mockMvc.perform(post(
                         "/api/v1/editor/articles/" + articleId + ":submit")
                         .principal(editor())
                         .header("Idempotency-Key", "submit-1")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
+                        .content("{\"revisionId\":\"%s\"}".formatted(revisionId)))
                 .andExpect(status().isAccepted())
                 .andReturn();
         String operationId = OBJECT_MAPPER.readTree(first.getResponse().getContentAsString())
@@ -141,7 +142,7 @@ final class EditorialPublicationApiIT {
                         .principal(editor())
                         .header("Idempotency-Key", "submit-1")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
+                        .content("{\"revisionId\":\"%s\"}".formatted(revisionId)))
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.operationId").value(operationId));
     }
