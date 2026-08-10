@@ -2,8 +2,10 @@ package tw.basketball.magazine.media.domain;
 
 import java.time.Instant;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -31,27 +33,42 @@ public final class RightsPolicy {
         }
 
         List<RightsRecord> assetRecords = records.stream()
+                .peek(record -> Objects.requireNonNull(record, "records must not contain null"))
                 .filter(record -> record.assetId().equals(assetId))
+                .sorted(Comparator.comparing(RightsRecord::id))
                 .toList();
         if (assetRecords.isEmpty()) {
             return RightsDecision.blocked(assetId, "RIGHTS_MISSING");
         }
-        if (assetRecords.stream().anyMatch(record -> record.status() == Status.REVOKED)) {
-            return RightsDecision.blocked(assetId, "RIGHTS_REVOKED");
+
+        Optional<RightsRecord> revokedRecord = assetRecords.stream()
+                .filter(record -> record.status() == Status.REVOKED)
+                .findFirst();
+        if (revokedRecord.isPresent()) {
+            return RightsDecision.blocked(assetId, "RIGHTS_REVOKED", revokedRecord.get());
         }
 
-        boolean activeRecord = assetRecords.stream().anyMatch(record -> record.isActiveAt(checkedAt));
-        if (activeRecord && assetRecords.stream().anyMatch(record ->
-                record.isActiveAt(checkedAt) && record.allowedChannels().contains(requiredChannel))) {
-            return RightsDecision.allowed(assetId);
+        List<RightsRecord> activeRecords = assetRecords.stream()
+                .filter(record -> record.isActiveAt(checkedAt))
+                .toList();
+        if (!activeRecords.isEmpty()) {
+            Optional<RightsRecord> allowedRecord = activeRecords.stream()
+                    .filter(record -> record.allowedChannels().contains(requiredChannel))
+                    .findFirst();
+            if (allowedRecord.isPresent()) {
+                return RightsDecision.allowed(assetId, allowedRecord.get());
+            }
+            return RightsDecision.blocked(assetId, "RIGHTS_WRONG_CHANNEL", activeRecords.get(0));
         }
-        if (activeRecord) {
-            return RightsDecision.blocked(assetId, "RIGHTS_WRONG_CHANNEL");
+
+        Optional<RightsRecord> expiredRecord = assetRecords.stream()
+                .filter(record -> record.isExpiredAt(checkedAt))
+                .findFirst();
+        if (expiredRecord.isPresent()) {
+            return RightsDecision.blocked(assetId, "RIGHTS_EXPIRED", expiredRecord.get());
         }
-        if (assetRecords.stream().anyMatch(record -> record.isExpiredAt(checkedAt))) {
-            return RightsDecision.blocked(assetId, "RIGHTS_EXPIRED");
-        }
-        return RightsDecision.blocked(assetId, "RIGHTS_MISSING");
+
+        return RightsDecision.blocked(assetId, "RIGHTS_MISSING", assetRecords.get(0));
     }
 
     public enum Status {
@@ -64,18 +81,24 @@ public final class RightsPolicy {
     }
 
     public record RightsRecord(
+            UUID id,
             UUID assetId,
+            long version,
             Status status,
             Set<String> allowedChannels,
             Instant validFrom,
             Instant validUntil
     ) {
         public RightsRecord {
+            Objects.requireNonNull(id, "id");
             Objects.requireNonNull(assetId, "assetId");
             Objects.requireNonNull(status, "status");
             Objects.requireNonNull(allowedChannels, "allowedChannels");
             Objects.requireNonNull(validFrom, "validFrom");
             Objects.requireNonNull(validUntil, "validUntil");
+            if (version < 0) {
+                throw new IllegalArgumentException("version must be non-negative");
+            }
             if (!validUntil.isAfter(validFrom)) {
                 throw new IllegalArgumentException("validUntil must be after validFrom");
             }
@@ -94,7 +117,13 @@ public final class RightsPolicy {
         }
     }
 
-    public record RightsDecision(UUID assetId, boolean allowed, String blockingCode) {
+    public record RightsDecision(
+            UUID assetId,
+            boolean allowed,
+            String blockingCode,
+            UUID rightsRecordId,
+            Long rightsRecordVersion
+    ) {
         public RightsDecision {
             Objects.requireNonNull(assetId, "assetId");
             if (allowed && blockingCode != null) {
@@ -103,14 +132,27 @@ public final class RightsPolicy {
             if (!allowed && (blockingCode == null || blockingCode.isBlank())) {
                 throw new IllegalArgumentException("blocked decisions require a blocking code");
             }
+            if ((rightsRecordId == null) != (rightsRecordVersion == null)) {
+                throw new IllegalArgumentException("rights record identity and version must be paired");
+            }
+            if (rightsRecordVersion != null && rightsRecordVersion < 0) {
+                throw new IllegalArgumentException("rights record version must be non-negative");
+            }
+            if (allowed && rightsRecordId == null) {
+                throw new IllegalArgumentException("allowed decisions require rights evidence");
+            }
         }
 
-        public static RightsDecision allowed(UUID assetId) {
-            return new RightsDecision(assetId, true, null);
+        public static RightsDecision allowed(UUID assetId, RightsRecord record) {
+            return new RightsDecision(assetId, true, null, record.id(), record.version());
         }
 
         public static RightsDecision blocked(UUID assetId, String blockingCode) {
-            return new RightsDecision(assetId, false, blockingCode);
+            return new RightsDecision(assetId, false, blockingCode, null, null);
+        }
+
+        public static RightsDecision blocked(UUID assetId, String blockingCode, RightsRecord record) {
+            return new RightsDecision(assetId, false, blockingCode, record.id(), record.version());
         }
     }
 }

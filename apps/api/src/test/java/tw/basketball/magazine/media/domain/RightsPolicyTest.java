@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 
 final class RightsPolicyTest {
     private static final UUID ASSET_ID = UUID.fromString("00000000-0000-4000-8000-000000000301");
+    private static final UUID RIGHTS_ID = UUID.fromString("00000000-0000-4000-8000-000000000302");
     private static final Instant CHECKED_AT = Instant.parse("2026-08-09T00:00:00Z");
     private static final Instant VALID_FROM = CHECKED_AT.minusSeconds(60);
     private static final Instant VALID_UNTIL = CHECKED_AT.plusSeconds(60);
@@ -29,6 +30,8 @@ final class RightsPolicyTest {
 
         assertTrue(decision.allowed());
         assertNull(decision.blockingCode());
+        assertEquals(RIGHTS_ID, decision.rightsRecordId());
+        assertEquals(3L, decision.rightsRecordVersion());
     }
 
     @Test
@@ -42,6 +45,8 @@ final class RightsPolicyTest {
 
         assertFalse(decision.allowed());
         assertEquals("RIGHTS_MISSING", decision.blockingCode());
+        assertNull(decision.rightsRecordId());
+        assertNull(decision.rightsRecordVersion());
     }
 
     @Test
@@ -49,7 +54,9 @@ final class RightsPolicyTest {
         RightsPolicy.RightsDecision decision = RightsPolicy.evaluate(
                 ASSET_ID,
                 List.of(new RightsPolicy.RightsRecord(
+                        RIGHTS_ID,
                         ASSET_ID,
+                        3,
                         RightsPolicy.Status.VALID,
                         Set.of(RightsPolicy.PUBLIC_WEB_CHANNEL),
                         CHECKED_AT.minusSeconds(120),
@@ -61,6 +68,7 @@ final class RightsPolicyTest {
 
         assertFalse(decision.allowed());
         assertEquals("RIGHTS_EXPIRED", decision.blockingCode());
+        assertEquals(RIGHTS_ID, decision.rightsRecordId());
     }
 
     @Test
@@ -69,7 +77,15 @@ final class RightsPolicyTest {
                 ASSET_ID,
                 List.of(
                         record(RightsPolicy.Status.VALID, Set.of(RightsPolicy.PUBLIC_WEB_CHANNEL)),
-                        record(RightsPolicy.Status.REVOKED, Set.of(RightsPolicy.PUBLIC_WEB_CHANNEL))
+                        new RightsPolicy.RightsRecord(
+                                RIGHTS_ID,
+                                ASSET_ID,
+                                4,
+                                RightsPolicy.Status.REVOKED,
+                                Set.of(RightsPolicy.PUBLIC_WEB_CHANNEL),
+                                VALID_FROM,
+                                VALID_UNTIL
+                        )
                 ),
                 RightsPolicy.PUBLIC_WEB_CHANNEL,
                 CHECKED_AT
@@ -77,6 +93,8 @@ final class RightsPolicyTest {
 
         assertFalse(decision.allowed());
         assertEquals("RIGHTS_REVOKED", decision.blockingCode());
+        assertEquals(RIGHTS_ID, decision.rightsRecordId());
+        assertEquals(4L, decision.rightsRecordVersion());
     }
 
     @Test
@@ -90,9 +108,18 @@ final class RightsPolicyTest {
 
         assertFalse(decision.allowed());
         assertEquals("RIGHTS_WRONG_CHANNEL", decision.blockingCode());
+        assertEquals(RIGHTS_ID, decision.rightsRecordId());
     }
 
     private static RightsPolicy.RightsRecord record(RightsPolicy.Status status, Set<String> channels) {
-        return new RightsPolicy.RightsRecord(ASSET_ID, status, channels, VALID_FROM, VALID_UNTIL);
+        return new RightsPolicy.RightsRecord(
+                RIGHTS_ID,
+                ASSET_ID,
+                3,
+                status,
+                channels,
+                VALID_FROM,
+                VALID_UNTIL
+        );
     }
 }

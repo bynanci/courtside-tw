@@ -184,7 +184,7 @@ jobs:
           set -o pipefail
           bash scripts/test/verify-article-contributors-migration.sh 2>&1 | tee artifacts/dependencies/article-contributors-migration.log
 
-      - name: Verify V004 editorial publication migration
+      - name: Verify editorial publication gate migration and hardening
         run: |
           set -o pipefail
           bash scripts/test/verify-editorial-publication-migration.sh 2>&1 | tee artifacts/dependencies/editorial-publication-migration.log

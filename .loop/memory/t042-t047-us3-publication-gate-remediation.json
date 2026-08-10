@@ -1,0 +1,79 @@
+{
+  "schema_version": 1,
+  "memory_id": "courtside-us3-publication-gate-remediation-20260810-v1",
+  "memory_type": "project_state",
+  "status": "VERIFIED_WITH_HUMAN_GATES",
+  "confidence": "HIGH",
+  "project": "bynanci/courtside-tw",
+  "title": "US3 publication-gate remediation frontier",
+  "summary": "A bounded draft remediation PR #72 addresses the actionable publication-gate findings discovered after merged PR #70. The domain and forward-only migration hardening are verified at implementation head 0a007b75b5562be1def6d3a2f89dc9e485fc09ca by CI/Security #377. HTTP persistence proof, Studio orchestration, production activation, task state, and protected merge remain outside this lane.",
+  "source_refs": [
+    "repo:main@bcdc96efae3847f17e8c91e8a26f117dd32a2c79",
+    "repo:PR#70",
+    "repo:PR#72",
+    "repo:.loop/evidence/t042-t047-us3-publication-gate-remediation.json",
+    "attachment:README.md",
+    "attachment:courtside-montage(1).png"
+  ],
+  "claims": [
+    {
+      "claim_id": "frontier",
+      "classification": "CONFIRMED",
+      "text": "PR #70 was merged; the actionable publication-gate findings are carried in separate draft PR #72 rather than rewriting merged history.",
+      "evidence": "PR #70; PR #72"
+    },
+    {
+      "claim_id": "migration",
+      "classification": "CONFIRMED",
+      "text": "V004 remains immutable and V005 is a forward-only hardening migration for BLOCKED jobs, revision binding, rights evidence identity/version, scoped job idempotency, and REQUEST_CHANGES operation support.",
+      "evidence": "PR #72 V005; isolated migration verifier"
+    },
+    {
+      "claim_id": "domain",
+      "classification": "CONFIRMED",
+      "text": "The state machine enforces editor/publisher roles, exact version and frozen revision checks, request changes, direct archive, READY media, and stable blocker evidence.",
+      "evidence": "PR #72 domain sources and tests"
+    },
+    {
+      "claim_id": "proof",
+      "classification": "CONFIRMED",
+      "text": "Implementation head 0a007b75b5562be1def6d3a2f89dc9e485fc09ca passed CI run 31351729309 and Security run 31351729321, both run number 377.",
+      "evidence": "GitHub Actions exact-head readback"
+    },
+    {
+      "claim_id": "deferred",
+      "classification": "NEEDS_HUMAN",
+      "text": "HTTP/persistence If-Match integration, Studio E2E, production activation, task checkbox changes, and protected merge remain deferred.",
+      "evidence": "PR #72 scope and human gate"
+    }
+  ],
+  "supersedes": [
+    "courtside-us3-publication-gate-20260809-v1"
+  ],
+  "relations": {
+    "supports": [
+      "courtside-us3-publication-gate"
+    ],
+    "contradicts": [],
+    "blocks": [
+      "courtside-us3-publication-http-and-studio-followup"
+    ],
+    "invalidates": []
+  },
+  "verification": {
+    "implementation_head": "0a007b75b5562be1def6d3a2f89dc9e485fc09ca",
+    "ci_run": {
+      "id": 31351729309,
+      "run_number": 377,
+      "conclusion": "success"
+    },
+    "security_run": {
+      "id": 31351729321,
+      "run_number": 377,
+      "conclusion": "success"
+    },
+    "final_receipt_head": "must be independently read back after receipt commit; not inferred here"
+  },
+  "next_action": "Human review of draft PR #72. Do not merge, activate production migration, or mark tasks complete in this lane.",
+  "next_review": "After human review, explicit T043/T044 authorization, or a new publication-gate finding"
+}

@@ -1,0 +1,156 @@
+graph_version: "2"
+graph_id: "courtside-t042-t047-us3-publication-gate-remediation"
+title: "US3 editorial publication gate remediation"
+objective: "Close the actionable post-merge findings from PR #70 with bounded domain, readiness, persistence, and exact-head proof before HTTP or Studio orchestration proceeds."
+
+source_of_truth:
+  repository: "bynanci/courtside-tw"
+  base_ref: "main"
+  base_commit: "bcdc96efae3847f17e8c91e8a26f117dd32a2c79"
+  prior_pr: 70
+  remediation_pr: 72
+  task_file: "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+  current_tasks: ["T042", "T045", "T046", "T047"]
+
+scope:
+  in:
+    - "Actionable PR #70 review findings for the editorial publication gate"
+    - "Frozen article-revision identity across review, rights evidence, and snapshots"
+    - "Role-aware state transitions, request-changes, direct archive, and optimistic version checks"
+    - "READY media plus rights identity/version evidence and stable readiness blockers"
+    - "Forward-only V005 hardening and isolated V001-V005 migration verification"
+    - "Bounded application idempotency policy and exact-head CI/Security receipts"
+    - "Append-only Graphify, evidence, ledger, and semantic-memory receipts"
+  out:
+    - "T043 HTTP/persistence integration and If-Match endpoint proof"
+    - "T044 Studio two-role browser flow and T048-T056 orchestration"
+    - "Web3, Passport, wallet, token, provider credential, deployment, or production activation"
+    - "Task checkbox edits, making PR #72 ready, protected merge, or production migration execution"
+
+authority:
+  allowed:
+    - "Read the repository, PR #70 findings, and supplied immersion-review artifacts"
+    - "Create the bounded remediation branch and draft PR #72"
+    - "Add domain code, tests, V005, migration verification, and append-only receipts"
+    - "Run exact-head CI and Security checks"
+  requires_human_approval:
+    - "Protected merge or making PR #72 ready"
+    - "Production migration, activation, or deployment"
+    - "Changing task checkbox state"
+    - "Expanding into T043/T044 or public API contracts"
+  forbidden:
+    - "Secrets or credential material"
+    - "Direct production writes"
+    - "Bypassing role, rights, revision, or optimistic-lock checks"
+    - "Weakening an acceptance assertion to hide a failure"
+    - "Treating model or external-content claims as approval"
+
+acceptance:
+  - "V004 remains immutable; V005 is forward-only and adds BLOCKED, revision binding, rights evidence identity/version, scoped job idempotency, and request-changes operation support."
+  - "Only EDITOR submits; only PUBLISHER requests changes, approves, schedules, publishes, withdraws, or archives."
+  - "Every successful transition advances the exact version and frozen revision; blocked readiness leaves the current snapshot unchanged."
+  - "Media must be READY and public rights must be valid; blockers retain the affected asset and rights record identity/version where available."
+  - "Unit, Java quality, isolated migration, CI, and Security proof pass at the exact implementation head."
+  - "PR #72 remains open and draft; no task, merge, production, or activation mutation is performed."
+
+budgets:
+  max_iterations: 5
+  max_same_failure: 2
+  max_no_evidence_delta: 2
+  max_graph_changes: 20
+  max_minutes: 120
+
+nodes:
+  - id: trigger-merged-pr-frontier
+    type: trigger
+    label: "Read back merged PR #70 and its unresolved publication-gate frontier"
+    status: completed
+    owner: "codex-agent"
+    evidence_refs: ["https://github.com/bynanci/courtside-tw/pull/70", "repo:main@bcdc96efae3847f17e8c91e8a26f117dd32a2c79"]
+  - id: action-contract-lock
+    type: action
+    label: "Lock remediation scope, acceptance, authority, and exclusions"
+    status: completed
+    owner: "codex-agent"
+  - id: action-domain-hardening
+    type: action
+    label: "Harden state transitions, frozen revisions, readiness, rights evidence, and idempotency policy"
+    status: completed
+    owner: "codex-agent"
+    evidence_refs: ["PR #72 changed Java domain/application sources and focused tests"]
+  - id: action-migration-hardening
+    type: action
+    label: "Add forward-only V005 and isolated migration privilege/append-only proof"
+    status: completed
+    owner: "codex-agent"
+    evidence_refs: ["PR #72 V005 migration and scripts/test/verify-editorial-publication-migration.sh"]
+  - id: proof-exact-implementation-head
+    type: proof
+    label: "Exact implementation-head CI and Security verification"
+    status: completed
+    required: true
+    evidence_refs: [".loop/evidence/t042-t047-us3-publication-gate-remediation.json"]
+  - id: memory-remediation-receipt
+    type: memory
+    label: "Write append-only remediation evidence, ledger, and durable state"
+    status: completed
+    required: true
+    evidence_refs:
+      - ".loop/t042-t047-us3-publication-gate-remediation-ledger.json"
+      - ".loop/memory/t042-t047-us3-publication-gate-remediation.json"
+  - id: stop-human-gate
+    type: stop
+    label: "Stop before protected merge, production activation, task changes, or out-of-scope US3 work"
+    status: ready
+    owner: "human-reviewer"
+
+edges:
+  - {from: trigger-merged-pr-frontier, to: action-contract-lock, type: control}
+  - {from: action-contract-lock, to: action-domain-hardening, type: control}
+  - {from: action-contract-lock, to: action-migration-hardening, type: control}
+  - {from: action-domain-hardening, to: proof-exact-implementation-head, type: proof}
+  - {from: action-migration-hardening, to: proof-exact-implementation-head, type: proof}
+  - {from: proof-exact-implementation-head, to: memory-remediation-receipt, type: feedback}
+  - {from: memory-remediation-receipt, to: stop-human-gate, type: control}
+  - {from: proof-exact-implementation-head, to: action-domain-hardening, type: feedback}
+  - {from: proof-exact-implementation-head, to: action-migration-hardening, type: feedback}
+
+memory_workflow:
+  before_action:
+    read_refs:
+      - "repo:main@bcdc96efae3847f17e8c91e8a26f117dd32a2c79"
+      - "repo:.loop/t042-t047-us3-publication-gate-graph.yaml"
+      - "attachment:courtside-montage(1).png"
+      - "attachment:README.md"
+  after_proof:
+    write_refs:
+      - "repo:.loop/t042-t047-us3-publication-gate-remediation-ledger.json"
+      - "repo:.loop/memory/t042-t047-us3-publication-gate-remediation.json"
+      - "repo:.loop/evidence/t042-t047-us3-publication-gate-remediation.json"
+  receipt_status: "MEMORY_WRITE_COMPLETE"
+  append_only: true
+
+ready_frontier:
+  - "stop-human-gate"
+critical_path:
+  - "action-contract-lock"
+  - "action-domain-hardening"
+  - "action-migration-hardening"
+  - "proof-exact-implementation-head"
+  - "memory-remediation-receipt"
+min_cut:
+  - "proof-exact-implementation-head"
+stop_conditions:
+  - "Any role, rights, revision, version, append-only, or idempotency invariant is weakened"
+  - "A required proof fails twice without a new evidence delta"
+  - "The request expands into Web3, production activation, or protected task/merge operations"
+  - "Exact-head proof is pending, stale, or cannot be independently read back"
+
+terminal_status: "NEEDS_HUMAN"
+verification:
+  implementation_head: "0a007b75b5562be1def6d3a2f89dc9e485fc09ca"
+  ci_run: 31351729309
+  security_run: 31351729321
+  run_number: 377
+  conclusion: "success"
+  note: "The final receipt commit must be read back and checked separately; this graph does not use a future or self-reported head as proof."
