@@ -515,6 +515,13 @@ const apiServer = createServer(async (request, response) => {
       writeJson(response, 200, { items: [studioArticle()], page: { nextCursor: null, limit: 100 } })
       return
     }
+    if (
+      requestUrl.pathname === `/api/v1/editor/articles/${STUDIO_ARTICLE_ID}` &&
+      request.method === "GET"
+    ) {
+      writeJson(response, 200, studioArticle())
+      return
+    }
     if (requestUrl.pathname === "/api/v1/editor/articles" && request.method === "PATCH") {
       const body = await readJson(request)
       const expectedVersion = Number(String(request.headers["if-match"] ?? "").replaceAll('"', ""))
