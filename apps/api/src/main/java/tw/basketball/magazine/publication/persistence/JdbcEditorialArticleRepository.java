@@ -193,7 +193,7 @@ public final class JdbcEditorialArticleRepository implements EditorialArticleRep
                     id, article_id, revision_number, title, dek, content_document,
                     state, version
                 )
-                SELECT ?, COALESCE(MAX(revision_number), 0) + 1,
+                SELECT ?, ?, COALESCE(MAX(revision_number), 0) + 1,
                        ?, ?, ?::jsonb, 'DRAFT', 1
                 FROM article_revision
                 WHERE article_id = ?
@@ -684,3 +684,4 @@ public final class JdbcEditorialArticleRepository implements EditorialArticleRep
         }
     }
 }
+c19a2ecb994da3e214769b02c6dbe53db9a4659a
