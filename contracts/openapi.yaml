@@ -2559,12 +2559,15 @@ components:
       additionalProperties: false
       required:
         - articleId
+        - revisionId
         - version
         - title
         - slug
         - state
       properties:
         articleId:
+          $ref: "#/components/schemas/Uuid"
+        revisionId:
           $ref: "#/components/schemas/Uuid"
         version:
           type: integer
