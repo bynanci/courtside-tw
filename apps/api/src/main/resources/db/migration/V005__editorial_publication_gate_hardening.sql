@@ -15,6 +15,18 @@ ALTER TABLE publication_job
     );
 
 ALTER TABLE publication_job
+    DROP CONSTRAINT publication_job_operation_ck,
+    ADD CONSTRAINT publication_job_operation_ck CHECK (
+        operation IN ('SUBMIT', 'REQUEST_CHANGES', 'APPROVE', 'SCHEDULE', 'PUBLISH', 'WITHDRAW', 'ARCHIVE')
+    );
+
+ALTER TABLE publication_idempotency
+    DROP CONSTRAINT publication_idempotency_operation_ck,
+    ADD CONSTRAINT publication_idempotency_operation_ck CHECK (
+        operation IN ('SUBMIT', 'REQUEST_CHANGES', 'APPROVE', 'SCHEDULE', 'PUBLISH', 'WITHDRAW', 'ARCHIVE')
+    );
+
+ALTER TABLE publication_job
     DROP CONSTRAINT publication_job_idempotency_uk,
     ADD CONSTRAINT publication_job_idempotency_uk UNIQUE (
         requested_by,
