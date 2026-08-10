@@ -61,27 +61,27 @@ nodes:
   - id: action-implement-gate
     type: action
     label: "Implement domain gate and V004 migration"
-    status: in_progress
+    status: completed
     owner: "agent"
   - id: proof-static-and-unit
     type: proof
     label: "Java quality and unit proof"
-    status: pending
+    status: completed
     required: true
   - id: proof-migration
     type: proof
     label: "Isolated V004 migration and privilege proof"
-    status: pending
+    status: completed
     required: true
   - id: memory-us3-receipt
     type: memory
     label: "Write exact-head graph and project-state receipt"
-    status: pending
+    status: completed
     required: true
   - id: stop-human-gate
     type: stop
     label: "Stop before protected merge, task completion, or production activation"
-    status: pending
+    status: ready
 edges:
   - from: trigger-us3-frontier
     to: action-contract-lock
@@ -115,9 +115,9 @@ memory_workflow:
       - "repo:.loop/t042-t047-us3-publication-gate-ledger.json"
       - "repo:.loop/memory/t042-t047-us3-publication-gate.json"
       - "repo:.loop/evidence/t042-t047-us3-publication-gate.json"
-  receipt_status: "MEMORY_WRITE_PENDING"
+  receipt_status: "MEMORY_WRITE_COMPLETE"
 ready_frontier:
-  - "action-implement-gate"
+  - "stop-human-gate"
 critical_path:
   - "action-implement-gate"
   - "proof-static-and-unit"
@@ -131,3 +131,9 @@ stop_conditions:
   - "A test or migration proof fails twice without a new evidence delta"
   - "The requested change expands into Web3/Passport or production activation"
   - "Proof remains pending at the exact implementation head"
+terminal_status: "NEEDS_HUMAN"
+verification:
+  implementation_head: "2937e5d13f24237b7a76cabe4a138abf7ce1e7f8"
+  ci_run: 31343385363
+  security_run: 31343385354
+  conclusion: "success"
