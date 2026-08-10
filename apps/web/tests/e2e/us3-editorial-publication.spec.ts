@@ -36,7 +36,7 @@ test.describe("US3 Studio editor/publisher workflow", () => {
     await page.getByRole("button", { name: "儲存 Save", exact: true }).click()
     await expect(page.getByText(/已保存 revision|saved revision/i)).toBeVisible()
     await page.getByRole("button", { name: /送出審核|submit/i }).click()
-    await expect(page.getByText(/已送出 review|review/i)).toBeVisible()
+    await expect(page.locator(".studio-action-result")).toContainText(/已送出 review|review/i)
 
     await page.goto(`/studio/review/${seededArticleId}?role=PUBLISHER`, {
       waitUntil: "domcontentloaded"

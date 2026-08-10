@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.net.URI;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
@@ -35,16 +36,14 @@ import tw.basketball.magazine.shared.RoleCode;
 import tw.basketball.magazine.shared.UuidV7Generator;
 
 final class EditorialMediaUploadApiIT extends EditorialApiIntegrationTestSupport {
-    private static final UUID UPLOAD_ID =
-            UUID.fromString("00000000-0000-7000-8000-000000000901");
     private static final String CHECKSUM = "a".repeat(64);
 
     @BeforeEach
     void installMediaController() {
         S3CompatibleStoragePort storage = request -> new SignedUpload(
                 request.assetId(),
-                UPLOAD_ID,
-                "media/originals/" + request.assetId() + "/" + UPLOAD_ID,
+                UUID.nameUUIDFromBytes(("upload:" + request.assetId()).getBytes(StandardCharsets.UTF_8)),
+                "media/originals/" + request.assetId(),
                 request.mimeType(),
                 request.byteSize(),
                 applicationClock.now().plus(Duration.ofMinutes(5)),

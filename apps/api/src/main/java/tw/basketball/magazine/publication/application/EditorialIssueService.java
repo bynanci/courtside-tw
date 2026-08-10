@@ -331,17 +331,23 @@ public final class EditorialIssueService {
                             ))
                     );
                 }
+                String replayBody = canonicalJson(existing.get().response());
                 return new EditorialWorkflowService.OperationResult(
                         operation.startsWith("CREATE") ? 201 : 200,
-                        existing.get().response(),
-                        versionFrom(existing.get().response())
+                        replayBody,
+                        versionFrom(replayBody)
                 );
             }
             EditorialWorkflowService.OperationResult computed = work.get();
             repository.insertIdempotency(
                     actor.subject(), operation, idempotencyKey, hash, computed.body()
             );
-            return computed;
+            String persistedBody = repository.findIdempotency(actor.subject(), operation, idempotencyKey)
+                    .orElseThrow(() -> new IllegalStateException("issue receipt disappeared"))
+                    .response();
+            return new EditorialWorkflowService.OperationResult(
+                    computed.statusCode(), canonicalJson(persistedBody), computed.version()
+            );
         });
         return Objects.requireNonNull(result, "transaction returned no issue result");
     }
@@ -636,6 +642,14 @@ public final class EditorialIssueService {
             return objectMapper.writeValueAsString(value);
         } catch (Exception exception) {
             throw new IllegalStateException("unable to serialize issue response", exception);
+        }
+    }
+
+    private String canonicalJson(String value) {
+        try {
+            return json(objectMapper.readTree(value));
+        } catch (JacksonException exception) {
+            throw new IllegalStateException("stored issue receipt is not valid JSON", exception);
         }
     }
 

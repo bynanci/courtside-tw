@@ -233,13 +233,18 @@ final class PublicationReliabilityIT extends EditorialApiIntegrationTestSupport 
                 """, sectionId, issueId);
         jdbcTemplate.update("""
                 INSERT INTO article (id, slug, state, published_revision_id, published_at)
-                VALUES (?, 'withdrawn-origin', 'WITHDRAWN', ?, ?)
-                """, articleId, revisionId, Timestamp.from(publishedAt));
+                VALUES (?, 'withdrawn-origin', 'DRAFT', NULL, NULL)
+                """, articleId);
         jdbcTemplate.update("""
                 INSERT INTO article_revision (
                     id, article_id, revision_number, title, dek, content_document, state
                 ) VALUES (?, ?, 1, 'Withdrawn origin', 'Withdrawn origin', ?::jsonb, 'WITHDRAWN')
                 """, revisionId, articleId, CREATE_BODY_CONTENT);
+        jdbcTemplate.update("""
+                UPDATE article
+                SET state = 'WITHDRAWN', published_revision_id = ?, published_at = ?
+                WHERE id = ?
+                """, revisionId, Timestamp.from(publishedAt), articleId);
         jdbcTemplate.update("""
                 INSERT INTO contributor (id, slug, display_name)
                 VALUES (?, 'reliability-editor', 'Reliability editor')

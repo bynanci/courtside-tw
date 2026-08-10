@@ -76,8 +76,9 @@ public final class PublisherMediaService {
                             ))
                     );
                 }
+                String replayBody = canonicalJson(receipt.response);
                 return new EditorialWorkflowService.OperationResult(
-                        200, receipt.response, versionFrom(receipt.response)
+                        200, replayBody, versionFrom(replayBody)
                 );
             }
 
@@ -151,7 +152,14 @@ public final class PublisherMediaService {
                     assetId,
                     Map.of("reason", reason, "affectedArticles", affectedArticles.size())
             ));
-            return new EditorialWorkflowService.OperationResult(200, response, expectedVersion.next().value());
+            Receipt persisted = findReceipt(actor.subject(), idempotencyKey);
+            if (persisted == null) {
+                throw new IllegalStateException("media revoke receipt disappeared");
+            }
+            String persistedBody = canonicalJson(persisted.response);
+            return new EditorialWorkflowService.OperationResult(
+                    200, persistedBody, versionFrom(persistedBody)
+            );
         });
         return Objects.requireNonNull(result, "transaction returned no revocation result");
     }
@@ -247,6 +255,14 @@ public final class PublisherMediaService {
             return objectMapper.writeValueAsString(value);
         } catch (Exception exception) {
             throw new IllegalStateException("unable to serialize impact report", exception);
+        }
+    }
+
+    private String canonicalJson(String value) {
+        try {
+            return json(objectMapper.readTree(value));
+        } catch (JacksonException exception) {
+            throw new IllegalStateException("stored media revoke receipt is not valid JSON", exception);
         }
     }
 

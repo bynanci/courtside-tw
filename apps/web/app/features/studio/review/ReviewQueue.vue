@@ -416,11 +416,12 @@ function toLocalDateTimeValue(value: Date): string {
             <button class="studio-button studio-button--primary" type="submit" :disabled="busy">
               確認排程 Confirm schedule
             </button>
-            <span v-if="current.scheduledAt" class="studio-action-result">
-              UTC {{ current.scheduledAt }}
-            </span>
           </div>
         </form>
+
+        <p v-if="current.scheduledAt" class="studio-action-result" role="status">
+          UTC {{ current.scheduledAt }}
+        </p>
 
         <form
           v-if="withdrawalOpen"

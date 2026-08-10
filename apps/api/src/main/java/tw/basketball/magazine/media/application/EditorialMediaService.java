@@ -131,7 +131,10 @@ public final class EditorialMediaService {
                     assetId,
                     Map.of("mimeType", mimeType, "byteSize", byteSize)
             ));
-            return new OperationResult(201, response, 0, assetId);
+            String persistedResponse = receiptRepository.find(actor.subject(), CREATE_OPERATION, key)
+                    .orElseThrow(() -> new IllegalStateException("media intent receipt disappeared"))
+                    .responseJson();
+            return new OperationResult(201, canonicalJson(persistedResponse), 0, assetId);
         });
     }
 
@@ -229,7 +232,10 @@ public final class EditorialMediaService {
                     assetId,
                     Map.of("eventType", PROCESS_EVENT, "state", "PROCESSING")
             ));
-            return new OperationResult(202, response, processing.version(), assetId);
+            String persistedResponse = receiptRepository.find(actor.subject(), COMPLETE_OPERATION, key)
+                    .orElseThrow(() -> new IllegalStateException("media completion receipt disappeared"))
+                    .responseJson();
+            return new OperationResult(202, canonicalJson(persistedResponse), processing.version(), assetId);
         });
     }
 
@@ -258,7 +264,7 @@ public final class EditorialMediaService {
             long responseVersion = version != null && version.isIntegralNumber()
                     ? version.asLong() : 0;
             return new OperationResult(
-                    statusCode, receipt.responseJson(), responseVersion, receipt.assetId()
+                    statusCode, canonicalJson(receipt.responseJson()), responseVersion, receipt.assetId()
             );
         } catch (Exception exception) {
             throw new IllegalStateException("stored media receipt is not valid JSON", exception);
@@ -350,6 +356,14 @@ public final class EditorialMediaService {
             return objectMapper.writeValueAsString(value);
         } catch (Exception exception) {
             throw new IllegalStateException("unable to serialize media response", exception);
+        }
+    }
+
+    private String canonicalJson(String value) {
+        try {
+            return json(objectMapper.readTree(value));
+        } catch (JacksonException exception) {
+            throw new IllegalStateException("stored media receipt is not valid JSON", exception);
         }
     }
 

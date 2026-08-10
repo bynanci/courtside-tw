@@ -168,7 +168,7 @@ public final class EditorialMediaMetadataService {
             return;
         }
         if (input.version() == null) {
-            throw EditorialProblemException.invalid(
+            throw EditorialProblemException.gate(
                     "/rights/version", "RIGHTS_VERSION_REQUIRED", "existing rights records require a version"
             );
         }
