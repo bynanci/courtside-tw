@@ -1,12 +1,13 @@
 {
   "schema_version": "1",
   "evidence_id": "t042-t047-us3-publication-gate-scope-20260809",
-  "status": "IMPLEMENTATION_PENDING_VERIFICATION",
-  "classification": "INFERRED",
+  "status": "BOUNDED_IMPLEMENTATION_VERIFIED_WITH_HUMAN_GATES",
+  "classification": "CONFIRMED",
   "source_of_truth": {
     "repository": "bynanci/courtside-tw",
     "base_ref": "main",
-    "base_commit": "fcc18d948073433d2a6e2397329391ef125c091c"
+    "base_commit": "fcc18d948073433d2a6e2397329391ef125c091c",
+    "implementation_head": "2937e5d13f24237b7a76cabe4a138abf7ce1e7f8"
   },
   "scope": {
     "included": [
@@ -24,15 +25,32 @@
     ]
   },
   "proof": {
-    "static": "PENDING",
-    "unit": "PENDING",
-    "migration": "PENDING",
-    "security": "PENDING"
+    "static": "PASSED",
+    "unit": "PASSED",
+    "migration": "PASSED",
+    "security": "PASSED"
+  },
+  "verification": {
+    "ci_run": {"id": 31343385363, "run_number": 337, "conclusion": "success"},
+    "security_run": {"id": 31343385354, "run_number": 337, "conclusion": "success"},
+    "jobs": [
+      "Java quality and unit verification",
+      "Docker Compose dependency health (including V004 migration)",
+      "Frontend and contract verification",
+      "Public magazine browser verification",
+      "Dependency audit and reports",
+      "CodeQL java-kotlin",
+      "CodeQL javascript-typescript",
+      "Trivy filesystem",
+      "Trivy image postgres",
+      "Trivy image s3",
+      "Trivy image oidc"
+    ]
   },
   "human_gates": [
     "Protected merge",
     "Production migration/activation",
     "Marking task checkboxes complete"
   ],
-  "next_action": "Publish a draft branch, wait for exact-head proof, then update this evidence without claiming unverified success."
+  "next_action": "Human review PR #70; keep merge, production activation, and task checkbox edits gated."
 }
