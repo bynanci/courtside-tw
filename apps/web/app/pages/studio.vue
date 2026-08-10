@@ -21,7 +21,6 @@ watch(
   role,
   (currentRole) => {
     workflowStatus.value = currentRole === "PUBLISHER" ? "待出版者審核" : "草稿"
-    editorOpen.value = false
     showConflict.value = false
     saveCount.value = 0
   },
