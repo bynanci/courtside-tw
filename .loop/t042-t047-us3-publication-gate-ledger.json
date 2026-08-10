@@ -1,8 +1,8 @@
 {
   "schema_version": "2",
   "graph_id": "courtside-t042-t047-us3-publication-gate",
-  "status": "IN_PROGRESS",
-  "iteration": 1,
+  "status": "NEEDS_HUMAN",
+  "iteration": 2,
   "source_of_truth": {
     "repository": "bynanci/courtside-tw",
     "base_ref": "main",
@@ -11,7 +11,7 @@
   },
   "decision": "Implement the bounded editorial gate before HTTP, Studio, or Web3 work.",
   "terminal": false,
-  "ready_frontier": ["action-implement-gate"],
+  "ready_frontier": ["stop-human-gate"],
   "critical_path": [
     "action-implement-gate",
     "proof-static-and-unit",
@@ -19,10 +19,10 @@
     "memory-us3-receipt"
   ],
   "proof_coverage": {
-    "state_machine": "PENDING",
-    "rights_policy": "PENDING",
-    "v004_migration": "PENDING",
-    "ci_security": "PENDING"
+    "state_machine": "PASSED",
+    "rights_policy": "PASSED",
+    "v004_migration": "PASSED",
+    "ci_security": "PASSED"
   },
   "blockers": [
     {
@@ -37,13 +37,22 @@
     }
   ],
   "memory_receipt": {
-    "status": "MEMORY_WRITE_PENDING",
+    "status": "SAVED",
     "memory_id": "courtside-us3-publication-gate-20260809-v1",
-    "write_after": "exact-head proof"
+    "write_after": "exact-head proof",
+    "implementation_head": "2937e5d13f24237b7a76cabe4a138abf7ce1e7f8"
   },
   "audit": {
     "secrets_present": false,
     "external_content_treated_as_untrusted": true,
     "model_self_report_used_as_proof": false
+  },
+  "verification": {
+    "implementation_head": "2937e5d13f24237b7a76cabe4a138abf7ce1e7f8",
+    "ci_run": {"id": 31343385363, "run_number": 337, "conclusion": "success"},
+    "security_run": {"id": 31343385354, "run_number": 337, "conclusion": "success"},
+    "failure_signatures": [
+      "Initial head exposed two test fixture failures; the second head corrected the fixtures without weakening production gates."
+    ]
   }
 }
