@@ -79,8 +79,9 @@ test.describe("US3 Studio editor/publisher workflow", () => {
 
     await expect(page.locator(".studio-action-result")).toContainText(/UTC/)
     await page.getByRole("button", { name: /重試|retry/i }).click()
-    await expect(page.getByText(/SCHEDULED|已排程/i)).toBeVisible()
-    await expect(page.getByText(/SCHEDULED|已排程/i)).toBeVisible()
+    await expect(page.locator(".studio-workflow-result strong")).toHaveText(
+      /已排程 · revision \d+|SCHEDULED · revision \d+/i
+    )
   })
 
   test("publisher can perform an auditable emergency withdrawal", async ({ page }) => {
