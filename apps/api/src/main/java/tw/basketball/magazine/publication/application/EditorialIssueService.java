@@ -98,6 +98,10 @@ public final class EditorialIssueService {
         });
     }
 
+    public EditorialWorkflowService.OperationResult listIssues(ActorContext actor, int limit) {
+        return listIssues(actor, null, limit);
+    }
+
     public EditorialWorkflowService.OperationResult listIssues(
             ActorContext actor,
             String cursor,

@@ -16,7 +16,16 @@ public interface EditorialIssueRepository {
 
     Optional<IssueRecord> findForUpdate(UUID issueId);
 
-    IssuePage list(String cursor, int limit);
+    default IssuePage list(String cursor, int limit) {
+        if (cursor != null) {
+            throw new IllegalArgumentException("cursor pagination is not supported by this adapter");
+        }
+        return new IssuePage(list(limit), null, limit);
+    }
+
+    default List<IssueRecord> list(int limit) {
+        return list(null, limit).items();
+    }
 
     List<SectionRecord> listSections(UUID issueId);
 
@@ -122,6 +131,18 @@ public interface EditorialIssueRepository {
             long version,
             Instant updatedAt
     ) {
+        public IssueRecord(
+                UUID issueId,
+                int issueNumber,
+                String slug,
+                String title,
+                String summary,
+                UUID coverAssetId,
+                PublicationState state,
+                long version
+        ) {
+            this(issueId, issueNumber, slug, title, summary, coverAssetId, state, version, Instant.EPOCH);
+        }
     }
 
     record IssuePage(List<IssueRecord> items, String nextCursor, int limit) {
