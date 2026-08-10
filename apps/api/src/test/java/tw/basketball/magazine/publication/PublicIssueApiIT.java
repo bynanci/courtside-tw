@@ -12,8 +12,8 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.Base64;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
@@ -82,7 +82,7 @@ final class PublicIssueApiIntegrationTest extends PublicIssueApiIntegrationTestS
         String etag = firstPage.getResponse().getHeader(HttpHeaders.ETAG);
         assertNotNull(etag);
         JsonNode firstPayload = OBJECT_MAPPER.readTree(firstPage.getResponse().getContentAsString());
-        String nextCursor = firstPayload.at("/page/nextCursor").asText();
+        String nextCursor = firstPayload.at("/page/nextCursor").asString();
         assertFalse(nextCursor.isBlank());
         assertFalse(firstPage.getResponse().getContentAsString().contains("private"));
 

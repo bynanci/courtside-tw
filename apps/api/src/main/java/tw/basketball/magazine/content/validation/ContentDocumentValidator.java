@@ -1,13 +1,5 @@
 package tw.basketball.magazine.content.validation;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.networknt.schema.JsonSchema;
-import com.networknt.schema.JsonSchemaFactory;
-import com.networknt.schema.SchemaValidatorsConfig;
-import com.networknt.schema.SpecVersion.VersionFlag;
-import com.networknt.schema.ValidationMessage;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
@@ -15,11 +7,21 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.networknt.schema.Error;
+import com.networknt.schema.Schema;
+import com.networknt.schema.SchemaRegistry;
+import com.networknt.schema.SchemaRegistryConfig;
+import com.networknt.schema.SpecificationVersion;
+
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+
 public final class ContentDocumentValidator {
     private static final String SCHEMA_RESOURCE = "/contracts/content-document.schema.json";
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
-    private final JsonSchema schema;
+    private final Schema schema;
 
     public ContentDocumentValidator() {
         this.schema = loadSchema();
@@ -31,7 +33,7 @@ public final class ContentDocumentValidator {
         }
 
         List<String> errors = new ArrayList<>(schema.validate(document).stream()
-                .map(ValidationMessage::getMessage)
+                .map(Error::getMessage)
                 .sorted()
                 .toList());
         addDuplicateBlockIdErrors(document, errors);
@@ -41,7 +43,7 @@ public final class ContentDocumentValidator {
     public ValidationResult validate(String documentJson) {
         try {
             return validate(OBJECT_MAPPER.readTree(documentJson));
-        } catch (IOException exception) {
+        } catch (JacksonException exception) {
             return invalid(List.of("document is not valid JSON: " + exception.getMessage()));
         }
     }
@@ -53,16 +55,19 @@ public final class ContentDocumentValidator {
         }
     }
 
-    private static JsonSchema loadSchema() {
+    private static Schema loadSchema() {
         try (InputStream schemaStream = ContentDocumentValidator.class.getResourceAsStream(SCHEMA_RESOURCE)) {
             if (schemaStream == null) {
                 throw new IllegalStateException("Missing canonical ContentDocument schema resource");
             }
 
-            SchemaValidatorsConfig config = SchemaValidatorsConfig.builder()
+            SchemaRegistryConfig config = SchemaRegistryConfig.builder()
                     .formatAssertionsEnabled(true)
                     .build();
-            return JsonSchemaFactory.getInstance(VersionFlag.V202012).getSchema(schemaStream, config);
+            SchemaRegistry registry = SchemaRegistry.withDefaultDialect(
+                    SpecificationVersion.DRAFT_2020_12,
+                    builder -> builder.schemaRegistryConfig(config));
+            return registry.getSchema(schemaStream);
         } catch (IOException exception) {
             throw new IllegalStateException("Unable to load canonical ContentDocument schema", exception);
         }
@@ -78,7 +83,7 @@ public final class ContentDocumentValidator {
         for (int index = 0; index < blocks.size(); index++) {
             JsonNode block = blocks.get(index);
             JsonNode id = block == null ? null : block.get("id");
-            if (id != null && id.isTextual() && !blockIds.add(id.textValue())) {
+            if (id != null && id.isString() && !blockIds.add(id.stringValue())) {
                 errors.add("/blocks/" + index + "/id: must be unique");
             }
         }
