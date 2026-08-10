@@ -17,6 +17,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+
 import tw.basketball.magazine.media.application.EditorialMediaService;
 import tw.basketball.magazine.publication.application.EditorialProblemException;
 import tw.basketball.magazine.shared.ActorContext;
@@ -30,6 +34,7 @@ import tw.basketball.magazine.shared.RoleCode;
 public final class EditorialMediaController {
     private static final String REQUEST_ID_HEADER = "X-Request-Id";
     private static final String IDEMPOTENCY_HEADER = "Idempotency-Key";
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final EditorialMediaService service;
 
@@ -41,7 +46,7 @@ public final class EditorialMediaController {
             path = "/api/v1/editor/media/uploads",
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity<String> createUploadIntent(
+    public ResponseEntity<JsonNode> createUploadIntent(
             @RequestBody(required = false) String body,
             Authentication authentication,
             HttpServletRequest request
@@ -60,7 +65,7 @@ public final class EditorialMediaController {
             path = "/api/v1/editor/media/{assetId}:complete",
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity<String> completeUpload(
+    public ResponseEntity<JsonNode> completeUpload(
             @PathVariable String assetId,
             @RequestBody(required = false) String body,
             Authentication authentication,
@@ -77,18 +82,27 @@ public final class EditorialMediaController {
         );
     }
 
-    private static ResponseEntity<String> response(
+    private static ResponseEntity<JsonNode> response(
             EditorialMediaService.OperationResult result,
             RequestId requestId
     ) {
         ResponseEntity.BodyBuilder builder = ResponseEntity.status(result.statusCode())
                 .contentType(MediaType.APPLICATION_JSON)
                 .cacheControl(CacheControl.noStore())
-                .header(REQUEST_ID_HEADER, requestId.value());
+                .header(REQUEST_ID_HEADER, requestId.value())
+                .header("X-Content-Type-Options", "nosniff");
         if (result.version() > 0) {
             builder.eTag('"' + Long.toString(result.version()) + '"');
         }
-        return builder.body(result.body());
+        return builder.body(json(result.body()));
+    }
+
+    private static JsonNode json(String body) {
+        try {
+            return OBJECT_MAPPER.readTree(body);
+        } catch (JacksonException exception) {
+            throw new IllegalStateException("Editorial media service returned invalid JSON", exception);
+        }
     }
 
     private static ActorContext actor(Authentication authentication, HttpServletRequest request) {

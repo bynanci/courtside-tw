@@ -22,6 +22,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+
 import tw.basketball.magazine.publication.application.EditorialIssueService;
 import tw.basketball.magazine.publication.application.EditorialProblemException;
 import tw.basketball.magazine.publication.application.EditorialWorkflowService;
@@ -36,6 +40,7 @@ import tw.basketball.magazine.shared.Version;
 @ConditionalOnBean(EditorialIssueService.class)
 public final class EditorialIssueController {
     private static final String REQUEST_ID_HEADER = "X-Request-Id";
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final EditorialIssueService service;
 
@@ -44,7 +49,7 @@ public final class EditorialIssueController {
     }
 
     @PostMapping(path = "/api/v1/editor/issues", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<String> createIssue(
+    public ResponseEntity<JsonNode> createIssue(
             @RequestBody(required = false) String body,
             Authentication authentication,
             HttpServletRequest request
@@ -55,7 +60,7 @@ public final class EditorialIssueController {
     }
 
     @GetMapping(path = "/api/v1/editor/issues", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<String> listIssues(
+    public ResponseEntity<JsonNode> listIssues(
             @RequestParam(defaultValue = "20") int limit,
             Authentication authentication,
             HttpServletRequest request
@@ -64,7 +69,7 @@ public final class EditorialIssueController {
     }
 
     @PatchMapping(path = "/api/v1/editor/issues", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<String> patchIssue(
+    public ResponseEntity<JsonNode> patchIssue(
             @RequestBody(required = false) String body,
             Authentication authentication,
             HttpServletRequest request
@@ -78,7 +83,7 @@ public final class EditorialIssueController {
     }
 
     @GetMapping(path = "/api/v1/editor/issues/{issueId}/sections", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<String> listSections(
+    public ResponseEntity<JsonNode> listSections(
             @PathVariable String issueId,
             Authentication authentication,
             HttpServletRequest request
@@ -93,7 +98,7 @@ public final class EditorialIssueController {
             path = "/api/v1/editor/issues/{issueId}/sections",
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity<String> createSection(
+    public ResponseEntity<JsonNode> createSection(
             @PathVariable String issueId,
             @RequestBody(required = false) String body,
             Authentication authentication,
@@ -115,7 +120,7 @@ public final class EditorialIssueController {
             path = "/api/v1/editor/issues/{issueId}/sections",
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity<String> reorderSections(
+    public ResponseEntity<JsonNode> reorderSections(
             @PathVariable String issueId,
             @RequestBody(required = false) String body,
             Authentication authentication,
@@ -137,7 +142,7 @@ public final class EditorialIssueController {
             path = "/api/v1/editor/issues/{issueId}/sections/{sectionId}",
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity<String> patchSection(
+    public ResponseEntity<JsonNode> patchSection(
             @PathVariable String issueId,
             @PathVariable String sectionId,
             @RequestBody(required = false) String body,
@@ -158,7 +163,7 @@ public final class EditorialIssueController {
     }
 
     @DeleteMapping(path = "/api/v1/editor/issues/{issueId}/sections/{sectionId}")
-    public ResponseEntity<String> deleteSection(
+    public ResponseEntity<JsonNode> deleteSection(
             @PathVariable String issueId,
             @PathVariable String sectionId,
             Authentication authentication,
@@ -176,18 +181,27 @@ public final class EditorialIssueController {
         );
     }
 
-    private static ResponseEntity<String> response(
+    private static ResponseEntity<JsonNode> response(
             EditorialWorkflowService.OperationResult result,
             RequestId requestId
     ) {
         ResponseEntity.BodyBuilder builder = ResponseEntity.status(result.statusCode())
                 .contentType(MediaType.APPLICATION_JSON)
                 .cacheControl(CacheControl.noStore())
-                .header(REQUEST_ID_HEADER, requestId.value());
+                .header(REQUEST_ID_HEADER, requestId.value())
+                .header("X-Content-Type-Options", "nosniff");
         if (result.version() > 0) {
             builder.eTag(new Version(result.version()).toIfMatch());
         }
-        return builder.body(result.body());
+        return builder.body(json(result.body()));
+    }
+
+    private static JsonNode json(String body) {
+        try {
+            return OBJECT_MAPPER.readTree(body);
+        } catch (JacksonException exception) {
+            throw new IllegalStateException("Editorial issue service returned invalid JSON", exception);
+        }
     }
 
     private static ActorContext actor(Authentication authentication, HttpServletRequest request) {

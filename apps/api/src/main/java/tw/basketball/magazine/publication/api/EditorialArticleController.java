@@ -21,6 +21,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+
 import tw.basketball.magazine.publication.application.EditorialProblemException;
 import tw.basketball.magazine.publication.application.EditorialWorkflowService;
 import tw.basketball.magazine.shared.ActorContext;
@@ -35,6 +39,7 @@ import tw.basketball.magazine.shared.Version;
 public final class EditorialArticleController {
     private static final String REQUEST_ID_HEADER = "X-Request-Id";
     private static final String IDEMPOTENCY_HEADER = "Idempotency-Key";
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final EditorialWorkflowService service;
 
@@ -43,7 +48,7 @@ public final class EditorialArticleController {
     }
 
     @PostMapping(path = "/api/v1/editor/articles", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<String> createArticle(
+    public ResponseEntity<JsonNode> createArticle(
             @RequestBody(required = false) String body,
             Authentication authentication,
             HttpServletRequest request
@@ -53,7 +58,7 @@ public final class EditorialArticleController {
     }
 
     @PatchMapping(path = "/api/v1/editor/articles", consumes = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<String> patchArticle(
+    public ResponseEntity<JsonNode> patchArticle(
             @RequestBody(required = false) String body,
             Authentication authentication,
             HttpServletRequest request
@@ -71,7 +76,7 @@ public final class EditorialArticleController {
     }
 
     @GetMapping(path = "/api/v1/editor/articles", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<String> listArticles(
+    public ResponseEntity<JsonNode> listArticles(
             @RequestParam(defaultValue = "20") int limit,
             Authentication authentication,
             HttpServletRequest request
@@ -83,7 +88,7 @@ public final class EditorialArticleController {
     }
 
     @GetMapping(path = "/api/v1/publisher/articles", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<String> listPublisherArticles(
+    public ResponseEntity<JsonNode> listPublisherArticles(
             @RequestParam(defaultValue = "20") int limit,
             Authentication authentication,
             HttpServletRequest request
@@ -95,7 +100,7 @@ public final class EditorialArticleController {
     }
 
     @GetMapping(path = "/api/v1/publisher/articles/{articleId}", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<String> getPublisherArticle(
+    public ResponseEntity<JsonNode> getPublisherArticle(
             @PathVariable String articleId,
             Authentication authentication,
             HttpServletRequest request
@@ -110,7 +115,7 @@ public final class EditorialArticleController {
             path = "/api/v1/editor/articles/{articleId}:revise",
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity<String> createRevision(
+    public ResponseEntity<JsonNode> createRevision(
             @PathVariable String articleId,
             @RequestBody(required = false) String body,
             Authentication authentication,
@@ -132,7 +137,7 @@ public final class EditorialArticleController {
             path = "/api/v1/editor/articles/{articleId}:submit",
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity<String> submitArticle(
+    public ResponseEntity<JsonNode> submitArticle(
             @PathVariable String articleId,
             @RequestBody(required = false) String body,
             Authentication authentication,
@@ -152,7 +157,7 @@ public final class EditorialArticleController {
     }
 
     @PostMapping(path = "/api/v1/publisher/articles/{articleId}:approve")
-    public ResponseEntity<String> approveArticle(
+    public ResponseEntity<JsonNode> approveArticle(
             @PathVariable String articleId,
             @RequestBody(required = false) String body,
             Authentication authentication,
@@ -175,7 +180,7 @@ public final class EditorialArticleController {
             path = "/api/v1/publisher/articles/{articleId}:request-changes",
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity<String> requestChanges(
+    public ResponseEntity<JsonNode> requestChanges(
             @PathVariable String articleId,
             @RequestBody(required = false) String body,
             Authentication authentication,
@@ -198,7 +203,7 @@ public final class EditorialArticleController {
             path = "/api/v1/publisher/articles/{articleId}:schedule",
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity<String> scheduleArticle(
+    public ResponseEntity<JsonNode> scheduleArticle(
             @PathVariable String articleId,
             @RequestBody(required = false) String body,
             Authentication authentication,
@@ -218,7 +223,7 @@ public final class EditorialArticleController {
     }
 
     @PostMapping(path = "/api/v1/publisher/articles/{articleId}:publish")
-    public ResponseEntity<String> publishArticle(
+    public ResponseEntity<JsonNode> publishArticle(
             @PathVariable String articleId,
             @RequestBody(required = false) String body,
             Authentication authentication,
@@ -241,7 +246,7 @@ public final class EditorialArticleController {
             path = "/api/v1/publisher/articles/{articleId}:withdraw",
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity<String> withdrawArticle(
+    public ResponseEntity<JsonNode> withdrawArticle(
             @PathVariable String articleId,
             @RequestBody(required = false) String body,
             Authentication authentication,
@@ -261,7 +266,7 @@ public final class EditorialArticleController {
     }
 
     @PostMapping(path = "/api/v1/publisher/articles/{articleId}:archive")
-    public ResponseEntity<String> archiveArticle(
+    public ResponseEntity<JsonNode> archiveArticle(
             @PathVariable String articleId,
             @RequestBody(required = false) String body,
             Authentication authentication,
@@ -280,7 +285,7 @@ public final class EditorialArticleController {
         );
     }
 
-    private static ResponseEntity<String> response(
+    private static ResponseEntity<JsonNode> response(
             EditorialWorkflowService.OperationResult result,
             RequestId requestId
     ) {
@@ -290,11 +295,20 @@ public final class EditorialArticleController {
         ResponseEntity.BodyBuilder builder = ResponseEntity.status(result.statusCode())
                 .contentType(contentType)
                 .cacheControl(CacheControl.noStore())
-                .header(REQUEST_ID_HEADER, requestId.value());
+                .header(REQUEST_ID_HEADER, requestId.value())
+                .header("X-Content-Type-Options", "nosniff");
         if (result.version() > 0) {
             builder.eTag(new Version(result.version()).toIfMatch());
         }
-        return builder.body(result.body());
+        return builder.body(json(result.body()));
+    }
+
+    private static JsonNode json(String body) {
+        try {
+            return OBJECT_MAPPER.readTree(body);
+        } catch (JacksonException exception) {
+            throw new IllegalStateException("Editorial workflow service returned invalid JSON", exception);
+        }
     }
 
     private static ActorContext actor(Authentication authentication, HttpServletRequest request) {

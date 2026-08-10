@@ -18,6 +18,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+
 import tw.basketball.magazine.media.application.PublisherMediaService;
 import tw.basketball.magazine.publication.application.EditorialProblemException;
 import tw.basketball.magazine.publication.application.EditorialWorkflowService;
@@ -32,6 +36,7 @@ import tw.basketball.magazine.shared.Version;
 @ConditionalOnBean(PublisherMediaService.class)
 public final class PublisherMediaController {
     private static final String REQUEST_ID_HEADER = "X-Request-Id";
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final PublisherMediaService service;
 
@@ -43,7 +48,7 @@ public final class PublisherMediaController {
             path = "/api/v1/publisher/media/{assetId}:revoke",
             consumes = MediaType.APPLICATION_JSON_VALUE
     )
-    public ResponseEntity<String> revoke(
+    public ResponseEntity<JsonNode> revoke(
             @PathVariable String assetId,
             @RequestBody(required = false) String body,
             Authentication authentication,
@@ -60,8 +65,17 @@ public final class PublisherMediaController {
                 .contentType(MediaType.APPLICATION_JSON)
                 .cacheControl(CacheControl.noStore())
                 .header(REQUEST_ID_HEADER, requestId(request).value())
+                .header("X-Content-Type-Options", "nosniff")
                 .eTag(new Version(result.version()).toIfMatch())
-                .body(result.body());
+                .body(json(result.body()));
+    }
+
+    private static JsonNode json(String body) {
+        try {
+            return OBJECT_MAPPER.readTree(body);
+        } catch (JacksonException exception) {
+            throw new IllegalStateException("Publisher media service returned invalid JSON", exception);
+        }
     }
 
     private static ActorContext actor(Authentication authentication, HttpServletRequest request) {
