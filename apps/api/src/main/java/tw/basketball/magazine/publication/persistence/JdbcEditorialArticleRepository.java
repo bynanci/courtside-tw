@@ -684,4 +684,3 @@ public final class JdbcEditorialArticleRepository implements EditorialArticleRep
         }
     }
 }
-c19a2ecb994da3e214769b02c6dbe53db9a4659a
