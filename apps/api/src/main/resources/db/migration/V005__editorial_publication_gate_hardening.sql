@@ -44,8 +44,13 @@ ALTER TABLE publication_rights_reference
         REFERENCES article_revision (article_id, id)
         ON DELETE RESTRICT,
     ADD CONSTRAINT publication_rights_reference_rights_evidence_ck CHECK (
-        (rights_record_id IS NULL AND rights_record_version IS NULL)
-        OR (rights_record_id IS NOT NULL AND rights_record_version >= 0)
+        (decision_code = 'RIGHTS_MISSING' AND (
+            (rights_record_id IS NULL AND rights_record_version IS NULL)
+            OR (rights_record_id IS NOT NULL AND rights_record_version >= 0)
+        ))
+        OR (decision_code <> 'RIGHTS_MISSING'
+            AND rights_record_id IS NOT NULL
+            AND rights_record_version >= 0)
     );
 
 ALTER TABLE publication_snapshot
