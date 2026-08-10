@@ -3,7 +3,7 @@ import { onMounted, ref } from "vue"
 import { navigateTo } from "#app"
 
 import ArticleEditor from "../../../features/studio/editor/ArticleEditor.vue"
-import { listEditorArticles } from "../../../features/studio/studio-api"
+import { getEditorArticle } from "../../../features/studio/studio-api"
 import {
   resolveRequiredStudioRole,
   type StudioArticleDraft,
@@ -29,10 +29,8 @@ onMounted(async () => {
       error.value = "目前的 OIDC session 沒有 EDITOR role。"
       return
     }
-    const page = await listEditorArticles()
     const articleId = String(route.params.id)
-    draft.value = page.items.find((item) => item.articleId === articleId) ?? null
-    if (!draft.value) error.value = "找不到這篇文章，或它不在目前的 editorial scope。"
+    draft.value = await getEditorArticle(articleId)
   } catch (cause) {
     error.value = cause instanceof Error ? cause.message : "無法讀取 Studio article API。"
   } finally {

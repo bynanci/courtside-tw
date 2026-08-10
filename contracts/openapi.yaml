@@ -1398,6 +1398,54 @@ paths:
       x-optimistic-lock: If-Match
       x-required-roles:
         - EDITOR
+  /api/v1/editor/articles/{id}:
+    get:
+      tags:
+        - Editorial
+      operationId: getEditorArticle
+      summary: Read one article draft
+      description: Returns the current editor-visible revision by stable article identifier.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArticleDraft"
+              examples:
+                valid:
+                  value:
+                    articleId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    revisionId: 0190f7b0-7c4b-7e3a-8f12-123456789abd
+                    revisionNumber: 1
+                    version: 1
+                    title: Article 1
+                    slug: article-1
+                    state: DRAFT
+                    readiness:
+                      ready: true
+                      blockingCodes: []
+                      blockers: []
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-required-roles:
+        - EDITOR
   /api/v1/editor/articles/{id}:submit:
     post:
       tags:

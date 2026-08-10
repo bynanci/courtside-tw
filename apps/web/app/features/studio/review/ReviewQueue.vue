@@ -25,8 +25,9 @@ const props = defineProps<{
 
 const current = ref<StudioArticleDraft>(props.article)
 const timezone = ref("Asia/Taipei")
-const publishAt = ref(defaultScheduleValue())
+const publishAt = ref(defaultScheduleValue(timezone.value))
 const scheduleKey = ref<string | null>(null)
+const scheduleVersion = ref<number | null>(null)
 const scheduleRetryPending = ref(false)
 const scheduleOpen = ref(false)
 const withdrawalOpen = ref(false)
@@ -111,7 +112,9 @@ async function refreshQueue(): Promise<void> {
 
 function openSchedule(): void {
   scheduleKey.value = crypto.randomUUID()
+  scheduleVersion.value = current.value.version
   scheduleRetryPending.value = false
+  publishAt.value = defaultScheduleValue(timezone.value)
   scheduleOpen.value = true
 }
 
@@ -127,13 +130,16 @@ async function retrySchedule(): Promise<void> {
 }
 
 async function executeSchedule(): Promise<void> {
-  if (!scheduleKey.value) scheduleKey.value = crypto.randomUUID()
+  if (!scheduleKey.value) {
+    scheduleKey.value = crypto.randomUUID()
+    scheduleVersion.value = current.value.version
+  }
   busy.value = true
   apiError.value = null
   try {
     const result = await scheduleArticle(
       current.value.articleId,
-      current.value.version,
+      scheduleVersion.value ?? current.value.version,
       publishAt.value,
       timezone.value,
       scheduleKey.value
@@ -141,10 +147,9 @@ async function executeSchedule(): Promise<void> {
     recordReceipt(result)
     await refreshFromApi()
     scheduleOpen.value = false
-    if (scheduleRetryPending.value) {
-      scheduleKey.value = null
-      scheduleRetryPending.value = false
-    }
+    // Keep the key and its original version so a retry after a successful
+    // response replays the same receipt instead of becoming a new command.
+    scheduleRetryPending.value = false
   } catch (error) {
     handleApiError(error)
   } finally {
@@ -216,7 +221,7 @@ async function refreshFromApi(): Promise<void> {
   current.value = article
   if (article.scheduledAt) {
     const scheduled = new Date(article.scheduledAt)
-    publishAt.value = toLocalDateTimeValue(scheduled)
+    publishAt.value = toLocalDateTimeValue(scheduled, timezone.value)
   }
 }
 
@@ -232,14 +237,23 @@ function handleApiError(error: unknown): void {
   apiError.value = error instanceof Error ? error.message : "Publisher API 請求失敗。"
 }
 
-function defaultScheduleValue(): string {
+function defaultScheduleValue(zone: string): string {
   const value = new Date(Date.now() + 60 * 60 * 1000)
-  return toLocalDateTimeValue(value)
+  return toLocalDateTimeValue(value, zone)
 }
 
-function toLocalDateTimeValue(value: Date): string {
-  const pad = (part: number) => String(part).padStart(2, "0")
-  return `${value.getFullYear()}-${pad(value.getMonth() + 1)}-${pad(value.getDate())}T${pad(value.getHours())}:${pad(value.getMinutes())}`
+function toLocalDateTimeValue(value: Date, zone: string): string {
+  const parts = new Intl.DateTimeFormat("sv-SE", {
+    timeZone: zone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23"
+  }).formatToParts(value)
+  const part = (type: string) => parts.find((entry) => entry.type === type)?.value ?? "00"
+  return `${part("year")}-${part("month")}-${part("day")}T${part("hour")}:${part("minute")}`
 }
 </script>
 

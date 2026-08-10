@@ -108,6 +108,7 @@ public final class JdbcEditorialArticleRepository implements EditorialArticleRep
                     state, version
                 ) VALUES (?, ?, 1, ?, ?, ?::jsonb, 'DRAFT', 1)
                 """, revisionId, articleId, title, dek, json(content));
+        syncMediaReferences(revisionId, content);
         return find(articleId).orElseThrow(() -> new IllegalStateException(
                 "inserted article was not readable"));
     }
@@ -141,7 +142,8 @@ public final class JdbcEditorialArticleRepository implements EditorialArticleRep
     public boolean updateDraft(
             UUID articleId,
             UUID revisionId,
-            long expectedVersion,
+            long expectedArticleVersion,
+            long expectedRevisionVersion,
             String title,
             String slug,
             String dek,
@@ -151,7 +153,7 @@ public final class JdbcEditorialArticleRepository implements EditorialArticleRep
                 UPDATE article
                 SET slug = ?, version = version + 1, updated_at = transaction_timestamp()
                 WHERE id = ? AND state = 'DRAFT' AND version = ?
-                """, slug, articleId, expectedVersion);
+                """, slug, articleId, expectedArticleVersion);
         if (articleRows != 1) {
             return false;
         }
@@ -160,10 +162,11 @@ public final class JdbcEditorialArticleRepository implements EditorialArticleRep
                 SET title = ?, dek = ?, content_document = ?::jsonb,
                     version = version + 1, updated_at = transaction_timestamp()
                 WHERE article_id = ? AND id = ? AND state = 'DRAFT' AND version = ?
-                """, title, dek, json(content), articleId, revisionId, expectedVersion);
+                """, title, dek, json(content), articleId, revisionId, expectedRevisionVersion);
         if (revisionRows != 1) {
             throw new IllegalStateException("article and revision versions diverged");
         }
+        syncMediaReferences(revisionId, content);
         return true;
     }
 
@@ -184,20 +187,40 @@ public final class JdbcEditorialArticleRepository implements EditorialArticleRep
         if (articleRows != 1) {
             return false;
         }
+        UUID revisionId = idGenerator.next();
         int revisionRows = jdbcTemplate.update("""
                 INSERT INTO article_revision (
                     id, article_id, revision_number, title, dek, content_document,
                     state, version
                 )
-                SELECT uuidv7(), ?, COALESCE(MAX(revision_number), 0) + 1,
+                SELECT ?, COALESCE(MAX(revision_number), 0) + 1,
                        ?, ?, ?::jsonb, 'DRAFT', 1
                 FROM article_revision
                 WHERE article_id = ?
-                """, articleId, title, dek, json(content), articleId);
+                """, revisionId, articleId, title, dek, json(content), articleId);
         if (revisionRows != 1) {
             throw new IllegalStateException("article revision was not inserted");
         }
+        syncMediaReferences(revisionId, content);
         return true;
+    }
+
+    /**
+     * The link table is append-only by design.  Add the current document's
+     * public-web references before a workflow evaluates readiness; this keeps
+     * the gate fail-closed for newly referenced assets without granting the app
+     * role destructive link permissions.
+     */
+    private void syncMediaReferences(UUID revisionId, JsonNode content) {
+        List<UUID> assetIds = ContentMediaReferences.extract(content);
+        for (int index = 0; index < assetIds.size(); index++) {
+            jdbcTemplate.update("""
+                    INSERT INTO article_revision_media (
+                        article_revision_id, asset_id, required_channel, position
+                    ) VALUES (?, ?, 'PUBLIC_WEB', ?)
+                    ON CONFLICT (article_revision_id, asset_id, required_channel) DO NOTHING
+                    """, revisionId, assetIds.get(index), index + 1);
+        }
     }
 
     @Override

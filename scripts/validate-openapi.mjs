@@ -34,6 +34,7 @@ const expectedPaths = {
   "/api/v1/editor/issues/{issueId}/sections": ["get", "post", "patch"],
   "/api/v1/editor/issues/{issueId}/sections/{sectionId}": ["patch", "delete"],
   "/api/v1/editor/articles": ["post", "get", "patch"],
+  "/api/v1/editor/articles/{id}": ["get"],
   "/api/v1/editor/articles/{id}:revise": ["post"],
   "/api/v1/editor/articles/{id}:submit": ["post"],
   "/api/v1/publisher/articles": ["get"],

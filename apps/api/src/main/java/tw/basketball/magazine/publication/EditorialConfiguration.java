@@ -68,13 +68,15 @@ public final class EditorialConfiguration {
             EditorialIssueRepository repository,
             AuditWriter auditWriter,
             PlatformTransactionManager transactionManager,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            ApplicationClock applicationClock
     ) {
         return new EditorialIssueService(
                 repository,
                 auditWriter,
                 new TransactionTemplate(transactionManager),
-                objectMapper
+                objectMapper,
+                applicationClock
         );
     }
 }

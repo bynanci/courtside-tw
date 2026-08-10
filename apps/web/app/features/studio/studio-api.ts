@@ -49,6 +49,13 @@ export async function listEditorArticles(limit = 100): Promise<ArticleDraftPage>
   return unwrap(result)
 }
 
+export async function getEditorArticle(articleId: string): Promise<ArticleDraft> {
+  const result = await createStudioApiClient().GET("/api/v1/editor/articles/{id}", {
+    params: { path: { id: articleId } }
+  })
+  return unwrap(result)
+}
+
 export async function listEditorIssues(limit = 100): Promise<IssueDraftPage> {
   const result = await createStudioApiClient().GET("/api/v1/editor/issues", {
     params: { query: { limit } }

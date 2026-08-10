@@ -461,6 +461,26 @@ export interface paths {
     patch: operations["patchEditorArticle"]
     trace?: never
   }
+  "/api/v1/editor/articles/{id}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Read one article draft
+     * @description Returns the current editor-visible revision by stable article identifier.
+     */
+    get: operations["getEditorArticle"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   "/api/v1/editor/articles/{id}:submit": {
     parameters: {
       query?: never
@@ -2607,6 +2627,34 @@ export interface operations {
       404: components["responses"]["Problem404"]
       409: components["responses"]["Problem409"]
       422: components["responses"]["Problem422"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  getEditorArticle: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: components["parameters"]["Id"]
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response. */
+      200: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ArticleDraft"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
       429: components["responses"]["Problem429"]
     }
   }

@@ -1,5 +1,6 @@
 package tw.basketball.magazine.publication.persistence;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -39,6 +40,23 @@ public interface EditorialIssueRepository {
             String slug,
             String summary,
             UUID coverAssetId
+    );
+
+    boolean transition(
+            UUID issueId,
+            long expectedVersion,
+            PublicationState currentState,
+            PublicationState nextState,
+            Instant publishedAt
+    );
+
+    void insertPublicationJob(
+            UUID issueId,
+            String operation,
+            String idempotencyKey,
+            String requestedBy,
+            Instant scheduledAt,
+            String timezone
     );
 
     Optional<EditorialArticleRepository.IdempotencyRecord> findIdempotency(

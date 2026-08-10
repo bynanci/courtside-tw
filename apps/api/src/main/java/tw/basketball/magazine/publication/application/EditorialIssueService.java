@@ -2,6 +2,11 @@ package tw.basketball.magazine.publication.application;
 
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.time.DateTimeException;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.HashSet;
@@ -23,6 +28,7 @@ import tw.basketball.magazine.audit.AuditWriter;
 import tw.basketball.magazine.publication.domain.PublicationState;
 import tw.basketball.magazine.publication.persistence.EditorialIssueRepository;
 import tw.basketball.magazine.shared.ActorContext;
+import tw.basketball.magazine.shared.ApplicationClock;
 import tw.basketball.magazine.shared.FieldError;
 import tw.basketball.magazine.shared.ProblemCode;
 import tw.basketball.magazine.shared.RoleCode;
@@ -35,6 +41,7 @@ public final class EditorialIssueService {
     private final AuditWriter auditWriter;
     private final TransactionTemplate transactionTemplate;
     private final ObjectMapper objectMapper;
+    private final ApplicationClock applicationClock;
 
     public EditorialIssueService(
             EditorialIssueRepository repository,
@@ -42,10 +49,21 @@ public final class EditorialIssueService {
             TransactionTemplate transactionTemplate,
             ObjectMapper objectMapper
     ) {
+        this(repository, auditWriter, transactionTemplate, objectMapper, ApplicationClock.systemUtc());
+    }
+
+    public EditorialIssueService(
+            EditorialIssueRepository repository,
+            AuditWriter auditWriter,
+            TransactionTemplate transactionTemplate,
+            ObjectMapper objectMapper,
+            ApplicationClock applicationClock
+    ) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.auditWriter = Objects.requireNonNull(auditWriter, "auditWriter");
         this.transactionTemplate = Objects.requireNonNull(transactionTemplate, "transactionTemplate");
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
+        this.applicationClock = Objects.requireNonNull(applicationClock, "applicationClock");
     }
 
     public EditorialWorkflowService.OperationResult createIssue(
@@ -93,6 +111,112 @@ public final class EditorialIssueService {
         response.put("items", items);
         response.put("page", page);
         return new EditorialWorkflowService.OperationResult(200, json(response), 0);
+    }
+
+    public EditorialWorkflowService.OperationResult publishIssue(
+            ActorContext actor,
+            UUID issueId,
+            Version expectedVersion,
+            String idempotencyKey,
+            String body
+    ) {
+        requirePublisher(actor);
+        Objects.requireNonNull(expectedVersion, "expectedVersion");
+        JsonNode request = body == null || body.isBlank()
+                ? objectMapper.createObjectNode()
+                : object(body);
+        String hash = requestHash("PUBLISH_ISSUE", request);
+        return idempotent(actor, "PUBLISH", idempotencyKey, hash, () -> {
+            EditorialIssueRepository.IssueRecord current = requireIssue(issueId, expectedVersion);
+            if (current.state() != PublicationState.APPROVED
+                    && current.state() != PublicationState.SCHEDULED) {
+                throw new tw.basketball.magazine.publication.domain.PublicationWorkflowException(
+                        "INVALID_TRANSITION", "issue must be approved or scheduled before publishing"
+                );
+            }
+            if (!repository.transition(
+                    issueId,
+                    current.version(),
+                    current.state(),
+                    PublicationState.PUBLISHED,
+                    applicationClock.now()
+            )) {
+                throw new tw.basketball.magazine.shared.VersionConflictException(
+                        expectedVersion,
+                        repository.find(issueId).map(issue -> new Version(issue.version()))
+                                .orElse(expectedVersion)
+                );
+            }
+            EditorialIssueRepository.IssueRecord updated = requireIssue(issueId);
+            auditWriter.append(new AuditEventDraft(
+                    actor,
+                    "ISSUE_PUBLISHED",
+                    "ISSUE",
+                    issueId,
+                    metadata(updated)
+            ));
+            return workflowResult("PUBLISHED", updated.version(), null);
+        });
+    }
+
+    public EditorialWorkflowService.OperationResult scheduleIssue(
+            ActorContext actor,
+            UUID issueId,
+            Version expectedVersion,
+            String idempotencyKey,
+            String body
+    ) {
+        requirePublisher(actor);
+        Objects.requireNonNull(expectedVersion, "expectedVersion");
+        ScheduleInput schedule = parseSchedule(body);
+        String hash = requestHash("SCHEDULE_ISSUE", object(body));
+        return idempotent(actor, "SCHEDULE", idempotencyKey, hash, () -> {
+            EditorialIssueRepository.IssueRecord current = requireIssue(issueId, expectedVersion);
+            if (current.state() != PublicationState.APPROVED) {
+                throw new tw.basketball.magazine.publication.domain.PublicationWorkflowException(
+                        "INVALID_TRANSITION", "only an approved issue can be scheduled"
+                );
+            }
+            if (!schedule.publishAt().isAfter(applicationClock.now())) {
+                throw new tw.basketball.magazine.publication.domain.PublicationWorkflowException(
+                        "SCHEDULE_TIME_INVALID", "scheduled publication must be in the future"
+                );
+            }
+            if (!repository.transition(
+                    issueId,
+                    current.version(),
+                    current.state(),
+                    PublicationState.SCHEDULED,
+                    null
+            )) {
+                throw new tw.basketball.magazine.shared.VersionConflictException(
+                        expectedVersion,
+                        repository.find(issueId).map(issue -> new Version(issue.version()))
+                                .orElse(expectedVersion)
+                );
+            }
+            repository.insertPublicationJob(
+                    issueId,
+                    "SCHEDULE",
+                    idempotencyKey,
+                    actor.subject(),
+                    schedule.publishAt(),
+                    schedule.timezone()
+            );
+            EditorialIssueRepository.IssueRecord updated = requireIssue(issueId);
+            auditWriter.append(new AuditEventDraft(
+                    actor,
+                    "ISSUE_SCHEDULED",
+                    "ISSUE",
+                    issueId,
+                    Map.of(
+                            "version", updated.version(),
+                            "scheduledAt", schedule.publishAt().toString(),
+                            "timezone", schedule.timezone()
+                    )
+            ));
+            return workflowResult("SCHEDULED", updated.version(), schedule.publishAt());
+        });
     }
 
     public EditorialWorkflowService.OperationResult listSections(ActorContext actor, UUID issueId) {
@@ -333,7 +457,9 @@ public final class EditorialIssueService {
                 }
                 String replayBody = canonicalJson(existing.get().response());
                 return new EditorialWorkflowService.OperationResult(
-                        operation.startsWith("CREATE") ? 201 : 200,
+                        operation.equals("PUBLISH") || operation.equals("SCHEDULE")
+                                ? 202
+                                : operation.startsWith("CREATE") ? 201 : 200,
                         replayBody,
                         versionFrom(replayBody)
                 );
@@ -413,6 +539,38 @@ public final class EditorialIssueService {
             );
         }
         return issue;
+    }
+
+    private EditorialIssueRepository.IssueRecord requireIssue(UUID issueId) {
+        return repository.find(issueId).orElseThrow(() -> EditorialProblemException.notFound(
+                "/id", "issue was not found"
+        ));
+    }
+
+    private EditorialIssueRepository.IssueRecord requireIssue(UUID issueId, Version expectedVersion) {
+        EditorialIssueRepository.IssueRecord issue = repository.findForUpdate(issueId)
+                .orElseThrow(() -> EditorialProblemException.notFound("/id", "issue was not found"));
+        if (issue.version() != expectedVersion.value()) {
+            throw new tw.basketball.magazine.shared.VersionConflictException(
+                    expectedVersion, new Version(issue.version())
+            );
+        }
+        return issue;
+    }
+
+    private EditorialWorkflowService.OperationResult workflowResult(
+            String status,
+            long version,
+            Instant scheduledAt
+    ) {
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("operationId", UUID.randomUUID().toString());
+        response.put("status", status);
+        response.put("version", version);
+        if (scheduledAt != null) {
+            response.put("scheduledAt", scheduledAt.toString());
+        }
+        return new EditorialWorkflowService.OperationResult(202, json(response), version);
     }
 
     private EditorialIssueRepository.SectionRecord requireSection(UUID issueId, UUID sectionId) {
@@ -620,12 +778,52 @@ public final class EditorialIssueService {
         }
     }
 
+    private static void requirePublisher(ActorContext actor) {
+        Objects.requireNonNull(actor, "actor");
+        if (!actor.authenticated()) {
+            throw new EditorialProblemException(ProblemCode.AUTHENTICATION_REQUIRED, List.of());
+        }
+        if (!actor.hasRole(RoleCode.PUBLISHER)) {
+            throw EditorialProblemException.forbidden("/roles", "operation requires role PUBLISHER");
+        }
+    }
+
     private static void validateIdempotencyKey(String value) {
         if (value == null || value.isBlank() || value.length() > 512
                 || value.codePoints().anyMatch(Character::isISOControl)) {
             throw EditorialProblemException.invalid(
                     "/Idempotency-Key", "IDEMPOTENCY_KEY_REQUIRED", "Idempotency-Key is required"
             );
+        }
+    }
+
+    private ScheduleInput parseSchedule(String body) {
+        JsonNode request = object(body);
+        String rawPublishAt = requiredText(request, "publishAt", "/publishAt", 80);
+        String timezone = requiredText(request, "timezone", "/timezone", 128);
+        ZoneId zone;
+        try {
+            zone = ZoneId.of(timezone);
+        } catch (DateTimeException exception) {
+            throw EditorialProblemException.invalid(
+                    "/timezone", "TIMEZONE_INVALID", "timezone must be a valid IANA timezone"
+            );
+        }
+        try {
+            return new ScheduleInput(parseInstant(rawPublishAt, zone), timezone);
+        } catch (DateTimeException exception) {
+            throw EditorialProblemException.invalid(
+                    "/publishAt", "SCHEDULE_TIME_INVALID",
+                    "publishAt must be an ISO local or offset date-time"
+            );
+        }
+    }
+
+    private static Instant parseInstant(String value, ZoneId zone) {
+        try {
+            return OffsetDateTime.parse(value).toInstant();
+        } catch (DateTimeException ignored) {
+            return LocalDateTime.parse(value).atZone(zone).toInstant();
         }
     }
 
@@ -683,6 +881,13 @@ public final class EditorialIssueService {
             return Long.parseLong(body.substring(start, end));
         } catch (RuntimeException exception) {
             return 0;
+        }
+    }
+
+    private record ScheduleInput(Instant publishAt, String timezone) {
+        private ScheduleInput {
+            Objects.requireNonNull(publishAt, "publishAt");
+            Objects.requireNonNull(timezone, "timezone");
         }
     }
 }

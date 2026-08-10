@@ -23,6 +23,8 @@ const ALLOWED_PREFIXES = [
   "editor/issues",
   "editor/media",
   "publisher/articles",
+  "publisher/issues",
+  "publisher/media",
   "editor/audit"
 ]
 

@@ -2,6 +2,8 @@ package tw.basketball.magazine.publication.persistence;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -195,6 +197,56 @@ public final class JdbcEditorialIssueRepository implements EditorialIssueReposit
                     version = version + 1, updated_at = transaction_timestamp()
                 WHERE id = ? AND state = 'DRAFT' AND version = ?
                 """, title, slug, summary, coverAssetId, issueId, expectedVersion) == 1;
+    }
+
+    @Override
+    public boolean transition(
+            UUID issueId,
+            long expectedVersion,
+            PublicationState currentState,
+            PublicationState nextState,
+            Instant publishedAt
+    ) {
+        return jdbcTemplate.update("""
+                UPDATE publication_issue
+                SET state = ?,
+                    version = version + 1,
+                    published_at = CASE WHEN ? = 'PUBLISHED' THEN ? ELSE published_at END,
+                    updated_at = transaction_timestamp()
+                WHERE id = ? AND state = ? AND version = ?
+                """,
+                nextState.name(),
+                nextState.name(),
+                publishedAt == null ? null : Timestamp.from(publishedAt),
+                issueId,
+                currentState.name(),
+                expectedVersion
+        ) == 1;
+    }
+
+    @Override
+    public void insertPublicationJob(
+            UUID issueId,
+            String operation,
+            String idempotencyKey,
+            String requestedBy,
+            Instant scheduledAt,
+            String timezone
+    ) {
+        jdbcTemplate.update("""
+                INSERT INTO publication_job (
+                    aggregate_type, aggregate_id, operation, idempotency_key,
+                    requested_by, scheduled_at, timezone, payload
+                ) VALUES ('ISSUE', ?, ?, ?, ?, ?, ?, ?::jsonb)
+                """,
+                issueId,
+                operation,
+                idempotencyKey,
+                requestedBy,
+                scheduledAt == null ? null : Timestamp.from(scheduledAt),
+                timezone,
+                "{\"issueId\":\"" + issueId + "\"}"
+        );
     }
 
     @Override

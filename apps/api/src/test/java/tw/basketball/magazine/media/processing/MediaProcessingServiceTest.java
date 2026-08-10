@@ -100,7 +100,8 @@ final class MediaProcessingServiceTest {
                 spec.maxWidth() + 1,
                 spec.maxHeight(),
                 media.bytes().length,
-                StorageVisibility.PUBLIC_VARIANT
+                StorageVisibility.PUBLIC_VARIANT,
+                media.bytes()
         )).process(
                 MediaProcessingState.PENDING,
                 request("image/jpeg", jpeg, sha256(jpeg))
@@ -136,7 +137,8 @@ final class MediaProcessingServiceTest {
                 spec.maxWidth(),
                 spec.maxHeight(),
                 Math.max(1, media.bytes().length),
-                StorageVisibility.PUBLIC_VARIANT
+                StorageVisibility.PUBLIC_VARIANT,
+                media.bytes()
         );
     }
 

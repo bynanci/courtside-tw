@@ -10,7 +10,9 @@ import tw.basketball.magazine.media.persistence.MediaAssetRepository;
 import tw.basketball.magazine.media.processing.MediaCompletionRequest;
 import tw.basketball.magazine.media.processing.MediaProcessingService;
 import tw.basketball.magazine.media.processing.MediaProcessingState;
+import tw.basketball.magazine.media.processing.MediaVariant;
 import tw.basketball.magazine.media.storage.PrivateObjectReader;
+import tw.basketball.magazine.media.storage.PublicVariantWriter;
 import tw.basketball.magazine.outbox.OutboxEvent;
 import tw.basketball.magazine.outbox.OutboxHandlerException;
 import tw.basketball.magazine.outbox.OutboxEventHandler;
@@ -22,17 +24,20 @@ public final class EditorialMediaOutboxHandler implements OutboxEventHandler {
     private final MediaAssetRepository assetRepository;
     private final PrivateObjectReader privateObjectReader;
     private final MediaProcessingService processingService;
+    private final PublicVariantWriter publicVariantWriter;
     private final ObjectMapper objectMapper;
 
     public EditorialMediaOutboxHandler(
             MediaAssetRepository assetRepository,
             PrivateObjectReader privateObjectReader,
             MediaProcessingService processingService,
+            PublicVariantWriter publicVariantWriter,
             ObjectMapper objectMapper
     ) {
         this.assetRepository = Objects.requireNonNull(assetRepository, "assetRepository");
         this.privateObjectReader = Objects.requireNonNull(privateObjectReader, "privateObjectReader");
         this.processingService = Objects.requireNonNull(processingService, "processingService");
+        this.publicVariantWriter = Objects.requireNonNull(publicVariantWriter, "publicVariantWriter");
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
     }
 
@@ -71,9 +76,29 @@ public final class EditorialMediaOutboxHandler implements OutboxEventHandler {
                         bytes
                 )
         );
+        if (result.state() == MediaProcessingState.READY) {
+            for (MediaVariant variant : result.variants()) {
+                try {
+                    publicVariantWriter.write(
+                            publicStorageKey(payload.assetId(), variant.name()),
+                            variant.mimeType(),
+                            variant.encodedBytes()
+                    );
+                } catch (RuntimeException exception) {
+                    // Do not persist READY metadata until every public object exists.
+                    throw new OutboxHandlerException(
+                            "generated public variant could not be written", exception, true
+                    );
+                }
+            }
+        }
         if (!assetRepository.recordProcessingResult(payload.assetId(), current.version(), result)) {
             throw new OutboxHandlerException("media processing version changed", true);
         }
+    }
+
+    private static String publicStorageKey(UUID assetId, String variantName) {
+        return "media/variants/" + assetId + "/" + variantName;
     }
 
     private Payload payload(String value) throws OutboxHandlerException {

@@ -34,7 +34,8 @@ final class EditorialIssueApiIT extends EditorialApiIntegrationTestSupport {
                 new JdbcEditorialIssueRepository(jdbcTemplate),
                 new JdbcAuditWriter(jdbcTemplate, JSON),
                 new TransactionTemplate(new DataSourceTransactionManager(jdbcTemplate.getDataSource())),
-                JSON
+                JSON,
+                applicationClock
         );
         mockMvc = MockMvcBuilders.standaloneSetup(new EditorialIssueController(service))
                 .setControllerAdvice(new EditorialApiExceptionHandler())
@@ -104,6 +105,45 @@ final class EditorialIssueApiIT extends EditorialApiIntegrationTestSupport {
                                 """))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
+    @Test
+    void publisherCanScheduleAndPublishAnApprovedIssue() throws Exception {
+        Authentication editor = actor("issue-workflow-editor", RoleCode.EDITOR);
+        Authentication publisher = actor("issue-workflow-publisher", RoleCode.PUBLISHER);
+        UUID issueId = createIssue(editor, "issue-workflow");
+        jdbcTemplate.update("UPDATE publication_issue SET state = 'APPROVED' WHERE id = ?", issueId);
+
+        mockMvc.perform(post("/api/v1/publisher/issues/{issueId}:schedule", issueId)
+                        .principal(publisher)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.IF_MATCH, "\"1\"")
+                        .header("Idempotency-Key", "issue-schedule")
+                        .content("""
+                                {"publishAt":"2026-08-11T09:00:00","timezone":"Asia/Taipei"}
+                                """))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.status").value("SCHEDULED"))
+                .andExpect(jsonPath("$.version").value(2))
+                .andExpect(jsonPath("$.scheduledAt").value("2026-08-11T01:00:00Z"));
+
+        assertEquals("SCHEDULED", jdbcTemplate.queryForObject(
+                "SELECT state FROM publication_issue WHERE id = ?", String.class, issueId));
+
+        mockMvc.perform(post("/api/v1/publisher/issues/{issueId}:publish", issueId)
+                        .principal(publisher)
+                        .header(HttpHeaders.IF_MATCH, "\"2\"")
+                        .header("Idempotency-Key", "issue-publish"))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.status").value("PUBLISHED"))
+                .andExpect(jsonPath("$.version").value(3));
+
+        assertEquals("PUBLISHED", jdbcTemplate.queryForObject(
+                "SELECT state FROM publication_issue WHERE id = ?", String.class, issueId));
+        assertEquals(1, jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM audit_event WHERE target_type = 'ISSUE' AND target_id = ? AND action = 'ISSUE_PUBLISHED'",
+                Integer.class,
+                issueId));
     }
 
     @Test

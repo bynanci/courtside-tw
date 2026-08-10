@@ -82,6 +82,41 @@ public final class EditorialIssueController {
         ), requestId(request));
     }
 
+    @PostMapping(path = "/api/v1/publisher/issues/{issueId}:publish")
+    public ResponseEntity<JsonNode> publishIssue(
+            @PathVariable String issueId,
+            @RequestBody(required = false) String body,
+            Authentication authentication,
+            HttpServletRequest request
+    ) {
+        return response(service.publishIssue(
+                actor(authentication, request),
+                uuid(issueId, "/id"),
+                Version.parseIfMatch(request.getHeader(HttpHeaders.IF_MATCH)),
+                request.getHeader("Idempotency-Key"),
+                body
+        ), requestId(request));
+    }
+
+    @PostMapping(
+            path = "/api/v1/publisher/issues/{issueId}:schedule",
+            consumes = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<JsonNode> scheduleIssue(
+            @PathVariable String issueId,
+            @RequestBody(required = false) String body,
+            Authentication authentication,
+            HttpServletRequest request
+    ) {
+        return response(service.scheduleIssue(
+                actor(authentication, request),
+                uuid(issueId, "/id"),
+                Version.parseIfMatch(request.getHeader(HttpHeaders.IF_MATCH)),
+                request.getHeader("Idempotency-Key"),
+                body
+        ), requestId(request));
+    }
+
     @GetMapping(path = "/api/v1/editor/issues/{issueId}/sections", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<JsonNode> listSections(
             @PathVariable String issueId,

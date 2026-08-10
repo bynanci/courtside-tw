@@ -19,6 +19,7 @@ const props = defineProps<{
 const articlePath = computed(() =>
   props.articleId ? `/studio/articles/${props.articleId}` : "/studio/articles"
 )
+const issuePath = "/studio/issues"
 const reviewPath = computed(() =>
   props.articleId ? `/studio/review/${props.articleId}` : "/studio/review"
 )
@@ -46,6 +47,12 @@ const auditPath = computed(() => {
           :class="{ 'is-active': active === 'articles' }"
           :to="articlePath"
           >文章</NuxtLink
+        >
+        <NuxtLink
+          v-if="canStudioAction(role, 'edit')"
+          :class="{ 'is-active': active === 'issues' }"
+          :to="issuePath"
+          >期刊</NuxtLink
         >
         <NuxtLink
           v-if="canStudioAction(role, 'upload')"
