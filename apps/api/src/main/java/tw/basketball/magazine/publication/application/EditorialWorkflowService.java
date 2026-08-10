@@ -230,7 +230,7 @@ public final class EditorialWorkflowService {
                 title,
                 contentJson
         );
-        return new ArticleDraft(articleId, 1, title, slug, "DRAFT");
+        return new ArticleDraft(articleId, revisionId, 1, title, slug, "DRAFT");
     }
 
     @Transactional
@@ -304,7 +304,7 @@ public final class EditorialWorkflowService {
                 title,
                 contentJson
         );
-        return new ArticleDraft(articleId, expected.next().value(), title, slug, "DRAFT");
+        return new ArticleDraft(articleId, revisionId, expected.next().value(), title, slug, "DRAFT");
     }
 
     @Transactional
@@ -599,7 +599,7 @@ public final class EditorialWorkflowService {
         }
         return jdbcTemplate.query(
                 """
-                SELECT article.id, article.version, article.slug, article.state,
+                SELECT article.id, revision.id AS revision_id, article.version, article.slug, article.state,
                        revision.title
                 FROM article
                 JOIN article_revision revision
@@ -614,6 +614,7 @@ public final class EditorialWorkflowService {
                 """,
                 (resultSet, rowNumber) -> new ArticleDraft(
                         UUID.fromString(resultSet.getString("id")),
+                        UUID.fromString(resultSet.getString("revision_id")),
                         resultSet.getLong("version"),
                         resultSet.getString("title"),
                         resultSet.getString("slug"),
@@ -1036,6 +1037,7 @@ public final class EditorialWorkflowService {
     private static ArticleDraft articleDraft(ArticleRecord article) {
         return new ArticleDraft(
                 article.articleId(),
+                article.revisionId(),
                 article.version(),
                 article.title(),
                 article.slug(),
@@ -1124,7 +1126,14 @@ public final class EditorialWorkflowService {
     public record IssueDraft(UUID issueId, long version, String title, String slug, String state) {
     }
 
-    public record ArticleDraft(UUID articleId, long version, String title, String slug, String state) {
+    public record ArticleDraft(
+            UUID articleId,
+            UUID revisionId,
+            long version,
+            String title,
+            String slug,
+            String state
+    ) {
     }
 
     public record WorkflowResult(
