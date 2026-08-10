@@ -376,6 +376,63 @@ export interface paths {
     patch: operations["patchEditorIssue"]
     trace?: never
   }
+  "/api/v1/editor/issues/{issueId}/sections": {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        issueId: components["parameters"]["IssueId"]
+      }
+      cookie?: never
+    }
+    /**
+     * List issue sections
+     * @description Returns the server-backed, explicitly positioned table of contents for an issue draft.
+     */
+    get: operations["listEditorIssueSections"]
+    put?: never
+    /**
+     * Create an issue section
+     * @description Creates a section and persists its explicit position inside a draft issue.
+     */
+    post: operations["createEditorIssueSection"]
+    delete?: never
+    options?: never
+    head?: never
+    /**
+     * Reorder issue sections
+     * @description Atomically replaces the complete section order with contiguous explicit positions.
+     */
+    patch: operations["reorderEditorIssueSections"]
+    trace?: never
+  }
+  "/api/v1/editor/issues/{issueId}/sections/{sectionId}": {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        issueId: components["parameters"]["IssueId"]
+        sectionId: components["parameters"]["SectionId"]
+      }
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
+    /**
+     * Delete an empty issue section
+     * @description Deletes only an empty section and normalizes the remaining explicit positions.
+     */
+    delete: operations["deleteEditorIssueSection"]
+    options?: never
+    head?: never
+    /**
+     * Rename an issue section
+     * @description Updates section metadata inside a draft issue with the issue aggregate lock.
+     */
+    patch: operations["patchEditorIssueSection"]
+    trace?: never
+  }
   "/api/v1/editor/articles": {
     parameters: {
       query?: never
@@ -424,6 +481,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  "/api/v1/editor/articles/{id}:revise": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Create an article revision
+     * @description Creates a new draft revision without mutating the published snapshot.
+     */
+    post: operations["createArticleRevision"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   "/api/v1/publisher/articles/{id}:approve": {
     parameters: {
       query?: never
@@ -438,6 +515,106 @@ export interface paths {
      * @description Approves an article revision after editorial review.
      */
     post: operations["approvePublisherArticle"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/publisher/articles": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List articles for publisher review
+     * @description Lists article revisions and readiness evidence visible to a publisher.
+     */
+    get: operations["listPublisherArticles"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/publisher/articles/{id}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Read an article for publisher review
+     * @description Returns the current article revision and its readiness evidence.
+     */
+    get: operations["getPublisherArticle"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/publisher/articles/{id}:schedule": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Schedule an article
+     * @description Schedules article publication using an explicit IANA timezone.
+     */
+    post: operations["schedulePublisherArticle"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/publisher/articles/{id}:publish": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Publish an article now
+     * @description Publishes the approved article revision and records an immutable snapshot.
+     */
+    post: operations["publishPublisherArticle"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/publisher/articles/{id}:request-changes": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Request article changes
+     * @description Returns a frozen article revision to draft with an auditable reason.
+     */
+    post: operations["requestChangesPublisherArticle"]
     delete?: never
     options?: never
     head?: never
@@ -504,6 +681,46 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  "/api/v1/publisher/articles/{id}:archive": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Archive a withdrawn article
+     * @description Archives an already withdrawn article while preserving its publication evidence.
+     */
+    post: operations["archivePublisherArticle"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/editor/audit": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List append-only editorial audit events
+     * @description Reads immutable audit events for one article, issue, or media asset.
+     */
+    get: operations["listEditorialAudit"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   "/api/v1/editor/media/uploads": {
     parameters: {
       query?: never
@@ -542,6 +759,30 @@ export interface paths {
     options?: never
     head?: never
     patch?: never
+    trace?: never
+  }
+  "/api/v1/editor/media/{id}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Read media metadata
+     * @description Reads accessibility metadata and the latest rights record for an editor-owned media asset.
+     */
+    get: operations["getEditorMediaMetadata"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /**
+     * Update media metadata and rights
+     * @description Persists alt text and a versioned rights record with an If-Match lock on the media asset.
+     */
+    patch: operations["updateEditorMediaMetadata"]
     trace?: never
   }
   "/api/v1/publisher/media/{id}:revoke": {
@@ -631,6 +872,23 @@ export interface components {
     PageMeta: {
       nextCursor: string | null
       limit: number
+    }
+    AuditEvent: {
+      id: components["schemas"]["Uuid"]
+      /** Format: date-time */
+      occurredAt: string
+      actorSubject: string
+      action: string
+      targetType: string
+      targetId: components["schemas"]["Uuid"]
+      requestId?: string | null
+      metadata: {
+        [key: string]: unknown
+      }
+    }
+    AuditEventPage: {
+      items: components["schemas"]["AuditEvent"][]
+      page: components["schemas"]["PageMeta"]
     }
     ContentDocument: components["schemas"]["content-document.schema"]
     IssueSummary: {
@@ -805,6 +1063,7 @@ export interface components {
       title: string
       slug: string
       description?: string
+      coverAssetId: components["schemas"]["Uuid"]
     }
     IssuePatch: {
       issueId: components["schemas"]["Uuid"]
@@ -814,9 +1073,12 @@ export interface components {
     }
     IssueDraft: {
       issueId: components["schemas"]["Uuid"]
+      issueNumber: number
       version: number
       title: string
       slug: string
+      description: string
+      coverAssetId: components["schemas"]["Uuid"]
       /** @enum {string} */
       state: "DRAFT" | "IN_REVIEW" | "APPROVED" | "SCHEDULED" | "PUBLISHED" | "ARCHIVED"
     }
@@ -824,9 +1086,35 @@ export interface components {
       items: components["schemas"]["IssueDraft"][]
       page: components["schemas"]["PageMeta"]
     }
+    IssueSectionInput: {
+      title: string
+      position?: number
+    }
+    IssueSectionPatch: {
+      title: string
+    }
+    IssueSectionReorder: {
+      sections: {
+        sectionId: components["schemas"]["Uuid"]
+        position: number
+      }[]
+    }
+    IssueSection: {
+      sectionId: components["schemas"]["Uuid"]
+      title: string
+      position: number
+      articleCount: number
+      version: number
+    }
+    IssueSectionCollection: {
+      issueId: components["schemas"]["Uuid"]
+      issueVersion: number
+      sections: components["schemas"]["IssueSection"][]
+    }
     ArticleDraftInput: {
       title: string
       slug: string
+      dek?: string
       content?: components["schemas"]["content-document.schema"]
     }
     ArticlePatch: {
@@ -837,11 +1125,34 @@ export interface components {
     }
     ArticleDraft: {
       articleId: components["schemas"]["Uuid"]
+      revisionId: components["schemas"]["Uuid"]
+      revisionNumber: number
       version: number
       title: string
       slug: string
+      dek?: string
+      content?: components["schemas"]["content-document.schema"]
       /** @enum {string} */
-      state: "DRAFT" | "IN_REVIEW" | "APPROVED" | "PUBLISHED" | "WITHDRAWN"
+      state:
+        "DRAFT" | "IN_REVIEW" | "APPROVED" | "SCHEDULED" | "PUBLISHED" | "WITHDRAWN" | "ARCHIVED"
+      /** Format: date-time */
+      scheduledAt?: string
+      readiness: components["schemas"]["PublicationReadiness"]
+    }
+    PublicationReadiness: {
+      ready: boolean
+      blockingCodes: string[]
+      blockers: {
+        assetId?: components["schemas"]["Uuid"]
+        code: string
+        rightsRecordId?: components["schemas"]["Uuid"]
+        rightsRecordVersion?: number
+      }[]
+    }
+    RevisionInput: {
+      title: string
+      dek?: string
+      content: components["schemas"]["content-document.schema"]
     }
     SubmitRequest: {
       revisionId: components["schemas"]["Uuid"]
@@ -850,9 +1161,23 @@ export interface components {
       /** Format: uuid */
       operationId: string
       /** @enum {string} */
-      status: "ACCEPTED" | "APPROVED" | "PUBLISHED" | "SCHEDULED" | "WITHDRAWN" | "BLOCKED"
+      status:
+        | "ACCEPTED"
+        | "CHANGES_REQUESTED"
+        | "APPROVED"
+        | "PUBLISHED"
+        | "SCHEDULED"
+        | "WITHDRAWN"
+        | "ARCHIVED"
+        | "BLOCKED"
       version: number
       blockingCodes?: string[]
+      revisionId?: components["schemas"]["Uuid"]
+      /** Format: date-time */
+      scheduledAt?: string
+      assetId?: components["schemas"]["Uuid"]
+      /** @enum {string} */
+      state?: "PENDING" | "PROCESSING" | "READY" | "FAILED" | "REVOKED"
     }
     ScheduleRequest: {
       /** Format: date-time */
@@ -862,7 +1187,7 @@ export interface components {
     MediaUploadRequest: {
       filename: string
       /** @enum {string} */
-      contentType: "image/jpeg" | "image/png" | "image/webp" | "video/mp4"
+      contentType: "image/avif" | "image/jpeg" | "image/png" | "image/webp"
       sizeBytes: number
       checksumSha256: string
     }
@@ -873,16 +1198,50 @@ export interface components {
       /** Format: date-time */
       expiresAt: string
       maxSizeBytes: number
+      version?: number
+      /** @enum {string} */
+      state?: "PENDING" | "PROCESSING" | "READY" | "FAILED" | "REVOKED"
     }
     MediaCompleteRequest: {
       checksumSha256: string
       contentType: string
+    }
+    MediaMetadataUpdate: {
+      altText: string
+      rights?: components["schemas"]["MediaRightsMetadataInput"]
+    }
+    MediaMetadata: {
+      assetId: components["schemas"]["Uuid"]
+      version: number
+      altText: string | null
+      /** @enum {string} */
+      state: "PENDING" | "PROCESSING" | "READY" | "FAILED" | "REVOKED"
+      rights: components["schemas"]["MediaRightsMetadata"] | null
+    }
+    MediaRightsMetadataInput: {
+      version?: number
+      rightsOwner: string
+      licenseName: string
+      allowedChannels: ("PUBLIC_WEB" | "READER_LIBRARY" | "OFFLINE" | "PROVENANCE")[]
+      territories: string[]
+      /** Format: date-time */
+      validFrom: string
+      /** Format: date-time */
+      validUntil: string
+      credit: string
+      withdrawalTerms: string
+      /** @enum {string} */
+      status: "UNKNOWN" | "PENDING" | "VALID" | "EXPIRED" | "REVOKED" | "BLOCKED"
+    }
+    MediaRightsMetadata: components["schemas"]["MediaRightsMetadataInput"] & {
+      id: components["schemas"]["Uuid"]
     }
     RevokeImpactReport: {
       assetId: components["schemas"]["Uuid"]
       affectedArticles: components["schemas"]["Uuid"][]
       /** @enum {string} */
       status: "REVOKED" | "BLOCKED" | "NO_IMPACT"
+      version?: number
     }
     OfflineManifest: {
       issueSlug: string
@@ -1275,6 +1634,8 @@ export interface components {
     ArticleSlug: string
     ArticleId: components["schemas"]["Uuid"]
     Id: components["schemas"]["Uuid"]
+    IssueId: components["schemas"]["Uuid"]
+    SectionId: components["schemas"]["Uuid"]
     Type: "league" | "season" | "team" | "player" | "topic"
     ChainNamespace: string
     Address: string
@@ -1969,6 +2330,185 @@ export interface operations {
       429: components["responses"]["Problem429"]
     }
   }
+  listEditorIssueSections: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        issueId: components["parameters"]["IssueId"]
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Current section ordering. */
+      200: {
+        headers: {
+          /** @description Current issue aggregate version. */
+          ETag?: string
+          "X-Request-Id": components["headers"]["XRequestId"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["IssueSectionCollection"]
+        }
+      }
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  createEditorIssueSection: {
+    parameters: {
+      query?: never
+      header: {
+        /** @description Optimistic-lock version or ETag. The server rejects stale values with 409 VERSION_CONFLICT. */
+        "If-Match": components["parameters"]["IfMatch"]
+        /** @description Stable retry key. Replays return the original operation result. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"]
+      }
+      path: {
+        issueId: components["parameters"]["IssueId"]
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["IssueSectionInput"]
+      }
+    }
+    responses: {
+      /** @description Section created and ordering persisted. */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["IssueSectionCollection"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      409: components["responses"]["Problem409"]
+      422: components["responses"]["Problem422"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  reorderEditorIssueSections: {
+    parameters: {
+      query?: never
+      header: {
+        /** @description Optimistic-lock version or ETag. The server rejects stale values with 409 VERSION_CONFLICT. */
+        "If-Match": components["parameters"]["IfMatch"]
+        /** @description Stable retry key. Replays return the original operation result. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"]
+      }
+      path: {
+        issueId: components["parameters"]["IssueId"]
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["IssueSectionReorder"]
+      }
+    }
+    responses: {
+      /** @description Section ordering persisted. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["IssueSectionCollection"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      409: components["responses"]["Problem409"]
+      422: components["responses"]["Problem422"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  deleteEditorIssueSection: {
+    parameters: {
+      query?: never
+      header: {
+        /** @description Optimistic-lock version or ETag. The server rejects stale values with 409 VERSION_CONFLICT. */
+        "If-Match": components["parameters"]["IfMatch"]
+        /** @description Stable retry key. Replays return the original operation result. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"]
+      }
+      path: {
+        issueId: components["parameters"]["IssueId"]
+        sectionId: components["parameters"]["SectionId"]
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Section deleted and ordering persisted. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["IssueSectionCollection"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      409: components["responses"]["Problem409"]
+      422: components["responses"]["Problem422"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  patchEditorIssueSection: {
+    parameters: {
+      query?: never
+      header: {
+        /** @description Optimistic-lock version or ETag. The server rejects stale values with 409 VERSION_CONFLICT. */
+        "If-Match": components["parameters"]["IfMatch"]
+        /** @description Stable retry key. Replays return the original operation result. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"]
+      }
+      path: {
+        issueId: components["parameters"]["IssueId"]
+        sectionId: components["parameters"]["SectionId"]
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["IssueSectionPatch"]
+      }
+    }
+    responses: {
+      /** @description Section metadata persisted. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["IssueSectionCollection"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      409: components["responses"]["Problem409"]
+      422: components["responses"]["Problem422"]
+      429: components["responses"]["Problem429"]
+    }
+  }
   listEditorArticles: {
     parameters: {
       query?: {
@@ -2107,6 +2647,45 @@ export interface operations {
       429: components["responses"]["Problem429"]
     }
   }
+  createArticleRevision: {
+    parameters: {
+      query?: never
+      header: {
+        /** @description Optimistic-lock version or ETag. The server rejects stale values with 409 VERSION_CONFLICT. */
+        "If-Match": components["parameters"]["IfMatch"]
+        /** @description Stable retry key. Replays return the original operation result. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"]
+      }
+      path: {
+        id: components["parameters"]["Id"]
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["RevisionInput"]
+      }
+    }
+    responses: {
+      /** @description Revision created. */
+      201: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ArticleDraft"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      409: components["responses"]["Problem409"]
+      422: components["responses"]["Problem422"]
+      429: components["responses"]["Problem429"]
+    }
+  }
   approvePublisherArticle: {
     parameters: {
       query?: never
@@ -2140,6 +2719,174 @@ export interface operations {
       409: components["responses"]["Problem409"]
       422: components["responses"]["Problem422"]
       429: components["responses"]["Problem429"]
+    }
+  }
+  listPublisherArticles: {
+    parameters: {
+      query?: {
+        /** @description Opaque cursor returned by the previous page. */
+        cursor?: components["parameters"]["Cursor"]
+        /** @description Bounded page size. */
+        limit?: components["parameters"]["Limit"]
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response. */
+      200: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ArticleDraftPage"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  getPublisherArticle: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: components["parameters"]["Id"]
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response. */
+      200: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ArticleDraft"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  schedulePublisherArticle: {
+    parameters: {
+      query?: never
+      header: {
+        /** @description Optimistic-lock version or ETag. The server rejects stale values with 409 VERSION_CONFLICT. */
+        "If-Match": components["parameters"]["IfMatch"]
+        /** @description Stable retry key. Replays return the original operation result. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"]
+      }
+      path: {
+        id: components["parameters"]["Id"]
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ScheduleRequest"]
+      }
+    }
+    responses: {
+      /** @description Schedule accepted. */
+      202: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["WorkflowResult"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      409: components["responses"]["Problem409"]
+      422: components["responses"]["Problem422"]
+    }
+  }
+  publishPublisherArticle: {
+    parameters: {
+      query?: never
+      header: {
+        /** @description Optimistic-lock version or ETag. The server rejects stale values with 409 VERSION_CONFLICT. */
+        "If-Match": components["parameters"]["IfMatch"]
+        /** @description Stable retry key. Replays return the original operation result. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"]
+      }
+      path: {
+        id: components["parameters"]["Id"]
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Publication accepted. */
+      202: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["WorkflowResult"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      409: components["responses"]["Problem409"]
+      422: components["responses"]["Problem422"]
+    }
+  }
+  requestChangesPublisherArticle: {
+    parameters: {
+      query?: never
+      header: {
+        /** @description Optimistic-lock version or ETag. The server rejects stale values with 409 VERSION_CONFLICT. */
+        "If-Match": components["parameters"]["IfMatch"]
+        /** @description Stable retry key. Replays return the original operation result. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"]
+      }
+      path: {
+        id: components["parameters"]["Id"]
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["WithdrawRequest"]
+      }
+    }
+    responses: {
+      /** @description Change request accepted. */
+      202: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["WorkflowResult"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      409: components["responses"]["Problem409"]
+      422: components["responses"]["Problem422"]
     }
   }
   publishPublisherIssue: {
@@ -2255,6 +3002,70 @@ export interface operations {
       429: components["responses"]["Problem429"]
     }
   }
+  archivePublisherArticle: {
+    parameters: {
+      query?: never
+      header: {
+        /** @description Optimistic-lock version or ETag. The server rejects stale values with 409 VERSION_CONFLICT. */
+        "If-Match": components["parameters"]["IfMatch"]
+        /** @description Stable retry key. Replays return the original operation result. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"]
+      }
+      path: {
+        id: components["parameters"]["Id"]
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Archive accepted. */
+      202: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["WorkflowResult"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      409: components["responses"]["Problem409"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  listEditorialAudit: {
+    parameters: {
+      query: {
+        targetType: "ARTICLE" | "ISSUE" | "MEDIA_ASSET"
+        targetId: components["schemas"]["Uuid"]
+        /** @description Bounded page size. */
+        limit?: components["parameters"]["Limit"]
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Audit events. */
+      200: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["AuditEventPage"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      429: components["responses"]["Problem429"]
+    }
+  }
   createMediaUploadIntent: {
     parameters: {
       query?: never
@@ -2315,6 +3126,73 @@ export interface operations {
         }
         content: {
           "application/json": components["schemas"]["WorkflowResult"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      409: components["responses"]["Problem409"]
+      422: components["responses"]["Problem422"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  getEditorMediaMetadata: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: components["parameters"]["Id"]
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response. */
+      200: {
+        headers: {
+          ETag: components["headers"]["ETag"]
+          "X-Request-Id": components["headers"]["XRequestId"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["MediaMetadata"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  updateEditorMediaMetadata: {
+    parameters: {
+      query?: never
+      header: {
+        /** @description Optimistic-lock version or ETag. The server rejects stale values with 409 VERSION_CONFLICT. */
+        "If-Match": components["parameters"]["IfMatch"]
+      }
+      path: {
+        id: components["parameters"]["Id"]
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["MediaMetadataUpdate"]
+      }
+    }
+    responses: {
+      /** @description Metadata updated. */
+      200: {
+        headers: {
+          ETag: components["headers"]["ETag"]
+          "X-Request-Id": components["headers"]["XRequestId"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["MediaMetadata"]
         }
       }
       400: components["responses"]["Problem400"]

@@ -150,7 +150,14 @@ paths:
                     content:
                       schemaVersion: 1
                       documentId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
-                      blocks: []
+                      blocks:
+                        - id: 00000000-0000-4000-8000-000000000101
+                          type: paragraph
+                          version: 1
+                          payload:
+                            content:
+                              - kind: text
+                                text: Article 1 body
                     media: []
                     contributors: []
                     issueNavigation:
@@ -808,9 +815,12 @@ paths:
                 valid:
                   value:
                     issueId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    issueNumber: 1
                     version: 1
                     title: Issue 1
                     slug: issue-1
+                    description: Issue 1
+                    coverAssetId: 0190f7b0-7c4b-7e3a-8f12-123456789abd
                     state: DRAFT
           headers:
             X-Request-Id:
@@ -838,6 +848,7 @@ paths:
                 value:
                   title: Issue 1
                   slug: issue-1
+                  coverAssetId: 0190f7b0-7c4b-7e3a-8f12-123456789abd
       x-idempotent: true
       x-required-roles:
         - EDITOR
@@ -940,6 +951,286 @@ paths:
       x-optimistic-lock: If-Match
       x-required-roles:
         - EDITOR
+  /api/v1/editor/issues/{issueId}/sections:
+    parameters:
+      - $ref: "#/components/parameters/IssueId"
+    get:
+      tags:
+        - Editorial
+      operationId: listEditorIssueSections
+      summary: List issue sections
+      description: Returns the server-backed, explicitly positioned table of contents for an issue draft.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      responses:
+        "200":
+          description: Current section ordering.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueSectionCollection"
+              examples:
+                valid:
+                  value:
+                    issueId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    issueVersion: 3
+                    sections:
+                      - sectionId: 0190f7b0-7c4b-7e3a-8f12-123456789abd
+                        title: 場邊現場
+                        position: 1
+                        articleCount: 2
+                        version: 0
+                      - sectionId: 0190f7b0-7c4b-7e3a-8f12-123456789abe
+                        title: 人物與方法
+                        position: 2
+                        articleCount: 1
+                        version: 0
+          headers:
+            ETag:
+              description: Current issue aggregate version.
+              schema:
+                type: string
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-required-roles:
+        - EDITOR
+    post:
+      tags:
+        - Editorial
+      operationId: createEditorIssueSection
+      summary: Create an issue section
+      description: Creates a section and persists its explicit position inside a draft issue.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IssueSectionInput"
+            examples:
+              valid:
+                value:
+                  title: 場邊現場
+      responses:
+        "201":
+          description: Section created and ordering persisted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueSectionCollection"
+              examples:
+                valid:
+                  value:
+                    issueId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    issueVersion: 2
+                    sections:
+                      - sectionId: 0190f7b0-7c4b-7e3a-8f12-123456789abd
+                        title: 場邊現場
+                        position: 1
+                        articleCount: 0
+                        version: 0
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-idempotent: true
+      x-optimistic-lock: If-Match
+      x-required-roles:
+        - EDITOR
+    patch:
+      tags:
+        - Editorial
+      operationId: reorderEditorIssueSections
+      summary: Reorder issue sections
+      description: Atomically replaces the complete section order with contiguous explicit positions.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IssueSectionReorder"
+            examples:
+              valid:
+                value:
+                  sections:
+                    - sectionId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                      position: 1
+      responses:
+        "200":
+          description: Section ordering persisted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueSectionCollection"
+              examples:
+                valid:
+                  value:
+                    issueId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    issueVersion: 4
+                    sections:
+                      - sectionId: 0190f7b0-7c4b-7e3a-8f12-123456789abe
+                        title: 人物與方法
+                        position: 1
+                        articleCount: 1
+                        version: 1
+                      - sectionId: 0190f7b0-7c4b-7e3a-8f12-123456789abd
+                        title: 場邊現場
+                        position: 2
+                        articleCount: 2
+                        version: 1
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-idempotent: true
+      x-optimistic-lock: If-Match
+      x-required-roles:
+        - EDITOR
+  /api/v1/editor/issues/{issueId}/sections/{sectionId}:
+    parameters:
+      - $ref: "#/components/parameters/IssueId"
+      - $ref: "#/components/parameters/SectionId"
+    patch:
+      tags:
+        - Editorial
+      operationId: patchEditorIssueSection
+      summary: Rename an issue section
+      description: Updates section metadata inside a draft issue with the issue aggregate lock.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/IssueSectionPatch"
+            examples:
+              valid:
+                value:
+                  title: 人物與方法｜修訂
+      responses:
+        "200":
+          description: Section metadata persisted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueSectionCollection"
+              examples:
+                valid:
+                  value:
+                    issueId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    issueVersion: 5
+                    sections:
+                      - sectionId: 0190f7b0-7c4b-7e3a-8f12-123456789abe
+                        title: 人物與方法｜修訂
+                        position: 1
+                        articleCount: 1
+                        version: 2
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-idempotent: true
+      x-optimistic-lock: If-Match
+      x-required-roles:
+        - EDITOR
+    delete:
+      tags:
+        - Editorial
+      operationId: deleteEditorIssueSection
+      summary: Delete an empty issue section
+      description: Deletes only an empty section and normalizes the remaining explicit positions.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Section deleted and ordering persisted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueSectionCollection"
+              examples:
+                valid:
+                  value:
+                    issueId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    issueVersion: 6
+                    sections: []
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-idempotent: true
+      x-optimistic-lock: If-Match
+      x-required-roles:
+        - EDITOR
   /api/v1/editor/articles:
     post:
       tags:
@@ -963,10 +1254,16 @@ paths:
                 valid:
                   value:
                     articleId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    revisionId: 0190f7b0-7c4b-7e3a-8f12-123456789abd
+                    revisionNumber: 1
                     version: 1
                     title: Article 1
                     slug: article-1
                     state: DRAFT
+                    readiness:
+                      ready: true
+                      blockingCodes: []
+                      blockers: []
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -1058,10 +1355,16 @@ paths:
                 valid:
                   value:
                     articleId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    revisionId: 0190f7b0-7c4b-7e3a-8f12-123456789abd
+                    revisionNumber: 1
                     version: 2
                     title: Article 1 revised
                     slug: article-1
                     state: DRAFT
+                    readiness:
+                      ready: true
+                      blockingCodes: []
+                      blockers: []
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -1151,6 +1454,84 @@ paths:
       x-idempotent: true
       x-required-roles:
         - EDITOR
+  /api/v1/editor/articles/{id}:revise:
+    post:
+      tags:
+        - Editorial
+      operationId: createArticleRevision
+      summary: Create an article revision
+      description: Creates a new draft revision without mutating the published snapshot.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "201":
+          description: Revision created.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArticleDraft"
+              examples:
+                valid:
+                  value:
+                    articleId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    revisionId: 0190f7b0-7c4b-7e3a-8f12-123456789abd
+                    revisionNumber: 1
+                    version: 2
+                    title: Article correction
+                    slug: article-1
+                    state: DRAFT
+                    readiness:
+                      ready: true
+                      blockingCodes: []
+                      blockers: []
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/RevisionInput"
+            examples:
+              valid:
+                value:
+                  title: Article correction
+                  dek: Corrected deck
+                  content:
+                    schemaVersion: 1
+                    documentId: 0190f7b0-7c4b-7e3a-8f12-123456789abe
+                    blocks:
+                      - id: 00000000-0000-4000-8000-000000000102
+                        type: paragraph
+                        version: 1
+                        payload:
+                          content:
+                            - kind: text
+                              text: Article correction body
+      x-idempotent: true
+      x-optimistic-lock: If-Match
+      x-required-roles:
+        - EDITOR
   /api/v1/publisher/articles/{id}:approve:
     post:
       tags:
@@ -1195,6 +1576,257 @@ paths:
           $ref: "#/components/responses/Problem422"
         "429":
           $ref: "#/components/responses/Problem429"
+      x-idempotent: true
+      x-optimistic-lock: If-Match
+      x-required-roles:
+        - PUBLISHER
+  /api/v1/publisher/articles:
+    get:
+      tags:
+        - Publisher
+      operationId: listPublisherArticles
+      summary: List articles for publisher review
+      description: Lists article revisions and readiness evidence visible to a publisher.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArticleDraftPage"
+              examples:
+                valid:
+                  value:
+                    items: []
+                    page:
+                      nextCursor: null
+                      limit: 20
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-required-roles:
+        - PUBLISHER
+  /api/v1/publisher/articles/{id}:
+    get:
+      tags:
+        - Publisher
+      operationId: getPublisherArticle
+      summary: Read an article for publisher review
+      description: Returns the current article revision and its readiness evidence.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArticleDraft"
+              examples:
+                valid:
+                  value:
+                    articleId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    revisionId: 0190f7b0-7c4b-7e3a-8f12-123456789abd
+                    revisionNumber: 1
+                    version: 1
+                    title: Article 1
+                    slug: article-1
+                    state: DRAFT
+                    readiness:
+                      ready: true
+                      blockingCodes: []
+                      blockers: []
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-required-roles:
+        - PUBLISHER
+  /api/v1/publisher/articles/{id}:schedule:
+    post:
+      tags:
+        - Publisher
+      operationId: schedulePublisherArticle
+      summary: Schedule an article
+      description: Schedules article publication using an explicit IANA timezone.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ScheduleRequest"
+            examples:
+              valid:
+                value:
+                  publishAt: 2026-08-11T09:00:00
+                  timezone: Asia/Taipei
+      responses:
+        "202":
+          description: Schedule accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowResult"
+              examples:
+                valid:
+                  value:
+                    operationId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    status: SCHEDULED
+                    version: 4
+                    revisionId: 0190f7b0-7c4b-7e3a-8f12-123456789abd
+                    scheduledAt: 2026-08-11T01:00:00Z
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+      x-idempotent: true
+      x-optimistic-lock: If-Match
+      x-required-roles:
+        - PUBLISHER
+  /api/v1/publisher/articles/{id}:publish:
+    post:
+      tags:
+        - Publisher
+      operationId: publishPublisherArticle
+      summary: Publish an article now
+      description: Publishes the approved article revision and records an immutable snapshot.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202":
+          description: Publication accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowResult"
+              examples:
+                valid:
+                  value:
+                    operationId: 0190f7b0-7c4b-7e3a-8f12-123456789abe
+                    status: PUBLISHED
+                    version: 5
+                    revisionId: 0190f7b0-7c4b-7e3a-8f12-123456789abd
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+      x-idempotent: true
+      x-optimistic-lock: If-Match
+      x-required-roles:
+        - PUBLISHER
+  /api/v1/publisher/articles/{id}:request-changes:
+    post:
+      tags:
+        - Publisher
+      operationId: requestChangesPublisherArticle
+      summary: Request article changes
+      description: Returns a frozen article revision to draft with an auditable reason.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/WithdrawRequest"
+            examples:
+              valid:
+                value:
+                  reason: editorial changes requested
+      responses:
+        "202":
+          description: Change request accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowResult"
+              examples:
+                valid:
+                  value:
+                    operationId: 0190f7b0-7c4b-7e3a-8f12-123456789abf
+                    status: CHANGES_REQUESTED
+                    version: 4
+                    revisionId: 0190f7b0-7c4b-7e3a-8f12-123456789abd
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
       x-idempotent: true
       x-optimistic-lock: If-Match
       x-required-roles:
@@ -1364,6 +1996,103 @@ paths:
       x-optimistic-lock: If-Match
       x-required-roles:
         - PUBLISHER
+  /api/v1/publisher/articles/{id}:archive:
+    post:
+      tags:
+        - Publisher
+      operationId: archivePublisherArticle
+      summary: Archive a withdrawn article
+      description: Archives an already withdrawn article while preserving its publication evidence.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202":
+          description: Archive accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowResult"
+              examples:
+                valid:
+                  value:
+                    operationId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    status: ARCHIVED
+                    version: 2
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-idempotent: true
+      x-optimistic-lock: If-Match
+      x-required-roles:
+        - PUBLISHER
+  /api/v1/editor/audit:
+    get:
+      tags:
+        - Editorial
+      operationId: listEditorialAudit
+      summary: List append-only editorial audit events
+      description: Reads immutable audit events for one article, issue, or media asset.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - name: targetType
+          in: query
+          required: true
+          schema:
+            type: string
+            enum:
+              - ARTICLE
+              - ISSUE
+              - MEDIA_ASSET
+        - name: targetId
+          in: query
+          required: true
+          schema:
+            $ref: "#/components/schemas/Uuid"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Audit events.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditEventPage"
+              examples:
+                valid:
+                  value:
+                    items: []
+                    page:
+                      nextCursor: null
+                      limit: 50
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "429":
+          $ref: "#/components/responses/Problem429"
   /api/v1/editor/media/uploads:
     post:
       tags:
@@ -1389,7 +2118,7 @@ paths:
                     assetId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
                     uploadUrl: https://s3.example.test/upload
                     expiresAt: 2026-08-07T15:00:00Z
-                    maxSizeBytes: 52428800
+                    maxSizeBytes: 20971520
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -1476,6 +2205,122 @@ paths:
                   checksumSha256: "0000000000000000000000000000000000000000000000000000000000000000"
                   contentType: image/jpeg
       x-idempotent: true
+      x-required-roles:
+        - EDITOR
+  /api/v1/editor/media/{id}:
+    get:
+      tags:
+        - Media
+      operationId: getEditorMediaMetadata
+      summary: Read media metadata
+      description: Reads accessibility metadata and the latest rights record for an editor-owned media asset.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaMetadata"
+              examples:
+                valid:
+                  value:
+                    assetId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    version: 1
+                    altText: Courtside action
+                    state: READY
+                    rights: null
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-required-roles:
+        - EDITOR
+    patch:
+      tags:
+        - Media
+      operationId: updateEditorMediaMetadata
+      summary: Update media metadata and rights
+      description: Persists alt text and a versioned rights record with an If-Match lock on the media asset.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/MediaMetadataUpdate"
+            examples:
+              valid:
+                value:
+                  altText: Courtside action
+                  rights:
+                    rightsOwner: Courtside Studio
+                    licenseName: Editorial license
+                    allowedChannels:
+                      - PUBLIC_WEB
+                    territories:
+                      - GLOBAL
+                    validFrom: 2026-08-10T00:00:00Z
+                    validUntil: 2027-08-10T00:00:00Z
+                    credit: Courtside Studio
+                    withdrawalTerms: Contact rights desk
+                    status: VALID
+      responses:
+        "200":
+          description: Metadata updated.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaMetadata"
+              examples:
+                valid:
+                  value:
+                    assetId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    version: 2
+                    altText: Courtside action
+                    state: READY
+                    rights: null
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-idempotent: false
+      x-optimistic-lock: If-Match
       x-required-roles:
         - EDITOR
   /api/v1/publisher/media/{id}:revoke:
@@ -1758,6 +2603,18 @@ components:
       required: true
       schema:
         $ref: "#/components/schemas/Uuid"
+    IssueId:
+      name: issueId
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/Uuid"
+    SectionId:
+      name: sectionId
+      in: path
+      required: true
+      schema:
+        $ref: "#/components/schemas/Uuid"
     Type:
       name: type
       in: path
@@ -1914,6 +2771,49 @@ components:
           type: integer
           minimum: 1
           maximum: 100
+    AuditEvent:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - occurredAt
+        - actorSubject
+        - action
+        - targetType
+        - targetId
+        - metadata
+      properties:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        occurredAt:
+          type: string
+          format: date-time
+        actorSubject:
+          type: string
+        action:
+          type: string
+        targetType:
+          type: string
+        targetId:
+          $ref: "#/components/schemas/Uuid"
+        requestId:
+          type: [string, "null"]
+        metadata:
+          type: object
+          additionalProperties: true
+    AuditEventPage:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - page
+      properties:
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/AuditEvent"
+        page:
+          $ref: "#/components/schemas/PageMeta"
     ContentDocument:
       $ref: ./content-document.schema.json
     IssueSummary:
@@ -2460,6 +3360,7 @@ components:
       required:
         - title
         - slug
+        - coverAssetId
       properties:
         title:
           type: string
@@ -2471,6 +3372,8 @@ components:
         description:
           type: string
           maxLength: 1000
+        coverAssetId:
+          $ref: "#/components/schemas/Uuid"
     IssuePatch:
       type: object
       additionalProperties: false
@@ -2489,13 +3392,19 @@ components:
       additionalProperties: false
       required:
         - issueId
+        - issueNumber
         - version
         - title
         - slug
+        - description
+        - coverAssetId
         - state
       properties:
         issueId:
           $ref: "#/components/schemas/Uuid"
+        issueNumber:
+          type: integer
+          minimum: 1
         version:
           type: integer
           minimum: 1
@@ -2503,6 +3412,10 @@ components:
           type: string
         slug:
           type: string
+        description:
+          type: string
+        coverAssetId:
+          $ref: "#/components/schemas/Uuid"
         state:
           type: string
           enum:
@@ -2525,6 +3438,95 @@ components:
             $ref: "#/components/schemas/IssueDraft"
         page:
           $ref: "#/components/schemas/PageMeta"
+    IssueSectionInput:
+      type: object
+      additionalProperties: false
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 250
+        position:
+          type: integer
+          minimum: 1
+          maximum: 50
+    IssueSectionPatch:
+      type: object
+      additionalProperties: false
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 250
+    IssueSectionReorder:
+      type: object
+      additionalProperties: false
+      required:
+        - sections
+      properties:
+        sections:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - sectionId
+              - position
+            properties:
+              sectionId:
+                $ref: "#/components/schemas/Uuid"
+              position:
+                type: integer
+                minimum: 1
+                maximum: 50
+    IssueSection:
+      type: object
+      additionalProperties: false
+      required:
+        - sectionId
+        - title
+        - position
+        - articleCount
+        - version
+      properties:
+        sectionId:
+          $ref: "#/components/schemas/Uuid"
+        title:
+          type: string
+          minLength: 1
+          maxLength: 250
+        position:
+          type: integer
+          minimum: 1
+        articleCount:
+          type: integer
+          minimum: 0
+        version:
+          type: integer
+          minimum: 0
+    IssueSectionCollection:
+      type: object
+      additionalProperties: false
+      required:
+        - issueId
+        - issueVersion
+        - sections
+      properties:
+        issueId:
+          $ref: "#/components/schemas/Uuid"
+        issueVersion:
+          type: integer
+          minimum: 1
+        sections:
+          type: array
+          maxItems: 50
+          items:
+            $ref: "#/components/schemas/IssueSection"
     ArticleDraftInput:
       type: object
       additionalProperties: false
@@ -2539,6 +3541,9 @@ components:
         slug:
           type: string
           pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        dek:
+          type: string
+          maxLength: 1000
         content:
           $ref: "#/components/schemas/ContentDocument"
     ArticlePatch:
@@ -2559,13 +3564,21 @@ components:
       additionalProperties: false
       required:
         - articleId
+        - revisionId
+        - revisionNumber
         - version
         - title
         - slug
         - state
+        - readiness
       properties:
         articleId:
           $ref: "#/components/schemas/Uuid"
+        revisionId:
+          $ref: "#/components/schemas/Uuid"
+        revisionNumber:
+          type: integer
+          minimum: 1
         version:
           type: integer
           minimum: 1
@@ -2573,14 +3586,72 @@ components:
           type: string
         slug:
           type: string
+        dek:
+          type: string
+        content:
+          $ref: "#/components/schemas/ContentDocument"
         state:
           type: string
           enum:
             - DRAFT
             - IN_REVIEW
             - APPROVED
+            - SCHEDULED
             - PUBLISHED
             - WITHDRAWN
+            - ARCHIVED
+        scheduledAt:
+          type: string
+          format: date-time
+        readiness:
+          $ref: "#/components/schemas/PublicationReadiness"
+    PublicationReadiness:
+      type: object
+      additionalProperties: false
+      required:
+        - ready
+        - blockingCodes
+        - blockers
+      properties:
+        ready:
+          type: boolean
+        blockingCodes:
+          type: array
+          items:
+            type: string
+        blockers:
+          type: array
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - code
+            properties:
+              assetId:
+                $ref: "#/components/schemas/Uuid"
+              code:
+                type: string
+              rightsRecordId:
+                $ref: "#/components/schemas/Uuid"
+              rightsRecordVersion:
+                type: integer
+                minimum: 0
+    RevisionInput:
+      type: object
+      additionalProperties: false
+      required:
+        - title
+        - content
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 250
+        dek:
+          type: string
+          maxLength: 1000
+        content:
+          $ref: "#/components/schemas/ContentDocument"
     SubmitRequest:
       type: object
       additionalProperties: false
@@ -2604,10 +3675,12 @@ components:
           type: string
           enum:
             - ACCEPTED
+            - CHANGES_REQUESTED
             - APPROVED
             - PUBLISHED
             - SCHEDULED
             - WITHDRAWN
+            - ARCHIVED
             - BLOCKED
         version:
           type: integer
@@ -2616,6 +3689,21 @@ components:
           type: array
           items:
             type: string
+        revisionId:
+          $ref: "#/components/schemas/Uuid"
+        scheduledAt:
+          type: string
+          format: date-time
+        assetId:
+          $ref: "#/components/schemas/Uuid"
+        state:
+          type: string
+          enum:
+            - PENDING
+            - PROCESSING
+            - READY
+            - FAILED
+            - REVOKED
     ScheduleRequest:
       type: object
       additionalProperties: false
@@ -2645,14 +3733,14 @@ components:
         contentType:
           type: string
           enum:
+            - image/avif
             - image/jpeg
             - image/png
             - image/webp
-            - video/mp4
         sizeBytes:
           type: integer
           minimum: 1
-          maximum: 52428800
+          maximum: 20971520
         checksumSha256:
           type: string
           pattern: ^[0-9a-f]{64}$
@@ -2676,6 +3764,17 @@ components:
         maxSizeBytes:
           type: integer
           minimum: 1
+        version:
+          type: integer
+          minimum: 0
+        state:
+          type: string
+          enum:
+            - PENDING
+            - PROCESSING
+            - READY
+            - FAILED
+            - REVOKED
     MediaCompleteRequest:
       type: object
       additionalProperties: false
@@ -2688,6 +3787,127 @@ components:
           pattern: ^[0-9a-f]{64}$
         contentType:
           type: string
+    MediaMetadataUpdate:
+      type: object
+      additionalProperties: false
+      required:
+        - altText
+      properties:
+        altText:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        rights:
+          $ref: "#/components/schemas/MediaRightsMetadataInput"
+    MediaMetadata:
+      type: object
+      additionalProperties: false
+      required:
+        - assetId
+        - version
+        - altText
+        - state
+        - rights
+      properties:
+        assetId:
+          $ref: "#/components/schemas/Uuid"
+        version:
+          type: integer
+          minimum: 0
+        altText:
+          oneOf:
+            - type: string
+              minLength: 1
+              maxLength: 1000
+            - type: "null"
+        state:
+          type: string
+          enum:
+            - PENDING
+            - PROCESSING
+            - READY
+            - FAILED
+            - REVOKED
+        rights:
+          oneOf:
+            - $ref: "#/components/schemas/MediaRightsMetadata"
+            - type: "null"
+    MediaRightsMetadataInput:
+      type: object
+      additionalProperties: false
+      required:
+        - rightsOwner
+        - licenseName
+        - allowedChannels
+        - territories
+        - validFrom
+        - validUntil
+        - credit
+        - withdrawalTerms
+        - status
+      properties:
+        version:
+          type: integer
+          minimum: 0
+        rightsOwner:
+          type: string
+          minLength: 1
+          maxLength: 512
+        licenseName:
+          type: string
+          minLength: 1
+          maxLength: 512
+        allowedChannels:
+          type: array
+          minItems: 1
+          maxItems: 16
+          items:
+            type: string
+            enum:
+              - PUBLIC_WEB
+              - READER_LIBRARY
+              - OFFLINE
+              - PROVENANCE
+        territories:
+          type: array
+          minItems: 1
+          maxItems: 16
+          items:
+            type: string
+            pattern: ^[A-Za-z0-9_-]{1,64}$
+        validFrom:
+          type: string
+          format: date-time
+        validUntil:
+          type: string
+          format: date-time
+        credit:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        withdrawalTerms:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        status:
+          type: string
+          enum:
+            - UNKNOWN
+            - PENDING
+            - VALID
+            - EXPIRED
+            - REVOKED
+            - BLOCKED
+    MediaRightsMetadata:
+      allOf:
+        - $ref: "#/components/schemas/MediaRightsMetadataInput"
+        - type: object
+          required:
+            - id
+            - version
+          properties:
+            id:
+              $ref: "#/components/schemas/Uuid"
     RevokeImpactReport:
       type: object
       additionalProperties: false
@@ -2708,6 +3928,9 @@ components:
             - REVOKED
             - BLOCKED
             - NO_IMPACT
+        version:
+          type: integer
+          minimum: 0
     OfflineManifest:
       type: object
       additionalProperties: false

@@ -1,0 +1,242 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-t043-t056-local-implementation
+objective: >-
+  Execute the bounded T043/T044 proof lane, then implement T048 and ordered
+  T049-T056 editorial media, Studio and publication surfaces from the
+  reconciled main@5530c228 baseline, while making execution and merge gates
+  explicit.
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - T043 Editorial API integration and conditional persistence proof
+    - T044 Studio editor/publisher two-role E2E contract
+    - T048 private media upload intent/completion and worker dispatch
+    - ordered T049-T056 Studio, publication, audit and reliability surfaces
+    - OpenAPI, generated client, content schema and frontend verification
+    - append-only evidence, memory, ledger and graph receipts
+  out:
+    - production migration or activation
+    - deployment, remote push or protected merge
+    - task checkbox changes
+    - Web3, Wallet and Passport implementation
+
+policy:
+  human_gates:
+    - Java 21 and dependency-provisioned API compile/integration execution
+    - Playwright Chromium browser execution
+    - protected push, CI and merge
+    - production migration or activation
+    - task checkbox updates
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+memory_workflow:
+  contract: work-memory/v1
+  control_ledger: Append implementation deltas, verification receipts and gates every iteration.
+  semantic_memory: Capture only the bounded local implementation state and its execution limits.
+  modes: [recall, capture, update, forget, no_op]
+  retrieval:
+    levels: [index, timeline_relations, details]
+    max_index_results: 10
+    stop_on_sufficient_evidence: true
+  capture:
+    allowed_kinds: [fact, task_state, evidence]
+    requires_downstream_proof: true
+    requires_write_receipt: true
+  lifecycle: [seed, verified, stable, needs_update, disputed, archived]
+  failure_policy:
+    write_pending: blocked
+    stale_or_disputed: needs_human
+    redact_secrets: true
+
+graph:
+  entry_nodes: [t-t043-t056-authorized]
+  terminal_nodes: [s-local-proof-ready, s-execution-gated]
+  loops:
+    - id: l1-t043-t056-local
+      layer: L1
+      owner: codex-agent
+      trigger_nodes: [t-t043-t056-authorized]
+      action_nodes: [a-implement-t043-t056]
+      proof_nodes: [p-contract-and-scope-proof]
+      memory_nodes: [m-t043-t056-memory]
+      stop_nodes: [s-local-proof-ready, s-execution-gated]
+      budgets:
+        max_iterations: 2
+        max_minutes: 45
+        max_same_failure: 2
+        max_graph_changes: 6
+        max_tokens: 16000
+  nodes:
+    - id: t-t043-t056-authorized
+      kind: trigger
+      layer: L1
+      label: Execute T043/T044 then T048-T056 from reconciled main
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 0.98
+        basis: User supplied the ordered task frontier and the prior reconciliation receipt identifies main@5530c228.
+        evidence_refs:
+          - .loop/evidence/t042-t047-pr72-main-reconciliation-20260810.json
+      budget: {effort_hours: 0.2, tokens: 800}
+      config:
+        condition: PR #72 is reconciled and T043/T044 are the authorized proof frontier.
+        inputs_required:
+          - main@5530c22831ca3c88d6fc74cbaaaa84c3e2775568
+          - existing .loop receipts
+          - specs/001-taiwan-basketball-magazine-ebook/tasks.md
+        dedupe: repository plus baseline commit plus ordered task frontier
+    - id: a-implement-t043-t056
+      kind: action
+      layer: L1
+      label: Implement T043/T044 proof and ordered T048-T056 local surfaces
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 0.9
+        basis: Local commits contain the API, persistence, worker, contracts, Studio surfaces and test sources; Java/browser execution is separately gated.
+        evidence_refs:
+          - f05f829
+          - .loop/evidence/t043-t056-local-implementation-20260810.json
+      budget: {effort_hours: 12.0, tokens: 11000}
+      config:
+        workflow:
+          - read reconciled baseline and task scopes
+          - implement T043/T044 proof surfaces
+          - implement T048 upload before T049-T056
+          - run bounded frontend/contract checks
+          - append receipts without checkbox or historical receipt mutation
+        allowed:
+          - local code and test changes within the ordered task scope
+          - generated contract output
+          - append-only .loop receipts
+        requires_approval:
+          - production migration or activation
+          - protected push and merge
+          - task checkbox update
+        forbidden:
+          - rewrite historical receipts
+          - delete evidence
+          - expose secrets
+          - activate unconfigured storage or worker providers
+    - id: p-contract-and-scope-proof
+      kind: proof
+      layer: L1
+      label: Independent contract, frontend, task and environment-gate read-back
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 0.86
+        basis: OpenAPI/schema/client/Nuxt checks and frontend tests pass; Java and browser execution have explicit blockers rather than unverified claims.
+        evidence_refs:
+          - .loop/evidence/t043-t056-local-implementation-20260810.json
+      budget: {effort_hours: 1.0, tokens: 2500}
+      config:
+        level: P2
+        claim: Local T043-T056 implementation is present and bounded, with remaining execution and merge gates explicit.
+        method: Read commit/tree, run contract and frontend checks, inspect task checkbox state, record blocked Java/Chromium attempts.
+        evidence_path: .loop/evidence/t043-t056-local-implementation-20260810.json
+        required: true
+        baseline_required: true
+    - id: m-t043-t056-memory
+      kind: memory
+      layer: L1
+      label: Persist local implementation state and execution gates
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        score: 0.86
+        basis: Validated work-memory/v1 record references the implementation proof, baseline reconciliation and local commits.
+        evidence_refs:
+          - .loop/memory/t043-t056-local-implementation-20260810.json
+      budget: {effort_hours: 0.2, tokens: 1200}
+      config:
+        path: .loop/memory/t043-t056-local-implementation-20260810.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: work-memory/v1
+        memory_role: hybrid
+        receipt_required: true
+        write_failure_state: blocked
+    - id: s-local-proof-ready
+      kind: stop
+      layer: GLOBAL
+      label: Local T043-T056 proof surfaces ready for gated verification
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        score: 0.86
+        basis: Required local code, contracts, receipts and available checks pass; unavailable runtimes are not substituted by inference.
+        evidence_refs:
+          - .loop/t043-t056-local-implementation-ledger.json
+      budget: {effort_hours: 0.0, tokens: 0}
+      config:
+        states:
+          success: Local implementation and available proof checks pass.
+          no_op: No bounded change was needed.
+          blocked: A required local write or proof receipt failed.
+          stalled: No evidence delta after the configured limit.
+          exhausted: The bounded iteration budget is reached.
+          needs_human: Java/browser/protected merge or production gate is requested.
+    - id: s-execution-gated
+      kind: stop
+      layer: GLOBAL
+      label: Hold remote completion until Java, browser and protected merge gates pass
+      owner: codex-agent
+      status: planned
+      risk: high
+      confidence:
+        score: 0.98
+        basis: The environment read-back explicitly shows Java 17, unavailable Spring Boot dependency resolution and missing Chromium.
+        evidence_refs:
+          - .loop/evidence/t043-t056-local-implementation-20260810.json
+      budget: {effort_hours: 0.0, tokens: 0}
+      config:
+        states:
+          success: Provisioned verification and protected merge evidence exists.
+          no_op: No new remote state was requested.
+          blocked: Required runtime, dependency or permission is unavailable.
+          stalled: No new gate evidence after the configured limit.
+          exhausted: The bounded gate budget is reached.
+          needs_human: Protected merge or production activation is requested.
+  edges:
+    - {id: e-trigger-action, from: t-t043-t056-authorized, to: a-implement-t043-t056, type: enables, required: true, confidence: 0.98, token_capacity: 11000}
+    - {id: e-action-proof, from: a-implement-t043-t056, to: p-contract-and-scope-proof, type: verifies, required: true, confidence: 0.9, token_capacity: 3500}
+    - {id: e-proof-memory, from: p-contract-and-scope-proof, to: m-t043-t056-memory, type: records, required: true, confidence: 0.86, token_capacity: 1800}
+    - {id: e-proof-memory-enables, from: p-contract-and-scope-proof, to: m-t043-t056-memory, type: enables, required: true, confidence: 0.86, token_capacity: 1800}
+    - {id: e-memory-success, from: m-t043-t056-memory, to: s-local-proof-ready, type: enables, required: true, confidence: 0.86, token_capacity: 1000}
+    - {id: e-memory-reads-action, from: m-t043-t056-memory, to: a-implement-t043-t056, type: reads, required: true, confidence: 0.85, token_capacity: 1000}
+    - {id: e-proof-feedback, from: p-contract-and-scope-proof, to: a-implement-t043-t056, type: feedback, required: false, confidence: 0.8, token_capacity: 1000}
+    - {id: e-proof-gated, from: p-contract-and-scope-proof, to: s-execution-gated, type: blocks, required: false, confidence: 0.98, token_capacity: 1000}
+
+flow:
+  source: t-t043-t056-authorized
+  sink: s-local-proof-ready
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - memory_receipt
+  - next_action

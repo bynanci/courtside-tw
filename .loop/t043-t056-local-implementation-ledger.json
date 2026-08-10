@@ -1,0 +1,96 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-t043-t056-local-implementation",
+  "graph_version": 1,
+  "run_id": "courtside-tw-t043-t056-local-implementation-20260810",
+  "status": "done_with_gates",
+  "iteration": 1,
+  "started_at": "2026-08-10T05:00:00Z",
+  "updated_at": "2026-08-10T05:31:51Z",
+  "current_frontier": [
+    "local-t043-t056-proof-ready",
+    "java21-and-browser-verification-required"
+  ],
+  "blocked_nodes": [
+    "java21-and-gradle-dependency-verification",
+    "chromium-playwright-verification",
+    "protected-push-and-merge"
+  ],
+  "terminal_state": "local_implementation_complete_with_human_gates",
+  "next_action": "Run Java 21 API suites and the opt-in Studio E2E in a provisioned runner, then use the protected merge workflow; preserve task checkbox and receipt policies.",
+  "events": [
+    {
+      "event_id": "evt-t043-t056-local-implementation-001",
+      "at": "2026-08-10T05:31:51Z",
+      "actor": "codex-supervisor",
+      "type": "bounded_implementation_and_verification",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "implementation_commits",
+            "value": ["06006a3", "f05f829"]
+          },
+          {
+            "op": "add",
+            "path": "ordered_frontier",
+            "value": ["T043", "T044", "T048", "T049", "T050", "T051", "T052", "T053", "T054", "T055", "T056"]
+          },
+          {
+            "op": "add",
+            "path": "verification_gates",
+            "value": ["Java 21/Gradle", "Playwright Chromium", "protected push/merge"]
+          },
+          {
+            "op": "add",
+            "path": "historical_receipt_policy",
+            "value": "preserve old receipts; append implementation evidence, memory, ledger and graph"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t043-t056-local-implementation-20260810.json",
+        ".loop/evidence/t042-t047-pr72-main-reconciliation-20260810.json",
+        "f05f829"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "ordered implementation read-back",
+          "result": "T043/T044 then T048-T056 present in local branch"
+        },
+        {
+          "proof": "contract and frontend verification",
+          "result": "openapi/schema/client/Nuxt checks pass"
+        },
+        {
+          "proof": "Java and browser execution",
+          "result": "gated by Java 21/dependency and Chromium availability"
+        },
+        {
+          "proof": "scope gate",
+          "result": "task checkboxes unchanged; no production activation or remote merge"
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "SAVED",
+        "memory_id": "wm:project:courtside-tw:t043-t056-local-implementation-20260810",
+        "version": "t043-t056-local-implementation-v1",
+        "retrieval_ids": ["wm:project:courtside-tw:pr72-main-reconciliation-20260810"],
+        "evidence_refs": [
+          ".loop/evidence/t043-t056-local-implementation-20260810.json"
+        ],
+        "next_review_at": "2026-08-10",
+        "blocker": "Java 21/Gradle, Chromium and protected merge gates remain."
+      },
+      "failure_signature": null,
+      "token_usage": {
+        "estimated": 11000,
+        "input": 0,
+        "output": 0,
+        "total": 11000
+      }
+    }
+  ]
+}

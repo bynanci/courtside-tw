@@ -1,0 +1,72 @@
+{
+  "schema_version": "courtside-tw/implementation-proof/v1",
+  "proof_id": "t052-section-management-review-20260810",
+  "recorded_at": "2026-08-10T09:35:09Z",
+  "result": "LOCAL_T052_COMPLETE_WITH_REMOTE_EXECUTION_GATES",
+  "classification": "CONFIRMED_WITH_GATES",
+  "purpose": "Append-only receipt for T052 server-backed section management and its available verification; no task checkbox or historical receipt was rewritten.",
+  "source_of_truth": {
+    "repository": "bynanci/courtside-tw",
+    "baseline_main": "5530c22831ca3c88d6fc74cbaaaa84c3e2775568",
+    "local_branch": "agent/t043-t044-editorial-http-e2e",
+    "local_head": "fc9ff7a916e23dfdafa95e3a7d6afbb40c516719",
+    "tasks_file": "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    "task_readback": {"T052": false, "task_file_changed": false},
+    "working_tree": "clean_before_receipt"
+  },
+  "implementation_proof": {
+    "api": [
+      "GET /api/v1/editor/issues/{issueId}/sections",
+      "POST /api/v1/editor/issues/{issueId}/sections",
+      "PATCH /api/v1/editor/issues/{issueId}/sections",
+      "PATCH /api/v1/editor/issues/{issueId}/sections/{sectionId}",
+      "DELETE /api/v1/editor/issues/{issueId}/sections/{sectionId}"
+    ],
+    "persistence": [
+      "explicit issue_section positions",
+      "aggregate publication_issue version with SELECT FOR UPDATE and If-Match",
+      "section version and articleCount response fields",
+      "append-only V010 idempotency operation constraint"
+    ],
+    "frontend": [
+      "server-backed IssueEditor section load/create/reorder/rename/delete",
+      "ArrowUp/ArrowDown and accessible list/button labels",
+      "explicit contiguous reorder payload and conflict recovery"
+    ],
+    "proof_tests": [
+      "EditorialIssueApiIT section CRUD/reorder/replay/stale-role coverage",
+      "section-editor contract/component source wiring tests",
+      "Playwright fixture and keyboard reorder case"
+    ]
+  },
+  "verification": [
+    {"command": "node scripts/validate-openapi.mjs", "result": "PASS", "detail": "OpenAPI 3.1; 39 paths; 50 operations; stable errors and examples pass."},
+    {"command": "node scripts/validate-content-schema.mjs", "result": "PASS", "detail": "Canonical content schema and invalid-fixture suite pass."},
+    {"command": "pnpm --filter @courtside/api-client contract", "result": "PASS", "detail": "Generated client is unchanged after regeneration; 2 tests pass."},
+    {"command": "pnpm --filter @courtside/content-schema contract", "result": "PASS", "detail": "Generated content types are unchanged; 3 tests pass."},
+    {"command": "pnpm --filter @courtside/web lint && typecheck && test", "result": "PASS", "detail": "40 frontend/integration tests pass."},
+    {"command": "pnpm --filter @courtside/web build", "result": "PASS", "detail": "Nuxt production build completes with only bundle-size/Rollup warnings."},
+    {"command": "pnpm format:check && git diff --check", "result": "PASS", "detail": "Formatting and whitespace checks pass."},
+    {"command": "pnpm --filter @courtside/web exec playwright test --list", "result": "PASS", "detail": "15 Playwright tests are collected, including the T052 keyboard reorder case."},
+    {"command": "PLAYWRIGHT_BROWSERS_PATH=/tmp/courtside-playwright-browsers pnpm --filter @courtside/web exec playwright install chromium", "result": "GATED", "detail": "Chromium download failed with CDN 502/certificate-time error; browser assertions are not claimed."},
+    {"command": "Java/Gradle/Docker API verification", "result": "GATED", "detail": "Only Java 17.0.19 is installed; Gradle and Docker are unavailable. CI setup uses Java 21, Gradle 8.14.3 and Docker-backed integration services."}
+  ],
+  "scope_controls": {
+    "production_migration_executed": false,
+    "production_worker_or_storage_activated": false,
+    "deployment_performed": false,
+    "remote_push_performed": false,
+    "protected_merge_performed": false,
+    "task_checkbox_changed": false,
+    "web3_wallet_passport_changed": false,
+    "historical_receipts_overwritten": false
+  },
+  "execution_gates": [
+    "push the exact head and append-only receipt",
+    "obtain Java 21/Gradle/Docker CI proof",
+    "obtain Chromium Playwright proof",
+    "obtain review-thread, security and mergeability proof",
+    "merge, read back main and only then decide task checkbox receipt"
+  ],
+  "next_action": "Create/update the PR for the exact head, verify exact-head CI and review gates, then merge only if all required gates pass."
+}

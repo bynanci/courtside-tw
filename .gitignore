@@ -3,4 +3,5 @@ apps/**/.nuxt/
 apps/**/.output/
 apps/**/coverage/
 apps/**/test-results/
+apps/**/.gradle/
 artifacts/

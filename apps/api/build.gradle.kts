@@ -32,6 +32,12 @@ dependencies {
 
 tasks.withType<Test> {
     useJUnitPlatform()
+    // Keep the repository's Testcontainers integration proofs in the CI test
+    // graph; Gradle's default patterns do not discover *IT classes.
+    include("**/*Test.class")
+    include("**/*Tests.class")
+    include("**/*TestCase.class")
+    include("**/*IT.class")
     systemProperty("courtside.repoRoot", projectDir.resolve("../..").canonicalPath)
 }
 

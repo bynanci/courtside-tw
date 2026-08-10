@@ -1,0 +1,58 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-t052-section-management-review",
+  "graph_version": 1,
+  "run_id": "courtside-tw-t052-section-management-review-20260810",
+  "status": "local_proof_complete_with_remote_gates",
+  "iteration": 1,
+  "started_at": "2026-08-10T09:35:09Z",
+  "updated_at": "2026-08-10T09:35:09Z",
+  "current_frontier": [
+    "t052-local-proof-ready",
+    "exact-head-java-browser-review-merge-required"
+  ],
+  "blocked_nodes": [
+    "java21-gradle-docker-execution",
+    "chromium-browser-execution",
+    "remote-review-and-protected-merge"
+  ],
+  "terminal_state": "local_proof_complete_with_remote_gates",
+  "next_action": "Push fc9ff7a plus this append-only receipt, create or update the PR, then verify exact-head CI, review threads and mergeability before merging.",
+  "events": [
+    {
+      "event_id": "evt-t052-section-management-001",
+      "at": "2026-08-10T09:35:09Z",
+      "actor": "codex-agent",
+      "type": "t052_implementation_and_local_verification",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {"op": "add", "path": "implementation_commit", "value": "fc9ff7a916e23dfdafa95e3a7d6afbb40c516719"},
+          {"op": "add", "path": "api_section_commands", "value": ["GET", "POST", "PATCH reorder", "PATCH rename", "DELETE"]},
+          {"op": "add", "path": "local_proof", "value": ["OpenAPI", "content schema", "api-client contract", "web lint/typecheck/test/build", "format check"]},
+          {"op": "add", "path": "execution_gates", "value": ["Java 21/Gradle/Docker", "Playwright Chromium", "protected review/merge"]}
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t052-section-management-review-20260810.json",
+        "fc9ff7a916e23dfdafa95e3a7d6afbb40c516719"
+      ],
+      "proof_receipts": [
+        {"proof": "T052 API and persistence", "result": "Server-backed section list/create/reorder/rename/delete with aggregate If-Match and V010 idempotency scopes are committed."},
+        {"proof": "Studio section editor", "result": "Explicit positions, keyboard ArrowUp/ArrowDown, accessible labels and API wiring are committed."},
+        {"proof": "local available verification", "result": "OpenAPI/content schema/api-client contracts pass; web lint/typecheck/tests/build and formatting pass."},
+        {"proof": "environment gates", "result": "Playwright install failed on CDN certificate/time 502; Java is 17 and Gradle/Docker are unavailable."}
+      ],
+      "memory_receipt": {
+        "memory_status": "SAVED",
+        "memory_id": "wm:project:courtside-tw:t052-section-management-review-20260810",
+        "version": "t052-section-management-review-v1",
+        "evidence_refs": [".loop/evidence/t052-section-management-review-20260810.json"],
+        "blocker": "Remote exact-head Java/browser/review/merge evidence remains outstanding."
+      },
+      "failure_signature": "local_runtime_missing_java21_gradle_docker_and_chromium",
+      "token_usage": {"estimated": 7200, "input": 0, "output": 0, "total": 7200}
+    }
+  ]
+}

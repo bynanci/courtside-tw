@@ -1,10 +1,18 @@
 import { spawn } from "node:child_process"
 import { createServer } from "node:http"
-import { readFileSync } from "node:fs"
+import { existsSync, readFileSync } from "node:fs"
+import { fileURLToPath } from "node:url"
+import { exportJWK, generateKeyPair, SignJWT } from "jose"
 
 const API_PORT = 4010
 const WEB_PORT = 4173
 const webOrigin = "http://127.0.0.1:" + WEB_PORT
+const STUDIO_ARTICLE_ID = "00000000-0000-4000-8000-000000000201"
+const STUDIO_REVISION_ID = "00000000-0000-4000-8000-000000000202"
+const STUDIO_ISSUE_ID = "0190f7b0-7c4b-7e3a-8f12-123456789abc"
+const STUDIO_COVER_ASSET_ID = "00000000-0000-4000-8000-000000000203"
+const STUDIO_ACCESS_TOKEN = "e2e-studio-access-token"
+const STUDIO_PUBLIC_TARGET = STUDIO_ARTICLE_ID
 const contentDocument = JSON.parse(
   readFileSync(new URL("../fixtures/content-document-v1.json", import.meta.url), "utf8")
 )
@@ -181,13 +189,437 @@ const articleProjections = new Map([
   ]
 ])
 
-const apiServer = createServer((request, response) => {
+let studioState = createStudioState("DRAFT")
+let studioIssueState = createStudioIssueState()
+let studioIssueSections = createStudioIssueSections()
+let studioAuditEvents = []
+let studioReceipts = new Map()
+
+function createStudioIssueState() {
+  return {
+    issueId: STUDIO_ISSUE_ID,
+    issueNumber: 1,
+    version: 1,
+    title: issue.title,
+    slug: issue.slug,
+    description: issue.summary,
+    coverAssetId: STUDIO_COVER_ASSET_ID,
+    state: "DRAFT"
+  }
+}
+
+function createStudioIssueSections() {
+  return [
+    {
+      sectionId: "0190f7b0-7c4b-7e3a-8f12-123456789abd",
+      title: "開場",
+      position: 1,
+      articleCount: 0,
+      version: 0
+    },
+    {
+      sectionId: "0190f7b0-7c4b-7e3a-8f12-123456789abe",
+      title: "場邊觀察",
+      position: 2,
+      articleCount: 0,
+      version: 0
+    }
+  ]
+}
+
+function studioIssueCollection() {
+  return {
+    issueId: studioIssueState.issueId,
+    issueVersion: studioIssueState.version,
+    sections: studioIssueSections.map((section) => ({ ...section }))
+  }
+}
+
+function createStudioState(initialState) {
+  return {
+    articleId: STUDIO_ARTICLE_ID,
+    revisionId: STUDIO_REVISION_ID,
+    revisionNumber: 1,
+    version: initialState === "DRAFT" ? 1 : 4,
+    slug: "studio-fixture",
+    title: "Studio fixture article",
+    dek: "Deterministic Studio workflow fixture.",
+    content: contentDocument,
+    state: initialState,
+    scheduledAt: undefined,
+    readiness: {
+      ready: initialState !== "IN_REVIEW",
+      blockingCodes: initialState === "IN_REVIEW" ? ["RIGHTS_MISSING"] : [],
+      blockers: []
+    }
+  }
+}
+
+function resetStudioState(initialState = "DRAFT") {
+  studioState = createStudioState(initialState)
+  studioIssueState = createStudioIssueState()
+  studioIssueSections = createStudioIssueSections()
+  studioAuditEvents = []
+  studioReceipts = new Map()
+}
+
+function studioArticle() {
+  return {
+    ...studioState,
+    ...(studioState.scheduledAt ? { scheduledAt: studioState.scheduledAt } : {})
+  }
+}
+
+function appendStudioAudit(action, actorSubject, metadata = {}) {
+  studioAuditEvents.unshift({
+    id: `00000000-0000-4000-8000-${String(studioAuditEvents.length + 301).padStart(12, "0")}`,
+    occurredAt: new Date().toISOString(),
+    actorSubject,
+    action,
+    targetType: "ARTICLE",
+    targetId: STUDIO_ARTICLE_ID,
+    requestId: "e2e-studio-request",
+    metadata
+  })
+}
+
+function studioOperation(status, operationId) {
+  return { status, operationId }
+}
+
+function isStudioAuthorizationValid(request) {
+  return request.headers.authorization === `Bearer ${STUDIO_ACCESS_TOKEN}`
+}
+
+async function readJson(request) {
+  const text = await readBodyText(request)
+  if (!text) return {}
+  return JSON.parse(text)
+}
+
+async function readForm(request) {
+  return new URLSearchParams(await readBodyText(request))
+}
+
+async function readBodyText(request) {
+  const chunks = []
+  for await (const chunk of request) chunks.push(Buffer.from(chunk))
+  return Buffer.concat(chunks).toString("utf8")
+}
+
+function writeProblem(response, status, detail, code) {
+  writeJson(response, status, {
+    type: `https://courtside.tw/problems/${code.toLowerCase()}`,
+    title: code,
+    status,
+    detail,
+    instance: "/api/v1/editor/articles",
+    requestId: "e2e-studio-request",
+    code,
+    errors: []
+  })
+}
+
+function scheduledUtc(publishAt, timezone) {
+  const value = String(publishAt)
+  if (timezone === "Asia/Taipei" && !/[zZ]|[+-]\d{2}:?\d{2}$/u.test(value)) {
+    return new Date(`${value}:00+08:00`).toISOString()
+  }
+  return new Date(value).toISOString()
+}
+
+const apiServer = createServer(async (request, response) => {
   const requestUrl = new URL(request.url ?? "/", webOrigin)
 
   response.setHeader("access-control-allow-origin", webOrigin)
   response.setHeader("access-control-allow-credentials", "true")
   response.setHeader("x-request-id", "e2e-public-api")
   response.setHeader("cache-control", "public, max-age=60, must-revalidate")
+
+  if (requestUrl.pathname === "/test/studio/reset" && request.method === "POST") {
+    const requestedState = requestUrl.searchParams.get("state") ?? "DRAFT"
+    const allowedStates = new Set(["DRAFT", "APPROVED", "PUBLISHED"])
+    resetStudioState(allowedStates.has(requestedState) ? requestedState : "DRAFT")
+    writeJson(response, 204, null)
+    return
+  }
+
+  const isStudioRequest =
+    requestUrl.pathname.startsWith("/api/v1/editor/") ||
+    requestUrl.pathname.startsWith("/api/v1/publisher/")
+  if (isStudioRequest) {
+    response.setHeader("cache-control", "no-store")
+    if (!isStudioAuthorizationValid(request)) {
+      writeProblem(
+        response,
+        401,
+        "Studio fixture requires a server-side session bearer.",
+        "AUTHENTICATION_REQUIRED"
+      )
+      return
+    }
+
+    if (requestUrl.pathname === "/api/v1/editor/issues" && request.method === "GET") {
+      writeJson(response, 200, {
+        items: [{ ...studioIssueState }],
+        page: { nextCursor: null, limit: 100 }
+      })
+      return
+    }
+
+    if (requestUrl.pathname === "/api/v1/editor/issues" && request.method === "PATCH") {
+      const body = await readJson(request)
+      const expectedVersion = Number(String(request.headers["if-match"] ?? "").replaceAll('"', ""))
+      if (expectedVersion !== studioIssueState.version) {
+        writeProblem(response, 409, "The Studio issue version is stale.", "VERSION_CONFLICT")
+        return
+      }
+      studioIssueState = {
+        ...studioIssueState,
+        title: String(body.changes?.title ?? studioIssueState.title),
+        description: String(body.changes?.description ?? studioIssueState.description),
+        version: studioIssueState.version + 1
+      }
+      writeJson(response, 200, { ...studioIssueState })
+      return
+    }
+
+    const editorIssueSectionsPath = `/api/v1/editor/issues/${STUDIO_ISSUE_ID}/sections`
+    const editorIssueSectionPrefix = `${editorIssueSectionsPath}/`
+    if (requestUrl.pathname === editorIssueSectionsPath && request.method === "GET") {
+      writeJson(response, 200, studioIssueCollection())
+      return
+    }
+
+    if (requestUrl.pathname === editorIssueSectionsPath && request.method === "POST") {
+      const body = await readJson(request)
+      const expectedVersion = Number(String(request.headers["if-match"] ?? "").replaceAll('"', ""))
+      if (expectedVersion !== studioIssueState.version) {
+        writeProblem(response, 409, "The Studio issue version is stale.", "VERSION_CONFLICT")
+        return
+      }
+      const title = String(body.title ?? "").trim()
+      const requestedPosition =
+        body.position === undefined ? studioIssueSections.length + 1 : Number(body.position)
+      if (
+        !title ||
+        !Number.isInteger(requestedPosition) ||
+        requestedPosition < 1 ||
+        requestedPosition > studioIssueSections.length + 1
+      ) {
+        writeProblem(response, 400, "Section title or position is invalid.", "INVALID_REQUEST")
+        return
+      }
+      studioIssueSections = studioIssueSections
+        .map((section) => ({
+          ...section,
+          position: section.position >= requestedPosition ? section.position + 1 : section.position
+        }))
+        .concat({
+          sectionId: globalThis.crypto.randomUUID(),
+          title,
+          position: requestedPosition,
+          articleCount: 0,
+          version: 0
+        })
+        .sort((left, right) => left.position - right.position)
+      studioIssueState = { ...studioIssueState, version: studioIssueState.version + 1 }
+      writeJson(response, 201, studioIssueCollection())
+      return
+    }
+
+    if (requestUrl.pathname === editorIssueSectionsPath && request.method === "PATCH") {
+      const body = await readJson(request)
+      const expectedVersion = Number(String(request.headers["if-match"] ?? "").replaceAll('"', ""))
+      if (expectedVersion !== studioIssueState.version) {
+        writeProblem(response, 409, "The Studio issue version is stale.", "VERSION_CONFLICT")
+        return
+      }
+      const changes = Array.isArray(body.sections) ? body.sections : []
+      const byId = new Map(changes.map((change) => [change.sectionId, Number(change.position)]))
+      if (
+        changes.length !== studioIssueSections.length ||
+        new Set(changes.map((change) => change.sectionId)).size !== changes.length ||
+        new Set(changes.map((change) => Number(change.position))).size !== changes.length ||
+        changes.some((change) => !Number.isInteger(Number(change.position))) ||
+        changes.some(
+          (change) => Number(change.position) < 1 || Number(change.position) > changes.length
+        ) ||
+        changes.some(
+          (change) => !studioIssueSections.some((section) => section.sectionId === change.sectionId)
+        )
+      ) {
+        writeProblem(response, 400, "The complete section order is required.", "INVALID_REQUEST")
+        return
+      }
+      studioIssueSections = studioIssueSections
+        .map((section) => ({
+          ...section,
+          position: byId.get(section.sectionId),
+          version: section.version + 1
+        }))
+        .sort((left, right) => left.position - right.position)
+      studioIssueState = { ...studioIssueState, version: studioIssueState.version + 1 }
+      writeJson(response, 200, studioIssueCollection())
+      return
+    }
+
+    if (requestUrl.pathname.startsWith(editorIssueSectionPrefix)) {
+      const sectionId = requestUrl.pathname.slice(editorIssueSectionPrefix.length)
+      const section = studioIssueSections.find((candidate) => candidate.sectionId === sectionId)
+      if (!section) {
+        writeProblem(response, 404, "The Studio section was not found.", "RESOURCE_NOT_FOUND")
+        return
+      }
+      const expectedVersion = Number(String(request.headers["if-match"] ?? "").replaceAll('"', ""))
+      if (expectedVersion !== studioIssueState.version) {
+        writeProblem(response, 409, "The Studio issue version is stale.", "VERSION_CONFLICT")
+        return
+      }
+      if (request.method === "PATCH") {
+        const body = await readJson(request)
+        const title = String(body.title ?? "").trim()
+        if (!title) {
+          writeProblem(response, 400, "Section title is required.", "INVALID_REQUEST")
+          return
+        }
+        studioIssueSections = studioIssueSections.map((candidate) =>
+          candidate.sectionId === sectionId
+            ? { ...candidate, title, version: candidate.version + 1 }
+            : candidate
+        )
+        studioIssueState = { ...studioIssueState, version: studioIssueState.version + 1 }
+        writeJson(response, 200, studioIssueCollection())
+        return
+      }
+      if (request.method === "DELETE") {
+        if (section.articleCount > 0) {
+          writeProblem(
+            response,
+            422,
+            "Sections with articles cannot be deleted.",
+            "SECTION_NOT_EMPTY"
+          )
+          return
+        }
+        studioIssueSections = studioIssueSections
+          .filter((candidate) => candidate.sectionId !== sectionId)
+          .map((candidate, position) => ({ ...candidate, position: position + 1 }))
+        studioIssueState = { ...studioIssueState, version: studioIssueState.version + 1 }
+        writeJson(response, 200, studioIssueCollection())
+        return
+      }
+    }
+
+    if (requestUrl.pathname === "/api/v1/editor/articles" && request.method === "GET") {
+      writeJson(response, 200, { items: [studioArticle()], page: { nextCursor: null, limit: 100 } })
+      return
+    }
+    if (requestUrl.pathname === "/api/v1/editor/articles" && request.method === "PATCH") {
+      const body = await readJson(request)
+      const expectedVersion = Number(String(request.headers["if-match"] ?? "").replaceAll('"', ""))
+      if (expectedVersion !== studioState.version) {
+        writeProblem(response, 409, "The Studio article version is stale.", "VERSION_CONFLICT")
+        return
+      }
+      studioState = {
+        ...studioState,
+        title: String(body.changes?.title ?? studioState.title),
+        dek: String(body.changes?.dek ?? studioState.dek),
+        version: studioState.version + 1
+      }
+      appendStudioAudit("ARTICLE_DRAFT_PATCHED", "editor.e2e", { version: studioState.version })
+      writeJson(response, 200, studioArticle())
+      return
+    }
+
+    const editorSubmitPrefix = "/api/v1/editor/articles/"
+    if (
+      requestUrl.pathname.startsWith(editorSubmitPrefix) &&
+      requestUrl.pathname.endsWith(":submit") &&
+      request.method === "POST"
+    ) {
+      studioState = {
+        ...studioState,
+        state: "IN_REVIEW",
+        version: studioState.version + 1,
+        readiness: { ready: false, blockingCodes: ["RIGHTS_MISSING"], blockers: [] }
+      }
+      appendStudioAudit("ARTICLE_SUBMITTED", "editor.e2e", { revisionId: STUDIO_REVISION_ID })
+      writeJson(response, 202, studioOperation("IN_REVIEW", "e2e-submit-operation"))
+      return
+    }
+
+    if (requestUrl.pathname === "/api/v1/publisher/articles" && request.method === "GET") {
+      writeJson(response, 200, { items: [studioArticle()], page: { nextCursor: null, limit: 100 } })
+      return
+    }
+
+    const publisherArticlePrefix = "/api/v1/publisher/articles/"
+    if (
+      requestUrl.pathname === `${publisherArticlePrefix}${STUDIO_ARTICLE_ID}` &&
+      request.method === "GET"
+    ) {
+      writeJson(response, 200, studioArticle())
+      return
+    }
+
+    if (
+      requestUrl.pathname === `${publisherArticlePrefix}${STUDIO_ARTICLE_ID}:schedule` &&
+      request.method === "POST"
+    ) {
+      const key = String(request.headers["idempotency-key"] ?? "")
+      if (key && studioReceipts.has(key)) {
+        writeJson(response, 202, studioReceipts.get(key))
+        return
+      }
+      const body = await readJson(request)
+      studioState = {
+        ...studioState,
+        state: "SCHEDULED",
+        scheduledAt: scheduledUtc(body.publishAt, body.timezone),
+        version: studioState.version + 1
+      }
+      appendStudioAudit("ARTICLE_SCHEDULED", "publisher.e2e", {
+        timezone: body.timezone,
+        scheduledAt: studioState.scheduledAt
+      })
+      const result = studioOperation("SCHEDULED", "e2e-schedule-operation")
+      if (key) studioReceipts.set(key, result)
+      writeJson(response, 202, result)
+      return
+    }
+
+    if (
+      requestUrl.pathname === `${publisherArticlePrefix}${STUDIO_ARTICLE_ID}:withdraw` &&
+      request.method === "POST"
+    ) {
+      const body = await readJson(request)
+      studioState = { ...studioState, state: "WITHDRAWN", version: studioState.version + 1 }
+      appendStudioAudit("ARTICLE_WITHDRAWN", "publisher.e2e", { reason: body.reason })
+      writeJson(response, 202, studioOperation("WITHDRAWN", "e2e-withdraw-operation"))
+      return
+    }
+
+    if (requestUrl.pathname === "/api/v1/editor/audit" && request.method === "GET") {
+      const targetType = requestUrl.searchParams.get("targetType")
+      const targetId = requestUrl.searchParams.get("targetId")
+      const items =
+        targetType === "ARTICLE" && targetId === STUDIO_PUBLIC_TARGET
+          ? studioAuditEvents.slice(0, 50)
+          : []
+      writeJson(response, 200, { items, page: { nextCursor: null, limit: 50 } })
+      return
+    }
+
+    writeProblem(
+      response,
+      404,
+      "The requested Studio fixture resource was not found.",
+      "RESOURCE_NOT_FOUND"
+    )
+    return
+  }
 
   if (requestUrl.pathname === "/api/v1/public/issues") {
     writeJson(response, 200, {
@@ -238,35 +670,150 @@ const apiServer = createServer((request, response) => {
   })
 })
 
-apiServer.listen(API_PORT, "127.0.0.1", () => {
-  const command = process.platform === "win32" ? "pnpm.cmd" : "pnpm"
-  const webServer = spawn(
-    command,
-    ["exec", "nuxt", "dev", "--host", "127.0.0.1", "--port", String(WEB_PORT)],
-    {
-      cwd: process.cwd(),
-      env: {
-        ...process.env,
-        NUXT_PUBLIC_API_BASE_URL: "http://127.0.0.1:" + API_PORT,
-        NUXT_PUBLIC_SITE_URL: "https://courtside.test",
-        NUXT_TELEMETRY_DISABLED: "1"
-      },
-      stdio: "inherit"
-    }
-  )
+const { privateKey: oidcPrivateKey, publicKey: oidcPublicKey } = await generateKeyPair("RS256")
+const oidcJwk = await exportJWK(oidcPublicKey)
+const oidcKeyId = "courtside-e2e-key"
+const pendingAuthorizationCodes = new Map()
+const oidcServer = createServer(async (request, response) => {
+  const requestUrl = new URL(request.url ?? "/", webOrigin)
+  const oidcIssuer = `http://127.0.0.1:${oidcServer.address()?.port}/issuer`
 
-  const stop = () => {
-    webServer.kill("SIGTERM")
-    apiServer.close(() => process.exit(0))
+  if (requestUrl.pathname === "/jwks") {
+    response.setHeader("content-type", "application/json")
+    response.end(
+      JSON.stringify({ keys: [{ ...oidcJwk, kid: oidcKeyId, alg: "RS256", use: "sig" }] })
+    )
+    return
   }
-  process.once("SIGINT", stop)
-  process.once("SIGTERM", stop)
-  webServer.once("exit", (code) => {
-    apiServer.close(() => process.exit(code ?? 1))
-  })
+  if (requestUrl.pathname === "/authorize") {
+    const code = `e2e-code-${Date.now()}`
+    pendingAuthorizationCodes.set(code, {
+      nonce: requestUrl.searchParams.get("nonce"),
+      redirectUri: requestUrl.searchParams.get("redirect_uri")
+    })
+    const redirect = new URL(requestUrl.searchParams.get("redirect_uri"))
+    redirect.searchParams.set("code", code)
+    redirect.searchParams.set("state", requestUrl.searchParams.get("state") ?? "")
+    response.writeHead(302, { location: redirect.toString() })
+    response.end()
+    return
+  }
+  if (requestUrl.pathname === "/token" && request.method === "POST") {
+    const body = await readForm(request)
+    const code = pendingAuthorizationCodes.get(body.get("code"))
+    if (!code || body.get("redirect_uri") !== code.redirectUri) {
+      response.statusCode = 400
+      response.end(JSON.stringify({ error: "invalid_grant" }))
+      return
+    }
+    pendingAuthorizationCodes.delete(body.get("code"))
+    const idToken = await new SignJWT({ roles: ["EDITOR", "PUBLISHER"], nonce: code.nonce })
+      .setProtectedHeader({ alg: "RS256", kid: oidcKeyId })
+      .setIssuer(oidcIssuer)
+      .setSubject("studio-e2e-user")
+      .setAudience("courtside-web")
+      .setIssuedAt()
+      .setExpirationTime("5m")
+      .sign(oidcPrivateKey)
+    response.setHeader("content-type", "application/json")
+    response.end(
+      JSON.stringify({
+        access_token: STUDIO_ACCESS_TOKEN,
+        id_token: idToken,
+        token_type: "Bearer",
+        refresh_token: "e2e-studio-refresh-token",
+        expires_in: 300
+      })
+    )
+    return
+  }
+  if (requestUrl.pathname === "/revoke" && request.method === "POST") {
+    response.statusCode = 200
+    response.end()
+    return
+  }
+  response.statusCode = 404
+  response.end()
 })
 
+await listen(oidcServer, 0)
+await listen(apiServer, API_PORT)
+
+const command = process.platform === "win32" ? "pnpm.cmd" : "pnpm"
+const webEntry = fileURLToPath(new URL("../../.output/server/index.mjs", import.meta.url))
+const oidcPort = oidcServer.address().port
+const webEnvironment = {
+  ...process.env,
+  NODE_ENV: "test",
+  COURTSIDE_E2E: "1",
+  HOST: "127.0.0.1",
+  PORT: String(WEB_PORT),
+  NITRO_HOST: "127.0.0.1",
+  NITRO_PORT: String(WEB_PORT),
+  NUXT_PUBLIC_API_BASE_URL: "http://127.0.0.1:" + API_PORT,
+  NUXT_PUBLIC_SITE_URL: "https://courtside.test",
+  NUXT_OIDC_ISSUER: `http://127.0.0.1:${oidcPort}/issuer`,
+  NUXT_OIDC_AUTHORIZATION_ENDPOINT: `http://127.0.0.1:${oidcPort}/authorize`,
+  NUXT_OIDC_TOKEN_ENDPOINT: `http://127.0.0.1:${oidcPort}/token`,
+  NUXT_OIDC_JWKS_URI: `http://127.0.0.1:${oidcPort}/jwks`,
+  NUXT_OIDC_REVOCATION_ENDPOINT: `http://127.0.0.1:${oidcPort}/revoke`,
+  NUXT_OIDC_CLIENT_ID: "courtside-web",
+  NUXT_OIDC_CLIENT_SECRET: "e2e-client-secret",
+  NUXT_OIDC_REDIRECT_URI: `${webOrigin}/auth/callback`,
+  NUXT_OIDC_ALLOW_INSECURE_HTTP: "true",
+  NUXT_TELEMETRY_DISABLED: "1"
+}
+let webServer
+let buildProcess
+
+const closeServers = (code) => {
+  apiServer.close(() => oidcServer.close(() => process.exit(code)))
+}
+
+const launchWebServer = () => {
+  webServer = spawn(process.execPath, [webEntry], {
+    cwd: process.cwd(),
+    env: webEnvironment,
+    stdio: "inherit"
+  })
+  webServer.once("exit", (code) => closeServers(code ?? 1))
+}
+
+if (existsSync(webEntry)) {
+  launchWebServer()
+} else {
+  buildProcess = spawn(command, ["exec", "nuxt", "build"], {
+    cwd: process.cwd(),
+    env: webEnvironment,
+    stdio: "inherit"
+  })
+  buildProcess.once("exit", (code) => {
+    if (code === 0) launchWebServer()
+    else closeServers(code ?? 1)
+  })
+}
+
+const stop = () => {
+  buildProcess?.kill("SIGTERM")
+  webServer?.kill("SIGTERM")
+  closeServers(0)
+}
+process.once("SIGINT", stop)
+process.once("SIGTERM", stop)
+
+function listen(server, port) {
+  return new Promise((resolve, reject) => {
+    server.once("error", reject)
+    server.listen(port, "127.0.0.1", resolve)
+  })
+}
+
 function writeJson(response, status, body) {
+  if (status === 204) {
+    response.writeHead(status)
+    response.end()
+    return
+  }
   response.setHeader("content-type", "application/json; charset=utf-8")
   response.setHeader("etag", '"e2e-public-issue"')
   response.writeHead(status)
