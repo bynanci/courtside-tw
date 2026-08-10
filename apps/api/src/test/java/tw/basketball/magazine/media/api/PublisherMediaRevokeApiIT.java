@@ -40,7 +40,7 @@ final class PublisherMediaRevokeApiIT extends EditorialApiIntegrationTestSupport
     void publisherRevokeIsConditionalIdempotentAndLeavesImpactLink() throws Exception {
         UUID assetId = seedAssetAndPublishedImpact();
         var publisher = actor("publisher-revoke-1", RoleCode.PUBLISHER);
-        String body = """{"reason":"rights revoked by owner"}""";
+        String body = "{\"reason\":\"rights revoked by owner\"}";
 
         MvcResult first = mockMvc.perform(post("/api/v1/publisher/media/{id}:revoke", assetId)
                         .principal(publisher)
@@ -78,7 +78,7 @@ final class PublisherMediaRevokeApiIT extends EditorialApiIntegrationTestSupport
                         .contentType(MediaType.APPLICATION_JSON)
                         .header(HttpHeaders.IF_MATCH, "\"0\"")
                         .header("Idempotency-Key", "editor-revoke")
-                        .content("""{"reason":"not allowed"}"""))
+                        .content("{\"reason\":\"not allowed\"}"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"));
     }
@@ -88,7 +88,7 @@ final class PublisherMediaRevokeApiIT extends EditorialApiIntegrationTestSupport
         UUID articleId = UUID.randomUUID();
         UUID revisionId = UUID.randomUUID();
         UUID snapshotId = UUID.randomUUID();
-        String document = """{"schemaVersion":1,"documentId":"00000000-0000-7000-8000-000000000001","blocks":[{"id":"00000000-0000-4000-8000-000000000105","type":"paragraph","version":1,"payload":{"content":[{"kind":"text","text":"Revoke fixture"}]}}]}""";
+        String document = "{\"schemaVersion\":1,\"documentId\":\"00000000-0000-7000-8000-000000000001\",\"blocks\":[{\"id\":\"00000000-0000-4000-8000-000000000105\",\"type\":\"paragraph\",\"version\":1,\"payload\":{\"content\":[{\"kind\":\"text\",\"text\":\"Revoke fixture\"}]}}]}";
         jdbcTemplate.update("""
                 INSERT INTO media_asset (
                     id, private_storage_key, checksum_sha256, mime_type, byte_size,

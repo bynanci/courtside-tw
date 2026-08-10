@@ -88,7 +88,7 @@ final class EditorialMediaApiIT extends EditorialApiIntegrationTestSupport {
                 .principal(editor)
                 .contentType(MediaType.APPLICATION_JSON)
                 .header("Idempotency-Key", key)
-                .content("""{"revisionId":"%s"}""".formatted(article.revisionId()));
+                .content("{\"revisionId\":\"%s\"}".formatted(article.revisionId()));
         return mockMvc.perform(request);
     }
 }

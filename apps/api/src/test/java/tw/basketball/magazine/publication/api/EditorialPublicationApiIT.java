@@ -80,7 +80,7 @@ final class EditorialPublicationApiIT extends EditorialApiIntegrationTestSupport
                         .principal(publisher)
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Idempotency-Key", "submit-by-publisher")
-                        .content("""{"revisionId":"%s"}""".formatted(article.revisionId())))
+                        .content("{\"revisionId\":\"%s\"}".formatted(article.revisionId())))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"));
 
@@ -133,7 +133,7 @@ final class EditorialPublicationApiIT extends EditorialApiIntegrationTestSupport
     void sameScopedRetryReplaysOneResultAndChangedPayloadConflicts() throws Exception {
         var editor = actor("editor-3", RoleCode.EDITOR);
         CreatedArticle article = createArticle(editor, "create-idempotency");
-        String body = """{"revisionId":"%s"}""".formatted(article.revisionId());
+        String body = "{\"revisionId\":\"%s\"}".formatted(article.revisionId());
 
         MvcResult first = mockMvc.perform(post("/api/v1/editor/articles/{id}:submit", article.articleId())
                         .principal(editor)
@@ -164,7 +164,7 @@ final class EditorialPublicationApiIT extends EditorialApiIntegrationTestSupport
                         .principal(editor)
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Idempotency-Key", "submit-retry")
-                        .content("""{"revisionId":"00000000-0000-7000-8000-000000000099"}"""))
+                        .content("{\"revisionId\":\"00000000-0000-7000-8000-000000000099\"}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("VERSION_CONFLICT"));
     }
@@ -249,7 +249,7 @@ final class EditorialPublicationApiIT extends EditorialApiIntegrationTestSupport
                         .principal(editor)
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Idempotency-Key", "submit-invalid-content")
-                        .content("""{"revisionId":"%s"}""".formatted(article.revisionId())))
+                        .content("{\"revisionId\":\"%s\"}".formatted(article.revisionId())))
                 .andExpect(status().isUnprocessableEntity())
                 .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
                 .andExpect(jsonPath("$.code").value("RIGHTS_OR_CONTENT_GATE"))
@@ -275,7 +275,7 @@ final class EditorialPublicationApiIT extends EditorialApiIntegrationTestSupport
                         .contentType(MediaType.APPLICATION_JSON)
                         .header(HttpHeaders.IF_MATCH, "\"4\"")
                         .header("Idempotency-Key", "withdraw-archive")
-                        .content("""{"reason":"rights revoked"}"""))
+                        .content("{\"reason\":\"rights revoked\"}"))
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.status").value("WITHDRAWN"))
                 .andExpect(jsonPath("$.version").value(5));
@@ -330,7 +330,7 @@ final class EditorialPublicationApiIT extends EditorialApiIntegrationTestSupport
                         .principal(editor)
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Idempotency-Key", key)
-                        .content("""{"revisionId":"%s"}""".formatted(article.revisionId())))
+                        .content("{\"revisionId\":\"%s\"}".formatted(article.revisionId())))
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.version").value(2));
     }

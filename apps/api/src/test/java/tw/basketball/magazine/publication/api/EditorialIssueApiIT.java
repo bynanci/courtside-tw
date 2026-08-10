@@ -116,7 +116,7 @@ final class EditorialIssueApiIT extends EditorialApiIntegrationTestSupport {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header(HttpHeaders.IF_MATCH, "\"1\"")
                         .header("Idempotency-Key", "section-create-1")
-                        .content("""{"title":"場邊現場"}"""))
+                        .content("{\"title\":\"場邊現場\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.issueId").value(issueId.toString()))
                 .andExpect(jsonPath("$.issueVersion").value(2))
@@ -131,7 +131,7 @@ final class EditorialIssueApiIT extends EditorialApiIntegrationTestSupport {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header(HttpHeaders.IF_MATCH, "\"2\"")
                         .header("Idempotency-Key", "section-create-2")
-                        .content("""{"title":"人物與方法"}"""))
+                        .content("{\"title\":\"人物與方法\"}"))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.issueVersion").value(3))
                 .andExpect(jsonPath("$.sections.length()").value(2))
@@ -184,7 +184,7 @@ final class EditorialIssueApiIT extends EditorialApiIntegrationTestSupport {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header(HttpHeaders.IF_MATCH, "\"4\"")
                         .header("Idempotency-Key", "section-rename-1")
-                        .content("""{"title":"人物與方法｜修訂"}"""))
+                        .content("{\"title\":\"人物與方法｜修訂\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.issueVersion").value(5))
                 .andExpect(jsonPath("$.sections[0].title").value("人物與方法｜修訂"));
@@ -230,7 +230,7 @@ final class EditorialIssueApiIT extends EditorialApiIntegrationTestSupport {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header(HttpHeaders.IF_MATCH, "\"1\"")
                         .header("Idempotency-Key", "section-stale-section")
-                        .content("""{"title":"唯一章節"}"""))
+                        .content("{\"title\":\"唯一章節\"}"))
                 .andExpect(status().isCreated());
 
         String sectionId = jdbcTemplate.queryForObject(
@@ -240,7 +240,7 @@ final class EditorialIssueApiIT extends EditorialApiIntegrationTestSupport {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header(HttpHeaders.IF_MATCH, "\"1\"")
                         .header("Idempotency-Key", "section-stale-reorder")
-                        .content("""{"sections":[{"sectionId":"%s","position":1}]}"""
+                        .content("{\"sections\":[{\"sectionId\":\"%s\",\"position\":1}]}"
                                 .formatted(sectionId)))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("VERSION_CONFLICT"));

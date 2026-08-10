@@ -64,7 +64,7 @@ final class PublicationJobHandlerIT extends EditorialApiIntegrationTestSupport {
                         .principal(editor)
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Idempotency-Key", "worker-submit")
-                        .content("""{"revisionId":"%s"}""".formatted(article.revisionId())))
+                        .content("{\"revisionId\":\"%s\"}".formatted(article.revisionId())))
                 .andExpect(status().isAccepted());
         mockMvc.perform(post("/api/v1/publisher/articles/{id}:approve", article.id())
                         .principal(publisher)
@@ -76,7 +76,7 @@ final class PublicationJobHandlerIT extends EditorialApiIntegrationTestSupport {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header(HttpHeaders.IF_MATCH, "\"3\"")
                         .header("Idempotency-Key", "worker-schedule")
-                        .content("""{"publishAt":"2026-08-11T09:00:00","timezone":"Asia/Taipei"}"""))
+                        .content("{\"publishAt\":\"2026-08-11T09:00:00\",\"timezone\":\"Asia/Taipei\"}"))
                 .andExpect(status().isAccepted());
 
         assertEquals(0, jdbcTemplate.queryForObject(
@@ -150,7 +150,7 @@ final class PublicationJobHandlerIT extends EditorialApiIntegrationTestSupport {
                         .principal(editor)
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Idempotency-Key", "worker-rights-submit")
-                        .content("""{"revisionId":"%s"}""".formatted(article.revisionId())))
+                        .content("{\"revisionId\":\"%s\"}".formatted(article.revisionId())))
                 .andExpect(status().isAccepted());
         mockMvc.perform(post("/api/v1/publisher/articles/{id}:approve", article.id())
                         .principal(publisher)
@@ -162,7 +162,7 @@ final class PublicationJobHandlerIT extends EditorialApiIntegrationTestSupport {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header(HttpHeaders.IF_MATCH, "\"3\"")
                         .header("Idempotency-Key", "worker-rights-schedule")
-                        .content("""{"publishAt":"2026-08-11T09:00:00","timezone":"Asia/Taipei"}"""))
+                        .content("{\"publishAt\":\"2026-08-11T09:00:00\",\"timezone\":\"Asia/Taipei\"}"))
                 .andExpect(status().isAccepted());
 
         jdbcTemplate.update("UPDATE rights_record SET status = 'REVOKED' WHERE asset_id IN (SELECT asset_id FROM article_revision_media WHERE article_revision_id = ?)", article.revisionId());
