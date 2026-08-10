@@ -1,4 +1,6 @@
 <script setup lang="ts">
+import { ref, watch } from "vue"
+
 type StudioRole = "EDITOR" | "PUBLISHER"
 
 const route = useRoute()
@@ -41,7 +43,10 @@ function handleMediaChange(event: Event): void {
   if (!(target instanceof HTMLInputElement) || !target.files?.length) {
     return
   }
-  const file = target.files[0]
+  const file = target.files.item(0)
+  if (!file) {
+    return
+  }
   mediaState.value = `已驗證：${file.name}（${file.type || "未知 MIME"}）`
 }
 
