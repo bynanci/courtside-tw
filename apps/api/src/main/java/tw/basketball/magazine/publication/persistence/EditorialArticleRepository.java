@@ -21,7 +21,8 @@ public interface EditorialArticleRepository {
     boolean updateDraft(
             UUID articleId,
             UUID revisionId,
-            long expectedVersion,
+            long expectedArticleVersion,
+            long expectedRevisionVersion,
             String title,
             String slug,
             String dek,

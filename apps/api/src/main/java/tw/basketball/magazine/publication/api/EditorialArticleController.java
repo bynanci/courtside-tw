@@ -38,6 +38,7 @@ import tw.basketball.magazine.shared.Version;
 @ConditionalOnBean(EditorialWorkflowService.class)
 public final class EditorialArticleController {
     private static final String REQUEST_ID_HEADER = "X-Request-Id";
+    private static final String REQUEST_ID_ATTRIBUTE = EditorialArticleController.class.getName() + ".requestId";
     private static final String IDEMPOTENCY_HEADER = "Idempotency-Key";
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
@@ -83,6 +84,18 @@ public final class EditorialArticleController {
     ) {
         return response(
                 service.listEditorArticles(actor(authentication, request), limit),
+                requestId(request)
+        );
+    }
+
+    @GetMapping(path = "/api/v1/editor/articles/{articleId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<JsonNode> getEditorArticle(
+            @PathVariable String articleId,
+            Authentication authentication,
+            HttpServletRequest request
+    ) {
+        return response(
+                service.getEditorArticle(actor(authentication, request), uuid(articleId)),
                 requestId(request)
         );
     }
@@ -343,14 +356,22 @@ public final class EditorialArticleController {
     }
 
     private static RequestId requestId(HttpServletRequest request) {
+        Object stored = request.getAttribute(REQUEST_ID_ATTRIBUTE);
+        if (stored instanceof RequestId requestId) {
+            return requestId;
+        }
         String candidate = request.getHeader(REQUEST_ID_HEADER);
         if (candidate != null) {
             try {
-                return RequestId.of(candidate);
+                RequestId requestId = RequestId.of(candidate);
+                request.setAttribute(REQUEST_ID_ATTRIBUTE, requestId);
+                return requestId;
             } catch (IllegalArgumentException ignored) {
                 // Invalid caller input is not echoed.
             }
         }
-        return RequestId.of("req-" + UUID.randomUUID());
+        RequestId generated = RequestId.of("req-" + UUID.randomUUID());
+        request.setAttribute(REQUEST_ID_ATTRIBUTE, generated);
+        return generated;
     }
 }

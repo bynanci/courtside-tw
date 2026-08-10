@@ -29,8 +29,12 @@ onMounted(async () => {
       error.value = "目前的 OIDC session 沒有 EDITOR role。"
       return
     }
-    const page = await listEditorIssues()
-    issue.value = page.items.find((item) => item.issueId === issueId) ?? null
+    let cursor: string | undefined
+    do {
+      const page = await listEditorIssues(100, cursor)
+      issue.value = page.items.find((item) => item.issueId === issueId) ?? null
+      cursor = issue.value ? undefined : (page.page.nextCursor ?? undefined)
+    } while (!issue.value && cursor)
     if (!issue.value) {
       error.value = "伺服器找不到這個 issue draft。"
     }

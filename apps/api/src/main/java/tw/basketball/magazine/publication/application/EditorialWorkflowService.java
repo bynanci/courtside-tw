@@ -192,6 +192,7 @@ public final class EditorialWorkflowService {
                             articleId,
                             current.revisionId(),
                             expectedVersion.value(),
+                            current.revisionVersion(),
                             title,
                             slug,
                             dek,
@@ -219,6 +220,12 @@ public final class EditorialWorkflowService {
     public OperationResult listEditorArticles(ActorContext actor, int limit) {
         requireRole(actor, RoleCode.EDITOR);
         return listArticles(limit);
+    }
+
+    public OperationResult getEditorArticle(ActorContext actor, UUID articleId) {
+        requireRole(actor, RoleCode.EDITOR);
+        EditorialArticleRepository.ArticleRecord article = requireArticle(articleId);
+        return new OperationResult(200, json(articleJson(article)), article.version());
     }
 
     public OperationResult listPublisherArticles(ActorContext actor, int limit) {

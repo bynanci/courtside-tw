@@ -3,12 +3,7 @@ import { computed, ref } from "vue"
 
 import StudioShell from "../StudioShell.vue"
 import { canStudioAction, missingRoleMessage } from "../studio-rbac"
-import {
-  listEditorArticles,
-  patchEditorArticle,
-  submitArticle,
-  StudioApiError
-} from "../studio-api"
+import { getEditorArticle, patchEditorArticle, submitArticle, StudioApiError } from "../studio-api"
 import type { StudioArticleDraft, StudioRole } from "../studio-contract"
 import { articleStateLabel, readinessLabel, roleLabel } from "../studio-contract"
 import {
@@ -33,6 +28,9 @@ const contentError = ref<string | null>(null)
 const apiError = ref<string | null>(null)
 const generativePrompt = ref("")
 const busy = ref(false)
+const savedFingerprint = ref(
+  editorFingerprint(props.draft.title, props.draft.dek ?? "", contentJson.value)
+)
 
 const boundedPrompt = computed(() => boundedGenerativePrompt(generativePrompt.value))
 const canEdit = computed(
@@ -41,12 +39,16 @@ const canEdit = computed(
 const canSubmit = computed(
   () => canStudioAction(props.role, "submit") && current.value.state === "DRAFT"
 )
+const isDirty = computed(
+  () => editorFingerprint(title.value, dek.value, contentJson.value) !== savedFingerprint.value
+)
 
 function applyArticle(article: StudioArticleDraft): void {
   current.value = article
   title.value = article.title
   dek.value = article.dek ?? ""
   contentJson.value = safeSerialize(article.content)
+  savedFingerprint.value = editorFingerprint(title.value, dek.value, contentJson.value)
 }
 
 async function saveDraft(): Promise<void> {
@@ -79,6 +81,11 @@ async function saveDraft(): Promise<void> {
 
 async function submitForReview(): Promise<void> {
   if (!canSubmit.value || busy.value) return
+  if (isDirty.value) {
+    apiError.value = "尚有未儲存的編輯；請先按 Save，再送出審核。"
+    saveMessage.value = "送審已暫停：請先儲存目前草稿。"
+    return
+  }
   apiError.value = null
   busy.value = true
   try {
@@ -93,10 +100,7 @@ async function submitForReview(): Promise<void> {
 }
 
 async function refreshFromApi(): Promise<void> {
-  const page = await listEditorArticles()
-  const article = page.items.find((item) => item.articleId === current.value.articleId)
-  if (!article) throw new Error("伺服器找不到這篇文章")
-  applyArticle(article)
+  applyArticle(await getEditorArticle(current.value.articleId))
 }
 
 function retrySave(): void {
@@ -150,6 +154,10 @@ function safeSerialize(value: unknown): string {
   } catch {
     return JSON.stringify(value ?? {}, null, 2)
   }
+}
+
+function editorFingerprint(titleValue: string, dekValue: string, contentValue: string): string {
+  return `${titleValue}\u0000${dekValue}\u0000${contentValue}`
 }
 </script>
 
@@ -241,7 +249,8 @@ function safeSerialize(value: unknown): string {
           <button
             class="studio-button studio-button--quiet"
             type="button"
-            :disabled="!canSubmit || busy"
+            :disabled="!canSubmit || busy || isDirty"
+            :title="isDirty ? '請先儲存目前編輯' : undefined"
             @click="submitForReview"
           >
             送出審核 Submit

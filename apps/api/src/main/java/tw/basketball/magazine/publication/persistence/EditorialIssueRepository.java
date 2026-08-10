@@ -1,10 +1,12 @@
 package tw.basketball.magazine.publication.persistence;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import tw.basketball.magazine.publication.domain.PublicationState;
+import tools.jackson.databind.JsonNode;
 
 /** Persistence boundary for issue draft CRUD and explicit optimistic locks. */
 public interface EditorialIssueRepository {
@@ -14,7 +16,16 @@ public interface EditorialIssueRepository {
 
     Optional<IssueRecord> findForUpdate(UUID issueId);
 
-    List<IssueRecord> list(int limit);
+    default IssuePage list(String cursor, int limit) {
+        if (cursor != null) {
+            throw new IllegalArgumentException("cursor pagination is not supported by this adapter");
+        }
+        return new IssuePage(list(limit), null, limit);
+    }
+
+    default List<IssueRecord> list(int limit) {
+        return list(null, limit).items();
+    }
 
     List<SectionRecord> listSections(UUID issueId);
 
@@ -41,6 +52,58 @@ public interface EditorialIssueRepository {
             UUID coverAssetId
     );
 
+    boolean transition(
+            UUID issueId,
+            long expectedVersion,
+            PublicationState currentState,
+            PublicationState nextState,
+            Instant publishedAt
+    );
+
+    boolean readyForPublication(UUID issueId, Instant checkedAt);
+
+    void appendReview(
+            UUID issueId,
+            String reviewerSubject,
+            String reviewerRole,
+            String decision,
+            String reason
+    );
+
+    String publicationSnapshotDocument(UUID issueId);
+
+    long nextSnapshotVersion(UUID issueId);
+
+    void appendPublicationSnapshot(
+            UUID issueId,
+            long snapshotVersion,
+            JsonNode content,
+            String checksumSha256,
+            String createdBy,
+            UUID coverAssetId
+    );
+
+    boolean hasPublicationSnapshot(UUID issueId);
+
+    void insertPublicationJob(
+            UUID issueId,
+            String operation,
+            String idempotencyKey,
+            String requestedBy,
+            Instant scheduledAt,
+            String timezone
+    );
+
+    Optional<PublicationJobRecord> findPublicationJob(
+            String requestedBy,
+            String operation,
+            String idempotencyKey
+    );
+
+    void markPublicationJobSucceeded(UUID jobId, Instant processedAt);
+
+    void markPublicationJobBlocked(UUID jobId, String reason, Instant processedAt);
+
     Optional<EditorialArticleRepository.IdempotencyRecord> findIdempotency(
             String actorSubject,
             String operation,
@@ -65,8 +128,27 @@ public interface EditorialIssueRepository {
             String summary,
             UUID coverAssetId,
             PublicationState state,
-            long version
+            long version,
+            Instant updatedAt
     ) {
+        public IssueRecord(
+                UUID issueId,
+                int issueNumber,
+                String slug,
+                String title,
+                String summary,
+                UUID coverAssetId,
+                PublicationState state,
+                long version
+        ) {
+            this(issueId, issueNumber, slug, title, summary, coverAssetId, state, version, Instant.EPOCH);
+        }
+    }
+
+    record IssuePage(List<IssueRecord> items, String nextCursor, int limit) {
+        public IssuePage {
+            items = List.copyOf(items);
+        }
     }
 
     record SectionRecord(
@@ -79,5 +161,17 @@ public interface EditorialIssueRepository {
     }
 
     record SectionPosition(UUID sectionId, int position) {
+    }
+
+    record PublicationJobRecord(
+            UUID jobId,
+            UUID issueId,
+            String operation,
+            String idempotencyKey,
+            String requestedBy,
+            Instant scheduledAt,
+            String status,
+            JsonNode payload
+    ) {
     }
 }

@@ -225,6 +225,79 @@ final class EditorialPublicationApiIT extends EditorialApiIntegrationTestSupport
         );
         assertEquals(2, jdbcTemplate.queryForObject(
                 "SELECT count(*) FROM article_revision WHERE article_id = ?", Integer.class, article.articleId()));
+
+        mockMvc.perform(patch("/api/v1/editor/articles")
+                        .principal(editor)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.IF_MATCH, "\"2\"")
+                        .header("Idempotency-Key", "revision-follow-up-patch")
+                        .content("""
+                                {"articleId":"%s","changes":{"title":"Correction patched"}}
+                                """.formatted(article.articleId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.version").value(3))
+                .andExpect(jsonPath("$.revisionNumber").value(2))
+                .andExpect(jsonPath("$.title").value("Correction patched"));
+
+        assertEquals(2, jdbcTemplate.queryForObject(
+                "SELECT version FROM article_revision WHERE article_id = ? AND revision_number = 2",
+                Integer.class,
+                article.articleId()));
+    }
+
+    @Test
+    void generatedRequestIdIsSharedByAuditAndResponse() throws Exception {
+        Authentication editor = actor("editor-request-id", RoleCode.EDITOR);
+        MvcResult created = mockMvc.perform(post("/api/v1/editor/articles")
+                        .principal(editor)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Idempotency-Key", "request-id-create")
+                        .content(CREATE_BODY.replace("opening-night", "request-id-article")))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String requestId = created.getResponse().getHeader("X-Request-Id");
+        String articleId = JSON.readTree(created.getResponse().getContentAsString())
+                .path("articleId").asString();
+        assertEquals(requestId, jdbcTemplate.queryForObject(
+                "SELECT request_id FROM audit_event WHERE target_type = 'ARTICLE' AND target_id = ?",
+                String.class,
+                java.util.UUID.fromString(articleId)));
+    }
+
+    @Test
+    void contentMediaReferencesAreLinkedBeforeReadinessIsEvaluated() throws Exception {
+        Authentication editor = actor("editor-content-media", RoleCode.EDITOR);
+        java.util.UUID assetId = java.util.UUID.randomUUID();
+        jdbcTemplate.update("""
+                INSERT INTO media_asset (
+                    id, private_storage_key, checksum_sha256, mime_type, byte_size,
+                    width, height, alt_text, processing_state
+                ) VALUES (?, ?, ?, 'image/jpeg', 1024, 10, 10, 'fixture alt', 'PROCESSING')
+                """, assetId, "private/content-media/" + assetId, "a".repeat(64));
+        String body = """
+                {
+                  "title":"Media linked",
+                  "slug":"media-linked",
+                  "content":{"schemaVersion":1,"documentId":"00000000-0000-7000-8000-000000000003","blocks":[
+                    {"id":"00000000-0000-4000-8000-000000000103","type":"image","version":1,"payload":{"assetId":"%s","altText":"fixture"}}
+                  ]}
+                }
+                """.formatted(assetId);
+
+        CreatedArticle article = readCreatedArticle(mockMvc.perform(post("/api/v1/editor/articles")
+                        .principal(editor)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Idempotency-Key", "content-media-create")
+                        .content(body))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString());
+
+        assertEquals(1, jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM article_revision_media WHERE article_revision_id = ? AND asset_id = ?",
+                Integer.class,
+                article.revisionId(),
+                assetId));
     }
 
     @Test

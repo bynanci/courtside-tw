@@ -2,10 +2,12 @@ package tw.basketball.magazine.media.application;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.security.MessageDigest;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
@@ -26,6 +28,7 @@ import tw.basketball.magazine.media.storage.PrivateObjectReader;
 import tw.basketball.magazine.media.storage.StorageUploadPolicy;
 import tw.basketball.magazine.media.storage.StorageVisibility;
 import tw.basketball.magazine.outbox.OutboxEvent;
+import tw.basketball.magazine.outbox.OutboxHandlerException;
 import tw.basketball.magazine.outbox.OutboxStatus;
 
 final class EditorialMediaOutboxHandlerTest {
@@ -38,7 +41,9 @@ final class EditorialMediaOutboxHandlerTest {
         PrivateObjectReader reader = key -> {
             throw new AssertionError("ready duplicate must not read the private original");
         };
-        new EditorialMediaOutboxHandler(repository, reader, processor(), JSON).handle(event(payload()));
+        new EditorialMediaOutboxHandler(repository, reader, processor(), (key, mime, bytes) -> {
+            throw new AssertionError("ready duplicate must not write variants");
+        }, JSON).handle(event(payload()));
         assertFalse(repository.recorded);
     }
 
@@ -52,6 +57,9 @@ final class EditorialMediaOutboxHandlerTest {
                 repository,
                 reader,
                 processor(),
+                (key, mime, variantBytes) -> {
+                    throw new AssertionError("failed processing must not write variants");
+                },
                 JSON
         ).handle(event(payload(checksum, bytes.length)));
         assertTrue(repository.recorded);
@@ -61,10 +69,54 @@ final class EditorialMediaOutboxHandlerTest {
         );
     }
 
+    @Test
+    void readyProcessingWritesEveryPublicVariantBeforeRecordingCompletion() throws Exception {
+        byte[] bytes = new byte[]{
+                (byte) 0xFF, (byte) 0xD8, (byte) 0xFF,
+                (byte) 0xDA, 0x00, 0x02, (byte) 0xFF, (byte) 0xD9
+        };
+        CapturingRepository repository = new CapturingRepository(asset(MediaProcessingState.PROCESSING, 1));
+        List<String> keys = new ArrayList<>();
+        new EditorialMediaOutboxHandler(
+                repository,
+                key -> bytes,
+                processor(),
+                (key, mime, variantBytes) -> keys.add(key + "|" + variantBytes.length),
+                JSON
+        ).handle(event(payload(sha256(bytes), bytes.length)));
+
+        assertTrue(repository.recorded);
+        assertEquals(5, keys.size());
+        assertTrue(keys.stream().allMatch(key -> key.startsWith("media/variants/")));
+    }
+
+    @Test
+    void publicVariantWriteFailureIsRetryableAndDoesNotRecordReady() throws Exception {
+        byte[] bytes = new byte[]{
+                (byte) 0xFF, (byte) 0xD8, (byte) 0xFF,
+                (byte) 0xDA, 0x00, 0x02, (byte) 0xFF, (byte) 0xD9
+        };
+        CapturingRepository repository = new CapturingRepository(asset(MediaProcessingState.PROCESSING, 1));
+        OutboxHandlerException exception = assertThrows(
+                OutboxHandlerException.class,
+                () -> new EditorialMediaOutboxHandler(
+                        repository,
+                        key -> bytes,
+                        processor(),
+                        (key, mime, variantBytes) -> { throw new IllegalStateException("storage down"); },
+                        JSON
+                ).handle(event(payload(sha256(bytes), bytes.length)))
+        );
+
+        assertTrue(exception.retryable());
+        assertFalse(repository.recorded);
+    }
+
     private static MediaProcessingService processor() {
         MediaVariantEncoder encoder = (media, spec) -> new tw.basketball.magazine.media.processing.MediaVariant(
                 spec.name(), spec.outputMimeType(), spec.maxWidth(), spec.maxHeight(),
-                Math.max(1, media.bytes().length), StorageVisibility.PUBLIC_VARIANT
+                Math.max(1, media.bytes().length), StorageVisibility.PUBLIC_VARIANT,
+                media.bytes()
         );
         return new MediaProcessingService(
                 new MediaCompletionValidator(StorageUploadPolicy.standard()),
