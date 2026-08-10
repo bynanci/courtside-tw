@@ -82,7 +82,7 @@ final class PublicIssueApiIntegrationTest extends PublicIssueApiIntegrationTestS
         String etag = firstPage.getResponse().getHeader(HttpHeaders.ETAG);
         assertNotNull(etag);
         JsonNode firstPayload = OBJECT_MAPPER.readTree(firstPage.getResponse().getContentAsString());
-        String nextCursor = firstPayload.at("/page/nextCursor").asText();
+        String nextCursor = firstPayload.at("/page/nextCursor").asString();
         assertFalse(nextCursor.isBlank());
         assertFalse(firstPage.getResponse().getContentAsString().contains("private"));
 
