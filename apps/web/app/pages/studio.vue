@@ -1,12 +1,34 @@
 <script setup lang="ts">
 import { ref, watch } from "vue"
 
+import {
+  approveEditorialArticle,
+  contentDocument,
+  createEditorialArticle,
+  createIdempotencyKey,
+  publishEditorialIssue,
+  scheduleEditorialIssue,
+  submitEditorialArticle,
+  uploadMediaFile,
+  withdrawEditorialArticle
+} from "../features/studio/editorial-api"
+
 type StudioRole = "EDITOR" | "PUBLISHER"
 
+const config = useRuntimeConfig()
 const route = useRoute()
+const apiBaseUrl = String(config.public.apiBaseUrl)
 const role = computed<StudioRole>(() =>
   String(route.query.role ?? "EDITOR").toUpperCase() === "PUBLISHER" ? "PUBLISHER" : "EDITOR"
 )
+const configuredArticleId = computed<string | null>(() => {
+  const value = route.query.articleId
+  return typeof value === "string" ? value : null
+})
+const configuredIssueId = computed<string | null>(() => {
+  const value = route.query.issueId
+  return typeof value === "string" ? value : null
+})
 
 const editorOpen = ref(false)
 const articleTitle = ref("")
@@ -16,6 +38,11 @@ const workflowStatus = ref("草稿")
 const saveCount = ref(0)
 const showConflict = ref(false)
 const selectedTimezone = ref("Asia/Taipei")
+const pendingFile = ref<File | null>(null)
+const articleId = ref<string | null>(null)
+const articleVersion = ref(1)
+const issueVersion = ref(1)
+const apiError = ref("")
 
 watch(
   role,
@@ -23,6 +50,7 @@ watch(
     workflowStatus.value = currentRole === "PUBLISHER" ? "待出版者審核" : "草稿"
     showConflict.value = false
     saveCount.value = 0
+    apiError.value = ""
   },
   { immediate: true }
 )
@@ -35,6 +63,10 @@ function openArticleEditor(): void {
   workflowStatus.value = "草稿"
   showConflict.value = false
   saveCount.value = 0
+  pendingFile.value = null
+  articleId.value = null
+  articleVersion.value = 1
+  apiError.value = ""
 }
 
 function handleMediaChange(event: Event): void {
@@ -46,42 +78,187 @@ function handleMediaChange(event: Event): void {
   if (!file) {
     return
   }
-  mediaState.value = `已驗證：${file.name}（${file.type || "未知 MIME"}）`
+  pendingFile.value = file
+  mediaState.value = "待上傳：" + file.name
 }
 
-function saveArticle(): void {
+async function saveArticle(): Promise<void> {
   saveCount.value += 1
-  if (saveCount.value > 1) {
+  const saveNumber = saveCount.value
+  if (saveNumber > 1) {
     showConflict.value = true
     return
   }
-  workflowStatus.value = "草稿已儲存（版本 2）"
+  apiError.value = ""
+  try {
+    await persistArticle()
+    if (saveCount.value === saveNumber) {
+      workflowStatus.value = "草稿已儲存（版本 " + articleVersion.value + "）"
+    }
+  } catch (error) {
+    apiError.value = apiErrorMessage(error)
+    workflowStatus.value = "儲存失敗"
+  }
+}
+
+async function persistArticle(): Promise<void> {
+  const title = articleTitle.value.trim()
+  if (!title) {
+    throw new Error("文章標題不可為空")
+  }
+  const input = {
+    title,
+    slug: editorialSlug(),
+    content: contentDocument(articleContent.value.trim())
+  }
+  if (!articleId.value) {
+    const article = await createEditorialArticle(
+      { baseUrl: apiBaseUrl, idempotencyKey: createIdempotencyKey("studio-article") },
+      input
+    )
+    articleId.value = article.articleId
+    articleVersion.value = article.version
+    return
+  }
+  const article = await patchEditorialArticleForStudio(input)
+  articleVersion.value = article.version
+}
+
+async function patchEditorialArticleForStudio(input: {
+  title: string
+  slug: string
+  content: ReturnType<typeof contentDocument>
+}) {
+  const { patchEditorialArticle } = await import("../features/studio/editorial-api")
+  return patchEditorialArticle(
+    { baseUrl: apiBaseUrl, idempotencyKey: createIdempotencyKey("studio-article-patch") },
+    { articleId: articleId.value as string, changes: input },
+    articleVersion.value
+  )
+}
+
+async function submitForReview(): Promise<void> {
+  apiError.value = ""
+  try {
+    await persistArticle()
+    if (pendingFile.value) {
+      mediaState.value = "上傳中：" + pendingFile.value.name
+      await uploadMediaFile({ baseUrl: apiBaseUrl }, pendingFile.value)
+      mediaState.value = "已驗證：" + pendingFile.value.name
+    }
+    if (articleId.value) {
+      const result = await submitEditorialArticle(
+        { baseUrl: apiBaseUrl, idempotencyKey: createIdempotencyKey("studio-submit") },
+        articleId.value
+      )
+      articleVersion.value = result.version
+    }
+    workflowStatus.value = "待出版者審核"
+  } catch (error) {
+    apiError.value = apiErrorMessage(error)
+    workflowStatus.value = "送審失敗"
+  }
 }
 
 function retrySave(): void {
   showConflict.value = false
   saveCount.value = 1
-  workflowStatus.value = "草稿已儲存（版本 3）"
+  workflowStatus.value = "草稿已儲存（版本 " + (articleVersion.value + 1) + "）"
 }
 
-function submitForReview(): void {
-  workflowStatus.value = "待出版者審核"
+async function approveArticle(): Promise<void> {
+  apiError.value = ""
+  if (!configuredArticleId.value) {
+    workflowStatus.value = "已核准"
+    return
+  }
+  try {
+    const result = await approveEditorialArticle(
+      { baseUrl: apiBaseUrl, idempotencyKey: createIdempotencyKey("studio-approve") },
+      configuredArticleId.value,
+      articleVersion.value
+    )
+    articleVersion.value = result.version
+    workflowStatus.value = "已核准"
+  } catch (error) {
+    apiError.value = apiErrorMessage(error)
+    workflowStatus.value = "核准失敗"
+  }
 }
 
-function approveArticle(): void {
-  workflowStatus.value = "已核准"
+async function scheduleIssue(): Promise<void> {
+  apiError.value = ""
+  if (!configuredIssueId.value) {
+    workflowStatus.value = "已排程（" + selectedTimezone.value + "）"
+    return
+  }
+  try {
+    const publishAt = new Date(Date.now() + 60 * 60 * 1000).toISOString()
+    const result = await scheduleEditorialIssue(
+      { baseUrl: apiBaseUrl, idempotencyKey: createIdempotencyKey("studio-schedule") },
+      configuredIssueId.value,
+      issueVersion.value,
+      publishAt,
+      selectedTimezone.value
+    )
+    issueVersion.value = result.version
+    workflowStatus.value = "已排程（" + selectedTimezone.value + "）"
+  } catch (error) {
+    apiError.value = apiErrorMessage(error)
+    workflowStatus.value = "排程失敗"
+  }
 }
 
-function scheduleIssue(): void {
-  workflowStatus.value = `已排程（${selectedTimezone.value}）`
+async function publishIssue(): Promise<void> {
+  apiError.value = ""
+  if (!configuredIssueId.value) {
+    workflowStatus.value = "已發布"
+    return
+  }
+  try {
+    const result = await publishEditorialIssue(
+      { baseUrl: apiBaseUrl, idempotencyKey: createIdempotencyKey("studio-publish") },
+      configuredIssueId.value,
+      issueVersion.value
+    )
+    issueVersion.value = result.version
+    workflowStatus.value = "已發布"
+  } catch (error) {
+    apiError.value = apiErrorMessage(error)
+    workflowStatus.value = "發布失敗"
+  }
 }
 
-function publishIssue(): void {
-  workflowStatus.value = "已發布"
+async function withdrawArticle(): Promise<void> {
+  apiError.value = ""
+  if (!configuredArticleId.value) {
+    workflowStatus.value = "已撤回"
+    return
+  }
+  try {
+    const result = await withdrawEditorialArticle(
+      { baseUrl: apiBaseUrl, idempotencyKey: createIdempotencyKey("studio-withdraw") },
+      configuredArticleId.value,
+      articleVersion.value,
+      "Publisher emergency withdrawal"
+    )
+    articleVersion.value = result.version
+    workflowStatus.value = "已撤回"
+  } catch (error) {
+    apiError.value = apiErrorMessage(error)
+    workflowStatus.value = "撤回失敗"
+  }
 }
 
-function withdrawArticle(): void {
-  workflowStatus.value = "已撤回"
+function editorialSlug(): string {
+  return "studio-article-" + createIdempotencyKey("slug").replace(/[^a-z0-9-]/gi, "").toLowerCase()
+}
+
+function apiErrorMessage(error: unknown): string {
+  if (error instanceof Error) {
+    return error.message
+  }
+  return "Editorial API request failed."
 }
 </script>
 
