@@ -1,5 +1,6 @@
 package tw.basketball.magazine.publication.application;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -11,12 +12,12 @@ public final class EditorialProblemException extends RuntimeException {
     private static final long serialVersionUID = 1L;
 
     private final ProblemCode problemCode;
-    private final List<FieldError> errors;
+    private final ArrayList<FieldError> errors;
 
     public EditorialProblemException(ProblemCode problemCode, List<FieldError> errors) {
         super(Objects.requireNonNull(problemCode, "problemCode").defaultDetail());
         this.problemCode = problemCode;
-        this.errors = List.copyOf(Objects.requireNonNull(errors, "errors"));
+        this.errors = new ArrayList<>(Objects.requireNonNull(errors, "errors"));
     }
 
     public ProblemCode problemCode() {
@@ -24,7 +25,7 @@ public final class EditorialProblemException extends RuntimeException {
     }
 
     public List<FieldError> errors() {
-        return errors;
+        return List.copyOf(errors);
     }
 
     public static EditorialProblemException invalid(
