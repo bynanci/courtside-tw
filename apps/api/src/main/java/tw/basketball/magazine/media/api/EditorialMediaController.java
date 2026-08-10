@@ -2,6 +2,7 @@ package tw.basketball.magazine.media.api;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -177,7 +178,7 @@ public final class EditorialMediaController {
                 code,
                 request.getRequestURI(),
                 requestId(request),
-                List.of(new FieldError("/request", code.name().toLowerCase(), safeMessage))
+                List.of(new FieldError("/request", code.name().toLowerCase(Locale.ROOT), safeMessage))
         );
     }
 
