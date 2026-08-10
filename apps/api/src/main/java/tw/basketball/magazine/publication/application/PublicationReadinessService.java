@@ -1,12 +1,14 @@
 package tw.basketball.magazine.publication.application;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
 
+import tw.basketball.magazine.media.domain.MediaProcessingState;
 import tw.basketball.magazine.media.domain.RightsPolicy;
 
 /**
@@ -23,11 +25,19 @@ public final class PublicationReadinessService {
         Objects.requireNonNull(mediaRequirements, "mediaRequirements");
         Objects.requireNonNull(checkedAt, "checkedAt");
 
-        LinkedHashSet<String> blockingCodes = new LinkedHashSet<>();
+        List<ReadinessBlock> blockers = new ArrayList<>();
         if (!contentReady) {
-            blockingCodes.add("CONTENT_NOT_READY");
+            blockers.add(new ReadinessBlock(null, "CONTENT_NOT_READY", null, null));
         }
         for (MediaRequirement requirement : mediaRequirements) {
+            if (requirement.processingState() != MediaProcessingState.READY) {
+                String code = requirement.processingState() == MediaProcessingState.REVOKED
+                        ? "MEDIA_REVOKED"
+                        : "MEDIA_NOT_READY";
+                blockers.add(new ReadinessBlock(requirement.assetId(), code, null, null));
+                continue;
+            }
+
             RightsPolicy.RightsDecision decision = RightsPolicy.evaluate(
                     requirement.assetId(),
                     requirement.rightsRecords(),
@@ -35,33 +45,66 @@ public final class PublicationReadinessService {
                     checkedAt
             );
             if (!decision.allowed()) {
-                blockingCodes.add(decision.blockingCode());
+                blockers.add(new ReadinessBlock(
+                        decision.assetId(),
+                        decision.blockingCode(),
+                        decision.rightsRecordId(),
+                        decision.rightsRecordVersion()
+                ));
             }
         }
-        return new ReadinessReport(blockingCodes.isEmpty(), List.copyOf(blockingCodes));
+        return new ReadinessReport(blockers);
     }
 
     public record MediaRequirement(
             UUID assetId,
+            MediaProcessingState processingState,
             Collection<RightsPolicy.RightsRecord> rightsRecords
     ) {
         public MediaRequirement {
             Objects.requireNonNull(assetId, "assetId");
+            Objects.requireNonNull(processingState, "processingState");
             Objects.requireNonNull(rightsRecords, "rightsRecords");
             rightsRecords = List.copyOf(rightsRecords);
         }
     }
 
-    public record ReadinessReport(boolean ready, List<String> blockingCodes) {
+    public record ReadinessBlock(
+            UUID assetId,
+            String code,
+            UUID rightsRecordId,
+            Long rightsRecordVersion
+    ) {
+        public ReadinessBlock {
+            Objects.requireNonNull(code, "code");
+            if (assetId == null && !"CONTENT_NOT_READY".equals(code)) {
+                throw new IllegalArgumentException("media blockers require an asset id");
+            }
+            if ((rightsRecordId == null) != (rightsRecordVersion == null)) {
+                throw new IllegalArgumentException("rights evidence identity and version must be paired");
+            }
+            if (rightsRecordVersion != null && rightsRecordVersion < 0) {
+                throw new IllegalArgumentException("rights record version must be non-negative");
+            }
+        }
+    }
+
+    public record ReadinessReport(List<ReadinessBlock> blockers) {
         public ReadinessReport {
-            Objects.requireNonNull(blockingCodes, "blockingCodes");
-            blockingCodes = List.copyOf(blockingCodes);
-            if (ready && !blockingCodes.isEmpty()) {
-                throw new IllegalArgumentException("ready reports cannot contain blocking codes");
-            }
-            if (!ready && blockingCodes.isEmpty()) {
-                throw new IllegalArgumentException("blocked reports require blocking codes");
-            }
+            Objects.requireNonNull(blockers, "blockers");
+            blockers = List.copyOf(blockers);
+        }
+
+        public boolean ready() {
+            return blockers.isEmpty();
+        }
+
+        public List<String> blockingCodes() {
+            LinkedHashSet<String> codes = new LinkedHashSet<>();
+            blockers.stream()
+                    .map(ReadinessBlock::code)
+                    .forEach(codes::add);
+            return List.copyOf(codes);
         }
     }
 }
