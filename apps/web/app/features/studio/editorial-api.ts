@@ -87,10 +87,9 @@ export async function patchEditorialArticle(
 export async function submitEditorialArticle(
   options: EditorialApiOptions,
   articleId: string,
-  revisionId?: string
+  revisionId: string
 ): Promise<EditorialWorkflowResult> {
   const client = createApiClient({ baseUrl: normalizedApiBaseUrl(options.baseUrl) })
-  const body = (revisionId ? { revisionId } : {}) as components["schemas"]["SubmitRequest"]
   const { data, response } = await client.POST("/api/v1/editor/articles/{id}:submit", {
     params: {
       path: { id: articleId },
@@ -98,7 +97,7 @@ export async function submitEditorialArticle(
         "Idempotency-Key": options.idempotencyKey ?? createIdempotencyKey("article-submit")
       }
     },
-    body
+    body: { revisionId }
   })
   return expectResponse(response, data)
 }
