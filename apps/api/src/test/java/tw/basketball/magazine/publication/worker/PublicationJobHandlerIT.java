@@ -211,8 +211,8 @@ final class PublicationJobHandlerIT extends EditorialApiIntegrationTestSupport {
                 .andReturn();
         var node = JSON.readTree(result.getResponse().getContentAsString());
         return new MvcArticle(
-                UUID.fromString(node.path("articleId").asText()),
-                UUID.fromString(node.path("revisionId").asText())
+                UUID.fromString(node.path("articleId").asString()),
+                UUID.fromString(node.path("revisionId").asString())
         );
     }
 

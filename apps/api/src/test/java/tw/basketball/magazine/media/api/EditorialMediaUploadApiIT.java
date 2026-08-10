@@ -85,7 +85,7 @@ final class EditorialMediaUploadApiIT extends EditorialApiIntegrationTestSupport
                 .andReturn();
 
         UUID assetId = UUID.fromString(JSON.readTree(
-                result.getResponse().getContentAsString()).path("assetId").asText());
+                result.getResponse().getContentAsString()).path("assetId").asString());
         assertEquals(1, jdbcTemplate.queryForObject(
                 "SELECT count(*) FROM media_asset WHERE id = ? AND processing_state = 'PENDING'",
                 Integer.class,
@@ -146,7 +146,7 @@ final class EditorialMediaUploadApiIT extends EditorialApiIntegrationTestSupport
                 .andExpect(status().isCreated())
                 .andReturn();
         UUID assetId = UUID.fromString(JSON.readTree(
-                intent.getResponse().getContentAsString()).path("assetId").asText());
+                intent.getResponse().getContentAsString()).path("assetId").asString());
 
         String completion = """
                 {"checksumSha256":"%s","contentType":"image/jpeg"}
@@ -239,6 +239,6 @@ final class EditorialMediaUploadApiIT extends EditorialApiIntegrationTestSupport
                 .andExpect(status().isCreated())
                 .andReturn();
         return UUID.fromString(JSON.readTree(
-                result.getResponse().getContentAsString()).path("assetId").asText());
+                result.getResponse().getContentAsString()).path("assetId").asString());
     }
 }

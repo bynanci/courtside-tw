@@ -3,6 +3,7 @@ package tw.basketball.magazine.media.application;
 import java.util.Objects;
 import java.util.UUID;
 
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tw.basketball.magazine.media.persistence.MediaAssetRepository;
@@ -88,7 +89,7 @@ public final class EditorialMediaOutboxHandler implements OutboxEventHandler {
                     text(node, "mimeType"),
                     longValue(node, "byteSize")
             );
-        } catch (Exception exception) {
+        } catch (JacksonException | IllegalArgumentException exception) {
             throw new OutboxHandlerException("media processing payload is invalid", exception, false);
         }
     }

@@ -9,6 +9,7 @@ import java.util.UUID;
 
 import org.springframework.transaction.support.TransactionTemplate;
 
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tw.basketball.magazine.content.validation.ContentDocumentValidator;
@@ -309,7 +310,7 @@ public final class PublicationJobHandler implements OutboxEventHandler {
                     required(payload, "requestedBy"),
                     optionalUuid(payload, "revisionId")
             );
-        } catch (Exception exception) {
+        } catch (JacksonException | IllegalArgumentException exception) {
             throw new IllegalArgumentException("publication payload is not valid JSON", exception);
         }
     }

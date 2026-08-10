@@ -12,6 +12,7 @@ import java.util.UUID;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tw.basketball.magazine.audit.AuditEventDraft;
@@ -207,7 +208,7 @@ public final class PublisherMediaService {
             return node;
         } catch (EditorialProblemException exception) {
             throw exception;
-        } catch (Exception exception) {
+        } catch (JacksonException exception) {
             throw EditorialProblemException.invalid("/", "JSON_INVALID", "request JSON is invalid");
         }
     }

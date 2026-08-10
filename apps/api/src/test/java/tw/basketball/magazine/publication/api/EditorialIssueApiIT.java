@@ -67,7 +67,7 @@ final class EditorialIssueApiIT extends EditorialApiIntegrationTestSupport {
                 .andReturn();
         assertEquals(first.getResponse().getContentAsString(), replay.getResponse().getContentAsString());
 
-        String issueId = JSON.readTree(first.getResponse().getContentAsString()).path("issueId").asText();
+        String issueId = JSON.readTree(first.getResponse().getContentAsString()).path("issueId").asString();
         mockMvc.perform(patch("/api/v1/editor/issues")
                         .principal(editor)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -124,7 +124,7 @@ final class EditorialIssueApiIT extends EditorialApiIntegrationTestSupport {
                 .andExpect(jsonPath("$.sections[0].title").value("場邊現場"))
                 .andReturn();
         String firstSectionId = JSON.readTree(first.getResponse().getContentAsString())
-                .path("sections").get(0).path("sectionId").asText();
+                .path("sections").get(0).path("sectionId").asString();
 
         MvcResult second = mockMvc.perform(post("/api/v1/editor/issues/{issueId}/sections", issueId)
                         .principal(editor)
@@ -138,7 +138,7 @@ final class EditorialIssueApiIT extends EditorialApiIntegrationTestSupport {
                 .andExpect(jsonPath("$.sections[1].position").value(2))
                 .andReturn();
         String secondSectionId = JSON.readTree(second.getResponse().getContentAsString())
-                .path("sections").get(1).path("sectionId").asText();
+                .path("sections").get(1).path("sectionId").asString();
 
         MvcResult reordered = mockMvc.perform(patch(
                         "/api/v1/editor/issues/{issueId}/sections", issueId)
@@ -263,7 +263,7 @@ final class EditorialIssueApiIT extends EditorialApiIntegrationTestSupport {
                 .andExpect(status().isCreated())
                 .andReturn();
         return UUID.fromString(JSON.readTree(result.getResponse().getContentAsString())
-                .path("issueId").asText());
+                .path("issueId").asString());
     }
 
     private UUID seedCoverAsset() {

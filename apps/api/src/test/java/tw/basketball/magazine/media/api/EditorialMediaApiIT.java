@@ -31,7 +31,7 @@ final class EditorialMediaApiIT extends EditorialApiIntegrationTestSupport {
         linkMedia(article.revisionId(), "PROCESSING", "VALID", Set.of("PUBLIC_WEB"));
 
         submitRequest(article, editor, "media-processing")
-                .andExpect(status().isUnprocessableEntity())
+                .andExpect(status().isUnprocessableContent())
                 .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
                 .andExpect(jsonPath("$.code").value("RIGHTS_OR_CONTENT_GATE"))
                 .andExpect(jsonPath("$.errors[0].code").value("MEDIA_NOT_READY"))
@@ -45,7 +45,7 @@ final class EditorialMediaApiIT extends EditorialApiIntegrationTestSupport {
         linkMedia(article.revisionId(), "READY", "EXPIRED", Set.of("PUBLIC_WEB"));
 
         submitRequest(article, editor, "media-expired")
-                .andExpect(status().isUnprocessableEntity())
+                .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.code").value("RIGHTS_OR_CONTENT_GATE"))
                 .andExpect(jsonPath("$.errors[0].code").value("RIGHTS_EXPIRED"));
 

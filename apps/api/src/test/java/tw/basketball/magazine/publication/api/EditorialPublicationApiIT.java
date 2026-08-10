@@ -221,7 +221,7 @@ final class EditorialPublicationApiIT extends EditorialApiIntegrationTestSupport
 
         assertNotEquals(
                 article.revisionId().toString(),
-                JSON.readTree(revision.getResponse().getContentAsString()).path("revisionId").asText()
+                JSON.readTree(revision.getResponse().getContentAsString()).path("revisionId").asString()
         );
         assertEquals(2, jdbcTemplate.queryForObject(
                 "SELECT count(*) FROM article_revision WHERE article_id = ?", Integer.class, article.articleId()));
@@ -250,7 +250,7 @@ final class EditorialPublicationApiIT extends EditorialApiIntegrationTestSupport
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Idempotency-Key", "submit-invalid-content")
                         .content("{\"revisionId\":\"%s\"}".formatted(article.revisionId())))
-                .andExpect(status().isUnprocessableEntity())
+                .andExpect(status().isUnprocessableContent())
                 .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
                 .andExpect(jsonPath("$.code").value("RIGHTS_OR_CONTENT_GATE"))
                 .andExpect(jsonPath("$.errors[0].code").value("CONTENT_NOT_READY"));

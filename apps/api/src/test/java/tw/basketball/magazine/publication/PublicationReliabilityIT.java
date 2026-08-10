@@ -172,7 +172,7 @@ final class PublicationReliabilityIT extends EditorialApiIntegrationTestSupport 
         OutboxEvent event = publicationEvent("WITHDRAW", "partial-external-withdraw");
         var payload = JSON.readTree(event.payloadJson());
         List<String> keys = new ArrayList<>();
-        payload.path("surrogateKeys").forEach(node -> keys.add(node.asText()));
+        payload.path("surrogateKeys").forEach(node -> keys.add(node.asString()));
         assertTrue(keys.contains("article:" + article.id()));
         assertTrue(keys.contains("article:" + article.id() + ":revision:" + article.revisionId()));
         assertTrue(keys.contains("search:article:" + article.id()));
@@ -293,8 +293,8 @@ final class PublicationReliabilityIT extends EditorialApiIntegrationTestSupport 
                 .andReturn();
         var node = JSON.readTree(result.getResponse().getContentAsString());
         return new MvcArticle(
-                UUID.fromString(node.path("articleId").asText()),
-                UUID.fromString(node.path("revisionId").asText())
+                UUID.fromString(node.path("articleId").asString()),
+                UUID.fromString(node.path("revisionId").asString())
         );
     }
 
@@ -399,7 +399,7 @@ final class PublicationReliabilityIT extends EditorialApiIntegrationTestSupport 
         private void invalidate(tools.jackson.databind.JsonNode payload) {
             attempts++;
             lastKeys = new ArrayList<>();
-            payload.path("surrogateKeys").forEach(node -> lastKeys.add(node.asText()));
+            payload.path("surrogateKeys").forEach(node -> lastKeys.add(node.asString()));
             if (attempts == 1) {
                 throw new IllegalStateException("simulated partial external purge failure");
             }

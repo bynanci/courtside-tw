@@ -109,7 +109,7 @@ final class EditorialMediaMetadataApiIT extends EditorialApiIntegrationTestSuppo
                         .contentType(MediaType.APPLICATION_JSON)
                         .header(HttpHeaders.IF_MATCH, "\"1\"")
                         .content(bodyWithoutRightsVersion()))
-                .andExpect(status().isUnprocessableEntity())
+                .andExpect(status().isUnprocessableContent())
                 .andExpect(jsonPath("$.errors[0].code").value("RIGHTS_VERSION_REQUIRED"));
         assertEquals(1, jdbcTemplate.queryForObject(
                 "SELECT version FROM media_asset WHERE id = ?", Integer.class, assetId));

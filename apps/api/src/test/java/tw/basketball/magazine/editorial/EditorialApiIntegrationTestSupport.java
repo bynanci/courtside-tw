@@ -162,8 +162,8 @@ public abstract class EditorialApiIntegrationTestSupport {
     protected CreatedArticle readCreatedArticle(String responseBody) throws IOException {
         JsonNode body = JSON.readTree(responseBody);
         return new CreatedArticle(
-                UUID.fromString(body.path("articleId").asText()),
-                UUID.fromString(body.path("revisionId").asText()),
+                UUID.fromString(body.path("articleId").asString()),
+                UUID.fromString(body.path("revisionId").asString()),
                 body.path("version").asLong()
         );
     }
