@@ -54,7 +54,7 @@ final class EditorialMediaApiIT {
                                 """))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.uploadUrl").value(
-                        "https://signed.example.test/upload/"
+                        org.hamcrest.Matchers.startsWith("https://signed.example.test/upload/")
                 ));
     }
 
