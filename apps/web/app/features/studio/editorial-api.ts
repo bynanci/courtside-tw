@@ -43,13 +43,11 @@ export function contentDocument(text: string): ContentDocument {
         type: "paragraph",
         version: 1,
         payload: {
-          content: text
-            ? [{ kind: "text", text }]
-            : []
+          content: text ? [{ kind: "text", text }] : []
         }
       }
     ]
-  } as ContentDocument
+  } as unknown as ContentDocument
 }
 
 export async function createEditorialArticle(
@@ -58,7 +56,11 @@ export async function createEditorialArticle(
 ): Promise<EditorialArticle> {
   const client = createApiClient({ baseUrl: normalizedApiBaseUrl(options.baseUrl) })
   const { data, response } = await client.POST("/api/v1/editor/articles", {
-    headers: { "Idempotency-Key": options.idempotencyKey ?? createIdempotencyKey("article-create") },
+    params: {
+      header: {
+        "Idempotency-Key": options.idempotencyKey ?? createIdempotencyKey("article-create")
+      }
+    },
     body: input
   })
   return expectResponse(response, data)
@@ -71,9 +73,11 @@ export async function patchEditorialArticle(
 ): Promise<EditorialArticle> {
   const client = createApiClient({ baseUrl: normalizedApiBaseUrl(options.baseUrl) })
   const { data, response } = await client.PATCH("/api/v1/editor/articles", {
-    headers: {
-      "If-Match": etag(version),
-      "Idempotency-Key": options.idempotencyKey ?? createIdempotencyKey("article-patch")
+    params: {
+      header: {
+        "If-Match": etag(version),
+        "Idempotency-Key": options.idempotencyKey ?? createIdempotencyKey("article-patch")
+      }
     },
     body: input
   })
@@ -88,9 +92,11 @@ export async function submitEditorialArticle(
   const client = createApiClient({ baseUrl: normalizedApiBaseUrl(options.baseUrl) })
   const body = (revisionId ? { revisionId } : {}) as components["schemas"]["SubmitRequest"]
   const { data, response } = await client.POST("/api/v1/editor/articles/{id}:submit", {
-    params: { path: { id: articleId } },
-    headers: {
-      "Idempotency-Key": options.idempotencyKey ?? createIdempotencyKey("article-submit")
+    params: {
+      path: { id: articleId },
+      header: {
+        "Idempotency-Key": options.idempotencyKey ?? createIdempotencyKey("article-submit")
+      }
     },
     body
   })
@@ -104,10 +110,12 @@ export async function approveEditorialArticle(
 ): Promise<EditorialWorkflowResult> {
   const client = createApiClient({ baseUrl: normalizedApiBaseUrl(options.baseUrl) })
   const { data, response } = await client.POST("/api/v1/publisher/articles/{id}:approve", {
-    params: { path: { id: articleId } },
-    headers: {
-      "If-Match": etag(version),
-      "Idempotency-Key": options.idempotencyKey ?? createIdempotencyKey("article-approve")
+    params: {
+      path: { id: articleId },
+      header: {
+        "If-Match": etag(version),
+        "Idempotency-Key": options.idempotencyKey ?? createIdempotencyKey("article-approve")
+      }
     }
   })
   return expectResponse(response, data)
@@ -122,10 +130,12 @@ export async function scheduleEditorialIssue(
 ): Promise<EditorialWorkflowResult> {
   const client = createApiClient({ baseUrl: normalizedApiBaseUrl(options.baseUrl) })
   const { data, response } = await client.POST("/api/v1/publisher/issues/{id}:schedule", {
-    params: { path: { id: issueId } },
-    headers: {
-      "If-Match": etag(version),
-      "Idempotency-Key": options.idempotencyKey ?? createIdempotencyKey("issue-schedule")
+    params: {
+      path: { id: issueId },
+      header: {
+        "If-Match": etag(version),
+        "Idempotency-Key": options.idempotencyKey ?? createIdempotencyKey("issue-schedule")
+      }
     },
     body: { publishAt, timezone }
   })
@@ -139,10 +149,12 @@ export async function publishEditorialIssue(
 ): Promise<EditorialWorkflowResult> {
   const client = createApiClient({ baseUrl: normalizedApiBaseUrl(options.baseUrl) })
   const { data, response } = await client.POST("/api/v1/publisher/issues/{id}:publish", {
-    params: { path: { id: issueId } },
-    headers: {
-      "If-Match": etag(version),
-      "Idempotency-Key": options.idempotencyKey ?? createIdempotencyKey("issue-publish")
+    params: {
+      path: { id: issueId },
+      header: {
+        "If-Match": etag(version),
+        "Idempotency-Key": options.idempotencyKey ?? createIdempotencyKey("issue-publish")
+      }
     }
   })
   return expectResponse(response, data)
@@ -156,10 +168,12 @@ export async function withdrawEditorialArticle(
 ): Promise<EditorialWorkflowResult> {
   const client = createApiClient({ baseUrl: normalizedApiBaseUrl(options.baseUrl) })
   const { data, response } = await client.POST("/api/v1/publisher/articles/{id}:withdraw", {
-    params: { path: { id: articleId } },
-    headers: {
-      "If-Match": etag(version),
-      "Idempotency-Key": options.idempotencyKey ?? createIdempotencyKey("article-withdraw")
+    params: {
+      path: { id: articleId },
+      header: {
+        "If-Match": etag(version),
+        "Idempotency-Key": options.idempotencyKey ?? createIdempotencyKey("article-withdraw")
+      }
     },
     body: { reason }
   })
@@ -177,7 +191,11 @@ export async function createMediaUploadIntent(
 ): Promise<MediaUploadIntent> {
   const client = createApiClient({ baseUrl: normalizedApiBaseUrl(options.baseUrl) })
   const { data, response } = await client.POST("/api/v1/editor/media/uploads", {
-    headers: { "Idempotency-Key": options.idempotencyKey ?? createIdempotencyKey("media-intent") },
+    params: {
+      header: {
+        "Idempotency-Key": options.idempotencyKey ?? createIdempotencyKey("media-intent")
+      }
+    },
     body: input
   })
   return expectResponse(response, data)
@@ -190,9 +208,11 @@ export async function completeMediaUpload(
 ): Promise<EditorialWorkflowResult> {
   const client = createApiClient({ baseUrl: normalizedApiBaseUrl(options.baseUrl) })
   const { data, response } = await client.POST("/api/v1/editor/media/{id}:complete", {
-    params: { path: { id: assetId } },
-    headers: {
-      "Idempotency-Key": options.idempotencyKey ?? createIdempotencyKey("media-complete")
+    params: {
+      path: { id: assetId },
+      header: {
+        "Idempotency-Key": options.idempotencyKey ?? createIdempotencyKey("media-complete")
+      }
     },
     body: input
   })
@@ -245,7 +265,12 @@ function etag(version: number): string {
 }
 
 function mediaType(value: string): "image/jpeg" | "image/png" | "image/webp" | "video/mp4" {
-  if (value === "image/jpeg" || value === "image/png" || value === "image/webp" || value === "video/mp4") {
+  if (
+    value === "image/jpeg" ||
+    value === "image/png" ||
+    value === "image/webp" ||
+    value === "video/mp4"
+  ) {
     return value
   }
   throw new EditorialApiError(415, "UNSUPPORTED_MEDIA_TYPE")
