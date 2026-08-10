@@ -270,7 +270,7 @@ function apiErrorMessage(error: unknown): string {
 </script>
 
 <template>
-  <div class="studio-page" data-testid="studio-shell" :data-hydrated="hydrated ? \"true\" : \"false\"">
+  <div class="studio-page" data-testid="studio-shell" :data-hydrated="hydrated ? 'true' : 'false'">
     <header class="studio-header">
       <div>
         <p class="eyebrow">Courtside TW Studio</p>
