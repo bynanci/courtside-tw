@@ -1,0 +1,92 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-pr72-main-reconciliation",
+  "graph_version": 1,
+  "run_id": "courtside-tw-pr72-main-reconciliation-20260810",
+  "status": "done",
+  "iteration": 1,
+  "started_at": "2026-08-10T11:00:00Z",
+  "updated_at": "2026-08-10T11:00:00Z",
+  "current_frontier": [
+    "trigger-t043-t044-authorized"
+  ],
+  "blocked_nodes": [],
+  "terminal_state": "success",
+  "next_action": "Start the bounded T043 Editorial API integration and conditional persistence slice from main@5530c228.",
+  "events": [
+    {
+      "event_id": "evt-pr72-main-reconciliation-001",
+      "at": "2026-08-10T11:00:00Z",
+      "actor": "codex-supervisor",
+      "type": "receipt_reconciliation",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "authoritative_main",
+            "value": "main@5530c22831ca3c88d6fc74cbaaaa84c3e2775568"
+          },
+          {
+            "op": "add",
+            "path": "pull_request_72",
+            "value": "closed/merged with merge_commit_sha=5530c22831ca3c88d6fc74cbaaaa84c3e2775568"
+          },
+          {
+            "op": "add",
+            "path": "next_frontier",
+            "value": ["T043", "T044"]
+          },
+          {
+            "op": "add",
+            "path": "historical_receipt_policy",
+            "value": "preserve old receipts; add new reconciliation receipt"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t042-t047-pr72-main-reconciliation-20260810.json",
+        "https://github.com/bynanci/courtside-tw/pull/72",
+        "https://github.com/bynanci/courtside-tw/commit/5530c22831ca3c88d6fc74cbaaaa84c3e2775568"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "GitHub PR state",
+          "result": "closed_merged",
+          "head_sha": "713d412b699eca41c26a0d3affcfc0571072fbc2",
+          "merge_commit_sha": "5530c22831ca3c88d6fc74cbaaaa84c3e2775568"
+        },
+        {
+          "proof": "main ref read-back",
+          "result": "matched",
+          "commit_sha": "5530c22831ca3c88d6fc74cbaaaa84c3e2775568"
+        },
+        {
+          "proof": "task read-back",
+          "result": "T043/T044/T048-T056 remain unchecked"
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "SAVED",
+        "memory_id": "wm:project:courtside-tw:pr72-main-reconciliation-20260810",
+        "version": "pr72-main-reconciliation-v1",
+        "retrieval_ids": [
+          "courtside-us3-publication-gate-remediation-20260810-v1"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t042-t047-pr72-main-reconciliation-20260810.json"
+        ],
+        "next_review_at": "2026-08-10",
+        "blocker": "none"
+      },
+      "failure_signature": null,
+      "token_usage": {
+        "estimated": 5000,
+        "input": 0,
+        "output": 0,
+        "total": 5000
+      }
+    }
+  ]
+}

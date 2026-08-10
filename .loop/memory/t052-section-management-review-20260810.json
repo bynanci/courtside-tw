@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "memory_id": "wm:project:courtside-tw:t052-section-management-review-20260810",
+  "scope": "project",
+  "kind": "task_state",
+  "title": "T052 section management is locally implemented with remote execution gates",
+  "summary": "At fc9ff7a the issue section API, explicit positions, aggregate optimistic locking, Studio keyboard reorder UI, OpenAPI contract and proof sources are present. Available Node/web checks pass; Java 21/Gradle/Docker and Chromium remain gated by the environment, and T052 remains unchecked.",
+  "claims": [
+    {"text": "fc9ff7a adds server-backed issue section list/create/reorder/rename/delete commands and V010 idempotency scopes.", "class": "CONFIRMED", "confidence": "medium"},
+    {"text": "IssueEditor persists explicit section order and exposes keyboard and accessible controls through the server API.", "class": "CONFIRMED", "confidence": "medium"},
+    {"text": "OpenAPI/content schema/generated client contracts, web lint/typecheck/tests/build and formatting pass at the exact local head.", "class": "CONFIRMED", "confidence": "medium"},
+    {"text": "Playwright collected 15 cases but Chromium installation failed; Java 21/Gradle/Docker API execution is unavailable locally.", "class": "CONFIRMED", "confidence": "medium"},
+    {"text": "T052 remains unchecked until exact-head CI/review/merge proof is available.", "class": "CONFIRMED", "confidence": "medium"}
+  ],
+  "status": "verified",
+  "confidence": "medium",
+  "confidence_basis": [
+    ".loop/evidence/t052-section-management-review-20260810.json",
+    "fc9ff7a916e23dfdafa95e3a7d6afbb40c516719",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+  ],
+  "volatility": "high",
+  "as_of": "2026-08-10",
+  "source_refs": [
+    ".loop/evidence/t052-section-management-review-20260810.json",
+    "fc9ff7a916e23dfdafa95e3a7d6afbb40c516719",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+  ],
+  "entities": ["courtside-tw", "T052", "fc9ff7a", "Java 21", "Gradle", "Docker", "Chromium"],
+  "relations": {
+    "supports": ["wm:project:courtside-tw:t043-t056-local-implementation-20260810"],
+    "contradicts": [],
+    "supersedes": [],
+    "blocks": ["wm:project:courtside-tw:protected-merge-and-post-merge-ci"],
+    "invalidates": []
+  },
+  "next_review_at": "2026-08-10",
+  "sensitivity": "internal",
+  "retention": "until_superseded",
+  "write_receipt": {
+    "status": "SAVED",
+    "version": "t052-section-management-review-v1",
+    "written_by": "codex-agent"
+  }
+}

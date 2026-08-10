@@ -1,4 +1,4 @@
-import { createRemoteJWKSet, jwtVerify, type JWTPayload } from "jose"
+import { createRemoteJWKSet, customFetch, jwtVerify, type JWTPayload } from "jose"
 
 import { canonicalRoles, type OidcClientConfig, type CanonicalRole } from "./config.ts"
 import { AuthSessionError } from "./errors.ts"
@@ -159,16 +159,19 @@ export function createIdTokenVerifier(
   fetchImpl: typeof fetch = fetch
 ): (input: VerifyIdTokenInput) => Promise<VerifiedIdToken> {
   const safeFetch: typeof fetch = (input, init) => fetchImpl(input, { ...init, redirect: "error" })
-  const jwks = createRemoteJWKSet(new URL(config.jwksUri), { fetch: safeFetch })
+  const jwks = createRemoteJWKSet(new URL(config.jwksUri), { [customFetch]: safeFetch })
   return async (input) => {
     try {
       const result = await jwtVerify(input.idToken, jwks, {
         issuer: config.issuer,
         audience: config.clientId,
-        nonce: input.nonce,
         algorithms: ["RS256", "ES256"]
       })
-      return parseVerifiedClaims(result.payload, config)
+      const claims = parseVerifiedClaims(result.payload, config)
+      if (claims.nonce !== input.nonce) {
+        throw new AuthSessionError("OIDC_ID_TOKEN_INVALID", 502)
+      }
+      return claims
     } catch (error) {
       if (error instanceof AuthSessionError) {
         throw error

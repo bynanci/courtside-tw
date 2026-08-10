@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "memory_id": "wm:project:courtside-tw:pr72-main-reconciliation-20260810",
+  "scope": "project",
+  "kind": "task_state",
+  "title": "PR #72 merge and main read-back are reconciled",
+  "summary": "Live GitHub state confirms PR #72 is closed and merged. The authoritative repository main ref reads back to merge commit 5530c22831ca3c88d6fc74cbaaaa84c3e2775568. Previous remediation receipts are retained; T043/T044 and later T048-T056 remain unchecked and are now the authorized next implementation frontier.",
+  "claims": [
+    {
+      "text": "PR #72 is closed, merged, and no longer a draft; its merge commit is 5530c22831ca3c88d6fc74cbaaaa84c3e2775568.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The repository main ref was fetched and read back at 5530c22831ca3c88d6fc74cbaaaa84c3e2775568.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The reconciliation added only new receipt files and did not rewrite or delete historical evidence.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "T043 and T044 remain unchecked; T048-T056 remain outside the current implementation slice until T043/T044 proof is complete.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "PR #72 CI/Security #378 prove the pre-merge PR head; they do not substitute for a new post-merge workflow run on the merge commit.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    }
+  ],
+  "status": "verified",
+  "confidence": "high",
+  "confidence_basis": [
+    "https://github.com/bynanci/courtside-tw/pull/72",
+    "https://github.com/bynanci/courtside-tw/commit/5530c22831ca3c88d6fc74cbaaaa84c3e2775568",
+    ".loop/evidence/t042-t047-pr72-main-reconciliation-20260810.json",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+  ],
+  "volatility": "medium",
+  "as_of": "2026-08-10",
+  "source_refs": [
+    "https://github.com/bynanci/courtside-tw/pull/72",
+    "https://github.com/bynanci/courtside-tw/commit/5530c22831ca3c88d6fc74cbaaaa84c3e2775568",
+    ".loop/evidence/t042-t047-pr72-main-reconciliation-20260810.json"
+  ],
+  "entities": [
+    "courtside-tw",
+    "PR #72",
+    "main@5530c22831ca3c88d6fc74cbaaaa84c3e2775568",
+    "T043",
+    "T044"
+  ],
+  "relations": {
+    "supports": [],
+    "contradicts": [],
+    "supersedes": [
+      "courtside-us3-publication-gate-remediation-20260810-v1"
+    ],
+    "blocks": [
+      "wm:project:courtside-tw:t048-t056-after-t043-t044-proof"
+    ],
+    "invalidates": []
+  },
+  "next_review_at": "2026-08-10",
+  "sensitivity": "internal",
+  "retention": "until_superseded",
+  "write_receipt": {
+    "status": "SAVED",
+    "version": "pr72-main-reconciliation-v1",
+    "written_by": "codex-supervisor"
+  }
+}

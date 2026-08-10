@@ -205,6 +205,11 @@ export function createAuthSessionService(options: AuthSessionServiceOptions) {
       assertCsrf(session, csrfToken)
     },
 
+    /** Server-only BFF bridge; the bearer token is never included in the session view. */
+    getAccessToken(sessionId: string): string {
+      return requireSession(sessionId, options.store, now()).accessToken
+    },
+
     getSessionCookieValue(setCookieHeader: string): string {
       return parseSetCookieValue(setCookieHeader, COOKIE_NAMES.session)
     },

@@ -98,13 +98,20 @@ for migration in \
   "$REPO_ROOT/apps/api/src/main/resources/db/migration/V002__publication_content_core.sql" \
   "$REPO_ROOT/apps/api/src/main/resources/db/migration/V003__article_contributors.sql" \
   "$REPO_ROOT/apps/api/src/main/resources/db/migration/V004__editorial_publication_workflow.sql" \
-  "$REPO_ROOT/apps/api/src/main/resources/db/migration/V005__editorial_publication_gate_hardening.sql"; do
+  "$REPO_ROOT/apps/api/src/main/resources/db/migration/V005__editorial_publication_gate_hardening.sql" \
+  "$REPO_ROOT/apps/api/src/main/resources/db/migration/V006__editorial_api_commands.sql" \
+  "$REPO_ROOT/apps/api/src/main/resources/db/migration/V007__editorial_media_uploads.sql" \
+  "$REPO_ROOT/apps/api/src/main/resources/db/migration/V008__editorial_crud_commands.sql" \
+  "$REPO_ROOT/apps/api/src/main/resources/db/migration/V009__publisher_media_commands.sql"; do
   [ -r "$migration" ] || fail "missing migration: $migration"
   sql -f - < "$migration"
 done
-echo "verify-editorial-publication-migration: V001/V002/V003/V004/V005 applied"
+echo "verify-editorial-publication-migration: V001/V002/V003/V004/V005/V006/V007/V008/V009 applied"
 
 assert_equal "workflow tables" 6 "$(scalar "SELECT count(*) FROM pg_class WHERE relkind = 'r' AND relname IN ('publication_review', 'publication_rights_reference', 'publication_snapshot', 'publication_job', 'publication_idempotency', 'publication_impact_link');")"
+assert_equal "revision media table" 1 "$(scalar "SELECT count(*) FROM pg_class WHERE relkind = 'r' AND relname = 'article_revision_media';")"
+assert_equal "application revision media INSERT" t "$(scalar "SELECT has_table_privilege('courtside_app', 'public.article_revision_media', 'INSERT');")"
+assert_equal "application revision media UPDATE" f "$(scalar "SELECT has_table_privilege('courtside_app', 'public.article_revision_media', 'UPDATE');")"
 assert_equal "application review INSERT" t "$(scalar "SELECT has_table_privilege('courtside_app', 'public.publication_review', 'INSERT');")"
 assert_equal "application review UPDATE" f "$(scalar "SELECT has_table_privilege('courtside_app', 'public.publication_review', 'UPDATE');")"
 assert_equal "application job UPDATE" t "$(scalar "SELECT has_table_privilege('courtside_app', 'public.publication_job', 'UPDATE');")"
@@ -140,6 +147,15 @@ INSERT INTO article_revision (
     'Migration article',
     'Migration fixture',
     '{}'::jsonb
+);
+
+INSERT INTO article_revision_media (
+    article_revision_id, asset_id, required_channel, position
+) VALUES (
+    '00000000-0000-4000-8000-000000000504',
+    '00000000-0000-4000-8000-000000000501',
+    'PUBLIC_WEB',
+    1
 );
 
 INSERT INTO rights_record (

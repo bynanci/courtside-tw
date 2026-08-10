@@ -1,0 +1,203 @@
+{
+  "schema_version": "courtside-tw/implementation-proof/v1",
+  "proof_id": "t043-t056-local-implementation-20260810",
+  "recorded_at": "2026-08-10T05:31:51Z",
+  "result": "LOCAL_IMPLEMENTATION_COMPLETE_WITH_EXECUTION_GATES",
+  "classification": "CONFIRMED_WITH_GATES",
+  "purpose": "Append-only receipt for the bounded T043/T044 proof lane followed by T048 upload and ordered T049-T056 local implementation; no task checkbox or historical receipt was rewritten.",
+  "source_of_truth": {
+    "repository": "bynanci/courtside-tw",
+    "baseline_main": "5530c22831ca3c88d6fc74cbaaaa84c3e2775568",
+    "local_branch": "agent/t043-t044-editorial-http-e2e",
+    "local_commits": [
+      "06006a3 feat(editorial): add T043 HTTP workflow proof",
+      "f05f829 feat(editorial): build T048-T056 studio publication slice"
+    ],
+    "working_tree": "clean_at_receipt",
+    "tasks_file": "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+  },
+  "reconciliation_ref": {
+    "pr_number": 72,
+    "merged_main": "main@5530c22831ca3c88d6fc74cbaaaa84c3e2775568",
+    "receipt": ".loop/evidence/t042-t047-pr72-main-reconciliation-20260810.json",
+    "old_receipts_preserved": true,
+    "mutation_type": "append_only_new_receipts"
+  },
+  "ordered_frontier": [
+    "T043 editorial API integration tests",
+    "T044 Studio editor/publisher two-role E2E contract",
+    "T048 upload intent/completion and worker slice",
+    "T049 media library",
+    "T050 issue/article/revision CRUD",
+    "T051 schema-constrained editor",
+    "T052 issue editor and keyboard TOC ordering",
+    "T053 publisher review and readiness gate",
+    "T054 atomic publication command and worker acknowledgement",
+    "T055 revision correction, archive, withdrawal, media revoke and audit",
+    "T056 duplicate-worker and revoked-public-origin reliability surfaces"
+  ],
+  "task_readback": {
+    "T043": false,
+    "T044": false,
+    "T048": false,
+    "T049": false,
+    "T050": false,
+    "T051": false,
+    "T052": false,
+    "T053": false,
+    "T054": false,
+    "T055": false,
+    "T056": false,
+    "task_file_changed_by_implementation": false
+  },
+  "implementation_proof": {
+    "T043": {
+      "surfaces": [
+        "apps/api/src/test/java/tw/basketball/magazine/media/api/EditorialMediaUploadApiIT.java",
+        "apps/api/src/test/java/tw/basketball/magazine/media/api/EditorialMediaApiIT.java",
+        "apps/api/src/test/java/tw/basketball/magazine/publication/api/EditorialIssueApiIT.java",
+        "apps/api/src/test/java/tw/basketball/magazine/publication/api/EditorialPublicationApiIT.java",
+        "apps/api/src/main/java/tw/basketball/magazine/publication/api/EditorialApiExceptionHandler.java"
+      ],
+      "coverage": [
+        "editor and publisher role boundaries",
+        "If-Match conditional updates and VERSION_CONFLICT Problem Details",
+        "insert-only idempotency and exact replay",
+        "rights/content gate Problem Details",
+        "Asia/Taipei local schedule conversion to an instant",
+        "MockMvc actual HTTP controller proof"
+      ],
+      "persistence": "Conditional article, issue, revision and media updates use expected versions and append-only command/audit/outbox records."
+    },
+    "T044": {
+      "surfaces": [
+        "apps/web/tests/e2e/us3-editorial-publication.spec.ts",
+        "apps/web/app/features/studio/editor/ArticleEditor.vue",
+        "apps/web/app/features/studio/review/ReviewQueue.vue",
+        "apps/web/tests/e2e/start-server.mjs"
+      ],
+      "coverage": [
+        "editor/publisher role separation",
+        "concurrent edit conflict and local-draft recovery",
+        "missing/expired rights disables publish",
+        "retry and revision preservation",
+        "Asia/Taipei schedule display and UTC conversion",
+        "emergency withdrawal and audit visibility"
+      ],
+      "execution": "Spec was discovered and the fixture server reached the Playwright runner; browser assertions remain gated because Chromium is unavailable in this sandbox."
+    },
+    "T048": {
+      "surfaces": [
+        "apps/api/src/main/resources/db/migration/V007__editorial_media_uploads.sql",
+        "apps/api/src/main/java/tw/basketball/magazine/media/application/EditorialMediaService.java",
+        "apps/api/src/main/java/tw/basketball/magazine/media/application/EditorialMediaOutboxHandler.java",
+        "apps/api/src/main/java/tw/basketball/magazine/media/api/EditorialMediaController.java"
+      ],
+      "coverage": [
+        "bounded filename, MIME, size and checksum input",
+        "private signed upload intent and completion",
+        "server-side checksum/content-type/magic-byte recheck through processing",
+        "PROCESSING state and one outbox command",
+        "duplicate delivery skip for terminal state and retry for transient private-storage failure"
+      ],
+      "activation": "Provider-neutral adapter wiring only; no storage provider or production worker activation."
+    },
+    "T049_T053": {
+      "surfaces": [
+        "apps/web/app/features/studio/media/",
+        "apps/web/app/features/studio/editor/",
+        "apps/web/app/features/studio/issues/",
+        "apps/web/app/features/studio/review/",
+        "apps/api/src/main/java/tw/basketball/magazine/publication/api/EditorialIssueController.java",
+        "apps/api/src/main/java/tw/basketball/magazine/publication/application/EditorialIssueService.java"
+      ],
+      "coverage": [
+        "ContentDocument v1 parsing and bounded generative preset prompt",
+        "20 MiB image upload form with alt text, credit and rights readiness",
+        "keyboard-accessible section reordering",
+        "publisher-only review actions and readiness blockers",
+        "disabled publish state for processing, expired or missing rights"
+      ]
+    },
+    "T054_T056": {
+      "surfaces": [
+        "apps/api/src/main/java/tw/basketball/magazine/publication/worker/PublicationJobHandler.java",
+        "apps/api/src/main/java/tw/basketball/magazine/media/application/PublisherMediaService.java",
+        "apps/api/src/main/java/tw/basketball/magazine/publication/api/EditorialAuditController.java",
+        "apps/api/src/main/resources/db/migration/V008__editorial_crud_commands.sql",
+        "apps/api/src/main/resources/db/migration/V009__publisher_media_commands.sql",
+        "apps/api/src/test/java/tw/basketball/magazine/publication/worker/PublicationJobHandlerIT.java",
+        "apps/api/src/test/java/tw/basketball/magazine/media/application/EditorialMediaOutboxHandlerTest.java"
+      ],
+      "coverage": [
+        "publication snapshot checksum and job/outbox write path",
+        "idempotent publication worker acknowledgement",
+        "new revision correction and republish path",
+        "withdrawal then archive while retaining publication evidence",
+        "publisher-only media revoke with impact report",
+        "append-only audit query",
+        "public resolver terminal-state denial is covered by the existing publication gate surface"
+      ]
+    }
+  },
+  "verification": [
+    {
+      "command": "node scripts/validate-openapi.mjs",
+      "result": "PASS",
+      "detail": "OpenAPI 3.1; 34 paths; 41 operations; 20 request examples; stable error statuses present."
+    },
+    {
+      "command": "prettier --check changed JavaScript/TypeScript/Vue/JSON/YAML files",
+      "result": "PASS"
+    },
+    {
+      "command": "pnpm --filter @courtside/web lint && typecheck && test",
+      "result": "PASS",
+      "detail": "17 tests passed."
+    },
+    {
+      "command": "pnpm --filter @courtside/api-client generate:check && typecheck && test",
+      "result": "PASS",
+      "detail": "Generated client is clean after commit; 2 tests passed."
+    },
+    {
+      "command": "pnpm --filter @courtside/content-schema generate:check && typecheck && test",
+      "result": "PASS",
+      "detail": "3 tests passed."
+    },
+    {
+      "command": "pnpm --filter @courtside/web build",
+      "result": "PASS",
+      "detail": "Nuxt production build completed; only bundle-size and Rollup comment warnings."
+    },
+    {
+      "command": "bash -n scripts/test/verify-editorial-publication-migration.sh && node --check apps/web/tests/e2e/start-server.mjs && git diff --check",
+      "result": "PASS"
+    },
+    {
+      "command": "COURTSIDE_STUDIO_E2E=1 pnpm --filter @courtside/web exec playwright test tests/e2e/us3-editorial-publication.spec.ts",
+      "result": "GATED",
+      "detail": "Fixture server became ready and Playwright discovered 3 tests; browser launch was blocked because Chromium is not installed, and the attempted download failed with the sandbox CDN certificate/time gate."
+    },
+    {
+      "command": "gradle -p apps/api compileJava",
+      "result": "GATED",
+      "detail": "The environment has Java 17.0.19 rather than the project Java 21 requirement; Gradle also cannot resolve Spring Boot Gradle plugin 4.1.0 in the restricted environment, so Java compilation and integration execution are not claimed."
+    }
+  ],
+  "scope_controls": {
+    "production_migration_executed": false,
+    "production_worker_or_storage_activated": false,
+    "deployment_performed": false,
+    "remote_push_performed": false,
+    "protected_merge_performed": false,
+    "web3_wallet_passport_changed": false,
+    "historical_receipts_overwritten": false
+  },
+  "execution_gates": [
+    "Install Java 21 and make Spring Boot/Gradle dependencies available, then run API compile and integration suites.",
+    "Provide a Playwright Chromium binary or a runner with browser installation access, then execute the opt-in T044 spec.",
+    "Push the local branch and obtain protected CI/post-merge evidence before claiming remote completion."
+  ],
+  "next_action": "Human-gated review of the local T043-T056 implementation, followed by Java/Chromium verification and a protected merge path; task checkboxes remain unchanged."
+}

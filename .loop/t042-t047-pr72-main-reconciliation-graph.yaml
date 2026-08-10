@@ -1,0 +1,211 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-pr72-main-reconciliation
+objective: >-
+  Reconcile the live PR #72 merge state with the authoritative main ref and
+  route the verified state to the bounded T043/T044 implementation frontier.
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - PR #72 live state and merge commit read-back
+    - main ref read-back at the merged commit
+    - preservation of historical .loop receipts
+    - T043/T044 next-frontier routing
+  out:
+    - production migration or activation
+    - deployment or external communication
+    - task checkbox changes
+    - implementation code, Web3, Wallet, Passport, and T048-T056 orchestration
+
+policy:
+  human_gates:
+    - protected merge of future implementation PR
+    - production migration or activation
+    - task checkbox updates
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+memory_workflow:
+  contract: work-memory/v1
+  control_ledger: Append reconciliation graph deltas and proof receipts every iteration.
+  semantic_memory: Capture only the corrected PR/main task-state delta.
+  modes: [recall, capture, update, forget, no_op]
+  retrieval:
+    levels: [index, timeline_relations, details]
+    max_index_results: 10
+    stop_on_sufficient_evidence: true
+  capture:
+    allowed_kinds: [fact, task_state, evidence]
+    requires_downstream_proof: true
+    requires_write_receipt: true
+  lifecycle: [seed, verified, stable, needs_update, disputed, archived]
+  failure_policy:
+    write_pending: blocked
+    stale_or_disputed: needs_human
+    redact_secrets: true
+
+graph:
+  entry_nodes: [t-reconciliation-trigger]
+  terminal_nodes: [s-reconciliation-success, s-reconciliation-blocked]
+  loops:
+    - id: l1-reconciliation
+      layer: L1
+      owner: codex-agent
+      trigger_nodes: [t-reconciliation-trigger]
+      action_nodes: [a-reconcile-pr72-main]
+      proof_nodes: [p-reconciliation-proof]
+      memory_nodes: [m-reconciliation-memory]
+      stop_nodes: [s-reconciliation-success, s-reconciliation-blocked]
+      budgets:
+        max_iterations: 2
+        max_minutes: 15
+        max_same_failure: 2
+        max_graph_changes: 4
+        max_tokens: 8000
+  nodes:
+    - id: t-reconciliation-trigger
+      kind: trigger
+      layer: L1
+      label: Reconcile PR #72 and main after protected merge
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        score: 1.0
+        basis: User explicitly requested receipt-only reconciliation.
+        evidence_refs: ["https://github.com/bynanci/courtside-tw/pull/72"]
+      budget: {effort_hours: 0.1, tokens: 500}
+      config:
+        condition: Live PR state differs from prior .loop receipt state.
+        inputs_required: ["GitHub PR #72", "origin/main", "existing .loop receipts"]
+        dedupe: repository plus PR number plus merge commit
+    - id: a-reconcile-pr72-main
+      kind: action
+      layer: L1
+      label: Add append-only PR/main reconciliation receipts
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        score: 0.98
+        basis: GitHub PR response and git ref read-back agree on the merge commit.
+        evidence_refs: [".loop/evidence/t042-t047-pr72-main-reconciliation-20260810.json"]
+      budget: {effort_hours: 0.5, tokens: 3500}
+      config:
+        workflow: [read live PR, read main ref, compare old receipts, add new evidence and memory, validate JSON]
+        allowed: [read scoped GitHub state, read scoped repository files, add new .loop receipts]
+        requires_approval: [production migration, task checkbox update, protected merge]
+        forbidden: [rewrite historical receipts, delete evidence, expose secrets, change code]
+    - id: p-reconciliation-proof
+      kind: proof
+      layer: L1
+      label: Independent PR/main/task read-back proof
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        score: 0.98
+        basis: Structured GitHub response, git commit read-back, and task-file inspection.
+        evidence_refs: [".loop/evidence/t042-t047-pr72-main-reconciliation-20260810.json"]
+      budget: {effort_hours: 0.2, tokens: 1500}
+      config:
+        level: P2
+        claim: PR #72 is merged into main@5530c228 and historical receipts remain present.
+        method: GitHub connector read plus git fetch/log and file existence checks.
+        evidence_path: .loop/evidence/t042-t047-pr72-main-reconciliation-20260810.json
+        required: true
+        baseline_required: true
+    - id: m-reconciliation-memory
+      kind: memory
+      layer: L1
+      label: Persist corrected PR/main task-state delta
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        score: 0.95
+        basis: Validated work-memory/v1 record with evidence references and write receipt.
+        evidence_refs: [".loop/memory/t042-t047-pr72-main-reconciliation-20260810.json"]
+      budget: {effort_hours: 0.1, tokens: 1000}
+      config:
+        path: .loop/memory/t042-t047-pr72-main-reconciliation-20260810.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: work-memory/v1
+        memory_role: hybrid
+        receipt_required: true
+        write_failure_state: blocked
+    - id: s-reconciliation-success
+      kind: stop
+      layer: GLOBAL
+      label: Reconciliation complete; route T043/T044
+      owner: codex-agent
+      status: done
+      risk: low
+      confidence:
+        score: 0.98
+        basis: Required reconciliation proof and memory receipt passed.
+        evidence_refs: [".loop/t042-t047-pr72-main-reconciliation-ledger.json"]
+      budget: {effort_hours: 0.0, tokens: 0}
+      config:
+        states:
+          success: Reconciliation proof and memory receipt pass.
+          no_op: No authoritative state changed.
+          blocked: GitHub/main read-back or receipt write is unavailable.
+          stalled: No new evidence delta after the configured limit.
+          exhausted: Reconciliation budget is reached.
+          needs_human: A protected action is requested.
+    - id: s-reconciliation-blocked
+      kind: stop
+      layer: GLOBAL
+      label: Stop on reconciliation evidence or write failure
+      owner: codex-agent
+      status: planned
+      risk: high
+      confidence:
+        score: 0.9
+        basis: Explicit stop policy for stale or conflicting authoritative state.
+        evidence_refs: []
+      budget: {effort_hours: 0.0, tokens: 0}
+      config:
+        states:
+          success: Required evidence passes.
+          no_op: No change exists.
+          blocked: Authoritative read-back or append-only write failed.
+          stalled: No evidence delta after the configured limit.
+          exhausted: Reconciliation budget is reached.
+          needs_human: PR/main contradiction requires human resolution.
+  edges:
+    - {id: e-trigger-action, from: t-reconciliation-trigger, to: a-reconcile-pr72-main, type: enables, required: true, confidence: 0.99, token_capacity: 5000}
+    - {id: e-action-proof, from: a-reconcile-pr72-main, to: p-reconciliation-proof, type: verifies, required: true, confidence: 0.98, token_capacity: 3000}
+    - {id: e-proof-memory, from: p-reconciliation-proof, to: m-reconciliation-memory, type: records, required: true, confidence: 0.98, token_capacity: 2000}
+    - {id: e-proof-memory-enables, from: p-reconciliation-proof, to: m-reconciliation-memory, type: enables, required: true, confidence: 0.98, token_capacity: 2000}
+    - {id: e-memory-success, from: m-reconciliation-memory, to: s-reconciliation-success, type: enables, required: true, confidence: 0.98, token_capacity: 1000}
+    - {id: e-memory-reads-action, from: m-reconciliation-memory, to: a-reconcile-pr72-main, type: reads, required: true, confidence: 0.95, token_capacity: 1000}
+    - {id: e-proof-feedback, from: p-reconciliation-proof, to: a-reconcile-pr72-main, type: feedback, required: false, confidence: 0.9, token_capacity: 1000}
+    - {id: e-action-blocked, from: a-reconcile-pr72-main, to: s-reconciliation-blocked, type: blocks, required: false, confidence: 0.9, token_capacity: 1000}
+
+flow:
+  source: t-reconciliation-trigger
+  sink: s-reconciliation-success
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - memory_receipt
+  - next_action

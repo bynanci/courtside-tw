@@ -31,13 +31,24 @@ const expectedPaths = {
   "/api/v1/me/wallets/{chainNamespace}/{address}": ["delete"],
   "/api/v1/me": ["delete"],
   "/api/v1/editor/issues": ["post", "get", "patch"],
+  "/api/v1/editor/issues/{issueId}/sections": ["get", "post", "patch"],
+  "/api/v1/editor/issues/{issueId}/sections/{sectionId}": ["patch", "delete"],
   "/api/v1/editor/articles": ["post", "get", "patch"],
+  "/api/v1/editor/articles/{id}:revise": ["post"],
   "/api/v1/editor/articles/{id}:submit": ["post"],
+  "/api/v1/publisher/articles": ["get"],
+  "/api/v1/publisher/articles/{id}": ["get"],
   "/api/v1/publisher/articles/{id}:approve": ["post"],
+  "/api/v1/publisher/articles/{id}:schedule": ["post"],
+  "/api/v1/publisher/articles/{id}:publish": ["post"],
+  "/api/v1/publisher/articles/{id}:request-changes": ["post"],
   "/api/v1/publisher/issues/{id}:publish": ["post"],
   "/api/v1/publisher/issues/{id}:schedule": ["post"],
   "/api/v1/publisher/articles/{id}:withdraw": ["post"],
+  "/api/v1/publisher/articles/{id}:archive": ["post"],
+  "/api/v1/editor/audit": ["get"],
   "/api/v1/editor/media/uploads": ["post"],
+  "/api/v1/editor/media/{id}": ["get", "patch"],
   "/api/v1/editor/media/{id}:complete": ["post"],
   "/api/v1/publisher/media/{id}:revoke": ["post"],
   "/api/v1/editor/taxonomy": ["post", "get", "patch"]
@@ -121,7 +132,10 @@ for (const { pathName, method, operation } of operations) {
     `responses missing for ${operation.operationId}`
   )
 
-  const names = new Set((operation.parameters ?? []).map(parameterName))
+  const names = new Set([
+    ...(paths[pathName].parameters ?? []).map(parameterName),
+    ...(operation.parameters ?? []).map(parameterName)
+  ])
   for (const match of pathName.matchAll(/\{([^}]+)\}/g)) {
     assert.ok(
       names.has(match[1]),

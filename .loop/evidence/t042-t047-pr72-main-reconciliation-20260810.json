@@ -1,0 +1,83 @@
+{
+  "schema_version": "courtside-tw/reconciliation-proof/v1",
+  "proof_id": "t042-t047-pr72-main-reconciliation-20260810",
+  "recorded_at": "2026-08-10T11:00:00Z",
+  "result": "PASS_RECONCILED",
+  "classification": "CONFIRMED",
+  "purpose": "Receipt-only reconciliation of the live PR #72 merge state and authoritative main read-back; no historical receipt is rewritten.",
+  "source_of_truth": {
+    "repository": "bynanci/courtside-tw",
+    "main_ref": "main",
+    "main_commit": "5530c22831ca3c88d6fc74cbaaaa84c3e2775568",
+    "main_commit_url": "https://github.com/bynanci/courtside-tw/commit/5530c22831ca3c88d6fc74cbaaaa84c3e2775568",
+    "read_back_method": "git fetch origin main followed by local commit and tree read-back",
+    "read_back_at": "2026-08-10T11:00:00Z"
+  },
+  "pull_request": {
+    "number": 72,
+    "url": "https://github.com/bynanci/courtside-tw/pull/72",
+    "state": "closed",
+    "merged": true,
+    "draft": false,
+    "base": "main",
+    "base_sha_before_merge": "bcdc96efae3847f17e8c91e8a26f117dd32a2c79",
+    "head_sha": "713d412b699eca41c26a0d3affcfc0571072fbc2",
+    "merge_commit_sha": "5530c22831ca3c88d6fc74cbaaaa84c3e2775568"
+  },
+  "prior_exact_head_proof": {
+    "head_sha": "713d412b699eca41c26a0d3affcfc0571072fbc2",
+    "ci_run": {
+      "run_number": 378,
+      "run_id": 31352088532,
+      "conclusion": "success"
+    },
+    "security_run": {
+      "run_number": 378,
+      "run_id": 31352088556,
+      "conclusion": "success"
+    },
+    "limitation": "These runs prove the PR head before merge, not a new post-merge execution on the merge commit."
+  },
+  "task_readback": {
+    "tasks_file": "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    "T042": false,
+    "T043": false,
+    "T044": false,
+    "T045": false,
+    "T046": false,
+    "T047": false,
+    "T048": false,
+    "T049_T056": false,
+    "task_file_changed_by_reconciliation": false
+  },
+  "receipt_integrity": {
+    "old_receipts_preserved": true,
+    "old_receipts": [
+      ".loop/evidence/t042-t047-us3-publication-gate.json",
+      ".loop/evidence/t042-t047-us3-publication-gate-remediation.json",
+      ".loop/t042-t047-us3-publication-gate-ledger.json",
+      ".loop/t042-t047-us3-publication-gate-remediation-ledger.json",
+      ".loop/memory/t042-t047-us3-publication-gate.json",
+      ".loop/memory/t042-t047-us3-publication-gate-remediation.json"
+    ],
+    "mutation_type": "append_only_new_receipt",
+    "implementation_files_changed": false,
+    "production_migration_executed": false,
+    "deployment_performed": false,
+    "web3_wallet_passport_changed": false
+  },
+  "supersedes_metadata_only": [
+    ".loop/evidence/t042-t047-us3-publication-gate-remediation.json",
+    ".loop/memory/t042-t047-us3-publication-gate-remediation.json"
+  ],
+  "next_frontier": [
+    "T043 editorial API integration tests",
+    "T043 conditional persistence update and actual HTTP proof",
+    "T044 Studio editor/publisher two-role E2E"
+  ],
+  "human_gates": [
+    "Protected merge of the new T043/T044 lane",
+    "Production migration or activation",
+    "Task checkbox updates"
+  ]
+}

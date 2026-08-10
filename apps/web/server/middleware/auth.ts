@@ -37,7 +37,7 @@ type GlobalAuthState = typeof globalThis & {
 
 type RuntimeAuthService = ReturnType<typeof createAuthSessionService>
 
-type RuntimeAuthContext = {
+export type RuntimeAuthContext = {
   service: RuntimeAuthService | null
   config: OidcClientConfig | null
   error: unknown | null
@@ -193,7 +193,7 @@ async function handleAuthRoute(event: H3Event, path: string, auth: RuntimeAuthCo
   return undefined
 }
 
-function createRuntimeAuthContext(runtimeConfig: AuthRuntimeConfig): RuntimeAuthContext {
+export function createRuntimeAuthContext(runtimeConfig: AuthRuntimeConfig): RuntimeAuthContext {
   const configResult = readOidcConfig(runtimeConfig)
   const config = configResult.config
   if (configResult.error) {
@@ -206,7 +206,8 @@ function createRuntimeAuthContext(runtimeConfig: AuthRuntimeConfig): RuntimeAuth
   try {
     const rawOidc = runtimeConfig.oidc ?? {}
     const sessionStore = typeof rawOidc.sessionStore === "string" ? rawOidc.sessionStore : "memory"
-    if (sessionStore !== "memory" || process.env.NODE_ENV === "production") {
+    const isLocalE2e = process.env.COURTSIDE_E2E === "1"
+    if (sessionStore !== "memory" || (process.env.NODE_ENV === "production" && !isLocalE2e)) {
       throw new AuthSessionError("SESSION_STORE_UNAVAILABLE", 503)
     }
     const globalState = globalThis as GlobalAuthState
@@ -243,7 +244,7 @@ function singleQueryValue(value: unknown): string | null {
   return null
 }
 
-function toHttpError(error: unknown) {
+export function toHttpError(error: unknown) {
   if (isAuthSessionError(error)) {
     return createError({
       statusCode: error.status,

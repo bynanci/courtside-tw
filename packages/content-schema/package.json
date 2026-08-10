@@ -3,18 +3,23 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./browser": "./src/browser.ts"
+  },
   "description": "Canonical ContentDocument v1 TypeScript types and runtime validation.",
   "engines": {
     "node": "24.14.x",
     "pnpm": "11.7.x"
   },
   "scripts": {
-    "generate": "node --experimental-strip-types scripts/generate-types.ts",
-    "generate:check": "node --experimental-strip-types scripts/generate-types.ts && git diff --exit-code -- src/generated/content-document.ts",
+    "generate": "node --experimental-strip-types scripts/generate-types.ts && node --experimental-strip-types scripts/generate-browser-validator.ts",
+    "generate:check": "node --experimental-strip-types scripts/generate-types.ts && node --experimental-strip-types scripts/generate-browser-validator.ts && git diff --exit-code -- src/generated/content-document.ts src/generated/content-document-validator.ts",
     "lint": "eslint --max-warnings=0 src scripts tests",
     "typecheck": "tsc --noEmit",
     "test": "node --experimental-strip-types --test tests/content-document.test.ts",
-    "contract": "node --experimental-strip-types scripts/generate-types.ts && git diff --exit-code -- src/generated/content-document.ts && node --experimental-strip-types --test tests/content-document.test.ts"
+    "contract": "node --experimental-strip-types scripts/generate-types.ts && node --experimental-strip-types scripts/generate-browser-validator.ts && git diff --exit-code -- src/generated/content-document.ts src/generated/content-document-validator.ts && node --experimental-strip-types --test tests/content-document.test.ts"
   },
   "dependencies": {
     "ajv": "8.20.0",

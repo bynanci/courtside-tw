@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "memory_id": "wm:project:courtside-tw:t043-t056-local-implementation-20260810",
+  "scope": "project",
+  "kind": "task_state",
+  "title": "T043-T056 local editorial implementation is complete with execution gates",
+  "summary": "Starting from reconciled main@5530c228, the local branch implements the ordered T043/T044 proof lane followed by T048 and T049-T056 editorial media, Studio, publication and audit surfaces. Contract and frontend checks pass; Java integration execution and browser E2E execution remain environment-gated. Tasks remain unchecked and no remote merge is claimed.",
+  "claims": [
+    {
+      "text": "The implementation branch is based on reconciled main@5530c22831ca3c88d6fc74cbaaaa84c3e2775568 and contains local commits 06006a3 and f05f829.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "T043 includes role, If-Match, idempotency, Problem Details, rights and Asia/Taipei HTTP/persistence proof surfaces, with MockMvc integration test sources added.",
+      "class": "CONFIRMED",
+      "confidence": "medium"
+    },
+    {
+      "text": "T044 includes an opt-in two-role Studio Playwright contract covering conflict recovery, missing rights, retry, revision, Asia/Taipei scheduling and withdrawal/audit behavior.",
+      "class": "CONFIRMED",
+      "confidence": "medium"
+    },
+    {
+      "text": "T048 and T049-T056 local code, migrations, API contracts, frontend surfaces and reliability test sources are present in the local branch in the requested order.",
+      "class": "CONFIRMED",
+      "confidence": "medium"
+    },
+    {
+      "text": "OpenAPI, content schema, generated client, Nuxt build/typecheck/lint and 17 frontend tests pass; Java and browser test execution are not proven in this environment.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The tasks file remains unchanged with T043, T044 and T048-T056 unchecked; historical receipts remain preserved and no remote push or protected merge was performed.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    }
+  ],
+  "status": "verified",
+  "confidence": "medium",
+  "confidence_basis": [
+    ".loop/evidence/t043-t056-local-implementation-20260810.json",
+    "f05f829 feat(editorial): build T048-T056 studio publication slice",
+    "node scripts/validate-openapi.mjs",
+    "Nuxt typecheck/lint/unit results",
+    "packages/api-client generate:check/typecheck/test results",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+  ],
+  "volatility": "medium",
+  "as_of": "2026-08-10",
+  "source_refs": [
+    ".loop/evidence/t043-t056-local-implementation-20260810.json",
+    ".loop/evidence/t042-t047-pr72-main-reconciliation-20260810.json",
+    "f05f829",
+    "06006a3",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+  ],
+  "entities": [
+    "courtside-tw",
+    "main@5530c22831ca3c88d6fc74cbaaaa84c3e2775568",
+    "T043",
+    "T044",
+    "T048",
+    "T049",
+    "T050",
+    "T051",
+    "T052",
+    "T053",
+    "T054",
+    "T055",
+    "T056"
+  ],
+  "relations": {
+    "supports": [
+      "wm:project:courtside-tw:pr72-main-reconciliation-20260810"
+    ],
+    "contradicts": [],
+    "supersedes": [
+      "wm:project:courtside-tw:t048-t056-after-t043-t044-proof"
+    ],
+    "blocks": [
+      "wm:project:courtside-tw:protected-merge-and-post-merge-ci"
+    ],
+    "invalidates": []
+  },
+  "next_review_at": "2026-08-10",
+  "sensitivity": "internal",
+  "retention": "until_superseded",
+  "write_receipt": {
+    "status": "SAVED",
+    "version": "t043-t056-local-implementation-v1",
+    "written_by": "codex-supervisor"
+  }
+}
