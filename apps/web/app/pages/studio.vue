@@ -118,12 +118,7 @@ function withdrawArticle(): void {
           </label>
           <label>
             內容預覽
-            <textarea
-              v-model="articleContent"
-              data-testid="article-content"
-              rows="6"
-              required
-            />
+            <textarea v-model="articleContent" data-testid="article-content" rows="6" required />
           </label>
           <label>
             媒體檔案
