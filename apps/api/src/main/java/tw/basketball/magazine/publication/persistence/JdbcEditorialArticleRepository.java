@@ -207,8 +207,9 @@ public final class JdbcEditorialArticleRepository implements EditorialArticleRep
 
     private void syncMediaReferences(UUID revisionId, JsonNode content) {
         List<UUID> assetIds = ContentMediaReferences.extract(content);
-        jdbcTemplate.update(
+        jdbcTemplate.query(
                 "SELECT replace_public_article_revision_media(?, ?::jsonb)",
+                resultSet -> null,
                 revisionId,
                 json(assetIds)
         );

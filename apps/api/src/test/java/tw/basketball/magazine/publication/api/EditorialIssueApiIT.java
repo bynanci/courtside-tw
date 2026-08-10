@@ -314,6 +314,22 @@ final class EditorialIssueApiIT extends EditorialApiIntegrationTestSupport {
                     width, height, alt_text, processing_state
                 ) VALUES (?, ?, ?, 'image/jpeg', 1024, 10, 10, 'fixture cover', 'READY')
                 """, assetId, "private/issue-cover/" + assetId, "a".repeat(64));
+        jdbcTemplate.update("""
+                INSERT INTO media_variant (
+                    asset_id, variant, public_storage_key, checksum_sha256,
+                    mime_type, byte_size, width, height
+                ) VALUES (?, 'cover', ?, ?, 'image/jpeg', 512, 10, 10)
+                """, assetId, "issues/" + assetId + "/cover.jpg", "a".repeat(64));
+        jdbcTemplate.update("""
+                INSERT INTO rights_record (
+                    asset_id, rights_owner, license_name, allowed_channels,
+                    territories, valid_from, valid_until, credit,
+                    withdrawal_terms, status
+                ) VALUES (?, 'Courtside TW', 'Fixture license', ARRAY['PUBLIC_WEB']::text[],
+                    ARRAY['GLOBAL']::text[], ?, ?, 'Courtside TW', 'withdraw on notice', 'VALID')
+                """, assetId,
+                java.sql.Timestamp.from(java.time.Instant.parse("2026-08-09T00:00:00Z")),
+                java.sql.Timestamp.from(java.time.Instant.parse("2026-08-12T00:00:00Z")));
         return assetId;
     }
 }
