@@ -58,7 +58,11 @@ final class PublicationWorkflowTest {
 
     @Test
     void missingRightsBlocksSubmitWithoutAdvancingVersion() {
-        PublicationWorkflow.PublicationSnapshot draft = snapshot(PublicationState.DRAFT, true);
+        PublicationWorkflow.PublicationSnapshot draft = snapshot(
+                PublicationState.DRAFT,
+                true,
+                new PublicationReadinessService.MediaRequirement(ASSET_ID, List.of())
+        );
 
         PublicationWorkflow.PublicationResult result = workflow.apply(
                 draft,
@@ -211,7 +215,7 @@ final class PublicationWorkflowTest {
                         status,
                         channels,
                         CHECKED_AT.minusSeconds(60),
-                        CHECKED_AT.plusSeconds(60)
+                        CHECKED_AT.plusSeconds(7200)
                 ))
         );
     }
