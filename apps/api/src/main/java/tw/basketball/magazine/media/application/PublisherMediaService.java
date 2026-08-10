@@ -185,14 +185,14 @@ public final class PublisherMediaService {
 
     private static String reason(JsonNode request) {
         JsonNode value = request.get("reason");
-        if (value == null || !value.isTextual() || value.asText().isBlank()
-                || value.asText().length() > 500
-                || value.asText().codePoints().anyMatch(Character::isISOControl)) {
+        if (value == null || !value.isString() || value.asString().isBlank()
+                || value.asString().length() > 500
+                || value.asString().codePoints().anyMatch(Character::isISOControl)) {
             throw EditorialProblemException.invalid(
                     "/reason", "REASON_REQUIRED", "a bounded reason is required"
             );
         }
-        return value.asText();
+        return value.asString();
     }
 
     private JsonNode object(String body) {

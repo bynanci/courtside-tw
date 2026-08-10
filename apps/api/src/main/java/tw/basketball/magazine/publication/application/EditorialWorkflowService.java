@@ -959,10 +959,10 @@ public final class EditorialWorkflowService {
 
     private static String requiredText(JsonNode request, String name, String path, int maxLength) {
         JsonNode value = request.get(name);
-        if (value == null || !value.isTextual()) {
+        if (value == null || !value.isString()) {
             throw EditorialProblemException.invalid(path, "TEXT_REQUIRED", "a text value is required");
         }
-        String text = value.asText();
+        String text = value.asString();
         if (text.isBlank() || text.length() > maxLength || hasControl(text)) {
             throw EditorialProblemException.invalid(path, "TEXT_OUT_OF_RANGE", "text is outside the allowed bounds");
         }
@@ -974,10 +974,10 @@ public final class EditorialWorkflowService {
         if (value == null || value.isNull()) {
             return "";
         }
-        if (!value.isTextual()) {
+        if (!value.isString()) {
             throw EditorialProblemException.invalid(path, "TEXT_REQUIRED", "a text value is required");
         }
-        String text = value.asText();
+        String text = value.asString();
         if (text.length() > maxLength || hasControl(text)) {
             throw EditorialProblemException.invalid(path, "TEXT_OUT_OF_RANGE", "text is outside the allowed bounds");
         }

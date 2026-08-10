@@ -253,7 +253,7 @@ public final class EditorialMediaService {
             JsonNode response = objectMapper.readTree(receipt.responseJson());
             JsonNode status = response.get("status");
             JsonNode version = response.get("version");
-            int statusCode = status != null && "ACCEPTED".equals(status.asText()) ? 202 : 201;
+            int statusCode = status != null && "ACCEPTED".equals(status.asString()) ? 202 : 201;
             long responseVersion = version != null && version.isIntegralNumber()
                     ? version.asLong() : 0;
             return new OperationResult(
@@ -312,10 +312,10 @@ public final class EditorialMediaService {
 
     private static String requiredText(JsonNode request, String field, String path, int maximum) {
         JsonNode value = request.get(field);
-        if (value == null || !value.isTextual()) {
+        if (value == null || !value.isString()) {
             throw EditorialProblemException.invalid(path, "FIELD_REQUIRED", field + " is required");
         }
-        String text = value.asText().strip();
+        String text = value.asString().strip();
         if (text.isBlank() || text.length() > maximum
                 || text.codePoints().anyMatch(Character::isISOControl)) {
             throw EditorialProblemException.invalid(path, "FIELD_INVALID", field + " is invalid");

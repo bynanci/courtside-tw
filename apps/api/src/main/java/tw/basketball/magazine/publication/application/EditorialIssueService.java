@@ -565,10 +565,10 @@ public final class EditorialIssueService {
 
     private static String requiredText(JsonNode request, String field, String path, int maxLength) {
         JsonNode value = request.get(field);
-        if (value == null || !value.isTextual()) {
+        if (value == null || !value.isString()) {
             throw EditorialProblemException.invalid(path, "TEXT_REQUIRED", field + " is required");
         }
-        String text = value.asText().strip();
+        String text = value.asString().strip();
         if (text.isBlank() || text.length() > maxLength
                 || text.codePoints().anyMatch(Character::isISOControl)) {
             throw EditorialProblemException.invalid(path, "TEXT_INVALID", field + " is invalid");

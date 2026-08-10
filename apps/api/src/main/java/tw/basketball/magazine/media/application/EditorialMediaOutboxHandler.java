@@ -95,10 +95,10 @@ public final class EditorialMediaOutboxHandler implements OutboxEventHandler {
 
     private static String text(JsonNode node, String field) {
         JsonNode value = node.get(field);
-        if (value == null || !value.isTextual() || value.asText().isBlank()) {
+        if (value == null || !value.isString() || value.asString().isBlank()) {
             throw new IllegalArgumentException(field + " is required");
         }
-        return value.asText();
+        return value.asString();
     }
 
     private static long longValue(JsonNode node, String field) {

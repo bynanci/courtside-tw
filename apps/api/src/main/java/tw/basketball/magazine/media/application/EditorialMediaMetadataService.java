@@ -325,12 +325,12 @@ public final class EditorialMediaMetadataService {
         }
         List<String> result = new ArrayList<>();
         for (JsonNode item : node) {
-            if (!item.isTextual() || item.asText().isBlank() || item.asText().length() > 64
-                    || item.asText().codePoints().anyMatch(Character::isISOControl)
-                    || !item.asText().matches("^[A-Za-z0-9_-]{1,64}$")) {
+            if (!item.isString() || item.asString().isBlank() || item.asString().length() > 64
+                    || item.asString().codePoints().anyMatch(Character::isISOControl)
+                    || !item.asString().matches("^[A-Za-z0-9_-]{1,64}$")) {
                 throw EditorialProblemException.invalid(path, "LIST_ITEM_INVALID", "list items are invalid");
             }
-            result.add(item.asText());
+            result.add(item.asString());
         }
         return List.copyOf(result);
     }
@@ -365,10 +365,10 @@ public final class EditorialMediaMetadataService {
 
     private static String requiredText(JsonNode value, String field, String path, int maximum) {
         JsonNode node = value.get(field);
-        if (node == null || !node.isTextual()) {
+        if (node == null || !node.isString()) {
             throw EditorialProblemException.invalid(path, "TEXT_REQUIRED", "a text value is required");
         }
-        String text = node.asText().strip();
+        String text = node.asString().strip();
         if (text.isBlank() || text.length() > maximum
                 || text.codePoints().anyMatch(Character::isISOControl)) {
             throw EditorialProblemException.invalid(path, "TEXT_OUT_OF_RANGE", "text is outside the allowed bounds");

@@ -319,10 +319,10 @@ public final class PublicationJobHandler implements OutboxEventHandler {
             throw new IllegalArgumentException("publication payload must be an object");
         }
         JsonNode value = payload.get(field);
-        if (value == null || !value.isTextual() || value.asText().isBlank()) {
+        if (value == null || !value.isString() || value.asString().isBlank()) {
             throw new IllegalArgumentException(field + " is required");
         }
-        return value.asText();
+        return value.asString();
     }
 
     private static UUID requiredUuid(JsonNode payload, String field) {
