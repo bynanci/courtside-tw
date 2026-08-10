@@ -115,7 +115,7 @@ public final class JdbcMediaAssetRepository implements MediaAssetRepository {
                         assetId,
                         variant.name(),
                         "media/variants/" + assetId + "/" + variant.name(),
-                        checksum,
+                        variant.encodedSha256(),
                         variant.mimeType(),
                         variant.byteSize(),
                         variant.width(),

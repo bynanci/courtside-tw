@@ -113,6 +113,70 @@ public final class EditorialIssueService {
         return new EditorialWorkflowService.OperationResult(200, json(response), 0);
     }
 
+    public EditorialWorkflowService.OperationResult submitIssue(
+            ActorContext actor,
+            UUID issueId,
+            Version expectedVersion,
+            String idempotencyKey,
+            String body
+    ) {
+        requireEditor(actor);
+        Objects.requireNonNull(expectedVersion, "expectedVersion");
+        JsonNode request = body == null || body.isBlank()
+                ? objectMapper.createObjectNode()
+                : object(body);
+        String hash = requestHash(
+                "SUBMIT_ISSUE|" + issueId + "|" + expectedVersion.value(), request
+        );
+        return idempotent(actor, "SUBMIT", idempotencyKey, hash, () -> {
+            EditorialIssueRepository.IssueRecord current = requireIssue(issueId, expectedVersion);
+            if (current.state() != PublicationState.DRAFT) {
+                throw new tw.basketball.magazine.publication.domain.PublicationWorkflowException(
+                        "INVALID_TRANSITION", "only a draft issue can be submitted"
+                );
+            }
+            transitionIssue(issueId, current, PublicationState.IN_REVIEW, expectedVersion);
+            repository.appendReview(issueId, actor.subject(), RoleCode.EDITOR.name(), "SUBMITTED", null);
+            EditorialIssueRepository.IssueRecord updated = requireIssue(issueId);
+            auditWriter.append(new AuditEventDraft(
+                    actor, "ISSUE_SUBMITTED", "ISSUE", issueId, metadata(updated)
+            ));
+            return workflowResult("IN_REVIEW", updated.version(), null);
+        });
+    }
+
+    public EditorialWorkflowService.OperationResult approveIssue(
+            ActorContext actor,
+            UUID issueId,
+            Version expectedVersion,
+            String idempotencyKey,
+            String body
+    ) {
+        requirePublisher(actor);
+        Objects.requireNonNull(expectedVersion, "expectedVersion");
+        JsonNode request = body == null || body.isBlank()
+                ? objectMapper.createObjectNode()
+                : object(body);
+        String hash = requestHash(
+                "APPROVE_ISSUE|" + issueId + "|" + expectedVersion.value(), request
+        );
+        return idempotent(actor, "APPROVE", idempotencyKey, hash, () -> {
+            EditorialIssueRepository.IssueRecord current = requireIssue(issueId, expectedVersion);
+            if (current.state() != PublicationState.IN_REVIEW) {
+                throw new tw.basketball.magazine.publication.domain.PublicationWorkflowException(
+                        "INVALID_TRANSITION", "only an issue in review can be approved"
+                );
+            }
+            transitionIssue(issueId, current, PublicationState.APPROVED, expectedVersion);
+            repository.appendReview(issueId, actor.subject(), RoleCode.PUBLISHER.name(), "APPROVED", null);
+            EditorialIssueRepository.IssueRecord updated = requireIssue(issueId);
+            auditWriter.append(new AuditEventDraft(
+                    actor, "ISSUE_APPROVED", "ISSUE", issueId, metadata(updated)
+            ));
+            return workflowResult("APPROVED", updated.version(), null);
+        });
+    }
+
     public EditorialWorkflowService.OperationResult publishIssue(
             ActorContext actor,
             UUID issueId,
@@ -125,7 +189,9 @@ public final class EditorialIssueService {
         JsonNode request = body == null || body.isBlank()
                 ? objectMapper.createObjectNode()
                 : object(body);
-        String hash = requestHash("PUBLISH_ISSUE", request);
+        String hash = requestHash(
+                "PUBLISH_ISSUE|" + issueId + "|" + expectedVersion.value(), request
+        );
         return idempotent(actor, "PUBLISH", idempotencyKey, hash, () -> {
             EditorialIssueRepository.IssueRecord current = requireIssue(issueId, expectedVersion);
             if (current.state() != PublicationState.APPROVED
@@ -134,12 +200,20 @@ public final class EditorialIssueService {
                         "INVALID_TRANSITION", "issue must be approved or scheduled before publishing"
                 );
             }
+            Instant publishedAt = applicationClock.now();
+            if (!repository.readyForPublication(issueId, publishedAt)) {
+                throw EditorialProblemException.gate(
+                        "/coverAssetId",
+                        "ISSUE_NOT_READY",
+                        "issue cover must be ready, have a cover variant, alt text, and valid public rights"
+                );
+            }
             if (!repository.transition(
                     issueId,
                     current.version(),
                     current.state(),
                     PublicationState.PUBLISHED,
-                    applicationClock.now()
+                    publishedAt
             )) {
                 throw new tw.basketball.magazine.shared.VersionConflictException(
                         expectedVersion,
@@ -148,6 +222,15 @@ public final class EditorialIssueService {
                 );
             }
             EditorialIssueRepository.IssueRecord updated = requireIssue(issueId);
+            JsonNode snapshot = object(repository.publicationSnapshotDocument(issueId));
+            repository.appendPublicationSnapshot(
+                    issueId,
+                    repository.nextSnapshotVersion(issueId),
+                    snapshot,
+                    sha256(snapshot.toString()),
+                    actor.subject(),
+                    updated.coverAssetId()
+            );
             auditWriter.append(new AuditEventDraft(
                     actor,
                     "ISSUE_PUBLISHED",
@@ -169,7 +252,10 @@ public final class EditorialIssueService {
         requirePublisher(actor);
         Objects.requireNonNull(expectedVersion, "expectedVersion");
         ScheduleInput schedule = parseSchedule(body);
-        String hash = requestHash("SCHEDULE_ISSUE", object(body));
+        JsonNode request = object(body);
+        String hash = requestHash(
+                "SCHEDULE_ISSUE|" + issueId + "|" + expectedVersion.value(), request
+        );
         return idempotent(actor, "SCHEDULE", idempotencyKey, hash, () -> {
             EditorialIssueRepository.IssueRecord current = requireIssue(issueId, expectedVersion);
             if (current.state() != PublicationState.APPROVED) {
@@ -457,7 +543,10 @@ public final class EditorialIssueService {
                 }
                 String replayBody = canonicalJson(existing.get().response());
                 return new EditorialWorkflowService.OperationResult(
-                        operation.equals("PUBLISH") || operation.equals("SCHEDULE")
+                        operation.equals("PUBLISH")
+                                || operation.equals("SCHEDULE")
+                                || operation.equals("SUBMIT")
+                                || operation.equals("APPROVE")
                                 ? 202
                                 : operation.startsWith("CREATE") ? 201 : 200,
                         replayBody,
@@ -476,6 +565,27 @@ public final class EditorialIssueService {
             );
         });
         return Objects.requireNonNull(result, "transaction returned no issue result");
+    }
+
+    private void transitionIssue(
+            UUID issueId,
+            EditorialIssueRepository.IssueRecord current,
+            PublicationState nextState,
+            Version expectedVersion
+    ) {
+        if (!repository.transition(
+                issueId,
+                current.version(),
+                current.state(),
+                nextState,
+                null
+        )) {
+            throw new tw.basketball.magazine.shared.VersionConflictException(
+                    expectedVersion,
+                    repository.find(issueId).map(issue -> new Version(issue.version()))
+                            .orElse(expectedVersion)
+            );
+        }
     }
 
     private Map<String, Object> issueJson(EditorialIssueRepository.IssueRecord issue) {

@@ -10,6 +10,10 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -24,12 +28,15 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
+import tools.jackson.databind.ObjectMapper;
+
 abstract class PublicIssueApiIntegrationTestSupport {
     private static final String POSTGRES_IMAGE = "postgres:18.4-alpine";
     private static final String FOUNDATION_MIGRATION = "/db/migration/V001__foundation.sql";
     private static final String PUBLICATION_MIGRATION = "/db/migration/V002__publication_content_core.sql";
     private static final String CONTRIBUTOR_MIGRATION = "/db/migration/V003__article_contributors.sql";
     private static final String CHECKSUM = "a".repeat(64);
+    private static final ObjectMapper JSON = new ObjectMapper();
 
     private static final PostgreSQLContainer POSTGRES =
             new PostgreSQLContainer(POSTGRES_IMAGE)
@@ -51,6 +58,8 @@ abstract class PublicIssueApiIntegrationTestSupport {
         applyMigration(dataSource, FOUNDATION_MIGRATION);
         applyMigration(dataSource, PUBLICATION_MIGRATION);
         applyMigration(dataSource, CONTRIBUTOR_MIGRATION);
+        applyMigration(dataSource, "/db/migration/V004__editorial_publication_workflow.sql");
+        applyMigration(dataSource, "/db/migration/V005__editorial_publication_gate_hardening.sql");
         jdbcTemplate = new JdbcTemplate(dataSource);
     }
 
@@ -62,7 +71,9 @@ abstract class PublicIssueApiIntegrationTestSupport {
     @BeforeEach
     void createControllerAndCleanPublicationData() {
         jdbcTemplate.update("""
-                TRUNCATE TABLE article_contributor, contributor, issue_article, issue_section, article_revision, article,
+                TRUNCATE TABLE publication_impact_link, publication_snapshot, publication_review,
+                    publication_rights_reference, publication_job, publication_idempotency,
+                    article_contributor, contributor, issue_article, issue_section, article_revision, article,
                     publication_issue, media_variant, rights_record, media_asset
                 RESTART IDENTITY CASCADE
                 """);
@@ -133,6 +144,7 @@ abstract class PublicIssueApiIntegrationTestSupport {
                 state,
                 Timestamp.from(publishedAt)
         );
+        refreshSnapshot(issueId);
 
         return new IssueFixture(issueId, slug);
     }
@@ -201,6 +213,84 @@ abstract class PublicIssueApiIntegrationTestSupport {
                 INSERT INTO issue_article (issue_id, section_id, article_id, position)
                 VALUES (?, ?, ?, ?)
                 """, issue.id(), sectionId, articleId, articlePosition);
+        refreshSnapshot(issue.id());
+    }
+
+    private void refreshSnapshot(UUID issueId) {
+        Map<String, Object> document = jdbcTemplate.queryForObject("""
+                SELECT issue_number, slug, title, summary, cover_asset_id
+                FROM publication_issue
+                WHERE id = ?
+                """, (resultSet, rowNumber) -> {
+            Map<String, Object> value = new LinkedHashMap<>();
+            value.put("schemaVersion", 1);
+            value.put("issueId", issueId.toString());
+            value.put("issueNumber", resultSet.getInt("issue_number"));
+            value.put("slug", resultSet.getString("slug"));
+            value.put("title", resultSet.getString("title"));
+            value.put("summary", resultSet.getString("summary"));
+            value.put("coverAssetId", resultSet.getObject("cover_asset_id", UUID.class).toString());
+            return value;
+        }, issueId);
+        List<Map<String, Object>> sections = new ArrayList<>();
+        List<Map<String, Object>> sectionRows = jdbcTemplate.query("""
+                SELECT id, title, position
+                FROM issue_section
+                WHERE issue_id = ?
+                ORDER BY position, id
+                """, (resultSet, rowNumber) -> {
+            Map<String, Object> value = new LinkedHashMap<>();
+            value.put("sectionId", resultSet.getObject("id", UUID.class).toString());
+            value.put("title", resultSet.getString("title"));
+            value.put("position", resultSet.getInt("position"));
+            return value;
+        }, issueId);
+        for (Map<String, Object> section : sectionRows) {
+            UUID sectionId = UUID.fromString((String) section.get("sectionId"));
+            List<Map<String, Object>> articles = jdbcTemplate.query("""
+                    SELECT article.id, article.slug, revision.title, issue_article.position
+                    FROM issue_article
+                    JOIN article ON article.id = issue_article.article_id
+                    JOIN article_revision revision ON revision.id = article.published_revision_id
+                    WHERE issue_article.issue_id = ? AND issue_article.section_id = ?
+                      AND article.state = 'PUBLISHED' AND revision.state = 'PUBLISHED'
+                    ORDER BY issue_article.position, issue_article.id
+                    """, (resultSet, rowNumber) -> {
+                Map<String, Object> value = new LinkedHashMap<>();
+                value.put("articleId", resultSet.getObject("id", UUID.class).toString());
+                value.put("slug", resultSet.getString("slug"));
+                value.put("title", resultSet.getString("title"));
+                value.put("position", resultSet.getInt("position"));
+                return value;
+            }, issueId, sectionId);
+            if (!articles.isEmpty()) {
+                section.put("articles", articles);
+                sections.add(section);
+            }
+        }
+        document.put("sections", sections);
+        String content;
+        try {
+            content = JSON.writeValueAsString(document);
+        } catch (Exception exception) {
+            throw new IllegalStateException("fixture snapshot serialization failed", exception);
+        }
+        UUID snapshotId = jdbcTemplate.queryForObject("""
+                INSERT INTO publication_snapshot (
+                    aggregate_type, aggregate_id, revision_id, snapshot_version,
+                    content_document, checksum_sha256, created_by
+                ) VALUES ('ISSUE', ?, NULL,
+                    (SELECT COALESCE(MAX(snapshot_version), 0) + 1
+                     FROM publication_snapshot WHERE aggregate_type = 'ISSUE' AND aggregate_id = ?),
+                    ?::jsonb, ?, 'public-fixture')
+                RETURNING id
+                """, (resultSet, rowNumber) -> resultSet.getObject("id", UUID.class),
+                issueId, issueId, content, CHECKSUM);
+        UUID coverAssetId = UUID.fromString((String) document.get("coverAssetId"));
+        jdbcTemplate.update("""
+                INSERT INTO publication_impact_link (snapshot_id, asset_id, impact_type)
+                VALUES (?, ?, 'COVER_MEDIA')
+                """, snapshotId, coverAssetId);
     }
 
     private static void applyMigration(DataSource dataSource, String migrationResource)

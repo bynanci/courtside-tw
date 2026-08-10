@@ -1,5 +1,7 @@
 package tw.basketball.magazine.media.processing;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Objects;
 
 import tw.basketball.magazine.media.storage.StorageVisibility;
@@ -12,8 +14,21 @@ public record MediaVariant(
         int height,
         long byteSize,
         StorageVisibility visibility,
-        byte[] encodedBytes
+        byte[] encodedBytes,
+        String encodedSha256
 ) {
+    public MediaVariant(
+            String name,
+            String mimeType,
+            int width,
+            int height,
+            long byteSize,
+            StorageVisibility visibility,
+            byte[] encodedBytes
+    ) {
+        this(name, mimeType, width, height, byteSize, visibility, encodedBytes, checksum(encodedBytes));
+    }
+
     public MediaVariant {
         name = requireText(name, "name");
         mimeType = requireText(mimeType, "mimeType");
@@ -25,11 +40,31 @@ public record MediaVariant(
         if (encodedBytes.length == 0 || encodedBytes.length != byteSize) {
             throw new IllegalArgumentException("encodedBytes must be non-empty and match byteSize");
         }
+        encodedSha256 = requireChecksum(encodedSha256);
     }
 
     @Override
     public byte[] encodedBytes() {
         return encodedBytes.clone();
+    }
+
+    private static String checksum(byte[] bytes) {
+        Objects.requireNonNull(bytes, "encodedBytes");
+        try {
+            return java.util.HexFormat.of().formatHex(
+                    MessageDigest.getInstance("SHA-256").digest(bytes)
+            );
+        } catch (NoSuchAlgorithmException exception) {
+            throw new IllegalStateException("SHA-256 is required by the runtime", exception);
+        }
+    }
+
+    private static String requireChecksum(String value) {
+        Objects.requireNonNull(value, "encodedSha256");
+        if (!value.matches("^[0-9a-fA-F]{64}$")) {
+            throw new IllegalArgumentException("encodedSha256 must be a SHA-256 hex digest");
+        }
+        return value.toLowerCase(java.util.Locale.ROOT);
     }
 
     private static String requireText(String value, String field) {

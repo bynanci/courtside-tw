@@ -14,6 +14,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.databind.ObjectMapper;
 import tw.basketball.magazine.outbox.OutboxHandlerRegistration;
 import tw.basketball.magazine.publication.persistence.JdbcEditorialArticleRepository;
+import tw.basketball.magazine.publication.persistence.JdbcEditorialIssueRepository;
 import tw.basketball.magazine.publication.persistence.EditorialArticleRepository;
 import tw.basketball.magazine.shared.UuidV7Generator;
 
@@ -47,5 +48,26 @@ public final class PublicationWorkerConfiguration {
             PublicationJobHandler handler
     ) {
         return new OutboxHandlerRegistration(PublicationJobHandler.EVENT_TYPE, handler);
+    }
+
+    @Bean
+    public IssuePublicationJobHandler issuePublicationJobHandler(
+            JdbcTemplate jdbcTemplate,
+            PlatformTransactionManager transactionManager,
+            ObjectMapper objectMapper
+    ) {
+        return new IssuePublicationJobHandler(
+                new JdbcEditorialIssueRepository(jdbcTemplate, objectMapper),
+                new TransactionTemplate(transactionManager),
+                objectMapper,
+                Clock.systemUTC()
+        );
+    }
+
+    @Bean
+    public OutboxHandlerRegistration issuePublicationJobHandlerRegistration(
+            IssuePublicationJobHandler handler
+    ) {
+        return new OutboxHandlerRegistration(IssuePublicationJobHandler.EVENT_TYPE, handler);
     }
 }

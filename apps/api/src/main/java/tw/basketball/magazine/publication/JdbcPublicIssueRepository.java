@@ -14,6 +14,9 @@ import java.util.UUID;
 
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import tw.basketball.magazine.publication.PublicIssueModels.ArticleSummary;
 import tw.basketball.magazine.publication.PublicIssueModels.IssueCover;
 import tw.basketball.magazine.publication.PublicIssueModels.IssueDetail;
@@ -54,9 +57,15 @@ public final class JdbcPublicIssueRepository implements PublicIssueRepository {
             )
             """;
     private final JdbcTemplate jdbcTemplate;
+    private final ObjectMapper objectMapper;
 
     public JdbcPublicIssueRepository(JdbcTemplate jdbcTemplate) {
+        this(jdbcTemplate, new ObjectMapper());
+    }
+
+    public JdbcPublicIssueRepository(JdbcTemplate jdbcTemplate, ObjectMapper objectMapper) {
         this.jdbcTemplate = Objects.requireNonNull(jdbcTemplate, "jdbcTemplate");
+        this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
     }
 
     @Override
@@ -67,7 +76,6 @@ public final class JdbcPublicIssueRepository implements PublicIssueRepository {
         parameters.add(Timestamp.from(now));
         parameters.add(Timestamp.from(now));
         parameters.add(Timestamp.from(now));
-        parameters.add(Timestamp.from(now));
         if (cursor != null) {
             parameters.add(Timestamp.from(cursor.publishedAt()));
             parameters.add(cursor.issueId());
@@ -75,24 +83,22 @@ public final class JdbcPublicIssueRepository implements PublicIssueRepository {
         parameters.add(limit + 1);
 
         List<IssueSummary> rows = jdbcTemplate.query("""
-                SELECT pi.id, pi.issue_number, pi.slug, pi.title, pi.summary, pi.published_at,
-                       mv.public_storage_key, ma.alt_text, mv.width, mv.height,
-                       count(ar.id) AS article_count
+                SELECT pi.id, pi.published_at, snapshot.content_document AS snapshot_document,
+                       mv.public_storage_key, ma.alt_text, mv.width, mv.height
                 FROM publication_issue pi
+                JOIN LATERAL (
+                    SELECT frozen.content_document
+                    FROM publication_snapshot frozen
+                    WHERE frozen.aggregate_type = 'ISSUE'
+                      AND frozen.aggregate_id = pi.id
+                      AND frozen.revision_id IS NULL
+                    ORDER BY frozen.snapshot_version DESC, frozen.id DESC
+                    LIMIT 1
+                ) snapshot ON snapshot.content_document->>'coverAssetId' = pi.cover_asset_id::text
                 JOIN media_asset ma ON ma.id = pi.cover_asset_id
                 JOIN media_variant mv ON mv.asset_id = ma.id
-                LEFT JOIN issue_article ia ON ia.issue_id = pi.id
-                LEFT JOIN article a ON a.id = ia.article_id
-                    AND a.state = 'PUBLISHED'
-                    AND a.published_at <= ?
-                    AND a.published_revision_id IS NOT NULL
-                LEFT JOIN article_revision ar ON ar.id = a.published_revision_id
-                    AND ar.article_id = a.id
-                    AND ar.state = 'PUBLISHED'
                 WHERE
                 """ + PUBLIC_ISSUE_PREDICATE + cursorPredicate + """
-                GROUP BY pi.id, pi.issue_number, pi.slug, pi.title, pi.summary, pi.published_at,
-                         mv.public_storage_key, ma.alt_text, mv.width, mv.height
                 ORDER BY pi.published_at DESC, pi.id DESC
                 LIMIT ?
                 """, (resultSet, rowNumber) -> mapIssueSummary(resultSet), parameters.toArray());
@@ -113,9 +119,18 @@ public final class JdbcPublicIssueRepository implements PublicIssueRepository {
         Objects.requireNonNull(issueSlug, "issueSlug");
         Objects.requireNonNull(now, "now");
         List<IssueHeader> headers = jdbcTemplate.query("""
-                SELECT pi.id, pi.issue_number, pi.slug, pi.title, pi.summary, pi.published_at,
+                SELECT pi.id, pi.published_at, snapshot.content_document AS snapshot_document,
                        mv.public_storage_key, ma.alt_text, mv.width, mv.height
                 FROM publication_issue pi
+                JOIN LATERAL (
+                    SELECT frozen.content_document
+                    FROM publication_snapshot frozen
+                    WHERE frozen.aggregate_type = 'ISSUE'
+                      AND frozen.aggregate_id = pi.id
+                      AND frozen.revision_id IS NULL
+                    ORDER BY frozen.snapshot_version DESC, frozen.id DESC
+                    LIMIT 1
+                ) snapshot ON snapshot.content_document->>'coverAssetId' = pi.cover_asset_id::text
                 JOIN media_asset ma ON ma.id = pi.cover_asset_id
                 JOIN media_variant mv ON mv.asset_id = ma.id
                 WHERE pi.slug = ?
@@ -132,29 +147,7 @@ public final class JdbcPublicIssueRepository implements PublicIssueRepository {
         }
 
         IssueHeader header = headers.getFirst();
-        List<TocRow> rows = jdbcTemplate.query("""
-                SELECT section.id AS section_id, section.title AS section_title,
-                       section.position AS section_position,
-                       article.id AS article_id, article.slug AS article_slug,
-                       revision.title AS article_title,
-                       issue_article.position AS article_position
-                FROM issue_section section
-                JOIN issue_article ON issue_article.section_id = section.id
-                JOIN article ON article.id = issue_article.article_id
-                JOIN article_revision revision ON revision.id = article.published_revision_id
-                    AND revision.article_id = article.id
-                WHERE section.issue_id = ?
-                  AND article.state = 'PUBLISHED'
-                  AND article.published_at <= ?
-                  AND article.published_revision_id IS NOT NULL
-                  AND revision.state = 'PUBLISHED'
-                ORDER BY section.position ASC, section.id ASC,
-                         issue_article.position ASC, issue_article.id ASC
-                LIMIT ?
-                """, (resultSet, rowNumber) -> mapTocRow(resultSet),
-                header.issueId(),
-                Timestamp.from(now),
-                MAXIMUM_TOC_ROWS + 1);
+        List<TocRow> rows = snapshotRows(header.snapshot());
         if (rows.size() > MAXIMUM_TOC_ROWS) {
             return Optional.empty();
         }
@@ -182,41 +175,91 @@ public final class JdbcPublicIssueRepository implements PublicIssueRepository {
         ));
     }
 
-    private static IssueSummary mapIssueSummary(ResultSet resultSet) throws SQLException {
+    private IssueSummary mapIssueSummary(ResultSet resultSet) throws SQLException {
+        JsonNode snapshot = snapshot(resultSet);
         return new IssueSummary(
                 resultSet.getObject("id", UUID.class),
-                resultSet.getString("slug"),
-                resultSet.getInt("issue_number"),
-                resultSet.getString("title"),
-                resultSet.getString("summary"),
+                requiredText(snapshot, "slug"),
+                requiredInt(snapshot, "issueNumber"),
+                requiredText(snapshot, "title"),
+                requiredText(snapshot, "summary"),
                 cover(resultSet),
                 resultSet.getTimestamp("published_at").toInstant(),
-                resultSet.getInt("article_count")
+                snapshotRows(snapshot).size()
         );
     }
 
-    private static IssueHeader mapIssueHeader(ResultSet resultSet) throws SQLException {
+    private IssueHeader mapIssueHeader(ResultSet resultSet) throws SQLException {
+        JsonNode snapshot = snapshot(resultSet);
         return new IssueHeader(
                 resultSet.getObject("id", UUID.class),
-                resultSet.getString("slug"),
-                resultSet.getInt("issue_number"),
-                resultSet.getString("title"),
-                resultSet.getString("summary"),
+                requiredText(snapshot, "slug"),
+                requiredInt(snapshot, "issueNumber"),
+                requiredText(snapshot, "title"),
+                requiredText(snapshot, "summary"),
                 cover(resultSet),
-                resultSet.getTimestamp("published_at").toInstant()
+                resultSet.getTimestamp("published_at").toInstant(),
+                snapshot
         );
     }
 
-    private static TocRow mapTocRow(ResultSet resultSet) throws SQLException {
-        return new TocRow(
-                resultSet.getObject("section_id", UUID.class),
-                resultSet.getString("section_title"),
-                resultSet.getInt("section_position"),
-                resultSet.getObject("article_id", UUID.class),
-                resultSet.getString("article_slug"),
-                resultSet.getString("article_title"),
-                resultSet.getInt("article_position")
-        );
+    private JsonNode snapshot(ResultSet resultSet) throws SQLException {
+        try {
+            return objectMapper.readTree(resultSet.getString("snapshot_document"));
+        } catch (JacksonException exception) {
+            throw new SQLException("public issue snapshot is invalid", exception);
+        }
+    }
+
+    private List<TocRow> snapshotRows(JsonNode snapshot) {
+        List<TocRow> rows = new ArrayList<>();
+        JsonNode sections = snapshot == null ? null : snapshot.get("sections");
+        if (sections == null || !sections.isArray()) {
+            return rows;
+        }
+        for (JsonNode section : sections) {
+            if (section == null || !section.isObject()) {
+                continue;
+            }
+            UUID sectionId = UUID.fromString(requiredText(section, "sectionId"));
+            String sectionTitle = requiredText(section, "title");
+            int sectionPosition = requiredInt(section, "position");
+            JsonNode articles = section.get("articles");
+            if (articles == null || !articles.isArray()) {
+                continue;
+            }
+            for (JsonNode article : articles) {
+                if (article == null || !article.isObject()) {
+                    continue;
+                }
+                rows.add(new TocRow(
+                        sectionId,
+                        sectionTitle,
+                        sectionPosition,
+                        UUID.fromString(requiredText(article, "articleId")),
+                        requiredText(article, "slug"),
+                        requiredText(article, "title"),
+                        requiredInt(article, "position")
+                ));
+            }
+        }
+        return rows;
+    }
+
+    private static String requiredText(JsonNode node, String field) {
+        JsonNode value = node.get(field);
+        if (value == null || !value.isString() || value.asString().isBlank()) {
+            throw new IllegalStateException("public issue snapshot is missing " + field);
+        }
+        return value.asString();
+    }
+
+    private static int requiredInt(JsonNode node, String field) {
+        JsonNode value = node.get(field);
+        if (value == null || !value.isNumber()) {
+            throw new IllegalStateException("public issue snapshot is missing " + field);
+        }
+        return value.asInt();
     }
 
     private static IssueCover cover(ResultSet resultSet) throws SQLException {
@@ -240,7 +283,8 @@ public final class JdbcPublicIssueRepository implements PublicIssueRepository {
             String title,
             String summary,
             IssueCover cover,
-            Instant publishedAt
+            Instant publishedAt,
+            JsonNode snapshot
     ) {
     }
 

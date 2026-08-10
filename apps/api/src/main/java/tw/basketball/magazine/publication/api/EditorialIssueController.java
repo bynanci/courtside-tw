@@ -40,6 +40,7 @@ import tw.basketball.magazine.shared.Version;
 @ConditionalOnBean(EditorialIssueService.class)
 public final class EditorialIssueController {
     private static final String REQUEST_ID_HEADER = "X-Request-Id";
+    private static final String REQUEST_ID_ATTRIBUTE = EditorialIssueController.class.getName() + ".requestId";
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     private final EditorialIssueService service;
@@ -76,6 +77,40 @@ public final class EditorialIssueController {
     ) {
         return response(service.patchIssue(
                 actor(authentication, request),
+                Version.parseIfMatch(request.getHeader(HttpHeaders.IF_MATCH)),
+                request.getHeader("Idempotency-Key"),
+                body
+        ), requestId(request));
+    }
+
+    @PostMapping(path = "/api/v1/editor/issues/{issueId}:submit")
+    public ResponseEntity<JsonNode> submitIssue(
+            @PathVariable String issueId,
+            @RequestBody(required = false) String body,
+            Authentication authentication,
+            HttpServletRequest request
+    ) {
+        ActorContext actor = actor(authentication, request);
+        return response(service.submitIssue(
+                actor,
+                uuid(issueId, "/id"),
+                Version.parseIfMatch(request.getHeader(HttpHeaders.IF_MATCH)),
+                request.getHeader("Idempotency-Key"),
+                body
+        ), requestId(request));
+    }
+
+    @PostMapping(path = "/api/v1/publisher/issues/{issueId}:approve")
+    public ResponseEntity<JsonNode> approveIssue(
+            @PathVariable String issueId,
+            @RequestBody(required = false) String body,
+            Authentication authentication,
+            HttpServletRequest request
+    ) {
+        ActorContext actor = actor(authentication, request);
+        return response(service.approveIssue(
+                actor,
+                uuid(issueId, "/id"),
                 Version.parseIfMatch(request.getHeader(HttpHeaders.IF_MATCH)),
                 request.getHeader("Idempotency-Key"),
                 body
@@ -259,15 +294,23 @@ public final class EditorialIssueController {
     }
 
     private static RequestId requestId(HttpServletRequest request) {
+        Object cached = request.getAttribute(REQUEST_ID_ATTRIBUTE);
+        if (cached instanceof RequestId requestId) {
+            return requestId;
+        }
         String candidate = request.getHeader(REQUEST_ID_HEADER);
         if (candidate != null) {
             try {
-                return RequestId.of(candidate);
+                RequestId requestId = RequestId.of(candidate);
+                request.setAttribute(REQUEST_ID_ATTRIBUTE, requestId);
+                return requestId;
             } catch (IllegalArgumentException ignored) {
                 // Invalid caller input is not echoed.
             }
         }
-        return RequestId.of("req-" + UUID.randomUUID());
+        RequestId generated = RequestId.of("req-" + UUID.randomUUID());
+        request.setAttribute(REQUEST_ID_ATTRIBUTE, generated);
+        return generated;
     }
 
     private static UUID uuid(String value, String path) {

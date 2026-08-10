@@ -6,6 +6,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 import tw.basketball.magazine.publication.domain.PublicationState;
+import tools.jackson.databind.JsonNode;
 
 /** Persistence boundary for issue draft CRUD and explicit optimistic locks. */
 public interface EditorialIssueRepository {
@@ -50,6 +51,31 @@ public interface EditorialIssueRepository {
             Instant publishedAt
     );
 
+    boolean readyForPublication(UUID issueId, Instant checkedAt);
+
+    void appendReview(
+            UUID issueId,
+            String reviewerSubject,
+            String reviewerRole,
+            String decision,
+            String reason
+    );
+
+    String publicationSnapshotDocument(UUID issueId);
+
+    long nextSnapshotVersion(UUID issueId);
+
+    void appendPublicationSnapshot(
+            UUID issueId,
+            long snapshotVersion,
+            JsonNode content,
+            String checksumSha256,
+            String createdBy,
+            UUID coverAssetId
+    );
+
+    boolean hasPublicationSnapshot(UUID issueId);
+
     void insertPublicationJob(
             UUID issueId,
             String operation,
@@ -58,6 +84,16 @@ public interface EditorialIssueRepository {
             Instant scheduledAt,
             String timezone
     );
+
+    Optional<PublicationJobRecord> findPublicationJob(
+            String requestedBy,
+            String operation,
+            String idempotencyKey
+    );
+
+    void markPublicationJobSucceeded(UUID jobId, Instant processedAt);
+
+    void markPublicationJobBlocked(UUID jobId, String reason, Instant processedAt);
 
     Optional<EditorialArticleRepository.IdempotencyRecord> findIdempotency(
             String actorSubject,
@@ -97,5 +133,17 @@ public interface EditorialIssueRepository {
     }
 
     record SectionPosition(UUID sectionId, int position) {
+    }
+
+    record PublicationJobRecord(
+            UUID jobId,
+            UUID issueId,
+            String operation,
+            String idempotencyKey,
+            String requestedBy,
+            Instant scheduledAt,
+            String status,
+            JsonNode payload
+    ) {
     }
 }

@@ -205,22 +205,13 @@ public final class JdbcEditorialArticleRepository implements EditorialArticleRep
         return true;
     }
 
-    /**
-     * The link table is append-only by design.  Add the current document's
-     * public-web references before a workflow evaluates readiness; this keeps
-     * the gate fail-closed for newly referenced assets without granting the app
-     * role destructive link permissions.
-     */
     private void syncMediaReferences(UUID revisionId, JsonNode content) {
         List<UUID> assetIds = ContentMediaReferences.extract(content);
-        for (int index = 0; index < assetIds.size(); index++) {
-            jdbcTemplate.update("""
-                    INSERT INTO article_revision_media (
-                        article_revision_id, asset_id, required_channel, position
-                    ) VALUES (?, ?, 'PUBLIC_WEB', ?)
-                    ON CONFLICT (article_revision_id, asset_id, required_channel) DO NOTHING
-                    """, revisionId, assetIds.get(index), index + 1);
-        }
+        jdbcTemplate.update(
+                "SELECT replace_public_article_revision_media(?, ?::jsonb)",
+                revisionId,
+                json(assetIds)
+        );
     }
 
     @Override

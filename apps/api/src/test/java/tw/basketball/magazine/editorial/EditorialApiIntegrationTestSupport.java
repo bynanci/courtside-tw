@@ -73,6 +73,7 @@ public abstract class EditorialApiIntegrationTestSupport {
         applyMigration(dataSource, "/db/migration/V008__editorial_crud_commands.sql");
         applyMigration(dataSource, "/db/migration/V009__publisher_media_commands.sql");
         applyMigration(dataSource, "/db/migration/V010__editorial_section_commands.sql");
+        applyMigration(dataSource, "/db/migration/V011__editorial_media_reference_sync.sql");
         jdbcTemplate = new JdbcTemplate(dataSource);
         applicationClock = new ApplicationClock(
                 Clock.fixed(Instant.parse("2026-08-10T00:00:00Z"), ZoneOffset.UTC)
