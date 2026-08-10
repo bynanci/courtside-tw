@@ -29,10 +29,9 @@ test.describe("US3 Studio editorial publication", () => {
   test("publisher can approve, schedule in Asia/Taipei and withdraw a revision", async ({
     page
   }) => {
-    await page.goto(
-      "/studio?role=PUBLISHER&articleId=" + ARTICLE_ID + "&issueId=" + ISSUE_ID,
-      { waitUntil: "domcontentloaded" }
-    )
+    await page.goto("/studio?role=PUBLISHER&articleId=" + ARTICLE_ID + "&issueId=" + ISSUE_ID, {
+      waitUntil: "domcontentloaded"
+    })
 
     await expect(page.getByTestId("studio-shell")).toBeVisible()
     await expect(page.getByTestId("studio-role")).toContainText("PUBLISHER")
@@ -85,10 +84,7 @@ async function installEditorialApiMock(page: Page): Promise<void> {
       return
     }
 
-    if (
-      request.method() === "POST" &&
-      requestUrl.pathname === "/api/v1/editor/articles"
-    ) {
+    if (request.method() === "POST" && requestUrl.pathname === "/api/v1/editor/articles") {
       await json(route, 201, {
         articleId: ARTICLE_ID,
         version: 1,
@@ -98,10 +94,7 @@ async function installEditorialApiMock(page: Page): Promise<void> {
       })
       return
     }
-    if (
-      request.method() === "PATCH" &&
-      requestUrl.pathname === "/api/v1/editor/articles"
-    ) {
+    if (request.method() === "PATCH" && requestUrl.pathname === "/api/v1/editor/articles") {
       await json(route, 200, {
         articleId: ARTICLE_ID,
         version: 2,
@@ -111,10 +104,7 @@ async function installEditorialApiMock(page: Page): Promise<void> {
       })
       return
     }
-    if (
-      request.method() === "POST" &&
-      requestUrl.pathname === "/api/v1/editor/media/uploads"
-    ) {
+    if (request.method() === "POST" && requestUrl.pathname === "/api/v1/editor/media/uploads") {
       await json(route, 201, {
         assetId: "00000000-0000-4000-8000-000000000703",
         uploadUrl: "http://127.0.0.1:4010/upload/000000000703",
