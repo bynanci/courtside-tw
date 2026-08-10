@@ -12,6 +12,7 @@ test.describe("US3 Studio editorial publication", () => {
     await page.goto("/studio?role=EDITOR", { waitUntil: "domcontentloaded" })
 
     await expect(page.getByTestId("studio-shell")).toBeVisible()
+    await expect(page.getByTestId("studio-shell")).toHaveAttribute("data-hydrated", "true")
     await expect(page.getByTestId("studio-role")).toContainText("EDITOR")
     await page.getByTestId("studio-new-article").click()
     await page.getByTestId("article-title").fill("主場燈光亮起之前")
@@ -34,6 +35,7 @@ test.describe("US3 Studio editorial publication", () => {
     })
 
     await expect(page.getByTestId("studio-shell")).toBeVisible()
+    await expect(page.getByTestId("studio-shell")).toHaveAttribute("data-hydrated", "true")
     await expect(page.getByTestId("studio-role")).toContainText("PUBLISHER")
     await page.getByTestId("publisher-approve").click()
     await expect(page.getByTestId("workflow-status")).toContainText("已核准")
@@ -49,6 +51,7 @@ test.describe("US3 Studio editorial publication", () => {
   test("stale concurrent edit is shown as a recoverable conflict", async ({ page }) => {
     await page.goto("/studio?role=EDITOR", { waitUntil: "domcontentloaded" })
 
+    await expect(page.getByTestId("studio-shell")).toHaveAttribute("data-hydrated", "true")
     await page.getByTestId("studio-new-article").click()
     await page.getByTestId("article-title").fill("第一次修訂")
     await page.getByTestId("article-save").click()
