@@ -1,8 +1,11 @@
 package tw.basketball.magazine.shared;
 
+import java.io.Serializable;
 import java.util.Objects;
 
-public record FieldError(String path, String code, String message) {
+public record FieldError(String path, String code, String message) implements Serializable {
+    private static final long serialVersionUID = 1L;
+
     public FieldError {
         path = bounded(path, "path", 200);
         code = bounded(code, "code", 80);

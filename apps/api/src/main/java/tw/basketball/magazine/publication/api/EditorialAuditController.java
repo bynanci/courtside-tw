@@ -3,6 +3,7 @@ package tw.basketball.magazine.publication.api;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import tw.basketball.magazine.publication.application.EditorialProblemException;
 import tw.basketball.magazine.shared.ActorContext;
@@ -48,8 +50,8 @@ public final class EditorialAuditController {
             Authentication authentication,
             HttpServletRequest request
     ) {
-        ActorContext actor = actor(authentication, request);
-        String normalizedTargetType = targetType == null ? "" : targetType.strip().toUpperCase();
+        actor(authentication, request);
+        String normalizedTargetType = targetType == null ? "" : targetType.strip().toUpperCase(Locale.ROOT);
         if (!Set.of("ARTICLE", "ISSUE", "MEDIA_ASSET").contains(normalizedTargetType)) {
             throw new IllegalArgumentException("targetType is not supported");
         }
@@ -72,7 +74,7 @@ public final class EditorialAuditController {
             event.put("requestId", resultSet.getString("request_id"));
             try {
                 event.put("metadata", objectMapper.readTree(resultSet.getString("metadata")));
-            } catch (Exception exception) {
+            } catch (JacksonException exception) {
                 throw new IllegalStateException("audit metadata is not valid JSON", exception);
             }
             return event;

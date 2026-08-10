@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import jakarta.servlet.http.HttpServletRequest;
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -30,6 +31,7 @@ import tw.basketball.magazine.shared.Version;
 
 /** HTTP adapter for the Editorial article workflow. */
 @RestController
+@ConditionalOnBean(EditorialWorkflowService.class)
 public final class EditorialArticleController {
     private static final String REQUEST_ID_HEADER = "X-Request-Id";
     private static final String IDEMPOTENCY_HEADER = "Idempotency-Key";

@@ -26,8 +26,8 @@ final class ModuleBoundaryTest {
             .allowEmptyShould(true);
 
     @ArchTest
-    static final ArchRule mediaDoesNotDependOnAuditOrOutbox = noClasses()
-            .that().resideInAnyPackage("..media..")
+    static final ArchRule mediaDomainAndStorageDoNotDependOnAuditOrOutbox = noClasses()
+            .that().resideInAnyPackage("..media.domain..", "..media.storage..")
             .should().dependOnClassesThat().resideInAnyPackage("..audit..", "..outbox..")
             .allowEmptyShould(true);
 

@@ -33,7 +33,7 @@ test.describe("US3 Studio editor/publisher workflow", () => {
 
     await expect(page.getByRole("heading", { name: /文章編輯|Article editor/i })).toBeVisible()
     await page.getByRole("textbox", { name: /標題|title/i }).fill("T044 revision A")
-    await page.getByRole("button", { name: /儲存|save/i }).click()
+    await page.getByRole("button", { name: "儲存 Save", exact: true }).click()
     await expect(page.getByText(/已保存 revision|saved revision/i)).toBeVisible()
     await page.getByRole("button", { name: /送出審核|submit/i }).click()
     await expect(page.getByText(/已送出 review|review/i)).toBeVisible()
@@ -77,7 +77,7 @@ test.describe("US3 Studio editor/publisher workflow", () => {
     await page.getByLabel(/發布時間|publish at/i).fill("2026-08-11T09:00")
     await page.getByRole("button", { name: /確認排程|confirm schedule/i }).click()
 
-    await expect(page.getByText(/UTC/)).toBeVisible()
+    await expect(page.locator(".studio-action-result")).toContainText(/UTC/)
     await page.getByRole("button", { name: /重試|retry/i }).click()
     await expect(page.getByText(/SCHEDULED|已排程/i)).toBeVisible()
     await expect(page.getByText(/SCHEDULED|已排程/i)).toBeVisible()
@@ -94,7 +94,9 @@ test.describe("US3 Studio editor/publisher workflow", () => {
     await page.getByLabel(/原因|reason/i).fill("rights revoked by owner")
     await page.getByRole("button", { name: /確認撤回|confirm withdrawal/i }).click()
 
-    await expect(page.getByText(/WITHDRAWN|已撤回/i)).toBeVisible()
+    await expect(page.locator(".studio-workflow-result strong")).toHaveText(
+      /已撤回 · revision \d+|WITHDRAWN · revision \d+/i
+    )
     await page.getByRole("link", { name: /稽核|audit/i }).click()
     await expect(page.getByText("ARTICLE_WITHDRAWN")).toBeVisible()
   })

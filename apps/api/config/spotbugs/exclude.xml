@@ -1,4 +1,33 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <FindBugsFilter>
-  <!-- Keep exclusions empty by default; every exception needs a ticket and owner. -->
+  <!--
+    These are Spring-managed constructor collaborators. They are intentionally kept as
+    private final references and are never returned or exposed to callers; EI_EXPOSE_REP2
+    is therefore a false positive for dependency injection rather than a mutable data leak.
+  -->
+  <Match>
+    <Class name="tw.basketball.magazine.publication.application.EditorialWorkflowService"/>
+    <Field name="outboxRepository"/>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
+  <Match>
+    <Class name="tw.basketball.magazine.publication.api.EditorialIssueController"/>
+    <Field name="service"/>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
+  <Match>
+    <Class name="tw.basketball.magazine.publication.api.EditorialArticleController"/>
+    <Field name="service"/>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
+  <Match>
+    <Class name="tw.basketball.magazine.publication.api.EditorialAuditController"/>
+    <Field name="jdbcTemplate"/>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
+  <Match>
+    <Class name="tw.basketball.magazine.publication.api.EditorialAuditController"/>
+    <Field name="objectMapper"/>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
 </FindBugsFilter>

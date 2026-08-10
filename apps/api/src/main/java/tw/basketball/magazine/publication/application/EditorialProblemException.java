@@ -11,7 +11,7 @@ public final class EditorialProblemException extends RuntimeException {
     private static final long serialVersionUID = 1L;
 
     private final ProblemCode problemCode;
-    private final transient List<FieldError> errors;
+    private final List<FieldError> errors;
 
     public EditorialProblemException(ProblemCode problemCode, List<FieldError> errors) {
         super(Objects.requireNonNull(problemCode, "problemCode").defaultDetail());
