@@ -210,6 +210,16 @@ INSERT INTO publication_idempotency (
     '{"status":"ACCEPTED"}'::jsonb
 );
 
+INSERT INTO publication_idempotency (
+    actor_subject, operation, idempotency_key, request_hash_sha256, response
+) VALUES (
+    'migration-publisher',
+    'REQUEST_CHANGES',
+    'migration-v005-request-changes-key',
+    repeat('d', 64),
+    '{"status":"CHANGES_REQUESTED"}'::jsonb
+);
+
 INSERT INTO publication_job (
     aggregate_type, aggregate_id, operation, idempotency_key, requested_by, status, last_error, payload
 ) VALUES (
