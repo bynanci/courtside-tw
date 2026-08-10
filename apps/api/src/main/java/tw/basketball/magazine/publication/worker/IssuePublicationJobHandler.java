@@ -13,11 +13,15 @@ import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import tw.basketball.magazine.audit.AuditEventDraft;
+import tw.basketball.magazine.audit.AuditWriter;
 import tw.basketball.magazine.outbox.OutboxEvent;
 import tw.basketball.magazine.outbox.OutboxEventHandler;
 import tw.basketball.magazine.outbox.OutboxHandlerException;
 import tw.basketball.magazine.publication.domain.PublicationState;
 import tw.basketball.magazine.publication.persistence.EditorialIssueRepository;
+import tw.basketball.magazine.shared.ActorContext;
+import tw.basketball.magazine.shared.RequestId;
 
 /** Executes scheduled issue publication against an immutable issue snapshot. */
 public final class IssuePublicationJobHandler implements OutboxEventHandler {
@@ -25,6 +29,7 @@ public final class IssuePublicationJobHandler implements OutboxEventHandler {
     private static final String WORKER_ACTOR = "system:issue-publication-worker";
 
     private final EditorialIssueRepository repository;
+    private final AuditWriter auditWriter;
     private final TransactionTemplate transactionTemplate;
     private final ObjectMapper objectMapper;
     private final Clock clock;
@@ -35,7 +40,18 @@ public final class IssuePublicationJobHandler implements OutboxEventHandler {
             ObjectMapper objectMapper,
             Clock clock
     ) {
+        this(repository, draft -> null, transactionTemplate, objectMapper, clock);
+    }
+
+    public IssuePublicationJobHandler(
+            EditorialIssueRepository repository,
+            AuditWriter auditWriter,
+            TransactionTemplate transactionTemplate,
+            ObjectMapper objectMapper,
+            Clock clock
+    ) {
         this.repository = Objects.requireNonNull(repository, "repository");
+        this.auditWriter = Objects.requireNonNull(auditWriter, "auditWriter");
         this.transactionTemplate = Objects.requireNonNull(transactionTemplate, "transactionTemplate");
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
         this.clock = Objects.requireNonNull(clock, "clock");
@@ -101,14 +117,29 @@ public final class IssuePublicationJobHandler implements OutboxEventHandler {
             throw new RetryableJobException("publication issue changed during worker execution");
         }
         JsonNode snapshot = parseSnapshot(repository.publicationSnapshotDocument(issue.issueId()));
+        long snapshotVersion = repository.nextSnapshotVersion(issue.issueId());
         repository.appendPublicationSnapshot(
                 issue.issueId(),
-                repository.nextSnapshotVersion(issue.issueId()),
+                snapshotVersion,
                 snapshot,
                 checksum(snapshot),
                 WORKER_ACTOR,
                 issue.coverAssetId()
         );
+        auditWriter.append(new AuditEventDraft(
+                ActorContext.service(
+                        WORKER_ACTOR,
+                        RequestId.of("issue-publication-" + job.jobId())
+                ),
+                "ISSUE_PUBLISHED",
+                "ISSUE",
+                issue.issueId(),
+                java.util.Map.of(
+                        "source", "scheduled_worker",
+                        "publicationJobId", job.jobId().toString(),
+                        "snapshotVersion", snapshotVersion
+                )
+        ));
         repository.markPublicationJobSucceeded(job.jobId(), now);
     }
 

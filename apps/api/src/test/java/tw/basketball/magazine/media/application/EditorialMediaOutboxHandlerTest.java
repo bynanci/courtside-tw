@@ -86,7 +86,7 @@ final class EditorialMediaOutboxHandlerTest {
         ).handle(event(payload(sha256(bytes), bytes.length)));
 
         assertTrue(repository.recorded);
-        assertEquals(4, keys.size());
+        assertEquals(5, keys.size());
         assertTrue(keys.stream().allMatch(key -> key.startsWith("media/variants/")));
     }
 

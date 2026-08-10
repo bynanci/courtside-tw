@@ -32,6 +32,7 @@ public record VariantSpec(
 
     public static List<VariantSpec> defaults() {
         return List.of(
+                new VariantSpec("cover", 1800, 1200, "image/webp", StorageVisibility.PUBLIC_VARIANT),
                 new VariantSpec("hero", 1600, 1200, "image/avif", StorageVisibility.PUBLIC_VARIANT),
                 new VariantSpec("wide", 1200, 800, "image/webp", StorageVisibility.PUBLIC_VARIANT),
                 new VariantSpec("inline", 768, 512, "image/webp", StorageVisibility.PUBLIC_VARIANT),

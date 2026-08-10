@@ -6,8 +6,8 @@ import java.sql.Timestamp;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.time.Instant;
 import java.time.DateTimeException;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.LinkedHashMap;
@@ -279,6 +279,24 @@ public final class JdbcEditorialIssueRepository implements EditorialIssueReposit
                       AND position('//' IN variant.public_storage_key) = 0
                       AND position('/./' IN variant.public_storage_key) = 0
                       AND right(variant.public_storage_key, 1) <> '/'
+                      AND NOT EXISTS (
+                          SELECT 1
+                          FROM issue_article entry
+                          LEFT JOIN article entry_article
+                            ON entry_article.id = entry.article_id
+                          LEFT JOIN article_revision entry_revision
+                            ON entry_revision.id = entry_article.published_revision_id
+                           AND entry_revision.article_id = entry_article.id
+                          WHERE entry.issue_id = issue.id
+                            AND (
+                                entry_article.id IS NULL
+                                OR entry_article.state <> 'PUBLISHED'
+                                OR entry_article.published_at IS NULL
+                                OR entry_article.published_at > ?
+                                OR entry_revision.id IS NULL
+                                OR entry_revision.state <> 'PUBLISHED'
+                            )
+                      )
                       AND EXISTS (
                           SELECT 1
                           FROM rights_record rights
@@ -289,7 +307,11 @@ public final class JdbcEditorialIssueRepository implements EditorialIssueReposit
                             AND rights.valid_until > ?
                       )
                 )
-                """, Boolean.class, issueId, Timestamp.from(checkedAt), Timestamp.from(checkedAt));
+                """, Boolean.class,
+                issueId,
+                Timestamp.from(checkedAt),
+                Timestamp.from(checkedAt),
+                Timestamp.from(checkedAt));
         return Boolean.TRUE.equals(ready);
     }
 

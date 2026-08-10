@@ -12,6 +12,7 @@ import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import tools.jackson.databind.ObjectMapper;
+import tw.basketball.magazine.audit.JdbcAuditWriter;
 import tw.basketball.magazine.outbox.OutboxHandlerRegistration;
 import tw.basketball.magazine.publication.persistence.JdbcEditorialArticleRepository;
 import tw.basketball.magazine.publication.persistence.JdbcEditorialIssueRepository;
@@ -58,6 +59,7 @@ public final class PublicationWorkerConfiguration {
     ) {
         return new IssuePublicationJobHandler(
                 new JdbcEditorialIssueRepository(jdbcTemplate, objectMapper),
+                new JdbcAuditWriter(jdbcTemplate, objectMapper),
                 new TransactionTemplate(transactionManager),
                 objectMapper,
                 Clock.systemUTC()

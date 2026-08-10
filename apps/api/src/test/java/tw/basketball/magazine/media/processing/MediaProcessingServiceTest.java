@@ -25,7 +25,7 @@ final class MediaProcessingServiceTest {
         );
 
         assertEquals(MediaProcessingState.READY, result.state());
-        assertEquals(4, result.variants().size());
+        assertEquals(5, result.variants().size());
         assertFalse(new String(result.sanitizedBytes(), StandardCharsets.ISO_8859_1).contains("Exif"));
     }
 
@@ -118,7 +118,7 @@ final class MediaProcessingServiceTest {
         );
 
         assertEquals(MediaProcessingState.READY, result.state());
-        assertEquals(4, result.variants().size());
+        assertEquals(5, result.variants().size());
     }
 
     private static MediaProcessingService processingService(MediaVariantEncoder encoder) {
