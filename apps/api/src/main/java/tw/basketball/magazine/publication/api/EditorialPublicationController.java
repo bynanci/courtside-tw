@@ -356,17 +356,32 @@ public final class EditorialPublicationController {
         public IssuePatch {
             changes = immutableMap(changes);
         }
+
+        @Override
+        public Map<String, Object> changes() {
+            return immutableMap(changes);
+        }
     }
 
     public record ArticleInput(String title, String slug, Map<String, Object> content) {
         public ArticleInput {
             content = content == null ? null : immutableMap(content);
         }
+
+        @Override
+        public Map<String, Object> content() {
+            return content == null ? null : immutableMap(content);
+        }
     }
 
     public record ArticlePatch(UUID articleId, Map<String, Object> changes) {
         public ArticlePatch {
             changes = immutableMap(changes);
+        }
+
+        @Override
+        public Map<String, Object> changes() {
+            return immutableMap(changes);
         }
     }
 
