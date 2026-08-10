@@ -22,7 +22,7 @@ dependencies {
     implementation("org.springframework.boot:spring-boot-starter-actuator:4.1.0")
     implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server:4.1.0")
     implementation("org.springframework.boot:spring-boot-micrometer-tracing-opentelemetry:4.1.0")
-    implementation("com.networknt:json-schema-validator:1.5.9")
+    implementation("com.networknt:json-schema-validator:3.0.6")
     runtimeOnly("org.postgresql:postgresql:42.7.13")
     testImplementation("org.springframework.boot:spring-boot-starter-test:4.1.0")
     testImplementation("com.tngtech.archunit:archunit-junit5:1.5.0")
