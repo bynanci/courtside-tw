@@ -83,7 +83,7 @@ public final class ContentDocumentValidator {
         for (int index = 0; index < blocks.size(); index++) {
             JsonNode block = blocks.get(index);
             JsonNode id = block == null ? null : block.get("id");
-            if (id != null && id.isTextual() && !blockIds.add(id.textValue())) {
+            if (id != null && id.isString() && !blockIds.add(id.stringValue())) {
                 errors.add("/blocks/" + index + "/id: must be unique");
             }
         }
