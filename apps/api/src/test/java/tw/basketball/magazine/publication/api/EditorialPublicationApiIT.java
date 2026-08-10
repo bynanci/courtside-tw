@@ -109,7 +109,14 @@ final class EditorialPublicationApiIT {
                                   "content":{
                                     "schemaVersion":1,
                                     "documentId":"00000000-0000-4000-8000-000000000611",
-                                    "blocks":[]
+                                    "blocks":[
+                                      {
+                                        "id":"00000000-0000-4000-8000-000000000612",
+                                        "type":"paragraph",
+                                        "version":1,
+                                        "payload":{"content":[]}
+                                      }
+                                    ]
                                   }
                                 }
                                 """))
