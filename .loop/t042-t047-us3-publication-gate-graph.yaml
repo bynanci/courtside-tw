@@ -1,0 +1,139 @@
+graph_version: "2"
+graph_id: "courtside-t042-t047-us3-publication-gate"
+title: "US3 editorial publication gate"
+objective: "Implement and verify the bounded domain and persistence guardrails needed before editorial publication commands can reach the public reader."
+source_of_truth:
+  repository: "bynanci/courtside-tw"
+  base_ref: "main"
+  base_commit: "fcc18d948073433d2a6e2397329391ef125c091c"
+  task_file: "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+  current_tasks: ["T042", "T045", "T046", "T047"]
+scope:
+  in:
+    - "Publication state machine for editor and publisher roles"
+    - "Rights/readiness gate with stable blocking codes"
+    - "V004 append-only review, rights reference, snapshot, job, idempotency, and impact-link schema"
+    - "Unit proof and isolated migration verification"
+    - "CI wiring for the V004 verification script"
+  out:
+    - "T043 editorial HTTP integration endpoints"
+    - "T044 Studio two-role browser flow"
+    - "T048 signed upload completion and worker dispatch"
+    - "T049-T056 full Studio CRUD and publish orchestration"
+    - "Wallet, Passport, token, Web3 activation, deployment, production migration"
+    - "Task checkbox edits and protected merge"
+authority:
+  allowed:
+    - "Read the repository and supplied immersion-review artifacts"
+    - "Create a bounded branch and draft pull request"
+    - "Add domain code, tests, migration verification, graph ledger, and evidence receipts"
+  requires_human_approval:
+    - "Protected merge or making the pull request ready"
+    - "Production migration or activation"
+    - "Changing public API contracts outside the approved US3 slice"
+    - "Marking task checkboxes complete"
+  forbidden:
+    - "Secrets or credential material"
+    - "Direct production writes"
+    - "Bypassing rights, role, or optimistic-lock checks"
+acceptance:
+  - "Only EDITOR may submit; only PUBLISHER may approve, schedule, publish, withdraw, or archive."
+  - "Every successful transition advances the exact optimistic-lock version; blocked readiness leaves state and version unchanged."
+  - "Readiness emits deterministic CONTENT_NOT_READY, RIGHTS_MISSING, RIGHTS_EXPIRED, RIGHTS_REVOKED, and RIGHTS_WRONG_CHANNEL codes."
+  - "V004 applies after V001-V003, keeps review/snapshot/rights/impact records append-only, and enforces idempotency uniqueness."
+  - "Unit tests, migration verification, Java quality, and security checks attach to the exact implementation head."
+budgets:
+  max_iterations: 5
+  max_same_failure: 2
+  max_no_evidence_delta: 2
+  max_graph_changes: 20
+nodes:
+  - id: trigger-us3-frontier
+    type: trigger
+    label: "US2 merged; US3 is the next critical path"
+    status: completed
+    evidence_refs: ["attachment:courtside-montage(1).png", "repo:specs/001-taiwan-basketball-magazine-ebook/tasks.md"]
+  - id: action-contract-lock
+    type: action
+    label: "Lock scope, authority, and acceptance"
+    status: completed
+    owner: "agent"
+  - id: action-implement-gate
+    type: action
+    label: "Implement domain gate and V004 migration"
+    status: completed
+    owner: "agent"
+  - id: proof-static-and-unit
+    type: proof
+    label: "Java quality and unit proof"
+    status: completed
+    required: true
+  - id: proof-migration
+    type: proof
+    label: "Isolated V004 migration and privilege proof"
+    status: completed
+    required: true
+  - id: memory-us3-receipt
+    type: memory
+    label: "Write exact-head graph and project-state receipt"
+    status: completed
+    required: true
+  - id: stop-human-gate
+    type: stop
+    label: "Stop before protected merge, task completion, or production activation"
+    status: ready
+edges:
+  - from: trigger-us3-frontier
+    to: action-contract-lock
+    type: control
+  - from: action-contract-lock
+    to: action-implement-gate
+    type: control
+  - from: action-implement-gate
+    to: proof-static-and-unit
+    type: proof
+  - from: action-implement-gate
+    to: proof-migration
+    type: proof
+  - from: proof-static-and-unit
+    to: memory-us3-receipt
+    type: feedback
+  - from: proof-migration
+    to: memory-us3-receipt
+    type: feedback
+  - from: memory-us3-receipt
+    to: stop-human-gate
+    type: control
+memory_workflow:
+  before_action:
+    read_refs:
+      - "repo:main"
+      - "attachment:courtside-montage(1).png"
+      - "repo:specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+  after_proof:
+    write_refs:
+      - "repo:.loop/t042-t047-us3-publication-gate-ledger.json"
+      - "repo:.loop/memory/t042-t047-us3-publication-gate.json"
+      - "repo:.loop/evidence/t042-t047-us3-publication-gate.json"
+  receipt_status: "MEMORY_WRITE_COMPLETE"
+ready_frontier:
+  - "stop-human-gate"
+critical_path:
+  - "action-implement-gate"
+  - "proof-static-and-unit"
+  - "proof-migration"
+  - "memory-us3-receipt"
+min_cut:
+  - "proof-static-and-unit"
+  - "proof-migration"
+stop_conditions:
+  - "Any rights, role, or version invariant is weakened"
+  - "A test or migration proof fails twice without a new evidence delta"
+  - "The requested change expands into Web3/Passport or production activation"
+  - "Proof remains pending at the exact implementation head"
+terminal_status: "NEEDS_HUMAN"
+verification:
+  implementation_head: "2937e5d13f24237b7a76cabe4a138abf7ce1e7f8"
+  ci_run: 31343385363
+  security_run: 31343385354
+  conclusion: "success"

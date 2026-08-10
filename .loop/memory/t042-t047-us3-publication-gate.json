@@ -1,0 +1,41 @@
+{
+  "memory_id": "courtside-us3-publication-gate-20260809-v1",
+  "memory_type": "project_state",
+  "status": "VERIFIED_WITH_HUMAN_GATES",
+  "confidence": "HIGH",
+  "project": "bynanci/courtside-tw",
+  "title": "US3 editorial publication gate frontier",
+  "source_refs": [
+    "repo:main@fcc18d948073433d2a6e2397329391ef125c091c",
+    "repo:specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    "attachment:courtside-montage(1).png"
+  ],
+  "claims": [
+    {
+      "claim_id": "direction",
+      "classification": "INFERRED",
+      "text": "The supplied immersion review supports magazine-first reading, human-language provenance, Reader Stamp after value, and wallet-optional sequencing.",
+      "evidence": "attachment:courtside-montage(1).png"
+    },
+    {
+      "claim_id": "frontier",
+      "classification": "CONFIRMED",
+      "text": "US3 editorial workflow tasks T042-T056 remain the next implementation lane after the merged US2 public reader fixes.",
+      "evidence": "repo:specs/001-taiwan-basketball-magazine-ebook/tasks.md; repo:main@fcc18d948073433d2a6e2397329391ef125c091c"
+    },
+    {
+      "claim_id": "proof",
+      "classification": "CONFIRMED",
+      "text": "The implementation head passed exact-head CI and Security proof; protected merge and production activation remain human gates.",
+      "evidence": "repo:CI run 31343385363; repo:Security run 31343385354; head:2937e5d13f24237b7a76cabe4a138abf7ce1e7f8"
+    }
+  ],
+  "supersedes": [],
+  "verification": {
+    "implementation_head": "2937e5d13f24237b7a76cabe4a138abf7ce1e7f8",
+    "ci_run": {"id": 31343385363, "run_number": 337, "conclusion": "success"},
+    "security_run": {"id": 31343385354, "run_number": 337, "conclusion": "success"}
+  },
+  "next_action": "Human review of PR #70; protected merge, production migration/activation, and task checkbox changes remain out of band.",
+  "next_review": "After human review or a new US3 frontier is authorized"
+}

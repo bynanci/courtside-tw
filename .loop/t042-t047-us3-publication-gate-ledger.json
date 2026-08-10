@@ -1,0 +1,58 @@
+{
+  "schema_version": "2",
+  "graph_id": "courtside-t042-t047-us3-publication-gate",
+  "status": "NEEDS_HUMAN",
+  "iteration": 2,
+  "source_of_truth": {
+    "repository": "bynanci/courtside-tw",
+    "base_ref": "main",
+    "base_commit": "fcc18d948073433d2a6e2397329391ef125c091c",
+    "task_file": "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+  },
+  "decision": "Implement the bounded editorial gate before HTTP, Studio, or Web3 work.",
+  "terminal": false,
+  "ready_frontier": ["stop-human-gate"],
+  "critical_path": [
+    "action-implement-gate",
+    "proof-static-and-unit",
+    "proof-migration",
+    "memory-us3-receipt"
+  ],
+  "proof_coverage": {
+    "state_machine": "PASSED",
+    "rights_policy": "PASSED",
+    "v004_migration": "PASSED",
+    "ci_security": "PASSED"
+  },
+  "blockers": [
+    {
+      "code": "HUMAN_PROTECTED_MERGE",
+      "status": "OPEN",
+      "reason": "The branch must remain a draft until a human reviews and approves the exact-head proof."
+    },
+    {
+      "code": "PRODUCTION_ACTIVATION",
+      "status": "OPEN",
+      "reason": "The migration is verified in an isolated CI database only; no production migration is authorized."
+    }
+  ],
+  "memory_receipt": {
+    "status": "SAVED",
+    "memory_id": "courtside-us3-publication-gate-20260809-v1",
+    "write_after": "exact-head proof",
+    "implementation_head": "2937e5d13f24237b7a76cabe4a138abf7ce1e7f8"
+  },
+  "audit": {
+    "secrets_present": false,
+    "external_content_treated_as_untrusted": true,
+    "model_self_report_used_as_proof": false
+  },
+  "verification": {
+    "implementation_head": "2937e5d13f24237b7a76cabe4a138abf7ce1e7f8",
+    "ci_run": {"id": 31343385363, "run_number": 337, "conclusion": "success"},
+    "security_run": {"id": 31343385354, "run_number": 337, "conclusion": "success"},
+    "failure_signatures": [
+      "Initial head exposed two test fixture failures; the second head corrected the fixtures without weakening production gates."
+    ]
+  }
+}
