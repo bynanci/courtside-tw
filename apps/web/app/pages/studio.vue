@@ -6,6 +6,7 @@ import {
   contentDocument,
   createEditorialArticle,
   createIdempotencyKey,
+  patchEditorialArticle,
   publishEditorialIssue,
   scheduleEditorialIssue,
   submitEditorialArticle,
@@ -120,21 +121,12 @@ async function persistArticle(): Promise<void> {
     articleVersion.value = article.version
     return
   }
-  const article = await patchEditorialArticleForStudio(input)
-  articleVersion.value = article.version
-}
-
-async function patchEditorialArticleForStudio(input: {
-  title: string
-  slug: string
-  content: ReturnType<typeof contentDocument>
-}) {
-  const { patchEditorialArticle } = await import("../features/studio/editorial-api")
-  return patchEditorialArticle(
+  const article = await patchEditorialArticle(
     { baseUrl: apiBaseUrl, idempotencyKey: createIdempotencyKey("studio-article-patch") },
     { articleId: articleId.value as string, changes: input },
     articleVersion.value
   )
+  articleVersion.value = article.version
 }
 
 async function submitForReview(): Promise<void> {
