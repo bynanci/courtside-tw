@@ -1,0 +1,115 @@
+{
+  "schema_version": "courtside-proof/v1",
+  "proof_id": "t042-tests-first-receipt-20260810",
+  "recorded_at": "2026-08-10T22:52:25Z",
+  "scope": [
+    "T042",
+    "US3",
+    "FR-011",
+    "FR-012",
+    "FR-013",
+    "FR-014",
+    "FR-015",
+    "FR-016",
+    "FR-018",
+    "FR-020",
+    "FR-022",
+    "FR-023",
+    "FR-025"
+  ],
+  "claim": "T042 test contracts are present and current main passes the resulting unit suite; a reproducible pre-implementation baseline identifies the intended missing US3 publication/right-policy boundary, but an executable Java red-run receipt is not available in this environment.",
+  "result": "RECORDED_WITH_EXECUTION_GATE",
+  "classification": "CONFIRMED_WITH_HISTORICAL_LIMITATION",
+  "proof_level": "P1_PLUS_CURRENT_MAIN_P2",
+  "source_of_truth": {
+    "repository": "bynanci/courtside-tw",
+    "current_main": "cf4b91527900f051fff7b724be68923ffa892fd9",
+    "pre_implementation_parent": "fcc18d948073433d2a6e2397329391ef125c091c",
+    "original_implementation_commit": "bcdc96efae3847f17e8c91e8a26f117dd32a2c79",
+    "original_test_files_commit": "bcdc96efae3847f17e8c91e8a26f117dd32a2c79",
+    "history_note": "PR #70 landed the original T042 tests and production boundary in one implementation commit; this receipt does not claim that the original PR had a separately executed red CI commit."
+  },
+  "test_artifacts": [
+    "apps/api/src/test/java/tw/basketball/magazine/publication/domain/PublicationWorkflowTest.java",
+    "apps/api/src/test/java/tw/basketball/magazine/media/domain/RightsPolicyTest.java"
+  ],
+  "reconstructed_baseline": {
+    "purpose": "Reproduce the tests-first ordering without rewriting the historical PR.",
+    "baseline_pull_request": {
+      "number": 80,
+      "url": "https://github.com/bynanci/courtside-tw/pull/80",
+      "head_sha": "3afd09e6298e8c54bb1eca2a5cece4b8ece7c658",
+      "state": "closed",
+      "merged": false,
+      "changed_files": 2
+    },
+    "construction": "Parent of PR #70 plus the exact original T042 test files; no publication workflow, rights policy, readiness service or related production boundary was added.",
+    "static_readback": {
+      "test_files_added_before_production_boundary": true,
+      "missing_production_paths_at_baseline": [
+        "apps/api/src/main/java/tw/basketball/magazine/publication/domain/PublicationWorkflow.java",
+        "apps/api/src/main/java/tw/basketball/magazine/publication/domain/PublicationAction.java",
+        "apps/api/src/main/java/tw/basketball/magazine/publication/domain/PublicationState.java",
+        "apps/api/src/main/java/tw/basketball/magazine/publication/domain/PublicationWorkflowException.java",
+        "apps/api/src/main/java/tw/basketball/magazine/media/domain/RightsPolicy.java",
+        "apps/api/src/main/java/tw/basketball/magazine/publication/application/PublicationReadinessService.java"
+      ],
+      "failure_signature": "MISSING_US3_PUBLICATION_RUNTIME_BOUNDARY",
+      "readback_command": "git cat-file -e <baseline-or-parent>:<path> for the two test files and six production boundary paths"
+    },
+    "execution": {
+      "github_workflow_status": "NOT_RUN",
+      "reason": "The obsolete baseline PR conflicted with the current main versions of the same test paths, so GitHub emitted no CI/Security status.",
+      "local_java_status": "NOT_RUN",
+      "reason_local": "The workspace has Java 17 runtime but no javac or Gradle executable; no local Java test result is claimed.",
+      "classification": "EXPECTED_RED_BOUNDARY_STATIC_ONLY"
+    }
+  },
+  "current_main_green": {
+    "main_readback": {
+      "ref": "main",
+      "commit": "cf4b91527900f051fff7b724be68923ffa892fd9",
+      "publication_workflow_test_blob": "8694cc22422b81c606c4fb952d1f9d122578786d",
+      "rights_policy_test_blob": "26eafd9bbe7b39d432db85fa3cba64a6341b1a08"
+    },
+    "exact_head_verification": {
+      "pull_request": 79,
+      "head_sha": "960f801c7298caf2560aa38c78bf04c75045028a",
+      "ci_run": {
+        "run_number": 417,
+        "run_id": 31395903448,
+        "java_quality_and_unit": "success"
+      },
+      "security_run": {
+        "run_number": 418,
+        "run_id": 31395903466,
+        "conclusion": "success"
+      }
+    },
+    "behavioral_coverage": [
+      "editor submit and publisher approval",
+      "request changes with bounded reason",
+      "missing and non-ready media blockers",
+      "schedule due-time enforcement",
+      "archive and withdrawal reason gates",
+      "role, frozen revision and optimistic version conflicts",
+      "valid, missing, expired, revoked and wrong-channel rights decisions",
+      "rights evidence id/version preservation"
+    ]
+  },
+  "task_decision": {
+    "checkbox": "KEEP_UNCHECKED",
+    "reason": "The receipt closes the historical evidence gap as far as this environment can prove, but the task explicitly requires observing the failing tests and the only available baseline proof is structural because Java21/Gradle execution was unavailable.",
+    "unblock": "Run the same two T042 tests on a Java 21/Gradle runner against baseline commit 3afd09e6298e8c54bb1eca2a5cece4b8ece7c658, capture the expected missing-boundary failure, then append a follow-up receipt."
+  },
+  "scope_guard": {
+    "production_source_changed": false,
+    "migration_changed": false,
+    "task_checkbox_changed": false,
+    "production_migration_executed": false,
+    "deployment_performed": false,
+    "web3_wallet_passport_changed": false
+  },
+  "owner": "codex-agent",
+  "next_action": "Run the exact baseline test command on a Java 21/Gradle runner before checking T042."
+}

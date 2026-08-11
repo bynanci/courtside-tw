@@ -120,9 +120,9 @@
 
 ### Implementation for User Story 3
 
-- [ ] T045 [US3] Add workflow reviews, rights references, publication snapshots, jobs, idempotency records and impact links in `apps/api/src/main/resources/db/migration/V004__editorial_publication_workflow.sql`; enforce immutable snapshot and unique idempotency constraints.
-- [ ] T046 [US3] Implement allowed state transitions, role checks, frozen review revisions and conflict responses in `apps/api/src/main/java/tw/basketball/magazine/publication/domain/` and `publication/application/EditorialWorkflowService.java`.
-- [ ] T047 [US3] Implement the content/media publication gate in `apps/api/src/main/java/tw/basketball/magazine/media/domain/RightsPolicy.java` and `publication/application/PublicationReadinessService.java`; return exact stable blocking codes for missing, expired, revoked or wrong-channel rights.
+- [x] T045 [US3] Add workflow reviews, rights references, publication snapshots, jobs, idempotency records and impact links in `apps/api/src/main/resources/db/migration/V004__editorial_publication_workflow.sql`; enforce immutable snapshot and unique idempotency constraints.
+- [x] T046 [US3] Implement allowed state transitions, role checks, frozen review revisions and conflict responses in `apps/api/src/main/java/tw/basketball/magazine/publication/domain/` and `publication/application/EditorialWorkflowService.java`.
+- [x] T047 [US3] Implement the content/media publication gate in `apps/api/src/main/java/tw/basketball/magazine/media/domain/RightsPolicy.java` and `publication/application/PublicationReadinessService.java`; return exact stable blocking codes for missing, expired, revoked or wrong-channel rights.
 - [x] T048 [US3] Implement signed upload intent/completion endpoints and worker dispatch in `apps/api/src/main/java/tw/basketball/magazine/media/api/EditorialMediaController.java` and `media/application/`; re-check size, checksum, magic bytes and processing state server-side.
 - [x] T049 [P] [US3] Build the media library, upload state UI, alt text, credit and rights form in `apps/web/app/features/studio/media/` with component tests in `apps/web/tests/component/studio/media/`; prevent submission while processing or invalid.
 - [x] T050 [US3] Implement issue/article/revision editorial CRUD endpoints with optimistic locking in `apps/api/src/main/java/tw/basketball/magazine/publication/api/EditorialIssueController.java`, `content/api/EditorialArticleController.java`, and their application services.

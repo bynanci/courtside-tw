@@ -1,0 +1,166 @@
+{
+  "schema_version": "courtside-tw/task-reconciliation/v1",
+  "proof_id": "t045-t047-completion-reconciliation-20260810",
+  "recorded_at": "2026-08-10T22:52:25Z",
+  "result": "PASS_RECONCILED_INDEPENDENTLY",
+  "classification": "CONFIRMED",
+  "repository": "bynanci/courtside-tw",
+  "authoritative_main": {
+    "ref": "main",
+    "commit": "cf4b91527900f051fff7b724be68923ffa892fd9",
+    "tasks_file_blob": "e91154464fde377c94f5a777e4142a8b02163959"
+  },
+  "scope": {
+    "included": [
+      "T045 workflow persistence and append-only constraints",
+      "T046 state transitions, role/revision/version enforcement and conflict mapping",
+      "T047 content/media readiness and stable rights blocking codes"
+    ],
+    "excluded": [
+      "T042 checkbox or executable red-baseline claim",
+      "T043/T044 completion reclassification",
+      "T048-T056 task reclassification",
+      "production migration execution or activation",
+      "deployment, provider credentials, Web3, Passport or wallet changes"
+    ]
+  },
+  "task_results": {
+    "T045": {
+      "status": "CHECK",
+      "requirement": "Add workflow reviews, rights references, publication snapshots, jobs, idempotency records and impact links; enforce immutable snapshot and unique idempotency constraints.",
+      "implementation": [
+        {
+          "path": "apps/api/src/main/resources/db/migration/V004__editorial_publication_workflow.sql",
+          "blob": "604c643bc08e8e525e3e44e0697db89a165eb942",
+          "verified": [
+            "publication_review",
+            "publication_rights_reference",
+            "publication_snapshot",
+            "publication_job",
+            "publication_idempotency",
+            "publication_impact_link",
+            "append-only triggers",
+            "unique snapshot and idempotency constraints"
+          ]
+        },
+        {
+          "path": "apps/api/src/main/resources/db/migration/V005__editorial_publication_gate_hardening.sql",
+          "blob": "7b158521dd7059a396ef45d956df9aa40d183d97",
+          "verified": [
+            "frozen article-revision binding",
+            "rights evidence id/version binding",
+            "BLOCKED job state and bounded error",
+            "scoped job idempotency"
+          ]
+        }
+      ],
+      "verification": [
+        "PR #70 merged at bcdc96efae3847f17e8c91e8a26f117dd32a2c79",
+        "PR #72 merged at 5530c22831ca3c88d6fc74cbaaaa84c3e2775568",
+        "CI #337 Docker Compose dependency health / Verify V004 editorial publication migration: success",
+        "CI #378 Docker Compose dependency health / Verify editorial publication gate migration and hardening: success",
+        "Security #337 and #378: all jobs success"
+      ],
+      "scope_note": "The verifier uses an isolated Compose database; it does not activate or migrate production."
+    },
+    "T046": {
+      "status": "CHECK",
+      "requirement": "Implement allowed transitions, role checks, frozen review revisions and conflict responses.",
+      "implementation": [
+        {
+          "path": "apps/api/src/main/java/tw/basketball/magazine/publication/domain/PublicationWorkflow.java",
+          "blob": "c600adfaa4ded33ea0b19e6af08114f9f11e3951",
+          "verified": [
+            "DRAFT to IN_REVIEW",
+            "IN_REVIEW to APPROVED or DRAFT with bounded reason",
+            "APPROVED to SCHEDULED/PUBLISHED",
+            "PUBLISHED/WITHDRAWN to ARCHIVED",
+            "publisher-only actions",
+            "frozen revision and optimistic version checks"
+          ]
+        },
+        {
+          "path": "apps/api/src/main/java/tw/basketball/magazine/publication/application/EditorialWorkflowService.java",
+          "blob": "3a4d0c07c7fee344d37caacaa8039f2e9e7aef6e",
+          "verified": [
+            "conditional persistence transition",
+            "Problem Details mapping for role, revision, version and readiness failures",
+            "review, snapshot, job, audit and outbox sequencing",
+            "idempotent replay and conflict policy"
+          ]
+        }
+      ],
+      "tests": [
+        "apps/api/src/test/java/tw/basketball/magazine/publication/domain/PublicationWorkflowTest.java",
+        "apps/api/src/test/java/tw/basketball/magazine/publication/api/EditorialPublicationApiIT.java",
+        "apps/api/src/test/java/tw/basketball/magazine/media/api/EditorialMediaApiIT.java"
+      ],
+      "verification": [
+        "PR #72 exact-head CI #378 and Security #378: success",
+        "PR #78 exact-head head d4269ddeade1b410522c954ba43537c73a9575a5, CI #409 and Security #410: success",
+        "PR #79 exact-head head 960f801c7298caf2560aa38c78bf04c75045028a, CI #417 Java quality/unit: success",
+        "PR #79 Security #418: success"
+      ],
+      "scope_note": "The current main read-back includes the service and HTTP proof; no deployment or external provider was required."
+    },
+    "T047": {
+      "status": "CHECK",
+      "requirement": "Gate content/media publication and return stable blockers for missing, expired, revoked or wrong-channel rights.",
+      "implementation": [
+        {
+          "path": "apps/api/src/main/java/tw/basketball/magazine/media/domain/RightsPolicy.java",
+          "blob": "e869d97dc2dc78b624e8363ed52d45ef34f26f33",
+          "verified": [
+            "RIGHTS_MISSING",
+            "RIGHTS_EXPIRED",
+            "RIGHTS_REVOKED",
+            "RIGHTS_WRONG_CHANNEL",
+            "rights record id/version preservation"
+          ]
+        },
+        {
+          "path": "apps/api/src/main/java/tw/basketball/magazine/publication/application/PublicationReadinessService.java",
+          "blob": "a4a4483783f54f62f2b56157f4a6335ed7e471be",
+          "verified": [
+            "CONTENT_NOT_READY",
+            "MEDIA_NOT_READY and MEDIA_REVOKED before rights evaluation",
+            "bounded readiness report with stable deduplicated codes"
+          ]
+        }
+      ],
+      "tests": [
+        "apps/api/src/test/java/tw/basketball/magazine/media/domain/RightsPolicyTest.java",
+        "apps/api/src/test/java/tw/basketball/magazine/publication/domain/PublicationWorkflowTest.java",
+        "apps/api/src/test/java/tw/basketball/magazine/publication/api/EditorialPublicationApiIT.java"
+      ],
+      "verification": [
+        "CI #337 Java quality/unit and V004 migration verification: success",
+        "CI #378 Java quality/unit and V005 hardening verification: success",
+        "CI #409 and Security #410 exact-head verification: success",
+        "CI #417 and Security #418 current-main compatibility verification: success"
+      ],
+      "scope_note": "Rights evaluation is provider-neutral and does not claim production storage/provider activation."
+    }
+  },
+  "task_readback": {
+    "before": {
+      "T045": false,
+      "T046": false,
+      "T047": false
+    },
+    "after": {
+      "T045": true,
+      "T046": true,
+      "T047": true
+    },
+    "T042": false,
+    "task_file_change_reason": "Each of T045-T047 now has an independent implementation and verification trail; T042 remains unchecked because the executable red baseline is still gated."
+  },
+  "human_gates": [
+    "Protected merge of this reconciliation PR",
+    "Any production migration execution or activation",
+    "Separate Java 21/Gradle red-baseline execution before T042 is checked"
+  ],
+  "owner": "codex-agent",
+  "next_action": "Review the docs-only reconciliation PR; do not activate production migrations or claim T042 until its red-run gate is executed."
+}
