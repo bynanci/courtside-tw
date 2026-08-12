@@ -15,6 +15,8 @@ import {
   parsePublicIssueSlug
 } from "../../features/issues/public-issue-contract"
 import {
+  legacyProgressKey,
+  progressIndexKey,
   selectViewportProgress,
   useLocalReadingProgress,
   type LocalReadingContext,
@@ -56,6 +58,14 @@ type CourtPulseParameters = {
   paletteId: "court-dusk"
   numericSequence: number[]
 }
+
+type DocumentNavigationType = "navigate" | "reload" | "back_forward" | "prerender"
+type DocumentNavigationEntry = {
+  name: string
+  type: DocumentNavigationType
+}
+
+const RELOAD_GUARD_ATTRIBUTE = "data-reader-reload-restoration-handled"
 
 const route = useRoute()
 const config = useRuntimeConfig()
@@ -145,6 +155,13 @@ const creativeInViewByBlock = ref<Record<string, boolean>>({})
 const runtimeStateByBlock = ref<Record<string, "paused" | "running">>({})
 const creativeObservers = new Map<string, IntersectionObserver>()
 let creativeVisibilityTimer: number | null = null
+let reloadGuardActive = false
+let reloadProgressLoaded = false
+let reloadResumeChoicePending = false
+let reloadLifecycleReady = false
+let reloadReleaseScheduled = false
+let reloadChosenAction: "continue" | "start-over" | null = null
+let previousScrollRestoration: "auto" | "manual" | null = null
 
 useHead(() => {
   const current = article.value
@@ -610,21 +627,51 @@ function loadResumeProgress(): void {
   const storage = browserProgressStorage()
   const context = readingContext.value
   if (!storage) {
+    markReloadProgressLoaded(false)
     return
   }
   if (!context) {
     if (articleUnavailable.value) {
       readingProgress.clearUnavailable(storage, articleSlug)
     }
+    markReloadProgressLoaded(false)
     return
   }
   readingProgress.load(storage, context, readingBlockAnchors.value)
+  markReloadProgressLoaded(Boolean(readingProgress.resumePrompt.value))
 }
 
-function continueFromSavedProgress(): void {
+function markReloadProgressLoaded(resumeChoicePending: boolean): void {
+  if (!reloadGuardActive) {
+    return
+  }
+  reloadProgressLoaded = true
+  reloadResumeChoicePending = resumeChoicePending
+  applyReloadGuardPosition()
+  scheduleReloadGuardRelease()
+}
+
+async function continueFromSavedProgress(): Promise<void> {
   if (typeof window === "undefined") {
     return
   }
+  if (!readingProgress.beginContinueReading()) {
+    return
+  }
+  if (reloadGuardActive) {
+    reloadResumeChoicePending = false
+    reloadChosenAction = "continue"
+    applyReloadGuardPosition()
+    scheduleReloadGuardRelease()
+    return
+  }
+  await nextTick()
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(scrollToSavedProgress)
+  })
+}
+
+function scrollToSavedProgress(): void {
   const targetTop = readingProgress.continueReading(
     readingBlockElements().map((element) => {
       const rect = element.getBoundingClientRect()
@@ -636,9 +683,7 @@ function continueFromSavedProgress(): void {
     }),
     window.innerHeight
   )
-  if (targetTop !== null) {
-    window.scrollTo({ top: targetTop, behavior: "auto" })
-  }
+  window.scrollTo({ top: targetTop ?? 0, behavior: "auto" })
 }
 
 function startReadingFromTop(): void {
@@ -648,8 +693,147 @@ function startReadingFromTop(): void {
     readingProgress.startOver(storage, context)
   }
   if (typeof window !== "undefined") {
+    if (reloadGuardActive) {
+      reloadResumeChoicePending = false
+      reloadChosenAction = "start-over"
+      applyReloadGuardPosition()
+      scheduleReloadGuardRelease()
+      return
+    }
     window.scrollTo({ top: 0, behavior: "auto" })
   }
+}
+
+function applyReloadFinalChoice(): void {
+  if (!reloadGuardActive) {
+    return
+  }
+  if (reloadChosenAction === "continue") {
+    scrollToSavedProgress()
+  } else {
+    applyReloadGuardPosition()
+  }
+}
+
+function beginInitialReloadScrollGuard(): void {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return
+  }
+  const navigation = navigationEntry()
+  if (
+    navigation?.type !== "reload" ||
+    window.location.hash ||
+    document.documentElement.hasAttribute(RELOAD_GUARD_ATTRIBUTE)
+  ) {
+    return
+  }
+  const initialUrl = new URL(navigation.name, window.location.href)
+  if (
+    initialUrl.origin !== window.location.origin ||
+    initialUrl.pathname !== window.location.pathname ||
+    initialUrl.search !== window.location.search
+  ) {
+    return
+  }
+
+  document.documentElement.setAttribute(RELOAD_GUARD_ATTRIBUTE, "true")
+  if (!hasReloadProgressCandidate()) {
+    return
+  }
+  previousScrollRestoration = window.history.scrollRestoration
+  window.history.scrollRestoration = "manual"
+  reloadGuardActive = true
+  reloadProgressLoaded = false
+  reloadResumeChoicePending = false
+  reloadChosenAction = null
+  reloadLifecycleReady = document.readyState === "complete"
+  window.addEventListener("load", handleReloadLifecycleReady)
+  window.addEventListener("pageshow", handleReloadLifecycleReady)
+  applyReloadGuardPosition()
+}
+
+function hasReloadProgressCandidate(): boolean {
+  const storage = browserProgressStorage()
+  const context = readingContext.value
+  if (!storage || !context) {
+    return false
+  }
+  try {
+    const indexValue = storage.getItem(progressIndexKey(context.articleId))
+    return Boolean(
+      indexValue || storage.getItem(legacyProgressKey(context.articleSlug, context.revisionNumber))
+    )
+  } catch {
+    return false
+  }
+}
+
+function handleReloadLifecycleReady(): void {
+  reloadLifecycleReady = true
+  applyReloadGuardPosition()
+  scheduleReloadGuardRelease()
+}
+
+function scheduleReloadGuardRelease(): void {
+  if (
+    !reloadGuardActive ||
+    !reloadProgressLoaded ||
+    !reloadLifecycleReady ||
+    reloadResumeChoicePending ||
+    reloadReleaseScheduled
+  ) {
+    return
+  }
+  reloadReleaseScheduled = true
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      applyReloadFinalChoice()
+      releaseReloadScrollGuard()
+    })
+  })
+}
+
+function applyReloadGuardPosition(): void {
+  if (reloadGuardActive) {
+    window.scrollTo({ top: 0, behavior: "auto" })
+  }
+}
+
+function releaseReloadScrollGuard(): void {
+  if (typeof window === "undefined" || !reloadGuardActive) {
+    return
+  }
+  reloadGuardActive = false
+  reloadResumeChoicePending = false
+  reloadReleaseScheduled = false
+  reloadChosenAction = null
+  window.removeEventListener("load", handleReloadLifecycleReady)
+  window.removeEventListener("pageshow", handleReloadLifecycleReady)
+  if (previousScrollRestoration) {
+    window.history.scrollRestoration = previousScrollRestoration
+  }
+  previousScrollRestoration = null
+}
+
+function handleReaderPageHide(): void {
+  releaseReloadScrollGuard()
+}
+
+function navigationEntry(): DocumentNavigationEntry | null {
+  if (typeof performance === "undefined") {
+    return null
+  }
+  const entry = performance.getEntriesByType("navigation")[0] as
+    { name?: unknown; type?: unknown } | undefined
+  return entry && typeof entry.name === "string" && isDocumentNavigationType(entry.type)
+    ? { name: entry.name, type: entry.type }
+    : null
+}
+
+function isDocumentNavigationType(value: unknown): value is DocumentNavigationType {
+  return (
+    value === "navigate" || value === "reload" || value === "back_forward" || value === "prerender"
+  )
 }
 
 function readingBlockElements(): HTMLElement[] {
@@ -687,12 +871,14 @@ let stopCreativeWatch: (() => void) | null = null
 
 onMounted(() => {
   if (typeof window !== "undefined") {
+    beginInitialReloadScrollGuard()
     motionMode.value = window.matchMedia("(prefers-reduced-motion: reduce)").matches
       ? "reduced"
       : "full"
     interactiveEnabled.value = motionMode.value === "full"
     window.addEventListener("scroll", handleReaderScroll, { passive: true })
     window.addEventListener("beforeunload", saveReadingProgress)
+    window.addEventListener("pagehide", handleReaderPageHide)
   }
   document.addEventListener("scroll", handleReaderScroll, { passive: true, capture: true })
   document.addEventListener("visibilitychange", syncRuntimeStates)
@@ -724,6 +910,8 @@ onBeforeUnmount(() => {
   document.removeEventListener("visibilitychange", syncRuntimeStates)
   window.removeEventListener("scroll", handleReaderScroll)
   window.removeEventListener("beforeunload", saveReadingProgress)
+  window.removeEventListener("pagehide", handleReaderPageHide)
+  releaseReloadScrollGuard()
   stopCreativeVisibilityWatch()
 })
 </script>
