@@ -2,7 +2,7 @@
   "schema_version": "courtside-tw/task-level-evidence-reconciliation/v1",
   "proof_id": "t034-t041-task-level-reconciliation-20260812",
   "recorded_at": "2026-08-12T13:19:33Z",
-  "result": "PARTIAL_TASK_LEVEL_EVIDENCE_RECONCILED_PENDING_EXACT_HEAD_CI",
+  "result": "PARTIAL_TASK_LEVEL_EVIDENCE_RECONCILED_EXACT_HEAD_CI_PASSED",
   "classification": "ATTRIBUTABLE_CURRENT_MAIN_AUDIT",
   "purpose": "Replace T034-T041 group-level implementation inference with criterion-level current-main evidence and add only two missing API integration records for behavior that already exists. This receipt records verified behavior and exact blockers; it does not claim task completion where a named production or test boundary is absent.",
   "source_of_truth": {
@@ -158,20 +158,20 @@
     "records": [
       {
         "test": "returnsStableEtagHonorsIfNoneMatchAndChangesWithProjection",
-        "status": "PENDING_EXACT_HEAD_CI",
+        "status": "PASSED_EXACT_HEAD_CI",
         "attribution": [
           "T035"
         ],
-        "intended_to_prove": "The existing Article controller emits an ETag, honors If-None-Match with 304 and an empty body, and changes the ETag when the projected representation changes.",
+        "proves": "The existing Article controller emits an ETag, honors If-None-Match with 304 and an empty body, and changes the ETag when the projected representation changes.",
         "does_not_prove": "Immutable publication-snapshot derivation, snapshot navigation or complete canonical metadata."
       },
       {
         "test": "returnsPublishedPointerWithRevisionScopedContributors",
-        "status": "PENDING_EXACT_HEAD_CI",
+        "status": "PASSED_EXACT_HEAD_CI",
         "attribution": [
           "T034"
         ],
-        "intended_to_prove": "The existing default public query follows article.published_revision_id and projects only contributors attached to that selected revision.",
+        "proves": "The existing default public query follows article.published_revision_id and projects only contributors attached to that selected revision.",
         "does_not_prove": "Revision-row immutability, server-derived plain text/reading time or publication-snapshot navigation."
       }
     ],
@@ -181,11 +181,79 @@
       "reason": "The existing fixture does not mutate live navigation after snapshot creation and therefore must not claim snapshot isolation."
     },
     "local_execution": "NOT_RUN: Java 21 and Docker/Testcontainers are unavailable in the local environment.",
-    "required_execution": "Fresh exact-head PR CI"
+    "required_execution": "SATISFIED: PR #83 exact-head CI run 31603947813 (run #424) passed at 51b4d7c454f220c424d03cd6b386cbe9df29e0f0."
+  },
+  "exact_head_verification": {
+    "recorded_at": "2026-08-12T14:29:45Z",
+    "pull_request": 83,
+    "head_sha": "51b4d7c454f220c424d03cd6b386cbe9df29e0f0",
+    "tree_sha": "a4611021149a4d1f595e155cd7ab18628105c310",
+    "base_sha": "ed12e73aea918797a9470140e9730c5a1905d4f7",
+    "test_source_blob": "83a507dff502b397b52628dd84675555b8313d90",
+    "ci": {
+      "run_id": 31603947813,
+      "run_number": 424,
+      "conclusion": "success",
+      "workflow_url": "https://github.com/bynanci/courtside-tw/actions/runs/31603947813",
+      "jobs": {
+        "docker_compose_dependency_health": {
+          "job_id": 94137985142,
+          "conclusion": "success"
+        },
+        "java_quality_and_unit_verification": {
+          "job_id": 94137985163,
+          "conclusion": "success"
+        },
+        "frontend_and_contract_verification": {
+          "job_id": 94137985166,
+          "conclusion": "success"
+        },
+        "public_magazine_browser_verification": {
+          "job_id": 94138275639,
+          "conclusion": "success"
+        }
+      },
+      "java_report_artifact": {
+        "artifact_id": 9144348412,
+        "name": "ci-java-reports",
+        "digest": "sha256:da13708376dcb6432401a05dbb8907b7771ca9a6d1284d59b645d935dc59b526",
+        "head_sha": "51b4d7c454f220c424d03cd6b386cbe9df29e0f0",
+        "suite": "PublicArticleApiIT",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "browser_report_artifact": {
+        "artifact_id": 9144347679,
+        "name": "ci-web-e2e-reports",
+        "digest": "sha256:07ca2f38f23baadd0589b2e05ca6dbc640c8a02fce71b442236eafa6e77d9d3e"
+      },
+      "focused_tests": [
+        {
+          "test": "returnsPublishedPointerWithRevisionScopedContributors",
+          "task": "T034",
+          "result": "passed"
+        },
+        {
+          "test": "returnsStableEtagHonorsIfNoneMatchAndChangesWithProjection",
+          "task": "T035",
+          "result": "passed"
+        }
+      ]
+    },
+    "security": {
+      "run_id": 31603947815,
+      "run_number": 425,
+      "conclusion": "success",
+      "workflow_url": "https://github.com/bynanci/courtside-tw/actions/runs/31603947815",
+      "required_jobs": "success"
+    },
+    "task_completion_effect": "None. The two passing tests provide attributable evidence for bounded T034/T035 subclauses; every T034-T041 task still has the blockers listed below."
   },
   "task_results": {
     "T034": {
-      "status": "PARTIAL_TEST_RECORD_PENDING_EXACT_HEAD_CI",
+      "status": "PARTIAL_TASK_LEVEL_EVIDENCE_EXACT_HEAD_VERIFIED",
       "verified": [
         "Published reads select article.published_revision_id and reject an explicit historical revision query.",
         "Revision-scoped contributors are persisted and projected.",
@@ -196,9 +264,7 @@
         "apps/api/src/main/java/tw/basketball/magazine/publication/PublicArticleModels.java",
         "apps/api/src/main/resources/db/migration/V003__article_contributors.sql",
         "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java#returnsPublishedRevisionAndIssueNavigation",
-        "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java#deniesDraftWithdrawnHistoricalAndPrivateRightsContent"
-      ],
-      "pending_test_records": [
+        "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java#deniesDraftWithdrawnHistoricalAndPrivateRightsContent",
         "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java#returnsPublishedPointerWithRevisionScopedContributors"
       ],
       "blockers": [
@@ -210,7 +276,7 @@
       "checkbox_allowed": false
     },
     "T035": {
-      "status": "PARTIAL_TEST_RECORD_PENDING_EXACT_HEAD_CI",
+      "status": "PARTIAL_TASK_LEVEL_EVIDENCE_EXACT_HEAD_VERIFIED",
       "verified": [
         "GET /api/v1/public/articles/{articleSlug} is anonymous and published-only.",
         "The controller generates deterministic ETags and implements If-None-Match handling.",
@@ -222,9 +288,7 @@
         "apps/api/src/main/java/tw/basketball/magazine/publication/PublicArticleEtag.java",
         "apps/api/src/main/java/tw/basketball/magazine/publication/JdbcPublicArticleRepository.java",
         "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java#resolvesSelectedPublicStorageVariantWithoutInventingArticlePath",
-        "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java#skipsRightsIneligibleNeighborFromIssueNavigation"
-      ],
-      "pending_test_records": [
+        "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java#skipsRightsIneligibleNeighborFromIssueNavigation",
         "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java#returnsStableEtagHonorsIfNoneMatchAndChangesWithProjection"
       ],
       "blockers": [

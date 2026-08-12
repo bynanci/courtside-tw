@@ -1,12 +1,12 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t034-t041-us2-review-remediation",
-  "graph_version": 3,
+  "graph_version": 4,
   "run_id": "courtside-tw-us2-review-remediation-20260809",
   "status": "blocked",
-  "iteration": 3,
+  "iteration": 4,
   "started_at": "2026-08-09",
-  "updated_at": "2026-08-12T13:19:33Z",
+  "updated_at": "2026-08-12T14:29:45Z",
   "current_frontier": [],
   "blocked_nodes": [
     "g-protected-p1",
@@ -470,6 +470,136 @@
         "total": 24000
       },
       "terminal_reason": "The evidence and focused test-record reconciliation is complete; task completion remains blocked and no production implementation authority was exercised."
+    },
+    {
+      "event_id": "evt-us2-review-remediation-004",
+      "at": "2026-08-12T14:29:45Z",
+      "actor": "codex-supervisor",
+      "type": "exact_head_post_ci_readback",
+      "base_graph_version": 3,
+      "new_graph_version": 4,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph/nodes/p-exact-head/label",
+            "value": "Latest exact-head CI, Security and browser verification"
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/p-exact-head/confidence",
+            "value": {
+              "score": 1.0,
+              "basis": "PR #83 head 51b4d7c454f220c424d03cd6b386cbe9df29e0f0 has CI #424 and Security #425 passing; PublicArticleApiIT passed 9/9 including the two focused T034/T035 records. This proves only those bounded subclauses and does not close any task.",
+              "evidence_refs": [
+                ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json"
+              ]
+            }
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/p-exact-head/config/claim",
+            "value": "The latest PR #83 evidence head has reproducible CI/Security/browser results and passing focused T034/T035 records; named T034-T041 criterion blockers remain."
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/p-exact-head/config/evidence_path",
+            "value": ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json"
+          },
+          {
+            "op": "replace",
+            "path": "task_completion_claim",
+            "value": "T034-T041 remain blocked by named criterion gaps; exact-head success closes only the two pending test records"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json",
+        "https://github.com/bynanci/courtside-tw/pull/83",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31603947813",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31603947815"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "PR #83 exact head 51b4d7c454f220c424d03cd6b386cbe9df29e0f0",
+          "level": "P3",
+          "result": "success",
+          "tree_sha": "a4611021149a4d1f595e155cd7ab18628105c310",
+          "ci_run": 31603947813,
+          "ci_run_number": 424,
+          "ci_conclusion": "success",
+          "ci_jobs": {
+            "docker_compose_dependency_health": {
+              "job_id": 94137985142,
+              "conclusion": "success"
+            },
+            "java_quality_and_unit_verification": {
+              "job_id": 94137985163,
+              "conclusion": "success"
+            },
+            "frontend_and_contract_verification": {
+              "job_id": 94137985166,
+              "conclusion": "success"
+            },
+            "public_magazine_browser_verification": {
+              "job_id": 94138275639,
+              "conclusion": "success"
+            }
+          },
+          "java_report_artifact": {
+            "artifact_id": 9144348412,
+            "digest": "sha256:da13708376dcb6432401a05dbb8907b7771ca9a6d1284d59b645d935dc59b526",
+            "suite": "PublicArticleApiIT",
+            "tests": 9,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "browser_report_artifact": {
+            "artifact_id": 9144347679,
+            "digest": "sha256:07ca2f38f23baadd0589b2e05ca6dbc640c8a02fce71b442236eafa6e77d9d3e"
+          },
+          "focused_tests": {
+            "T034": "returnsPublishedPointerWithRevisionScopedContributors=passed",
+            "T035": "returnsStableEtagHonorsIfNoneMatchAndChangesWithProjection=passed"
+          }
+        },
+        {
+          "proof": "PR #83 exact-head Security",
+          "level": "P3",
+          "result": "success",
+          "security_run": 31603947815,
+          "security_run_number": 425,
+          "security_conclusion": "success",
+          "required_jobs": "success"
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:t034-t041-task-level-evidence-reconciliation",
+        "version": "task-evidence-reconciliation-v2",
+        "retrieval_ids": [
+          "wm:project:courtside-tw:us2-t034-t041-implementation-lane",
+          "wm:project:courtside-tw:us2-t034-t041-review-remediation"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json",
+          "https://github.com/bynanci/courtside-tw/actions/runs/31603947813",
+          "https://github.com/bynanci/courtside-tw/actions/runs/31603947815"
+        ],
+        "next_review_at": "2026-08-19",
+        "blocker": "Each T034-T041 task retains at least one named criterion gap."
+      },
+      "failure_signature": "EXACT_HEAD_TEST_DELTA_PASSED_TASK_CRITERIA_STILL_OPEN",
+      "decision": "RECORD_EXACT_HEAD_SUCCESS_KEEP_TASKS_UNCHECKED",
+      "frontier_reconciliation": "The two formerly pending T034/T035 test records are now passed; current_frontier remains empty and g-protected-p1 remains blocked because no task is complete.",
+      "token_usage": {
+        "estimated": 6000,
+        "input": 0,
+        "output": 0,
+        "total": 6000
+      },
+      "terminal_reason": "Exact-head CI and Security close the pending test-execution record only; every T034-T041 task retains named acceptance blockers and no production, test, task or out-of-scope state changed in this readback."
     }
   ]
 }

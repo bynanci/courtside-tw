@@ -4,7 +4,7 @@
   "scope": "project",
   "kind": "task_state",
   "title": "T034-T041 current-main evidence is reconciled without false completion",
-  "summary": "Current main at ed12e73 was reconciled criterion by criterion against tasks.md, the implementation and review-remediation ledgers, historical receipts and current source/test blobs. Prior receipts prove a useful group implementation, but all eight tasks retain at least one named production or executable-test gap. Two focused API integration records pending exact-head CI were added for existing T034/T035 behavior; no production source, migration or checkbox changed.",
+  "summary": "Current main at ed12e73 was reconciled criterion by criterion against tasks.md, the implementation and review-remediation ledgers, historical receipts and current source/test blobs. Prior receipts prove a useful group implementation, but all eight tasks retain at least one named production or executable-test gap. Two focused API integration records for existing T034/T035 behavior passed exact-head CI on PR #83 head 51b4d7c; no production source, migration or checkbox changed.",
   "claims": [
     {
       "text": "The authoritative baseline is main@ed12e73aea918797a9470140e9730c5a1905d4f7 and tasks blob f25d8fd362a50a77b79c49ad2abe0c5c06ca871f.",
@@ -27,7 +27,7 @@
       "confidence": "high"
     },
     {
-      "text": "The only executable-test delta adds focused records, pending exact-head CI, for the existing Article ETag lifecycle and published-pointer/revision-scoped-contributor projection; it does not close T034 or T035.",
+      "text": "The only executable-test delta adds focused records for the existing Article ETag lifecycle and published-pointer/revision-scoped-contributor projection. Both passed in PublicArticleApiIT on PR #83 exact head 51b4d7c454f220c424d03cd6b386cbe9df29e0f0 (CI run 31603947813, #424); they do not close T034 or T035.",
       "class": "CONFIRMED",
       "confidence": "high"
     },
@@ -49,6 +49,9 @@
     "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
     ".loop/t034-t041-us2-implementation-ledger.json",
     ".loop/t034-t041-us2-review-remediation-ledger.json",
+    "https://github.com/bynanci/courtside-tw/pull/83",
+    "https://github.com/bynanci/courtside-tw/actions/runs/31603947813",
+    "https://github.com/bynanci/courtside-tw/actions/runs/31603947815",
     "https://github.com/bynanci/courtside-tw/pull/65",
     "https://github.com/bynanci/courtside-tw/pull/67",
     "https://github.com/bynanci/courtside-tw/pull/69"
@@ -63,6 +66,9 @@
     "docs/adr/0005-motion-and-generative-runtime.md",
     "apps/api/src/main/java/tw/basketball/magazine/publication/JdbcPublicArticleRepository.java",
     "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java",
+    "https://github.com/bynanci/courtside-tw/pull/83",
+    "https://github.com/bynanci/courtside-tw/actions/runs/31603947813",
+    "https://github.com/bynanci/courtside-tw/actions/runs/31603947815",
     "apps/web/app/pages/articles/[articleSlug].vue",
     "apps/web/tests/e2e/us2-read-article.spec.ts",
     "apps/web/tests/e2e/us2-no-js.spec.ts",
@@ -103,12 +109,12 @@
   "sensitivity": "public",
   "retention": "until_superseded",
   "write_receipt": {
-    "status": "SAVED",
-    "version": "task-evidence-reconciliation-v1",
+    "status": "UPDATED",
+    "version": "task-evidence-reconciliation-v2",
     "backend": "repository",
     "record_path": ".loop/memory/t034-t041-task-level-evidence-reconciliation.json",
-    "receipt_ref": ".loop/t034-t041-us2-review-remediation-ledger.json#evt-us2-review-remediation-003",
-    "readback": "validate_memory_record.py returned VALID for the repository-backed record; commit and PR-head readback are part of this handoff.",
+    "receipt_ref": ".loop/t034-t041-us2-review-remediation-ledger.json#evt-us2-review-remediation-004",
+    "readback": "PR #83 exact head 51b4d7c454f220c424d03cd6b386cbe9df29e0f0 has successful CI run 31603947813 and Security run 31603947815; validate_memory_record.py returned VALID for this repository-backed v2 record.",
     "written_by": "codex-supervisor"
   }
 }

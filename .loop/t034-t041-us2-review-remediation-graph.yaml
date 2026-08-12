@@ -199,20 +199,20 @@ graph:
     - id: p-exact-head
       kind: proof
       layer: L1
-      label: Exact-head CI, Security and browser verification
+      label: Latest exact-head CI, Security and browser verification
       owner: verifier
       status: done
       risk: high
       confidence:
         score: 1.0
-        basis: "Implementation head eb7fc608bca82183889237c46b0f123a8555037c has CI #308, Security #308 and 9/9 browser tests passing."
-        evidence_refs: [".loop/evidence/t034-t041-media-byline-p5-implementation-20260809.json"]
+        basis: "PR #83 head 51b4d7c454f220c424d03cd6b386cbe9df29e0f0 has CI #424 and Security #425 passing; PublicArticleApiIT passed 9/9 including the two focused T034/T035 records. This proves only those bounded subclauses and does not close any task."
+        evidence_refs: [".loop/evidence/t034-t041-task-level-reconciliation-20260812.json"]
       budget: {effort_hours: 1.5, tokens: 12000}
       config:
         level: P3
-        claim: "The implementation head has reproducible CI/Security/browser results, with no pending failure hidden."
-        method: "Fetch workflow runs by exact head SHA and inspect every job conclusion plus browser logs."
-        evidence_path: ".loop/evidence/t034-t041-media-byline-p5-implementation-20260809.json"
+        claim: "The latest PR #83 evidence head has reproducible CI/Security/browser results and passing focused T034/T035 records; named T034-T041 criterion blockers remain."
+        method: "Fetch workflow runs by exact head SHA and inspect every job conclusion plus exact-head report artifacts."
+        evidence_path: ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json"
         required: true
         baseline_required: true
 
