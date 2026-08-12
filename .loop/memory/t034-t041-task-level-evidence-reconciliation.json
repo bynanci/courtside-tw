@@ -4,7 +4,7 @@
   "scope": "project",
   "kind": "task_state",
   "title": "T034-T041 current-main evidence is reconciled without false completion",
-  "summary": "Current main at ed12e73 was reconciled criterion by criterion against tasks.md, the implementation and review-remediation ledgers, historical receipts and current source/test blobs. Prior receipts prove a useful group implementation, but all eight tasks retain at least one named production or executable-test gap. Two focused API integration records for existing T034/T035 behavior passed exact-head CI on PR #83 head 51b4d7c; no production source, migration or checkbox changed.",
+  "summary": "Current main at ed12e73 was reconciled criterion by criterion against tasks.md, the implementation and review-remediation ledgers, historical receipts and current source/test blobs. Prior receipts prove a useful group implementation, but all eight tasks retain at least one named production or executable-test gap. Two focused API integration records for existing T034/T035 behavior passed CI on the earlier focused evidence head 51b4d7c; no production source, migration or checkbox changed.",
   "claims": [
     {
       "text": "The authoritative baseline is main@ed12e73aea918797a9470140e9730c5a1905d4f7 and tasks blob f25d8fd362a50a77b79c49ad2abe0c5c06ca871f.",
@@ -27,7 +27,12 @@
       "confidence": "high"
     },
     {
-      "text": "The only executable-test delta adds focused records for the existing Article ETag lifecycle and published-pointer/revision-scoped-contributor projection. Both passed in PublicArticleApiIT on PR #83 exact head 51b4d7c454f220c424d03cd6b386cbe9df29e0f0 (CI run 31603947813, #424); they do not close T034 or T035.",
+      "text": "The only executable-test delta adds focused records for the existing Article ETag lifecycle and published-pointer/revision-scoped-contributor projection. Both passed in PublicArticleApiIT on the earlier focused evidence head 51b4d7c454f220c424d03cd6b386cbe9df29e0f0 (CI run 31603947813, #424); they do not close T034 or T035 and are not the live protected-merge head.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The mutable PR merge head is never serialized as a self-referential final SHA; CI, Security, browser and review-thread gates must match the expected current head immediately before merge.",
       "class": "CONFIRMED",
       "confidence": "high"
     },
@@ -110,11 +115,11 @@
   "retention": "until_superseded",
   "write_receipt": {
     "status": "UPDATED",
-    "version": "task-evidence-reconciliation-v2",
+    "version": "task-evidence-reconciliation-v3",
     "backend": "repository",
     "record_path": ".loop/memory/t034-t041-task-level-evidence-reconciliation.json",
-    "receipt_ref": ".loop/t034-t041-us2-review-remediation-ledger.json#evt-us2-review-remediation-004",
-    "readback": "PR #83 exact head 51b4d7c454f220c424d03cd6b386cbe9df29e0f0 has successful CI run 31603947813 and Security run 31603947815; validate_memory_record.py returned VALID for this repository-backed v2 record.",
+    "receipt_ref": ".loop/t034-t041-us2-review-remediation-ledger.json#evt-us2-review-remediation-006",
+    "readback": "Earlier focused evidence head 51b4d7c454f220c424d03cd6b386cbe9df29e0f0 has successful CI run 31603947813 and Security run 31603947815; live protected gates remain bound to the mutable expected head. validate_memory_record.py returned VALID for this repository-backed v3 record.",
     "written_by": "codex-supervisor"
   }
 }

@@ -181,14 +181,16 @@
       "reason": "The existing fixture does not mutate live navigation after snapshot creation and therefore must not claim snapshot isolation."
     },
     "local_execution": "NOT_RUN: Java 21 and Docker/Testcontainers are unavailable in the local environment.",
-    "required_execution": "SATISFIED: PR #83 exact-head CI run 31603947813 (run #424) passed at 51b4d7c454f220c424d03cd6b386cbe9df29e0f0."
+    "required_execution": "SATISFIED_FOR_FOCUSED_TEST_HEAD: PR #83 CI run 31603947813 (run #424) passed at 51b4d7c454f220c424d03cd6b386cbe9df29e0f0; the protected-merge gate must evaluate the current mutable PR head live."
   },
   "exact_head_verification": {
+    "classification": "EARLIER_FOCUSED_TEST_HEAD",
     "recorded_at": "2026-08-12T14:29:45Z",
     "pull_request": 83,
     "head_sha": "51b4d7c454f220c424d03cd6b386cbe9df29e0f0",
     "tree_sha": "a4611021149a4d1f595e155cd7ab18628105c310",
     "base_sha": "ed12e73aea918797a9470140e9730c5a1905d4f7",
+    "live_merge_gate_policy": "Do not treat this serialized SHA as the final PR head. CI, Security, browser and review-thread gates are read live for the expected head immediately before merge.",
     "test_source_blob": "83a507dff502b397b52628dd84675555b8313d90",
     "ci": {
       "run_id": 31603947813,
@@ -249,7 +251,7 @@
       "workflow_url": "https://github.com/bynanci/courtside-tw/actions/runs/31603947815",
       "required_jobs": "success"
     },
-    "task_completion_effect": "None. The two passing tests provide attributable evidence for bounded T034/T035 subclauses; every T034-T041 task still has the blockers listed below."
+    "task_completion_effect": "None. This earlier focused test head provides attributable evidence for bounded T034/T035 subclauses; every T034-T041 task still has the blockers listed below, and current-head protected gates are evaluated separately."
   },
   "task_results": {
     "T034": {

@@ -1,12 +1,12 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t034-t041-us2-review-remediation",
-  "graph_version": 5,
+  "graph_version": 6,
   "run_id": "courtside-tw-us2-review-remediation-20260809",
   "status": "blocked",
-  "iteration": 5,
+  "iteration": 6,
   "started_at": "2026-08-09",
-  "updated_at": "2026-08-12T23:40:13Z",
+  "updated_at": "2026-08-12T23:53:13Z",
   "current_frontier": [],
   "blocked_nodes": [
     "g-protected-p1",
@@ -676,6 +676,132 @@
         "total": 2500
       },
       "terminal_reason": "Both PR #83 control-plane review findings are repaired without changing production, tests, migrations, deployment or task state; T034-T041 remain blocked by their named criteria."
+    },
+    {
+      "event_id": "evt-us2-review-remediation-006",
+      "at": "2026-08-12T23:53:13Z",
+      "actor": "codex-supervisor",
+      "type": "review_replay_and_head_attribution_correction",
+      "base_graph_version": 5,
+      "new_graph_version": 6,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "budgets/max_iterations",
+            "value": 6
+          },
+          {
+            "op": "replace",
+            "path": "graph/loops/l1-us2-review-remediation/budgets/max_iterations",
+            "value": 6
+          },
+          {
+            "op": "replace",
+            "path": "acceptance/0",
+            "value": "The historical PR #67 remediation remained draft-only during this lane and was based on main@c45c1fd7e93699f4626e2ceab6b5fb6f52f38842; later merge state is reconciled in the ledger."
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/p-exact-head/label",
+            "value": "Focused T034/T035 evidence-head CI, Security and browser verification"
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/p-exact-head/confidence",
+            "value": {
+              "score": 1.0,
+              "basis": "Earlier focused evidence head 51b4d7c454f220c424d03cd6b386cbe9df29e0f0 has CI #424 and Security #425 passing; PublicArticleApiIT passed 9/9 including the two focused T034/T035 records. This is not the live protected-merge head and proves only those bounded subclauses.",
+              "evidence_refs": [
+                ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json"
+              ]
+            }
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/p-exact-head/config/claim",
+            "value": "The earlier focused PR #83 evidence head has reproducible CI/Security/browser results and passing focused T034/T035 records; live protected-merge checks must still match the current PR SHA."
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/p-exact-head/config/method",
+            "value": "Fetch workflow runs for the focused evidence-head SHA and inspect every job conclusion plus report artifacts; evaluate the mutable PR merge head live rather than serializing a self-referential final SHA."
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/g-protected-p1/config/condition",
+            "value": "Do not review task-state completion until the task-level blockers in the reconciliation receipt are closed separately."
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/m-semantic-lane/confidence",
+            "value": {
+              "score": 0.95,
+              "basis": "The historical semantic record is superseded by task-level reconciliation and cannot route to success while named task criteria remain open.",
+              "evidence_refs": [
+                ".loop/memory/t034-t041-task-level-evidence-reconciliation.json",
+                ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json"
+              ]
+            }
+          }
+        ]
+      },
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/pull/83",
+        "review-thread:PRRT_kwDOTvfycs6YwzMn",
+        "review-thread:PRRT_kwDOTvfycs6YwzMq",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31651870941",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31651870939",
+        ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json",
+        ".loop/memory/t034-t041-task-level-evidence-reconciliation.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Graph mutation replay from main graph version 2 through event 006",
+          "level": "P1",
+          "result": "success",
+          "errors": 0,
+          "unrecorded_mutations": 0
+        },
+        {
+          "proof": "Pre-correction reviewed head f220e01b890215f49fc3bc81233c1e33282ae1e3",
+          "level": "P3",
+          "classification": "SUPERSEDED_PREDECESSOR_HEAD_NOT_LIVE_MERGE_GATE",
+          "result": "success",
+          "ci_run": 31651870941,
+          "ci_run_number": 438,
+          "security_run": 31651870939,
+          "security_run_number": 439,
+          "browser_job": 94297950857,
+          "required_jobs": "success"
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:t034-t041-task-level-evidence-reconciliation",
+        "version": "task-evidence-reconciliation-v3",
+        "retrieval_ids": [
+          "wm:project:courtside-tw:t034-t041-task-level-evidence-reconciliation",
+          "wm:project:courtside-tw:us2-t034-t041-review-remediation"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json",
+          "https://github.com/bynanci/courtside-tw/actions/runs/31603947813",
+          "https://github.com/bynanci/courtside-tw/actions/runs/31603947815"
+        ],
+        "next_review_at": "2026-08-19",
+        "blocker": "T034-T041 retain named task criteria; live protected-merge gates must match the current expected PR head."
+      },
+      "failure_signature": "UNRECORDED_GRAPH_MUTATIONS_AND_SELF_REFERENTIAL_HEAD_ATTRIBUTION_RESOLVED",
+      "decision": "RECLASSIFY_FOCUSED_HEAD_AND_REQUIRE_LIVE_MERGE_GATE",
+      "frontier_reconciliation": "Task frontier remains empty. The ledger can replay every graph mutation, while the serialized 51b4d7c proof is explicitly limited to focused T034/T035 evidence.",
+      "token_usage": {
+        "estimated": 4500,
+        "input": 0,
+        "output": 0,
+        "total": 4500
+      },
+      "terminal_reason": "Evidence attribution and graph replay are corrected without claiming T034-T041 completion; current-head CI, Security, browser and review threads remain live merge-controller gates."
     }
   ]
 }

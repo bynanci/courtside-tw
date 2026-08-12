@@ -35,7 +35,7 @@ authority:
     - Add undeclared compatibility fields or external provider dependencies
 
 acceptance:
-  - The historical PR #67 remediation remained draft-only during this lane and was based on main@c45c1fd7e93699f4626e2ceab6b5fb6f52f38842; later merge state is reconciled in the ledger.
+  - "The historical PR #67 remediation remained draft-only during this lane and was based on main@c45c1fd7e93699f4626e2ceab6b5fb6f52f38842; later merge state is reconciled in the ledger."
   - Reader/API, exact public media resolution, contributor source/contract and p5.js runtime changes are bounded and separately evidenced.
   - Canonical ContentDocument validation fails closed and issue navigation applies the public rights gate.
   - The implementation head has successful exact-head CI, Security and browser receipts with no pending test failure.
@@ -43,7 +43,7 @@ acceptance:
   - No task checkbox, merge, production migration execution, deployment or public activation is changed by this lane.
 
 budgets:
-  max_iterations: 5
+  max_iterations: 6
   max_minutes: 180
   max_same_failure: 2
   max_no_evidence_delta: 2
@@ -96,7 +96,7 @@ graph:
       memory_nodes: [m-control-ledger, m-semantic-lane]
       stop_nodes: [s-review-terminal]
       budgets:
-        max_iterations: 5
+        max_iterations: 6
         max_minutes: 180
         max_same_failure: 2
         max_graph_changes: 20
@@ -203,19 +203,19 @@ graph:
     - id: p-exact-head
       kind: proof
       layer: L1
-      label: Latest exact-head CI, Security and browser verification
+      label: Focused T034/T035 evidence-head CI, Security and browser verification
       owner: verifier
       status: done
       risk: high
       confidence:
         score: 1.0
-        basis: "PR #83 head 51b4d7c454f220c424d03cd6b386cbe9df29e0f0 has CI #424 and Security #425 passing; PublicArticleApiIT passed 9/9 including the two focused T034/T035 records. This proves only those bounded subclauses and does not close any task."
+        basis: "Earlier focused evidence head 51b4d7c454f220c424d03cd6b386cbe9df29e0f0 has CI #424 and Security #425 passing; PublicArticleApiIT passed 9/9 including the two focused T034/T035 records. This is not the live protected-merge head and proves only those bounded subclauses."
         evidence_refs: [".loop/evidence/t034-t041-task-level-reconciliation-20260812.json"]
       budget: {effort_hours: 1.5, tokens: 12000}
       config:
         level: P3
-        claim: "The latest PR #83 evidence head has reproducible CI/Security/browser results and passing focused T034/T035 records; named T034-T041 criterion blockers remain."
-        method: "Fetch workflow runs by exact head SHA and inspect every job conclusion plus exact-head report artifacts."
+        claim: "The earlier focused PR #83 evidence head has reproducible CI/Security/browser results and passing focused T034/T035 records; live protected-merge checks must still match the current PR SHA."
+        method: "Fetch workflow runs for the focused evidence-head SHA and inspect every job conclusion plus report artifacts; evaluate the mutable PR merge head live rather than serializing a self-referential final SHA."
         evidence_path: ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json"
         required: true
         baseline_required: true
