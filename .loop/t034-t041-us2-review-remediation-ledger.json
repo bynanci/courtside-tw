@@ -1,12 +1,12 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t034-t041-us2-review-remediation",
-  "graph_version": 4,
+  "graph_version": 5,
   "run_id": "courtside-tw-us2-review-remediation-20260809",
   "status": "blocked",
-  "iteration": 4,
+  "iteration": 5,
   "started_at": "2026-08-09",
-  "updated_at": "2026-08-12T14:29:45Z",
+  "updated_at": "2026-08-12T23:40:13Z",
   "current_frontier": [],
   "blocked_nodes": [
     "g-protected-p1",
@@ -600,6 +600,82 @@
         "total": 6000
       },
       "terminal_reason": "Exact-head CI and Security close the pending test-execution record only; every T034-T041 task retains named acceptance blockers and no production, test, task or out-of-scope state changed in this readback."
+    },
+    {
+      "event_id": "evt-us2-review-remediation-005",
+      "at": "2026-08-12T23:40:13Z",
+      "actor": "codex-supervisor",
+      "type": "review_thread_control_plane_reconciliation",
+      "base_graph_version": 4,
+      "new_graph_version": 5,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph/nodes/m-semantic-lane/config/path",
+            "value": ".loop/memory/t034-t041-task-level-evidence-reconciliation.json"
+          }
+        ]
+      },
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/pull/83",
+        "review-thread:PRRT_kwDOTvfycs6YprWz",
+        "review-thread:PRRT_kwDOTvfycs6YprW7",
+        ".loop/t034-t041-us2-review-remediation-graph.yaml",
+        ".loop/memory/t034-t041-task-level-evidence-reconciliation.json",
+        ".loop/t034-t041-us2-review-remediation-ledger.json#evt-us2-review-remediation-003"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Strict Graphify control-plane validation",
+          "level": "P1",
+          "result": "success",
+          "command": "python3 validate_graphify_loop.py .loop/t034-t041-us2-review-remediation-graph.yaml --strict --json",
+          "nodes": 10,
+          "edges": 17,
+          "errors": 0,
+          "warnings": 0
+        },
+        {
+          "proof": "Semantic memory contract validation",
+          "level": "P1",
+          "result": "success",
+          "command": "python3 validate_memory_record.py .loop/memory/t034-t041-task-level-evidence-reconciliation.json --strict",
+          "memory_id": "wm:project:courtside-tw:t034-t041-task-level-evidence-reconciliation"
+        },
+        {
+          "proof": "Scope-guard replay consistency",
+          "level": "P1",
+          "result": "success",
+          "ledger_event": "evt-us2-review-remediation-003",
+          "graph_path": "scope_guard"
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": "wm:project:courtside-tw:t034-t041-task-level-evidence-reconciliation",
+        "version": "task-evidence-reconciliation-v2",
+        "retrieval_ids": [
+          "wm:project:courtside-tw:t034-t041-task-level-evidence-reconciliation",
+          "wm:project:courtside-tw:us2-t034-t041-review-remediation"
+        ],
+        "evidence_refs": [
+          ".loop/t034-t041-us2-review-remediation-graph.yaml",
+          ".loop/t034-t041-us2-review-remediation-ledger.json"
+        ],
+        "next_review_at": "2026-08-19",
+        "blocker": "Each T034-T041 task retains at least one named criterion gap; this event changes routing metadata only."
+      },
+      "failure_signature": "STALE_SEMANTIC_PATH_AND_UNAPPLIED_SCOPE_GUARD_RESOLVED",
+      "decision": "RECONCILE_CONTROL_PLANE_KEEP_TASKS_UNCHECKED",
+      "frontier_reconciliation": "No task frontier changes. The graph now reads the superseding task-level memory record and materializes the scope guard already declared by event 003.",
+      "token_usage": {
+        "estimated": 2500,
+        "input": 0,
+        "output": 0,
+        "total": 2500
+      },
+      "terminal_reason": "Both PR #83 control-plane review findings are repaired without changing production, tests, migrations, deployment or task state; T034-T041 remain blocked by their named criteria."
     }
   ]
 }

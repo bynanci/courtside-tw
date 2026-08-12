@@ -15,6 +15,10 @@ scope:
     - Protected merge, production migration execution, production activation or deployment
     - Web3, wallet, token, Passport or public content publication
 
+scope_guard: >-
+  No production, migration, deployment or checkbox changes; test-only delta is limited
+  to two focused PublicArticleApiIT records and one corrected test name
+
 authority:
   allowed:
     - Read main, PR #65/#66/#67, review threads, tasks, OpenAPI, schema, ADRs and tests
@@ -268,7 +272,7 @@ graph:
         evidence_refs: [".loop/memory/t034-t041-task-level-evidence-reconciliation.json", ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json"]
       budget: {effort_hours: 0.2, tokens: 2500}
       config:
-        path: ".loop/memory/t034-t041-us2-review-remediation.json"
+        path: ".loop/memory/t034-t041-task-level-evidence-reconciliation.json"
         read_before_action: true
         write_after_iteration: true
         append_only: true
