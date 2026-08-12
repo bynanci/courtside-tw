@@ -30,12 +30,18 @@
       "text": "T034-T038 and T040-T041 remain unchecked because their independent acceptance gaps are not repaired by T039.",
       "class": "CONFIRMED",
       "confidence": "high"
+    },
+    {
+      "text": "The v1 receipt's independent-review count is retracted because it has no durable reviewer identity or review receipt; T039 completion rests on tests-first and exact-head executable evidence.",
+      "class": "CONFIRMED",
+      "confidence": "high"
     }
   ],
   "status": "verified",
   "confidence": "medium",
   "confidence_basis": [
     ".loop/evidence/t039-progress-proof.json",
+    ".loop/evidence/t039-progress-proof-attribution-correction.json",
     "9351bedce1e990ff618bf1c81028bbd8f454bfab",
     "https://github.com/bynanci/courtside-tw/actions/runs/31617186365",
     "https://github.com/bynanci/courtside-tw/actions/runs/31617186277"
@@ -46,6 +52,7 @@
     ".loop/evidence/t039-tests-first-red-20260812.json",
     ".loop/evidence/t039-review-tests-first-red-20260812.json",
     ".loop/evidence/t039-progress-proof.json",
+    ".loop/evidence/t039-progress-proof-attribution-correction.json",
     "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
     "https://github.com/bynanci/courtside-tw/pull/84"
   ],
@@ -55,7 +62,7 @@
       "wm:project:courtside-tw:us2-t034-t041-implementation-lane"
     ],
     "contradicts": [],
-    "supersedes": [],
+    "supersedes": ["wm:project:courtside-tw:t039-progress-completion@t039-progress-completion-v1"],
     "blocks": [],
     "invalidates": []
   },
@@ -63,8 +70,10 @@
   "sensitivity": "internal",
   "retention": "until_superseded",
   "write_receipt": {
-    "status": "SAVED",
-    "version": "t039-progress-completion-v1",
-    "written_by": "codex-agent"
+    "status": "UPDATED",
+    "version": "t039-progress-completion-v2",
+    "previous_version": "t039-progress-completion-v1",
+    "written_by": "codex-agent",
+    "correction_evidence_ref": ".loop/evidence/t039-progress-proof-attribution-correction.json"
   }
 }

@@ -220,7 +220,7 @@ graph:
       confidence:
         score: 1.0
         basis: Tests-first, implementation, local and exact-head browser/Security proof all pass with zero T039 acceptance blocker.
-        evidence_refs: [.loop/evidence/t039-progress-proof.json]
+        evidence_refs: [.loop/evidence/t039-progress-proof.json, .loop/evidence/t039-progress-proof-attribution-correction.json]
       budget: {effort_hours: 0.0, tokens: 0}
       config:
         states:

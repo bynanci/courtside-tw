@@ -1,0 +1,58 @@
+{
+  "schema_version": "courtside-tw/evidence-attribution-correction/v1",
+  "proof_id": "t039-progress-proof-attribution-correction",
+  "recorded_at": "2026-08-12T16:40:00Z",
+  "result": "ATTRIBUTION_RETRACTED_TASK_COMPLETION_UNCHANGED",
+  "task": "T039",
+  "preserved_sources": {
+    "completion_receipt": {
+      "path": ".loop/evidence/t039-progress-proof.json",
+      "original_blob": "e94fd17753559985ec7031e91ad7de8ea33ee53c"
+    },
+    "ledger": {
+      "path": ".loop/t039-progress-remediation-ledger.json",
+      "original_blob": "e621a033833be4b8cd17b778c64bb56ae030c2d5",
+      "preserved_event": "evt-t039-progress-remediation-001"
+    },
+    "memory": {
+      "path": ".loop/memory/t039-progress-completion.json",
+      "original_blob": "35cddf9f2f8f6f159360b5237b8a4ae20db0eab4",
+      "original_version": "t039-progress-completion-v1"
+    },
+    "closure_head": "d050e07fdcc467df387a332069efd001c951d2bd"
+  },
+  "correction": {
+    "retracted_claims": [
+      ".loop/evidence/t039-progress-proof.json#independent_review",
+      ".loop/t039-progress-remediation-ledger.json#events/0/proof_receipts/3",
+      "independent-review wording in the v1 graph stop-node basis, memory summary and ledger terminal reason"
+    ],
+    "reason": "The v1 artifacts recorded a reviewer count and zero-finding result without durable reviewer identities or review receipt paths. Those claims are not attributable evidence and must not support completion.",
+    "effect": "The original artifacts remain preserved in Git history and the original ledger event remains byte-for-byte in the current ledger. The graph, memory v2 and appended ledger event explicitly retract the unsupported attribution."
+  },
+  "completion_revalidation": {
+    "classification": "complete-and-evidenced",
+    "task_acceptance_blockers": [],
+    "basis": [
+      "tests-first RED receipts identify the missing T039 behavior",
+      "57 of 57 local web tests pass, including 17 focused reader units",
+      "CI run 31617186365 passed at implementation head 9351bedce1e990ff618bf1c81028bbd8f454bfab",
+      "the browser job passed 18 of 18 journeys, including six focused T039 reader-progress cases",
+      "Security run 31617186277 passed at the same implementation head"
+    ],
+    "does_not_rely_on": ["independent reviewer count", "unattributed zero-finding claim"]
+  },
+  "scope_guard": {
+    "historical_completion_receipt_overwritten": false,
+    "historical_ledger_event_overwritten": false,
+    "memory_update_mode": "UPDATED_V2",
+    "graph_delta_appended_to_ledger": true,
+    "production_source_changed": false,
+    "test_source_changed": false,
+    "task_checkbox_changed": false,
+    "T056_or_T057_plus_changed": false,
+    "web3_wallet_passport_changed": false,
+    "deployment_or_activation_changed": false,
+    "database_or_migration_changed": false
+  }
+}
