@@ -68,6 +68,9 @@ importers:
       p5:
         specifier: 2.3.0
         version: 2.3.0
+      vue:
+        specifier: 3.5.41
+        version: 3.5.41(typescript@5.9.3)
     devDependencies:
       '@axe-core/playwright':
         specifier: 4.12.1

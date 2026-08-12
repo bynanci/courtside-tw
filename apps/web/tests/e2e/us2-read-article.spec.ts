@@ -49,7 +49,9 @@ test.describe("US2 long-form public article", () => {
     await expect(page.getByTestId("share-status")).toBeVisible()
   })
 
-  test("resumes the last stable block anchor after reload", async ({ page }) => {
+  test("offers explicit continue or start-over actions before restoring a stable anchor", async ({
+    page
+  }) => {
     await page.goto("/articles/opening-night?issue=issue-2026-01", {
       waitUntil: "domcontentloaded"
     })
@@ -64,7 +66,27 @@ test.describe("US2 long-form public article", () => {
     await page.reload({ waitUntil: "domcontentloaded" })
 
     await expect(page.getByTestId("reader-resume")).toBeVisible()
-    await expect(page.getByTestId("reader-resume")).toContainText("繼續閱讀")
+    await expect(page.getByTestId("reader-resume")).toContainText("主場燈光亮起之前")
+    await expect(page.getByTestId("reader-resume-section")).not.toBeEmpty()
+    expect(await page.evaluate(() => window.scrollY)).toBe(0)
+
+    await page.getByTestId("reader-resume-continue").click()
+    await expect(page.getByTestId("reader-resume")).toHaveCount(0)
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+
+    await page.reload({ waitUntil: "domcontentloaded" })
+    await expect(page.getByTestId("reader-resume")).toBeVisible()
+    await page.getByTestId("reader-resume-start-over").click()
+    await expect(page.getByTestId("reader-resume")).toHaveCount(0)
+    expect(await page.evaluate(() => window.scrollY)).toBe(0)
+    expect(
+      await page.evaluate(() =>
+        localStorage.getItem(
+          "courtside.reader.progress:v1:index:" +
+            encodeURIComponent("0190f7b0-7c4b-7e3a-8f12-123456789abd")
+        )
+      )
+    ).toBeNull()
   })
 
   test("uses the issue snapshot for previous, next and table-of-contents links", async ({
@@ -85,7 +107,7 @@ test.describe("US2 long-form public article", () => {
     await expect(page.getByTestId("article-toc")).toBeVisible()
   })
 
-  test("keeps the final block when scrolling into article navigation", async ({ page }) => {
+  test("clears local progress after the reader reaches the completed range", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" })
     await page.goto("/articles/opening-night?issue=issue-2026-01", {
       waitUntil: "domcontentloaded"
@@ -94,13 +116,22 @@ test.describe("US2 long-form public article", () => {
     await expect(page.getByTestId("article-document")).toHaveAttribute("data-client-ready", "true")
     await page.waitForLoadState("networkidle")
 
-    const lastBlock = page.locator("[data-block-id]").last()
-    const lastBlockId = await lastBlock.getAttribute("data-block-id")
-    expect(lastBlockId).toBeTruthy()
-    await lastBlock.evaluate((element) => {
-      element.scrollIntoView({ block: "end", behavior: "auto" })
+    const middleBlock = page.locator("[data-block-id]").nth(6)
+    await middleBlock.evaluate((element) => {
+      element.scrollIntoView({ block: "center", behavior: "auto" })
     })
-    await page.waitForLoadState("networkidle")
+    await page.evaluate(() => window.dispatchEvent(new Event("scroll")))
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          localStorage.getItem(
+            "courtside.reader.progress:v1:index:" +
+              encodeURIComponent("0190f7b0-7c4b-7e3a-8f12-123456789abd")
+          )
+        )
+      )
+      .not.toBeNull()
+
     await page.evaluate(() => {
       window.scrollTo(0, document.documentElement.scrollHeight)
     })
@@ -118,15 +149,63 @@ test.describe("US2 long-form public article", () => {
     await page.evaluate(() => window.dispatchEvent(new Event("scroll")))
 
     await expect
-      .poll(async () =>
+      .poll(() =>
         page.evaluate(() => {
-          const saved = window.localStorage.getItem(
-            "courtside.reader.progress:opening-night:revision-1"
+          return localStorage.getItem(
+            "courtside.reader.progress:v1:index:" +
+              encodeURIComponent("0190f7b0-7c4b-7e3a-8f12-123456789abd")
           )
-          return saved ? JSON.parse(saved).blockId : null
         })
       )
-      .toBe(lastBlockId)
+      .toBeNull()
+  })
+
+  test("clears a saved pointer when the public article becomes unavailable", async ({ page }) => {
+    const articleId = "0190f7b0-7c4b-7e3a-8f12-123456789aff"
+    const revisionId = "0190f7b0-7c4b-7e3a-8f12-123456789afe"
+    const blockId = "00000000-0000-4000-8000-000000000002"
+    const recordKey =
+      "courtside.reader.progress:v1:record:" +
+      [articleId, revisionId, blockId].map(encodeURIComponent).join(":")
+    const indexKey = "courtside.reader.progress:v1:index:" + encodeURIComponent(articleId)
+    const slugKey = "courtside.reader.progress:v1:slug:" + encodeURIComponent("withdrawn-article")
+    await page.addInitScript(
+      ({ articleId, revisionId, blockId, recordKey, indexKey, slugKey }) => {
+        localStorage.setItem(
+          recordKey,
+          JSON.stringify({
+            schemaVersion: 1,
+            articleId,
+            revisionId,
+            articleSlug: "withdrawn-article",
+            blockId,
+            blockLabel: "已撤回段落",
+            offset: 0.4,
+            documentProgress: 0.5
+          })
+        )
+        localStorage.setItem(indexKey, recordKey)
+        localStorage.setItem(slugKey, articleId)
+      },
+      { articleId, revisionId, blockId, recordKey, indexKey, slugKey }
+    )
+
+    await page.goto("/articles/withdrawn-article?issue=issue-2026-01", {
+      waitUntil: "domcontentloaded"
+    })
+    await expect(page.getByTestId("article-error-state")).toBeVisible()
+    await expect
+      .poll(() =>
+        page.evaluate(
+          ({ recordKey, indexKey, slugKey }) => [
+            localStorage.getItem(recordKey),
+            localStorage.getItem(indexKey),
+            localStorage.getItem(slugKey)
+          ],
+          { recordKey, indexKey, slugKey }
+        )
+      )
+      .toEqual([null, null, null])
   })
 
   test("keeps reading functional when browser storage is unavailable", async ({ page }) => {
