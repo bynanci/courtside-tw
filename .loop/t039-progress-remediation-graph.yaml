@@ -219,7 +219,7 @@ graph:
       risk: high
       confidence:
         score: 1.0
-        basis: Tests-first, implementation, local, exact-head browser/Security and independent-review proof all pass with zero T039 acceptance blocker.
+        basis: Tests-first, implementation, local and exact-head browser/Security proof all pass with zero T039 acceptance blocker.
         evidence_refs: [.loop/evidence/t039-progress-proof.json]
       budget: {effort_hours: 0.0, tokens: 0}
       config:

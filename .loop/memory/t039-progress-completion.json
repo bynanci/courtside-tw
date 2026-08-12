@@ -4,7 +4,7 @@
   "scope": "project",
   "kind": "task_state",
   "title": "T039 stable-anchor reading progress is complete and evidenced on PR 84",
-  "summary": "PR 84 implementation head 9351bed closes T039 with article/revision/block identity, bounded offsets, explicit Continue or Start over, stale-revision and unavailable-content invalidation, a 20-article attributable storage cap, rollback-safe recovery, and document-scoped reload restoration. Local web checks, exact-head CI 434 with 18/18 browser journeys, Security 435 and two independent reviews pass; only protected merge and authoritative main read-back remain.",
+  "summary": "PR 84 implementation head 9351bed closes T039 with article/revision/block identity, bounded offsets, explicit Continue or Start over, stale-revision and unavailable-content invalidation, a 20-article attributable storage cap, rollback-safe recovery, and document-scoped reload restoration. Local web checks, exact-head CI 434 with 18/18 browser journeys and Security 435 pass; only protected merge and authoritative main read-back remain.",
   "claims": [
     {
       "text": "T039 is complete-and-evidenced on PR 84 head 9351bedce1e990ff618bf1c81028bbd8f454bfab.",

@@ -155,17 +155,6 @@
       "required_jobs": "success"
     }
   },
-  "independent_review": {
-    "result": "PASS",
-    "reviewers": 2,
-    "findings_remaining": 0,
-    "reviewed_boundaries": [
-      "stable-anchor recomputation after prompt removal and delayed layout reflow",
-      "stale revision and unavailable content cleanup",
-      "bounded manifest reconciliation and failure rollback",
-      "reload, pagehide, SPA Back and unavailable-storage lifecycle"
-    ]
-  },
   "scope_guard": {
     "production_source_changed": true,
     "production_change_scope": "T039 reader progress composable and article-route integration only",

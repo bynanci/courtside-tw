@@ -74,19 +74,16 @@
           "security_run": 31617186277,
           "security_run_number": 435,
           "security_conclusion": "success"
-        },
-        {
-          "proof": "Independent code and test review",
-          "level": "P2",
-          "result": "success",
-          "reviewers": 2,
-          "remaining_findings": 0
         }
       ],
       "memory_receipt": {
         "memory_status": "SAVED",
         "memory_id": "wm:project:courtside-tw:t039-progress-completion",
         "version": "t039-progress-completion-v1",
+        "retrieval_ids": [
+          "wm:project:courtside-tw:us2-t034-t041-implementation-lane",
+          "wm:project:courtside-tw:us2-t034-t041-review-remediation"
+        ],
         "evidence_refs": [".loop/evidence/t039-progress-proof.json"],
         "next_review_at": "2026-08-19",
         "blocker": "No task-acceptance blocker; protected merge and authoritative main read-back remain repository gates."
@@ -100,7 +97,7 @@
       ],
       "decision": "MARK_T039_COMPLETE_AND_EVIDENCED",
       "token_usage": {"estimated": 52000, "input": 0, "output": 0, "total": 52000},
-      "terminal_reason": "Every T039 criterion has attributable tests-first, implementation, exact-head browser/Security and independent-review proof; only T039 is checked."
+      "terminal_reason": "Every T039 criterion has attributable tests-first, implementation and exact-head browser/Security proof; only T039 is checked."
     }
   ]
 }
