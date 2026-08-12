@@ -114,7 +114,7 @@
 
 ### Tests for User Story 3 — write first
 
-- [ ] T042 [P] [US3] Write failing state-machine and rights-decision unit tests for FR-011–FR-025 in `apps/api/src/test/java/tw/basketball/magazine/publication/domain/PublicationWorkflowTest.java` and `apps/api/src/test/java/tw/basketball/magazine/media/domain/RightsPolicyTest.java`.
+- [x] T042 [P] [US3] Write failing state-machine and rights-decision unit tests for FR-011–FR-025 in `apps/api/src/test/java/tw/basketball/magazine/publication/domain/PublicationWorkflowTest.java` and `apps/api/src/test/java/tw/basketball/magazine/media/domain/RightsPolicyTest.java`.
 - [x] T043 [P] [US3] Write failing editorial API integration tests for role boundaries, `If-Match`, idempotency, scheduling and Problem Details in `apps/api/src/test/java/tw/basketball/magazine/publication/api/EditorialPublicationApiIT.java` and `apps/api/src/test/java/tw/basketball/magazine/media/api/EditorialMediaApiIT.java`.
 - [x] T044 [P] [US3] Write the failing two-role Studio E2E workflow in `apps/web/tests/e2e/us3-editorial-publication.spec.ts`; include concurrent edit conflict, missing rights, Asia/Taipei schedule, retry, revision and emergency withdrawal.
 
