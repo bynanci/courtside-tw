@@ -368,6 +368,59 @@ test("recovers a missing manifest before enforcing the article cap", () => {
   assert.equal(countKeys(storage, "courtside.reader.progress:v1:slug:"), 20)
 })
 
+test("reconciles a valid partial manifest and interrupted writes before enforcing the cap", () => {
+  const storage = new MemoryStorage()
+  const progress = useLocalReadingProgress()
+  storage.setItem("unrelated:preference", "keep")
+
+  for (let index = 0; index < MAX_LOCAL_PROGRESS_ARTICLES; index += 1) {
+    progress.save(storage, articleContext(index), readingLocation())
+  }
+  storage.setItem(
+    "courtside.reader.progress:v1:manifest",
+    JSON.stringify([{ articleId: "article-19", articleSlug: "article-19" }])
+  )
+
+  for (let index = MAX_LOCAL_PROGRESS_ARTICLES; index < 45; index += 1) {
+    seedStoredProgress(storage, articleContext(index), { includeSlug: true })
+  }
+  const recordOnly = articleContext(45)
+  seedStoredProgress(storage, recordOnly, { includeIndex: false, includeSlug: false })
+
+  assert.equal(progress.save(storage, articleContext(46), readingLocation()), true)
+
+  const manifest = JSON.parse(
+    storage.getItem("courtside.reader.progress:v1:manifest") ?? "[]"
+  ) as unknown[]
+  assert.equal(manifest.length, MAX_LOCAL_PROGRESS_ARTICLES)
+  assert.equal(countKeys(storage, "courtside.reader.progress:v1:index:"), 20)
+  assert.equal(countKeys(storage, "courtside.reader.progress:v1:record:"), 20)
+  assert.equal(countKeys(storage, "courtside.reader.progress:v1:slug:"), 20)
+  assert.equal(storage.getItem("unrelated:preference"), "keep")
+})
+
+test("clears an unavailable attributable record when an interrupted write omitted its slug key", () => {
+  const storage = new MemoryStorage()
+  const unavailable = articleContext(47)
+  const recordKey = seedStoredProgress(storage, unavailable, {
+    includeIndex: true,
+    includeSlug: false
+  })
+  storage.setItem(
+    "courtside.reader.progress:v1:manifest",
+    JSON.stringify([{ articleId: unavailable.articleId, articleSlug: unavailable.articleSlug }])
+  )
+  storage.setItem("unrelated:preference", "keep")
+
+  useLocalReadingProgress().clearUnavailable(storage, unavailable.articleSlug)
+
+  assert.equal(storage.getItem(recordKey), null)
+  assert.equal(storage.getItem(progressIndexKey(unavailable.articleId)), null)
+  assert.equal(storage.getItem(progressSlugKey(unavailable.articleSlug)), null)
+  assert.equal(storage.getItem("courtside.reader.progress:v1:manifest"), null)
+  assert.equal(storage.getItem("unrelated:preference"), "keep")
+})
+
 test("cleans old slug pointers and never follows a corrupt unavailable-slug index", () => {
   const storage = new MemoryStorage()
   const progress = useLocalReadingProgress()
@@ -408,6 +461,36 @@ function readingLocation() {
     offset: 0.2,
     documentProgress: 0.4
   }
+}
+
+function seedStoredProgress(
+  storage: MemoryStorage,
+  seededContext: LocalReadingContext,
+  options: { includeIndex?: boolean; includeSlug?: boolean }
+): string {
+  const location = readingLocation()
+  const recordKey = progressRecordKey(
+    seededContext.articleId,
+    seededContext.revisionId,
+    location.blockId
+  )
+  storage.setItem(
+    recordKey,
+    JSON.stringify({
+      schemaVersion: 1,
+      articleId: seededContext.articleId,
+      revisionId: seededContext.revisionId,
+      articleSlug: seededContext.articleSlug,
+      ...location
+    })
+  )
+  if (options.includeIndex !== false) {
+    storage.setItem(progressIndexKey(seededContext.articleId), recordKey)
+  }
+  if (options.includeSlug !== false) {
+    storage.setItem(progressSlugKey(seededContext.articleSlug), seededContext.articleId)
+  }
+  return recordKey
 }
 
 function countKeys(storage: MemoryStorage, prefix: string): number {

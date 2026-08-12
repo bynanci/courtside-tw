@@ -56,13 +56,21 @@ test.describe("US2 long-form public article", () => {
       waitUntil: "domcontentloaded"
     })
     await expect(page.getByTestId("article-document")).toBeVisible()
-
-    await page.evaluate(() => {
-      localStorage.setItem(
-        "courtside.reader.progress:opening-night:revision-1",
-        JSON.stringify({ blockId: "00000000-0000-4000-8000-000000000007", offset: 0.42 })
-      )
+    await page.locator("[data-block-id]").nth(6).evaluate((element) => {
+      element.scrollIntoView({ block: "center", behavior: "auto" })
     })
+    await page.evaluate(() => window.dispatchEvent(new Event("scroll")))
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          localStorage.getItem(
+            "courtside.reader.progress:v1:index:" +
+              encodeURIComponent("0190f7b0-7c4b-7e3a-8f12-123456789abd")
+          )
+        )
+      )
+      .not.toBeNull()
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
     await page.reload({ waitUntil: "domcontentloaded" })
 
     await expect(page.getByTestId("reader-resume")).toBeVisible()
@@ -74,7 +82,10 @@ test.describe("US2 long-form public article", () => {
     await expect(page.getByTestId("reader-resume")).toHaveCount(0)
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
 
-    await page.reload({ waitUntil: "domcontentloaded" })
+    await page.goto("/issues/issue-2026-01", { waitUntil: "domcontentloaded" })
+    await page.goBack({ waitUntil: "domcontentloaded" })
+    await expect(page.getByTestId("article-document")).toBeVisible()
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
     await expect(page.getByTestId("reader-resume")).toBeVisible()
     await page.getByTestId("reader-resume-start-over").click()
     await expect(page.getByTestId("reader-resume")).toHaveCount(0)

@@ -1,0 +1,60 @@
+{
+  "schema_version": "courtside-tw/tests-first-red/v1",
+  "proof_id": "t039-review-tests-first-red-20260812",
+  "recorded_at": "2026-08-12T15:34:09Z",
+  "result": "EXPECTED_RED_CONFIRMED",
+  "task": "T039",
+  "source_of_truth": {
+    "repository": "bynanci/courtside-tw",
+    "base_ref": "agent/t039-progress-remediation",
+    "base_commit": "0b0bbd76b439e6a8dd5a3d203e017deca7da2643",
+    "base_tree": "6445316d253d675874455ebedffaddd5bd67c494",
+    "task_ref": "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T039"
+  },
+  "test_delta": {
+    "unit_test": {
+      "path": "apps/web/tests/unit/reader/useLocalReadingProgress.test.ts",
+      "blob": "52874914bc962e9f5ad71bb0c97c0d9722683dd8",
+      "acceptance": [
+        "a syntactically valid partial manifest is reconciled with attributable index-to-record groups before enforcing the 20-article cap",
+        "record-only interrupted writes are removed without touching unrelated storage",
+        "an unavailable article is cleared through attributable index/record evidence when an interrupted write omitted the slug pointer"
+      ]
+    },
+    "browser_test": {
+      "path": "apps/web/tests/e2e/us2-read-article.spec.ts",
+      "blob": "a6cacb8e6b52ce16f8a7b4cc15d16a54c8bbf131",
+      "acceptance": [
+        "a real mid-article save followed by reload remains at the top until Continue or Start over",
+        "Continue uses the stable saved anchor",
+        "back-forward navigation retains native history restoration"
+      ]
+    }
+  },
+  "red_execution": {
+    "command": "cd apps/web && node --experimental-strip-types --test tests/unit/reader/useLocalReadingProgress.test.ts",
+    "exit_code": 1,
+    "tests": 15,
+    "passed": 13,
+    "failed": 2,
+    "failure_signatures": [
+      "reconciles a valid partial manifest and interrupted writes before enforcing the cap: manifest length 2, expected 20",
+      "clears an unavailable attributable record when an interrupted write omitted its slug key: record remained, expected null"
+    ],
+    "classification": "EXPECTED_MISSING_BEHAVIOR",
+    "syntax_or_setup_failure": false
+  },
+  "browser_red_execution": {
+    "result": "NOT_RUN_LOCAL_ENVIRONMENT_BLOCKER",
+    "blocker": "The local Playwright Chromium executable is unavailable; the test is committed before the implementation correction so CI can provide executable browser evidence."
+  },
+  "scope_guard": {
+    "production_changed_in_this_red_delta": false,
+    "database_or_migration_changed": false,
+    "T056_or_T057_plus_changed": false,
+    "web3_wallet_passport_changed": false,
+    "deployment_or_activation_changed": false,
+    "unrelated_task_state_changed": false
+  },
+  "next_action": "Reconcile attributable progress storage before cap enforcement, provide slug-pointer-independent unavailable cleanup, suppress reload restoration only while the explicit resume choice is pending, then rerun focused and exact-head verification."
+}
