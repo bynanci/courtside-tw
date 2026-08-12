@@ -5,7 +5,6 @@ const LEGACY_STORAGE_PREFIX = "courtside.reader.progress:"
 const STORAGE_MANIFEST_KEY = STORAGE_PREFIX + "manifest"
 const MINIMUM_RESUME_PROGRESS = 0.1
 const MAXIMUM_RESUME_PROGRESS = 0.95
-const MAX_STORAGE_KEYS_TO_SCAN = 4096
 
 export const MAX_LOCAL_PROGRESS_ARTICLES = 20
 
@@ -67,6 +66,11 @@ type ResumePrompt = {
 type ProgressManifestEntry = {
   articleId: string
   articleSlug: string
+}
+
+type StorageSnapshot = {
+  key: string
+  value: string | null
 }
 
 export function progressRecordKey(articleId: string, revisionId: string, blockId: string): string {
@@ -269,8 +273,16 @@ export function useLocalReadingProgress() {
     clearLegacyProgress(storage, articleSlug)
     const slugKey = progressSlugKey(articleSlug)
     const articleId = read(storage, slugKey)
-    if (articleId) {
-      clearArticle(storage, articleId, articleSlug)
+    if (articleId && validIdentifier(articleId)) {
+      const recordKey = read(storage, progressIndexKey(articleId))
+      const serialized =
+        recordKey && isRecordKeyForArticle(recordKey, articleId) ? read(storage, recordKey) : null
+      const stored = serialized ? parseStoredProgress(serialized) : null
+      if (stored?.articleSlug === articleSlug) {
+        clearArticle(storage, articleId, articleSlug)
+      } else {
+        remove(storage, slugKey)
+      }
     } else {
       remove(storage, slugKey)
     }
@@ -332,14 +344,30 @@ export function useLocalReadingProgress() {
     progress: StoredReadingProgress
   ): boolean {
     const indexKey = progressIndexKey(context.articleId)
-    const previousRecordKey = read(storage, indexKey)
-    const previousRecord =
-      previousRecordKey && isRecordKeyForArticle(previousRecordKey, context.articleId)
-        ? read(storage, previousRecordKey)
+    const rawPreviousRecordKey = read(storage, indexKey)
+    const previousRecordKey =
+      rawPreviousRecordKey && isRecordKeyForArticle(rawPreviousRecordKey, context.articleId)
+        ? rawPreviousRecordKey
         : null
+    const previousRecord = previousRecordKey ? read(storage, previousRecordKey) : null
+    const previousStoredProgress = previousRecord ? parseStoredProgress(previousRecord) : null
     const slugKey = progressSlugKey(context.articleSlug)
     const previousSlugArticleId = read(storage, slugKey)
     const previousManifest = read(storage, STORAGE_MANIFEST_KEY)
+    const manifestEntries = readManifest(storage)
+    const previousEntry = manifestEntries.find((entry) => entry.articleId === context.articleId)
+    const previousArticleSlug = previousEntry?.articleSlug ?? previousStoredProgress?.articleSlug
+    const previousArticleSlugKey = previousArticleSlug ? progressSlugKey(previousArticleSlug) : null
+    const previousArticleSlugValue = previousArticleSlugKey
+      ? read(storage, previousArticleSlugKey)
+      : null
+    const nextEntries = manifestEntries.filter((entry) => entry.articleId !== context.articleId)
+    nextEntries.push({ articleId: context.articleId, articleSlug: context.articleSlug })
+    const evicted = nextEntries.splice(
+      0,
+      Math.max(0, nextEntries.length - MAX_LOCAL_PROGRESS_ARTICLES)
+    )
+    const rollbackSnapshots = snapshotEntries(storage, evicted)
     if (storageDisabled.value) {
       return false
     }
@@ -355,9 +383,15 @@ export function useLocalReadingProgress() {
       ) {
         storage.removeItem(previousRecordKey)
       }
-      updateManifest(storage, context)
+      storage.setItem(STORAGE_MANIFEST_KEY, JSON.stringify(nextEntries))
+      if (previousArticleSlug && previousArticleSlug !== context.articleSlug) {
+        removeSlugPointer(storage, previousArticleSlug, context.articleId)
+      }
+      for (const entry of evicted) {
+        clearArticleKeys(storage, entry.articleId, entry.articleSlug)
+      }
       if (storageDisabled.value) {
-        throw new Error("Progress storage became unavailable")
+        throw new Error("Progress cleanup became unavailable")
       }
       return true
     } catch {
@@ -367,9 +401,13 @@ export function useLocalReadingProgress() {
           storage.removeItem(recordKey)
         }
         restoreStorageValue(storage, previousRecordKey, previousRecord)
-        restoreStorageValue(storage, indexKey, previousRecordKey)
+        restoreStorageValue(storage, indexKey, rawPreviousRecordKey)
         restoreStorageValue(storage, slugKey, previousSlugArticleId)
+        restoreStorageValue(storage, previousArticleSlugKey, previousArticleSlugValue)
         restoreStorageValue(storage, STORAGE_MANIFEST_KEY, previousManifest)
+        for (const snapshot of rollbackSnapshots) {
+          restoreStorageValue(storage, snapshot.key, snapshot.value)
+        }
       } catch {
         // Storage is unavailable; reading remains functional without persistence.
       }
@@ -383,6 +421,10 @@ export function useLocalReadingProgress() {
     }
     const indexKey = progressIndexKey(articleId)
     const recordKey = read(storage, indexKey)
+    const stored =
+      recordKey && isRecordKeyForArticle(recordKey, articleId)
+        ? parseStoredProgress(read(storage, recordKey) ?? "")
+        : null
     if (storageDisabled.value) {
       return
     }
@@ -390,18 +432,15 @@ export function useLocalReadingProgress() {
       remove(storage, recordKey)
     }
     remove(storage, indexKey)
-    remove(storage, progressSlugKey(articleSlug))
-    removeFromManifest(storage, articleId)
-  }
-
-  function updateManifest(storage: ProgressStorage, context: LocalReadingContext): void {
-    const entries = readManifest(storage).filter((entry) => entry.articleId !== context.articleId)
-    entries.push({ articleId: context.articleId, articleSlug: context.articleSlug })
-    const evicted = entries.splice(0, Math.max(0, entries.length - MAX_LOCAL_PROGRESS_ARTICLES))
-    storage.setItem(STORAGE_MANIFEST_KEY, JSON.stringify(entries))
-    for (const entry of evicted) {
-      clearArticleKeys(storage, entry.articleId, entry.articleSlug)
+    const manifestEntry = readManifest(storage).find((entry) => entry.articleId === articleId)
+    removeSlugPointer(storage, articleSlug, articleId)
+    if (stored && stored.articleSlug !== articleSlug) {
+      removeSlugPointer(storage, stored.articleSlug, articleId)
     }
+    if (manifestEntry && manifestEntry.articleSlug !== articleSlug) {
+      removeSlugPointer(storage, manifestEntry.articleSlug, articleId)
+    }
+    removeFromManifest(storage, articleId)
   }
 
   function removeFromManifest(storage: ProgressStorage, articleId: string): void {
@@ -424,19 +463,61 @@ export function useLocalReadingProgress() {
   function readManifest(storage: ProgressStorage): ProgressManifestEntry[] {
     const serialized = read(storage, STORAGE_MANIFEST_KEY)
     if (!serialized) {
-      return []
+      return recoverManifest(storage)
     }
     try {
       const parsed = JSON.parse(serialized) as unknown
-      if (!Array.isArray(parsed)) {
-        remove(storage, STORAGE_MANIFEST_KEY)
-        return []
+      if (
+        !Array.isArray(parsed) ||
+        parsed.length > MAX_LOCAL_PROGRESS_ARTICLES ||
+        parsed.some((entry) => !isProgressManifestEntry(entry)) ||
+        new Set(parsed.map((entry) => (entry as ProgressManifestEntry).articleId)).size !==
+          parsed.length
+      ) {
+        return recoverManifest(storage)
       }
-      return parsed.filter(isProgressManifestEntry).slice(-MAX_LOCAL_PROGRESS_ARTICLES)
+      return parsed
     } catch {
-      remove(storage, STORAGE_MANIFEST_KEY)
+      return recoverManifest(storage)
+    }
+  }
+
+  function recoverManifest(storage: ProgressStorage): ProgressManifestEntry[] {
+    if (typeof storage.length !== "number" || typeof storage.key !== "function") {
       return []
     }
+    const indexPrefix = STORAGE_PREFIX + "index:"
+    const recovered = new Map<string, ProgressManifestEntry>()
+    try {
+      const length = storage.length
+      for (let index = 0; index < length; index += 1) {
+        const key = storage.key(index)
+        if (!key?.startsWith(indexPrefix)) {
+          continue
+        }
+        const articleId = decodeStorageSegment(key.slice(indexPrefix.length))
+        if (!articleId || !validIdentifier(articleId)) {
+          continue
+        }
+        const recordKey = storage.getItem(key)
+        if (!recordKey || !isRecordKeyForArticle(recordKey, articleId)) {
+          continue
+        }
+        const serialized = storage.getItem(recordKey)
+        const stored = serialized ? parseStoredProgress(serialized) : null
+        if (!stored || stored.articleId !== articleId) {
+          continue
+        }
+        recovered.set(articleId, {
+          articleId,
+          articleSlug: stored.articleSlug
+        })
+      }
+    } catch {
+      storageDisabled.value = true
+      return []
+    }
+    return Array.from(recovered.values())
   }
 
   function clearArticleKeys(
@@ -450,7 +531,38 @@ export function useLocalReadingProgress() {
       remove(storage, recordKey)
     }
     remove(storage, indexKey)
-    remove(storage, progressSlugKey(articleSlug))
+    removeSlugPointer(storage, articleSlug, articleId)
+  }
+
+  function removeSlugPointer(
+    storage: ProgressStorage,
+    articleSlug: string,
+    articleId: string
+  ): void {
+    const key = progressSlugKey(articleSlug)
+    if (read(storage, key) === articleId) {
+      remove(storage, key)
+    }
+  }
+
+  function snapshotEntries(
+    storage: ProgressStorage,
+    entries: ProgressManifestEntry[]
+  ): StorageSnapshot[] {
+    const snapshots = new Map<string, string | null>()
+    for (const entry of entries) {
+      const indexKey = progressIndexKey(entry.articleId)
+      const recordKey = read(storage, indexKey)
+      snapshots.set(indexKey, recordKey)
+      snapshots.set(
+        progressSlugKey(entry.articleSlug),
+        read(storage, progressSlugKey(entry.articleSlug))
+      )
+      if (recordKey && isRecordKeyForArticle(recordKey, entry.articleId)) {
+        snapshots.set(recordKey, read(storage, recordKey))
+      }
+    }
+    return Array.from(snapshots, ([key, value]) => ({ key, value }))
   }
 
   function clearLegacyProgress(storage: ProgressStorage, articleSlug: string): void {
@@ -463,7 +575,7 @@ export function useLocalReadingProgress() {
     }
     const prefix = LEGACY_STORAGE_PREFIX + articleSlug + ":revision-"
     const matchingKeys: string[] = []
-    const length = Math.min(storage.length, MAX_STORAGE_KEYS_TO_SCAN)
+    const length = storage.length
     try {
       for (let index = 0; index < length; index += 1) {
         const candidate = storage.key(index)
@@ -551,6 +663,14 @@ function isProgressManifestEntry(value: unknown): value is ProgressManifestEntry
 
 function isRecordKeyForArticle(value: string, articleId: string): boolean {
   return value.startsWith(STORAGE_PREFIX + "record:" + encodeURIComponent(articleId) + ":")
+}
+
+function decodeStorageSegment(value: string): string | null {
+  try {
+    return decodeURIComponent(value)
+  } catch {
+    return null
+  }
 }
 
 function restoreStorageValue(

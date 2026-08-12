@@ -53,11 +53,18 @@ class MemoryStorage implements ProgressStorage {
 
 class StagedFailureStorage extends MemoryStorage {
   private failAtSet: number | null = null
+  private failAtRemove: number | null = null
   private setCalls = 0
+  private removeCalls = 0
 
   armFailure(setCall: number): void {
     this.failAtSet = setCall
     this.setCalls = 0
+  }
+
+  armRemoveFailure(removeCall: number): void {
+    this.failAtRemove = removeCall
+    this.removeCalls = 0
   }
 
   override setItem(key: string, value: string): void {
@@ -67,6 +74,15 @@ class StagedFailureStorage extends MemoryStorage {
       throw new DOMException("quota", "QuotaExceededError")
     }
     super.setItem(key, value)
+  }
+
+  override removeItem(key: string): void {
+    this.removeCalls += 1
+    if (this.failAtRemove === this.removeCalls) {
+      this.failAtRemove = null
+      throw new DOMException("blocked", "SecurityError")
+    }
+    super.removeItem(key)
   }
 }
 
@@ -208,6 +224,13 @@ test("start over and unavailable cleanup remove only the attributable article po
   progress.clearUnavailable(storage, context.articleSlug)
   assert.equal(storage.getItem(legacyRevisionOne), null)
   assert.equal(storage.getItem(legacyRevisionTwo), null)
+
+  for (let index = 0; index < 4_096; index += 1) {
+    storage.setItem(`unrelated:${index}`, "keep")
+  }
+  storage.setItem(legacyRevisionOne, JSON.stringify({ blockId: blocks[0]!.id, offset: 0.2 }))
+  progress.clearUnavailable(storage, context.articleSlug)
+  assert.equal(storage.getItem(legacyRevisionOne), null)
 })
 
 test("bounds retained article pointers and evicts only the oldest attributable keys", () => {
@@ -296,6 +319,100 @@ test("a staged migration failure rolls back v1 keys and retains the legacy point
     null
   )
 })
+
+test("failed corrupt-index save never removes a foreign record", () => {
+  const storage = new StagedFailureStorage()
+  const foreign = articleContext(99)
+  useLocalReadingProgress().save(storage, foreign, readingLocation())
+  const foreignRecordKey = storage.getItem(progressIndexKey(foreign.articleId))!
+  storage.setItem(progressIndexKey(context.articleId), foreignRecordKey)
+  storage.armFailure(1)
+
+  assert.equal(useLocalReadingProgress().save(storage, context, readingLocation()), false)
+  assert.notEqual(storage.getItem(foreignRecordKey), null)
+  assert.equal(storage.getItem(progressIndexKey(foreign.articleId)), foreignRecordKey)
+})
+
+test("failed eviction restores the evicted pointer and manifest", () => {
+  const storage = new StagedFailureStorage()
+  const progress = useLocalReadingProgress()
+  for (let index = 0; index < MAX_LOCAL_PROGRESS_ARTICLES; index += 1) {
+    progress.save(storage, articleContext(index), readingLocation())
+  }
+  const oldestRecordKey = storage.getItem(progressIndexKey("article-0"))!
+  const manifestBefore = storage.getItem("courtside.reader.progress:v1:manifest")
+  storage.armRemoveFailure(2)
+
+  assert.equal(
+    progress.save(storage, articleContext(MAX_LOCAL_PROGRESS_ARTICLES), readingLocation()),
+    false
+  )
+  assert.notEqual(storage.getItem(oldestRecordKey), null)
+  assert.equal(storage.getItem(progressIndexKey("article-0")), oldestRecordKey)
+  assert.equal(storage.getItem("courtside.reader.progress:v1:manifest"), manifestBefore)
+})
+
+test("recovers a missing manifest before enforcing the article cap", () => {
+  const storage = new MemoryStorage()
+  const progress = useLocalReadingProgress()
+  for (let index = 0; index < MAX_LOCAL_PROGRESS_ARTICLES; index += 1) {
+    progress.save(storage, articleContext(index), readingLocation())
+  }
+  storage.removeItem("courtside.reader.progress:v1:manifest")
+
+  progress.save(storage, articleContext(MAX_LOCAL_PROGRESS_ARTICLES), readingLocation())
+
+  assert.equal(storage.getItem(progressIndexKey("article-0")), null)
+  assert.equal(countKeys(storage, "courtside.reader.progress:v1:index:"), 20)
+  assert.equal(countKeys(storage, "courtside.reader.progress:v1:record:"), 20)
+  assert.equal(countKeys(storage, "courtside.reader.progress:v1:slug:"), 20)
+})
+
+test("cleans old slug pointers and never follows a corrupt unavailable-slug index", () => {
+  const storage = new MemoryStorage()
+  const progress = useLocalReadingProgress()
+  const oldContext = articleContext(1)
+  progress.save(storage, oldContext, readingLocation())
+  const renamed = {
+    ...oldContext,
+    revisionId: "renamed-revision",
+    articleSlug: "renamed-article"
+  }
+  progress.load(storage, renamed, blocks)
+  assert.equal(storage.getItem(progressSlugKey(oldContext.articleSlug)), null)
+
+  const foreignContext = articleContext(2)
+  progress.save(storage, foreignContext, readingLocation())
+  const foreignRecordKey = storage.getItem(progressIndexKey(foreignContext.articleId))
+  storage.setItem(progressSlugKey("withdrawn-article"), foreignContext.articleId)
+  progress.clearUnavailable(storage, "withdrawn-article")
+  assert.notEqual(storage.getItem(foreignRecordKey!), null)
+  assert.equal(storage.getItem(progressIndexKey(foreignContext.articleId)), foreignRecordKey)
+  assert.equal(storage.getItem(progressSlugKey("withdrawn-article")), null)
+})
+
+function articleContext(index: number): LocalReadingContext {
+  return {
+    articleId: `article-${index}`,
+    revisionId: `revision-${index}`,
+    revisionNumber: 1,
+    articleSlug: `article-${index}`,
+    articleTitle: `文章 ${index}`
+  }
+}
+
+function readingLocation() {
+  return {
+    blockId: blocks[1]!.id,
+    blockLabel: blocks[1]!.label,
+    offset: 0.2,
+    documentProgress: 0.4
+  }
+}
+
+function countKeys(storage: MemoryStorage, prefix: string): number {
+  return Array.from(storage.values.keys()).filter((key) => key.startsWith(prefix)).length
+}
 
 test("malformed and unavailable storage fail closed without breaking reading", () => {
   const malformed = new MemoryStorage()
