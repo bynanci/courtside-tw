@@ -436,6 +436,27 @@ a:focus-visible {
   line-height: 1.5;
 }
 
+.reader-resume p {
+  margin: 0;
+}
+
+.reader-resume p + p {
+  margin-top: 0.35rem;
+}
+
+.reader-resume__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.reader-resume__actions .button-link {
+  min-height: 44px;
+  margin-top: 0;
+  cursor: pointer;
+}
+
 .article-toc {
   max-width: 48rem;
   margin: clamp(2.5rem, 7vw, 5rem) 0;
@@ -815,7 +836,10 @@ a:focus-visible {
   padding: 0.65rem 0.75rem;
   color: var(--studio-muted);
   text-decoration: none;
-  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
 }
 
 .studio-sidebar__nav a:hover,
@@ -1032,7 +1056,10 @@ a:focus-visible {
   font-weight: 800;
   letter-spacing: 0.02em;
   padding: 0.7rem 0.85rem;
-  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+  transition:
+    background 150ms ease,
+    color 150ms ease,
+    border-color 150ms ease;
 }
 
 .studio-button:hover:not(:disabled),
