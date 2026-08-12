@@ -31,7 +31,7 @@ authority:
     - Add undeclared compatibility fields or external provider dependencies
 
 acceptance:
-  - PR #67 remains draft-only and based on main@c45c1fd7e93699f4626e2ceab6b5fb6f52f38842.
+  - The historical PR #67 remediation remained draft-only during this lane and was based on main@c45c1fd7e93699f4626e2ceab6b5fb6f52f38842; later merge state is reconciled in the ledger.
   - Reader/API, exact public media resolution, contributor source/contract and p5.js runtime changes are bounded and separately evidenced.
   - Canonical ContentDocument validation fails closed and issue navigation applies the public rights gate.
   - The implementation head has successful exact-head CI, Security and browser receipts with no pending test failure.
@@ -79,8 +79,8 @@ memory_workflow:
 graph:
   entry_nodes: [t-review-readback]
   terminal_nodes: [s-review-terminal]
-  current_frontier: [g-protected-p1]
-  blocked_nodes: [g-protected-p1]
+  current_frontier: []
+  blocked_nodes: [g-protected-p1, m-semantic-lane, s-review-terminal]
 
   loops:
     - id: l1-us2-review-remediation
@@ -147,6 +147,9 @@ graph:
         evidence_refs: [".loop/evidence/t034-t041-media-byline-p5-implementation-20260809.json"]
       budget: {effort_hours: 2.0, tokens: 10000}
       config:
+        workflow: [read selected media reference and rights record, resolve only the selected public storage key, run focused API and browser proof]
+        allowed: [public Article media projection, focused API and browser tests, loop evidence]
+        requires_approval: [schema or rights-policy change, production migration or activation, protected merge]
         contract: "ArticleProjection.media[]"
         invariant: "The selected public_storage_key is the only source of the public media URL."
         forbidden: ["slug-derived paths", "asset-id-derived paths", "non-PUBLIC_WEB rights"]
@@ -164,6 +167,10 @@ graph:
         evidence_refs: [".loop/evidence/t034-t041-media-byline-p5-implementation-20260809.json"]
       budget: {effort_hours: 2.0, tokens: 10000}
       config:
+        workflow: [read revision contributor source, project the selected revision only, run focused API and browser proof]
+        allowed: [revision-scoped contributor projection, focused API and browser tests, loop evidence]
+        requires_approval: [schema or contributor-policy change, production migration or activation, protected merge]
+        forbidden: [private contributor fields, live article-level byline fallback, unrelated editorial workflow]
         source: "contributor + article_contributor(article_revision_id, role, position)"
         contract: "ArticleProjection.contributors[]"
         invariant: "Byline and JSON-LD authors come only from the requested published revision."
@@ -176,11 +183,15 @@ graph:
       status: done
       risk: high
       confidence:
-        score: 0.98
-        basis: "p5@2.3.0 is locked and installed; browser proof covers canvas creation, deterministic first frame, loop state, visibility and unmount."
-        evidence_refs: [".loop/evidence/t034-t041-media-byline-p5-implementation-20260809.json"]
+        score: 0.8
+        basis: "p5@2.3.0 is locked and browser proof covers canvas creation, fixed-seed metadata, loop state, visibility and unmount; a canvas-output digest and full T037 lifecycle bounds remain unproven."
+        evidence_refs: [".loop/evidence/t034-t041-task-level-reconciliation-20260812.json"]
       budget: {effort_hours: 2.5, tokens: 14000}
       config:
+        workflow: [read bounded preset data, import p5 client-only, run lifecycle proof]
+        allowed: [CourtPulse p5 instance runtime, fixed preset registry, focused browser tests, loop evidence]
+        requires_approval: [runtime dependency or parameter-contract change, production activation, protected merge]
+        forbidden: [content-selected modules, remote code or shaders, unbounded animation lifecycle]
         dependency: "p5@2.3.0"
         lifecycle: ["dynamic client import", "instance mode setup", "noLoop when reduced/hidden/out-of-view", "loop when visible/full", "remove on unmount"]
         invariant: "Reduced-motion and SSR fallback remain readable without starting the loop."
@@ -210,15 +221,15 @@ graph:
       layer: L1
       label: Human closure of protected merge, production activation and task state
       owner: human-mark
-      status: needs_human
+      status: blocked
       risk: critical
       confidence:
         score: 1.0
-        basis: "Implementation and proof gates are closed; protected merge, production migration/activation and task checkbox state remain outside this lane."
-        evidence_refs: [".loop/evidence/t034-t041-media-byline-p5-implementation-20260809.json"]
+        basis: "Task-level reconciliation found unresolved production and executable-test criteria, so this historical completion gate cannot advance."
+        evidence_refs: [".loop/evidence/t034-t041-task-level-reconciliation-20260812.json"]
       budget: {effort_hours: 0.5, tokens: 2500}
       config:
-        condition: "Review the verified implementation and approve protected merge, production migration/activation and task-state changes separately."
+        condition: "Do not review task-state completion until the task-level blockers in the reconciliation receipt are closed separately."
         approver: human-mark
         required: true
 
@@ -249,12 +260,12 @@ graph:
       layer: L1
       label: Durable remediation constraints and disputed state
       owner: codex-agent
-      status: needs_update
+      status: blocked
       risk: high
       confidence:
         score: 0.95
-        basis: "The semantic record now contains verified media, contributor and p5 implementation facts; it remains needs_update only because protected merge and production gates are pending."
-        evidence_refs: [".loop/memory/t034-t041-us2-review-remediation.json", ".loop/evidence/t034-t041-media-byline-p5-implementation-20260809.json"]
+        basis: "The historical semantic record is superseded by task-level reconciliation and cannot route to success while named task criteria remain open."
+        evidence_refs: [".loop/memory/t034-t041-task-level-evidence-reconciliation.json", ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json"]
       budget: {effort_hours: 0.2, tokens: 2500}
       config:
         path: ".loop/memory/t034-t041-us2-review-remediation.json"
@@ -271,12 +282,12 @@ graph:
       layer: GLOBAL
       label: Stop bounded remediation at proof or protected human gates
       owner: codex-supervisor
-      status: needs_human
+      status: blocked
       risk: high
       confidence:
         score: 1.0
-        basis: "Implementation proof is closed, but protected merge, production activation and task-state changes remain human decisions."
-        evidence_refs: [".loop/evidence/t034-t041-media-byline-p5-implementation-20260809.json"]
+        basis: "The historical implementation proof is narrower than T034-T041 acceptance; named task-level blockers prevent a completion terminal."
+        evidence_refs: [".loop/evidence/t034-t041-task-level-reconciliation-20260812.json"]
       budget: {effort_hours: 0.1, tokens: 500}
       config:
         states:

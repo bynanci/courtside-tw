@@ -1,20 +1,20 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t034-t041-us2-review-remediation",
-  "graph_version": 2,
+  "graph_version": 3,
   "run_id": "courtside-tw-us2-review-remediation-20260809",
-  "status": "needs_human",
-  "iteration": 2,
+  "status": "blocked",
+  "iteration": 3,
   "started_at": "2026-08-09",
-  "updated_at": "2026-08-09",
-  "current_frontier": [
-    "g-protected-p1"
-  ],
+  "updated_at": "2026-08-12T13:19:33Z",
+  "current_frontier": [],
   "blocked_nodes": [
-    "g-protected-p1"
+    "g-protected-p1",
+    "m-semantic-lane",
+    "s-review-terminal"
   ],
-  "terminal_state": "needs_human",
-  "next_action": "Human review of the verified media storage-key resolver, revision-scoped contributor contract and p5.js lifecycle proof; then decide protected migration/activation, task state and merge.",
+  "terminal_state": "blocked",
+  "next_action": "Do not advance the historical g-protected-p1 group gate or check T034-T041; close their named criterion blockers in separately authorized slices.",
   "events": [
     {
       "event_id": "evt-us2-review-remediation-001",
@@ -188,6 +188,288 @@
         "total": 12000
       },
       "terminal_reason": "Media, contributor and p5 implementation/proof gates are closed; protected merge, production migration/activation and task checkbox state remain human gates."
+    },
+    {
+      "event_id": "evt-us2-review-remediation-003",
+      "at": "2026-08-12T13:19:33Z",
+      "actor": "codex-supervisor",
+      "type": "task_level_evidence_reconciliation",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "evidence/task-level-reconciliation",
+            "value": ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json"
+          },
+          {
+            "op": "replace",
+            "path": "task_completion_claim",
+            "value": "T034-T041 remain blocked by named criterion gaps"
+          },
+          {
+            "op": "replace",
+            "path": "graph/current_frontier",
+            "value": []
+          },
+          {
+            "op": "replace",
+            "path": "graph/blocked_nodes",
+            "value": [
+              "g-protected-p1",
+              "m-semantic-lane",
+              "s-review-terminal"
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/g-protected-p1/status",
+            "value": "blocked"
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/s-review-terminal/status",
+            "value": "blocked"
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/g-protected-p1/confidence",
+            "value": {
+              "score": 1.0,
+              "basis": "Task-level reconciliation found unresolved production and executable-test criteria, so this historical completion gate cannot advance.",
+              "evidence_refs": [
+                ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json"
+              ]
+            }
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/s-review-terminal/confidence",
+            "value": {
+              "score": 1.0,
+              "basis": "The historical implementation proof is narrower than T034-T041 acceptance; named task-level blockers prevent a completion terminal.",
+              "evidence_refs": [
+                ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json"
+              ]
+            }
+          },
+          {
+            "op": "add",
+            "path": "graph/nodes/a-media-resolver/config/workflow",
+            "value": [
+              "read selected media reference and rights record",
+              "resolve only the selected public storage key",
+              "run focused API and browser proof"
+            ]
+          },
+          {
+            "op": "add",
+            "path": "graph/nodes/a-media-resolver/config/allowed",
+            "value": [
+              "public Article media projection",
+              "focused API and browser tests",
+              "loop evidence"
+            ]
+          },
+          {
+            "op": "add",
+            "path": "graph/nodes/a-media-resolver/config/requires_approval",
+            "value": [
+              "schema or rights-policy change",
+              "production migration or activation",
+              "protected merge"
+            ]
+          },
+          {
+            "op": "add",
+            "path": "graph/nodes/a-contributor-contract/config/workflow",
+            "value": [
+              "read revision contributor source",
+              "project the selected revision only",
+              "run focused API and browser proof"
+            ]
+          },
+          {
+            "op": "add",
+            "path": "graph/nodes/a-contributor-contract/config/allowed",
+            "value": [
+              "revision-scoped contributor projection",
+              "focused API and browser tests",
+              "loop evidence"
+            ]
+          },
+          {
+            "op": "add",
+            "path": "graph/nodes/a-contributor-contract/config/requires_approval",
+            "value": [
+              "schema or contributor-policy change",
+              "production migration or activation",
+              "protected merge"
+            ]
+          },
+          {
+            "op": "add",
+            "path": "graph/nodes/a-contributor-contract/config/forbidden",
+            "value": [
+              "private contributor fields",
+              "live article-level byline fallback",
+              "unrelated editorial workflow"
+            ]
+          },
+          {
+            "op": "add",
+            "path": "graph/nodes/a-p5-runtime/config/workflow",
+            "value": [
+              "read bounded preset data",
+              "import p5 client-only",
+              "run lifecycle proof"
+            ]
+          },
+          {
+            "op": "add",
+            "path": "graph/nodes/a-p5-runtime/config/allowed",
+            "value": [
+              "CourtPulse p5 instance runtime",
+              "fixed preset registry",
+              "focused browser tests",
+              "loop evidence"
+            ]
+          },
+          {
+            "op": "add",
+            "path": "graph/nodes/a-p5-runtime/config/requires_approval",
+            "value": [
+              "runtime dependency or parameter-contract change",
+              "production activation",
+              "protected merge"
+            ]
+          },
+          {
+            "op": "add",
+            "path": "graph/nodes/a-p5-runtime/config/forbidden",
+            "value": [
+              "content-selected modules",
+              "remote code or shaders",
+              "unbounded animation lifecycle"
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/a-p5-runtime/confidence",
+            "value": {
+              "score": 0.8,
+              "basis": "p5@2.3.0 is locked and browser proof covers canvas creation, fixed-seed metadata, loop state, visibility and unmount; a canvas-output digest and full T037 lifecycle bounds remain unproven.",
+              "evidence_refs": [
+                ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json"
+              ]
+            }
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/m-semantic-lane/status",
+            "value": "blocked"
+          },
+          {
+            "op": "add",
+            "path": "scope_guard",
+            "value": "No production, migration, deployment or checkbox changes; test-only delta is limited to two focused PublicArticleApiIT records and one corrected test name"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json",
+        "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+        "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java",
+        "https://github.com/bynanci/courtside-tw/pull/65",
+        "https://github.com/bynanci/courtside-tw/pull/67",
+        "https://github.com/bynanci/courtside-tw/pull/69"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Current-main criterion and blob audit",
+          "level": "P1",
+          "result": "partial_by_task",
+          "main_sha": "ed12e73aea918797a9470140e9730c5a1905d4f7",
+          "tasks_blob": "f25d8fd362a50a77b79c49ad2abe0c5c06ca871f",
+          "completed_tasks": [],
+          "blocked_tasks": [
+            "T034",
+            "T035",
+            "T036",
+            "T037",
+            "T038",
+            "T039",
+            "T040",
+            "T041"
+          ]
+        },
+        {
+          "proof": "Historical final implementation heads",
+          "level": "P4",
+          "result": "success_with_task_attribution_limits",
+          "pull_requests": {
+            "65": {
+              "head": "e9eb0bcfc412161ced717f72b5b94a478bdb475b",
+              "ci": 31307598571,
+              "security": 31307598581
+            },
+            "67": {
+              "head": "669d98f3ca8c7eebe0e55ae2921819463e839185",
+              "ci": 31316401225,
+              "security": 31316401274
+            },
+            "69": {
+              "head": "677753033d05f1218f2589459fc0a015f4934ebf",
+              "ci": 31322535600,
+              "security": 31322535598
+            }
+          }
+        },
+        {
+          "proof": "Current-main local Node and contract verification",
+          "level": "P2",
+          "result": "success",
+          "command": "PATH=/tmp/courtside-bin:$PATH COREPACK_HOME=/tmp/courtside-corepack make verify",
+          "node_tests": 46,
+          "java21_postgres_browser_claimed": false
+        },
+        {
+          "proof": "Necessary focused API integration records",
+          "level": "P2",
+          "result": "pending_fresh_exact_head_ci",
+          "tests": [
+            "returnsStableEtagHonorsIfNoneMatchAndChangesWithProjection",
+            "returnsPublishedPointerWithRevisionScopedContributors"
+          ],
+          "production_source_changed": false,
+          "local_java21_testcontainers_claimed": false
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "SAVED",
+        "memory_id": "wm:project:courtside-tw:t034-t041-task-level-evidence-reconciliation",
+        "version": "task-evidence-reconciliation-v1",
+        "retrieval_ids": [
+          "wm:project:courtside-tw:us2-t034-t041-implementation-lane",
+          "wm:project:courtside-tw:us2-t034-t041-review-remediation"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json"
+        ],
+        "next_review_at": "2026-08-19",
+        "blocker": "Each T034-T041 task retains at least one named criterion gap."
+      },
+      "failure_signature": "GROUP_EVIDENCE_CANNOT_CLOSE_TASK_CRITERIA",
+      "decision": "RECONCILE_EVIDENCE_KEEP_TASKS_UNCHECKED",
+      "frontier_reconciliation": "g-protected-p1 remains the named historical human gate but is now blocked; it cannot advance or close any newly enumerated task-level blocker.",
+      "token_usage": {
+        "estimated": 24000,
+        "input": 0,
+        "output": 0,
+        "total": 24000
+      },
+      "terminal_reason": "The evidence and focused test-record reconciliation is complete; task completion remains blocked and no production implementation authority was exercised."
     }
   ]
 }

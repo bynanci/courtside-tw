@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "memory_id": "wm:project:courtside-tw:t034-t041-task-level-evidence-reconciliation",
+  "scope": "project",
+  "kind": "task_state",
+  "title": "T034-T041 current-main evidence is reconciled without false completion",
+  "summary": "Current main at ed12e73 was reconciled criterion by criterion against tasks.md, the implementation and review-remediation ledgers, historical receipts and current source/test blobs. Prior receipts prove a useful group implementation, but all eight tasks retain at least one named production or executable-test gap. Two focused API integration records pending exact-head CI were added for existing T034/T035 behavior; no production source, migration or checkbox changed.",
+  "claims": [
+    {
+      "text": "The authoritative baseline is main@ed12e73aea918797a9470140e9730c5a1905d4f7 and tasks blob f25d8fd362a50a77b79c49ad2abe0c5c06ca871f.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The historical implementation and review-remediation ledgers provide group-level scope and workflow proof, not criterion-level completion for T034-T041.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The historical media/byline/p5 receipt contains stale Java path references and targets an intermediate head that is not an ancestor of current main; current attribution therefore uses final PR heads and current-main blobs.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "T034-T041 all remain unchecked because each still has at least one named production behavior, component/test boundary, lifecycle, accessibility or performance gap.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The only executable-test delta adds focused records, pending exact-head CI, for the existing Article ETag lifecycle and published-pointer/revision-scoped-contributor projection; it does not close T034 or T035.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The supplied immersion montage/presentation is design input and simulated experience, not executable or participant evidence.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "This reconciliation does not change production source or authorize T056, T057+, Web3, deployment, production migrations or unrelated task state.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    }
+  ],
+  "status": "verified",
+  "confidence": "high",
+  "confidence_basis": [
+    ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    ".loop/t034-t041-us2-implementation-ledger.json",
+    ".loop/t034-t041-us2-review-remediation-ledger.json",
+    "https://github.com/bynanci/courtside-tw/pull/65",
+    "https://github.com/bynanci/courtside-tw/pull/67",
+    "https://github.com/bynanci/courtside-tw/pull/69"
+  ],
+  "volatility": "medium",
+  "as_of": "2026-08-12",
+  "source_refs": [
+    ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    "specs/001-taiwan-basketball-magazine-ebook/spec.md",
+    "DESIGN.md",
+    "docs/adr/0005-motion-and-generative-runtime.md",
+    "apps/api/src/main/java/tw/basketball/magazine/publication/JdbcPublicArticleRepository.java",
+    "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java",
+    "apps/web/app/pages/articles/[articleSlug].vue",
+    "apps/web/tests/e2e/us2-read-article.spec.ts",
+    "apps/web/tests/e2e/us2-no-js.spec.ts",
+    "apps/web/tests/e2e/us2-reduced-motion.spec.ts"
+  ],
+  "entities": [
+    "courtside-tw",
+    "T034",
+    "T035",
+    "T036",
+    "T037",
+    "T038",
+    "T039",
+    "T040",
+    "T041",
+    "task-level evidence"
+  ],
+  "relations": {
+    "supports": [],
+    "contradicts": [],
+    "supersedes": [
+      "wm:project:courtside-tw:us2-t034-t041-implementation-lane",
+      "wm:project:courtside-tw:us2-t034-t041-review-remediation"
+    ],
+    "blocks": [
+      "task:T034",
+      "task:T035",
+      "task:T036",
+      "task:T037",
+      "task:T038",
+      "task:T039",
+      "task:T040",
+      "task:T041"
+    ],
+    "invalidates": []
+  },
+  "next_review_at": "2026-08-19",
+  "sensitivity": "public",
+  "retention": "until_superseded",
+  "write_receipt": {
+    "status": "SAVED",
+    "version": "task-evidence-reconciliation-v1",
+    "backend": "repository",
+    "record_path": ".loop/memory/t034-t041-task-level-evidence-reconciliation.json",
+    "receipt_ref": ".loop/t034-t041-us2-review-remediation-ledger.json#evt-us2-review-remediation-003",
+    "readback": "validate_memory_record.py returned VALID for the repository-backed record; commit and PR-head readback are part of this handoff.",
+    "written_by": "codex-supervisor"
+  }
+}
