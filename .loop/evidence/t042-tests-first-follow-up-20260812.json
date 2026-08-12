@@ -1,0 +1,219 @@
+{
+  "schema_version": "courtside-proof/v1",
+  "proof_id": "t042-tests-first-follow-up-20260812",
+  "recorded_at": "2026-08-12T07:48:53.496Z",
+  "supersedes": ".loop/evidence/t042-tests-first-receipt-20260810.json",
+  "scope": [
+    "T042",
+    "US3",
+    "FR-011",
+    "FR-012",
+    "FR-013",
+    "FR-014",
+    "FR-015",
+    "FR-016",
+    "FR-018",
+    "FR-020",
+    "FR-022",
+    "FR-023",
+    "FR-025"
+  ],
+  "claim": "The original T042 unit-test contracts were copied byte-for-byte from the original implementation commit into the exact reconstructed pre-implementation boundary and executed on Java 21/Gradle; compileTestJava failed only because six US3 runtime boundary types were absent. Current main contains evolved versions of those tests (not byte-identical) and the exact PR #81 tree is green.",
+  "result": "PASS_EXECUTABLE_RED_BASELINE",
+  "classification": "CONFIRMED",
+  "proof_level": "P2_EXECUTABLE_RED_PLUS_EXACT_HEAD_GREEN",
+  "source_of_truth": {
+    "repository": "bynanci/courtside-tw",
+    "authoritative_main": "ebdb729ad16ed00baa661afa2c6caa6bf51b81b6",
+    "pre_implementation_parent": "fcc18d948073433d2a6e2397329391ef125c091c",
+    "reconstructed_baseline": "3afd09e6298e8c54bb1eca2a5cece4b8ece7c658",
+    "original_implementation_commit": "bcdc96efae3847f17e8c91e8a26f117dd32a2c79",
+    "original_test_files_commit": "bcdc96efae3847f17e8c91e8a26f117dd32a2c79",
+    "historical_test_identity": {
+      "baseline_publication_workflow_test_identical_to_original": true,
+      "baseline_rights_policy_test_identical_to_original": true,
+      "current_main_publication_workflow_test_identical_to_original": false,
+      "current_main_rights_policy_test_identical_to_original": false,
+      "comparison_basis": "Historical identity applies to the reconstructed baseline at 3afd09e6298e8c54bb1eca2a5cece4b8ece7c658; current main test files evolved after the original implementation."
+    }
+  },
+  "reconstructed_baseline": {
+    "branch": "evidence/t042-tests-first-baseline-20260810",
+    "pull_request": 80,
+    "head_sha": "3afd09e6298e8c54bb1eca2a5cece4b8ece7c658",
+    "construction": "Parent of PR #70 plus the exact original T042 test files; no US3 publication workflow, rights policy, readiness service or related production boundary was added.",
+    "missing_production_paths": [
+      "apps/api/src/main/java/tw/basketball/magazine/publication/domain/PublicationWorkflow.java",
+      "apps/api/src/main/java/tw/basketball/magazine/publication/domain/PublicationAction.java",
+      "apps/api/src/main/java/tw/basketball/magazine/publication/domain/PublicationState.java",
+      "apps/api/src/main/java/tw/basketball/magazine/publication/domain/PublicationWorkflowException.java",
+      "apps/api/src/main/java/tw/basketball/magazine/media/domain/RightsPolicy.java",
+      "apps/api/src/main/java/tw/basketball/magazine/publication/application/PublicationReadinessService.java"
+    ],
+    "test_artifacts": [
+      "apps/api/src/test/java/tw/basketball/magazine/publication/domain/PublicationWorkflowTest.java",
+      "apps/api/src/test/java/tw/basketball/magazine/media/domain/RightsPolicyTest.java"
+    ]
+  },
+  "executable_red_baseline": {
+    "runner_branch": "evidence/t042-red-run-20260812",
+    "runner_commit": "5ec1056c27ff1c0ca548dc1cde75fc069e71673e",
+    "workflow_file": ".github/workflows/t042-red-baseline.yml",
+    "workflow_event": "push",
+    "run_id": 31553002898,
+    "run_number": 1,
+    "run_url": "https://github.com/bynanci/courtside-tw/actions/runs/31553002898",
+    "job_id": 93979512054,
+    "job_name": "T042 original tests fail at missing US3 boundary",
+    "job_conclusion": "success",
+    "job_success_meaning": "The assertion harness observed and validated the expected red build; it does not mean the baseline tests passed.",
+    "artifact": {
+      "name": "t042-red-baseline-evidence",
+      "id": 9124953414,
+      "url": "https://github.com/bynanci/courtside-tw/actions/runs/31553002898/artifacts/9124953414",
+      "sha256": "74fede7dda488651da0d6f0fb561711f496db1f4901833d1ba7a3b86d8df6d8f"
+    },
+    "environment": {
+      "runner_image": "ubuntu-24.04",
+      "java": "Temurin 21.0.11+10",
+      "gradle": "8.14.3",
+      "setup_java": "success",
+      "setup_gradle": "success"
+    },
+    "command": "gradle --no-daemon --console=plain -p apps/api test --tests tw.basketball.magazine.publication.domain.PublicationWorkflowTest --tests tw.basketball.magazine.media.domain.RightsPolicyTest",
+    "observed": {
+      "exit_code": 1,
+      "build_phase": "compileTestJava",
+      "build_result": "BUILD FAILED",
+      "compiler_error_count": 92,
+      "test_methods_entered": false,
+      "red_failure_type": "missing US3 runtime boundary at test compilation"
+    },
+    "attribution": {
+      "unique_missing_symbols": [
+        "PublicationAction",
+        "PublicationReadinessService",
+        "PublicationState",
+        "PublicationWorkflow",
+        "PublicationWorkflowException",
+        "RightsPolicy"
+      ],
+      "missing_packages": [
+        "tw.basketball.magazine.publication.application"
+      ],
+      "diagnostic_test_files": [
+        "apps/api/src/test/java/tw/basketball/magazine/publication/domain/PublicationWorkflowTest.java",
+        "apps/api/src/test/java/tw/basketball/magazine/media/domain/RightsPolicyTest.java"
+      ],
+      "environment_noise_signatures_checked": [
+        "Could not resolve",
+        "Could not download",
+        "network is unreachable",
+        "connection timed out",
+        "daemon disappeared",
+        "Unsupported class file major version",
+        "Could not determine java version"
+      ],
+      "environment_noise_signatures_found": [],
+      "source_tree_check": "All six missing symbols map to the six production paths absent from the reconstructed baseline; no unrelated missing symbol was observed."
+    }
+  },
+  "current_main_green": {
+    "ref": "main",
+    "commit": "ebdb729ad16ed00baa661afa2c6caa6bf51b81b6",
+    "tree_matches_pr81_head": true,
+    "pr81": {
+      "number": 81,
+      "head_sha": "24c22754b3f7620a0febed413b6414eac7e58bb9",
+      "merge_commit_sha": "ebdb729ad16ed00baa661afa2c6caa6bf51b81b6",
+      "ci_run": {
+        "run_number": 419,
+        "run_id": 31440242648,
+        "conclusion": "success",
+        "java_quality_and_unit_job": {
+          "id": 93623233924,
+          "conclusion": "success"
+        },
+        "dependency_integration_job": {
+          "id": 93623233958,
+          "conclusion": "success"
+        },
+        "frontend_contract_job": {
+          "id": 93623234025,
+          "conclusion": "success"
+        },
+        "browser_job": {
+          "id": 93623386151,
+          "conclusion": "success"
+        }
+      },
+      "security_run": {
+        "run_number": 420,
+        "run_id": 31440242652,
+        "conclusion": "success",
+        "all_jobs_successful": true
+      }
+    },
+    "test_blobs": {
+      "apps/api/src/test/java/tw/basketball/magazine/publication/domain/PublicationWorkflowTest.java": "8694cc22422b81c606c4fb952d1f9d122578786d",
+      "apps/api/src/test/java/tw/basketball/magazine/media/domain/RightsPolicyTest.java": "26eafd9bbe7b39d432db85fa3cba64a6341b1a08"
+    },
+    "tree_readback": "git diff 24c22754b3f7620a0febed413b6414eac7e58bb9 HEAD returned no files; the merge commit has the exact PR #81 tree.",
+    "original_test_blobs": {
+      "apps/api/src/test/java/tw/basketball/magazine/publication/domain/PublicationWorkflowTest.java": "bcb34a70a83a3a96bf61058e1f6e8aec40445a0f",
+      "apps/api/src/test/java/tw/basketball/magazine/media/domain/RightsPolicyTest.java": "8b340780daebe7952a7e30d9a25630e970defcd1"
+    },
+    "test_evolution": {
+      "apps/api/src/test/java/tw/basketball/magazine/publication/domain/PublicationWorkflowTest.java": {
+        "original_blob": "bcb34a70a83a3a96bf61058e1f6e8aec40445a0f",
+        "current_main_blob": "8694cc22422b81c606c4fb952d1f9d122578786d",
+        "byte_identical": false,
+        "original_test_method_count": 5,
+        "current_main_test_method_count": 9,
+        "current_main_additions": [
+          "publisherCanRequestChangesBackToDraftWithReason",
+          "requestChangesRequiresReason",
+          "missingRightsBlocksSubmitWithoutAdvancingVersionAndKeepsAssetId",
+          "nonReadyMediaBlocksEvenWhenRightsAreValid",
+          "publishedCanArchiveDirectly",
+          "roleRevisionAndVersionChecksRejectUnsafeCommands"
+        ]
+      },
+      "apps/api/src/test/java/tw/basketball/magazine/media/domain/RightsPolicyTest.java": {
+        "original_blob": "8b340780daebe7952a7e30d9a25630e970defcd1",
+        "current_main_blob": "26eafd9bbe7b39d432db85fa3cba64a6341b1a08",
+        "byte_identical": false,
+        "original_test_method_count": 5,
+        "current_main_test_method_count": 5,
+        "current_main_additions": [
+          "rightsRecordId and rightsRecordVersion assertions",
+          "rights record identity/version constructor fields"
+        ]
+      }
+    }
+  },
+  "task_decision": {
+    "checkbox": "CHECK",
+    "before": false,
+    "after": true,
+    "reason": "The executable Java 21/Gradle red baseline is attributable to the missing US3 runtime boundary; the record now explicitly states that current main tests evolved and are not byte-identical to the original files.",
+    "test_first_interpretation": "This is a compile-time red baseline: the original test methods cannot enter until the six runtime boundary types exist. No passing or runtime test-method claim is made for the pre-implementation commit.",
+    "next_action": "Keep later US3 implementation and production activation gates independent; do not infer T043-T056 completion from T042."
+  },
+  "scope_guard": {
+    "production_source_changed": false,
+    "migration_changed": false,
+    "production_migration_executed": false,
+    "deployment_performed": false,
+    "provider_credentials_changed": false,
+    "web3_wallet_passport_changed": false,
+    "unrelated_task_state_changed": false,
+    "temporary_evidence_workflow_merged_to_main": false,
+    "task_checkbox_changed": true,
+    "task_checkbox_path": "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+  },
+  "amendment": {
+    "amended_at": "2026-08-12T07:48:53.496Z",
+    "reason": "Corrected historical-versus-current test identity wording after exact blob read-back; no production behavior or baseline execution claim changed."
+  }
+}
