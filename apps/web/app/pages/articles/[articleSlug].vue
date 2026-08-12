@@ -1103,3 +1103,26 @@ onBeforeUnmount(() => {
     </main>
   </div>
 </template>
+
+<style scoped>
+.reader-resume p {
+  margin: 0;
+}
+
+.reader-resume p + p {
+  margin-top: 0.35rem;
+}
+
+.reader-resume__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.reader-resume__actions .button-link {
+  min-height: 44px;
+  margin-top: 0;
+  cursor: pointer;
+}
+</style>
