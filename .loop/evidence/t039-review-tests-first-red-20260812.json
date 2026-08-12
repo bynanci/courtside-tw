@@ -14,18 +14,19 @@
   "test_delta": {
     "unit_test": {
       "path": "apps/web/tests/unit/reader/useLocalReadingProgress.test.ts",
-      "blob": "603470a27999c8615dce2c1acb879b8b9b56abb0",
+      "blob": "ff97e23a55286bee5f60438e5cb446a2aba3d50b",
       "acceptance": [
         "a syntactically valid partial manifest is reconciled with attributable index-to-record groups before enforcing the 20-article cap",
         "record-only interrupted writes are removed without touching unrelated storage",
         "an unavailable article is cleared through attributable index/record evidence when an interrupted write omitted the slug pointer",
         "a failed save restores an exact target record-only prestate",
-        "an unavailable article clears a canonical record-only earliest kill-point without touching unrelated storage"
+        "an unavailable article clears a canonical record-only earliest kill-point without touching unrelated storage",
+        "Continue can dismiss the prompt while retaining the stable anchor until current layout geometry is available"
       ]
     },
     "browser_test": {
       "path": "apps/web/tests/e2e/us2-read-article.spec.ts",
-      "blob": "eef1e82b6ad08a54812214ca99bd1598c593d7a6",
+      "blob": "c124295dc979d3315f5e968fa98e772a66a3447b",
       "acceptance": [
         "a real mid-article save followed by reload remains at the top until Continue or Start over",
         "Continue uses the stable saved anchor",
@@ -33,7 +34,10 @@
         "stale revision invalidation leaves a reload at the top",
         "withdrawn cleanup removes a canonical record-only earliest kill-point",
         "a second reload before choosing keeps the prompt at the top and releases the prior document policy on pagehide",
-        "storage-unavailable reload preserves native scroll restoration and auto policy"
+        "storage-unavailable reload preserves native scroll restoration and auto policy",
+        "a blank v1 index falls through to a valid legacy pointer and is guarded before migration",
+        "Continue and Start over keep the chosen stable target under a delayed full-document load, then restore native history policy",
+        "Continue recomputes the stable block and offset after the prompt disappears and delayed layout changes settle"
       ]
     }
   },
@@ -93,6 +97,17 @@
     ],
     "browser_job": "SKIPPED_DOWNSTREAM_OF_EXPECTED_FRONTEND_RED",
     "classification": "EXPECTED_MISSING_BEHAVIOR"
+  },
+  "stable_anchor_reflow_red_execution": {
+    "recorded_at": "2026-08-12T16:14:14Z",
+    "command": "COREPACK_HOME=/tmp/courtside-t039-corepack corepack pnpm@11.7.0 --filter @courtside/web run test",
+    "exit_code": 1,
+    "tests": 57,
+    "passed": 56,
+    "failed": 1,
+    "failure_signature": "continue resolves the same stable anchor against current viewport and font geometry: beginContinueReading is not a function",
+    "classification": "EXPECTED_MISSING_BEHAVIOR",
+    "syntax_or_setup_failure": false
   },
   "scope_guard": {
     "production_changed_in_this_red_delta": false,

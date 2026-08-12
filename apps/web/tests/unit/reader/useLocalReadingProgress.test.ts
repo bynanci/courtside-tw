@@ -130,6 +130,9 @@ test("continue resolves the same stable anchor against current viewport and font
 
   const reflowed = useLocalReadingProgress()
   reflowed.load(storage, context, blocks)
+  assert.equal(reflowed.beginContinueReading(), true)
+  assert.equal(reflowed.resumePrompt.value, null)
+  assert.equal(reflowed.pendingProgress.value?.blockId, blocks[1]!.id)
   assert.equal(
     reflowed.continueReading([{ blockId: blocks[1]!.id, top: 1100, height: 700 }], 500),
     1325

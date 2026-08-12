@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs"
 
-import { expect, test } from "@playwright/test"
+import { expect, test, type Page } from "@playwright/test"
 
 type ContentFixture = {
   blocks: Array<{ type: string }>
@@ -81,14 +81,60 @@ test.describe("US2 long-form public article", () => {
     await expect(page.getByTestId("reader-resume-section")).not.toBeEmpty()
     expect(await page.evaluate(() => window.scrollY)).toBe(0)
 
+    const finishDelayedReload = await armDelayedReloadResource(page)
     await page.reload({ waitUntil: "domcontentloaded" })
     await expect(page.getByTestId("reader-resume")).toBeVisible()
     expect(await page.evaluate(() => window.scrollY)).toBe(0)
     expect(await page.evaluate(() => window.history.scrollRestoration)).toBe("manual")
 
+    const savedAnchor = await page.evaluate(() => {
+      const indexKey =
+        "courtside.reader.progress:v1:index:" +
+        encodeURIComponent("0190f7b0-7c4b-7e3a-8f12-123456789abd")
+      const recordKey = localStorage.getItem(indexKey)
+      const stored = recordKey
+        ? (JSON.parse(localStorage.getItem(recordKey) ?? "{}") as unknown)
+        : null
+      if (
+        !stored ||
+        typeof stored !== "object" ||
+        !("blockId" in stored) ||
+        typeof stored.blockId !== "string" ||
+        !("offset" in stored) ||
+        typeof stored.offset !== "number"
+      ) {
+        throw new Error("saved reader anchor is unavailable")
+      }
+      return { blockId: stored.blockId, offset: stored.offset }
+    })
+
     await page.getByTestId("reader-resume-continue").click()
     await expect(page.getByTestId("reader-resume")).toHaveCount(0)
-    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+    expect(await page.evaluate(() => window.history.scrollRestoration)).toBe("manual")
+    await page.locator(`[data-block-id="${savedAnchor.blockId}"]`).evaluate((element) => {
+      element.style.marginTop = "640px"
+    })
+    await finishDelayedReload()
+    await expect
+      .poll(() =>
+        page.evaluate(({ blockId, offset }) => {
+          const target = document.querySelector<HTMLElement>(`[data-block-id="${blockId}"]`)
+          if (!target) {
+            return Number.POSITIVE_INFINITY
+          }
+          const rect = target.getBoundingClientRect()
+          const expectedTop = Math.max(
+            0,
+            window.scrollY +
+              rect.top +
+              rect.height * offset -
+              Math.min(window.innerHeight * 0.25, 160)
+          )
+          return Math.abs(window.scrollY - expectedTop)
+        }, savedAnchor)
+      )
+      .toBeLessThan(3)
+    await expect.poll(() => page.evaluate(() => window.history.scrollRestoration)).toBe("auto")
 
     await page.getByTestId("article-issue-link").evaluate((element) => {
       const link = element as HTMLElement
@@ -168,6 +214,61 @@ test.describe("US2 long-form public article", () => {
     await expect(page.getByTestId("reader-resume")).toHaveCount(0)
     expect(await page.evaluate(() => window.scrollY)).toBe(0)
     expect(await page.evaluate((key) => localStorage.getItem(key), indexKey)).toBeNull()
+  })
+
+  test("guards a legacy resume when a blank v1 index falls through to migration", async ({
+    page
+  }) => {
+    const articleId = "0190f7b0-7c4b-7e3a-8f12-123456789abd"
+    const indexKey = "courtside.reader.progress:v1:index:" + encodeURIComponent(articleId)
+    const slugKey = "courtside.reader.progress:v1:slug:" + encodeURIComponent("opening-night")
+    const legacyKey = "courtside.reader.progress:opening-night:revision-1"
+
+    await page.addInitScript(
+      ({ indexKey, slugKey, legacyKey }) => {
+        if (sessionStorage.getItem("seed-legacy-with-blank-index") !== "true") {
+          return
+        }
+        sessionStorage.removeItem("seed-legacy-with-blank-index")
+        const priorRecordKey = localStorage.getItem(indexKey)
+        if (priorRecordKey) {
+          localStorage.removeItem(priorRecordKey)
+        }
+        localStorage.setItem(indexKey, "")
+        localStorage.removeItem(slugKey)
+        localStorage.setItem(
+          legacyKey,
+          JSON.stringify({ blockId: "00000000-0000-4000-8000-000000000007", offset: 0.42 })
+        )
+      },
+      { indexKey, slugKey, legacyKey }
+    )
+
+    await page.goto("/articles/opening-night?issue=issue-2026-01", {
+      waitUntil: "domcontentloaded"
+    })
+    await expect(page.getByTestId("article-document")).toBeVisible()
+    await page
+      .locator("[data-block-id]")
+      .nth(6)
+      .evaluate((element) => {
+        element.scrollIntoView({ block: "center", behavior: "auto" })
+      })
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+    await page.evaluate(() => sessionStorage.setItem("seed-legacy-with-blank-index", "true"))
+
+    const finishDelayedReload = await armDelayedReloadResource(page)
+    await page.reload({ waitUntil: "domcontentloaded" })
+
+    await expect(page.getByTestId("reader-resume")).toBeVisible()
+    expect(await page.evaluate(() => window.scrollY)).toBe(0)
+    expect(await page.evaluate(() => window.history.scrollRestoration)).toBe("manual")
+    expect(await page.evaluate((key) => localStorage.getItem(key), legacyKey)).toBeNull()
+    await page.getByTestId("reader-resume-start-over").click()
+    expect(await page.evaluate(() => window.history.scrollRestoration)).toBe("manual")
+    await finishDelayedReload()
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0)
+    await expect.poll(() => page.evaluate(() => window.history.scrollRestoration)).toBe("auto")
   })
 
   test("uses the issue snapshot for previous, next and table-of-contents links", async ({
@@ -359,3 +460,39 @@ test.describe("US2 long-form public article", () => {
     expect(pageErrors).toEqual([])
   })
 })
+
+async function armDelayedReloadResource(page: Page): Promise<() => Promise<void>> {
+  let releaseRequest: (() => void) | null = null
+  await page.route("**/media/delayed-reader-reload.svg", async (route) => {
+    await new Promise<void>((resolve) => {
+      releaseRequest = resolve
+    })
+    await route.fulfill({
+      contentType: "image/svg+xml",
+      body: '<svg xmlns="http://www.w3.org/2000/svg" width="1" height="1" />'
+    })
+  })
+  await page.addInitScript(() => {
+    if (sessionStorage.getItem("delay-reader-reload") !== "true") {
+      return
+    }
+    sessionStorage.removeItem("delay-reader-reload")
+    document.addEventListener(
+      "DOMContentLoaded",
+      () => {
+        const delayedImage = document.createElement("img")
+        delayedImage.alt = ""
+        delayedImage.src = "/media/delayed-reader-reload.svg"
+        document.body.append(delayedImage)
+      },
+      { once: true }
+    )
+  })
+  await page.evaluate(() => sessionStorage.setItem("delay-reader-reload", "true"))
+
+  return async () => {
+    await expect.poll(() => Boolean(releaseRequest)).toBe(true)
+    releaseRequest?.()
+    await page.waitForLoadState("load")
+  }
+}
