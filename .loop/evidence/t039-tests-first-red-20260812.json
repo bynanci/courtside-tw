@@ -1,7 +1,7 @@
 {
   "schema_version": "courtside-tw/tests-first-red/v1",
   "proof_id": "t039-tests-first-red-20260812",
-  "recorded_at": "2026-08-12T14:46:08Z",
+  "recorded_at": "2026-08-12T15:06:47Z",
   "result": "EXPECTED_RED_CONFIRMED",
   "task": "T039",
   "source_of_truth": {
@@ -14,31 +14,33 @@
   "test_delta": {
     "unit_test": {
       "path": "apps/web/tests/unit/reader/useLocalReadingProgress.test.ts",
-      "blob": "77f56a859221b8c5e2f9d359cc8f55fb59aa6261",
+      "blob": "c257d68a57b9de93b52c726dc78d5824fef5570a",
       "acceptance": [
         "articleId + revisionId + stable block anchor identity",
         "explicit Continue and Start over without load-time scrolling",
         "current-geometry restoration after viewport or font reflow",
-        "safe stable-anchor mapping or invalidation after a revision change",
+        "unconditional stale revision invalidation",
         "10%-95% resume range",
+        "20-article retention cap with attributable oldest-entry eviction",
+        "corrupt-index isolation and staged-write rollback",
         "malformed, quota and unavailable-storage degradation",
-        "unavailable-article cleanup"
+        "v1 and legacy unavailable-article cleanup"
       ]
     },
     "browser_test": {
       "path": "apps/web/tests/e2e/us2-read-article.spec.ts",
-      "blob": "590f023f8d5c8dcc23a48b6e99e0e6f3b49a9c7a",
+      "blob": "8c05edfbf9c9d9810f04f1f1ae2810453b036504",
       "acceptance": [
         "no automatic jump before an explicit choice",
         "Continue restores and Start over clears",
         "completed-range cleanup",
-        "withdrawn or unavailable article cleanup"
+        "withdrawn or unavailable article cleanup for v1 and legacy pointers"
       ]
     },
     "test_glob_added": "apps/web/tests/unit/reader/*.test.ts"
   },
   "red_execution": {
-    "command": "PATH=/tmp/courtside-bin:$PATH COREPACK_HOME=/tmp/courtside-corepack pnpm --filter @courtside/web exec node --experimental-strip-types --test tests/unit/reader/*.test.ts",
+    "command": "COREPACK_HOME=/tmp/courtside-t039-corepack XDG_DATA_HOME=/tmp/courtside-t039-xdg PNPM_HOME=/tmp/courtside-t039-pnpm-home PATH=/tmp/courtside-t039-pnpm-bin:$PATH pnpm --filter @courtside/web exec node --experimental-strip-types --test tests/unit/reader/*.test.ts",
     "exit_code": 1,
     "failure_signature": "ERR_MODULE_NOT_FOUND: apps/web/app/features/reader/composables/useLocalReadingProgress.ts",
     "classification": "EXPECTED_MISSING_BEHAVIOR",

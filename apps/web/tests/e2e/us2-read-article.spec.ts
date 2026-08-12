@@ -169,8 +169,9 @@ test.describe("US2 long-form public article", () => {
       [articleId, revisionId, blockId].map(encodeURIComponent).join(":")
     const indexKey = "courtside.reader.progress:v1:index:" + encodeURIComponent(articleId)
     const slugKey = "courtside.reader.progress:v1:slug:" + encodeURIComponent("withdrawn-article")
+    const legacyKey = "courtside.reader.progress:withdrawn-article:revision-1"
     await page.addInitScript(
-      ({ articleId, revisionId, blockId, recordKey, indexKey, slugKey }) => {
+      ({ articleId, revisionId, blockId, recordKey, indexKey, slugKey, legacyKey }) => {
         localStorage.setItem(
           recordKey,
           JSON.stringify({
@@ -186,8 +187,9 @@ test.describe("US2 long-form public article", () => {
         )
         localStorage.setItem(indexKey, recordKey)
         localStorage.setItem(slugKey, articleId)
+        localStorage.setItem(legacyKey, JSON.stringify({ blockId, offset: 0.4 }))
       },
-      { articleId, revisionId, blockId, recordKey, indexKey, slugKey }
+      { articleId, revisionId, blockId, recordKey, indexKey, slugKey, legacyKey }
     )
 
     await page.goto("/articles/withdrawn-article?issue=issue-2026-01", {
@@ -197,15 +199,16 @@ test.describe("US2 long-form public article", () => {
     await expect
       .poll(() =>
         page.evaluate(
-          ({ recordKey, indexKey, slugKey }) => [
+          ({ recordKey, indexKey, slugKey, legacyKey }) => [
             localStorage.getItem(recordKey),
             localStorage.getItem(indexKey),
-            localStorage.getItem(slugKey)
+            localStorage.getItem(slugKey),
+            localStorage.getItem(legacyKey)
           ],
-          { recordKey, indexKey, slugKey }
+          { recordKey, indexKey, slugKey, legacyKey }
         )
       )
-      .toEqual([null, null, null])
+      .toEqual([null, null, null, null])
   })
 
   test("keeps reading functional when browser storage is unavailable", async ({ page }) => {
