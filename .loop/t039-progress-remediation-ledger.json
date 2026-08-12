@@ -1,0 +1,106 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-t039-progress-remediation",
+  "graph_version": 1,
+  "run_id": "courtside-tw-t039-progress-remediation-20260812",
+  "status": "complete_and_evidenced",
+  "iteration": 1,
+  "started_at": "2026-08-12T14:50:00Z",
+  "updated_at": "2026-08-12T16:25:44Z",
+  "current_frontier": ["s-t039-complete"],
+  "blocked_nodes": [],
+  "terminal_state": "success",
+  "next_action": "Review and merge PR #84 through the protected workflow, then read back authoritative main; no further T039 implementation is required.",
+  "events": [
+    {
+      "event_id": "evt-t039-progress-remediation-001",
+      "at": "2026-08-12T16:25:44Z",
+      "actor": "codex-agent",
+      "type": "tests_first_implementation_and_exact_head_completion",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {"op": "add", "path": "graph/nodes/a-t039-tests-first/status", "value": "done"},
+          {"op": "add", "path": "graph/nodes/p-t039-red/status", "value": "done"},
+          {"op": "add", "path": "graph/nodes/a-t039-implementation/status", "value": "done"},
+          {"op": "add", "path": "graph/nodes/p-t039-local/status", "value": "done"},
+          {"op": "add", "path": "graph/nodes/p-t039-exact-head/status", "value": "done"},
+          {"op": "add", "path": "graph/nodes/m-t039-memory/status", "value": "done"},
+          {"op": "add", "path": "graph/nodes/s-t039-complete/status", "value": "done"},
+          {"op": "add", "path": "graph/terminal_state", "value": "success"}
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t039-tests-first-red-20260812.json",
+        ".loop/evidence/t039-review-tests-first-red-20260812.json",
+        ".loop/evidence/t039-progress-proof.json",
+        "https://github.com/bynanci/courtside-tw/pull/84",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31617186365",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31617186277"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Tests-first RED",
+          "level": "P3",
+          "result": "expected_failure",
+          "head_sha": "5fa038e1a9187bb198e09af03583b80990ae2aa7",
+          "ci_run": 31616916919,
+          "ci_run_number": 433,
+          "tests": 57,
+          "passed": 52,
+          "failed": 5,
+          "security_run": 31616916920,
+          "security_conclusion": "success"
+        },
+        {
+          "proof": "Local implementation verification",
+          "level": "P2",
+          "result": "success",
+          "tests": "57/57",
+          "checks": ["eslint", "nuxt typecheck", "nuxt build", "prettier", "git diff --check"]
+        },
+        {
+          "proof": "PR #84 implementation exact head",
+          "level": "P3",
+          "result": "success",
+          "head_sha": "9351bedce1e990ff618bf1c81028bbd8f454bfab",
+          "tree_sha": "526cc207fd309dae21111c986298adbd92c87127",
+          "ci_run": 31617186365,
+          "ci_run_number": 434,
+          "ci_conclusion": "success",
+          "browser_job": 94183081214,
+          "browser_tests": "18/18",
+          "security_run": 31617186277,
+          "security_run_number": 435,
+          "security_conclusion": "success"
+        },
+        {
+          "proof": "Independent code and test review",
+          "level": "P2",
+          "result": "success",
+          "reviewers": 2,
+          "remaining_findings": 0
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "SAVED",
+        "memory_id": "wm:project:courtside-tw:t039-progress-completion",
+        "version": "t039-progress-completion-v1",
+        "evidence_refs": [".loop/evidence/t039-progress-proof.json"],
+        "next_review_at": "2026-08-19",
+        "blocker": "No task-acceptance blocker; protected merge and authoritative main read-back remain repository gates."
+      },
+      "resolved_failure_signatures": [
+        "AUTO_JUMP_WITHOUT_EXPLICIT_RESUME_CHOICE",
+        "STALE_REVISION_PROGRESS_RETAINED",
+        "UNBOUNDED_OR_ORPHANED_LOCAL_PROGRESS",
+        "NON_ATOMIC_PROGRESS_ROLLBACK",
+        "RELOAD_RESTORATION_OVERRIDES_STABLE_ANCHOR"
+      ],
+      "decision": "MARK_T039_COMPLETE_AND_EVIDENCED",
+      "token_usage": {"estimated": 52000, "input": 0, "output": 0, "total": 52000},
+      "terminal_reason": "Every T039 criterion has attributable tests-first, implementation, exact-head browser/Security and independent-review proof; only T039 is checked."
+    }
+  ]
+}
