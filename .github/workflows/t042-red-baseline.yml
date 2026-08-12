@@ -1,0 +1,86 @@
+name: T042 tests-first red baseline
+
+on:
+  push:
+    branches:
+      - 'evidence/t042-red-run-*'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  GRADLE_VERSION: 8.14.3
+
+jobs:
+  t042-red-baseline:
+    name: T042 original tests fail at missing US3 boundary
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact baseline
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: 3afd09e6298e8c54bb1eca2a5cece4b8ece7c658
+          persist-credentials: false
+
+      - name: Set up Java 21
+        uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+          cache-dependency-path: |
+            apps/api/**/*.gradle*
+            apps/api/gradle.properties
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          gradle-version: ${{ env.GRADLE_VERSION }}
+
+      - name: Execute original T042 tests and assert attributable red result
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p artifacts/t042
+          set +e
+          gradle --no-daemon --console=plain -p apps/api test \
+            --tests tw.basketball.magazine.publication.domain.PublicationWorkflowTest \
+            --tests tw.basketball.magazine.media.domain.RightsPolicyTest \
+            2>&1 | tee artifacts/t042/gradle-test.log
+          status=${PIPESTATUS[0]}
+          set -e
+
+          if [ "${status}" -eq 0 ]; then
+            echo "ERROR: the pre-implementation baseline unexpectedly passed" | tee artifacts/t042/assertion.log
+            exit 1
+          fi
+
+          grep -Fq "PublicationWorkflow" artifacts/t042/gradle-test.log
+          grep -Fq "RightsPolicy" artifacts/t042/gradle-test.log
+          grep -Fq "PublicationReadinessService" artifacts/t042/gradle-test.log
+
+          if grep -Eiq "Could not resolve|Could not download|network is unreachable|connection timed out|daemon.*disappeared|Unsupported class file major version|Could not determine java version" artifacts/t042/gradle-test.log; then
+            echo "ERROR: failure includes an environment/toolchain or dependency-resolution error" | tee artifacts/t042/assertion.log
+            exit 1
+          fi
+
+          {
+            echo "baseline_commit=3afd09e6298e8c54bb1eca2a5cece4b8ece7c658"
+            echo "java_expected=21"
+            echo "gradle_expected=${GRADLE_VERSION}"
+            echo "command=gradle --no-daemon --console=plain -p apps/api test --tests tw.basketball.magazine.publication.domain.PublicationWorkflowTest --tests tw.basketball.magazine.media.domain.RightsPolicyTest"
+            echo "observed_exit=${status}"
+            echo "attribution=MISSING_US3_PUBLICATION_RUNTIME_BOUNDARY"
+            echo "assertions=PublicationWorkflow, RightsPolicy, PublicationReadinessService compiler references present; environment-noise signatures absent"
+          } | tee artifacts/t042/assertion.log
+
+      - name: Upload T042 red-baseline evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: t042-red-baseline-evidence
+          path: artifacts/t042
+          if-no-files-found: error
+          retention-days: 14
