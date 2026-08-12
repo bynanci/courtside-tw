@@ -1,7 +1,7 @@
 {
   "schema_version": "courtside-proof/v1",
   "proof_id": "t042-tests-first-follow-up-20260812",
-  "recorded_at": "2026-08-12T01:22:00Z",
+  "recorded_at": "2026-08-12T07:48:53.496Z",
   "supersedes": ".loop/evidence/t042-tests-first-receipt-20260810.json",
   "scope": [
     "T042",
@@ -18,7 +18,7 @@
     "FR-023",
     "FR-025"
   ],
-  "claim": "The original T042 unit-test contracts were executed against the exact reconstructed pre-implementation boundary on a Java 21/Gradle runner and failed only because the six US3 runtime boundary types were absent; current main contains the same tests and its exact PR #81 head is green.",
+  "claim": "The original T042 unit-test contracts were copied byte-for-byte from the original implementation commit into the exact reconstructed pre-implementation boundary and executed on Java 21/Gradle; compileTestJava failed only because six US3 runtime boundary types were absent. Current main contains evolved versions of those tests (not byte-identical) and the exact PR #81 tree is green.",
   "result": "PASS_EXECUTABLE_RED_BASELINE",
   "classification": "CONFIRMED",
   "proof_level": "P2_EXECUTABLE_RED_PLUS_EXACT_HEAD_GREEN",
@@ -30,12 +30,11 @@
     "original_implementation_commit": "bcdc96efae3847f17e8c91e8a26f117dd32a2c79",
     "original_test_files_commit": "bcdc96efae3847f17e8c91e8a26f117dd32a2c79",
     "historical_test_identity": {
-      "publication_workflow_test_identical_to_original": true,
-      "rights_policy_test_identical_to_original": true,
-      "baseline_changed_files": [
-        "apps/api/src/test/java/tw/basketball/magazine/publication/domain/PublicationWorkflowTest.java",
-        "apps/api/src/test/java/tw/basketball/magazine/media/domain/RightsPolicyTest.java"
-      ]
+      "baseline_publication_workflow_test_identical_to_original": true,
+      "baseline_rights_policy_test_identical_to_original": true,
+      "current_main_publication_workflow_test_identical_to_original": false,
+      "current_main_rights_policy_test_identical_to_original": false,
+      "comparison_basis": "Historical identity applies to the reconstructed baseline at 3afd09e6298e8c54bb1eca2a5cece4b8ece7c658; current main test files evolved after the original implementation."
     }
   },
   "reconstructed_baseline": {
@@ -159,13 +158,45 @@
       "apps/api/src/test/java/tw/basketball/magazine/publication/domain/PublicationWorkflowTest.java": "8694cc22422b81c606c4fb952d1f9d122578786d",
       "apps/api/src/test/java/tw/basketball/magazine/media/domain/RightsPolicyTest.java": "26eafd9bbe7b39d432db85fa3cba64a6341b1a08"
     },
-    "tree_readback": "git diff 24c22754b3f7620a0febed413b6414eac7e58bb9 HEAD returned no files; the merge commit has the exact PR #81 tree."
+    "tree_readback": "git diff 24c22754b3f7620a0febed413b6414eac7e58bb9 HEAD returned no files; the merge commit has the exact PR #81 tree.",
+    "original_test_blobs": {
+      "apps/api/src/test/java/tw/basketball/magazine/publication/domain/PublicationWorkflowTest.java": "bcb34a70a83a3a96bf61058e1f6e8aec40445a0f",
+      "apps/api/src/test/java/tw/basketball/magazine/media/domain/RightsPolicyTest.java": "8b340780daebe7952a7e30d9a25630e970defcd1"
+    },
+    "test_evolution": {
+      "apps/api/src/test/java/tw/basketball/magazine/publication/domain/PublicationWorkflowTest.java": {
+        "original_blob": "bcb34a70a83a3a96bf61058e1f6e8aec40445a0f",
+        "current_main_blob": "8694cc22422b81c606c4fb952d1f9d122578786d",
+        "byte_identical": false,
+        "original_test_method_count": 5,
+        "current_main_test_method_count": 9,
+        "current_main_additions": [
+          "publisherCanRequestChangesBackToDraftWithReason",
+          "requestChangesRequiresReason",
+          "missingRightsBlocksSubmitWithoutAdvancingVersionAndKeepsAssetId",
+          "nonReadyMediaBlocksEvenWhenRightsAreValid",
+          "publishedCanArchiveDirectly",
+          "roleRevisionAndVersionChecksRejectUnsafeCommands"
+        ]
+      },
+      "apps/api/src/test/java/tw/basketball/magazine/media/domain/RightsPolicyTest.java": {
+        "original_blob": "8b340780daebe7952a7e30d9a25630e970defcd1",
+        "current_main_blob": "26eafd9bbe7b39d432db85fa3cba64a6341b1a08",
+        "byte_identical": false,
+        "original_test_method_count": 5,
+        "current_main_test_method_count": 5,
+        "current_main_additions": [
+          "rightsRecordId and rightsRecordVersion assertions",
+          "rights record identity/version constructor fields"
+        ]
+      }
+    }
   },
   "task_decision": {
     "checkbox": "CHECK",
     "before": false,
     "after": true,
-    "reason": "The executable Java 21/Gradle red baseline is now attributable to the missing US3 runtime boundary, and current main's exact PR #81 tree is green.",
+    "reason": "The executable Java 21/Gradle red baseline is attributable to the missing US3 runtime boundary; the record now explicitly states that current main tests evolved and are not byte-identical to the original files.",
     "test_first_interpretation": "This is a compile-time red baseline: the original test methods cannot enter until the six runtime boundary types exist. No passing or runtime test-method claim is made for the pre-implementation commit.",
     "next_action": "Keep later US3 implementation and production activation gates independent; do not infer T043-T056 completion from T042."
   },
@@ -180,5 +211,9 @@
     "temporary_evidence_workflow_merged_to_main": false,
     "task_checkbox_changed": true,
     "task_checkbox_path": "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+  },
+  "amendment": {
+    "amended_at": "2026-08-12T07:48:53.496Z",
+    "reason": "Corrected historical-versus-current test identity wording after exact blob read-back; no production behavior or baseline execution claim changed."
   }
 }
