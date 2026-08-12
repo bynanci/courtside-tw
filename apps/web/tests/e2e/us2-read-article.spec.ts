@@ -56,9 +56,12 @@ test.describe("US2 long-form public article", () => {
       waitUntil: "domcontentloaded"
     })
     await expect(page.getByTestId("article-document")).toBeVisible()
-    await page.locator("[data-block-id]").nth(6).evaluate((element) => {
-      element.scrollIntoView({ block: "center", behavior: "auto" })
-    })
+    await page
+      .locator("[data-block-id]")
+      .nth(6)
+      .evaluate((element) => {
+        element.scrollIntoView({ block: "center", behavior: "auto" })
+      })
     await page.evaluate(() => window.dispatchEvent(new Event("scroll")))
     await expect
       .poll(() =>

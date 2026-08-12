@@ -23,7 +23,7 @@
     },
     "browser_test": {
       "path": "apps/web/tests/e2e/us2-read-article.spec.ts",
-      "blob": "a6cacb8e6b52ce16f8a7b4cc15d16a54c8bbf131",
+      "blob": "7a070cd5aee5d1391d07a605cd4c8f73f5f8dc40",
       "acceptance": [
         "a real mid-article save followed by reload remains at the top until Continue or Start over",
         "Continue uses the stable saved anchor",
@@ -47,6 +47,14 @@
   "browser_red_execution": {
     "result": "NOT_RUN_LOCAL_ENVIRONMENT_BLOCKER",
     "blocker": "The local Playwright Chromium executable is unavailable; the test is committed before the implementation correction so CI can provide executable browser evidence."
+  },
+  "remote_red_preflight": {
+    "head_commit": "04d2c0b66fe3d87504019be44270d31e395eee91",
+    "ci_run_id": 31613704179,
+    "ci_run_number": 429,
+    "result": "EXPECTED_RED_AT_FORMAT_GATE",
+    "failure": "Prettier rejected apps/web/tests/e2e/us2-read-article.spec.ts before the unit tests executed.",
+    "correction": "The follow-up remains test-only: format the browser test, update its blob reference, and rerun CI so the behavioral RED can execute."
   },
   "scope_guard": {
     "production_changed_in_this_red_delta": false,
