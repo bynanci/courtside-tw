@@ -14,20 +14,24 @@
   "test_delta": {
     "unit_test": {
       "path": "apps/web/tests/unit/reader/useLocalReadingProgress.test.ts",
-      "blob": "52874914bc962e9f5ad71bb0c97c0d9722683dd8",
+      "blob": "603470a27999c8615dce2c1acb879b8b9b56abb0",
       "acceptance": [
         "a syntactically valid partial manifest is reconciled with attributable index-to-record groups before enforcing the 20-article cap",
         "record-only interrupted writes are removed without touching unrelated storage",
-        "an unavailable article is cleared through attributable index/record evidence when an interrupted write omitted the slug pointer"
+        "an unavailable article is cleared through attributable index/record evidence when an interrupted write omitted the slug pointer",
+        "a failed save restores an exact target record-only prestate",
+        "an unavailable article clears a canonical record-only earliest kill-point without touching unrelated storage"
       ]
     },
     "browser_test": {
       "path": "apps/web/tests/e2e/us2-read-article.spec.ts",
-      "blob": "7a070cd5aee5d1391d07a605cd4c8f73f5f8dc40",
+      "blob": "4308a4861d725f084fc98fc05ae39f49fcea3d9a",
       "acceptance": [
         "a real mid-article save followed by reload remains at the top until Continue or Start over",
         "Continue uses the stable saved anchor",
-        "back-forward navigation retains native history restoration"
+        "back-forward navigation through an actual Nuxt link retains native history restoration without a BFCache-dependent prompt assertion",
+        "stale revision invalidation leaves a reload at the top",
+        "withdrawn cleanup removes a canonical record-only earliest kill-point"
       ]
     }
   },
@@ -55,6 +59,20 @@
     "result": "EXPECTED_RED_AT_FORMAT_GATE",
     "failure": "Prettier rejected apps/web/tests/e2e/us2-read-article.spec.ts before the unit tests executed.",
     "correction": "The follow-up remains test-only: format the browser test, update its blob reference, and rerun CI so the behavioral RED can execute."
+  },
+  "review_followup_red_execution": {
+    "recorded_at": "2026-08-12T15:49:00Z",
+    "command": "cd apps/web && node --experimental-strip-types --test tests/unit/reader/useLocalReadingProgress.test.ts",
+    "exit_code": 1,
+    "tests": 17,
+    "passed": 15,
+    "failed": 2,
+    "failure_signatures": [
+      "failed save restores an exact target record-only interrupted prestate: target record was null instead of its original value",
+      "clears an unavailable canonical record-only interrupted write: canonical progress record remained instead of null"
+    ],
+    "classification": "EXPECTED_MISSING_BEHAVIOR",
+    "syntax_or_setup_failure": false
   },
   "scope_guard": {
     "production_changed_in_this_red_delta": false,

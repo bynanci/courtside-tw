@@ -85,10 +85,14 @@ test.describe("US2 long-form public article", () => {
     await expect(page.getByTestId("reader-resume")).toHaveCount(0)
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
 
-    await page.goto("/issues/issue-2026-01", { waitUntil: "domcontentloaded" })
+    await page.getByTestId("article-issue-link").click()
+    await expect(page).toHaveURL(/\/issues\/issue-2026-01$/)
     await page.goBack({ waitUntil: "domcontentloaded" })
     await expect(page.getByTestId("article-document")).toBeVisible()
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+    await page.evaluate(() => window.scrollTo({ top: 0, behavior: "auto" }))
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBe(0)
+    await page.reload({ waitUntil: "domcontentloaded" })
     await expect(page.getByTestId("reader-resume")).toBeVisible()
     await page.getByTestId("reader-resume-start-over").click()
     await expect(page.getByTestId("reader-resume")).toHaveCount(0)
@@ -101,6 +105,55 @@ test.describe("US2 long-form public article", () => {
         )
       )
     ).toBeNull()
+  })
+
+  test("invalidates stale revision progress and starts a reload from the top", async ({ page }) => {
+    const articleId = "0190f7b0-7c4b-7e3a-8f12-123456789abd"
+    const staleRevisionId = "0190f7b0-7c4b-7e3a-8f12-123456789ab0"
+    const blockId = "00000000-0000-4000-8000-000000000007"
+    const recordKey =
+      "courtside.reader.progress:v1:record:" +
+      [articleId, staleRevisionId, blockId].map(encodeURIComponent).join(":")
+    const indexKey = "courtside.reader.progress:v1:index:" + encodeURIComponent(articleId)
+    const slugKey = "courtside.reader.progress:v1:slug:" + encodeURIComponent("opening-night")
+
+    await page.goto("/articles/opening-night?issue=issue-2026-01", {
+      waitUntil: "domcontentloaded"
+    })
+    await expect(page.getByTestId("article-document")).toBeVisible()
+    await page
+      .locator("[data-block-id]")
+      .nth(6)
+      .evaluate((element) => {
+        element.scrollIntoView({ block: "center", behavior: "auto" })
+      })
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+    await page.evaluate(
+      ({ articleId, staleRevisionId, blockId, recordKey, indexKey, slugKey }) => {
+        localStorage.setItem(
+          recordKey,
+          JSON.stringify({
+            schemaVersion: 1,
+            articleId,
+            revisionId: staleRevisionId,
+            articleSlug: "opening-night",
+            blockId,
+            blockLabel: "舊版段落",
+            offset: 0.42,
+            documentProgress: 0.5
+          })
+        )
+        localStorage.setItem(indexKey, recordKey)
+        localStorage.setItem(slugKey, articleId)
+      },
+      { articleId, staleRevisionId, blockId, recordKey, indexKey, slugKey }
+    )
+
+    await page.reload({ waitUntil: "domcontentloaded" })
+
+    await expect(page.getByTestId("reader-resume")).toHaveCount(0)
+    expect(await page.evaluate(() => window.scrollY)).toBe(0)
+    expect(await page.evaluate((key) => localStorage.getItem(key), indexKey)).toBeNull()
   })
 
   test("uses the issue snapshot for previous, next and table-of-contents links", async ({
@@ -184,8 +237,22 @@ test.describe("US2 long-form public article", () => {
     const indexKey = "courtside.reader.progress:v1:index:" + encodeURIComponent(articleId)
     const slugKey = "courtside.reader.progress:v1:slug:" + encodeURIComponent("withdrawn-article")
     const legacyKey = "courtside.reader.progress:withdrawn-article:revision-1"
+    const recordOnlyArticleId = "0190f7b0-7c4b-7e3a-8f12-123456789af0"
+    const recordOnlyKey =
+      "courtside.reader.progress:v1:record:" +
+      [recordOnlyArticleId, revisionId, blockId].map(encodeURIComponent).join(":")
     await page.addInitScript(
-      ({ articleId, revisionId, blockId, recordKey, indexKey, slugKey, legacyKey }) => {
+      ({
+        articleId,
+        revisionId,
+        blockId,
+        recordKey,
+        indexKey,
+        slugKey,
+        legacyKey,
+        recordOnlyArticleId,
+        recordOnlyKey
+      }) => {
         localStorage.setItem(
           recordKey,
           JSON.stringify({
@@ -202,8 +269,31 @@ test.describe("US2 long-form public article", () => {
         localStorage.setItem(indexKey, recordKey)
         localStorage.setItem(slugKey, articleId)
         localStorage.setItem(legacyKey, JSON.stringify({ blockId, offset: 0.4 }))
+        localStorage.setItem(
+          recordOnlyKey,
+          JSON.stringify({
+            schemaVersion: 1,
+            articleId: recordOnlyArticleId,
+            revisionId,
+            articleSlug: "withdrawn-article",
+            blockId,
+            blockLabel: "中斷寫入段落",
+            offset: 0.3,
+            documentProgress: 0.45
+          })
+        )
       },
-      { articleId, revisionId, blockId, recordKey, indexKey, slugKey, legacyKey }
+      {
+        articleId,
+        revisionId,
+        blockId,
+        recordKey,
+        indexKey,
+        slugKey,
+        legacyKey,
+        recordOnlyArticleId,
+        recordOnlyKey
+      }
     )
 
     await page.goto("/articles/withdrawn-article?issue=issue-2026-01", {
@@ -213,16 +303,17 @@ test.describe("US2 long-form public article", () => {
     await expect
       .poll(() =>
         page.evaluate(
-          ({ recordKey, indexKey, slugKey, legacyKey }) => [
+          ({ recordKey, indexKey, slugKey, legacyKey, recordOnlyKey }) => [
             localStorage.getItem(recordKey),
             localStorage.getItem(indexKey),
             localStorage.getItem(slugKey),
-            localStorage.getItem(legacyKey)
+            localStorage.getItem(legacyKey),
+            localStorage.getItem(recordOnlyKey)
           ],
-          { recordKey, indexKey, slugKey, legacyKey }
+          { recordKey, indexKey, slugKey, legacyKey, recordOnlyKey }
         )
       )
-      .toEqual([null, null, null, null])
+      .toEqual([null, null, null, null, null])
   })
 
   test("keeps reading functional when browser storage is unavailable", async ({ page }) => {

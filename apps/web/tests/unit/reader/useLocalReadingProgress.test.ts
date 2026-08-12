@@ -399,6 +399,23 @@ test("reconciles a valid partial manifest and interrupted writes before enforcin
   assert.equal(storage.getItem("unrelated:preference"), "keep")
 })
 
+test("failed save restores an exact target record-only interrupted prestate", () => {
+  const storage = new StagedFailureStorage()
+  const recordOnly = articleContext(46)
+  const recordKey = seedStoredProgress(storage, recordOnly, {
+    includeIndex: false,
+    includeSlug: false
+  })
+  const preexistingRecord = storage.getItem(recordKey)
+  storage.armFailure(2)
+
+  assert.equal(useLocalReadingProgress().save(storage, recordOnly, readingLocation()), false)
+
+  assert.equal(storage.getItem(recordKey), preexistingRecord)
+  assert.equal(storage.getItem(progressIndexKey(recordOnly.articleId)), null)
+  assert.equal(storage.getItem(progressSlugKey(recordOnly.articleSlug)), null)
+})
+
 test("clears an unavailable attributable record when an interrupted write omitted its slug key", () => {
   const storage = new MemoryStorage()
   const unavailable = articleContext(47)
@@ -418,6 +435,21 @@ test("clears an unavailable attributable record when an interrupted write omitte
   assert.equal(storage.getItem(progressIndexKey(unavailable.articleId)), null)
   assert.equal(storage.getItem(progressSlugKey(unavailable.articleSlug)), null)
   assert.equal(storage.getItem("courtside.reader.progress:v1:manifest"), null)
+  assert.equal(storage.getItem("unrelated:preference"), "keep")
+})
+
+test("clears an unavailable canonical record-only interrupted write", () => {
+  const storage = new MemoryStorage()
+  const unavailable = articleContext(48)
+  const recordKey = seedStoredProgress(storage, unavailable, {
+    includeIndex: false,
+    includeSlug: false
+  })
+  storage.setItem("unrelated:preference", "keep")
+
+  useLocalReadingProgress().clearUnavailable(storage, unavailable.articleSlug)
+
+  assert.equal(storage.getItem(recordKey), null)
   assert.equal(storage.getItem("unrelated:preference"), "keep")
 })
 
