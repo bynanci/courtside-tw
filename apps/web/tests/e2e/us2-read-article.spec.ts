@@ -81,11 +81,19 @@ test.describe("US2 long-form public article", () => {
     await expect(page.getByTestId("reader-resume-section")).not.toBeEmpty()
     expect(await page.evaluate(() => window.scrollY)).toBe(0)
 
+    await page.reload({ waitUntil: "domcontentloaded" })
+    await expect(page.getByTestId("reader-resume")).toBeVisible()
+    expect(await page.evaluate(() => window.scrollY)).toBe(0)
+    expect(await page.evaluate(() => window.history.scrollRestoration)).toBe("manual")
+
     await page.getByTestId("reader-resume-continue").click()
     await expect(page.getByTestId("reader-resume")).toHaveCount(0)
     await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
 
-    await page.getByTestId("article-issue-link").click()
+    await page.getByTestId("article-issue-link").evaluate((element) => {
+      const link = element as HTMLElement
+      link.click()
+    })
     await expect(page).toHaveURL(/\/issues\/issue-2026-01$/)
     await page.goBack({ waitUntil: "domcontentloaded" })
     await expect(page.getByTestId("article-document")).toBeVisible()
@@ -117,19 +125,12 @@ test.describe("US2 long-form public article", () => {
     const indexKey = "courtside.reader.progress:v1:index:" + encodeURIComponent(articleId)
     const slugKey = "courtside.reader.progress:v1:slug:" + encodeURIComponent("opening-night")
 
-    await page.goto("/articles/opening-night?issue=issue-2026-01", {
-      waitUntil: "domcontentloaded"
-    })
-    await expect(page.getByTestId("article-document")).toBeVisible()
-    await page
-      .locator("[data-block-id]")
-      .nth(6)
-      .evaluate((element) => {
-        element.scrollIntoView({ block: "center", behavior: "auto" })
-      })
-    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
-    await page.evaluate(
+    await page.addInitScript(
       ({ articleId, staleRevisionId, blockId, recordKey, indexKey, slugKey }) => {
+        if (sessionStorage.getItem("seed-stale-progress") !== "true") {
+          return
+        }
+        sessionStorage.removeItem("seed-stale-progress")
         localStorage.setItem(
           recordKey,
           JSON.stringify({
@@ -148,6 +149,19 @@ test.describe("US2 long-form public article", () => {
       },
       { articleId, staleRevisionId, blockId, recordKey, indexKey, slugKey }
     )
+
+    await page.goto("/articles/opening-night?issue=issue-2026-01", {
+      waitUntil: "domcontentloaded"
+    })
+    await expect(page.getByTestId("article-document")).toBeVisible()
+    await page
+      .locator("[data-block-id]")
+      .nth(6)
+      .evaluate((element) => {
+        element.scrollIntoView({ block: "center", behavior: "auto" })
+      })
+    expect(await page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+    await page.evaluate(() => sessionStorage.setItem("seed-stale-progress", "true"))
 
     await page.reload({ waitUntil: "domcontentloaded" })
 
@@ -331,7 +345,17 @@ test.describe("US2 long-form public article", () => {
       waitUntil: "domcontentloaded"
     })
     await expect(page.getByTestId("article-document")).toBeVisible()
-    await page.evaluate(() => window.dispatchEvent(new Event("scroll")))
+    await page
+      .locator("[data-block-id]")
+      .nth(6)
+      .evaluate((element) => {
+        element.scrollIntoView({ block: "center", behavior: "auto" })
+      })
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+    await page.reload({ waitUntil: "domcontentloaded" })
+    await expect(page.getByTestId("article-document")).toBeVisible()
+    await expect.poll(() => page.evaluate(() => window.scrollY)).toBeGreaterThan(0)
+    expect(await page.evaluate(() => window.history.scrollRestoration)).toBe("auto")
     expect(pageErrors).toEqual([])
   })
 })
