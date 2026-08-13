@@ -42,7 +42,7 @@ test("public media rights metadata is attributed alongside block credit", () => 
   )
 })
 
-test("gallery rendering preserves stable dimensions, caption and credit metadata", () => {
+test("gallery rendering preserves stable dimensions, caption and credit metadata", async () => {
   assert.deepEqual(
     galleryItems(
       [
@@ -67,6 +67,11 @@ test("gallery rendering preserves stable dimensions, caption and credit metadata
       }
     ]
   )
+  const source = await readFile(
+    new URL("../../../app/components/content-blocks/media/GalleryBlock.vue", import.meta.url),
+    "utf8"
+  )
+  assert.equal(source.match(/mediaFallbackStyle\(item\.width, item\.height\)/g)?.length, 2)
 })
 
 test("media failure fallback preserves the frozen media aspect ratio", () => {

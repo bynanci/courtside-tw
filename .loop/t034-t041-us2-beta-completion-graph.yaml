@@ -120,10 +120,11 @@ graph:
       risk: high
       confidence:
         score: 0.97
-        basis: Historical reader subject 8e029c5 implements the SSR reader and trusted creative runtime and passed component, bundle, SSR, and independent review evidence.
+        basis: Historical reader subject 8e029c5 plus the bounded browser remediation implement the SSR reader and trusted creative runtime; actual Chromium US2 and full regression now pass locally.
         evidence_refs:
           - .loop/evidence/t034-t041-us2-beta-tests-first-baseline-20260813.json
           - .loop/evidence/t034-t041-us2-beta-local-acceptance-20260813.json
+          - .loop/evidence/t034-t041-us2-beta-exact-head-remediation-20260813.json
       budget: {effort_hours: 8, tokens: 44000}
       config:
         workflow: [extract explicit block components, implement trusted creative package, integrate SSR reader progressively, run component and web regression]
@@ -139,11 +140,12 @@ graph:
       status: done
       risk: high
       confidence:
-        score: 0.95
-        basis: Historical subjects 8e029c5 and 1e414d7 implement SEO, no-JS, lifecycle, bundle, Lighthouse, and exact-source-head gates; live browser execution remains under p-exact-head.
+        score: 0.97
+        basis: Historical subjects 8e029c5 and 1e414d7 plus the bounded remediation implement SEO, no-JS, lifecycle, bundle, direct Lighthouse, dependency, and exact-source-head gates; actual local browser and Lighthouse pass while replacement live proof remains under p-exact-head.
         evidence_refs:
           - .loop/evidence/t034-t041-us2-beta-tests-first-baseline-20260813.json
           - .loop/evidence/t034-t041-us2-beta-local-acceptance-20260813.json
+          - .loop/evidence/t034-t041-us2-beta-exact-head-remediation-20260813.json
       budget: {effort_hours: 6, tokens: 32000}
       config:
         workflow: [implement SEO helper and no-JS assertions, enforce lifecycle and bundle budgets, wire independent and combined CI verification]
@@ -159,10 +161,11 @@ graph:
       status: done
       risk: high
       confidence:
-        score: 0.96
-        basis: Independent backend, frontend, and integrated reviews found and closed all confirmed P1 findings; the final integrated verdict found no P0/P1, compile-likely blocker, or scope violation.
+        score: 0.98
+        basis: Independent reviews found the predecessor browser and dependency P1 failures, the remediation closed them, and final read-only review found no remaining P0/P1 or scope violation.
         evidence_refs:
           - .loop/evidence/t034-t041-us2-beta-local-acceptance-20260813.json
+          - .loop/evidence/t034-t041-us2-beta-exact-head-remediation-20260813.json
       budget: {effort_hours: 4, tokens: 28000}
       config:
         workflow: [inspect changed-file scope, reconcile contracts and hydration boundaries, run targeted then broad verification, fix findings and repeat]
@@ -199,10 +202,11 @@ graph:
       status: running
       risk: high
       confidence:
-        score: 0.82
-        basis: Local feasible checks and historical implementation subjects are verified; live PR-head Java 21, CI, Security, browser, axe, lifecycle, and Lighthouse read-back is still required.
+        score: 0.92
+        basis: Workspace, actual Chromium US1/US2/combined/full regression, direct Lighthouse, bundle, and dependency checks pass locally; replacement PR-head Java 21, CI, Security, browser, review-thread, and mergeability read-back is still required.
         evidence_refs:
           - .loop/evidence/t034-t041-us2-beta-local-acceptance-20260813.json
+          - .loop/evidence/t034-t041-us2-beta-exact-head-remediation-20260813.json
       budget: {effort_hours: 3, tokens: 18000}
       config:
         level: P3

@@ -8,7 +8,6 @@ export default defineEventHandler((event) => {
     "User-agent: *",
     "Allow: /",
     "Disallow: /api/",
-    "Disallow: /articles/",
     "Sitemap: " + siteUrl + "/sitemap.xml",
     ""
   ].join("\n")

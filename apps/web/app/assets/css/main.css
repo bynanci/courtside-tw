@@ -543,6 +543,7 @@ a:focus-visible {
 .article-gallery img {
   display: block;
   width: 100%;
+  height: auto;
   max-height: 38rem;
   object-fit: cover;
   background: #ded7ca;
@@ -559,7 +560,9 @@ a:focus-visible {
 
 .article-image-fallback {
   display: grid;
+  box-sizing: border-box;
   width: 100%;
+  max-height: 38rem;
   border: 1px dashed var(--accent);
   padding: 1rem;
   place-items: center;

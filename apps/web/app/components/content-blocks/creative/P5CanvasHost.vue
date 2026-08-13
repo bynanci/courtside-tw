@@ -33,6 +33,8 @@ let visibilityObserver: IntersectionObserver | null = null
 let resizeObserver: ResizeObserver | null = null
 let pauseTimer: ReturnType<typeof setTimeout> | null = null
 let resizeTimer: ReturnType<typeof setTimeout> | null = null
+let selectionFrame: number | null = null
+let setupFrame: number | null = null
 let runtimeModules: Promise<{
   P5: (typeof import("p5"))["default"]
   presetModule: CreativePresetModule
@@ -54,6 +56,39 @@ function shouldMount(): boolean {
 
 function shouldRun(): boolean {
   return shouldMount() && !props.reducedMotion
+}
+
+function measuredViewportRatio(host: HTMLElement): number {
+  const rectangle = host.getBoundingClientRect()
+  const viewportHeight = window.innerHeight || document.documentElement.clientHeight
+  if (rectangle.height <= 0 || viewportHeight <= 0) {
+    return 0
+  }
+  const visibleHeight = Math.max(
+    0,
+    Math.min(rectangle.bottom, viewportHeight) - Math.max(rectangle.top, 0)
+  )
+  return Math.min(1, visibleHeight / rectangle.height)
+}
+
+function isPreferredVisibleHost(): boolean {
+  const host = container.value
+  if (!host) {
+    return false
+  }
+  const candidates = Array.from(
+    document.querySelectorAll<HTMLElement>(
+      '[data-testid="creative-runtime"][data-runtime-active="true"]'
+    )
+  )
+    .map((candidate) => ({
+      candidate,
+      ratio: measuredViewportRatio(candidate),
+      top: Math.abs(candidate.getBoundingClientRect().top)
+    }))
+    .filter(({ ratio }) => ratio >= 0.25)
+    .sort((left, right) => right.ratio - left.ratio || left.top - right.top)
+  return candidates[0]?.candidate === host
 }
 
 function clearPauseTimer(): void {
@@ -102,6 +137,10 @@ function applyLoopState(): void {
   if (!shouldRun()) {
     // The 10–25% band intentionally preserves the current state to avoid
     // thrashing while the reader scrolls across the activation threshold.
+    return
+  }
+  if (!isPreferredVisibleHost()) {
+    pauseSketch()
     return
   }
   creativeActiveLoop.claim(props.ownerId, () => {
@@ -155,6 +194,14 @@ async function mountSketch(): Promise<void> {
       width: hostWidth,
       onFrame: (frame) => {
         frameTick.value = frame
+        if (frame === 0 && setupFrame === null) {
+          setupFrame = window.requestAnimationFrame(() => {
+            setupFrame = null
+            if (!disposed) {
+              applyLoopState()
+            }
+          })
+        }
       }
     })
     sketch = new P5(createSketch as (instance: p5) => void, host)
@@ -199,6 +246,29 @@ function handleVisibility(): void {
   void mountSketch()
 }
 
+function syncViewportSelection(): void {
+  const host = container.value
+  if (!host) {
+    return
+  }
+  intersectionRatio.value = measuredViewportRatio(host)
+  if (intersectionRatio.value >= 0.25) {
+    void mountSketch()
+  } else {
+    applyLoopState()
+  }
+}
+
+function handleViewportSelection(): void {
+  if (selectionFrame !== null) {
+    return
+  }
+  selectionFrame = window.requestAnimationFrame(() => {
+    selectionFrame = null
+    syncViewportSelection()
+  })
+}
+
 watch(
   () => [props.enabled, props.reducedMotion] as const,
   () => {
@@ -217,6 +287,7 @@ onMounted(() => {
     return
   }
   document.addEventListener("visibilitychange", handleVisibility)
+  window.addEventListener("scroll", handleViewportSelection, { passive: true })
   if (typeof IntersectionObserver === "undefined") {
     nearViewport.value = true
     intersectionRatio.value = 1
@@ -256,8 +327,17 @@ onBeforeUnmount(() => {
     clearTimeout(resizeTimer)
     resizeTimer = null
   }
+  if (selectionFrame !== null) {
+    window.cancelAnimationFrame(selectionFrame)
+    selectionFrame = null
+  }
+  if (setupFrame !== null) {
+    window.cancelAnimationFrame(setupFrame)
+    setupFrame = null
+  }
   creativeActiveLoop.release(props.ownerId)
   document.removeEventListener("visibilitychange", handleVisibility)
+  window.removeEventListener("scroll", handleViewportSelection)
   preloadObserver?.disconnect()
   preloadObserver = null
   visibilityObserver?.disconnect()

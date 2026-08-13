@@ -1,8 +1,12 @@
 <script setup lang="ts">
-import { onMounted, ref } from "vue"
+import { defineAsyncComponent, onMounted, ref } from "vue"
 
 import { numberValue, stringValue } from "../rendering"
-import P5CanvasHost from "./P5CanvasHost.vue"
+
+// The SSR poster and summary stay synchronous. Only the trusted local canvas
+// host is resolved after runtimeEnabled becomes true on the client; no content
+// value participates in module resolution.
+const P5CanvasHost = defineAsyncComponent(() => import("./P5CanvasHost.vue"))
 
 type Props = {
   blockId: string

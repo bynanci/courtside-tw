@@ -27,6 +27,9 @@ export default defineNuxtConfig({
     }
   },
   css: ["~/assets/css/main.css", "~/assets/css/article.css"],
+  nitro: {
+    compressPublicAssets: true
+  },
   hooks: {
     "build:manifest": removeCreativeRuntimePrefetch
   },

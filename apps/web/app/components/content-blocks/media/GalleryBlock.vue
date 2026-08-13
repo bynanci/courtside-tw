@@ -33,6 +33,7 @@ const items = computed(() =>
         :alt="item.altText"
         :width="item.width"
         :height="item.height"
+        :style="mediaFallbackStyle(item.width, item.height)"
         loading="lazy"
         decoding="async"
         @error="props.markAssetFailed(`${props.blockId}-${index}`)"

@@ -1,18 +1,18 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t034-t041-us2-beta-completion",
-  "graph_version": 4,
+  "graph_version": 5,
   "run_id": "courtside-tw-us2-beta-completion-20260813",
   "status": "running",
-  "iteration": 4,
+  "iteration": 5,
   "started_at": "2026-08-13T07:10:36Z",
-  "updated_at": "2026-08-13T08:52:02Z",
+  "updated_at": "2026-08-13T09:43:59Z",
   "current_frontier": [
     "p-exact-head"
   ],
   "blocked_nodes": [],
   "terminal_state": null,
-  "next_action": "Commit the candidate task and evidence state, publish a draft PR, and read CI, Security, component, browser, axe, lifecycle, Lighthouse, mergeability, and review-thread state live for the observed PR head.",
+  "next_action": "Publish exactly one replacement PR head, then read mergeability, reviews, unresolved threads, CI, Security, component, browser, axe, lifecycle, and Lighthouse state live for that observed head without committing its mutable receipt.",
   "events": [
     {
       "event_id": "evt-us2-beta-001-tests-first-baseline",
@@ -367,6 +367,120 @@
         "input": 0,
         "output": 0,
         "total": 8000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-us2-beta-005-browser-security-exact-head-remediation",
+      "at": "2026-08-13T09:43:59Z",
+      "actor": "codex-supervisor",
+      "type": "exact_head_failure_local_remediation_and_reverification",
+      "base_graph_version": 4,
+      "new_graph_version": 5,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "historical_exact_head_failures/2bac1f8",
+            "value": {
+              "head_sha": "2bac1f87e200442c773ca1de9dbd89b842630f6a",
+              "ci_run_id": 31684079435,
+              "browser_job_id": 94396212881,
+              "security_run_id": 31684079408,
+              "dependency_job_id": 94395960013,
+              "failed_gates": ["browser acceptance and performance budgets", "dependency audit"]
+            }
+          },
+          {
+            "op": "add",
+            "path": "remediation/browser_runtime",
+            "value": "Correct AbortSignal and once listener accounting, preserve frozen media geometry, and use deterministic single-loop creative ownership with post-setup activation."
+          },
+          {
+            "op": "add",
+            "path": "remediation/security_and_performance",
+            "value": "Replace vulnerable LHCI with pinned direct Lighthouse, fail closed on every run, expose public article crawl paths, precompress assets, and defer only the fixed trusted P5 host until client runtime enablement."
+          },
+          {
+            "op": "replace",
+            "path": "nodes/a-review-fix/status",
+            "value": "done"
+          },
+          {
+            "op": "replace",
+            "path": "nodes/p-exact-head/status",
+            "value": "running"
+          },
+          {
+            "op": "replace",
+            "path": "frontier",
+            "value": ["p-exact-head"]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t034-t041-us2-beta-exact-head-remediation-20260813.json",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31684079435",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31684079408"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Historical 2bac1f8 source attribution",
+          "level": "P3",
+          "result": "success",
+          "subject_commit": "2bac1f87e200442c773ca1de9dbd89b842630f6a",
+          "details": "All reported CI and Security jobs verified this immutable predecessor head before execution."
+        },
+        {
+          "proof": "Historical browser and dependency gates",
+          "level": "P3",
+          "result": "failure",
+          "subject_commit": "2bac1f87e200442c773ca1de9dbd89b842630f6a",
+          "details": "Browser acceptance exposed listener-accounting, media-geometry, and creative-owner failures; dependency audit exposed two high-severity LHCI transitive advisories."
+        },
+        {
+          "proof": "Actual local Chromium acceptance after remediation",
+          "level": "P2",
+          "result": "success",
+          "details": "US1 passed 3/3, US2 23/23, combined 26/26, and full regression 30/30."
+        },
+        {
+          "proof": "Actual local Lighthouse after remediation",
+          "level": "P2",
+          "result": "success",
+          "details": "Both public reader URLs passed three-run median LCP, CLS, and TBT budgets plus perfect accessibility and SEO scores."
+        },
+        {
+          "proof": "Local workspace and dependency acceptance",
+          "level": "P2",
+          "result": "success",
+          "details": "make verify, frozen install, full development dependency audit, bundle budget, typecheck, and diff hygiene passed."
+        },
+        {
+          "proof": "Replacement live exact-head protected acceptance",
+          "level": "P3",
+          "result": "pending",
+          "details": "The replacement PR head is intentionally not serialized. CI, Security, browser, Lighthouse, mergeability, and thread state must be read live after this commit."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:us2-beta-completion",
+        "version": "us2-beta-v4",
+        "retrieval_ids": ["wm:project:courtside-tw:us2-beta-completion"],
+        "evidence_refs": [
+          ".loop/evidence/t034-t041-us2-beta-exact-head-remediation-20260813.json"
+        ],
+        "next_review_at": "2026-08-13",
+        "blocker": "Replacement live exact-head GitHub evidence is pending."
+      },
+      "failure_signature": "PREDECESSOR_BROWSER_RUNTIME_AND_LHCI_SECURITY_FAILURES_REMEDIATED_LOCALLY",
+      "decision": "PUBLISH_ONE_REPLACEMENT_HEAD_AND_REQUIRE_LIVE_EXACT_HEAD_READBACK",
+      "token_usage": {
+        "estimated": 36000,
+        "input": 0,
+        "output": 0,
+        "total": 36000
       },
       "terminal_reason": null
     }

@@ -149,7 +149,6 @@ jobs:
           path: |
             artifacts/web-e2e
             apps/web/artifacts/lighthouse
-            apps/web/.lighthouseci
             apps/web/test-results
             apps/web/playwright-report
           if-no-files-found: warn

@@ -5,6 +5,7 @@ import { expect, test, type Page } from "@playwright/test"
 
 type LifecycleSnapshot = {
   globalListeners: number
+  globalListenerTypes: string[]
   intervals: number
   animationFrames: number
   intersectionTargets: number
@@ -68,11 +69,24 @@ test("Save-Data keeps the creative reader poster-only and transfers zero p5 byte
   expect(requests.some((pathname) => pathname.endsWith("/" + p5Chunk))).toBe(false)
 })
 
-test("twenty client-side article switches leave zero creative lifecycle delta", async ({
+test("twenty client-side article switches leave zero per-instance creative lifecycle delta", async ({
   page
 }) => {
   await page.emulateMedia({ reducedMotion: "no-preference" })
   await page.goto(ordinaryArticlePath, { waitUntil: "networkidle" })
+  await expect(page.locator("canvas")).toHaveCount(0)
+
+  // Import p5 once before taking the per-instance baseline. Its ESM bootstrap
+  // installs one immutable set of browser event handlers; modules cannot be
+  // unloaded during SPA navigation, so the leak gate must distinguish that
+  // one-time module state from listeners owned by each canvas instance.
+  await page.getByTestId("article-previous").click()
+  await expect(page).toHaveURL(/\/articles\/opening-night/)
+  await page.getByTestId("generative-canvas").first().scrollIntoViewIfNeeded()
+  await expect.poll(() => page.locator("canvas").count()).toBeGreaterThan(0)
+  await page.getByTestId("article-next").click()
+  await expect(page).toHaveURL(/\/articles\/courtside-notes/)
+  await expect(page.getByTestId("creative-runtime")).toHaveCount(0)
   await expect(page.locator("canvas")).toHaveCount(0)
   const baseline = await lifecycleSnapshot(page)
 
@@ -157,12 +171,16 @@ async function lifecycleSnapshot(page: Page): Promise<LifecycleSnapshot> {
 
 async function installLifecycleCounters(page: Page): Promise<void> {
   await page.addInitScript(() => {
-    const globalListenerRecords: Array<{
+    type GlobalListenerRecord = {
       target: EventTarget
       type: string
       listener: EventListenerOrEventListenerObject | null
+      nativeListener: EventListenerOrEventListenerObject
       capture: boolean
-    }> = []
+      signal: AbortSignal | null
+      abortHandler: EventListener | null
+    }
+    const globalListenerRecords: GlobalListenerRecord[] = []
     const intervalIds = new Set<number>()
     const animationFrameIds = new Set<number>()
     let intersectionTargets = 0
@@ -170,25 +188,79 @@ async function installLifecycleCounters(page: Page): Promise<void> {
 
     const originalAddEventListener = EventTarget.prototype.addEventListener
     const originalRemoveEventListener = EventTarget.prototype.removeEventListener
+    const removeGlobalListenerRecord = (
+      record: GlobalListenerRecord,
+      removeNativeListener: boolean
+    ): void => {
+      const index = globalListenerRecords.indexOf(record)
+      if (index < 0) {
+        return
+      }
+      globalListenerRecords.splice(index, 1)
+      if (removeNativeListener) {
+        originalRemoveEventListener.call(
+          record.target,
+          record.type,
+          record.nativeListener,
+          record.capture
+        )
+      }
+      if (record.signal && record.abortHandler) {
+        originalRemoveEventListener.call(record.signal, "abort", record.abortHandler)
+      }
+    }
     EventTarget.prototype.addEventListener = function (
       type: string,
       listener: EventListenerOrEventListenerObject | null,
       options?: boolean | AddEventListenerOptions
     ): void {
       const capture = typeof options === "boolean" ? options : options?.capture === true
-      if (
-        (this === window || this === document) &&
-        !globalListenerRecords.some(
-          (record) =>
-            record.target === this &&
-            record.type === type &&
-            record.listener === listener &&
-            record.capture === capture
-        )
-      ) {
-        globalListenerRecords.push({ target: this, type, listener, capture })
+      if ((this !== window && this !== document) || listener === null) {
+        originalAddEventListener.call(this, type, listener, options)
+        return
       }
-      originalAddEventListener.call(this, type, listener, options)
+      const existing = globalListenerRecords.find(
+        (record) =>
+          record.target === this &&
+          record.type === type &&
+          record.listener === listener &&
+          record.capture === capture
+      )
+      if (existing) {
+        originalAddEventListener.call(this, type, existing.nativeListener, options)
+        return
+      }
+      const once = typeof options !== "boolean" && options?.once === true
+      const signal = typeof options !== "boolean" ? (options?.signal ?? null) : null
+      if (signal?.aborted) {
+        originalAddEventListener.call(this, type, listener, options)
+        return
+      }
+      const record: GlobalListenerRecord = {
+        target: this,
+        type,
+        listener,
+        nativeListener: listener,
+        capture,
+        signal,
+        abortHandler: null
+      }
+      if (once) {
+        record.nativeListener = (event: Event) => {
+          removeGlobalListenerRecord(record, false)
+          if (typeof listener === "function") {
+            listener.call(this, event)
+          } else {
+            listener.handleEvent(event)
+          }
+        }
+      }
+      originalAddEventListener.call(this, type, record.nativeListener, options)
+      globalListenerRecords.push(record)
+      if (signal) {
+        record.abortHandler = () => removeGlobalListenerRecord(record, true)
+        originalAddEventListener.call(signal, "abort", record.abortHandler, { once: true })
+      }
     }
     EventTarget.prototype.removeEventListener = function (
       type: string,
@@ -204,7 +276,11 @@ async function installLifecycleCounters(page: Page): Promise<void> {
           record.capture === capture
       )
       if (index >= 0) {
-        globalListenerRecords.splice(index, 1)
+        const record = globalListenerRecords[index]
+        if (record) {
+          removeGlobalListenerRecord(record, true)
+        }
+        return
       }
       originalRemoveEventListener.call(this, type, listener, options)
     }
@@ -311,6 +387,9 @@ async function installLifecycleCounters(page: Page): Promise<void> {
     ).__courtsideT041Lifecycle = {
       snapshot: () => ({
         globalListeners: globalListenerRecords.length,
+        globalListenerTypes: globalListenerRecords
+          .map((record) => `${record.target === window ? "window" : "document"}:${record.type}`)
+          .sort(),
         intervals: intervalIds.size,
         animationFrames: animationFrameIds.size,
         intersectionTargets,

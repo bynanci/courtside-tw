@@ -1,6 +1,11 @@
 import { createApiClient } from "@courtside/api-client"
 
-import { parsePublicIssueSlug } from "../../app/features/issues/public-issue-contract"
+import {
+  parsePublicArticleSlug,
+  parsePublicIssueSlug
+} from "../../app/features/issues/public-issue-contract"
+
+const MAXIMUM_CONCURRENT_ISSUE_READS = 4
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event)
@@ -15,6 +20,25 @@ export default defineEventHandler(async (event) => {
     if (response.ok && data) {
       for (const issue of data.items) {
         paths.push("/issues/" + parsePublicIssueSlug(issue.slug))
+      }
+      const details = await mapWithConcurrency(
+        data.items,
+        MAXIMUM_CONCURRENT_ISSUE_READS,
+        async (issue) => {
+          const issueSlug = parsePublicIssueSlug(issue.slug)
+          const result = await client.GET("/api/v1/public/issues/{issueSlug}", {
+            params: { path: { issueSlug } }
+          })
+          return result.response.ok && result.data ? result.data : null
+        }
+      )
+      for (const detail of details) {
+        if (!detail) continue
+        for (const section of detail.sections) {
+          for (const article of section.articles) {
+            paths.push("/articles/" + parsePublicArticleSlug(article.slug))
+          }
+        }
       }
     }
   } catch {
@@ -45,6 +69,29 @@ function normalizedSiteUrl(value: string): string {
     // Fall back to the documented public origin without returning caller input.
   }
   return "https://courtside.tw"
+}
+
+async function mapWithConcurrency<Input, Output>(
+  values: Input[],
+  concurrency: number,
+  mapper: (value: Input) => Promise<Output>
+): Promise<Array<Output | null>> {
+  const results: Array<Output | null> = Array.from({ length: values.length }, () => null)
+  let nextIndex = 0
+  const workers = Array.from({ length: Math.min(concurrency, values.length) }, async () => {
+    while (nextIndex < values.length) {
+      const index = nextIndex
+      nextIndex += 1
+      try {
+        const value = values[index]
+        if (value !== undefined) results[index] = await mapper(value)
+      } catch {
+        // One unavailable issue must not remove the remaining public sitemap entries.
+      }
+    }
+  })
+  await Promise.all(workers)
+  return results
 }
 
 function normalizedApiBaseUrl(value: string): string {
