@@ -369,10 +369,10 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
                     mime_type, byte_size, width, height
                 )
                 SELECT ?,
-                       'extra-' || lpad(series::text, 4, '0'),
-                       'published/variant-bound/' || ? || '/' || series || '.webp',
+                       'extra-' || lpad(generated.value::text, 4, '0'),
+                       'published/variant-bound/' || ? || '/' || generated.value || '.webp',
                        repeat('c', 64), 'image/webp', 1024, 1200, 675
-                FROM generate_series(1, 5001) AS series
+                FROM generate_series(1, 5001) AS generated(value)
                 """, assetId, assetId.toString());
 
         var media = new JdbcEditorialArticleRepository(jdbcTemplate)
