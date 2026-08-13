@@ -44,7 +44,7 @@ final class ContentDocumentExtractorTest {
         ExtractedContent extracted = new ContentDocumentExtractor().extract(document);
 
         assertEquals("""
-                第一節 連結文字
+                第一節連結文字
                 文章標題
                 項目一
                 項目二
