@@ -66,6 +66,7 @@ type DocumentNavigationEntry = {
 }
 
 const RELOAD_GUARD_ATTRIBUTE = "data-reader-reload-restoration-handled"
+const READER_PROGRESS_WRITE_INTERVAL_MS = 250
 
 const route = useRoute()
 const config = useRuntimeConfig()
@@ -162,6 +163,7 @@ let reloadLifecycleReady = false
 let reloadReleaseScheduled = false
 let reloadChosenAction: "continue" | "start-over" | null = null
 let previousScrollRestoration: "auto" | "manual" | null = null
+let progressSaveTimer: number | null = null
 
 useHead(() => {
   const current = article.value
@@ -315,12 +317,7 @@ function safeInlineHref(value: unknown): string | null {
 }
 
 function assetMediaUrl(assetId: unknown, variant = "inline"): string {
-  if (typeof assetId !== "string" || !article.value) {
-    return ""
-  }
-  const media = article.value.media.find(
-    (candidate) => candidate.assetId === assetId && candidate.variant === variant
-  )
+  const media = assetMedia(assetId, variant)
   if (!media) {
     return ""
   }
@@ -329,6 +326,28 @@ function assetMediaUrl(assetId: unknown, variant = "inline"): string {
   } catch {
     return ""
   }
+}
+
+function assetMedia(
+  assetId: unknown,
+  variant = "inline"
+): PublicArticleProjection["media"][number] | null {
+  if (typeof assetId !== "string" || !article.value) {
+    return null
+  }
+  return (
+    article.value.media.find(
+      (candidate) => candidate.assetId === assetId && candidate.variant === variant
+    ) ?? null
+  )
+}
+
+function assetMediaWidth(assetId: unknown, variant = "inline"): number | undefined {
+  return assetMedia(assetId, variant)?.width
+}
+
+function assetMediaHeight(assetId: unknown, variant = "inline"): number | undefined {
+  return assetMedia(assetId, variant)?.height
 }
 
 const CONTRIBUTOR_ROLE_LABELS: Record<string, string> = {
@@ -513,7 +532,10 @@ function handleCreativeScroll(): void {
 
 function handleReaderScroll(): void {
   handleCreativeScroll()
-  saveReadingProgress()
+  if (reloadGuardActive && reloadResumeChoicePending && window.scrollY > 0) {
+    releaseReloadScrollGuard()
+  }
+  scheduleReadingProgressSave()
 }
 
 function observeCreative(): void {
@@ -623,6 +645,25 @@ function saveReadingProgress(): void {
   readingProgress.save(storage, context, location)
 }
 
+function scheduleReadingProgressSave(): void {
+  if (typeof window === "undefined" || progressSaveTimer !== null) {
+    return
+  }
+  progressSaveTimer = window.setTimeout(() => {
+    progressSaveTimer = null
+    saveReadingProgress()
+  }, READER_PROGRESS_WRITE_INTERVAL_MS)
+}
+
+function flushReadingProgressSave(): void {
+  if (typeof window === "undefined" || progressSaveTimer === null) {
+    return
+  }
+  window.clearTimeout(progressSaveTimer)
+  progressSaveTimer = null
+  saveReadingProgress()
+}
+
 function loadResumeProgress(): void {
   const storage = browserProgressStorage()
   const context = readingContext.value
@@ -631,7 +672,7 @@ function loadResumeProgress(): void {
     return
   }
   if (!context) {
-    if (articleUnavailable.value) {
+    if (articleSlugValid && articleUnavailable.value) {
       readingProgress.clearUnavailable(storage, articleSlug)
     }
     markReloadProgressLoaded(false)
@@ -816,6 +857,7 @@ function releaseReloadScrollGuard(): void {
 }
 
 function handleReaderPageHide(): void {
+  flushReadingProgressSave()
   releaseReloadScrollGuard()
 }
 
@@ -877,7 +919,7 @@ onMounted(() => {
       : "full"
     interactiveEnabled.value = motionMode.value === "full"
     window.addEventListener("scroll", handleReaderScroll, { passive: true })
-    window.addEventListener("beforeunload", saveReadingProgress)
+    window.addEventListener("beforeunload", flushReadingProgressSave)
     window.addEventListener("pagehide", handleReaderPageHide)
   }
   document.addEventListener("scroll", handleReaderScroll, { passive: true, capture: true })
@@ -909,8 +951,9 @@ onBeforeUnmount(() => {
   document.removeEventListener("scroll", handleReaderScroll, true)
   document.removeEventListener("visibilitychange", syncRuntimeStates)
   window.removeEventListener("scroll", handleReaderScroll)
-  window.removeEventListener("beforeunload", saveReadingProgress)
+  window.removeEventListener("beforeunload", flushReadingProgressSave)
   window.removeEventListener("pagehide", handleReaderPageHide)
+  flushReadingProgressSave()
   releaseReloadScrollGuard()
   stopCreativeVisibilityWatch()
 })
@@ -1114,6 +1157,18 @@ onBeforeUnmount(() => {
                   )
                 "
                 :alt="stringValue(payloadFor(block).altText)"
+                :width="
+                  assetMediaWidth(
+                    payloadFor(block).assetId,
+                    stringValue(payloadFor(block).variant) || 'inline'
+                  )
+                "
+                :height="
+                  assetMediaHeight(
+                    payloadFor(block).assetId,
+                    stringValue(payloadFor(block).variant) || 'inline'
+                  )
+                "
                 loading="lazy"
                 @error="markAssetFailed(block.id)"
               />

@@ -1,16 +1,16 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t039-progress-remediation",
-  "graph_version": 2,
+  "graph_version": 3,
   "run_id": "courtside-tw-t039-progress-remediation-20260812",
   "status": "complete_and_evidenced",
-  "iteration": 2,
+  "iteration": 3,
   "started_at": "2026-08-12T14:50:00Z",
-  "updated_at": "2026-08-12T16:40:00Z",
+  "updated_at": "2026-08-13T01:07:32Z",
   "current_frontier": ["s-t039-complete"],
   "blocked_nodes": [],
   "terminal_state": "success",
-  "next_action": "Review and merge PR #84 through the protected workflow, then read back authoritative main; no further T039 implementation is required.",
+  "next_action": "Update onto authoritative post-PR-83 main, then require live expected-head CI, Security, browser, review-thread and mergeability readback before protected merge.",
   "events": [
     {
       "event_id": "evt-t039-progress-remediation-001",
@@ -21,14 +21,14 @@
       "new_graph_version": 1,
       "graph_delta": {
         "operations": [
-          {"op": "add", "path": "graph/nodes/a-t039-tests-first/status", "value": "done"},
-          {"op": "add", "path": "graph/nodes/p-t039-red/status", "value": "done"},
-          {"op": "add", "path": "graph/nodes/a-t039-implementation/status", "value": "done"},
-          {"op": "add", "path": "graph/nodes/p-t039-local/status", "value": "done"},
-          {"op": "add", "path": "graph/nodes/p-t039-exact-head/status", "value": "done"},
-          {"op": "add", "path": "graph/nodes/m-t039-memory/status", "value": "done"},
-          {"op": "add", "path": "graph/nodes/s-t039-complete/status", "value": "done"},
-          {"op": "add", "path": "graph/terminal_state", "value": "success"}
+          { "op": "add", "path": "graph/nodes/a-t039-tests-first/status", "value": "done" },
+          { "op": "add", "path": "graph/nodes/p-t039-red/status", "value": "done" },
+          { "op": "add", "path": "graph/nodes/a-t039-implementation/status", "value": "done" },
+          { "op": "add", "path": "graph/nodes/p-t039-local/status", "value": "done" },
+          { "op": "add", "path": "graph/nodes/p-t039-exact-head/status", "value": "done" },
+          { "op": "add", "path": "graph/nodes/m-t039-memory/status", "value": "done" },
+          { "op": "add", "path": "graph/nodes/s-t039-complete/status", "value": "done" },
+          { "op": "add", "path": "graph/terminal_state", "value": "success" }
         ]
       },
       "evidence_refs": [
@@ -99,7 +99,7 @@
         "RELOAD_RESTORATION_OVERRIDES_STABLE_ANCHOR"
       ],
       "decision": "MARK_T039_COMPLETE_AND_EVIDENCED",
-      "token_usage": {"estimated": 52000, "input": 0, "output": 0, "total": 52000},
+      "token_usage": { "estimated": 52000, "input": 0, "output": 0, "total": 52000 },
       "terminal_reason": "Every T039 criterion has attributable tests-first, implementation, exact-head browser/Security and independent-review proof; only T039 is checked."
     },
     {
@@ -163,8 +163,139 @@
       },
       "failure_signature": "UNATTRIBUTED_INDEPENDENT_REVIEW_CLAIM",
       "decision": "RETRACT_REVIEW_COUNT_PRESERVE_EXECUTABLE_T039_COMPLETION",
-      "token_usage": {"estimated": 1800, "input": 0, "output": 0, "total": 1800},
+      "token_usage": { "estimated": 1800, "input": 0, "output": 0, "total": 1800 },
       "terminal_reason": "The unsupported reviewer count is explicitly retracted without changing T039 completion, which rests on attributable executable proof."
+    },
+    {
+      "event_id": "evt-t039-progress-remediation-003",
+      "at": "2026-08-13T01:07:32Z",
+      "actor": "codex-supervisor",
+      "type": "review_findings_and_merge_order_reconciliation",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph/nodes/p-t039-exact-head/label",
+            "value": "Preserve the historical implementation baseline and require live protected-head verification"
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/p-t039-exact-head/confidence",
+            "value": {
+              "score": 0.95,
+              "basis": "The earlier implementation head proves the original T039 core, while the current branch repairs four later review findings; CI, browser, Security and thread state must be evaluated live at the mutable expected merge head.",
+              "evidence_refs": [
+                ".loop/evidence/t039-progress-proof.json",
+                ".loop/evidence/t039-review-remediation-20260813.json"
+              ]
+            }
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/p-t039-exact-head/config/claim",
+            "value": "Historical executable proof remains attributable, and the current review-remediated head may merge only when every live protected gate matches expected_head_sha."
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/p-t039-exact-head/config/method",
+            "value": "Retain immutable historical receipts, then read CI, Security, browser jobs, mergeability and unresolved threads live for the mutable expected merge head."
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/m-t039-memory/confidence",
+            "value": {
+              "score": 0.95,
+              "basis": "Memory v3 preserves the historical T039 proof, records the four review repairs and refuses to serialize a superseded head as the live merge gate.",
+              "evidence_refs": [
+                ".loop/memory/t039-progress-completion.json",
+                ".loop/evidence/t039-review-remediation-20260813.json"
+              ]
+            }
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/s-t039-complete/confidence",
+            "value": {
+              "score": 0.95,
+              "basis": "T039 remains the only completed task after four review-scoped runtime repairs; protected merge still requires a live expected-head CI, Security, browser and thread readback.",
+              "evidence_refs": [
+                ".loop/evidence/t039-progress-proof.json",
+                ".loop/evidence/t039-progress-proof-attribution-correction.json",
+                ".loop/evidence/t039-review-remediation-20260813.json"
+              ]
+            }
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t039-review-remediation-20260813.json",
+        "https://github.com/bynanci/courtside-tw/pull/83",
+        "https://github.com/bynanci/courtside-tw/pull/84",
+        "review-thread:PRRT_kwDOTvfycs6YpwiG",
+        "review-thread:PRRT_kwDOTvfycs6YpwiI",
+        "review-thread:PRRT_kwDOTvfycs6YpwiL",
+        "review-thread:PRRT_kwDOTvfycs6YpwiO"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Historical PR 84 head 8500e0f workflow classification",
+          "level": "P3",
+          "result": "superseded",
+          "classification": "EXACT_TREE_PASSED_BUT_LATER_REVIEW_FINDINGS_BLOCK_MERGE",
+          "ci_run": 31618862794,
+          "security_run": 31618862812,
+          "browser_job": 94188575681
+        },
+        {
+          "proof": "Authoritative post-PR-83 main readback",
+          "level": "P3",
+          "result": "success",
+          "main_commit": "4bcc604237345fa8e25fa4f7eaaf5081a692bdf8",
+          "parents": [
+            "ed12e73aea918797a9470140e9730c5a1905d4f7",
+            "a30880fb4b2983b6bf5577d40457c09312385737"
+          ],
+          "task_state": "T034-T041 all unchecked before PR 84 integration"
+        },
+        {
+          "proof": "Review-scoped local verification",
+          "level": "P2",
+          "result": "success",
+          "checks": [
+            "prettier",
+            "eslint",
+            "57/57 web tests",
+            "nuxt typecheck",
+            "nuxt production build",
+            "11-test Playwright discovery"
+          ],
+          "browser_execution": "environment unavailable; live exact-head CI required"
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:t039-progress-completion",
+        "version": "t039-progress-completion-v3",
+        "previous_version": "t039-progress-completion-v2",
+        "evidence_refs": [
+          ".loop/evidence/t039-progress-proof.json",
+          ".loop/evidence/t039-progress-proof-attribution-correction.json",
+          ".loop/evidence/t039-review-remediation-20260813.json"
+        ],
+        "next_review_at": "2026-08-20",
+        "blocker": "No remaining T039 criterion blocker after the focused repairs; the mutable PR head still requires live protected-gate readback."
+      },
+      "resolved_failure_signatures": [
+        "UNTHROTTLED_SCROLL_PERSISTENCE",
+        "LAZY_IMAGE_GEOMETRY_SHIFT",
+        "MALFORMED_ROUTE_FALLBACK_CLEANUP",
+        "LATE_LOAD_MANUAL_SCROLL_SNAPBACK"
+      ],
+      "decision": "MERGE_PR83_FIRST_THEN_REMEDIATE_ONLY_T039",
+      "token_usage": { "estimated": 5000, "input": 0, "output": 0, "total": 5000 },
+      "terminal_reason": "The four review findings are repaired without expanding beyond T039; the expected current head must pass live CI, Security, browser and review gates before protected merge."
     }
   ]
 }

@@ -4,10 +4,15 @@
   "scope": "project",
   "kind": "task_state",
   "title": "T039 stable-anchor reading progress is complete and evidenced on PR 84",
-  "summary": "PR 84 implementation head 9351bed closes T039 with article/revision/block identity, bounded offsets, explicit Continue or Start over, stale-revision and unavailable-content invalidation, a 20-article attributable storage cap, rollback-safe recovery, and document-scoped reload restoration. Local web checks, exact-head CI 434 with 18/18 browser journeys and Security 435 pass; only protected merge and authoritative main read-back remain.",
+  "summary": "PR 84 closes only T039 with article/revision/block identity, bounded offsets, explicit Continue or Start over, stale-revision and unavailable-content invalidation, a 20-article attributable storage cap, rollback-safe recovery and document-scoped reload restoration. Four later review findings are repaired with focused regressions for throttled persistence, intrinsic media geometry, malformed-route isolation and manual-scroll guard release. Historical executable receipts remain attributable, while protected merge must use live expected-head CI, Security, browser and thread readback.",
   "claims": [
     {
-      "text": "T039 is complete-and-evidenced on PR 84 head 9351bedce1e990ff618bf1c81028bbd8f454bfab.",
+      "text": "T039 is the only T034-T041 task completed by PR 84; the mutable review-remediated head is authorized only through live protected-gate readback.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "PR 83 merged first as main@4bcc604237345fa8e25fa4f7eaaf5081a692bdf8 with T034-T041 unchecked; PR 84 then incorporated that authoritative main before retaining completion only for T039.",
       "class": "CONFIRMED",
       "confidence": "high"
     },
@@ -22,7 +27,12 @@
       "confidence": "high"
     },
     {
-      "text": "Exact-head CI 434 and Security 435 pass; the browser job passes 18 of 18 journeys including six focused T039 reader-progress journeys.",
+      "text": "The review-remediated branch adds focused coverage for scroll-write throttling and lifecycle flush, intrinsic lazy-image dimensions, malformed-route cleanup isolation and manual-scroll reload-guard release.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Historical implementation-head CI 434 and Security 435 passed with 18 of 18 browser journeys, but those receipts are a baseline rather than the live merge gate because later review findings changed production and test blobs.",
       "class": "CONFIRMED",
       "confidence": "high"
     },
@@ -42,38 +52,51 @@
   "confidence_basis": [
     ".loop/evidence/t039-progress-proof.json",
     ".loop/evidence/t039-progress-proof-attribution-correction.json",
+    ".loop/evidence/t039-review-remediation-20260813.json",
+    "https://github.com/bynanci/courtside-tw/pull/83",
     "9351bedce1e990ff618bf1c81028bbd8f454bfab",
     "https://github.com/bynanci/courtside-tw/actions/runs/31617186365",
     "https://github.com/bynanci/courtside-tw/actions/runs/31617186277"
   ],
   "volatility": "high",
-  "as_of": "2026-08-12",
+  "as_of": "2026-08-13",
   "source_refs": [
     ".loop/evidence/t039-tests-first-red-20260812.json",
     ".loop/evidence/t039-review-tests-first-red-20260812.json",
     ".loop/evidence/t039-progress-proof.json",
     ".loop/evidence/t039-progress-proof-attribution-correction.json",
+    ".loop/evidence/t039-review-remediation-20260813.json",
     "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    "https://github.com/bynanci/courtside-tw/pull/83",
     "https://github.com/bynanci/courtside-tw/pull/84"
   ],
-  "entities": ["courtside-tw", "T039", "PR 84", "9351bed", "CI 434", "Security 435"],
+  "entities": [
+    "courtside-tw",
+    "T039",
+    "PR 83",
+    "PR 84",
+    "4bcc604",
+    "9351bed",
+    "CI 434",
+    "Security 435",
+    "review remediation"
+  ],
   "relations": {
-    "supports": [
-      "wm:project:courtside-tw:us2-t034-t041-implementation-lane"
-    ],
+    "supports": ["wm:project:courtside-tw:us2-t034-t041-implementation-lane"],
     "contradicts": [],
     "supersedes": ["wm:project:courtside-tw:t039-progress-completion@t039-progress-completion-v1"],
     "blocks": [],
     "invalidates": []
   },
-  "next_review_at": "2026-08-19",
+  "next_review_at": "2026-08-20",
   "sensitivity": "internal",
   "retention": "until_superseded",
   "write_receipt": {
     "status": "UPDATED",
-    "version": "t039-progress-completion-v2",
-    "previous_version": "t039-progress-completion-v1",
+    "version": "t039-progress-completion-v3",
+    "previous_version": "t039-progress-completion-v2",
     "written_by": "codex-agent",
-    "correction_evidence_ref": ".loop/evidence/t039-progress-proof-attribution-correction.json"
+    "correction_evidence_ref": ".loop/evidence/t039-review-remediation-20260813.json",
+    "receipt_ref": ".loop/t039-progress-remediation-ledger.json#evt-t039-progress-remediation-003"
   }
 }
