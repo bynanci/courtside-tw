@@ -4,7 +4,7 @@
   "scope": "project",
   "kind": "task_state",
   "title": "T036 deny-by-default content-block renderer registry is reviewable",
-  "summary": "Starting from main@d3efe73, T036 adds a static registry and renderer for the 11 canonical v1 block types. Unknown block types, unsupported block versions and unknown generative presets fail closed to a poster identity plus bounded plain-text summary and emit deduplicated telemetry codes. T039 and all unrelated task state remain unchanged. Exact-head CI, Security and browser evidence are pending on the review branch.",
+  "summary": "Starting from main@d3efe73, T036 adds a static registry and renderer for the 11 canonical v1 block types. Unknown block types, unsupported block versions and unknown generative presets fail closed to a poster identity plus bounded plain-text summary and emit deduplicated telemetry codes. T039 and all unrelated task state remain unchanged. Exact-head CI #452, Security #453 and browser job 94333313832 passed on head 5b1e070; human review and protected merge remain.",
   "claims": [
     {
       "text": "The article page now delegates block rendering to ContentDocumentRenderer.vue through a static registry; content cannot select a module or component.",
@@ -22,7 +22,7 @@
       "confidence": "high"
     },
     {
-      "text": "Local web tests 62/62, lint, typecheck, Prettier and production build pass; local browser execution is unavailable because Chromium is not installed.",
+      "text": "Local web tests 63/63, lint, typecheck, Prettier and production build pass; local browser execution is unavailable because Chromium is not installed.",
       "class": "CONFIRMED",
       "confidence": "high"
     },
@@ -32,12 +32,12 @@
       "confidence": "high"
     },
     {
-      "text": "Protected exact-head CI, Security and browser proof must be read back before T036 can be classified complete-and-evidenced.",
-      "class": "NEEDS_UPDATE",
+      "text": "Protected exact-head CI #452, Security #453 and browser job 94333313832 passed on head 5b1e070; T036 remains reviewable pending human review and protected merge.",
+      "class": "CONFIRMED",
       "confidence": "high"
     }
   ],
-  "status": "needs_update",
+  "status": "reviewable",
   "confidence": "high",
   "confidence_basis": [
     ".loop/evidence/t036-renderer-proof.json",

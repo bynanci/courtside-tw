@@ -6,7 +6,7 @@
   "status": "running",
   "iteration": 2,
   "started_at": "2026-08-09T08:16:20Z",
-  "updated_at": "2026-08-13T03:30:00Z",
+  "updated_at": "2026-08-13T03:23:22Z",
   "current_frontier": [
     "a-t036",
     "p-t036"
@@ -19,7 +19,7 @@
     "a-t041"
   ],
   "terminal_state": "running",
-  "next_action": "Read back exact-head CI, Security and browser proof for the T036 review branch; leave T036 unchecked until protected gates pass.",
+  "next_action": "Human review and protected merge of the T036 review branch; leave T036 unchecked until merge.",
   "events": [
     {
       "event_id": "evt-us2-impl-001-lane-opened",
@@ -150,12 +150,12 @@
           {
             "op": "add",
             "path": ".loop/evidence/t036-renderer-proof.json",
-            "after": "Tests-first and local verification receipt; exact remote gates pending on the review head."
+          "after": "Tests-first, local verification and exact-head protected gate receipt for the T036 review head."
           },
           {
             "op": "add",
             "path": ".loop/memory/t036-content-block-renderer.json",
-            "after": "T036 semantic memory receipt with T039 and unrelated scope guards."
+            "after": "T036 semantic memory receipt with exact-head gate IDs, T039 and unrelated scope guards."
           }
         ]
       },
@@ -199,7 +199,7 @@
           ".loop/evidence/t036-renderer-proof.json"
         ],
         "next_review_at": "2026-08-20",
-        "blocker": "Exact-head CI, Security and browser proof are pending after the review branch is pushed."
+        "blocker": "No protected gate blocker; human review and protected merge remain."
       },
       "failure_signature": "LOCAL_BROWSER_CHROMIUM_UNAVAILABLE",
       "decision": "Implement only T036 on a branch from main@d3efe73; do not change T039 or unrelated task state; open a reviewable PR and stop before protected merge.",
@@ -209,7 +209,65 @@
         "output": 0,
         "total": 0
       },
-      "terminal_reason": "Review lane is ready; protected remote proof and human review remain."
+      "terminal_reason": "Review lane is ready; exact-head protected proof passed and human review remains."
+    },
+    {
+      "event_id": "evt-us2-impl-004-t036-exact-head-proof-readback",
+      "at": "2026-08-13T03:23:22Z",
+      "actor": "codex-agent",
+      "type": "t036_exact_head_proof_readback",
+      "graph_version": 2,
+      "head_sha": "5b1e070ad3f40079470c8a2cc621cef494682820",
+      "proof_receipts": [
+        {
+          "proof": "CI",
+          "run_number": 452,
+          "run_id": 31663528331,
+          "result": "pass"
+        },
+        {
+          "proof": "Security",
+          "run_number": 453,
+          "run_id": 31663528344,
+          "result": "pass"
+        },
+        {
+          "proof": "browser",
+          "job_id": 94333313832,
+          "result": "pass",
+          "details": "Chromium installed; mobile SSR/accessibility journey passed."
+        },
+        {
+          "proof": "review threads",
+          "result": "pass",
+          "count": 0
+        }
+      ],
+      "evidence_refs": [
+        ".loop/evidence/t036-renderer-proof.json",
+        ".loop/memory/t036-content-block-renderer.json",
+        "https://github.com/bynanci/courtside-tw/pull/85"
+      ],
+      "decision": "Exact-head protected proof passed; keep T036 unchecked and stop before merge pending human review.",
+      "terminal_reason": "No evidence-attribution drift remains after exact SHA/run IDs were recorded."
+    },
+    {
+      "event_id": "evt-us2-impl-005-t036-test-count-correction",
+      "at": "2026-08-13T03:23:22Z",
+      "actor": "codex-agent",
+      "type": "evidence_correction",
+      "graph_version": 2,
+      "correction": {
+        "field": "local component regression test count",
+        "previous_receipt": 62,
+        "authoritative_receipt": 63,
+        "reason": "The package test glob includes six T036 tests; the complete command reports 63 total tests and 63 passes."
+      },
+      "evidence_refs": [
+        ".loop/evidence/t036-renderer-proof.json",
+        "apps/web/tests/component/content-blocks/registry.test.ts"
+      ],
+      "decision": "Use 63/63 for the review matrix; no runtime or task-state change."
     }
   ]
 }

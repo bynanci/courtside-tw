@@ -1,9 +1,9 @@
 {
   "schema_version": "courtside-tw/t036-renderer-proof/v1",
   "proof_id": "t036-renderer-proof",
-  "recorded_at": "2026-08-13T03:25:00Z",
-  "result": "REVIEWABLE_PENDING_EXACT_HEAD_GATES",
-  "classification": "implemented-but-pending-protected-gates",
+  "recorded_at": "2026-08-13T03:23:22Z",
+  "result": "REVIEWABLE_EXACT_HEAD_GATES_PASS",
+  "classification": "implemented-protected-gates-pass-pending-human-review",
   "task": "T036",
   "source_of_truth": {
     "repository": "bynanci/courtside-tw",
@@ -19,8 +19,8 @@
     },
     "green": {
       "command": "pnpm --filter @courtside/web run test",
-      "tests": 62,
-      "passed": 62,
+      "tests": 63,
+      "passed": 63,
       "result": "PASS"
     }
   },
@@ -42,17 +42,17 @@
     },
     {
       "criterion": "Existing v1 public article rendering remains regression-free.",
-      "status": "PENDING_EXACT_HEAD_CI_BROWSER",
-      "proof": "Local production build passed; remote browser proof is required because Chromium is unavailable locally."
+      "status": "PASS_EXACT_HEAD_CI_BROWSER",
+      "proof": "CI #452 and browser job 94333313832 passed on head 5b1e070ad3f40079470c8a2cc621cef494682820."
     }
   ],
   "local_verification": {
-    "web_tests": "62/62 PASS",
+    "web_tests": "63/63 PASS",
     "typecheck": "PASS",
     "lint": "PASS",
     "prettier": "PASS",
     "production_build": "PASS",
-    "browser_execution": "BLOCKED_LOCALLY: Playwright Chromium executable is not installed; exact-head CI browser job is required."
+    "browser_execution": "PASS_REMOTE: CI #452 browser job 94333313832 installed Chromium and passed the mobile SSR/accessibility journey; local Chromium remains unavailable."
   },
   "scope_guard": {
     "changed_runtime_scope": [
@@ -72,9 +72,29 @@
     "unrelated_task_state_changed": false
   },
   "exact_head_verification": {
-    "head_commit": "pending_remote_push",
-    "ci": null,
-    "security": null,
-    "browser": null
+    "head_commit": "5b1e070ad3f40079470c8a2cc621cef494682820",
+    "ci": {
+      "workflow": "CI",
+      "run_number": 452,
+      "run_id": 31663528331,
+      "conclusion": "success"
+    },
+    "security": {
+      "workflow": "Security",
+      "run_number": 453,
+      "run_id": 31663528344,
+      "conclusion": "success"
+    },
+    "browser": {
+      "job_id": 94333313832,
+      "conclusion": "success",
+      "steps": [
+        "Install Playwright Chromium",
+        "Run mobile SSR and accessibility journey"
+      ]
+    },
+    "review_threads": 0,
+    "review_submissions": 0,
+    "discussion_comments": 0
   }
 }
