@@ -19,6 +19,39 @@ test("SSR renders article blocks and generative poster without JavaScript", asyn
     "data-fallback",
     "true"
   )
+  await expect(page.locator('link[rel="canonical"]')).toHaveAttribute(
+    "href",
+    "https://courtside.test/articles/opening-night"
+  )
+  await expect(page.locator('meta[property="article:published_time"]')).toHaveAttribute(
+    "content",
+    "2026-08-01T00:00:00Z"
+  )
+  await expect(page.getByTestId("article-published-at")).toHaveAttribute(
+    "datetime",
+    "2026-08-01T00:00:00Z"
+  )
+  await expect(page.getByTestId("article-updated-at")).toHaveAttribute(
+    "datetime",
+    "2026-08-02T00:00:00Z"
+  )
+  await expect(page.getByTestId("article-media-attribution")).toHaveCount(5)
+  await expect(page.getByTestId("article-media-attribution").first()).toContainText(
+    "權利：Courtside TW"
+  )
+  const unstableServerRenderedMedia = await page
+    .locator('[data-testid="article-document"] img')
+    .evaluateAll((images) =>
+      images.flatMap((image) => {
+        const width = Number(image.getAttribute("width"))
+        const height = Number(image.getAttribute("height"))
+        const aspectRatio = getComputedStyle(image).aspectRatio
+        return (width > 0 && height > 0) || (aspectRatio !== "auto" && aspectRatio !== "")
+          ? []
+          : [image.getAttribute("src") ?? "unknown"]
+      })
+    )
+  expect(unstableServerRenderedMedia).toEqual([])
   await expect(page.locator("canvas")).toHaveCount(0)
   await expect(page.getByTestId("article-toc")).toBeVisible()
 

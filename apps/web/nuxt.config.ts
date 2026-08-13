@@ -1,3 +1,5 @@
+import { removeCreativeRuntimePrefetch } from "./config/creative-resource-hints"
+
 export default defineNuxtConfig({
   ssr: true,
   devtools: { enabled: false },
@@ -24,7 +26,10 @@ export default defineNuxtConfig({
       sessionStore: "memory"
     }
   },
-  css: ["~/assets/css/main.css"],
+  css: ["~/assets/css/main.css", "~/assets/css/article.css"],
+  hooks: {
+    "build:manifest": removeCreativeRuntimePrefetch
+  },
   app: {
     head: {
       htmlAttrs: { lang: "zh-Hant-TW" },

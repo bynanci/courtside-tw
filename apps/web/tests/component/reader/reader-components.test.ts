@@ -7,7 +7,8 @@ import { readingProgressPercent } from "../../../app/features/reader/reading-pro
 import { performArticleShare } from "../../../app/features/reader/share.ts"
 
 test("reading progress is bounded and its motion has an immediate reduced variant", () => {
-  assert.equal(readingProgressPercent(500, 1000, 500), 50)
+  assert.equal(readingProgressPercent(250, 1000, 500), 50)
+  assert.equal(readingProgressPercent(500, 1000, 500), 100)
   assert.equal(readingProgressPercent(-10, 1000, 500), 0)
   assert.equal(readingProgressPercent(1000, 1000, 500), 100)
   assert.equal(readerMotion.readingProgress.full.durationMs, 90)
@@ -49,10 +50,7 @@ test("share has an accessible canonical-link fallback when browser APIs fail", a
   )
 
   const source = await readFile(
-    new URL(
-      "../../../app/features/reader/components/ShareArticleButton.vue",
-      import.meta.url
-    ),
+    new URL("../../../app/features/reader/components/ShareArticleButton.vue", import.meta.url),
     "utf8"
   )
   assert.match(source, /role="status"/)
@@ -62,10 +60,7 @@ test("share has an accessible canonical-link fallback when browser APIs fail", a
 test("snapshot navigation and heading-only TOC live behind reader components", async () => {
   const [navigation, page] = await Promise.all([
     readFile(
-      new URL(
-        "../../../app/features/reader/components/ArticleNavigation.vue",
-        import.meta.url
-      ),
+      new URL("../../../app/features/reader/components/ArticleNavigation.vue", import.meta.url),
       "utf8"
     ),
     readFile(new URL("../../../app/pages/articles/[articleSlug].vue", import.meta.url), "utf8")

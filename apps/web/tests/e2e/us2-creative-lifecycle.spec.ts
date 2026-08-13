@@ -27,11 +27,13 @@ test("ordinary and reduced-motion reads transfer zero p5 bytes until explicit en
 
   await page.emulateMedia({ reducedMotion: "reduce" })
   await page.goto(ordinaryArticlePath, { waitUntil: "networkidle" })
+  await expect(page.locator(`link[href$="/${p5Chunk}"]`)).toHaveCount(0)
   expect(requests.some((pathname) => pathname.endsWith("/" + p5Chunk))).toBe(false)
 
   requests.length = 0
   await page.goto(creativeArticlePath, { waitUntil: "networkidle" })
   await expect(page.getByTestId("creative-runtime")).toHaveCount(0)
+  await expect(page.locator(`link[href$="/${p5Chunk}"]`)).toHaveCount(0)
   expect(requests.some((pathname) => pathname.endsWith("/" + p5Chunk))).toBe(false)
 
   await page.getByTestId("creative-enable").first().click()
@@ -62,10 +64,13 @@ test("Save-Data keeps the creative reader poster-only and transfers zero p5 byte
 
   await expect(page.getByTestId("generative-poster")).toHaveCount(2)
   await expect(page.getByTestId("creative-runtime")).toHaveCount(0)
+  await expect(page.locator(`link[href$="/${p5Chunk}"]`)).toHaveCount(0)
   expect(requests.some((pathname) => pathname.endsWith("/" + p5Chunk))).toBe(false)
 })
 
-test("twenty client-side article switches leave zero creative lifecycle delta", async ({ page }) => {
+test("twenty client-side article switches leave zero creative lifecycle delta", async ({
+  page
+}) => {
   await page.emulateMedia({ reducedMotion: "no-preference" })
   await page.goto(ordinaryArticlePath, { waitUntil: "networkidle" })
   await expect(page.locator("canvas")).toHaveCount(0)
@@ -73,15 +78,19 @@ test("twenty client-side article switches leave zero creative lifecycle delta", 
 
   for (let switchIndex = 1; switchIndex <= 20; switchIndex += 1) {
     const enteringCreative = switchIndex % 2 === 1
-    await page
-      .getByTestId(enteringCreative ? "article-previous" : "article-next")
-      .click()
+    await page.getByTestId(enteringCreative ? "article-previous" : "article-next").click()
     await expect(page).toHaveURL(
       enteringCreative ? /\/articles\/opening-night/ : /\/articles\/courtside-notes/
     )
     if (enteringCreative) {
+      // The creative hosts exist in the SSR document, but p5 must stay outside the
+      // initial route payload and must not mount while the blocks are below the fold.
       await expect(page.getByTestId("creative-runtime")).toHaveCount(2)
-      await expect(page.locator("canvas")).toHaveCount(2)
+      await expect(page.locator("canvas")).toHaveCount(0)
+
+      await page.getByTestId("generative-canvas").first().scrollIntoViewIfNeeded()
+      await expect.poll(() => page.locator("canvas").count()).toBeGreaterThan(0)
+      expect(await page.locator("canvas").count()).toBeLessThanOrEqual(2)
       expect(await runningCanvasCount(page)).toBeLessThanOrEqual(1)
     } else {
       await expect(page.getByTestId("creative-runtime")).toHaveCount(0)
@@ -126,10 +135,13 @@ function findP5ChunkName(): string {
 }
 
 async function runningCanvasCount(page: Page): Promise<number> {
-  return page.getByTestId("creative-runtime").evaluateAll(
-    (runtimes) =>
-      runtimes.filter((runtime) => runtime.getAttribute("data-runtime-status") === "running").length
-  )
+  return page
+    .getByTestId("creative-runtime")
+    .evaluateAll(
+      (runtimes) =>
+        runtimes.filter((runtime) => runtime.getAttribute("data-runtime-status") === "running")
+          .length
+    )
 }
 
 async function lifecycleSnapshot(page: Page): Promise<LifecycleSnapshot> {

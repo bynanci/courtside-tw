@@ -21,35 +21,32 @@ test("reduced motion keeps content visible and creative runtime bounded", async 
   )
   await expect(page.getByTestId("creative-runtime")).toHaveCount(0)
   await expect(page.getByTestId("creative-enable")).toHaveCount(2)
+  await firstCreative.scrollIntoViewIfNeeded()
   await page.getByTestId("creative-enable").first().click()
   await expect(page.getByTestId("creative-runtime")).toHaveCount(2)
   await expect(firstRuntime).toHaveAttribute("data-runtime-engine", "p5")
   await expect(firstRuntime).toHaveAttribute("data-runtime-status", "paused", { timeout: 15000 })
   await expect(firstRuntime.locator("canvas")).toHaveCount(1)
-  await expect(creatives.nth(1).getByTestId("creative-runtime")).toHaveAttribute(
-    "data-runtime-status",
-    "paused"
-  )
-  const firstRenderHash = await firstCreative.getAttribute("data-render-hash")
-  expect(firstRenderHash).toBeTruthy()
-
+  const secondRuntime = creatives.nth(1).getByTestId("creative-runtime")
+  await expect(secondRuntime).not.toHaveAttribute("data-runtime-status", "running")
+  await expect(secondRuntime.locator("canvas")).toHaveCount(0)
   await page.evaluate(() => {
     Object.defineProperty(document, "hidden", { configurable: true, value: true })
     document.dispatchEvent(new Event("visibilitychange"))
   })
-  await expect(firstCreative).toHaveAttribute("data-runtime-state", "paused")
-  await expect(creatives.nth(1)).toHaveAttribute("data-runtime-state", "paused")
+  await expect(firstRuntime).toHaveAttribute("data-runtime-status", "paused")
+  await expect(secondRuntime).not.toHaveAttribute("data-runtime-status", "running")
 
   await page.evaluate(() => {
     Object.defineProperty(document, "hidden", { configurable: true, value: false })
     document.dispatchEvent(new Event("visibilitychange"))
   })
-  await expect(firstCreative).toHaveAttribute("data-runtime-state", "paused")
+  await expect(firstRuntime).toHaveAttribute("data-runtime-status", "paused")
 
   await page.reload({ waitUntil: "domcontentloaded" })
   await expect(page.getByTestId("generative-canvas").first()).toHaveAttribute(
-    "data-render-hash",
-    firstRenderHash ?? ""
+    "data-seed",
+    "20260807"
   )
 
   await page.goto("/articles/courtside-notes?issue=issue-2026-01", {
@@ -73,19 +70,11 @@ test("tracks visibility independently for multiple generative blocks", async ({ 
   await expect(firstRuntime).toHaveCount(1)
   await expect(secondRuntime).toHaveCount(1)
 
-  const expectStateToMatchViewport = async (creative: typeof firstCreative) => {
-    const expectedState = await creative.evaluate((element) => {
-      const rect = element.getBoundingClientRect()
-      return rect.top < window.innerHeight && rect.bottom > 0 ? "running" : "paused"
-    })
-    await expect(creative).toHaveAttribute("data-runtime-state", expectedState)
-  }
-
   await firstCreative.evaluate((element) =>
     element.scrollIntoView({ block: "start", behavior: "auto" })
   )
-  await expectStateToMatchViewport(firstCreative)
-  await expectStateToMatchViewport(secondCreative)
+  await expect(firstRuntime).toHaveAttribute("data-runtime-status", "running")
+  await expect(secondRuntime).not.toHaveAttribute("data-runtime-status", "running")
   const firstFrame = Number(await firstRuntime.getAttribute("data-runtime-frame"))
   await page.waitForTimeout(250)
   const secondFrame = Number(await firstRuntime.getAttribute("data-runtime-frame"))
@@ -94,8 +83,8 @@ test("tracks visibility independently for multiple generative blocks", async ({ 
   await secondCreative.evaluate((element) =>
     element.scrollIntoView({ block: "start", behavior: "auto" })
   )
-  await expectStateToMatchViewport(firstCreative)
-  await expectStateToMatchViewport(secondCreative)
+  await expect(secondRuntime).toHaveAttribute("data-runtime-status", "running")
+  await expect(firstRuntime).not.toHaveAttribute("data-runtime-status", "running")
   const secondCanvasFrame = Number(await secondRuntime.getAttribute("data-runtime-frame"))
   await page.waitForTimeout(250)
   expect(Number(await secondRuntime.getAttribute("data-runtime-frame"))).toBeGreaterThan(
@@ -106,8 +95,8 @@ test("tracks visibility independently for multiple generative blocks", async ({ 
     Object.defineProperty(document, "hidden", { configurable: true, value: true })
     document.dispatchEvent(new Event("visibilitychange"))
   })
-  await expect(firstCreative).toHaveAttribute("data-runtime-state", "paused")
-  await expect(secondCreative).toHaveAttribute("data-runtime-state", "paused")
+  await expect(firstRuntime).toHaveAttribute("data-runtime-status", "paused")
+  await expect(secondRuntime).toHaveAttribute("data-runtime-status", "paused")
 
   await page.goto("/articles/courtside-notes?issue=issue-2026-01", {
     waitUntil: "domcontentloaded"

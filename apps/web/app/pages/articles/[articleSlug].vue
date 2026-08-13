@@ -1,7 +1,8 @@
 <script setup lang="ts">
+import { useState } from "#app"
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 
-import { canonicalUrl, jsonLd } from "../../composables/public-seo"
+import { canonicalUrl } from "../../composables/public-seo"
 import {
   fetchPublicArticle,
   publicMediaUrl,
@@ -25,6 +26,12 @@ import {
 } from "../../features/reader/composables/useLocalReadingProgress"
 import ContentDocumentRenderer from "../../components/content-blocks/ContentDocumentRenderer.vue"
 import type { ContentBlockTelemetry } from "../../components/content-blocks/registry"
+import { formatMediaAttribution } from "../../components/content-blocks/rendering"
+import ArticleNavigation from "../../features/reader/components/ArticleNavigation.vue"
+import ReadingProgress from "../../features/reader/components/ReadingProgress.vue"
+import ShareArticleButton from "../../features/reader/components/ShareArticleButton.vue"
+import { readingProgressPercent } from "../../features/reader/reading-progress"
+import { buildArticleSeo } from "../../features/reader/seo/article-seo"
 
 type ContentRun = {
   kind: "text" | "link"
@@ -50,14 +57,6 @@ type GalleryItem = {
   altText: string
   caption?: string
   credit?: string
-}
-
-type CourtPulseParameters = {
-  density: number
-  tempo: number
-  lineWeight: number
-  paletteId: "court-dusk"
-  numericSequence: number[]
 }
 
 type DocumentNavigationType = "navigate" | "reload" | "back_forward" | "prerender"
@@ -107,29 +106,57 @@ const articleUnavailable = computed(
   () => !articleSlugValid || isUnavailableArticleError(error.value)
 )
 
-if (import.meta.server && articleUnavailable.value) {
-  setResponseStatus(useRequestEvent()!, 404)
+if (import.meta.server) {
+  if (articleUnavailable.value) {
+    setResponseStatus(useRequestEvent()!, 404)
+  } else if (error.value) {
+    setResponseStatus(useRequestEvent()!, 503)
+  }
 }
 
 const articleIssueSlug = computed(
   () => article.value?.issueNavigation.issueSlug ?? issueSlugFromQuery ?? ""
 )
-const articleCanonicalPath = computed(() =>
-  article.value ? "/articles/" + article.value.slug : "/articles/" + articleSlug
-)
+const articleCanonicalPath = computed(() => {
+  const expectedPath = article.value
+    ? "/articles/" + article.value.slug
+    : "/articles/" + articleSlug
+  return article.value?.canonicalPath === expectedPath ? article.value.canonicalPath : expectedPath
+})
 const canonical = computed(() => canonicalUrl(config.public.siteUrl, articleCanonicalPath.value))
+const articleShareImage = computed(() => {
+  const current = article.value
+  if (!current) return undefined
+  const media = current.media.find((candidate) => candidate.variant === "wide") ?? current.media[0]
+  if (!media) return undefined
+  try {
+    return publicMediaUrl(config.public.apiBaseUrl, media.url)
+  } catch {
+    return undefined
+  }
+})
 
 const contentDocument = computed(() =>
   article.value ? toContentDocument(article.value.content) : null
 )
 const articleBlocks = computed(() => contentDocument.value?.blocks ?? [])
 const readingTimeMinutes = computed(() => {
+  if (article.value?.readingTimeMinutes) {
+    return article.value.readingTimeMinutes
+  }
   const characters = articleBlocks.value.reduce(
     (total, block) => total + blockText(block).length,
     0
   )
   return Math.max(1, Math.ceil(characters / 450))
 })
+const articleTocItems = computed(() =>
+  articleBlocks.value.flatMap((block) => {
+    if (block.type !== "heading") return []
+    const label = stringValue(block.payload.text).trim()
+    return label ? [{ id: block.id, label, level: numberValue(block.payload.level, 2) }] : []
+  })
+)
 const readingContext = computed<LocalReadingContext | null>(() =>
   article.value
     ? {
@@ -149,16 +176,13 @@ const readingBlockAnchors = computed<ReadingBlockAnchor[]>(() =>
 )
 const readingProgress = useLocalReadingProgress()
 const { resumePrompt } = readingProgress
-const shareStatus = ref("")
+const visibleReadingProgress = ref(0)
 const failedAssets = ref(new Set<string>())
 const contentBlockTelemetry = ref<ContentBlockTelemetry[]>([])
 const motionMode = ref<"reduced" | "full">("reduced")
 const clientReady = ref(false)
 const interactiveEnabled = ref(false)
-const creativeInViewByBlock = ref<Record<string, boolean>>({})
-const runtimeStateByBlock = ref<Record<string, "paused" | "running">>({})
-const creativeObservers = new Map<string, IntersectionObserver>()
-let creativeVisibilityTimer: number | null = null
+const readerHasMounted = useState("public-article-reader-has-mounted", () => false)
 let reloadGuardActive = false
 let reloadProgressLoaded = false
 let reloadResumeChoicePending = false
@@ -171,43 +195,17 @@ let progressSaveTimer: number | null = null
 
 useHead(() => {
   const current = article.value
-  const title = current ? current.title + " — Courtside TW" : "文章閱讀頁 — Courtside TW"
-  const description = current?.dek ?? "Courtside TW 的公開文章閱讀頁。"
-  const structuredData: Record<string, unknown> = {
-    "@context": "https://schema.org",
-    "@type": "Article",
-    headline: current?.title,
-    description,
-    url: canonical.value,
-    inLanguage: "zh-Hant-TW"
-  }
-  const authors = current?.contributors.filter((contributor) => contributor.role === "AUTHOR") ?? []
-  if (authors.length > 0) {
-    structuredData.author = authors.map((contributor) => ({
-      "@type": "Person",
-      name: contributor.displayName
-    }))
-  }
-  return {
-    title,
-    meta: [
-      { name: "description", content: description },
-      { property: "og:title", content: title },
-      { property: "og:description", content: description },
-      { property: "og:type", content: "article" },
-      { property: "og:url", content: canonical.value }
-    ],
-    link: [{ rel: "canonical", href: canonical.value }],
-    script: current
-      ? [
-          {
-            key: "courtside-article-jsonld",
-            type: "application/ld+json",
-            innerHTML: jsonLd(structuredData)
-          }
-        ]
-      : []
-  }
+  return buildArticleSeo({
+    siteUrl: config.public.siteUrl,
+    slug: current?.slug ?? articleSlug,
+    canonicalPath: articleCanonicalPath.value,
+    title: current?.title ?? "文章閱讀頁",
+    ...(current?.dek ? { description: current.dek } : {}),
+    contributors: current?.contributors ?? [],
+    ...(current?.publishedAt ? { publishedAt: current.publishedAt } : {}),
+    ...(current?.updatedAt ? { modifiedAt: current.updatedAt } : {}),
+    ...(articleShareImage.value ? { imageUrl: articleShareImage.value } : {})
+  })
 })
 
 function isRecord(value: unknown): value is Record<string, unknown> {
@@ -336,6 +334,14 @@ function assetMediaHeight(assetId: unknown, variant = "inline"): number | undefi
   return assetMedia(assetId, variant)?.height
 }
 
+function assetMediaAttribution(
+  assetId: unknown,
+  variant = "inline",
+  payloadCredit?: unknown
+): string {
+  return formatMediaAttribution(assetMedia(assetId, variant), payloadCredit)
+}
+
 const CONTRIBUTOR_ROLE_LABELS: Record<string, string> = {
   AUTHOR: "作者",
   EDITOR: "編輯",
@@ -349,21 +355,15 @@ function contributorRoleLabel(value: unknown): string {
   return typeof value === "string" ? (CONTRIBUTOR_ROLE_LABELS[value] ?? "貢獻者") : "貢獻者"
 }
 
-function canvasParameters(value: unknown): CourtPulseParameters {
-  const parameters = isRecord(value) ? value : {}
-  const numericSequence = Array.isArray(parameters.numericSequence)
-    ? parameters.numericSequence
-        .filter((entry): entry is number => typeof entry === "number" && Number.isFinite(entry))
-        .map((entry) => Math.min(1, Math.max(0, entry)))
-        .slice(0, 256)
-    : []
-  return {
-    density: Math.min(100, Math.max(1, numberValue(parameters.density, 42))),
-    tempo: Math.min(2, Math.max(0, numberValue(parameters.tempo, 0.8))),
-    lineWeight: Math.min(10, Math.max(0.5, numberValue(parameters.lineWeight, 1.5))),
-    paletteId: "court-dusk",
-    numericSequence
+function publicDateLabel(value: string): string {
+  const instant = Date.parse(value)
+  if (!Number.isFinite(instant)) {
+    return "日期未提供"
   }
+  return new Intl.DateTimeFormat("zh-TW", {
+    dateStyle: "long",
+    timeZone: "Asia/Taipei"
+  }).format(new Date(instant))
 }
 
 function markAssetFailed(assetKey: string): void {
@@ -435,160 +435,26 @@ function blockText(block: ArticleBlock): string {
   }
 }
 
-function renderHash(block: ArticleBlock): string {
-  const payload = payloadFor(block)
-  return "court-pulse-v1-" + String(numberValue(payload.seed)) + "-stable"
-}
-
-function generativeBlockIds(): string[] {
-  return articleBlocks.value
-    .filter((block) => block.type === "generative-canvas")
-    .map((block) => block.id)
-}
-
-function runtimeStateFor(blockId: string): "paused" | "running" {
-  return runtimeStateByBlock.value[blockId] ?? "paused"
-}
-
-function syncRuntimeStates(): void {
-  const nextStates: Record<string, "paused" | "running"> = {}
-  for (const blockId of generativeBlockIds()) {
-    nextStates[blockId] =
-      creativeInViewByBlock.value[blockId] === true &&
-      interactiveEnabled.value &&
-      motionMode.value === "full" &&
-      typeof document !== "undefined" &&
-      !document.hidden
-        ? "running"
-        : "paused"
-  }
-  runtimeStateByBlock.value = nextStates
-}
-
-function creativeTarget(blockId: string): HTMLElement | null {
-  if (typeof document === "undefined") {
-    return null
-  }
-  return (
-    Array.from(document.querySelectorAll<HTMLElement>('[data-testid="generative-canvas"]')).find(
-      (target) => target.dataset.creativeBlockId === blockId
-    ) ?? null
-  )
-}
-
-function disconnectCreativeObservers(): void {
-  for (const observer of creativeObservers.values()) {
-    observer.disconnect()
-  }
-  creativeObservers.clear()
-}
-
-function stopCreativeVisibilityWatch(): void {
-  if (typeof window !== "undefined" && creativeVisibilityTimer !== null) {
-    window.clearInterval(creativeVisibilityTimer)
-  }
-  creativeVisibilityTimer = null
-  disconnectCreativeObservers()
-}
-
-function updateCreativeVisibility(): void {
-  const nextVisibility: Record<string, boolean> = {}
-  for (const blockId of generativeBlockIds()) {
-    const target = creativeTarget(blockId)
-    if (!target || typeof window === "undefined") {
-      nextVisibility[blockId] = false
-      continue
-    }
-    const { top, bottom } = target.getBoundingClientRect()
-    nextVisibility[blockId] = top < window.innerHeight && bottom > 0
-  }
-  creativeInViewByBlock.value = nextVisibility
-  syncRuntimeStates()
-}
-
-function startCreativeVisibilityWatch(): void {
-  if (typeof window === "undefined" || creativeVisibilityTimer !== null) {
-    return
-  }
-  updateCreativeVisibility()
-  creativeVisibilityTimer = window.setInterval(updateCreativeVisibility, 100)
-}
-
-function handleCreativeScroll(): void {
-  updateCreativeVisibility()
-}
-
 function handleReaderScroll(): void {
-  handleCreativeScroll()
   releaseReloadGuardAfterManualScroll()
+  updateVisibleReadingProgress()
   scheduleReadingProgressSave()
 }
 
-function observeCreative(): void {
-  disconnectCreativeObservers()
-  const blockIds = generativeBlockIds()
-  if (blockIds.length === 0) {
-    creativeInViewByBlock.value = {}
-    runtimeStateByBlock.value = {}
+function updateVisibleReadingProgress(): void {
+  if (typeof window === "undefined" || typeof document === "undefined") {
     return
   }
-  if (typeof IntersectionObserver === "undefined") {
-    updateCreativeVisibility()
-    startCreativeVisibilityWatch()
-    return
-  }
-  for (const blockId of blockIds) {
-    const target = creativeTarget(blockId)
-    if (!target) {
-      continue
-    }
-    const observer = new IntersectionObserver(
-      (entries) => {
-        creativeInViewByBlock.value = {
-          ...creativeInViewByBlock.value,
-          [blockId]: entries[0]?.isIntersecting === true
-        }
-        syncRuntimeStates()
-      },
-      { threshold: 0.01 }
-    )
-    observer.observe(target)
-    creativeObservers.set(blockId, observer)
-  }
-  startCreativeVisibilityWatch()
+  visibleReadingProgress.value = readingProgressPercent(
+    window.scrollY,
+    Math.max(document.documentElement.scrollHeight, document.body?.scrollHeight ?? 0),
+    window.innerHeight
+  )
 }
 
 async function enableCreative(): Promise<void> {
   interactiveEnabled.value = true
-  syncRuntimeStates()
   await nextTick()
-  observeCreative()
-}
-
-async function shareArticle(): Promise<void> {
-  shareStatus.value = ""
-  const url = canonical.value
-  const title = article.value?.title ?? "Courtside TW"
-  if (typeof navigator === "undefined") {
-    shareStatus.value = "請使用下方文章連結。"
-    return
-  }
-  try {
-    if (navigator.share) {
-      await navigator.share({ title, url })
-      shareStatus.value = "文章已分享。"
-      return
-    }
-    if (navigator.clipboard) {
-      await navigator.clipboard.writeText(url)
-      shareStatus.value = "文章連結已複製。"
-      return
-    }
-  } catch {
-    shareStatus.value = "分享未完成，請使用下方文章連結。"
-    return
-  }
-  shareStatus.value = "請使用下方文章連結。"
 }
 
 function saveReadingProgress(): void {
@@ -1015,48 +881,62 @@ function blockAnchorLabel(index: number): string {
 }
 
 let stopResumeWatch: (() => void) | null = null
-let stopCreativeWatch: (() => void) | null = null
+let stopArticleFocusWatch: (() => void) | null = null
+let activeRevisionId: string | null = null
+
+function focusArticleHeading(): void {
+  document.getElementById("article-heading")?.focus({ preventScroll: true })
+}
 
 onMounted(() => {
+  const focusOnMount = readerHasMounted.value
+  readerHasMounted.value = true
   if (typeof window !== "undefined") {
     beginInitialReloadScrollGuard()
     restoreUnavailableStorageScrollPosition()
     motionMode.value = window.matchMedia("(prefers-reduced-motion: reduce)").matches
       ? "reduced"
       : "full"
-    interactiveEnabled.value = motionMode.value === "full"
+    const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
+    interactiveEnabled.value = motionMode.value === "full" && connection?.saveData !== true
+    updateVisibleReadingProgress()
     window.addEventListener("scroll", handleReaderScroll, { passive: true })
     window.addEventListener("beforeunload", flushReadingProgressSave)
     window.addEventListener("pagehide", handleReaderPageHide)
   }
   document.addEventListener("scroll", handleReaderScroll, { passive: true, capture: true })
-  document.addEventListener("visibilitychange", syncRuntimeStates)
   stopResumeWatch = watch(
     () => readingContext.value?.revisionId ?? error.value,
     () => void nextTick().then(loadResumeProgress),
     { immediate: true }
   )
-  stopCreativeWatch = watch(
-    () => article.value?.revisionId,
-    async () => {
-      creativeInViewByBlock.value = {}
-      runtimeStateByBlock.value = {}
-      stopCreativeVisibilityWatch()
+  activeRevisionId = article.value?.revisionId ?? null
+  stopArticleFocusWatch = watch(
+    () => article.value?.revisionId ?? null,
+    async (revisionId) => {
+      if (!revisionId) return
+      if (activeRevisionId === null) {
+        activeRevisionId = revisionId
+        return
+      }
+      if (revisionId === activeRevisionId) return
+      activeRevisionId = revisionId
       await nextTick()
-      observeCreative()
-    },
-    { immediate: true }
+      focusArticleHeading()
+    }
   )
   void nextTick().then(() => {
     clientReady.value = true
+    if (focusOnMount) {
+      focusArticleHeading()
+    }
   })
 })
 
 onBeforeUnmount(() => {
   stopResumeWatch?.()
-  stopCreativeWatch?.()
+  stopArticleFocusWatch?.()
   document.removeEventListener("scroll", handleReaderScroll, true)
-  document.removeEventListener("visibilitychange", syncRuntimeStates)
   window.removeEventListener("scroll", handleReaderScroll)
   window.removeEventListener("beforeunload", flushReadingProgressSave)
   window.removeEventListener("pagehide", handleReaderPageHide)
@@ -1064,12 +944,12 @@ onBeforeUnmount(() => {
   reloadManualScrollPosition = null
   window.removeEventListener("load", restoreManualReloadScrollPosition)
   releaseReloadScrollGuard()
-  stopCreativeVisibilityWatch()
 })
 </script>
 
 <template>
   <div class="site-page">
+    <a class="skip-link" href="#main-content">跳到主要內容</a>
     <header class="site-header">
       <NuxtLink to="/" class="site-brand">Courtside TW</NuxtLink>
       <nav aria-label="主要導覽">
@@ -1078,7 +958,7 @@ onBeforeUnmount(() => {
       </nav>
     </header>
 
-    <main class="site-shell article-reader">
+    <main id="main-content" class="site-shell article-reader" tabindex="-1">
       <NuxtLink v-if="articleIssueSlug" :to="issueRoute(articleIssueSlug)" class="back-link"
         >← 返回本期目錄</NuxtLink
       >
@@ -1091,9 +971,14 @@ onBeforeUnmount(() => {
         :data-client-ready="String(clientReady)"
         aria-labelledby="article-heading"
       >
+        <ReadingProgress
+          v-if="clientReady"
+          :percent="visibleReadingProgress"
+          :motion-mode="motionMode"
+        />
         <header class="article-header" data-testid="article-header">
           <p class="eyebrow">Public Reading</p>
-          <h1 id="article-heading">{{ article.title }}</h1>
+          <h1 id="article-heading" tabindex="-1">{{ article.title }}</h1>
           <p v-if="article.dek" class="article-dek">{{ article.dek }}</p>
           <div class="article-meta">
             <span
@@ -1115,26 +1000,27 @@ onBeforeUnmount(() => {
             </span>
             <span v-else data-testid="article-byline">署名未提供</span>
             <span data-testid="article-reading-time">{{ readingTimeMinutes }} 分鐘閱讀</span>
+            <time :datetime="article.publishedAt" data-testid="article-published-at">
+              發布於 {{ publicDateLabel(article.publishedAt) }}
+            </time>
+            <time
+              v-if="article.updatedAt && article.updatedAt !== article.publishedAt"
+              :datetime="article.updatedAt"
+              data-testid="article-updated-at"
+            >
+              更新於 {{ publicDateLabel(article.updatedAt) }}
+            </time>
             <NuxtLink
               :to="issueRoute(articleIssueSlug)"
               data-testid="article-issue-link"
               class="text-link"
               >返回本期目錄</NuxtLink
             >
-            <button
-              type="button"
-              data-testid="article-share"
-              class="button-link button-link--quiet"
-              @click="shareArticle"
-            >
-              分享文章
-            </button>
-            <a :href="canonical" data-testid="article-share-fallback" class="text-link">
-              開啟文章連結
-            </a>
-            <span v-if="shareStatus" data-testid="share-status" role="status">{{
-              shareStatus
-            }}</span>
+            <ShareArticleButton
+              :title="article.title"
+              :canonical-url="canonical"
+              :client-ready="clientReady"
+            />
           </div>
         </header>
 
@@ -1168,14 +1054,12 @@ onBeforeUnmount(() => {
           </div>
         </section>
 
-        <aside data-testid="article-toc" class="article-toc" aria-label="文章目錄">
-          <p class="eyebrow">Contents</p>
-          <ol>
-            <li v-for="block in articleBlocks" :key="block.id">
-              <a :href="'#block-' + block.id">{{ blockText(block) || block.type }}</a>
-            </li>
-          </ol>
-        </aside>
+        <ArticleNavigation
+          :issue-slug="articleIssueSlug"
+          :issue-navigation="article.issueNavigation"
+          :toc-items="articleTocItems"
+          mode="toc"
+        />
 
         <div data-testid="article-content" class="article-content">
           <ContentDocumentRenderer
@@ -1187,43 +1071,24 @@ onBeforeUnmount(() => {
             :get-asset-url="assetMediaUrl"
             :get-asset-width="assetMediaWidth"
             :get-asset-height="assetMediaHeight"
+            :get-asset-attribution="assetMediaAttribution"
             :is-asset-failed="isAssetFailed"
             :mark-asset-failed="markAssetFailed"
             :related-article-href="relatedArticleHref"
             :enable-creative="enableCreative"
-            :runtime-state-for="runtimeStateFor"
-            :canvas-parameters="canvasParameters"
-            :render-hash="renderHash"
             @telemetry="recordContentBlockTelemetry"
           />
+          <p v-if="articleBlocks.length === 0" class="article-empty-content">
+            這篇文章目前沒有可顯示的正文，請返回本期目錄。
+          </p>
         </div>
 
-        <nav class="article-navigation" aria-label="文章前後篇">
-          <button
-            v-if="!article.issueNavigation.previous"
-            type="button"
-            data-testid="article-previous"
-            disabled
-          >
-            上一篇
-          </button>
-          <NuxtLink
-            v-else
-            :to="articleRoute(article.issueNavigation.previous.slug, articleIssueSlug)"
-            data-testid="article-previous"
-          >
-            上一篇：{{ article.issueNavigation.previous.title }}
-          </NuxtLink>
-
-          <NuxtLink
-            v-if="article.issueNavigation.next"
-            :to="articleRoute(article.issueNavigation.next.slug, articleIssueSlug)"
-            data-testid="article-next"
-          >
-            下一篇：{{ article.issueNavigation.next.title }}
-          </NuxtLink>
-          <button v-else type="button" data-testid="article-next" disabled>下一篇</button>
-        </nav>
+        <ArticleNavigation
+          :issue-slug="articleIssueSlug"
+          :issue-navigation="article.issueNavigation"
+          :toc-items="articleTocItems"
+          mode="footer"
+        />
       </article>
 
       <section

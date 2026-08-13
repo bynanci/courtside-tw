@@ -72,6 +72,12 @@ const articleProjections = new Map([
       title: "主場燈光亮起之前",
       dek: "一篇從球場入口開始，記錄主場如何成為共同記憶的長文。",
       content: contentDocument,
+      plainText:
+        "主場燈光亮起以前，人們已經沿著熟悉的路線進場。這篇文章記錄球場、看台與城市共同形成的主場記憶。",
+      readingTimeMinutes: 6,
+      publishedAt: "2026-08-01T00:00:00Z",
+      updatedAt: "2026-08-02T00:00:00Z",
+      canonicalPath: "/articles/opening-night",
       media: [
         {
           assetId: "00000000-0000-4000-8000-000000000011",
@@ -79,7 +85,11 @@ const articleProjections = new Map([
           url: "/media/published/opening-wide.webp",
           mimeType: "image/webp",
           width: 1600,
-          height: 900
+          height: 900,
+          altText: "球場在夜間燈光下的全景",
+          credit: "場邊攝影",
+          rightsOwner: "Courtside TW",
+          licenseName: "Courtside public editorial license"
         },
         {
           assetId: "00000000-0000-4000-8000-000000000012",
@@ -87,7 +97,11 @@ const articleProjections = new Map([
           url: "/media/published/opening-gallery-1.webp",
           mimeType: "image/webp",
           width: 1200,
-          height: 800
+          height: 800,
+          altText: "球員在場上傳球",
+          credit: "場邊攝影",
+          rightsOwner: "Courtside TW",
+          licenseName: "Courtside public editorial license"
         },
         {
           assetId: "00000000-0000-4000-8000-000000000013",
@@ -95,7 +109,11 @@ const articleProjections = new Map([
           url: "/media/published/opening-gallery-2.webp",
           mimeType: "image/webp",
           width: 1200,
-          height: 800
+          height: 800,
+          altText: "觀眾席的主場應援",
+          credit: "場邊攝影",
+          rightsOwner: "Courtside TW",
+          licenseName: "Courtside public editorial license"
         },
         {
           assetId: "00000000-0000-4000-8000-000000000016",
@@ -103,7 +121,11 @@ const articleProjections = new Map([
           url: "/media/published/opening-generative-wide.webp",
           mimeType: "image/webp",
           width: 1200,
-          height: 675
+          height: 675,
+          altText: "以球場線條與投籃落點構成的抽象視覺 poster",
+          credit: "Courtside TW 資料視覺",
+          rightsOwner: "Courtside TW",
+          licenseName: "Courtside public editorial license"
         }
       ],
       contributors: [
@@ -166,6 +188,11 @@ const articleProjections = new Map([
           }
         ]
       },
+      plainText: "看台的聲音，讓比賽在終場之後繼續留下節奏。",
+      readingTimeMinutes: 1,
+      publishedAt: "2026-08-01T00:05:00Z",
+      updatedAt: "2026-08-01T00:05:00Z",
+      canonicalPath: "/articles/courtside-notes",
       media: [],
       contributors: [
         {
@@ -183,6 +210,67 @@ const articleProjections = new Map([
           title: "主場燈光亮起之前",
           position: 1
         },
+        next: null
+      }
+    }
+  ],
+  [
+    "future-creative",
+    {
+      articleId: "00000000-0000-4000-8000-000000000901",
+      revisionId: "00000000-0000-4000-8000-000000000902",
+      revisionNumber: 1,
+      slug: "future-creative",
+      title: "未支援創意版本的安全備援",
+      dek: "驗證公開 reader 對未知 preset 採 total deny-by-default。",
+      content: {
+        schemaVersion: 1,
+        documentId: "00000000-0000-4000-8000-000000000903",
+        blocks: [
+          {
+            id: "00000000-0000-4000-8000-000000000904",
+            type: "generative-canvas",
+            version: 1,
+            payload: {
+              presetId: "court-pulse-v2",
+              seed: 20260813,
+              posterAssetId: "00000000-0000-4000-8000-000000000905",
+              altText: "未知創意版本的靜態球場 poster",
+              dataSummary: "此創意版本尚未支援，reader 只呈現可信的靜態摘要。"
+            }
+          }
+        ]
+      },
+      plainText: "此創意版本尚未支援，reader 只呈現可信的靜態摘要。",
+      readingTimeMinutes: 1,
+      publishedAt: "2026-08-13T00:00:00Z",
+      updatedAt: "2026-08-13T00:00:00Z",
+      canonicalPath: "/articles/future-creative",
+      media: [
+        {
+          assetId: "00000000-0000-4000-8000-000000000905",
+          variant: "wide",
+          url: "/media/published/future-creative-poster.webp",
+          mimeType: "image/webp",
+          width: 1200,
+          height: 675,
+          altText: "未知創意版本的靜態球場 poster",
+          credit: "Courtside TW 資料視覺",
+          rightsOwner: "Courtside TW",
+          licenseName: "Courtside public editorial license"
+        }
+      ],
+      contributors: [
+        {
+          contributorId: "00000000-0000-4000-8000-000000000022",
+          slug: "courtside-tw-editorial",
+          displayName: "Courtside TW 編輯部",
+          role: "EDITOR"
+        }
+      ],
+      issueNavigation: {
+        issueSlug: "issue-2026-01",
+        previous: null,
         next: null
       }
     }

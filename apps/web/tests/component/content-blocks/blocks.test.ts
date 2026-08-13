@@ -3,7 +3,9 @@ import { readFile } from "node:fs/promises"
 import test from "node:test"
 
 import {
+  formatMediaAttribution,
   galleryItems,
+  mediaFallbackStyle,
   safeInlineHref
 } from "../../../app/components/content-blocks/rendering.ts"
 
@@ -24,6 +26,20 @@ test("text rendering keeps Vue escaping and admits only bounded HTTPS or mailto 
   for (const source of sources) {
     assert.doesNotMatch(source, /v-html/)
   }
+})
+
+test("public media rights metadata is attributed alongside block credit", () => {
+  assert.equal(
+    formatMediaAttribution(
+      {
+        credit: "場邊攝影",
+        rightsOwner: "Courtside TW",
+        licenseName: "Courtside public editorial license"
+      },
+      "文章圖片說明攝影"
+    ),
+    "文章圖片說明攝影 · 場邊攝影 · 權利：Courtside TW · 授權：Courtside public editorial license"
+  )
 })
 
 test("gallery rendering preserves stable dimensions, caption and credit metadata", () => {
@@ -53,12 +69,15 @@ test("gallery rendering preserves stable dimensions, caption and credit metadata
   )
 })
 
+test("media failure fallback preserves the frozen media aspect ratio", () => {
+  assert.deepEqual(mediaFallbackStyle(1600, 900), { aspectRatio: "1600 / 900" })
+  assert.deepEqual(mediaFallbackStyle(1200, 800), { aspectRatio: "1200 / 800" })
+  assert.deepEqual(mediaFallbackStyle(undefined, undefined), { aspectRatio: "16 / 9" })
+})
+
 test("the total renderer delegates canonical blocks to explicit local components", async () => {
   const source = await readFile(
-    new URL(
-      "../../../app/components/content-blocks/ContentDocumentRenderer.vue",
-      import.meta.url
-    ),
+    new URL("../../../app/components/content-blocks/ContentDocumentRenderer.vue", import.meta.url),
     "utf8"
   )
 
@@ -79,4 +98,7 @@ test("the total renderer delegates canonical blocks to explicit local components
   }
   assert.doesNotMatch(source, /v-html/)
   assert.doesNotMatch(source, /import\s*\(.*block/u)
+  assert.match(source, /getAssetWidth\(fallbackPosterAssetId\(block\), 'wide'\)/)
+  assert.match(source, /getAssetHeight\(fallbackPosterAssetId\(block\), 'wide'\)/)
+  assert.match(source, /content-block-fallback__poster/)
 })
