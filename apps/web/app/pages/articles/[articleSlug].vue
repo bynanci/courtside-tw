@@ -23,7 +23,8 @@ import {
   type ProgressStorage,
   type ReadingBlockAnchor
 } from "../../features/reader/composables/useLocalReadingProgress"
-import CourtPulseRuntime from "../../components/article/CourtPulseRuntime.vue"
+import ContentDocumentRenderer from "../../components/content-blocks/ContentDocumentRenderer.vue"
+import type { ContentBlockTelemetry } from "../../components/content-blocks/registry"
 
 type ContentRun = {
   kind: "text" | "link"
@@ -150,6 +151,7 @@ const readingProgress = useLocalReadingProgress()
 const { resumePrompt } = readingProgress
 const shareStatus = ref("")
 const failedAssets = ref(new Set<string>())
+const contentBlockTelemetry = ref<ContentBlockTelemetry[]>([])
 const motionMode = ref<"reduced" | "full">("reduced")
 const clientReady = ref(false)
 const interactiveEnabled = ref(false)
@@ -300,24 +302,6 @@ function galleryItems(value: unknown): GalleryItem[] {
   })
 }
 
-function safeInlineHref(value: unknown): string | null {
-  if (typeof value !== "string" || value.length > 2048 || value.includes("\u0000")) {
-    return null
-  }
-  if (/^mailto:[^\s@]+@[^\s@]+$/.test(value)) {
-    return value
-  }
-  try {
-    const url = new URL(value)
-    if (url.protocol !== "https:" || url.username || url.password || !url.hostname) {
-      return null
-    }
-    return url.toString()
-  } catch {
-    return null
-  }
-}
-
 function assetMediaUrl(assetId: unknown, variant = "inline"): string {
   const media = assetMedia(assetId, variant)
   if (!media) {
@@ -386,17 +370,19 @@ function markAssetFailed(assetKey: string): void {
   failedAssets.value = new Set(failedAssets.value).add(assetKey)
 }
 
-function headingTag(value: unknown): "h2" | "h3" | "h4" {
-  const level = numberValue(value, 2)
-  return level === 4 ? "h4" : level === 3 ? "h3" : "h2"
+function isAssetFailed(assetKey: string): boolean {
+  return failedAssets.value.has(assetKey)
 }
 
-function listTag(value: unknown): "ol" | "ul" {
-  return value === true ? "ol" : "ul"
-}
-
-function dividerClass(value: unknown): string {
-  return value === "space" ? "article-divider article-divider--space" : "article-divider"
+function recordContentBlockTelemetry(event: ContentBlockTelemetry): void {
+  if (
+    contentBlockTelemetry.value.some(
+      (entry) => entry.code === event.code && entry.blockId === event.blockId
+    )
+  ) {
+    return
+  }
+  contentBlockTelemetry.value = [...contentBlockTelemetry.value, event].slice(-50)
 }
 
 function relatedArticleHref(value: unknown): string | null {
@@ -1192,231 +1178,24 @@ onBeforeUnmount(() => {
         </aside>
 
         <div data-testid="article-content" class="article-content">
-          <section
-            v-for="block in articleBlocks"
-            :id="'block-' + block.id"
-            :key="block.id"
-            class="article-block"
-            :data-block-id="block.id"
-            :data-block-type="block.type"
-          >
-            <p v-if="block.type === 'paragraph'" class="article-paragraph">
-              <template
-                v-for="(run, runIndex) in inlineRuns(payloadFor(block).content)"
-                :key="runIndex"
-              >
-                <a
-                  v-if="run.kind === 'link' && safeInlineHref(run.href)"
-                  :href="safeInlineHref(run.href) ?? '#'"
-                  rel="noreferrer noopener"
-                  target="_blank"
-                  >{{ run.text }}</a
-                >
-                <span v-else>{{ run.text }}</span>
-              </template>
-            </p>
-
-            <component
-              :is="headingTag(payloadFor(block).level)"
-              v-else-if="block.type === 'heading'"
-            >
-              {{ stringValue(payloadFor(block).text) }}
-            </component>
-
-            <component :is="listTag(payloadFor(block).ordered)" v-else-if="block.type === 'list'">
-              <li v-for="(runs, itemIndex) in listItems(payloadFor(block).items)" :key="itemIndex">
-                <template v-for="(run, runIndex) in runs" :key="runIndex">
-                  <a
-                    v-if="run.kind === 'link' && safeInlineHref(run.href)"
-                    :href="safeInlineHref(run.href) ?? '#'"
-                    rel="noreferrer noopener"
-                    target="_blank"
-                    >{{ run.text }}</a
-                  >
-                  <span v-else>{{ run.text }}</span>
-                </template>
-              </li>
-            </component>
-
-            <blockquote v-else-if="block.type === 'quote'">
-              <p>
-                <template
-                  v-for="(run, runIndex) in inlineRuns(payloadFor(block).content)"
-                  :key="runIndex"
-                >
-                  <a
-                    v-if="run.kind === 'link' && safeInlineHref(run.href)"
-                    :href="safeInlineHref(run.href) ?? '#'"
-                    rel="noreferrer noopener"
-                    target="_blank"
-                    >{{ run.text }}</a
-                  >
-                  <span v-else>{{ run.text }}</span>
-                </template>
-              </p>
-              <cite v-if="payloadFor(block).attribution">{{
-                stringValue(payloadFor(block).attribution)
-              }}</cite>
-            </blockquote>
-
-            <div
-              v-else-if="block.type === 'divider'"
-              :class="dividerClass(payloadFor(block).style)"
-              aria-hidden="true"
-            />
-
-            <figure v-else-if="block.type === 'image'" class="article-image">
-              <img
-                v-if="
-                  assetMediaUrl(
-                    payloadFor(block).assetId,
-                    stringValue(payloadFor(block).variant) || 'inline'
-                  )
-                "
-                :src="
-                  assetMediaUrl(
-                    payloadFor(block).assetId,
-                    stringValue(payloadFor(block).variant) || 'inline'
-                  )
-                "
-                :alt="stringValue(payloadFor(block).altText)"
-                :width="
-                  assetMediaWidth(
-                    payloadFor(block).assetId,
-                    stringValue(payloadFor(block).variant) || 'inline'
-                  )
-                "
-                :height="
-                  assetMediaHeight(
-                    payloadFor(block).assetId,
-                    stringValue(payloadFor(block).variant) || 'inline'
-                  )
-                "
-                loading="lazy"
-                @error="markAssetFailed(block.id)"
-              />
-              <figcaption
-                v-if="failedAssets.has(block.id)"
-                data-testid="article-image-fallback"
-                class="article-image-fallback"
-              >
-                圖片目前無法載入，已保留文字備援：{{ stringValue(payloadFor(block).altText) }}
-              </figcaption>
-              <figcaption v-if="payloadFor(block).caption">
-                {{ stringValue(payloadFor(block).caption) }}
-              </figcaption>
-            </figure>
-
-            <div
-              v-else-if="block.type === 'gallery'"
-              class="article-gallery"
-              :class="{
-                'article-gallery--stack': payloadFor(block).layout === 'stack'
-              }"
-            >
-              <figure
-                v-for="(item, itemIndex) in galleryItems(payloadFor(block).items)"
-                :key="block.id + '-' + itemIndex"
-              >
-                <img
-                  v-if="assetMediaUrl(item.assetId, 'inline')"
-                  :src="assetMediaUrl(item.assetId, 'inline')"
-                  :alt="item.altText"
-                  loading="lazy"
-                  @error="markAssetFailed(block.id + '-' + itemIndex)"
-                />
-                <figcaption v-if="failedAssets.has(block.id + '-' + itemIndex)">
-                  圖片備援：{{ item.altText }}
-                </figcaption>
-                <figcaption v-else-if="item.caption">
-                  {{ item.caption }}
-                </figcaption>
-              </figure>
-            </div>
-
-            <aside v-else-if="block.type === 'stat'" class="article-stat">
-              <strong>{{ stringValue(payloadFor(block).label) }}</strong>
-              <span>{{ stringValue(payloadFor(block).value) }}</span>
-              <small>{{ stringValue(payloadFor(block).unit) }}</small>
-              <p>{{ stringValue(payloadFor(block).context) }}</p>
-            </aside>
-
-            <section v-else-if="block.type === 'video'" class="article-video">
-              <p class="eyebrow">Video</p>
-              <h3>{{ stringValue(payloadFor(block).title) }}</h3>
-              <p>影片權利尚未開放；本頁保留可理解的文字內容。</p>
-              <p v-if="payloadFor(block).caption">
-                {{ stringValue(payloadFor(block).caption) }}
-              </p>
-            </section>
-
-            <aside v-else-if="block.type === 'related-reading'" class="article-related">
-              <p class="eyebrow">Related reading</p>
-              <NuxtLink
-                v-if="relatedArticleHref(payloadFor(block).articleSlug)"
-                :to="relatedArticleHref(payloadFor(block).articleSlug) ?? '/issues'"
-              >
-                {{ stringValue(payloadFor(block).label) }}
-              </NuxtLink>
-            </aside>
-
-            <section v-else-if="block.type === 'generative-canvas'" class="article-generative">
-              <div
-                data-testid="generative-poster"
-                data-fallback="true"
-                role="img"
-                :aria-label="stringValue(payloadFor(block).altText)"
-              >
-                <img
-                  v-if="
-                    assetMediaUrl(payloadFor(block).posterAssetId, 'wide') &&
-                    !failedAssets.has(block.id + '-poster')
-                  "
-                  data-testid="generative-poster-image"
-                  class="article-generative-poster"
-                  :src="assetMediaUrl(payloadFor(block).posterAssetId, 'wide')"
-                  :alt="stringValue(payloadFor(block).altText)"
-                  loading="lazy"
-                  @error="markAssetFailed(block.id + '-poster')"
-                />
-                <span>{{ stringValue(payloadFor(block).dataSummary) }}</span>
-              </div>
-              <button
-                v-if="clientReady && motionMode === 'reduced' && !interactiveEnabled"
-                type="button"
-                class="button-link creative-enable"
-                data-testid="creative-enable"
-                @click="enableCreative"
-              >
-                顯示互動視覺
-              </button>
-              <div
-                data-testid="generative-canvas"
-                :data-creative-block-id="block.id"
-                :data-seed="String(numberValue(payloadFor(block).seed))"
-                :data-render-hash="renderHash(block)"
-                :data-runtime-state="runtimeStateFor(block.id)"
-                :data-runtime-enabled="String(interactiveEnabled)"
-                role="img"
-                :aria-label="stringValue(payloadFor(block).altText)"
-              >
-                <CourtPulseRuntime
-                  v-if="interactiveEnabled"
-                  :key="article.revisionId + ':' + block.id"
-                  :seed="numberValue(payloadFor(block).seed)"
-                  :parameters="canvasParameters(payloadFor(block).parameters)"
-                  :alt-text="stringValue(payloadFor(block).altText)"
-                  :active="interactiveEnabled"
-                  :paused="runtimeStateFor(block.id) !== 'running'"
-                  :reduced-motion="motionMode === 'reduced'"
-                />
-                <span v-else data-testid="creative-runtime-placeholder">
-                  互動視覺預設停用；{{ stringValue(payloadFor(block).dataSummary) }}
-                </span>
-              </div>
-              <p>{{ stringValue(payloadFor(block).dataSummary) }}</p>
-            </section>
-          </section>
+          <ContentDocumentRenderer
+            :blocks="articleBlocks"
+            :article-revision-id="article.revisionId"
+            :client-ready="clientReady"
+            :motion-mode="motionMode"
+            :interactive-enabled="interactiveEnabled"
+            :get-asset-url="assetMediaUrl"
+            :get-asset-width="assetMediaWidth"
+            :get-asset-height="assetMediaHeight"
+            :is-asset-failed="isAssetFailed"
+            :mark-asset-failed="markAssetFailed"
+            :related-article-href="relatedArticleHref"
+            :enable-creative="enableCreative"
+            :runtime-state-for="runtimeStateFor"
+            :canvas-parameters="canvasParameters"
+            :render-hash="renderHash"
+            @telemetry="recordContentBlockTelemetry"
+          />
         </div>
 
         <nav class="article-navigation" aria-label="文章前後篇">

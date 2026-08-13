@@ -1,0 +1,181 @@
+{
+  "schema_version": "courtside-tw/t036-renderer-proof/v2",
+  "proof_id": "t036-renderer-proof",
+  "recorded_at": "2026-08-13T05:41:54Z",
+  "result": "IMPLEMENTATION_PROOF_RECONCILED_LIVE_MERGE_GATE_PENDING",
+  "classification": "ATTRIBUTABLE_IMPLEMENTATION_PROOF",
+  "task": "T036",
+  "source_of_truth": {
+    "repository": "bynanci/courtside-tw",
+    "pull_request": 85,
+    "base_ref": "main",
+    "base_commit": "d3efe73d9719f07a877480ac889949c6386d61db",
+    "task_ref": "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T036"
+  },
+  "implementation_subject": {
+    "commit": "5b1e070ad3f40079470c8a2cc621cef494682820",
+    "tree": "a6450baeb11f2946546a8f873d3b65a46974b5de",
+    "classification": "IMMUTABLE_T036_RUNTIME_AND_TEST_SUBJECT",
+    "scope": [
+      "apps/web/app/components/content-blocks/registry.ts",
+      "apps/web/app/components/content-blocks/ContentDocumentRenderer.vue",
+      "apps/web/app/pages/articles/[articleSlug].vue",
+      "apps/web/package.json",
+      "apps/web/tests/component/content-blocks/registry.test.ts"
+    ],
+    "meaning": "This immutable commit and tree identify the T036 runtime and test implementation. Later evidence-only commits do not change this subject."
+  },
+  "tests_first": {
+    "red": {
+      "command": "node --experimental-strip-types apps/web/tests/component/content-blocks/registry.test.ts",
+      "result": "EXPECTED_FAILURE",
+      "failure": "ContentDocumentRenderer.vue and registry.ts were absent on current main."
+    },
+    "green": {
+      "command": "pnpm --filter @courtside/web run test",
+      "tests": 63,
+      "passed": 63,
+      "result": "PASS"
+    }
+  },
+  "acceptance_mapping": [
+    {
+      "criterion": "The registry is total and deny-by-default for the canonical v1 block universe.",
+      "status": "PASS_LOCAL",
+      "proof": "registry.test.ts resolves all 11 canonical block types and rejects unknown types."
+    },
+    {
+      "criterion": "Unknown block, block version and generative preset versions render a safe poster plus plain-text summary fallback.",
+      "status": "PASS_LOCAL",
+      "proof": "Registry resolution tests cover all three fallback reasons; renderer maps only validated asset identities and bounded text."
+    },
+    {
+      "criterion": "Fallbacks emit attributable telemetry codes without content-driven module resolution.",
+      "status": "PASS_LOCAL",
+      "proof": "ContentDocumentRenderer emits deduplicated telemetry events and static-source assertions reject import() and content-driven component resolution."
+    },
+    {
+      "criterion": "Existing v1 public article rendering remains regression-free.",
+      "status": "PASS_IMPLEMENTATION_SUBJECT_CI_SECURITY_BROWSER",
+      "proof": "CI #452, Security #453 and browser job 94333313832 passed on implementation subject 5b1e070ad3f40079470c8a2cc621cef494682820."
+    }
+  ],
+  "local_verification": {
+    "web_tests": "63/63 PASS",
+    "typecheck": "PASS",
+    "lint": "PASS",
+    "prettier": "PASS",
+    "production_build": "PASS",
+    "browser_execution": "PASS_REMOTE_ON_IMPLEMENTATION_SUBJECT: CI #452 browser job 94333313832 installed Chromium and passed the mobile SSR/accessibility journey; local Chromium remains unavailable."
+  },
+  "scope_guard": {
+    "changed_runtime_scope": [
+      "apps/web/app/components/content-blocks/registry.ts",
+      "apps/web/app/components/content-blocks/ContentDocumentRenderer.vue",
+      "apps/web/app/pages/articles/[articleSlug].vue",
+      "apps/web/package.json",
+      "apps/web/tests/component/content-blocks/registry.test.ts"
+    ],
+    "T036_candidate_checkbox_only": true,
+    "T039_preserved": true,
+    "T034_T035_preserved": true,
+    "T037_T041_untouched": true,
+    "T056_or_T057_plus_changed": false,
+    "web3_wallet_passport_changed": false,
+    "deployment_changed": false,
+    "migration_changed": false,
+    "unrelated_task_state_changed": false
+  },
+  "historical_exact_head_verifications": [
+    {
+      "classification": "IMPLEMENTATION_HEAD_HISTORICAL_RECEIPT",
+      "subject_commit": "5b1e070ad3f40079470c8a2cc621cef494682820",
+      "ci": {
+        "workflow": "CI",
+        "run_number": 452,
+        "run_id": 31663528331,
+        "conclusion": "success"
+      },
+      "security": {
+        "workflow": "Security",
+        "run_number": 453,
+        "run_id": 31663528344,
+        "conclusion": "success"
+      },
+      "browser": {
+        "job_id": 94333313832,
+        "conclusion": "success",
+        "steps": ["Install Playwright Chromium", "Run mobile SSR and accessibility journey"]
+      }
+    },
+    {
+      "classification": "PREDECESSOR_HEAD_NOT_LIVE_MERGE_GATE",
+      "subject_commit": "803e78b6ad4e5c794bdfc89fd1be706d16102a4a",
+      "ci": {
+        "workflow": "CI",
+        "run_number": 453,
+        "run_id": 31663921455,
+        "conclusion": "success"
+      },
+      "security": {
+        "workflow": "Security",
+        "run_number": 454,
+        "run_id": 31663921463,
+        "conclusion": "success"
+      },
+      "browser": {
+        "job_id": 94334940909,
+        "conclusion": "success"
+      },
+      "meaning": "This receipt is valid for its named predecessor commit only; a later evidence commit changed the PR head."
+    },
+    {
+      "classification": "ATTRIBUTION_BLOCKER_HEAD_HISTORICAL_RECEIPT",
+      "subject_commit": "7d8291aa03d889ac09658e4f69aef664e45ca428",
+      "ci": {
+        "workflow": "CI",
+        "run_number": 454,
+        "run_id": 31664325261,
+        "conclusion": "success"
+      },
+      "security": {
+        "workflow": "Security",
+        "run_number": 455,
+        "run_id": 31664325253,
+        "conclusion": "success"
+      },
+      "browser": {
+        "job_id": 94335690809,
+        "conclusion": "success"
+      },
+      "meaning": "This head exposed the self-referential attribution failure and becomes historical when this correction is committed."
+    }
+  ],
+  "live_merge_gate_contract": {
+    "provider": "GitHub",
+    "repository": "bynanci/courtside-tw",
+    "pull_request": 85,
+    "head_ref": "agent/t036-content-block-registry",
+    "serialize_final_mutable_head": false,
+    "required_workflows": ["CI", "Security"],
+    "required_ci_job": "Public magazine browser verification",
+    "binding_rule": "Immediately before ready and merge, the observed PR head SHA must equal the head associated with successful CI and Security runs, and the browser job from that CI run must succeed.",
+    "required_observations": {
+      "mergeable": true,
+      "unresolved_review_threads": 0,
+      "CI": "success",
+      "Security": "success",
+      "browser_job": "success",
+      "merge_expected_head_sha_equals_observed_pr_head": true
+    },
+    "receipt_persistence": "Append-only PR comment plus PR body evidence matrix; live GitHub state remains authoritative.",
+    "artifact_state": "PENDING_POST_COMMIT_LIVE_READBACK",
+    "rationale": "A versioned file cannot embed the SHA of the commit containing that file without changing the commit. The final exact-head receipt is externally bound after the last commit."
+  },
+  "attribution_failure_mode": {
+    "signature": "SELF_REFERENTIAL_EXACT_HEAD_ATTRIBUTION",
+    "detected_on_predecessor_head": "7d8291aa03d889ac09658e4f69aef664e45ca428",
+    "correction": "Treat serialized predecessor receipts as historical subjects only and bind the final protected gate externally to the immutable PR head."
+  },
+  "task_completion_effect": "T036 is a candidate completion in PR #85 only; completion is authoritative only after protected merge and main read-back. T039 remains inherited complete from base main."
+}
