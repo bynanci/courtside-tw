@@ -1,7 +1,7 @@
 {
   "schema_version": "courtside-tw/t036-renderer-proof/v1",
   "proof_id": "t036-renderer-proof",
-  "recorded_at": "2026-08-13T03:23:22Z",
+  "recorded_at": "2026-08-13T03:31:00Z",
   "result": "REVIEWABLE_EXACT_HEAD_GATES_PASS",
   "classification": "implemented-protected-gates-pass-pending-human-review",
   "task": "T036",
@@ -72,21 +72,21 @@
     "unrelated_task_state_changed": false
   },
   "exact_head_verification": {
-    "head_commit": "5b1e070ad3f40079470c8a2cc621cef494682820",
+    "head_commit": "803e78b6ad4e5c794bdfc89fd1be706d16102a4a",
     "ci": {
       "workflow": "CI",
-      "run_number": 452,
-      "run_id": 31663528331,
+      "run_number": 453,
+      "run_id": 31663921455,
       "conclusion": "success"
     },
     "security": {
       "workflow": "Security",
-      "run_number": 453,
-      "run_id": 31663528344,
+      "run_number": 454,
+      "run_id": 31663921463,
       "conclusion": "success"
     },
     "browser": {
-      "job_id": 94333313832,
+      "job_id": 94334940909,
       "conclusion": "success",
       "steps": [
         "Install Playwright Chromium",

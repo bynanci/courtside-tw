@@ -4,7 +4,7 @@
   "scope": "project",
   "kind": "task_state",
   "title": "T036 deny-by-default content-block renderer registry is reviewable",
-  "summary": "Starting from main@d3efe73, T036 adds a static registry and renderer for the 11 canonical v1 block types. Unknown block types, unsupported block versions and unknown generative presets fail closed to a poster identity plus bounded plain-text summary and emit deduplicated telemetry codes. T039 and all unrelated task state remain unchanged. Exact-head CI #452, Security #453 and browser job 94333313832 passed on head 5b1e070; human review and protected merge remain.",
+  "summary": "Starting from main@d3efe73, T036 adds a static registry and renderer for the 11 canonical v1 block types. Unknown block types, unsupported block versions and unknown generative presets fail closed to a poster identity plus bounded plain-text summary and emit deduplicated telemetry codes. T039 and all unrelated task state remain unchanged. Exact-head CI #453, Security #454 and browser job 94334940909 passed on head 803e78b; human review and protected merge remain.",
   "claims": [
     {
       "text": "The article page now delegates block rendering to ContentDocumentRenderer.vue through a static registry; content cannot select a module or component.",

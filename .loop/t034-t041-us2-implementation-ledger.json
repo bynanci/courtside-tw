@@ -217,23 +217,23 @@
       "actor": "codex-agent",
       "type": "t036_exact_head_proof_readback",
       "graph_version": 2,
-      "head_sha": "5b1e070ad3f40079470c8a2cc621cef494682820",
+      "head_sha": "803e78b6ad4e5c794bdfc89fd1be706d16102a4a",
       "proof_receipts": [
         {
           "proof": "CI",
-          "run_number": 452,
-          "run_id": 31663528331,
+          "run_number": 453,
+          "run_id": 31663921455,
           "result": "pass"
         },
         {
           "proof": "Security",
-          "run_number": 453,
-          "run_id": 31663528344,
+          "run_number": 454,
+          "run_id": 31663921463,
           "result": "pass"
         },
         {
           "proof": "browser",
-          "job_id": 94333313832,
+          "job_id": 94334940909,
           "result": "pass",
           "details": "Chromium installed; mobile SSR/accessibility journey passed."
         },
