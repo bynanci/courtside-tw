@@ -4,10 +4,10 @@
   "scope": "project",
   "kind": "task_state",
   "title": "T036 deny-by-default content-block renderer registry is reviewable",
-  "summary": "Starting from main@d3efe73, T036 adds a static registry and renderer for the 11 canonical v1 block types. Unknown block types, unsupported block versions and unknown generative presets fail closed to a poster identity plus bounded plain-text summary and emit deduplicated telemetry codes. T039 and all unrelated task state remain unchanged. Exact-head CI #453, Security #454 and browser job 94334940909 passed on head 803e78b; human review and protected merge remain.",
+  "summary": "Starting from main@d3efe73, immutable implementation subject 5b1e070 (tree a6450ba) adds a static registry and renderer for the 11 canonical v1 block types. Unknown block types, unsupported block versions and unknown generative presets fail closed to a poster identity plus bounded plain-text summary and emit deduplicated telemetry codes. T039 and all unrelated task state remain unchanged. The final protected merge gate is read live from GitHub and is intentionally not serialized as a self-referential current-head SHA.",
   "claims": [
     {
-      "text": "The article page now delegates block rendering to ContentDocumentRenderer.vue through a static registry; content cannot select a module or component.",
+      "text": "The article page delegates block rendering to ContentDocumentRenderer.vue through a static registry; content cannot select a module or component.",
       "class": "CONFIRMED",
       "confidence": "high"
     },
@@ -22,7 +22,7 @@
       "confidence": "high"
     },
     {
-      "text": "Local web tests 63/63, lint, typecheck, Prettier and production build pass; local browser execution is unavailable because Chromium is not installed.",
+      "text": "Local web tests 63/63, lint, typecheck, Prettier and production build pass; CI #452, Security #453 and browser job 94333313832 passed on historical implementation subject 5b1e070.",
       "class": "CONFIRMED",
       "confidence": "high"
     },
@@ -32,25 +32,32 @@
       "confidence": "high"
     },
     {
-      "text": "Protected exact-head CI #452, Security #453 and browser job 94333313832 passed on head 5b1e070; T036 remains reviewable pending human review and protected merge.",
+      "text": "Receipts for 803e78b and 7d8291a are attributable predecessor-head evidence only, not the live protected merge gate.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The mutable PR head, successful CI/Security/browser runs, zero unresolved threads and mergeability are read live immediately before protected merge; merge must use the same expected_head_sha.",
       "class": "CONFIRMED",
       "confidence": "high"
     }
   ],
-  "status": "reviewable",
+  "status": "verified",
   "confidence": "high",
   "confidence_basis": [
     ".loop/evidence/t036-renderer-proof.json",
     "apps/web/tests/component/content-blocks/registry.test.ts",
-    "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    "https://github.com/bynanci/courtside-tw/pull/85"
   ],
-  "volatility": "high",
+  "volatility": "medium",
   "as_of": "2026-08-13",
   "source_refs": [
     ".loop/evidence/t036-renderer-proof.json",
     "apps/web/app/components/content-blocks/registry.ts",
     "apps/web/app/components/content-blocks/ContentDocumentRenderer.vue",
-    "apps/web/app/pages/articles/[articleSlug].vue"
+    "apps/web/app/pages/articles/[articleSlug].vue",
+    "https://github.com/bynanci/courtside-tw/pull/85"
   ],
   "entities": ["courtside-tw", "T036", "ContentDocumentRenderer", "content-block registry", "T039"],
   "relations": {
@@ -64,8 +71,9 @@
   "sensitivity": "internal",
   "retention": "until_superseded",
   "write_receipt": {
-    "status": "SAVED",
-    "version": "t036-content-block-renderer-v1",
-    "written_by": "codex-agent"
+    "status": "UPDATED",
+    "version": "t036-content-block-renderer-v2",
+    "written_by": "codex-agent",
+    "update_reason": "Replace self-referential latest-head attribution with immutable implementation subjects plus external post-commit GitHub gate binding."
   }
 }

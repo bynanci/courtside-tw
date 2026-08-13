@@ -1,25 +1,16 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t034-t041-us2-implementation-lane",
-  "graph_version": 2,
+  "graph_version": 3,
   "run_id": "courtside-tw-us2-implementation-20260809",
   "status": "running",
-  "iteration": 2,
+  "iteration": 3,
   "started_at": "2026-08-09T08:16:20Z",
-  "updated_at": "2026-08-13T03:23:22Z",
-  "current_frontier": [
-    "a-t036",
-    "p-t036"
-  ],
-  "blocked_nodes": [
-    "a-t037",
-    "a-t038",
-    "a-t039",
-    "a-t040",
-    "a-t041"
-  ],
+  "updated_at": "2026-08-13T05:41:54Z",
+  "current_frontier": ["p-t036-live-exact-head", "g-t036-protected-merge"],
+  "blocked_nodes": ["a-t037", "a-t038", "a-t040", "a-t041"],
   "terminal_state": "running",
-  "next_action": "Human review and protected merge of the T036 review branch; leave T036 unchecked until merge.",
+  "next_action": "Bind CI, Security, browser, review-thread and mergeability receipts to the final PR #85 head in GitHub; if every protected gate passes, merge with expected_head_sha and verify T036/T039 on authoritative main.",
   "events": [
     {
       "event_id": "evt-us2-impl-001-lane-opened",
@@ -268,6 +259,74 @@
         "apps/web/tests/component/content-blocks/registry.test.ts"
       ],
       "decision": "Use 63/63 for the review matrix; no runtime or task-state change."
+    },
+    {
+      "event_id": "evt-us2-impl-006-t036-evidence-attribution-correction",
+      "at": "2026-08-13T05:41:54Z",
+      "actor": "codex-agent",
+      "type": "evidence_attribution_model_corrected",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "evidence.implementation_subject",
+            "after": "T036 runtime/test subject is immutable commit 5b1e070 and tree a6450ba; evidence-only commits do not change it."
+          },
+          {
+            "op": "replace",
+            "path": "evidence.final_exact_head_binding",
+            "before": "A versioned evidence file embeds the latest head SHA and run IDs.",
+            "after": "GitHub PR metadata, head-associated Actions runs and an append-only PR receipt externally bind the final exact head after the last commit."
+          },
+          {
+            "op": "replace",
+            "path": "frontier",
+            "before": "a-t036 -> p-t036",
+            "after": "p-t036-live-exact-head -> g-t036-protected-merge"
+          },
+          {
+            "op": "remove",
+            "path": "blocked_nodes.a-t039",
+            "before": "blocked",
+            "after": "T039 is inherited complete from main@d3efe73; no T039 implementation or checkbox mutation."
+          },
+          {
+            "op": "replace",
+            "path": "tasks.T036",
+            "before": "unchecked on review branch",
+            "after": "checked as a PR candidate; authoritative completion is asserted only after protected merge and main read-back"
+          }
+        ]
+      },
+      "implementation_subject": {
+        "commit": "5b1e070ad3f40079470c8a2cc621cef494682820",
+        "tree": "a6450baeb11f2946546a8f873d3b65a46974b5de"
+      },
+      "supersedes_interpretation": {
+        "event_id": "evt-us2-impl-004-t036-exact-head-proof-readback",
+        "scope": "Only the claim that 803e78b remains the current PR exact head. Its workflow receipts remain valid historical observations for that predecessor commit."
+      },
+      "ordering_note": "Event IDs and append order are authoritative. Prior observed timestamps are preserved as historical capture metadata even where wall-clock order differs.",
+      "evidence_refs": [
+        ".loop/evidence/t036-renderer-proof.json",
+        ".loop/memory/t036-content-block-renderer.json",
+        "https://github.com/bynanci/courtside-tw/pull/85"
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:t036-content-block-renderer",
+        "version": "t036-content-block-renderer-v2",
+        "evidence_refs": [
+          ".loop/evidence/t036-renderer-proof.json",
+          "https://github.com/bynanci/courtside-tw/pull/85"
+        ],
+        "next_review_at": "2026-08-20"
+      },
+      "failure_signature": "SELF_REFERENTIAL_EXACT_HEAD_ATTRIBUTION",
+      "decision": "Do not create another repository metadata commit after final GitHub exact-head gates. Persist the final SHA/run binding externally and use expected_head_sha at merge.",
+      "terminal_reason": "The evidence schema no longer requires an impossible self-hash fixed point; protected merge remains gated by live exact-head read-back."
     }
   ]
 }
