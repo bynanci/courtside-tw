@@ -1,0 +1,368 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-t039-progress-remediation
+objective: >-
+  Close only T039 with tests-first, stable block-anchor local reading progress,
+  explicit resume choice, bounded attributable storage and exact-head browser
+  plus Security evidence.
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - T039 local reading-progress composable and article-route integration
+    - T039 unit and browser acceptance tests
+    - append-only T039 RED, completion, ledger and semantic-memory receipts
+    - the T039 checkbox after attributable exact-head proof passes
+  out:
+    - T034-T038 or T040-T041 implementation or checkbox changes
+    - T056, T057 or any later task state
+    - Web3, Wallet, Passport, deployment or production activation
+    - API, database or migration changes
+
+policy:
+  authority:
+    allowed:
+      - implement and test only the bounded T039 reading-progress behavior
+      - record tests-first RED and exact-head CI, browser, Security and review proof
+      - check only T039 after every criterion is attributable and verified
+    requires_approval:
+      - protected merge of PR 84
+      - deployment, production activation or any scope expansion
+    forbidden:
+      - auto-jump before an explicit reader choice
+      - retain unbounded or unattributable reading-history keys
+      - weaken tests or use group-level evidence as task-completion proof
+      - modify any unrelated checkbox, Web3 or deployment state
+  human_gates:
+    - protected review and merge of PR 84
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+memory_workflow:
+  contract: work-memory/v1
+  control_ledger: Append T039 graph deltas, RED signatures and exact-head proof receipts.
+  semantic_memory: Capture only durable T039 state, verified behavior and remaining repository gate.
+  modes: [recall, capture, update, forget, no_op]
+  retrieval:
+    levels: [index, timeline_relations, details]
+    max_index_results: 10
+    stop_on_sufficient_evidence: true
+  capture:
+    allowed_kinds: [task_state, evidence, constraint, attempt]
+    requires_downstream_proof: true
+    requires_write_receipt: true
+  lifecycle: [seed, verified, stable, needs_update, disputed, archived]
+  failure_policy:
+    write_pending: blocked
+    stale_or_disputed: needs_human
+    redact_secrets: true
+
+graph:
+  entry_nodes: [t-t039-authorized]
+  terminal_nodes: [s-t039-complete]
+  current_frontier: [s-t039-complete]
+  blocked_nodes: []
+  terminal_state: success
+  loops:
+    - id: l1-t039-remediation
+      layer: L1
+      owner: codex-agent
+      trigger_nodes: [t-t039-authorized]
+      action_nodes: [a-t039-tests-first, a-t039-implementation]
+      proof_nodes: [p-t039-red, p-t039-local, p-t039-exact-head]
+      memory_nodes: [m-t039-memory]
+      stop_nodes: [s-t039-complete]
+      budgets:
+        max_iterations: 8
+        max_minutes: 240
+        max_same_failure: 2
+        max_graph_changes: 16
+        max_tokens: 60000
+  nodes:
+    - id: t-t039-authorized
+      kind: trigger
+      layer: L1
+      label: Reconcile T034-T041 and remediate the smallest independently closable task
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 1.0
+        basis: The user explicitly authorized tests-first remediation and attributable checkbox updates within T034-T041.
+        evidence_refs: [.loop/evidence/t039-progress-proof.json]
+      budget: { effort_hours: 0.3, tokens: 1200 }
+      config:
+        condition: Current main leaves T039 actually incomplete and it is independently closable without API or database changes.
+        inputs_required: [tasks.md, DESIGN.md, current-main code and tests, T034-T041 LOOP receipts]
+        dedupe: courtside-tw plus T039 plus main ed12e73
+    - id: a-t039-tests-first
+      kind: action
+      layer: L1
+      label: Add focused unit and browser contracts before each missing T039 behavior
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 1.0
+        basis: Test-only heads failed for the absent composable, bounded-storage recovery and stable-anchor reflow seams.
+        evidence_refs:
+          [
+            .loop/evidence/t039-tests-first-red-20260812.json,
+            .loop/evidence/t039-review-tests-first-red-20260812.json
+          ]
+      budget: { effort_hours: 2.5, tokens: 12000 }
+      config:
+        workflow:
+          [write focused contract, execute RED, classify failure, preserve immutable receipt]
+        allowed: [T039 unit tests, T039 browser tests, test script wiring, append-only evidence]
+        requires_approval: [weaken an acceptance criterion, expand beyond T039]
+        forbidden:
+          [production change in RED commit, synthetic green assertion, unrelated test rewrite]
+    - id: p-t039-red
+      kind: proof
+      layer: L1
+      label: Prove missing behavior with executable RED results
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 1.0
+        basis: CI 433 failed 5 of 57 tests on the exact test-only head while Security 434 passed.
+        evidence_refs: [.loop/evidence/t039-review-tests-first-red-20260812.json]
+      budget: { effort_hours: 0.5, tokens: 2500 }
+      config:
+        level: P3
+        claim: The focused contracts fail because T039 behavior is missing, not because of syntax or environment setup.
+        method: Local Node test replay and exact test-only GitHub CI log read-back.
+        evidence_path: .loop/evidence/t039-review-tests-first-red-20260812.json
+        required: true
+        baseline_required: true
+    - id: a-t039-implementation
+      kind: action
+      layer: L1
+      label: Implement bounded stable-anchor progress and explicit reload resume behavior
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 1.0
+        basis: The exact implementation tree changes only the reader composable and article integration, with support/test files in the bounded T039 slice.
+        evidence_refs: [.loop/evidence/t039-progress-proof.json]
+      budget: { effort_hours: 5.0, tokens: 24000 }
+      config:
+        workflow:
+          [
+            implement minimal seam,
+            run focused tests,
+            attack storage and lifecycle boundaries,
+            fix only proven defects
+          ]
+        allowed: [reader composable, article-route integration, T039 tests and test dependencies]
+        requires_approval: [API or database change, cross-task production refactor]
+        forbidden: [auto-resume, unbounded storage, content-derived code, migration or deployment]
+    - id: p-t039-local
+      kind: proof
+      layer: L1
+      label: Verify T039 unit, lint, type, build and formatting contracts
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        score: 1.0
+        basis: Web tests passed 57 of 57; lint, Nuxt typecheck, production build, Prettier and diff check passed.
+        evidence_refs: [.loop/evidence/t039-progress-proof.json]
+      budget: { effort_hours: 0.8, tokens: 3200 }
+      config:
+        level: P2
+        claim: The bounded T039 implementation passes every locally executable repository gate.
+        method: Locked pnpm 11.7 web test, lint, typecheck, build, Prettier and git diff check.
+        evidence_path: .loop/evidence/t039-progress-proof.json
+        required: true
+        baseline_required: true
+    - id: p-t039-exact-head
+      kind: proof
+      layer: L1
+      label: Preserve the historical implementation baseline and require live protected-head verification
+      owner: github
+      status: done
+      risk: high
+      confidence:
+        score: 0.95
+        basis: The earlier implementation head proves the original T039 core, while the current branch repairs four later review findings; CI, browser, Security and thread state must be evaluated live at the mutable expected merge head.
+        evidence_refs:
+          [
+            .loop/evidence/t039-progress-proof.json,
+            .loop/evidence/t039-review-remediation-20260813.json
+          ]
+      budget: { effort_hours: 1.5, tokens: 5000 }
+      config:
+        level: P3
+        claim: Historical executable proof remains attributable, and the current review-remediated head may merge only when every live protected gate matches expected_head_sha.
+        method: Retain immutable historical receipts, then read CI, Security, browser jobs, mergeability and unresolved threads live for the mutable expected merge head.
+        evidence_path: .loop/evidence/t039-progress-proof.json
+        required: true
+        baseline_required: true
+    - id: m-t039-memory
+      kind: memory
+      layer: L1
+      label: Persist T039 completion and remaining merge gate
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        score: 0.95
+        basis: Memory v3 preserves the historical T039 proof, records the four review repairs and refuses to serialize a superseded head as the live merge gate.
+        evidence_refs:
+          [
+            .loop/memory/t039-progress-completion.json,
+            .loop/evidence/t039-review-remediation-20260813.json
+          ]
+      budget: { effort_hours: 0.2, tokens: 1000 }
+      config:
+        path: .loop/memory/t039-progress-completion.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: work-memory/v1
+        memory_role: hybrid
+        receipt_required: true
+        write_failure_state: blocked
+    - id: s-t039-complete
+      kind: stop
+      layer: GLOBAL
+      label: T039 is complete and attributable evidence permits its checkbox
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 0.95
+        basis: T039 remains the only completed task after four review-scoped runtime repairs; protected merge still requires a live expected-head CI, Security, browser and thread readback.
+        evidence_refs:
+          [
+            .loop/evidence/t039-progress-proof.json,
+            .loop/evidence/t039-progress-proof-attribution-correction.json,
+            .loop/evidence/t039-review-remediation-20260813.json
+          ]
+      budget: { effort_hours: 0.0, tokens: 0 }
+      config:
+        states:
+          success: T039 is complete-and-evidenced and only its checkbox is checked.
+          no_op: No T039 gap or attributable state change exists.
+          blocked: A T039 acceptance, exact-head or memory proof is missing.
+          stalled: The same failure repeats without evidence delta.
+          exhausted: The bounded remediation budget is reached.
+          needs_human: Protected review or merge remains outside task-completion proof.
+  edges:
+    - {
+        id: e-t039-authorize-tests,
+        from: t-t039-authorized,
+        to: a-t039-tests-first,
+        type: enables,
+        required: true,
+        confidence: 1.0,
+        token_capacity: 12000
+      }
+    - {
+        id: e-t039-tests-red,
+        from: a-t039-tests-first,
+        to: p-t039-red,
+        type: verifies,
+        required: true,
+        confidence: 1.0,
+        token_capacity: 2500
+      }
+    - {
+        id: e-t039-red-implementation,
+        from: p-t039-red,
+        to: a-t039-implementation,
+        type: enables,
+        required: true,
+        confidence: 1.0,
+        token_capacity: 24000
+      }
+    - {
+        id: e-t039-implementation-local,
+        from: a-t039-implementation,
+        to: p-t039-local,
+        type: verifies,
+        required: true,
+        confidence: 1.0,
+        token_capacity: 3200
+      }
+    - {
+        id: e-t039-local-exact,
+        from: p-t039-local,
+        to: p-t039-exact-head,
+        type: enables,
+        required: true,
+        confidence: 1.0,
+        token_capacity: 5000
+      }
+    - {
+        id: e-t039-exact-memory,
+        from: p-t039-exact-head,
+        to: m-t039-memory,
+        type: records,
+        required: true,
+        confidence: 1.0,
+        token_capacity: 1000
+      }
+    - {
+        id: e-t039-exact-memory-enable,
+        from: p-t039-exact-head,
+        to: m-t039-memory,
+        type: enables,
+        required: true,
+        confidence: 1.0,
+        token_capacity: 1000
+      }
+    - {
+        id: e-t039-memory-read-tests,
+        from: m-t039-memory,
+        to: a-t039-tests-first,
+        type: reads,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 800
+      }
+    - {
+        id: e-t039-local-feedback,
+        from: p-t039-local,
+        to: a-t039-implementation,
+        type: feedback,
+        required: false,
+        confidence: 0.9,
+        token_capacity: 2000
+      }
+    - {
+        id: e-t039-memory-complete,
+        from: m-t039-memory,
+        to: s-t039-complete,
+        type: enables,
+        required: true,
+        confidence: 1.0,
+        token_capacity: 1000
+      }
+
+flow:
+  source: t-t039-authorized
+  sink: s-t039-complete
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - memory_receipt
+  - next_action

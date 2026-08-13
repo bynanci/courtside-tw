@@ -1,0 +1,121 @@
+{
+  "schema_version": "courtside-tw/tests-first-red/v1",
+  "proof_id": "t039-review-tests-first-red-20260812",
+  "recorded_at": "2026-08-12T15:34:09Z",
+  "result": "EXPECTED_RED_CONFIRMED",
+  "task": "T039",
+  "source_of_truth": {
+    "repository": "bynanci/courtside-tw",
+    "base_ref": "agent/t039-progress-remediation",
+    "base_commit": "0b0bbd76b439e6a8dd5a3d203e017deca7da2643",
+    "base_tree": "6445316d253d675874455ebedffaddd5bd67c494",
+    "task_ref": "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T039"
+  },
+  "test_delta": {
+    "unit_test": {
+      "path": "apps/web/tests/unit/reader/useLocalReadingProgress.test.ts",
+      "blob": "ff97e23a55286bee5f60438e5cb446a2aba3d50b",
+      "acceptance": [
+        "a syntactically valid partial manifest is reconciled with attributable index-to-record groups before enforcing the 20-article cap",
+        "record-only interrupted writes are removed without touching unrelated storage",
+        "an unavailable article is cleared through attributable index/record evidence when an interrupted write omitted the slug pointer",
+        "a failed save restores an exact target record-only prestate",
+        "an unavailable article clears a canonical record-only earliest kill-point without touching unrelated storage",
+        "Continue can dismiss the prompt while retaining the stable anchor until current layout geometry is available"
+      ]
+    },
+    "browser_test": {
+      "path": "apps/web/tests/e2e/us2-read-article.spec.ts",
+      "blob": "c124295dc979d3315f5e968fa98e772a66a3447b",
+      "acceptance": [
+        "a real mid-article save followed by reload remains at the top until Continue or Start over",
+        "Continue uses the stable saved anchor",
+        "back-forward navigation through an actual Nuxt link retains native history restoration without a BFCache-dependent prompt assertion",
+        "stale revision invalidation leaves a reload at the top",
+        "withdrawn cleanup removes a canonical record-only earliest kill-point",
+        "a second reload before choosing keeps the prompt at the top and releases the prior document policy on pagehide",
+        "storage-unavailable reload preserves native scroll restoration and auto policy",
+        "a blank v1 index falls through to a valid legacy pointer and is guarded before migration",
+        "Continue and Start over keep the chosen stable target under a delayed full-document load, then restore native history policy",
+        "Continue recomputes the stable block and offset after the prompt disappears and delayed layout changes settle"
+      ]
+    }
+  },
+  "red_execution": {
+    "command": "cd apps/web && node --experimental-strip-types --test tests/unit/reader/useLocalReadingProgress.test.ts",
+    "exit_code": 1,
+    "tests": 15,
+    "passed": 13,
+    "failed": 2,
+    "failure_signatures": [
+      "reconciles a valid partial manifest and interrupted writes before enforcing the cap: manifest length 2, expected 20",
+      "clears an unavailable attributable record when an interrupted write omitted its slug key: record remained, expected null"
+    ],
+    "classification": "EXPECTED_MISSING_BEHAVIOR",
+    "syntax_or_setup_failure": false
+  },
+  "browser_red_execution": {
+    "result": "NOT_RUN_LOCAL_ENVIRONMENT_BLOCKER",
+    "blocker": "The local Playwright Chromium executable is unavailable; the test is committed before the implementation correction so CI can provide executable browser evidence."
+  },
+  "remote_red_preflight": {
+    "head_commit": "04d2c0b66fe3d87504019be44270d31e395eee91",
+    "ci_run_id": 31613704179,
+    "ci_run_number": 429,
+    "result": "EXPECTED_RED_AT_FORMAT_GATE",
+    "failure": "Prettier rejected apps/web/tests/e2e/us2-read-article.spec.ts before the unit tests executed.",
+    "correction": "The follow-up remains test-only: format the browser test, update its blob reference, and rerun CI so the behavioral RED can execute."
+  },
+  "review_followup_red_execution": {
+    "recorded_at": "2026-08-12T15:49:00Z",
+    "command": "cd apps/web && node --experimental-strip-types --test tests/unit/reader/useLocalReadingProgress.test.ts",
+    "exit_code": 1,
+    "tests": 17,
+    "passed": 15,
+    "failed": 2,
+    "failure_signatures": [
+      "failed save restores an exact target record-only interrupted prestate: target record was null instead of its original value",
+      "clears an unavailable canonical record-only interrupted write: canonical progress record remained instead of null"
+    ],
+    "classification": "EXPECTED_MISSING_BEHAVIOR",
+    "syntax_or_setup_failure": false
+  },
+  "remote_behavioral_red_execution": {
+    "head_commit": "28b2b9788a3aad04fbfda6f57dcef5ff44e93c00",
+    "ci_run_id": 31614787943,
+    "ci_run_number": 431,
+    "frontend_job_id": 94174775087,
+    "result": "EXPECTED_RED_CONFIRMED",
+    "tests": 57,
+    "passed": 53,
+    "failed": 4,
+    "failure_signatures": [
+      "valid partial manifest retained only 2 tracked entries while owned records remained outside the cap",
+      "failed save deleted the exact target record-only prestate",
+      "missing-slug unavailable cleanup retained its attributable record",
+      "canonical record-only earliest kill-point survived unavailable cleanup"
+    ],
+    "browser_job": "SKIPPED_DOWNSTREAM_OF_EXPECTED_FRONTEND_RED",
+    "classification": "EXPECTED_MISSING_BEHAVIOR"
+  },
+  "stable_anchor_reflow_red_execution": {
+    "recorded_at": "2026-08-12T16:14:14Z",
+    "command": "COREPACK_HOME=/tmp/courtside-t039-corepack corepack pnpm@11.7.0 --filter @courtside/web run test",
+    "exit_code": 1,
+    "tests": 57,
+    "passed": 56,
+    "failed": 1,
+    "failure_signature": "continue resolves the same stable anchor against current viewport and font geometry: beginContinueReading is not a function",
+    "classification": "EXPECTED_MISSING_BEHAVIOR",
+    "syntax_or_setup_failure": false
+  },
+  "scope_guard": {
+    "production_changed_in_this_red_delta": false,
+    "database_or_migration_changed": false,
+    "T056_or_T057_plus_changed": false,
+    "web3_wallet_passport_changed": false,
+    "deployment_or_activation_changed": false,
+    "unrelated_task_state_changed": false
+  },
+  "next_action": "Reconcile attributable progress storage before cap enforcement, provide slug-pointer-independent unavailable cleanup, suppress reload restoration only while the explicit resume choice is pending, then rerun focused and exact-head verification."
+}

@@ -1,0 +1,187 @@
+{
+  "schema_version": "courtside-tw/task-progress-proof/v1",
+  "proof_id": "t039-progress-proof",
+  "recorded_at": "2026-08-12T16:25:44Z",
+  "result": "COMPLETE_AND_EVIDENCED",
+  "classification": "complete-and-evidenced",
+  "task": "T039",
+  "source_of_truth": {
+    "repository": "bynanci/courtside-tw",
+    "base_ref": "main",
+    "base_commit": "ed12e73aea918797a9470140e9730c5a1905d4f7",
+    "pull_request": 84,
+    "implementation_head": "9351bedce1e990ff618bf1c81028bbd8f454bfab",
+    "implementation_tree": "526cc207fd309dae21111c986298adbd92c87127",
+    "task_ref": "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T039"
+  },
+  "tests_first": {
+    "initial_receipt": ".loop/evidence/t039-tests-first-red-20260812.json",
+    "review_receipt": ".loop/evidence/t039-review-tests-first-red-20260812.json",
+    "remote_behavioral_red": {
+      "head_commit": "5fa038e1a9187bb198e09af03583b80990ae2aa7",
+      "ci_run_id": 31616916919,
+      "ci_run_number": 433,
+      "conclusion": "failure",
+      "tests": 57,
+      "passed": 52,
+      "failed": 5,
+      "expected_failures": [
+        "beginContinueReading stable-anchor reflow seam was absent",
+        "a valid partial manifest bypassed the 20-article cap",
+        "an exact target record-only prestate was not restored after a staged save failure",
+        "an unavailable attributable record without a slug pointer was retained",
+        "a canonical record-only earliest kill-point was retained for an unavailable article"
+      ],
+      "security_run_id": 31616916920,
+      "security_run_number": 434,
+      "security_conclusion": "success",
+      "classification": "EXPECTED_MISSING_BEHAVIOR"
+    }
+  },
+  "implementation": {
+    "production": {
+      "apps/web/app/features/reader/composables/useLocalReadingProgress.ts": "12490b471e1fae7b9dd4fd7e4a0a1b77ba9ca3b8",
+      "apps/web/app/pages/articles/[articleSlug].vue": "2a88e8c42dd13a27746b7a8488b70021abd04bd7"
+    },
+    "tests": {
+      "apps/web/tests/unit/reader/useLocalReadingProgress.test.ts": "ff97e23a55286bee5f60438e5cb446a2aba3d50b",
+      "apps/web/tests/e2e/us2-read-article.spec.ts": "c124295dc979d3315f5e968fa98e772a66a3447b"
+    },
+    "support": {
+      "apps/web/package.json": "2410eded33c3d7f358f90c14c7f516a7da3133b8",
+      "pnpm-lock.yaml": "eb398d1ff0385335fe5480f3071558fe721265fe"
+    }
+  },
+  "acceptance_mapping": [
+    {
+      "criterion": "Persist a stable article, immutable revision, block anchor and bounded offset instead of a viewport pixel.",
+      "status": "PASS",
+      "proof": [
+        "progressRecordKey(articleId, revisionId, blockId)",
+        "useLocalReadingProgress.save",
+        "loads a mid-article pointer as an explicit prompt without scrolling"
+      ]
+    },
+    {
+      "criterion": "Offer an explicit Continue or Start over choice and never auto-jump on load.",
+      "status": "PASS",
+      "proof": [
+        "reader-resume non-modal status in [articleSlug].vue",
+        "offers explicit continue or start-over actions before restoring a stable anchor"
+      ]
+    },
+    {
+      "criterion": "Resolve the saved block and offset against current viewport, font and post-hydration geometry.",
+      "status": "PASS",
+      "proof": [
+        "continue resolves the same stable anchor against current viewport and font geometry",
+        "browser proof applies a 640px delayed reflow and requires the restored anchor equation to be within 3px"
+      ]
+    },
+    {
+      "criterion": "Invalidate stale revisions and clear completed, withdrawn or unavailable attributable progress.",
+      "status": "PASS",
+      "proof": [
+        "invalidates a stale revision even when its stable block still exists",
+        "invalidates stale revision progress and starts a reload from the top",
+        "clears local progress after the reader reaches the completed range",
+        "clears a saved pointer when the public article becomes unavailable"
+      ]
+    },
+    {
+      "criterion": "Fail closed for corrupt, quota-limited or unavailable storage and keep retained reading history bounded.",
+      "status": "PASS",
+      "proof": [
+        "57 repository web tests, including 17 focused reader units, cover corrupt indexes, exact rollback, legacy migration, slug changes, partial manifests and a 20-article cap",
+        "keeps reading functional when browser storage is unavailable"
+      ]
+    },
+    {
+      "criterion": "Preserve native SPA back/forward restoration while suppressing only an initial full reload that has an attributable resume candidate.",
+      "status": "PASS",
+      "proof": [
+        "document-scoped reload guard with pagehide release",
+        "browser journey leaves through the real Nuxt issue link and verifies native Back restoration",
+        "blank v1 index falls through to a valid legacy candidate"
+      ]
+    }
+  ],
+  "local_verification": {
+    "repository_verify": {
+      "command": "COREPACK_HOME=/tmp/courtside-t039-corepack make PNPM='corepack pnpm@11.7.0' verify",
+      "result": "PASS"
+    },
+    "web_tests": {
+      "command": "COREPACK_HOME=/tmp/courtside-t039-corepack corepack pnpm@11.7.0 --filter @courtside/web run test",
+      "result": "PASS",
+      "tests": 57,
+      "passed": 57,
+      "focused_reader_units": 17
+    },
+    "lint": "PASS",
+    "nuxt_typecheck": "PASS",
+    "production_build": "PASS",
+    "prettier": "PASS",
+    "git_diff_check": "PASS",
+    "browser_execution": "NOT_RUN_LOCALLY: Playwright Chromium was unavailable; exact-head CI supplied the browser proof."
+  },
+  "exact_head_verification": {
+    "head_commit": "9351bedce1e990ff618bf1c81028bbd8f454bfab",
+    "tree_sha": "526cc207fd309dae21111c986298adbd92c87127",
+    "ci": {
+      "run_id": 31617186365,
+      "run_number": 434,
+      "conclusion": "success",
+      "workflow_url": "https://github.com/bynanci/courtside-tw/actions/runs/31617186365",
+      "jobs": {
+        "frontend_and_contract_verification": {"job_id": 94182827421, "conclusion": "success"},
+        "java_quality_and_unit_verification": {"job_id": 94182827341, "conclusion": "success"},
+        "docker_compose_dependency_health": {"job_id": 94182827477, "conclusion": "success"},
+        "public_magazine_browser_verification": {"job_id": 94183081214, "conclusion": "success"}
+      },
+      "browser": {
+        "tests": 18,
+        "passed": 18,
+        "t039_reader_journeys": 6,
+        "artifact_id": 9149793038,
+        "artifact_digest": "sha256:c7f6f538af5e108f5984dc5c4b6fd32b3a10df4f4d9281f9a4f36f37e2146646"
+      }
+    },
+    "security": {
+      "run_id": 31617186277,
+      "run_number": 435,
+      "conclusion": "success",
+      "workflow_url": "https://github.com/bynanci/courtside-tw/actions/runs/31617186277",
+      "required_jobs": "success"
+    }
+  },
+  "independent_review": {
+    "result": "PASS",
+    "reviewers": 2,
+    "findings_remaining": 0,
+    "reviewed_boundaries": [
+      "stable-anchor recomputation after prompt removal and delayed layout reflow",
+      "stale revision and unavailable content cleanup",
+      "bounded manifest reconciliation and failure rollback",
+      "reload, pagehide, SPA Back and unavailable-storage lifecycle"
+    ]
+  },
+  "scope_guard": {
+    "production_source_changed": true,
+    "production_change_scope": "T039 reader progress composable and article-route integration only",
+    "task_checkbox_changed": ["T039"],
+    "other_task_checkboxes_changed": false,
+    "T056_or_T057_plus_changed": false,
+    "web3_wallet_passport_changed": false,
+    "deployment_or_activation_changed": false,
+    "database_or_migration_changed": false,
+    "api_or_publication_behavior_changed": false,
+    "historical_evidence_overwritten": false
+  },
+  "blockers": {
+    "task_acceptance": [],
+    "repository_state": [
+      "PR #84 remains subject to normal protected review and merge; authoritative main read-back can occur only after merge."
+    ]
+  }
+}

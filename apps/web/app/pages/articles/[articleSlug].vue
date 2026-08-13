@@ -14,6 +14,15 @@ import {
   parsePublicArticleSlug,
   parsePublicIssueSlug
 } from "../../features/issues/public-issue-contract"
+import {
+  legacyProgressKey,
+  progressIndexKey,
+  selectViewportProgress,
+  useLocalReadingProgress,
+  type LocalReadingContext,
+  type ProgressStorage,
+  type ReadingBlockAnchor
+} from "../../features/reader/composables/useLocalReadingProgress"
 import CourtPulseRuntime from "../../components/article/CourtPulseRuntime.vue"
 
 type ContentRun = {
@@ -42,11 +51,6 @@ type GalleryItem = {
   credit?: string
 }
 
-type ResumeProgress = {
-  blockId: string
-  offset: number
-}
-
 type CourtPulseParameters = {
   density: number
   tempo: number
@@ -54,6 +58,16 @@ type CourtPulseParameters = {
   paletteId: "court-dusk"
   numericSequence: number[]
 }
+
+type DocumentNavigationType = "navigate" | "reload" | "back_forward" | "prerender"
+type DocumentNavigationEntry = {
+  name: string
+  type: DocumentNavigationType
+}
+
+const RELOAD_GUARD_ATTRIBUTE = "data-reader-reload-restoration-handled"
+const READER_PROGRESS_WRITE_INTERVAL_MS = 250
+const RELOAD_SCROLL_SNAPSHOT_KEY = "courtside.reader.reload-scroll:v1"
 
 const route = useRoute()
 const config = useRuntimeConfig()
@@ -88,12 +102,11 @@ const {
     ? fetchPublicArticle(config.public.apiBaseUrl, articleSlug)
     : Promise.resolve(null)
 )
+const articleUnavailable = computed(
+  () => !articleSlugValid || isUnavailableArticleError(error.value)
+)
 
-if (
-  import.meta.server &&
-  (!articleSlugValid ||
-    (error.value instanceof PublicArticleApiError && error.value.statusCode === 404))
-) {
+if (import.meta.server && articleUnavailable.value) {
   setResponseStatus(useRequestEvent()!, 404)
 }
 
@@ -116,16 +129,25 @@ const readingTimeMinutes = computed(() => {
   )
   return Math.max(1, Math.ceil(characters / 450))
 })
-const resumeStorageKey = computed(() =>
+const readingContext = computed<LocalReadingContext | null>(() =>
   article.value
-    ? "courtside.reader.progress:" +
-      article.value.slug +
-      ":revision-" +
-      article.value.revisionNumber
-    : ""
+    ? {
+        articleId: article.value.articleId,
+        revisionId: article.value.revisionId,
+        revisionNumber: article.value.revisionNumber,
+        articleSlug: article.value.slug,
+        articleTitle: article.value.title
+      }
+    : null
 )
-const resumeAvailable = ref(false)
-const resumeProgress = ref<ResumeProgress | null>(null)
+const readingBlockAnchors = computed<ReadingBlockAnchor[]>(() =>
+  articleBlocks.value.map((block, index) => ({
+    id: block.id,
+    label: blockAnchorLabel(index)
+  }))
+)
+const readingProgress = useLocalReadingProgress()
+const { resumePrompt } = readingProgress
 const shareStatus = ref("")
 const failedAssets = ref(new Set<string>())
 const motionMode = ref<"reduced" | "full">("reduced")
@@ -133,9 +155,17 @@ const clientReady = ref(false)
 const interactiveEnabled = ref(false)
 const creativeInViewByBlock = ref<Record<string, boolean>>({})
 const runtimeStateByBlock = ref<Record<string, "paused" | "running">>({})
-const resumeStorageDisabled = ref(false)
 const creativeObservers = new Map<string, IntersectionObserver>()
 let creativeVisibilityTimer: number | null = null
+let reloadGuardActive = false
+let reloadProgressLoaded = false
+let reloadResumeChoicePending = false
+let reloadLifecycleReady = false
+let reloadReleaseScheduled = false
+let reloadChosenAction: "continue" | "start-over" | null = null
+let reloadManualScrollPosition: number | null = null
+let previousScrollRestoration: "auto" | "manual" | null = null
+let progressSaveTimer: number | null = null
 
 useHead(() => {
   const current = article.value
@@ -180,6 +210,17 @@ useHead(() => {
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null
+}
+
+function isUnavailableArticleError(value: unknown): boolean {
+  if (value instanceof PublicArticleApiError) {
+    return value.statusCode === 404 || value.statusCode === 410
+  }
+  if (!isRecord(value)) {
+    return false
+  }
+  const status = value.statusCode ?? value.status
+  return status === 404 || status === 410
 }
 
 function stringValue(value: unknown): string {
@@ -278,12 +319,7 @@ function safeInlineHref(value: unknown): string | null {
 }
 
 function assetMediaUrl(assetId: unknown, variant = "inline"): string {
-  if (typeof assetId !== "string" || !article.value) {
-    return ""
-  }
-  const media = article.value.media.find(
-    (candidate) => candidate.assetId === assetId && candidate.variant === variant
-  )
+  const media = assetMedia(assetId, variant)
   if (!media) {
     return ""
   }
@@ -292,6 +328,28 @@ function assetMediaUrl(assetId: unknown, variant = "inline"): string {
   } catch {
     return ""
   }
+}
+
+function assetMedia(
+  assetId: unknown,
+  variant = "inline"
+): PublicArticleProjection["media"][number] | null {
+  if (typeof assetId !== "string" || !article.value) {
+    return null
+  }
+  return (
+    article.value.media.find(
+      (candidate) => candidate.assetId === assetId && candidate.variant === variant
+    ) ?? null
+  )
+}
+
+function assetMediaWidth(assetId: unknown, variant = "inline"): number | undefined {
+  return assetMedia(assetId, variant)?.width
+}
+
+function assetMediaHeight(assetId: unknown, variant = "inline"): number | undefined {
+  return assetMedia(assetId, variant)?.height
 }
 
 const CONTRIBUTOR_ROLE_LABELS: Record<string, string> = {
@@ -476,7 +534,8 @@ function handleCreativeScroll(): void {
 
 function handleReaderScroll(): void {
   handleCreativeScroll()
-  saveReadingProgress()
+  releaseReloadGuardAfterManualScroll()
+  scheduleReadingProgressSave()
 }
 
 function observeCreative(): void {
@@ -546,128 +605,427 @@ async function shareArticle(): Promise<void> {
   shareStatus.value = "請使用下方文章連結。"
 }
 
-function parseResumeProgress(value: unknown): ResumeProgress | null {
-  if (
-    !isRecord(value) ||
-    typeof value.blockId !== "string" ||
-    typeof value.offset !== "number" ||
-    value.offset < 0 ||
-    value.offset > 1
-  ) {
-    return null
-  }
-  return { blockId: value.blockId, offset: value.offset }
-}
-
-function restoreResumeProgress(): void {
-  if (typeof window === "undefined" || !resumeProgress.value) {
-    return
-  }
-  const target = document.getElementById("block-" + resumeProgress.value.blockId)
-  if (!target) {
-    return
-  }
-  const rect = target.getBoundingClientRect()
-  const targetTop =
-    window.scrollY +
-    rect.top +
-    rect.height * resumeProgress.value.offset -
-    Math.min(window.innerHeight * 0.25, 160)
-  window.scrollTo({ top: Math.max(0, targetTop), behavior: "auto" })
-}
-
-function readResumeStorage(key: string): string | null {
-  if (resumeStorageDisabled.value || typeof window === "undefined") {
-    return null
-  }
-  try {
-    return window.localStorage.getItem(key)
-  } catch {
-    resumeStorageDisabled.value = true
-    return null
-  }
-}
-
-function writeResumeStorage(key: string, value: string): boolean {
-  if (resumeStorageDisabled.value || typeof window === "undefined") {
-    return false
-  }
-  try {
-    window.localStorage.setItem(key, value)
-    return true
-  } catch {
-    resumeStorageDisabled.value = true
-    return false
-  }
-}
-
 function saveReadingProgress(): void {
-  if (typeof window === "undefined" || !resumeStorageKey.value || resumeStorageDisabled.value) {
+  const storage = browserProgressStorage()
+  const context = readingContext.value
+  if (!storage || !context) {
     return
   }
-  const blocks = Array.from(document.querySelectorAll<HTMLElement>("[data-block-id]"))
-  if (blocks.length === 0) {
-    return
-  }
-  const lastBlock = blocks.at(-1)
-  const lastRect = lastBlock?.getBoundingClientRect()
   const documentBottom = Math.max(
     document.documentElement.scrollHeight,
     document.body?.scrollHeight ?? 0
   )
-  const atDocumentEnd = window.scrollY + window.innerHeight >= documentBottom - 2
-  let current =
-    atDocumentEnd && lastBlock
-      ? lastBlock
-      : blocks.find((block) => {
-          const rect = block.getBoundingClientRect()
-          return rect.bottom > 0 && rect.top < window.innerHeight * 0.6
-        })
-  if (!current) {
-    const previousBlock = resumeProgress.value?.blockId
-      ? blocks.find((block) => block.dataset.blockId === resumeProgress.value?.blockId)
-      : null
-    if (lastBlock && lastRect && lastRect.bottom <= window.innerHeight * 0.25) {
-      current = lastBlock
-    } else if (previousBlock) {
-      current = previousBlock
-    } else {
-      return
-    }
-  }
-  const rect = current.getBoundingClientRect()
-  const offset = Math.min(
-    1,
-    Math.max(0, (window.innerHeight * 0.25 - rect.top) / Math.max(rect.height, 1))
-  )
-  const progress = { blockId: current.dataset.blockId ?? "", offset }
-  if (!progress.blockId || !writeResumeStorage(resumeStorageKey.value, JSON.stringify(progress))) {
+  const scrollableHeight = Math.max(documentBottom - window.innerHeight, 1)
+  const documentProgress = Math.min(1, Math.max(0, window.scrollY / scrollableHeight))
+  if (documentProgress > 0.95) {
+    readingProgress.clearCompleted(storage, context)
     return
   }
-  resumeProgress.value = progress
-  resumeAvailable.value = true
+  const blockLabels = new Map(
+    readingBlockAnchors.value.map((block) => [block.id, block.label] as const)
+  )
+  const location = selectViewportProgress(
+    readingBlockElements().map((element) => {
+      const rect = element.getBoundingClientRect()
+      const blockId = element.dataset.blockId ?? ""
+      return {
+        blockId,
+        blockLabel: blockLabels.get(blockId) ?? "文章段落",
+        top: rect.top,
+        bottom: rect.bottom,
+        height: rect.height
+      }
+    }),
+    window.innerHeight,
+    documentProgress
+  )
+  if (!location) {
+    return
+  }
+  readingProgress.save(storage, context, location)
+}
+
+function scheduleReadingProgressSave(): void {
+  if (typeof window === "undefined" || progressSaveTimer !== null) {
+    return
+  }
+  progressSaveTimer = window.setTimeout(() => {
+    progressSaveTimer = null
+    saveReadingProgress()
+  }, READER_PROGRESS_WRITE_INTERVAL_MS)
+}
+
+function flushReadingProgressSave(): void {
+  if (typeof window === "undefined" || progressSaveTimer === null) {
+    return
+  }
+  window.clearTimeout(progressSaveTimer)
+  progressSaveTimer = null
+  saveReadingProgress()
 }
 
 function loadResumeProgress(): void {
-  resumeAvailable.value = false
-  resumeProgress.value = null
-  if (typeof window === "undefined" || !resumeStorageKey.value) {
+  const storage = browserProgressStorage()
+  const context = readingContext.value
+  if (!storage) {
+    markReloadProgressLoaded(false)
     return
   }
-  const saved = readResumeStorage(resumeStorageKey.value)
-  if (!saved) {
+  if (!context) {
+    if (articleSlugValid && articleUnavailable.value) {
+      readingProgress.clearUnavailable(storage, articleSlug)
+    }
+    markReloadProgressLoaded(false)
+    return
+  }
+  readingProgress.load(storage, context, readingBlockAnchors.value)
+  markReloadProgressLoaded(Boolean(readingProgress.resumePrompt.value))
+}
+
+function markReloadProgressLoaded(resumeChoicePending: boolean): void {
+  if (!reloadGuardActive) {
+    return
+  }
+  if (releaseReloadGuardAfterManualScroll()) {
+    return
+  }
+  reloadProgressLoaded = true
+  reloadResumeChoicePending = resumeChoicePending
+  applyReloadGuardPosition()
+  scheduleReloadGuardRelease()
+}
+
+async function continueFromSavedProgress(): Promise<void> {
+  if (typeof window === "undefined") {
+    return
+  }
+  if (!readingProgress.beginContinueReading()) {
+    return
+  }
+  if (reloadGuardActive) {
+    reloadManualScrollPosition = null
+    reloadResumeChoicePending = false
+    reloadChosenAction = "continue"
+    applyReloadGuardPosition()
+    scheduleReloadGuardRelease()
+    return
+  }
+  await nextTick()
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(scrollToSavedProgress)
+  })
+}
+
+function scrollToSavedProgress(): void {
+  const targetTop = readingProgress.continueReading(
+    readingBlockElements().map((element) => {
+      const rect = element.getBoundingClientRect()
+      return {
+        blockId: element.dataset.blockId ?? "",
+        top: window.scrollY + rect.top,
+        height: rect.height
+      }
+    }),
+    window.innerHeight
+  )
+  window.scrollTo({ top: targetTop ?? 0, behavior: "auto" })
+}
+
+function startReadingFromTop(): void {
+  const storage = browserProgressStorage()
+  const context = readingContext.value
+  if (storage && context) {
+    readingProgress.startOver(storage, context)
+  }
+  if (typeof window !== "undefined") {
+    if (reloadGuardActive) {
+      reloadManualScrollPosition = null
+      reloadResumeChoicePending = false
+      reloadChosenAction = "start-over"
+      applyReloadGuardPosition()
+      scheduleReloadGuardRelease()
+      return
+    }
+    window.scrollTo({ top: 0, behavior: "auto" })
+  }
+}
+
+function applyReloadFinalChoice(): void {
+  if (!reloadGuardActive) {
+    return
+  }
+  if (reloadChosenAction === "continue") {
+    scrollToSavedProgress()
+  } else {
+    applyReloadGuardPosition()
+  }
+}
+
+function beginInitialReloadScrollGuard(): void {
+  if (typeof window === "undefined" || typeof document === "undefined") {
+    return
+  }
+  const navigation = navigationEntry()
+  if (
+    navigation?.type !== "reload" ||
+    window.location.hash ||
+    document.documentElement.hasAttribute(RELOAD_GUARD_ATTRIBUTE)
+  ) {
+    return
+  }
+  const initialUrl = new URL(navigation.name, window.location.href)
+  if (
+    initialUrl.origin !== window.location.origin ||
+    initialUrl.pathname !== window.location.pathname ||
+    initialUrl.search !== window.location.search
+  ) {
+    return
+  }
+
+  document.documentElement.setAttribute(RELOAD_GUARD_ATTRIBUTE, "true")
+  if (!hasReloadProgressCandidate()) {
+    return
+  }
+  previousScrollRestoration = window.history.scrollRestoration
+  window.history.scrollRestoration = "manual"
+  reloadGuardActive = true
+  reloadProgressLoaded = false
+  reloadResumeChoicePending = false
+  reloadChosenAction = null
+  reloadLifecycleReady = document.readyState === "complete"
+  window.addEventListener("load", handleReloadLifecycleReady)
+  window.addEventListener("pageshow", handleReloadLifecycleReady)
+  applyReloadGuardPosition()
+}
+
+function restoreUnavailableStorageScrollPosition(): void {
+  if (
+    typeof window === "undefined" ||
+    browserProgressStorage() ||
+    navigationEntry()?.type !== "reload"
+  ) {
+    return
+  }
+  const storage = browserSessionStorage()
+  if (!storage) {
+    return
+  }
+  let rawSnapshot: string | null
+  try {
+    rawSnapshot = storage.getItem(RELOAD_SCROLL_SNAPSHOT_KEY)
+    storage.removeItem(RELOAD_SCROLL_SNAPSHOT_KEY)
+  } catch {
+    return
+  }
+  if (!rawSnapshot) {
+    return
+  }
+  let snapshot: { href?: unknown; top?: unknown }
+  try {
+    snapshot = JSON.parse(rawSnapshot) as { href?: unknown; top?: unknown }
+  } catch {
+    return
+  }
+  if (
+    snapshot.href !== window.location.href ||
+    typeof snapshot.top !== "number" ||
+    !Number.isFinite(snapshot.top) ||
+    snapshot.top <= 0
+  ) {
+    return
+  }
+  const targetPosition = snapshot.top
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: targetPosition, behavior: "auto" })
+    })
+  })
+}
+
+function hasReloadProgressCandidate(): boolean {
+  const storage = browserProgressStorage()
+  const context = readingContext.value
+  if (!storage || !context) {
+    return false
+  }
+  try {
+    const indexValue = storage.getItem(progressIndexKey(context.articleId))
+    return Boolean(
+      indexValue || storage.getItem(legacyProgressKey(context.articleSlug, context.revisionNumber))
+    )
+  } catch {
+    return false
+  }
+}
+
+function handleReloadLifecycleReady(): void {
+  reloadLifecycleReady = true
+  if (releaseReloadGuardAfterManualScroll()) {
+    return
+  }
+  applyReloadGuardPosition()
+  scheduleReloadGuardRelease()
+}
+
+function releaseReloadGuardAfterManualScroll(): boolean {
+  if (!reloadGuardActive || reloadChosenAction === "continue" || window.scrollY <= 0) {
+    return false
+  }
+  reloadManualScrollPosition = window.scrollY
+  queueManualReloadPositionRestore()
+  releaseReloadScrollGuard()
+  return true
+}
+
+function queueManualReloadPositionRestore(): void {
+  if (typeof window === "undefined" || reloadManualScrollPosition === null) {
+    return
+  }
+  if (document.readyState === "complete") {
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(restoreManualReloadScrollPosition)
+    })
+    return
+  }
+  window.addEventListener("load", restoreManualReloadScrollPosition, { once: true })
+}
+
+function restoreManualReloadScrollPosition(): void {
+  if (typeof window === "undefined" || reloadManualScrollPosition === null) {
+    return
+  }
+  const targetPosition = reloadManualScrollPosition
+  reloadManualScrollPosition = null
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: targetPosition, behavior: "auto" })
+    })
+  })
+}
+
+function scheduleReloadGuardRelease(): void {
+  if (
+    !reloadGuardActive ||
+    !reloadProgressLoaded ||
+    !reloadLifecycleReady ||
+    reloadResumeChoicePending ||
+    reloadReleaseScheduled
+  ) {
+    return
+  }
+  reloadReleaseScheduled = true
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      applyReloadFinalChoice()
+      releaseReloadScrollGuard()
+    })
+  })
+}
+
+function applyReloadGuardPosition(): void {
+  if (reloadGuardActive) {
+    window.scrollTo({ top: 0, behavior: "auto" })
+  }
+}
+
+function releaseReloadScrollGuard(): void {
+  if (typeof window === "undefined" || !reloadGuardActive) {
+    return
+  }
+  reloadGuardActive = false
+  reloadResumeChoicePending = false
+  reloadReleaseScheduled = false
+  reloadChosenAction = null
+  window.removeEventListener("load", handleReloadLifecycleReady)
+  window.removeEventListener("pageshow", handleReloadLifecycleReady)
+  if (previousScrollRestoration) {
+    window.history.scrollRestoration = previousScrollRestoration
+  }
+  previousScrollRestoration = null
+}
+
+function handleReaderPageHide(): void {
+  saveUnavailableStorageScrollPosition()
+  flushReadingProgressSave()
+  reloadManualScrollPosition = null
+  window.removeEventListener("load", restoreManualReloadScrollPosition)
+  releaseReloadScrollGuard()
+}
+
+function navigationEntry(): DocumentNavigationEntry | null {
+  if (typeof performance === "undefined") {
+    return null
+  }
+  const entry = performance.getEntriesByType("navigation")[0] as
+    { name?: unknown; type?: unknown } | undefined
+  return entry && typeof entry.name === "string" && isDocumentNavigationType(entry.type)
+    ? { name: entry.name, type: entry.type }
+    : null
+}
+
+function isDocumentNavigationType(value: unknown): value is DocumentNavigationType {
+  return (
+    value === "navigate" || value === "reload" || value === "back_forward" || value === "prerender"
+  )
+}
+
+function readingBlockElements(): HTMLElement[] {
+  return typeof document === "undefined"
+    ? []
+    : Array.from(document.querySelectorAll<HTMLElement>("[data-block-id]"))
+}
+
+function browserProgressStorage(): ProgressStorage | null {
+  if (typeof window === "undefined") {
+    return null
+  }
+  try {
+    return window.localStorage
+  } catch {
+    return null
+  }
+}
+
+function browserSessionStorage(): Storage | null {
+  if (typeof window === "undefined") {
+    return null
+  }
+  try {
+    return window.sessionStorage
+  } catch {
+    return null
+  }
+}
+
+function saveUnavailableStorageScrollPosition(): void {
+  if (typeof window === "undefined" || browserProgressStorage() || window.scrollY <= 0) {
+    return
+  }
+  const storage = browserSessionStorage()
+  if (!storage) {
     return
   }
   try {
-    const progress = parseResumeProgress(JSON.parse(saved))
-    if (progress) {
-      resumeProgress.value = progress
-      resumeAvailable.value = true
-      void nextTick().then(restoreResumeProgress)
-    }
+    storage.setItem(
+      RELOAD_SCROLL_SNAPSHOT_KEY,
+      JSON.stringify({ href: window.location.href, top: window.scrollY })
+    )
   } catch {
-    // Ignore malformed local progress and keep the page readable.
+    // A blocked session store should not affect normal pagehide behavior.
   }
+}
+
+function blockAnchorLabel(index: number): string {
+  for (let cursor = index; cursor >= 0; cursor -= 1) {
+    const block = articleBlocks.value[cursor]
+    if (block?.type === "heading") {
+      const heading = blockText(block).trim()
+      if (heading) {
+        return heading.slice(0, 120)
+      }
+    }
+  }
+  return "文章開場"
 }
 
 let stopResumeWatch: (() => void) | null = null
@@ -675,16 +1033,23 @@ let stopCreativeWatch: (() => void) | null = null
 
 onMounted(() => {
   if (typeof window !== "undefined") {
+    beginInitialReloadScrollGuard()
+    restoreUnavailableStorageScrollPosition()
     motionMode.value = window.matchMedia("(prefers-reduced-motion: reduce)").matches
       ? "reduced"
       : "full"
     interactiveEnabled.value = motionMode.value === "full"
     window.addEventListener("scroll", handleReaderScroll, { passive: true })
-    window.addEventListener("beforeunload", saveReadingProgress)
+    window.addEventListener("beforeunload", flushReadingProgressSave)
+    window.addEventListener("pagehide", handleReaderPageHide)
   }
   document.addEventListener("scroll", handleReaderScroll, { passive: true, capture: true })
   document.addEventListener("visibilitychange", syncRuntimeStates)
-  stopResumeWatch = watch(resumeStorageKey, loadResumeProgress, { immediate: true })
+  stopResumeWatch = watch(
+    () => readingContext.value?.revisionId ?? error.value,
+    () => void nextTick().then(loadResumeProgress),
+    { immediate: true }
+  )
   stopCreativeWatch = watch(
     () => article.value?.revisionId,
     async () => {
@@ -707,7 +1072,12 @@ onBeforeUnmount(() => {
   document.removeEventListener("scroll", handleReaderScroll, true)
   document.removeEventListener("visibilitychange", syncRuntimeStates)
   window.removeEventListener("scroll", handleReaderScroll)
-  window.removeEventListener("beforeunload", saveReadingProgress)
+  window.removeEventListener("beforeunload", flushReadingProgressSave)
+  window.removeEventListener("pagehide", handleReaderPageHide)
+  flushReadingProgressSave()
+  reloadManualScrollPosition = null
+  window.removeEventListener("load", restoreManualReloadScrollPosition)
+  releaseReloadScrollGuard()
   stopCreativeVisibilityWatch()
 })
 </script>
@@ -782,9 +1152,35 @@ onBeforeUnmount(() => {
           </div>
         </header>
 
-        <p v-if="resumeAvailable" data-testid="reader-resume" class="reader-resume" role="status">
-          繼續閱讀：已記住你上次讀到的位置。
-        </p>
+        <section
+          v-if="resumePrompt"
+          data-testid="reader-resume"
+          class="reader-resume"
+          aria-labelledby="reader-resume-heading"
+        >
+          <p id="reader-resume-heading">
+            <strong>繼續閱讀「{{ resumePrompt.articleTitle }}」？</strong>
+          </p>
+          <p data-testid="reader-resume-section">上次讀到：{{ resumePrompt.blockLabel }}</p>
+          <div class="reader-resume__actions">
+            <button
+              type="button"
+              class="button-link"
+              data-testid="reader-resume-continue"
+              @click="continueFromSavedProgress"
+            >
+              繼續上次閱讀
+            </button>
+            <button
+              type="button"
+              class="button-link button-link--quiet"
+              data-testid="reader-resume-start-over"
+              @click="startReadingFromTop"
+            >
+              從頭開始
+            </button>
+          </div>
+        </section>
 
         <aside data-testid="article-toc" class="article-toc" aria-label="文章目錄">
           <p class="eyebrow">Contents</p>
@@ -884,6 +1280,18 @@ onBeforeUnmount(() => {
                   )
                 "
                 :alt="stringValue(payloadFor(block).altText)"
+                :width="
+                  assetMediaWidth(
+                    payloadFor(block).assetId,
+                    stringValue(payloadFor(block).variant) || 'inline'
+                  )
+                "
+                :height="
+                  assetMediaHeight(
+                    payloadFor(block).assetId,
+                    stringValue(payloadFor(block).variant) || 'inline'
+                  )
+                "
                 loading="lazy"
                 @error="markAssetFailed(block.id)"
               />
@@ -1040,7 +1448,7 @@ onBeforeUnmount(() => {
       </article>
 
       <section
-        v-else-if="error instanceof PublicArticleApiError && error.statusCode === 404"
+        v-else-if="articleUnavailable"
         data-testid="article-error-state"
         class="reading-state"
       >
@@ -1061,3 +1469,26 @@ onBeforeUnmount(() => {
     </main>
   </div>
 </template>
+
+<style scoped>
+.reader-resume p {
+  margin: 0;
+}
+
+.reader-resume p + p {
+  margin-top: 0.35rem;
+}
+
+.reader-resume__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+
+.reader-resume__actions .button-link {
+  min-height: 44px;
+  margin-top: 0;
+  cursor: pointer;
+}
+</style>

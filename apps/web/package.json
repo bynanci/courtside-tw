@@ -12,7 +12,7 @@
     "dev": "nuxt dev",
     "lint": "eslint --max-warnings=0 .",
     "build": "nuxt build",
-    "test": "node --experimental-strip-types --test tests/integration/*.test.ts tests/unit/*.test.ts tests/component/studio/issues/*.test.ts tests/component/studio/media/*.test.ts",
+    "test": "node --experimental-strip-types --test tests/integration/*.test.ts tests/unit/*.test.ts tests/unit/reader/*.test.ts tests/component/studio/issues/*.test.ts tests/component/studio/media/*.test.ts",
     "test:e2e": "playwright test",
     "start": "node .output/server/index.mjs",
     "preview": "nuxt preview",
@@ -24,7 +24,8 @@
     "h3": "1.15.11",
     "jose": "6.2.4",
     "nuxt": "4.5.1",
-    "p5": "2.3.0"
+    "p5": "2.3.0",
+    "vue": "3.5.41"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.12.1",

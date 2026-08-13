@@ -1,0 +1,79 @@
+{
+  "schema_version": "courtside-tw/t039-review-remediation/v1",
+  "proof_id": "t039-review-remediation-20260813",
+  "recorded_at": "2026-08-13T01:07:32Z",
+  "result": "REVIEW_FINDINGS_REMEDIATED_LIVE_GATE_REQUIRED",
+  "task": "T039",
+  "merge_order": {
+    "shared_base": "ed12e73aea918797a9470140e9730c5a1905d4f7",
+    "first_pull_request": 83,
+    "first_main_commit": "4bcc604237345fa8e25fa4f7eaaf5081a692bdf8",
+    "second_pull_request": 84,
+    "reason": "PR 83 established the incomplete T034-T041 reconciliation on main before PR 84 supersedes only T039; reversing the order would have landed a later artifact that still described T039 as incomplete."
+  },
+  "reviewed_head": {
+    "commit": "8500e0f491483ebb02c057eed636ade61fbdeb7b",
+    "classification": "SUPERSEDED_REVIEWED_HEAD_NOT_LIVE_MERGE_GATE",
+    "historical_ci_run": 31618862794,
+    "historical_security_run": 31618862812,
+    "historical_browser_job": 94188575681,
+    "reason": "Those workflows passed their exact tree, but the subsequent exact-diff review found four unresolved runtime defects."
+  },
+  "review_findings": [
+    {
+      "thread": "PRRT_kwDOTvfycs6YpwiG",
+      "failure": "Every scroll event synchronously reconciled and wrote local progress.",
+      "repair": "Throttle persistence to one pending 250 ms write and flush that pending location on pagehide, beforeunload or unmount.",
+      "regression": "throttles scroll persistence and flushes the pending location on pagehide"
+    },
+    {
+      "thread": "PRRT_kwDOTvfycs6YpwiI",
+      "failure": "The lazy single-image block reserved no intrinsic geometry before anchor restoration.",
+      "repair": "Project the selected public media width and height onto the image element.",
+      "regression": "article image exposes the published 1600 by 900 intrinsic dimensions"
+    },
+    {
+      "thread": "PRRT_kwDOTvfycs6YpwiL",
+      "failure": "A malformed route reused the valid fallback slug not-found for unavailable-progress cleanup.",
+      "repair": "Run unavailable cleanup only for a successfully parsed requested slug.",
+      "regression": "does not clear a real not-found article when the requested route slug is malformed"
+    },
+    {
+      "thread": "PRRT_kwDOTvfycs6YpwiO",
+      "failure": "A late load event could snap a reader back to the top after they manually scrolled past the non-modal resume prompt.",
+      "repair": "Treat positive manual scrolling while the choice is pending as release of the reload guard.",
+      "regression": "treats manual scrolling as the reload-guard choice before slow assets finish"
+    }
+  ],
+  "local_verification": {
+    "prettier": "PASS",
+    "eslint": "PASS",
+    "web_tests": { "result": "PASS", "passed": 57, "failed": 0 },
+    "nuxt_typecheck": "PASS",
+    "production_build": "PASS",
+    "playwright_discovery": { "result": "PASS", "t039_file_tests": 11 },
+    "browser_execution": "NOT_RUN_LOCALLY_ENVIRONMENT_ONLY: the pinned Playwright Chromium binary is unavailable and the isolated CDN download returned truncated archives; exact-head CI is required."
+  },
+  "live_merge_gate_policy": {
+    "serialize_final_mutable_head": false,
+    "required": [
+      "PR head equals the merge request expected_head_sha",
+      "exact-head CI succeeds",
+      "exact-head Security succeeds",
+      "exact-head public magazine browser verification succeeds",
+      "all review threads are resolved",
+      "PR remains mergeable onto the authoritative post-PR-83 main"
+    ]
+  },
+  "scope_guard": {
+    "production_change_scope": "T039 article-route integration only",
+    "test_change_scope": "four focused T039 regressions in the existing reader browser suite",
+    "task_checkbox_changed": ["T039"],
+    "other_task_checkboxes_changed": false,
+    "T034_to_T038_changed": false,
+    "T040_to_T041_changed": false,
+    "T056_or_T057_plus_changed": false,
+    "web3_wallet_passport_changed": false,
+    "database_migration_deployment_changed": false
+  }
+}

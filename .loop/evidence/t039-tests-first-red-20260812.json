@@ -1,0 +1,63 @@
+{
+  "schema_version": "courtside-tw/tests-first-red/v1",
+  "proof_id": "t039-tests-first-red-20260812",
+  "recorded_at": "2026-08-12T15:06:47Z",
+  "result": "EXPECTED_RED_CONFIRMED",
+  "task": "T039",
+  "source_of_truth": {
+    "repository": "bynanci/courtside-tw",
+    "base_ref": "main",
+    "base_commit": "ed12e73aea918797a9470140e9730c5a1905d4f7",
+    "task_ref": "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T039",
+    "design_ref": "DESIGN.md#42-return-and-resume"
+  },
+  "test_delta": {
+    "unit_test": {
+      "path": "apps/web/tests/unit/reader/useLocalReadingProgress.test.ts",
+      "blob": "c257d68a57b9de93b52c726dc78d5824fef5570a",
+      "acceptance": [
+        "articleId + revisionId + stable block anchor identity",
+        "explicit Continue and Start over without load-time scrolling",
+        "current-geometry restoration after viewport or font reflow",
+        "unconditional stale revision invalidation",
+        "10%-95% resume range",
+        "20-article retention cap with attributable oldest-entry eviction",
+        "corrupt-index isolation and staged-write rollback",
+        "malformed, quota and unavailable-storage degradation",
+        "v1 and legacy unavailable-article cleanup"
+      ]
+    },
+    "browser_test": {
+      "path": "apps/web/tests/e2e/us2-read-article.spec.ts",
+      "blob": "8c05edfbf9c9d9810f04f1f1ae2810453b036504",
+      "acceptance": [
+        "no automatic jump before an explicit choice",
+        "Continue restores and Start over clears",
+        "completed-range cleanup",
+        "withdrawn or unavailable article cleanup for v1 and legacy pointers"
+      ]
+    },
+    "test_glob_added": "apps/web/tests/unit/reader/*.test.ts"
+  },
+  "red_execution": {
+    "command": "COREPACK_HOME=/tmp/courtside-t039-corepack XDG_DATA_HOME=/tmp/courtside-t039-xdg PNPM_HOME=/tmp/courtside-t039-pnpm-home PATH=/tmp/courtside-t039-pnpm-bin:$PATH pnpm --filter @courtside/web exec node --experimental-strip-types --test tests/unit/reader/*.test.ts",
+    "exit_code": 1,
+    "failure_signature": "ERR_MODULE_NOT_FOUND: apps/web/app/features/reader/composables/useLocalReadingProgress.ts",
+    "classification": "EXPECTED_MISSING_BEHAVIOR",
+    "syntax_or_setup_failure": false
+  },
+  "production_state_at_red": {
+    "apps/web/app/features/reader/composables/useLocalReadingProgress.ts": "absent",
+    "article_page_still_auto_scrolled_on_load": true,
+    "explicit_continue_start_over_controls": "absent"
+  },
+  "scope_guard": {
+    "production_changed_in_red_commit": false,
+    "database_or_migration_changed": false,
+    "T056_or_T057_plus_changed": false,
+    "web3_wallet_passport_changed": false,
+    "deployment_or_activation_changed": false,
+    "unrelated_task_state_changed": false
+  },
+  "next_action": "Implement only the T039 composable and article-route integration, then run the focused unit suite, full repository verification and exact-head PR CI/Security before changing the T039 checkbox."
+}
