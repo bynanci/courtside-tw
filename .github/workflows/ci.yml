@@ -30,7 +30,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+
+      - name: Verify exact source head
+        env:
+          EXPECTED_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: bash scripts/ci/verify-source-head.sh
 
       - name: Set up pnpm and Node.js
         uses: pnpm/setup@4700d737c3d7a2e7199f3d42a920f0bf7f34e411 # v2.0.1
@@ -58,6 +64,11 @@ jobs:
           set -o pipefail
           make verify 2>&1 | tee artifacts/frontend/make-verify.log
 
+      - name: Build and enforce public reader bundle budget
+        run: |
+          set -o pipefail
+          pnpm --filter @courtside/web run test:bundle 2>&1 | tee artifacts/frontend/reader-bundle.log
+
       - name: Upload frontend and contract reports
         if: ${{ always() }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
@@ -75,12 +86,18 @@ jobs:
     name: Public magazine browser verification
     needs: frontend-contract
     runs-on: ubuntu-latest
-    timeout-minutes: 25
+    timeout-minutes: 45
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+
+      - name: Verify exact source head
+        env:
+          EXPECTED_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: bash scripts/ci/verify-source-head.sh
 
       - name: Set up pnpm and Node.js
         uses: pnpm/setup@4700d737c3d7a2e7199f3d42a920f0bf7f34e411 # v2.0.1
@@ -97,11 +114,32 @@ jobs:
       - name: Install Playwright Chromium
         run: pnpm --filter @courtside/web exec playwright install --with-deps chromium
 
-      - name: Run mobile SSR and accessibility journey
+      - name: Run US1 independently
         run: |
           set -o pipefail
           mkdir -p artifacts/web-e2e
-          pnpm --filter @courtside/web run test:e2e 2>&1 | tee artifacts/web-e2e/playwright.log
+          pnpm --filter @courtside/web run test:us1 2>&1 | tee artifacts/web-e2e/playwright-us1.log
+
+      - name: Run US2 independently
+        run: |
+          set -o pipefail
+          pnpm --filter @courtside/web run test:us2 2>&1 | tee artifacts/web-e2e/playwright-us2.log
+
+      - name: Run US1 and US2 together
+        run: |
+          set -o pipefail
+          pnpm --filter @courtside/web run test:us1-us2 2>&1 | tee artifacts/web-e2e/playwright-us1-us2.log
+
+      - name: Preserve the complete browser regression path
+        run: |
+          set -o pipefail
+          pnpm --filter @courtside/web run test:e2e 2>&1 | tee artifacts/web-e2e/playwright-combined.log
+
+      - name: Enforce mobile Lighthouse budgets
+        run: |
+          set -o pipefail
+          export CHROME_PATH="$(pnpm --filter @courtside/web exec node -e 'const { chromium } = require("@playwright/test"); process.stdout.write(chromium.executablePath())')"
+          pnpm --filter @courtside/web run test:lighthouse 2>&1 | tee artifacts/web-e2e/lighthouse.log
 
       - name: Upload browser verification reports
         if: ${{ always() }}
@@ -110,6 +148,8 @@ jobs:
           name: ci-web-e2e-reports
           path: |
             artifacts/web-e2e
+            apps/web/artifacts/lighthouse
+            apps/web/.lighthouseci
             apps/web/test-results
             apps/web/playwright-report
           if-no-files-found: warn
@@ -123,13 +163,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+
+      - name: Verify exact source head
+        env:
+          EXPECTED_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: bash scripts/ci/verify-source-head.sh
 
       - name: Set up Java
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: "21"
           cache: gradle
           cache-dependency-path: |
             apps/api/**/*.gradle*
@@ -166,7 +212,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+
+      - name: Verify exact source head
+        env:
+          EXPECTED_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: bash scripts/ci/verify-source-head.sh
 
       - name: Start dependencies and wait for health
         run: |
