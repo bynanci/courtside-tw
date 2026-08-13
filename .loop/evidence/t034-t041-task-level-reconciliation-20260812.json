@@ -1,0 +1,482 @@
+{
+  "schema_version": "courtside-tw/task-level-evidence-reconciliation/v1",
+  "proof_id": "t034-t041-task-level-reconciliation-20260812",
+  "recorded_at": "2026-08-12T13:19:33Z",
+  "result": "PARTIAL_TASK_LEVEL_EVIDENCE_RECONCILED_EXACT_HEAD_CI_PASSED",
+  "classification": "ATTRIBUTABLE_CURRENT_MAIN_AUDIT",
+  "purpose": "Replace T034-T041 group-level implementation inference with criterion-level current-main evidence and add only two missing API integration records for behavior that already exists. This receipt records verified behavior and exact blockers; it does not claim task completion where a named production or test boundary is absent.",
+  "source_of_truth": {
+    "repository": "bynanci/courtside-tw",
+    "ref": "main",
+    "commit": "ed12e73aea918797a9470140e9730c5a1905d4f7",
+    "tasks_file": "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    "tasks_blob": "f25d8fd362a50a77b79c49ad2abe0c5c06ca871f",
+    "open_pull_requests_at_readback": 0,
+    "task_state_before": {
+      "T034": false,
+      "T035": false,
+      "T036": false,
+      "T037": false,
+      "T038": false,
+      "T039": false,
+      "T040": false,
+      "T041": false
+    }
+  },
+  "scope": {
+    "included": [
+      "T034-T041 task text and FR-004-FR-010 traceability",
+      "T034-T041 implementation and review-remediation ledgers",
+      "existing T034-T041 evidence receipts",
+      "current-main production and test blobs",
+      "historical exact-head CI and Security receipts for PR #65, PR #67 and PR #69"
+    ],
+    "excluded": [
+      "production behavior changes",
+      "new database migrations or production migration execution",
+      "T056 or any T057+ task",
+      "Web3, wallet, Passport or provenance",
+      "deployment or provider activation",
+      "unrelated task checkboxes"
+    ],
+    "attachment_classification": "The supplied montage/presentation is product-design input and simulated experience, not executable or participant evidence for T034-T041."
+  },
+  "ledger_reconciliation": {
+    "implementation_ledger": {
+      "path": ".loop/t034-t041-us2-implementation-ledger.json",
+      "blob": "d839c2bcd1957cdc5115043b4710d1e2ea0e1ca0",
+      "classification": "historical_lane_and_contract_gate",
+      "limitation": "It opens T034/T035 and defers T036-T041; it does not provide task-by-task completion proof."
+    },
+    "review_remediation_ledger": {
+      "path": ".loop/t034-t041-us2-review-remediation-ledger.json",
+      "blob_before_this_receipt": "59667fdde9005a308cf1ca64506553cd89beaac9",
+      "classification": "group_level_implementation_proof",
+      "limitation": "It proves a bounded media/byline/p5 remediation head and browser suite, but it does not map every T034-T041 criterion to current main."
+    },
+    "stale_or_inexact_historical_claims": [
+      {
+        "source": ".loop/evidence/t034-t041-media-byline-p5-implementation-20260809.json",
+        "source_blob": "21624396072c8b050bcb67244d54ac022dab3fd7",
+        "issue": "Several listed Java paths use apps/api/src/main/java/com/courtside/api/issue, which is absent from both implementation head eb7fc608 and current main; the actual package is tw/basketball/magazine/publication."
+      },
+      {
+        "source": ".loop/evidence/t034-t041-media-byline-p5-implementation-20260809.json",
+        "issue": "The receipt targets intermediate head eb7fc608bca82183889237c46b0f123a8555037c, which is not an ancestor of current main because the final PR and later remediation were merged through different heads. Current-main attribution must use blobs and the final PR #67/#69 heads instead."
+      },
+      {
+        "source": ".loop/evidence/t034-t041-implementation-scope-20260809.json",
+        "source_blob": "09835dbf976129cee1fbbad95762753ef4f748fa",
+        "issue": "It records implementation scope with CI/Security pending and cannot independently close any task."
+      }
+    ],
+    "declared_task_receipts": {
+      ".loop/evidence/t034-t035-implementation-proof.json": "absent",
+      ".loop/evidence/t036-renderer-proof.json": "absent",
+      ".loop/evidence/t036-t037-creative-proof.json": "absent",
+      ".loop/evidence/t038-article-route-proof.json": "absent",
+      ".loop/evidence/t039-progress-proof.json": "absent",
+      ".loop/evidence/t040-navigation-proof.json": "absent",
+      ".loop/evidence/t041-release-gate-proof.json": "absent"
+    },
+    "review_thread_reconciliation": {
+      "PR65": "Historical inline threads remain unresolved in GitHub, but their actionable findings were addressed by later PR #67/#69 code; they are not task-completion receipts.",
+      "PR67": "Historical inline threads remain unresolved in GitHub, but their actionable findings were addressed by PR #69/current main; the final PR #67 workflow green remains group-level proof.",
+      "PR69": "Zero review threads; its exact-head CI/Security prove the bounded remediation head, not every T034-T041 acceptance criterion."
+    }
+  },
+  "historical_exact_head_evidence": [
+    {
+      "pull_request": 65,
+      "head_sha": "e9eb0bcfc412161ced717f72b5b94a478bdb475b",
+      "merge_sha": "c45c1fd7e93699f4626e2ceab6b5fb6f52f38842",
+      "ci": {
+        "run_id": 31307598571,
+        "run_number": 266,
+        "conclusion": "success"
+      },
+      "security": {
+        "run_id": 31307598581,
+        "run_number": 266,
+        "conclusion": "success"
+      },
+      "scope": "base public Article projection and monolithic reader implementation"
+    },
+    {
+      "pull_request": 67,
+      "head_sha": "669d98f3ca8c7eebe0e55ae2921819463e839185",
+      "merge_sha": "b49bbf030887d3d490aab60997696e647cf703f4",
+      "ci": {
+        "run_id": 31316401225,
+        "run_number": 316,
+        "conclusion": "success"
+      },
+      "security": {
+        "run_id": 31316401274,
+        "run_number": 316,
+        "conclusion": "success"
+      },
+      "scope": "US2 media, contributor, p5 and correctness remediation"
+    },
+    {
+      "pull_request": 69,
+      "head_sha": "677753033d05f1218f2589459fc0a015f4934ebf",
+      "merge_sha": "fcc18d948073433d2a6e2397329391ef125c091c",
+      "ci": {
+        "run_id": 31322535600,
+        "run_number": 334,
+        "conclusion": "success"
+      },
+      "security": {
+        "run_id": 31322535598,
+        "run_number": 334,
+        "conclusion": "success"
+      },
+      "scope": "post-merge public reader review fixes"
+    }
+  ],
+  "current_main_artifacts": {
+    "api": {
+      "apps/api/src/main/java/tw/basketball/magazine/publication/PublicArticleModels.java": "aedf2d89268f50415923ca55ff3a326dd4d12841",
+      "apps/api/src/main/java/tw/basketball/magazine/publication/JdbcPublicArticleRepository.java": "bd720257d1a96f1be88b054a03b3fc463d43ad7f",
+      "apps/api/src/main/java/tw/basketball/magazine/publication/PublicArticleController.java": "d1c966094d651ef807e1a5b0ca15b3efa1184b96",
+      "apps/api/src/main/java/tw/basketball/magazine/publication/PublicArticleEtag.java": "e0d5ee8d0590f054a8128a4d4fde7b233f24904b",
+      "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java": "b96a2ec2db355ef1f26669a839b36671df64a554"
+    },
+    "web": {
+      "apps/web/app/pages/articles/[articleSlug].vue": "3b2e8c3acfaebe6abfd37645fdedf72ad517ff48",
+      "apps/web/app/components/article/CourtPulseRuntime.vue": "274793c580064a44b76c8acd51d45c5eb35d23b3",
+      "apps/web/tests/e2e/us2-read-article.spec.ts": "a3ea746261563c68ccb9c17f2d007ab8d754557b",
+      "apps/web/tests/e2e/us2-no-js.spec.ts": "8af125e57794c12ef3e47de67d4b62f2dbd20157",
+      "apps/web/tests/e2e/us2-reduced-motion.spec.ts": "62e925cbc4c450708d93babaa4f0c1b0670d398a",
+      "apps/web/tests/fixtures/content-document-v1.json": "d09397c209f682c4e27682b8d606cdf759d974ba"
+    }
+  },
+  "necessary_test_delta": {
+    "path": "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java",
+    "production_behavior_changed": false,
+    "records": [
+      {
+        "test": "returnsStableEtagHonorsIfNoneMatchAndChangesWithProjection",
+        "status": "PASSED_EXACT_HEAD_CI",
+        "attribution": [
+          "T035"
+        ],
+        "proves": "The existing Article controller emits an ETag, honors If-None-Match with 304 and an empty body, and changes the ETag when the projected representation changes.",
+        "does_not_prove": "Immutable publication-snapshot derivation, snapshot navigation or complete canonical metadata."
+      },
+      {
+        "test": "returnsPublishedPointerWithRevisionScopedContributors",
+        "status": "PASSED_EXACT_HEAD_CI",
+        "attribution": [
+          "T034"
+        ],
+        "proves": "The existing default public query follows article.published_revision_id and projects only contributors attached to that selected revision.",
+        "does_not_prove": "Revision-row immutability, server-derived plain text/reading time or publication-snapshot navigation."
+      }
+    ],
+    "corrected_test_name": {
+      "before": "returnsPublishedRevisionAndSnapshotIssueNavigation",
+      "after": "returnsPublishedRevisionAndIssueNavigation",
+      "reason": "The existing fixture does not mutate live navigation after snapshot creation and therefore must not claim snapshot isolation."
+    },
+    "local_execution": "NOT_RUN: Java 21 and Docker/Testcontainers are unavailable in the local environment.",
+    "required_execution": "SATISFIED_FOR_FOCUSED_TEST_HEAD: PR #83 CI run 31603947813 (run #424) passed at 51b4d7c454f220c424d03cd6b386cbe9df29e0f0; the protected-merge gate must evaluate the current mutable PR head live."
+  },
+  "exact_head_verification": {
+    "classification": "EARLIER_FOCUSED_TEST_HEAD",
+    "recorded_at": "2026-08-12T14:29:45Z",
+    "pull_request": 83,
+    "head_sha": "51b4d7c454f220c424d03cd6b386cbe9df29e0f0",
+    "tree_sha": "a4611021149a4d1f595e155cd7ab18628105c310",
+    "base_sha": "ed12e73aea918797a9470140e9730c5a1905d4f7",
+    "live_merge_gate_policy": "Do not treat this serialized SHA as the final PR head. CI, Security, browser and review-thread gates are read live for the expected head immediately before merge.",
+    "test_source_blob": "83a507dff502b397b52628dd84675555b8313d90",
+    "ci": {
+      "run_id": 31603947813,
+      "run_number": 424,
+      "conclusion": "success",
+      "workflow_url": "https://github.com/bynanci/courtside-tw/actions/runs/31603947813",
+      "jobs": {
+        "docker_compose_dependency_health": {
+          "job_id": 94137985142,
+          "conclusion": "success"
+        },
+        "java_quality_and_unit_verification": {
+          "job_id": 94137985163,
+          "conclusion": "success"
+        },
+        "frontend_and_contract_verification": {
+          "job_id": 94137985166,
+          "conclusion": "success"
+        },
+        "public_magazine_browser_verification": {
+          "job_id": 94138275639,
+          "conclusion": "success"
+        }
+      },
+      "java_report_artifact": {
+        "artifact_id": 9144348412,
+        "name": "ci-java-reports",
+        "digest": "sha256:da13708376dcb6432401a05dbb8907b7771ca9a6d1284d59b645d935dc59b526",
+        "head_sha": "51b4d7c454f220c424d03cd6b386cbe9df29e0f0",
+        "suite": "PublicArticleApiIT",
+        "tests": 9,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      "browser_report_artifact": {
+        "artifact_id": 9144347679,
+        "name": "ci-web-e2e-reports",
+        "digest": "sha256:07ca2f38f23baadd0589b2e05ca6dbc640c8a02fce71b442236eafa6e77d9d3e"
+      },
+      "focused_tests": [
+        {
+          "test": "returnsPublishedPointerWithRevisionScopedContributors",
+          "task": "T034",
+          "result": "passed"
+        },
+        {
+          "test": "returnsStableEtagHonorsIfNoneMatchAndChangesWithProjection",
+          "task": "T035",
+          "result": "passed"
+        }
+      ]
+    },
+    "security": {
+      "run_id": 31603947815,
+      "run_number": 425,
+      "conclusion": "success",
+      "workflow_url": "https://github.com/bynanci/courtside-tw/actions/runs/31603947815",
+      "required_jobs": "success"
+    },
+    "task_completion_effect": "None. This earlier focused test head provides attributable evidence for bounded T034/T035 subclauses; every T034-T041 task still has the blockers listed below, and current-head protected gates are evaluated separately."
+  },
+  "task_results": {
+    "T034": {
+      "status": "PARTIAL_TASK_LEVEL_EVIDENCE_EXACT_HEAD_VERIFIED",
+      "verified": [
+        "Published reads select article.published_revision_id and reject an explicit historical revision query.",
+        "Revision-scoped contributors are persisted and projected.",
+        "Published ContentDocument payloads are validated fail closed before projection."
+      ],
+      "evidence": [
+        "apps/api/src/main/java/tw/basketball/magazine/publication/JdbcPublicArticleRepository.java",
+        "apps/api/src/main/java/tw/basketball/magazine/publication/PublicArticleModels.java",
+        "apps/api/src/main/resources/db/migration/V003__article_contributors.sql",
+        "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java#returnsPublishedRevisionAndIssueNavigation",
+        "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java#deniesDraftWithdrawnHistoricalAndPrivateRightsContent",
+        "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java#returnsPublishedPointerWithRevisionScopedContributors"
+      ],
+      "blockers": [
+        "No server-side all-block plain-text extraction exists.",
+        "Reading time is computed in the Vue page instead of the server-side projection.",
+        "The named content/domain, content/application and content/persistence production boundaries do not exist; current code remains under publication.",
+        "Because the derived fields are absent, no focused test can yet prove all-block plain text and deterministic zh-TW reading time in the published projection."
+      ],
+      "checkbox_allowed": false
+    },
+    "T035": {
+      "status": "PARTIAL_TASK_LEVEL_EVIDENCE_EXACT_HEAD_VERIFIED",
+      "verified": [
+        "GET /api/v1/public/articles/{articleSlug} is anonymous and published-only.",
+        "The controller generates deterministic ETags and implements If-None-Match handling.",
+        "The repository projects only rights-eligible public media variants.",
+        "Navigation candidates are ordered and rights-filtered."
+      ],
+      "evidence": [
+        "apps/api/src/main/java/tw/basketball/magazine/publication/PublicArticleController.java",
+        "apps/api/src/main/java/tw/basketball/magazine/publication/PublicArticleEtag.java",
+        "apps/api/src/main/java/tw/basketball/magazine/publication/JdbcPublicArticleRepository.java",
+        "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java#resolvesSelectedPublicStorageVariantWithoutInventingArticlePath",
+        "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java#skipsRightsIneligibleNeighborFromIssueNavigation",
+        "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java#returnsStableEtagHonorsIfNoneMatchAndChangesWithProjection"
+      ],
+      "blockers": [
+        "Navigation is reconstructed from live issue_article/article_revision rows, not an immutable publication_snapshot; post-publication TOC drift can change the public response.",
+        "The named apps/api/src/main/java/tw/basketball/magazine/content/api/PublicArticleController.java boundary is absent; the controller remains under publication.",
+        "The OpenAPI Article 200 response does not declare the ETag header even though the controller emits it.",
+        "ArticleProjection lacks the complete publication/update time and rights-credit metadata needed by FR-006 and the reader."
+      ],
+      "checkbox_allowed": false
+    },
+    "T036": {
+      "status": "REQUIRED_RENDERER_BOUNDARY_MISSING",
+      "verified": [
+        "The server-side canonical ContentDocument validator rejects unknown block types and versions."
+      ],
+      "evidence": [
+        "apps/api/src/main/java/tw/basketball/magazine/content/validation/ContentDocumentValidator.java",
+        "packages/content-schema/tests/content-document.test.ts"
+      ],
+      "blockers": [
+        "ContentDocumentRenderer.vue, registry.ts and registry.test.ts are absent.",
+        "The current monolithic page has no total type/version/preset registry.",
+        "Unknown blocks/presets have no poster-plus-summary fallback or stable telemetry code.",
+        "There is no focused proof that content cannot select a dynamic module."
+      ],
+      "checkbox_allowed": false
+    },
+    "T037": {
+      "status": "PARTIAL_IMPLEMENTATION_GROUP_EVIDENCE_ONLY",
+      "verified": [
+        "The monolithic article page renders the eleven v1 block types without unrestricted v-html.",
+        "CourtPulseRuntime uses p5 2.3.0 instance mode, a fixed seed, client-only import, noLoop and remove.",
+        "Existing browser tests cover fixed-seed metadata, visibility pause and route unmount for the current preset."
+      ],
+      "evidence": [
+        "apps/web/app/pages/articles/[articleSlug].vue",
+        "apps/web/app/components/article/CourtPulseRuntime.vue",
+        "apps/web/tests/e2e/us2-reduced-motion.spec.ts",
+        "apps/web/tests/fixtures/content-document-v1.json"
+      ],
+      "blockers": [
+        "The named text/media/creative component boundaries and packages/creative-runtime are absent.",
+        "No per-block component tests or unknown preset/version tests exist.",
+        "The reported render hash is a seed-labelled string rather than a digest of canvas output, so deterministic rendered output is not proven.",
+        "Runtime normalization permits density 1-100, tempo 0-2, lineWeight 0.5-10 and 256 sequence values, which is not reconciled with DESIGN.md bounds 8-48, 0.25-1.0, 1-3 and 64 values with unit/source.",
+        "Save-Data, near-viewport transfer and single-active-loop behavior are not proven."
+      ],
+      "checkbox_allowed": false
+    },
+    "T038": {
+      "status": "PARTIAL_IMPLEMENTATION_GROUP_EVIDENCE_ONLY",
+      "verified": [
+        "The article route is SSR-rendered with magazine styling, role-aware contributor byline and reduced-motion readable fallback.",
+        "Article content, TOC and poster are final-visible without JavaScript."
+      ],
+      "evidence": [
+        "apps/web/app/pages/articles/[articleSlug].vue",
+        "apps/web/app/assets/css/main.css",
+        "apps/web/tests/e2e/us2-no-js.spec.ts",
+        "apps/web/tests/e2e/us2-read-article.spec.ts"
+      ],
+      "blockers": [
+        "No visible reading-progress indicator exists; the page only exposes a resume status.",
+        "No centralized reader Motion module or article.css boundary exists.",
+        "Schema-valid image/gallery credit is parsed but not rendered, and public media rights credit is not projected.",
+        "ArticleProjection media width/height are not bound to rendered image dimensions, leaving layout-shift proof incomplete.",
+        "Publication and update time required by FR-006 are absent from the ArticleProjection/UI."
+      ],
+      "checkbox_allowed": false
+    },
+    "T039": {
+      "status": "PARTIAL_WITH_ACCEPTANCE_CONFLICT",
+      "verified": [
+        "Local progress persists blockId and offset under an article slug plus revision-number key.",
+        "Browser tests cover reload resume, final-block persistence and unavailable localStorage."
+      ],
+      "evidence": [
+        "apps/web/app/pages/articles/[articleSlug].vue",
+        "apps/web/tests/e2e/us2-read-article.spec.ts#resumes the last stable block anchor after reload",
+        "apps/web/tests/e2e/us2-read-article.spec.ts#keeps the final block when scrolling into article navigation",
+        "apps/web/tests/e2e/us2-read-article.spec.ts#keeps reading functional when browser storage is unavailable"
+      ],
+      "blockers": [
+        "The named useLocalReadingProgress composable and unit-test directory are absent.",
+        "Progress does not use articleId plus revisionId as the stable identity boundary.",
+        "Loading saved progress auto-scrolls instead of offering the explicit continue/start-over choice required by DESIGN UX-11.",
+        "Viewport/font-size changes, stale revision invalidation, malformed storage, quota and withdrawn-content clearing lack focused unit/integration proof."
+      ],
+      "checkbox_allowed": false
+    },
+    "T040": {
+      "status": "PARTIAL_IMPLEMENTATION_GROUP_EVIDENCE_ONLY",
+      "verified": [
+        "Inline previous/next, block TOC, native share, clipboard fallback and canonical link fallback exist.",
+        "Browser coverage exercises issue/next/TOC links and a generic share status."
+      ],
+      "evidence": [
+        "apps/web/app/pages/articles/[articleSlug].vue",
+        "apps/web/tests/e2e/us2-read-article.spec.ts#uses the issue snapshot for previous, next and table-of-contents links",
+        "apps/web/tests/e2e/us2-read-article.spec.ts#renders every v1 block, metadata, image fallback, navigation and share"
+      ],
+      "blockers": [
+        "ArticleNavigation.vue, ShareArticleButton.vue and their component tests are absent.",
+        "Native share success/cancel/failure and clipboard success/failure branches are not independently proven.",
+        "Prev/next rel metadata and canonical issue #toc semantics are absent.",
+        "The navigation still depends on T035 live rather than immutable snapshot reconstruction."
+      ],
+      "checkbox_allowed": false
+    },
+    "T041": {
+      "status": "PARTIAL_RELEASE_PROOF_MISSING",
+      "verified": [
+        "The article page emits canonical, Open Graph and Article JSON-LD metadata.",
+        "No-JS and reduced-motion browser tests exist.",
+        "The current p5 test proves visibility pause and one route-unmount removal."
+      ],
+      "evidence": [
+        "apps/web/app/pages/articles/[articleSlug].vue",
+        "apps/web/tests/e2e/us2-no-js.spec.ts",
+        "apps/web/tests/e2e/us2-reduced-motion.spec.ts",
+        "DESIGN.md#15-performance-and-progressive-enhancement",
+        "docs/adr/0005-motion-and-generative-runtime.md"
+      ],
+      "blockers": [
+        "us2-read-article.a11y.spec.ts and an article axe WCAG AA gate are absent.",
+        "us2-creative-lifecycle.spec.ts and a twenty-route zero canvas/loop/observer/listener leak gate are absent.",
+        "The named apps/web/app/features/reader/seo/ boundary is absent; SEO remains inline in the page.",
+        "No animation-interruption proof exists.",
+        "apps/web/lighthouserc.cjs and executable LCP/CLS/INP budgets are absent.",
+        "No ordinary-route no-p5 bundle assertion exists.",
+        "Rendered article images do not bind fixed dimensions.",
+        "The ADR-required representative Android/Pixel 6 performance receipt remains unobserved."
+      ],
+      "checkbox_allowed": false
+    }
+  },
+  "local_verification": {
+    "environment": {
+      "node": "24.14.0",
+      "pnpm": "11.7.0 via isolated Corepack shim",
+      "java": "17.0.19; project-required Java 21 unavailable locally",
+      "docker": "unavailable"
+    },
+    "command": "PATH=/tmp/courtside-bin:$PATH COREPACK_HOME=/tmp/courtside-corepack make verify",
+    "result": "PASS",
+    "observed": [
+      "Prettier, ESLint and TypeScript/Nuxt typecheck passed.",
+      "46 Node unit/integration/contract tests passed: 40 web, 4 content-schema and 2 generated-client.",
+      "ContentDocument validation passed for 11 block types, 23 schema-invalid fixtures and duplicate IDs.",
+      "OpenAPI 3.1 validation passed for 42 paths and 53 operations.",
+      "Generated ContentDocument and OpenAPI clients matched source."
+    ],
+    "not_claimed": [
+      "Java 21 or Testcontainers execution",
+      "PostgreSQL/Docker execution",
+      "local Chromium/Playwright execution",
+      "Lighthouse, bundle or representative-device performance"
+    ],
+    "record_validation": {
+      "semantic_memory": "PASS: validate_memory_record.py accepted the new work-memory/v1 record.",
+      "legacy_review_graph_strict": "PASS after synchronizing the blocked task-level frontier, adding current strict action authority fields and marking the superseded semantic-memory node blocked.",
+      "review_graph_changed": true,
+      "interpretation": "The graph now validates structurally while retaining all named task blockers; strict graph validity is not task acceptance proof."
+    }
+  },
+  "task_state_after": {
+    "T034": false,
+    "T035": false,
+    "T036": false,
+    "T037": false,
+    "T038": false,
+    "T039": false,
+    "T040": false,
+    "T041": false,
+    "reason": "Every task still has at least one named production or executable-test criterion gap; group-level green workflows cannot substitute for missing task acceptance."
+  },
+  "scope_guard": {
+    "production_source_changed": false,
+    "test_source_changed": true,
+    "test_source_delta": "Two focused PublicArticleApiIT records plus one corrected non-snapshot test name",
+    "migration_changed": false,
+    "deployment_changed": false,
+    "web3_wallet_passport_changed": false,
+    "T056_or_T057_plus_changed": false,
+    "task_checkbox_changed": false,
+    "historical_evidence_overwritten": false
+  },
+  "next_action": "Keep T034-T041 unchecked. Open a separately authorized implementation/tests-first slice beginning with T034 server-derived projection fields and T035 immutable snapshot navigation; do not infer completion from this receipt."
+}

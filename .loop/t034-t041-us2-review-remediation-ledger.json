@@ -1,20 +1,20 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t034-t041-us2-review-remediation",
-  "graph_version": 2,
+  "graph_version": 7,
   "run_id": "courtside-tw-us2-review-remediation-20260809",
-  "status": "needs_human",
-  "iteration": 2,
+  "status": "blocked",
+  "iteration": 7,
   "started_at": "2026-08-09",
-  "updated_at": "2026-08-09",
-  "current_frontier": [
-    "g-protected-p1"
-  ],
+  "updated_at": "2026-08-13T00:02:54Z",
+  "current_frontier": [],
   "blocked_nodes": [
-    "g-protected-p1"
+    "g-protected-p1",
+    "m-semantic-lane",
+    "s-review-terminal"
   ],
-  "terminal_state": "needs_human",
-  "next_action": "Human review of the verified media storage-key resolver, revision-scoped contributor contract and p5.js lifecycle proof; then decide protected migration/activation, task state and merge.",
+  "terminal_state": "blocked",
+  "next_action": "Do not advance the historical g-protected-p1 group gate or check T034-T041; close their named criterion blockers in separately authorized slices.",
   "events": [
     {
       "event_id": "evt-us2-review-remediation-001",
@@ -188,6 +188,710 @@
         "total": 12000
       },
       "terminal_reason": "Media, contributor and p5 implementation/proof gates are closed; protected merge, production migration/activation and task checkbox state remain human gates."
+    },
+    {
+      "event_id": "evt-us2-review-remediation-003",
+      "at": "2026-08-12T13:19:33Z",
+      "actor": "codex-supervisor",
+      "type": "task_level_evidence_reconciliation",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "budgets/max_graph_changes",
+            "value": 64
+          },
+          {
+            "op": "replace",
+            "path": "graph/loops/l1-us2-review-remediation/budgets/max_graph_changes",
+            "value": 64
+          },
+          {
+            "op": "replace",
+            "path": "budgets/max_tokens",
+            "value": 100000
+          },
+          {
+            "op": "replace",
+            "path": "graph/loops/l1-us2-review-remediation/budgets/max_tokens",
+            "value": 100000
+          },
+          {
+            "op": "add",
+            "path": "evidence/task-level-reconciliation",
+            "value": ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json"
+          },
+          {
+            "op": "add",
+            "path": "task_completion_claim",
+            "value": "T034-T041 remain blocked by named criterion gaps"
+          },
+          {
+            "op": "replace",
+            "path": "graph/current_frontier",
+            "value": []
+          },
+          {
+            "op": "replace",
+            "path": "graph/blocked_nodes",
+            "value": [
+              "g-protected-p1",
+              "m-semantic-lane",
+              "s-review-terminal"
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/g-protected-p1/status",
+            "value": "blocked"
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/s-review-terminal/status",
+            "value": "blocked"
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/g-protected-p1/confidence",
+            "value": {
+              "score": 1.0,
+              "basis": "Task-level reconciliation found unresolved production and executable-test criteria, so this historical completion gate cannot advance.",
+              "evidence_refs": [
+                ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json"
+              ]
+            }
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/s-review-terminal/confidence",
+            "value": {
+              "score": 1.0,
+              "basis": "The historical implementation proof is narrower than T034-T041 acceptance; named task-level blockers prevent a completion terminal.",
+              "evidence_refs": [
+                ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json"
+              ]
+            }
+          },
+          {
+            "op": "add",
+            "path": "graph/nodes/a-media-resolver/config/workflow",
+            "value": [
+              "read selected media reference and rights record",
+              "resolve only the selected public storage key",
+              "run focused API and browser proof"
+            ]
+          },
+          {
+            "op": "add",
+            "path": "graph/nodes/a-media-resolver/config/allowed",
+            "value": [
+              "public Article media projection",
+              "focused API and browser tests",
+              "loop evidence"
+            ]
+          },
+          {
+            "op": "add",
+            "path": "graph/nodes/a-media-resolver/config/requires_approval",
+            "value": [
+              "schema or rights-policy change",
+              "production migration or activation",
+              "protected merge"
+            ]
+          },
+          {
+            "op": "add",
+            "path": "graph/nodes/a-contributor-contract/config/workflow",
+            "value": [
+              "read revision contributor source",
+              "project the selected revision only",
+              "run focused API and browser proof"
+            ]
+          },
+          {
+            "op": "add",
+            "path": "graph/nodes/a-contributor-contract/config/allowed",
+            "value": [
+              "revision-scoped contributor projection",
+              "focused API and browser tests",
+              "loop evidence"
+            ]
+          },
+          {
+            "op": "add",
+            "path": "graph/nodes/a-contributor-contract/config/requires_approval",
+            "value": [
+              "schema or contributor-policy change",
+              "production migration or activation",
+              "protected merge"
+            ]
+          },
+          {
+            "op": "add",
+            "path": "graph/nodes/a-contributor-contract/config/forbidden",
+            "value": [
+              "private contributor fields",
+              "live article-level byline fallback",
+              "unrelated editorial workflow"
+            ]
+          },
+          {
+            "op": "add",
+            "path": "graph/nodes/a-p5-runtime/config/workflow",
+            "value": [
+              "read bounded preset data",
+              "import p5 client-only",
+              "run lifecycle proof"
+            ]
+          },
+          {
+            "op": "add",
+            "path": "graph/nodes/a-p5-runtime/config/allowed",
+            "value": [
+              "CourtPulse p5 instance runtime",
+              "fixed preset registry",
+              "focused browser tests",
+              "loop evidence"
+            ]
+          },
+          {
+            "op": "add",
+            "path": "graph/nodes/a-p5-runtime/config/requires_approval",
+            "value": [
+              "runtime dependency or parameter-contract change",
+              "production activation",
+              "protected merge"
+            ]
+          },
+          {
+            "op": "add",
+            "path": "graph/nodes/a-p5-runtime/config/forbidden",
+            "value": [
+              "content-selected modules",
+              "remote code or shaders",
+              "unbounded animation lifecycle"
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/a-p5-runtime/confidence",
+            "value": {
+              "score": 0.8,
+              "basis": "p5@2.3.0 is locked and browser proof covers canvas creation, fixed-seed metadata, loop state, visibility and unmount; a canvas-output digest and full T037 lifecycle bounds remain unproven.",
+              "evidence_refs": [
+                ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json"
+              ]
+            }
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/m-semantic-lane/status",
+            "value": "blocked"
+          },
+          {
+            "op": "add",
+            "path": "scope_guard",
+            "value": "No production, migration, deployment or checkbox changes; test-only delta is limited to two focused PublicArticleApiIT records and one corrected test name"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json",
+        "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+        "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java",
+        "https://github.com/bynanci/courtside-tw/pull/65",
+        "https://github.com/bynanci/courtside-tw/pull/67",
+        "https://github.com/bynanci/courtside-tw/pull/69"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Current-main criterion and blob audit",
+          "level": "P1",
+          "result": "partial_by_task",
+          "main_sha": "ed12e73aea918797a9470140e9730c5a1905d4f7",
+          "tasks_blob": "f25d8fd362a50a77b79c49ad2abe0c5c06ca871f",
+          "completed_tasks": [],
+          "blocked_tasks": [
+            "T034",
+            "T035",
+            "T036",
+            "T037",
+            "T038",
+            "T039",
+            "T040",
+            "T041"
+          ]
+        },
+        {
+          "proof": "Historical final implementation heads",
+          "level": "P4",
+          "result": "success_with_task_attribution_limits",
+          "pull_requests": {
+            "65": {
+              "head": "e9eb0bcfc412161ced717f72b5b94a478bdb475b",
+              "ci": 31307598571,
+              "security": 31307598581
+            },
+            "67": {
+              "head": "669d98f3ca8c7eebe0e55ae2921819463e839185",
+              "ci": 31316401225,
+              "security": 31316401274
+            },
+            "69": {
+              "head": "677753033d05f1218f2589459fc0a015f4934ebf",
+              "ci": 31322535600,
+              "security": 31322535598
+            }
+          }
+        },
+        {
+          "proof": "Current-main local Node and contract verification",
+          "level": "P2",
+          "result": "success",
+          "command": "PATH=/tmp/courtside-bin:$PATH COREPACK_HOME=/tmp/courtside-corepack make verify",
+          "node_tests": 46,
+          "java21_postgres_browser_claimed": false
+        },
+        {
+          "proof": "Necessary focused API integration records",
+          "level": "P2",
+          "result": "pending_fresh_exact_head_ci",
+          "tests": [
+            "returnsStableEtagHonorsIfNoneMatchAndChangesWithProjection",
+            "returnsPublishedPointerWithRevisionScopedContributors"
+          ],
+          "production_source_changed": false,
+          "local_java21_testcontainers_claimed": false
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "SAVED",
+        "memory_id": "wm:project:courtside-tw:t034-t041-task-level-evidence-reconciliation",
+        "version": "task-evidence-reconciliation-v1",
+        "retrieval_ids": [
+          "wm:project:courtside-tw:us2-t034-t041-implementation-lane",
+          "wm:project:courtside-tw:us2-t034-t041-review-remediation"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json"
+        ],
+        "next_review_at": "2026-08-19",
+        "blocker": "Each T034-T041 task retains at least one named criterion gap."
+      },
+      "failure_signature": "GROUP_EVIDENCE_CANNOT_CLOSE_TASK_CRITERIA",
+      "decision": "RECONCILE_EVIDENCE_KEEP_TASKS_UNCHECKED",
+      "frontier_reconciliation": "g-protected-p1 remains the named historical human gate but is now blocked; it cannot advance or close any newly enumerated task-level blocker.",
+      "token_usage": {
+        "estimated": 24000,
+        "input": 0,
+        "output": 0,
+        "total": 24000
+      },
+      "terminal_reason": "The evidence and focused test-record reconciliation is complete; task completion remains blocked and no production implementation authority was exercised."
+    },
+    {
+      "event_id": "evt-us2-review-remediation-004",
+      "at": "2026-08-12T14:29:45Z",
+      "actor": "codex-supervisor",
+      "type": "exact_head_post_ci_readback",
+      "base_graph_version": 3,
+      "new_graph_version": 4,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph/nodes/p-exact-head/label",
+            "value": "Latest exact-head CI, Security and browser verification"
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/p-exact-head/confidence",
+            "value": {
+              "score": 1.0,
+              "basis": "PR #83 head 51b4d7c454f220c424d03cd6b386cbe9df29e0f0 has CI #424 and Security #425 passing; PublicArticleApiIT passed 9/9 including the two focused T034/T035 records. This proves only those bounded subclauses and does not close any task.",
+              "evidence_refs": [
+                ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json"
+              ]
+            }
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/p-exact-head/config/claim",
+            "value": "The latest PR #83 evidence head has reproducible CI/Security/browser results and passing focused T034/T035 records; named T034-T041 criterion blockers remain."
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/p-exact-head/config/evidence_path",
+            "value": ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json"
+          },
+          {
+            "op": "replace",
+            "path": "task_completion_claim",
+            "value": "T034-T041 remain blocked by named criterion gaps; exact-head success closes only the two pending test records"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json",
+        "https://github.com/bynanci/courtside-tw/pull/83",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31603947813",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31603947815"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "PR #83 exact head 51b4d7c454f220c424d03cd6b386cbe9df29e0f0",
+          "level": "P3",
+          "result": "success",
+          "tree_sha": "a4611021149a4d1f595e155cd7ab18628105c310",
+          "ci_run": 31603947813,
+          "ci_run_number": 424,
+          "ci_conclusion": "success",
+          "ci_jobs": {
+            "docker_compose_dependency_health": {
+              "job_id": 94137985142,
+              "conclusion": "success"
+            },
+            "java_quality_and_unit_verification": {
+              "job_id": 94137985163,
+              "conclusion": "success"
+            },
+            "frontend_and_contract_verification": {
+              "job_id": 94137985166,
+              "conclusion": "success"
+            },
+            "public_magazine_browser_verification": {
+              "job_id": 94138275639,
+              "conclusion": "success"
+            }
+          },
+          "java_report_artifact": {
+            "artifact_id": 9144348412,
+            "digest": "sha256:da13708376dcb6432401a05dbb8907b7771ca9a6d1284d59b645d935dc59b526",
+            "suite": "PublicArticleApiIT",
+            "tests": 9,
+            "failures": 0,
+            "errors": 0,
+            "skipped": 0
+          },
+          "browser_report_artifact": {
+            "artifact_id": 9144347679,
+            "digest": "sha256:07ca2f38f23baadd0589b2e05ca6dbc640c8a02fce71b442236eafa6e77d9d3e"
+          },
+          "focused_tests": {
+            "T034": "returnsPublishedPointerWithRevisionScopedContributors=passed",
+            "T035": "returnsStableEtagHonorsIfNoneMatchAndChangesWithProjection=passed"
+          }
+        },
+        {
+          "proof": "PR #83 exact-head Security",
+          "level": "P3",
+          "result": "success",
+          "security_run": 31603947815,
+          "security_run_number": 425,
+          "security_conclusion": "success",
+          "required_jobs": "success"
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:t034-t041-task-level-evidence-reconciliation",
+        "version": "task-evidence-reconciliation-v2",
+        "retrieval_ids": [
+          "wm:project:courtside-tw:us2-t034-t041-implementation-lane",
+          "wm:project:courtside-tw:us2-t034-t041-review-remediation"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json",
+          "https://github.com/bynanci/courtside-tw/actions/runs/31603947813",
+          "https://github.com/bynanci/courtside-tw/actions/runs/31603947815"
+        ],
+        "next_review_at": "2026-08-19",
+        "blocker": "Each T034-T041 task retains at least one named criterion gap."
+      },
+      "failure_signature": "EXACT_HEAD_TEST_DELTA_PASSED_TASK_CRITERIA_STILL_OPEN",
+      "decision": "RECORD_EXACT_HEAD_SUCCESS_KEEP_TASKS_UNCHECKED",
+      "frontier_reconciliation": "The two formerly pending T034/T035 test records are now passed; current_frontier remains empty and g-protected-p1 remains blocked because no task is complete.",
+      "token_usage": {
+        "estimated": 6000,
+        "input": 0,
+        "output": 0,
+        "total": 6000
+      },
+      "terminal_reason": "Exact-head CI and Security close the pending test-execution record only; every T034-T041 task retains named acceptance blockers and no production, test, task or out-of-scope state changed in this readback."
+    },
+    {
+      "event_id": "evt-us2-review-remediation-005",
+      "at": "2026-08-12T23:40:13Z",
+      "actor": "codex-supervisor",
+      "type": "review_thread_control_plane_reconciliation",
+      "base_graph_version": 4,
+      "new_graph_version": 5,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "budgets/max_iterations",
+            "value": 7
+          },
+          {
+            "op": "replace",
+            "path": "graph/loops/l1-us2-review-remediation/budgets/max_iterations",
+            "value": 7
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/m-semantic-lane/config/path",
+            "value": ".loop/memory/t034-t041-task-level-evidence-reconciliation.json"
+          }
+        ]
+      },
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/pull/83",
+        "review-thread:PRRT_kwDOTvfycs6YprWz",
+        "review-thread:PRRT_kwDOTvfycs6YprW7",
+        ".loop/t034-t041-us2-review-remediation-graph.yaml",
+        ".loop/memory/t034-t041-task-level-evidence-reconciliation.json",
+        ".loop/t034-t041-us2-review-remediation-ledger.json#evt-us2-review-remediation-003"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Strict Graphify control-plane validation",
+          "level": "P1",
+          "result": "success",
+          "command": "python3 validate_graphify_loop.py .loop/t034-t041-us2-review-remediation-graph.yaml --strict --json",
+          "nodes": 10,
+          "edges": 17,
+          "errors": 0,
+          "warnings": 0
+        },
+        {
+          "proof": "Semantic memory contract validation",
+          "level": "P1",
+          "result": "success",
+          "command": "python3 validate_memory_record.py .loop/memory/t034-t041-task-level-evidence-reconciliation.json --strict",
+          "memory_id": "wm:project:courtside-tw:t034-t041-task-level-evidence-reconciliation"
+        },
+        {
+          "proof": "Scope-guard replay consistency",
+          "level": "P1",
+          "result": "success",
+          "ledger_event": "evt-us2-review-remediation-003",
+          "graph_path": "scope_guard"
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": "wm:project:courtside-tw:t034-t041-task-level-evidence-reconciliation",
+        "version": "task-evidence-reconciliation-v2",
+        "retrieval_ids": [
+          "wm:project:courtside-tw:t034-t041-task-level-evidence-reconciliation",
+          "wm:project:courtside-tw:us2-t034-t041-review-remediation"
+        ],
+        "evidence_refs": [
+          ".loop/t034-t041-us2-review-remediation-graph.yaml",
+          ".loop/t034-t041-us2-review-remediation-ledger.json"
+        ],
+        "next_review_at": "2026-08-19",
+        "blocker": "Each T034-T041 task retains at least one named criterion gap; this event changes routing metadata only."
+      },
+      "failure_signature": "STALE_SEMANTIC_PATH_AND_UNAPPLIED_SCOPE_GUARD_RESOLVED",
+      "decision": "RECONCILE_CONTROL_PLANE_KEEP_TASKS_UNCHECKED",
+      "frontier_reconciliation": "No task frontier changes. The graph now reads the superseding task-level memory record and materializes the scope guard already declared by event 003.",
+      "token_usage": {
+        "estimated": 2500,
+        "input": 0,
+        "output": 0,
+        "total": 2500
+      },
+      "terminal_reason": "Both PR #83 control-plane review findings are repaired without changing production, tests, migrations, deployment or task state; T034-T041 remain blocked by their named criteria."
+    },
+    {
+      "event_id": "evt-us2-review-remediation-006",
+      "at": "2026-08-12T23:53:13Z",
+      "actor": "codex-supervisor",
+      "type": "review_replay_and_head_attribution_correction",
+      "base_graph_version": 5,
+      "new_graph_version": 6,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "acceptance/0",
+            "value": "The historical PR #67 remediation remained draft-only during this lane and was based on main@c45c1fd7e93699f4626e2ceab6b5fb6f52f38842; later merge state is reconciled in the ledger."
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/p-exact-head/label",
+            "value": "Focused T034/T035 evidence-head CI, Security and browser verification"
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/p-exact-head/confidence",
+            "value": {
+              "score": 1.0,
+              "basis": "Earlier focused evidence head 51b4d7c454f220c424d03cd6b386cbe9df29e0f0 has CI #424 and Security #425 passing; PublicArticleApiIT passed 9/9 including the two focused T034/T035 records. This is not the live protected-merge head and proves only those bounded subclauses.",
+              "evidence_refs": [
+                ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json"
+              ]
+            }
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/p-exact-head/config/claim",
+            "value": "The earlier focused PR #83 evidence head has reproducible CI/Security/browser results and passing focused T034/T035 records; live protected-merge checks must still match the current PR SHA."
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/p-exact-head/config/method",
+            "value": "Fetch workflow runs for the focused evidence-head SHA and inspect every job conclusion plus report artifacts; evaluate the mutable PR merge head live rather than serializing a self-referential final SHA."
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/g-protected-p1/config/condition",
+            "value": "Do not review task-state completion until the task-level blockers in the reconciliation receipt are closed separately."
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/m-semantic-lane/confidence",
+            "value": {
+              "score": 0.95,
+              "basis": "The historical semantic record is superseded by task-level reconciliation and cannot route to success while named task criteria remain open.",
+              "evidence_refs": [
+                ".loop/memory/t034-t041-task-level-evidence-reconciliation.json",
+                ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json"
+              ]
+            }
+          }
+        ]
+      },
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/pull/83",
+        "review-thread:PRRT_kwDOTvfycs6YwzMn",
+        "review-thread:PRRT_kwDOTvfycs6YwzMq",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31651870941",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31651870939",
+        ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json",
+        ".loop/memory/t034-t041-task-level-evidence-reconciliation.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Graph mutation replay from main graph version 2 through event 006",
+          "level": "P1",
+          "result": "success",
+          "errors": 0,
+          "unrecorded_mutations": 0
+        },
+        {
+          "proof": "Pre-correction reviewed head f220e01b890215f49fc3bc81233c1e33282ae1e3",
+          "level": "P3",
+          "classification": "SUPERSEDED_PREDECESSOR_HEAD_NOT_LIVE_MERGE_GATE",
+          "result": "success",
+          "ci_run": 31651870941,
+          "ci_run_number": 438,
+          "security_run": 31651870939,
+          "security_run_number": 439,
+          "browser_job": 94297950857,
+          "required_jobs": "success"
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:t034-t041-task-level-evidence-reconciliation",
+        "version": "task-evidence-reconciliation-v3",
+        "retrieval_ids": [
+          "wm:project:courtside-tw:t034-t041-task-level-evidence-reconciliation",
+          "wm:project:courtside-tw:us2-t034-t041-review-remediation"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json",
+          "https://github.com/bynanci/courtside-tw/actions/runs/31603947813",
+          "https://github.com/bynanci/courtside-tw/actions/runs/31603947815"
+        ],
+        "next_review_at": "2026-08-19",
+        "blocker": "T034-T041 retain named task criteria; live protected-merge gates must match the current expected PR head."
+      },
+      "failure_signature": "UNRECORDED_GRAPH_MUTATIONS_AND_SELF_REFERENTIAL_HEAD_ATTRIBUTION_RESOLVED",
+      "decision": "RECLASSIFY_FOCUSED_HEAD_AND_REQUIRE_LIVE_MERGE_GATE",
+      "frontier_reconciliation": "Task frontier remains empty. The ledger can replay every graph mutation, while the serialized 51b4d7c proof is explicitly limited to focused T034/T035 evidence.",
+      "token_usage": {
+        "estimated": 4500,
+        "input": 0,
+        "output": 0,
+        "total": 4500
+      },
+      "terminal_reason": "Evidence attribution and graph replay are corrected without claiming T034-T041 completion; current-head CI, Security, browser and review threads remain live merge-controller gates."
+    },
+    {
+      "event_id": "evt-us2-review-remediation-007",
+      "at": "2026-08-13T00:02:54Z",
+      "actor": "codex-supervisor",
+      "type": "canonical_graph_replay_materialization",
+      "base_graph_version": 6,
+      "new_graph_version": 7,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "replay_verification",
+            "value": {
+              "base_graph_version": 2,
+              "through_event": "evt-us2-review-remediation-007",
+              "result": "success",
+              "materialized_fields": [
+                "evidence/task-level-reconciliation",
+                "task_completion_claim"
+              ]
+            }
+          }
+        ]
+      },
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/pull/83",
+        "review-thread:PRRT_kwDOTvfycs6Yw-e5",
+        ".loop/t034-t041-us2-review-remediation-graph.yaml",
+        ".loop/t034-t041-us2-review-remediation-ledger.json#evt-us2-review-remediation-003",
+        ".loop/t034-t041-us2-review-remediation-ledger.json#evt-us2-review-remediation-004"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Graph mutation replay from main graph version 2 through event 007",
+          "level": "P1",
+          "result": "success",
+          "errors": 0,
+          "unrecorded_mutations": 0,
+          "materialized_prior_operations": [
+            "evidence/task-level-reconciliation",
+            "task_completion_claim"
+          ]
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": "wm:project:courtside-tw:t034-t041-task-level-evidence-reconciliation",
+        "version": "task-evidence-reconciliation-v3",
+        "retrieval_ids": [
+          "wm:project:courtside-tw:t034-t041-task-level-evidence-reconciliation",
+          "wm:project:courtside-tw:us2-t034-t041-review-remediation"
+        ],
+        "evidence_refs": [
+          ".loop/t034-t041-us2-review-remediation-graph.yaml",
+          ".loop/t034-t041-us2-review-remediation-ledger.json"
+        ],
+        "next_review_at": "2026-08-19",
+        "blocker": "T034-T041 retain named task criteria; live protected-merge gates must match the current expected PR head."
+      },
+      "failure_signature": "PSEUDO_GRAPH_FIELDS_NOT_MATERIALIZED_RESOLVED",
+      "decision": "MATERIALIZE_REPLAYED_FIELDS_KEEP_TASKS_UNCHECKED",
+      "frontier_reconciliation": "No task frontier changes. The canonical graph now contains the evidence and non-completion fields introduced by events 003-004.",
+      "token_usage": {
+        "estimated": 1800,
+        "input": 0,
+        "output": 0,
+        "total": 1800
+      },
+      "terminal_reason": "Canonical graph and append-only ledger replay now agree without changing production, tests, deployment or T034-T041 checkbox state."
     }
   ]
 }

@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "memory_id": "wm:project:courtside-tw:t034-t041-task-level-evidence-reconciliation",
+  "scope": "project",
+  "kind": "task_state",
+  "title": "T034-T041 current-main evidence is reconciled without false completion",
+  "summary": "Current main at ed12e73 was reconciled criterion by criterion against tasks.md, the implementation and review-remediation ledgers, historical receipts and current source/test blobs. Prior receipts prove a useful group implementation, but all eight tasks retain at least one named production or executable-test gap. Two focused API integration records for existing T034/T035 behavior passed CI on the earlier focused evidence head 51b4d7c; no production source, migration or checkbox changed.",
+  "claims": [
+    {
+      "text": "The authoritative baseline is main@ed12e73aea918797a9470140e9730c5a1905d4f7 and tasks blob f25d8fd362a50a77b79c49ad2abe0c5c06ca871f.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The historical implementation and review-remediation ledgers provide group-level scope and workflow proof, not criterion-level completion for T034-T041.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The historical media/byline/p5 receipt contains stale Java path references and targets an intermediate head that is not an ancestor of current main; current attribution therefore uses final PR heads and current-main blobs.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "T034-T041 all remain unchecked because each still has at least one named production behavior, component/test boundary, lifecycle, accessibility or performance gap.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The only executable-test delta adds focused records for the existing Article ETag lifecycle and published-pointer/revision-scoped-contributor projection. Both passed in PublicArticleApiIT on the earlier focused evidence head 51b4d7c454f220c424d03cd6b386cbe9df29e0f0 (CI run 31603947813, #424); they do not close T034 or T035 and are not the live protected-merge head.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The mutable PR merge head is never serialized as a self-referential final SHA; CI, Security, browser and review-thread gates must match the expected current head immediately before merge.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The historical review-remediation ledger is preserved at blob 270a1d17c71fb37373e65ecca35b5b8601d69d3e; its post-budget events are not the canonical control replay. New control mutations begin in a fresh continuation lane from immutable graph blob 219d21fd9bc55711030324bba8eb18cb0484995d, without changing task evidence or checkbox state.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The supplied immersion montage/presentation is design input and simulated experience, not executable or participant evidence.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "This reconciliation does not change production source or authorize T056, T057+, Web3, deployment, production migrations or unrelated task state.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    }
+  ],
+  "status": "verified",
+  "confidence": "high",
+  "confidence_basis": [
+    ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json",
+    ".loop/evidence/t034-t041-control-continuation-20260813.json",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    ".loop/t034-t041-us2-implementation-ledger.json",
+    ".loop/t034-t041-us2-review-remediation-ledger.json",
+    ".loop/t034-t041-us2-review-remediation-continuation-ledger.json",
+    "https://github.com/bynanci/courtside-tw/pull/83",
+    "https://github.com/bynanci/courtside-tw/actions/runs/31603947813",
+    "https://github.com/bynanci/courtside-tw/actions/runs/31603947815",
+    "https://github.com/bynanci/courtside-tw/pull/65",
+    "https://github.com/bynanci/courtside-tw/pull/67",
+    "https://github.com/bynanci/courtside-tw/pull/69"
+  ],
+  "volatility": "medium",
+  "as_of": "2026-08-13",
+  "source_refs": [
+    ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json",
+    ".loop/evidence/t034-t041-control-continuation-20260813.json",
+    ".loop/t034-t041-us2-review-remediation-graph.yaml",
+    ".loop/t034-t041-us2-review-remediation-continuation-ledger.json",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    "specs/001-taiwan-basketball-magazine-ebook/spec.md",
+    "DESIGN.md",
+    "docs/adr/0005-motion-and-generative-runtime.md",
+    "apps/api/src/main/java/tw/basketball/magazine/publication/JdbcPublicArticleRepository.java",
+    "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java",
+    "https://github.com/bynanci/courtside-tw/pull/83",
+    "https://github.com/bynanci/courtside-tw/actions/runs/31603947813",
+    "https://github.com/bynanci/courtside-tw/actions/runs/31603947815",
+    "apps/web/app/pages/articles/[articleSlug].vue",
+    "apps/web/tests/e2e/us2-read-article.spec.ts",
+    "apps/web/tests/e2e/us2-no-js.spec.ts",
+    "apps/web/tests/e2e/us2-reduced-motion.spec.ts"
+  ],
+  "entities": [
+    "courtside-tw",
+    "T034",
+    "T035",
+    "T036",
+    "T037",
+    "T038",
+    "T039",
+    "T040",
+    "T041",
+    "task-level evidence"
+  ],
+  "relations": {
+    "supports": [],
+    "contradicts": [],
+    "supersedes": [
+      "wm:project:courtside-tw:us2-t034-t041-implementation-lane",
+      "wm:project:courtside-tw:us2-t034-t041-review-remediation"
+    ],
+    "blocks": [
+      "task:T034",
+      "task:T035",
+      "task:T036",
+      "task:T037",
+      "task:T038",
+      "task:T039",
+      "task:T040",
+      "task:T041"
+    ],
+    "invalidates": []
+  },
+  "next_review_at": "2026-08-19",
+  "sensitivity": "public",
+  "retention": "until_superseded",
+  "write_receipt": {
+    "status": "UPDATED",
+    "version": "task-evidence-reconciliation-v5",
+    "backend": "repository",
+    "record_path": ".loop/memory/t034-t041-task-level-evidence-reconciliation.json",
+    "receipt_ref": ".loop/t034-t041-us2-review-remediation-continuation-ledger.json#evt-us2-review-remediation-continuation-002",
+    "readback": "The August 12 task receipt and historical ledger are preserved exactly; the separate August 13 continuation receipt changes no T034-T041 criterion. Earlier focused evidence head 51b4d7c454f220c424d03cd6b386cbe9df29e0f0 has successful CI run 31603947813 and Security run 31603947815; live protected gates remain bound to the mutable expected head. validate_memory_record.py returned VALID for this repository-backed v5 record.",
+    "written_by": "codex-supervisor"
+  }
+}
