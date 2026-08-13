@@ -53,8 +53,8 @@ budgets:
   max_minutes: 180
   max_same_failure: 2
   max_no_evidence_delta: 2
-  max_graph_changes: 20
-  max_tokens: 80000
+  max_graph_changes: 64
+  max_tokens: 100000
 
 policy:
   human_gates:
@@ -105,8 +105,8 @@ graph:
         max_iterations: 7
         max_minutes: 180
         max_same_failure: 2
-        max_graph_changes: 20
-        max_tokens: 80000
+        max_graph_changes: 64
+        max_tokens: 100000
 
   nodes:
     - id: t-review-readback
@@ -346,3 +346,9 @@ output_required:
   - graph_delta
   - next_action
   - memory_receipt
+
+replay_verification:
+  base_graph_version: 2
+  through_event: evt-us2-review-remediation-007
+  result: success
+  materialized_fields: [evidence/task-level-reconciliation, task_completion_claim]
