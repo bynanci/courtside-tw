@@ -1,9 +1,12 @@
 package tw.basketball.magazine.publication;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -13,6 +16,7 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.dao.DataAccessException;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -26,7 +30,7 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
     private static final String CHECKSUM = "b".repeat(64);
 
     @Test
-    void returnsPublishedRevisionAndSnapshotIssueNavigation() throws Exception {
+    void returnsPublishedRevisionAndIssueNavigation() throws Exception {
         IssueFixture issue = createIssue(
                 "issue-2026-04",
                 4,
@@ -53,6 +57,90 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
                 .andExpect(jsonPath("$.issueNavigation.issueSlug").value(issue.slug()))
                 .andExpect(jsonPath("$.issueNavigation.next.slug").value("courtside-notes"))
                 .andExpect(jsonPath("$.content.blocks[0].type").value("paragraph"));
+    }
+
+    @Test
+    void returnsStableEtagHonorsIfNoneMatchAndChangesWithProjection() throws Exception {
+        IssueFixture issue = createIssue(
+                "issue-2026-11",
+                11,
+                Instant.parse("2026-08-08T00:00:00Z"),
+                "PUBLISHED",
+                true
+        );
+        addArticle(issue, "快取", 1, "etag-article", 1, "PUBLISHED");
+
+        MvcResult first = mockMvc.perform(get("/api/v1/public/articles/etag-article"))
+                .andExpect(status().isOk())
+                .andExpect(header().exists(HttpHeaders.ETAG))
+                .andReturn();
+        String etag = first.getResponse().getHeader(HttpHeaders.ETAG);
+        assertNotNull(etag);
+
+        mockMvc.perform(get("/api/v1/public/articles/etag-article")
+                        .header(HttpHeaders.IF_NONE_MATCH, etag))
+                .andExpect(status().isNotModified())
+                .andExpect(header().string(HttpHeaders.ETAG, etag))
+                .andExpect(content().string(""));
+
+        replaceDocument("etag-article", """
+                {"schemaVersion":1,"documentId":"0190f7b0-7c4b-7e3a-8f12-123456789abc","blocks":[
+                  {"id":"00000000-0000-4000-8000-000000000002","type":"paragraph","version":1,
+                   "payload":{"content":[{"kind":"text","text":"Changed projection"}]}}
+                ]}
+                """);
+
+        MvcResult changed = mockMvc.perform(get("/api/v1/public/articles/etag-article")
+                        .header(HttpHeaders.IF_NONE_MATCH, etag))
+                .andExpect(status().isOk())
+                .andExpect(header().exists(HttpHeaders.ETAG))
+                .andReturn();
+        assertNotEquals(etag, changed.getResponse().getHeader(HttpHeaders.ETAG));
+    }
+
+    @Test
+    void returnsPublishedPointerWithRevisionScopedContributors() throws Exception {
+        IssueFixture issue = createIssue(
+                "issue-2026-12",
+                12,
+                Instant.parse("2026-08-08T00:00:00Z"),
+                "PUBLISHED",
+                true
+        );
+        String articleSlug = "published-pointer";
+        addArticle(issue, "版本", 1, articleSlug, 1, "PUBLISHED");
+        addPublishedRevision(articleSlug);
+
+        UUID revisionId = jdbcTemplate.queryForObject("""
+                SELECT revision.id
+                FROM article_revision revision
+                JOIN article ON article.id = revision.article_id
+                WHERE article.slug = ? AND revision.revision_number = 2
+                """, UUID.class, articleSlug);
+        UUID contributorId = UUID.randomUUID();
+        jdbcTemplate.update("""
+                INSERT INTO contributor (id, slug, display_name)
+                VALUES (?, 'current-revision-author', 'Current revision author')
+                """, contributorId);
+        jdbcTemplate.update("""
+                INSERT INTO article_contributor (
+                    article_revision_id, contributor_id, role, position
+                ) VALUES (?, ?, 'AUTHOR', 1)
+                """, revisionId, contributorId);
+
+        mockMvc.perform(get("/api/v1/public/articles/" + articleSlug))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.revisionId").value(revisionId.toString()))
+                .andExpect(jsonPath("$.revisionNumber").value(2))
+                .andExpect(jsonPath("$.title").value("Current revision"))
+                .andExpect(jsonPath("$.content.blocks[0].payload.content[0].text")
+                        .value("Current revision"))
+                .andExpect(jsonPath("$.contributors.length()").value(1))
+                .andExpect(jsonPath("$.contributors[0].contributorId")
+                        .value(contributorId.toString()))
+                .andExpect(jsonPath("$.contributors[0].displayName")
+                        .value("Current revision author"))
+                .andExpect(jsonPath("$.contributors[0].role").value("AUTHOR"));
     }
 
     @Test

@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "evidence_id": "t034-t041-control-continuation-20260813",
+  "recorded_at": "2026-08-13T00:54:13Z",
+  "scope": "Append-only control-provenance correction for PR #83; no implementation or task-completion evidence.",
+  "prior_task_receipt": {
+    "path": ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json",
+    "blob": "719ee8b5d3dc7e0ff545272c9514e97f3c3cc745",
+    "classification": "PRESERVED_EXACTLY"
+  },
+  "historical_control_lane": {
+    "ledger_path": ".loop/t034-t041-us2-review-remediation-ledger.json",
+    "ledger_blob": "270a1d17c71fb37373e65ecca35b5b8601d69d3e",
+    "through_event": "evt-us2-review-remediation-007",
+    "classification": "IMMUTABLE_HISTORICAL_PROOF_NOT_CANONICAL_CONTROL_REPLAY_AFTER_ELAPSED_TIME_BUDGET"
+  },
+  "continuation_lane": {
+    "run_id": "courtside-tw-us2-review-remediation-continuation-20260813",
+    "ledger_path": ".loop/t034-t041-us2-review-remediation-continuation-ledger.json",
+    "base_graph_version": 7,
+    "base_graph_blob": "219d21fd9bc55711030324bba8eb18cb0484995d",
+    "events": [
+      "evt-us2-review-remediation-continuation-001",
+      "evt-us2-review-remediation-continuation-002"
+    ],
+    "classification": "CANONICAL_FRESH_CONTROL_REPLAY"
+  },
+  "proof": {
+    "strict_graph_validation": "PASS",
+    "continuation_replay": "PASS",
+    "replay_errors": 0,
+    "unrecorded_graph_mutations": 0,
+    "historical_ledger_unchanged": true,
+    "prior_task_receipt_unchanged": true
+  },
+  "task_state_effect": {
+    "completed_tasks": [],
+    "T034": false,
+    "T035": false,
+    "T036": false,
+    "T037": false,
+    "T038": false,
+    "T039": false,
+    "T040": false,
+    "T041": false,
+    "interpretation": "The continuation repairs control attribution only. It does not add criterion proof, close any named blocker or authorize a checkbox."
+  },
+  "live_merge_gate_policy": "CI, Security, browser evidence and unresolved review threads must be read from the mutable exact PR head immediately before merge."
+}
