@@ -177,3 +177,50 @@ test("representative reader interaction stays within the 200 ms INP budget", asy
       : EVENT_TIMING_REPORTING_THRESHOLD_MS
   expect(worstInteraction).toBeLessThanOrEqual(200)
 })
+
+test("ordinary article hydration stays within the CLS budget", async ({ page }) => {
+  await page.addInitScript(() => {
+    let cumulativeLayoutShift = 0
+    const layoutShiftSources: string[] = []
+    const observer = new PerformanceObserver((list) => {
+      for (const entry of list.getEntries()) {
+        const shift = entry as PerformanceEntry & {
+          value: number
+          hadRecentInput: boolean
+          sources?: Array<{ node?: Node }>
+        }
+        if (shift.hadRecentInput) continue
+        cumulativeLayoutShift += shift.value
+        for (const source of shift.sources ?? []) {
+          if (source.node instanceof Element) layoutShiftSources.push(source.node.className)
+        }
+      }
+    })
+    observer.observe({ type: "layout-shift", buffered: true })
+    Object.defineProperty(window, "__courtsideReaderCls", {
+      get: () => cumulativeLayoutShift
+    })
+    Object.defineProperty(window, "__courtsideReaderClsSources", {
+      get: () => [...layoutShiftSources]
+    })
+  })
+
+  await page.goto("/articles/courtside-notes?issue=issue-2026-01")
+  await expect(page.getByTestId("article-document")).toHaveAttribute("data-client-ready", "true")
+  await page.evaluate(async () => {
+    await document.fonts.ready
+    await new Promise<void>((resolve) =>
+      requestAnimationFrame(() => requestAnimationFrame(resolve))
+    )
+  })
+
+  const hydrationLayoutShift = await page.evaluate(() => {
+    const evidence = window as Window & {
+      __courtsideReaderCls: number
+      __courtsideReaderClsSources: string[]
+    }
+    return { value: evidence.__courtsideReaderCls, sources: evidence.__courtsideReaderClsSources }
+  })
+  expect(hydrationLayoutShift.value).toBeLessThanOrEqual(0.01)
+  expect(hydrationLayoutShift.sources).not.toContain("article-header")
+})

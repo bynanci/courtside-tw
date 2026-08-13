@@ -34,6 +34,26 @@
     },
     "source_attribution": "Every reported job checked out and verified 2bac1f87e200442c773ca1de9dbd89b842630f6a before executing. This is an immutable predecessor-head receipt, not current PR evidence."
   },
+  "historical_lighthouse_exact_head_failure": {
+    "subject_commit": "1ad44a004246541a971782b8c8c5f89322bba95b",
+    "ci_run_id": 31688646926,
+    "browser_job_id": 94410892168,
+    "artifact_id": 9176568368,
+    "result": "FAIL",
+    "passing_gates": [
+      "Frontend and contract verification",
+      "Java quality and unit verification",
+      "Docker Compose dependency health",
+      "US1 3/3",
+      "US2 23/23",
+      "US1 and US2 combined 26/26",
+      "full browser regression 30/30",
+      "Security workflow"
+    ],
+    "failure_signature": "ORDINARY_ARTICLE_HYDRATION_INSERTED_PROGRESS_AND_SHARE_CONTROLS_CAUSING_CLS",
+    "details": "All three courtside-notes Lighthouse runs reported CLS 0.148945241257309 against the 0.1 budget. The only layout-shift source was header.article-header; opening-night passed with CLS 0.08304426870205461. The workflow verified this immutable subject head before execution.",
+    "classification": "PREDECESSOR_HEAD_NOT_LIVE_MERGE_GATE"
+  },
   "local_remediation": {
     "classification": "LOCAL_CANDIDATE_TREE_NOT_LIVE_PR_HEAD",
     "changes": [
@@ -41,7 +61,8 @@
       "Select the most-visible creative host deterministically, re-evaluate ownership with an rAF-throttled scroll handler, and reapply loop state after p5 setup.",
       "Preserve frozen image and gallery aspect ratio before and after media errors.",
       "Remove vulnerable LHCI dependencies and run pinned Lighthouse directly with fail-closed audit aggregation and bounded fixture/Chrome cleanup.",
-      "Make public articles crawlable, include snapshot article URLs in sitemap output, precompress public assets, and resolve the trusted local P5 host only after client runtime enablement."
+      "Make public articles crawlable, include snapshot article URLs in sitemap output, precompress public assets, and resolve the trusted local P5 host only after client runtime enablement.",
+      "Keep reading progress and the share control in SSR markup so hydration changes state without inserting layout boxes; add no-JS footprint and hydration CLS regression coverage."
     ],
     "tests_first_and_regression": [
       {
@@ -72,7 +93,12 @@
       {
         "gate": "Lighthouse budgets",
         "result": "PASS",
-        "details": "Two reader URLs ran three times each. courtside-notes median LCP=1974.718ms, CLS=0.0419476, TBT=70ms; opening-night median LCP=2054.0665ms, CLS=0.0657033, TBT=155.361ms. Accessibility and SEO were 1.0 in every run; responsive and sized-image audits passed."
+        "details": "After the hydration-footprint remediation, two reader URLs ran three times each. courtside-notes median LCP=1819.248ms, CLS=0, TBT=125ms; opening-night median LCP=2044.3065ms, CLS=0, TBT=97.9395ms. Accessibility and SEO were 1.0; responsive and sized-image audits passed."
+      },
+      {
+        "gate": "hydration CLS regression",
+        "result": "PASS",
+        "details": "Actual Chromium observed ordinary-article hydration CLS <=0.01 with no article-header shift source; no-JS output contains the progressbar, disabled share button, and usable canonical-link fallback."
       },
       {
         "gate": "bundle and compression",

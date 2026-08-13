@@ -972,8 +972,7 @@ onBeforeUnmount(() => {
         aria-labelledby="article-heading"
       >
         <ReadingProgress
-          v-if="clientReady"
-          :percent="visibleReadingProgress"
+          :percent="clientReady ? visibleReadingProgress : 0"
           :motion-mode="motionMode"
         />
         <header class="article-header" data-testid="article-header">

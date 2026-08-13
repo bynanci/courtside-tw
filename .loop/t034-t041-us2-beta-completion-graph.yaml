@@ -141,7 +141,7 @@ graph:
       risk: high
       confidence:
         score: 0.97
-        basis: Historical subjects 8e029c5 and 1e414d7 plus the bounded remediation implement SEO, no-JS, lifecycle, bundle, direct Lighthouse, dependency, and exact-source-head gates; actual local browser and Lighthouse pass while replacement live proof remains under p-exact-head.
+        basis: Historical subjects 8e029c5 and 1e414d7 plus the bounded remediation implement SEO, no-JS, lifecycle, bundle, direct Lighthouse, dependency, exact-source-head, and hydration-CLS gates; actual local browser and Lighthouse pass while replacement live proof remains under p-exact-head.
         evidence_refs:
           - .loop/evidence/t034-t041-us2-beta-tests-first-baseline-20260813.json
           - .loop/evidence/t034-t041-us2-beta-local-acceptance-20260813.json
@@ -203,7 +203,7 @@ graph:
       risk: high
       confidence:
         score: 0.92
-        basis: Workspace, actual Chromium US1/US2/combined/full regression, direct Lighthouse, bundle, and dependency checks pass locally; replacement PR-head Java 21, CI, Security, browser, review-thread, and mergeability read-back is still required.
+        basis: Exact predecessor 1ad44a0 passed Java, Security, US1/US2/combined/full browser regression but exposed ordinary-article hydration CLS; the SSR-footprint remediation passes actual Chromium CLS and direct Lighthouse locally, while replacement PR-head Java 21, CI, Security, browser, review-thread, and mergeability read-back is still required.
         evidence_refs:
           - .loop/evidence/t034-t041-us2-beta-local-acceptance-20260813.json
           - .loop/evidence/t034-t041-us2-beta-exact-head-remediation-20260813.json

@@ -23,10 +23,11 @@ async function shareArticle(): Promise<void> {
 <template>
   <div class="article-share-actions">
     <button
-      v-if="props.clientReady"
       type="button"
       data-testid="article-share"
       class="button-link button-link--quiet"
+      :disabled="!props.clientReady"
+      :aria-disabled="!props.clientReady"
       @click="shareArticle"
     >
       分享文章

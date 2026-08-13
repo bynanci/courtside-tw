@@ -55,6 +55,18 @@ test("share has an accessible canonical-link fallback when browser APIs fail", a
   )
   assert.match(source, /role="status"/)
   assert.match(source, /data-testid="article-share-fallback"/)
+  assert.match(source, /:disabled="!props\.clientReady"/)
+  assert.doesNotMatch(source, /v-if="props\.clientReady"/)
+})
+
+test("reader hydration preserves header geometry", async () => {
+  const page = await readFile(
+    new URL("../../../app/pages/articles/[articleSlug].vue", import.meta.url),
+    "utf8"
+  )
+
+  assert.doesNotMatch(page, /<ReadingProgress\s+v-if="clientReady"/u)
+  assert.match(page, /:percent="clientReady \? visibleReadingProgress : 0"/)
 })
 
 test("snapshot navigation and heading-only TOC live behind reader components", async () => {

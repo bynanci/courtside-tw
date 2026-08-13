@@ -14,6 +14,12 @@ test("SSR renders article blocks and generative poster without JavaScript", asyn
 
   await expect(page.getByTestId("article-document")).toBeVisible()
   await expect(page.getByTestId("article-content")).toBeVisible()
+  await expect(page.getByTestId("article-reading-progress")).toBeVisible()
+  await expect(page.getByTestId("article-share")).toBeDisabled()
+  await expect(page.getByTestId("article-share-fallback")).toHaveAttribute(
+    "href",
+    "https://courtside.test/articles/opening-night"
+  )
   await expect(page.getByTestId("generative-poster")).toHaveCount(2)
   await expect(page.getByTestId("generative-poster").first()).toHaveAttribute(
     "data-fallback",

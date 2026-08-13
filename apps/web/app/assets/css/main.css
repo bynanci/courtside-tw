@@ -420,6 +420,11 @@ a:focus-visible {
   color: #f5f1e9;
 }
 
+.article-meta .button-link:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
 .article-meta [role="status"] {
   color: var(--accent);
   font-weight: 700;

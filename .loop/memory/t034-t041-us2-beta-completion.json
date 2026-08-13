@@ -4,7 +4,7 @@
   "scope": "project",
   "kind": "task_state",
   "title": "US2 public Article beta replacement candidate awaits live exact-head proof",
-  "summary": "Historical subjects 25e7626, 8e029c5, and 1e414d7 implement the bounded T034, T035, T037, T038, T040, and T041 candidate from main c39288f. Exact predecessor head 2bac1f8 passed Java, contracts, Docker, CodeQL, and Trivy but failed browser and dependency gates. The bounded remediation now passes actual local Chromium US1, US2, combined and full regression, direct Lighthouse budgets, workspace verification, bundle budgets, and a zero-vulnerability development audit. A replacement PR head still requires live CI, Security, mergeability, and review-thread read-back. T036 and T039 remain complete and preserved, while T056, T057+, Web3, deployment, and migrations remain out of scope.",
+  "summary": "Historical subjects 25e7626, 8e029c5, and 1e414d7 implement the bounded T034, T035, T037, T038, T040, and T041 candidate from main c39288f. Exact predecessor 2bac1f8 failed browser and dependency gates; successor 1ad44a0 then passed Java, Security, US1, US2, combined and full browser regression but failed ordinary-article Lighthouse CLS because hydration inserted progress and share controls. The bounded SSR-footprint remediation now passes actual local Chromium hydration CLS, no-JS, direct Lighthouse, workspace, bundle, and dependency evidence. A replacement PR head still requires live CI, Security, mergeability, and review-thread read-back. T036 and T039 remain complete and preserved, while T056, T057+, Web3, deployment, and migrations remain out of scope.",
   "claims": [
     {
       "text": "The authoritative base is main c39288f98279b939401302fe6c50376340db9c6a with T036 and T039 checked and the six selected US2 tasks unchecked.",
@@ -48,6 +48,16 @@
     },
     {
       "text": "The browser, media-geometry, creative-owner, crawlability, compression, Lighthouse-runner, and vulnerable LHCI findings are remediated in the local replacement candidate and covered by actual Chromium, Lighthouse, unit, bundle, and audit evidence.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Exact predecessor head 1ad44a004246541a971782b8c8c5f89322bba95b passed Security, Java, frontend/contracts, Docker, US1 3/3, US2 23/23, combined 26/26, and full browser regression 30/30, but CI run 31688646926 failed because courtside-notes Lighthouse CLS was 0.148945; that immutable failure is not current-head evidence.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The local successor candidate preserves progress and share control layout boxes across SSR and hydration, and actual Chromium now reports hydration CLS <=0.01 plus two-URL three-run Lighthouse CLS 0.",
       "class": "CONFIRMED",
       "confidence": "high"
     },
@@ -119,7 +129,7 @@
   "retention": "until_superseded",
   "write_receipt": {
     "status": "UPDATED",
-    "version": "us2-beta-v4",
+    "version": "us2-beta-v5",
     "written_by": "codex-supervisor"
   }
 }

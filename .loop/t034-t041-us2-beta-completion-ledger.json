@@ -1,12 +1,12 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t034-t041-us2-beta-completion",
-  "graph_version": 5,
+  "graph_version": 6,
   "run_id": "courtside-tw-us2-beta-completion-20260813",
   "status": "running",
-  "iteration": 5,
+  "iteration": 6,
   "started_at": "2026-08-13T07:10:36Z",
-  "updated_at": "2026-08-13T09:43:59Z",
+  "updated_at": "2026-08-13T10:08:00Z",
   "current_frontier": [
     "p-exact-head"
   ],
@@ -481,6 +481,92 @@
         "input": 0,
         "output": 0,
         "total": 36000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-us2-beta-006-hydration-cls-exact-head-remediation",
+      "at": "2026-08-13T10:08:00Z",
+      "actor": "codex-supervisor",
+      "type": "exact_head_failure_local_remediation_and_reverification",
+      "base_graph_version": 5,
+      "new_graph_version": 6,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "historical_exact_head_failures/1ad44a0",
+            "value": {
+              "head_sha": "1ad44a004246541a971782b8c8c5f89322bba95b",
+              "ci_run_id": 31688646926,
+              "browser_job_id": 94410892168,
+              "artifact_id": 9176568368,
+              "failed_gate": "courtside-notes Lighthouse CLS 0.148945241257309 exceeds 0.1"
+            }
+          },
+          {
+            "op": "add",
+            "path": "remediation/hydration_footprint",
+            "value": "Render the reading progress and disabled share control in SSR so hydration changes only state and transform, not article-header geometry."
+          },
+          {
+            "op": "replace",
+            "path": "nodes/p-exact-head/status",
+            "value": "running"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t034-t041-us2-beta-exact-head-remediation-20260813.json",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31688646926",
+        "apps/web/tests/e2e/us2-read-article.a11y.spec.ts",
+        "apps/web/tests/e2e/us2-no-js.spec.ts"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Historical 1ad44a0 protected acceptance",
+          "level": "P3",
+          "result": "failure",
+          "subject_commit": "1ad44a004246541a971782b8c8c5f89322bba95b",
+          "details": "Security, Java, frontend/contracts, Docker, US1 3/3, US2 23/23, combined 26/26, and full browser regression 30/30 passed; all three ordinary-article Lighthouse runs failed only CLS with the article header as the sole shift source."
+        },
+        {
+          "proof": "Tests-first hydration geometry coverage",
+          "level": "P2",
+          "result": "success",
+          "details": "Focused component assertions failed before production changes; no-JS and actual Chromium hydration checks now require stable progress/share footprints, CLS <=0.01, and no article-header shift source."
+        },
+        {
+          "proof": "Actual local Lighthouse after hydration remediation",
+          "level": "P2",
+          "result": "success",
+          "details": "Both public reader URLs passed three runs with median CLS 0; LCP, TBT, accessibility, SEO, sized-image, and responsive-image gates remained green."
+        },
+        {
+          "proof": "Replacement live exact-head protected acceptance",
+          "level": "P3",
+          "result": "pending",
+          "details": "The successor head remains intentionally external. CI, Security, browser, Lighthouse, mergeability, and review state must be read live."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:us2-beta-completion",
+        "version": "us2-beta-v5",
+        "retrieval_ids": ["wm:project:courtside-tw:us2-beta-completion"],
+        "evidence_refs": [
+          ".loop/evidence/t034-t041-us2-beta-exact-head-remediation-20260813.json"
+        ],
+        "next_review_at": "2026-08-13",
+        "blocker": "Replacement live exact-head GitHub evidence is pending."
+      },
+      "failure_signature": "ORDINARY_ARTICLE_HYDRATION_INSERTED_PROGRESS_AND_SHARE_CONTROLS_CAUSING_CLS",
+      "decision": "PRESERVE_SSR_LAYOUT_FOOTPRINT_AND_REVERIFY_ONE_SUCCESSOR_HEAD",
+      "token_usage": {
+        "estimated": 12000,
+        "input": 0,
+        "output": 0,
+        "total": 12000
       },
       "terminal_reason": null
     }
