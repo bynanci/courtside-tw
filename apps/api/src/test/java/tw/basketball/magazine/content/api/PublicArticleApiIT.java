@@ -335,43 +335,6 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
     }
 
     @Test
-    void publicationMediaQueryCountsReferencedVariantsInsteadOfEveryDerivative() throws Exception {
-        String articleSlug = "publication-media-variants";
-        UUID assetId = addPublicWideMediaAsset(articleSlug);
-        var repository = new JdbcEditorialArticleRepository(jdbcTemplate);
-        var draft = repository.insertDraft(
-                "Media variants",
-                articleSlug,
-                "Only the referenced variant belongs in the snapshot",
-                new tools.jackson.databind.ObjectMapper().readTree("""
-                {"schemaVersion":1,"documentId":"0190f7b0-7c4b-7e3a-8f12-123456789abc","blocks":[
-                  {"id":"00000000-0000-4000-8000-000000000007","type":"image","version":1,
-                   "payload":{"assetId":"%s","altText":"Referenced wide image","variant":"wide"}}
-                ]}
-                """.formatted(assetId))
-        );
-        jdbcTemplate.update("""
-                INSERT INTO media_variant (
-                    asset_id, variant, public_storage_key, checksum_sha256,
-                    mime_type, byte_size, width, height
-                )
-                SELECT ?,
-                       'extra-' || lpad(generated.value::text, 4, '0'),
-                       'published/variant-bound/' || ? || '/' || generated.value || '.webp',
-                       repeat('c', 64), 'image/webp', 1024, 1200, 675
-                FROM generate_series(1, 5001) AS generated(value)
-                """, assetId, assetId.toString());
-
-        var media = repository.publicMedia(
-                draft.revisionId(),
-                Instant.parse("2026-08-08T00:00:00Z")
-        );
-
-        assertEquals(1, media.size());
-        assertEquals("wide", media.getFirst().variant());
-    }
-
-    @Test
     void returnsPublishedPointerWithRevisionScopedContributors() throws Exception {
         IssueFixture issue = createIssue(
                 "issue-2026-12",

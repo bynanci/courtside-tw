@@ -9,6 +9,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.time.Instant;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -18,6 +19,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.test.web.servlet.MvcResult;
 
 import tw.basketball.magazine.editorial.EditorialApiIntegrationTestSupport;
+import tw.basketball.magazine.publication.persistence.JdbcEditorialArticleRepository;
 import tw.basketball.magazine.shared.RoleCode;
 
 final class EditorialPublicationApiIT extends EditorialApiIntegrationTestSupport {
@@ -526,6 +528,68 @@ final class EditorialPublicationApiIT extends EditorialApiIntegrationTestSupport
                 .andExpect(status().isBadRequest())
                 .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+    }
+
+    @Test
+    void publicationMediaQueryCountsReferencedVariantsInsteadOfEveryDerivative() throws Exception {
+        String articleSlug = "publication-media-variants";
+        UUID assetId = UUID.randomUUID();
+        jdbcTemplate.update("""
+                INSERT INTO media_asset (
+                    id, private_storage_key, checksum_sha256, mime_type, byte_size,
+                    width, height, alt_text, processing_state
+                ) VALUES (?, ?, ?, 'image/webp', 2048, 1200, 675, 'Referenced wide image', 'READY')
+                """, assetId, "private/" + articleSlug + ".webp", "b".repeat(64));
+        jdbcTemplate.update("""
+                INSERT INTO media_variant (
+                    id, asset_id, variant, public_storage_key, checksum_sha256,
+                    mime_type, byte_size, width, height
+                ) VALUES (?, ?, 'wide', ?, ?, 'image/webp', 1024, 1200, 675)
+                """,
+                UUID.randomUUID(),
+                assetId,
+                "published/" + articleSlug + ".webp",
+                "b".repeat(64)
+        );
+        jdbcTemplate.update("""
+                INSERT INTO rights_record (
+                    id, asset_id, rights_owner, license_name, allowed_channels,
+                    territories, valid_from, valid_until, credit, withdrawal_terms, status
+                ) VALUES (?, ?, 'Courtside TW', 'Editorial license', '{PUBLIC_WEB}'::text[],
+                    ARRAY['GLOBAL']::text[], '2026-08-01T00:00:00Z', '2027-08-01T00:00:00Z',
+                    'Courtside TW', 'withdraw on notice', 'VALID')
+                """, UUID.randomUUID(), assetId);
+        var repository = new JdbcEditorialArticleRepository(jdbcTemplate);
+        var draft = repository.insertDraft(
+                "Media variants",
+                articleSlug,
+                "Only the referenced variant belongs in the snapshot",
+                JSON.readTree("""
+                {"schemaVersion":1,"documentId":"0190f7b0-7c4b-7e3a-8f12-123456789abc","blocks":[
+                  {"id":"00000000-0000-4000-8000-000000000007","type":"image","version":1,
+                   "payload":{"assetId":"%s","altText":"Referenced wide image","variant":"wide"}}
+                ]}
+                """.formatted(assetId))
+        );
+        jdbcTemplate.update("""
+                INSERT INTO media_variant (
+                    asset_id, variant, public_storage_key, checksum_sha256,
+                    mime_type, byte_size, width, height
+                )
+                SELECT ?,
+                       'extra-' || lpad(generated.value::text, 4, '0'),
+                       'published/variant-bound/' || ? || '/' || generated.value || '.webp',
+                       repeat('c', 64), 'image/webp', 1024, 1200, 675
+                FROM generate_series(1, 5001) AS generated(value)
+                """, assetId, assetId.toString());
+
+        var media = repository.publicMedia(
+                draft.revisionId(),
+                Instant.parse("2026-08-10T00:00:00Z")
+        );
+
+        assertEquals(1, media.size());
+        assertEquals("wide", media.getFirst().variant());
     }
 
     private CreatedArticle createArticle(Authentication editor, String key) throws Exception {
