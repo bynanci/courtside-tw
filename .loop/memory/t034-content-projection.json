@@ -1,0 +1,74 @@
+{
+  "schema_version": 1,
+  "memory_id": "wm:project:courtside-tw:t034-content-projection",
+  "scope": "project",
+  "kind": "task_state",
+  "title": "T034 immutable published content projection is reviewable",
+  "summary": "From main@c39288f, immutable implementation subject 09d99ef adds the named content domain/application/persistence boundaries, selects only the published revision pointer, preserves revision-scoped contributor credits, extracts public-visible text from all 11 canonical blocks and computes deterministic reading time server-side. Tests-first RED, review RED, local regressions, CI #462, Security #463 and browser verification pass. Only T034 is a candidate checkbox; protected merge and main read-back remain authoritative.",
+  "claims": [
+    {
+      "text": "PublishedArticleRevision and ContentDocument expose defensive immutable snapshots, and persistence selects only article.published_revision_id.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Contributor credit is ordered and scoped to the selected article revision without article-level fallback or private fields.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "All 11 ContentDocument v1 blocks have explicit public-visible text semantics; links, routing identifiers, asset identities and generative execution metadata are excluded.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "plainText and readingTimeMinutes are derived in the server application projection and included in the public contract and ETag.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "CI #462, Security #463, Java quality/unit, Docker migration regression, frontend contract and browser verification passed on implementation subject 09d99ef.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "T035-T041, T056, T057+, Web3, deployment and migrations are unchanged; T036 and T039 remain checked from base main.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    }
+  ],
+  "status": "verified",
+  "confidence": "high",
+  "confidence_basis": [
+    ".loop/evidence/t034-content-projection-proof.json",
+    "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java",
+    "apps/api/src/test/java/tw/basketball/magazine/content/application/ContentDocumentExtractorTest.java",
+    "https://github.com/bynanci/courtside-tw/pull/86"
+  ],
+  "volatility": "medium",
+  "as_of": "2026-08-13",
+  "source_refs": [
+    ".loop/evidence/t034-content-projection-proof.json",
+    "apps/api/src/main/java/tw/basketball/magazine/content/domain/PublishedArticleRevision.java",
+    "apps/api/src/main/java/tw/basketball/magazine/content/application/PublishedArticleProjectionService.java",
+    "apps/api/src/main/java/tw/basketball/magazine/content/persistence/JdbcPublishedArticleRepository.java",
+    "https://github.com/bynanci/courtside-tw/pull/86"
+  ],
+  "entities": ["courtside-tw", "T034", "PublishedArticleRevision", "ContentDocument", "ContributorCredit"],
+  "relations": {
+    "supports": ["wm:project:courtside-tw:us2-t034-t041-implementation-lane"],
+    "contradicts": [],
+    "supersedes": [],
+    "blocks": [],
+    "invalidates": []
+  },
+  "next_review_at": "2026-08-20",
+  "sensitivity": "internal",
+  "retention": "until_superseded",
+  "write_receipt": {
+    "status": "SAVED",
+    "version": "t034-content-projection-v1",
+    "written_by": "codex-agent",
+    "update_reason": "Record attributable T034 acceptance only after exact implementation-head CI, Security and browser proof passed."
+  }
+}

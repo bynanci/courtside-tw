@@ -1,0 +1,145 @@
+{
+  "schema_version": "courtside-tw/t034-content-projection-proof/v1",
+  "proof_id": "t034-content-projection-proof",
+  "recorded_at": "2026-08-13T08:59:06Z",
+  "result": "IMPLEMENTATION_ACCEPTANCE_PROVEN_CANDIDATE_ONLY",
+  "classification": "ATTRIBUTABLE_T034_TESTS_FIRST_PROOF",
+  "task": "T034",
+  "source_of_truth": {
+    "repository": "bynanci/courtside-tw",
+    "pull_request": 86,
+    "base_ref": "main",
+    "base_commit": "c39288f98279b939401302fe6c50376340db9c6a",
+    "base_context": "Protected PR #85 is merged; T036 and T039 are checked and T034 is unchecked.",
+    "task_ref": "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T034"
+  },
+  "implementation_subject": {
+    "commit": "09d99efff2866a0bc57ab86cf37f3fc591be786b",
+    "tree": "a6774f0dc8dcbf4a17d7b8efa7156d55191cc17e",
+    "classification": "IMMUTABLE_T034_RUNTIME_AND_TEST_SUBJECT",
+    "meaning": "This commit and tree identify the accepted T034 runtime, tests and generated public contract before evidence-only candidate metadata is added."
+  },
+  "acceptance_matrix": [
+    {
+      "criterion": "Immutable published revision selection",
+      "status": "PASS",
+      "proof": "PublishedArticleRevision and ContentDocument defensively own immutable snapshots; JdbcPublishedArticleRepository joins only article.published_revision_id and PublicArticleApiIT rejects explicit history while proving the current pointer."
+    },
+    {
+      "criterion": "Revision-scoped contributor credit",
+      "status": "PASS",
+      "proof": "ContributorCredit is projected in persisted position order from article_contributor.article_revision_id, copied immutably, and the attributable T032 pointer test proves only selected-revision credits are returned."
+    },
+    {
+      "criterion": "All-block public-visible content extraction",
+      "status": "PASS",
+      "proof": "ContentDocumentExtractorTest covers all 11 canonical v1 blocks, includes visible labels/captions/credits and excludes href, routing, asset, provider and generative execution metadata."
+    },
+    {
+      "criterion": "Published-article projection in content domain/application/persistence boundaries",
+      "status": "PASS",
+      "proof": "The new content domain value objects, application port/service and JDBC adapter are used by the existing publication adapter; invalid canonical content fails closed while database failures still propagate."
+    },
+    {
+      "criterion": "Server-side plain text and deterministic reading time",
+      "status": "PASS",
+      "proof": "The API projection now returns plainText and readingTimeMinutes derived server-side at 400 CJK characters or 200 other words per minute; boundary and integration tests pass."
+    },
+    {
+      "criterion": "Attributable T032 regression coverage",
+      "status": "PASS",
+      "proof": "PublicArticleApiIT retains published/draft/withdrawn/history/media/navigation coverage and extends the published-pointer records with exact server-derived fields."
+    }
+  ],
+  "tests_first": {
+    "initial_red": {
+      "head_sha": "abc3e87f9ae88b25d6fc5a26830381ee4717cea4",
+      "ci_run": 31682593562,
+      "ci_run_number": 457,
+      "java_job": 94391226438,
+      "result": "EXPECTED_FAILURE",
+      "tests": 140,
+      "failures": 2,
+      "failure_signature": "PublicArticleApiIT PathNotFoundException for the absent $.plainText field in the two attributable T032 records.",
+      "security_run": 31682593704,
+      "security_run_number": 458,
+      "security_result": "EXPECTED_FAILURE_DOWNSTREAM_OF_THE_SAME_JAVA_TEST_BUILD"
+    },
+    "review_red": {
+      "head_sha": "4a4b0c64c2a271a519dbfa186a5c290af8b00eee",
+      "ci_run": 31683691405,
+      "ci_run_number": 460,
+      "java_job": 94394805671,
+      "result": "EXPECTED_FAILURE",
+      "tests": 144,
+      "failures": 1,
+      "failure_signature": "ContentDocumentExtractorTest proved that inserting a space between canonical inline runs changed renderer-visible text.",
+      "security_run": 31683691414,
+      "security_run_number": 461,
+      "security_result": "EXPECTED_FAILURE_DOWNSTREAM_OF_THE_SAME_JAVA_TEST_BUILD"
+    },
+    "green": {
+      "head_sha": "09d99efff2866a0bc57ab86cf37f3fc591be786b",
+      "ci": {
+        "run_id": 31684122038,
+        "run_number": 462,
+        "conclusion": "success",
+        "jobs": {
+          "java_quality_and_unit": 94396099788,
+          "docker_dependency_and_migration_regression": 94396099865,
+          "frontend_and_contract": 94396099890,
+          "public_magazine_browser": 94396304576
+        }
+      },
+      "security": {
+        "run_id": 31684122099,
+        "run_number": 463,
+        "conclusion": "success",
+        "required_jobs": "all success"
+      }
+    }
+  },
+  "test_sources": {
+    "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java": "45ce7b0140d295db3cde65ceed02552ba53ba2db",
+    "apps/api/src/test/java/tw/basketball/magazine/content/application/ContentDocumentExtractorTest.java": "8b44f5f4d2a28a4129af77ab7598a93939f8f8ac",
+    "apps/api/src/test/java/tw/basketball/magazine/content/application/PublishedArticleProjectionServiceTest.java": "cddf874bd94cdaa4cd2e129552598da14e9de089",
+    "apps/api/src/test/java/tw/basketball/magazine/content/domain/PublishedArticleRevisionTest.java": "40318cb5b27960f97c83e161b25418b0c451847a"
+  },
+  "local_verification": {
+    "command": "make verify PNPM='corepack pnpm'",
+    "result": "PASS",
+    "checks": [
+      "root contract",
+      "Prettier",
+      "ESLint",
+      "TypeScript and Nuxt typecheck",
+      "API client 2/2",
+      "ContentDocument 4/4 across 11 block types",
+      "web 63/63",
+      "OpenAPI 42 paths and 53 operations",
+      "generated client drift"
+    ],
+    "java_execution": "Remote Java 21/Testcontainers CI is authoritative because local Java 21 and Docker are unavailable."
+  },
+  "scope_guard": {
+    "T034_candidate_checkbox_only": true,
+    "T035_T041_preserved": true,
+    "T036_preserved_checked": true,
+    "T039_preserved_checked": true,
+    "T056_or_T057_plus_changed": false,
+    "web3_wallet_passport_changed": false,
+    "deployment_changed": false,
+    "migration_changed": false,
+    "unrelated_task_state_changed": false
+  },
+  "live_merge_gate_contract": {
+    "provider": "GitHub",
+    "pull_request": 86,
+    "serialize_final_mutable_head": false,
+    "required_workflows": ["CI", "Security"],
+    "required_ci_job": "Public magazine browser verification",
+    "binding_rule": "After the evidence-only candidate commit, successful CI and Security runs, browser success, mergeability and zero unresolved review threads must all bind to the observed final PR head before protected merge.",
+    "artifact_state": "PENDING_POST_COMMIT_LIVE_READBACK"
+  },
+  "task_completion_effect": "T034 is checked only as a PR candidate after every named acceptance blocker passed on the immutable implementation subject. Authoritative completion requires protected merge and main read-back."
+}

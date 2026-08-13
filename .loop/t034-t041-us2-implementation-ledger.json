@@ -1,16 +1,16 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t034-t041-us2-implementation-lane",
-  "graph_version": 3,
+  "graph_version": 4,
   "run_id": "courtside-tw-us2-implementation-20260809",
   "status": "running",
-  "iteration": 3,
+  "iteration": 4,
   "started_at": "2026-08-09T08:16:20Z",
-  "updated_at": "2026-08-13T05:41:54Z",
-  "current_frontier": ["p-t036-live-exact-head", "g-t036-protected-merge"],
+  "updated_at": "2026-08-13T08:59:06Z",
+  "current_frontier": ["p-t034-final-exact-head", "g-t034-protected-merge"],
   "blocked_nodes": ["a-t037", "a-t038", "a-t040", "a-t041"],
   "terminal_state": "running",
-  "next_action": "Bind CI, Security, browser, review-thread and mergeability receipts to the final PR #85 head in GitHub; if every protected gate passes, merge with expected_head_sha and verify T036/T039 on authoritative main.",
+  "next_action": "Bind CI, Security, browser, review-thread and mergeability receipts to the final PR #86 head in GitHub; keep T034 candidate-only until protected merge and authoritative main read-back.",
   "events": [
     {
       "event_id": "evt-us2-impl-001-lane-opened",
@@ -327,6 +327,103 @@
       "failure_signature": "SELF_REFERENTIAL_EXACT_HEAD_ATTRIBUTION",
       "decision": "Do not create another repository metadata commit after final GitHub exact-head gates. Persist the final SHA/run binding externally and use expected_head_sha at merge.",
       "terminal_reason": "The evidence schema no longer requires an impossible self-hash fixed point; protected merge remains gated by live exact-head read-back."
+    },
+    {
+      "event_id": "evt-us2-impl-007-t034-tests-first-candidate",
+      "at": "2026-08-13T08:59:06Z",
+      "actor": "codex-agent",
+      "type": "t034_tests_first_acceptance_candidate",
+      "base_graph_version": 3,
+      "new_graph_version": 4,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "external.human_direction.t034",
+            "after": "Current main after protected PR #85 authorizes only T034, tests-first, with T035-T041 and unrelated state preserved."
+          },
+          {
+            "op": "replace",
+            "path": "frontier",
+            "before": "p-t036-live-exact-head -> g-t036-protected-merge",
+            "after": "p-t034-final-exact-head -> g-t034-protected-merge"
+          },
+          {
+            "op": "add",
+            "path": "apps/api/content/domain-application-persistence",
+            "after": "Immutable published revision, revision-scoped credits, all-block extraction and deterministic server-derived reading metadata."
+          },
+          {
+            "op": "replace",
+            "path": "tasks.T034",
+            "before": "unchecked on main@c39288f",
+            "after": "checked as a PR candidate only after implementation-subject CI #462 and Security #463 passed"
+          }
+        ]
+      },
+      "implementation_subject": {
+        "commit": "09d99efff2866a0bc57ab86cf37f3fc591be786b",
+        "tree": "a6774f0dc8dcbf4a17d7b8efa7156d55191cc17e"
+      },
+      "evidence_refs": [
+        ".loop/evidence/t034-content-projection-proof.json",
+        ".loop/memory/t034-content-projection.json",
+        "https://github.com/bynanci/courtside-tw/pull/86",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31684122038",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31684122099"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Initial tests-first RED",
+          "level": "P3",
+          "result": "expected_failure",
+          "head_sha": "abc3e87f9ae88b25d6fc5a26830381ee4717cea4",
+          "ci_run": 31682593562,
+          "java_tests": 140,
+          "failures": 2,
+          "failure_signature": "Missing server-derived plainText on the two attributable T032 published-pointer records."
+        },
+        {
+          "proof": "Review-remediation RED",
+          "level": "P3",
+          "result": "expected_failure",
+          "head_sha": "4a4b0c64c2a271a519dbfa186a5c290af8b00eee",
+          "ci_run": 31683691405,
+          "java_tests": 144,
+          "failures": 1,
+          "failure_signature": "Inline run extraction inserted a renderer-inconsistent space."
+        },
+        {
+          "proof": "Immutable implementation subject",
+          "level": "P3",
+          "result": "success",
+          "head_sha": "09d99efff2866a0bc57ab86cf37f3fc591be786b",
+          "ci_run": 31684122038,
+          "ci_run_number": 462,
+          "security_run": 31684122099,
+          "security_run_number": 463,
+          "browser_job": 94396304576,
+          "required_jobs": "all success"
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "SAVED",
+        "memory_id": "wm:project:courtside-tw:t034-content-projection",
+        "version": "t034-content-projection-v1",
+        "evidence_refs": [
+          ".loop/evidence/t034-content-projection-proof.json",
+          "https://github.com/bynanci/courtside-tw/pull/86"
+        ],
+        "next_review_at": "2026-08-20"
+      },
+      "resolved_failure_signatures": [
+        "MISSING_SERVER_DERIVED_ARTICLE_TEXT",
+        "CLIENT_ONLY_READING_TIME",
+        "MISSING_CONTENT_DOMAIN_APPLICATION_PERSISTENCE_BOUNDARIES",
+        "RENDERER_INCONSISTENT_INLINE_RUN_SPACING"
+      ],
+      "decision": "MARK_ONLY_T034_AS_PR_CANDIDATE_AFTER_FULL_ACCEPTANCE_PROOF",
+      "terminal_reason": "Every named T034 criterion is proven on the immutable implementation subject; the evidence-only final head still requires live exact-head gates before review handoff or protected merge."
     }
   ]
 }
