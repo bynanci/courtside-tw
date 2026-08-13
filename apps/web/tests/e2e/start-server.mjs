@@ -754,8 +754,7 @@ const apiServer = createServer(async (request, response) => {
     writeJson(response, 200, {
       items: [issue],
       page: {
-        nextCursor:
-          requestUrl.searchParams.get("limit") === "100" ? "sitemap-older-issues" : null,
+        nextCursor: requestUrl.searchParams.get("limit") === "100" ? "sitemap-older-issues" : null,
         limit: Number(requestUrl.searchParams.get("limit") ?? 20)
       }
     })
