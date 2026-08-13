@@ -1,7 +1,7 @@
 package tw.basketball.magazine.publication;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -62,7 +62,7 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
     }
 
     @Test
-    void returnsStableEtagHonorsIfNoneMatchAndChangesWithProjection() throws Exception {
+    void returnsStableEtagHonorsIfNoneMatchAndIgnoresLiveRevisionDrift() throws Exception {
         IssueFixture issue = createIssue(
                 "issue-2026-11",
                 11,
@@ -85,19 +85,19 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
                 .andExpect(header().string(HttpHeaders.ETAG, etag))
                 .andExpect(content().string(""));
 
-        replaceDocument("etag-article", """
+        mutateLiveDocument("etag-article", """
                 {"schemaVersion":1,"documentId":"0190f7b0-7c4b-7e3a-8f12-123456789abc","blocks":[
                   {"id":"00000000-0000-4000-8000-000000000002","type":"paragraph","version":1,
                    "payload":{"content":[{"kind":"text","text":"Changed projection"}]}}
                 ]}
                 """);
 
-        MvcResult changed = mockMvc.perform(get("/api/v1/public/articles/etag-article")
+        MvcResult unchanged = mockMvc.perform(get("/api/v1/public/articles/etag-article")
                         .header(HttpHeaders.IF_NONE_MATCH, etag))
-                .andExpect(status().isOk())
-                .andExpect(header().exists(HttpHeaders.ETAG))
+                .andExpect(status().isNotModified())
+                .andExpect(header().string(HttpHeaders.ETAG, etag))
                 .andReturn();
-        assertNotEquals(etag, changed.getResponse().getHeader(HttpHeaders.ETAG));
+        assertEquals(etag, unchanged.getResponse().getHeader(HttpHeaders.ETAG));
     }
 
     @Test
@@ -309,6 +309,80 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
     }
 
     @Test
+    void returnsCanonicalPublicationMetadataAndMediaCredit() throws Exception {
+        IssueFixture issue = createIssue(
+                "issue-2026-13",
+                13,
+                Instant.parse("2026-08-08T00:00:00Z"),
+                "PUBLISHED",
+                true
+        );
+        addArticle(issue, "中繼資料", 1, "canonical-metadata", 1, "PUBLISHED");
+        UUID assetId = addPublicWideMediaAsset("canonical-metadata");
+        replaceDocument("canonical-metadata", """
+                {"schemaVersion":1,"documentId":"0190f7b0-7c4b-7e3a-8f12-123456789abc","blocks":[
+                  {"id":"00000000-0000-4000-8000-000000000019","type":"generative-canvas","version":1,
+                   "payload":{"presetId":"court-pulse-v1","seed":20260808,"parameters":{"density":42,"tempo":0.8,"lineWeight":1.5,"paletteId":"court-dusk","numericSequence":[0.1,0.4,0.9]},"posterAssetId":"%s","altText":"公開生成視覺","dataSummary":"wide fixture"}}
+                ]}
+                """.formatted(assetId));
+
+        mockMvc.perform(get("/api/v1/public/articles/canonical-metadata"))
+                .andExpect(status().isOk())
+                .andExpect(header().exists(HttpHeaders.ETAG))
+                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, "max-age=60, must-revalidate, public"))
+                .andExpect(jsonPath("$.canonicalPath").value("/articles/canonical-metadata"))
+                .andExpect(jsonPath("$.publishedAt").value("2026-08-01T00:00:00Z"))
+                .andExpect(jsonPath("$.updatedAt").value("2026-08-02T00:00:00Z"))
+                .andExpect(jsonPath("$.media[0].credit").value("Courtside TW"));
+    }
+
+    @Test
+    void keepsArticleAndNavigationFrozenAfterLiveEditorialRowsDrift() throws Exception {
+        IssueFixture issue = createIssue(
+                "issue-2026-14",
+                14,
+                Instant.parse("2026-08-08T00:00:00Z"),
+                "PUBLISHED",
+                true
+        );
+        addArticle(issue, "第一節", 1, "snapshot-opening", 1, "PUBLISHED");
+        addArticle(issue, "第二節", 2, "snapshot-next", 1, "PUBLISHED");
+
+        MvcResult before = mockMvc.perform(get("/api/v1/public/articles/snapshot-opening"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Article snapshot-opening"))
+                .andExpect(jsonPath("$.plainText").value("Fixture article snapshot-opening"))
+                .andExpect(jsonPath("$.issueNavigation.next.slug").value("snapshot-next"))
+                .andReturn();
+        String etag = before.getResponse().getHeader(HttpHeaders.ETAG);
+        assertNotNull(etag);
+
+        jdbcTemplate.update("""
+                UPDATE article_revision
+                SET title = 'Live drift title',
+                    content_document = '{"schemaVersion":1,"documentId":"0190f7b0-7c4b-7e3a-8f12-123456789abc","blocks":[
+                      {"id":"00000000-0000-4000-8000-000000000002","type":"paragraph","version":1,
+                       "payload":{"content":[{"kind":"text","text":"Live drift body"}]}}
+                    ]}'::jsonb
+                WHERE article_id = (SELECT id FROM article WHERE slug = 'snapshot-opening')
+                """);
+        jdbcTemplate.update("""
+                DELETE FROM issue_article
+                WHERE article_id = (SELECT id FROM article WHERE slug = 'snapshot-next')
+                """);
+
+        mockMvc.perform(get("/api/v1/public/articles/snapshot-opening")
+                        .header(HttpHeaders.IF_NONE_MATCH, etag))
+                .andExpect(status().isNotModified())
+                .andExpect(header().string(HttpHeaders.ETAG, etag));
+        mockMvc.perform(get("/api/v1/public/articles/snapshot-opening"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("Article snapshot-opening"))
+                .andExpect(jsonPath("$.plainText").value("Fixture article snapshot-opening"))
+                .andExpect(jsonPath("$.issueNavigation.next.slug").value("snapshot-next"));
+    }
+
+    @Test
     void deniesSchemaInvalidPublishedDocument() throws Exception {
         IssueFixture issue = createIssue(
                 "issue-2026-07",
@@ -330,6 +404,11 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
     }
 
     private void replaceDocument(String articleSlug, String document) {
+        mutateLiveDocument(articleSlug, document);
+        appendCurrentArticleSnapshot(articleSlug, Instant.parse("2026-08-02T00:00:00Z"));
+    }
+
+    private void mutateLiveDocument(String articleSlug, String document) {
         jdbcTemplate.update("""
                 UPDATE article_revision
                 SET content_document = ?::jsonb
@@ -361,6 +440,7 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
                 revisionId,
                 articleId
         );
+        appendCurrentArticleSnapshot(articleSlug, Instant.parse("2026-08-02T00:00:00Z"));
     }
 
 

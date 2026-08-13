@@ -213,10 +213,51 @@ abstract class PublicIssueApiIntegrationTestSupport {
                 INSERT INTO issue_article (issue_id, section_id, article_id, position)
                 VALUES (?, ?, ?, ?)
                 """, issue.id(), sectionId, articleId, articlePosition);
+        appendArticleSnapshot(articleId, revisionId, publishedAt);
         refreshSnapshot(issue.id());
     }
 
-    private void refreshSnapshot(UUID issueId) {
+    protected void appendCurrentArticleSnapshot(String articleSlug, Instant createdAt) {
+        Map<String, Object> article = jdbcTemplate.queryForObject("""
+                SELECT article.id AS article_id,
+                       article.published_revision_id AS revision_id
+                FROM article
+                WHERE article.slug = ?
+                """, (resultSet, rowNumber) -> Map.of(
+                "articleId", resultSet.getObject("article_id", UUID.class),
+                "revisionId", resultSet.getObject("revision_id", UUID.class)
+        ), articleSlug);
+        appendArticleSnapshot(
+                (UUID) article.get("articleId"),
+                (UUID) article.get("revisionId"),
+                createdAt
+        );
+        List<UUID> issueIds = jdbcTemplate.query(
+                "SELECT issue_id FROM issue_article WHERE article_id = ?",
+                (resultSet, rowNumber) -> resultSet.getObject("issue_id", UUID.class),
+                article.get("articleId")
+        );
+        issueIds.forEach(this::refreshSnapshot);
+    }
+
+    private void appendArticleSnapshot(UUID articleId, UUID revisionId, Instant createdAt) {
+        String content = jdbcTemplate.queryForObject(
+                "SELECT content_document::text FROM article_revision WHERE id = ?",
+                String.class,
+                revisionId
+        );
+        jdbcTemplate.update("""
+                INSERT INTO publication_snapshot (
+                    aggregate_type, aggregate_id, revision_id, snapshot_version,
+                    content_document, checksum_sha256, created_by, created_at
+                ) VALUES ('ARTICLE', ?, ?,
+                    (SELECT COALESCE(MAX(snapshot_version), 0) + 1
+                     FROM publication_snapshot WHERE aggregate_type = 'ARTICLE' AND aggregate_id = ?),
+                    ?::jsonb, ?, 'public-fixture', ?)
+                """, articleId, revisionId, articleId, content, CHECKSUM, Timestamp.from(createdAt));
+    }
+
+    protected void refreshSnapshot(UUID issueId) {
         Map<String, Object> document = jdbcTemplate.queryForObject("""
                 SELECT issue_number, slug, title, summary, cover_asset_id
                 FROM publication_issue
@@ -248,7 +289,9 @@ abstract class PublicIssueApiIntegrationTestSupport {
         for (Map<String, Object> section : sectionRows) {
             UUID sectionId = UUID.fromString((String) section.get("sectionId"));
             List<Map<String, Object>> articles = jdbcTemplate.query("""
-                    SELECT article.id, article.slug, revision.title, issue_article.position
+                    SELECT article.id, article.slug, revision.id AS revision_id,
+                           revision.revision_number, revision.title, revision.dek,
+                           issue_article.position
                     FROM issue_article
                     JOIN article ON article.id = issue_article.article_id
                     JOIN article_revision revision ON revision.id = article.published_revision_id
@@ -258,8 +301,11 @@ abstract class PublicIssueApiIntegrationTestSupport {
                     """, (resultSet, rowNumber) -> {
                 Map<String, Object> value = new LinkedHashMap<>();
                 value.put("articleId", resultSet.getObject("id", UUID.class).toString());
+                value.put("revisionId", resultSet.getObject("revision_id", UUID.class).toString());
+                value.put("revisionNumber", resultSet.getInt("revision_number"));
                 value.put("slug", resultSet.getString("slug"));
                 value.put("title", resultSet.getString("title"));
+                value.put("dek", resultSet.getString("dek"));
                 value.put("position", resultSet.getInt("position"));
                 return value;
             }, issueId, sectionId);
