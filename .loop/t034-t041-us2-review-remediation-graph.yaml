@@ -7,6 +7,7 @@ feedback_updates_next_action: true
 
 evidence:
   task-level-reconciliation: ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json"
+  control-continuation: ".loop/evidence/t034-t041-control-continuation-20260813.json"
 task_completion_claim: >-
   T034-T041 remain blocked by named criterion gaps; exact-head success closes only
   the two pending test records
@@ -61,7 +62,7 @@ acceptance:
   - No task checkbox, merge, production migration execution, deployment or public activation is changed by this lane.
 
 budgets:
-  max_iterations: 2
+  max_iterations: 3
   max_minutes: 180
   max_same_failure: 2
   max_no_evidence_delta: 2
@@ -114,7 +115,7 @@ graph:
       memory_nodes: [m-control-ledger, m-semantic-lane]
       stop_nodes: [s-review-terminal]
       budgets:
-        max_iterations: 2
+        max_iterations: 3
         max_minutes: 180
         max_same_failure: 2
         max_graph_changes: 64
@@ -363,7 +364,7 @@ replay_verification:
   run_id: courtside-tw-us2-review-remediation-continuation-20260813
   base_graph_version: 7
   base_graph_blob: 219d21fd9bc55711030324bba8eb18cb0484995d
-  through_event: evt-us2-review-remediation-continuation-001
+  through_event: evt-us2-review-remediation-continuation-002
   result: success
   scope: continuation_delta_only
   historical_run_classification: superseded_control_replay_after_elapsed_time_budget

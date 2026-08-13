@@ -56,6 +56,7 @@
   "confidence": "high",
   "confidence_basis": [
     ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json",
+    ".loop/evidence/t034-t041-control-continuation-20260813.json",
     "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
     ".loop/t034-t041-us2-implementation-ledger.json",
     ".loop/t034-t041-us2-review-remediation-ledger.json",
@@ -68,9 +69,10 @@
     "https://github.com/bynanci/courtside-tw/pull/69"
   ],
   "volatility": "medium",
-  "as_of": "2026-08-12",
+  "as_of": "2026-08-13",
   "source_refs": [
     ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json",
+    ".loop/evidence/t034-t041-control-continuation-20260813.json",
     ".loop/t034-t041-us2-review-remediation-graph.yaml",
     ".loop/t034-t041-us2-review-remediation-continuation-ledger.json",
     "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
@@ -123,11 +125,11 @@
   "retention": "until_superseded",
   "write_receipt": {
     "status": "UPDATED",
-    "version": "task-evidence-reconciliation-v4",
+    "version": "task-evidence-reconciliation-v5",
     "backend": "repository",
     "record_path": ".loop/memory/t034-t041-task-level-evidence-reconciliation.json",
-    "receipt_ref": ".loop/t034-t041-us2-review-remediation-continuation-ledger.json#evt-us2-review-remediation-continuation-001",
-    "readback": "The historical ledger is immutable and superseded only as control replay; the fresh continuation replay changes no T034-T041 criterion. Earlier focused evidence head 51b4d7c454f220c424d03cd6b386cbe9df29e0f0 has successful CI run 31603947813 and Security run 31603947815; live protected gates remain bound to the mutable expected head. validate_memory_record.py returned VALID for this repository-backed v4 record.",
+    "receipt_ref": ".loop/t034-t041-us2-review-remediation-continuation-ledger.json#evt-us2-review-remediation-continuation-002",
+    "readback": "The August 12 task receipt and historical ledger are preserved exactly; the separate August 13 continuation receipt changes no T034-T041 criterion. Earlier focused evidence head 51b4d7c454f220c424d03cd6b386cbe9df29e0f0 has successful CI run 31603947813 and Security run 31603947815; live protected gates remain bound to the mutable expected head. validate_memory_record.py returned VALID for this repository-backed v5 record.",
     "written_by": "codex-supervisor"
   }
 }
