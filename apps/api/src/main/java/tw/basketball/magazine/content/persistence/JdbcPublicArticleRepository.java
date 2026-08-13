@@ -407,7 +407,7 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
                   AND article.published_at IS NOT NULL
                   AND article.published_at <= ?
                   AND revision.state = 'PUBLISHED'
-                """.formatted(placeholders);
+                """.replace("%s", placeholders);
         List<Object> parameters = new ArrayList<>();
         for (ArticleSummary item : items) {
             parameters.add(item.articleId());
@@ -433,9 +433,11 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
             if (row == null) {
                 continue;
             }
+            JsonNode articleSnapshot;
+            JsonNode content;
             List<JdbcPublicMediaResolver.MediaReference> articleReferences;
             try {
-                JsonNode articleSnapshot = json(row.snapshotDocument());
+                articleSnapshot = json(row.snapshotDocument());
                 if (articleSnapshot.has("content")) {
                     UUID frozenArticleId = optionalUuid(articleSnapshot, "articleId", row.articleId());
                     UUID frozenRevisionId = optionalUuid(articleSnapshot, "revisionId", row.revisionId());
@@ -444,11 +446,10 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
                         throw invalid("published neighbor snapshot ownership is inconsistent");
                     }
                 }
-                JsonNode content = snapshotContent(articleSnapshot);
+                content = snapshotContent(articleSnapshot);
                 ExtractedArticleContent extracted = validatedExtraction(content);
                 validateEnvelopeContract(articleSnapshot, articleSnapshot.has("content"), extracted);
                 articleReferences = extractMediaReferences(content);
-                validateSnapshotMediaContract(articleSnapshot, content, articleReferences);
             } catch (InvalidPublishedContentException | IllegalArgumentException exception) {
                 // An invalid or inaccessible neighbor is omitted without destabilizing the reader.
                 continue;
@@ -456,6 +457,12 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
             referenceCount = Math.addExact(referenceCount, articleReferences.size());
             if (referenceCount > JdbcPublicMediaResolver.MAXIMUM_BATCH_REFERENCES) {
                 throw invalid("published issue snapshot exceeds the bounded media limit");
+            }
+            try {
+                validateSnapshotMediaContract(articleSnapshot, content, articleReferences);
+            } catch (InvalidPublishedContentException | IllegalArgumentException exception) {
+                // A bounded neighbor with an invalid frozen media contract remains inaccessible.
+                continue;
             }
             references.put(item.articleId(), articleReferences);
         }

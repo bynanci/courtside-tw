@@ -162,7 +162,7 @@ final class JdbcPublicMediaResolver {
         parameters.add(Timestamp.from(now));
         parameters.add(Timestamp.from(now));
         List<MediaRow> rows = jdbcTemplate.query(
-                RESOLVE_SQL.formatted(placeholders),
+                RESOLVE_SQL.replace("%s", placeholders),
                 (resultSet, rowNumber) -> map(resultSet),
                 parameters.toArray()
         );
@@ -198,7 +198,7 @@ final class JdbcPublicMediaResolver {
         String placeholders = placeholders(requested.size());
         List<Object> parameters = parameters(requested.keySet().stream().toList(), now);
         List<MediaReference> visible = jdbcTemplate.query(
-                VISIBILITY_SQL.formatted(placeholders),
+                VISIBILITY_SQL.replace("%s", placeholders),
                 (resultSet, rowNumber) -> new MediaReference(
                         resultSet.getObject("asset_id", UUID.class),
                         resultSet.getString("requested_variant")
@@ -274,7 +274,12 @@ final class JdbcPublicMediaResolver {
                 || row.publicStorageKey().contains("..")
                 || row.publicStorageKey().contains("//")
                 || row.publicStorageKey().contains("/./")
-                || row.publicStorageKey().endsWith("/")) {
+                || row.publicStorageKey().endsWith("/")
+                || row.mimeType() == null
+                || row.altText() == null
+                || row.credit() == null
+                || row.rightsOwner() == null
+                || row.licenseName() == null) {
             return Optional.empty();
         }
         try {
@@ -290,7 +295,7 @@ final class JdbcPublicMediaResolver {
                     row.rightsOwner(),
                     row.licenseName()
             ));
-        } catch (IllegalArgumentException | NullPointerException exception) {
+        } catch (IllegalArgumentException exception) {
             return Optional.empty();
         }
     }

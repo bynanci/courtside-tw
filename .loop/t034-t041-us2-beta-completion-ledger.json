@@ -1,12 +1,12 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t034-t041-us2-beta-completion",
-  "graph_version": 3,
+  "graph_version": 4,
   "run_id": "courtside-tw-us2-beta-completion-20260813",
   "status": "running",
-  "iteration": 3,
+  "iteration": 4,
   "started_at": "2026-08-13T07:10:36Z",
-  "updated_at": "2026-08-13T08:44:28Z",
+  "updated_at": "2026-08-13T08:52:02Z",
   "current_frontier": [
     "p-exact-head"
   ],
@@ -290,6 +290,83 @@
         "input": 0,
         "output": 0,
         "total": 5000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-us2-beta-004-java-exact-head-remediation",
+      "at": "2026-08-13T08:52:02Z",
+      "actor": "codex-supervisor",
+      "type": "exact_head_failure_and_fix",
+      "base_graph_version": 3,
+      "new_graph_version": 4,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "historical_exact_head_failures/d6b407d",
+            "value": {
+              "head_sha": "d6b407d30bb2e7ce400d4a72338b330745d8894c",
+              "ci_run_id": 31683636221,
+              "job_id": 94394546534,
+              "failed_gate": "Java quality and unit verification"
+            }
+          },
+          {
+            "op": "add",
+            "path": "remediation/java_quality",
+            "value": "Replace format-string SQL substitution, preflight nullable media fields instead of catching NullPointerException, and count schema-valid neighbor media references before frozen-attribution omission."
+          }
+        ]
+      },
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/actions/runs/31683636221",
+        "apps/api/src/main/java/tw/basketball/magazine/content/persistence/JdbcPublicArticleRepository.java",
+        "apps/api/src/main/java/tw/basketball/magazine/content/persistence/JdbcPublicMediaResolver.java",
+        "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Historical exact-head source attribution",
+          "level": "P3",
+          "result": "success",
+          "subject_commit": "d6b407d30bb2e7ce400d4a72338b330745d8894c",
+          "details": "The failing Java job checked out d6b407d and its exact-source-head verifier succeeded before Gradle execution."
+        },
+        {
+          "proof": "Java quality and unit gate",
+          "level": "P3",
+          "result": "failure",
+          "subject_commit": "d6b407d30bb2e7ce400d4a72338b330745d8894c",
+          "details": "SpotBugs reported three format-string warnings and one NullPointerException catch; PublicArticleApiIT oversizedIssueMediaGraphFailsClosedBeforeResolution expected 404 but received a non-404 response."
+        },
+        {
+          "proof": "Minimal remediation",
+          "level": "P2",
+          "result": "success",
+          "details": "Only the two persistence classes and append-only control ledger changed. The existing failing aggregate-cap test remains the regression proof."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": "wm:project:courtside-tw:us2-beta-completion",
+        "version": "us2-beta-v3",
+        "retrieval_ids": [
+          "wm:project:courtside-tw:us2-beta-completion"
+        ],
+        "evidence_refs": [
+          "https://github.com/bynanci/courtside-tw/actions/runs/31683636221"
+        ],
+        "next_review_at": "2026-08-13",
+        "blocker": "A replacement exact-head Java and browser/Security run is required."
+      },
+      "failure_signature": "SPOTBUGS_FORMAT_AND_NULL_CATCH_PLUS_NAVIGATION_MEDIA_CAP_BYPASS",
+      "decision": "APPLY_MINIMAL_JAVA_GATE_REMEDIATION_AND_REVERIFY_NEW_HEAD",
+      "token_usage": {
+        "estimated": 8000,
+        "input": 0,
+        "output": 0,
+        "total": 8000
       },
       "terminal_reason": null
     }
