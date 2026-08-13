@@ -820,11 +820,7 @@ function handleReloadLifecycleReady(): void {
 }
 
 function releaseReloadGuardAfterManualScroll(): boolean {
-  if (
-    !reloadGuardActive ||
-    reloadChosenAction === "continue" ||
-    window.scrollY <= 0
-  ) {
+  if (!reloadGuardActive || reloadChosenAction === "continue" || window.scrollY <= 0) {
     return false
   }
   releaseReloadScrollGuard()
