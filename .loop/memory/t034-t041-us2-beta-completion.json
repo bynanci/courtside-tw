@@ -3,8 +3,8 @@
   "memory_id": "wm:project:courtside-tw:us2-beta-completion",
   "scope": "project",
   "kind": "task_state",
-  "title": "US2 public Article beta completion is a bounded tests-first lane",
-  "summary": "Complete only T034, T035, T037, T038, T040, and T041 from main c39288f. Preserve completed T036 and T039, avoid T056, T057+, Web3, deployment, and migrations, and use live PR-head reads rather than serializing a mutable exact-head claim.",
+  "title": "US2 public Article beta candidate awaits live exact-head proof",
+  "summary": "Historical subjects 25e7626, 8e029c5, and 1e414d7 implement the bounded T034, T035, T037, T038, T040, and T041 candidate from main c39288f. Local feasible checks and independent review pass; Java 21, CI, Security, and actual browser evidence must still be read live for the final PR head. T036 and T039 remain complete and preserved, while T056, T057+, Web3, deployment, and migrations remain out of scope.",
   "claims": [
     {
       "text": "The authoritative base is main c39288f98279b939401302fe6c50376340db9c6a with T036 and T039 checked and the six selected US2 tasks unchecked.",
@@ -12,7 +12,32 @@
       "confidence": "high"
     },
     {
-      "text": "Historical subject commit 1c94ab2c574a827cf692bc8539f2c5d54f27844e contains the tests-first acceptance and API contract baseline, not a current merge-gate receipt.",
+      "text": "Historical subject commit 5b03ee08b1c94b99d17ce086ea9aa5015a0c55a9 contains the tests-first acceptance and API contract baseline, not a current merge-gate receipt.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Historical backend subject 25e762640da558b205c16d810c151163148bced8 implements T034 and T035 with immutable v2 article snapshots, server-derived text and reading time, frozen contributors and media attribution, stable ETags, and snapshot navigation.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Historical reader subject 8e029c5409ab8e9387896062f31c370d55a29598 implements T037, T038, T040, and the reader portion of T041 with SSR-safe blocks, a trusted bounded p5 runtime, magazine reader UX, navigation, share, SEO, no-JS, accessibility, lifecycle, and performance gates.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Historical workflow subject 1e414d7c77ec1817fdd48390cdedea4e368856c8 requires every CI and Security job to check out and verify the observed PR source head.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Local feasible acceptance passed workspace verification, 75 web tests, eight creative-runtime tests, bundle and SSR gates, Java syntax parsing, exact SQL probes, dependency audit, and independent backend, frontend, and integrated review.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The candidate changes only the six selected task checkboxes; T036 and T039 stay checked, T056 stays unchecked with only package-relocation imports in its test file, and T057+, Web3, deployment, and migrations remain unchanged.",
       "class": "CONFIRMED",
       "confidence": "high"
     },
@@ -36,14 +61,20 @@
   "confidence": "high",
   "confidence_basis": [
     "Authoritative main and tasks.md read-back",
-    "Historical tests-first subject commit 1c94ab2",
-    ".loop/evidence/t034-t041-us2-beta-tests-first-baseline-20260813.json"
+    "Historical tests-first subject commit 5b03ee0",
+    "Historical implementation subjects 25e7626, 8e029c5, and 1e414d7",
+    ".loop/evidence/t034-t041-us2-beta-tests-first-baseline-20260813.json",
+    ".loop/evidence/t034-t041-us2-beta-local-acceptance-20260813.json"
   ],
   "volatility": "medium",
-  "as_of": "2026-08-13T07:10:36Z",
+  "as_of": "2026-08-13T08:44:28Z",
   "source_refs": [
     "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
     ".loop/evidence/t034-t041-us2-beta-tests-first-baseline-20260813.json",
+    ".loop/evidence/t034-t041-us2-beta-local-acceptance-20260813.json",
+    "https://github.com/bynanci/courtside-tw/commit/25e762640da558b205c16d810c151163148bced8",
+    "https://github.com/bynanci/courtside-tw/commit/8e029c5409ab8e9387896062f31c370d55a29598",
+    "https://github.com/bynanci/courtside-tw/commit/1e414d7c77ec1817fdd48390cdedea4e368856c8",
     "https://github.com/bynanci/courtside-tw/commit/c39288f98279b939401302fe6c50376340db9c6a"
   ],
   "entities": [
@@ -73,7 +104,7 @@
   "retention": "until_superseded",
   "write_receipt": {
     "status": "SAVED",
-    "version": "us2-beta-v1",
+    "version": "us2-beta-v3",
     "written_by": "codex-supervisor"
   }
 }

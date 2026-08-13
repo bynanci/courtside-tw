@@ -96,13 +96,14 @@ graph:
       layer: L1
       label: Implement T034 and T035 snapshot-safe public Article projection
       owner: backend-agent
-      status: running
+      status: done
       risk: high
       confidence:
-        score: 0.82
-        basis: Focused tests and contract deltas define the implementation boundary; production proof is pending.
+        score: 0.97
+        basis: Historical backend subject 25e7626 implements the frozen projection and passed focused static, SQL, and independent review evidence.
         evidence_refs:
           - .loop/evidence/t034-t041-us2-beta-tests-first-baseline-20260813.json
+          - .loop/evidence/t034-t041-us2-beta-local-acceptance-20260813.json
       budget: {effort_hours: 6, tokens: 36000}
       config:
         workflow: [implement domain extraction and immutability, project ARTICLE and ISSUE snapshots, expose safe API metadata, run focused and regression tests]
@@ -115,13 +116,14 @@ graph:
       layer: L1
       label: Implement T037, T038, and T040 reader components and creative runtime
       owner: frontend-agent
-      status: running
+      status: done
       risk: high
       confidence:
-        score: 0.82
-        basis: Focused component tests define local registries, bounds, lifecycle, progress, and share behavior.
+        score: 0.97
+        basis: Historical reader subject 8e029c5 implements the SSR reader and trusted creative runtime and passed component, bundle, SSR, and independent review evidence.
         evidence_refs:
           - .loop/evidence/t034-t041-us2-beta-tests-first-baseline-20260813.json
+          - .loop/evidence/t034-t041-us2-beta-local-acceptance-20260813.json
       budget: {effort_hours: 8, tokens: 44000}
       config:
         workflow: [extract explicit block components, implement trusted creative package, integrate SSR reader progressively, run component and web regression]
@@ -134,13 +136,14 @@ graph:
       layer: L1
       label: Implement T041 SEO, accessibility, lifecycle, and performance gates
       owner: verification-agent
-      status: running
+      status: done
       risk: high
       confidence:
-        score: 0.8
-        basis: SEO unit and seven browser acceptance records are tests-first; exact browser execution is pending.
+        score: 0.95
+        basis: Historical subjects 8e029c5 and 1e414d7 implement SEO, no-JS, lifecycle, bundle, Lighthouse, and exact-source-head gates; live browser execution remains under p-exact-head.
         evidence_refs:
           - .loop/evidence/t034-t041-us2-beta-tests-first-baseline-20260813.json
+          - .loop/evidence/t034-t041-us2-beta-local-acceptance-20260813.json
       budget: {effort_hours: 6, tokens: 32000}
       config:
         workflow: [implement SEO helper and no-JS assertions, enforce lifecycle and bundle budgets, wire independent and combined CI verification]
@@ -153,12 +156,13 @@ graph:
       layer: L1
       label: Review the integrated diff, fix findings, and re-verify
       owner: codex-supervisor
-      status: planned
+      status: done
       risk: high
       confidence:
-        score: 0.75
-        basis: Integration review begins after all three bounded implementation lanes return.
-        evidence_refs: []
+        score: 0.96
+        basis: Independent backend, frontend, and integrated reviews found and closed all confirmed P1 findings; the final integrated verdict found no P0/P1, compile-likely blocker, or scope violation.
+        evidence_refs:
+          - .loop/evidence/t034-t041-us2-beta-local-acceptance-20260813.json
       budget: {effort_hours: 4, tokens: 28000}
       config:
         workflow: [inspect changed-file scope, reconcile contracts and hydration boundaries, run targeted then broad verification, fix findings and repeat]
@@ -175,14 +179,14 @@ graph:
       risk: medium
       confidence:
         score: 1.0
-        basis: Commit 1c94ab2 contains only acceptance tests and public API contract deltas for the selected tasks.
+        basis: Commit 5b03ee0 contains only acceptance tests and public API contract deltas for the selected tasks.
         evidence_refs:
           - .loop/evidence/t034-t041-us2-beta-tests-first-baseline-20260813.json
       budget: {effort_hours: 1, tokens: 6000}
       config:
         level: P2
         claim: The selected US2 gaps are expressed as focused domain, API, component, SEO, accessibility, lifecycle, and contract acceptance records before production implementation.
-        method: Inspect historical subject commit 1c94ab2 and reproduce focused RED or collection receipts.
+        method: Inspect historical subject commit 5b03ee0 and reproduce focused RED or collection receipts.
         evidence_path: .loop/evidence/t034-t041-us2-beta-tests-first-baseline-20260813.json
         required: true
         baseline_required: true
@@ -192,12 +196,13 @@ graph:
       layer: L1
       label: Integrated local and live exact-head acceptance
       owner: verifier
-      status: planned
+      status: running
       risk: high
       confidence:
-        score: 0.65
-        basis: Requires local feasible checks plus live PR-head CI, Security, component, and browser read-back.
-        evidence_refs: []
+        score: 0.82
+        basis: Local feasible checks and historical implementation subjects are verified; live PR-head Java 21, CI, Security, browser, axe, lifecycle, and Lighthouse read-back is still required.
+        evidence_refs:
+          - .loop/evidence/t034-t041-us2-beta-local-acceptance-20260813.json
       budget: {effort_hours: 3, tokens: 18000}
       config:
         level: P3

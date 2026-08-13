@@ -10,7 +10,7 @@
   },
   "tests_first_subject": {
     "branch": "agent/us2-public-article-beta",
-    "sha": "1c94ab2c574a827cf692bc8539f2c5d54f27844e",
+    "sha": "5b03ee08b1c94b99d17ce086ea9aa5015a0c55a9",
     "classification": "TESTS_FIRST_SUBJECT_HEAD_NOT_LIVE_MERGE_GATE",
     "scope": "Acceptance tests and public API contract only; production implementation follows in later commits."
   },

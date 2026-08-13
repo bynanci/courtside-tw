@@ -1,20 +1,18 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t034-t041-us2-beta-completion",
-  "graph_version": 1,
+  "graph_version": 3,
   "run_id": "courtside-tw-us2-beta-completion-20260813",
   "status": "running",
-  "iteration": 1,
+  "iteration": 3,
   "started_at": "2026-08-13T07:10:36Z",
-  "updated_at": "2026-08-13T07:10:36Z",
+  "updated_at": "2026-08-13T08:44:28Z",
   "current_frontier": [
-    "a-backend",
-    "a-reader",
-    "a-production-proof"
+    "p-exact-head"
   ],
   "blocked_nodes": [],
   "terminal_state": null,
-  "next_action": "Complete the three bounded production lanes, integrate and review the diff, then run local feasible and live exact-head acceptance.",
+  "next_action": "Commit the candidate task and evidence state, publish a draft PR, and read CI, Security, component, browser, axe, lifecycle, Lighthouse, mergeability, and review-thread state live for the observed PR head.",
   "events": [
     {
       "event_id": "evt-us2-beta-001-tests-first-baseline",
@@ -93,6 +91,205 @@
         "input": 0,
         "output": 0,
         "total": 24000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-us2-beta-002-local-acceptance",
+      "at": "2026-08-13T08:34:04Z",
+      "actor": "codex-supervisor",
+      "type": "integrated_local_acceptance",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "nodes/a-backend/status",
+            "value": "done"
+          },
+          {
+            "op": "replace",
+            "path": "nodes/a-reader/status",
+            "value": "done"
+          },
+          {
+            "op": "replace",
+            "path": "nodes/a-production-proof/status",
+            "value": "done"
+          },
+          {
+            "op": "replace",
+            "path": "nodes/a-review-fix/status",
+            "value": "done"
+          },
+          {
+            "op": "replace",
+            "path": "nodes/p-exact-head/status",
+            "value": "running"
+          },
+          {
+            "op": "replace",
+            "path": "frontier",
+            "value": ["p-exact-head"]
+          },
+          {
+            "op": "add",
+            "path": "candidate_task_state",
+            "value": ["T034=checked", "T035=checked", "T037=checked", "T038=checked", "T040=checked", "T041=checked", "T036/T039=preserved"]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t034-t041-us2-beta-local-acceptance-20260813.json",
+        "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Backend implementation subject",
+          "level": "P2",
+          "result": "success",
+          "subject_commit": "6c27f3677adddeb6aa2719ccd829ee6d63cba11d",
+          "classification": "BACKEND_IMPLEMENTATION_SUBJECT_HEAD_NOT_LIVE_MERGE_GATE"
+        },
+        {
+          "proof": "Reader implementation subject",
+          "level": "P2",
+          "result": "success",
+          "subject_commit": "29f0092c246f4238e7046e6d56a58a8150030737",
+          "classification": "READER_IMPLEMENTATION_SUBJECT_HEAD_NOT_LIVE_MERGE_GATE"
+        },
+        {
+          "proof": "Exact-source-head workflow subject",
+          "level": "P2",
+          "result": "success",
+          "subject_commit": "750ff29985ced3030975ae5b008688e26701f510",
+          "classification": "CI_IMPLEMENTATION_SUBJECT_HEAD_NOT_LIVE_MERGE_GATE"
+        },
+        {
+          "proof": "Local feasible acceptance",
+          "level": "P2",
+          "result": "success",
+          "details": "Workspace verification, 75 web tests, eight creative-runtime tests, bundle budget, production SSR readback, Java parsing, SQL probes, diff hygiene, YAML parsing, and production audit passed."
+        },
+        {
+          "proof": "Independent integrated review",
+          "level": "P2",
+          "result": "success",
+          "details": "No confirmed P0/P1, compile-likely blocker, or scope violation remained after the backend and frontend fix loops."
+        },
+        {
+          "proof": "Live exact-head protected acceptance",
+          "level": "P3",
+          "result": "pending",
+          "details": "Java 21, CI, Security, actual Chromium, axe, twenty-switch lifecycle, and Lighthouse must run for the final observed PR SHA."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "SAVED",
+        "memory_id": "wm:project:courtside-tw:us2-beta-completion",
+        "version": "us2-beta-v2",
+        "retrieval_ids": [
+          "wm:project:courtside-tw:us2-beta-completion"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t034-t041-us2-beta-local-acceptance-20260813.json"
+        ],
+        "next_review_at": "2026-08-13",
+        "blocker": "Live exact-head GitHub evidence is pending."
+      },
+      "failure_signature": "EXACT_HEAD_JAVA_BROWSER_EVIDENCE_PENDING",
+      "decision": "PUBLISH_DRAFT_PR_FOR_EXACT_HEAD_VERIFICATION",
+      "token_usage": {
+        "estimated": 118000,
+        "input": 0,
+        "output": 0,
+        "total": 118000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-us2-beta-003-remote-subject-reconciliation",
+      "at": "2026-08-13T08:44:28Z",
+      "actor": "codex-supervisor",
+      "type": "evidence_attribution_reconciliation",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "remote_subject_mapping/tests_first",
+            "value": {
+              "local_subject": "1c94ab2c574a827cf692bc8539f2c5d54f27844e",
+              "remote_subject": "5b03ee08b1c94b99d17ce086ea9aa5015a0c55a9"
+            }
+          },
+          {
+            "op": "add",
+            "path": "remote_subject_mapping/backend",
+            "value": {
+              "local_subject": "6c27f3677adddeb6aa2719ccd829ee6d63cba11d",
+              "remote_subject": "25e762640da558b205c16d810c151163148bced8"
+            }
+          },
+          {
+            "op": "add",
+            "path": "remote_subject_mapping/reader",
+            "value": {
+              "local_subject": "29f0092c246f4238e7046e6d56a58a8150030737",
+              "remote_subject": "8e029c5409ab8e9387896062f31c370d55a29598"
+            }
+          },
+          {
+            "op": "add",
+            "path": "remote_subject_mapping/workflows",
+            "value": {
+              "local_subject": "750ff29985ced3030975ae5b008688e26701f510",
+              "remote_subject": "1e414d7c77ec1817fdd48390cdedea4e368856c8"
+            }
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t034-t041-us2-beta-tests-first-baseline-20260813.json",
+        ".loop/evidence/t034-t041-us2-beta-local-acceptance-20260813.json",
+        ".loop/memory/t034-t041-us2-beta-completion.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Remote historical subject reconstruction",
+          "level": "P2",
+          "result": "success",
+          "details": "GitHub connector recreated the tests-first, backend, reader, and workflow trees from the exact local Git objects. Current graph, semantic memory, and evidence artifacts now cite the GitHub-resident subjects."
+        },
+        {
+          "proof": "Mutable final head exclusion",
+          "level": "P2",
+          "result": "success",
+          "details": "No final metadata commit SHA or workflow run identifier is serialized; the live PR head and protected gates remain external read-back evidence."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "SAVED",
+        "memory_id": "wm:project:courtside-tw:us2-beta-completion",
+        "version": "us2-beta-v3",
+        "retrieval_ids": [
+          "wm:project:courtside-tw:us2-beta-completion"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t034-t041-us2-beta-local-acceptance-20260813.json"
+        ],
+        "next_review_at": "2026-08-13",
+        "blocker": "Live exact-head GitHub evidence is pending."
+      },
+      "failure_signature": "LOCAL_GIT_SHA_NOT_REMOTE_REVIEWABLE",
+      "decision": "RECLASSIFY_TO_GITHUB_RESIDENT_HISTORICAL_SUBJECTS",
+      "token_usage": {
+        "estimated": 5000,
+        "input": 0,
+        "output": 0,
+        "total": 5000
       },
       "terminal_reason": null
     }

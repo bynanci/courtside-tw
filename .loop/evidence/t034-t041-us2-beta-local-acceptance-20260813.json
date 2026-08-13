@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "evidence_id": "t034-t041-us2-beta-local-acceptance-20260813",
+  "captured_at": "2026-08-13T08:34:04Z",
+  "repository": "bynanci/courtside-tw",
+  "authoritative_base": {
+    "branch": "main",
+    "sha": "c39288f98279b939401302fe6c50376340db9c6a",
+    "classification": "AUTHORITATIVE_BASE_READBACK"
+  },
+  "historical_subjects": [
+    {
+      "sha": "5b03ee08b1c94b99d17ce086ea9aa5015a0c55a9",
+      "classification": "TESTS_FIRST_SUBJECT_HEAD_NOT_LIVE_MERGE_GATE",
+      "scope": "Focused US2 acceptance tests and public API contract."
+    },
+    {
+      "sha": "25e762640da558b205c16d810c151163148bced8",
+      "classification": "BACKEND_IMPLEMENTATION_SUBJECT_HEAD_NOT_LIVE_MERGE_GATE",
+      "scope": "T034 and T035 immutable published projection, frozen media attribution, public API, ETag, and snapshot navigation."
+    },
+    {
+      "sha": "8e029c5409ab8e9387896062f31c370d55a29598",
+      "classification": "READER_IMPLEMENTATION_SUBJECT_HEAD_NOT_LIVE_MERGE_GATE",
+      "scope": "T037, T038, T040, and T041 reader, content blocks, creative runtime, SEO, accessibility, lifecycle, and performance implementation."
+    },
+    {
+      "sha": "1e414d7c77ec1817fdd48390cdedea4e368856c8",
+      "classification": "CI_IMPLEMENTATION_SUBJECT_HEAD_NOT_LIVE_MERGE_GATE",
+      "scope": "Exact-source-head CI and Security workflow wiring."
+    }
+  ],
+  "scope_matrix": [
+    {
+      "tasks": ["T034", "T035"],
+      "result": "IMPLEMENTED_AND_LOCALLY_REVIEWED",
+      "evidence": [
+        "Immutable v2 published snapshots freeze contributor, content, derived text, reading time, issue navigation, and public-safe media metadata.",
+        "Unknown or incomplete snapshot versions and legacy media snapshots fail closed.",
+        "Live media state is a deny-only gate; any REVOKED rights record takes precedence and responses are no-cache.",
+        "Public API covers stable ETag 200/304, canonical metadata, unpublished 404, frozen media, and snapshot navigation."
+      ]
+    },
+    {
+      "tasks": ["T037", "T038", "T040"],
+      "result": "IMPLEMENTED_AND_LOCALLY_REVIEWED",
+      "evidence": [
+        "Eleven explicit SSR-safe v1 block renderers use a total deny-by-default registry.",
+        "The local trusted p5.js 2.x instance-mode registry bounds inputs, fixes seeds, coordinates one active loop, and calls noLoop/remove on lifecycle exits.",
+        "The public article route renders final-visible text and media before hydration with credits, fixed geometry, progress, centralized reduced-motion behavior, navigation, and accessible share fallback."
+      ]
+    },
+    {
+      "tasks": ["T041"],
+      "result": "IMPLEMENTED_AND_LOCALLY_REVIEWED",
+      "evidence": [
+        "Canonical, Open Graph including a safe public image, JSON-LD, semantic publication dates, and readable no-JS output are implemented.",
+        "Axe, reduced-motion, route interruption, twenty-switch creative lifecycle, and media fallback geometry are represented in browser acceptance tests.",
+        "Lighthouse and bundle budgets are configured; p5 and local presets remain lazy and are removed from server resource hints."
+      ]
+    },
+    {
+      "tasks": ["T036", "T039"],
+      "result": "PRESERVED",
+      "evidence": [
+        "T036 unknown block and unknown preset versions still render safe poster/summary fallback with telemetry and no content-driven module resolution.",
+        "T039 composable, tests, and checked task state are unchanged."
+      ]
+    },
+    {
+      "tasks": ["T056", "T057+", "Web3", "deployment", "migrations"],
+      "result": "OUT_OF_SCOPE_AND_UNCHANGED",
+      "evidence": [
+        "PublicationReliabilityIT has only the two imports required by the public-article package relocation; T056 behavior and checkbox remain unchanged.",
+        "No Web3, wallet, deployment, production activation, or migration files changed."
+      ]
+    }
+  ],
+  "local_acceptance": [
+    {
+      "gate": "workspace verification",
+      "result": "PASS",
+      "details": "make verify passed formatting, lint, TypeScript checks, API-client tests 2/2, content-schema tests 4/4, creative-runtime tests 8/8, web unit/component tests 75/75, OpenAPI validation, generation, and generated-client diff checks."
+    },
+    {
+      "gate": "reader bundle budget",
+      "result": "PASS",
+      "details": "Production bundle verification found one lazy p5 chunk, one lazy host chunk, one local preset chunk, no server resource hints, and 354957 bytes incremental gzip against a 460800-byte budget."
+    },
+    {
+      "gate": "production SSR readback",
+      "result": "PASS",
+      "details": "Fixture-backed Nitro HTML contained canonical metadata, safe og:image and JSON-LD image, semantic dates, byline/body/TOC/rights/poster, no canvas, no p5/preset resource hint; ordinary and 404 paths degraded safely."
+    },
+    {
+      "gate": "browser acceptance collection",
+      "result": "PASS",
+      "details": "Playwright collected 30 tests across seven files, including independent US1, independent US2, combined regression, axe, no-JS, reduced-motion, CLS fallback, and creative lifecycle records."
+    },
+    {
+      "gate": "backend static and SQL probes",
+      "result": "PASS",
+      "details": "All 185 Java sources parsed, internal imports resolved, exact PostgreSQL media eligibility probes denied any REVOKED record, and PUBLIC_WEB plus OFFLINE link probing returned one public media row."
+    },
+    {
+      "gate": "repository and security hygiene",
+      "result": "PASS",
+      "details": "git diff --check, CI/Security YAML parsing, positive and negative source-head verifier probes, frozen dependency install, and production dependency audit passed with no known vulnerabilities."
+    }
+  ],
+  "independent_review": {
+    "result": "PASS",
+    "details": "Backend, frontend, and integrated read-only reviews found and closed all confirmed P1 findings. The final integrated verdict found no P0/P1, compile-likely blocker, or scope violation."
+  },
+  "task_candidate_state": {
+    "T034": "checked_in_candidate",
+    "T035": "checked_in_candidate",
+    "T036": "checked_and_preserved",
+    "T037": "checked_in_candidate",
+    "T038": "checked_in_candidate",
+    "T039": "checked_and_preserved",
+    "T040": "checked_in_candidate",
+    "T041": "checked_in_candidate",
+    "T056": "unchecked_and_preserved",
+    "T057_plus": "unchanged"
+  },
+  "environment_limits": {
+    "java": "Local Java is 17 and no Gradle or Docker runtime is available; Java 21 compilation and Testcontainers execution require the exact-head GitHub runner.",
+    "browser": "The local Chromium executable is absent and the configured proxy returned an invalid browser archive; actual Playwright, axe, lifecycle, and Lighthouse execution require the exact-head GitHub runner.",
+    "classification": "P3_EVIDENCE_PENDING_NOT_A_PASS_SUBSTITUTE"
+  },
+  "live_merge_gate_contract": {
+    "serialize_final_mutable_head": false,
+    "rule": "This receipt proves only the immutable historical subjects above. Current PR head, mergeability, workflow head_sha, checks, jobs, reviews, and browser results are read live after the final metadata commit.",
+    "required_workflows": ["CI", "Security"],
+    "required_jobs": ["US1 independent", "US2 independent", "US1 and US2 combined", "component regression", "browser acceptance", "Lighthouse and bundle budgets"],
+    "required_live_match": "workflow.head_sha == observed_pr.head_sha",
+    "receipt_location": "external PR body or append-only PR comment",
+    "protected_merge": "outside this run"
+  }
+}
