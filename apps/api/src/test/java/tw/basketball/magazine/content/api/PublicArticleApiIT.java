@@ -336,33 +336,20 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
 
     @Test
     void publicationMediaQueryCountsReferencedVariantsInsteadOfEveryDerivative() throws Exception {
-        IssueFixture issue = createIssue(
-                "issue-publication-media-variants",
-                27,
-                Instant.parse("2026-08-08T00:00:00Z"),
-                "PUBLISHED",
-                true
-        );
         String articleSlug = "publication-media-variants";
-        addArticle(issue, "Media variants", 1, articleSlug, 1, "DRAFT");
         UUID assetId = addPublicWideMediaAsset(articleSlug);
-        UUID revisionId = jdbcTemplate.queryForObject("""
-                SELECT revision.id
-                FROM article_revision revision
-                JOIN article ON article.id = revision.article_id
-                WHERE article.slug = ? AND revision.revision_number = 1
-                """, UUID.class, articleSlug);
-        replaceDocument(articleSlug, """
+        var repository = new JdbcEditorialArticleRepository(jdbcTemplate);
+        var draft = repository.insertDraft(
+                "Media variants",
+                articleSlug,
+                "Only the referenced variant belongs in the snapshot",
+                new tools.jackson.databind.ObjectMapper().readTree("""
                 {"schemaVersion":1,"documentId":"0190f7b0-7c4b-7e3a-8f12-123456789abc","blocks":[
                   {"id":"00000000-0000-4000-8000-000000000007","type":"image","version":1,
                    "payload":{"assetId":"%s","altText":"Referenced wide image","variant":"wide"}}
                 ]}
-                """.formatted(assetId));
-        jdbcTemplate.update("""
-                INSERT INTO article_revision_media (
-                    article_revision_id, asset_id, required_channel, position
-                ) VALUES (?, ?, 'PUBLIC_WEB', 1)
-                """, revisionId, assetId);
+                """.formatted(assetId))
+        );
         jdbcTemplate.update("""
                 INSERT INTO media_variant (
                     asset_id, variant, public_storage_key, checksum_sha256,
@@ -375,8 +362,10 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
                 FROM generate_series(1, 5001) AS generated(value)
                 """, assetId, assetId.toString());
 
-        var media = new JdbcEditorialArticleRepository(jdbcTemplate)
-                .publicMedia(revisionId, Instant.parse("2026-08-08T00:00:00Z"));
+        var media = repository.publicMedia(
+                draft.revisionId(),
+                Instant.parse("2026-08-08T00:00:00Z")
+        );
 
         assertEquals(1, media.size());
         assertEquals("wide", media.getFirst().variant());
