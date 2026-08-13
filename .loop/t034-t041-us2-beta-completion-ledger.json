@@ -1,0 +1,100 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-t034-t041-us2-beta-completion",
+  "graph_version": 1,
+  "run_id": "courtside-tw-us2-beta-completion-20260813",
+  "status": "running",
+  "iteration": 1,
+  "started_at": "2026-08-13T07:10:36Z",
+  "updated_at": "2026-08-13T07:10:36Z",
+  "current_frontier": [
+    "a-backend",
+    "a-reader",
+    "a-production-proof"
+  ],
+  "blocked_nodes": [],
+  "terminal_state": null,
+  "next_action": "Complete the three bounded production lanes, integrate and review the diff, then run local feasible and live exact-head acceptance.",
+  "events": [
+    {
+      "event_id": "evt-us2-beta-001-tests-first-baseline",
+      "at": "2026-08-13T07:10:36Z",
+      "actor": "codex-supervisor",
+      "type": "tests_first_baseline",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "scope",
+            "value": ["T034", "T035", "T037", "T038", "T040", "T041"]
+          },
+          {
+            "op": "add",
+            "path": "preserved_state",
+            "value": ["T036=complete", "T039=complete", "T056/T057+/Web3/deployment/migrations=out-of-scope"]
+          },
+          {
+            "op": "add",
+            "path": "tests_first_subject_head",
+            "value": "1c94ab2c574a827cf692bc8539f2c5d54f27844e"
+          },
+          {
+            "op": "add",
+            "path": "frontier",
+            "value": ["a-backend", "a-reader", "a-production-proof"]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t034-t041-us2-beta-tests-first-baseline-20260813.json",
+        "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Tests-first historical subject commit",
+          "level": "P2",
+          "result": "success",
+          "subject_commit": "1c94ab2c574a827cf692bc8539f2c5d54f27844e",
+          "classification": "TESTS_FIRST_SUBJECT_HEAD_NOT_LIVE_MERGE_GATE"
+        },
+        {
+          "proof": "OpenAPI and generated client acceptance contract",
+          "level": "P2",
+          "result": "success",
+          "details": "Contract validator, client typecheck, and client tests passed in the tests-first lane."
+        },
+        {
+          "proof": "Browser acceptance collection",
+          "level": "P1",
+          "result": "success",
+          "details": "Seven new Playwright acceptance records collect; execution is deferred to an environment with Chromium."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "SAVED",
+        "memory_id": "wm:project:courtside-tw:us2-beta-completion",
+        "version": "us2-beta-v1",
+        "retrieval_ids": [
+          "wm:project:courtside-tw:us2-t034-t041-review-remediation",
+          "wm:project:courtside-tw:us2-t034-t041-implementation-lane"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t034-t041-us2-beta-tests-first-baseline-20260813.json"
+        ],
+        "next_review_at": "2026-08-13",
+        "blocker": null
+      },
+      "failure_signature": "US2_SELECTED_TASK_ACCEPTANCE_RED",
+      "decision": "IMPLEMENT_THREE_BOUNDED_LANES",
+      "token_usage": {
+        "estimated": 24000,
+        "input": 0,
+        "output": 0,
+        "total": 24000
+      },
+      "terminal_reason": null
+    }
+  ]
+}

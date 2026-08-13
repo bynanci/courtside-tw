@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "evidence_id": "t034-t041-us2-beta-tests-first-baseline-20260813",
+  "captured_at": "2026-08-13T07:10:36Z",
+  "repository": "bynanci/courtside-tw",
+  "authoritative_base": {
+    "branch": "main",
+    "sha": "c39288f98279b939401302fe6c50376340db9c6a",
+    "classification": "AUTHORITATIVE_BASE_READBACK"
+  },
+  "tests_first_subject": {
+    "branch": "agent/us2-public-article-beta",
+    "sha": "1c94ab2c574a827cf692bc8539f2c5d54f27844e",
+    "classification": "TESTS_FIRST_SUBJECT_HEAD_NOT_LIVE_MERGE_GATE",
+    "scope": "Acceptance tests and public API contract only; production implementation follows in later commits."
+  },
+  "task_state_at_base": {
+    "T034": "unchecked",
+    "T035": "unchecked",
+    "T036": "checked_and_preserved",
+    "T037": "unchecked",
+    "T038": "unchecked",
+    "T039": "checked_and_preserved",
+    "T040": "unchecked",
+    "T041": "unchecked"
+  },
+  "scope_guard": {
+    "in": ["T034", "T035", "T037", "T038", "T040", "T041"],
+    "out": ["T036 mutation", "T039 mutation", "T042+ editorial production", "T056", "T057+", "Web3", "wallet", "deployment", "migrations", "protected merge"]
+  },
+  "gap_matrix": [
+    {
+      "tasks": ["T034", "T035"],
+      "observed_gap": "Public projection did not derive all-block plain text and reading time server-side; navigation used live issue rows rather than the published ISSUE snapshot; canonical, timestamps, rights credit, and response ETag contract were incomplete.",
+      "tests_first_paths": [
+        "apps/api/src/test/java/tw/basketball/magazine/content/domain/ContentDocumentExtractorTest.java",
+        "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java",
+        "contracts/openapi.yaml"
+      ]
+    },
+    {
+      "tasks": ["T037", "T038", "T040"],
+      "observed_gap": "Canonical blocks were monolithic; the trusted creative package and component tests were absent; reader progress, centralized motion, explicit reader components, fixed gallery geometry, and complete share fallback were not independently implemented.",
+      "tests_first_paths": [
+        "apps/web/tests/component/content-blocks/blocks.test.ts",
+        "apps/web/tests/component/reader/reader-components.test.ts",
+        "packages/creative-runtime/tests/registry.test.ts"
+      ]
+    },
+    {
+      "tasks": ["T041"],
+      "observed_gap": "Reader SEO helper, axe coverage, twenty-switch creative lifecycle proof, Lighthouse budgets, and explicit independent/combined verification were absent.",
+      "tests_first_paths": [
+        "apps/web/tests/unit/reader/article-seo.test.ts",
+        "apps/web/tests/e2e/us2-read-article.a11y.spec.ts",
+        "apps/web/tests/e2e/us2-creative-lifecycle.spec.ts"
+      ]
+    }
+  ],
+  "baseline_receipts": [
+    {
+      "lane": "backend",
+      "result": "RED_BY_MISSING_PRODUCTION_SYMBOLS",
+      "details": "ContentDocumentExtractorTest names missing ContentDocumentExtractor and ExtractedArticleContent symbols; Java 21 execution is not available locally and must be run by exact-head CI."
+    },
+    {
+      "lane": "frontend_components",
+      "result": "RED_BY_MISSING_PRODUCTION_MODULES",
+      "details": "Focused Node tests initially failed to resolve content-block rendering, reader motion/progress/share, and creative-runtime source modules."
+    },
+    {
+      "lane": "seo",
+      "result": "RED_BY_MISSING_PRODUCTION_MODULE",
+      "details": "The focused SEO unit record failed with ERR_MODULE_NOT_FOUND for app/features/reader/seo/article-seo.ts."
+    },
+    {
+      "lane": "browser_collection",
+      "result": "PASS",
+      "details": "Playwright collected seven new accessibility and creative lifecycle records. Chromium execution is unavailable locally because the browser artifact cannot be downloaded in this environment."
+    },
+    {
+      "lane": "contract",
+      "result": "PASS",
+      "details": "OpenAPI validation, generated client typecheck, and generated client tests passed for the acceptance contract."
+    },
+    {
+      "lane": "preexisting_web_regression",
+      "result": "PASS",
+      "details": "Before adding the RED records, 63/63 web tests, 4/4 content-schema tests, and web lint passed on the authoritative base."
+    }
+  ],
+  "environment_limits": {
+    "java": "Local runtime is Java 17 while the repository requires Java 21; no Gradle or Docker runtime is available.",
+    "browser": "No local Chromium is installed and browser download is unavailable; Playwright collection is local, execution is exact-head CI authority.",
+    "policy": "These limits are explicit blockers to local P3 claims, not passing substitutes."
+  },
+  "live_merge_gate_contract": {
+    "serialize_final_mutable_head": false,
+    "rule": "An in-repository receipt proves only its immutable subject commit. Current PR head, workflow head_sha, checks, reviews, and browser jobs are read live immediately before any protected action.",
+    "required_live_match": "workflow.head_sha == observed_pr.head_sha",
+    "receipt_location": "external PR body or append-only PR comment",
+    "protected_merge": "outside this run unless separately authorized"
+  }
+}
