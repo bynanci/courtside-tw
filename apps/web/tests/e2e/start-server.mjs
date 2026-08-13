@@ -60,6 +60,33 @@ const issueDetail = {
     }
   ]
 }
+const archivedIssue = {
+  ...issue,
+  issueId: "0190f7b0-7c4b-7e3a-8f12-123456789abf",
+  slug: "issue-2025-12",
+  issueNumber: 12,
+  title: "年末場邊誌",
+  summary: "驗證公開 sitemap 會走訪所有 issue cursor。",
+  publishedAt: "2025-12-01T00:00:00Z",
+  articleCount: 1
+}
+const archivedIssueDetail = {
+  ...archivedIssue,
+  sections: [
+    {
+      title: "年末回顧",
+      position: 1,
+      articles: [
+        {
+          articleId: "0190f7b0-7c4b-7e3a-8f12-123456789ac0",
+          slug: "archived-courtside-story",
+          title: "舊期仍應被找到",
+          position: 1
+        }
+      ]
+    }
+  ]
+}
 
 const articleProjections = new Map([
   [
@@ -717,14 +744,29 @@ const apiServer = createServer(async (request, response) => {
   }
 
   if (requestUrl.pathname === "/api/v1/public/issues") {
+    if (requestUrl.searchParams.get("cursor") === "sitemap-older-issues") {
+      writeJson(response, 200, {
+        items: [archivedIssue],
+        page: { nextCursor: null, limit: 100 }
+      })
+      return
+    }
     writeJson(response, 200, {
       items: [issue],
-      page: { nextCursor: null, limit: 20 }
+      page: {
+        nextCursor:
+          requestUrl.searchParams.get("limit") === "100" ? "sitemap-older-issues" : null,
+        limit: Number(requestUrl.searchParams.get("limit") ?? 20)
+      }
     })
     return
   }
   if (requestUrl.pathname === "/api/v1/public/issues/issue-2026-01") {
     writeJson(response, 200, issueDetail)
+    return
+  }
+  if (requestUrl.pathname === "/api/v1/public/issues/issue-2025-12") {
+    writeJson(response, 200, archivedIssueDetail)
     return
   }
 

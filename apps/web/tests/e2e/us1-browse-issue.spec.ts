@@ -78,6 +78,10 @@ test("robots and sitemap expose only the public reading surface", async ({ reque
   expect(sitemapText).toContain("<loc>https://courtside.test/issues/issue-2026-01</loc>")
   expect(sitemapText).toContain("<loc>https://courtside.test/articles/opening-night</loc>")
   expect(sitemapText).toContain("<loc>https://courtside.test/articles/courtside-notes</loc>")
+  expect(sitemapText).toContain("<loc>https://courtside.test/issues/issue-2025-12</loc>")
+  expect(sitemapText).toContain(
+    "<loc>https://courtside.test/articles/archived-courtside-story</loc>"
+  )
   expect(sitemapText).not.toContain("wallet")
   expect(sitemapText).not.toContain("passport")
 })

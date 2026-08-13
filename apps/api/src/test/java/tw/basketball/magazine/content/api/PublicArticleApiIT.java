@@ -290,6 +290,99 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
     }
 
     @Test
+    void navigationKeepsSnapshotOrderButUsesTheCurrentPublishedRevisionSlug() throws Exception {
+        IssueFixture issue = createIssue(
+                "issue-corrected-navigation-slug",
+                26,
+                Instant.parse("2026-08-08T00:00:00Z"),
+                "PUBLISHED",
+                true
+        );
+        addArticle(issue, "Opening", 1, "corrected-opening", 1, "PUBLISHED");
+        addArticle(issue, "Original title", 2, "original-neighbor-slug", 1, "PUBLISHED");
+        addPublishedRevision("original-neighbor-slug");
+
+        UUID revisionId = jdbcTemplate.queryForObject("""
+                SELECT revision.id
+                FROM article_revision revision
+                JOIN article ON article.id = revision.article_id
+                WHERE article.slug = 'original-neighbor-slug'
+                  AND revision.revision_number = 2
+                """, UUID.class);
+        jdbcTemplate.update(
+                "UPDATE article SET slug = 'corrected-neighbor-slug' WHERE slug = 'original-neighbor-slug'"
+        );
+        appendArticleSnapshot(
+                "corrected-neighbor-slug",
+                revisionId,
+                2,
+                "Corrected live title",
+                "Corrected dek",
+                """
+                {"schemaVersion":1,"documentId":"0190f7b0-7c4b-7e3a-8f12-123456789abc","blocks":[
+                  {"id":"00000000-0000-4000-8000-000000000002","type":"paragraph","version":1,
+                   "payload":{"content":[{"kind":"text","text":"Corrected revision"}]}}
+                ]}
+                """
+        );
+
+        mockMvc.perform(get("/api/v1/public/articles/corrected-opening"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.issueNavigation.next.slug").value("corrected-neighbor-slug"))
+                .andExpect(jsonPath("$.issueNavigation.next.title").value("Article original-neighbor-slug"));
+        mockMvc.perform(get("/api/v1/public/articles/corrected-neighbor-slug"))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void publicationMediaQueryCountsReferencedVariantsInsteadOfEveryDerivative() throws Exception {
+        IssueFixture issue = createIssue(
+                "issue-publication-media-variants",
+                27,
+                Instant.parse("2026-08-08T00:00:00Z"),
+                "PUBLISHED",
+                true
+        );
+        String articleSlug = "publication-media-variants";
+        addArticle(issue, "Media variants", 1, articleSlug, 1, "PUBLISHED");
+        UUID assetId = addPublicWideMediaAsset(articleSlug);
+        UUID revisionId = jdbcTemplate.queryForObject("""
+                SELECT revision.id
+                FROM article_revision revision
+                JOIN article ON article.id = revision.article_id
+                WHERE article.slug = ? AND revision.revision_number = 1
+                """, UUID.class, articleSlug);
+        replaceDocument(articleSlug, """
+                {"schemaVersion":1,"documentId":"0190f7b0-7c4b-7e3a-8f12-123456789abc","blocks":[
+                  {"id":"00000000-0000-4000-8000-000000000007","type":"image","version":1,
+                   "payload":{"assetId":"%s","altText":"Referenced wide image","variant":"wide"}}
+                ]}
+                """.formatted(assetId));
+        jdbcTemplate.update("""
+                INSERT INTO article_revision_media (
+                    article_revision_id, asset_id, required_channel, position
+                ) VALUES (?, ?, 'PUBLIC_WEB', 1)
+                """, revisionId, assetId);
+        jdbcTemplate.update("""
+                INSERT INTO media_variant (
+                    asset_id, variant, public_storage_key, checksum_sha256,
+                    mime_type, byte_size, width, height
+                )
+                SELECT ?,
+                       'extra-' || lpad(series::text, 4, '0'),
+                       'published/variant-bound/' || ? || '/' || series || '.webp',
+                       repeat('c', 64), 'image/webp', 1024, 1200, 675
+                FROM generate_series(1, 5001) AS series
+                """, assetId, assetId.toString());
+
+        var media = new JdbcEditorialArticleRepository(jdbcTemplate)
+                .publicMedia(revisionId, Instant.parse("2026-08-08T00:00:00Z"));
+
+        assertEquals(1, media.size());
+        assertEquals("wide", media.getFirst().variant());
+    }
+
+    @Test
     void returnsPublishedPointerWithRevisionScopedContributors() throws Exception {
         IssueFixture issue = createIssue(
                 "issue-2026-12",

@@ -33,6 +33,27 @@ test("share prefers native share and falls back to clipboard after failure", asy
   assert.deepEqual(calls, ["share", "copy:https://courtside.test/articles/story"])
 })
 
+test("share cancellation does not overwrite the clipboard", async () => {
+  const calls: string[] = []
+  const cancellation = new Error("share cancelled")
+  cancellation.name = "AbortError"
+
+  assert.deepEqual(
+    await performArticleShare(
+      { title: "文章", url: "https://courtside.test/articles/story" },
+      {
+        share: async () => {
+          calls.push("share")
+          throw cancellation
+        },
+        writeText: async (url) => calls.push(`copy:${url}`)
+      }
+    ),
+    { outcome: "cancelled", message: "已取消分享。" }
+  )
+  assert.deepEqual(calls, ["share"])
+})
+
 test("share has an accessible canonical-link fallback when browser APIs fail", async () => {
   assert.deepEqual(
     await performArticleShare(
