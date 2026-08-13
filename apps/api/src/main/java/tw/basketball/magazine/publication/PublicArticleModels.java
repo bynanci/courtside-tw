@@ -22,6 +22,8 @@ public final class PublicArticleModels {
             String title,
             String dek,
             JsonNode content,
+            String plainText,
+            int readingTimeMinutes,
             List<PublicArticleMedia> media,
             List<Contributor> contributors,
             IssueNavigation issueNavigation
@@ -35,10 +37,23 @@ public final class PublicArticleModels {
             slug = bounded(slug, "slug", 128);
             title = bounded(title, "title", 250);
             dek = boundedNullable(dek, "dek", 1000);
-            content = Objects.requireNonNull(content, "content");
+            content = Objects.requireNonNull(content, "content").deepCopy();
+            plainText = Objects.requireNonNull(plainText, "plainText");
+            if (plainText.length() > 500_000
+                    || plainText.codePoints().anyMatch(PublicArticleModels::isUnsafePlainTextControl)) {
+                throw new IllegalArgumentException("plainText must be bounded plain text");
+            }
+            if (readingTimeMinutes < 1) {
+                throw new IllegalArgumentException("readingTimeMinutes must be positive");
+            }
             media = List.copyOf(Objects.requireNonNull(media, "media"));
             contributors = List.copyOf(Objects.requireNonNull(contributors, "contributors"));
             issueNavigation = Objects.requireNonNull(issueNavigation, "issueNavigation");
+        }
+
+        @Override
+        public JsonNode content() {
+            return content.deepCopy();
         }
     }
 
@@ -109,5 +124,9 @@ public final class PublicArticleModels {
             return null;
         }
         return bounded(value, name, maximumLength);
+    }
+
+    private static boolean isUnsafePlainTextControl(int codePoint) {
+        return Character.isISOControl(codePoint) && codePoint != '\n' && codePoint != '\t';
     }
 }

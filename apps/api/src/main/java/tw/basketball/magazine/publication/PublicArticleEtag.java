@@ -16,7 +16,7 @@ final class PublicArticleEtag {
     }
 
     static String forProjection(ArticleProjection article) {
-        StringBuilder input = new StringBuilder("public-article-v2\n");
+        StringBuilder input = new StringBuilder("public-article-v3\n");
         append(input, article.articleId());
         append(input, article.revisionId());
         append(input, article.revisionNumber());
@@ -24,6 +24,8 @@ final class PublicArticleEtag {
         append(input, article.title());
         append(input, article.dek());
         append(input, article.content());
+        append(input, article.plainText());
+        append(input, article.readingTimeMinutes());
         for (PublicArticleMedia media : article.media()) {
             append(input, media.assetId());
             append(input, media.variant());

@@ -3169,6 +3169,8 @@ components:
         - slug
         - title
         - content
+        - plainText
+        - readingTimeMinutes
         - media
         - contributors
         - issueNavigation
@@ -3188,6 +3190,14 @@ components:
           type: string
         content:
           $ref: "#/components/schemas/ContentDocument"
+        plainText:
+          type: string
+          maxLength: 500000
+          description: Server-derived public-visible text extracted from the immutable ContentDocument.
+        readingTimeMinutes:
+          type: integer
+          minimum: 1
+          description: Deterministic server-side estimate using 400 CJK characters or 200 other words per minute.
         media:
           type: array
           items:

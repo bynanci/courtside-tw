@@ -1017,6 +1017,10 @@ export interface components {
       title: string
       dek?: string
       content: components["schemas"]["content-document.schema"]
+      /** @description Server-derived public-visible text extracted from the immutable ContentDocument. */
+      plainText: string
+      /** @description Deterministic server-side estimate using 400 CJK characters or 200 other words per minute. */
+      readingTimeMinutes: number
       media: components["schemas"]["PublicArticleMedia"][]
       contributors: components["schemas"]["Contributor"][]
       issueNavigation: {

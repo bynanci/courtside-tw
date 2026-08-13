@@ -15,6 +15,10 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
+import tw.basketball.magazine.content.application.PublishedArticleProjection;
+import tw.basketball.magazine.content.application.PublishedArticleProjectionService;
+import tw.basketball.magazine.content.domain.ContributorCredit;
+import tw.basketball.magazine.content.persistence.JdbcPublishedArticleRepository;
 import tw.basketball.magazine.content.validation.ContentDocumentValidator;
 import tw.basketball.magazine.publication.PublicArticleModels.ArticleProjection;
 import tw.basketball.magazine.publication.PublicArticleModels.Contributor;
@@ -32,39 +36,6 @@ import tw.basketball.magazine.publication.PublicIssueModels.ArticleSummary;
  * incomplete asset fails closed as a not-found response.</p>
  */
 public final class JdbcPublicArticleRepository implements PublicArticleRepository {
-    private static final String ARTICLE_SQL = """
-            SELECT article.id AS article_id,
-                   revision.id AS revision_id,
-                   revision.revision_number,
-                   article.slug,
-                   revision.title,
-                   revision.dek,
-                   revision.content_document,
-                   issue.id AS issue_id,
-                   issue.slug AS issue_slug
-            FROM article
-            JOIN article_revision revision
-              ON revision.id = article.published_revision_id
-             AND revision.article_id = article.id
-            JOIN issue_article
-              ON issue_article.article_id = article.id
-            JOIN issue_section section
-              ON section.id = issue_article.section_id
-             AND section.issue_id = issue_article.issue_id
-            JOIN publication_issue issue
-              ON issue.id = issue_article.issue_id
-            WHERE article.slug = ?
-              AND article.state = 'PUBLISHED'
-              AND article.published_at IS NOT NULL
-              AND article.published_at <= ?
-              AND revision.state = 'PUBLISHED'
-              AND issue.state = 'PUBLISHED'
-              AND issue.published_at IS NOT NULL
-              AND issue.published_at <= ?
-            ORDER BY issue.published_at DESC, issue.id DESC
-            LIMIT 1
-            """;
-
     private static final String NAVIGATION_SQL = """
             SELECT article.id AS article_id,
                    article.slug,
@@ -92,23 +63,11 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
                      issue_article.id ASC
             """;
 
-    private static final String CONTRIBUTOR_SQL = """
-            SELECT contributor.id AS contributor_id,
-                   contributor.slug,
-                   contributor.display_name,
-                   article_contributor.role
-            FROM article_contributor
-            JOIN contributor
-              ON contributor.id = article_contributor.contributor_id
-            WHERE article_contributor.article_revision_id = ?
-            ORDER BY article_contributor.position ASC,
-                     article_contributor.id ASC
-            """;
-
     private final JdbcTemplate jdbcTemplate;
     private final ObjectMapper objectMapper;
     private final ContentDocumentValidator contentDocumentValidator;
     private final JdbcPublicMediaResolver mediaResolver;
+    private final PublishedArticleProjectionService contentProjectionService;
 
     public JdbcPublicArticleRepository(JdbcTemplate jdbcTemplate) {
         this(jdbcTemplate, new ObjectMapper(), new ContentDocumentValidator());
@@ -127,7 +86,11 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
                 jdbcTemplate,
                 objectMapper,
                 contentDocumentValidator,
-                new JdbcPublicMediaResolver(jdbcTemplate)
+                new JdbcPublicMediaResolver(jdbcTemplate),
+                new PublishedArticleProjectionService(new JdbcPublishedArticleRepository(
+                        jdbcTemplate,
+                        contentDocumentValidator
+                ))
         );
     }
 
@@ -137,6 +100,25 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
             ContentDocumentValidator contentDocumentValidator,
             JdbcPublicMediaResolver mediaResolver
     ) {
+        this(
+                jdbcTemplate,
+                objectMapper,
+                contentDocumentValidator,
+                mediaResolver,
+                new PublishedArticleProjectionService(new JdbcPublishedArticleRepository(
+                        jdbcTemplate,
+                        contentDocumentValidator
+                ))
+        );
+    }
+
+    JdbcPublicArticleRepository(
+            JdbcTemplate jdbcTemplate,
+            ObjectMapper objectMapper,
+            ContentDocumentValidator contentDocumentValidator,
+            JdbcPublicMediaResolver mediaResolver,
+            PublishedArticleProjectionService contentProjectionService
+    ) {
         this.jdbcTemplate = Objects.requireNonNull(jdbcTemplate, "jdbcTemplate");
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
         this.contentDocumentValidator = Objects.requireNonNull(
@@ -144,6 +126,10 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
                 "contentDocumentValidator"
         );
         this.mediaResolver = Objects.requireNonNull(mediaResolver, "mediaResolver");
+        this.contentProjectionService = Objects.requireNonNull(
+                contentProjectionService,
+                "contentProjectionService"
+        );
     }
 
     @Override
@@ -158,34 +144,23 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
             return Optional.empty();
         }
 
-        List<ArticleRow> rows;
-        try {
-            rows = jdbcTemplate.query(
-                    ARTICLE_SQL,
-                    (resultSet, rowNumber) -> mapArticle(resultSet),
-                    articleSlug,
-                    Timestamp.from(now),
-                    Timestamp.from(now)
-            );
-        } catch (InvalidPublishedContentException exception) {
-            return Optional.empty();
-        }
-        if (rows.isEmpty()) {
+        Optional<PublishedArticleProjection> projectedArticle = contentProjectionService.findBySlug(
+                articleSlug,
+                now
+        );
+        if (projectedArticle.isEmpty()) {
             return Optional.empty();
         }
 
-        ArticleRow article = rows.getFirst();
-        Optional<List<PublicArticleMedia>> resolvedMedia = resolvePublicMedia(article.content(), now);
+        PublishedArticleProjection article = projectedArticle.get();
+        JsonNode content = article.content().toJsonNode();
+        Optional<List<PublicArticleMedia>> resolvedMedia = resolvePublicMedia(content, now);
         if (resolvedMedia.isEmpty()) {
             return Optional.empty();
         }
-
-        List<Contributor> contributors;
-        try {
-            contributors = findContributors(article.revisionId());
-        } catch (IllegalArgumentException exception) {
-            return Optional.empty();
-        }
+        List<Contributor> contributors = article.contributorCredits().stream()
+                .map(JdbcPublicArticleRepository::toPublicContributor)
+                .toList();
 
         List<NavigationRow> navigationRows = jdbcTemplate.query(
                 NAVIGATION_SQL,
@@ -215,38 +190,13 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
                 article.slug(),
                 article.title(),
                 article.dek(),
-                article.content(),
+                content,
+                article.plainText(),
+                article.readingTimeMinutes(),
                 resolvedMedia.get(),
                 contributors,
                 new IssueNavigation(article.issueSlug(), previous, next)
         ));
-    }
-
-    private ArticleRow mapArticle(ResultSet resultSet) throws SQLException {
-        try {
-            JsonNode content = objectMapper.readTree(resultSet.getString("content_document"));
-            if (content == null || !content.isObject()) {
-                throw new InvalidPublishedContentException("published content document must be a JSON object");
-            }
-            if (!isValidContent(content)) {
-                throw new InvalidPublishedContentException("published ContentDocument failed canonical validation");
-            }
-            return new ArticleRow(
-                    resultSet.getObject("article_id", UUID.class),
-                    resultSet.getObject("revision_id", UUID.class),
-                    resultSet.getInt("revision_number"),
-                    resultSet.getString("slug"),
-                    resultSet.getString("title"),
-                    resultSet.getString("dek"),
-                    content,
-                    resultSet.getObject("issue_id", UUID.class),
-                    resultSet.getString("issue_slug")
-            );
-        } catch (InvalidPublishedContentException exception) {
-            throw exception;
-        } catch (RuntimeException exception) {
-            throw new InvalidPublishedContentException("published Article content is not valid JSON", exception);
-        }
     }
 
     private NavigationRow mapNavigationItem(ResultSet resultSet) throws SQLException {
@@ -269,16 +219,12 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
         }
     }
 
-    private List<Contributor> findContributors(UUID revisionId) {
-        return jdbcTemplate.query(
-                CONTRIBUTOR_SQL,
-                (resultSet, rowNumber) -> new Contributor(
-                        resultSet.getObject("contributor_id", UUID.class),
-                        resultSet.getString("slug"),
-                        resultSet.getString("display_name"),
-                        resultSet.getString("role")
-                ),
-                revisionId
+    private static Contributor toPublicContributor(ContributorCredit credit) {
+        return new Contributor(
+                credit.contributorId(),
+                credit.slug(),
+                credit.displayName(),
+                credit.role().name()
         );
     }
 
@@ -384,28 +330,4 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
     private record NavigationRow(ArticleSummary summary, JsonNode content) {
     }
 
-    private static final class InvalidPublishedContentException extends RuntimeException {
-        private static final long serialVersionUID = 1L;
-
-        private InvalidPublishedContentException(String message) {
-            super(message);
-        }
-
-        private InvalidPublishedContentException(String message, Throwable cause) {
-            super(message, cause);
-        }
-    }
-
-    private record ArticleRow(
-            UUID articleId,
-            UUID revisionId,
-            int revisionNumber,
-            String slug,
-            String title,
-            String dek,
-            JsonNode content,
-            UUID issueId,
-            String issueSlug
-    ) {
-    }
 }
