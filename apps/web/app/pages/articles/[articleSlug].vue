@@ -162,6 +162,7 @@ let reloadResumeChoicePending = false
 let reloadLifecycleReady = false
 let reloadReleaseScheduled = false
 let reloadChosenAction: "continue" | "start-over" | null = null
+let reloadManualScrollPosition: number | null = null
 let previousScrollRestoration: "auto" | "manual" | null = null
 let progressSaveTimer: number | null = null
 
@@ -701,6 +702,7 @@ async function continueFromSavedProgress(): Promise<void> {
     return
   }
   if (reloadGuardActive) {
+    reloadManualScrollPosition = null
     reloadResumeChoicePending = false
     reloadChosenAction = "continue"
     applyReloadGuardPosition()
@@ -736,6 +738,7 @@ function startReadingFromTop(): void {
   }
   if (typeof window !== "undefined") {
     if (reloadGuardActive) {
+      reloadManualScrollPosition = null
       reloadResumeChoicePending = false
       reloadChosenAction = "start-over"
       applyReloadGuardPosition()
@@ -823,8 +826,36 @@ function releaseReloadGuardAfterManualScroll(): boolean {
   if (!reloadGuardActive || reloadChosenAction === "continue" || window.scrollY <= 0) {
     return false
   }
+  reloadManualScrollPosition = window.scrollY
+  queueManualReloadPositionRestore()
   releaseReloadScrollGuard()
   return true
+}
+
+function queueManualReloadPositionRestore(): void {
+  if (typeof window === "undefined" || reloadManualScrollPosition === null) {
+    return
+  }
+  if (document.readyState === "complete") {
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(restoreManualReloadScrollPosition)
+    })
+    return
+  }
+  window.addEventListener("load", restoreManualReloadScrollPosition, { once: true })
+}
+
+function restoreManualReloadScrollPosition(): void {
+  if (typeof window === "undefined" || reloadManualScrollPosition === null) {
+    return
+  }
+  const targetPosition = reloadManualScrollPosition
+  reloadManualScrollPosition = null
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: targetPosition, behavior: "auto" })
+    })
+  })
 }
 
 function scheduleReloadGuardRelease(): void {
@@ -870,6 +901,8 @@ function releaseReloadScrollGuard(): void {
 
 function handleReaderPageHide(): void {
   flushReadingProgressSave()
+  reloadManualScrollPosition = null
+  window.removeEventListener("load", restoreManualReloadScrollPosition)
   releaseReloadScrollGuard()
 }
 
@@ -966,6 +999,8 @@ onBeforeUnmount(() => {
   window.removeEventListener("beforeunload", flushReadingProgressSave)
   window.removeEventListener("pagehide", handleReaderPageHide)
   flushReadingProgressSave()
+  reloadManualScrollPosition = null
+  window.removeEventListener("load", restoreManualReloadScrollPosition)
   releaseReloadScrollGuard()
   stopCreativeVisibilityWatch()
 })
