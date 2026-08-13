@@ -1,16 +1,16 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t034-t041-us2-implementation-lane",
-  "graph_version": 4,
+  "graph_version": 5,
   "run_id": "courtside-tw-us2-implementation-20260809",
   "status": "running",
-  "iteration": 4,
+  "iteration": 5,
   "started_at": "2026-08-09T08:16:20Z",
-  "updated_at": "2026-08-13T08:59:06Z",
-  "current_frontier": ["p-t034-final-exact-head", "g-t034-protected-merge"],
+  "updated_at": "2026-08-13T09:41:44Z",
+  "current_frontier": ["p-t034-t035-final-exact-head", "g-t034-t035-protected-merge"],
   "blocked_nodes": ["a-t037", "a-t038", "a-t040", "a-t041"],
   "terminal_state": "running",
-  "next_action": "Bind CI, Security, browser, review-thread and mergeability receipts to the final PR #86 head in GitHub; keep T034 candidate-only until protected merge and authoritative main read-back.",
+  "next_action": "Bind CI, Security, browser, review-thread and mergeability receipts to the final PR #86 head in GitHub; keep T034 and T035 candidate-only until protected merge and authoritative main read-back.",
   "events": [
     {
       "event_id": "evt-us2-impl-001-lane-opened",
@@ -424,6 +424,85 @@
       ],
       "decision": "MARK_ONLY_T034_AS_PR_CANDIDATE_AFTER_FULL_ACCEPTANCE_PROOF",
       "terminal_reason": "Every named T034 criterion is proven on the immutable implementation subject; the evidence-only final head still requires live exact-head gates before review handoff or protected merge."
+    },
+    {
+      "event_id": "evt-us2-impl-008-t035-tests-first-candidate",
+      "at": "2026-08-13T09:41:44Z",
+      "actor": "codex-agent",
+      "type": "t035_tests_first_acceptance_candidate",
+      "base_graph_version": 4,
+      "new_graph_version": 5,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "external.human_direction.t034_t035",
+            "after": "Current direction authorizes the smallest coupled T034-T035 production gap while preserving T037-T041 and unrelated state."
+          },
+          {
+            "op": "replace",
+            "path": "frontier",
+            "before": "p-t034-final-exact-head -> g-t034-protected-merge",
+            "after": "p-t034-t035-final-exact-head -> g-t034-t035-protected-merge"
+          },
+          {
+            "op": "add",
+            "path": "apps/api/content/api.public-article-snapshot",
+            "after": "Issue-snapshot revision/TOC selection, Article-snapshot content, canonical publication metadata, rights credit and declared conditional response headers."
+          },
+          {
+            "op": "replace",
+            "path": "tasks.T035",
+            "before": "unchecked on main@c39288f",
+            "after": "checked as a PR candidate only after reviewed-subject CI #466 and Security #467 passed"
+          }
+        ]
+      },
+      "implementation_subject": {
+        "commit": "0dc4cbbbb30702707a02d152b8c781118cd7afe5",
+        "tree": "8698c719422e67559ecc9014a4455548ca1f788a"
+      },
+      "evidence_refs": [
+        ".loop/evidence/t034-content-projection-proof.json",
+        ".loop/evidence/t034-t035-public-article-snapshot-proof.json",
+        "https://github.com/bynanci/courtside-tw/pull/86",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31687492574",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31687492731"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "T035 tests-first RED",
+          "level": "P3",
+          "result": "expected_failure",
+          "head_sha": "3c85bc4f52a36fa79e4eb46e220f475e2a8bee84",
+          "ci_run": 31686470705,
+          "java_tests": 146,
+          "failures": 3,
+          "failure_signature": "Snapshot-stable ETag, frozen Article/TOC and canonical publication/credit metadata were missing."
+        },
+        {
+          "proof": "Immutable reviewed implementation subject",
+          "level": "P3",
+          "result": "success",
+          "head_sha": "0dc4cbbbb30702707a02d152b8c781118cd7afe5",
+          "ci_run": 31687492574,
+          "ci_run_number": 466,
+          "security_run": 31687492731,
+          "security_run_number": 467,
+          "browser_job": 94407102792,
+          "required_jobs": "all success"
+        }
+      ],
+      "resolved_failure_signatures": [
+        "LIVE_REVISION_DRIFT_CHANGED_PUBLIC_RESPONSE",
+        "LIVE_TOC_RECONSTRUCTION",
+        "MISSING_CANONICAL_PUBLICATION_METADATA",
+        "MISSING_PUBLIC_MEDIA_CREDIT",
+        "UNDECLARED_ARTICLE_200_ETAG",
+        "CROSS_SNAPSHOT_READ_RACE"
+      ],
+      "decision": "MARK_T034_AND_T035_AS_PR_CANDIDATES_AFTER_FULL_ACCEPTANCE_PROOF",
+      "terminal_reason": "Every named T034-T035 criterion is proven on the immutable reviewed implementation subject; the candidate evidence head still requires live exact-head gates before protected merge."
     }
   ]
 }

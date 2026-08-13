@@ -1,0 +1,150 @@
+{
+  "schema_version": "courtside-tw/t034-t035-public-article-snapshot-proof/v1",
+  "proof_id": "t034-t035-public-article-snapshot-proof",
+  "recorded_at": "2026-08-13T09:41:44Z",
+  "result": "IMPLEMENTATION_ACCEPTANCE_PROVEN_CANDIDATE_ONLY",
+  "classification": "ATTRIBUTABLE_T034_T035_TESTS_FIRST_PROOF",
+  "tasks": ["T034", "T035"],
+  "source_of_truth": {
+    "repository": "bynanci/courtside-tw",
+    "pull_request": 86,
+    "base_ref": "main",
+    "base_commit": "c39288f98279b939401302fe6c50376340db9c6a",
+    "base_context": "Protected PR #85 is merged; T036 and T039 are checked while T034, T035, T037, T038, T040 and T041 are unchecked on authoritative main.",
+    "task_refs": [
+      "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T034",
+      "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T035"
+    ],
+    "reconciliation": ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json"
+  },
+  "implementation_subject": {
+    "commit": "0dc4cbbbb30702707a02d152b8c781118cd7afe5",
+    "tree": "8698c719422e67559ecc9014a4455548ca1f788a",
+    "classification": "IMMUTABLE_REVIEWED_T034_T035_RUNTIME_AND_TEST_SUBJECT",
+    "meaning": "This commit and tree identify the accepted coupled T034-T035 runtime, tests and generated contract before candidate-only evidence metadata is added."
+  },
+  "acceptance_matrix": [
+    {
+      "criterion": "T034 server-derived published content projection",
+      "status": "PASS",
+      "proof": "The attributable T034 content domain/application/persistence boundaries remain in use; public-visible plainText and deterministic mixed-language readingTimeMinutes are derived from the immutable article snapshot content."
+    },
+    {
+      "criterion": "Anonymous public Article API and named controller boundary",
+      "status": "PASS",
+      "proof": "GET /api/v1/public/articles/{articleSlug} remains published-only and anonymous, and PublicArticleController plus its representation ETag helper now reside under content/api as named by T035."
+    },
+    {
+      "criterion": "Immutable publication snapshot and stable ETag",
+      "status": "PASS",
+      "proof": "The read model resolves the revision pinned by the latest immutable Issue snapshot and the matching append-only Article snapshot. Direct live pointer/title/body drift leaves the response and ETag unchanged; appending a new publication snapshot changes the representation and ETag."
+    },
+    {
+      "criterion": "Snapshot-based issue navigation",
+      "status": "PASS",
+      "proof": "Previous/next candidates come from frozen Issue snapshot sections and Article snapshot content rather than issue_article or live revision content. The selected issueSnapshotId is carried across the two read steps so a concurrent publication cannot mix snapshots."
+    },
+    {
+      "criterion": "Canonical and publication metadata",
+      "status": "PASS",
+      "proof": "ArticleProjection declares origin-neutral canonicalPath plus publishedAt and updatedAt derived from immutable snapshot timestamps; the configured web origin remains the only authority for constructing an absolute canonical URL."
+    },
+    {
+      "criterion": "Rights-eligible visible media and credits",
+      "status": "PASS",
+      "proof": "Only READY, safe-path, currently valid PUBLIC_WEB variants are returned, now with the authoritative rights-record credit included in the public model, contract and ETag."
+    },
+    {
+      "criterion": "Public contract and conditional response headers",
+      "status": "PASS",
+      "proof": "OpenAPI and the generated TypeScript client declare canonicalPath, publication timestamps, media credit and the Article 200 ETag header; 304 behavior remains declared and tested."
+    }
+  ],
+  "tests_first": {
+    "red": {
+      "head_sha": "3c85bc4f52a36fa79e4eb46e220f475e2a8bee84",
+      "tree": "59037715bcb3a2a6c6adeadaa2f79f1d21a43cfe",
+      "ci_run": 31686470705,
+      "ci_run_number": 464,
+      "java_job": 94403585730,
+      "result": "EXPECTED_FAILURE",
+      "tests": 146,
+      "failures": 3,
+      "failure_signature": "Exactly the three new T035 records failed: live drift changed ETag, live TOC/body drift changed the response, and canonical/publication/credit fields were absent.",
+      "security_run": 31686470667,
+      "security_run_number": 465,
+      "security_result": "EXPECTED_FAILURE_DOWNSTREAM_OF_THE_SAME_THREE_JAVA_TEST_FAILURES",
+      "unrelated_jobs": "Frontend/contract, browser, CodeQL and Trivy passed."
+    },
+    "reviewed_green": {
+      "head_sha": "0dc4cbbbb30702707a02d152b8c781118cd7afe5",
+      "tree": "8698c719422e67559ecc9014a4455548ca1f788a",
+      "ci": {
+        "run_id": 31687492574,
+        "run_number": 466,
+        "conclusion": "success",
+        "jobs": {
+          "java_quality_and_unit": 94406865898,
+          "docker_dependency_and_migration_regression": 94406865854,
+          "frontend_and_contract": 94406865773,
+          "public_magazine_browser": 94407102792
+        }
+      },
+      "security": {
+        "run_id": 31687492731,
+        "run_number": 467,
+        "conclusion": "success",
+        "required_jobs": "all success"
+      },
+      "focused_api_regression": "PublicArticleApiIT 11/11 within the successful full Java suite."
+    }
+  },
+  "review": {
+    "method": "Changed-scope correctness, architecture, security and optimization review",
+    "resolved_findings": [
+      {
+        "severity": "P1",
+        "finding": "Two separate reads could select different latest Issue snapshots during a concurrent publication.",
+        "remediation": "The content projection now carries the exact selected issueSnapshotId and navigation queries that immutable row.",
+        "commit": "0dc4cbbbb30702707a02d152b8c781118cd7afe5"
+      }
+    ],
+    "unresolved_P0_P1_P2": 0,
+    "security_notes": [
+      "Article slug remains a parameterized query input.",
+      "Absolute canonical URLs are not derived from an untrusted Host header.",
+      "Media paths remain server-selected, bounded and rights-gated.",
+      "Malformed or rights-ineligible published content fails closed."
+    ]
+  },
+  "supersedes_interpretation": {
+    "evidence": ".loop/evidence/t034-content-projection-proof.json",
+    "scope": "The earlier T034 proof correctly established immutable published content projection from article.published_revision_id. The coupled T035 boundary now makes the Issue publication snapshot's revisionId authoritative, with the published pointer retained only as a legacy-snapshot fallback."
+  },
+  "scope_guard": {
+    "T034_candidate_preserved": true,
+    "T035_candidate_checkbox_only": true,
+    "T036_preserved_checked": true,
+    "T039_preserved_checked": true,
+    "T037_T038_T040_T041_preserved_unchecked": true,
+    "T056_or_T057_plus_changed": false,
+    "web3_wallet_passport_changed": false,
+    "deployment_changed": false,
+    "migration_changed": false,
+    "unrelated_task_state_changed": false
+  },
+  "live_merge_gate_contract": {
+    "provider": "GitHub",
+    "pull_request": 86,
+    "serialize_final_mutable_head": false,
+    "required_workflows": ["CI", "Security"],
+    "required_ci_job": "Public magazine browser verification",
+    "binding_rule": "After this candidate evidence commit, successful CI and Security runs, browser success, mergeability and zero unresolved review threads must bind to the observed final PR head before protected merge.",
+    "artifact_state": "PENDING_POST_COMMIT_LIVE_READBACK"
+  },
+  "exact_blockers": [
+    "T034 and T035 remain branch-only candidates until protected merge and authoritative main read-back.",
+    "T037, T038, T040 and T041 retain their independent acceptance gaps and remain outside this PR."
+  ],
+  "task_completion_effect": "T034 remains checked and T035 is checked only as PR candidates after every named criterion passed on the immutable reviewed implementation subject. Authoritative completion requires protected merge and main read-back."
+}
