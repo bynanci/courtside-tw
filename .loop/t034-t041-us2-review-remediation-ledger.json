@@ -199,6 +199,36 @@
       "graph_delta": {
         "operations": [
           {
+            "op": "add",
+            "path": "time_accounting",
+            "value": {
+              "mode": "active_work_windows",
+              "wall_clock_pause_excluded": true,
+              "prior_window": {
+                "through_event": "evt-us2-review-remediation-002",
+                "status": "closed_within_original_budget"
+              },
+              "pause": {
+                "after_event": "evt-us2-review-remediation-002",
+                "resumed_at": "2026-08-12T13:19:33Z"
+              },
+              "rebase": {
+                "at_event": "evt-us2-review-remediation-003",
+                "max_minutes": 7200
+              }
+            }
+          },
+          {
+            "op": "replace",
+            "path": "budgets/max_minutes",
+            "value": 7200
+          },
+          {
+            "op": "replace",
+            "path": "graph/loops/l1-us2-review-remediation/budgets/max_minutes",
+            "value": 7200
+          },
+          {
             "op": "replace",
             "path": "budgets/max_graph_changes",
             "value": 64

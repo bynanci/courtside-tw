@@ -11,6 +11,19 @@ task_completion_claim: >-
   T034-T041 remain blocked by named criterion gaps; exact-head success closes only
   the two pending test records
 
+time_accounting:
+  mode: active_work_windows
+  wall_clock_pause_excluded: true
+  prior_window:
+    through_event: evt-us2-review-remediation-002
+    status: closed_within_original_budget
+  pause:
+    after_event: evt-us2-review-remediation-002
+    resumed_at: "2026-08-12T13:19:33Z"
+  rebase:
+    at_event: evt-us2-review-remediation-003
+    max_minutes: 7200
+
 scope:
   in:
     - PR #67 public Article reader correctness and fail-closed projection fixes
@@ -50,7 +63,7 @@ acceptance:
 
 budgets:
   max_iterations: 7
-  max_minutes: 180
+  max_minutes: 7200
   max_same_failure: 2
   max_no_evidence_delta: 2
   max_graph_changes: 64
@@ -103,7 +116,7 @@ graph:
       stop_nodes: [s-review-terminal]
       budgets:
         max_iterations: 7
-        max_minutes: 180
+        max_minutes: 7200
         max_same_failure: 2
         max_graph_changes: 64
         max_tokens: 100000
