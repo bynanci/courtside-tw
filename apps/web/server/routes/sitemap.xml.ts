@@ -1,4 +1,4 @@
-import { createApiClient } from "@courtside/api-client"
+import { createApiClient, type components } from "@courtside/api-client"
 
 import {
   parsePublicArticleSlug,
@@ -6,6 +6,7 @@ import {
 } from "../../app/features/issues/public-issue-contract"
 
 const MAXIMUM_CONCURRENT_ISSUE_READS = 4
+type IssueSummary = components["schemas"]["IssueSummary"]
 
 export default defineEventHandler(async (event) => {
   const config = useRuntimeConfig(event)
@@ -14,15 +15,26 @@ export default defineEventHandler(async (event) => {
 
   try {
     const client = createApiClient({ baseUrl: normalizedApiBaseUrl(config.public.apiBaseUrl) })
-    const { data, response } = await client.GET("/api/v1/public/issues", {
-      params: { query: { limit: 100 } }
-    })
-    if (response.ok && data) {
-      for (const issue of data.items) {
+    const issues: IssueSummary[] = []
+    const seenCursors = new Set<string>()
+    let cursor: string | undefined
+    while (true) {
+      const { data, response } = await client.GET("/api/v1/public/issues", {
+        params: { query: { limit: 100, ...(cursor ? { cursor } : {}) } }
+      })
+      if (!response.ok || !data) break
+      issues.push(...data.items)
+      const nextCursor = data.page.nextCursor ?? undefined
+      if (!nextCursor || seenCursors.has(nextCursor)) break
+      seenCursors.add(nextCursor)
+      cursor = nextCursor
+    }
+    if (issues.length > 0) {
+      for (const issue of issues) {
         paths.push("/issues/" + parsePublicIssueSlug(issue.slug))
       }
       const details = await mapWithConcurrency(
-        data.items,
+        issues,
         MAXIMUM_CONCURRENT_ISSUE_READS,
         async (issue) => {
           const issueSlug = parsePublicIssueSlug(issue.slug)

@@ -109,6 +109,7 @@ public final class JdbcEditorialArticleRepository implements EditorialArticleRep
             WHERE link.article_revision_id = ?
               AND link.required_channel = 'PUBLIC_WEB'
               AND asset.processing_state = 'READY'
+              AND (asset.id, variant.variant) IN (%s)
               AND NOT EXISTS (
                     SELECT 1
                     FROM rights_record revoked
@@ -391,8 +392,33 @@ public final class JdbcEditorialArticleRepository implements EditorialArticleRep
     public List<PublicArticleMedia> publicMedia(UUID revisionId, Instant checkedAt) {
         Objects.requireNonNull(revisionId, "revisionId");
         Objects.requireNonNull(checkedAt, "checkedAt");
+        JsonNode content = jdbcTemplate.queryForObject(
+                "SELECT content_document FROM article_revision WHERE id = ?",
+                (resultSet, rowNumber) -> parseJson(resultSet.getString("content_document")),
+                revisionId
+        );
+        List<ContentMediaReferences.MediaReference> references =
+                ContentMediaReferences.extractPublicVariants(content);
+        if (references.size() > 5_000) {
+            throw new IllegalArgumentException("publication media exceeds the bounded snapshot limit");
+        }
+        if (references.isEmpty()) {
+            return List.of();
+        }
+        String placeholders = String.join(
+                ", ",
+                java.util.Collections.nCopies(references.size(), "(?, ?)")
+        );
+        List<Object> parameters = new ArrayList<>();
+        parameters.add(Timestamp.from(checkedAt));
+        parameters.add(Timestamp.from(checkedAt));
+        parameters.add(revisionId);
+        for (ContentMediaReferences.MediaReference reference : references) {
+            parameters.add(reference.assetId());
+            parameters.add(reference.variant());
+        }
         List<PublicArticleMedia> media = jdbcTemplate.query(
-                PUBLIC_MEDIA_SQL,
+                PUBLIC_MEDIA_SQL.replace("%s", placeholders),
                 (resultSet, rowNumber) -> new PublicArticleMedia(
                         resultSet.getObject("asset_id", UUID.class),
                         resultSet.getString("variant"),
@@ -405,9 +431,7 @@ public final class JdbcEditorialArticleRepository implements EditorialArticleRep
                         resultSet.getString("rights_owner"),
                         resultSet.getString("license_name")
                 ),
-                Timestamp.from(checkedAt),
-                Timestamp.from(checkedAt),
-                revisionId
+                parameters.toArray()
         );
         if (media.size() > 5_000) {
             throw new IllegalArgumentException("publication media exceeds the bounded snapshot limit");

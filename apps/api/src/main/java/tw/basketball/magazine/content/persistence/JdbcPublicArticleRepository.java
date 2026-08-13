@@ -317,8 +317,9 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
             return Optional.empty();
         }
 
+        NavigationCandidates candidates = navigationCandidates(snapshotItems, now);
         Map<UUID, List<JdbcPublicMediaResolver.MediaReference>> mediaByArticle =
-                navigationMediaReferences(snapshotItems, now);
+                candidates.mediaByArticle();
         List<JdbcPublicMediaResolver.MediaReference> allReferences = mediaByArticle.values().stream()
                 .flatMap(List::stream)
                 .toList();
@@ -328,8 +329,14 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
         List<ArticleSummary> publicItems = new ArrayList<>();
         for (ArticleSummary item : snapshotItems) {
             List<JdbcPublicMediaResolver.MediaReference> references = mediaByArticle.get(item.articleId());
-            if (references != null && availableMedia.containsAll(references)) {
-                publicItems.add(item);
+            String currentSlug = candidates.currentSlugs().get(item.articleId());
+            if (references != null && currentSlug != null && availableMedia.containsAll(references)) {
+                publicItems.add(new ArticleSummary(
+                        item.articleId(),
+                        currentSlug,
+                        item.title(),
+                        item.position()
+                ));
             }
         }
         int currentIndex = findArticleIndex(publicItems, articleId);
@@ -377,16 +384,17 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
         return List.copyOf(items);
     }
 
-    private Map<UUID, List<JdbcPublicMediaResolver.MediaReference>> navigationMediaReferences(
+    private NavigationCandidates navigationCandidates(
             List<ArticleSummary> items,
             Instant now
     ) {
         if (items.isEmpty()) {
-            return Map.of();
+            return new NavigationCandidates(Map.of(), Map.of());
         }
         String placeholders = String.join(", ", java.util.Collections.nCopies(items.size(), "?"));
         String sql = """
                 SELECT article.id AS article_id,
+                       article.slug AS live_slug,
                        revision.id AS revision_id,
                        snapshot.content_document AS snapshot_document
                 FROM article
@@ -417,6 +425,7 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
                 sql,
                 (resultSet, rowNumber) -> new NavigationSnapshotRow(
                         resultSet.getObject("article_id", UUID.class),
+                        resultSet.getString("live_slug"),
                         resultSet.getObject("revision_id", UUID.class),
                         resultSet.getString("snapshot_document")
                 ),
@@ -427,6 +436,7 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
             snapshots.put(row.articleId(), row);
         }
         Map<UUID, List<JdbcPublicMediaResolver.MediaReference>> references = new LinkedHashMap<>();
+        Map<UUID, String> currentSlugs = new LinkedHashMap<>();
         int referenceCount = 0;
         for (ArticleSummary item : items) {
             NavigationSnapshotRow row = snapshots.get(item.articleId());
@@ -435,9 +445,13 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
             }
             JsonNode articleSnapshot;
             JsonNode content;
+            String currentSlug;
             List<JdbcPublicMediaResolver.MediaReference> articleReferences;
             try {
                 articleSnapshot = json(row.snapshotDocument());
+                currentSlug = articleSnapshot.has("content")
+                        ? requiredText(articleSnapshot, "slug")
+                        : row.liveSlug();
                 if (articleSnapshot.has("content")) {
                     UUID frozenArticleId = optionalUuid(articleSnapshot, "articleId", row.articleId());
                     UUID frozenRevisionId = optionalUuid(articleSnapshot, "revisionId", row.revisionId());
@@ -465,8 +479,9 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
                 continue;
             }
             references.put(item.articleId(), articleReferences);
+            currentSlugs.put(item.articleId(), currentSlug);
         }
-        return Map.copyOf(references);
+        return new NavigationCandidates(Map.copyOf(references), Map.copyOf(currentSlugs));
     }
 
     private List<Contributor> findContributors(UUID revisionId) {
@@ -848,7 +863,18 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
     ) {
     }
 
-    private record NavigationSnapshotRow(UUID articleId, UUID revisionId, String snapshotDocument) {
+    private record NavigationSnapshotRow(
+            UUID articleId,
+            String liveSlug,
+            UUID revisionId,
+            String snapshotDocument
+    ) {
+    }
+
+    private record NavigationCandidates(
+            Map<UUID, List<JdbcPublicMediaResolver.MediaReference>> mediaByArticle,
+            Map<UUID, String> currentSlugs
+    ) {
     }
 
     private static final class InvalidPublishedContentException extends RuntimeException {

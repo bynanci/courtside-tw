@@ -4,7 +4,7 @@ export type ArticleShareAdapters = {
   writeText?: (url: string) => Promise<void>
 }
 export type ArticleShareResult = {
-  outcome: "shared" | "copied" | "link"
+  outcome: "shared" | "copied" | "cancelled" | "link"
   message: string
 }
 
@@ -16,7 +16,10 @@ export async function performArticleShare(
     try {
       await adapters.share(payload)
       return { outcome: "shared", message: "文章已分享。" }
-    } catch {
+    } catch (error) {
+      if (isShareCancellation(error)) {
+        return { outcome: "cancelled", message: "已取消分享。" }
+      }
       // A rejected or failed native share can still use the accessible copy fallback.
     }
   }
@@ -29,4 +32,8 @@ export async function performArticleShare(
     }
   }
   return { outcome: "link", message: "分享未完成，請使用文章連結。" }
+}
+
+function isShareCancellation(error: unknown): boolean {
+  return error instanceof Error && error.name === "AbortError"
 }
