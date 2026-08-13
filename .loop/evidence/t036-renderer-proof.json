@@ -1,0 +1,80 @@
+{
+  "schema_version": "courtside-tw/t036-renderer-proof/v1",
+  "proof_id": "t036-renderer-proof",
+  "recorded_at": "2026-08-13T03:25:00Z",
+  "result": "REVIEWABLE_PENDING_EXACT_HEAD_GATES",
+  "classification": "implemented-but-pending-protected-gates",
+  "task": "T036",
+  "source_of_truth": {
+    "repository": "bynanci/courtside-tw",
+    "base_ref": "main",
+    "base_commit": "d3efe73d9719f07a877480ac889949c6386d61db",
+    "task_ref": "specs/001-taiwan-basketball-magazine-ebook/tasks.md#T036"
+  },
+  "tests_first": {
+    "red": {
+      "command": "node --experimental-strip-types apps/web/tests/component/content-blocks/registry.test.ts",
+      "result": "EXPECTED_FAILURE",
+      "failure": "ContentDocumentRenderer.vue and registry.ts were absent on current main."
+    },
+    "green": {
+      "command": "pnpm --filter @courtside/web run test",
+      "tests": 62,
+      "passed": 62,
+      "result": "PASS"
+    }
+  },
+  "acceptance_mapping": [
+    {
+      "criterion": "The registry is total and deny-by-default for the canonical v1 block universe.",
+      "status": "PASS_LOCAL",
+      "proof": "registry.test.ts resolves all 11 canonical block types and rejects unknown types."
+    },
+    {
+      "criterion": "Unknown block, block version and generative preset versions render a safe poster plus plain-text summary fallback.",
+      "status": "PASS_LOCAL",
+      "proof": "registry resolution tests cover all three fallback reasons; renderer maps only validated asset identities and bounded text."
+    },
+    {
+      "criterion": "Fallbacks emit attributable telemetry codes without content-driven module resolution.",
+      "status": "PASS_LOCAL",
+      "proof": "ContentDocumentRenderer emits deduplicated telemetry events and static-source assertions reject import() and content-driven component resolution."
+    },
+    {
+      "criterion": "Existing v1 public article rendering remains regression-free.",
+      "status": "PENDING_EXACT_HEAD_CI_BROWSER",
+      "proof": "Local production build passed; remote browser proof is required because Chromium is unavailable locally."
+    }
+  ],
+  "local_verification": {
+    "web_tests": "62/62 PASS",
+    "typecheck": "PASS",
+    "lint": "PASS",
+    "prettier": "PASS",
+    "production_build": "PASS",
+    "browser_execution": "BLOCKED_LOCALLY: Playwright Chromium executable is not installed; exact-head CI browser job is required."
+  },
+  "scope_guard": {
+    "changed_runtime_scope": [
+      "apps/web/app/components/content-blocks/registry.ts",
+      "apps/web/app/components/content-blocks/ContentDocumentRenderer.vue",
+      "apps/web/app/pages/articles/[articleSlug].vue",
+      "apps/web/package.json",
+      "apps/web/tests/component/content-blocks/registry.test.ts"
+    ],
+    "T039_preserved": true,
+    "T034_T035_preserved": true,
+    "T037_T041_untouched": true,
+    "T056_or_T057_plus_changed": false,
+    "web3_wallet_passport_changed": false,
+    "deployment_changed": false,
+    "migration_changed": false,
+    "unrelated_task_state_changed": false
+  },
+  "exact_head_verification": {
+    "head_commit": "pending_remote_push",
+    "ci": null,
+    "security": null,
+    "browser": null
+  }
+}

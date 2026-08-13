@@ -12,7 +12,7 @@
     "dev": "nuxt dev",
     "lint": "eslint --max-warnings=0 .",
     "build": "nuxt build",
-    "test": "node --experimental-strip-types --test tests/integration/*.test.ts tests/unit/*.test.ts tests/unit/reader/*.test.ts tests/component/studio/issues/*.test.ts tests/component/studio/media/*.test.ts",
+    "test": "node --experimental-strip-types --test tests/integration/*.test.ts tests/unit/*.test.ts tests/unit/reader/*.test.ts tests/component/content-blocks/*.test.ts tests/component/studio/issues/*.test.ts tests/component/studio/media/*.test.ts",
     "test:e2e": "playwright test",
     "start": "node .output/server/index.mjs",
     "preview": "nuxt preview",

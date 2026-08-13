@@ -1,26 +1,25 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t034-t041-us2-implementation-lane",
-  "graph_version": 1,
+  "graph_version": 2,
   "run_id": "courtside-tw-us2-implementation-20260809",
-  "status": "needs_human",
-  "iteration": 1,
+  "status": "running",
+  "iteration": 2,
   "started_at": "2026-08-09T08:16:20Z",
-  "updated_at": "2026-08-09T08:24:55Z",
-  "current_frontier": ["g-article-contract-approval"],
-  "blocked_nodes": [
-    "t-implementation-ready",
-    "a-t034",
-    "a-t035",
+  "updated_at": "2026-08-13T03:30:00Z",
+  "current_frontier": [
     "a-t036",
+    "p-t036"
+  ],
+  "blocked_nodes": [
     "a-t037",
     "a-t038",
     "a-t039",
     "a-t040",
     "a-t041"
   ],
-  "terminal_state": "needs_human",
-  "next_action": "Resolve the ArticleProjection contract drift before production implementation.",
+  "terminal_state": "running",
+  "next_action": "Read back exact-head CI, Security and browser proof for the T036 review branch; leave T036 unchecked until protected gates pass.",
   "events": [
     {
       "event_id": "evt-us2-impl-001-lane-opened",
@@ -122,6 +121,95 @@
       ],
       "decision": "LANE_OPENED_REMAIN_NEEDS_HUMAN",
       "terminal_reason": "The implementation lane exists and is reviewable; runtime work remains blocked by the unresolved ArticleProjection contract."
+    },
+    {
+      "event_id": "evt-us2-impl-003-t036-authorized-review-lane",
+      "at": "2026-08-13T03:30:00Z",
+      "actor": "codex-agent",
+      "type": "t036_tests_first_implementation",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "external.human_direction.t036",
+            "after": "Current main after protected PR #83/#84 authorizes the bounded T036 slice; the prior ArticleProjection contract blocker is not reopened."
+          },
+          {
+            "op": "replace",
+            "path": "frontier",
+            "before": "g-article-contract-approval",
+            "after": "a-t036 -> p-t036"
+          },
+          {
+            "op": "add",
+            "path": "apps/web/app/components/content-blocks",
+            "after": "Static deny-by-default registry and renderer with safe fallback and telemetry."
+          },
+          {
+            "op": "add",
+            "path": ".loop/evidence/t036-renderer-proof.json",
+            "after": "Tests-first and local verification receipt; exact remote gates pending on the review head."
+          },
+          {
+            "op": "add",
+            "path": ".loop/memory/t036-content-block-renderer.json",
+            "after": "T036 semantic memory receipt with T039 and unrelated scope guards."
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t036-renderer-proof.json",
+        ".loop/memory/t036-content-block-renderer.json",
+        "apps/web/tests/component/content-blocks/registry.test.ts",
+        "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "tests-first red",
+          "level": "P2",
+          "result": "pass",
+          "details": "The new registry test failed on missing renderer files before implementation."
+        },
+        {
+          "proof": "local component regression",
+          "level": "P2",
+          "result": "pass",
+          "tests": 62,
+          "passed": 62
+        },
+        {
+          "proof": "Nuxt typecheck/lint/Prettier/build",
+          "level": "P2",
+          "result": "pass"
+        },
+        {
+          "proof": "browser",
+          "level": "P2",
+          "result": "blocked_locally",
+          "details": "Chromium executable is unavailable; exact-head CI browser proof is required."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "SAVED",
+        "memory_id": "wm:project:courtside-tw:t036-content-block-renderer",
+        "version": "t036-content-block-renderer-v1",
+        "evidence_refs": [
+          ".loop/evidence/t036-renderer-proof.json"
+        ],
+        "next_review_at": "2026-08-20",
+        "blocker": "Exact-head CI, Security and browser proof are pending after the review branch is pushed."
+      },
+      "failure_signature": "LOCAL_BROWSER_CHROMIUM_UNAVAILABLE",
+      "decision": "Implement only T036 on a branch from main@d3efe73; do not change T039 or unrelated task state; open a reviewable PR and stop before protected merge.",
+      "token_usage": {
+        "estimated": 24000,
+        "input": 0,
+        "output": 0,
+        "total": 0
+      },
+      "terminal_reason": "Review lane is ready; protected remote proof and human review remain."
     }
   ]
 }

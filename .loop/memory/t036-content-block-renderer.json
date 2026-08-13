@@ -1,0 +1,71 @@
+{
+  "schema_version": 1,
+  "memory_id": "wm:project:courtside-tw:t036-content-block-renderer",
+  "scope": "project",
+  "kind": "task_state",
+  "title": "T036 deny-by-default content-block renderer registry is reviewable",
+  "summary": "Starting from main@d3efe73, T036 adds a static registry and renderer for the 11 canonical v1 block types. Unknown block types, unsupported block versions and unknown generative presets fail closed to a poster identity plus bounded plain-text summary and emit deduplicated telemetry codes. T039 and all unrelated task state remain unchanged. Exact-head CI, Security and browser evidence are pending on the review branch.",
+  "claims": [
+    {
+      "text": "The article page now delegates block rendering to ContentDocumentRenderer.vue through a static registry; content cannot select a module or component.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Unknown types, unsupported block versions and unknown generative presets resolve to attributable fallback telemetry codes.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The fallback never uses a content-supplied URL and renders only a bounded plain-text summary.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Local web tests 62/62, lint, typecheck, Prettier and production build pass; local browser execution is unavailable because Chromium is not installed.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "T039 remains checked and T034-T035, T037-T041, T056, T057+ and Web3/deployment/migration state are outside this change.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Protected exact-head CI, Security and browser proof must be read back before T036 can be classified complete-and-evidenced.",
+      "class": "NEEDS_UPDATE",
+      "confidence": "high"
+    }
+  ],
+  "status": "needs_update",
+  "confidence": "high",
+  "confidence_basis": [
+    ".loop/evidence/t036-renderer-proof.json",
+    "apps/web/tests/component/content-blocks/registry.test.ts",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+  ],
+  "volatility": "high",
+  "as_of": "2026-08-13",
+  "source_refs": [
+    ".loop/evidence/t036-renderer-proof.json",
+    "apps/web/app/components/content-blocks/registry.ts",
+    "apps/web/app/components/content-blocks/ContentDocumentRenderer.vue",
+    "apps/web/app/pages/articles/[articleSlug].vue"
+  ],
+  "entities": ["courtside-tw", "T036", "ContentDocumentRenderer", "content-block registry", "T039"],
+  "relations": {
+    "supports": ["wm:project:courtside-tw:us2-t034-t041-implementation-lane"],
+    "contradicts": [],
+    "supersedes": [],
+    "blocks": ["wm:project:courtside-tw:t037-after-t036-protected-proof"],
+    "invalidates": []
+  },
+  "next_review_at": "2026-08-20",
+  "sensitivity": "internal",
+  "retention": "until_superseded",
+  "write_receipt": {
+    "status": "SAVED",
+    "version": "t036-content-block-renderer-v1",
+    "written_by": "codex-agent"
+  }
+}
