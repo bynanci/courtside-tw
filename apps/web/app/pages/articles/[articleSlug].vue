@@ -67,6 +67,7 @@ type DocumentNavigationEntry = {
 
 const RELOAD_GUARD_ATTRIBUTE = "data-reader-reload-restoration-handled"
 const READER_PROGRESS_WRITE_INTERVAL_MS = 250
+const RELOAD_SCROLL_SNAPSHOT_KEY = "courtside.reader.reload-scroll:v1"
 
 const route = useRoute()
 const config = useRuntimeConfig()
@@ -797,6 +798,50 @@ function beginInitialReloadScrollGuard(): void {
   applyReloadGuardPosition()
 }
 
+function restoreUnavailableStorageScrollPosition(): void {
+  if (
+    typeof window === "undefined" ||
+    browserProgressStorage() ||
+    navigationEntry()?.type !== "reload"
+  ) {
+    return
+  }
+  const storage = browserSessionStorage()
+  if (!storage) {
+    return
+  }
+  let rawSnapshot: string | null
+  try {
+    rawSnapshot = storage.getItem(RELOAD_SCROLL_SNAPSHOT_KEY)
+    storage.removeItem(RELOAD_SCROLL_SNAPSHOT_KEY)
+  } catch {
+    return
+  }
+  if (!rawSnapshot) {
+    return
+  }
+  let snapshot: { href?: unknown; top?: unknown }
+  try {
+    snapshot = JSON.parse(rawSnapshot) as { href?: unknown; top?: unknown }
+  } catch {
+    return
+  }
+  if (
+    snapshot.href !== window.location.href ||
+    typeof snapshot.top !== "number" ||
+    !Number.isFinite(snapshot.top) ||
+    snapshot.top <= 0
+  ) {
+    return
+  }
+  const targetPosition = snapshot.top
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      window.scrollTo({ top: targetPosition, behavior: "auto" })
+    })
+  })
+}
+
 function hasReloadProgressCandidate(): boolean {
   const storage = browserProgressStorage()
   const context = readingContext.value
@@ -900,6 +945,7 @@ function releaseReloadScrollGuard(): void {
 }
 
 function handleReaderPageHide(): void {
+  saveUnavailableStorageScrollPosition()
   flushReadingProgressSave()
   reloadManualScrollPosition = null
   window.removeEventListener("load", restoreManualReloadScrollPosition)
@@ -940,6 +986,35 @@ function browserProgressStorage(): ProgressStorage | null {
   }
 }
 
+function browserSessionStorage(): Storage | null {
+  if (typeof window === "undefined") {
+    return null
+  }
+  try {
+    return window.sessionStorage
+  } catch {
+    return null
+  }
+}
+
+function saveUnavailableStorageScrollPosition(): void {
+  if (typeof window === "undefined" || browserProgressStorage() || window.scrollY <= 0) {
+    return
+  }
+  const storage = browserSessionStorage()
+  if (!storage) {
+    return
+  }
+  try {
+    storage.setItem(
+      RELOAD_SCROLL_SNAPSHOT_KEY,
+      JSON.stringify({ href: window.location.href, top: window.scrollY })
+    )
+  } catch {
+    // A blocked session store should not affect normal pagehide behavior.
+  }
+}
+
 function blockAnchorLabel(index: number): string {
   for (let cursor = index; cursor >= 0; cursor -= 1) {
     const block = articleBlocks.value[cursor]
@@ -959,6 +1034,7 @@ let stopCreativeWatch: (() => void) | null = null
 onMounted(() => {
   if (typeof window !== "undefined") {
     beginInitialReloadScrollGuard()
+    restoreUnavailableStorageScrollPosition()
     motionMode.value = window.matchMedia("(prefers-reduced-motion: reduce)").matches
       ? "reduced"
       : "full"
