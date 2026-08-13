@@ -30,12 +30,14 @@ public final class JdbcPublishedArticleRepository implements PublishedArticleRep
                    COALESCE(article_item.article_document->>'dek', revision.dek) AS dek,
                    article_snapshot.content_document,
                    issue.id AS issue_id,
+                   issue_snapshot.snapshot_id AS issue_snapshot_id,
                    issue_snapshot.content_document->>'slug' AS issue_slug,
                    publication_dates.published_at,
                    article_snapshot.created_at AS updated_at
             FROM publication_issue issue
             JOIN LATERAL (
-                SELECT frozen.content_document
+                SELECT frozen.id AS snapshot_id,
+                       frozen.content_document
                 FROM publication_snapshot frozen
                 WHERE frozen.aggregate_type = 'ISSUE'
                   AND frozen.aggregate_id = issue.id
@@ -154,6 +156,7 @@ public final class JdbcPublishedArticleRepository implements PublishedArticleRep
         return Optional.of(new PublishedArticleSource(
                 row.slug(),
                 row.issueId(),
+                row.issueSnapshotId(),
                 row.issueSlug(),
                 row.publishedAt(),
                 row.updatedAt(),
@@ -178,6 +181,7 @@ public final class JdbcPublishedArticleRepository implements PublishedArticleRep
                     resultSet.getString("dek"),
                     content,
                     resultSet.getObject("issue_id", UUID.class),
+                    resultSet.getObject("issue_snapshot_id", UUID.class),
                     resultSet.getString("issue_slug"),
                     resultSet.getTimestamp("published_at").toInstant(),
                     resultSet.getTimestamp("updated_at").toInstant()
@@ -211,6 +215,7 @@ public final class JdbcPublishedArticleRepository implements PublishedArticleRep
             String dek,
             ContentDocument content,
             UUID issueId,
+            UUID issueSnapshotId,
             String issueSlug,
             Instant publishedAt,
             Instant updatedAt

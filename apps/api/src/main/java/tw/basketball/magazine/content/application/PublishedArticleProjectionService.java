@@ -45,6 +45,7 @@ public final class PublishedArticleProjectionService {
                 extracted.readingTimeMinutes(),
                 revision.contributorCredits(),
                 source.issueId(),
+                source.issueSnapshotId(),
                 source.issueSlug(),
                 source.publishedAt(),
                 source.updatedAt()

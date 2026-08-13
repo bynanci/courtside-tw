@@ -10,6 +10,7 @@ import tw.basketball.magazine.content.domain.PublishedArticleRevision;
 public record PublishedArticleSource(
         String slug,
         UUID issueId,
+        UUID issueSnapshotId,
         String issueSlug,
         Instant publishedAt,
         Instant updatedAt,
@@ -18,6 +19,7 @@ public record PublishedArticleSource(
     public PublishedArticleSource {
         slug = required(slug, "slug", 128);
         issueId = Objects.requireNonNull(issueId, "issueId");
+        issueSnapshotId = Objects.requireNonNull(issueSnapshotId, "issueSnapshotId");
         issueSlug = required(issueSlug, "issueSlug", 128);
         publishedAt = Objects.requireNonNull(publishedAt, "publishedAt");
         updatedAt = Objects.requireNonNull(updatedAt, "updatedAt");

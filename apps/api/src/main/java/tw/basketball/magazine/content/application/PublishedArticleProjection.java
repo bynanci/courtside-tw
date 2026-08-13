@@ -21,6 +21,7 @@ public record PublishedArticleProjection(
         int readingTimeMinutes,
         List<ContributorCredit> contributorCredits,
         UUID issueId,
+        UUID issueSnapshotId,
         String issueSlug,
         Instant publishedAt,
         Instant updatedAt
@@ -44,6 +45,7 @@ public record PublishedArticleProjection(
                 "contributorCredits"
         ));
         issueId = Objects.requireNonNull(issueId, "issueId");
+        issueSnapshotId = Objects.requireNonNull(issueSnapshotId, "issueSnapshotId");
         issueSlug = Objects.requireNonNull(issueSlug, "issueSlug");
         publishedAt = Objects.requireNonNull(publishedAt, "publishedAt");
         updatedAt = Objects.requireNonNull(updatedAt, "updatedAt");

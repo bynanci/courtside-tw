@@ -40,10 +40,9 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
             WITH issue_snapshot AS (
                 SELECT frozen.content_document
                 FROM publication_snapshot frozen
-                WHERE frozen.aggregate_type = 'ISSUE'
+                WHERE frozen.id = ?
+                  AND frozen.aggregate_type = 'ISSUE'
                   AND frozen.aggregate_id = ?
-                ORDER BY frozen.snapshot_version DESC, frozen.id DESC
-                LIMIT 1
             )
             SELECT article.id AS article_id,
                    article_item.article_document->>'slug' AS slug,
@@ -186,6 +185,7 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
         List<NavigationRow> navigationRows = jdbcTemplate.query(
                 NAVIGATION_SQL,
                 (resultSet, rowNumber) -> mapNavigationItem(resultSet),
+                article.issueSnapshotId(),
                 article.issueId(),
                 Timestamp.from(now)
         );
