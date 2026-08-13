@@ -344,7 +344,7 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
                 true
         );
         String articleSlug = "publication-media-variants";
-        addArticle(issue, "Media variants", 1, articleSlug, 1, "PUBLISHED");
+        addArticle(issue, "Media variants", 1, articleSlug, 1, "DRAFT");
         UUID assetId = addPublicWideMediaAsset(articleSlug);
         UUID revisionId = jdbcTemplate.queryForObject("""
                 SELECT revision.id
