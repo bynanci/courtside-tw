@@ -54,6 +54,8 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.slug").value("opening-night"))
                 .andExpect(jsonPath("$.revisionNumber").value(1))
+                .andExpect(jsonPath("$.plainText").value("公開文章正文。"))
+                .andExpect(jsonPath("$.readingTimeMinutes").value(1))
                 .andExpect(jsonPath("$.issueNavigation.issueSlug").value(issue.slug()))
                 .andExpect(jsonPath("$.issueNavigation.next.slug").value("courtside-notes"))
                 .andExpect(jsonPath("$.content.blocks[0].type").value("paragraph"));
@@ -135,6 +137,8 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
                 .andExpect(jsonPath("$.title").value("Current revision"))
                 .andExpect(jsonPath("$.content.blocks[0].payload.content[0].text")
                         .value("Current revision"))
+                .andExpect(jsonPath("$.plainText").value("Current revision"))
+                .andExpect(jsonPath("$.readingTimeMinutes").value(1))
                 .andExpect(jsonPath("$.contributors.length()").value(1))
                 .andExpect(jsonPath("$.contributors[0].contributorId")
                         .value(contributorId.toString()))
