@@ -11,18 +11,17 @@ task_completion_claim: >-
   T034-T041 remain blocked by named criterion gaps; exact-head success closes only
   the two pending test records
 
-time_accounting:
-  mode: active_work_windows
-  wall_clock_pause_excluded: true
-  prior_window:
-    through_event: evt-us2-review-remediation-002
-    status: closed_within_original_budget
-  pause:
-    after_event: evt-us2-review-remediation-002
-    resumed_at: "2026-08-12T13:19:33Z"
-  rebase:
-    at_event: evt-us2-review-remediation-003
-    max_minutes: 7200
+control_lane:
+  run_id: courtside-tw-us2-review-remediation-continuation-20260813
+  started_at: "2026-08-13T00:43:30Z"
+  base_graph_version: 7
+  base_graph_blob: 219d21fd9bc55711030324bba8eb18cb0484995d
+  canonical_ledger: ".loop/t034-t041-us2-review-remediation-continuation-ledger.json"
+  historical_ledger:
+    path: ".loop/t034-t041-us2-review-remediation-ledger.json"
+    immutable_blob: 270a1d17c71fb37373e65ecca35b5b8601d69d3e
+    through_event: evt-us2-review-remediation-007
+    classification: superseded_control_replay_after_elapsed_time_budget
 
 scope:
   in:
@@ -62,8 +61,8 @@ acceptance:
   - No task checkbox, merge, production migration execution, deployment or public activation is changed by this lane.
 
 budgets:
-  max_iterations: 7
-  max_minutes: 7200
+  max_iterations: 2
+  max_minutes: 180
   max_same_failure: 2
   max_no_evidence_delta: 2
   max_graph_changes: 64
@@ -115,8 +114,8 @@ graph:
       memory_nodes: [m-control-ledger, m-semantic-lane]
       stop_nodes: [s-review-terminal]
       budgets:
-        max_iterations: 7
-        max_minutes: 7200
+        max_iterations: 2
+        max_minutes: 180
         max_same_failure: 2
         max_graph_changes: 64
         max_tokens: 100000
@@ -264,12 +263,12 @@ graph:
       status: done
       risk: medium
       confidence:
-        score: 0.9
-        basis: "The ledger records the graph delta, exact-head proof receipts, failure signature and next action."
-        evidence_refs: [".loop/t034-t041-us2-review-remediation-ledger.json"]
+        score: 0.95
+        basis: "A fresh continuation lane preserves the historical ledger byte-for-byte and records only new graph deltas from an immutable version-7 snapshot."
+        evidence_refs: [".loop/t034-t041-us2-review-remediation-continuation-ledger.json", ".loop/t034-t041-us2-review-remediation-ledger.json"]
       budget: {effort_hours: 0.2, tokens: 2500}
       config:
-        path: ".loop/t034-t041-us2-review-remediation-ledger.json"
+        path: ".loop/t034-t041-us2-review-remediation-continuation-ledger.json"
         read_before_action: true
         write_after_iteration: true
         append_only: true
@@ -361,7 +360,10 @@ output_required:
   - memory_receipt
 
 replay_verification:
-  base_graph_version: 2
-  through_event: evt-us2-review-remediation-007
+  run_id: courtside-tw-us2-review-remediation-continuation-20260813
+  base_graph_version: 7
+  base_graph_blob: 219d21fd9bc55711030324bba8eb18cb0484995d
+  through_event: evt-us2-review-remediation-continuation-001
   result: success
-  materialized_fields: [evidence/task-level-reconciliation, task_completion_claim]
+  scope: continuation_delta_only
+  historical_run_classification: superseded_control_replay_after_elapsed_time_budget

@@ -37,6 +37,11 @@
       "confidence": "high"
     },
     {
+      "text": "The historical review-remediation ledger is preserved at blob 270a1d17c71fb37373e65ecca35b5b8601d69d3e; its post-budget events are not the canonical control replay. New control mutations begin in a fresh continuation lane from immutable graph blob 219d21fd9bc55711030324bba8eb18cb0484995d, without changing task evidence or checkbox state.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
       "text": "The supplied immersion montage/presentation is design input and simulated experience, not executable or participant evidence.",
       "class": "CONFIRMED",
       "confidence": "high"
@@ -54,6 +59,7 @@
     "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
     ".loop/t034-t041-us2-implementation-ledger.json",
     ".loop/t034-t041-us2-review-remediation-ledger.json",
+    ".loop/t034-t041-us2-review-remediation-continuation-ledger.json",
     "https://github.com/bynanci/courtside-tw/pull/83",
     "https://github.com/bynanci/courtside-tw/actions/runs/31603947813",
     "https://github.com/bynanci/courtside-tw/actions/runs/31603947815",
@@ -65,6 +71,8 @@
   "as_of": "2026-08-12",
   "source_refs": [
     ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json",
+    ".loop/t034-t041-us2-review-remediation-graph.yaml",
+    ".loop/t034-t041-us2-review-remediation-continuation-ledger.json",
     "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
     "specs/001-taiwan-basketball-magazine-ebook/spec.md",
     "DESIGN.md",
@@ -115,11 +123,11 @@
   "retention": "until_superseded",
   "write_receipt": {
     "status": "UPDATED",
-    "version": "task-evidence-reconciliation-v3",
+    "version": "task-evidence-reconciliation-v4",
     "backend": "repository",
     "record_path": ".loop/memory/t034-t041-task-level-evidence-reconciliation.json",
-    "receipt_ref": ".loop/t034-t041-us2-review-remediation-ledger.json#evt-us2-review-remediation-006",
-    "readback": "Earlier focused evidence head 51b4d7c454f220c424d03cd6b386cbe9df29e0f0 has successful CI run 31603947813 and Security run 31603947815; live protected gates remain bound to the mutable expected head. validate_memory_record.py returned VALID for this repository-backed v3 record.",
+    "receipt_ref": ".loop/t034-t041-us2-review-remediation-continuation-ledger.json#evt-us2-review-remediation-continuation-001",
+    "readback": "The historical ledger is immutable and superseded only as control replay; the fresh continuation replay changes no T034-T041 criterion. Earlier focused evidence head 51b4d7c454f220c424d03cd6b386cbe9df29e0f0 has successful CI run 31603947813 and Security run 31603947815; live protected gates remain bound to the mutable expected head. validate_memory_record.py returned VALID for this repository-backed v4 record.",
     "written_by": "codex-supervisor"
   }
 }

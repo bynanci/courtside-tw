@@ -51,8 +51,17 @@
     "review_remediation_ledger": {
       "path": ".loop/t034-t041-us2-review-remediation-ledger.json",
       "blob_before_this_receipt": "59667fdde9005a308cf1ca64506553cd89beaac9",
-      "classification": "group_level_implementation_proof",
-      "limitation": "It proves a bounded media/byline/p5 remediation head and browser suite, but it does not map every T034-T041 criterion to current main."
+      "immutable_closed_lane_blob": "270a1d17c71fb37373e65ecca35b5b8601d69d3e",
+      "classification": "historical_group_level_implementation_proof_and_superseded_control_replay",
+      "limitation": "It proves a bounded media/byline/p5 remediation head and browser suite, but it does not map every T034-T041 criterion to current main. Events after its elapsed-time budget are not the canonical replay path and the file is preserved byte-for-byte."
+    },
+    "current_control_ledger": {
+      "path": ".loop/t034-t041-us2-review-remediation-continuation-ledger.json",
+      "run_id": "courtside-tw-us2-review-remediation-continuation-20260813",
+      "base_graph_version": 7,
+      "base_graph_blob": "219d21fd9bc55711030324bba8eb18cb0484995d",
+      "classification": "fresh_continuation_from_immutable_graph_snapshot",
+      "limitation": "This lane corrects append-only control provenance only. It does not add implementation evidence, close a task criterion or authorize a checkbox."
     },
     "stale_or_inexact_historical_claims": [
       {
@@ -452,8 +461,9 @@
     "record_validation": {
       "semantic_memory": "PASS: validate_memory_record.py accepted the new work-memory/v1 record.",
       "legacy_review_graph_strict": "PASS after synchronizing the blocked task-level frontier, adding current strict action authority fields and marking the superseded semantic-memory node blocked.",
+      "continuation_replay": "PASS from immutable graph version 7 blob 219d21fd9bc55711030324bba8eb18cb0484995d through the fresh continuation event; the historical ledger blob remains unchanged.",
       "review_graph_changed": true,
-      "interpretation": "The graph now validates structurally while retaining all named task blockers; strict graph validity is not task acceptance proof."
+      "interpretation": "The graph now validates structurally while retaining all named task blockers; strict graph or continuation-replay validity is not task acceptance proof."
     }
   },
   "task_state_after": {

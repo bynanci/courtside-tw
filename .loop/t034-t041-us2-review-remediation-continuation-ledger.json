@@ -1,0 +1,160 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-t034-t041-us2-review-remediation",
+  "graph_version": 8,
+  "run_id": "courtside-tw-us2-review-remediation-continuation-20260813",
+  "status": "blocked",
+  "iteration": 1,
+  "started_at": "2026-08-13T00:43:30Z",
+  "updated_at": "2026-08-13T00:43:30Z",
+  "base_snapshot": {
+    "graph_version": 7,
+    "graph_path": ".loop/t034-t041-us2-review-remediation-graph.yaml",
+    "graph_blob": "219d21fd9bc55711030324bba8eb18cb0484995d",
+    "source_commit": "ebb0b8099c5898b1806d33a70b137dbd6ff823f7",
+    "historical_ledger_path": ".loop/t034-t041-us2-review-remediation-ledger.json",
+    "historical_ledger_blob": "270a1d17c71fb37373e65ecca35b5b8601d69d3e",
+    "historical_through_event": "evt-us2-review-remediation-007",
+    "historical_classification": "superseded_control_replay_after_elapsed_time_budget"
+  },
+  "lane_budget": {
+    "max_iterations": 2,
+    "max_minutes": 180,
+    "max_same_failure": 2,
+    "max_no_evidence_delta": 2,
+    "max_graph_changes": 64,
+    "max_tokens": 100000
+  },
+  "current_frontier": [],
+  "blocked_nodes": [
+    "g-protected-p1",
+    "m-semantic-lane",
+    "s-review-terminal"
+  ],
+  "terminal_state": "blocked",
+  "next_action": "Do not advance T034-T041. Evaluate the mutable PR head through live CI, Security, browser and unresolved-review gates before protected merge.",
+  "events": [
+    {
+      "event_id": "evt-us2-review-remediation-continuation-001",
+      "at": "2026-08-13T00:43:30Z",
+      "actor": "codex-supervisor",
+      "type": "fresh_control_lane_from_immutable_snapshot",
+      "base_graph_version": 7,
+      "new_graph_version": 8,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "control_lane",
+            "value": {
+              "run_id": "courtside-tw-us2-review-remediation-continuation-20260813",
+              "started_at": "2026-08-13T00:43:30Z",
+              "base_graph_version": 7,
+              "base_graph_blob": "219d21fd9bc55711030324bba8eb18cb0484995d",
+              "canonical_ledger": ".loop/t034-t041-us2-review-remediation-continuation-ledger.json",
+              "historical_ledger": {
+                "path": ".loop/t034-t041-us2-review-remediation-ledger.json",
+                "immutable_blob": "270a1d17c71fb37373e65ecca35b5b8601d69d3e",
+                "through_event": "evt-us2-review-remediation-007",
+                "classification": "superseded_control_replay_after_elapsed_time_budget"
+              }
+            }
+          },
+          {
+            "op": "replace",
+            "path": "budgets/max_iterations",
+            "value": 2
+          },
+          {
+            "op": "replace",
+            "path": "graph/loops/l1-us2-review-remediation/budgets/max_iterations",
+            "value": 2
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/m-control-ledger/confidence",
+            "value": {
+              "score": 0.95,
+              "basis": "A fresh continuation lane preserves the historical ledger byte-for-byte and records only new graph deltas from an immutable version-7 snapshot.",
+              "evidence_refs": [
+                ".loop/t034-t041-us2-review-remediation-continuation-ledger.json",
+                ".loop/t034-t041-us2-review-remediation-ledger.json"
+              ]
+            }
+          },
+          {
+            "op": "replace",
+            "path": "graph/nodes/m-control-ledger/config/path",
+            "value": ".loop/t034-t041-us2-review-remediation-continuation-ledger.json"
+          },
+          {
+            "op": "replace",
+            "path": "replay_verification",
+            "value": {
+              "run_id": "courtside-tw-us2-review-remediation-continuation-20260813",
+              "base_graph_version": 7,
+              "base_graph_blob": "219d21fd9bc55711030324bba8eb18cb0484995d",
+              "through_event": "evt-us2-review-remediation-continuation-001",
+              "result": "success",
+              "scope": "continuation_delta_only",
+              "historical_run_classification": "superseded_control_replay_after_elapsed_time_budget"
+            }
+          }
+        ]
+      },
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/pull/83",
+        "review-thread:PRRT_kwDOTvfycs6YxX_W",
+        "review-thread:PRRT_kwDOTvfycs6YxX_X",
+        ".loop/t034-t041-us2-review-remediation-graph.yaml",
+        ".loop/t034-t041-us2-review-remediation-ledger.json",
+        ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json",
+        ".loop/memory/t034-t041-task-level-evidence-reconciliation.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Historical control ledger append-only integrity",
+          "level": "P1",
+          "result": "success",
+          "ledger_blob": "270a1d17c71fb37373e65ecca35b5b8601d69d3e",
+          "classification": "PRESERVED_EXACTLY_NOT_CANONICAL_REPLAY_AFTER_TIME_BUDGET"
+        },
+        {
+          "proof": "Fresh continuation replay from immutable graph snapshot through event 001",
+          "level": "P1",
+          "result": "success",
+          "base_graph_blob": "219d21fd9bc55711030324bba8eb18cb0484995d",
+          "result_graph_blob": "76bd69c606859e742f08ade3fa2988c7aa42bb72",
+          "errors": 0,
+          "unrecorded_mutations": 0
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:t034-t041-task-level-evidence-reconciliation",
+        "version": "task-evidence-reconciliation-v4",
+        "retrieval_ids": [
+          "wm:project:courtside-tw:t034-t041-task-level-evidence-reconciliation",
+          "wm:project:courtside-tw:us2-t034-t041-review-remediation"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t034-t041-task-level-reconciliation-20260812.json",
+          ".loop/memory/t034-t041-task-level-evidence-reconciliation.json",
+          ".loop/t034-t041-us2-review-remediation-continuation-ledger.json"
+        ],
+        "next_review_at": "2026-08-19",
+        "blocker": "T034-T041 retain named task criteria; live protected-merge gates must match the current expected PR head."
+      },
+      "failure_signature": "RETROACTIVE_TIME_ACCOUNTING_AND_EXHAUSTED_LANE_REPLAY_SUPERSEDED",
+      "decision": "START_FRESH_CONTROL_LANE_FROM_IMMUTABLE_GRAPH_SNAPSHOT",
+      "frontier_reconciliation": "No task frontier changes. The historical ledger remains immutable; this fresh lane records only new control provenance and points current replay to the continuation receipt.",
+      "token_usage": {
+        "estimated": 2500,
+        "input": 0,
+        "output": 0,
+        "total": 2500
+      },
+      "terminal_reason": "Control provenance is corrected without changing production, tests, deployment or T034-T041 checkbox state; the named task blockers and live merge gates remain."
+    }
+  ]
+}
