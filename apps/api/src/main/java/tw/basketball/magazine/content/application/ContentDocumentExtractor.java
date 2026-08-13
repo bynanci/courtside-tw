@@ -74,7 +74,7 @@ public final class ContentDocumentExtractor {
         StringBuilder text = new StringBuilder();
         for (JsonNode run : content) {
             if (run != null && run.isObject()) {
-                appendNormalized(text, stringValue(run.get("text")));
+                text.append(stringValue(run.get("text")));
             }
         }
         addNormalized(segments, text.toString());
@@ -116,17 +116,6 @@ public final class ContentDocumentExtractor {
 
     private static String stringValue(JsonNode node) {
         return node != null && node.isString() ? node.asString() : "";
-    }
-
-    private static void appendNormalized(StringBuilder target, String value) {
-        String normalized = normalize(value);
-        if (normalized.isEmpty()) {
-            return;
-        }
-        if (!target.isEmpty()) {
-            target.append(' ');
-        }
-        target.append(normalized);
     }
 
     private static void addNormalized(List<String> segments, String value) {
