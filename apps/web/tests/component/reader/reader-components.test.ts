@@ -1,0 +1,81 @@
+import assert from "node:assert/strict"
+import { readFile } from "node:fs/promises"
+import test from "node:test"
+
+import { readerMotion } from "../../../app/features/motion/reader-motion.ts"
+import { readingProgressPercent } from "../../../app/features/reader/reading-progress.ts"
+import { performArticleShare } from "../../../app/features/reader/share.ts"
+
+test("reading progress is bounded and its motion has an immediate reduced variant", () => {
+  assert.equal(readingProgressPercent(500, 1000, 500), 50)
+  assert.equal(readingProgressPercent(-10, 1000, 500), 0)
+  assert.equal(readingProgressPercent(1000, 1000, 500), 100)
+  assert.equal(readerMotion.readingProgress.full.durationMs, 90)
+  assert.equal(readerMotion.readingProgress.reduced.durationMs, 0)
+})
+
+test("share prefers native share and falls back to clipboard after failure", async () => {
+  const calls: string[] = []
+  assert.deepEqual(
+    await performArticleShare(
+      { title: "文章", url: "https://courtside.test/articles/story" },
+      {
+        share: async () => {
+          calls.push("share")
+          throw new Error("native failed")
+        },
+        writeText: async (url) => calls.push(`copy:${url}`)
+      }
+    ),
+    { outcome: "copied", message: "文章連結已複製。" }
+  )
+  assert.deepEqual(calls, ["share", "copy:https://courtside.test/articles/story"])
+})
+
+test("share has an accessible canonical-link fallback when browser APIs fail", async () => {
+  assert.deepEqual(
+    await performArticleShare(
+      { title: "文章", url: "https://courtside.test/articles/story" },
+      {
+        share: async () => {
+          throw new Error("native failed")
+        },
+        writeText: async () => {
+          throw new Error("clipboard failed")
+        }
+      }
+    ),
+    { outcome: "link", message: "分享未完成，請使用文章連結。" }
+  )
+
+  const source = await readFile(
+    new URL(
+      "../../../app/features/reader/components/ShareArticleButton.vue",
+      import.meta.url
+    ),
+    "utf8"
+  )
+  assert.match(source, /role="status"/)
+  assert.match(source, /data-testid="article-share-fallback"/)
+})
+
+test("snapshot navigation and heading-only TOC live behind reader components", async () => {
+  const [navigation, page] = await Promise.all([
+    readFile(
+      new URL(
+        "../../../app/features/reader/components/ArticleNavigation.vue",
+        import.meta.url
+      ),
+      "utf8"
+    ),
+    readFile(new URL("../../../app/pages/articles/[articleSlug].vue", import.meta.url), "utf8")
+  ])
+
+  assert.match(navigation, /issueNavigation/)
+  assert.match(navigation, /article-previous/)
+  assert.match(navigation, /article-next/)
+  assert.match(navigation, /#toc/)
+  assert.match(page, /ReadingProgress/)
+  assert.match(page, /ArticleNavigation/)
+  assert.match(page, /ShareArticleButton/)
+})

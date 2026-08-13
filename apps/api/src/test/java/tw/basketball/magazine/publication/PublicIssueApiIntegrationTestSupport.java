@@ -192,6 +192,48 @@ abstract class PublicIssueApiIntegrationTestSupport {
                 revisionId,
                 articleId
         );
+        jdbcTemplate.update("""
+                INSERT INTO publication_snapshot (
+                    aggregate_type, aggregate_id, revision_id, snapshot_version,
+                    content_document, checksum_sha256, created_by
+                ) VALUES ('ARTICLE', ?, ?, 1, ?::jsonb, ?, 'public-fixture')
+                """,
+                articleId,
+                revisionId,
+                """
+                {
+                  "schemaVersion": 1,
+                  "articleId": "%s",
+                  "revisionId": "%s",
+                  "revisionNumber": 1,
+                  "slug": "%s",
+                  "title": "Article %s",
+                  "dek": "Dek for %s",
+                  "content": {
+                    "schemaVersion": 1,
+                    "documentId": "0190f7b0-7c4b-7e3a-8f12-123456789abc",
+                    "blocks": [{
+                      "id": "00000000-0000-4000-8000-000000000002",
+                      "type": "paragraph",
+                      "version": 1,
+                      "payload": {"content": [{"kind": "text", "text": "Fixture article %s"}]}
+                    }]
+                  },
+                  "publishedAt": "%s",
+                  "updatedAt": "%s"
+                }
+                """.formatted(
+                        articleId,
+                        revisionId,
+                        articleSlug,
+                        articleSlug,
+                        articleSlug,
+                        articleSlug,
+                        publishedAt,
+                        publishedAt
+                ),
+                CHECKSUM
+        );
         UUID contributorId = UUID.randomUUID();
         jdbcTemplate.update("""
                 INSERT INTO contributor (id, slug, display_name)
@@ -216,7 +258,7 @@ abstract class PublicIssueApiIntegrationTestSupport {
         refreshSnapshot(issue.id());
     }
 
-    private void refreshSnapshot(UUID issueId) {
+    protected void refreshSnapshot(UUID issueId) {
         Map<String, Object> document = jdbcTemplate.queryForObject("""
                 SELECT issue_number, slug, title, summary, cover_asset_id
                 FROM publication_issue
