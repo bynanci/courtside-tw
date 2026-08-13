@@ -532,9 +532,7 @@ function handleCreativeScroll(): void {
 
 function handleReaderScroll(): void {
   handleCreativeScroll()
-  if (reloadGuardActive && reloadResumeChoicePending && window.scrollY > 0) {
-    releaseReloadScrollGuard()
-  }
+  releaseReloadGuardAfterManualScroll()
   scheduleReadingProgressSave()
 }
 
@@ -686,6 +684,9 @@ function markReloadProgressLoaded(resumeChoicePending: boolean): void {
   if (!reloadGuardActive) {
     return
   }
+  if (releaseReloadGuardAfterManualScroll()) {
+    return
+  }
   reloadProgressLoaded = true
   reloadResumeChoicePending = resumeChoicePending
   applyReloadGuardPosition()
@@ -811,8 +812,23 @@ function hasReloadProgressCandidate(): boolean {
 
 function handleReloadLifecycleReady(): void {
   reloadLifecycleReady = true
+  if (releaseReloadGuardAfterManualScroll()) {
+    return
+  }
   applyReloadGuardPosition()
   scheduleReloadGuardRelease()
+}
+
+function releaseReloadGuardAfterManualScroll(): boolean {
+  if (
+    !reloadGuardActive ||
+    reloadChosenAction === "continue" ||
+    window.scrollY <= 0
+  ) {
+    return false
+  }
+  releaseReloadScrollGuard()
+  return true
 }
 
 function scheduleReloadGuardRelease(): void {
