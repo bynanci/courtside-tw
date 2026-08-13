@@ -12,6 +12,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -19,6 +22,9 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MvcResult;
+
+import tw.basketball.magazine.content.persistence.JdbcPublicArticleRepository;
+import tw.basketball.magazine.publication.persistence.JdbcEditorialArticleRepository;
 
 /**
  * Contract tests for the public Article projection.
@@ -67,7 +73,16 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
                 .andExpect(jsonPath("$.canonicalPath").value("/articles/opening-night"))
                 .andExpect(jsonPath("$.issueNavigation.issueSlug").value(issue.slug()))
                 .andExpect(jsonPath("$.issueNavigation.next.slug").value("courtside-notes"))
-                .andExpect(jsonPath("$.content.blocks[0].type").value("paragraph"));
+                .andExpect(jsonPath("$.content.blocks[0].type").value("paragraph"))
+                .andExpect(jsonPath("$.state").doesNotExist())
+                .andExpect(jsonPath("$.workflow").doesNotExist())
+                .andExpect(jsonPath("$.audit").doesNotExist())
+                .andExpect(jsonPath("$.review").doesNotExist())
+                .andExpect(jsonPath("$.privateStorageKey").doesNotExist())
+                .andExpect(jsonPath("$.checksumSha256").doesNotExist())
+                .andExpect(jsonPath("$.rights.validFrom").doesNotExist())
+                .andExpect(jsonPath("$.rights.validUntil").doesNotExist())
+                .andExpect(jsonPath("$.rights.withdrawalTerms").doesNotExist());
     }
 
     @Test
@@ -83,7 +98,7 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
         String document = readFixture("packages/content-schema/fixtures/valid/content-document-v1-all-blocks.json");
         replaceDocument("all-block-extraction", document);
         replaceSnapshotDocument("all-block-extraction", document);
-        addFixtureMedia(document);
+        addFixtureMedia("all-block-extraction", document);
 
         mockMvc.perform(get("/api/v1/public/articles/all-block-extraction"))
                 .andExpect(status().isOk())
@@ -113,6 +128,10 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
         MvcResult first = mockMvc.perform(get("/api/v1/public/articles/etag-article"))
                 .andExpect(status().isOk())
                 .andExpect(header().exists(HttpHeaders.ETAG))
+                .andExpect(header().string(
+                        HttpHeaders.CACHE_CONTROL,
+                        "no-cache, max-age=0, must-revalidate"
+                ))
                 .andReturn();
         String etag = first.getResponse().getHeader(HttpHeaders.ETAG);
         assertNotNull(etag);
@@ -121,6 +140,10 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
                         .header(HttpHeaders.IF_NONE_MATCH, etag))
                 .andExpect(status().isNotModified())
                 .andExpect(header().string(HttpHeaders.ETAG, etag))
+                .andExpect(header().string(
+                        HttpHeaders.CACHE_CONTROL,
+                        "no-cache, max-age=0, must-revalidate"
+                ))
                 .andExpect(content().string(""));
 
         String originalBody = first.getResponse().getContentAsString();
@@ -142,6 +165,92 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.ETAG, etag))
                 .andExpect(content().json(originalBody));
+    }
+
+    @Test
+    void readsHistoricalRawContentDocumentSnapshotWithoutReadingLiveContent() throws Exception {
+        IssueFixture issue = createIssue(
+                "issue-legacy-article-snapshot",
+                17,
+                Instant.parse("2026-08-08T00:00:00Z"),
+                "PUBLISHED",
+                true
+        );
+        addArticle(issue, "Legacy", 1, "legacy-raw-snapshot", 1, "PUBLISHED");
+        appendLegacyRawSnapshot("legacy-raw-snapshot", """
+                {"schemaVersion":1,"documentId":"0190f7b0-7c4b-7e3a-8f12-123456789abc","blocks":[
+                  {"id":"00000000-0000-4000-8000-000000000002","type":"paragraph","version":1,
+                   "payload":{"content":[{"kind":"text","text":"Frozen legacy snapshot"}]}}
+                ]}
+                """);
+        replaceDocument("legacy-raw-snapshot", """
+                {"schemaVersion":1,"documentId":"0190f7b0-7c4b-7e3a-8f12-123456789abc","blocks":[
+                  {"id":"00000000-0000-4000-8000-000000000002","type":"paragraph","version":1,
+                   "payload":{"content":[{"kind":"text","text":"Live revision drift"}]}}
+                ]}
+                """);
+
+        mockMvc.perform(get("/api/v1/public/articles/legacy-raw-snapshot"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.plainText").value("Frozen legacy snapshot"))
+                .andExpect(jsonPath("$.content.blocks[0].payload.content[0].text")
+                        .value("Frozen legacy snapshot"))
+                .andExpect(jsonPath("$.title").value("Article legacy-raw-snapshot"));
+    }
+
+    @Test
+    void persistenceRejectsMutationOfPublishedRevisionAfterSnapshotCreation() throws Exception {
+        IssueFixture issue = createIssue(
+                "issue-published-immutability",
+                15,
+                Instant.parse("2026-08-08T00:00:00Z"),
+                "PUBLISHED",
+                true
+        );
+        addArticle(issue, "Immutable", 1, "immutable-revision", 1, "PUBLISHED");
+        UUID articleId = jdbcTemplate.queryForObject(
+                "SELECT id FROM article WHERE slug = 'immutable-revision'",
+                UUID.class
+        );
+        JdbcEditorialArticleRepository repository = new JdbcEditorialArticleRepository(jdbcTemplate);
+        var published = repository.find(articleId).orElseThrow();
+        String before = jdbcTemplate.queryForObject(
+                "SELECT content_document::text FROM article_revision WHERE id = ?",
+                String.class,
+                published.revisionId()
+        );
+
+        boolean changed = repository.updateDraft(
+                published.articleId(),
+                published.revisionId(),
+                published.version(),
+                published.revisionVersion(),
+                "Forbidden mutation",
+                published.slug(),
+                published.dek(),
+                new tools.jackson.databind.ObjectMapper().readTree("""
+                        {"schemaVersion":1,"documentId":"0190f7b0-7c4b-7e3a-8f12-123456789abc","blocks":[
+                          {"id":"00000000-0000-4000-8000-000000000002","type":"paragraph","version":1,
+                           "payload":{"content":[{"kind":"text","text":"Forbidden mutation"}]}}
+                        ]}
+                        """)
+        );
+
+        assertFalse(changed);
+        assertEquals(before, jdbcTemplate.queryForObject(
+                "SELECT content_document::text FROM article_revision WHERE id = ?",
+                String.class,
+                published.revisionId()
+        ));
+        assertEquals(1, jdbcTemplate.queryForObject(
+                """
+                SELECT count(*) FROM publication_snapshot
+                WHERE aggregate_type = 'ARTICLE' AND aggregate_id = ? AND revision_id = ?
+                """,
+                Integer.class,
+                published.articleId(),
+                published.revisionId()
+        ));
     }
 
     @Test
@@ -232,6 +341,32 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
     }
 
     @Test
+    void contributorCreditRemainsFrozenAfterLiveContributorDrift() throws Exception {
+        IssueFixture issue = createIssue(
+                "issue-frozen-byline",
+                16,
+                Instant.parse("2026-08-08T00:00:00Z"),
+                "PUBLISHED",
+                true
+        );
+        addArticle(issue, "Byline", 1, "frozen-byline", 1, "PUBLISHED");
+        MvcResult first = mockMvc.perform(get("/api/v1/public/articles/frozen-byline"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.contributors[0].displayName").value("Courtside TW 編輯部"))
+                .andReturn();
+        String etag = first.getResponse().getHeader(HttpHeaders.ETAG);
+
+        jdbcTemplate.update(
+                "UPDATE contributor SET display_name = 'Live contributor drift' WHERE slug = 'fixture-frozen-byline'"
+        );
+
+        mockMvc.perform(get("/api/v1/public/articles/frozen-byline"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.ETAG, etag))
+                .andExpect(jsonPath("$.contributors[0].displayName").value("Courtside TW 編輯部"));
+    }
+
+    @Test
     void resolvesSelectedPublicStorageVariantWithoutInventingArticlePath() throws Exception {
         IssueFixture issue = createIssue(
                 "issue-2026-08",
@@ -276,6 +411,13 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
                    "payload":{"assetId":"%s","altText":"公開圖片","variant":"wide"}}
                 ]}
                 """.formatted(assetId));
+        replaceSnapshotMedia("resolved-media", """
+                [{"assetId":"%s","variant":"wide",
+                  "url":"/media/published/actual-key.webp","mimeType":"image/webp",
+                  "width":1200,"height":800,"altText":"resolved",
+                  "credit":"Courtside TW","rightsOwner":"Courtside TW",
+                  "licenseName":"Editorial license"}]
+                """.formatted(assetId));
 
         mockMvc.perform(get("/api/v1/public/articles/resolved-media"))
                 .andExpect(status().isOk())
@@ -289,6 +431,114 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
                 .andExpect(jsonPath("$.media[0].url").value(org.hamcrest.Matchers.not(
                         org.hamcrest.Matchers.containsString("/media/articles/resolved-media/")
                 )));
+    }
+
+    @Test
+    void revokedRightsRecordOverridesAnOlderValidRecord() throws Exception {
+        IssueFixture issue = createIssue(
+                "issue-revoked-overrides-valid",
+                19,
+                Instant.parse("2026-08-08T00:00:00Z"),
+                "PUBLISHED",
+                true
+        );
+        addArticle(issue, "Rights precedence", 1, "revoked-overrides-valid", 1, "PUBLISHED");
+        UUID assetId = addPublicWideMediaAsset("revoked-overrides-valid");
+        String document = """
+                {"schemaVersion":1,"documentId":"0190f7b0-7c4b-7e3a-8f12-123456789abc","blocks":[
+                  {"id":"00000000-0000-4000-8000-000000000020","type":"image","version":1,
+                   "payload":{"assetId":"%s","altText":"撤銷權利測試","variant":"wide"}}
+                ]}
+                """.formatted(assetId);
+        replaceDocument("revoked-overrides-valid", document);
+        replaceSnapshotDocument("revoked-overrides-valid", document);
+        replaceSnapshotMedia("revoked-overrides-valid", """
+                [{"assetId":"%s","variant":"wide",
+                  "url":"/media/published/revoked-overrides-valid.webp","mimeType":"image/webp",
+                  "width":1200,"height":675,"altText":"公開生成視覺",
+                  "credit":"Courtside TW","rightsOwner":"Courtside TW",
+                  "licenseName":"Editorial license"}]
+                """.formatted(assetId));
+        jdbcTemplate.update("""
+                INSERT INTO rights_record (
+                    id, asset_id, rights_owner, license_name, allowed_channels,
+                    territories, valid_from, valid_until, credit, withdrawal_terms, status
+                ) VALUES (?, ?, 'Revoking owner', 'Revoked license', '{PUBLIC_WEB}'::text[],
+                    ARRAY['GLOBAL']::text[], '2026-08-01T00:00:00Z', '2027-08-01T00:00:00Z',
+                    'Revoking owner', 'withdraw immediately', 'REVOKED')
+                """, UUID.randomUUID(), assetId);
+
+        mockMvc.perform(get("/api/v1/public/articles/revoked-overrides-valid"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void returnsFrozenMediaMetadataWhileLiveRowsRemainOnlyAVisibilityGate() throws Exception {
+        IssueFixture issue = createIssue(
+                "issue-frozen-media-metadata",
+                20,
+                Instant.parse("2026-08-08T00:00:00Z"),
+                "PUBLISHED",
+                true
+        );
+        addArticle(issue, "Frozen media", 1, "frozen-media-metadata", 1, "PUBLISHED");
+        UUID assetId = addPublicWideMediaAsset("frozen-media-metadata");
+        String document = """
+                {"schemaVersion":1,"documentId":"0190f7b0-7c4b-7e3a-8f12-123456789abc","blocks":[
+                  {"id":"00000000-0000-4000-8000-000000000021","type":"image","version":1,
+                   "payload":{"assetId":"%s","altText":"凍結媒體測試","variant":"wide"}}
+                ]}
+                """.formatted(assetId);
+        replaceDocument("frozen-media-metadata", document);
+        replaceSnapshotDocument("frozen-media-metadata", document);
+        replaceSnapshotMedia("frozen-media-metadata", """
+                [{
+                  "assetId":"%s",
+                  "variant":"wide",
+                  "url":"/media/published/frozen-media-metadata.webp",
+                  "mimeType":"image/webp",
+                  "width":1200,
+                  "height":675,
+                  "altText":"公開生成視覺",
+                  "credit":"Courtside TW",
+                  "rightsOwner":"Courtside TW",
+                  "licenseName":"Editorial license"
+                }]
+                """.formatted(assetId));
+
+        MvcResult first = mockMvc.perform(get("/api/v1/public/articles/frozen-media-metadata"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.media[0].url")
+                        .value("/media/published/frozen-media-metadata.webp"))
+                .andReturn();
+        String etag = first.getResponse().getHeader(HttpHeaders.ETAG);
+        String body = first.getResponse().getContentAsString();
+
+        jdbcTemplate.update(
+                "UPDATE media_asset SET alt_text = 'Mutable live alt text' WHERE id = ?",
+                assetId
+        );
+        jdbcTemplate.update("""
+                UPDATE media_variant
+                SET public_storage_key = 'published/live-drift.webp',
+                    mime_type = 'image/png', width = 640, height = 360
+                WHERE asset_id = ? AND variant = 'wide'
+                """, assetId);
+        jdbcTemplate.update("""
+                UPDATE rights_record
+                SET rights_owner = 'Mutable live owner',
+                    license_name = 'Mutable live license',
+                    credit = 'Mutable live credit'
+                WHERE asset_id = ? AND status = 'VALID'
+                """, assetId);
+
+        MvcResult second = mockMvc.perform(get("/api/v1/public/articles/frozen-media-metadata"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.ETAG, etag))
+                .andExpect(jsonPath("$.media[0].altText").value("公開生成視覺"))
+                .andExpect(jsonPath("$.media[0].rightsOwner").value("Courtside TW"))
+                .andReturn();
+        assertEquals(body, second.getResponse().getContentAsString());
     }
 
 
@@ -315,6 +565,13 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
                    "payload":{"presetId":"court-pulse-v1","seed":20260808,"parameters":{"density":42,"tempo":0.8,"lineWeight":1.5,"paletteId":"court-dusk","numericSequence":[0.1,0.4,0.9]},"posterAssetId":"%s","altText":"公開生成視覺","dataSummary":"wide fixture"}}
                 ]}
                 """.formatted(assetId));
+        replaceSnapshotMedia("generative-wide", """
+                [{"assetId":"%s","variant":"wide",
+                  "url":"/media/published/generative-wide.webp","mimeType":"image/webp",
+                  "width":1200,"height":675,"altText":"公開生成視覺",
+                  "credit":"Courtside TW","rightsOwner":"Courtside TW",
+                  "licenseName":"Editorial license"}]
+                """.formatted(assetId));
 
         mockMvc.perform(get("/api/v1/public/articles/generative-wide"))
                 .andExpect(status().isOk())
@@ -333,6 +590,7 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
                 true
         );
         addArticle(issue, "故障測試", 1, "contributor-db-failure", 1, "PUBLISHED");
+        appendSnapshotWithoutContributors("contributor-db-failure");
 
         jdbcTemplate.execute("ALTER TABLE article_contributor RENAME TO article_contributor_unavailable");
         try {
@@ -374,6 +632,13 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
                    "payload":{"assetId":"%s","altText":"不可公開的圖片"}}
                 ]}
                 """.formatted(privateAssetId));
+        replaceSnapshotMedia("private-media-article", """
+                [{"assetId":"%s","variant":"inline",
+                  "url":"/media/articles/private-media-article/inline.webp","mimeType":"image/webp",
+                  "width":1200,"height":900,"altText":"不可公開的圖片",
+                  "credit":"Private owner","rightsOwner":"Private owner",
+                  "licenseName":"Reader-only license"}]
+                """.formatted(privateAssetId));
 
         for (String slug : new String[]{"draft-article", "withdrawn-article", "private-media-article"}) {
             MvcResult result = mockMvc.perform(get("/api/v1/public/articles/" + slug))
@@ -414,10 +679,36 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
                    "payload":{"assetId":"%s","altText":"不可公開的圖片"}}
                 ]}
                 """.formatted(privateAssetId));
+        replaceSnapshotMedia("private-neighbor", """
+                [{"assetId":"%s","variant":"inline",
+                  "url":"/media/articles/private-neighbor/inline.webp","mimeType":"image/webp",
+                  "width":1200,"height":900,"altText":"不可公開的圖片",
+                  "credit":"Private owner","rightsOwner":"Private owner",
+                  "licenseName":"Reader-only license"}]
+                """.formatted(privateAssetId));
 
         mockMvc.perform(get("/api/v1/public/articles/navigation-opening"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.issueNavigation.next.slug").value("public-next"));
+    }
+
+    @Test
+    void oversizedIssueMediaGraphFailsClosedBeforeResolution() throws Exception {
+        IssueFixture issue = createIssue(
+                "issue-bounded-navigation-media",
+                18,
+                Instant.parse("2026-08-08T00:00:00Z"),
+                "PUBLISHED",
+                true
+        );
+        addArticle(issue, "Opening", 1, "bounded-opening", 1, "PUBLISHED");
+        addArticle(issue, "Heavy one", 2, "bounded-heavy-one", 1, "PUBLISHED");
+        addArticle(issue, "Heavy two", 3, "bounded-heavy-two", 1, "PUBLISHED");
+        replaceSnapshotDocument("bounded-heavy-one", galleryHeavyDocument(106));
+        replaceSnapshotDocument("bounded-heavy-two", galleryHeavyDocument(106));
+
+        mockMvc.perform(get("/api/v1/public/articles/bounded-opening"))
+                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -447,6 +738,127 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
                 .andExpect(status().isNotFound());
     }
 
+    @Test
+    void deniesUnknownPublishedProjectionVersion() throws Exception {
+        IssueFixture issue = createIssue(
+                "issue-unknown-article-projection",
+                21,
+                Instant.parse("2026-08-08T00:00:00Z"),
+                "PUBLISHED",
+                true
+        );
+        addArticle(issue, "Unknown projection", 1, "unknown-projection", 1, "PUBLISHED");
+        jdbcTemplate.update("""
+                INSERT INTO publication_snapshot (
+                    aggregate_type, aggregate_id, revision_id, snapshot_version,
+                    content_document, checksum_sha256, created_by
+                )
+                SELECT 'ARTICLE', latest.aggregate_id, latest.revision_id,
+                       latest.snapshot_version + 1,
+                       jsonb_set(latest.content_document, '{projectionVersion}', '99'::jsonb),
+                       ?, 'unsupported-projection-fixture'
+                FROM publication_snapshot latest
+                WHERE latest.aggregate_type = 'ARTICLE'
+                  AND latest.aggregate_id = (SELECT id FROM article WHERE slug = 'unknown-projection')
+                ORDER BY latest.snapshot_version DESC, latest.id DESC
+                LIMIT 1
+                """, CHECKSUM);
+
+        mockMvc.perform(get("/api/v1/public/articles/unknown-projection"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void legacySnapshotWithMediaReferencesFailsClosedInsteadOfSynthesizingLiveMetadata()
+            throws Exception {
+        IssueFixture issue = createIssue(
+                "issue-legacy-media-fails-closed",
+                22,
+                Instant.parse("2026-08-08T00:00:00Z"),
+                "PUBLISHED",
+                true
+        );
+        addArticle(issue, "Legacy media", 1, "legacy-media-fails-closed", 1, "PUBLISHED");
+        UUID assetId = addPublicWideMediaAsset("legacy-media-fails-closed");
+        String document = """
+                {"schemaVersion":1,"documentId":"0190f7b0-7c4b-7e3a-8f12-123456789abc","blocks":[
+                  {"id":"00000000-0000-4000-8000-000000000022","type":"image","version":1,
+                   "payload":{"assetId":"%s","altText":"舊快照媒體","variant":"wide"}}
+                ]}
+                """.formatted(assetId);
+        replaceDocument("legacy-media-fails-closed", document);
+        replaceSnapshotDocument("legacy-media-fails-closed", document);
+
+        mockMvc.perform(get("/api/v1/public/articles/legacy-media-fails-closed"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void navigationOmitsNeighborWhoseFrozenMediaEnvelopeDoesNotMatchItsContent() throws Exception {
+        IssueFixture issue = createIssue(
+                "issue-inconsistent-neighbor-media",
+                23,
+                Instant.parse("2026-08-08T00:00:00Z"),
+                "PUBLISHED",
+                true
+        );
+        addArticle(issue, "Opening", 1, "consistent-opening", 1, "PUBLISHED");
+        addArticle(issue, "Inconsistent", 2, "inconsistent-neighbor", 1, "PUBLISHED");
+        addArticle(issue, "Final", 3, "consistent-final", 1, "PUBLISHED");
+        UUID assetId = addPublicWideMediaAsset("inconsistent-neighbor");
+        String document = """
+                {"schemaVersion":1,"documentId":"0190f7b0-7c4b-7e3a-8f12-123456789abc","blocks":[
+                  {"id":"00000000-0000-4000-8000-000000000023","type":"image","version":1,
+                   "payload":{"assetId":"%s","altText":"鄰居媒體","variant":"wide"}}
+                ]}
+                """.formatted(assetId);
+        replaceDocument("inconsistent-neighbor", document);
+        replaceSnapshotDocument("inconsistent-neighbor", document);
+        replaceSnapshotMedia("inconsistent-neighbor", """
+                [{"assetId":"%s","variant":"inline",
+                  "url":"/media/published/inconsistent-neighbor.webp","mimeType":"image/webp",
+                  "width":1200,"height":675,"altText":"公開生成視覺",
+                  "credit":"Courtside TW","rightsOwner":"Courtside TW",
+                  "licenseName":"Editorial license"}]
+                """.formatted(assetId));
+
+        mockMvc.perform(get("/api/v1/public/articles/consistent-opening"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.issueNavigation.next.slug").value("consistent-final"));
+    }
+
+    @Test
+    void projectionV2WithoutMediaArrayFailsClosedEvenForTextOnlyContent() throws Exception {
+        IssueFixture issue = createIssue(
+                "issue-v2-missing-media",
+                24,
+                Instant.parse("2026-08-08T00:00:00Z"),
+                "PUBLISHED",
+                true
+        );
+        addArticle(issue, "Missing media", 1, "v2-missing-media", 1, "PUBLISHED");
+        appendIncompleteV2TextSnapshot("v2-missing-media", "media");
+
+        mockMvc.perform(get("/api/v1/public/articles/v2-missing-media"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void projectionV2WithoutContributorsFailsClosedInsteadOfReadingLiveByline() throws Exception {
+        IssueFixture issue = createIssue(
+                "issue-v2-missing-contributors",
+                25,
+                Instant.parse("2026-08-08T00:00:00Z"),
+                "PUBLISHED",
+                true
+        );
+        addArticle(issue, "Missing contributors", 1, "v2-missing-contributors", 1, "PUBLISHED");
+        appendIncompleteV2TextSnapshot("v2-missing-contributors", "contributors");
+
+        mockMvc.perform(get("/api/v1/public/articles/v2-missing-contributors"))
+                .andExpect(status().isNotFound());
+    }
+
     private void replaceDocument(String articleSlug, String document) {
         jdbcTemplate.update("""
                 UPDATE article_revision
@@ -471,6 +883,54 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
                 ORDER BY latest.snapshot_version DESC, latest.id DESC
                 LIMIT 1
                 """, document, CHECKSUM, articleSlug);
+    }
+
+    private void replaceSnapshotMedia(String articleSlug, String media) {
+        jdbcTemplate.update("""
+                INSERT INTO publication_snapshot (
+                    aggregate_type, aggregate_id, revision_id, snapshot_version,
+                    content_document, checksum_sha256, created_by
+                )
+                SELECT 'ARTICLE', latest.aggregate_id, latest.revision_id,
+                       latest.snapshot_version + 1,
+                       jsonb_set(latest.content_document, '{media}', ?::jsonb),
+                       ?, 'public-fixture'
+                FROM publication_snapshot latest
+                WHERE latest.aggregate_type = 'ARTICLE'
+                  AND latest.aggregate_id = (SELECT id FROM article WHERE slug = ?)
+                ORDER BY latest.snapshot_version DESC, latest.id DESC
+                LIMIT 1
+                """, media, CHECKSUM, articleSlug);
+    }
+
+    private void appendIncompleteV2TextSnapshot(String articleSlug, String omittedField) {
+        if (!"media".equals(omittedField) && !"contributors".equals(omittedField)) {
+            throw new IllegalArgumentException("unsupported v2 fixture omission");
+        }
+        jdbcTemplate.update("""
+                INSERT INTO publication_snapshot (
+                    aggregate_type, aggregate_id, revision_id, snapshot_version,
+                    content_document, checksum_sha256, created_by
+                )
+                SELECT 'ARTICLE', latest.aggregate_id, latest.revision_id,
+                       latest.snapshot_version + 1,
+                       (
+                         latest.content_document || jsonb_build_object(
+                           'snapshotType', 'published-article',
+                           'projectionVersion', 2,
+                           'plainText', 'Fixture article ' || ?,
+                           'readingTimeMinutes', 1,
+                           'canonicalPath', '/articles/' || ?,
+                           'media', '[]'::jsonb
+                         )
+                       ) - ?,
+                       ?, 'incomplete-v2-fixture'
+                FROM publication_snapshot latest
+                WHERE latest.aggregate_type = 'ARTICLE'
+                  AND latest.aggregate_id = (SELECT id FROM article WHERE slug = ?)
+                ORDER BY latest.snapshot_version DESC, latest.id DESC
+                LIMIT 1
+                """, articleSlug, articleSlug, omittedField, CHECKSUM, articleSlug);
     }
 
     private void appendArticleSnapshot(
@@ -522,6 +982,40 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
                 ),
                 CHECKSUM
         );
+    }
+
+    private void appendSnapshotWithoutContributors(String articleSlug) {
+        jdbcTemplate.update("""
+                INSERT INTO publication_snapshot (
+                    aggregate_type, aggregate_id, revision_id, snapshot_version,
+                    content_document, checksum_sha256, created_by
+                )
+                SELECT 'ARTICLE', latest.aggregate_id, latest.revision_id,
+                       latest.snapshot_version + 1,
+                       latest.content_document - 'contributors', ?, 'legacy-public-fixture'
+                FROM publication_snapshot latest
+                WHERE latest.aggregate_type = 'ARTICLE'
+                  AND latest.aggregate_id = (SELECT id FROM article WHERE slug = ?)
+                ORDER BY latest.snapshot_version DESC, latest.id DESC
+                LIMIT 1
+                """, CHECKSUM, articleSlug);
+    }
+
+    private void appendLegacyRawSnapshot(String articleSlug, String document) {
+        jdbcTemplate.update("""
+                INSERT INTO publication_snapshot (
+                    aggregate_type, aggregate_id, revision_id, snapshot_version,
+                    content_document, checksum_sha256, created_by
+                )
+                SELECT 'ARTICLE', latest.aggregate_id, latest.revision_id,
+                       latest.snapshot_version + 1,
+                       ?::jsonb, ?, 'legacy-public-fixture'
+                FROM publication_snapshot latest
+                WHERE latest.aggregate_type = 'ARTICLE'
+                  AND latest.aggregate_id = (SELECT id FROM article WHERE slug = ?)
+                ORDER BY latest.snapshot_version DESC, latest.id DESC
+                LIMIT 1
+                """, document, CHECKSUM, articleSlug);
     }
 
     private void addPublishedRevision(String articleSlug) {
@@ -639,31 +1133,55 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
         );
     }
 
-    private void addFixtureMedia(String document) throws Exception {
+    private void addFixtureMedia(String articleSlug, String document) throws Exception {
         tools.jackson.databind.JsonNode root = new tools.jackson.databind.ObjectMapper().readTree(document);
+        Map<String, Map<String, Object>> frozen = new LinkedHashMap<>();
         for (tools.jackson.databind.JsonNode block : root.path("blocks")) {
             if ("image".equals(block.path("type").asString())) {
-                addFixtureMediaAsset(
-                        UUID.fromString(block.path("payload").path("assetId").asString()),
-                        block.path("payload").path("variant").asString("inline"),
-                        block.path("payload").path("altText").asString()
-                );
+                UUID assetId = UUID.fromString(block.path("payload").path("assetId").asString());
+                String variant = block.path("payload").path("variant").asString("inline");
+                String altText = block.path("payload").path("altText").asString();
+                addFixtureMediaAsset(assetId, variant, altText);
+                addFrozenFixtureMedia(frozen, assetId, variant, altText);
             } else if ("gallery".equals(block.path("type").asString())) {
                 for (tools.jackson.databind.JsonNode item : block.path("payload").path("items")) {
-                    addFixtureMediaAsset(
-                            UUID.fromString(item.path("assetId").asString()),
-                            "inline",
-                            item.path("altText").asString()
-                    );
+                    UUID assetId = UUID.fromString(item.path("assetId").asString());
+                    String altText = item.path("altText").asString();
+                    addFixtureMediaAsset(assetId, "inline", altText);
+                    addFrozenFixtureMedia(frozen, assetId, "inline", altText);
                 }
             } else if ("generative-canvas".equals(block.path("type").asString())) {
-                addFixtureMediaAsset(
-                        UUID.fromString(block.path("payload").path("posterAssetId").asString()),
-                        "wide",
-                        block.path("payload").path("altText").asString()
-                );
+                UUID assetId = UUID.fromString(block.path("payload").path("posterAssetId").asString());
+                String altText = block.path("payload").path("altText").asString();
+                addFixtureMediaAsset(assetId, "wide", altText);
+                addFrozenFixtureMedia(frozen, assetId, "wide", altText);
             }
         }
+        replaceSnapshotMedia(
+                articleSlug,
+                new tools.jackson.databind.ObjectMapper().writeValueAsString(new ArrayList<>(frozen.values()))
+        );
+    }
+
+    private static void addFrozenFixtureMedia(
+            Map<String, Map<String, Object>> frozen,
+            UUID assetId,
+            String variant,
+            String altText
+    ) {
+        String suffix = assetId.toString().substring(assetId.toString().length() - 12);
+        Map<String, Object> media = new LinkedHashMap<>();
+        media.put("assetId", assetId.toString());
+        media.put("variant", variant);
+        media.put("url", "/media/published/fixture-" + suffix + ".webp");
+        media.put("mimeType", "image/webp");
+        media.put("width", 1200);
+        media.put("height", 800);
+        media.put("altText", altText);
+        media.put("credit", "Courtside TW");
+        media.put("rightsOwner", "Courtside TW");
+        media.put("licenseName", "Editorial license");
+        frozen.putIfAbsent(assetId + ":" + variant, media);
     }
 
     private void addFixtureMediaAsset(UUID assetId, String variant, String altText) {
@@ -694,5 +1212,29 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
                     ARRAY['GLOBAL']::text[], '2026-08-01T00:00:00Z', '2027-08-01T00:00:00Z',
                     'Courtside TW', 'withdraw on notice', 'VALID')
                 """, UUID.randomUUID(), assetId);
+    }
+
+    private String galleryHeavyDocument(int blockCount) {
+        StringBuilder document = new StringBuilder("""
+                {"schemaVersion":1,"documentId":"0190f7b0-7c4b-7e3a-8f12-123456789abc","blocks":[
+                """);
+        for (int blockIndex = 0; blockIndex < blockCount; blockIndex++) {
+            if (blockIndex > 0) {
+                document.append(',');
+            }
+            document.append("{\"id\":\"")
+                    .append(UUID.randomUUID())
+                    .append("\",\"type\":\"gallery\",\"version\":1,\"payload\":{\"items\":[");
+            for (int itemIndex = 0; itemIndex < 24; itemIndex++) {
+                if (itemIndex > 0) {
+                    document.append(',');
+                }
+                document.append("{\"assetId\":\"")
+                        .append(UUID.randomUUID())
+                        .append("\",\"altText\":\"Bounded fixture\"}");
+            }
+            document.append("]}}");
+        }
+        return document.append("]}").toString();
     }
 }

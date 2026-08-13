@@ -134,6 +134,24 @@ final class PublicationJobHandlerIT extends EditorialApiIntegrationTestSupport {
                 article.id(),
                 article.revisionId()
         ));
+        var snapshot = JSON.readTree(jdbcTemplate.queryForObject(
+                """
+                SELECT content_document::text FROM publication_snapshot
+                WHERE aggregate_type = 'ARTICLE' AND aggregate_id = ? AND revision_id = ?
+                """,
+                String.class,
+                article.id(),
+                article.revisionId()
+        ));
+        assertEquals("published-article", snapshot.path("snapshotType").asString());
+        assertEquals("worker-fixture", snapshot.path("slug").asString());
+        assertEquals("Worker fixture", snapshot.path("plainText").asString());
+        assertEquals(1, snapshot.path("readingTimeMinutes").asInt());
+        assertEquals("/articles/worker-fixture", snapshot.path("canonicalPath").asString());
+        assertEquals("2026-08-11T01:00:00Z", snapshot.path("publishedAt").asString());
+        assertTrue(snapshot.path("updatedAt").isString());
+        assertTrue(snapshot.path("contributors").isArray());
+        assertTrue(snapshot.path("content").path("blocks").isArray());
         assertEquals(1, jdbcTemplate.queryForObject(
                 "SELECT count(*) FROM publication_job WHERE idempotency_key = 'worker-schedule'",
                 Integer.class
@@ -199,6 +217,75 @@ final class PublicationJobHandlerIT extends EditorialApiIntegrationTestSupport {
                 String.class,
                 article.id()
         ));
+    }
+
+    @Test
+    void dueWorkerBlocksReaderInvisibleContentBeforePublicationTransition() throws Exception {
+        var editor = actor("worker-divider-editor", RoleCode.EDITOR);
+        var publisher = actor("worker-divider-publisher", RoleCode.PUBLISHER);
+        MvcArticle article = create(editor);
+        mockMvc.perform(post("/api/v1/editor/articles/{id}:submit", article.id())
+                        .principal(editor)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Idempotency-Key", "worker-divider-submit")
+                        .content("{\"revisionId\":\"%s\"}".formatted(article.revisionId())))
+                .andExpect(status().isAccepted());
+        mockMvc.perform(post("/api/v1/publisher/articles/{id}:approve", article.id())
+                        .principal(publisher)
+                        .header(HttpHeaders.IF_MATCH, "\"2\"")
+                        .header("Idempotency-Key", "worker-divider-approve"))
+                .andExpect(status().isAccepted());
+        mockMvc.perform(post("/api/v1/publisher/articles/{id}:schedule", article.id())
+                        .principal(publisher)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.IF_MATCH, "\"3\"")
+                        .header("Idempotency-Key", "worker-divider-schedule")
+                        .content("{\"publishAt\":\"2026-08-11T09:00:00\",\"timezone\":\"Asia/Taipei\"}"))
+                .andExpect(status().isAccepted());
+        jdbcTemplate.update("""
+                UPDATE article_revision
+                SET content_document = '{
+                  "schemaVersion":1,
+                  "documentId":"00000000-0000-7000-8000-000000000025",
+                  "blocks":[{
+                    "id":"00000000-0000-4000-8000-000000000125",
+                    "type":"divider",
+                    "version":1,
+                    "payload":{"style":"space"}
+                  }]
+                }'::jsonb
+                WHERE id = ?
+                """, article.revisionId());
+
+        OutboxEvent event = new OutboxRepository(jdbcTemplate).findById(jdbcTemplate.queryForObject(
+                "SELECT id FROM outbox_event "
+                        + "WHERE event_type = 'publication.article.command' "
+                        + "AND payload->>'action' = 'SCHEDULE'",
+                UUID.class
+        )).orElseThrow();
+        PublicationJobHandler handler = new PublicationJobHandler(
+                new JdbcEditorialArticleRepository(jdbcTemplate),
+                new TransactionTemplate(new DataSourceTransactionManager(jdbcTemplate.getDataSource())),
+                JSON,
+                Clock.fixed(Instant.parse("2026-08-11T01:00:00Z"), ZoneOffset.UTC)
+        );
+
+        handler.handle(event);
+
+        assertEquals("BLOCKED", jdbcTemplate.queryForObject(
+                "SELECT status FROM publication_job WHERE idempotency_key = 'worker-divider-schedule'",
+                String.class));
+        assertTrue(jdbcTemplate.queryForObject(
+                "SELECT last_error FROM publication_job WHERE idempotency_key = 'worker-divider-schedule'",
+                String.class).contains("CONTENT_NOT_READY"));
+        assertEquals("SCHEDULED", jdbcTemplate.queryForObject(
+                "SELECT state FROM article WHERE id = ?", String.class, article.id()));
+        assertEquals("APPROVED", jdbcTemplate.queryForObject(
+                "SELECT state FROM article_revision WHERE id = ?", String.class, article.revisionId()));
+        assertEquals(0, jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM publication_snapshot WHERE aggregate_id = ?",
+                Integer.class,
+                article.id()));
     }
 
     private MvcArticle create(org.springframework.security.core.Authentication editor) throws Exception {

@@ -25,6 +25,8 @@ import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tw.basketball.magazine.audit.AuditEventDraft;
 import tw.basketball.magazine.audit.AuditWriter;
+import tw.basketball.magazine.content.application.PublishedArticleSnapshotFactory;
+import tw.basketball.magazine.content.domain.ContentDocumentExtractor;
 import tw.basketball.magazine.content.validation.ContentDocumentValidator;
 import tw.basketball.magazine.media.domain.MediaProcessingState;
 import tw.basketball.magazine.media.domain.RightsPolicy;
@@ -61,6 +63,8 @@ public final class EditorialWorkflowService {
     private final UuidV7Generator operationIdGenerator;
     private final OutboxRepository outboxRepository;
     private final ContentDocumentValidator contentDocumentValidator;
+    private final ContentDocumentExtractor contentDocumentExtractor;
+    private final PublishedArticleSnapshotFactory snapshotFactory;
 
     public EditorialWorkflowService(
             EditorialArticleRepository repository,
@@ -96,6 +100,8 @@ public final class EditorialWorkflowService {
         this.operationIdGenerator = UuidV7Generator.system();
         this.outboxRepository = outboxRepository;
         this.contentDocumentValidator = new ContentDocumentValidator();
+        this.contentDocumentExtractor = new ContentDocumentExtractor();
+        this.snapshotFactory = new PublishedArticleSnapshotFactory(objectMapper);
     }
 
     public OperationResult createDraft(
@@ -490,7 +496,9 @@ public final class EditorialWorkflowService {
                     PublicationAction commandAction = action;
                     Instant requestedAt = applicationClock.now();
                     List<PublicationReadinessService.MediaRequirement> mediaRequirements =
-                            repository.mediaRequirements(commandRevisionId);
+                            action == PublicationAction.PUBLISH
+                                    ? repository.lockMediaRequirements(commandRevisionId)
+                                    : repository.mediaRequirements(commandRevisionId);
                     PublicationWorkflow.PublicationSnapshot snapshot = new PublicationWorkflow.PublicationSnapshot(
                             current.articleId(),
                             current.revisionId(),
@@ -550,12 +558,26 @@ public final class EditorialWorkflowService {
                         );
                     }
                     if (action == PublicationAction.PUBLISH) {
+                        EditorialArticleRepository.ArticleRecord published = requireArticle(articleId);
+                        JsonNode publicSnapshot = snapshotFactory.create(
+                                published.articleId(),
+                                published.revisionId(),
+                                published.revisionNumber(),
+                                published.slug(),
+                                published.title(),
+                                published.dek(),
+                                published.content(),
+                                repository.contributors(published.revisionId()),
+                                repository.publicMedia(published.revisionId(), requestedAt),
+                                requestedAt,
+                                published.revisionUpdatedAt()
+                        );
                         repository.appendPublicationSnapshot(
-                                current.articleId(),
-                                current.revisionId(),
-                                repository.nextSnapshotVersion(current.articleId()),
-                                current.content(),
-                                sha256(canonicalJson(current.content())),
+                                published.articleId(),
+                                published.revisionId(),
+                                repository.nextSnapshotVersion(published.articleId()),
+                                publicSnapshot,
+                                sha256(canonicalJson(publicSnapshot)),
                                 actor.subject(),
                                 mediaRequirements.stream().map(
                                         PublicationReadinessService.MediaRequirement::assetId
@@ -926,10 +948,17 @@ public final class EditorialWorkflowService {
     }
 
     private boolean contentReady(EditorialArticleRepository.ArticleRecord article) {
-        return !article.title().isBlank()
-                && article.content() != null
-                && article.content().isObject()
-                && contentDocumentValidator.validate(article.content().toString()).valid();
+        if (article.title().isBlank()
+                || article.content() == null
+                || !article.content().isObject()
+                || !contentDocumentValidator.validate(article.content().toString()).valid()) {
+            return false;
+        }
+        try {
+            return !contentDocumentExtractor.extract(article.content()).plainText().isBlank();
+        } catch (IllegalArgumentException exception) {
+            return false;
+        }
     }
 
     private static void requireRole(ActorContext actor, RoleCode role) {

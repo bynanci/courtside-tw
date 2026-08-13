@@ -9,6 +9,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.util.UUID;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -301,6 +303,95 @@ final class EditorialPublicationApiIT extends EditorialApiIntegrationTestSupport
     }
 
     @Test
+    void publishFreezesCompletePublicMediaMetadataIntoTheArticleSnapshot() throws Exception {
+        Authentication editor = actor("editor-freeze-media", RoleCode.EDITOR);
+        Authentication publisher = actor("publisher-freeze-media", RoleCode.PUBLISHER);
+        UUID assetId = UUID.randomUUID();
+        jdbcTemplate.update("""
+                INSERT INTO media_asset (
+                    id, private_storage_key, checksum_sha256, mime_type, byte_size,
+                    width, height, alt_text, processing_state
+                ) VALUES (?, ?, ?, 'image/webp', 1024, 1200, 800, 'Frozen alt', 'READY')
+                """, assetId, "private/frozen-media/" + assetId, "a".repeat(64));
+        jdbcTemplate.update("""
+                INSERT INTO media_variant (
+                    id, asset_id, variant, public_storage_key, checksum_sha256,
+                    mime_type, byte_size, width, height
+                ) VALUES (?, ?, 'inline', ?, ?, 'image/webp', 1024, 1200, 800)
+                """,
+                UUID.randomUUID(),
+                assetId,
+                "published/frozen-media.webp",
+                "a".repeat(64)
+        );
+        jdbcTemplate.update("""
+                INSERT INTO rights_record (
+                    id, asset_id, rights_owner, license_name, allowed_channels,
+                    territories, valid_from, valid_until, credit, withdrawal_terms, status
+                ) VALUES (?, ?, 'Courtside TW', 'Editorial license', '{PUBLIC_WEB}'::text[],
+                    ARRAY['GLOBAL']::text[], '2026-08-01T00:00:00Z', '2027-08-01T00:00:00Z',
+                    'Frozen credit', 'withdraw on notice', 'VALID')
+                """, UUID.randomUUID(), assetId);
+        String body = """
+                {
+                  "title":"Frozen media article",
+                  "slug":"frozen-media-article",
+                  "content":{"schemaVersion":1,"documentId":"00000000-0000-7000-8000-000000000023","blocks":[
+                    {"id":"00000000-0000-4000-8000-000000000123","type":"image","version":1,
+                     "payload":{"assetId":"%s","altText":"Frozen alt","variant":"inline"}}
+                  ]}
+                }
+                """.formatted(assetId);
+        CreatedArticle article = readCreatedArticle(mockMvc.perform(post("/api/v1/editor/articles")
+                        .principal(editor)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Idempotency-Key", "freeze-media-create")
+                        .content(body))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString());
+        jdbcTemplate.update("""
+                INSERT INTO article_revision_media (
+                    article_revision_id, asset_id, required_channel, position
+                ) VALUES (?, ?, 'OFFLINE', 2)
+                """, article.revisionId(), assetId);
+        assertEquals(2, jdbcTemplate.queryForObject(
+                """
+                SELECT count(*) FROM article_revision_media
+                WHERE article_revision_id = ? AND asset_id = ?
+                """,
+                Integer.class,
+                article.revisionId(),
+                assetId
+        ));
+        submit(article, editor, "freeze-media-submit");
+        approve(article, publisher, 2, "freeze-media-approve");
+        mockMvc.perform(post("/api/v1/publisher/articles/{id}:publish", article.articleId())
+                        .principal(publisher)
+                        .header(HttpHeaders.IF_MATCH, "\"3\"")
+                        .header("Idempotency-Key", "freeze-media-publish"))
+                .andExpect(status().isAccepted());
+
+        var snapshot = JSON.readTree(jdbcTemplate.queryForObject(
+                """
+                SELECT content_document::text
+                FROM publication_snapshot
+                WHERE aggregate_type = 'ARTICLE' AND aggregate_id = ? AND revision_id = ?
+                """,
+                String.class,
+                article.articleId(),
+                article.revisionId()
+        ));
+        assertEquals(2, snapshot.path("projectionVersion").asInt());
+        assertEquals(assetId.toString(), snapshot.path("media").path(0).path("assetId").asString());
+        assertEquals("/media/published/frozen-media.webp",
+                snapshot.path("media").path(0).path("url").asString());
+        assertEquals("Frozen alt", snapshot.path("media").path(0).path("altText").asString());
+        assertEquals("Frozen credit", snapshot.path("media").path(0).path("credit").asString());
+        assertEquals("Courtside TW", snapshot.path("media").path(0).path("rightsOwner").asString());
+        assertEquals("Editorial license", snapshot.path("media").path(0).path("licenseName").asString());
+    }
+
+    @Test
     void submitRejectsContentThatIsNotCanonicalContentDocumentV1() throws Exception {
         Authentication editor = actor("editor-invalid-content", RoleCode.EDITOR);
         MvcResult created = mockMvc.perform(post("/api/v1/editor/articles")
@@ -330,6 +421,43 @@ final class EditorialPublicationApiIT extends EditorialApiIntegrationTestSupport
     }
 
     @Test
+    void submitRejectsCanonicalContentWithoutReaderVisibleText() throws Exception {
+        Authentication editor = actor("editor-divider-only", RoleCode.EDITOR);
+        MvcResult created = mockMvc.perform(post("/api/v1/editor/articles")
+                        .principal(editor)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Idempotency-Key", "create-divider-only")
+                        .content("""
+                                {
+                                  "title":"Divider only",
+                                  "slug":"divider-only",
+                                  "content":{"schemaVersion":1,"documentId":"00000000-0000-7000-8000-000000000024","blocks":[
+                                    {"id":"00000000-0000-4000-8000-000000000124","type":"divider","version":1,"payload":{"style":"solid"}}
+                                  ]}
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn();
+        CreatedArticle article = readCreatedArticle(created.getResponse().getContentAsString());
+
+        mockMvc.perform(post("/api/v1/editor/articles/{id}:submit", article.articleId())
+                        .principal(editor)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Idempotency-Key", "submit-divider-only")
+                        .content("{\"revisionId\":\"%s\"}".formatted(article.revisionId())))
+                .andExpect(status().isUnprocessableContent())
+                .andExpect(jsonPath("$.code").value("RIGHTS_OR_CONTENT_GATE"))
+                .andExpect(jsonPath("$.errors[0].code").value("CONTENT_NOT_READY"));
+
+        assertEquals("DRAFT", jdbcTemplate.queryForObject(
+                "SELECT state FROM article WHERE id = ?", String.class, article.articleId()));
+        assertEquals(0, jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM publication_snapshot WHERE aggregate_id = ?",
+                Integer.class,
+                article.articleId()));
+    }
+
+    @Test
     void publisherCanWithdrawThenArchiveWithoutDeletingThePublishedEvidence() throws Exception {
         Authentication editor = actor("editor-withdraw-archive", RoleCode.EDITOR);
         Authentication publisher = actor("publisher-withdraw-archive", RoleCode.PUBLISHER);
@@ -343,6 +471,22 @@ final class EditorialPublicationApiIT extends EditorialApiIntegrationTestSupport
                         .header("Idempotency-Key", "publish-withdraw-archive"))
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.version").value(4));
+        var snapshot = JSON.readTree(jdbcTemplate.queryForObject(
+                """
+                SELECT content_document::text FROM publication_snapshot
+                WHERE aggregate_type = 'ARTICLE' AND aggregate_id = ? AND revision_id = ?
+                """,
+                String.class,
+                article.articleId(),
+                article.revisionId()
+        ));
+        assertEquals("published-article", snapshot.path("snapshotType").asString());
+        assertEquals(2, snapshot.path("projectionVersion").asInt());
+        assertEquals(0, snapshot.path("media").size());
+        assertEquals("Opening night fixture", snapshot.path("plainText").asString());
+        assertEquals(1, snapshot.path("readingTimeMinutes").asInt());
+        assertEquals("/articles/opening-night", snapshot.path("canonicalPath").asString());
+        assertEquals("2026-08-10T00:00:00Z", snapshot.path("publishedAt").asString());
         mockMvc.perform(post("/api/v1/publisher/articles/{id}:withdraw", article.articleId())
                         .principal(publisher)
                         .contentType(MediaType.APPLICATION_JSON)

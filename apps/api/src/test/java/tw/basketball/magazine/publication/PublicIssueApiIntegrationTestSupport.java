@@ -29,6 +29,9 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import tools.jackson.databind.ObjectMapper;
+import tw.basketball.magazine.content.api.PublicArticleController;
+import tw.basketball.magazine.content.application.PublicArticleService;
+import tw.basketball.magazine.content.persistence.JdbcPublicArticleRepository;
 
 abstract class PublicIssueApiIntegrationTestSupport {
     private static final String POSTGRES_IMAGE = "postgres:18.4-alpine";
@@ -160,6 +163,7 @@ abstract class PublicIssueApiIntegrationTestSupport {
         UUID sectionId = UUID.randomUUID();
         UUID articleId = UUID.randomUUID();
         UUID revisionId = UUID.randomUUID();
+        UUID contributorId = UUID.randomUUID();
         Instant publishedAt = Instant.parse("2026-08-01T00:00:00Z");
 
         jdbcTemplate.update("""
@@ -219,6 +223,12 @@ abstract class PublicIssueApiIntegrationTestSupport {
                       "payload": {"content": [{"kind": "text", "text": "Fixture article %s"}]}
                     }]
                   },
+                  "contributors": [{
+                    "contributorId": "%s",
+                    "slug": "fixture-%s",
+                    "displayName": "Courtside TW 編輯部",
+                    "role": "EDITOR"
+                  }],
                   "publishedAt": "%s",
                   "updatedAt": "%s"
                 }
@@ -229,12 +239,13 @@ abstract class PublicIssueApiIntegrationTestSupport {
                         articleSlug,
                         articleSlug,
                         articleSlug,
+                        contributorId,
+                        articleSlug,
                         publishedAt,
                         publishedAt
                 ),
                 CHECKSUM
         );
-        UUID contributorId = UUID.randomUUID();
         jdbcTemplate.update("""
                 INSERT INTO contributor (id, slug, display_name)
                 VALUES (?, ?, ?)
