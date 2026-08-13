@@ -1,5 +1,6 @@
 package tw.basketball.magazine.content.application;
 
+import java.time.Instant;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -10,12 +11,19 @@ public record PublishedArticleSource(
         String slug,
         UUID issueId,
         String issueSlug,
+        Instant publishedAt,
+        Instant updatedAt,
         PublishedArticleRevision revision
 ) {
     public PublishedArticleSource {
         slug = required(slug, "slug", 128);
         issueId = Objects.requireNonNull(issueId, "issueId");
         issueSlug = required(issueSlug, "issueSlug", 128);
+        publishedAt = Objects.requireNonNull(publishedAt, "publishedAt");
+        updatedAt = Objects.requireNonNull(updatedAt, "updatedAt");
+        if (updatedAt.isBefore(publishedAt)) {
+            throw new IllegalArgumentException("updatedAt cannot precede publishedAt");
+        }
         revision = Objects.requireNonNull(revision, "revision");
     }
 

@@ -1,4 +1,4 @@
-package tw.basketball.magazine.publication;
+package tw.basketball.magazine.content.api;
 
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -16,13 +16,16 @@ final class PublicArticleEtag {
     }
 
     static String forProjection(ArticleProjection article) {
-        StringBuilder input = new StringBuilder("public-article-v3\n");
+        StringBuilder input = new StringBuilder("public-article-v4\n");
         append(input, article.articleId());
         append(input, article.revisionId());
         append(input, article.revisionNumber());
         append(input, article.slug());
+        append(input, article.canonicalPath());
         append(input, article.title());
         append(input, article.dek());
+        append(input, article.publishedAt());
+        append(input, article.updatedAt());
         append(input, article.content());
         append(input, article.plainText());
         append(input, article.readingTimeMinutes());
@@ -33,6 +36,7 @@ final class PublicArticleEtag {
             append(input, media.mimeType());
             append(input, media.width());
             append(input, media.height());
+            append(input, media.credit());
         }
         for (Contributor contributor : article.contributors()) {
             append(input, contributor.contributorId());

@@ -1008,14 +1008,21 @@ export interface components {
       mimeType: "image/avif" | "image/jpeg" | "image/png" | "image/webp"
       width: number
       height: number
+      /** @description Rights-approved public media credit. */
+      credit: string
     }
     ArticleProjection: {
       articleId: components["schemas"]["Uuid"]
       revisionId: components["schemas"]["Uuid"]
       revisionNumber: number
       slug: string
+      canonicalPath: string
       title: string
       dek?: string
+      /** Format: date-time */
+      publishedAt: string
+      /** Format: date-time */
+      updatedAt: string
       content: components["schemas"]["content-document.schema"]
       /** @description Server-derived public-visible text extracted from the immutable ContentDocument. */
       plainText: string
@@ -1819,6 +1826,7 @@ export interface operations {
       200: {
         headers: {
           "X-Request-Id": components["headers"]["XRequestId"]
+          ETag: components["headers"]["ETag"]
           [name: string]: unknown
         }
         content: {

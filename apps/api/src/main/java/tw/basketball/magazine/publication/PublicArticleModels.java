@@ -1,5 +1,6 @@
 package tw.basketball.magazine.publication;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -19,8 +20,11 @@ public final class PublicArticleModels {
             UUID revisionId,
             int revisionNumber,
             String slug,
+            String canonicalPath,
             String title,
             String dek,
+            Instant publishedAt,
+            Instant updatedAt,
             JsonNode content,
             String plainText,
             int readingTimeMinutes,
@@ -35,8 +39,17 @@ public final class PublicArticleModels {
                 throw new IllegalArgumentException("revisionNumber must be positive");
             }
             slug = bounded(slug, "slug", 128);
+            canonicalPath = bounded(canonicalPath, "canonicalPath", 256);
+            if (!canonicalPath.equals("/articles/" + slug)) {
+                throw new IllegalArgumentException("canonicalPath must match the published slug");
+            }
             title = bounded(title, "title", 250);
             dek = boundedNullable(dek, "dek", 1000);
+            publishedAt = Objects.requireNonNull(publishedAt, "publishedAt");
+            updatedAt = Objects.requireNonNull(updatedAt, "updatedAt");
+            if (updatedAt.isBefore(publishedAt)) {
+                throw new IllegalArgumentException("updatedAt cannot precede publishedAt");
+            }
             content = Objects.requireNonNull(content, "content").deepCopy();
             plainText = Objects.requireNonNull(plainText, "plainText");
             if (plainText.length() > 500_000
@@ -63,7 +76,8 @@ public final class PublicArticleModels {
             String url,
             String mimeType,
             int width,
-            int height
+            int height,
+            String credit
     ) {
         public PublicArticleMedia {
             assetId = Objects.requireNonNull(assetId, "assetId");
@@ -83,6 +97,7 @@ public final class PublicArticleModels {
             if (width < 1 || height < 1) {
                 throw new IllegalArgumentException("media dimensions must be positive");
             }
+            credit = bounded(credit, "credit", 1000);
         }
     }
 

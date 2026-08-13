@@ -146,7 +146,10 @@ paths:
                     revisionId: 0190f7b0-7c4b-7e3a-8f12-123456789abd
                     revisionNumber: 1
                     slug: article-1
+                    canonicalPath: /articles/article-1
                     title: Article 1
+                    publishedAt: 2026-08-01T00:00:00Z
+                    updatedAt: 2026-08-01T00:00:00Z
                     content:
                       schemaVersion: 1
                       documentId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
@@ -158,6 +161,8 @@ paths:
                             content:
                               - kind: text
                                 text: Article 1 body
+                    plainText: Article 1 body
+                    readingTimeMinutes: 1
                     media: []
                     contributors: []
                     issueNavigation:
@@ -171,6 +176,8 @@ paths:
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
+            ETag:
+              $ref: "#/components/headers/ETag"
         "400":
           $ref: "#/components/responses/Problem400"
         "404":
@@ -3136,6 +3143,7 @@ components:
         - mimeType
         - width
         - height
+        - credit
       properties:
         assetId:
           $ref: "#/components/schemas/Uuid"
@@ -3159,6 +3167,11 @@ components:
         height:
           type: integer
           minimum: 1
+        credit:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          description: Rights-approved public media credit.
     ArticleProjection:
       type: object
       additionalProperties: false
@@ -3167,7 +3180,10 @@ components:
         - revisionId
         - revisionNumber
         - slug
+        - canonicalPath
         - title
+        - publishedAt
+        - updatedAt
         - content
         - plainText
         - readingTimeMinutes
@@ -3184,10 +3200,20 @@ components:
           minimum: 1
         slug:
           type: string
+        canonicalPath:
+          type: string
+          pattern: "^/articles/[a-z0-9]+(?:-[a-z0-9]+)*$"
+          maxLength: 256
         title:
           type: string
         dek:
           type: string
+        publishedAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
         content:
           $ref: "#/components/schemas/ContentDocument"
         plainText:

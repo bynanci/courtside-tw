@@ -30,7 +30,8 @@ final class JdbcPublicMediaResolver {
             SELECT variant.public_storage_key,
                    variant.mime_type,
                    variant.width,
-                   variant.height
+                   variant.height,
+                   rights.credit
             FROM media_asset asset
             JOIN media_variant variant
               ON variant.asset_id = asset.id
@@ -48,7 +49,7 @@ final class JdbcPublicMediaResolver {
               AND rights.allowed_channels @> ARRAY['PUBLIC_WEB']::text[]
               AND rights.valid_from <= ?
               AND rights.valid_until > ?
-            ORDER BY variant.id ASC
+            ORDER BY rights.valid_from DESC, rights.id DESC, variant.id ASC
             LIMIT 1
             """;
 
@@ -103,7 +104,8 @@ final class JdbcPublicMediaResolver {
                 resultSet.getString("public_storage_key"),
                 resultSet.getString("mime_type"),
                 resultSet.getInt("width"),
-                resultSet.getInt("height")
+                resultSet.getInt("height"),
+                resultSet.getString("credit")
         );
     }
 
@@ -126,7 +128,8 @@ final class JdbcPublicMediaResolver {
                     "/media/" + row.publicStorageKey(),
                     row.mimeType(),
                     row.width(),
-                    row.height()
+                    row.height(),
+                    row.credit()
             ));
         } catch (IllegalArgumentException exception) {
             return Optional.empty();
@@ -144,7 +147,8 @@ final class JdbcPublicMediaResolver {
             String publicStorageKey,
             String mimeType,
             int width,
-            int height
+            int height,
+            String credit
     ) {
     }
 }

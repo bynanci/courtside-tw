@@ -19,30 +19,60 @@ import tw.basketball.magazine.content.domain.ContributorCredit.Role;
 import tw.basketball.magazine.content.domain.PublishedArticleRevision;
 import tw.basketball.magazine.content.validation.ContentDocumentValidator;
 
-/** JDBC read model that selects only an Article's current published revision pointer. */
+/** JDBC read model that selects the revision pinned by the latest published Issue snapshot. */
 public final class JdbcPublishedArticleRepository implements PublishedArticleRepository {
     private static final String ARTICLE_SQL = """
             SELECT article.id AS article_id,
                    revision.id AS revision_id,
                    revision.revision_number,
-                   article.slug,
-                   revision.title,
-                   revision.dek,
-                   revision.content_document,
+                   article_item.article_document->>'slug' AS slug,
+                   article_item.article_document->>'title' AS title,
+                   COALESCE(article_item.article_document->>'dek', revision.dek) AS dek,
+                   article_snapshot.content_document,
                    issue.id AS issue_id,
-                   issue.slug AS issue_slug
-            FROM article
+                   issue_snapshot.content_document->>'slug' AS issue_slug,
+                   publication_dates.published_at,
+                   article_snapshot.created_at AS updated_at
+            FROM publication_issue issue
+            JOIN LATERAL (
+                SELECT frozen.content_document
+                FROM publication_snapshot frozen
+                WHERE frozen.aggregate_type = 'ISSUE'
+                  AND frozen.aggregate_id = issue.id
+                ORDER BY frozen.snapshot_version DESC, frozen.id DESC
+                LIMIT 1
+            ) issue_snapshot ON TRUE
+            CROSS JOIN LATERAL jsonb_array_elements(
+                COALESCE(issue_snapshot.content_document->'sections', '[]'::jsonb)
+            ) AS section_item(section_document)
+            CROSS JOIN LATERAL jsonb_array_elements(
+                COALESCE(section_item.section_document->'articles', '[]'::jsonb)
+            ) AS article_item(article_document)
+            JOIN article
+              ON article.id::text = article_item.article_document->>'articleId'
             JOIN article_revision revision
-              ON revision.id = article.published_revision_id
-             AND revision.article_id = article.id
-            JOIN issue_article
-              ON issue_article.article_id = article.id
-            JOIN issue_section section
-              ON section.id = issue_article.section_id
-             AND section.issue_id = issue_article.issue_id
-            JOIN publication_issue issue
-              ON issue.id = issue_article.issue_id
-            WHERE article.slug = ?
+              ON revision.article_id = article.id
+             AND revision.id::text = COALESCE(
+                    article_item.article_document->>'revisionId',
+                    article.published_revision_id::text
+                 )
+            JOIN LATERAL (
+                SELECT frozen.content_document,
+                       frozen.created_at
+                FROM publication_snapshot frozen
+                WHERE frozen.aggregate_type = 'ARTICLE'
+                  AND frozen.aggregate_id = article.id
+                  AND frozen.revision_id = revision.id
+                ORDER BY frozen.snapshot_version DESC, frozen.id DESC
+                LIMIT 1
+            ) article_snapshot ON TRUE
+            JOIN LATERAL (
+                SELECT MIN(frozen.created_at) AS published_at
+                FROM publication_snapshot frozen
+                WHERE frozen.aggregate_type = 'ARTICLE'
+                  AND frozen.aggregate_id = article.id
+            ) publication_dates ON publication_dates.published_at IS NOT NULL
+            WHERE article_item.article_document->>'slug' = ?
               AND article.state = 'PUBLISHED'
               AND article.published_at IS NOT NULL
               AND article.published_at <= ?
@@ -125,6 +155,8 @@ public final class JdbcPublishedArticleRepository implements PublishedArticleRep
                 row.slug(),
                 row.issueId(),
                 row.issueSlug(),
+                row.publishedAt(),
+                row.updatedAt(),
                 revision
         ));
     }
@@ -146,7 +178,9 @@ public final class JdbcPublishedArticleRepository implements PublishedArticleRep
                     resultSet.getString("dek"),
                     content,
                     resultSet.getObject("issue_id", UUID.class),
-                    resultSet.getString("issue_slug")
+                    resultSet.getString("issue_slug"),
+                    resultSet.getTimestamp("published_at").toInstant(),
+                    resultSet.getTimestamp("updated_at").toInstant()
             );
         } catch (InvalidPublishedRevisionException exception) {
             throw exception;
@@ -177,7 +211,9 @@ public final class JdbcPublishedArticleRepository implements PublishedArticleRep
             String dek,
             ContentDocument content,
             UUID issueId,
-            String issueSlug
+            String issueSlug,
+            Instant publishedAt,
+            Instant updatedAt
     ) {
     }
 

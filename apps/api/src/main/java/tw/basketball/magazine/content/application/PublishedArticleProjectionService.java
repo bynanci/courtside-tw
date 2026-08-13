@@ -45,7 +45,9 @@ public final class PublishedArticleProjectionService {
                 extracted.readingTimeMinutes(),
                 revision.contributorCredits(),
                 source.issueId(),
-                source.issueSlug()
+                source.issueSlug(),
+                source.publishedAt(),
+                source.updatedAt()
         );
     }
 }

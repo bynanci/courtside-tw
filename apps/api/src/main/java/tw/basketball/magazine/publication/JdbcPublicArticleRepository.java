@@ -29,38 +29,59 @@ import tw.basketball.magazine.publication.PublicIssueModels.ArticleSummary;
 /**
  * Read-only JDBC projection for anonymous published Articles.
  *
- * <p>The selected revision is always the article's immutable
- * {@code published_revision_id}; a requested historical revision is never
- * served. Public media rights and server-selected variant resolution are
- * evaluated before the projection leaves the repository, so a private or
- * incomplete asset fails closed as a not-found response.</p>
+ * <p>The selected revision and navigation order come from the latest immutable
+ * Issue publication snapshot; a requested historical revision is never served.
+ * Public media rights and server-selected variant resolution are evaluated
+ * before the projection leaves the repository, so a private or incomplete
+ * asset fails closed as a not-found response.</p>
  */
 public final class JdbcPublicArticleRepository implements PublicArticleRepository {
     private static final String NAVIGATION_SQL = """
+            WITH issue_snapshot AS (
+                SELECT frozen.content_document
+                FROM publication_snapshot frozen
+                WHERE frozen.aggregate_type = 'ISSUE'
+                  AND frozen.aggregate_id = ?
+                ORDER BY frozen.snapshot_version DESC, frozen.id DESC
+                LIMIT 1
+            )
             SELECT article.id AS article_id,
-                   article.slug,
-                   revision.title,
-                   revision.content_document,
-                   issue_article.position,
-                   section.position AS section_position
-            FROM issue_article
-            JOIN issue_section section
-              ON section.id = issue_article.section_id
-             AND section.issue_id = issue_article.issue_id
+                   article_item.article_document->>'slug' AS slug,
+                   article_item.article_document->>'title' AS title,
+                   article_snapshot.content_document,
+                   (article_item.article_document->>'position')::integer AS position,
+                   (section_item.section_document->>'position')::integer AS section_position
+            FROM issue_snapshot
+            CROSS JOIN LATERAL jsonb_array_elements(
+                COALESCE(issue_snapshot.content_document->'sections', '[]'::jsonb)
+            ) AS section_item(section_document)
+            CROSS JOIN LATERAL jsonb_array_elements(
+                COALESCE(section_item.section_document->'articles', '[]'::jsonb)
+            ) AS article_item(article_document)
             JOIN article
-              ON article.id = issue_article.article_id
+              ON article.id::text = article_item.article_document->>'articleId'
             JOIN article_revision revision
-              ON revision.id = article.published_revision_id
-             AND revision.article_id = article.id
-            WHERE issue_article.issue_id = ?
-              AND article.state = 'PUBLISHED'
+              ON revision.article_id = article.id
+             AND revision.id::text = COALESCE(
+                    article_item.article_document->>'revisionId',
+                    article.published_revision_id::text
+                 )
+            JOIN LATERAL (
+                SELECT frozen.content_document
+                FROM publication_snapshot frozen
+                WHERE frozen.aggregate_type = 'ARTICLE'
+                  AND frozen.aggregate_id = article.id
+                  AND frozen.revision_id = revision.id
+                ORDER BY frozen.snapshot_version DESC, frozen.id DESC
+                LIMIT 1
+            ) article_snapshot ON TRUE
+            WHERE article.state = 'PUBLISHED'
               AND article.published_at IS NOT NULL
               AND article.published_at <= ?
               AND revision.state = 'PUBLISHED'
-            ORDER BY section.position ASC,
-                     section.id ASC,
-                     issue_article.position ASC,
-                     issue_article.id ASC
+            ORDER BY section_position ASC,
+                     position ASC,
+                     article.id ASC
             """;
 
     private final JdbcTemplate jdbcTemplate;
@@ -188,8 +209,11 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
                 article.revisionId(),
                 article.revisionNumber(),
                 article.slug(),
+                "/articles/" + article.slug(),
                 article.title(),
                 article.dek(),
+                article.publishedAt(),
+                article.updatedAt(),
                 content,
                 article.plainText(),
                 article.readingTimeMinutes(),

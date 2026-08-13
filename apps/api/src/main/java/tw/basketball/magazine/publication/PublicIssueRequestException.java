@@ -1,7 +1,7 @@
 package tw.basketball.magazine.publication;
 
 /** A safe, client-correctable public-read input error. */
-final class PublicIssueRequestException extends RuntimeException {
+public final class PublicIssueRequestException extends RuntimeException {
     private static final long serialVersionUID = 1L;
 
     private final String path;
@@ -13,11 +13,11 @@ final class PublicIssueRequestException extends RuntimeException {
         this.code = code;
     }
 
-    String path() {
+    public String path() {
         return path;
     }
 
-    String code() {
+    public String code() {
         return code;
     }
 }

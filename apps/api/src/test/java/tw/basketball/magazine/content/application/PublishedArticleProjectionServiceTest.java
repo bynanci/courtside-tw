@@ -29,6 +29,8 @@ final class PublishedArticleProjectionServiceTest {
                 "projection-article",
                 UUID.fromString("00000000-0000-4000-8000-000000000024"),
                 "projection-issue",
+                Instant.parse("2026-08-01T00:00:00Z"),
+                Instant.parse("2026-08-02T00:00:00Z"),
                 new PublishedArticleRevision(
                         revisionId,
                         articleId,
@@ -54,5 +56,7 @@ final class PublishedArticleProjectionServiceTest {
         assertEquals("Projection body", result.orElseThrow().plainText());
         assertEquals(1, result.orElseThrow().readingTimeMinutes());
         assertEquals(List.of(credit), result.orElseThrow().contributorCredits());
+        assertEquals(Instant.parse("2026-08-01T00:00:00Z"), result.orElseThrow().publishedAt());
+        assertEquals(Instant.parse("2026-08-02T00:00:00Z"), result.orElseThrow().updatedAt());
     }
 }

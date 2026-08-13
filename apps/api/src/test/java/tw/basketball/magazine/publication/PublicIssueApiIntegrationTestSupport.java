@@ -30,6 +30,8 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import tools.jackson.databind.ObjectMapper;
 
+import tw.basketball.magazine.content.api.PublicArticleController;
+
 abstract class PublicIssueApiIntegrationTestSupport {
     private static final String POSTGRES_IMAGE = "postgres:18.4-alpine";
     private static final String FOUNDATION_MIGRATION = "/db/migration/V001__foundation.sql";
@@ -79,7 +81,9 @@ abstract class PublicIssueApiIntegrationTestSupport {
                 """);
         mockMvc = MockMvcBuilders.standaloneSetup(
                 new PublicIssueController(new PublicIssueService(new JdbcPublicIssueRepository(jdbcTemplate))),
-                new PublicArticleController(new PublicArticleService(new JdbcPublicArticleRepository(jdbcTemplate)))
+                new PublicArticleController(
+                        new PublicArticleService(new JdbcPublicArticleRepository(jdbcTemplate))
+                )
         ).build();
     }
 

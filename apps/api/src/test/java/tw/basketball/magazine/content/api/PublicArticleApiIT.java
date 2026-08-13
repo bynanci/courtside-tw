@@ -2,6 +2,7 @@ package tw.basketball.magazine.publication;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -98,6 +99,19 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
                 .andExpect(header().string(HttpHeaders.ETAG, etag))
                 .andReturn();
         assertEquals(etag, unchanged.getResponse().getHeader(HttpHeaders.ETAG));
+
+        replaceDocument("etag-article", """
+                {"schemaVersion":1,"documentId":"0190f7b0-7c4b-7e3a-8f12-123456789abc","blocks":[
+                  {"id":"00000000-0000-4000-8000-000000000002","type":"paragraph","version":1,
+                   "payload":{"content":[{"kind":"text","text":"Changed projection"}]}}
+                ]}
+                """);
+        MvcResult republished = mockMvc.perform(get("/api/v1/public/articles/etag-article")
+                        .header(HttpHeaders.IF_NONE_MATCH, etag))
+                .andExpect(status().isOk())
+                .andExpect(header().exists(HttpHeaders.ETAG))
+                .andReturn();
+        assertNotEquals(etag, republished.getResponse().getHeader(HttpHeaders.ETAG));
     }
 
     @Test
@@ -357,6 +371,25 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
         String etag = before.getResponse().getHeader(HttpHeaders.ETAG);
         assertNotNull(etag);
 
+        UUID articleId = jdbcTemplate.queryForObject(
+                "SELECT id FROM article WHERE slug = 'snapshot-opening'",
+                UUID.class
+        );
+        UUID liveRevisionId = UUID.randomUUID();
+        jdbcTemplate.update("""
+                INSERT INTO article_revision (
+                    id, article_id, revision_number, title, dek, content_document, state
+                ) VALUES (?, ?, 2, 'Unpublished pointer drift', 'Unpublished pointer drift',
+                    '{"schemaVersion":1,"documentId":"0190f7b0-7c4b-7e3a-8f12-123456789abc","blocks":[
+                      {"id":"00000000-0000-4000-8000-000000000002","type":"paragraph","version":1,
+                       "payload":{"content":[{"kind":"text","text":"Unpublished pointer drift"}]}}
+                    ]}'::jsonb, 'PUBLISHED')
+                """, liveRevisionId, articleId);
+        jdbcTemplate.update(
+                "UPDATE article SET published_revision_id = ? WHERE id = ?",
+                liveRevisionId,
+                articleId
+        );
         jdbcTemplate.update("""
                 UPDATE article_revision
                 SET title = 'Live drift title',

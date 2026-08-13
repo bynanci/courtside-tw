@@ -1,4 +1,4 @@
-package tw.basketball.magazine.publication;
+package tw.basketball.magazine.content.api;
 
 import java.time.Duration;
 import java.util.Arrays;
@@ -25,7 +25,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import tw.basketball.magazine.publication.JdbcPublicArticleRepository;
 import tw.basketball.magazine.publication.PublicArticleModels.ArticleProjection;
+import tw.basketball.magazine.publication.PublicArticleService;
+import tw.basketball.magazine.publication.PublicIssueRequestException;
 import tw.basketball.magazine.shared.FieldError;
 import tw.basketball.magazine.shared.ProblemCode;
 import tw.basketball.magazine.shared.ProblemDetails;
@@ -58,7 +61,7 @@ public final class PublicArticleController {
         serviceResolver = () -> resolveJdbcService(provider);
     }
 
-    PublicArticleController(PublicArticleService service) {
+    public PublicArticleController(PublicArticleService service) {
         PublicArticleService fixed = Objects.requireNonNull(service, "service");
         serviceResolver = () -> fixed;
     }
