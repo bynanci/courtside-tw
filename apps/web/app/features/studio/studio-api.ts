@@ -16,6 +16,36 @@ export type MediaUploadIntent = components["schemas"]["MediaUploadIntent"]
 export type MediaUploadRequest = components["schemas"]["MediaUploadRequest"]
 export type ProblemDetails = components["schemas"]["ProblemDetails"]
 
+export type TaxonomyKind = "LEAGUE" | "SEASON" | "TEAM" | "PLAYER" | "PERSON" | "VENUE" | "TOPIC"
+export type TaxonomyStatus = "ACTIVE" | "RETIRED"
+
+export interface ManagedTaxonomyAlias {
+  id: string
+  alias: string
+  normalizedAlias: string
+  locale: string
+  validFrom: string
+  validUntil: string | null
+  version: number
+}
+
+export interface ManagedTaxonomyTerm {
+  id: string
+  key: string
+  kind: TaxonomyKind
+  displayName: string
+  locale: string
+  validFrom: string
+  validUntil: string | null
+  status: TaxonomyStatus
+  version: number
+  aliases: ManagedTaxonomyAlias[]
+}
+
+export interface ManagedTaxonomyPage {
+  items: ManagedTaxonomyTerm[]
+}
+
 export type EditorialAuditTargetType = "ARTICLE" | "ISSUE" | "MEDIA_ASSET"
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"])
@@ -366,8 +396,75 @@ export async function updateMediaMetadata(
   return unwrap(result)
 }
 
+export async function listManagedTaxonomy(
+  kind?: TaxonomyKind,
+  status?: TaxonomyStatus
+): Promise<ManagedTaxonomyPage> {
+  const query = new URLSearchParams()
+  if (kind) query.set("kind", kind)
+  if (status) query.set("status", status)
+  return taxonomyRequest<ManagedTaxonomyPage>(
+    `/api/v1/editor/taxonomy${query.size ? `?${query.toString()}` : ""}`
+  )
+}
+
+export async function createManagedTaxonomyTerm(input: {
+  key: string
+  kind: TaxonomyKind
+  displayName: string
+  locale: string
+}): Promise<ManagedTaxonomyTerm> {
+  return taxonomyRequest<ManagedTaxonomyTerm>("/api/v1/editor/taxonomy", {
+    method: "POST",
+    body: JSON.stringify(input)
+  })
+}
+
+export async function updateManagedTaxonomyTerm(
+  term: ManagedTaxonomyTerm,
+  input: { displayName: string; status: TaxonomyStatus }
+): Promise<ManagedTaxonomyTerm> {
+  return taxonomyRequest<ManagedTaxonomyTerm>(`/api/v1/editor/taxonomy/${term.id}`, {
+    method: "PATCH",
+    headers: { "If-Match": ifMatch(term.version) },
+    body: JSON.stringify({ ...input, clearValidUntil: false })
+  })
+}
+
+export async function addManagedTaxonomyAlias(
+  term: ManagedTaxonomyTerm,
+  alias: string,
+  locale: string
+): Promise<ManagedTaxonomyTerm> {
+  return taxonomyRequest<ManagedTaxonomyTerm>(`/api/v1/editor/taxonomy/${term.id}/aliases`, {
+    method: "POST",
+    headers: { "If-Match": ifMatch(term.version) },
+    body: JSON.stringify({ alias, locale })
+  })
+}
+
 function ifMatch(version: number): string {
   return `"${version}"`
+}
+
+async function taxonomyRequest<T>(path: string, init: RequestInit = {}): Promise<T> {
+  const headers = new Headers(init.headers)
+  headers.set("accept", "application/json")
+  if (init.body !== undefined) headers.set("content-type", "application/json")
+  const response = await studioFetch(new Request(`${STUDIO_BFF_BASE}${path}`, { ...init, headers }))
+  if (!response.ok) {
+    const details = await responseDetails(response)
+    const record = isRecord(details) ? details : null
+    throw new StudioApiError(
+      response.status,
+      typeof record?.detail === "string"
+        ? record.detail
+        : `Taxonomy API request failed (${response.status})`,
+      typeof record?.code === "string" ? record.code : null,
+      details
+    )
+  }
+  return (await response.json()) as T
 }
 
 async function studioFetch(input: Request): Promise<Response> {

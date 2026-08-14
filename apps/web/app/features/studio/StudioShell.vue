@@ -7,7 +7,7 @@ import { roleLabel } from "./studio-contract"
 
 const props = defineProps<{
   role: StudioRole
-  active: "articles" | "issues" | "media" | "review" | "audit"
+  active: "articles" | "issues" | "media" | "taxonomy" | "review" | "audit"
   articleId?: string
   auditTargetType?: "ARTICLE" | "ISSUE" | "MEDIA_ASSET"
   auditTargetId?: string
@@ -59,6 +59,12 @@ const auditPath = computed(() => {
           :class="{ 'is-active': active === 'media' }"
           to="/studio/media?role=EDITOR"
           >媒體庫</NuxtLink
+        >
+        <NuxtLink
+          v-if="canStudioAction(role, 'edit')"
+          :class="{ 'is-active': active === 'taxonomy' }"
+          to="/studio/taxonomy"
+          >分類詞彙</NuxtLink
         >
         <NuxtLink
           v-if="canStudioAction(role, 'publish')"

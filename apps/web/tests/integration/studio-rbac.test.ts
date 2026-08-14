@@ -7,7 +7,7 @@ import {
   resolveRequiredStudioRole,
   resolveStudioRole
 } from "../../app/features/studio/studio-contract.ts"
-import { isSafeProxyPath } from "../../server/api/studio/[...path].ts"
+import { isAllowedStudioPath, isSafeProxyPath } from "../../server/api/studio/[...path].ts"
 import { canReviewAction } from "../../app/features/studio/review/review-contract.ts"
 
 test("Studio authorization keeps editor and publisher actions isolated", () => {
@@ -65,4 +65,11 @@ test("Studio BFF exposes issue CRUD without widening the allowlist", () => {
   assert.equal(isSafeProxyPath("editor/issues"), true)
   assert.equal(isSafeProxyPath("editor/issues/../admin"), false)
   assert.equal(isSafeProxyPath("editor/issues/%2e%2e/admin"), false)
+})
+
+test("Studio BFF exposes taxonomy management without admitting admin paths", () => {
+  assert.equal(isAllowedStudioPath("editor/taxonomy"), true)
+  assert.equal(isAllowedStudioPath("editor/taxonomy/00000000-0000-4000-8000-000000000001"), true)
+  assert.equal(isAllowedStudioPath("editor/taxonomy/../admin"), false)
+  assert.equal(isAllowedStudioPath("admin/taxonomy"), false)
 })

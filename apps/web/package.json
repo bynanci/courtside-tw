@@ -16,7 +16,7 @@
     "test:e2e": "playwright test",
     "test:us1": "playwright test tests/e2e/us1-browse-issue.spec.ts",
     "test:us2": "playwright test tests/e2e/us2-no-js.spec.ts tests/e2e/us2-read-article.spec.ts tests/e2e/us2-reduced-motion.spec.ts tests/e2e/us2-read-article.a11y.spec.ts tests/e2e/us2-creative-lifecycle.spec.ts",
-    "test:us4": "playwright test tests/e2e/us4-search.spec.ts",
+    "test:us4": "playwright test tests/e2e/us4-search.spec.ts tests/e2e/us4-taxonomy.spec.ts",
     "test:us1-us2": "playwright test tests/e2e/us1-browse-issue.spec.ts tests/e2e/us2-no-js.spec.ts tests/e2e/us2-read-article.spec.ts tests/e2e/us2-reduced-motion.spec.ts tests/e2e/us2-read-article.a11y.spec.ts tests/e2e/us2-creative-lifecycle.spec.ts",
     "test:bundle": "nuxt build && node scripts/verify-reader-bundles.mjs",
     "test:lighthouse": "node scripts/run-lighthouse-budgets.mjs",
