@@ -27,7 +27,7 @@ record SearchCursor(double score, Instant publishedAt, UUID articleId) {
                 throw invalidCursor();
             }
             return new SearchCursor(
-                    Double.valueOf(fields[0]),
+                    Double.parseDouble(fields[0]),
                     Instant.parse(fields[1]),
                     UUID.fromString(fields[2])
             );

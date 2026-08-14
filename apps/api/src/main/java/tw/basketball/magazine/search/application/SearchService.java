@@ -89,9 +89,9 @@ public final class SearchService {
                           AND selected_term.status = 'ACTIVE'
                           AND selected_term.valid_from <= ?
                           AND (selected_term.valid_until IS NULL OR selected_term.valid_until > ?)
-                          AND selected_term.term_key IN (%s)
+                          AND selected_term.term_key IN (__PLACEHOLDERS__)
                     )
-                    """.formatted(placeholders(taxonomy.size()));
+                    """.replace("__PLACEHOLDERS__", placeholders(taxonomy.size()));
         }
 
         parameters.add(normalized);
@@ -126,18 +126,18 @@ public final class SearchService {
         }
         parameters.add(limit + 1);
 
-        List<SearchRow> rows = jdbcTemplate.query("""
+        String searchSql = """
                 WITH matching_alias AS (
                     SELECT DISTINCT article_taxonomy.article_revision_id
                     FROM article_taxonomy
                     JOIN taxonomy_term tt ON tt.id = article_taxonomy.term_id
                     JOIN taxonomy_alias ta ON ta.term_id = tt.id
-                    WHERE %s
+                    WHERE __ALIAS_VALIDITY__
                 ), candidates AS (
                     SELECT sd.article_id, sd.slug, sd.title, sd.dek, sd.body_text,
                            pi.slug AS issue_slug, sd.published_at,
                            (CASE WHEN lower(sd.title) = ? THEN 100.0 ELSE 0.0 END
-                            + CASE WHEN lower(sd.title) LIKE '%%' || ? || '%%' THEN 30.0 ELSE 0.0 END
+                            + CASE WHEN lower(sd.title) LIKE '%' || ? || '%' THEN 30.0 ELSE 0.0 END
                             + similarity(lower(sd.title), ?) * 20.0
                             + similarity(sd.normalized_text, ?) * 8.0
                             + CASE WHEN matching_alias.article_revision_id IS NULL
@@ -154,18 +154,22 @@ public final class SearchService {
                       AND pi.state = 'PUBLISHED'
                       AND pi.published_at <= ?
                       AND sd.published_at <= ?
-                      AND (sd.normalized_text LIKE '%%' || ? || '%%'
-                           OR lower(sd.title) LIKE '%%' || ? || '%%'
-                           OR sd.normalized_text %% ?
+                      AND (sd.normalized_text LIKE '%' || ? || '%'
+                           OR lower(sd.title) LIKE '%' || ? || '%'
+                           OR sd.normalized_text % ?
                            OR matching_alias.article_revision_id IS NOT NULL)
-                      %s
+                      __TAXONOMY_PREDICATE__
                 )
                 SELECT article_id, slug, title, dek, body_text, issue_slug, published_at, score
                 FROM candidates
-                %s
+                __CURSOR_PREDICATE__
                 ORDER BY score DESC, published_at DESC, article_id DESC
                 LIMIT ?
-                """.formatted(aliasValidity, taxonomyPredicate, cursorPredicate),
+                """
+                .replace("__ALIAS_VALIDITY__", aliasValidity)
+                .replace("__TAXONOMY_PREDICATE__", taxonomyPredicate)
+                .replace("__CURSOR_PREDICATE__", cursorPredicate);
+        List<SearchRow> rows = jdbcTemplate.query(searchSql,
                 (resultSet, rowNumber) -> new SearchRow(
                         resultSet.getObject("article_id", UUID.class),
                         resultSet.getString("slug"),
@@ -215,10 +219,11 @@ public final class SearchService {
                   AND status = 'ACTIVE'
                   AND valid_from <= ?
                   AND (valid_until IS NULL OR valid_until > ?)
-                  %s
+                  __CURSOR_PREDICATE__
                 ORDER BY term_key, id
                 LIMIT ?
-                """.formatted(cursorPredicate), (resultSet, rowNumber) -> new TaxonomyTerm(
+                """.replace("__CURSOR_PREDICATE__", cursorPredicate),
+                (resultSet, rowNumber) -> new TaxonomyTerm(
                         resultSet.getObject("id", UUID.class),
                         resultSet.getString("kind").toLowerCase(Locale.ROOT),
                         resultSet.getString("term_key"),

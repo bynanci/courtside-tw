@@ -172,15 +172,23 @@ final class PublicSearchApiIT extends PublicIssueApiIntegrationTestSupport {
         );
         jdbcTemplate.update(
                 """
-                UPDATE publication_snapshot
-                SET content_document = jsonb_set(
-                    jsonb_set(content_document, '{title}', to_jsonb(?::text)),
-                    '{dek}', to_jsonb(?::text)
+                INSERT INTO publication_snapshot (
+                    aggregate_type, aggregate_id, revision_id, snapshot_version,
+                    content_document, checksum_sha256, created_by
                 )
+                SELECT aggregate_type, aggregate_id, revision_id, snapshot_version + 1,
+                       jsonb_set(
+                           jsonb_set(content_document, '{title}', to_jsonb(?::text)),
+                           '{dek}', to_jsonb(?::text)
+                       ), ?, 'search-fixture'
+                FROM publication_snapshot
                 WHERE aggregate_type = 'ARTICLE' AND aggregate_id = ?
+                ORDER BY snapshot_version DESC, id DESC
+                LIMIT 1
                 """,
                 title,
                 dek,
+                "b".repeat(64),
                 articleId
         );
         jdbcTemplate.update(

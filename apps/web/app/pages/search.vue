@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { navigateTo } from "#app"
+import { onBeforeUnmount, ref, watch } from "vue"
+
 import ReadingState from "../components/issues/ReadingState.vue"
 import { canonicalUrl } from "../composables/public-seo"
 import { fetchPublicSearch, type PublicSearchPage } from "../features/search/public-search-api"
