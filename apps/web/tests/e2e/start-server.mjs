@@ -27,7 +27,11 @@ const issueDetail = {
   ...issue,
   sections: firstIssueFixture.sections.map((section) => ({
     ...section,
-    articles: section.articles.map(({ contentFile: _contentFile, ...article }) => article)
+    articles: section.articles.map((article) => {
+      const publicArticle = { ...article }
+      Reflect.deleteProperty(publicArticle, "contentFile")
+      return publicArticle
+    })
   }))
 }
 const archivedIssue = {
