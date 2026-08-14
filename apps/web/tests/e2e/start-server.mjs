@@ -18,10 +18,7 @@ const contentDocument = JSON.parse(
 )
 const firstIssueFixture = JSON.parse(
   readFileSync(
-    new URL(
-      "../../../api/src/test/resources/fixtures/first-issue/manifest.json",
-      import.meta.url
-    ),
+    new URL("../../../api/src/test/resources/fixtures/first-issue/manifest.json", import.meta.url),
     "utf8"
   )
 )
