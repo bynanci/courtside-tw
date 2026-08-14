@@ -29,6 +29,9 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import tools.jackson.databind.ObjectMapper;
+import tw.basketball.magazine.content.api.PublicArticleController;
+import tw.basketball.magazine.content.application.PublicArticleService;
+import tw.basketball.magazine.content.persistence.JdbcPublicArticleRepository;
 
 abstract class PublicIssueApiIntegrationTestSupport {
     private static final String POSTGRES_IMAGE = "postgres:18.4-alpine";
@@ -160,6 +163,7 @@ abstract class PublicIssueApiIntegrationTestSupport {
         UUID sectionId = UUID.randomUUID();
         UUID articleId = UUID.randomUUID();
         UUID revisionId = UUID.randomUUID();
+        UUID contributorId = UUID.randomUUID();
         Instant publishedAt = Instant.parse("2026-08-01T00:00:00Z");
 
         jdbcTemplate.update("""
@@ -192,7 +196,56 @@ abstract class PublicIssueApiIntegrationTestSupport {
                 revisionId,
                 articleId
         );
-        UUID contributorId = UUID.randomUUID();
+        jdbcTemplate.update("""
+                INSERT INTO publication_snapshot (
+                    aggregate_type, aggregate_id, revision_id, snapshot_version,
+                    content_document, checksum_sha256, created_by
+                ) VALUES ('ARTICLE', ?, ?, 1, ?::jsonb, ?, 'public-fixture')
+                """,
+                articleId,
+                revisionId,
+                """
+                {
+                  "schemaVersion": 1,
+                  "articleId": "%s",
+                  "revisionId": "%s",
+                  "revisionNumber": 1,
+                  "slug": "%s",
+                  "title": "Article %s",
+                  "dek": "Dek for %s",
+                  "content": {
+                    "schemaVersion": 1,
+                    "documentId": "0190f7b0-7c4b-7e3a-8f12-123456789abc",
+                    "blocks": [{
+                      "id": "00000000-0000-4000-8000-000000000002",
+                      "type": "paragraph",
+                      "version": 1,
+                      "payload": {"content": [{"kind": "text", "text": "Fixture article %s"}]}
+                    }]
+                  },
+                  "contributors": [{
+                    "contributorId": "%s",
+                    "slug": "fixture-%s",
+                    "displayName": "Courtside TW 編輯部",
+                    "role": "EDITOR"
+                  }],
+                  "publishedAt": "%s",
+                  "updatedAt": "%s"
+                }
+                """.formatted(
+                        articleId,
+                        revisionId,
+                        articleSlug,
+                        articleSlug,
+                        articleSlug,
+                        articleSlug,
+                        contributorId,
+                        articleSlug,
+                        publishedAt,
+                        publishedAt
+                ),
+                CHECKSUM
+        );
         jdbcTemplate.update("""
                 INSERT INTO contributor (id, slug, display_name)
                 VALUES (?, ?, ?)
@@ -216,7 +269,7 @@ abstract class PublicIssueApiIntegrationTestSupport {
         refreshSnapshot(issue.id());
     }
 
-    private void refreshSnapshot(UUID issueId) {
+    protected void refreshSnapshot(UUID issueId) {
         Map<String, Object> document = jdbcTemplate.queryForObject("""
                 SELECT issue_number, slug, title, summary, cover_asset_id
                 FROM publication_issue

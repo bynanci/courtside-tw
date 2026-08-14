@@ -16,7 +16,12 @@ test.describe("US2 long-form public article", () => {
   }) => {
     expect(new Set(contentFixture.blocks.map((block) => block.type)).size).toBe(11)
 
-    await page.route("**/media/**", (route) => route.abort())
+    await page.route("**/media/published/opening-wide.webp", (route) =>
+      route.fulfill({
+        body: '<svg xmlns="http://www.w3.org/2000/svg" width="1600" height="900" />',
+        contentType: "image/svg+xml"
+      })
+    )
     await page.goto("/articles/opening-night?issue=issue-2026-01", {
       waitUntil: "domcontentloaded"
     })
@@ -33,17 +38,39 @@ test.describe("US2 long-form public article", () => {
     await expect(articleImage).toHaveAttribute("src", /\/media\/published\/opening-wide\.webp$/)
     await expect(articleImage).toHaveAttribute("width", "1600")
     await expect(articleImage).toHaveAttribute("height", "900")
-    await expect(page.getByTestId("article-reading-time")).toContainText("分鐘")
+    await expect(page.getByTestId("article-media-attribution").first()).toContainText("場邊攝影")
+    await expect(page.getByTestId("article-media-attribution").first()).toContainText(
+      "權利：Courtside TW"
+    )
+    await expect(page.getByTestId("article-media-attribution").first()).toContainText(
+      "授權：Courtside public editorial license"
+    )
+    await expect(page.getByTestId("article-reading-time")).toHaveText("6 分鐘閱讀")
+    await expect(page.getByTestId("article-published-at")).toHaveAttribute(
+      "datetime",
+      "2026-08-01T00:00:00Z"
+    )
+    await expect(page.getByTestId("article-updated-at")).toHaveAttribute(
+      "datetime",
+      "2026-08-02T00:00:00Z"
+    )
     await expect(page.getByTestId("article-issue-link")).toHaveAttribute(
       "href",
       "/issues/issue-2026-01"
     )
     await page.waitForLoadState("networkidle")
+    const imageBox = await articleImage.boundingBox()
+    expect(imageBox).not.toBeNull()
     await page
       .locator('[data-testid="article-document"] .article-image img')
       .first()
       .dispatchEvent("error")
-    await expect(page.getByTestId("article-image-fallback")).toBeVisible()
+    const fallback = page.getByTestId("article-image-fallback")
+    await expect(fallback).toBeVisible()
+    await expect(fallback).toHaveCSS("aspect-ratio", "1600 / 900")
+    const fallbackBox = await fallback.boundingBox()
+    expect(fallbackBox).not.toBeNull()
+    expect(Math.abs((fallbackBox?.height ?? 0) - (imageBox?.height ?? 0))).toBeLessThanOrEqual(1)
     await expect(page.getByTestId("article-error-state")).toHaveCount(0)
 
     await page.getByTestId("article-share").click()
@@ -382,14 +409,42 @@ test.describe("US2 long-form public article", () => {
     })
     await expect(page.getByTestId("article-document")).toBeVisible()
 
+    await expect(page.locator("#article-heading")).not.toBeFocused()
+    await expect(page.getByTestId("article-toc")).toHaveCount(1)
+    await expect(page.getByTestId("article-previous")).toHaveCount(1)
+    await expect(page.getByTestId("article-next")).toHaveCount(1)
     await expect(page.getByTestId("article-previous")).toBeDisabled()
     await expect(page.getByTestId("article-next")).toHaveAttribute(
       "href",
       "/articles/courtside-notes?issue=issue-2026-01"
     )
+    await expect(page.getByTestId("article-next")).toHaveAttribute("rel", "next")
     await page.getByTestId("article-next").click()
     await expect(page).toHaveURL(/\/articles\/courtside-notes\?issue=issue-2026-01$/)
-    await expect(page.getByTestId("article-toc")).toBeVisible()
+    await expect(page.locator("#article-heading")).toBeFocused()
+    await expect(page.getByTestId("article-toc")).toHaveCount(0)
+  })
+
+  test("unknown creative presets render only a dimensioned attributed fallback", async ({
+    page
+  }) => {
+    await page.goto("/articles/future-creative?issue=issue-2026-01", {
+      waitUntil: "domcontentloaded"
+    })
+
+    const fallback = page.getByTestId("content-block-fallback")
+    const poster = page.getByTestId("content-block-fallback-poster")
+    await expect(fallback).toHaveAttribute(
+      "data-telemetry-code",
+      "CONTENT_BLOCK_RENDERER_UNKNOWN_PRESET"
+    )
+    await expect(poster).toHaveAttribute("width", "1200")
+    await expect(poster).toHaveAttribute("height", "675")
+    await expect(page.getByTestId("content-block-fallback-summary")).toContainText(
+      "此創意版本尚未支援"
+    )
+    await expect(page.getByTestId("article-media-attribution")).toContainText("權利：Courtside TW")
+    await expect(page.locator("canvas")).toHaveCount(0)
   })
 
   test("clears local progress after the reader reaches the completed range", async ({ page }) => {

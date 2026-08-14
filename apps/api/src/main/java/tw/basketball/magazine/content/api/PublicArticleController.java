@@ -1,6 +1,5 @@
-package tw.basketball.magazine.publication;
+package tw.basketball.magazine.content.api;
 
-import java.time.Duration;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -25,7 +24,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import tw.basketball.magazine.publication.PublicArticleModels.ArticleProjection;
+import tw.basketball.magazine.content.application.PublicArticleRequestException;
+import tw.basketball.magazine.content.application.PublicArticleService;
+import tw.basketball.magazine.content.domain.PublicArticleModels.ArticleProjection;
+import tw.basketball.magazine.content.persistence.JdbcPublicArticleRepository;
 import tw.basketball.magazine.shared.FieldError;
 import tw.basketball.magazine.shared.ProblemCode;
 import tw.basketball.magazine.shared.ProblemDetails;
@@ -38,17 +40,12 @@ import tw.basketball.magazine.shared.RequestId;
 public final class PublicArticleController {
     private static final String REQUEST_ID_HEADER = "X-Request-Id";
     private static final String COLLECTION_INSTANCE = "/api/v1/public/articles";
-    private static final CacheControl PUBLIC_CACHE_CONTROL = CacheControl.maxAge(Duration.ofSeconds(60))
-            .cachePublic()
-            .mustRevalidate();
+    private static final String PUBLIC_CACHE_CONTROL = "no-cache, max-age=0, must-revalidate";
 
     private final Supplier<PublicArticleService> serviceResolver;
     private volatile PublicArticleService resolvedService;
 
-    /**
-     * Resolves JDBC lazily for the application runtime while keeping the
-     * controller directly constructible by the standalone integration tests.
-     */
+    /** Lazily resolves JDBC while remaining directly constructible in integration tests. */
     @Autowired
     public PublicArticleController(ObjectProvider<JdbcTemplate> jdbcTemplateProvider) {
         ObjectProvider<JdbcTemplate> provider = Objects.requireNonNull(
@@ -58,7 +55,7 @@ public final class PublicArticleController {
         serviceResolver = () -> resolveJdbcService(provider);
     }
 
-    PublicArticleController(PublicArticleService service) {
+    public PublicArticleController(PublicArticleService service) {
         PublicArticleService fixed = Objects.requireNonNull(service, "service");
         serviceResolver = () -> fixed;
     }
@@ -85,7 +82,7 @@ public final class PublicArticleController {
                             requestId
                     ))
                     .orElseGet(() -> notFound(requestId));
-        } catch (PublicIssueRequestException exception) {
+        } catch (PublicArticleRequestException exception) {
             return invalidRequest(exception, requestId);
         }
     }
@@ -99,20 +96,20 @@ public final class PublicArticleController {
         if (etagMatches(ifNoneMatch, etag)) {
             return ResponseEntity.status(HttpStatus.NOT_MODIFIED)
                     .eTag(etag)
-                    .cacheControl(PUBLIC_CACHE_CONTROL)
+                    .header(HttpHeaders.CACHE_CONTROL, PUBLIC_CACHE_CONTROL)
                     .header(REQUEST_ID_HEADER, requestId.value())
                     .build();
         }
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_JSON)
                 .eTag(etag)
-                .cacheControl(PUBLIC_CACHE_CONTROL)
+                .header(HttpHeaders.CACHE_CONTROL, PUBLIC_CACHE_CONTROL)
                 .header(REQUEST_ID_HEADER, requestId.value())
                 .body(article);
     }
 
     private static ResponseEntity<ProblemDetails> invalidRequest(
-            PublicIssueRequestException exception,
+            PublicArticleRequestException exception,
             RequestId requestId
     ) {
         ProblemDetails problem = ProblemDetailsMapper.invalidRequest(

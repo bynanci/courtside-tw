@@ -1,0 +1,574 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-t034-t041-us2-beta-completion",
+  "graph_version": 6,
+  "run_id": "courtside-tw-us2-beta-completion-20260813",
+  "status": "running",
+  "iteration": 6,
+  "started_at": "2026-08-13T07:10:36Z",
+  "updated_at": "2026-08-13T10:08:00Z",
+  "current_frontier": [
+    "p-exact-head"
+  ],
+  "blocked_nodes": [],
+  "terminal_state": null,
+  "next_action": "Publish exactly one replacement PR head, then read mergeability, reviews, unresolved threads, CI, Security, component, browser, axe, lifecycle, and Lighthouse state live for that observed head without committing its mutable receipt.",
+  "events": [
+    {
+      "event_id": "evt-us2-beta-001-tests-first-baseline",
+      "at": "2026-08-13T07:10:36Z",
+      "actor": "codex-supervisor",
+      "type": "tests_first_baseline",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "scope",
+            "value": ["T034", "T035", "T037", "T038", "T040", "T041"]
+          },
+          {
+            "op": "add",
+            "path": "preserved_state",
+            "value": ["T036=complete", "T039=complete", "T056/T057+/Web3/deployment/migrations=out-of-scope"]
+          },
+          {
+            "op": "add",
+            "path": "tests_first_subject_head",
+            "value": "1c94ab2c574a827cf692bc8539f2c5d54f27844e"
+          },
+          {
+            "op": "add",
+            "path": "frontier",
+            "value": ["a-backend", "a-reader", "a-production-proof"]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t034-t041-us2-beta-tests-first-baseline-20260813.json",
+        "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Tests-first historical subject commit",
+          "level": "P2",
+          "result": "success",
+          "subject_commit": "1c94ab2c574a827cf692bc8539f2c5d54f27844e",
+          "classification": "TESTS_FIRST_SUBJECT_HEAD_NOT_LIVE_MERGE_GATE"
+        },
+        {
+          "proof": "OpenAPI and generated client acceptance contract",
+          "level": "P2",
+          "result": "success",
+          "details": "Contract validator, client typecheck, and client tests passed in the tests-first lane."
+        },
+        {
+          "proof": "Browser acceptance collection",
+          "level": "P1",
+          "result": "success",
+          "details": "Seven new Playwright acceptance records collect; execution is deferred to an environment with Chromium."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "SAVED",
+        "memory_id": "wm:project:courtside-tw:us2-beta-completion",
+        "version": "us2-beta-v1",
+        "retrieval_ids": [
+          "wm:project:courtside-tw:us2-t034-t041-review-remediation",
+          "wm:project:courtside-tw:us2-t034-t041-implementation-lane"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t034-t041-us2-beta-tests-first-baseline-20260813.json"
+        ],
+        "next_review_at": "2026-08-13",
+        "blocker": null
+      },
+      "failure_signature": "US2_SELECTED_TASK_ACCEPTANCE_RED",
+      "decision": "IMPLEMENT_THREE_BOUNDED_LANES",
+      "token_usage": {
+        "estimated": 24000,
+        "input": 0,
+        "output": 0,
+        "total": 24000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-us2-beta-002-local-acceptance",
+      "at": "2026-08-13T08:34:04Z",
+      "actor": "codex-supervisor",
+      "type": "integrated_local_acceptance",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "nodes/a-backend/status",
+            "value": "done"
+          },
+          {
+            "op": "replace",
+            "path": "nodes/a-reader/status",
+            "value": "done"
+          },
+          {
+            "op": "replace",
+            "path": "nodes/a-production-proof/status",
+            "value": "done"
+          },
+          {
+            "op": "replace",
+            "path": "nodes/a-review-fix/status",
+            "value": "done"
+          },
+          {
+            "op": "replace",
+            "path": "nodes/p-exact-head/status",
+            "value": "running"
+          },
+          {
+            "op": "replace",
+            "path": "frontier",
+            "value": ["p-exact-head"]
+          },
+          {
+            "op": "add",
+            "path": "candidate_task_state",
+            "value": ["T034=checked", "T035=checked", "T037=checked", "T038=checked", "T040=checked", "T041=checked", "T036/T039=preserved"]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t034-t041-us2-beta-local-acceptance-20260813.json",
+        "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Backend implementation subject",
+          "level": "P2",
+          "result": "success",
+          "subject_commit": "6c27f3677adddeb6aa2719ccd829ee6d63cba11d",
+          "classification": "BACKEND_IMPLEMENTATION_SUBJECT_HEAD_NOT_LIVE_MERGE_GATE"
+        },
+        {
+          "proof": "Reader implementation subject",
+          "level": "P2",
+          "result": "success",
+          "subject_commit": "29f0092c246f4238e7046e6d56a58a8150030737",
+          "classification": "READER_IMPLEMENTATION_SUBJECT_HEAD_NOT_LIVE_MERGE_GATE"
+        },
+        {
+          "proof": "Exact-source-head workflow subject",
+          "level": "P2",
+          "result": "success",
+          "subject_commit": "750ff29985ced3030975ae5b008688e26701f510",
+          "classification": "CI_IMPLEMENTATION_SUBJECT_HEAD_NOT_LIVE_MERGE_GATE"
+        },
+        {
+          "proof": "Local feasible acceptance",
+          "level": "P2",
+          "result": "success",
+          "details": "Workspace verification, 75 web tests, eight creative-runtime tests, bundle budget, production SSR readback, Java parsing, SQL probes, diff hygiene, YAML parsing, and production audit passed."
+        },
+        {
+          "proof": "Independent integrated review",
+          "level": "P2",
+          "result": "success",
+          "details": "No confirmed P0/P1, compile-likely blocker, or scope violation remained after the backend and frontend fix loops."
+        },
+        {
+          "proof": "Live exact-head protected acceptance",
+          "level": "P3",
+          "result": "pending",
+          "details": "Java 21, CI, Security, actual Chromium, axe, twenty-switch lifecycle, and Lighthouse must run for the final observed PR SHA."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "SAVED",
+        "memory_id": "wm:project:courtside-tw:us2-beta-completion",
+        "version": "us2-beta-v2",
+        "retrieval_ids": [
+          "wm:project:courtside-tw:us2-beta-completion"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t034-t041-us2-beta-local-acceptance-20260813.json"
+        ],
+        "next_review_at": "2026-08-13",
+        "blocker": "Live exact-head GitHub evidence is pending."
+      },
+      "failure_signature": "EXACT_HEAD_JAVA_BROWSER_EVIDENCE_PENDING",
+      "decision": "PUBLISH_DRAFT_PR_FOR_EXACT_HEAD_VERIFICATION",
+      "token_usage": {
+        "estimated": 118000,
+        "input": 0,
+        "output": 0,
+        "total": 118000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-us2-beta-003-remote-subject-reconciliation",
+      "at": "2026-08-13T08:44:28Z",
+      "actor": "codex-supervisor",
+      "type": "evidence_attribution_reconciliation",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "remote_subject_mapping/tests_first",
+            "value": {
+              "local_subject": "1c94ab2c574a827cf692bc8539f2c5d54f27844e",
+              "remote_subject": "5b03ee08b1c94b99d17ce086ea9aa5015a0c55a9"
+            }
+          },
+          {
+            "op": "add",
+            "path": "remote_subject_mapping/backend",
+            "value": {
+              "local_subject": "6c27f3677adddeb6aa2719ccd829ee6d63cba11d",
+              "remote_subject": "25e762640da558b205c16d810c151163148bced8"
+            }
+          },
+          {
+            "op": "add",
+            "path": "remote_subject_mapping/reader",
+            "value": {
+              "local_subject": "29f0092c246f4238e7046e6d56a58a8150030737",
+              "remote_subject": "8e029c5409ab8e9387896062f31c370d55a29598"
+            }
+          },
+          {
+            "op": "add",
+            "path": "remote_subject_mapping/workflows",
+            "value": {
+              "local_subject": "750ff29985ced3030975ae5b008688e26701f510",
+              "remote_subject": "1e414d7c77ec1817fdd48390cdedea4e368856c8"
+            }
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t034-t041-us2-beta-tests-first-baseline-20260813.json",
+        ".loop/evidence/t034-t041-us2-beta-local-acceptance-20260813.json",
+        ".loop/memory/t034-t041-us2-beta-completion.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Remote historical subject reconstruction",
+          "level": "P2",
+          "result": "success",
+          "details": "GitHub connector recreated the tests-first, backend, reader, and workflow trees from the exact local Git objects. Current graph, semantic memory, and evidence artifacts now cite the GitHub-resident subjects."
+        },
+        {
+          "proof": "Mutable final head exclusion",
+          "level": "P2",
+          "result": "success",
+          "details": "No final metadata commit SHA or workflow run identifier is serialized; the live PR head and protected gates remain external read-back evidence."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "SAVED",
+        "memory_id": "wm:project:courtside-tw:us2-beta-completion",
+        "version": "us2-beta-v3",
+        "retrieval_ids": [
+          "wm:project:courtside-tw:us2-beta-completion"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t034-t041-us2-beta-local-acceptance-20260813.json"
+        ],
+        "next_review_at": "2026-08-13",
+        "blocker": "Live exact-head GitHub evidence is pending."
+      },
+      "failure_signature": "LOCAL_GIT_SHA_NOT_REMOTE_REVIEWABLE",
+      "decision": "RECLASSIFY_TO_GITHUB_RESIDENT_HISTORICAL_SUBJECTS",
+      "token_usage": {
+        "estimated": 5000,
+        "input": 0,
+        "output": 0,
+        "total": 5000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-us2-beta-004-java-exact-head-remediation",
+      "at": "2026-08-13T08:52:02Z",
+      "actor": "codex-supervisor",
+      "type": "exact_head_failure_and_fix",
+      "base_graph_version": 3,
+      "new_graph_version": 4,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "historical_exact_head_failures/d6b407d",
+            "value": {
+              "head_sha": "d6b407d30bb2e7ce400d4a72338b330745d8894c",
+              "ci_run_id": 31683636221,
+              "job_id": 94394546534,
+              "failed_gate": "Java quality and unit verification"
+            }
+          },
+          {
+            "op": "add",
+            "path": "remediation/java_quality",
+            "value": "Replace format-string SQL substitution, preflight nullable media fields instead of catching NullPointerException, and count schema-valid neighbor media references before frozen-attribution omission."
+          }
+        ]
+      },
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/actions/runs/31683636221",
+        "apps/api/src/main/java/tw/basketball/magazine/content/persistence/JdbcPublicArticleRepository.java",
+        "apps/api/src/main/java/tw/basketball/magazine/content/persistence/JdbcPublicMediaResolver.java",
+        "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Historical exact-head source attribution",
+          "level": "P3",
+          "result": "success",
+          "subject_commit": "d6b407d30bb2e7ce400d4a72338b330745d8894c",
+          "details": "The failing Java job checked out d6b407d and its exact-source-head verifier succeeded before Gradle execution."
+        },
+        {
+          "proof": "Java quality and unit gate",
+          "level": "P3",
+          "result": "failure",
+          "subject_commit": "d6b407d30bb2e7ce400d4a72338b330745d8894c",
+          "details": "SpotBugs reported three format-string warnings and one NullPointerException catch; PublicArticleApiIT oversizedIssueMediaGraphFailsClosedBeforeResolution expected 404 but received a non-404 response."
+        },
+        {
+          "proof": "Minimal remediation",
+          "level": "P2",
+          "result": "success",
+          "details": "Only the two persistence classes and append-only control ledger changed. The existing failing aggregate-cap test remains the regression proof."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": "wm:project:courtside-tw:us2-beta-completion",
+        "version": "us2-beta-v3",
+        "retrieval_ids": [
+          "wm:project:courtside-tw:us2-beta-completion"
+        ],
+        "evidence_refs": [
+          "https://github.com/bynanci/courtside-tw/actions/runs/31683636221"
+        ],
+        "next_review_at": "2026-08-13",
+        "blocker": "A replacement exact-head Java and browser/Security run is required."
+      },
+      "failure_signature": "SPOTBUGS_FORMAT_AND_NULL_CATCH_PLUS_NAVIGATION_MEDIA_CAP_BYPASS",
+      "decision": "APPLY_MINIMAL_JAVA_GATE_REMEDIATION_AND_REVERIFY_NEW_HEAD",
+      "token_usage": {
+        "estimated": 8000,
+        "input": 0,
+        "output": 0,
+        "total": 8000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-us2-beta-005-browser-security-exact-head-remediation",
+      "at": "2026-08-13T09:43:59Z",
+      "actor": "codex-supervisor",
+      "type": "exact_head_failure_local_remediation_and_reverification",
+      "base_graph_version": 4,
+      "new_graph_version": 5,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "historical_exact_head_failures/2bac1f8",
+            "value": {
+              "head_sha": "2bac1f87e200442c773ca1de9dbd89b842630f6a",
+              "ci_run_id": 31684079435,
+              "browser_job_id": 94396212881,
+              "security_run_id": 31684079408,
+              "dependency_job_id": 94395960013,
+              "failed_gates": ["browser acceptance and performance budgets", "dependency audit"]
+            }
+          },
+          {
+            "op": "add",
+            "path": "remediation/browser_runtime",
+            "value": "Correct AbortSignal and once listener accounting, preserve frozen media geometry, and use deterministic single-loop creative ownership with post-setup activation."
+          },
+          {
+            "op": "add",
+            "path": "remediation/security_and_performance",
+            "value": "Replace vulnerable LHCI with pinned direct Lighthouse, fail closed on every run, expose public article crawl paths, precompress assets, and defer only the fixed trusted P5 host until client runtime enablement."
+          },
+          {
+            "op": "replace",
+            "path": "nodes/a-review-fix/status",
+            "value": "done"
+          },
+          {
+            "op": "replace",
+            "path": "nodes/p-exact-head/status",
+            "value": "running"
+          },
+          {
+            "op": "replace",
+            "path": "frontier",
+            "value": ["p-exact-head"]
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t034-t041-us2-beta-exact-head-remediation-20260813.json",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31684079435",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31684079408"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Historical 2bac1f8 source attribution",
+          "level": "P3",
+          "result": "success",
+          "subject_commit": "2bac1f87e200442c773ca1de9dbd89b842630f6a",
+          "details": "All reported CI and Security jobs verified this immutable predecessor head before execution."
+        },
+        {
+          "proof": "Historical browser and dependency gates",
+          "level": "P3",
+          "result": "failure",
+          "subject_commit": "2bac1f87e200442c773ca1de9dbd89b842630f6a",
+          "details": "Browser acceptance exposed listener-accounting, media-geometry, and creative-owner failures; dependency audit exposed two high-severity LHCI transitive advisories."
+        },
+        {
+          "proof": "Actual local Chromium acceptance after remediation",
+          "level": "P2",
+          "result": "success",
+          "details": "US1 passed 3/3, US2 23/23, combined 26/26, and full regression 30/30."
+        },
+        {
+          "proof": "Actual local Lighthouse after remediation",
+          "level": "P2",
+          "result": "success",
+          "details": "Both public reader URLs passed three-run median LCP, CLS, and TBT budgets plus perfect accessibility and SEO scores."
+        },
+        {
+          "proof": "Local workspace and dependency acceptance",
+          "level": "P2",
+          "result": "success",
+          "details": "make verify, frozen install, full development dependency audit, bundle budget, typecheck, and diff hygiene passed."
+        },
+        {
+          "proof": "Replacement live exact-head protected acceptance",
+          "level": "P3",
+          "result": "pending",
+          "details": "The replacement PR head is intentionally not serialized. CI, Security, browser, Lighthouse, mergeability, and thread state must be read live after this commit."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:us2-beta-completion",
+        "version": "us2-beta-v4",
+        "retrieval_ids": ["wm:project:courtside-tw:us2-beta-completion"],
+        "evidence_refs": [
+          ".loop/evidence/t034-t041-us2-beta-exact-head-remediation-20260813.json"
+        ],
+        "next_review_at": "2026-08-13",
+        "blocker": "Replacement live exact-head GitHub evidence is pending."
+      },
+      "failure_signature": "PREDECESSOR_BROWSER_RUNTIME_AND_LHCI_SECURITY_FAILURES_REMEDIATED_LOCALLY",
+      "decision": "PUBLISH_ONE_REPLACEMENT_HEAD_AND_REQUIRE_LIVE_EXACT_HEAD_READBACK",
+      "token_usage": {
+        "estimated": 36000,
+        "input": 0,
+        "output": 0,
+        "total": 36000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-us2-beta-006-hydration-cls-exact-head-remediation",
+      "at": "2026-08-13T10:08:00Z",
+      "actor": "codex-supervisor",
+      "type": "exact_head_failure_local_remediation_and_reverification",
+      "base_graph_version": 5,
+      "new_graph_version": 6,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "historical_exact_head_failures/1ad44a0",
+            "value": {
+              "head_sha": "1ad44a004246541a971782b8c8c5f89322bba95b",
+              "ci_run_id": 31688646926,
+              "browser_job_id": 94410892168,
+              "artifact_id": 9176568368,
+              "failed_gate": "courtside-notes Lighthouse CLS 0.148945241257309 exceeds 0.1"
+            }
+          },
+          {
+            "op": "add",
+            "path": "remediation/hydration_footprint",
+            "value": "Render the reading progress and disabled share control in SSR so hydration changes only state and transform, not article-header geometry."
+          },
+          {
+            "op": "replace",
+            "path": "nodes/p-exact-head/status",
+            "value": "running"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t034-t041-us2-beta-exact-head-remediation-20260813.json",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31688646926",
+        "apps/web/tests/e2e/us2-read-article.a11y.spec.ts",
+        "apps/web/tests/e2e/us2-no-js.spec.ts"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "Historical 1ad44a0 protected acceptance",
+          "level": "P3",
+          "result": "failure",
+          "subject_commit": "1ad44a004246541a971782b8c8c5f89322bba95b",
+          "details": "Security, Java, frontend/contracts, Docker, US1 3/3, US2 23/23, combined 26/26, and full browser regression 30/30 passed; all three ordinary-article Lighthouse runs failed only CLS with the article header as the sole shift source."
+        },
+        {
+          "proof": "Tests-first hydration geometry coverage",
+          "level": "P2",
+          "result": "success",
+          "details": "Focused component assertions failed before production changes; no-JS and actual Chromium hydration checks now require stable progress/share footprints, CLS <=0.01, and no article-header shift source."
+        },
+        {
+          "proof": "Actual local Lighthouse after hydration remediation",
+          "level": "P2",
+          "result": "success",
+          "details": "Both public reader URLs passed three runs with median CLS 0; LCP, TBT, accessibility, SEO, sized-image, and responsive-image gates remained green."
+        },
+        {
+          "proof": "Replacement live exact-head protected acceptance",
+          "level": "P3",
+          "result": "pending",
+          "details": "The successor head remains intentionally external. CI, Security, browser, Lighthouse, mergeability, and review state must be read live."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "UPDATED",
+        "memory_id": "wm:project:courtside-tw:us2-beta-completion",
+        "version": "us2-beta-v5",
+        "retrieval_ids": ["wm:project:courtside-tw:us2-beta-completion"],
+        "evidence_refs": [
+          ".loop/evidence/t034-t041-us2-beta-exact-head-remediation-20260813.json"
+        ],
+        "next_review_at": "2026-08-13",
+        "blocker": "Replacement live exact-head GitHub evidence is pending."
+      },
+      "failure_signature": "ORDINARY_ARTICLE_HYDRATION_INSERTED_PROGRESS_AND_SHARE_CONTROLS_CAUSING_CLS",
+      "decision": "PRESERVE_SSR_LAYOUT_FOOTPRINT_AND_REVERIFY_ONE_SUCCESSOR_HEAD",
+      "token_usage": {
+        "estimated": 12000,
+        "input": 0,
+        "output": 0,
+        "total": 12000
+      },
+      "terminal_reason": null
+    }
+  ]
+}

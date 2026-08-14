@@ -1,0 +1,135 @@
+{
+  "schema_version": 1,
+  "memory_id": "wm:project:courtside-tw:us2-beta-completion",
+  "scope": "project",
+  "kind": "task_state",
+  "title": "US2 public Article beta replacement candidate awaits live exact-head proof",
+  "summary": "Historical subjects 25e7626, 8e029c5, and 1e414d7 implement the bounded T034, T035, T037, T038, T040, and T041 candidate from main c39288f. Exact predecessor 2bac1f8 failed browser and dependency gates; successor 1ad44a0 then passed Java, Security, US1, US2, combined and full browser regression but failed ordinary-article Lighthouse CLS because hydration inserted progress and share controls. The bounded SSR-footprint remediation now passes actual local Chromium hydration CLS, no-JS, direct Lighthouse, workspace, bundle, and dependency evidence. A replacement PR head still requires live CI, Security, mergeability, and review-thread read-back. T036 and T039 remain complete and preserved, while T056, T057+, Web3, deployment, and migrations remain out of scope.",
+  "claims": [
+    {
+      "text": "The authoritative base is main c39288f98279b939401302fe6c50376340db9c6a with T036 and T039 checked and the six selected US2 tasks unchecked.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Historical subject commit 5b03ee08b1c94b99d17ce086ea9aa5015a0c55a9 contains the tests-first acceptance and API contract baseline, not a current merge-gate receipt.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Historical backend subject 25e762640da558b205c16d810c151163148bced8 implements T034 and T035 with immutable v2 article snapshots, server-derived text and reading time, frozen contributors and media attribution, stable ETags, and snapshot navigation.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Historical reader subject 8e029c5409ab8e9387896062f31c370d55a29598 implements T037, T038, T040, and the reader portion of T041 with SSR-safe blocks, a trusted bounded p5 runtime, magazine reader UX, navigation, share, SEO, no-JS, accessibility, lifecycle, and performance gates.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Historical workflow subject 1e414d7c77ec1817fdd48390cdedea4e368856c8 requires every CI and Security job to check out and verify the observed PR source head.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Local feasible acceptance passed workspace verification with 80 web tests and eight creative-runtime tests, actual Chromium US1 3/3, US2 23/23, combined 26/26, full regression 30/30, two-URL three-run Lighthouse budgets, bundle and SSR gates, dependency audit, and independent review.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The candidate changes only the six selected task checkboxes; T036 and T039 stay checked, T056 stays unchecked with only package-relocation imports in its test file, and T057+, Web3, deployment, and migrations remain unchanged.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Exact predecessor head 2bac1f87e200442c773ca1de9dbd89b842630f6a failed browser acceptance and dependency audit while its Java, contract, Docker, CodeQL, and Trivy lanes passed; run IDs 31684079435 and 31684079408 are historical receipts only.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The browser, media-geometry, creative-owner, crawlability, compression, Lighthouse-runner, and vulnerable LHCI findings are remediated in the local replacement candidate and covered by actual Chromium, Lighthouse, unit, bundle, and audit evidence.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Exact predecessor head 1ad44a004246541a971782b8c8c5f89322bba95b passed Security, Java, frontend/contracts, Docker, US1 3/3, US2 23/23, combined 26/26, and full browser regression 30/30, but CI run 31688646926 failed because courtside-notes Lighthouse CLS was 0.148945; that immutable failure is not current-head evidence.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "The local successor candidate preserves progress and share control layout boxes across SSR and hydration, and actual Chromium now reports hydration CLS <=0.01 plus two-URL three-run Lighthouse CLS 0.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Replacement exact-head CI, Security, component, browser, mergeability, and review attribution must be read live for the observed PR head and recorded externally so a metadata commit cannot invalidate its own claim.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Local Java 21 execution remains unavailable; the predecessor Java gate passed, and the replacement head must independently repeat that P3 proof on GitHub.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    },
+    {
+      "text": "Protected merge remains a human gate and is not implied by leaving a reviewable PR.",
+      "class": "CONFIRMED",
+      "confidence": "high"
+    }
+  ],
+  "status": "needs_update",
+  "confidence": "high",
+  "confidence_basis": [
+    "Authoritative main and tasks.md read-back",
+    "Historical tests-first subject commit 5b03ee0",
+    "Historical implementation subjects 25e7626, 8e029c5, and 1e414d7",
+    ".loop/evidence/t034-t041-us2-beta-tests-first-baseline-20260813.json",
+    ".loop/evidence/t034-t041-us2-beta-local-acceptance-20260813.json",
+    ".loop/evidence/t034-t041-us2-beta-exact-head-remediation-20260813.json",
+    "Historical exact-head runs 31684079435 and 31684079408"
+  ],
+  "volatility": "medium",
+  "as_of": "2026-08-13T09:43:59Z",
+  "source_refs": [
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    ".loop/evidence/t034-t041-us2-beta-tests-first-baseline-20260813.json",
+    ".loop/evidence/t034-t041-us2-beta-local-acceptance-20260813.json",
+    ".loop/evidence/t034-t041-us2-beta-exact-head-remediation-20260813.json",
+    "https://github.com/bynanci/courtside-tw/actions/runs/31684079435",
+    "https://github.com/bynanci/courtside-tw/actions/runs/31684079408",
+    "https://github.com/bynanci/courtside-tw/commit/25e762640da558b205c16d810c151163148bced8",
+    "https://github.com/bynanci/courtside-tw/commit/8e029c5409ab8e9387896062f31c370d55a29598",
+    "https://github.com/bynanci/courtside-tw/commit/1e414d7c77ec1817fdd48390cdedea4e368856c8",
+    "https://github.com/bynanci/courtside-tw/commit/c39288f98279b939401302fe6c50376340db9c6a"
+  ],
+  "entities": [
+    "courtside-tw",
+    "US2",
+    "T034",
+    "T035",
+    "T036",
+    "T037",
+    "T038",
+    "T039",
+    "T040",
+    "T041"
+  ],
+  "relations": {
+    "supports": [],
+    "contradicts": [],
+    "supersedes": [
+      "wm:project:courtside-tw:us2-t034-t041-review-remediation",
+      "wm:project:courtside-tw:us2-t034-t041-implementation-lane"
+    ],
+    "blocks": [],
+    "invalidates": []
+  },
+  "next_review_at": "2026-08-13",
+  "sensitivity": "internal",
+  "retention": "until_superseded",
+  "write_receipt": {
+    "status": "UPDATED",
+    "version": "us2-beta-v5",
+    "written_by": "codex-supervisor"
+  }
+}

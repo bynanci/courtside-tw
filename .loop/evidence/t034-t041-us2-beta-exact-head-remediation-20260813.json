@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "evidence_id": "t034-t041-us2-beta-exact-head-remediation-20260813",
+  "captured_at": "2026-08-13T09:43:59Z",
+  "repository": "bynanci/courtside-tw",
+  "pull_request": 87,
+  "classification": "HISTORICAL_FAILURE_AND_LOCAL_REMEDIATION_NOT_LIVE_MERGE_GATE",
+  "historical_exact_head_failure": {
+    "subject_commit": "2bac1f87e200442c773ca1de9dbd89b842630f6a",
+    "ci": {
+      "run_id": 31684079435,
+      "browser_job_id": 94396212881,
+      "result": "FAIL",
+      "passing_lanes": [
+        "frontend and contract verification",
+        "Java quality and unit verification",
+        "Docker health verification"
+      ],
+      "failure_signatures": [
+        "creative lifecycle listener counter did not retire AbortSignal and once listeners",
+        "media error fallback did not preserve the original rendered geometry",
+        "multiple visible creative hosts raced for the single active loop"
+      ]
+    },
+    "security": {
+      "run_id": 31684079408,
+      "dependency_job_id": 94395960013,
+      "result": "FAIL",
+      "passing_lanes": ["CodeQL Java", "CodeQL JavaScript", "Trivy"],
+      "failure_signatures": [
+        "@lhci/cli 0.15.1 retained high-severity tmp advisories",
+        "@lhci/cli 0.15.1 retained a high-severity extract-zip advisory"
+      ]
+    },
+    "source_attribution": "Every reported job checked out and verified 2bac1f87e200442c773ca1de9dbd89b842630f6a before executing. This is an immutable predecessor-head receipt, not current PR evidence."
+  },
+  "historical_lighthouse_exact_head_failure": {
+    "subject_commit": "1ad44a004246541a971782b8c8c5f89322bba95b",
+    "ci_run_id": 31688646926,
+    "browser_job_id": 94410892168,
+    "artifact_id": 9176568368,
+    "result": "FAIL",
+    "passing_gates": [
+      "Frontend and contract verification",
+      "Java quality and unit verification",
+      "Docker Compose dependency health",
+      "US1 3/3",
+      "US2 23/23",
+      "US1 and US2 combined 26/26",
+      "full browser regression 30/30",
+      "Security workflow"
+    ],
+    "failure_signature": "ORDINARY_ARTICLE_HYDRATION_INSERTED_PROGRESS_AND_SHARE_CONTROLS_CAUSING_CLS",
+    "details": "All three courtside-notes Lighthouse runs reported CLS 0.148945241257309 against the 0.1 budget. The only layout-shift source was header.article-header; opening-night passed with CLS 0.08304426870205461. The workflow verified this immutable subject head before execution.",
+    "classification": "PREDECESSOR_HEAD_NOT_LIVE_MERGE_GATE"
+  },
+  "local_remediation": {
+    "classification": "LOCAL_CANDIDATE_TREE_NOT_LIVE_PR_HEAD",
+    "changes": [
+      "Model once and AbortSignal listener removal accurately, warm the non-unloadable p5 module once, and retain a zero per-instance lifecycle delta gate across 20 switches.",
+      "Select the most-visible creative host deterministically, re-evaluate ownership with an rAF-throttled scroll handler, and reapply loop state after p5 setup.",
+      "Preserve frozen image and gallery aspect ratio before and after media errors.",
+      "Remove vulnerable LHCI dependencies and run pinned Lighthouse directly with fail-closed audit aggregation and bounded fixture/Chrome cleanup.",
+      "Make public articles crawlable, include snapshot article URLs in sitemap output, precompress public assets, and resolve the trusted local P5 host only after client runtime enablement.",
+      "Keep reading progress and the share control in SSR markup so hydration changes state without inserting layout boxes; add no-JS footprint and hydration CLS regression coverage."
+    ],
+    "tests_first_and_regression": [
+      {
+        "gate": "workspace verification",
+        "result": "PASS",
+        "details": "make verify passed format, lint, typecheck, 80 web unit/component tests, 8 creative-runtime tests, API client and content-schema tests, generation, and contract checks."
+      },
+      {
+        "gate": "US1 independent browser",
+        "result": "PASS",
+        "details": "3/3 Playwright tests passed in actual headless Chromium."
+      },
+      {
+        "gate": "US2 independent browser",
+        "result": "PASS",
+        "details": "23/23 Playwright tests passed, including axe, no-JS, reduced motion, media geometry, single-loop ownership, and 20-switch lifecycle cleanup."
+      },
+      {
+        "gate": "US1 and US2 combined browser",
+        "result": "PASS",
+        "details": "26/26 Playwright tests passed together."
+      },
+      {
+        "gate": "full browser regression",
+        "result": "PASS",
+        "details": "30/30 Playwright tests passed, including existing US3 regression tests without adding US3 behavior."
+      },
+      {
+        "gate": "Lighthouse budgets",
+        "result": "PASS",
+        "details": "After the hydration-footprint remediation, two reader URLs ran three times each. courtside-notes median LCP=1819.248ms, CLS=0, TBT=125ms; opening-night median LCP=2044.3065ms, CLS=0, TBT=97.9395ms. Accessibility and SEO were 1.0; responsive and sized-image audits passed."
+      },
+      {
+        "gate": "hydration CLS regression",
+        "result": "PASS",
+        "details": "Actual Chromium observed ordinary-article hydration CLS <=0.01 with no article-header shift source; no-JS output contains the progressbar, disabled share button, and usable canonical-link fallback."
+      },
+      {
+        "gate": "bundle and compression",
+        "result": "PASS",
+        "details": "One isolated lazy p5 chunk and trusted preset remained outside server resource hints; incremental creative gzip was 341331 bytes against 460800. Nitro generated gzip and Brotli public assets."
+      },
+      {
+        "gate": "dependency security",
+        "result": "PASS",
+        "details": "Frozen pnpm 11.7.0 install succeeded and pnpm audit reported zero info, low, moderate, high, or critical vulnerabilities across the full development graph."
+      }
+    ]
+  },
+  "scope_matrix": {
+    "remediated": ["T037", "T038", "T041"],
+    "implementation_unchanged": ["T034", "T035", "T040"],
+    "preserved_complete": ["T036", "T039"],
+    "preserved_out_of_scope": ["T056", "T057+", "Web3", "deployment", "migrations"]
+  },
+  "live_gate_contract": {
+    "serialize_final_mutable_head": false,
+    "rule": "After this evidence commit, read PR head, mergeability, reviews, unresolved threads, workflow head_sha, every required job, and browser/Lighthouse results live. A workflow is attributable only when workflow.head_sha equals the observed PR head.",
+    "required_workflows": ["CI", "Security"],
+    "receipt_location": "external PR body or append-only PR comment",
+    "protected_merge": "outside this run"
+  }
+}

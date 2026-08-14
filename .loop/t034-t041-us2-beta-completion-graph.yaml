@@ -1,0 +1,298 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-t034-t041-us2-beta-completion
+objective: >-
+  Make the public P1 Article reader beta-ready by completing only T034, T035,
+  T037, T038, T040, and T041 while preserving completed T036 and T039 state.
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - T034 immutable published-article projection, extraction, and persistence safety
+    - T035 public Article API, ETag, canonical metadata, visible media, and snapshot navigation
+    - T037 v1 content blocks and bounded local creative runtime
+    - T038 SSR reader route, typography, credits, progress, media geometry, and motion
+    - T040 snapshot navigation, table of contents, and accessible share fallback
+    - T041 SEO, no-JS, accessibility, lifecycle, and performance budgets
+    - Independent US1, independent US2, combined regression, exact-head CI, Security, and browser proof
+  out:
+    - T036 or T039 implementation changes
+    - T042 and later editorial production scope
+    - T056, T057+, Web3, wallet, deployment, production activation, or migrations
+    - Protected-branch merge or production deployment
+
+policy:
+  human_gates:
+    - protected-branch merge or production deployment
+    - schema migration, rights-policy, authentication, authorization, or security-control change
+    - expansion into US3 editorial production, Web3, wallet, T056, or T057+
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+memory_workflow:
+  contract: work-memory/v1
+  control_ledger: Append graph deltas, proof receipts, failure signatures, and token estimates every iteration.
+  semantic_memory: Capture only durable task constraints and verified implementation outcomes.
+  modes: [recall, capture, update, forget, no_op]
+  retrieval:
+    levels: [index, timeline_relations, details]
+    max_index_results: 10
+    stop_on_sufficient_evidence: true
+  capture:
+    allowed_kinds: [decision, constraint, fact, attempt, task_state, pattern, evidence]
+    requires_downstream_proof: true
+    requires_write_receipt: true
+  lifecycle: [seed, verified, stable, needs_update, disputed, archived]
+  failure_policy:
+    write_pending: blocked
+    stale_or_disputed: needs_human
+    redact_secrets: true
+
+graph:
+  entry_nodes: [t-us2-beta-request]
+  terminal_nodes: [s-reviewable-pr]
+
+  loops:
+    - id: l1-us2-beta-delivery
+      layer: L1
+      owner: codex-supervisor
+      trigger_nodes: [t-us2-beta-request]
+      action_nodes: [a-backend, a-reader, a-production-proof, a-review-fix]
+      proof_nodes: [p-tests-first, p-exact-head]
+      memory_nodes: [m-us2-ledger]
+      stop_nodes: [s-reviewable-pr]
+      budgets:
+        max_iterations: 8
+        max_minutes: 480
+        max_same_failure: 2
+        max_graph_changes: 96
+        max_tokens: 160000
+
+  nodes:
+    - id: t-us2-beta-request
+      kind: trigger
+      layer: L1
+      label: Bounded US2 public Article beta delivery is authorized
+      owner: user
+      status: done
+      risk: high
+      confidence:
+        score: 1.0
+        basis: The user supplied explicit task, acceptance, sequencing, and scope boundaries.
+        evidence_refs:
+          - specs/001-taiwan-basketball-magazine-ebook/tasks.md
+          - .loop/evidence/t034-t041-us2-beta-tests-first-baseline-20260813.json
+      budget: {effort_hours: 0, tokens: 0}
+      config:
+        condition: T034, T035, T037, T038, T040, and T041 remain unchecked and are explicitly authorized.
+        inputs_required: [current main, task contract, DESIGN.md runtime contract, tests-first baseline]
+        dedupe: us2-beta-request-plus-main-c39288f
+
+    - id: a-backend
+      kind: action
+      layer: L1
+      label: Implement T034 and T035 snapshot-safe public Article projection
+      owner: backend-agent
+      status: done
+      risk: high
+      confidence:
+        score: 0.97
+        basis: Historical backend subject 25e7626 implements the frozen projection and passed focused static, SQL, and independent review evidence.
+        evidence_refs:
+          - .loop/evidence/t034-t041-us2-beta-tests-first-baseline-20260813.json
+          - .loop/evidence/t034-t041-us2-beta-local-acceptance-20260813.json
+      budget: {effort_hours: 6, tokens: 36000}
+      config:
+        workflow: [implement domain extraction and immutability, project ARTICLE and ISSUE snapshots, expose safe API metadata, run focused and regression tests]
+        allowed: [content domain application persistence and API, publication projection compatibility, OpenAPI and generated client, focused tests]
+        requires_approval: [schema migration, rights-policy change, protected merge, production activation]
+        forbidden: [draft leakage, live mutable navigation, US3 editorial production, migration creation]
+
+    - id: a-reader
+      kind: action
+      layer: L1
+      label: Implement T037, T038, and T040 reader components and creative runtime
+      owner: frontend-agent
+      status: done
+      risk: high
+      confidence:
+        score: 0.97
+        basis: Historical reader subject 8e029c5 plus the bounded browser remediation implement the SSR reader and trusted creative runtime; actual Chromium US2 and full regression now pass locally.
+        evidence_refs:
+          - .loop/evidence/t034-t041-us2-beta-tests-first-baseline-20260813.json
+          - .loop/evidence/t034-t041-us2-beta-local-acceptance-20260813.json
+          - .loop/evidence/t034-t041-us2-beta-exact-head-remediation-20260813.json
+      budget: {effort_hours: 8, tokens: 44000}
+      config:
+        workflow: [extract explicit block components, implement trusted creative package, integrate SSR reader progressively, run component and web regression]
+        allowed: [public reader components and styles, creative-runtime local registry, component tests, SSR-safe reader route]
+        requires_approval: [remote code or provider dependency, protected merge, deployment]
+        forbidden: [dynamic module resolution from content, unrestricted v-html, global p5 mode, US3 editor features]
+
+    - id: a-production-proof
+      kind: action
+      layer: L1
+      label: Implement T041 SEO, accessibility, lifecycle, and performance gates
+      owner: verification-agent
+      status: done
+      risk: high
+      confidence:
+        score: 0.97
+        basis: Historical subjects 8e029c5 and 1e414d7 plus the bounded remediation implement SEO, no-JS, lifecycle, bundle, direct Lighthouse, dependency, exact-source-head, and hydration-CLS gates; actual local browser and Lighthouse pass while replacement live proof remains under p-exact-head.
+        evidence_refs:
+          - .loop/evidence/t034-t041-us2-beta-tests-first-baseline-20260813.json
+          - .loop/evidence/t034-t041-us2-beta-local-acceptance-20260813.json
+          - .loop/evidence/t034-t041-us2-beta-exact-head-remediation-20260813.json
+      budget: {effort_hours: 6, tokens: 32000}
+      config:
+        workflow: [implement SEO helper and no-JS assertions, enforce lifecycle and bundle budgets, wire independent and combined CI verification]
+        allowed: [reader SEO, web test support, Lighthouse config, non-deployment CI verification]
+        requires_approval: [deployment, security-policy relaxation, protected merge]
+        forbidden: [fake receipts, weakened assertions, production activation, unrelated workflow changes]
+
+    - id: a-review-fix
+      kind: action
+      layer: L1
+      label: Review the integrated diff, fix findings, and re-verify
+      owner: codex-supervisor
+      status: done
+      risk: high
+      confidence:
+        score: 0.98
+        basis: Independent reviews found the predecessor browser and dependency P1 failures, the remediation closed them, and final read-only review found no remaining P0/P1 or scope violation.
+        evidence_refs:
+          - .loop/evidence/t034-t041-us2-beta-local-acceptance-20260813.json
+          - .loop/evidence/t034-t041-us2-beta-exact-head-remediation-20260813.json
+      budget: {effort_hours: 4, tokens: 28000}
+      config:
+        workflow: [inspect changed-file scope, reconcile contracts and hydration boundaries, run targeted then broad verification, fix findings and repeat]
+        allowed: [authorized US2 files, tests, task checkboxes after proof, append-only evidence]
+        requires_approval: [protected merge, deployment, scope expansion]
+        forbidden: [claim unchecked evidence, alter T036 or T039, touch T056 or T057+]
+
+    - id: p-tests-first
+      kind: proof
+      layer: L1
+      label: Tests-first acceptance baseline
+      owner: verifier
+      status: done
+      risk: medium
+      confidence:
+        score: 1.0
+        basis: Commit 5b03ee0 contains only acceptance tests and public API contract deltas for the selected tasks.
+        evidence_refs:
+          - .loop/evidence/t034-t041-us2-beta-tests-first-baseline-20260813.json
+      budget: {effort_hours: 1, tokens: 6000}
+      config:
+        level: P2
+        claim: The selected US2 gaps are expressed as focused domain, API, component, SEO, accessibility, lifecycle, and contract acceptance records before production implementation.
+        method: Inspect historical subject commit 5b03ee0 and reproduce focused RED or collection receipts.
+        evidence_path: .loop/evidence/t034-t041-us2-beta-tests-first-baseline-20260813.json
+        required: true
+        baseline_required: true
+
+    - id: p-exact-head
+      kind: proof
+      layer: L1
+      label: Integrated local and live exact-head acceptance
+      owner: verifier
+      status: running
+      risk: high
+      confidence:
+        score: 0.92
+        basis: Exact predecessor 1ad44a0 passed Java, Security, US1/US2/combined/full browser regression but exposed ordinary-article hydration CLS; the SSR-footprint remediation passes actual Chromium CLS and direct Lighthouse locally, while replacement PR-head Java 21, CI, Security, browser, review-thread, and mergeability read-back is still required.
+        evidence_refs:
+          - .loop/evidence/t034-t041-us2-beta-local-acceptance-20260813.json
+          - .loop/evidence/t034-t041-us2-beta-exact-head-remediation-20260813.json
+      budget: {effort_hours: 3, tokens: 18000}
+      config:
+        level: P3
+        claim: US1 passes independently, US2 passes independently, both pass together, and exact-head protected checks have no unresolved review blocker.
+        method: Run local contract/unit/build checks, publish a reviewable PR, and read checks, jobs, reviews, and browser results live for the observed PR SHA.
+        evidence_path: external PR receipt plus append-only local proof artifacts
+        required: true
+        baseline_required: true
+
+    - id: m-us2-ledger
+      kind: memory
+      layer: L1
+      label: US2 beta execution and semantic memory
+      owner: codex-supervisor
+      status: running
+      risk: medium
+      confidence:
+        score: 0.95
+        basis: Append-only ledger and schema-validated durable memory are maintained per iteration.
+        evidence_refs:
+          - .loop/t034-t041-us2-beta-completion-ledger.json
+          - .loop/memory/t034-t041-us2-beta-completion.json
+      budget: {effort_hours: 0.5, tokens: 4000}
+      config:
+        path: .loop/t034-t041-us2-beta-completion-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: work-memory/v1
+        memory_role: hybrid
+        receipt_required: true
+        write_failure_state: blocked
+
+    - id: s-reviewable-pr
+      kind: stop
+      layer: GLOBAL
+      label: Stop with a smallest reviewable PR or the exact remaining blocker
+      owner: codex-supervisor
+      status: planned
+      risk: high
+      confidence:
+        score: 0.9
+        basis: Terminal policy is explicit and protected merge remains outside this run.
+        evidence_refs: []
+      budget: {effort_hours: 0.25, tokens: 2000}
+      config:
+        states:
+          success: All selected task acceptance and exact-head protected checks pass; leave the smallest reviewable PR.
+          no_op: Current main already satisfies every selected acceptance criterion with authoritative proof.
+          blocked: Stop at a named dependency, protected gate, or unavailable required proof.
+          stalled: Stop after the same falsifiable failure repeats within budget without an evidence delta.
+          exhausted: Stop when iteration, time, token, or graph-change budget is exhausted.
+          needs_human: Stop before protected merge, deployment, migration, scope expansion, or policy change.
+
+  edges:
+    - {id: e-trigger-backend, from: t-us2-beta-request, to: a-backend, type: enables, required: true, confidence: 1.0, token_capacity: 36000}
+    - {id: e-trigger-reader, from: t-us2-beta-request, to: a-reader, type: enables, required: true, confidence: 1.0, token_capacity: 44000}
+    - {id: e-trigger-production, from: t-us2-beta-request, to: a-production-proof, type: enables, required: true, confidence: 1.0, token_capacity: 32000}
+    - {id: e-backend-review, from: a-backend, to: a-review-fix, type: enables, required: true, confidence: 0.9, token_capacity: 18000}
+    - {id: e-reader-review, from: a-reader, to: a-review-fix, type: enables, required: true, confidence: 0.9, token_capacity: 18000}
+    - {id: e-production-review, from: a-production-proof, to: a-review-fix, type: enables, required: true, confidence: 0.9, token_capacity: 18000}
+    - {id: e-review-proof, from: a-review-fix, to: p-exact-head, type: verifies, required: true, confidence: 0.9, token_capacity: 18000}
+    - {id: e-proof-stop, from: p-exact-head, to: s-reviewable-pr, type: enables, required: true, confidence: 0.95, token_capacity: 10000}
+    - {id: e-baseline-feedback, from: p-tests-first, to: a-review-fix, type: feedback, required: true, confidence: 0.95, token_capacity: 6000}
+    - {id: e-backend-ledger, from: a-backend, to: m-us2-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-reader-ledger, from: a-reader, to: m-us2-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-production-ledger, from: a-production-proof, to: m-us2-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-proof-ledger, from: p-exact-head, to: m-us2-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-ledger-review, from: m-us2-ledger, to: a-review-fix, type: reads, required: true, confidence: 0.95, token_capacity: 4000}
+
+flow:
+  source: t-us2-beta-request
+  sink: s-reviewable-pr
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - next_action
+  - memory_receipt

@@ -1,5 +1,6 @@
-package tw.basketball.magazine.publication;
+package tw.basketball.magazine.content.domain;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -7,9 +8,7 @@ import java.util.UUID;
 
 import tools.jackson.databind.JsonNode;
 
-import tw.basketball.magazine.publication.PublicIssueModels.ArticleSummary;
-
-/** Immutable, anonymous-read Article projection models. */
+/** Immutable anonymous-read Article projection models. */
 public final class PublicArticleModels {
     private PublicArticleModels() {
     }
@@ -22,6 +21,11 @@ public final class PublicArticleModels {
             String title,
             String dek,
             JsonNode content,
+            String plainText,
+            int readingTimeMinutes,
+            Instant publishedAt,
+            Instant updatedAt,
+            String canonicalPath,
             List<PublicArticleMedia> media,
             List<Contributor> contributors,
             IssueNavigation issueNavigation
@@ -35,10 +39,25 @@ public final class PublicArticleModels {
             slug = bounded(slug, "slug", 128);
             title = bounded(title, "title", 250);
             dek = boundedNullable(dek, "dek", 1000);
-            content = Objects.requireNonNull(content, "content");
+            content = Objects.requireNonNull(content, "content").deepCopy();
+            plainText = publicText(plainText);
+            if (readingTimeMinutes < 1) {
+                throw new IllegalArgumentException("readingTimeMinutes must be positive");
+            }
+            publishedAt = Objects.requireNonNull(publishedAt, "publishedAt");
+            updatedAt = Objects.requireNonNull(updatedAt, "updatedAt");
+            canonicalPath = bounded(canonicalPath, "canonicalPath", 256);
+            if (!canonicalPath.equals("/articles/" + slug)) {
+                throw new IllegalArgumentException("canonicalPath must match the published slug");
+            }
             media = List.copyOf(Objects.requireNonNull(media, "media"));
             contributors = List.copyOf(Objects.requireNonNull(contributors, "contributors"));
             issueNavigation = Objects.requireNonNull(issueNavigation, "issueNavigation");
+        }
+
+        @Override
+        public JsonNode content() {
+            return content.deepCopy();
         }
     }
 
@@ -48,7 +67,11 @@ public final class PublicArticleModels {
             String url,
             String mimeType,
             int width,
-            int height
+            int height,
+            String altText,
+            String credit,
+            String rightsOwner,
+            String licenseName
     ) {
         public PublicArticleMedia {
             assetId = Objects.requireNonNull(assetId, "assetId");
@@ -68,6 +91,10 @@ public final class PublicArticleModels {
             if (width < 1 || height < 1) {
                 throw new IllegalArgumentException("media dimensions must be positive");
             }
+            altText = bounded(altText, "altText", 1000);
+            credit = bounded(credit, "credit", 1000);
+            rightsOwner = bounded(rightsOwner, "rightsOwner", 512);
+            licenseName = bounded(licenseName, "licenseName", 512);
         }
     }
 
@@ -82,6 +109,17 @@ public final class PublicArticleModels {
             slug = bounded(slug, "slug", 128);
             displayName = bounded(displayName, "displayName", 200);
             role = bounded(role, "role", 32);
+        }
+    }
+
+    public record ArticleSummary(UUID articleId, String slug, String title, int position) {
+        public ArticleSummary {
+            articleId = Objects.requireNonNull(articleId, "articleId");
+            slug = bounded(slug, "slug", 128);
+            title = bounded(title, "title", 250);
+            if (position < 1) {
+                throw new IllegalArgumentException("article position must be positive");
+            }
         }
     }
 
@@ -108,6 +146,21 @@ public final class PublicArticleModels {
         if (value == null) {
             return null;
         }
+        if (value.isEmpty()) {
+            return value;
+        }
         return bounded(value, name, maximumLength);
+    }
+
+    private static String publicText(String value) {
+        value = Objects.requireNonNull(value, "plainText");
+        if (value.isBlank() || value.length() > 1_000_000
+                || value.codePoints().anyMatch(codePoint ->
+                        Character.isISOControl(codePoint) && codePoint != '\n')) {
+            throw new IllegalArgumentException(
+                    "plainText must be bounded and contain only reader-visible line breaks"
+            );
+        }
+        return value;
     }
 }

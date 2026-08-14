@@ -30,6 +30,8 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import tw.basketball.magazine.audit.JdbcAuditWriter;
+import tw.basketball.magazine.content.application.PublicArticleService;
+import tw.basketball.magazine.content.persistence.JdbcPublicArticleRepository;
 import tw.basketball.magazine.editorial.EditorialApiIntegrationTestSupport;
 import tw.basketball.magazine.outbox.OutboxClaim;
 import tw.basketball.magazine.outbox.OutboxEvent;

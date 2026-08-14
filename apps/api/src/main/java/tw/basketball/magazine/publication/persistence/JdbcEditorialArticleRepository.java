@@ -19,6 +19,8 @@ import org.springframework.jdbc.core.ResultSetExtractor;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import tw.basketball.magazine.content.domain.PublicArticleModels.Contributor;
+import tw.basketball.magazine.content.domain.PublicArticleModels.PublicArticleMedia;
 import tw.basketball.magazine.media.domain.MediaProcessingState;
 import tw.basketball.magazine.media.domain.RightsPolicy;
 import tw.basketball.magazine.publication.application.EditorialProblemException;
@@ -40,12 +42,13 @@ public final class JdbcEditorialArticleRepository implements EditorialArticleRep
                    r.content_document,
                    r.state AS revision_state,
                    r.version AS revision_version,
+                   r.updated_at AS revision_updated_at,
                    job.scheduled_at AS scheduled_for
             FROM article a
             JOIN LATERAL (
                 SELECT revision.id, revision.revision_number, revision.title,
                        revision.dek, revision.content_document, revision.state,
-                       revision.version
+                       revision.version, revision.updated_at
                 FROM article_revision revision
                 WHERE revision.article_id = a.id
                 ORDER BY revision.revision_number DESC
@@ -75,6 +78,51 @@ public final class JdbcEditorialArticleRepository implements EditorialArticleRep
             LEFT JOIN rights_record rights ON rights.asset_id = link.asset_id
             WHERE link.article_revision_id = ?
             ORDER BY link.position, link.asset_id, rights.id
+            """;
+    private static final String PUBLIC_MEDIA_SQL = """
+            SELECT asset.id AS asset_id,
+                   variant.variant,
+                   variant.public_storage_key,
+                   variant.mime_type,
+                   variant.width,
+                   variant.height,
+                   asset.alt_text,
+                   rights.credit,
+                   rights.rights_owner,
+                   rights.license_name
+            FROM article_revision_media link
+            JOIN media_asset asset
+              ON asset.id = link.asset_id
+            JOIN media_variant variant
+              ON variant.asset_id = asset.id
+            JOIN LATERAL (
+                SELECT eligible.credit, eligible.rights_owner, eligible.license_name
+                FROM rights_record eligible
+                WHERE eligible.asset_id = asset.id
+                  AND eligible.status = 'VALID'
+                  AND eligible.allowed_channels @> ARRAY['PUBLIC_WEB']::text[]
+                  AND eligible.valid_from <= ?
+                  AND eligible.valid_until > ?
+                ORDER BY eligible.version DESC, eligible.updated_at DESC, eligible.id DESC
+                LIMIT 1
+            ) rights ON TRUE
+            WHERE link.article_revision_id = ?
+              AND link.required_channel = 'PUBLIC_WEB'
+              AND asset.processing_state = 'READY'
+              AND (asset.id, variant.variant) IN (%s)
+              AND NOT EXISTS (
+                    SELECT 1
+                    FROM rights_record revoked
+                    WHERE revoked.asset_id = asset.id
+                      AND revoked.status = 'REVOKED'
+              )
+              AND variant.public_storage_key ~ '^[a-z0-9][a-z0-9._/-]{0,255}$'
+              AND position('..' IN variant.public_storage_key) = 0
+              AND position('//' IN variant.public_storage_key) = 0
+              AND position('/./' IN variant.public_storage_key) = 0
+              AND right(variant.public_storage_key, 1) <> '/'
+            ORDER BY link.position, asset.id, variant.variant
+            LIMIT 5001
             """;
 
     private final JdbcTemplate jdbcTemplate;
@@ -313,6 +361,82 @@ public final class JdbcEditorialArticleRepository implements EditorialArticleRep
             );
         }
         return mediaRequirements(revisionId);
+    }
+
+    @Override
+    public List<Contributor> contributors(UUID revisionId) {
+        Objects.requireNonNull(revisionId, "revisionId");
+        return jdbcTemplate.query(
+                """
+                SELECT contributor.id AS contributor_id,
+                       contributor.slug,
+                       contributor.display_name,
+                       article_contributor.role
+                FROM article_contributor
+                JOIN contributor
+                  ON contributor.id = article_contributor.contributor_id
+                WHERE article_contributor.article_revision_id = ?
+                ORDER BY article_contributor.position, article_contributor.id
+                """,
+                (resultSet, rowNumber) -> new Contributor(
+                        resultSet.getObject("contributor_id", UUID.class),
+                        resultSet.getString("slug"),
+                        resultSet.getString("display_name"),
+                        resultSet.getString("role")
+                ),
+                revisionId
+        );
+    }
+
+    @Override
+    public List<PublicArticleMedia> publicMedia(UUID revisionId, Instant checkedAt) {
+        Objects.requireNonNull(revisionId, "revisionId");
+        Objects.requireNonNull(checkedAt, "checkedAt");
+        JsonNode content = jdbcTemplate.queryForObject(
+                "SELECT content_document FROM article_revision WHERE id = ?",
+                (resultSet, rowNumber) -> parseJson(resultSet.getString("content_document")),
+                revisionId
+        );
+        List<ContentMediaReferences.MediaReference> references =
+                ContentMediaReferences.extractPublicVariants(content);
+        if (references.size() > 5_000) {
+            throw new IllegalArgumentException("publication media exceeds the bounded snapshot limit");
+        }
+        if (references.isEmpty()) {
+            return List.of();
+        }
+        String placeholders = String.join(
+                ", ",
+                java.util.Collections.nCopies(references.size(), "(?, ?)")
+        );
+        List<Object> parameters = new ArrayList<>();
+        parameters.add(Timestamp.from(checkedAt));
+        parameters.add(Timestamp.from(checkedAt));
+        parameters.add(revisionId);
+        for (ContentMediaReferences.MediaReference reference : references) {
+            parameters.add(reference.assetId());
+            parameters.add(reference.variant());
+        }
+        List<PublicArticleMedia> media = jdbcTemplate.query(
+                PUBLIC_MEDIA_SQL.replace("%s", placeholders),
+                (resultSet, rowNumber) -> new PublicArticleMedia(
+                        resultSet.getObject("asset_id", UUID.class),
+                        resultSet.getString("variant"),
+                        "/media/" + resultSet.getString("public_storage_key"),
+                        resultSet.getString("mime_type"),
+                        resultSet.getInt("width"),
+                        resultSet.getInt("height"),
+                        resultSet.getString("alt_text"),
+                        resultSet.getString("credit"),
+                        resultSet.getString("rights_owner"),
+                        resultSet.getString("license_name")
+                ),
+                parameters.toArray()
+        );
+        if (media.size() > 5_000) {
+            throw new IllegalArgumentException("publication media exceeds the bounded snapshot limit");
+        }
+        return List.copyOf(media);
     }
 
     @Override
@@ -600,7 +724,8 @@ public final class JdbcEditorialArticleRepository implements EditorialArticleRep
                 PublicationState.valueOf(resultSet.getString("revision_state")),
                 resultSet.getLong("article_version"),
                 resultSet.getLong("revision_version"),
-                instant(resultSet.getTimestamp("scheduled_for"))
+                instant(resultSet.getTimestamp("scheduled_for")),
+                instant(resultSet.getTimestamp("revision_updated_at"))
         );
     }
 
