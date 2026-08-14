@@ -1,0 +1,83 @@
+{
+  "schema": "courtside-tw/task-evidence/v1",
+  "issue": 89,
+  "pull_request": 94,
+  "status": "COMPLETED_EXACT_HEAD",
+  "recorded_at": "2026-08-14T10:44:00Z",
+  "baseline_main": "3656835c1554b6c606e8deeeda1ec0e040428511",
+  "verified_implementation_head": "f3f094f26cadcd00bbdaad9af17893f9d282297f",
+  "tasks": {
+    "T057": "Tests-first search contract covers empty, punctuation-only, mixed zh-TW/English, alias, withdrawal, cache freshness and SSR states.",
+    "T058": "V012 adds UUID-backed taxonomy, validity, article relations, versioned search projection and pg_trgm indexes.",
+    "T059": "Editor-only taxonomy API and Studio workflow preserve UUID/key identity while names and aliases remain mutable attributes.",
+    "T060": "Publication/withdrawal delivery updates the checksum-bound search projection, rejects drafts and handles duplicate delivery.",
+    "T061": "Public search is normalized, weighted, cursor-based and supports validity-bounded taxonomy filters.",
+    "T062": "SSR search UI synchronizes accessible filters to URL state, cancels stale requests and renders result/error/empty states.",
+    "T063": "Curated relevance, production-seam latency/freshness test and k6 HTTP gate report thresholds plus escalation conditions."
+  },
+  "ci": {
+    "run_id": 31793003839,
+    "run_number": 516,
+    "conclusion": "success",
+    "jobs": [
+      {
+        "id": 94743959914,
+        "name": "Java quality and unit verification",
+        "conclusion": "success",
+        "tests": 181,
+        "failures": 0,
+        "errors": 0,
+        "skipped": 0
+      },
+      {
+        "id": 94743959921,
+        "name": "Frontend and contract verification",
+        "conclusion": "success"
+      },
+      {
+        "id": 94743959832,
+        "name": "Docker Compose dependency health",
+        "conclusion": "success"
+      },
+      {
+        "id": 94744221810,
+        "name": "Public magazine browser verification",
+        "conclusion": "success",
+        "full_regression_tests": 35,
+        "us4_tests": 3
+      }
+    ]
+  },
+  "search_gate": {
+    "fixture": "apps/api/src/test/resources/search/zh-tw-relevance.json",
+    "ndcg_at_10": 1.0,
+    "minimum_ndcg_at_10": 0.85,
+    "p95_milliseconds": 20,
+    "maximum_p95_milliseconds": 500,
+    "freshness_seconds": 30.0,
+    "maximum_freshness_seconds": 60,
+    "http_performance_gate": "tests/performance/search.js",
+    "escalation": "Escalate only after two consecutive exact-head misses remain after query/index tuning."
+  },
+  "security": {
+    "run_id": 31793003877,
+    "run_number": 517,
+    "conclusion": "success",
+    "jobs": [
+      { "id": 94743892623, "name": "Resolve Compose images", "conclusion": "success" },
+      { "id": 94743892679, "name": "CodeQL (java-kotlin)", "conclusion": "success" },
+      { "id": 94743892715, "name": "CodeQL (javascript-typescript)", "conclusion": "success" },
+      { "id": 94743892737, "name": "Dependency audit and reports", "conclusion": "success" },
+      { "id": 94743892751, "name": "Trivy (filesystem)", "conclusion": "success" },
+      { "id": 94743941073, "name": "Trivy (image s3)", "conclusion": "success" },
+      { "id": 94743941098, "name": "Trivy (image oidc)", "conclusion": "success" },
+      { "id": 94743941105, "name": "Trivy (image postgres)", "conclusion": "success" }
+    ]
+  },
+  "scope_guard": {
+    "pr_92_modified": false,
+    "repository_protection_modified": false,
+    "pr_94_draft": true,
+    "merged": false
+  }
+}

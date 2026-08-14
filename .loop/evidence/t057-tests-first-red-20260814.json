@@ -1,7 +1,7 @@
 {
   "schema": "courtside-tw/task-evidence/v1",
   "task": "T057",
-  "status": "AUTHORED_RED_PENDING_RUNTIME",
+  "status": "COMPLETED_EXACT_HEAD",
   "recorded_at": "2026-08-14T00:00:00Z",
   "baseline_main": "3656835c1554b6c606e8deeeda1ec0e040428511",
   "candidate": "892313640f2b80aa8680341c58882a12c283a7d3",
@@ -24,13 +24,13 @@
   "proof": {
     "static_diff_check": "PASS",
     "typescript_syntax_check": "PASS",
-    "runtime_red": "PENDING: local Gradle is unavailable and the pinned Node/pnpm versions are not installed",
-    "exact_head_ci_security": "PENDING: candidate has not been pushed"
+    "runtime_red": "The tests-first commit predates the production search surface; the preserved RED receipt is candidate 892313640f2b80aa8680341c58882a12c283a7d3.",
+    "exact_head_ci_security": "PASS on implementation head f3f094f26cadcd00bbdaad9af17893f9d282297f: CI run 31793003839 and Security run 31793003877. The full browser regression includes the US4 search cases."
   },
   "scope_guard": {
     "pr_92_modified": false,
     "repository_protection_modified": false,
-    "production_search_implemented": false
+    "production_search_implemented": true
   },
-  "next_action": "Implement T058 taxonomy and search projection migration without checking T058 until migration and integration proof pass."
+  "next_action": "None; see t057-t063-exact-head-20260814.json for consolidated completion evidence."
 }

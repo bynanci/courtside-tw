@@ -1,7 +1,7 @@
 {
   "schema": "courtside-tw/task-evidence/v1",
   "task": "T058",
-  "status": "IMPLEMENTED_PENDING_RUNTIME",
+  "status": "COMPLETED_EXACT_HEAD",
   "recorded_at": "2026-08-14T00:00:00Z",
   "baseline_main": "3656835c1554b6c606e8deeeda1ec0e040428511",
   "candidate": "d5ddfdfc3effdda807129aeef5a16b3757533e64",
@@ -23,15 +23,15 @@
   "proof": {
     "source_diff_check": "PASS",
     "schema_contract_test_authored": "PASS",
-    "postgres_migration_execution": "PENDING: Docker/PostgreSQL unavailable locally",
-    "exact_head_ci_security": "PENDING: candidate has not been pushed"
+    "postgres_migration_execution": "PASS in exact-head Java/Testcontainers and Docker jobs on CI run 31793003839",
+    "exact_head_ci_security": "PASS on implementation head f3f094f26cadcd00bbdaad9af17893f9d282297f: CI run 31793003839 and Security run 31793003877"
   },
   "scope_guard": {
     "pr_92_modified": false,
     "repository_protection_modified": false,
-    "t059_taxonomy_api_implemented": false,
-    "t060_projection_worker_implemented": false,
-    "t061_search_api_implemented": false
+    "t059_taxonomy_api_implemented": true,
+    "t060_projection_worker_implemented": true,
+    "t061_search_api_implemented": true
   },
-  "next_action": "Run the migration and schema contract on the pinned CI toolchain before checking T058; then implement T060 projection delivery."
+  "next_action": "None; see t057-t063-exact-head-20260814.json for consolidated completion evidence."
 }
