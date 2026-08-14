@@ -1,4 +1,4 @@
-import { readFile } from "node:fs/promises"
+// This validator is intentionally dry-run; publication remains an editorial API action.\nimport { readFile } from "node:fs/promises"
 import process from "node:process"
 
 type SeedManifest = {
