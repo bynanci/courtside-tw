@@ -14,9 +14,10 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import tw.basketball.magazine.search.application.SearchTextNormalizer;
 import tw.basketball.magazine.shared.ActorContext;
+import tw.basketball.magazine.shared.FieldError;
+import tw.basketball.magazine.shared.ProblemCode;
 import tw.basketball.magazine.shared.RoleCode;
 import tw.basketball.magazine.shared.Version;
-import tw.basketball.magazine.shared.VersionConflictException;
 import tw.basketball.magazine.taxonomy.domain.TaxonomyKind;
 import tw.basketball.magazine.taxonomy.domain.TaxonomyStatus;
 
@@ -243,7 +244,10 @@ public final class TaxonomyService {
     private static void assertVersion(Version expected, long current) {
         Version currentVersion = new Version(current);
         if (!expected.equals(currentVersion)) {
-            throw new VersionConflictException(expected, currentVersion);
+            throw new TaxonomyProblemException(
+                    ProblemCode.VERSION_CONFLICT,
+                    List.of(FieldError.currentVersion(currentVersion))
+            );
         }
     }
 
