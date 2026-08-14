@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "documentId": "0190f7b0-7c4b-7e3a-8f12-123456789ab3",
+  "blocks": [
+    {
+      "id": "00000000-0000-4000-8000-000000000101",
+      "type": "paragraph",
+      "version": 1,
+      "payload": {
+        "content": [
+          {
+            "kind": "text",
+            "text": "看台的聲音，讓比賽在終場之後繼續留下節奏。"
+          }
+        ]
+      }
+    }
+  ]
+}
