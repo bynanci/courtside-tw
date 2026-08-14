@@ -183,6 +183,7 @@ final class JdbcPublicMediaResolver {
         return visibleReferences(references, now).size() == requested.size();
     }
 
+    // Issue navigation may contain more references than one prepared statement can carry.
     Set<MediaReference> visibleReferences(List<MediaReference> references, Instant now) {
         Map<MediaReference, Boolean> requested = uniqueReferences(references);
         if (requested.isEmpty()) {
