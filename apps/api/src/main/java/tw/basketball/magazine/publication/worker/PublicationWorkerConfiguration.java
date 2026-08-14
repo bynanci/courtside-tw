@@ -17,6 +17,7 @@ import tw.basketball.magazine.outbox.OutboxHandlerRegistration;
 import tw.basketball.magazine.publication.persistence.JdbcEditorialArticleRepository;
 import tw.basketball.magazine.publication.persistence.JdbcEditorialIssueRepository;
 import tw.basketball.magazine.publication.persistence.EditorialArticleRepository;
+import tw.basketball.magazine.search.worker.SearchProjectionHandler;
 import tw.basketball.magazine.shared.UuidV7Generator;
 
 /** Registers publication command processing for the worker profile only. */
@@ -40,7 +41,9 @@ public final class PublicationWorkerConfiguration {
                 repository,
                 new TransactionTemplate(transactionManager),
                 objectMapper,
-                Clock.systemUTC()
+                Clock.systemUTC(),
+                PublicationExternalInvalidator.unavailable(),
+                new SearchProjectionHandler(jdbcTemplate, objectMapper)
         );
     }
 

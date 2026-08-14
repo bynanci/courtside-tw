@@ -32,12 +32,16 @@ import tools.jackson.databind.ObjectMapper;
 import tw.basketball.magazine.content.api.PublicArticleController;
 import tw.basketball.magazine.content.application.PublicArticleService;
 import tw.basketball.magazine.content.persistence.JdbcPublicArticleRepository;
+import tw.basketball.magazine.search.api.PublicSearchController;
+import tw.basketball.magazine.search.application.SearchService;
 
-abstract class PublicIssueApiIntegrationTestSupport {
+public abstract class PublicIssueApiIntegrationTestSupport {
     private static final String POSTGRES_IMAGE = "postgres:18.4-alpine";
     private static final String FOUNDATION_MIGRATION = "/db/migration/V001__foundation.sql";
     private static final String PUBLICATION_MIGRATION = "/db/migration/V002__publication_content_core.sql";
     private static final String CONTRIBUTOR_MIGRATION = "/db/migration/V003__article_contributors.sql";
+    private static final String TAXONOMY_SEARCH_MIGRATION =
+            "/db/migration/V012__taxonomy_and_search.sql";
     private static final String CHECKSUM = "a".repeat(64);
     private static final ObjectMapper JSON = new ObjectMapper();
 
@@ -51,7 +55,7 @@ abstract class PublicIssueApiIntegrationTestSupport {
     protected MockMvc mockMvc;
 
     @BeforeAll
-    static void startPostgresAndApplyMigrations() throws Exception {
+    protected static void startPostgresAndApplyMigrations() throws Exception {
         POSTGRES.start();
         DataSource dataSource = new DriverManagerDataSource(
                 POSTGRES.getJdbcUrl(),
@@ -63,18 +67,20 @@ abstract class PublicIssueApiIntegrationTestSupport {
         applyMigration(dataSource, CONTRIBUTOR_MIGRATION);
         applyMigration(dataSource, "/db/migration/V004__editorial_publication_workflow.sql");
         applyMigration(dataSource, "/db/migration/V005__editorial_publication_gate_hardening.sql");
+        applyMigration(dataSource, TAXONOMY_SEARCH_MIGRATION);
         jdbcTemplate = new JdbcTemplate(dataSource);
     }
 
     @AfterAll
-    static void stopPostgres() {
+    protected static void stopPostgres() {
         POSTGRES.stop();
     }
 
     @BeforeEach
-    void createControllerAndCleanPublicationData() {
+    protected void createControllerAndCleanPublicationData() {
         jdbcTemplate.update("""
-                TRUNCATE TABLE publication_impact_link, publication_snapshot, publication_review,
+                TRUNCATE TABLE search_document, article_taxonomy, taxonomy_alias, taxonomy_term,
+                    publication_impact_link, publication_snapshot, publication_review,
                     publication_rights_reference, publication_job, publication_idempotency,
                     article_contributor, contributor, issue_article, issue_section, article_revision, article,
                     publication_issue, media_variant, rights_record, media_asset
@@ -82,7 +88,8 @@ abstract class PublicIssueApiIntegrationTestSupport {
                 """);
         mockMvc = MockMvcBuilders.standaloneSetup(
                 new PublicIssueController(new PublicIssueService(new JdbcPublicIssueRepository(jdbcTemplate))),
-                new PublicArticleController(new PublicArticleService(new JdbcPublicArticleRepository(jdbcTemplate)))
+                new PublicArticleController(new PublicArticleService(new JdbcPublicArticleRepository(jdbcTemplate))),
+                new PublicSearchController(new SearchService(jdbcTemplate))
         ).build();
     }
 

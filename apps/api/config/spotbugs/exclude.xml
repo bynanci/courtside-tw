@@ -30,4 +30,9 @@
     <Field name="objectMapper"/>
     <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
+  <Match>
+    <Class name="tw.basketball.magazine.taxonomy.api.EditorialTaxonomyController"/>
+    <Field name="service"/>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
 </FindBugsFilter>

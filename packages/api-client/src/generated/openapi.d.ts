@@ -873,24 +873,60 @@ export interface paths {
       cookie?: never
     }
     /**
-     * List taxonomy terms
-     * @description Lists taxonomy terms visible to the editorial actor.
+     * List managed taxonomy terms
+     * @description Lists taxonomy terms by immutable key; display names remain mutable attributes.
      */
-    get: operations["listEditorTaxonomy"]
+    get: operations["listManagedTaxonomy"]
     put?: never
     /**
-     * Create a taxonomy term
-     * @description Creates a taxonomy term with a stable type and slug.
+     * Create a managed taxonomy term
+     * @description Creates a UUID-addressed term with an immutable stable key.
      */
-    post: operations["createEditorTaxonomy"]
+    post: operations["createManagedTaxonomy"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/editor/taxonomy/{termId}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    post?: never
     delete?: never
     options?: never
     head?: never
     /**
-     * Patch a taxonomy term
-     * @description Updates a taxonomy term with optimistic locking.
+     * Update taxonomy attributes
+     * @description Updates display attributes and lifecycle without changing the UUID or stable key.
      */
-    patch: operations["patchEditorTaxonomy"]
+    patch: operations["patchManagedTaxonomy"]
+    trace?: never
+  }
+  "/api/v1/editor/taxonomy/{termId}/aliases": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Add a versioned taxonomy alias
+     * @description Adds a validity-bounded alias and advances the parent term version.
+     */
+    post: operations["addManagedTaxonomyAlias"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
     trace?: never
   }
 }
@@ -1045,7 +1081,13 @@ export interface components {
       /** Format: date-time */
       publishedAt?: string
     }
+    SearchQuery: {
+      raw: string
+      normalized: string
+      taxonomy: string[]
+    }
     SearchResultPage: {
+      query: components["schemas"]["SearchQuery"]
       items: components["schemas"]["SearchResult"][]
       page: components["schemas"]["PageMeta"]
     }
@@ -1337,16 +1379,68 @@ export interface components {
       /** @enum {string} */
       status: "PENDING" | "VERIFIED" | "FAILED" | "SUPERSEDED" | "WITHDRAWN"
     }
-    TaxonomyInput: {
-      type: string
-      slug: string
-      name: string
+    /** @enum {string} */
+    TaxonomyKind: "LEAGUE" | "SEASON" | "TEAM" | "PLAYER" | "PERSON" | "VENUE" | "TOPIC"
+    /** @enum {string} */
+    TaxonomyStatus: "ACTIVE" | "RETIRED"
+    ManagedTaxonomyAlias: {
+      id: components["schemas"]["Uuid"]
+      alias: string
+      normalizedAlias: string
+      locale: string
+      /** Format: date-time */
+      validFrom: string
+      /** Format: date-time */
+      validUntil: string | null
+      version: number
     }
-    TaxonomyPatch: {
-      termId: components["schemas"]["Uuid"]
-      changes: {
-        [key: string]: unknown
-      }
+    ManagedTaxonomyTerm: {
+      id: components["schemas"]["Uuid"]
+      key: string
+      kind: components["schemas"]["TaxonomyKind"]
+      displayName: string
+      locale: string
+      /** Format: date-time */
+      validFrom: string
+      /** Format: date-time */
+      validUntil: string | null
+      status: components["schemas"]["TaxonomyStatus"]
+      version: number
+      aliases: components["schemas"]["ManagedTaxonomyAlias"][]
+    }
+    ManagedTaxonomyPage: {
+      items: components["schemas"]["ManagedTaxonomyTerm"][]
+    }
+    ManagedTaxonomyInput: {
+      key: string
+      kind: components["schemas"]["TaxonomyKind"]
+      displayName: string
+      /** @default zh-TW */
+      locale: string
+      /** Format: date-time */
+      validFrom?: string
+      /** Format: date-time */
+      validUntil?: string | null
+    }
+    ManagedTaxonomyPatch: {
+      displayName?: string
+      locale?: string
+      /** Format: date-time */
+      validFrom?: string
+      /** Format: date-time */
+      validUntil?: string | null
+      /** @default false */
+      clearValidUntil: boolean
+      status?: components["schemas"]["TaxonomyStatus"]
+    }
+    ManagedTaxonomyAliasInput: {
+      alias: string
+      /** @default zh-TW */
+      locale: string
+      /** Format: date-time */
+      validFrom?: string
+      /** Format: date-time */
+      validUntil?: string | null
     }
     WithdrawRequest: {
       reason: string
@@ -1849,13 +1943,15 @@ export interface operations {
   }
   searchPublicContent: {
     parameters: {
-      query: {
+      query?: {
         /** @description Opaque cursor returned by the previous page. */
         cursor?: components["parameters"]["Cursor"]
         /** @description Bounded page size. */
         limit?: components["parameters"]["Limit"]
-        q: string
+        q?: string
         type?: "article" | "issue"
+        /** @description Stable taxonomy slugs; repeated values use OR semantics. */
+        taxonomy?: string[]
       }
       header?: never
       path?: never
@@ -1867,11 +1963,21 @@ export interface operations {
       200: {
         headers: {
           "X-Request-Id": components["headers"]["XRequestId"]
+          ETag: components["headers"]["ETag"]
           [name: string]: unknown
         }
         content: {
           "application/json": components["schemas"]["SearchResultPage"]
         }
+      }
+      /** @description The current representation matches If-None-Match. */
+      304: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          ETag: components["headers"]["ETag"]
+          [name: string]: unknown
+        }
+        content?: never
       }
       400: components["responses"]["Problem400"]
       429: components["responses"]["Problem429"]
@@ -3411,13 +3517,11 @@ export interface operations {
       429: components["responses"]["Problem429"]
     }
   }
-  listEditorTaxonomy: {
+  listManagedTaxonomy: {
     parameters: {
       query?: {
-        /** @description Opaque cursor returned by the previous page. */
-        cursor?: components["parameters"]["Cursor"]
-        /** @description Bounded page size. */
-        limit?: components["parameters"]["Limit"]
+        kind?: components["schemas"]["TaxonomyKind"]
+        status?: components["schemas"]["TaxonomyStatus"]
       }
       header?: never
       path?: never
@@ -3432,7 +3536,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          "application/json": components["schemas"]["TaxonomyPage"]
+          "application/json": components["schemas"]["ManagedTaxonomyPage"]
         }
       }
       400: components["responses"]["Problem400"]
@@ -3441,19 +3545,16 @@ export interface operations {
       429: components["responses"]["Problem429"]
     }
   }
-  createEditorTaxonomy: {
+  createManagedTaxonomy: {
     parameters: {
       query?: never
-      header: {
-        /** @description Stable retry key. Replays return the original operation result. */
-        "Idempotency-Key": components["parameters"]["IdempotencyKey"]
-      }
+      header?: never
       path?: never
       cookie?: never
     }
     requestBody: {
       content: {
-        "application/json": components["schemas"]["TaxonomyInput"]
+        "application/json": components["schemas"]["ManagedTaxonomyInput"]
       }
     }
     responses: {
@@ -3461,35 +3562,35 @@ export interface operations {
       201: {
         headers: {
           "X-Request-Id": components["headers"]["XRequestId"]
+          ETag: components["headers"]["ETag"]
           [name: string]: unknown
         }
         content: {
-          "application/json": components["schemas"]["TaxonomyTerm"]
+          "application/json": components["schemas"]["ManagedTaxonomyTerm"]
         }
       }
       400: components["responses"]["Problem400"]
       401: components["responses"]["Problem401"]
       403: components["responses"]["Problem403"]
       409: components["responses"]["Problem409"]
-      422: components["responses"]["Problem422"]
       429: components["responses"]["Problem429"]
     }
   }
-  patchEditorTaxonomy: {
+  patchManagedTaxonomy: {
     parameters: {
       query?: never
       header: {
         /** @description Optimistic-lock version or ETag. The server rejects stale values with 409 VERSION_CONFLICT. */
         "If-Match": components["parameters"]["IfMatch"]
-        /** @description Stable retry key. Replays return the original operation result. */
-        "Idempotency-Key": components["parameters"]["IdempotencyKey"]
       }
-      path?: never
+      path: {
+        termId: components["schemas"]["Uuid"]
+      }
       cookie?: never
     }
     requestBody: {
       content: {
-        "application/json": components["schemas"]["TaxonomyPatch"]
+        "application/json": components["schemas"]["ManagedTaxonomyPatch"]
       }
     }
     responses: {
@@ -3497,10 +3598,11 @@ export interface operations {
       200: {
         headers: {
           "X-Request-Id": components["headers"]["XRequestId"]
+          ETag: components["headers"]["ETag"]
           [name: string]: unknown
         }
         content: {
-          "application/json": components["schemas"]["TaxonomyTerm"]
+          "application/json": components["schemas"]["ManagedTaxonomyTerm"]
         }
       }
       400: components["responses"]["Problem400"]
@@ -3508,7 +3610,43 @@ export interface operations {
       403: components["responses"]["Problem403"]
       404: components["responses"]["Problem404"]
       409: components["responses"]["Problem409"]
-      422: components["responses"]["Problem422"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  addManagedTaxonomyAlias: {
+    parameters: {
+      query?: never
+      header: {
+        /** @description Optimistic-lock version or ETag. The server rejects stale values with 409 VERSION_CONFLICT. */
+        "If-Match": components["parameters"]["IfMatch"]
+      }
+      path: {
+        termId: components["schemas"]["Uuid"]
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ManagedTaxonomyAliasInput"]
+      }
+    }
+    responses: {
+      /** @description Successful response. */
+      201: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          ETag: components["headers"]["ETag"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ManagedTaxonomyTerm"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      409: components["responses"]["Problem409"]
       429: components["responses"]["Problem429"]
     }
   }

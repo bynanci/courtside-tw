@@ -22,6 +22,7 @@ const ALLOWED_PREFIXES = [
   "editor/articles",
   "editor/issues",
   "editor/media",
+  "editor/taxonomy",
   "publisher/articles",
   "publisher/issues",
   "publisher/media",
@@ -68,14 +69,7 @@ async function proxyStudioRequest(
     setResponseStatus(event, 404)
     return null
   }
-  if (
-    !ALLOWED_PREFIXES.some(
-      (prefix) =>
-        normalizedPath === prefix ||
-        normalizedPath.startsWith(`${prefix}/`) ||
-        normalizedPath.startsWith(`${prefix}:`)
-    )
-  ) {
+  if (!isAllowedStudioPath(normalizedPath)) {
     setResponseStatus(event, 404)
     return null
   }
@@ -148,4 +142,14 @@ export function isSafeProxyPath(path: string): boolean {
     return false
   }
   return path.split("/").every((segment) => segment !== "." && segment !== "..")
+}
+
+/** Exact bounded surface the authenticated Studio BFF may proxy. */
+export function isAllowedStudioPath(path: string): boolean {
+  return (
+    isSafeProxyPath(path) &&
+    ALLOWED_PREFIXES.some(
+      (prefix) => path === prefix || path.startsWith(`${prefix}/`) || path.startsWith(`${prefix}:`)
+    )
+  )
 }

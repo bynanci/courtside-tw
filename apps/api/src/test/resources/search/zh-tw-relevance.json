@@ -1,0 +1,49 @@
+{
+  "schemaVersion": 1,
+  "thresholds": {
+    "minimumNdcgAt10": 0.85,
+    "maximumP95Milliseconds": 500,
+    "maximumFreshnessSeconds": 60
+  },
+  "escalation": {
+    "condition": "Escalate to a dedicated search service only after two consecutive exact-head runs miss NDCG@10, p95, or freshness after query/index tuning.",
+    "owner": "Discovery"
+  },
+  "documents": [
+    {
+      "slug": "season-analysis",
+      "title": "台籃 季後賽分析",
+      "dek": "季後賽對位與輪替觀察"
+    },
+    {
+      "slug": "courtside-guide",
+      "title": "台籃 Courtside",
+      "dek": "Taiwan basketball courtside guide",
+      "termKey": "league-sbl",
+      "alias": "SBL"
+    },
+    {
+      "slug": "dreamers-profile",
+      "title": "夢想家",
+      "dek": "福爾摩沙夢想家球隊專題"
+    }
+  ],
+  "queries": [
+    {
+      "query": "台籃 季後賽分析",
+      "judgments": [{ "slug": "season-analysis", "relevance": 3 }]
+    },
+    {
+      "query": "台籃 Courtside",
+      "judgments": [{ "slug": "courtside-guide", "relevance": 3 }]
+    },
+    {
+      "query": "SBL",
+      "judgments": [{ "slug": "courtside-guide", "relevance": 3 }]
+    },
+    {
+      "query": "夢想家",
+      "judgments": [{ "slug": "dreamers-profile", "relevance": 3 }]
+    }
+  ]
+}

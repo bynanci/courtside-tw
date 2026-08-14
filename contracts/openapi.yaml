@@ -204,11 +204,11 @@ paths:
         - $ref: "#/components/parameters/Limit"
         - name: q
           in: query
-          required: true
+          required: false
           schema:
             type: string
-            minLength: 1
             maxLength: 200
+            default: ""
         - name: type
           in: query
           required: false
@@ -217,6 +217,16 @@ paths:
             enum:
               - article
               - issue
+        - name: taxonomy
+          in: query
+          required: false
+          description: Stable taxonomy slugs; repeated values use OR semantics.
+          schema:
+            type: array
+            maxItems: 20
+            items:
+              type: string
+              pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
       responses:
         "200":
           description: Successful response.
@@ -227,6 +237,10 @@ paths:
               examples:
                 valid:
                   value:
+                    query:
+                      raw: ""
+                      normalized: ""
+                      taxonomy: []
                     items: []
                     page:
                       nextCursor: null
@@ -234,8 +248,17 @@ paths:
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
+            ETag:
+              $ref: "#/components/headers/ETag"
         "400":
           $ref: "#/components/responses/Problem400"
+        "304":
+          description: The current representation matches If-None-Match.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+            ETag:
+              $ref: "#/components/headers/ETag"
         "429":
           $ref: "#/components/responses/Problem429"
   /api/v1/public/taxonomy/{type}:
@@ -2530,34 +2553,84 @@ paths:
       x-required-roles:
         - PUBLISHER
   /api/v1/editor/taxonomy:
-    post:
+    get:
       tags:
         - Editorial
-      operationId: createEditorTaxonomy
-      summary: Create a taxonomy term
-      description: Creates a taxonomy term with a stable type and slug.
+      operationId: listManagedTaxonomy
+      summary: List managed taxonomy terms
+      description: Lists taxonomy terms by immutable key; display names remain mutable attributes.
       security:
         - bffSession: []
         - oidcBearer: []
       parameters:
-        - $ref: "#/components/parameters/IdempotencyKey"
+        - name: kind
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/TaxonomyKind"
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/TaxonomyStatus"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagedTaxonomyPage"
+              examples:
+                valid:
+                  value:
+                    items: []
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-required-roles:
+        - EDITOR
+    post:
+      tags:
+        - Editorial
+      operationId: createManagedTaxonomy
+      summary: Create a managed taxonomy term
+      description: Creates a UUID-addressed term with an immutable stable key.
+      security:
+        - bffSession: []
+        - oidcBearer: []
       responses:
         "201":
           description: Successful response.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TaxonomyTerm"
+                $ref: "#/components/schemas/ManagedTaxonomyTerm"
               examples:
                 valid:
                   value:
-                    termId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
-                    type: topic
-                    slug: tpbl
-                    name: TPBL
+                    id: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    key: tpbl
+                    kind: LEAGUE
+                    displayName: 台灣職業籃球大聯盟
+                    locale: zh-TW
+                    validFrom: 2026-08-14T00:00:00Z
+                    validUntil: null
+                    status: ACTIVE
+                    version: 0
+                    aliases: []
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
+            ETag:
+              $ref: "#/components/headers/ETag"
         "400":
           $ref: "#/components/responses/Problem400"
         "401":
@@ -2566,8 +2639,6 @@ paths:
           $ref: "#/components/responses/Problem403"
         "409":
           $ref: "#/components/responses/Problem409"
-        "422":
-          $ref: "#/components/responses/Problem422"
         "429":
           $ref: "#/components/responses/Problem429"
       requestBody:
@@ -2575,84 +2646,59 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/TaxonomyInput"
+              $ref: "#/components/schemas/ManagedTaxonomyInput"
             examples:
               valid:
                 value:
-                  type: topic
-                  slug: tpbl
-                  name: TPBL
-      x-idempotent: true
+                  key: tpbl
+                  kind: LEAGUE
+                  displayName: 台灣職業籃球大聯盟
+                  locale: zh-TW
+                  validFrom: 2026-08-14T00:00:00Z
       x-required-roles:
         - EDITOR
-    get:
-      tags:
-        - Editorial
-      operationId: listEditorTaxonomy
-      summary: List taxonomy terms
-      description: Lists taxonomy terms visible to the editorial actor.
-      security:
-        - bffSession: []
-        - oidcBearer: []
-      parameters:
-        - $ref: "#/components/parameters/Cursor"
-        - $ref: "#/components/parameters/Limit"
-      responses:
-        "200":
-          description: Successful response.
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/TaxonomyPage"
-              examples:
-                valid:
-                  value:
-                    items: []
-                    page:
-                      nextCursor: null
-                      limit: 20
-          headers:
-            X-Request-Id:
-              $ref: "#/components/headers/XRequestId"
-        "400":
-          $ref: "#/components/responses/Problem400"
-        "401":
-          $ref: "#/components/responses/Problem401"
-        "403":
-          $ref: "#/components/responses/Problem403"
-        "429":
-          $ref: "#/components/responses/Problem429"
-      x-required-roles:
-        - EDITOR
+  /api/v1/editor/taxonomy/{termId}:
     patch:
       tags:
         - Editorial
-      operationId: patchEditorTaxonomy
-      summary: Patch a taxonomy term
-      description: Updates a taxonomy term with optimistic locking.
+      operationId: patchManagedTaxonomy
+      summary: Update taxonomy attributes
+      description: Updates display attributes and lifecycle without changing the UUID or stable key.
       security:
         - bffSession: []
         - oidcBearer: []
       parameters:
+        - name: termId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/Uuid"
         - $ref: "#/components/parameters/IfMatch"
-        - $ref: "#/components/parameters/IdempotencyKey"
       responses:
         "200":
           description: Successful response.
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/TaxonomyTerm"
+                $ref: "#/components/schemas/ManagedTaxonomyTerm"
               examples:
                 valid:
                   value:
-                    termId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
-                    type: topic
-                    slug: tpbl
-                    name: TPBL
+                    id: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    key: tpbl
+                    kind: LEAGUE
+                    displayName: TPBL
+                    locale: zh-TW
+                    validFrom: 2026-08-14T00:00:00Z
+                    validUntil: null
+                    status: ACTIVE
+                    version: 1
+                    aliases: []
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
+            ETag:
+              $ref: "#/components/headers/ETag"
         "400":
           $ref: "#/components/responses/Problem400"
         "401":
@@ -2663,8 +2709,6 @@ paths:
           $ref: "#/components/responses/Problem404"
         "409":
           $ref: "#/components/responses/Problem409"
-        "422":
-          $ref: "#/components/responses/Problem422"
         "429":
           $ref: "#/components/responses/Problem429"
       requestBody:
@@ -2672,14 +2716,88 @@ paths:
         content:
           application/json:
             schema:
-              $ref: "#/components/schemas/TaxonomyPatch"
+              $ref: "#/components/schemas/ManagedTaxonomyPatch"
             examples:
               valid:
                 value:
-                  termId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
-                  changes:
-                    name: TPBL
-      x-idempotent: true
+                  displayName: TPBL
+                  status: ACTIVE
+      x-optimistic-lock: If-Match
+      x-required-roles:
+        - EDITOR
+  /api/v1/editor/taxonomy/{termId}/aliases:
+    post:
+      tags:
+        - Editorial
+      operationId: addManagedTaxonomyAlias
+      summary: Add a versioned taxonomy alias
+      description: Adds a validity-bounded alias and advances the parent term version.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - name: termId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/Uuid"
+        - $ref: "#/components/parameters/IfMatch"
+      responses:
+        "201":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ManagedTaxonomyTerm"
+              examples:
+                valid:
+                  value:
+                    id: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    key: tpbl
+                    kind: LEAGUE
+                    displayName: TPBL
+                    locale: zh-TW
+                    validFrom: 2026-08-14T00:00:00Z
+                    validUntil: null
+                    status: ACTIVE
+                    version: 1
+                    aliases:
+                      - id: 0190f7b0-7c4b-7e3a-8f12-123456789abd
+                        alias: 台職籃
+                        normalizedAlias: 台職籃
+                        locale: zh-TW
+                        validFrom: 2026-08-14T00:00:00Z
+                        validUntil: null
+                        version: 0
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+            ETag:
+              $ref: "#/components/headers/ETag"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ManagedTaxonomyAliasInput"
+            examples:
+              valid:
+                value:
+                  alias: 台職籃
+                  locale: zh-TW
+                  validFrom: 2026-08-14T00:00:00Z
       x-optimistic-lock: If-Match
       x-required-roles:
         - EDITOR
@@ -3284,13 +3402,33 @@ components:
         publishedAt:
           type: string
           format: date-time
+    SearchQuery:
+      type: object
+      additionalProperties: false
+      required:
+        - raw
+        - normalized
+        - taxonomy
+      properties:
+        raw:
+          type: string
+        normalized:
+          type: string
+        taxonomy:
+          type: array
+          maxItems: 20
+          items:
+            type: string
     SearchResultPage:
       type: object
       additionalProperties: false
       required:
+        - query
         - items
         - page
       properties:
+        query:
+          $ref: "#/components/schemas/SearchQuery"
         items:
           type: array
           items:
@@ -4194,36 +4332,190 @@ components:
             - FAILED
             - SUPERSEDED
             - WITHDRAWN
-    TaxonomyInput:
+    TaxonomyKind:
+      type: string
+      enum:
+        - LEAGUE
+        - SEASON
+        - TEAM
+        - PLAYER
+        - PERSON
+        - VENUE
+        - TOPIC
+    TaxonomyStatus:
+      type: string
+      enum:
+        - ACTIVE
+        - RETIRED
+    ManagedTaxonomyAlias:
       type: object
       additionalProperties: false
       required:
-        - type
-        - slug
-        - name
+        - id
+        - alias
+        - normalizedAlias
+        - locale
+        - validFrom
+        - validUntil
+        - version
       properties:
-        type:
-          type: string
-        slug:
-          type: string
-          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
-        name:
+        id:
+          $ref: "#/components/schemas/Uuid"
+        alias:
           type: string
           minLength: 1
-          maxLength: 200
-    TaxonomyPatch:
+          maxLength: 250
+        normalizedAlias:
+          type: string
+          minLength: 1
+          maxLength: 250
+        locale:
+          type: string
+          pattern: ^[a-z]{2,3}(?:-[A-Z]{2})?$
+        validFrom:
+          type: string
+          format: date-time
+        validUntil:
+          type:
+            - string
+            - "null"
+          format: date-time
+        version:
+          type: integer
+          minimum: 0
+    ManagedTaxonomyTerm:
       type: object
       additionalProperties: false
       required:
-        - termId
-        - changes
+        - id
+        - key
+        - kind
+        - displayName
+        - locale
+        - validFrom
+        - validUntil
+        - status
+        - version
+        - aliases
       properties:
-        termId:
+        id:
           $ref: "#/components/schemas/Uuid"
-        changes:
-          type: object
-          minProperties: 1
-          additionalProperties: true
+        key:
+          type: string
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        kind:
+          $ref: "#/components/schemas/TaxonomyKind"
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 250
+        locale:
+          type: string
+          pattern: ^[a-z]{2,3}(?:-[A-Z]{2})?$
+        validFrom:
+          type: string
+          format: date-time
+        validUntil:
+          type:
+            - string
+            - "null"
+          format: date-time
+        status:
+          $ref: "#/components/schemas/TaxonomyStatus"
+        version:
+          type: integer
+          minimum: 0
+        aliases:
+          type: array
+          items:
+            $ref: "#/components/schemas/ManagedTaxonomyAlias"
+    ManagedTaxonomyPage:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          maxItems: 200
+          items:
+            $ref: "#/components/schemas/ManagedTaxonomyTerm"
+    ManagedTaxonomyInput:
+      type: object
+      additionalProperties: false
+      required:
+        - key
+        - kind
+        - displayName
+      properties:
+        key:
+          type: string
+          pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
+        kind:
+          $ref: "#/components/schemas/TaxonomyKind"
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 250
+        locale:
+          type: string
+          pattern: ^[a-z]{2,3}(?:-[A-Z]{2})?$
+          default: zh-TW
+        validFrom:
+          type: string
+          format: date-time
+        validUntil:
+          type:
+            - string
+            - "null"
+          format: date-time
+    ManagedTaxonomyPatch:
+      type: object
+      additionalProperties: false
+      minProperties: 1
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 250
+        locale:
+          type: string
+          pattern: ^[a-z]{2,3}(?:-[A-Z]{2})?$
+        validFrom:
+          type: string
+          format: date-time
+        validUntil:
+          type:
+            - string
+            - "null"
+          format: date-time
+        clearValidUntil:
+          type: boolean
+          default: false
+        status:
+          $ref: "#/components/schemas/TaxonomyStatus"
+    ManagedTaxonomyAliasInput:
+      type: object
+      additionalProperties: false
+      required:
+        - alias
+      properties:
+        alias:
+          type: string
+          minLength: 1
+          maxLength: 250
+        locale:
+          type: string
+          pattern: ^[a-z]{2,3}(?:-[A-Z]{2})?$
+          default: zh-TW
+        validFrom:
+          type: string
+          format: date-time
+        validUntil:
+          type:
+            - string
+            - "null"
+          format: date-time
     WithdrawRequest:
       type: object
       additionalProperties: false

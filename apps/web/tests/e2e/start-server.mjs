@@ -283,6 +283,7 @@ let studioIssueState = createStudioIssueState()
 let studioIssueSections = createStudioIssueSections()
 let studioAuditEvents = []
 let studioReceipts = new Map()
+let studioTaxonomyTerms = []
 
 function createStudioIssueState() {
   return {
@@ -350,6 +351,7 @@ function resetStudioState(initialState = "DRAFT") {
   studioIssueSections = createStudioIssueSections()
   studioAuditEvents = []
   studioReceipts = new Map()
+  studioTaxonomyTerms = []
 }
 
 function studioArticle() {
@@ -446,6 +448,83 @@ const apiServer = createServer(async (request, response) => {
         "AUTHENTICATION_REQUIRED"
       )
       return
+    }
+
+    const taxonomyBasePath = "/api/v1/editor/taxonomy"
+    if (requestUrl.pathname === taxonomyBasePath && request.method === "GET") {
+      const kind = requestUrl.searchParams.get("kind")
+      const status = requestUrl.searchParams.get("status")
+      const items = studioTaxonomyTerms.filter(
+        (term) => (!kind || term.kind === kind) && (!status || term.status === status)
+      )
+      writeJson(response, 200, { items })
+      return
+    }
+    if (requestUrl.pathname === taxonomyBasePath && request.method === "POST") {
+      const body = await readJson(request)
+      if (studioTaxonomyTerms.some((term) => term.key === body.key)) {
+        writeProblem(response, 400, "Taxonomy key already exists.", "INVALID_REQUEST")
+        return
+      }
+      const term = {
+        id: globalThis.crypto.randomUUID(),
+        key: String(body.key),
+        kind: String(body.kind),
+        displayName: String(body.displayName),
+        locale: String(body.locale ?? "zh-TW"),
+        validFrom: "2026-08-01T00:00:00Z",
+        validUntil: null,
+        status: "ACTIVE",
+        version: 0,
+        aliases: []
+      }
+      studioTaxonomyTerms.push(term)
+      writeJson(response, 201, term)
+      return
+    }
+    if (requestUrl.pathname.startsWith(`${taxonomyBasePath}/`)) {
+      const suffix = requestUrl.pathname.slice(`${taxonomyBasePath}/`.length)
+      const [termId, nested] = suffix.split("/")
+      const index = studioTaxonomyTerms.findIndex((term) => term.id === termId)
+      if (index < 0) {
+        writeProblem(response, 404, "Taxonomy term was not found.", "RESOURCE_NOT_FOUND")
+        return
+      }
+      const current = studioTaxonomyTerms[index]
+      const expectedVersion = Number(String(request.headers["if-match"] ?? "").replaceAll('"', ""))
+      if (expectedVersion !== current.version) {
+        writeProblem(response, 409, "Taxonomy term version is stale.", "VERSION_CONFLICT")
+        return
+      }
+      const body = await readJson(request)
+      if (nested === "aliases" && request.method === "POST") {
+        const alias = {
+          id: globalThis.crypto.randomUUID(),
+          alias: String(body.alias),
+          normalizedAlias: String(body.alias).toLocaleLowerCase().replaceAll("+", "").trim(),
+          locale: String(body.locale ?? "zh-TW"),
+          validFrom: "2026-08-01T00:00:00Z",
+          validUntil: null,
+          version: 0
+        }
+        studioTaxonomyTerms[index] = {
+          ...current,
+          version: current.version + 1,
+          aliases: [...current.aliases, alias]
+        }
+        writeJson(response, 201, studioTaxonomyTerms[index])
+        return
+      }
+      if (!nested && request.method === "PATCH") {
+        studioTaxonomyTerms[index] = {
+          ...current,
+          displayName: String(body.displayName ?? current.displayName),
+          status: String(body.status ?? current.status),
+          version: current.version + 1
+        }
+        writeJson(response, 200, studioTaxonomyTerms[index])
+        return
+      }
     }
 
     if (requestUrl.pathname === "/api/v1/editor/issues" && request.method === "GET") {
@@ -740,6 +819,34 @@ const apiServer = createServer(async (request, response) => {
   }
   if (requestUrl.pathname === "/api/v1/public/issues/issue-2025-12") {
     writeJson(response, 200, archivedIssueDetail)
+    return
+  }
+
+  if (requestUrl.pathname === "/api/v1/public/search") {
+    const raw = requestUrl.searchParams.get("q") ?? ""
+    const normalized = raw
+      .normalize("NFKC")
+      .toLocaleLowerCase("zh-TW")
+      .replaceAll(/[^\p{Letter}\p{Number}]+/gu, " ")
+      .trim()
+    const items =
+      normalized.includes("台籃") && normalized.includes("courtside")
+        ? [
+            {
+              articleId: "0190f7b0-7c4b-7e3a-8f12-123456789abd",
+              slug: "opening-night",
+              title: "台籃 Courtside：主場燈光亮起之前",
+              snippet: "從 Courtside 看台灣籃球的主場記憶。",
+              issueSlug: "issue-2026-01",
+              publishedAt: "2026-08-01T00:00:00Z"
+            }
+          ]
+        : []
+    writeJson(response, 200, {
+      query: { raw, normalized, taxonomy: [] },
+      items,
+      page: { nextCursor: null, limit: Number(requestUrl.searchParams.get("limit") ?? 20) }
+    })
     return
   }
 

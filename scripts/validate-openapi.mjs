@@ -54,7 +54,9 @@ const expectedPaths = {
   "/api/v1/editor/media/{id}": ["get", "patch"],
   "/api/v1/editor/media/{id}:complete": ["post"],
   "/api/v1/publisher/media/{id}:revoke": ["post"],
-  "/api/v1/editor/taxonomy": ["post", "get", "patch"]
+  "/api/v1/editor/taxonomy": ["post", "get"],
+  "/api/v1/editor/taxonomy/{termId}": ["patch"],
+  "/api/v1/editor/taxonomy/{termId}/aliases": ["post"]
 }
 
 const expectedErrorStatuses = [400, 401, 403, 404, 409, 422, 429]
@@ -224,8 +226,7 @@ const paginated = [
   ["get", "/api/v1/me/bookmarks"],
   ["get", "/api/v1/me/progress"],
   ["get", "/api/v1/editor/issues"],
-  ["get", "/api/v1/editor/articles"],
-  ["get", "/api/v1/editor/taxonomy"]
+  ["get", "/api/v1/editor/articles"]
 ]
 for (const [method, pathName] of paginated) {
   const operation = paths[pathName][method]

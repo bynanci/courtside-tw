@@ -1,0 +1,38 @@
+{
+  "schema": "courtside-tw/task-evidence/v1",
+  "task": "T058",
+  "status": "COMPLETED_EXACT_HEAD",
+  "recorded_at": "2026-08-14T12:06:16.820Z",
+  "baseline_main": "3656835c1554b6c606e8deeeda1ec0e040428511",
+  "candidate": "d5ddfdfc3effdda807129aeef5a16b3757533e64",
+  "changed_files": [
+    "apps/api/src/main/resources/db/migration/V012__taxonomy_and_search.sql",
+    "apps/api/src/test/java/tw/basketball/magazine/publication/PublicIssueApiIntegrationTestSupport.java",
+    "apps/api/src/test/java/tw/basketball/magazine/search/PublicSearchApiIT.java",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+  ],
+  "implemented_controls": [
+    "forward-only migration because V005 is already occupied",
+    "UUID-backed taxonomy relations with managed term_key",
+    "validity windows for terms and aliases",
+    "revision-scoped article taxonomy relation",
+    "versioned search_document with source checksum",
+    "pg_trgm GIN indexes for normalized text and title",
+    "application role grants limited to taxonomy/search tables"
+  ],
+  "proof": {
+    "source_diff_check": "PASS",
+    "schema_contract_test_authored": "PASS",
+    "postgres_migration_execution": "PASS in exact-head Java/Testcontainers and Docker jobs on CI run 31793003839",
+    "exact_head_ci_security": "PASS on final exact head 8121672a94756e52541e9f7d500ba9334236e685: CI run 31793579496 and Security run 31793579485"
+  },
+  "scope_guard": {
+    "pr_92_modified": false,
+    "repository_protection_modified": false,
+    "t059_taxonomy_api_implemented": true,
+    "t060_projection_worker_implemented": true,
+    "t061_search_api_implemented": true
+  },
+  "next_action": "None; see t057-t063-exact-head-20260814.json for consolidated completion evidence.",
+  "verified_head": "8121672a94756e52541e9f7d500ba9334236e685"
+}
