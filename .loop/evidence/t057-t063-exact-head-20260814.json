@@ -3,9 +3,9 @@
   "issue": 89,
   "pull_request": 94,
   "status": "COMPLETED_EXACT_HEAD",
-  "recorded_at": "2026-08-14T10:44:00Z",
+  "recorded_at": "2026-08-14T12:06:16.820Z",
   "baseline_main": "3656835c1554b6c606e8deeeda1ec0e040428511",
-  "verified_implementation_head": "f3f094f26cadcd00bbdaad9af17893f9d282297f",
+  "verified_implementation_head": "8121672a94756e52541e9f7d500ba9334236e685",
   "tasks": {
     "T057": "Tests-first search contract covers empty, punctuation-only, mixed zh-TW/English, alias, withdrawal, cache freshness and SSR states.",
     "T058": "V012 adds UUID-backed taxonomy, validity, article relations, versioned search projection and pg_trgm indexes.",
@@ -16,12 +16,12 @@
     "T063": "Curated relevance, production-seam latency/freshness test and k6 HTTP gate report thresholds plus escalation conditions."
   },
   "ci": {
-    "run_id": 31793003839,
-    "run_number": 516,
+    "run_id": 31793579496,
+    "run_number": 517,
     "conclusion": "success",
     "jobs": [
       {
-        "id": 94743959914,
+        "id": 94745642062,
         "name": "Java quality and unit verification",
         "conclusion": "success",
         "tests": 181,
@@ -30,17 +30,17 @@
         "skipped": 0
       },
       {
-        "id": 94743959921,
+        "id": 94745641945,
         "name": "Frontend and contract verification",
         "conclusion": "success"
       },
       {
-        "id": 94743959832,
+        "id": 94745641903,
         "name": "Docker Compose dependency health",
         "conclusion": "success"
       },
       {
-        "id": 94744221810,
+        "id": 94745849368,
         "name": "Public magazine browser verification",
         "conclusion": "success",
         "full_regression_tests": 35,
@@ -50,28 +50,60 @@
   },
   "search_gate": {
     "fixture": "apps/api/src/test/resources/search/zh-tw-relevance.json",
-    "ndcg_at_10": 1.0,
+    "ndcg_at_10": 1,
     "minimum_ndcg_at_10": 0.85,
     "p95_milliseconds": 20,
     "maximum_p95_milliseconds": 500,
-    "freshness_seconds": 30.0,
+    "freshness_seconds": 30,
     "maximum_freshness_seconds": 60,
     "http_performance_gate": "tests/performance/search.js",
     "escalation": "Escalate only after two consecutive exact-head misses remain after query/index tuning."
   },
   "security": {
-    "run_id": 31793003877,
-    "run_number": 517,
+    "run_id": 31793579485,
+    "run_number": 518,
     "conclusion": "success",
     "jobs": [
-      { "id": 94743892623, "name": "Resolve Compose images", "conclusion": "success" },
-      { "id": 94743892679, "name": "CodeQL (java-kotlin)", "conclusion": "success" },
-      { "id": 94743892715, "name": "CodeQL (javascript-typescript)", "conclusion": "success" },
-      { "id": 94743892737, "name": "Dependency audit and reports", "conclusion": "success" },
-      { "id": 94743892751, "name": "Trivy (filesystem)", "conclusion": "success" },
-      { "id": 94743941073, "name": "Trivy (image s3)", "conclusion": "success" },
-      { "id": 94743941098, "name": "Trivy (image oidc)", "conclusion": "success" },
-      { "id": 94743941105, "name": "Trivy (image postgres)", "conclusion": "success" }
+      {
+        "id": 94745641761,
+        "name": "Dependency audit and reports",
+        "conclusion": "success"
+      },
+      {
+        "id": 94745641776,
+        "name": "CodeQL (javascript-typescript)",
+        "conclusion": "success"
+      },
+      {
+        "id": 94745641786,
+        "name": "CodeQL (java-kotlin)",
+        "conclusion": "success"
+      },
+      {
+        "id": 94745641793,
+        "name": "Trivy (filesystem)",
+        "conclusion": "success"
+      },
+      {
+        "id": 94745641800,
+        "name": "Resolve Compose images",
+        "conclusion": "success"
+      },
+      {
+        "id": 94745680348,
+        "name": "Trivy (image s3)",
+        "conclusion": "success"
+      },
+      {
+        "id": 94745680365,
+        "name": "Trivy (image postgres)",
+        "conclusion": "success"
+      },
+      {
+        "id": 94745680384,
+        "name": "Trivy (image oidc)",
+        "conclusion": "success"
+      }
     ]
   },
   "scope_guard": {
