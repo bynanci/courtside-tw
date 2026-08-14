@@ -16,49 +16,23 @@ const STUDIO_PUBLIC_TARGET = STUDIO_ARTICLE_ID
 const contentDocument = JSON.parse(
   readFileSync(new URL("../fixtures/content-document-v1.json", import.meta.url), "utf8")
 )
-const issue = {
-  issueId: "0190f7b0-7c4b-7e3a-8f12-123456789abc",
-  slug: "issue-2026-01",
-  issueNumber: 1,
-  title: "主場開季：先把每一次進場讀完",
-  summary: "從主場看台出發，整理這座城市與籃球的共同記憶。",
-  cover: {
-    url: "/media/issues/issue-2026-01/cover.webp",
-    alt: "第 1 期 Courtside TW 封面",
-    width: 1200,
-    height: 1600
-  },
-  publishedAt: "2026-08-01T00:00:00Z",
-  articleCount: 2
-}
+const firstIssueFixture = JSON.parse(
+  readFileSync(
+    new URL("../../../api/src/test/resources/fixtures/first-issue/manifest.json", import.meta.url),
+    "utf8"
+  )
+)
+const issue = firstIssueFixture.issue
 const issueDetail = {
   ...issue,
-  sections: [
-    {
-      title: "開場",
-      position: 1,
-      articles: [
-        {
-          articleId: "0190f7b0-7c4b-7e3a-8f12-123456789abd",
-          slug: "opening-night",
-          title: "主場燈光亮起之前",
-          position: 1
-        }
-      ]
-    },
-    {
-      title: "場邊觀察",
-      position: 2,
-      articles: [
-        {
-          articleId: "0190f7b0-7c4b-7e3a-8f12-123456789abe",
-          slug: "courtside-notes",
-          title: "看台上的第二種節奏",
-          position: 1
-        }
-      ]
-    }
-  ]
+  sections: firstIssueFixture.sections.map((section) => ({
+    ...section,
+    articles: section.articles.map((article) => {
+      const publicArticle = { ...article }
+      Reflect.deleteProperty(publicArticle, "contentFile")
+      return publicArticle
+    })
+  }))
 }
 const archivedIssue = {
   ...issue,

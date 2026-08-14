@@ -1,0 +1,41 @@
+{
+  "schemaVersion": 1,
+  "documentId": "0190f7b0-7c4b-7e3a-8f12-123456789ab3",
+  "blocks": [
+    {
+      "id": "00000000-0000-4000-8000-000000000001",
+      "type": "paragraph",
+      "version": 1,
+      "payload": {
+        "content": [
+          {
+            "kind": "text",
+            "text": "主場燈光亮起以前，人們已經沿著熟悉的路線進場。"
+          }
+        ]
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000002",
+      "type": "heading",
+      "version": 1,
+      "payload": {
+        "level": 2,
+        "text": "主場如何成為共同記憶"
+      }
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000003",
+      "type": "paragraph",
+      "version": 1,
+      "payload": {
+        "content": [
+          {
+            "kind": "text",
+            "text": "這篇文章記錄球場、看台與城市共同形成的主場記憶。"
+          }
+        ]
+      }
+    }
+  ]
+}

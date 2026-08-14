@@ -56,6 +56,9 @@ jobs:
       - name: Validate ContentDocument contract
         run: pnpm run contract:schema
 
+      - name: Validate first-issue seed pack
+        run: node --experimental-strip-types scripts/content/import-seed.ts
+
       - name: Validate OpenAPI contract
         run: pnpm run contract:openapi
 

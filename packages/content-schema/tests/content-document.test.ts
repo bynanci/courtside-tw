@@ -53,6 +53,33 @@ test("rejects duplicate block IDs as a runtime semantic invariant", () => {
   )
 })
 
+test("keeps Java and TypeScript reader-visible text controls aligned", () => {
+  const document = (text: string) => ({
+    schemaVersion: 1,
+    documentId: "0190f7b0-7c4b-7e3a-8f12-123456789abc",
+    blocks: [
+      {
+        id: "00000000-0000-4000-8000-000000000002",
+        type: "paragraph",
+        version: 1,
+        payload: { content: [{ kind: "text", text }] }
+      }
+    ]
+  })
+
+  for (const validate of [validateContentDocument, validateBrowserContentDocument]) {
+    strictEqual(validate(document("第一行\n第二行")).valid, true)
+    for (const control of ["\u0001", "\r", "\t", "\u007f"]) {
+      const result = validate(document(`a${control}b`))
+      strictEqual(result.valid, false, JSON.stringify(result.errors))
+      strictEqual(
+        result.errors.some((error) => error.keyword === "isoControlCharacter"),
+        true
+      )
+    }
+  }
+})
+
 test("browser validator is CSP-safe and preserves the canonical checks", () => {
   const source = readFileSync(browserValidatorPath, "utf8")
   strictEqual(/require\(|new Function|\beval\s*\(/u.test(source), false)

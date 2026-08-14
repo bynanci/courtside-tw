@@ -107,3 +107,12 @@ test("snapshot navigation and heading-only TOC live behind reader components", a
   assert.match(page, /ArticleNavigation/)
   assert.match(page, /ShareArticleButton/)
 })
+
+test("article revision changes clear failed media state", async () => {
+  const page = await readFile(
+    new URL("../../../app/pages/articles/[articleSlug].vue", import.meta.url),
+    "utf8"
+  )
+
+  assert.match(page, /activeRevisionId = revisionId\s+failedAssets\.value = new Set\(\)/u)
+})

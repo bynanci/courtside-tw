@@ -1,5 +1,17 @@
+import { readFileSync } from "node:fs"
+
 import { expect, test } from "@playwright/test"
 import AxeBuilder from "@axe-core/playwright"
+
+const firstIssueFixture = JSON.parse(
+  readFileSync(
+    new URL("../../../api/src/test/resources/fixtures/first-issue/manifest.json", import.meta.url),
+    "utf8"
+  )
+) as {
+  issue: { slug: string; title: string; articleCount: number }
+  sections: Array<{ articles: Array<{ slug: string }> }>
+}
 
 test("a mobile reader reaches an article shell from Home in two activations", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" })
@@ -42,6 +54,39 @@ test("a mobile reader reaches an article shell from Home in two activations", as
 
   const accessibility = await new AxeBuilder({ page }).analyze()
   expect(accessibility.violations).toEqual([])
+})
+
+test("the first issue completes Home to Issue to TOC to Article to Closure", async ({ page }) => {
+  await page.goto("/", { waitUntil: "domcontentloaded" })
+
+  await expect(page.getByTestId("home-issue-link")).toHaveAttribute(
+    "href",
+    `/issues/${firstIssueFixture.issue.slug}`
+  )
+  await page.getByTestId("home-issue-link").click()
+
+  await expect(page).toHaveURL(new RegExp(`/issues/${firstIssueFixture.issue.slug}$`))
+  await expect(
+    page.getByRole("heading", { level: 1, name: firstIssueFixture.issue.title })
+  ).toBeVisible()
+  await expect(page.getByTestId("issue-toc")).toBeVisible()
+  await expect(page.getByTestId("article-link")).toHaveCount(firstIssueFixture.issue.articleCount)
+
+  const firstArticleSlug = firstIssueFixture.sections[0]?.articles[0]?.slug
+  if (!firstArticleSlug) throw new Error("first issue seed has no opening article")
+  await page.getByTestId("article-link").first().click()
+
+  await expect(page).toHaveURL(
+    new RegExp(`/articles/${firstArticleSlug}\\?issue=${firstIssueFixture.issue.slug}$`)
+  )
+  await expect(page.getByTestId("article-document")).toBeVisible()
+  await expect(page.getByTestId("article-toc")).toBeVisible()
+  await expect(page.getByTestId("article-return-issue-toc")).toHaveAttribute(
+    "href",
+    `/issues/${firstIssueFixture.issue.slug}#toc`
+  )
+  await expect(page.getByTestId("article-next")).toHaveAttribute("href", /courtside-notes/)
+  await expect(page.getByTestId("article-media-attribution").first()).toBeVisible()
 })
 
 test("reader links remain available in SSR output without JavaScript", async ({ browser }) => {

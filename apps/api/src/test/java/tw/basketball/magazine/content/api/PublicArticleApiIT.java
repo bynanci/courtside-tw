@@ -738,7 +738,7 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
     }
 
     @Test
-    void oversizedIssueMediaGraphFailsClosedBeforeResolution() throws Exception {
+    void oversizedIssueMediaGraphDoesNotHideTheCurrentArticle() throws Exception {
         IssueFixture issue = createIssue(
                 "issue-bounded-navigation-media",
                 18,
@@ -753,7 +753,9 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
         replaceSnapshotDocument("bounded-heavy-two", galleryHeavyDocument(106));
 
         mockMvc.perform(get("/api/v1/public/articles/bounded-opening"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.slug").value("bounded-opening"))
+                .andExpect(jsonPath("$.issueNavigation.next").value(org.hamcrest.Matchers.nullValue()));
     }
 
     @Test

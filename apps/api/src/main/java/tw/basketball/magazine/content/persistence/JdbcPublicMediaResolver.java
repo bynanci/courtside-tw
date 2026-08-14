@@ -6,6 +6,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -179,15 +180,22 @@ final class JdbcPublicMediaResolver {
         if (requested.isEmpty()) {
             return true;
         }
-        return visibleReferences(requested, now).size() == requested.size();
+        return visibleReferences(references, now).size() == requested.size();
     }
 
+    // Issue navigation may contain more references than one prepared statement can carry.
     Set<MediaReference> visibleReferences(List<MediaReference> references, Instant now) {
         Map<MediaReference, Boolean> requested = uniqueReferences(references);
         if (requested.isEmpty()) {
             return Set.of();
         }
-        return visibleReferences(requested, now);
+        List<MediaReference> ordered = requested.keySet().stream().toList();
+        Set<MediaReference> visible = new LinkedHashSet<>();
+        for (int start = 0; start < ordered.size(); start += MAXIMUM_BATCH_REFERENCES) {
+            int end = Math.min(start + MAXIMUM_BATCH_REFERENCES, ordered.size());
+            visible.addAll(visibleReferences(requestedSubset(ordered, start, end), now));
+        }
+        return Set.copyOf(visible);
     }
 
     private Set<MediaReference> visibleReferences(
@@ -215,10 +223,19 @@ final class JdbcPublicMediaResolver {
             validate(reference);
             requested.putIfAbsent(reference, Boolean.TRUE);
         }
-        if (requested.size() > MAXIMUM_BATCH_REFERENCES) {
-            throw new IllegalArgumentException("public media batch exceeds the bounded projection limit");
-        }
         return requested;
+    }
+
+    private static Map<MediaReference, Boolean> requestedSubset(
+            List<MediaReference> ordered,
+            int start,
+            int end
+    ) {
+        Map<MediaReference, Boolean> subset = new LinkedHashMap<>();
+        for (int index = start; index < end; index++) {
+            subset.put(ordered.get(index), Boolean.TRUE);
+        }
+        return subset;
     }
 
     private static String placeholders(int size) {

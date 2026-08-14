@@ -437,7 +437,6 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
         }
         Map<UUID, List<JdbcPublicMediaResolver.MediaReference>> references = new LinkedHashMap<>();
         Map<UUID, String> currentSlugs = new LinkedHashMap<>();
-        int referenceCount = 0;
         for (ArticleSummary item : items) {
             NavigationSnapshotRow row = snapshots.get(item.articleId());
             if (row == null) {
@@ -467,10 +466,6 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
             } catch (InvalidPublishedContentException | IllegalArgumentException exception) {
                 // An invalid or inaccessible neighbor is omitted without destabilizing the reader.
                 continue;
-            }
-            referenceCount = Math.addExact(referenceCount, articleReferences.size());
-            if (referenceCount > JdbcPublicMediaResolver.MAXIMUM_BATCH_REFERENCES) {
-                throw invalid("published issue snapshot exceeds the bounded media limit");
             }
             try {
                 validateSnapshotMediaContract(articleSnapshot, content, articleReferences);

@@ -37,6 +37,7 @@ public final class ContentDocumentValidator {
                 .sorted()
                 .toList());
         addDuplicateBlockIdErrors(document, errors);
+        addControlCharacterErrors(document, "", errors);
         return new ValidationResult(errors.isEmpty(), List.copyOf(errors));
     }
 
@@ -87,6 +88,36 @@ public final class ContentDocumentValidator {
                 errors.add("/blocks/" + index + "/id: must be unique");
             }
         }
+    }
+
+    private static void addControlCharacterErrors(JsonNode node, String path, List<String> errors) {
+        if (node == null) {
+            return;
+        }
+        if (node.isString()) {
+            if (hasForbiddenControlCharacters(node.asString())) {
+                errors.add(path + ": must not contain ISO control characters");
+            }
+            return;
+        }
+        if (node.isArray()) {
+            for (int index = 0; index < node.size(); index++) {
+                addControlCharacterErrors(node.get(index), path + "/" + index, errors);
+            }
+            return;
+        }
+        if (node.isObject()) {
+            node.properties().forEach(entry -> addControlCharacterErrors(
+                    entry.getValue(),
+                    path + "/" + entry.getKey(),
+                    errors
+            ));
+        }
+    }
+
+    private static boolean hasForbiddenControlCharacters(String value) {
+        return value.codePoints().anyMatch(codePoint ->
+                Character.isISOControl(codePoint) && codePoint != '\n');
     }
 
     private static ValidationResult invalid(List<String> errors) {

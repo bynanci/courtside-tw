@@ -65,4 +65,33 @@ final class ContentDocumentExtractorTest {
         assertEquals(2, first.readingTimeMinutes());
         assertEquals(first, second);
     }
+
+    @Test
+    void rejectsIsoControlCharactersBeforeProjection() throws Exception {
+        JsonNode document = OBJECT_MAPPER.readTree("""
+                {"schemaVersion":1,"documentId":"0190f7b0-7c4b-7e3a-8f12-123456789abc","blocks":[
+                  {"id":"00000000-0000-4000-8000-000000000101","type":"paragraph","version":1,
+                   "payload":{"content":[{"kind":"text","text":"a\\u0001b"}]}}
+                ]}
+                """);
+
+        org.junit.jupiter.api.Assertions.assertThrows(
+                IllegalArgumentException.class,
+                () -> extractor.extract(document)
+        );
+    }
+
+    @Test
+    void acceptsReaderVisibleLineBreaksBeforeNormalization() throws Exception {
+        JsonNode document = OBJECT_MAPPER.readTree("""
+                {"schemaVersion":1,"documentId":"0190f7b0-7c4b-7e3a-8f12-123456789abc","blocks":[
+                  {"id":"00000000-0000-4000-8000-000000000101","type":"paragraph","version":1,
+                   "payload":{"content":[{"kind":"text","text":"第一行\\n第二行"}]}}
+                ]}
+                """);
+
+        ExtractedArticleContent extracted = extractor.extract(document);
+
+        assertEquals("第一行 第二行", extracted.plainText());
+    }
 }
