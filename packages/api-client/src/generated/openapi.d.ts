@@ -1045,7 +1045,13 @@ export interface components {
       /** Format: date-time */
       publishedAt?: string
     }
+    SearchQuery: {
+      raw: string
+      normalized: string
+      taxonomy: string[]
+    }
     SearchResultPage: {
+      query: components["schemas"]["SearchQuery"]
       items: components["schemas"]["SearchResult"][]
       page: components["schemas"]["PageMeta"]
     }
@@ -1854,8 +1860,11 @@ export interface operations {
         cursor?: components["parameters"]["Cursor"]
         /** @description Bounded page size. */
         limit?: components["parameters"]["Limit"]
-        q: string
+        /** @default  */
+        q?: string
         type?: "article" | "issue"
+        /** @description Stable taxonomy slugs; repeated values use OR semantics. */
+        taxonomy?: string[]
       }
       header?: never
       path?: never
@@ -1867,6 +1876,7 @@ export interface operations {
       200: {
         headers: {
           "X-Request-Id": components["headers"]["XRequestId"]
+          ETag: components["headers"]["ETag"]
           [name: string]: unknown
         }
         content: {
@@ -1874,6 +1884,15 @@ export interface operations {
         }
       }
       400: components["responses"]["Problem400"]
+      /** @description The current representation matches If-None-Match. */
+      304: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          ETag: components["headers"]["ETag"]
+          [name: string]: unknown
+        }
+        content?: never
+      }
       429: components["responses"]["Problem429"]
     }
   }

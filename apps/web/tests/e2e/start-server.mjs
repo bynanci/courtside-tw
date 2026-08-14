@@ -743,6 +743,31 @@ const apiServer = createServer(async (request, response) => {
     return
   }
 
+  if (requestUrl.pathname === "/api/v1/public/search") {
+    const raw = requestUrl.searchParams.get("q") ?? ""
+    const normalized = raw
+      .normalize("NFKC")
+      .toLocaleLowerCase("zh-TW")
+      .replaceAll(/[^\p{Letter}\p{Number}]+/gu, " ")
+      .trim()
+    const items = normalized.includes("台籃") && normalized.includes("courtside")
+      ? [{
+          articleId: "0190f7b0-7c4b-7e3a-8f12-123456789abd",
+          slug: "opening-night",
+          title: "台籃 Courtside：主場燈光亮起之前",
+          snippet: "從 Courtside 看台灣籃球的主場記憶。",
+          issueSlug: "issue-2026-01",
+          publishedAt: "2026-08-01T00:00:00Z"
+        }]
+      : []
+    writeJson(response, 200, {
+      query: { raw, normalized, taxonomy: [] },
+      items,
+      page: { nextCursor: null, limit: Number(requestUrl.searchParams.get("limit") ?? 20) }
+    })
+    return
+  }
+
   const articlePrefix = "/api/v1/public/articles/"
   if (requestUrl.pathname.startsWith(articlePrefix)) {
     const articleSlug = requestUrl.pathname.slice(articlePrefix.length)

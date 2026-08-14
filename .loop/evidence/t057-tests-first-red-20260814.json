@@ -1,0 +1,36 @@
+{
+  "schema": "courtside-tw/task-evidence/v1",
+  "task": "T057",
+  "status": "AUTHORED_RED_PENDING_RUNTIME",
+  "recorded_at": "2026-08-14T00:00:00Z",
+  "baseline_main": "3656835c1554b6c606e8deeeda1ec0e040428511",
+  "candidate": "892313640f2b80aa8680341c58882a12c283a7d3",
+  "changed_files": [
+    "apps/api/src/test/java/tw/basketball/magazine/publication/PublicIssueApiIntegrationTestSupport.java",
+    "apps/api/src/test/java/tw/basketball/magazine/search/PublicSearchApiIT.java",
+    "apps/web/tests/e2e/us4-search.spec.ts",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+  ],
+  "coverage": [
+    "empty query",
+    "punctuation-only query",
+    "Traditional Chinese and English mixed query",
+    "taxonomy alias query",
+    "withdrawn result exclusion",
+    "fresh result ETag change",
+    "public cache max-age and conditional response",
+    "SSR search result and explicit empty state"
+  ],
+  "proof": {
+    "static_diff_check": "PASS",
+    "typescript_syntax_check": "PASS",
+    "runtime_red": "PENDING: local Gradle is unavailable and the pinned Node/pnpm versions are not installed",
+    "exact_head_ci_security": "PENDING: candidate has not been pushed"
+  },
+  "scope_guard": {
+    "pr_92_modified": false,
+    "repository_protection_modified": false,
+    "production_search_implemented": false
+  },
+  "next_action": "Implement T058 taxonomy and search projection migration without checking T058 until migration and integration proof pass."
+}

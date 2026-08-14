@@ -204,11 +204,11 @@ paths:
         - $ref: "#/components/parameters/Limit"
         - name: q
           in: query
-          required: true
+          required: false
           schema:
             type: string
-            minLength: 1
             maxLength: 200
+            default: ""
         - name: type
           in: query
           required: false
@@ -217,6 +217,16 @@ paths:
             enum:
               - article
               - issue
+        - name: taxonomy
+          in: query
+          required: false
+          description: Stable taxonomy slugs; repeated values use OR semantics.
+          schema:
+            type: array
+            maxItems: 20
+            items:
+              type: string
+              pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
       responses:
         "200":
           description: Successful response.
@@ -227,6 +237,10 @@ paths:
               examples:
                 valid:
                   value:
+                    query:
+                      raw: ""
+                      normalized: ""
+                      taxonomy: []
                     items: []
                     page:
                       nextCursor: null
@@ -234,8 +248,17 @@ paths:
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
+            ETag:
+              $ref: "#/components/headers/ETag"
         "400":
           $ref: "#/components/responses/Problem400"
+        "304":
+          description: The current representation matches If-None-Match.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+            ETag:
+              $ref: "#/components/headers/ETag"
         "429":
           $ref: "#/components/responses/Problem429"
   /api/v1/public/taxonomy/{type}:
@@ -3284,13 +3307,33 @@ components:
         publishedAt:
           type: string
           format: date-time
+    SearchQuery:
+      type: object
+      additionalProperties: false
+      required:
+        - raw
+        - normalized
+        - taxonomy
+      properties:
+        raw:
+          type: string
+        normalized:
+          type: string
+        taxonomy:
+          type: array
+          maxItems: 20
+          items:
+            type: string
     SearchResultPage:
       type: object
       additionalProperties: false
       required:
+        - query
         - items
         - page
       properties:
+        query:
+          $ref: "#/components/schemas/SearchQuery"
         items:
           type: array
           items:

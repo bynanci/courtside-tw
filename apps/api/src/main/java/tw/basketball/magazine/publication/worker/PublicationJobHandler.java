@@ -26,6 +26,8 @@ import tw.basketball.magazine.publication.domain.PublicationAction;
 import tw.basketball.magazine.publication.domain.PublicationState;
 import tw.basketball.magazine.publication.domain.PublicationWorkflow;
 import tw.basketball.magazine.publication.persistence.EditorialArticleRepository;
+import tw.basketball.magazine.search.worker.SearchProjection;
+import tw.basketball.magazine.search.worker.SearchProjectionException;
 import tw.basketball.magazine.shared.RoleCode;
 import tw.basketball.magazine.shared.Version;
 
@@ -43,6 +45,7 @@ public final class PublicationJobHandler implements OutboxEventHandler {
     private final ContentDocumentExtractor contentDocumentExtractor;
     private final PublishedArticleSnapshotFactory snapshotFactory;
     private final PublicationExternalInvalidator externalInvalidator;
+    private final SearchProjection searchProjection;
 
     public PublicationJobHandler(
             EditorialArticleRepository repository,
@@ -55,7 +58,8 @@ public final class PublicationJobHandler implements OutboxEventHandler {
                 transactionTemplate,
                 objectMapper,
                 clock,
-                PublicationExternalInvalidator.unavailable()
+                PublicationExternalInvalidator.unavailable(),
+                SearchProjection.noop()
         );
     }
 
@@ -66,11 +70,30 @@ public final class PublicationJobHandler implements OutboxEventHandler {
             Clock clock,
             PublicationExternalInvalidator externalInvalidator
     ) {
+        this(
+                repository,
+                transactionTemplate,
+                objectMapper,
+                clock,
+                externalInvalidator,
+                SearchProjection.noop()
+        );
+    }
+
+    public PublicationJobHandler(
+            EditorialArticleRepository repository,
+            TransactionTemplate transactionTemplate,
+            ObjectMapper objectMapper,
+            Clock clock,
+            PublicationExternalInvalidator externalInvalidator,
+            SearchProjection searchProjection
+    ) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.transactionTemplate = Objects.requireNonNull(transactionTemplate, "transactionTemplate");
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
         this.clock = Objects.requireNonNull(clock, "clock");
         this.externalInvalidator = Objects.requireNonNull(externalInvalidator, "externalInvalidator");
+        this.searchProjection = Objects.requireNonNull(searchProjection, "searchProjection");
         this.workflow = new PublicationWorkflow(new PublicationReadinessService());
         this.contentDocumentValidator = new ContentDocumentValidator();
         this.contentDocumentExtractor = new ContentDocumentExtractor();
@@ -95,6 +118,12 @@ public final class PublicationJobHandler implements OutboxEventHandler {
             throw new OutboxHandlerException(exception.getMessage(), exception, true);
         } catch (PermanentJobException exception) {
             throw new OutboxHandlerException(exception.getMessage(), exception, false);
+        } catch (SearchProjectionException exception) {
+            throw new OutboxHandlerException(
+                    exception.getMessage(),
+                    exception,
+                    exception.retryable()
+            );
         } catch (RuntimeException exception) {
             throw new OutboxHandlerException("publication job execution failed", exception, true);
         }
@@ -150,6 +179,7 @@ public final class PublicationJobHandler implements OutboxEventHandler {
         if (command.surrogateKeys().isEmpty()) {
             throw new PermanentJobException("publication invalidation keys are missing");
         }
+        searchProjection.withdraw(command.articleId(), revisionId, now);
         externalInvalidator.invalidate(new PublicationExternalInvalidator.Request(
                 command.idempotencyKey(),
                 command.surrogateKeys()
@@ -169,6 +199,7 @@ public final class PublicationJobHandler implements OutboxEventHandler {
         }
         if (article.state() == PublicationState.PUBLISHED
                 && repository.hasPublicationSnapshot(article.articleId(), revisionId)) {
+            searchProjection.project(article.articleId(), revisionId, now);
             repository.markPublicationJobSucceeded(job.jobId(), now);
             return;
         }
@@ -191,6 +222,7 @@ public final class PublicationJobHandler implements OutboxEventHandler {
         }
         if (article.state() == PublicationState.PUBLISHED
                 && repository.hasPublicationSnapshot(article.articleId(), revisionId)) {
+            searchProjection.project(article.articleId(), revisionId, now);
             repository.markPublicationJobSucceeded(job.jobId(), now);
             return;
         }
@@ -274,6 +306,7 @@ public final class PublicationJobHandler implements OutboxEventHandler {
                         .map(PublicationReadinessService.MediaRequirement::assetId)
                         .toList()
         );
+        searchProjection.project(published.articleId(), revisionId, now);
         repository.markPublicationJobSucceeded(job.jobId(), now);
     }
 

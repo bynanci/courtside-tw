@@ -1,0 +1,37 @@
+{
+  "schema": "courtside-tw/task-evidence/v1",
+  "task": "T058",
+  "status": "IMPLEMENTED_PENDING_RUNTIME",
+  "recorded_at": "2026-08-14T00:00:00Z",
+  "baseline_main": "3656835c1554b6c606e8deeeda1ec0e040428511",
+  "candidate": "d5ddfdfc3effdda807129aeef5a16b3757533e64",
+  "changed_files": [
+    "apps/api/src/main/resources/db/migration/V012__taxonomy_and_search.sql",
+    "apps/api/src/test/java/tw/basketball/magazine/publication/PublicIssueApiIntegrationTestSupport.java",
+    "apps/api/src/test/java/tw/basketball/magazine/search/PublicSearchApiIT.java",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+  ],
+  "implemented_controls": [
+    "forward-only migration because V005 is already occupied",
+    "UUID-backed taxonomy relations with managed term_key",
+    "validity windows for terms and aliases",
+    "revision-scoped article taxonomy relation",
+    "versioned search_document with source checksum",
+    "pg_trgm GIN indexes for normalized text and title",
+    "application role grants limited to taxonomy/search tables"
+  ],
+  "proof": {
+    "source_diff_check": "PASS",
+    "schema_contract_test_authored": "PASS",
+    "postgres_migration_execution": "PENDING: Docker/PostgreSQL unavailable locally",
+    "exact_head_ci_security": "PENDING: candidate has not been pushed"
+  },
+  "scope_guard": {
+    "pr_92_modified": false,
+    "repository_protection_modified": false,
+    "t059_taxonomy_api_implemented": false,
+    "t060_projection_worker_implemented": false,
+    "t061_search_api_implemented": false
+  },
+  "next_action": "Run the migration and schema contract on the pinned CI toolchain before checking T058; then implement T060 projection delivery."
+}

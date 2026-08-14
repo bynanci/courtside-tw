@@ -145,11 +145,11 @@
 
 ### Tests for User Story 4 — write first
 
-- [ ] T057 [P] [US4] Write failing search contract, freshness and E2E tests in `apps/api/src/test/java/tw/basketball/magazine/search/PublicSearchApiIT.java` and `apps/web/tests/e2e/us4-search.spec.ts`; include empty, punctuation-only, zh-TW/English mixed, alias and withdrawn cases.
+- [x] T057 [P] [US4] Write failing search contract, freshness and E2E tests in `apps/api/src/test/java/tw/basketball/magazine/search/PublicSearchApiIT.java` and `apps/web/tests/e2e/us4-search.spec.ts`; include empty, punctuation-only, zh-TW/English mixed, alias and withdrawn cases. Completion proof: the RED contract was authored in candidate `892313640f2b80aa8680341c58882a12c283a7d3`; static diff and TypeScript syntax checks pass, while the absent search production surface keeps the tests intentionally failing until T058–T062 are implemented. Runtime RED and exact-head CI evidence remain pending because the pinned local toolchain is unavailable.
 
 ### Implementation for User Story 4
 
-- [ ] T058 [US4] Add taxonomy terms/aliases/validity, article taxonomy and public search projection with `pg_trgm` indexes in `apps/api/src/main/resources/db/migration/V005__taxonomy_and_search.sql`.
+- [ ] T058 [US4] Add taxonomy terms/aliases/validity, article taxonomy and public search projection with `pg_trgm` indexes in `apps/api/src/main/resources/db/migration/V012__taxonomy_and_search.sql` (V005 is already occupied by editorial publication gate hardening).
 - [ ] T059 [P] [US4] Implement taxonomy domain/API and Studio taxonomy management in `apps/api/src/main/java/tw/basketball/magazine/taxonomy/` and `apps/web/app/features/studio/taxonomy/`; names are attributes, never identifiers.
 - [ ] T060 [US4] Implement versioned search projection updates from publication/withdrawal outbox events in `apps/api/src/main/java/tw/basketball/magazine/search/worker/SearchProjectionHandler.java`; reject any draft source and record source checksum.
 - [ ] T061 [US4] Implement normalized, weighted, cursor-based `GET /api/v1/public/search` and taxonomy filter endpoints in `apps/api/src/main/java/tw/basketball/magazine/search/api/PublicSearchController.java` and `search/application/SearchService.java`.
