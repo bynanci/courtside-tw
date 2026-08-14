@@ -166,7 +166,14 @@ final class PublicSearchApiIT extends PublicIssueApiIntegrationTestSupport {
                         .param("q", "台籃")
                         .header(HttpHeaders.IF_NONE_MATCH, afterEtag))
                 .andExpect(status().isNotModified())
-                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, PUBLIC_CACHE_CONTROL))
+                .andExpect(header().string(
+                        HttpHeaders.CACHE_CONTROL,
+                        Matchers.allOf(
+                                Matchers.containsString("public"),
+                                Matchers.containsString("max-age=60"),
+                                Matchers.containsString("must-revalidate")
+                        )
+                ))
                 .andExpect(content().string(""));
     }
 
