@@ -3,6 +3,7 @@ package tw.basketball.magazine.publication.worker;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -41,6 +42,7 @@ public final class PublicationJobHandler implements OutboxEventHandler {
     private final ContentDocumentValidator contentDocumentValidator;
     private final ContentDocumentExtractor contentDocumentExtractor;
     private final PublishedArticleSnapshotFactory snapshotFactory;
+    private final PublicationExternalInvalidator externalInvalidator;
 
     public PublicationJobHandler(
             EditorialArticleRepository repository,
@@ -48,10 +50,27 @@ public final class PublicationJobHandler implements OutboxEventHandler {
             ObjectMapper objectMapper,
             Clock clock
     ) {
+        this(
+                repository,
+                transactionTemplate,
+                objectMapper,
+                clock,
+                PublicationExternalInvalidator.unavailable()
+        );
+    }
+
+    public PublicationJobHandler(
+            EditorialArticleRepository repository,
+            TransactionTemplate transactionTemplate,
+            ObjectMapper objectMapper,
+            Clock clock,
+            PublicationExternalInvalidator externalInvalidator
+    ) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.transactionTemplate = Objects.requireNonNull(transactionTemplate, "transactionTemplate");
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
         this.clock = Objects.requireNonNull(clock, "clock");
+        this.externalInvalidator = Objects.requireNonNull(externalInvalidator, "externalInvalidator");
         this.workflow = new PublicationWorkflow(new PublicationReadinessService());
         this.contentDocumentValidator = new ContentDocumentValidator();
         this.contentDocumentExtractor = new ContentDocumentExtractor();
@@ -128,6 +147,13 @@ public final class PublicationJobHandler implements OutboxEventHandler {
         if (!revisionId.equals(article.revisionId()) || article.state() != expectedState) {
             throw new PermanentJobException("publication job did not reach its expected state");
         }
+        if (command.surrogateKeys().isEmpty()) {
+            throw new PermanentJobException("publication invalidation keys are missing");
+        }
+        externalInvalidator.invalidate(new PublicationExternalInvalidator.Request(
+                command.idempotencyKey(),
+                command.surrogateKeys()
+        ));
         repository.markPublicationJobSucceeded(job.jobId(), now);
     }
 
@@ -335,7 +361,8 @@ public final class PublicationJobHandler implements OutboxEventHandler {
                     required(payload, "action"),
                     required(payload, "idempotencyKey"),
                     required(payload, "requestedBy"),
-                    optionalUuid(payload, "revisionId")
+                    optionalUuid(payload, "revisionId"),
+                    optionalStringList(payload, "surrogateKeys")
             );
         } catch (JacksonException | IllegalArgumentException exception) {
             throw new IllegalArgumentException("publication payload is not valid JSON", exception);
@@ -364,12 +391,31 @@ public final class PublicationJobHandler implements OutboxEventHandler {
         return requiredUuid(payload, field);
     }
 
+    private static List<String> optionalStringList(JsonNode payload, String field) {
+        if (payload == null || !payload.isObject() || payload.get(field) == null) {
+            return List.of();
+        }
+        JsonNode values = payload.get(field);
+        if (!values.isArray()) {
+            throw new IllegalArgumentException(field + " must be an array");
+        }
+        List<String> result = new ArrayList<>();
+        values.forEach(value -> {
+            if (!value.isString() || value.asString().isBlank()) {
+                throw new IllegalArgumentException(field + " must contain non-blank strings");
+            }
+            result.add(value.asString());
+        });
+        return List.copyOf(result);
+    }
+
     private record Command(
             UUID articleId,
             String action,
             String idempotencyKey,
             String requestedBy,
-            UUID revisionId
+            UUID revisionId,
+            List<String> surrogateKeys
     ) {
     }
 

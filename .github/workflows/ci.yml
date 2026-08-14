@@ -79,6 +79,7 @@ jobs:
           name: ci-frontend-reports
           path: |
             artifacts/frontend
+            artifacts/exact-head.json
             apps/**/coverage
             apps/**/test-results
             apps/**/.nuxt
@@ -151,6 +152,7 @@ jobs:
           name: ci-web-e2e-reports
           path: |
             artifacts/web-e2e
+            artifacts/exact-head.json
             apps/web/artifacts/lighthouse
             apps/web/test-results
             apps/web/playwright-report
@@ -201,6 +203,7 @@ jobs:
           name: ci-java-reports
           path: |
             artifacts/api
+            artifacts/exact-head.json
             apps/api/build/reports
             apps/api/build/test-results
           if-no-files-found: warn
@@ -255,6 +258,8 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: ci-dependency-reports
-          path: artifacts/dependencies
+          path: |
+            artifacts/dependencies
+            artifacts/exact-head.json
           if-no-files-found: warn
           retention-days: 14
