@@ -5,9 +5,7 @@ export interface SemanticValidationError {
   readonly params: Readonly<Record<string, unknown>>
 }
 
-export function findControlCharacterErrors(
-  value: unknown
-): SemanticValidationError[] {
+export function findControlCharacterErrors(value: unknown): SemanticValidationError[] {
   const errors: SemanticValidationError[] = []
 
   function visit(node: unknown, instancePath: string): void {
@@ -42,10 +40,7 @@ export function findControlCharacterErrors(
 function hasForbiddenControlCharacters(value: string): boolean {
   for (const character of value) {
     const codePoint = character.codePointAt(0) ?? 0
-    if (
-      (codePoint <= 0x1f && codePoint !== 0x0a) ||
-      (codePoint >= 0x7f && codePoint <= 0x9f)
-    ) {
+    if ((codePoint <= 0x1f && codePoint !== 0x0a) || (codePoint >= 0x7f && codePoint <= 0x9f)) {
       return true
     }
   }
