@@ -10,3 +10,4 @@ managePackageManagerVersions: false
 verifyDepsBeforeRun: false
 overrides:
   js-yaml: 4.3.1
+  nanoid: 3.3.18
