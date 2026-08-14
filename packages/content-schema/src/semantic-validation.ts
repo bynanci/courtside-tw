@@ -5,7 +5,9 @@ export interface SemanticValidationError {
   readonly params: Readonly<Record<string, unknown>>
 }
 
-export function findControlCharacterErrors(value: unknown): SemanticValidationError[] {
+export function findControlCharacterErrors(
+  value: unknown
+): SemanticValidationError[] {
   const errors: SemanticValidationError[] = []
 
   function visit(node: unknown, instancePath: string): void {
