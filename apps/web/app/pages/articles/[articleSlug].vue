@@ -914,13 +914,10 @@ onMounted(() => {
   stopArticleFocusWatch = watch(
     () => article.value?.revisionId ?? null,
     async (revisionId) => {
-      if (!revisionId) return
-      if (activeRevisionId === null) {
-        activeRevisionId = revisionId
-        return
-      }
       if (revisionId === activeRevisionId) return
       activeRevisionId = revisionId
+      failedAssets.value = new Set()
+      if (!revisionId) return
       await nextTick()
       focusArticleHeading()
     }

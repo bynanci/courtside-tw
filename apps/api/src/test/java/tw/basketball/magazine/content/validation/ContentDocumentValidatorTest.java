@@ -58,6 +58,23 @@ final class ContentDocumentValidatorTest {
         assertEquals(List.of("/blocks/1/id: must be unique"), result.errors());
     }
 
+    @Test
+    void rejectsEscapedIsoControlCharactersBeforePublication() throws IOException {
+        JsonNode document = OBJECT_MAPPER.readTree("""
+                {"schemaVersion":1,"documentId":"0190f7b0-7c4b-7e3a-8f12-123456789abc","blocks":[
+                  {"id":"00000000-0000-4000-8000-000000000002","type":"paragraph","version":1,
+                   "payload":{"content":[{"kind":"text","text":"a\\u0001b"}]}}
+                ]}
+                """);
+
+        ContentDocumentValidator.ValidationResult result = validator.validate(document);
+
+        assertFalse(result.valid());
+        assertTrue(result.errors().stream().anyMatch(error ->
+                error.contains("/blocks/0/payload/content/0/text")
+                        && error.contains("ISO control characters")));
+    }
+
     private static JsonNode read(Path path) throws IOException {
         return OBJECT_MAPPER.readTree(path.toFile());
     }
