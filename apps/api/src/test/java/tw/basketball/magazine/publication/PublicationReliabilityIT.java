@@ -34,6 +34,7 @@ import tw.basketball.magazine.content.application.PublicArticleService;
 import tw.basketball.magazine.content.persistence.JdbcPublicArticleRepository;
 import tw.basketball.magazine.editorial.EditorialApiIntegrationTestSupport;
 import tw.basketball.magazine.outbox.OutboxClaim;
+import tw.basketball.magazine.outbox.OutboxHandlerException;
 import tw.basketball.magazine.outbox.OutboxEvent;
 import tw.basketball.magazine.outbox.OutboxRepository;
 import tw.basketball.magazine.outbox.OutboxRetryPolicy;
@@ -41,6 +42,7 @@ import tw.basketball.magazine.publication.api.EditorialApiExceptionHandler;
 import tw.basketball.magazine.publication.api.EditorialArticleController;
 import tw.basketball.magazine.publication.application.EditorialWorkflowService;
 import tw.basketball.magazine.publication.persistence.JdbcEditorialArticleRepository;
+import tw.basketball.magazine.publication.worker.PublicationExternalInvalidator;
 import tw.basketball.magazine.publication.worker.PublicationJobHandler;
 import tw.basketball.magazine.shared.RoleCode;
 
@@ -193,16 +195,20 @@ final class PublicationReliabilityIT extends EditorialApiIntegrationTestSupport 
         );
         PartialExternalInvalidation probe = new PartialExternalInvalidation();
         OutboxClaim firstClaim = onlyClaim(outbox, event.id(), firstAttemptAt);
-        assertThrows(IllegalStateException.class, () -> probe.invalidate(payload));
+        PublicationJobHandler firstDelivery = handlerAt("2026-08-10T01:02:00Z", probe);
+        assertThrows(OutboxHandlerException.class, () -> firstDelivery.handle(event));
+        assertEquals(1, probe.attempts);
         outbox.fail(firstClaim, new IllegalStateException("cache purge failed"), firstAttemptAt, retryPolicy);
         assertEquals("FAILED", outbox.findById(event.id()).orElseThrow().status().name());
         assertTrue(origin.findBySlug("reliability-fixture", null).isEmpty());
 
         OutboxEvent failed = outbox.findById(event.id()).orElseThrow();
         OutboxClaim retryClaim = onlyClaim(outbox, event.id(), failed.availableAt().plusSeconds(1));
-        probe.invalidate(payload);
+        PublicationJobHandler retryDelivery = handlerAt("2026-08-10T01:03:00Z", probe);
+        retryDelivery.handle(event);
         outbox.complete(retryClaim, failed.availableAt().plusSeconds(1));
         assertEquals("COMPLETED", outbox.findById(event.id()).orElseThrow().status().name());
+        assertEquals("SUCCEEDED", jobStatus("partial-external-withdraw"));
         assertEquals(2, probe.attempts);
         assertEquals(keys, probe.lastKeys);
         assertTrue(origin.findBySlug("reliability-fixture", null).isEmpty());
@@ -367,11 +373,19 @@ final class PublicationReliabilityIT extends EditorialApiIntegrationTestSupport 
     }
 
     private PublicationJobHandler handlerAt(String instant) {
+        return handlerAt(instant, PublicationExternalInvalidator.unavailable());
+    }
+
+    private PublicationJobHandler handlerAt(
+            String instant,
+            PublicationExternalInvalidator invalidator
+    ) {
         return new PublicationJobHandler(
                 new JdbcEditorialArticleRepository(jdbcTemplate),
                 new TransactionTemplate(new DataSourceTransactionManager(jdbcTemplate.getDataSource())),
                 JSON,
-                Clock.fixed(Instant.parse(instant), ZoneOffset.UTC)
+                Clock.fixed(Instant.parse(instant), ZoneOffset.UTC),
+                invalidator
         );
     }
 
@@ -399,14 +413,15 @@ final class PublicationReliabilityIT extends EditorialApiIntegrationTestSupport 
     private record MvcArticle(UUID id, UUID revisionId) {
     }
 
-    private static final class PartialExternalInvalidation {
+    private static final class PartialExternalInvalidation
+            implements PublicationExternalInvalidator {
         private int attempts;
         private List<String> lastKeys = List.of();
 
-        private void invalidate(tools.jackson.databind.JsonNode payload) {
+        @Override
+        public void invalidate(PublicationExternalInvalidator.Request request) {
             attempts++;
-            lastKeys = new ArrayList<>();
-            payload.path("surrogateKeys").forEach(node -> lastKeys.add(node.asString()));
+            lastKeys = new ArrayList<>(request.surrogateKeys());
             if (attempts == 1) {
                 throw new IllegalStateException("simulated partial external purge failure");
             }
