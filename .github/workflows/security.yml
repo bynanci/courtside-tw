@@ -172,7 +172,9 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: security-dependency-reports
-          path: artifacts/dependency-audit
+          path: |
+            artifacts/dependency-audit
+            artifacts/exact-head.json
           if-no-files-found: warn
           retention-days: 14
 
@@ -239,7 +241,9 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: security-codeql-${{ matrix.language }}
-          path: artifacts/codeql/${{ matrix.language }}
+          path: |
+            artifacts/codeql/${{ matrix.language }}
+            artifacts/exact-head.json
           if-no-files-found: warn
           retention-days: 14
 
@@ -277,7 +281,9 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: security-compose-images
-          path: artifacts/compose-images.json
+          path: |
+            artifacts/compose-images.json
+            artifacts/exact-head.json
           retention-days: 14
 
   trivy-filesystem:
@@ -320,7 +326,9 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: security-trivy-filesystem
-          path: artifacts/trivy-filesystem.sarif
+          path: |
+            artifacts/trivy-filesystem.sarif
+            artifacts/exact-head.json
           if-no-files-found: warn
           retention-days: 14
 
@@ -373,6 +381,8 @@ jobs:
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: security-trivy-${{ matrix.name }}
-          path: ${{ matrix.output }}
+          path: |
+            ${{ matrix.output }}
+            artifacts/exact-head.json
           if-no-files-found: warn
           retention-days: 14
