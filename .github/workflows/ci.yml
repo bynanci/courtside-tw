@@ -260,5 +260,6 @@ jobs:
           name: ci-dependency-reports
           path: |
             artifacts/dependencies
-            artifacts/exact-head.json          if-no-files-found: warn
+            artifacts/exact-head.json
+          if-no-files-found: warn
           retention-days: 14
