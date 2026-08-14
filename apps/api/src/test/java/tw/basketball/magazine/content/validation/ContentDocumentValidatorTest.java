@@ -75,6 +75,31 @@ final class ContentDocumentValidatorTest {
                         && error.contains("ISO control characters")));
     }
 
+    @Test
+    void acceptsReaderVisibleLineBreaksButRejectsOtherIsoControls() throws IOException {
+        JsonNode document = OBJECT_MAPPER.readTree("""
+                {"schemaVersion":1,"documentId":"0190f7b0-7c4b-7e3a-8f12-123456789abc","blocks":[
+                  {"id":"00000000-0000-4000-8000-000000000002","type":"paragraph","version":1,
+                   "payload":{"content":[{"kind":"text","text":"第一行\\n第二行"}]}}
+                ]}
+                """);
+
+        ContentDocumentValidator.ValidationResult valid = validator.validate(document);
+        assertTrue(valid.valid(), valid.errors().toString());
+
+        JsonNode invalid = OBJECT_MAPPER.readTree("""
+                {"schemaVersion":1,"documentId":"0190f7b0-7c4b-7e3a-8f12-123456789abc","blocks":[
+                  {"id":"00000000-0000-4000-8000-000000000002","type":"paragraph","version":1,
+                   "payload":{"content":[{"kind":"text","text":"a\\rb"}]}}
+                ]}
+                """);
+
+        ContentDocumentValidator.ValidationResult invalidResult = validator.validate(invalid);
+        assertFalse(invalidResult.valid());
+        assertTrue(invalidResult.errors().stream().anyMatch(error ->
+                error.contains("ISO control characters")));
+    }
+
     private static JsonNode read(Path path) throws IOException {
         return OBJECT_MAPPER.readTree(path.toFile());
     }

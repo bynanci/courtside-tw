@@ -95,7 +95,7 @@ public final class ContentDocumentValidator {
             return;
         }
         if (node.isString()) {
-            if (node.asString().codePoints().anyMatch(Character::isISOControl)) {
+            if (hasForbiddenControlCharacters(node.asString())) {
                 errors.add(path + ": must not contain ISO control characters");
             }
             return;
@@ -113,6 +113,11 @@ public final class ContentDocumentValidator {
                     errors
             ));
         }
+    }
+
+    private static boolean hasForbiddenControlCharacters(String value) {
+        return value.codePoints().anyMatch(codePoint ->
+                Character.isISOControl(codePoint) && codePoint != '\n');
     }
 
     private static ValidationResult invalid(List<String> errors) {

@@ -1,6 +1,7 @@
 import Ajv2020, { type ErrorObject } from "ajv/dist/2020.js"
 import addFormats from "ajv-formats"
 import contentDocumentSchema from "../../../contracts/content-document.schema.json" with { type: "json" }
+import { findControlCharacterErrors } from "./semantic-validation.ts"
 
 export type { ContentDocument } from "./generated/content-document.js"
 
@@ -24,7 +25,11 @@ const validateSchema = ajv.compile<ContentDocument>(contentDocumentSchema)
 
 export function validateContentDocument(value: unknown): ContentDocumentValidationResult {
   const schemaErrors = validateSchema(value) ? [] : (validateSchema.errors ?? []).map(toError)
-  const errors = [...schemaErrors, ...findDuplicateBlockIds(value)]
+  const errors = [
+    ...schemaErrors,
+    ...findDuplicateBlockIds(value),
+    ...findControlCharacterErrors(value)
+  ]
 
   return {
     valid: errors.length === 0,

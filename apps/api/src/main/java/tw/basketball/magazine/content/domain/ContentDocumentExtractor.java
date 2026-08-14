@@ -137,7 +137,8 @@ public final class ContentDocumentExtractor {
     }
 
     private static void addNormalized(String value, List<String> lines) {
-        if (value.codePoints().anyMatch(Character::isISOControl)) {
+        if (value.codePoints().anyMatch(codePoint ->
+                Character.isISOControl(codePoint) && codePoint != '\n')) {
             throw new IllegalArgumentException("reader-visible text must not contain ISO control characters");
         }
         String normalized = value.strip().replaceAll("\\s+", " ");
