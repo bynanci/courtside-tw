@@ -8,7 +8,7 @@
   "started_at": "2026-08-14T03:51:03Z",
   "updated_at": "2026-08-14T13:26:01Z",
   "current_frontier": [
-    "remote-review-and-protected-merge"
+    "s-terminal"
   ],
   "blocked_nodes": [
     "a-ruleset-readback",
@@ -16,7 +16,7 @@
     "protected-merge-gate"
   ],
   "terminal_state": "needs_human",
-  "next_action": "Obtain one non-author approval and synchronize PR #92 with current main 88d31b9709339e94e7cf7a3af80f5da773cbed70; do not merge until final-head CI/Security, review resolution, and protected merge-gate readback are all satisfied.",
+  "next_action": "Obtain one non-author approval and protected-ruleset readback; do not merge until the human and administrative gates are satisfied.",
   "events": [
     {
       "event_id": "evt-001-p1-remediation-opened",

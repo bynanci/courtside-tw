@@ -42,8 +42,7 @@ policy:
 
 graph:
   entry_nodes:
-    - t-review-threads
-    - t-ruleset-gap
+    - t-remediation-entry
   terminal_nodes:
     - s-terminal
   loops:
@@ -77,6 +76,22 @@ graph:
         max_tokens: 10000
 
   nodes:
+    - id: t-remediation-entry
+      kind: trigger
+      layer: GLOBAL
+      label: P1 remediation entry fans into review and governance lanes
+      owner: codex-supervisor
+      status: ready
+      risk: critical
+      confidence:
+        score: 0.98
+        basis: Single declared entry makes both scoped remediation lanes reachable.
+        evidence_refs: [https://github.com/bynanci/courtside-tw/pull/92, https://api.github.com/repos/bynanci/courtside-tw/rulesets/20822671]
+      budget: {effort_hours: 0.1, tokens: 1000}
+      config:
+        condition: PR #92 remediation requires both review-thread and protected-ruleset lanes.
+        inputs_required: [PR review readback, ruleset readback]
+        dedupe: pr-number plus ruleset-id
     - id: t-review-threads
       kind: trigger
       layer: L1
@@ -170,7 +185,7 @@ graph:
       confidence:
         score: 0.98
         basis: GitHub compare shows exactly two scoped files and the four targeted changes.
-        evidence_refs: [https://github.com/bynanci/courtside-tw/compare/e5baa0702f4e8f730f86378a143eca8b36b084d8...b162979e71afb533efbb5e591871912738abb394]
+        evidence_refs: [https://github.com/bynanci/courtside-tw/compare/e5baa0702f4e8f730f86378a143eca8b36b084d8...aa2b6b73f9011e86ae8df1ed3d263b51192d9ac7]
       budget: {effort_hours: 0.1, tokens: 1500}
       config:
         level: P1
@@ -282,6 +297,8 @@ graph:
   
   edges:
     - {id: e-review-seed, from: t-review-threads, to: a-seed-validator, type: enables, required: true, confidence: 0.98, token_capacity: 10000}
+    - {id: e-remediation-entry-review, from: t-remediation-entry, to: t-review-threads, type: enables, required: true, confidence: 0.98, token_capacity: 10000}
+    - {id: e-remediation-entry-ruleset, from: t-remediation-entry, to: t-ruleset-gap, type: enables, required: true, confidence: 0.98, token_capacity: 4000}
     - {id: e-review-media, from: t-review-threads, to: a-media-boundary, type: enables, required: true, confidence: 0.98, token_capacity: 10000}
     - {id: e-seed-diff, from: a-seed-validator, to: p-diff, type: verifies, required: true, confidence: 0.95, token_capacity: 10000}
     - {id: e-media-diff, from: a-media-boundary, to: p-diff, type: verifies, required: true, confidence: 0.95, token_capacity: 10000}
@@ -302,7 +319,7 @@ graph:
     - {id: e-ruleset-feedback, from: p-ruleset-readback, to: t-ruleset-gap, type: feedback, required: false, confidence: 0.8, token_capacity: 2000}
 
 flow:
-  source: t-review-threads
+  source: t-remediation-entry
   sink: s-terminal
   capacity_unit: tokens
   interpretation: planning-proxy
