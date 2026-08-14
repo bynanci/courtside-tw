@@ -94,7 +94,7 @@ public final class ContentDocumentValidator {
         if (node == null) {
             return;
         }
-        if (node.isTextual()) {
+        if (node.isString()) {
             if (node.asString().codePoints().anyMatch(Character::isISOControl)) {
                 errors.add(path + ": must not contain ISO control characters");
             }
