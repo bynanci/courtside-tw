@@ -1,0 +1,338 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-p1-review-remediation-20260814",
+  "graph_version": 3,
+  "run_id": "courtside-p1-review-remediation-20260814",
+  "status": "needs_human",
+  "iteration": 3,
+  "started_at": "2026-08-14T03:51:03Z",
+  "updated_at": "2026-08-14T13:26:01Z",
+  "current_frontier": [
+    "remote-review-and-protected-merge"
+  ],
+  "blocked_nodes": [
+    "a-ruleset-readback",
+    "p-ruleset-readback",
+    "protected-merge-gate"
+  ],
+  "terminal_state": "needs_human",
+  "next_action": "Obtain one non-author approval and synchronize PR #92 with current main 88d31b9709339e94e7cf7a3af80f5da773cbed70; do not merge until final-head CI/Security, review resolution, and protected merge-gate readback are all satisfied.",
+  "events": [
+    {
+      "event_id": "evt-001-p1-remediation-opened",
+      "at": "2026-08-14T03:51:03Z",
+      "actor": "codex-supervisor",
+      "type": "iteration_started",
+      "base_graph_version": 1,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "graph.nodes/a-seed-validator/status",
+            "after": "verifying"
+          },
+          {
+            "op": "add",
+            "path": "graph.nodes/a-media-boundary/status",
+            "after": "verifying"
+          },
+          {
+            "op": "add",
+            "path": "graph.nodes/a-ruleset-readback/status",
+            "after": "blocked"
+          },
+          {
+            "op": "add",
+            "path": "graph.nodes/p-exact-head/status",
+            "after": "verifying"
+          }
+        ]
+      },
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/pull/91",
+        "https://github.com/bynanci/courtside-tw/pull/92",
+        "https://api.github.com/repos/bynanci/courtside-tw/rulesets/20822671"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "PR #92 diff readback",
+          "result": "pass",
+          "head_sha": "b162979e71afb533efbb5e591871912738abb394"
+        },
+        {
+          "proof": "PR #92 CI",
+          "result": "in_progress"
+        },
+        {
+          "proof": "PR #92 Security",
+          "result": "queued"
+        },
+        {
+          "proof": "main ruleset readback",
+          "result": "gap",
+          "ruleset_id": 20822671
+        }
+      ],
+      "failure_signature": "ruleset-admin-mutation-unavailable",
+      "decision": "Run exact-head CI/Security proof; keep ruleset governance blocked until an admin-capable mutation and readback are available.",
+      "token_usage": {
+        "estimated": 12000,
+        "input": 0,
+        "output": 0,
+        "total": 0
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-002-exact-head-retry",
+      "at": "2026-08-14T04:14:00Z",
+      "actor": "codex-supervisor",
+      "type": "evidence_delta",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-exact-head/status",
+            "before": "verifying",
+            "after": "verifying"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-media-boundary/status",
+            "before": "verifying",
+            "after": "done"
+          },
+          {
+            "op": "add",
+            "path": "graph.nodes/p-exact-head/retry_reason",
+            "after": "Java assertion expected null while matching 5088 media/rights made bounded-heavy-one eligible"
+          }
+        ]
+      },
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/actions/runs/31768580297",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31768580282",
+        "https://github.com/bynanci/courtside-tw/pull/92"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "seed validator",
+          "result": "pass",
+          "head_sha": "3e7708476f1e5b183538d4e1ae3598824dbabfe6"
+        },
+        {
+          "proof": "browser verification",
+          "result": "pass",
+          "head_sha": "3e7708476f1e5b183538d4e1ae3598824dbabfe6"
+        },
+        {
+          "proof": "PublicArticleApiIT",
+          "result": "fail_then_fixed",
+          "failure": "expected next null; actual bounded-heavy-one after matching media/rights"
+        },
+        {
+          "proof": "Security dependency resolution",
+          "result": "fail_then_fixed",
+          "failure": "same Gradle test failure propagated into dependency resolution"
+        }
+      ],
+      "failure_signature": "java-navigation-assertion-not-updated-for-real-fixture",
+      "decision": "Require the eligible bounded-heavy-one neighbor and rerun all exact-head CI/Security checks.",
+      "token_usage": {
+        "estimated": 8000,
+        "input": 0,
+        "output": 0,
+        "total": 0
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-003-trailing-batch-and-proof-scope",
+      "at": "2026-08-14T13:09:25Z",
+      "actor": "codex-agent",
+      "type": "evidence_delta",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java/oversizedIssueMediaGraphDoesNotHideTheCurrentArticle/trailing-batch-assertion",
+            "after": "GET bounded-heavy-two returns 200"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-exact-head/basis",
+            "before": "CI is in progress and Security is queued for PR head b162979e.",
+            "after": "Previous exact-head pass is recorded for 9a660add; final head revalidation is pending."
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-exact-head/status",
+            "before": "verifying",
+            "after": "verifying"
+          }
+        ]
+      },
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/commit/aa2b6b73f9011e86ae8df1ed3d263b51192d9ac7",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31802866086",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31802866109"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "trailing media-batch assertion",
+          "result": "added",
+          "head_sha": "aa2b6b73f9011e86ae8df1ed3d263b51192d9ac7"
+        },
+        {
+          "proof": "previous PR #92 CI",
+          "result": "pass",
+          "head_sha": "9a660add74cbf9bd8cd05fd37701ff93efbc5d69",
+          "run_id": 31802866086
+        },
+        {
+          "proof": "previous PR #92 Security",
+          "result": "pass",
+          "head_sha": "9a660add74cbf9bd8cd05fd37701ff93efbc5d69",
+          "run_id": 31802866109
+        },
+        {
+          "proof": "final PR #92 exact-head CI/Security",
+          "result": "pending",
+          "required_head": "next commit"
+        }
+      ],
+      "failure_signature": "trailing-media-batch-unverified-and-proof-receipt-stale",
+      "decision": "Re-run exact-head CI/Security after the final trailing-batch test and keep historical proof separate from final-head proof.",
+      "token_usage": {
+        "estimated": 5000,
+        "input": 0,
+        "output": 0,
+        "total": 0
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-004-final-exact-head-verified",
+      "at": "2026-08-14T13:16:36Z",
+      "actor": "codex-agent",
+      "type": "exact_head_proof_completed",
+      "base_graph_version": 3,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-exact-head/status",
+            "before": "verifying",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "run/terminal_state",
+            "before": "running",
+            "after": "needs_human"
+          }
+        ]
+      },
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/actions/runs/31803580193",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31803580195",
+        "https://github.com/bynanci/courtside-tw/commit/8fe3e85f626ae7be35ff88e4b8ef5511dbb630aa"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "PR #92 exact-head CI #524",
+          "result": "pass",
+          "head_sha": "8fe3e85f626ae7be35ff88e4b8ef5511dbb630aa",
+          "run_id": 31803580193
+        },
+        {
+          "proof": "PR #92 exact-head Security #525",
+          "result": "pass",
+          "head_sha": "8fe3e85f626ae7be35ff88e4b8ef5511dbb630aa",
+          "run_id": 31803580195
+        },
+        {
+          "proof": "Public magazine browser verification",
+          "result": "pass",
+          "head_sha": "8fe3e85f626ae7be35ff88e4b8ef5511dbb630aa",
+          "job_id": 94777404372
+        },
+        {
+          "proof": "Java quality and unit verification",
+          "result": "pass",
+          "head_sha": "8fe3e85f626ae7be35ff88e4b8ef5511dbb630aa",
+          "job_id": 94777106988
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Code and final exact-head runtime proof pass; stop at human review and protected-merge gates.",
+      "token_usage": {
+        "estimated": 5000,
+        "input": 0,
+        "output": 0,
+        "total": 0
+      },
+      "terminal_reason": "Non-author approval, current-main synchronization, and protected ruleset readback remain human/administrative gates."
+    },
+    {
+      "event_id": "evt-005-frontier-reconciled",
+      "at": "2026-08-14T13:26:01Z",
+      "actor": "codex-agent",
+      "type": "graph_replay_reconciled",
+      "base_graph_version": 3,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "current_frontier",
+            "before": [
+              "p-exact-head",
+              "remote-review-and-protected-merge"
+            ],
+            "after": [
+              "remote-review-and-protected-merge"
+            ]
+          },
+          {
+            "op": "replace",
+            "path": "evidence.diff_proof.compare_url",
+            "before": "...689614f",
+            "after": "...aa2b6b7"
+          }
+        ]
+      },
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/commit/7370f5c0f95aedaaf5ac476c263ea8cb1010d300",
+        "https://github.com/bynanci/courtside-tw/commit/aa2b6b73f9011e86ae8df1ed3d263b51192d9ac7"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "ledger replay",
+          "result": "pass",
+          "details": "p-exact-head is done and removed from current_frontier; only review/protected-merge gates remain."
+        },
+        {
+          "proof": "diff proof scope",
+          "result": "pass",
+          "compare_url": "https://github.com/bynanci/courtside-tw/compare/e5baa0702f4e8f730f86378a143eca8b36b084d8...aa2b6b73f9011e86ae8df1ed3d263b51192d9ac7"
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Keep runtime proof complete and advance the frontier to human review/protected merge only.",
+      "token_usage": {
+        "estimated": 2500,
+        "input": 0,
+        "output": 0,
+        "total": 0
+      },
+      "terminal_reason": "Runtime proof is complete; review approval and protected merge policy remain human/administrative gates."
+    }
+  ]
+}

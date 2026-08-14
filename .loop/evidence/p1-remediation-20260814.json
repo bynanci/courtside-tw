@@ -1,0 +1,180 @@
+{
+  "schema_version": "p1-remediation-evidence/v1",
+  "captured_at": "2026-08-14T13:26:01Z",
+  "repository": "bynanci/courtside-tw",
+  "base_sha": "e5baa0702f4e8f730f86378a143eca8b36b084d8",
+  "pull_request": {
+    "number": 92,
+    "url": "https://github.com/bynanci/courtside-tw/pull/92",
+    "branch": "codex/remediate-p1-review-blockers",
+    "head_sha_before_evidence": "d6b04b932be10712612affae8f26f10de20995af",
+    "draft": false,
+    "head_sha_verified_at": "2026-08-14T06:55:57Z",
+    "last_reviewed_head_sha": "9a660add74cbf9bd8cd05fd37701ff93efbc5d69",
+    "last_code_change_sha": "aa2b6b73f9011e86ae8df1ed3d263b51192d9ac7",
+    "exact_head_proof_status": "pending_final_head_readback"
+  },
+  "review_blockers": {
+    "source": "https://github.com/bynanci/courtside-tw/pull/91",
+    "unresolved_count": 4,
+    "addressed": [
+      "canonical ContentDocument validation in scripts/content/import-seed.ts",
+      "rights decision derived from status, allowedChannels, and fixed checkedAt/validUntil",
+      "section order checked without mutating manifest.sections",
+      "5000-plus media references backed by matching media, variants, frozen envelope, and PUBLIC_WEB rights"
+    ]
+  },
+  "diff_proof": {
+    "result": "pass",
+    "compare_url": "https://github.com/bynanci/courtside-tw/compare/e5baa0702f4e8f730f86378a143eca8b36b084d8...aa2b6b73f9011e86ae8df1ed3d263b51192d9ac7",
+    "changed_files": [
+      ".loop/evidence/p1-remediation-20260814.json",
+      ".loop/p1-remediation-graphify-loop.yaml",
+      ".loop/p1-remediation-ledger.json",
+      "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java",
+      "scripts/content/import-seed.ts"
+    ],
+    "last_code_change_sha": "aa2b6b73f9011e86ae8df1ed3d263b51192d9ac7"
+  },
+  "exact_head_proof": {
+    "result": "pending",
+    "previous_verified_head": "9a660add74cbf9bd8cd05fd37701ff93efbc5d69",
+    "previous_ci_run_id": 31802866086,
+    "previous_security_run_id": 31802866109,
+    "previous_browser_job_id": 94774996267,
+    "previous_verified_at": "2026-08-14T13:06:20Z",
+    "revalidation_required_for": "final head after trailing media-batch assertion",
+    "required_workflows": [
+      "CI",
+      "Security"
+    ],
+    "browser_job": "Public magazine browser verification"
+  },
+  "ruleset_baseline": {
+    "endpoint": "https://api.github.com/repos/bynanci/courtside-tw/rulesets/20822671",
+    "id": 20822671,
+    "name": "main",
+    "enforcement": "active",
+    "conditions": {
+      "ref_name": {
+        "include": [
+          "~DEFAULT_BRANCH",
+          "~ALL"
+        ],
+        "exclude": []
+      }
+    },
+    "rules": [
+      {
+        "type": "deletion"
+      },
+      {
+        "type": "non_fast_forward"
+      }
+    ],
+    "bypass_actors": [
+      {
+        "actor_id": 1144995,
+        "actor_type": "Integration",
+        "bypass_mode": "always"
+      }
+    ]
+  },
+  "desired_main_ruleset": {
+    "conditions": {
+      "ref_name": {
+        "include": [
+          "refs/heads/main"
+        ],
+        "exclude": []
+      }
+    },
+    "rules": [
+      {
+        "type": "deletion"
+      },
+      {
+        "type": "non_fast_forward"
+      },
+      {
+        "type": "required_status_checks",
+        "parameters": {
+          "strict_required_status_checks_policy": true,
+          "do_not_enforce_on_create": false,
+          "required_status_checks": [
+            {
+              "context": "Frontend and contract verification"
+            },
+            {
+              "context": "Docker Compose dependency health"
+            },
+            {
+              "context": "Java quality and unit verification"
+            },
+            {
+              "context": "Public magazine browser verification"
+            },
+            {
+              "context": "CodeQL (javascript-typescript)"
+            },
+            {
+              "context": "Resolve Compose images"
+            },
+            {
+              "context": "CodeQL (java-kotlin)"
+            },
+            {
+              "context": "Trivy (filesystem)"
+            },
+            {
+              "context": "Dependency audit and reports"
+            },
+            {
+              "context": "Trivy (image s3)"
+            },
+            {
+              "context": "Trivy (image postgres)"
+            },
+            {
+              "context": "Trivy (image oidc)"
+            }
+          ]
+        }
+      },
+      {
+        "type": "pull_request",
+        "parameters": {
+          "dismiss_stale_reviews_on_push": true,
+          "require_code_owner_review": false,
+          "require_last_push_approval": true,
+          "required_approving_review_count": 1,
+          "required_review_thread_resolution": true
+        }
+      }
+    ],
+    "bypass_actors": []
+  },
+  "governance_proof": {
+    "result": "blocked",
+    "blocker": "No admin-capable ruleset mutation tool or repository token is available in this session.",
+    "required_readback": [
+      "scope is refs/heads/main only",
+      "all listed CI/Security checks required",
+      "one approving review required",
+      "conversation resolution required",
+      "integration bypass actor removed"
+    ]
+  },
+  "test_delta": {
+    "initial_result": "fail",
+    "failing_test": "oversizedIssueMediaGraphDoesNotHideTheCurrentArticle",
+    "failure": "expected $.issueNavigation.next to be null",
+    "observed": "bounded-heavy-one was returned after matching media and PUBLIC_WEB rights were created",
+    "remediation": "assert next.slug is bounded-heavy-one",
+    "final_result": "pass",
+    "exact_head_sha": "689614f1dfd85392c25797f8d840f6caf0b7a426",
+    "ci_run_id": 31777745360,
+    "additional_regression": "GET bounded-heavy-two returns 200 after the trailing 88-reference batch",
+    "final_exact_head_result": "pending"
+  }
+}

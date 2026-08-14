@@ -749,13 +749,21 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
         addArticle(issue, "Opening", 1, "bounded-opening", 1, "PUBLISHED");
         addArticle(issue, "Heavy one", 2, "bounded-heavy-one", 1, "PUBLISHED");
         addArticle(issue, "Heavy two", 3, "bounded-heavy-two", 1, "PUBLISHED");
-        replaceSnapshotDocument("bounded-heavy-one", galleryHeavyDocument(106));
-        replaceSnapshotDocument("bounded-heavy-two", galleryHeavyDocument(106));
+        String heavyOne = galleryHeavyDocument(106);
+        String heavyTwo = galleryHeavyDocument(106);
+        replaceSnapshotDocument("bounded-heavy-one", heavyOne);
+        replaceSnapshotDocument("bounded-heavy-two", heavyTwo);
+        addFixtureMedia("bounded-heavy-one", heavyOne);
+        addFixtureMedia("bounded-heavy-two", heavyTwo);
 
         mockMvc.perform(get("/api/v1/public/articles/bounded-opening"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.slug").value("bounded-opening"))
-                .andExpect(jsonPath("$.issueNavigation.next").value(org.hamcrest.Matchers.nullValue()));
+                .andExpect(jsonPath("$.issueNavigation.next.slug").value("bounded-heavy-one"));
+
+        mockMvc.perform(get("/api/v1/public/articles/bounded-heavy-two"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.slug").value("bounded-heavy-two"));
     }
 
     @Test
