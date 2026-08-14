@@ -196,7 +196,11 @@ final class PublicationReliabilityIT extends EditorialApiIntegrationTestSupport 
         PartialExternalInvalidation probe = new PartialExternalInvalidation();
         OutboxClaim firstClaim = onlyClaim(outbox, event.id(), firstAttemptAt);
         PublicationJobHandler firstDelivery = handlerAt("2026-08-10T01:02:00Z", probe);
-        assertThrows(OutboxHandlerException.class, () -> firstDelivery.handle(event));
+        OutboxHandlerException firstFailure = assertThrows(
+                OutboxHandlerException.class,
+                () -> firstDelivery.handle(event)
+        );
+        assertTrue(firstFailure.retryable());
         assertEquals(1, probe.attempts);
         outbox.fail(firstClaim, new IllegalStateException("cache purge failed"), firstAttemptAt, retryPolicy);
         assertEquals("FAILED", outbox.findById(event.id()).orElseThrow().status().name());
@@ -210,6 +214,10 @@ final class PublicationReliabilityIT extends EditorialApiIntegrationTestSupport 
         assertEquals("COMPLETED", outbox.findById(event.id()).orElseThrow().status().name());
         assertEquals("SUCCEEDED", jobStatus("partial-external-withdraw"));
         assertEquals(2, probe.attempts);
+        assertEquals(
+                List.of("partial-external-withdraw", "partial-external-withdraw"),
+                probe.idempotencyKeys
+        );
         assertEquals(keys, probe.lastKeys);
         assertTrue(origin.findBySlug("reliability-fixture", null).isEmpty());
     }
@@ -417,10 +425,12 @@ final class PublicationReliabilityIT extends EditorialApiIntegrationTestSupport 
             implements PublicationExternalInvalidator {
         private int attempts;
         private List<String> lastKeys = List.of();
+        private final List<String> idempotencyKeys = new ArrayList<>();
 
         @Override
         public void invalidate(PublicationExternalInvalidator.Request request) {
             attempts++;
+            idempotencyKeys.add(request.idempotencyKey());
             lastKeys = new ArrayList<>(request.surrogateKeys());
             if (attempts == 1) {
                 throw new IllegalStateException("simulated partial external purge failure");
