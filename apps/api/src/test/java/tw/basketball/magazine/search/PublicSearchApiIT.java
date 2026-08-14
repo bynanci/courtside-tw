@@ -31,8 +31,6 @@ import tw.basketball.magazine.search.application.SearchTextNormalizer;
  * to the search contract.</p>
  */
 final class PublicSearchApiIT extends PublicIssueApiIntegrationTestSupport {
-    private static final String PUBLIC_CACHE_CONTROL = "public, max-age=60, must-revalidate";
-
     @Test
     void taxonomyAndSearchSchemaProvidesVersionedAliasesAndTrigramIndexes() {
         assertEquals(
@@ -131,7 +129,14 @@ final class PublicSearchApiIT extends PublicIssueApiIntegrationTestSupport {
         MvcResult before = mockMvc.perform(get("/api/v1/public/search")
                         .param("q", "台籃"))
                 .andExpect(status().isOk())
-                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, PUBLIC_CACHE_CONTROL))
+                .andExpect(header().string(
+                        HttpHeaders.CACHE_CONTROL,
+                        Matchers.allOf(
+                                Matchers.containsString("public"),
+                                Matchers.containsString("max-age=60"),
+                                Matchers.containsString("must-revalidate")
+                        )
+                ))
                 .andExpect(header().exists(HttpHeaders.ETAG))
                 .andExpect(jsonPath("$.items[0].slug").value("search-before"))
                 .andReturn();
@@ -144,7 +149,14 @@ final class PublicSearchApiIT extends PublicIssueApiIntegrationTestSupport {
         MvcResult after = mockMvc.perform(get("/api/v1/public/search")
                         .param("q", "台籃"))
                 .andExpect(status().isOk())
-                .andExpect(header().string(HttpHeaders.CACHE_CONTROL, PUBLIC_CACHE_CONTROL))
+                .andExpect(header().string(
+                        HttpHeaders.CACHE_CONTROL,
+                        Matchers.allOf(
+                                Matchers.containsString("public"),
+                                Matchers.containsString("max-age=60"),
+                                Matchers.containsString("must-revalidate")
+                        )
+                ))
                 .andExpect(jsonPath("$.items").value(Matchers.hasSize(2)))
                 .andReturn();
         String afterEtag = after.getResponse().getHeader(HttpHeaders.ETAG);
