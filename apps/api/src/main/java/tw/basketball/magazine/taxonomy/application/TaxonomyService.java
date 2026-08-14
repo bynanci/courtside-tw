@@ -113,7 +113,7 @@ public final class TaxonomyService {
                     ? current.locale() : locale(command.locale());
             Instant validFrom = command.validFrom() == null
                     ? current.validFrom() : command.validFrom();
-            Instant validUntil = command.clearValidUntil()
+            Instant validUntil = Boolean.TRUE.equals(command.clearValidUntil())
                     ? null
                     : command.validUntil() == null ? current.validUntil() : command.validUntil();
             TaxonomyStatus taxonomyStatus = command.status() == null
@@ -343,7 +343,7 @@ public final class TaxonomyService {
             String locale,
             Instant validFrom,
             Instant validUntil,
-            boolean clearValidUntil,
+            Boolean clearValidUntil,
             String status
     ) {
     }
