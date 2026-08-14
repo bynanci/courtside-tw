@@ -258,3 +258,42 @@ final class PublicSearchApiIT extends PublicIssueApiIntegrationTestSupport {
                 articleId
         );
     }
+
+    private void attachAlias(String slug, String termKey, String alias) {
+        UUID revisionId = jdbcTemplate.queryForObject(
+                """
+                SELECT article.published_revision_id
+                FROM article
+                WHERE article.slug = ?
+                """,
+                UUID.class,
+                slug
+        );
+        UUID termId = jdbcTemplate.queryForObject(
+                """
+                INSERT INTO taxonomy_term (term_key, kind, display_name)
+                VALUES (?, 'LEAGUE', '台灣職籃聯盟')
+                RETURNING id
+                """,
+                UUID.class,
+                termKey
+        );
+        jdbcTemplate.update(
+                """
+                INSERT INTO taxonomy_alias (term_id, alias, normalized_alias)
+                VALUES (?, ?, ?)
+                """,
+                termId,
+                alias,
+                SearchTextNormalizer.normalize(alias)
+        );
+        jdbcTemplate.update(
+                """
+                INSERT INTO article_taxonomy (article_revision_id, term_id, relevance)
+                VALUES (?, ?, 'PRIMARY')
+                """,
+                revisionId,
+                termId
+        );
+    }
+}

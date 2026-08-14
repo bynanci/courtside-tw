@@ -258,3 +258,138 @@ public final class SearchService {
         String normalized = value.strip().replaceAll("\\s+", " ");
         int count = normalized.codePointCount(0, normalized.length());
         if (count <= MAXIMUM_SNIPPET_CODE_POINTS) {
+            return normalized;
+        }
+        int end = normalized.offsetByCodePoints(0, MAXIMUM_SNIPPET_CODE_POINTS);
+        return normalized.substring(0, end).stripTrailing() + "…";
+    }
+
+    private static int limit(String value) {
+        if (value == null || value.isBlank()) {
+            return DEFAULT_LIMIT;
+        }
+        if (value.length() > 3) {
+            throw invalidLimit();
+        }
+        try {
+            int parsed = Integer.parseInt(value);
+            if (parsed < 1 || parsed > MAXIMUM_LIMIT) {
+                throw invalidLimit();
+            }
+            return parsed;
+        } catch (NumberFormatException exception) {
+            throw invalidLimit();
+        }
+    }
+
+    private static List<String> taxonomy(List<String> values) {
+        if (values == null || values.isEmpty()) {
+            return List.of();
+        }
+        List<String> result = values.stream()
+                .filter(Objects::nonNull)
+                .flatMap(value -> List.of(value.split(",")).stream())
+                .map(value -> value.toLowerCase(Locale.ROOT).strip())
+                .distinct()
+                .toList();
+        if (result.size() > MAXIMUM_FILTERS
+                || result.stream().anyMatch(value -> !TERM_KEY.matcher(value).matches())) {
+            throw invalid(
+                    "/taxonomy",
+                    "invalid_taxonomy_filter",
+                    "taxonomy must contain at most 20 bounded term keys"
+            );
+        }
+        return result;
+    }
+
+    private static String placeholders(int count) {
+        return String.join(", ", java.util.Collections.nCopies(count, "?"));
+    }
+
+    private static SearchRequestException invalidLimit() {
+        return invalid("/limit", "invalid_limit", "limit must be an integer between 1 and 100");
+    }
+
+    private static SearchRequestException invalid(String path, String code, String message) {
+        return new SearchRequestException(path, code, message);
+    }
+
+    public record QueryEcho(String raw, String normalized, List<String> taxonomy) {
+        public QueryEcho {
+            taxonomy = List.copyOf(taxonomy);
+        }
+    }
+
+    public record SearchResult(
+            UUID articleId,
+            String slug,
+            String title,
+            String snippet,
+            String issueSlug,
+            Instant publishedAt
+    ) {
+    }
+
+    public record PageMeta(String nextCursor, int limit) {
+    }
+
+    public record SearchPage(QueryEcho query, List<SearchResult> items, PageMeta page) {
+        public SearchPage {
+            items = List.copyOf(items);
+        }
+    }
+
+    public record TaxonomyTerm(UUID termId, String type, String slug, String name) {
+    }
+
+    public record TaxonomyPage(List<TaxonomyTerm> items, PageMeta page) {
+        public TaxonomyPage {
+            items = List.copyOf(items);
+        }
+    }
+
+    private record SearchRow(
+            UUID articleId,
+            String slug,
+            String title,
+            String dek,
+            String bodyText,
+            String issueSlug,
+            Instant publishedAt,
+            double score
+    ) {
+    }
+
+    private record TaxonomyCursor(String termKey, UUID termId) {
+        private static final int MAXIMUM_CURSOR_LENGTH = 256;
+
+        private static TaxonomyCursor parse(String value) {
+            if (value == null) {
+                return null;
+            }
+            if (value.isBlank() || value.length() > MAXIMUM_CURSOR_LENGTH) {
+                throw invalid("/cursor", "invalid_cursor", "cursor must be a bounded opaque value");
+            }
+            try {
+                String decoded = new String(
+                        Base64.getUrlDecoder().decode(value),
+                        StandardCharsets.UTF_8
+                );
+                String[] fields = decoded.split("\\|", -1);
+                if (fields.length != 2 || !TERM_KEY.matcher(fields[0]).matches()) {
+                    throw new IllegalArgumentException("invalid taxonomy cursor");
+                }
+                return new TaxonomyCursor(fields[0], UUID.fromString(fields[1]));
+            } catch (IllegalArgumentException exception) {
+                throw invalid("/cursor", "invalid_cursor", "cursor must be a bounded opaque value");
+            }
+        }
+
+        private String encode() {
+            String value = termKey + "|" + termId;
+            return Base64.getUrlEncoder().withoutPadding()
+                    .encodeToString(value.getBytes(StandardCharsets.UTF_8));
+        }
+    }
+}
