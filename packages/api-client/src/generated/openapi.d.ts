@@ -1008,6 +1008,10 @@ export interface components {
       mimeType: "image/avif" | "image/jpeg" | "image/png" | "image/webp"
       width: number
       height: number
+      altText: string
+      credit: string
+      rightsOwner: string
+      licenseName: string
     }
     ArticleProjection: {
       articleId: components["schemas"]["Uuid"]
@@ -1017,6 +1021,13 @@ export interface components {
       title: string
       dek?: string
       content: components["schemas"]["content-document.schema"]
+      plainText: string
+      readingTimeMinutes: number
+      /** Format: date-time */
+      publishedAt: string
+      /** Format: date-time */
+      updatedAt: string
+      canonicalPath: string
       media: components["schemas"]["PublicArticleMedia"][]
       contributors: components["schemas"]["Contributor"][]
       issueNavigation: {
@@ -1815,6 +1826,7 @@ export interface operations {
       200: {
         headers: {
           "X-Request-Id": components["headers"]["XRequestId"]
+          ETag: components["headers"]["ETag"]
           [name: string]: unknown
         }
         content: {

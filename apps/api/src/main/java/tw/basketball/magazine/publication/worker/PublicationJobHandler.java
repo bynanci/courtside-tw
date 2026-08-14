@@ -12,6 +12,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import tw.basketball.magazine.content.application.PublishedArticleSnapshotFactory;
+import tw.basketball.magazine.content.domain.ContentDocumentExtractor;
 import tw.basketball.magazine.content.validation.ContentDocumentValidator;
 import tw.basketball.magazine.media.domain.MediaProcessingState;
 import tw.basketball.magazine.media.domain.RightsPolicy;
@@ -37,6 +39,8 @@ public final class PublicationJobHandler implements OutboxEventHandler {
     private final Clock clock;
     private final PublicationWorkflow workflow;
     private final ContentDocumentValidator contentDocumentValidator;
+    private final ContentDocumentExtractor contentDocumentExtractor;
+    private final PublishedArticleSnapshotFactory snapshotFactory;
 
     public PublicationJobHandler(
             EditorialArticleRepository repository,
@@ -50,6 +54,8 @@ public final class PublicationJobHandler implements OutboxEventHandler {
         this.clock = Objects.requireNonNull(clock, "clock");
         this.workflow = new PublicationWorkflow(new PublicationReadinessService());
         this.contentDocumentValidator = new ContentDocumentValidator();
+        this.contentDocumentExtractor = new ContentDocumentExtractor();
+        this.snapshotFactory = new PublishedArticleSnapshotFactory(objectMapper);
     }
 
     @Override
@@ -217,12 +223,26 @@ public final class PublicationJobHandler implements OutboxEventHandler {
         )) {
             throw new RetryableJobException("publication article changed during worker execution");
         }
+        EditorialArticleRepository.ArticleRecord published = requireArticle(article.articleId());
+        JsonNode publicSnapshot = snapshotFactory.create(
+                published.articleId(),
+                published.revisionId(),
+                published.revisionNumber(),
+                published.slug(),
+                published.title(),
+                published.dek(),
+                published.content(),
+                repository.contributors(published.revisionId()),
+                repository.publicMedia(published.revisionId(), now),
+                now,
+                published.revisionUpdatedAt()
+        );
         repository.appendPublicationSnapshot(
-                article.articleId(),
+                published.articleId(),
                 revisionId,
-                repository.nextSnapshotVersion(article.articleId()),
-                article.content(),
-                checksum(article.content()),
+                repository.nextSnapshotVersion(published.articleId()),
+                publicSnapshot,
+                checksum(publicSnapshot),
                 WORKER_ACTOR,
                 requirements.stream()
                         .map(PublicationReadinessService.MediaRequirement::assetId)
@@ -279,10 +299,17 @@ public final class PublicationJobHandler implements OutboxEventHandler {
     }
 
     private boolean contentReady(EditorialArticleRepository.ArticleRecord article) {
-        return !article.title().isBlank()
-                && article.content() != null
-                && article.content().isObject()
-                && contentDocumentValidator.validate(article.content().toString()).valid();
+        if (article.title().isBlank()
+                || article.content() == null
+                || !article.content().isObject()
+                || !contentDocumentValidator.validate(article.content().toString()).valid()) {
+            return false;
+        }
+        try {
+            return !contentDocumentExtractor.extract(article.content()).plainText().isBlank();
+        } catch (IllegalArgumentException exception) {
+            return false;
+        }
     }
 
     private String checksum(JsonNode content) {

@@ -147,6 +147,11 @@ paths:
                     revisionNumber: 1
                     slug: article-1
                     title: Article 1
+                    plainText: Article 1 body
+                    readingTimeMinutes: 1
+                    publishedAt: 2026-08-01T00:00:00Z
+                    updatedAt: 2026-08-01T00:00:00Z
+                    canonicalPath: /articles/article-1
                     content:
                       schemaVersion: 1
                       documentId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
@@ -171,6 +176,8 @@ paths:
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
+            ETag:
+              $ref: "#/components/headers/ETag"
         "400":
           $ref: "#/components/responses/Problem400"
         "404":
@@ -3136,6 +3143,10 @@ components:
         - mimeType
         - width
         - height
+        - altText
+        - credit
+        - rightsOwner
+        - licenseName
       properties:
         assetId:
           $ref: "#/components/schemas/Uuid"
@@ -3159,6 +3170,22 @@ components:
         height:
           type: integer
           minimum: 1
+        altText:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        credit:
+          type: string
+          minLength: 1
+          maxLength: 1000
+        rightsOwner:
+          type: string
+          minLength: 1
+          maxLength: 512
+        licenseName:
+          type: string
+          minLength: 1
+          maxLength: 512
     ArticleProjection:
       type: object
       additionalProperties: false
@@ -3169,6 +3196,11 @@ components:
         - slug
         - title
         - content
+        - plainText
+        - readingTimeMinutes
+        - publishedAt
+        - updatedAt
+        - canonicalPath
         - media
         - contributors
         - issueNavigation
@@ -3188,6 +3220,22 @@ components:
           type: string
         content:
           $ref: "#/components/schemas/ContentDocument"
+        plainText:
+          type: string
+          minLength: 1
+        readingTimeMinutes:
+          type: integer
+          minimum: 1
+        publishedAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        canonicalPath:
+          type: string
+          pattern: "^/articles/[a-z0-9]+(?:-[a-z0-9]+)*$"
+          maxLength: 138
         media:
           type: array
           items:

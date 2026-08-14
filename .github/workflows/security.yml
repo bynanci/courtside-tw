@@ -8,7 +8,7 @@ on:
     branches:
       - main
   schedule:
-    - cron: '17 3 * * 1'
+    - cron: "17 3 * * 1"
   workflow_dispatch:
 
 permissions:
@@ -32,8 +32,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 0
           persist-credentials: false
+
+      - name: Verify exact source head
+        env:
+          EXPECTED_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: bash scripts/ci/verify-source-head.sh
 
       - name: Set up pnpm and Node.js
         uses: pnpm/setup@4700d737c3d7a2e7199f3d42a920f0bf7f34e411 # v2.0.1
@@ -54,7 +60,7 @@ jobs:
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: "21"
           cache: gradle
           cache-dependency-path: |
             apps/api/**/*.gradle*
@@ -150,7 +156,7 @@ jobs:
           severity: HIGH,CRITICAL
           limit-severities-for-sarif: true
           ignore-unfixed: false
-          exit-code: '1'
+          exit-code: "1"
           cache: true
 
       - name: Enforce dependency audit result
@@ -190,7 +196,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+
+      - name: Verify exact source head
+        env:
+          EXPECTED_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: bash scripts/ci/verify-source-head.sh
 
       - name: Initialize CodeQL
         uses: github/codeql-action/init@7d9249f5a57288b8a472ddd9cc3ece1921f7dc38 # v3.28.10
@@ -203,7 +215,7 @@ jobs:
         uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5.7.0
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: "21"
 
       - name: Set up Gradle
         if: ${{ matrix.language == 'java-kotlin' }}
@@ -241,7 +253,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+
+      - name: Verify exact source head
+        env:
+          EXPECTED_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: bash scripts/ci/verify-source-head.sh
 
       - name: Resolve Compose image matrix
         id: resolve
@@ -272,7 +290,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+
+      - name: Verify exact source head
+        env:
+          EXPECTED_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: bash scripts/ci/verify-source-head.sh
 
       - name: Prepare scan output directory
         run: mkdir -p artifacts
@@ -288,7 +312,7 @@ jobs:
           severity: HIGH,CRITICAL
           limit-severities-for-sarif: true
           ignore-unfixed: false
-          exit-code: '1'
+          exit-code: "1"
           cache: true
 
       - name: Upload Trivy report
@@ -315,7 +339,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
           persist-credentials: false
+
+      - name: Verify exact source head
+        env:
+          EXPECTED_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: bash scripts/ci/verify-source-head.sh
 
       - name: Prepare scan output directory
         run: mkdir -p artifacts
@@ -335,7 +365,7 @@ jobs:
           severity: HIGH,CRITICAL
           limit-severities-for-sarif: true
           ignore-unfixed: false
-          exit-code: '1'
+          exit-code: "1"
           cache: true
 
       - name: Upload Trivy report

@@ -420,7 +420,12 @@ a:focus-visible {
   color: #f5f1e9;
 }
 
-.article-meta [role=\"status\"] {
+.article-meta .button-link:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.article-meta [role="status"] {
   color: var(--accent);
   font-weight: 700;
 }
@@ -543,6 +548,7 @@ a:focus-visible {
 .article-gallery img {
   display: block;
   width: 100%;
+  height: auto;
   max-height: 38rem;
   object-fit: cover;
   background: #ded7ca;
@@ -558,9 +564,18 @@ a:focus-visible {
 }
 
 .article-image-fallback {
+  display: grid;
+  box-sizing: border-box;
+  width: 100%;
+  max-height: 38rem;
   border: 1px dashed var(--accent);
   padding: 1rem;
+  place-items: center;
   background: #f1e3d8;
+}
+
+.article-image-fallback p {
+  margin: 0;
 }
 
 .article-gallery {
@@ -636,7 +651,7 @@ a:focus-visible {
   padding-top: 1.25rem;
 }
 
-.article-generative [data-testid=\"generative-poster\"] {
+.article-generative [data-testid="generative-poster"] {
   min-height: 12rem;
   display: grid;
   place-items: center;
@@ -647,7 +662,7 @@ a:focus-visible {
   text-align: center;
 }
 
-.article-generative [data-testid=\"generative-canvas\"] {
+.article-generative [data-testid="generative-canvas"] {
   display: grid;
   min-height: 4rem;
   place-items: center;
@@ -659,11 +674,11 @@ a:focus-visible {
   font-size: 0.75rem;
 }
 
-.article-generative [data-runtime-state=\"paused\"] {
+.article-generative [data-runtime-state="paused"] {
   opacity: 0.68;
 }
 
-.article-generative [data-runtime-state=\"running\"] {
+.article-generative [data-runtime-state="running"] {
   border-color: var(--accent);
 }
 
@@ -815,7 +830,10 @@ a:focus-visible {
   padding: 0.65rem 0.75rem;
   color: var(--studio-muted);
   text-decoration: none;
-  transition: background 150ms ease, border-color 150ms ease, color 150ms ease;
+  transition:
+    background 150ms ease,
+    border-color 150ms ease,
+    color 150ms ease;
 }
 
 .studio-sidebar__nav a:hover,
@@ -1032,7 +1050,10 @@ a:focus-visible {
   font-weight: 800;
   letter-spacing: 0.02em;
   padding: 0.7rem 0.85rem;
-  transition: background 150ms ease, color 150ms ease, border-color 150ms ease;
+  transition:
+    background 150ms ease,
+    color 150ms ease,
+    border-color 150ms ease;
 }
 
 .studio-button:hover:not(:disabled),

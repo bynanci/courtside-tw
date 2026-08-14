@@ -6,7 +6,7 @@ defineProps<{ issue: PublicIssueDetail }>()
 </script>
 
 <template>
-  <section class="issue-toc" aria-labelledby="toc-heading">
+  <section id="toc" class="issue-toc" aria-labelledby="toc-heading">
     <div class="section-heading">
       <p class="eyebrow">本期目錄</p>
       <h2 id="toc-heading">依編輯順序閱讀</h2>

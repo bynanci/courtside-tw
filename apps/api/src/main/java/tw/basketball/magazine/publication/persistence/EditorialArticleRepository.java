@@ -7,6 +7,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 import tools.jackson.databind.JsonNode;
+import tw.basketball.magazine.content.domain.PublicArticleModels.Contributor;
+import tw.basketball.magazine.content.domain.PublicArticleModels.PublicArticleMedia;
 import tw.basketball.magazine.publication.application.PublicationReadinessService;
 import tw.basketball.magazine.publication.domain.PublicationState;
 
@@ -55,6 +57,16 @@ public interface EditorialArticleRepository {
      * The returned requirements are read after the locks are acquired.
      */
     List<PublicationReadinessService.MediaRequirement> lockMediaRequirements(UUID revisionId);
+
+    /** Returns the ordered, public-safe byline frozen into a publication snapshot. */
+    List<Contributor> contributors(UUID revisionId);
+
+    /**
+     * Returns public-safe media metadata while publication rights rows are in the
+     * same transaction. The snapshot factory selects only variants referenced by
+     * the canonical content document.
+     */
+    List<PublicArticleMedia> publicMedia(UUID revisionId, Instant checkedAt);
 
     void appendReview(
             UUID articleId,
@@ -140,7 +152,8 @@ public interface EditorialArticleRepository {
             PublicationState revisionState,
             long version,
             long revisionVersion,
-            Instant scheduledFor
+            Instant scheduledFor,
+            Instant revisionUpdatedAt
     ) {
     }
 
