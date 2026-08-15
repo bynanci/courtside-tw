@@ -164,7 +164,7 @@ public final class OfflineManifestService {
         Instant now = clock.instant();
         List<IssueRow> rows = jdbcTemplate.query(
                 ISSUE_SQL,
-                (resultSet, rowNumber) -> mapIssue(resultSet),
+                (resultSet, rowNumber) -> mapIssue(resultSet, rowNumber),
                 Timestamp.from(now),
                 Timestamp.from(now),
                 issueSlug,
@@ -182,7 +182,7 @@ public final class OfflineManifestService {
                 return Optional.empty();
             }
             List<OfflineAsset> assets = assets(issue.snapshotId(), now);
-            int linkedAssetCount = jdbcTemplate.queryForObject(
+            Integer linkedAssetCount = jdbcTemplate.queryForObject(
                     ASSET_COUNT_SQL,
                     Integer.class,
                     issue.snapshotId()
@@ -249,7 +249,7 @@ public final class OfflineManifestService {
                 int position = requiredPositiveInt(article, "position");
                 List<ArticleRow> rows = jdbcTemplate.query(
                         ARTICLE_SQL,
-                        (resultSet, rowNumber) -> mapArticle(resultSet),
+                        (resultSet, rowNumber) -> mapArticle(resultSet, rowNumber),
                         articleId
                 );
                 if (rows.isEmpty()) {
@@ -273,7 +273,7 @@ public final class OfflineManifestService {
     private List<OfflineAsset> assets(UUID snapshotId, Instant now) {
         return jdbcTemplate.query(
                 ASSET_SQL,
-                (resultSet, rowNumber) -> mapAsset(resultSet),
+                (resultSet, rowNumber) -> mapAsset(resultSet, rowNumber),
                 snapshotId,
                 Timestamp.from(now),
                 Timestamp.from(now)

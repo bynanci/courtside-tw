@@ -1,15 +1,17 @@
 {
   "schema": "courtside-tw/task-evidence/v1",
   "task": "T072",
-  "status": "IMPLEMENTATION_STARTED",
-  "recorded_at": "2026-08-15T15:00:00Z",
+  "status": "RED_IMPLEMENTATION",
+  "recorded_at": "2026-08-15T16:00:00Z",
   "baseline_main": "73bbb0851d90a108f6a8c9d93c284670afbfd152",
   "parent_exact_head": "8e5c94c676ce4661466831a77eae8cafb1df6176",
+  "current_exact_head": "03d07aa3273655570d3bace7b98e0c27f2ff7df1",
   "changed_files": [
     "apps/api/src/main/java/tw/basketball/magazine/publication/api/OfflineManifestController.java",
     "apps/api/src/main/java/tw/basketball/magazine/publication/application/OfflineManifestService.java",
     "apps/api/src/test/java/tw/basketball/magazine/publication/api/OfflineManifestApiIT.java",
     "contracts/openapi.yaml",
+    "packages/api-client/src/generated/openapi.d.ts",
     ".loop/evidence/t072-us6-offline-manifest-20260815.json",
     ".loop/t071-us6-offline-graphify-loop.yaml",
     ".loop/t071-us6-offline-ledger.json",
@@ -43,10 +45,15 @@
   ],
   "proof": {
     "local_diff_check": "PASS",
-    "openapi_validation": "PENDING: local yaml package is unavailable; repository CI must run scripts/validate-openapi.mjs",
-    "java_compile_and_test": "PENDING: pinned CI/Testcontainers",
-    "exact_head_ci": "PENDING: publish implementation commit",
-    "exact_head_security": "PENDING: publish implementation commit"
+    "openapi_validation": "PASS: CI #563 job 95028315634 validated contracts/openapi.yaml",
+    "java_compile_and_test": "RED: CI #563 job 95028315833 failed at compileJava in OfflineManifestService.java",
+    "exact_head_ci": "FAIL: CI #563 on 03d07aa3273655570d3bace7b98e0c27f2ff7df1; generated api-client contract was stale and Java compile failed",
+    "exact_head_security": "FAIL: Security #564 on 03d07aa3273655570d3bace7b98e0c27f2ff7df1; dependency audit and CodeQL Java/Kotlin stopped at the same Java compile failure; Trivy jobs passed",
+    "attributable_failures": [
+      "RowMapper lambdas called mapIssue/mapArticle/mapAsset without the required row number",
+      "linkedAssetCount was declared primitive while compared with null",
+      "packages/api-client/src/generated/openapi.d.ts did not reflect the checked-in OpenAPI schema"
+    ]
   },
   "scope_guard": {
     "T071_contracts_preserved": true,
@@ -57,5 +64,5 @@
     "repository_protection_modified": false,
     "web3_or_unrelated_work_started": false
   },
-  "next_action": "Create one non-force implementation commit on PR #100 from parent 8e5c94c676ce4661466831a77eae8cafb1df6176, then rerun and read back exact-head CI/Security before any checkbox change."
+  "next_action": "Publish the minimal T072 compile/generated-contract fix from exact head 03d07aa3273655570d3bace7b98e0c27f2ff7df1, then rerun and read back exact-head CI/Security before any checkbox change."
 }

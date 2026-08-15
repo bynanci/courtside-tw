@@ -93,11 +93,33 @@
         "Web3 and repository protection untouched",
         "issue #89 human research state preserved"
       ]
+    },
+    {
+      "sequence": 6,
+      "type": "t072_exact_head_compile_and_contract_rejected",
+      "result": "red_implementation_receipt",
+      "source_head": "03d07aa3273655570d3bace7b98e0c27f2ff7df1",
+      "ci_run": 563,
+      "security_run": 564,
+      "ci_jobs": [95028315634, 95028315833],
+      "security_jobs": [95028315650, 95028315652],
+      "passed_gates": ["OpenAPI validation", "Trivy filesystem", "Trivy postgres", "Trivy s3", "Trivy oidc", "Compose image resolution", "CodeQL JavaScript/TypeScript"],
+      "failure_signature": "OfflineManifestService_compile_errors_and_generated_openapi_dts_drift",
+      "attribution": "attributable_to_T072_implementation; no unrelated task or vulnerability finding",
+      "minimal_fix": [
+        "pass row number to mapIssue/mapArticle/mapAsset",
+        "use Integer for nullable linked asset count",
+        "check in generated packages/api-client/src/generated/openapi.d.ts"
+      ],
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/actions/runs/31891497804",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31891497792"
+      ]
     }
   ],
   "graph_delta": {
     "opened": ["T071", "api_red", "browser_red"],
-    "ready_frontier": ["T072_exact_head_ci_security"],
+    "ready_frontier": ["T072_minimal_compile_and_generated_contract_fix"],
     "blocked": ["T073", "T074", "T075", "T076"],
     "preserved": ["issue #89 human research items", "T071 unchecked", "PR #92 and repository protection untouched"]
   },
@@ -105,12 +127,12 @@
     "api_contracts": "authored",
     "browser_contracts": "5/5 scenarios authored",
     "runtime_red": "proven on exact head 8e5c94c676ce4661466831a77eae8cafb1df6176 by CI #562/Security #563",
-    "passing_implementation": "T072 implementation started; exact-head proof pending"
+    "passing_implementation": "T072 implementation RED on 03d07aa3273655570d3bace7b98e0c27f2ff7df1; minimal fix pending"
   },
   "min_cut": [
     "pinned CI toolchain execution of OfflineManifestApiIT",
     "pinned Playwright execution of us6-offline-issue.spec.ts",
     "T072 exact-head Java/API proof and contract validation"
   ],
-  "next_action": "Publish T072 against PR #100 current head, rerun exact-head CI/Security, and stop at the first attributable downstream US6 blocker; do not start T073+."
+  "next_action": "Publish the minimal T072 compile/generated-contract fix from 03d07aa3273655570d3bace7b98e0c27f2ff7df1, rerun exact-head CI/Security, and stop at the first attributable downstream US6 blocker; do not start T073+."
 }

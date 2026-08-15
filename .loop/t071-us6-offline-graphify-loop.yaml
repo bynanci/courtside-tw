@@ -1,6 +1,6 @@
 schema: courtside-tw/graphify-loop/v1
 lane: t072-us6-offline-manifest
-recorded_at: 2026-08-15T15:00:00Z
+recorded_at: 2026-08-15T16:00:00Z
 decision: preserve_t071_attributable_red_and_dispatch_only_t072_manifest_implementation
 terminal_state: needs_runtime_verification
 
@@ -50,8 +50,10 @@ nodes:
       - apps/api/src/main/java/tw/basketball/magazine/publication/api/OfflineManifestController.java
       - apps/api/src/main/java/tw/basketball/magazine/publication/application/OfflineManifestService.java
       - contracts/openapi.yaml
+      - packages/api-client/src/generated/openapi.d.ts
       - .loop/evidence/t072-us6-offline-manifest-20260815.json
-    acceptance: exact-head Java/API tests, OpenAPI validation and Security must pass
+    acceptance: exact-head Java/API tests, generated contract, OpenAPI validation and Security must pass
+    current_red: CI #563/Security #564 found three attributable compile/generated-contract failures on 03d07aa3273655570d3bace7b98e0c27f2ff7df1
   human_research:
     kind: external_gate
     state: open
@@ -64,7 +66,7 @@ edges:
   - [browser_red, T072]
   - [T072, T073]
 
-ready_frontier: [T072_exact_head_ci_security]
+ready_frontier: [T072_minimal_compile_and_generated_contract_fix]
 critical_path:
   - T071
   - API and browser RED replay
@@ -82,4 +84,5 @@ proof_coverage:
   api_contracts: authored
   browser_failure_injection_matrix: 5_scenarios_authored
   local_runtime_red: blocked_by_toolchain
-  exact_head_ci_security: pending_on_t072_exact_head
+  exact_head_ci_security: RED_on_03d07aa3273655570d3bace7b98e0c27f2ff7df1_CI_563_Security_564
+  attributable_t072_fix: required_before_checkbox
