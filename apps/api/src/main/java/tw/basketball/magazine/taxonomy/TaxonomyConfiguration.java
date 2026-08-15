@@ -7,18 +7,20 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 
+import tw.basketball.magazine.audit.AuditWriter;
 import tw.basketball.magazine.taxonomy.application.TaxonomyService;
 
 /** Wires taxonomy management when JDBC transactions are available. */
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnBean({JdbcTemplate.class, PlatformTransactionManager.class})
+@ConditionalOnBean({JdbcTemplate.class, PlatformTransactionManager.class, AuditWriter.class})
 public final class TaxonomyConfiguration {
     @Bean
     @ConditionalOnMissingBean(TaxonomyService.class)
     public TaxonomyService taxonomyService(
             JdbcTemplate jdbcTemplate,
-            PlatformTransactionManager transactionManager
+            PlatformTransactionManager transactionManager,
+            AuditWriter auditWriter
     ) {
-        return new TaxonomyService(jdbcTemplate, transactionManager);
+        return new TaxonomyService(jdbcTemplate, transactionManager, auditWriter);
     }
 }

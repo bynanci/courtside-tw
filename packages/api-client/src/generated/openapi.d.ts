@@ -1229,10 +1229,13 @@ export interface components {
       slug: string
       dek?: string
       content?: components["schemas"]["content-document.schema"]
+      taxonomy?: components["schemas"]["TaxonomyKeyList"]
     }
     ArticlePatch: {
       articleId: components["schemas"]["Uuid"]
       changes: {
+        taxonomy?: components["schemas"]["TaxonomyKeyList"]
+      } & {
         [key: string]: unknown
       }
     }
@@ -1245,6 +1248,7 @@ export interface components {
       slug: string
       dek?: string
       content?: components["schemas"]["content-document.schema"]
+      taxonomy?: components["schemas"]["TaxonomyKeyList"]
       /** @enum {string} */
       state:
         "DRAFT" | "IN_REVIEW" | "APPROVED" | "SCHEDULED" | "PUBLISHED" | "WITHDRAWN" | "ARCHIVED"
@@ -1266,7 +1270,9 @@ export interface components {
       title: string
       dek?: string
       content: components["schemas"]["content-document.schema"]
+      taxonomy?: components["schemas"]["TaxonomyKeyList"]
     }
+    TaxonomyKeyList: string[]
     SubmitRequest: {
       revisionId: components["schemas"]["Uuid"]
     }
@@ -1801,7 +1807,7 @@ export interface components {
     Id: components["schemas"]["Uuid"]
     IssueId: components["schemas"]["Uuid"]
     SectionId: components["schemas"]["Uuid"]
-    Type: "league" | "season" | "team" | "player" | "topic"
+    Type: "league" | "season" | "team" | "player" | "person" | "venue" | "topic"
     ChainNamespace: string
     Address: string
     /** @description Optimistic-lock version or ETag. The server rejects stale values with 409 VERSION_CONFLICT. */
@@ -1949,7 +1955,7 @@ export interface operations {
         /** @description Bounded page size. */
         limit?: components["parameters"]["Limit"]
         q?: string
-        type?: "article" | "issue"
+        type?: "article"
         /** @description Stable taxonomy slugs; repeated values use OR semantics. */
         taxonomy?: string[]
       }

@@ -61,11 +61,21 @@ function parseStrictUtcTimestamp(value: string, label: string): number {
 }
 
 const checkedAt = parseStrictUtcTimestamp("2026-08-01T00:00:00Z", "checkedAt")
-const knownRightsStatuses = new Set(["UNKNOWN", "PENDING", "VALID", "EXPIRED", "REVOKED", "BLOCKED"])
+const knownRightsStatuses = new Set([
+  "UNKNOWN",
+  "PENDING",
+  "VALID",
+  "EXPIRED",
+  "REVOKED",
+  "BLOCKED"
+])
 
 function deriveRightsDecision(rights: SeedManifest["rightsCases"][number]): string {
   const validFrom = parseStrictUtcTimestamp(rights.validFrom, `rights validFrom for ${rights.id}`)
-  const validUntil = parseStrictUtcTimestamp(rights.validUntil, `rights validUntil for ${rights.id}`)
+  const validUntil = parseStrictUtcTimestamp(
+    rights.validUntil,
+    `rights validUntil for ${rights.id}`
+  )
 
   if (!knownRightsStatuses.has(rights.status)) {
     throw new Error(`invalid rights status for ${rights.id}: ${rights.status}`)
@@ -121,12 +131,11 @@ if (
   throw new Error("first-issue seed manifest is incomplete, non-deterministic, or rights-invalid")
 }
 
-const seedRoot = new URL(
-  "../../apps/api/src/test/resources/fixtures/first-issue/",
-  import.meta.url
-)
+const seedRoot = new URL("../../apps/api/src/test/resources/fixtures/first-issue/", import.meta.url)
 for (const article of articles) {
-  const content = JSON.parse(await readFile(new URL(article.contentFile, seedRoot), "utf8")) as unknown
+  const content = JSON.parse(
+    await readFile(new URL(article.contentFile, seedRoot), "utf8")
+  ) as unknown
   try {
     assertValidContentDocument(content)
   } catch (error) {

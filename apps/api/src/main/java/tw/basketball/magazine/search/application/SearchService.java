@@ -53,11 +53,11 @@ public final class SearchService {
         String normalized = SearchTextNormalizer.normalize(raw);
         List<String> taxonomy = taxonomy(taxonomyValues);
         QueryEcho query = new QueryEcho(raw, normalized, taxonomy);
-        if ((normalized.isEmpty() && taxonomy.isEmpty()) || "issue".equals(contentType)) {
-            return new SearchPage(query, List.of(), new PageMeta(null, limit));
-        }
         if (contentType != null && !contentType.isBlank() && !"article".equals(contentType)) {
-            throw invalid("/type", "invalid_search_type", "type must be article or issue");
+            throw invalid("/type", "invalid_search_type", "type must be article");
+        }
+        if (normalized.isEmpty() && taxonomy.isEmpty()) {
+            return new SearchPage(query, List.of(), new PageMeta(null, limit));
         }
         SearchCursor cursor = cursorValue == null ? null : SearchCursor.parse(cursorValue);
         Instant now = clock.instant();

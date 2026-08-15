@@ -1,24 +1,16 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-p1-review-remediation-20260814",
-  "graph_version": 8,
+  "graph_version": 9,
   "run_id": "courtside-p1-review-remediation-20260814",
-  "status": "needs_human",
-  "iteration": 5,
+  "status": "verifying",
+  "iteration": 6,
   "started_at": "2026-08-14T03:51:03Z",
-  "updated_at": "2026-08-15T02:23:04Z",
-  "current_frontier": [
-    "p-exact-head",
-    "a-ruleset-readback"
-  ],
-  "blocked_nodes": [
-    "p-exact-head",
-    "a-ruleset-readback",
-    "p-ruleset-readback",
-    "protected-merge-gate"
-  ],
-  "terminal_state": "needs_human",
-  "next_action": "Re-run exact-head CI/Security on the resulting evidence head; then obtain one non-author approval and current protected-ruleset readback. Do not merge.",
+  "updated_at": "2026-08-15T07:27:22Z",
+  "current_frontier": ["p-exact-head", "review-thread-resolution", "protected-merge-gate"],
+  "blocked_nodes": [],
+  "terminal_state": "verifying",
+  "next_action": "Publish the current-main reconciliation head, require all 12 exact-head contexts to pass, resolve only demonstrably addressed review threads, then exercise the protected merge and read back main. Do not start T064.",
   "events": [
     {
       "event_id": "evt-001-p1-remediation-opened",
@@ -294,13 +286,8 @@
           {
             "op": "replace",
             "path": "current_frontier",
-            "before": [
-              "p-exact-head",
-              "remote-review-and-protected-merge"
-            ],
-            "after": [
-              "remote-review-and-protected-merge"
-            ]
+            "before": ["p-exact-head", "remote-review-and-protected-merge"],
+            "after": ["remote-review-and-protected-merge"]
           },
           {
             "op": "replace",
@@ -426,7 +413,7 @@
           {
             "op": "replace",
             "path": "graph.nodes/p-exact-head/status",
-            "before": "verifying",
+            "before": "done",
             "after": "blocked"
           },
           {
@@ -438,13 +425,8 @@
           {
             "op": "replace",
             "path": "current_frontier",
-            "before": [
-              "s-terminal"
-            ],
-            "after": [
-              "p-exact-head",
-              "a-ruleset-readback"
-            ]
+            "before": ["s-terminal"],
+            "after": ["p-exact-head", "a-ruleset-readback"]
           },
           {
             "op": "append",
@@ -706,6 +688,116 @@
         "total": 0
       },
       "terminal_reason": "Security #542 is not green; non-author approval and protected ruleset readback remain absent."
+    },
+    {
+      "event_id": "evt-011-current-main-governance-reconciliation",
+      "at": "2026-08-15T07:27:22Z",
+      "actor": "codex-supervisor",
+      "type": "authoritative_baseline_and_policy_delta",
+      "base_graph_version": 8,
+      "new_graph_version": 9,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "base_sha",
+            "before": "88d31b9709339e94e7cf7a3af80f5da773cbed70",
+            "after": "f1805496010cd9eac9767e0f1efe357fe8e45a92"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-exact-head/status",
+            "before": "blocked",
+            "after": "verifying"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/a-ruleset-readback/status",
+            "before": "blocked",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-ruleset-readback/status",
+            "before": "blocked",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/s-terminal/status",
+            "before": "needs_human",
+            "after": "verifying"
+          },
+          {
+            "op": "replace",
+            "path": "current_frontier",
+            "before": ["p-exact-head", "a-ruleset-readback"],
+            "after": ["p-exact-head", "review-thread-resolution", "protected-merge-gate"]
+          },
+          {
+            "op": "repair_precondition",
+            "path": "events/evt-007-final-head-revalidation-blocked/graph_delta/operations/0/before",
+            "before": "verifying",
+            "after": "done",
+            "reason": "evt-004 set p-exact-head to done and no intervening event changed that status"
+          },
+          {
+            "op": "append",
+            "path": "events",
+            "value": "evt-011-current-main-governance-reconciliation"
+          }
+        ]
+      },
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/commit/f1805496010cd9eac9767e0f1efe357fe8e45a92",
+        "https://github.com/bynanci/courtside-tw/pull/96",
+        "https://github.com/bynanci/courtside-tw/issues/97",
+        "https://api.github.com/repos/bynanci/courtside-tw/rulesets/20822671",
+        "https://github.com/bynanci/courtside-tw/pull/92"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "external postgres baseline remediation",
+          "result": "pass_on_current_base",
+          "main_merge_commit": "d03955f",
+          "source_pr": 96,
+          "ci_run_number": 543,
+          "security_run_number": 544
+        },
+        {
+          "proof": "protected ruleset readback",
+          "result": "pass",
+          "ruleset_id": 20822671,
+          "required_check_count": 12,
+          "required_approving_review_count": 0,
+          "required_review_thread_resolution": true,
+          "bypass_actor_count": 0
+        },
+        {
+          "proof": "six-file changed scope and payload digests",
+          "result": "pass",
+          "evidence_path": ".loop/evidence/p1-remediation-20260814.json"
+        },
+        {
+          "proof": "resulting PR #92 exact-head CI and Security",
+          "result": "pending",
+          "required_context_count": 12
+        },
+        {
+          "proof": "merge authorization",
+          "result": "pass",
+          "basis": "user explicitly authorized completion and merge on 2026-08-15"
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Reconcile current main without widening the six-file PR scope, then run one fresh exact-head gate cycle before resolving threads and protected merge.",
+      "token_usage": {
+        "estimated": 6000,
+        "input": 0,
+        "output": 0,
+        "total": 0
+      },
+      "terminal_reason": "The resulting reconciliation head, exact-head required contexts, and review-thread resolution are not yet authoritatively proven."
     }
   ]
 }

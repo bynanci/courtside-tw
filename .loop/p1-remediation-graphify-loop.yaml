@@ -1,38 +1,37 @@
 schema_version: mark-graphify-loop/v2
 name: courtside-p1-review-remediation-20260814
-objective: Close the four unresolved PR #91 review defects and produce a review-ready remediation PR with exact-head CI/Security/browser proof, while stopping before merge.
+objective: Integrate PR #92's unique P1 fixes onto current main and complete a protected merge only after exact-head CI, Security, browser, review-thread, and ruleset proof pass.
 feedback_updates_next_action: true
 
 scope:
   in:
     - scripts/content/import-seed.ts canonical ContentDocument validation, rights derivation, and source-order validation.
     - PublicArticleApiIT matching media, variants, frozen envelopes, and PUBLIC_WEB rights for the 5000-plus media-reference regression.
-    - PR #92 exact-head CI, Security, and browser verification.
-    - Readback and preparation of the main protected ruleset requirements.
+    - PR #92 reconciliation with current main f1805496010cd9eac9767e0f1efe357fe8e45a92.
+    - PR #92 exact-head CI, Security, browser, review-thread, and changed-file verification.
+    - Authoritative readback of main protected ruleset 20822671 under issue #97's solo-maintainer policy.
   out:
-    - Merging PR #92 or declaring the release gate complete.
+    - T064 or later task execution.
     - Reader Stamp, Season Passport, or other T4/T5 runtime work.
-    - Deployment, secrets, providers, payments, or unrelated task updates.
+    - Web3, deployment, secrets, providers, payments, ruleset mutation, or unrelated task updates.
 
 policy:
   authority:
     allowed:
       - Read authoritative GitHub source, review threads, ruleset, and workflow state.
-      - Write the two scoped code fixes and this remediation graph/ledger on the dedicated branch.
-      - Open a draft remediation PR and read exact-head proof.
-      - Prepare the desired protected-ruleset shape for repository-admin application.
+      - Preserve the three scoped code/fixture fixes and reconcile this remediation graph/ledger on the dedicated branch.
+      - Read exact-head proof and resolve review threads whose findings are demonstrably addressed.
+      - Merge PR #92 after all configured protected gates pass; user authorization was granted on 2026-08-15.
     requires_approval:
-      - Merge PR #92.
-      - Apply or weaken repository protected-branch policy when an admin-capable mutation is unavailable.
-      - Declare the full P1 merge/release gate complete.
+      - Apply, weaken, or bypass repository protected-branch policy.
+      - Start T064 or unrelated work.
     forbidden:
       - Treat expectedDecision as rights proof.
       - Hide malformed ContentDocuments or missing media/rights fixtures.
       - Mark required proof successful from source inspection alone.
-      - Modify tasks.md or check T4/T5 before Reader Stamp/Passport runtime exists.
+      - Modify tasks.md or check T064/T4/T5 before their runtime and human evidence exists.
   human_gates:
-    - repository-admin application of the main protected ruleset
-    - approval and merge of PR #92
+    - none; the active solo-maintainer policy requires zero approvals and the user authorized a protected merge
   no_progress:
     max_same_failure: 2
     max_no_evidence_delta: 2
@@ -81,13 +80,17 @@ graph:
       layer: GLOBAL
       label: P1 remediation entry fans into review and governance lanes
       owner: codex-supervisor
-      status: ready
+      status: done
       risk: critical
       confidence:
         score: 0.98
         basis: Single declared entry makes both scoped remediation lanes reachable.
-        evidence_refs: [https://github.com/bynanci/courtside-tw/pull/92, https://api.github.com/repos/bynanci/courtside-tw/rulesets/20822671]
-      budget: {effort_hours: 0.1, tokens: 1000}
+        evidence_refs:
+          [
+            https://github.com/bynanci/courtside-tw/pull/92,
+            https://api.github.com/repos/bynanci/courtside-tw/rulesets/20822671
+          ]
+      budget: { effort_hours: 0.1, tokens: 1000 }
       config:
         condition: PR #92 remediation requires both review-thread and protected-ruleset lanes.
         inputs_required: [PR review readback, ruleset readback]
@@ -95,33 +98,33 @@ graph:
     - id: t-review-threads
       kind: trigger
       layer: L1
-      label: Four unresolved PR #91 review threads are authoritative blockers
+      label: PR #91 blockers are implemented and PR #92 threads require final reconciliation
       owner: codex-agent
-      status: ready
+      status: done
       risk: high
       confidence:
         score: 0.98
         basis: GitHub review-thread readback on PR #91.
         evidence_refs: [https://github.com/bynanci/courtside-tw/pull/91]
-      budget: {effort_hours: 0.1, tokens: 1000}
+      budget: { effort_hours: 0.1, tokens: 1000 }
       config:
-        condition: PR #91 has four unresolved, non-outdated review threads.
+        condition: The unique PR #92 code and fixture changes address the PR #91 findings; current PR #92 threads must be resolved only after resulting-head review.
         inputs_required: [review-thread readback, main head SHA]
         dedupe: pr-number plus unresolved-thread-fingerprint
     - id: t-ruleset-gap
       kind: trigger
       layer: L2
-      label: Main ruleset readback shows missing release-gate protections
+      label: Main ruleset gap is resolved by issue #97's solo-maintainer policy
       owner: codex-supervisor
-      status: ready
+      status: done
       risk: critical
       confidence:
         score: 1.0
-        basis: GitHub ruleset 20822671 readback.
+        basis: Authoritative GitHub ruleset 20822671 readback confirms issue #97's active policy.
         evidence_refs: [https://api.github.com/repos/bynanci/courtside-tw/rulesets/20822671]
-      budget: {effort_hours: 0.1, tokens: 1000}
+      budget: { effort_hours: 0.1, tokens: 1000 }
       config:
-        condition: main ruleset lacks required checks, approval, conversation resolution, or has broad scope/bypass.
+        condition: main ruleset is active, main-only, has strict 12 checks, zero approvals, conversation resolution, no bypass, and deletion/non-fast-forward protection.
         inputs_required: [ruleset readback, exact CI/Security check names]
         dedupe: ruleset-id plus updated-at
     - id: a-seed-validator
@@ -129,16 +132,25 @@ graph:
       layer: L1
       label: Close seed validator and order/rights derivation defects
       owner: codex-agent
-      status: verifying
+      status: done
       risk: high
       confidence:
         score: 0.92
-        basis: PR #92 diff shows canonical validator, derived rights decision, and copied sort input.
+        basis: PR #92 diff shows canonical validation, validFrom/validUntil derivation, strict runtime shapes, and copied sort input.
         evidence_refs: [https://github.com/bynanci/courtside-tw/pull/92]
-      budget: {effort_hours: 0.75, tokens: 9000}
+      budget: { effort_hours: 0.75, tokens: 9000 }
       config:
-        workflow: [read canonical validator and RightsPolicy, patch minimal seed script, run exact-head proof]
-        allowed: [edit scripts/content/import-seed.ts]
+        workflow:
+          [
+            read canonical validator and RightsPolicy,
+            patch minimal seed script,
+            run exact-head proof
+          ]
+        allowed:
+          [
+            edit scripts/content/import-seed.ts,
+            edit apps/api/src/test/resources/fixtures/first-issue/manifest.json
+          ]
         requires_approval: [merge]
         forbidden: [trust expectedDecision as source of truth]
     - id: a-media-boundary
@@ -146,34 +158,45 @@ graph:
       layer: L1
       label: Make the 5000-plus media regression create matching media and rights
       owner: codex-agent
-      status: verifying
+      status: done
       risk: high
       confidence:
         score: 0.94
         basis: PR #92 diff calls addFixtureMedia for both heavy documents.
         evidence_refs: [https://github.com/bynanci/courtside-tw/pull/92]
-      budget: {effort_hours: 0.5, tokens: 6000}
+      budget: { effort_hours: 0.5, tokens: 6000 }
       config:
-        workflow: [read fixture helper, bind generated document, create media/variant/rights rows, run API proof]
+        workflow:
+          [
+            read fixture helper,
+            bind generated document,
+            create media/variant/rights rows,
+            run API proof
+          ]
         allowed: [edit PublicArticleApiIT.java]
         requires_approval: [merge]
         forbidden: [assert only on synthetic references without matching rights]
     - id: a-ruleset-readback
       kind: action
       layer: L2
-      label: Prepare main-only protected ruleset requirements
+      label: Read back the active main-only protected ruleset
       owner: codex-supervisor
-      status: blocked
+      status: done
       risk: critical
       confidence:
         score: 0.98
-        basis: Exact desired policy is known, but no admin-capable ruleset mutation tool is available in this session.
+        basis: Issue #97 is complete and ruleset 20822671 authoritatively matches the solo-maintainer policy.
         evidence_refs: [https://api.github.com/repos/bynanci/courtside-tw/rulesets/20822671]
-      budget: {effort_hours: 0.25, tokens: 3000}
+      budget: { effort_hours: 0.25, tokens: 3000 }
       config:
-        workflow: [read current ruleset, resolve exact check contexts, prepare admin mutation, read back ruleset]
-        allowed: [read ruleset, prepare policy payload]
-        requires_approval: [repository-admin ruleset mutation]
+        workflow:
+          [
+            read current ruleset,
+            compare exact check contexts and pull-request parameters,
+            record readback
+          ]
+        allowed: [read ruleset, record policy evidence]
+        requires_approval: [ruleset mutation]
         forbidden: [claim protection is active without readback]
     - id: p-diff
       kind: proof
@@ -184,9 +207,13 @@ graph:
       risk: medium
       confidence:
         score: 0.98
-        basis: Current main compare covers the six-file PR scope, including validFrom/rights-status/channel-shape validation and the 5000-plus media boundary.
-        evidence_refs: [https://github.com/bynanci/courtside-tw/compare/88d31b9709339e94e7cf7a3af80f5da773cbed70...cfca74edad35883a1a08bc76e6d3151315861037]
-      budget: {effort_hours: 0.1, tokens: 1500}
+        basis: Current-main reconciliation preserves exactly six PR-scoped files, including validFrom/status/channel-shape validation and the 5000-plus media boundary.
+        evidence_refs:
+          [
+            https://github.com/bynanci/courtside-tw/pull/92/files,
+            .loop/evidence/p1-remediation-20260814.json
+          ]
+      budget: { effort_hours: 0.1, tokens: 1500 }
       config:
         level: P1
         claim: The remediation diff addresses all four review-thread defects without unrelated scope.
@@ -199,13 +226,17 @@ graph:
       layer: L1
       label: PR #92 exact-head CI Security and browser checks pass
       owner: codex-agent
-      status: blocked
+      status: verifying
       risk: critical
       confidence:
         score: 0.98
-        basis: Final-head CI #541 passed on cfca74edad35883a1a08bc76e6d3151315861037; Security #542 is blocked by Trivy (image postgres) reporting HIGH CVE-2026-39821 and CVE-2026-46600 in the external gosu image baseline, outside the six-file PR scope.
-        evidence_refs: [https://github.com/bynanci/courtside-tw/actions/runs/31858750629, https://github.com/bynanci/courtside-tw/actions/runs/31858750661]
-      budget: {effort_hours: 1.5, tokens: 5000}
+        basis: Current main contains PR #96's postgres/gosu remediation; fresh CI and Security must now pass on the resulting PR #92 reconciliation head.
+        evidence_refs:
+          [
+            https://github.com/bynanci/courtside-tw/pull/92,
+            https://github.com/bynanci/courtside-tw/pull/96
+          ]
+      budget: { effort_hours: 1.5, tokens: 5000 }
       config:
         level: P2
         claim: Final CI, Security, and the Public magazine browser job must pass on the final PR head; historical runs are not reused as final proof.
@@ -218,17 +249,17 @@ graph:
       layer: L2
       label: Main ruleset readback confirms the protected release gate
       owner: codex-supervisor
-      status: blocked
+      status: done
       risk: critical
       confidence:
-        score: 0.2
-        basis: Current readback proves the gap; post-mutation proof cannot run without admin-capable write access.
+        score: 1.0
+        basis: Ruleset 20822671 readback proves active main-only strict checks, solo-maintainer review policy, conversation resolution, no bypass, and destructive-update protection.
         evidence_refs: [https://api.github.com/repos/bynanci/courtside-tw/rulesets/20822671]
-      budget: {effort_hours: 0.25, tokens: 2000}
+      budget: { effort_hours: 0.25, tokens: 2000 }
       config:
         level: P2
-        claim: main targets only refs/heads/main, requires CI/Security checks, one approval, conversation resolution, and has no integration bypass.
-        method: Ruleset GET after repository-admin mutation.
+        claim: main targets only refs/heads/main, requires 12 CI/Security checks, requires zero approvals under the solo-maintainer policy, requires conversation resolution, and has no bypass.
+        method: Authoritative ruleset GET after issue #97 completion.
         evidence_path: .loop/evidence/p1-remediation-20260814.json
         required: true
         baseline_required: true
@@ -243,7 +274,7 @@ graph:
         score: 0.95
         basis: Dedicated append-only ledger is versioned with the remediation PR.
         evidence_refs: [.loop/p1-remediation-ledger.json]
-      budget: {effort_hours: 0.1, tokens: 1500}
+      budget: { effort_hours: 0.1, tokens: 1500 }
       config:
         path: .loop/p1-remediation-ledger.json
         read_before_action: true
@@ -264,7 +295,7 @@ graph:
         score: 0.95
         basis: Dedicated append-only ledger is shared by the scoped governance loop.
         evidence_refs: [.loop/p1-remediation-ledger.json]
-      budget: {effort_hours: 0.1, tokens: 1500}
+      budget: { effort_hours: 0.1, tokens: 1500 }
       config:
         path: .loop/p1-remediation-ledger.json
         read_before_action: true
@@ -277,46 +308,214 @@ graph:
     - id: s-terminal
       kind: stop
       layer: GLOBAL
-      label: Stop at verified remediation, blocked governance, or human approval gate
+      label: Stop at protected merge success or an authoritative gate failure
       owner: codex-supervisor
-      status: needs_human
+      status: verifying
       risk: critical
       confidence:
         score: 0.95
-        basis: Merge and full release-gate claims remain explicitly gated.
+        basis: User merge authorization is recorded; exact-head checks and conversation resolution remain machine-enforced gates.
         evidence_refs: [.loop/p1-remediation-ledger.json]
-      budget: {effort_hours: 0.0, tokens: 0}
+      budget: { effort_hours: 0.0, tokens: 0 }
       config:
         states:
-          success: Code proof and exact-head workflows pass; protected ruleset readback also passes.
+          success: Code proof, all exact-head required contexts, review-thread resolution, protected merge, and main readback pass.
           no_op: No authoritative blocker remains.
           blocked: Ruleset mutation or required proof is unavailable.
           stalled: Same failure or no evidence delta reaches the configured limit.
           exhausted: A loop budget is reached.
-          needs_human: Repository-admin mutation or merge approval is pending.
-  
+          needs_human: A genuinely non-automatable decision or authority gap remains.
+
   edges:
-    - {id: e-review-seed, from: t-review-threads, to: a-seed-validator, type: enables, required: true, confidence: 0.98, token_capacity: 10000}
-    - {id: e-remediation-entry-review, from: t-remediation-entry, to: t-review-threads, type: enables, required: true, confidence: 0.98, token_capacity: 10000}
-    - {id: e-remediation-entry-ruleset, from: t-remediation-entry, to: t-ruleset-gap, type: enables, required: true, confidence: 0.98, token_capacity: 4000}
-    - {id: e-review-media, from: t-review-threads, to: a-media-boundary, type: enables, required: true, confidence: 0.98, token_capacity: 10000}
-    - {id: e-seed-diff, from: a-seed-validator, to: p-diff, type: verifies, required: true, confidence: 0.95, token_capacity: 10000}
-    - {id: e-media-diff, from: a-media-boundary, to: p-diff, type: verifies, required: true, confidence: 0.95, token_capacity: 10000}
-    - {id: e-seed-ci, from: a-seed-validator, to: p-exact-head, type: verifies, required: true, confidence: 0.9, token_capacity: 10000}
-    - {id: e-media-ci, from: a-media-boundary, to: p-exact-head, type: verifies, required: true, confidence: 0.9, token_capacity: 10000}
-    - {id: e-diff-ledger, from: p-diff, to: m-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3000}
-    - {id: e-ci-ledger, from: p-exact-head, to: m-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3000}
-    - {id: e-ledger-seed, from: m-ledger, to: a-seed-validator, type: reads, required: true, confidence: 0.9, token_capacity: 3000}
-    - {id: e-ledger-media, from: m-ledger, to: a-media-boundary, type: reads, required: true, confidence: 0.9, token_capacity: 3000}
-    - {id: e-ci-terminal, from: p-exact-head, to: s-terminal, type: enables, required: true, confidence: 0.9, token_capacity: 10000}
-    - {id: e-diff-terminal, from: p-diff, to: s-terminal, type: enables, required: true, confidence: 0.9, token_capacity: 10000}
-    - {id: e-ci-feedback, from: p-exact-head, to: t-review-threads, type: feedback, required: false, confidence: 0.8, token_capacity: 5000}
-    - {id: e-ruleset-action, from: t-ruleset-gap, to: a-ruleset-readback, type: enables, required: true, confidence: 0.98, token_capacity: 4000}
-    - {id: e-ruleset-proof, from: a-ruleset-readback, to: p-ruleset-readback, type: verifies, required: true, confidence: 0.8, token_capacity: 4000}
-    - {id: e-ruleset-ledger, from: p-ruleset-readback, to: m-l2-ledger, type: records, required: true, confidence: 0.9, token_capacity: 3000}
-    - {id: e-ledger-ruleset, from: m-l2-ledger, to: a-ruleset-readback, type: reads, required: true, confidence: 0.8, token_capacity: 3000}
-    - {id: e-ruleset-terminal, from: p-ruleset-readback, to: s-terminal, type: enables, required: true, confidence: 0.8, token_capacity: 4000}
-    - {id: e-ruleset-feedback, from: p-ruleset-readback, to: t-ruleset-gap, type: feedback, required: false, confidence: 0.8, token_capacity: 2000}
+    - {
+        id: e-review-seed,
+        from: t-review-threads,
+        to: a-seed-validator,
+        type: enables,
+        required: true,
+        confidence: 0.98,
+        token_capacity: 10000
+      }
+    - {
+        id: e-remediation-entry-review,
+        from: t-remediation-entry,
+        to: t-review-threads,
+        type: enables,
+        required: true,
+        confidence: 0.98,
+        token_capacity: 10000
+      }
+    - {
+        id: e-remediation-entry-ruleset,
+        from: t-remediation-entry,
+        to: t-ruleset-gap,
+        type: enables,
+        required: true,
+        confidence: 0.98,
+        token_capacity: 4000
+      }
+    - {
+        id: e-review-media,
+        from: t-review-threads,
+        to: a-media-boundary,
+        type: enables,
+        required: true,
+        confidence: 0.98,
+        token_capacity: 10000
+      }
+    - {
+        id: e-seed-diff,
+        from: a-seed-validator,
+        to: p-diff,
+        type: verifies,
+        required: true,
+        confidence: 0.95,
+        token_capacity: 10000
+      }
+    - {
+        id: e-media-diff,
+        from: a-media-boundary,
+        to: p-diff,
+        type: verifies,
+        required: true,
+        confidence: 0.95,
+        token_capacity: 10000
+      }
+    - {
+        id: e-seed-ci,
+        from: a-seed-validator,
+        to: p-exact-head,
+        type: verifies,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 10000
+      }
+    - {
+        id: e-media-ci,
+        from: a-media-boundary,
+        to: p-exact-head,
+        type: verifies,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 10000
+      }
+    - {
+        id: e-diff-ledger,
+        from: p-diff,
+        to: m-ledger,
+        type: records,
+        required: true,
+        confidence: 0.95,
+        token_capacity: 3000
+      }
+    - {
+        id: e-ci-ledger,
+        from: p-exact-head,
+        to: m-ledger,
+        type: records,
+        required: true,
+        confidence: 0.95,
+        token_capacity: 3000
+      }
+    - {
+        id: e-ledger-seed,
+        from: m-ledger,
+        to: a-seed-validator,
+        type: reads,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 3000
+      }
+    - {
+        id: e-ledger-media,
+        from: m-ledger,
+        to: a-media-boundary,
+        type: reads,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 3000
+      }
+    - {
+        id: e-ci-terminal,
+        from: p-exact-head,
+        to: s-terminal,
+        type: enables,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 10000
+      }
+    - {
+        id: e-diff-terminal,
+        from: p-diff,
+        to: s-terminal,
+        type: enables,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 10000
+      }
+    - {
+        id: e-ci-feedback,
+        from: p-exact-head,
+        to: t-review-threads,
+        type: feedback,
+        required: false,
+        confidence: 0.8,
+        token_capacity: 5000
+      }
+    - {
+        id: e-ruleset-action,
+        from: t-ruleset-gap,
+        to: a-ruleset-readback,
+        type: enables,
+        required: true,
+        confidence: 0.98,
+        token_capacity: 4000
+      }
+    - {
+        id: e-ruleset-proof,
+        from: a-ruleset-readback,
+        to: p-ruleset-readback,
+        type: verifies,
+        required: true,
+        confidence: 0.8,
+        token_capacity: 4000
+      }
+    - {
+        id: e-ruleset-ledger,
+        from: p-ruleset-readback,
+        to: m-l2-ledger,
+        type: records,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 3000
+      }
+    - {
+        id: e-ledger-ruleset,
+        from: m-l2-ledger,
+        to: a-ruleset-readback,
+        type: reads,
+        required: true,
+        confidence: 0.8,
+        token_capacity: 3000
+      }
+    - {
+        id: e-ruleset-terminal,
+        from: p-ruleset-readback,
+        to: s-terminal,
+        type: enables,
+        required: true,
+        confidence: 0.8,
+        token_capacity: 4000
+      }
+    - {
+        id: e-ruleset-feedback,
+        from: p-ruleset-readback,
+        to: t-ruleset-gap,
+        type: feedback,
+        required: false,
+        confidence: 0.8,
+        token_capacity: 2000
+      }
 
 flow:
   source: t-remediation-entry

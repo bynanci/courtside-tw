@@ -21,3 +21,28 @@ test("punctuation-only search renders the explicit empty state", async ({ page }
   await expect(page.getByTestId("search-empty")).toBeVisible()
   await expect(page.getByTestId("search-result")).toHaveCount(0)
 })
+
+test("taxonomy filter is accessible and synchronized with the URL", async ({ page }) => {
+  await page.goto("/search", { waitUntil: "domcontentloaded" })
+
+  await page.getByTestId("search-taxonomy").fill("team-formosa")
+  await page.getByTestId("search-submit").click()
+
+  await expect
+    .poll(() => new URL(page.url()).searchParams.getAll("taxonomy"))
+    .toEqual(["team-formosa"])
+  await expect(page.getByTestId("search-result")).toContainText("分類篩選結果")
+})
+
+test("search follows the opaque cursor to the next result page", async ({ page }) => {
+  await page.goto("/search?q=%E5%88%86%E9%A0%81&taxonomy=team-formosa", {
+    waitUntil: "domcontentloaded"
+  })
+
+  await expect(page.getByTestId("search-result")).toContainText("第一頁")
+  await page.getByTestId("search-next").click()
+
+  await expect(page).toHaveURL(/cursor=cGFnZS0y/)
+  expect(new URL(page.url()).searchParams.getAll("taxonomy")).toEqual(["team-formosa"])
+  await expect(page.getByTestId("search-result")).toContainText("第二頁")
+})

@@ -216,7 +216,6 @@ paths:
             type: string
             enum:
               - article
-              - issue
         - name: taxonomy
           in: query
           required: false
@@ -2891,6 +2890,8 @@ components:
           - season
           - team
           - player
+          - person
+          - venue
           - topic
     ChainNamespace:
       name: chainNamespace
@@ -3872,6 +3873,8 @@ components:
           maxLength: 1000
         content:
           $ref: "#/components/schemas/ContentDocument"
+        taxonomy:
+          $ref: "#/components/schemas/TaxonomyKeyList"
     ArticlePatch:
       type: object
       additionalProperties: false
@@ -3885,6 +3888,9 @@ components:
           type: object
           minProperties: 1
           additionalProperties: true
+          properties:
+            taxonomy:
+              $ref: "#/components/schemas/TaxonomyKeyList"
     ArticleDraft:
       type: object
       additionalProperties: false
@@ -3916,6 +3922,8 @@ components:
           type: string
         content:
           $ref: "#/components/schemas/ContentDocument"
+        taxonomy:
+          $ref: "#/components/schemas/TaxonomyKeyList"
         state:
           type: string
           enum:
@@ -3978,6 +3986,16 @@ components:
           maxLength: 1000
         content:
           $ref: "#/components/schemas/ContentDocument"
+        taxonomy:
+          $ref: "#/components/schemas/TaxonomyKeyList"
+    TaxonomyKeyList:
+      type: array
+      maxItems: 20
+      uniqueItems: true
+      items:
+        type: string
+        maxLength: 256
+        pattern: ^[a-z0-9]+(?:-[a-z0-9]+)*$
     SubmitRequest:
       type: object
       additionalProperties: false

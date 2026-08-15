@@ -2,7 +2,9 @@ package tw.basketball.magazine.taxonomy.application;
 
 import java.sql.Timestamp;
 import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Pattern;
@@ -12,6 +14,8 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import tw.basketball.magazine.audit.AuditEventDraft;
+import tw.basketball.magazine.audit.AuditWriter;
 import tw.basketball.magazine.search.application.SearchTextNormalizer;
 import tw.basketball.magazine.shared.ActorContext;
 import tw.basketball.magazine.shared.FieldError;
@@ -29,15 +33,18 @@ public final class TaxonomyService {
 
     private final JdbcTemplate jdbcTemplate;
     private final TransactionTemplate transactionTemplate;
+    private final AuditWriter auditWriter;
 
     public TaxonomyService(
             JdbcTemplate jdbcTemplate,
-            PlatformTransactionManager transactionManager
+            PlatformTransactionManager transactionManager,
+            AuditWriter auditWriter
     ) {
         this.jdbcTemplate = Objects.requireNonNull(jdbcTemplate, "jdbcTemplate");
         transactionTemplate = new TransactionTemplate(
                 Objects.requireNonNull(transactionManager, "transactionManager")
         );
+        this.auditWriter = Objects.requireNonNull(auditWriter, "auditWriter");
     }
 
     public TaxonomyPage list(String kind, String status) {
@@ -77,14 +84,19 @@ public final class TaxonomyService {
         Instant validFrom = command.validFrom() == null ? Instant.now() : command.validFrom();
         validateValidity(validFrom, command.validUntil(), "/validUntil");
         try {
-            UUID id = jdbcTemplate.queryForObject("""
-                    INSERT INTO taxonomy_term (
-                        term_key, kind, display_name, locale, valid_from, valid_until, status
-                    ) VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE')
-                    RETURNING id
-                    """, UUID.class, key, kind.name(), displayName, locale,
-                    Timestamp.from(validFrom), timestamp(command.validUntil()));
-            return find(id);
+            TaxonomyTerm created = transactionTemplate.execute(status -> {
+                UUID id = jdbcTemplate.queryForObject("""
+                        INSERT INTO taxonomy_term (
+                            term_key, kind, display_name, locale, valid_from, valid_until, status
+                        ) VALUES (?, ?, ?, ?, ?, ?, 'ACTIVE')
+                        RETURNING id
+                        """, UUID.class, key, kind.name(), displayName, locale,
+                        Timestamp.from(validFrom), timestamp(command.validUntil()));
+                TaxonomyTerm term = find(id);
+                audit(actor, "TAXONOMY_TERM_CREATED", term, Map.of());
+                return term;
+            });
+            return Objects.requireNonNull(created, "transaction returned no taxonomy term");
         } catch (DuplicateKeyException exception) {
             throw TaxonomyProblemException.invalid(
                     "/key",
@@ -104,6 +116,13 @@ public final class TaxonomyService {
         Objects.requireNonNull(termId, "termId");
         Objects.requireNonNull(expected, "expected");
         Objects.requireNonNull(command, "command");
+        if (!command.hasChanges()) {
+            throw TaxonomyProblemException.invalid(
+                    "/",
+                    "taxonomy_patch_empty",
+                    "at least one mutable property is required"
+            );
+        }
         return transactionTemplate.execute(status -> {
             TaxonomyTerm current = lock(termId);
             assertVersion(expected, current.version());
@@ -126,7 +145,11 @@ public final class TaxonomyService {
                     WHERE id = ? AND version = ?
                     """, displayName, locale, Timestamp.from(validFrom), timestamp(validUntil),
                     taxonomyStatus.name(), termId, expected.value());
-            return find(termId);
+            TaxonomyTerm updated = find(termId);
+            audit(actor, "TAXONOMY_TERM_UPDATED", updated, Map.of(
+                    "previousVersion", current.version()
+            ));
+            return updated;
         });
     }
 
@@ -174,8 +197,34 @@ public final class TaxonomyService {
                     SET updated_at = transaction_timestamp(), version = version + 1
                     WHERE id = ? AND version = ?
                     """, termId, expected.value());
-            return find(termId);
+            TaxonomyTerm updated = find(termId);
+            audit(actor, "TAXONOMY_ALIAS_CREATED", updated, Map.of(
+                    "aliasLocale", locale,
+                    "normalizedAlias", normalized
+            ));
+            return updated;
         });
+    }
+
+    private void audit(
+            ActorContext actor,
+            String action,
+            TaxonomyTerm term,
+            Map<String, ?> additionalMetadata
+    ) {
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("key", term.key());
+        metadata.put("kind", term.kind().name());
+        metadata.put("status", term.status().name());
+        metadata.put("version", term.version());
+        metadata.putAll(additionalMetadata);
+        auditWriter.append(new AuditEventDraft(
+                actor,
+                action,
+                "TAXONOMY_TERM",
+                term.id(),
+                metadata
+        ));
     }
 
     private TaxonomyTerm lock(UUID termId) {
@@ -346,6 +395,14 @@ public final class TaxonomyService {
             Boolean clearValidUntil,
             String status
     ) {
+        boolean hasChanges() {
+            return displayName != null
+                    || locale != null
+                    || validFrom != null
+                    || validUntil != null
+                    || clearValidUntil != null
+                    || status != null;
+        }
     }
 
     public record CreateAlias(

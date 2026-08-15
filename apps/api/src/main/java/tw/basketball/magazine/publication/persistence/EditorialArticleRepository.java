@@ -20,6 +20,12 @@ public interface EditorialArticleRepository {
 
     List<ArticleRecord> list(int limit);
 
+    /** Returns stable taxonomy keys assigned to one immutable article revision. */
+    List<String> taxonomyKeys(UUID revisionId);
+
+    /** Atomically replaces the active revision's validated taxonomy assignments. */
+    void replaceTaxonomy(UUID revisionId, List<String> taxonomyKeys);
+
     boolean updateDraft(
             UUID articleId,
             UUID revisionId,

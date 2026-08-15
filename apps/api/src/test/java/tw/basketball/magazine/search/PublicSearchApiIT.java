@@ -78,6 +78,16 @@ final class PublicSearchApiIT extends PublicIssueApiIntegrationTestSupport {
     }
 
     @Test
+    void unsupportedIssueSearchTypeFailsClosedInsteadOfReturningAFalseEmptyResult()
+            throws Exception {
+        mockMvc.perform(get("/api/v1/public/search")
+                        .param("q", "台籃")
+                        .param("type", "issue"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].code").value("invalid_search_type"));
+    }
+
+    @Test
     void mixedLanguageAndAliasSearchUsesPublishedProjectionAndExcludesWithdrawnResults()
             throws Exception {
         IssueFixture issue = createIssue(

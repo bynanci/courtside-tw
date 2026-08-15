@@ -4,8 +4,8 @@ export type PublicSearchPage = components["schemas"]["SearchResultPage"]
 export type PublicSearchResult = components["schemas"]["SearchResult"]
 
 export type PublicSearchOptions = {
+  cursor?: string
   limit?: number
-  type?: "article" | "issue"
   taxonomy?: string[]
   signal?: AbortSignal
 }
@@ -35,8 +35,8 @@ export async function fetchPublicSearch(
       params: {
         query: {
           q: query,
+          cursor: options.cursor,
           limit,
-          type: options.type,
           taxonomy: options.taxonomy
         }
       },
