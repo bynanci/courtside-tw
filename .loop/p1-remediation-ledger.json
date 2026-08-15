@@ -1,22 +1,24 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-p1-review-remediation-20260814",
-  "graph_version": 4,
+  "graph_version": 5,
   "run_id": "courtside-p1-review-remediation-20260814",
   "status": "needs_human",
-  "iteration": 4,
+  "iteration": 5,
   "started_at": "2026-08-14T03:51:03Z",
-  "updated_at": "2026-08-15T00:18:05.465Z",
+  "updated_at": "2026-08-15T00:33:30.727Z",
   "current_frontier": [
-    "s-terminal"
+    "p-exact-head",
+    "a-ruleset-readback"
   ],
   "blocked_nodes": [
+    "p-exact-head",
     "a-ruleset-readback",
     "p-ruleset-readback",
     "protected-merge-gate"
   ],
   "terminal_state": "needs_human",
-  "next_action": "Re-run exact-head CI/Security on the evidence-sync head; then obtain one non-author approval and protected-ruleset readback before merge.",
+  "next_action": "Remediate or formally accept the external postgres image CVEs; then obtain one non-author approval and current protected-ruleset readback. Do not merge.",
   "events": [
     {
       "event_id": "evt-001-p1-remediation-opened",
@@ -411,6 +413,90 @@
         "total": 0
       },
       "terminal_reason": "Post-receipt CI/Security verification and human/admin merge gates remain required."
+    },
+    {
+      "event_id": "evt-007-final-head-revalidation-blocked",
+      "at": "2026-08-15T00:33:30.727Z",
+      "actor": "codex-agent",
+      "type": "exact_head_revalidation",
+      "base_graph_version": 4,
+      "new_graph_version": 5,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-exact-head/status",
+            "before": "verifying",
+            "after": "blocked"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-exact-head/basis",
+            "before": "CI #530 + Security #531 subject proof; post-receipt rerun pending",
+            "after": "CI #532 passed on f1183d9b9abfccc6499385b66708b19638230ebf; Security #533 blocked by external postgres image CVEs"
+          },
+          {
+            "op": "replace",
+            "path": "current_frontier",
+            "before": [
+              "s-terminal"
+            ],
+            "after": [
+              "p-exact-head",
+              "a-ruleset-readback"
+            ]
+          },
+          {
+            "op": "append",
+            "path": "events",
+            "value": "evt-007-final-head-revalidation-blocked"
+          }
+        ]
+      },
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/compare/88d31b9709339e94e7cf7a3af80f5da773cbed70...f1183d9b9abfccc6499385b66708b19638230ebf",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31853630778",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31853630780",
+        "https://api.github.com/repos/bynanci/courtside-tw/rulesets/20822671"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "final PR #92 exact-head CI #532",
+          "result": "pass",
+          "head_sha": "f1183d9b9abfccc6499385b66708b19638230ebf",
+          "run_id": 31853630778
+        },
+        {
+          "proof": "final PR #92 exact-head Security #533",
+          "result": "blocked",
+          "head_sha": "f1183d9b9abfccc6499385b66708b19638230ebf",
+          "run_id": 31853630780,
+          "failed_job_id": 94934120430,
+          "failed_job": "Trivy (image postgres)",
+          "failure_signature": "external-postgres-image-go-stdlib-high-cves"
+        },
+        {
+          "proof": "Public magazine browser verification",
+          "result": "pass",
+          "head_sha": "f1183d9b9abfccc6499385b66708b19638230ebf",
+          "job_id": 94934292301
+        },
+        {
+          "proof": "Java quality and unit verification",
+          "result": "pass",
+          "head_sha": "f1183d9b9abfccc6499385b66708b19638230ebf",
+          "job_id": 94934101805
+        }
+      ],
+      "failure_signature": "external-postgres-image-go-stdlib-high-cves",
+      "decision": "Stop code changes; the exact-head security gate is blocked by an external image baseline, while review and protected governance gates remain human/admin work.",
+      "token_usage": {
+        "estimated": 2500,
+        "input": 0,
+        "output": 0,
+        "total": 0
+      },
+      "terminal_reason": "Security #533 is not green; non-author approval and required main ruleset checks/approval/conversation resolution are still absent."
     }
   ]
 }

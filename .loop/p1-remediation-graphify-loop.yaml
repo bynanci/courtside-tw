@@ -185,7 +185,7 @@ graph:
       confidence:
         score: 0.98
         basis: Current main compare covers the five-file PR scope and the four targeted remediation behaviors.
-        evidence_refs: [https://github.com/bynanci/courtside-tw/compare/88d31b9709339e94e7cf7a3af80f5da773cbed70...41f1d6e90cda14cb3fa1290289114e2c5012f5ca]
+        evidence_refs: [https://github.com/bynanci/courtside-tw/compare/88d31b9709339e94e7cf7a3af80f5da773cbed70...f1183d9b9abfccc6499385b66708b19638230ebf]
       budget: {effort_hours: 0.1, tokens: 1500}
       config:
         level: P1
@@ -199,12 +199,12 @@ graph:
       layer: L1
       label: PR #92 exact-head CI Security and browser checks pass
       owner: codex-agent
-      status: verifying
+      status: blocked
       risk: critical
       confidence:
         score: 0.98
-        basis: CI #530 and Security #531 passed for the current evidence subject head 41f1d6e90cda14cb3fa1290289114e2c5012f5ca; the metadata-only receipt sync requires a fresh final-head rerun.
-        evidence_refs: [https://github.com/bynanci/courtside-tw/actions/runs/31816417999, https://github.com/bynanci/courtside-tw/actions/runs/31816417976]
+        basis: Final-head CI #532 passed on f1183d9b9abfccc6499385b66708b19638230ebf; Security #533 is blocked by Trivy (image postgres) reporting HIGH CVE-2026-39821 and CVE-2026-46600 in the external gosu image baseline, outside the five-file PR scope.
+        evidence_refs: [https://github.com/bynanci/courtside-tw/actions/runs/31853630778, https://github.com/bynanci/courtside-tw/actions/runs/31853630780]
       budget: {effort_hours: 1.5, tokens: 5000}
       config:
         level: P2
@@ -279,7 +279,7 @@ graph:
       layer: GLOBAL
       label: Stop at verified remediation, blocked governance, or human approval gate
       owner: codex-supervisor
-      status: running
+      status: needs_human
       risk: critical
       confidence:
         score: 0.95
