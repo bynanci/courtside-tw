@@ -203,8 +203,8 @@ graph:
       risk: critical
       confidence:
         score: 0.98
-        basis: Final-head CI #538 passed on 8e7c69eccd58c56947e5d538552ac96ae1ba19ed; Security #539 is blocked by Trivy (image postgres) reporting HIGH CVE-2026-39821 and CVE-2026-46600 in the external gosu image baseline, outside the six-file PR scope.
-        evidence_refs: [https://github.com/bynanci/courtside-tw/actions/runs/31857300941, https://github.com/bynanci/courtside-tw/actions/runs/31857300945]
+        basis: Final-head CI #539 passed on a6176aa80b0bf46c486e42a88992394b592bf9b5; Security #540 is blocked by Trivy (image postgres) reporting HIGH CVE-2026-39821 and CVE-2026-46600 in the external gosu image baseline, outside the six-file PR scope.
+        evidence_refs: [https://github.com/bynanci/courtside-tw/actions/runs/31857842544, https://github.com/bynanci/courtside-tw/actions/runs/31857842559]
       budget: {effort_hours: 1.5, tokens: 5000}
       config:
         level: P2

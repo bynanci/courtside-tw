@@ -1,12 +1,12 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-p1-review-remediation-20260814",
-  "graph_version": 6,
+  "graph_version": 7,
   "run_id": "courtside-p1-review-remediation-20260814",
   "status": "needs_human",
   "iteration": 5,
   "started_at": "2026-08-14T03:51:03Z",
-  "updated_at": "2026-08-15T01:54:48Z",
+  "updated_at": "2026-08-15T02:06:11Z",
   "current_frontier": [
     "p-exact-head",
     "a-ruleset-readback"
@@ -18,7 +18,7 @@
     "protected-merge-gate"
   ],
   "terminal_state": "needs_human",
-  "next_action": "Re-run exact-head CI/Security on the resulting metadata head; then obtain one non-author approval and current protected-ruleset readback. Do not merge.",
+  "next_action": "Re-run exact-head CI/Security on the resulting evidence head; then obtain one non-author approval and current protected-ruleset readback. Do not merge.",
   "events": [
     {
       "event_id": "evt-001-p1-remediation-opened",
@@ -565,6 +565,74 @@
         "total": 0
       },
       "terminal_reason": "Security #539 is not green; no non-author approval and the desired main ruleset protections are not active."
+    },
+    {
+      "event_id": "evt-009-current-receipt-head-proof",
+      "at": "2026-08-15T02:06:11Z",
+      "actor": "codex-agent",
+      "type": "evidence_sync",
+      "base_graph_version": 6,
+      "new_graph_version": 7,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-exact-head/confidence/basis",
+            "before": "CI #538 / Security #539 on 8e7c69e",
+            "after": "CI #539 / Security #540 on a6176aa"
+          },
+          {
+            "op": "replace",
+            "path": "pull_request.current_revalidation_subject_sha",
+            "before": "8e7c69e",
+            "after": "a6176aa"
+          },
+          {
+            "op": "append",
+            "path": "events",
+            "value": "evt-009-current-receipt-head-proof"
+          }
+        ]
+      },
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/compare/88d31b9709339e94e7cf7a3af80f5da773cbed70...442f76f1f518da5a92391c649e6086c5d5e5b329",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31857842544",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31857842559",
+        "https://github.com/bynanci/courtside-tw/commit/a6176aa80b0bf46c486e42a88992394b592bf9b5"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "checked-in evidence sync",
+          "result": "pass",
+          "head_sha": "a6176aa80b0bf46c486e42a88992394b592bf9b5",
+          "receipt_commit_sha": "pending-resulting-head"
+        },
+        {
+          "proof": "PR #92 CI #539",
+          "result": "pass",
+          "head_sha": "a6176aa80b0bf46c486e42a88992394b592bf9b5",
+          "run_id": 31857842544,
+          "browser_job_id": 94946382794
+        },
+        {
+          "proof": "PR #92 Security #540",
+          "result": "blocked",
+          "head_sha": "a6176aa80b0bf46c486e42a88992394b592bf9b5",
+          "run_id": 31857842559,
+          "failed_job_id": 94945805916,
+          "failed_job": "Trivy (image postgres)",
+          "failure_signature": "external-postgres-image-go-stdlib-high-cves"
+        }
+      ],
+      "failure_signature": "external-postgres-image-go-stdlib-high-cves",
+      "decision": "Bind the checked-in receipt to the current metadata head and keep the aggregate blocked; re-run both workflows on the resulting evidence commit before any merge decision.",
+      "token_usage": {
+        "estimated": 2800,
+        "input": 0,
+        "output": 0,
+        "total": 0
+      },
+      "terminal_reason": "Security #540 is not green; non-author approval and protected ruleset readback remain absent."
     }
   ]
 }
