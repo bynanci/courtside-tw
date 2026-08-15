@@ -1,0 +1,77 @@
+schema: courtside-tw/graphify-loop/v1
+lane: t071-us6-offline-tests-first
+recorded_at: 2026-08-15T00:00:00Z
+decision: author_t071_red_contracts_and_stop_before_us6_runtime_implementation
+terminal_state: needs_next_action
+
+scope:
+  issue: 89
+  tasks: [T071]
+  included:
+    - public offline issue manifest contract
+    - public withdrawal manifest contract
+    - browser failure-injection contracts for interruption, corruption, quota, update and withdrawal
+    - checked-in evidence, graph delta, append-only ledger and project memory
+  excluded:
+    - T072, T073, T074, T075, T076
+    - Web3, wallet, token, provenance and unrelated task state
+    - issue #89 human research completion
+    - PR #92 and repository ruleset mutation
+
+invariants:
+  - T071 remains unchecked until its tests-first evidence is executable on the repository toolchain.
+  - No offline content is marked installed after interruption, corruption or quota denial.
+  - A newer complete manifest replaces an older installed version atomically.
+  - Withdrawal reconciliation removes or blocks cached article content before it is exposed.
+  - Draft, withdrawn and rights-ineligible issues fail closed without metadata leakage.
+
+nodes:
+  T071:
+    kind: tests_first_contract
+    state: in_progress
+    proof:
+      - apps/api/src/test/java/tw/basketball/magazine/publication/api/OfflineManifestApiIT.java
+      - apps/web/tests/e2e/us6-offline-issue.spec.ts
+  api_red:
+    kind: expected_red
+    state: pending_runtime_replay
+    seam: public offline manifest and withdrawal HTTP endpoints
+    expected_failure: HTTP 404 because no OfflineManifestController or service is registered yet
+  browser_red:
+    kind: expected_red
+    state: pending_runtime_replay
+    seam: issue page offline download/update/reconcile controls
+    expected_failure: missing offline test IDs because US6 offline UI and manager are not implemented
+  T072:
+    kind: next_implementation
+    state: blocked_by_t071_red_evidence
+  human_research:
+    kind: external_gate
+    state: open
+    proof: issue-89 human accessibility, performance, threat-model, DR and participant research items remain separate
+
+edges:
+  - [T071, api_red]
+  - [T071, browser_red]
+  - [api_red, T072]
+  - [browser_red, T072]
+
+ready_frontier: [targeted_runtime_red_replay, T072_after_red_receipt]
+critical_path:
+  - T071
+  - API and browser RED replay
+  - T072 manifest service/controller
+  - T073 service-worker cache policy
+  - T074 atomic offline install/update/delete
+  - T075 offline UI
+  - T076 withdrawal reconciliation
+min_cut:
+  - tests compile and execute on pinned CI toolchain
+  - API RED is attributable to the absent production seam
+  - browser RED is attributable to absent offline controls
+  - no task checkbox is advanced without a passing implementation head
+proof_coverage:
+  api_contracts: authored
+  browser_failure_injection_matrix: 5_scenarios_authored
+  local_runtime_red: blocked_by_toolchain
+  exact_head_ci_security: pending_until_implementation
