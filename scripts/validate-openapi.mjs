@@ -26,6 +26,7 @@ const expectedPaths = {
   "/api/v1/me/progress": ["get"],
   "/api/v1/me/progress/{articleId}": ["put"],
   "/api/v1/me/progress:merge": ["post"],
+  "/api/v1/me/export": ["get"],
   "/api/v1/auth/siwe/challenge": ["post"],
   "/api/v1/auth/siwe/verify": ["post"],
   "/api/v1/me/wallets/{chainNamespace}/{address}": ["delete"],

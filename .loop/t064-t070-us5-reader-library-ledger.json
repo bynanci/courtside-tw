@@ -1,0 +1,178 @@
+{
+  "schema": "courtside-tw/loop-ledger/v1",
+  "lane": "t064-t070-us5-reader-library",
+  "version": 1,
+  "recorded_at": "2026-08-15T12:40:00Z",
+  "decision": "Complete the bounded US5 reader-library slice, preserve both attributable RED failures, and require a fresh protected gate after the evidence-only commit.",
+  "terminal_state": "pending_final_metadata_head_ci_security",
+  "scope": {
+    "issue": 89,
+    "pull_request": 99,
+    "baseline_main": "a48584fbeaa5d3f9b3663afa2697f8736f702508",
+    "tasks": ["T064", "T065", "T066", "T067", "T068", "T069", "T070"],
+    "excluded": ["T071+", "Web3", "wallet", "PR #92", "ruleset mutation", "unrelated task state"]
+  },
+  "events": [
+    {
+      "sequence": 1,
+      "type": "tests_first_contract_authored",
+      "subject": {
+        "commit": "98e039c54e7d2f92ec5e1a1c3c0393b280b53941",
+        "tree": "c6e1367788ae721c2351a57a4b86980c7e4135ec"
+      },
+      "result": "red_contract_defined",
+      "proof": [
+        "ReaderLibraryApiIT defines idempotency, stale revision, explicit merge, withdrawn response and deletion contracts.",
+        "ProgressMergePolicyTest defines generated newer-valid-wins and invalid-candidate behavior.",
+        "US5 browser contracts define two-device sync, logout/session expiry, revision invalidation, withdrawal and deletion."
+      ]
+    },
+    {
+      "sequence": 2,
+      "type": "initial_implementation_exact_head_failure",
+      "subject": {
+        "commit": "15789a21f6ba0964501542726ab483713bdc6dc6",
+        "tree": "b5bdd9fba2f51cc98d047de2ae92128affa52f6b"
+      },
+      "ci": {
+        "run_id": 31883706899,
+        "run_number": 554,
+        "conclusion": "failure",
+        "java_job": 95009738133,
+        "artifact_id": 9246729441,
+        "artifact_digest": "sha256:bce35b6b3ab0ca1945983e1d775130db9b0171bc8d1d94a123e870a035a49d94"
+      },
+      "security": {
+        "run_id": 31883706949,
+        "run_number": 555,
+        "conclusion": "failure",
+        "attribution": "Dependency audit reran the same failing Java tests; every Trivy and CodeQL context passed."
+      },
+      "observed_red": "All five ReaderLibraryApiIT requests returned HTTP 404 instead of the expected 200/204.",
+      "root_cause": "Controller beans were guarded by ConditionalOnBean while component scanning preceded JdbcTemplate auto-configuration, so the endpoints were never registered.",
+      "resolution": "cd7437ce454c4f263bbe8994bd700ecb48ef5ad7 lazily resolves JDBC-backed services using ObjectProvider."
+    },
+    {
+      "sequence": 3,
+      "type": "second_exact_head_failure",
+      "subject": {
+        "commit": "cd7437ce454c4f263bbe8994bd700ecb48ef5ad7",
+        "tree": "83535c52c4e05abba549bd8950f3e6f3c07aa2ff"
+      },
+      "ci": {
+        "run_id": 31884382491,
+        "run_number": 555,
+        "conclusion": "failure",
+        "java_job": 95011428511,
+        "artifact_id": 9246906587,
+        "artifact_digest": "sha256:0e952e2d16080cc748bb683401c048b9b881aafd3d9dc2c05fc9b0cf37657292"
+      },
+      "security": {
+        "run_id": 31884382489,
+        "run_number": 556,
+        "conclusion": "failure",
+        "attribution": "Dependency audit inherited the same Java test failure; all seven other Security jobs passed."
+      },
+      "observed_red": "ReaderLibraryApiIT passed 4/5; progress merge failed because SQL contained updated_atRETURNING.",
+      "root_cause": "The optional upsert WHERE fragment had no trailing delimiter before the text-block RETURNING clause.",
+      "resolution": "0ff6e2119fa344bae908e306f8701325e173ebd0 adds the required newline and changes no other payload."
+    },
+    {
+      "sequence": 4,
+      "type": "implementation_exact_head_pass",
+      "subject": {
+        "commit": "0ff6e2119fa344bae908e306f8701325e173ebd0",
+        "tree": "275467d59a34ccb9716151b662656a75959e6ddf",
+        "payload_files": 37,
+        "payload_manifest_sha256": "8eeb91e04f735627ce9115e884d02bd80eb06eb6b40866503e0bd8bebbc3119e"
+      },
+      "ci": {
+        "run_id": 31884868847,
+        "run_number": 556,
+        "conclusion": "success",
+        "java_tests": { "total": 197, "failures": 0, "errors": 0, "skipped": 0 },
+        "reader_library_api": "5/5",
+        "merge_policy": "2/2",
+        "browser": "43/43",
+        "us5_browser": "6/6",
+        "java_artifact": {
+          "id": 9247030654,
+          "digest": "sha256:c531978853bacbaac0856925999e67588247ed1437b51b61272b3182993b6edc"
+        },
+        "browser_artifact": {
+          "id": 9247029744,
+          "digest": "sha256:991b2a329cf4d486e986bf1412c2571de33ce1e3a03191ef0539f4a4bf1c4b1c"
+        }
+      },
+      "security": {
+        "run_id": 31884868821,
+        "run_number": 557,
+        "conclusion": "success",
+        "jobs": 8,
+        "dependency_artifact": {
+          "id": 9247044478,
+          "digest": "sha256:190e6e5f0586f6597bd9b724cefdd559d69d69256bb89a5132dbe10b01ac6588"
+        }
+      },
+      "result": "12/12 protected required contexts passed on one exact implementation head"
+    },
+    {
+      "sequence": 5,
+      "type": "governance_readback",
+      "ruleset": {
+        "id": 20822671,
+        "name": "main-protected-release-gate",
+        "enforcement": "active",
+        "target": "refs/heads/main only",
+        "strict_required_status_checks": true,
+        "required_context_count": 12,
+        "required_approving_review_count": 0,
+        "required_review_thread_resolution": true,
+        "bypass_actors": [],
+        "current_user_can_bypass": "never",
+        "deletion_prohibited": true,
+        "force_push_prohibited": true
+      },
+      "result": "matches issue #97 solo-maintainer policy"
+    },
+    {
+      "sequence": 6,
+      "type": "metadata_receipt_prepared",
+      "mutations": [
+        ".loop/t064-t070-us5-reader-library-graphify-loop.yaml",
+        ".loop/t064-t070-us5-reader-library-ledger.json",
+        ".loop/evidence/t064-t070-us5-reader-library-20260815.json",
+        ".loop/memory/t064-t070-us5-reader-library.json",
+        "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+      ],
+      "result": "pending a fresh 12-context exact-head run because this evidence-only commit changes the PR head"
+    }
+  ],
+  "graph_delta": {
+    "completed": ["T064", "T065", "T066", "T067", "T068", "T069", "T070"],
+    "resolved_failures": ["conditional endpoint registration", "upsert SQL delimiter"],
+    "opened": [],
+    "preserved": ["T071+ unchecked", "issue #89 human research items open"]
+  },
+  "ready_frontier": ["commit metadata receipt", "run final exact-head CI/Security"],
+  "critical_path": [
+    "metadata receipt",
+    "final exact-head checks",
+    "ready-for-review",
+    "protected merge",
+    "main/tasks read-back",
+    "issue #89 continuation comment"
+  ],
+  "min_cut": [
+    "12 required contexts on the final metadata head",
+    "zero unresolved threads",
+    "clean mergeability",
+    "ruleset 20822671 read-back"
+  ],
+  "proof_coverage": {
+    "task_acceptance": "7/7",
+    "implementation_exact_head": "12/12",
+    "final_metadata_exact_head": "pending"
+  },
+  "next_action": "Commit and publish the metadata receipt, then treat only that resulting PR head as eligible for the protected merge gate."
+}

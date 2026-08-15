@@ -1,0 +1,167 @@
+schema: courtside-tw/graphify-loop/v1
+lane: t064-t070-us5-reader-library
+recorded_at: 2026-08-15T12:40:00Z
+decision: complete_bounded_us5_and_require_a_fresh_metadata_head_gate
+terminal_state: pending_final_metadata_head_ci_security
+
+scope:
+  issue: 89
+  pull_request: 99
+  baseline_main: a48584fbeaa5d3f9b3663afa2697f8736f702508
+  implementation_subject:
+    commit: 0ff6e2119fa344bae908e306f8701325e173ebd0
+    tree: 275467d59a34ccb9716151b662656a75959e6ddf
+    payload_manifest_sha256: 8eeb91e04f735627ce9115e884d02bd80eb06eb6b40866503e0bd8bebbc3119e
+  included_tasks: [T064, T065, T066, T067, T068, T069, T070]
+  excluded:
+    - T071+
+    - Web3, wallet, token, credential and provenance runtime work
+    - repository ruleset mutation
+    - PR #92 mutation
+    - unrelated product or deployment work
+
+invariants:
+  - Anonymous reading and anonymous local progress remain available without authentication.
+  - Server library state is reachable only through an authenticated READER principal.
+  - Merge preview is side-effect free; apply requires explicit user confirmation.
+  - A stale revision position is denied and a withdrawn bookmark never returns the article body.
+  - Account deletion requires fresh authentication and preserves only an append-only, non-identifying receipt.
+  - V014 is forward-only because V006 is already occupied.
+  - Checked-in evidence proves an immutable implementation subject; the mutable PR gate is read live after the metadata commit.
+
+nodes:
+  T064:
+    kind: tests_first_contract
+    state: complete
+    subject: 98e039c54e7d2f92ec5e1a1c3c0393b280b53941
+    proof:
+      - apps/api/src/test/java/tw/basketball/magazine/readerlibrary/ReaderLibraryApiIT.java
+      - apps/api/src/test/java/tw/basketball/magazine/readerlibrary/domain/ProgressMergePolicyTest.java
+      - apps/web/tests/e2e/us5-reader-library.spec.ts
+      - apps/web/tests/e2e/us5-account-deletion.spec.ts
+  T065:
+    kind: schema
+    state: complete
+    proof: apps/api/src/main/resources/db/migration/V014__reader_library.sql
+  T066:
+    kind: authenticated_api
+    state: complete
+    proof:
+      - apps/api/src/main/java/tw/basketball/magazine/readerlibrary/api/ReaderLibraryController.java
+      - apps/api/src/main/java/tw/basketball/magazine/readerlibrary/application/ReaderLibraryService.java
+  T067:
+    kind: deterministic_merge
+    state: complete
+    proof:
+      - apps/api/src/main/java/tw/basketball/magazine/readerlibrary/domain/ProgressMergePolicy.java
+      - apps/web/app/features/library/composables/useProgressMerge.ts
+  T068:
+    kind: reader_ui
+    state: complete
+    proof:
+      - apps/web/app/features/reader/components/BookmarkControl.vue
+      - apps/web/app/pages/library.vue
+  T069:
+    kind: privacy_orchestration
+    state: complete
+    proof:
+      - apps/api/src/main/java/tw/basketball/magazine/identity/application/AccountDataService.java
+      - apps/api/src/main/java/tw/basketball/magazine/identity/api/AccountController.java
+      - apps/web/app/pages/settings/privacy.vue
+  T070:
+    kind: runtime_stabilization
+    state: complete
+    proof:
+      - apps/web/tests/e2e/us5-reader-library.spec.ts
+      - docs/product/reading-progress.md
+  red_404:
+    kind: attributable_failure
+    state: resolved
+    subject: 15789a21f6ba0964501542726ab483713bdc6dc6
+    evidence: CI #554 / artifact 9246729441
+    cause: endpoint beans were conditionally omitted before JDBC auto-configuration completed
+    remediation: cd7437ce454c4f263bbe8994bd700ecb48ef5ad7
+  red_sql_delimiter:
+    kind: attributable_failure
+    state: resolved
+    subject: cd7437ce454c4f263bbe8994bd700ecb48ef5ad7
+    evidence: CI #555 / artifact 9246906587
+    cause: dynamic WHERE clause joined directly to RETURNING
+    remediation: 0ff6e2119fa344bae908e306f8701325e173ebd0
+  implementation_gate:
+    kind: exact_head_gate
+    state: complete
+    subject: 0ff6e2119fa344bae908e306f8701325e173ebd0
+    proof:
+      ci: 31884868847
+      security: 31884868821
+      required_contexts: 12/12
+      java_tests: 197/197
+      reader_library_api: 5/5
+      merge_policy: 2/2
+      browser: 43/43
+      us5_browser: 6/6
+  metadata_receipt:
+    kind: evidence_and_task_state
+    state: in_progress
+    proof:
+      - .loop/evidence/t064-t070-us5-reader-library-20260815.json
+      - .loop/t064-t070-us5-reader-library-ledger.json
+      - specs/001-taiwan-basketball-magazine-ebook/tasks.md
+  final_gate:
+    kind: protected_exact_head_gate
+    state: pending
+    requires:
+      - draft converted to ready
+      - 12/12 required contexts succeed on the metadata head
+      - zero unresolved review threads
+      - attributable changed-file scope
+      - mergeable true
+      - ruleset 20822671 unchanged and active
+  protected_merge:
+    kind: mutation
+    state: blocked_by_final_gate
+  main_and_issue_readback:
+    kind: authoritative_readback
+    state: blocked_by_protected_merge
+
+edges:
+  - [T064, T065]
+  - [T065, T066]
+  - [T066, T067]
+  - [T067, T068]
+  - [T068, T069]
+  - [T069, T070]
+  - [T070, implementation_gate]
+  - [red_404, red_sql_delimiter]
+  - [red_sql_delimiter, implementation_gate]
+  - [implementation_gate, metadata_receipt]
+  - [metadata_receipt, final_gate]
+  - [final_gate, protected_merge]
+  - [protected_merge, main_and_issue_readback]
+
+ready_frontier: [metadata_receipt]
+critical_path:
+  [
+    T064,
+    T065,
+    T066,
+    T067,
+    T068,
+    T069,
+    T070,
+    implementation_gate,
+    metadata_receipt,
+    final_gate,
+    protected_merge,
+    main_and_issue_readback
+  ]
+min_cut:
+  - all 12 strict required contexts on one final metadata head
+  - review-thread resolution on that same head
+  - current ruleset 20822671 read-back
+  - protected merge followed by authoritative main read-back
+proof_coverage:
+  task_contracts: 7/7
+  implementation_exact_head_required_contexts: 12/12
+  final_metadata_head_required_contexts: 0/12_pending

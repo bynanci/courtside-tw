@@ -643,6 +643,43 @@ paths:
                   mode: preview
                   items: []
       x-idempotent: true
+  /api/v1/me/export:
+    get:
+      tags:
+        - Reader
+      operationId: exportAccountData
+      summary: Export reader account data
+      description: Returns the authenticated reader's minimal bookmark and progress data as JSON.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AccountExport"
+              examples:
+                valid:
+                  value:
+                    issuer: https://identity.example.test
+                    subject: reader-123
+                    bookmarks: []
+                    progress: []
+                    generatedAt: 2026-08-15T00:00:00Z
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "429":
+          $ref: "#/components/responses/Problem429"
   /api/v1/auth/siwe/challenge:
     post:
       tags:
@@ -3472,12 +3509,30 @@ components:
       required:
         - articleId
         - createdAt
+        - available
+        - unavailableReason
+        - slug
+        - title
       properties:
         articleId:
           $ref: "#/components/schemas/Uuid"
         createdAt:
           type: string
           format: date-time
+        available:
+          type: boolean
+        unavailableReason:
+          type:
+            - string
+            - "null"
+        slug:
+          type:
+            - string
+            - "null"
+        title:
+          type:
+            - string
+            - "null"
     BookmarkPage:
       type: object
       additionalProperties: false
@@ -3666,6 +3721,43 @@ components:
       properties:
         confirm:
           const: true
+    AccountExport:
+      type: object
+      additionalProperties: false
+      required:
+        - issuer
+        - subject
+        - bookmarks
+        - progress
+        - generatedAt
+      properties:
+        issuer:
+          type: string
+        subject:
+          type: string
+        bookmarks:
+          type: array
+          items:
+            $ref: "#/components/schemas/AccountExportBookmark"
+        progress:
+          type: array
+          items:
+            $ref: "#/components/schemas/ReadingProgress"
+        generatedAt:
+          type: string
+          format: date-time
+    AccountExportBookmark:
+      type: object
+      additionalProperties: false
+      required:
+        - articleId
+        - createdAt
+      properties:
+        articleId:
+          $ref: "#/components/schemas/Uuid"
+        createdAt:
+          type: string
+          format: date-time
     DeletionWorkflow:
       type: object
       additionalProperties: false

@@ -28,10 +28,16 @@ import ContentDocumentRenderer from "../../components/content-blocks/ContentDocu
 import type { ContentBlockTelemetry } from "../../components/content-blocks/registry"
 import { formatMediaAttribution } from "../../components/content-blocks/rendering"
 import ArticleNavigation from "../../features/reader/components/ArticleNavigation.vue"
+import BookmarkControl from "../../features/reader/components/BookmarkControl.vue"
 import ReadingProgress from "../../features/reader/components/ReadingProgress.vue"
 import ShareArticleButton from "../../features/reader/components/ShareArticleButton.vue"
 import { readingProgressPercent } from "../../features/reader/reading-progress"
 import { buildArticleSeo } from "../../features/reader/seo/article-seo"
+import {
+  putProgress as putServerProgress,
+  readReaderSession,
+  ReaderLibraryApiError
+} from "../../features/library/reader-library-api"
 
 type ContentRun = {
   kind: "text" | "link"
@@ -182,6 +188,8 @@ const contentBlockTelemetry = ref<ContentBlockTelemetry[]>([])
 const motionMode = ref<"reduced" | "full">("reduced")
 const clientReady = ref(false)
 const interactiveEnabled = ref(false)
+const readerCanSync = ref(false)
+const progressSyncState = ref<"idle" | "syncing" | "synced" | "local-only">("idle")
 const readerHasMounted = useState("public-article-reader-has-mounted", () => false)
 let reloadGuardActive = false
 let reloadProgressLoaded = false
@@ -192,6 +200,7 @@ let reloadChosenAction: "continue" | "start-over" | null = null
 let reloadManualScrollPosition: number | null = null
 let previousScrollRestoration: "auto" | "manual" | null = null
 let progressSaveTimer: number | null = null
+let progressSyncQueue = Promise.resolve()
 
 useHead(() => {
   const current = article.value
@@ -494,7 +503,31 @@ function saveReadingProgress(): void {
   if (!location) {
     return
   }
-  readingProgress.save(storage, context, location)
+  if (readingProgress.save(storage, context, location) && readerCanSync.value) {
+    queueServerProgress(context, location)
+  }
+}
+
+function queueServerProgress(
+  context: LocalReadingContext,
+  location: { blockId: string; documentProgress: number }
+): void {
+  progressSyncState.value = "syncing"
+  progressSyncQueue = progressSyncQueue
+    .then(async () => {
+      await putServerProgress(context.articleId, {
+        revisionId: context.revisionId,
+        blockId: location.blockId,
+        percent: Math.round(location.documentProgress * 10_000) / 100
+      })
+      progressSyncState.value = "synced"
+    })
+    .catch((cause: unknown) => {
+      if (cause instanceof ReaderLibraryApiError && cause.status === 401) {
+        readerCanSync.value = false
+      }
+      progressSyncState.value = "local-only"
+    })
 }
 
 function scheduleReadingProgressSave(): void {
@@ -891,6 +924,15 @@ function focusArticleHeading(): void {
 onMounted(() => {
   const focusOnMount = readerHasMounted.value
   readerHasMounted.value = true
+  void readReaderSession()
+    .then((session) => {
+      readerCanSync.value = session.canSync
+      progressSyncState.value = session.canSync ? "idle" : "local-only"
+    })
+    .catch(() => {
+      readerCanSync.value = false
+      progressSyncState.value = "local-only"
+    })
   if (typeof window !== "undefined") {
     beginInitialReloadScrollGuard()
     restoreUnavailableStorageScrollPosition()
@@ -1017,6 +1059,16 @@ onBeforeUnmount(() => {
               :canonical-url="canonical"
               :client-ready="clientReady"
             />
+            <BookmarkControl :article-id="article.articleId" />
+            <span v-if="readerCanSync" data-testid="signed-in-progress-control" role="status">
+              {{
+                progressSyncState === "syncing"
+                  ? "同步閱讀進度中"
+                  : progressSyncState === "synced"
+                    ? "閱讀進度已同步"
+                    : "登入後將跨裝置同步"
+              }}
+            </span>
           </div>
         </header>
 

@@ -268,6 +268,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  "/api/v1/me/export": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Export reader account data
+     * @description Returns the authenticated reader's minimal bookmark and progress data as JSON.
+     */
+    get: operations["exportAccountData"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   "/api/v1/auth/siwe/challenge": {
     parameters: {
       query?: never
@@ -1105,6 +1125,10 @@ export interface components {
       articleId: components["schemas"]["Uuid"]
       /** Format: date-time */
       createdAt: string
+      available: boolean
+      unavailableReason: string | null
+      slug: string | null
+      title: string | null
     }
     BookmarkPage: {
       items: components["schemas"]["Bookmark"][]
@@ -1166,6 +1190,19 @@ export interface components {
     DeletionRequest: {
       /** @constant */
       confirm: true
+    }
+    AccountExport: {
+      issuer: string
+      subject: string
+      bookmarks: components["schemas"]["AccountExportBookmark"][]
+      progress: components["schemas"]["ReadingProgress"][]
+      /** Format: date-time */
+      generatedAt: string
+    }
+    AccountExportBookmark: {
+      articleId: components["schemas"]["Uuid"]
+      /** Format: date-time */
+      createdAt: string
     }
     DeletionWorkflow: {
       requestId: string
@@ -2283,6 +2320,31 @@ export interface operations {
       403: components["responses"]["Problem403"]
       409: components["responses"]["Problem409"]
       422: components["responses"]["Problem422"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  exportAccountData: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response. */
+      200: {
+        headers: {
+          "Content-Disposition"?: string
+          "X-Request-Id": components["headers"]["XRequestId"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["AccountExport"]
+        }
+      }
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
       429: components["responses"]["Problem429"]
     }
   }

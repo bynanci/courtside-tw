@@ -104,7 +104,7 @@ public final class OidcSecurityConfiguration {
                     .authorizeHttpRequests(authorize -> authorize
                             .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**").permitAll()
                             .requestMatchers(HttpMethod.GET, "/api/v1/public/**").permitAll()
-                            .requestMatchers("/api/v1/me/**")
+                            .requestMatchers("/api/v1/me", "/api/v1/me/**")
                             .hasAuthority(OidcRolePolicy.authority(RoleCode.READER))
                             .requestMatchers("/api/v1/editor/**")
                             .hasAuthority(OidcRolePolicy.authority(RoleCode.EDITOR))
