@@ -2,9 +2,9 @@
   "schema": "courtside-tw/loop-ledger/v1",
   "lane": "t071-us6-offline-tests-first",
   "version": 1,
-  "recorded_at": "2026-08-15T00:00:00Z",
-  "decision": "Preserve the T071 RED receipt and dispatch only the bounded T072 manifest implementation.",
-  "terminal_state": "needs_runtime_verification",
+  "recorded_at": "2026-08-15T15:42:00Z",
+  "decision": "Record T072 exact-head acceptance while preserving the T071 downstream browser RED and stop before T073+.",
+  "terminal_state": "blocked_on_t071_downstream_contract",
   "scope": {
     "issue": 89,
     "tasks": ["T071", "T072"],
@@ -115,24 +115,61 @@
         "https://github.com/bynanci/courtside-tw/actions/runs/31891497804",
         "https://github.com/bynanci/courtside-tw/actions/runs/31891497792"
       ]
+    },
+    {
+      "sequence": 7,
+      "type": "t072_exact_head_verified_with_t071_browser_red",
+      "result": "t072_implementation_passed_t071_remains_blocked",
+      "source_head": "a1ab39f1a19e4261558712e060b5023ddf5f424b",
+      "parent_head": "c3bade958cc52086576b2351bb974f0bfde1ac27",
+      "ci_run": 566,
+      "security_run": 567,
+      "ci_jobs": [95032106310, 95032106331, 95032106342, 95032247474],
+      "security_jobs": [95032106395, 95032106413, 95032106419, 95032106426, 95032106437, 95032134221, 95032134244, 95032134334],
+      "passed_gates": [
+        "Frontend and contract verification",
+        "Docker Compose dependency health",
+        "Java quality and unit verification",
+        "Security dependency audit",
+        "CodeQL Java/Kotlin",
+        "CodeQL JavaScript/TypeScript",
+        "Trivy filesystem",
+        "Resolve Compose images",
+        "Trivy image oidc",
+        "Trivy image postgres",
+        "Trivy image s3"
+      ],
+      "failure_signature": "five T071 browser contracts fail at the absent offline-download control; 43 browser tests passed",
+      "attribution": "T072 public manifest/withdrawal API is not the failing seam; the remaining RED is the downstream T071 offline UI/manager contract. No unrelated baseline failure was attributed in this run.",
+      "scope_guard": [
+        "T071 remains unchecked",
+        "T072 checkbox advanced only after exact-head Java/API and Security proof",
+        "T073-T076 not started",
+        "PR #92, Web3, repository protection and issue #89 human research state untouched"
+      ],
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/actions/runs/31893058818",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31893058816"
+      ]
     }
   ],
   "graph_delta": {
     "opened": ["T071", "api_red", "browser_red"],
-    "ready_frontier": ["T072_minimal_compile_and_generated_contract_fix"],
+    "closed": ["T072_minimal_compile_and_generated_contract_fix"],
+    "ready_frontier": ["T071_downstream_offline_controls"],
     "blocked": ["T073", "T074", "T075", "T076"],
     "preserved": ["issue #89 human research items", "T071 unchecked", "PR #92 and repository protection untouched"]
   },
   "proof_coverage": {
     "api_contracts": "authored",
     "browser_contracts": "5/5 scenarios authored",
-    "runtime_red": "proven on exact head 8e5c94c676ce4661466831a77eae8cafb1df6176 by CI #562/Security #563",
-    "passing_implementation": "T072 implementation RED on 03d07aa3273655570d3bace7b98e0c27f2ff7df1; minimal fix pending"
+    "runtime_red": "T071 browser RED replayed on exact head a1ab39f1a19e4261558712e060b5023ddf5f424b by CI #566 browser job 95032247474",
+    "passing_implementation": "T072 passed exact-head Java/API, OpenAPI/frontend contract, and Security checks on a1ab39f1a19e4261558712e060b5023ddf5f424b; T072 checkbox is checked"
   },
   "min_cut": [
     "pinned CI toolchain execution of OfflineManifestApiIT",
     "pinned Playwright execution of us6-offline-issue.spec.ts",
     "T072 exact-head Java/API proof and contract validation"
   ],
-  "next_action": "Publish the minimal T072 compile/generated-contract fix from 03d07aa3273655570d3bace7b98e0c27f2ff7df1, rerun exact-head CI/Security, and stop at the first attributable downstream US6 blocker; do not start T073+."
+  "next_action": "Stop at the T071 downstream browser RED; keep the PR draft and do not start T073+ until the five offline-control contracts pass."
 }

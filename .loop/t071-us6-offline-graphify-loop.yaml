@@ -1,8 +1,8 @@
 schema: courtside-tw/graphify-loop/v1
 lane: t072-us6-offline-manifest
-recorded_at: 2026-08-15T16:00:00Z
-decision: preserve_t071_attributable_red_and_dispatch_only_t072_manifest_implementation
-terminal_state: needs_runtime_verification
+recorded_at: 2026-08-15T15:42:00Z
+decision: record_t072_exact_head_pass_and_preserve_t071_downstream_browser_red
+terminal_state: blocked_on_t071_downstream_contract
 
 scope:
   issue: 89
@@ -45,15 +45,16 @@ nodes:
     expected_failure: CI #562 browser run fails at absent offline controls; downstream UI/manager remains out of scope
   T072:
     kind: next_implementation
-    state: in_progress
+    state: implementation_verified
     proof:
       - apps/api/src/main/java/tw/basketball/magazine/publication/api/OfflineManifestController.java
       - apps/api/src/main/java/tw/basketball/magazine/publication/application/OfflineManifestService.java
       - contracts/openapi.yaml
       - packages/api-client/src/generated/openapi.d.ts
       - .loop/evidence/t072-us6-offline-manifest-20260815.json
-    acceptance: exact-head Java/API tests, generated contract, OpenAPI validation and Security must pass
-    current_red: CI #563/Security #564 found three attributable compile/generated-contract failures on 03d07aa3273655570d3bace7b98e0c27f2ff7df1
+    acceptance: exact-head Java/API tests, generated contract, OpenAPI validation and Security passed on a1ab39f1a19e4261558712e060b5023ddf5f424b
+    verification: CI #566 Java job 95032106342 and Security #567 jobs all passed; tasks.md T072 is checked.
+    current_red: CI #566 browser job 95032247474 remains RED only for the five T071 downstream offline-control contracts
   human_research:
     kind: external_gate
     state: open
@@ -66,7 +67,7 @@ edges:
   - [browser_red, T072]
   - [T072, T073]
 
-ready_frontier: [T072_minimal_compile_and_generated_contract_fix]
+ready_frontier: [T071_downstream_offline_controls]
 critical_path:
   - T071
   - API and browser RED replay
@@ -84,5 +85,6 @@ proof_coverage:
   api_contracts: authored
   browser_failure_injection_matrix: 5_scenarios_authored
   local_runtime_red: blocked_by_toolchain
-  exact_head_ci_security: RED_on_03d07aa3273655570d3bace7b98e0c27f2ff7df1_CI_563_Security_564
-  attributable_t072_fix: required_before_checkbox
+  exact_head_ci_security: T072_pass_on_a1ab39f1a19e4261558712e060b5023ddf5f424b_CI_566_Security_567_with_T071_browser_RED
+  attributable_t072_fix: resolved_and_checked
+  downstream_t071_browser_red: five_contract_failures_at_absent_offline_download_control

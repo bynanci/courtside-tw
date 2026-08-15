@@ -1,11 +1,11 @@
 {
   "schema": "courtside-tw/task-evidence/v1",
   "task": "T072",
-  "status": "RED_IMPLEMENTATION",
-  "recorded_at": "2026-08-15T16:00:00Z",
+  "status": "PASS_IMPLEMENTATION",
+  "recorded_at": "2026-08-15T15:42:00Z",
   "baseline_main": "73bbb0851d90a108f6a8c9d93c284670afbfd152",
-  "parent_exact_head": "8e5c94c676ce4661466831a77eae8cafb1df6176",
-  "current_exact_head": "03d07aa3273655570d3bace7b98e0c27f2ff7df1",
+  "parent_exact_head": "c3bade958cc52086576b2351bb974f0bfde1ac27",
+  "current_exact_head": "a1ab39f1a19e4261558712e060b5023ddf5f424b",
   "changed_files": [
     "apps/api/src/main/java/tw/basketball/magazine/publication/api/OfflineManifestController.java",
     "apps/api/src/main/java/tw/basketball/magazine/publication/application/OfflineManifestService.java",
@@ -45,24 +45,26 @@
   ],
   "proof": {
     "local_diff_check": "PASS",
-    "openapi_validation": "PASS: CI #563 job 95028315634 validated contracts/openapi.yaml",
-    "java_compile_and_test": "RED: CI #563 job 95028315833 failed at compileJava in OfflineManifestService.java",
-    "exact_head_ci": "FAIL: CI #563 on 03d07aa3273655570d3bace7b98e0c27f2ff7df1; generated api-client contract was stale and Java compile failed",
-    "exact_head_security": "FAIL: Security #564 on 03d07aa3273655570d3bace7b98e0c27f2ff7df1; dependency audit and CodeQL Java/Kotlin stopped at the same Java compile failure; Trivy jobs passed",
-    "attributable_failures": [
-      "RowMapper lambdas called mapIssue/mapArticle/mapAsset without the required row number",
-      "linkedAssetCount was declared primitive while compared with null",
-      "packages/api-client/src/generated/openapi.d.ts did not reflect the checked-in OpenAPI schema"
-    ]
+    "openapi_validation": "PASS: CI #566 job 95032106331 validated contracts/openapi.yaml and frontend/contract checks",
+    "java_compile_and_test": "PASS: CI #566 job 95032106342; OfflineManifestApiIT completed successfully after the integration fixture wiring and snapshot-version assertion were corrected",
+    "exact_head_ci": "PASS for T072: CI #566 on a1ab39f1a19e4261558712e060b5023ddf5f424b; frontend/contract, Compose health and Java quality/unit passed. The separate browser job 95032247474 failed only the five pre-existing T071 downstream offline-control contracts (43 browser tests passed).",
+    "exact_head_security": "PASS: Security #567 on a1ab39f1a19e4261558712e060b5023ddf5f424b; dependency audit, CodeQL Java/Kotlin, CodeQL JavaScript/TypeScript, filesystem Trivy, Compose image resolution and Trivy postgres/oidc/s3 all passed with no HIGH/CRITICAL image finding.",
+    "fixture_replay": "PASS: addArticle refreshes the issue snapshot to version 2; the T072 integration assertion now checks the current bounded snapshot version.",
+    "historical_attributable_failures_resolved": [
+      "RowMapper lambdas now pass the required row number",
+      "Nullable linked-asset count now uses Integer",
+      "packages/api-client/src/generated/openapi.d.ts is synchronized with contracts/openapi.yaml"
+    ],
+    "downstream_blocker_not_t072": "The browser job reports five T071 contracts failing at the absent offline-download control; this remains outside the T072 API manifest scope."
   },
   "scope_guard": {
     "T071_contracts_preserved": true,
     "T073_plus_changed": false,
-    "tasks_checkbox_changed": false,
+    "tasks_checkbox_changed": true,
     "issue_89_changed": false,
     "pr_92_modified": false,
     "repository_protection_modified": false,
     "web3_or_unrelated_work_started": false
   },
-  "next_action": "Publish the minimal T072 compile/generated-contract fix from exact head 03d07aa3273655570d3bace7b98e0c27f2ff7df1, then rerun and read back exact-head CI/Security before any checkbox change."
+  "next_action": "Keep T071 unchecked because the five browser contracts still fail at the absent downstream offline controls; stop before T073+ and do not treat the overall CI run as green."
 }
