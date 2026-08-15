@@ -1,12 +1,12 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-p1-review-remediation-20260814",
-  "graph_version": 5,
+  "graph_version": 6,
   "run_id": "courtside-p1-review-remediation-20260814",
   "status": "needs_human",
   "iteration": 5,
   "started_at": "2026-08-14T03:51:03Z",
-  "updated_at": "2026-08-15T00:33:30.727Z",
+  "updated_at": "2026-08-15T01:54:48Z",
   "current_frontier": [
     "p-exact-head",
     "a-ruleset-readback"
@@ -18,7 +18,7 @@
     "protected-merge-gate"
   ],
   "terminal_state": "needs_human",
-  "next_action": "Remediate or formally accept the external postgres image CVEs; then obtain one non-author approval and current protected-ruleset readback. Do not merge.",
+  "next_action": "Re-run exact-head CI/Security on the resulting metadata head; then obtain one non-author approval and current protected-ruleset readback. Do not merge.",
   "events": [
     {
       "event_id": "evt-001-p1-remediation-opened",
@@ -497,6 +497,74 @@
         "total": 0
       },
       "terminal_reason": "Security #533 is not green; non-author approval and required main ruleset checks/approval/conversation resolution are still absent."
+    },
+    {
+      "event_id": "evt-008-current-head-proof-scope",
+      "at": "2026-08-15T01:54:48Z",
+      "actor": "codex-agent",
+      "type": "evidence_delta",
+      "base_graph_version": 5,
+      "new_graph_version": 6,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-diff/confidence/evidence_refs",
+            "before": "...f1183d9",
+            "after": "...442f76f"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-exact-head/confidence/basis",
+            "before": "CI #532 / Security #533 on f1183d9",
+            "after": "CI #538 / Security #539 on 8e7c69e"
+          },
+          {
+            "op": "append",
+            "path": "events",
+            "value": "evt-008-current-head-proof-scope"
+          }
+        ]
+      },
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/compare/88d31b9709339e94e7cf7a3af80f5da773cbed70...442f76f1f518da5a92391c649e6086c5d5e5b329",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31857300941",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31857300945",
+        "https://github.com/bynanci/courtside-tw/pull/92"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "source diff through last code change",
+          "result": "pass",
+          "base_sha": "88d31b9709339e94e7cf7a3af80f5da773cbed70",
+          "head_sha": "442f76f1f518da5a92391c649e6086c5d5e5b329"
+        },
+        {
+          "proof": "PR #92 CI #538",
+          "result": "pass",
+          "head_sha": "8e7c69eccd58c56947e5d538552ac96ae1ba19ed",
+          "run_id": 31857300941,
+          "browser_job_id": 94944541350
+        },
+        {
+          "proof": "PR #92 Security #539",
+          "result": "blocked",
+          "head_sha": "8e7c69eccd58c56947e5d538552ac96ae1ba19ed",
+          "run_id": 31857300945,
+          "failed_job_id": 94944419949,
+          "failed_job": "Trivy (image postgres)",
+          "failure_signature": "external-postgres-image-go-stdlib-high-cves"
+        }
+      ],
+      "failure_signature": "external-postgres-image-go-stdlib-high-cves",
+      "decision": "Keep the exact-head proof blocked on the external postgres image baseline; require fresh CI/Security readback after this metadata commit and keep approval, thread resolution, and protected-ruleset gates human/admin-owned.",
+      "token_usage": {
+        "estimated": 2500,
+        "input": 0,
+        "output": 0,
+        "total": 0
+      },
+      "terminal_reason": "Security #539 is not green; no non-author approval and the desired main ruleset protections are not active."
     }
   ]
 }

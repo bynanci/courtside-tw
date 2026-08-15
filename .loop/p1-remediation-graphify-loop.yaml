@@ -184,8 +184,8 @@ graph:
       risk: medium
       confidence:
         score: 0.98
-        basis: Current main compare covers the five-file PR scope and the four targeted remediation behaviors.
-        evidence_refs: [https://github.com/bynanci/courtside-tw/compare/88d31b9709339e94e7cf7a3af80f5da773cbed70...f1183d9b9abfccc6499385b66708b19638230ebf]
+        basis: Current main compare covers the six-file PR scope, including validFrom/rights-status validation and the 5000-plus media boundary.
+        evidence_refs: [https://github.com/bynanci/courtside-tw/compare/88d31b9709339e94e7cf7a3af80f5da773cbed70...442f76f1f518da5a92391c649e6086c5d5e5b329]
       budget: {effort_hours: 0.1, tokens: 1500}
       config:
         level: P1
@@ -203,8 +203,8 @@ graph:
       risk: critical
       confidence:
         score: 0.98
-        basis: Final-head CI #532 passed on f1183d9b9abfccc6499385b66708b19638230ebf; Security #533 is blocked by Trivy (image postgres) reporting HIGH CVE-2026-39821 and CVE-2026-46600 in the external gosu image baseline, outside the five-file PR scope.
-        evidence_refs: [https://github.com/bynanci/courtside-tw/actions/runs/31853630778, https://github.com/bynanci/courtside-tw/actions/runs/31853630780]
+        basis: Final-head CI #538 passed on 8e7c69eccd58c56947e5d538552ac96ae1ba19ed; Security #539 is blocked by Trivy (image postgres) reporting HIGH CVE-2026-39821 and CVE-2026-46600 in the external gosu image baseline, outside the six-file PR scope.
+        evidence_refs: [https://github.com/bynanci/courtside-tw/actions/runs/31857300941, https://github.com/bynanci/courtside-tw/actions/runs/31857300945]
       budget: {effort_hours: 1.5, tokens: 5000}
       config:
         level: P2
