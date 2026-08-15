@@ -11,12 +11,14 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.function.Supplier;
+import java.util.regex.Pattern;
 
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -53,6 +55,9 @@ import tw.basketball.magazine.shared.VersionConflictException;
 public final class EditorialWorkflowService {
     private static final String REQUIRED_CHANNEL = RightsPolicy.PUBLIC_WEB_CHANNEL;
     private static final int MAX_IDEMPOTENCY_KEY_LENGTH = 512;
+    private static final Pattern TAXONOMY_KEY = Pattern.compile(
+            "[a-z0-9]+(?:-[a-z0-9]+)*"
+    );
 
     private final EditorialArticleRepository repository;
     private final AuditWriter auditWriter;
@@ -116,6 +121,7 @@ public final class EditorialWorkflowService {
         validateSlug(slug);
         String dek = optionalText(request, "dek", "/dek", 1000);
         JsonNode content = optionalObject(request, "content", "/content");
+        List<String> taxonomyKeys = optionalTaxonomy(request, "taxonomy", "/taxonomy");
         String hash = requestHash("CREATE_ARTICLE", null, null, request);
 
         return idempotent(
@@ -130,6 +136,8 @@ public final class EditorialWorkflowService {
                             dek,
                             content
                     );
+                    repository.replaceTaxonomy(created.revisionId(), taxonomyKeys);
+                    created = requireArticle(created.articleId());
                     auditWriter.append(new AuditEventDraft(
                             actor,
                             "ARTICLE_CREATED",
@@ -164,6 +172,9 @@ public final class EditorialWorkflowService {
                     "changes must be a non-empty object"
             );
         }
+        List<String> taxonomyKeys = changes.has("taxonomy")
+                ? taxonomy(changes.get("taxonomy"), "/changes/taxonomy")
+                : null;
         String hash = requestHash("PATCH_ARTICLE", articleId, expectedVersion, request);
 
         return idempotent(
@@ -209,6 +220,9 @@ public final class EditorialWorkflowService {
                                 expectedVersion,
                                 new Version(latest.version())
                         );
+                    }
+                    if (taxonomyKeys != null) {
+                        repository.replaceTaxonomy(current.revisionId(), taxonomyKeys);
                     }
                     EditorialArticleRepository.ArticleRecord updated = requireArticle(articleId);
                     auditWriter.append(new AuditEventDraft(
@@ -277,6 +291,9 @@ public final class EditorialWorkflowService {
         String title = requiredText(request, "title", "/title", 250);
         String dek = optionalText(request, "dek", "/dek", 1000);
         JsonNode content = optionalObject(request, "content", "/content");
+        List<String> requestedTaxonomy = request.has("taxonomy")
+                ? taxonomy(request.get("taxonomy"), "/taxonomy")
+                : null;
         String hash = requestHash("CREATE_REVISION", articleId, expectedVersion, request);
         return idempotent(
                 actor,
@@ -284,7 +301,10 @@ public final class EditorialWorkflowService {
                 idempotencyKey,
                 hash,
                 () -> {
-                    requireArticle(articleId);
+                    EditorialArticleRepository.ArticleRecord current = requireArticle(articleId);
+                    List<String> taxonomyKeys = requestedTaxonomy == null
+                            ? repository.taxonomyKeys(current.revisionId())
+                            : requestedTaxonomy;
                     if (!repository.createRevision(
                             articleId,
                             expectedVersion.value(),
@@ -299,6 +319,8 @@ public final class EditorialWorkflowService {
                         );
                     }
                     EditorialArticleRepository.ArticleRecord revision = requireArticle(articleId);
+                    repository.replaceTaxonomy(revision.revisionId(), taxonomyKeys);
+                    revision = requireArticle(articleId);
                     auditWriter.append(new AuditEventDraft(
                             actor,
                             "ARTICLE_REVISION_CREATED",
@@ -874,6 +896,7 @@ public final class EditorialWorkflowService {
         response.put("slug", article.slug());
         response.put("dek", article.dek());
         response.put("content", article.content());
+        response.put("taxonomy", repository.taxonomyKeys(article.revisionId()));
         response.put("state", article.state().name());
         if (article.scheduledFor() != null) {
             response.put("scheduledAt", article.scheduledFor().toString());
@@ -1053,6 +1076,38 @@ public final class EditorialWorkflowService {
             throw EditorialProblemException.invalid(path, "OBJECT_REQUIRED", "content must be an object");
         }
         return value;
+    }
+
+    private static List<String> optionalTaxonomy(
+            JsonNode request,
+            String name,
+            String path
+    ) {
+        return request.has(name) ? taxonomy(request.get(name), path) : List.of();
+    }
+
+    private static List<String> taxonomy(JsonNode value, String path) {
+        if (value == null || !value.isArray() || value.size() > 20) {
+            throw EditorialProblemException.invalid(
+                    path,
+                    "TAXONOMY_INVALID",
+                    "taxonomy must be an array containing at most 20 stable keys"
+            );
+        }
+        LinkedHashSet<String> keys = new LinkedHashSet<>();
+        for (JsonNode item : value) {
+            if (!item.isString()
+                    || item.asString().length() > 256
+                    || !TAXONOMY_KEY.matcher(item.asString()).matches()
+                    || !keys.add(item.asString())) {
+                throw EditorialProblemException.invalid(
+                        path,
+                        "TAXONOMY_INVALID",
+                        "taxonomy keys must be distinct bounded lowercase slugs"
+                );
+            }
+        }
+        return List.copyOf(keys);
     }
 
     private static UUID requiredUuid(JsonNode request, String name, String path) {

@@ -74,6 +74,8 @@ public abstract class EditorialApiIntegrationTestSupport {
         applyMigration(dataSource, "/db/migration/V009__publisher_media_commands.sql");
         applyMigration(dataSource, "/db/migration/V010__editorial_section_commands.sql");
         applyMigration(dataSource, "/db/migration/V011__editorial_media_reference_sync.sql");
+        applyMigration(dataSource, "/db/migration/V012__taxonomy_and_search.sql");
+        applyMigration(dataSource, "/db/migration/V013__editorial_taxonomy_assignment_sync.sql");
         jdbcTemplate = new JdbcTemplate(dataSource);
         applicationClock = new ApplicationClock(
                 Clock.fixed(Instant.parse("2026-08-10T00:00:00Z"), ZoneOffset.UTC)
@@ -88,7 +90,8 @@ public abstract class EditorialApiIntegrationTestSupport {
     @BeforeEach
     void createControllerAndCleanEditorialData() {
         jdbcTemplate.update("""
-                TRUNCATE TABLE publication_impact_link, publication_idempotency,
+                TRUNCATE TABLE search_document, article_taxonomy, taxonomy_alias, taxonomy_term,
+                    publication_impact_link, publication_idempotency,
                     publication_job, publication_snapshot, publication_rights_reference,
                     publication_review, article_revision_media, article_revision, article,
                     issue_article, issue_section, publication_issue, rights_record,

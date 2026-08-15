@@ -5,12 +5,14 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
 import tools.jackson.databind.ObjectMapper;
 import tw.basketball.magazine.publication.PublicIssueApiIntegrationTestSupport;
+import tw.basketball.magazine.search.application.SearchService;
 
 final class SearchProjectionHandlerIT extends PublicIssueApiIntegrationTestSupport {
     @Test
@@ -44,6 +46,56 @@ final class SearchProjectionHandlerIT extends PublicIssueApiIntegrationTestSuppo
                 Boolean.class,
                 articleId
         ));
+
+    }
+
+    @Test
+    void publishedArticleCanBeProjectedBeforeItsLinkedIssueIsPublished() {
+        IssueFixture issue = createIssue(
+                "draft-issue-projection",
+                34,
+                Instant.parse("2026-08-08T00:00:00Z"),
+                "DRAFT",
+                true
+        );
+        addArticle(issue, "Pre-publication", 1, "pre-publication-projection", 1, "PUBLISHED");
+        UUID articleId = articleId("pre-publication-projection");
+        UUID revisionId = revisionId(articleId);
+
+        handler().project(articleId, revisionId, Instant.parse("2026-08-10T00:00:00Z"));
+
+        assertEquals(issue.id(), jdbcTemplate.queryForObject(
+                "SELECT issue_id FROM search_document WHERE article_id = ?",
+                UUID.class,
+                articleId
+        ));
+        assertEquals(Boolean.TRUE, jdbcTemplate.queryForObject(
+                "SELECT active FROM search_document WHERE article_id = ?",
+                Boolean.class,
+                articleId
+        ));
+
+        SearchService search = new SearchService(jdbcTemplate);
+        assertEquals(0, search.search(
+                "pre publication",
+                null,
+                "20",
+                "article",
+                List.of()
+        ).items().size());
+
+        jdbcTemplate.update(
+                "UPDATE publication_issue SET state = 'PUBLISHED' WHERE id = ?",
+                issue.id()
+        );
+
+        assertEquals(1, search.search(
+                "pre publication",
+                null,
+                "20",
+                "article",
+                List.of()
+        ).items().size());
     }
 
     @Test

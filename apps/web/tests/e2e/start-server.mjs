@@ -824,13 +824,44 @@ const apiServer = createServer(async (request, response) => {
 
   if (requestUrl.pathname === "/api/v1/public/search") {
     const raw = requestUrl.searchParams.get("q") ?? ""
+    const cursor = requestUrl.searchParams.get("cursor")
+    const taxonomy = requestUrl.searchParams.getAll("taxonomy")
     const normalized = raw
       .normalize("NFKC")
       .toLocaleLowerCase("zh-TW")
       .replaceAll(/[^\p{Letter}\p{Number}]+/gu, " ")
       .trim()
+    const pagedItems = normalized.includes("分頁")
+      ? [
+          {
+            articleId:
+              cursor === "cGFnZS0y"
+                ? "0190f7b0-7c4b-7e3a-8f12-123456789ac2"
+                : "0190f7b0-7c4b-7e3a-8f12-123456789ac1",
+            slug: cursor === "cGFnZS0y" ? "search-page-two" : "search-page-one",
+            title: cursor === "cGFnZS0y" ? "搜尋第二頁" : "搜尋第一頁",
+            snippet: "Opaque cursor pagination fixture.",
+            issueSlug: "issue-2026-01",
+            publishedAt: cursor === "cGFnZS0y" ? "2026-08-01T00:00:00Z" : "2026-08-02T00:00:00Z"
+          }
+        ]
+      : null
+    const taxonomyItems = taxonomy.includes("team-formosa")
+      ? [
+          {
+            articleId: "0190f7b0-7c4b-7e3a-8f12-123456789ac3",
+            slug: "taxonomy-filter-result",
+            title: "分類篩選結果",
+            snippet: "Stable taxonomy key fixture.",
+            issueSlug: "issue-2026-01",
+            publishedAt: "2026-08-01T00:00:00Z"
+          }
+        ]
+      : null
     const items =
-      normalized.includes("台籃") && normalized.includes("courtside")
+      pagedItems ??
+      taxonomyItems ??
+      (normalized.includes("台籃") && normalized.includes("courtside")
         ? [
             {
               articleId: "0190f7b0-7c4b-7e3a-8f12-123456789abd",
@@ -841,11 +872,14 @@ const apiServer = createServer(async (request, response) => {
               publishedAt: "2026-08-01T00:00:00Z"
             }
           ]
-        : []
+        : [])
     writeJson(response, 200, {
-      query: { raw, normalized, taxonomy: [] },
+      query: { raw, normalized, taxonomy },
       items,
-      page: { nextCursor: null, limit: Number(requestUrl.searchParams.get("limit") ?? 20) }
+      page: {
+        nextCursor: pagedItems && cursor !== "cGFnZS0y" ? "cGFnZS0y" : null,
+        limit: Number(requestUrl.searchParams.get("limit") ?? 20)
+      }
     })
     return
   }

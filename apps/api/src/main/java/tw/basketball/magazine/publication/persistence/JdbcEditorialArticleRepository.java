@@ -188,6 +188,77 @@ public final class JdbcEditorialArticleRepository implements EditorialArticleRep
     }
 
     @Override
+    public List<String> taxonomyKeys(UUID revisionId) {
+        Objects.requireNonNull(revisionId, "revisionId");
+        return jdbcTemplate.query(
+                """
+                SELECT term.term_key
+                FROM article_taxonomy assignment
+                JOIN taxonomy_term term ON term.id = assignment.term_id
+                WHERE assignment.article_revision_id = ?
+                ORDER BY (assignment.relevance = 'PRIMARY') DESC, term.term_key
+                """,
+                (resultSet, rowNumber) -> resultSet.getString("term_key"),
+                revisionId
+        );
+    }
+
+    @Override
+    public void replaceTaxonomy(UUID revisionId, List<String> taxonomyKeys) {
+        Objects.requireNonNull(revisionId, "revisionId");
+        List<String> keys = List.copyOf(Objects.requireNonNull(taxonomyKeys, "taxonomyKeys"));
+        if (keys.size() > 20 || Set.copyOf(keys).size() != keys.size()) {
+            throw EditorialProblemException.invalid(
+                    "/taxonomy",
+                    "TAXONOMY_INVALID",
+                    "taxonomy must contain at most 20 distinct keys"
+            );
+        }
+        Map<String, UUID> activeTerms = new LinkedHashMap<>();
+        if (!keys.isEmpty()) {
+            String placeholders = String.join(
+                    ", ",
+                    java.util.Collections.nCopies(keys.size(), "?")
+            );
+            jdbcTemplate.query(
+                    """
+                    SELECT term_key, id
+                    FROM taxonomy_term
+                    WHERE term_key IN (__PLACEHOLDERS__)
+                      AND status = 'ACTIVE'
+                      AND valid_from <= transaction_timestamp()
+                      AND (valid_until IS NULL OR valid_until > transaction_timestamp())
+                    FOR KEY SHARE
+                    """.replace("__PLACEHOLDERS__", placeholders),
+                    resultSet -> {
+                        while (resultSet.next()) {
+                            activeTerms.put(
+                                    resultSet.getString("term_key"),
+                                    resultSet.getObject("id", UUID.class)
+                            );
+                        }
+                        return null;
+                    },
+                    keys.toArray()
+            );
+            if (activeTerms.size() != keys.size()) {
+                throw EditorialProblemException.invalid(
+                        "/taxonomy",
+                        "TAXONOMY_TERM_NOT_FOUND",
+                        "taxonomy contains an inactive, expired, or unknown key"
+                );
+            }
+        }
+        List<UUID> termIds = keys.stream().map(activeTerms::get).toList();
+        jdbcTemplate.query(
+                "SELECT replace_article_revision_taxonomy(?, ?::jsonb)",
+                resultSet -> null,
+                revisionId,
+                json(termIds)
+        );
+    }
+
+    @Override
     public boolean updateDraft(
             UUID articleId,
             UUID revisionId,
