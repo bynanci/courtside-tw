@@ -187,7 +187,7 @@ public final class ReaderLibraryService {
 
     private ReadingProgress upsert(UUID readerId, Candidate candidate, boolean onlyIfNewer) {
         String updateCondition = onlyIfNewer
-                ? " WHERE EXCLUDED.updated_at > reading_progress.updated_at"
+                ? " WHERE EXCLUDED.updated_at > reading_progress.updated_at\n"
                 : "";
         List<ReadingProgress> updated = jdbcTemplate.query("""
                 INSERT INTO reading_progress (
