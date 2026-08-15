@@ -69,6 +69,7 @@ const knownRightsStatuses = new Set([
   "REVOKED",
   "BLOCKED"
 ])
+const knownRightsChannels = new Set(["PUBLIC_WEB", "READER_LIBRARY", "OFFLINE", "PROVENANCE"])
 
 function deriveRightsDecision(rights: SeedManifest["rightsCases"][number]): string {
   const validFrom = parseStrictUtcTimestamp(rights.validFrom, `rights validFrom for ${rights.id}`)
@@ -85,7 +86,10 @@ function deriveRightsDecision(rights: SeedManifest["rightsCases"][number]): stri
   }
   if (
     !Array.isArray(rights.allowedChannels) ||
-    rights.allowedChannels.some((channel) => typeof channel !== "string")
+    rights.allowedChannels.length === 0 ||
+    rights.allowedChannels.some(
+      (channel) => typeof channel !== "string" || !knownRightsChannels.has(channel)
+    )
   ) {
     throw new Error(`invalid rights channels for ${rights.id}`)
   }

@@ -136,7 +136,7 @@ graph:
       risk: high
       confidence:
         score: 0.92
-        basis: PR #92 diff shows canonical validation, validFrom/validUntil derivation, strict runtime shapes, and copied sort input.
+        basis: PR #92 diff shows canonical validation, validFrom/validUntil derivation, nonempty allowlisted channel validation, strict runtime shapes, and copied sort input.
         evidence_refs: [https://github.com/bynanci/courtside-tw/pull/92]
       budget: { effort_hours: 0.75, tokens: 9000 }
       config:

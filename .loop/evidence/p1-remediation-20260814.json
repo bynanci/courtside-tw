@@ -19,7 +19,8 @@
       "rights decision derived from status, allowedChannels, validFrom, checkedAt, and validUntil",
       "section order checked without mutating manifest.sections",
       "5000-plus media references backed by matching media, variants, frozen envelope, and PUBLIC_WEB rights",
-      "malformed allowedChannels runtime shapes rejected before membership checks"
+      "malformed allowedChannels runtime shapes rejected before membership checks",
+      "empty and unsupported rights channels rejected against the persisted channel allowlist"
     ],
     "pr_92_thread_resolution": "pending_resulting_head_review"
   },
@@ -39,7 +40,7 @@
   "immutable_payload_digests": {
     "algorithm": "sha256",
     "files": {
-      "scripts/content/import-seed.ts": "6469705fa3719c4f8a499cd17beafd46cc3e2e9414f705bf7e5244a4b54faeb0",
+      "scripts/content/import-seed.ts": "7917e211b1887beace7bcc6f80a449ef1ab888ec1488e0839c51266d3911b908",
       "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java": "b0e7bf1f4a66cd3c2fb8dd16106d1485679c68ab9a4284e65eb51b3cee74d36a",
       "apps/api/src/test/resources/fixtures/first-issue/manifest.json": "6ba9f64d8cd41d4511b824a3d9d3771d455823fd1984607f3a55248c4b299e21"
     }
