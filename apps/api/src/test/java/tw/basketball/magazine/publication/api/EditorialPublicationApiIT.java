@@ -68,6 +68,79 @@ final class EditorialPublicationApiIT extends EditorialApiIntegrationTestSupport
     }
 
     @Test
+    void editorialWorkflowAssignsAndClearsTaxonomyOnTheActiveRevision() throws Exception {
+        jdbcTemplate.update("""
+                INSERT INTO taxonomy_term (
+                    term_key, kind, display_name, locale, valid_from, status
+                ) VALUES ('topic-playoffs', 'TOPIC', '季後賽', 'zh-TW',
+                    transaction_timestamp() - interval '1 day', 'ACTIVE')
+                """);
+        Authentication editor = actor("editor-taxonomy", RoleCode.EDITOR);
+        MvcResult created = mockMvc.perform(post("/api/v1/editor/articles")
+                        .principal(editor)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Idempotency-Key", "create-taxonomy-article")
+                        .content("""
+                                {
+                                  "title":"Playoff taxonomy",
+                                  "slug":"playoff-taxonomy",
+                                  "taxonomy":["topic-playoffs"],
+                                  "content":{"schemaVersion":1,"documentId":"00000000-0000-7000-8000-000000000041","blocks":[{"id":"00000000-0000-4000-8000-000000000141","type":"paragraph","version":1,"payload":{"content":[{"kind":"text","text":"Playoff taxonomy fixture"}]}}]}
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.taxonomy[0]").value("topic-playoffs"))
+                .andReturn();
+        CreatedArticle article = readCreatedArticle(created.getResponse().getContentAsString());
+
+        assertEquals(1, jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM article_taxonomy WHERE article_revision_id = ?",
+                Integer.class,
+                article.revisionId()
+        ));
+
+        mockMvc.perform(patch("/api/v1/editor/articles")
+                        .principal(editor)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Idempotency-Key", "clear-taxonomy-article")
+                        .header(HttpHeaders.IF_MATCH, "\"1\"")
+                        .content("""
+                                {"articleId":"%s","changes":{"taxonomy":[]}}
+                                """.formatted(article.articleId())))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.taxonomy").isEmpty());
+
+        assertEquals(0, jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM article_taxonomy WHERE article_revision_id = ?",
+                Integer.class,
+                article.revisionId()
+        ));
+    }
+
+    @Test
+    void unknownTaxonomyKeyRollsBackArticleCreation() throws Exception {
+        mockMvc.perform(post("/api/v1/editor/articles")
+                        .principal(actor("editor-unknown-taxonomy", RoleCode.EDITOR))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Idempotency-Key", "create-unknown-taxonomy")
+                        .content("""
+                                {
+                                  "title":"Unknown taxonomy",
+                                  "slug":"unknown-taxonomy",
+                                  "taxonomy":["topic-does-not-exist"],
+                                  "content":{"schemaVersion":1,"documentId":"00000000-0000-7000-8000-000000000042","blocks":[{"id":"00000000-0000-4000-8000-000000000142","type":"paragraph","version":1,"payload":{"content":[{"kind":"text","text":"Unknown taxonomy fixture"}]}}]}
+                                }
+                                """))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].code").value("TAXONOMY_TERM_NOT_FOUND"));
+
+        assertEquals(0, jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM article WHERE slug = 'unknown-taxonomy'",
+                Integer.class
+        ));
+    }
+
+    @Test
     void roleBoundariesRejectEditorApprovalAndPublisherSubmission() throws Exception {
         var editor = actor("editor-2", RoleCode.EDITOR);
         var publisher = actor("publisher-1", RoleCode.PUBLISHER);

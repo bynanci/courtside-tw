@@ -80,6 +80,7 @@ public abstract class PublicIssueApiIntegrationTestSupport {
     protected void createControllerAndCleanPublicationData() {
         jdbcTemplate.update("""
                 TRUNCATE TABLE search_document, article_taxonomy, taxonomy_alias, taxonomy_term,
+                    audit_event,
                     publication_impact_link, publication_snapshot, publication_review,
                     publication_rights_reference, publication_job, publication_idempotency,
                     article_contributor, contributor, issue_article, issue_section, article_revision, article,

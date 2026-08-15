@@ -2,6 +2,7 @@ package tw.basketball.magazine.taxonomy.api;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -9,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -24,7 +26,10 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import tw.basketball.magazine.audit.JdbcAuditWriter;
 import tw.basketball.magazine.publication.PublicIssueApiIntegrationTestSupport;
+import tw.basketball.magazine.shared.ActorContext;
+import tw.basketball.magazine.shared.RequestId;
 import tw.basketball.magazine.shared.RoleCode;
 import tw.basketball.magazine.taxonomy.application.TaxonomyService;
 
@@ -35,7 +40,8 @@ final class EditorialTaxonomyApiIT extends PublicIssueApiIntegrationTestSupport 
     void createTaxonomyController() {
         TaxonomyService service = new TaxonomyService(
                 jdbcTemplate,
-                new DataSourceTransactionManager(jdbcTemplate.getDataSource())
+                new DataSourceTransactionManager(jdbcTemplate.getDataSource()),
+                new JdbcAuditWriter(jdbcTemplate, JSON)
         );
         mockMvc = MockMvcBuilders.standaloneSetup(new EditorialTaxonomyController(service))
                 .setControllerAdvice(new TaxonomyApiExceptionHandler())
@@ -121,6 +127,37 @@ final class EditorialTaxonomyApiIT extends PublicIssueApiIntegrationTestSupport 
                         firstId
                 )
         );
+        assertEquals(
+                List.of(
+                        "TAXONOMY_TERM_CREATED",
+                        "TAXONOMY_TERM_UPDATED",
+                        "TAXONOMY_ALIAS_CREATED"
+                ),
+                jdbcTemplate.queryForList(
+                        """
+                        SELECT action
+                        FROM audit_event
+                        WHERE target_type = 'TAXONOMY_TERM' AND target_id = ?
+                        ORDER BY occurred_at, id
+                        """,
+                        String.class,
+                        firstId
+                )
+        );
+        assertEquals(
+                3,
+                jdbcTemplate.queryForObject(
+                        """
+                        SELECT count(*)
+                        FROM audit_event
+                        WHERE target_type = 'TAXONOMY_TERM'
+                          AND target_id = ?
+                          AND actor_subject = 'taxonomy-test'
+                        """,
+                        Integer.class,
+                        firstId
+                )
+        );
     }
 
     @Test
@@ -168,6 +205,74 @@ final class EditorialTaxonomyApiIT extends PublicIssueApiIntegrationTestSupport 
                                 """))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors[0].code").value("taxonomy_key_invalid"));
+    }
+
+    @Test
+    void emptyPatchIsRejectedWithoutAdvancingTheTermVersion() throws Exception {
+        MvcResult created = mockMvc.perform(post("/api/v1/editor/taxonomy")
+                        .principal(actor(RoleCode.EDITOR))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "key":"topic-empty-patch",
+                                  "kind":"TOPIC",
+                                  "displayName":"Empty patch"
+                                }
+                                """))
+                .andExpect(status().isCreated())
+                .andReturn();
+        UUID termId = UUID.fromString(JSON.readTree(created.getResponse().getContentAsString())
+                .path("id").asString());
+
+        mockMvc.perform(patch("/api/v1/editor/taxonomy/{termId}", termId)
+                        .principal(actor(RoleCode.EDITOR))
+                        .header(HttpHeaders.IF_MATCH, "\"0\"")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].code").value("taxonomy_patch_empty"));
+
+        assertEquals(0L, jdbcTemplate.queryForObject(
+                "SELECT version FROM taxonomy_term WHERE id = ?",
+                Long.class,
+                termId
+        ));
+    }
+
+    @Test
+    void auditFailureRollsBackTheTaxonomyMutation() {
+        TaxonomyService service = new TaxonomyService(
+                jdbcTemplate,
+                new DataSourceTransactionManager(jdbcTemplate.getDataSource()),
+                ignored -> {
+                    throw new IllegalStateException("audit unavailable");
+                }
+        );
+        ActorContext editor = ActorContext.user(
+                "taxonomy-rollback-test",
+                Set.of(RoleCode.EDITOR),
+                RequestId.of("req-taxonomy-rollback")
+        );
+
+        assertThrows(
+                IllegalStateException.class,
+                () -> service.create(
+                        editor,
+                        new TaxonomyService.CreateTerm(
+                                "topic-audit-rollback",
+                                "TOPIC",
+                                "Audit rollback",
+                                "en",
+                                null,
+                                null
+                        )
+                )
+        );
+
+        assertEquals(0, jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM taxonomy_term WHERE term_key = 'topic-audit-rollback'",
+                Integer.class
+        ));
     }
 
     private static Authentication actor(RoleCode role) {

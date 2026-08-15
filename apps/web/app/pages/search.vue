@@ -10,11 +10,10 @@ const route = useRoute()
 const config = useRuntimeConfig()
 
 const routeQuery = computed(() => boundedQuery(route.query.q))
-const routeType = computed<"article" | "issue">(() =>
-  route.query.type === "issue" ? "issue" : "article"
-)
+const routeTaxonomy = computed(() => boundedTaxonomy(route.query.taxonomy))
+const routeCursor = computed(() => boundedCursor(route.query.cursor))
 const inputQuery = ref(routeQuery.value)
-const inputType = ref<"article" | "issue">(routeType.value)
+const inputTaxonomy = ref(routeTaxonomy.value.join(", "))
 let activeRequest: AbortController | null = null
 
 const emptyPage = (raw: string): PublicSearchPage => ({
@@ -31,14 +30,15 @@ const {
   "public-search",
   async () => {
     const query = routeQuery.value
-    if (!query) return emptyPage(query)
+    if (!query && routeTaxonomy.value.length === 0) return emptyPage(query)
     activeRequest?.abort()
     const request = new AbortController()
     activeRequest = request
     try {
       return await fetchPublicSearch(config.public.apiBaseUrl, query, {
+        cursor: routeCursor.value || undefined,
         limit: 20,
-        type: routeType.value,
+        taxonomy: routeTaxonomy.value,
         signal: request.signal
       })
     } finally {
@@ -46,24 +46,37 @@ const {
     }
   },
   {
-    watch: [routeQuery, routeType],
+    watch: [routeQuery, routeTaxonomy, routeCursor],
     dedupe: "cancel"
   }
 )
 
-watch([routeQuery, routeType], ([query, type]) => {
+watch([routeQuery, routeTaxonomy], ([query, taxonomy]) => {
   inputQuery.value = query
-  inputType.value = type
+  inputTaxonomy.value = taxonomy.join(", ")
 })
 onBeforeUnmount(() => activeRequest?.abort())
 
-const hasSearch = computed(() => routeQuery.value.length > 0)
+const hasSearch = computed(() => routeQuery.value.length > 0 || routeTaxonomy.value.length > 0)
 const normalizedQuery = computed(() => results.value?.query.normalized ?? "")
 const canonical = computed(() => {
   const url = new URL("/search", config.public.siteUrl)
   if (routeQuery.value) url.searchParams.set("q", routeQuery.value)
-  if (routeType.value !== "article") url.searchParams.set("type", routeType.value)
+  for (const key of routeTaxonomy.value) url.searchParams.append("taxonomy", key)
+  if (routeCursor.value) url.searchParams.set("cursor", routeCursor.value)
   return canonicalUrl(config.public.siteUrl, url.pathname + url.search)
+})
+const nextPageTo = computed(() => {
+  const cursor = results.value?.page.nextCursor
+  if (!cursor) return null
+  return {
+    path: "/search",
+    query: {
+      ...(routeQuery.value ? { q: routeQuery.value } : {}),
+      ...(routeTaxonomy.value.length ? { taxonomy: routeTaxonomy.value } : {}),
+      cursor
+    }
+  }
 })
 
 useHead(() => ({
@@ -71,7 +84,7 @@ useHead(() => ({
   meta: [
     {
       name: "description",
-      content: "搜尋已發布的 Courtside TW 台灣籃球文章與期數。"
+      content: "搜尋已發布的 Courtside TW 台灣籃球文章。"
     }
   ],
   link: [{ rel: "canonical", href: canonical.value }]
@@ -79,17 +92,31 @@ useHead(() => ({
 
 async function submitSearch() {
   const query = inputQuery.value.trim().slice(0, 200)
+  const taxonomy = boundedTaxonomy(inputTaxonomy.value)
   await navigateTo({
     path: "/search",
     query: {
       ...(query ? { q: query } : {}),
-      ...(inputType.value === "issue" ? { type: "issue" } : {})
+      ...(taxonomy.length ? { taxonomy } : {})
     }
   })
 }
 
 function boundedQuery(value: unknown): string {
   return typeof value === "string" ? value.slice(0, 200) : ""
+}
+
+function boundedCursor(value: unknown): string {
+  return typeof value === "string" && /^[A-Za-z0-9_-]{1,512}$/.test(value) ? value : ""
+}
+
+function boundedTaxonomy(value: unknown): string[] {
+  const values = Array.isArray(value) ? value : [value]
+  const keys = values
+    .flatMap((candidate) => (typeof candidate === "string" ? candidate.split(",") : []))
+    .map((candidate) => candidate.trim())
+    .filter((candidate) => /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(candidate) && candidate.length <= 256)
+  return [...new Set(keys)].slice(0, 20)
 }
 </script>
 
@@ -126,11 +153,17 @@ function boundedQuery(value: unknown): string {
           />
         </div>
         <div class="search-form__filter">
-          <label for="public-search-type">內容類型</label>
-          <select id="public-search-type" v-model="inputType" name="type">
-            <option value="article">文章</option>
-            <option value="issue">期數</option>
-          </select>
+          <label for="public-search-taxonomy">分類（可選）</label>
+          <input
+            id="public-search-taxonomy"
+            v-model="inputTaxonomy"
+            data-testid="search-taxonomy"
+            name="taxonomy"
+            type="text"
+            maxlength="1024"
+            autocomplete="off"
+            placeholder="例如：team-formosa, topic-playoffs"
+          />
         </div>
         <button data-testid="search-submit" type="submit">搜尋</button>
       </form>
@@ -140,17 +173,27 @@ function boundedQuery(value: unknown): string {
           「{{ routeQuery }}」找到 {{ results?.items.length ?? 0 }} 筆公開結果
         </p>
 
-        <ol v-if="results?.items.length" class="search-result-list">
-          <li v-for="result in results.items" :key="result.articleId" data-testid="search-result">
-            <article>
-              <p class="eyebrow">{{ result.issueSlug || "Courtside TW" }}</p>
-              <h2>
-                <NuxtLink :to="`/articles/${result.slug}`">{{ result.title }}</NuxtLink>
-              </h2>
-              <p>{{ result.snippet }}</p>
-            </article>
-          </li>
-        </ol>
+        <div v-if="results?.items.length">
+          <ol class="search-result-list">
+            <li v-for="result in results.items" :key="result.articleId" data-testid="search-result">
+              <article>
+                <p class="eyebrow">{{ result.issueSlug || "Courtside TW" }}</p>
+                <h2>
+                  <NuxtLink :to="`/articles/${result.slug}`">{{ result.title }}</NuxtLink>
+                </h2>
+                <p>{{ result.snippet }}</p>
+              </article>
+            </li>
+          </ol>
+          <NuxtLink
+            v-if="nextPageTo"
+            :to="nextPageTo"
+            class="search-next"
+            data-testid="search-next"
+          >
+            下一頁
+          </NuxtLink>
+        </div>
         <ReadingState
           v-else-if="error"
           tone="error"

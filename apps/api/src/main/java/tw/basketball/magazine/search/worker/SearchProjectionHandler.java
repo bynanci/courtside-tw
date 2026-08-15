@@ -140,8 +140,9 @@ public final class SearchProjectionHandler implements SearchProjection {
                     FROM issue_article ia
                     JOIN publication_issue pi ON pi.id = ia.issue_id
                     WHERE ia.article_id = a.id
-                      AND pi.state = 'PUBLISHED'
-                    ORDER BY pi.published_at DESC, pi.id DESC
+                    ORDER BY (pi.state = 'PUBLISHED') DESC,
+                             pi.published_at DESC NULLS LAST,
+                             pi.id DESC
                     LIMIT 1
                 ) issue_link ON true
                 LEFT JOIN LATERAL (
