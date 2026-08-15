@@ -16,9 +16,9 @@ import tw.basketball.magazine.publication.PublicIssueApiIntegrationTestSupport;
 /**
  * T071 RED contract for the public offline manifest boundary.
  *
- * The implementation is intentionally absent at this stage. These tests must
- * fail with a missing endpoint before T072 adds the manifest service and
- * controller.
+ * T071 remains the executable contract boundary for the T072 manifest
+ * service/controller implementation; it must fail closed for non-published or
+ * rights-ineligible data while exposing only bounded versioned metadata.
  */
 final class OfflineManifestApiIT extends PublicIssueApiIntegrationTestSupport {
     @Test
@@ -39,9 +39,16 @@ final class OfflineManifestApiIT extends PublicIssueApiIntegrationTestSupport {
                 .andExpect(jsonPath("$.manifestVersion").value(1))
                 .andExpect(jsonPath("$.checksum").value(Matchers.matchesPattern("[0-9a-f]{64}")))
                 .andExpect(jsonPath("$.expiresAt").exists())
+                .andExpect(jsonPath("$.assetBytes").value(512))
+                .andExpect(jsonPath("$.assets[0].byteSize").value(512))
+                .andExpect(jsonPath("$.assets[0].checksum").value(Matchers.matchesPattern("[0-9a-f]{64}")))
+                .andExpect(jsonPath("$.assets[0].expiresAt").exists())
                 .andExpect(jsonPath("$.articles[0].slug").value("opening-night"))
                 .andExpect(jsonPath("$.articles[0].title").value("Article opening-night"))
-                .andExpect(jsonPath("$.articles[0].position").value(1));
+                .andExpect(jsonPath("$.articles[0].position").value(1))
+                .andExpect(jsonPath("$.articles[0].revisionId").isNotEmpty())
+                .andExpect(jsonPath("$.articles[0].revisionNumber").value(1))
+                .andExpect(jsonPath("$.articles[0].checksum").value(Matchers.matchesPattern("[0-9a-f]{64}")));
     }
 
     @Test
@@ -51,7 +58,8 @@ final class OfflineManifestApiIT extends PublicIssueApiIntegrationTestSupport {
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.version").value(Matchers.greaterThanOrEqualTo(1)))
                 .andExpect(jsonPath("$.generatedAt").exists())
-                .andExpect(jsonPath("$.withdrawals").isArray());
+                .andExpect(jsonPath("$.withdrawals").isArray())
+                .andExpect(jsonPath("$.checksum").value(Matchers.matchesPattern("[0-9a-f]{64}")));
     }
 
     @Test

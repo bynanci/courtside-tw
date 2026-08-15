@@ -1,7 +1,7 @@
 {
   "schema": "courtside-tw/task-evidence/v1",
   "task": "T071",
-  "status": "RED_CONTRACT_AUTHORED",
+  "status": "RED_CONTRACT_EVIDENCED",
   "recorded_at": "2026-08-15T00:00:00Z",
   "baseline_main": "73bbb0851d90a108f6a8c9d93c284670afbfd152",
   "tests_first_commit": "fe7f0ffe6fc1c4ff8c93936ba81968b229183434",
@@ -58,11 +58,11 @@
   "proof": {
     "git_diff_check": "PASS",
     "typescript_syntax": "PASS via node --experimental-strip-types --check",
-    "java_runtime_red": "PENDING: local worktree has no Gradle executable; CI/Testcontainers replay is required",
-    "browser_runtime_red": "PENDING: repo-pinned pnpm/node are unavailable locally and the staged worktree has no package install",
+    "java_runtime_red": "PASS: CI #562 job 95023797686 failed only on the two new OfflineManifestApiIT assertions for the absent T072 seam",
+    "browser_runtime_red": "PASS: CI #562 browser job 95023941694 observed the five new US6 contracts failing at absent offline controls; one unrelated US2 baseline failure was excluded",
     "ci_format_guard": "FAIL on CI #559 job Frontend and contract verification: Prettier rejected apps/web/tests/e2e/us6-offline-issue.spec.ts; fixed in the follow-up head before targeted RED replay",
     "source_readback": "PASS: no OfflineManifestController, OfflineManifestService, OfflineIssueManager, WithdrawalReconciler or offline UI test IDs exist on baseline main",
-    "exact_head_ci_security": "PENDING: T071 is tests-first only; no implementation head is eligible for protected merge"
+    "exact_head_ci_security": "RED receipt: exact head 8e5c94c676ce4661466831a77eae8cafb1df6176, CI #562 and Security #563; Security failures were the same attributable API RED, with no vulnerability finding"
   },
   "scope_guard": {
     "production_code_changed": false,
@@ -72,5 +72,5 @@
     "repository_protection_modified": false,
     "web3_or_unrelated_work_started": false
   },
-  "next_action": "Re-run exact-head CI/Security after the formatting fix, then preserve only an attributable API/browser RED receipt before dispatching T072; do not mark T071 complete yet."
+  "next_action": "Implement only T072, publish it on the PR branch, and rerun exact-head CI/Security; keep T071 unchecked until its contract and the downstream US6 implementation proof are complete."
 }

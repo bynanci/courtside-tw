@@ -1,0 +1,61 @@
+{
+  "schema": "courtside-tw/task-evidence/v1",
+  "task": "T072",
+  "status": "IMPLEMENTATION_STARTED",
+  "recorded_at": "2026-08-15T15:00:00Z",
+  "baseline_main": "73bbb0851d90a108f6a8c9d93c284670afbfd152",
+  "parent_exact_head": "8e5c94c676ce4661466831a77eae8cafb1df6176",
+  "changed_files": [
+    "apps/api/src/main/java/tw/basketball/magazine/publication/api/OfflineManifestController.java",
+    "apps/api/src/main/java/tw/basketball/magazine/publication/application/OfflineManifestService.java",
+    "apps/api/src/test/java/tw/basketball/magazine/publication/api/OfflineManifestApiIT.java",
+    "contracts/openapi.yaml",
+    ".loop/evidence/t072-us6-offline-manifest-20260815.json",
+    ".loop/t071-us6-offline-graphify-loop.yaml",
+    ".loop/t071-us6-offline-ledger.json",
+    ".loop/memory/t071-us6-offline.json"
+  ],
+  "acceptance_matrix": [
+    {
+      "contract": "published issue manifest",
+      "seam": "OfflineManifestController GET /api/v1/public/offline/issues/{issueSlug}/manifest",
+      "fixture": "published issue with published article revision, cover variant and valid PUBLIC_WEB rights",
+      "pass_assertion": "200 response is bounded/versioned, includes article revision ID/number/checksum, asset bytes/checksum and rights expiry"
+    },
+    {
+      "contract": "rights and publication fail closed",
+      "seam": "OfflineManifestService ISSUE_SQL and ASSET_SQL",
+      "fixture": "draft, withdrawn and reader-only rights fixtures",
+      "pass_assertion": "404 with no manifest metadata; valid_from/valid_until and status/channel predicates are enforced at query time"
+    },
+    {
+      "contract": "withdrawal manifest",
+      "seam": "OfflineManifestController GET /api/v1/public/withdrawals",
+      "fixture": "issue/article states and revision states including withdrawn/archived values",
+      "pass_assertion": "200 versioned UUID list with generatedAt and SHA-256 checksum"
+    },
+    {
+      "contract": "conditional cache boundary",
+      "seam": "OfflineManifestController ETag/cache headers",
+      "fixture": "If-None-Match matching the manifest checksum",
+      "pass_assertion": "304 without body; 200 responses are public, short-lived and must-revalidate"
+    }
+  ],
+  "proof": {
+    "local_diff_check": "PASS",
+    "openapi_validation": "PENDING: local yaml package is unavailable; repository CI must run scripts/validate-openapi.mjs",
+    "java_compile_and_test": "PENDING: pinned CI/Testcontainers",
+    "exact_head_ci": "PENDING: publish implementation commit",
+    "exact_head_security": "PENDING: publish implementation commit"
+  },
+  "scope_guard": {
+    "T071_contracts_preserved": true,
+    "T073_plus_changed": false,
+    "tasks_checkbox_changed": false,
+    "issue_89_changed": false,
+    "pr_92_modified": false,
+    "repository_protection_modified": false,
+    "web3_or_unrelated_work_started": false
+  },
+  "next_action": "Create one non-force implementation commit on PR #100 from parent 8e5c94c676ce4661466831a77eae8cafb1df6176, then rerun and read back exact-head CI/Security before any checkbox change."
+}

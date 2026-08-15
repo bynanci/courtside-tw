@@ -3,14 +3,14 @@
   "lane": "t071-us6-offline-tests-first",
   "version": 1,
   "recorded_at": "2026-08-15T00:00:00Z",
-  "decision": "Author the bounded T071 RED contracts and stop before runtime implementation.",
-  "terminal_state": "needs_next_action",
+  "decision": "Preserve the T071 RED receipt and dispatch only the bounded T072 manifest implementation.",
+  "terminal_state": "needs_runtime_verification",
   "scope": {
     "issue": 89,
-    "tasks": ["T071"],
+    "tasks": ["T071", "T072"],
     "baseline_main": "73bbb0851d90a108f6a8c9d93c284670afbfd152",
     "tests_first_commit": "fe7f0ffe6fc1c4ff8c93936ba81968b229183434",
-    "excluded": ["T072+", "Web3", "PR #92", "ruleset mutation", "unrelated task state", "human research closure"]
+    "excluded": ["T073+", "Web3", "PR #92", "ruleset mutation", "unrelated task state", "human research closure"]
   },
   "events": [
     {
@@ -54,24 +54,63 @@
       "failure_signature": "prettier_rejected_apps_web_tests_e2e_us6_offline_issue_spec_ts",
       "attribution": "attributable_to_tests_first_file_formatting; not an API/browser behavior RED",
       "disposition": "format-only follow-up head prepared; re-run exact-head CI/Security before T072"
+    },
+    {
+      "sequence": 4,
+      "type": "ci_attributable_red_replayed",
+      "result": "red_receipt_proven",
+      "source_head": "8e5c94c676ce4661466831a77eae8cafb1df6176",
+      "ci_run": 562,
+      "security_run": 563,
+      "ci_jobs": [95023797686, 95023941694],
+      "security_jobs": [95023799329, 95023799351, 95023799390, 95023799394, 95023799464, 95023814036, 95023814064, 95023814106],
+      "failure_signature": "OfflineManifestApiIT_missing_public_manifest_seam_and_five_offline_ui_controls",
+      "attribution": "attributable_to_T072_and_downstream_US6_seams; unrelated_us2_browser_failure_excluded; Security reported no vulnerability finding",
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/pull/100#issuecomment-5302666548",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31889590750",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31889590774"
+      ]
+    },
+    {
+      "sequence": 5,
+      "type": "t072_implementation_started",
+      "result": "bounded_production_seam_added_pending_ci",
+      "changed_files": [
+        "apps/api/src/main/java/tw/basketball/magazine/publication/api/OfflineManifestController.java",
+        "apps/api/src/main/java/tw/basketball/magazine/publication/application/OfflineManifestService.java",
+        "contracts/openapi.yaml",
+        "apps/api/src/test/java/tw/basketball/magazine/publication/api/OfflineManifestApiIT.java"
+      ],
+      "local_proof": [
+        "git diff --check passed",
+        "OpenAPI validator could not run because local yaml dependency is unavailable",
+        "Java compile remains pending pinned CI/Testcontainers"
+      ],
+      "scope_guard": [
+        "T073-T076 untouched",
+        "PR #92 untouched",
+        "Web3 and repository protection untouched",
+        "issue #89 human research state preserved"
+      ]
     }
   ],
   "graph_delta": {
     "opened": ["T071", "api_red", "browser_red"],
-    "ready_frontier": ["targeted_runtime_red_replay"],
-    "blocked": ["T072", "T073", "T074", "T075", "T076"],
+    "ready_frontier": ["T072_exact_head_ci_security"],
+    "blocked": ["T073", "T074", "T075", "T076"],
     "preserved": ["issue #89 human research items", "T071 unchecked", "PR #92 and repository protection untouched"]
   },
   "proof_coverage": {
     "api_contracts": "authored",
     "browser_contracts": "5/5 scenarios authored",
-    "runtime_red": "pending after format guard fix",
-    "passing_implementation": "0/0; not started"
+    "runtime_red": "proven on exact head 8e5c94c676ce4661466831a77eae8cafb1df6176 by CI #562/Security #563",
+    "passing_implementation": "T072 implementation started; exact-head proof pending"
   },
   "min_cut": [
     "pinned CI toolchain execution of OfflineManifestApiIT",
     "pinned Playwright execution of us6-offline-issue.spec.ts",
-    "attributable RED failure before T072 implementation"
+    "T072 exact-head Java/API proof and contract validation"
   ],
-  "next_action": "Execute exact-head CI/Security again, then preserve attributable API/browser RED replay; only then begin T072."
+  "next_action": "Publish T072 against PR #100 current head, rerun exact-head CI/Security, and stop at the first attributable downstream US6 blocker; do not start T073+."
 }

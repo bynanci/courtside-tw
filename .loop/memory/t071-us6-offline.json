@@ -1,14 +1,14 @@
 {
   "schema": "courtside-tw/loop-memory/v1",
   "lane": "t071-us6-offline-tests-first",
-  "updated_at": "2026-08-15T00:00:00Z",
-  "summary": "T071 now has checked-in API and browser RED contracts for bounded offline manifests, failure-safe installation and withdrawal reconciliation. Runtime replay is still pending because the scratch environment lacks the pinned Gradle and pnpm/node toolchains.",
+  "updated_at": "2026-08-15T15:00:00Z",
+  "summary": "T071 now has an authoritative attributable RED receipt on exact head 8e5c94c676ce4661466831a77eae8cafb1df6176. T072 implementation has started with a rights-checked versioned issue/withdrawal manifest service and public controller; runtime proof is pending on the next exact head.",
   "decisions": [
     "Keep offline manifests and withdrawals public and unauthenticated, matching contracts/openapi.yaml.",
     "Keep draft, withdrawn and rights-ineligible issues fail-closed without metadata leakage.",
     "Do not mark partial downloads installed; checksum and quota failures must leave no installed state.",
     "Require a newer complete manifest to replace an installed version atomically.",
-    "Preserve issue #89 human research items and do not start T072+ until T071 RED execution is evidenced."
+    "Preserve issue #89 human research items; T072 is the only implementation frontier after the T071 RED receipt."
   ],
   "source_refs": [
     "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
@@ -23,14 +23,14 @@
     "tests_first_commit": "fe7f0ffe6fc1c4ff8c93936ba81968b229183434",
     "contracts": "API manifest/withdrawal and five browser failure-injection scenarios authored",
     "static_checks": "diff check and TypeScript syntax pass",
-    "runtime": "CI #559 reached the repository format guard before runtime replay; formatting was fixed and exact-head CI/Security must be rerun"
+    "runtime": "CI #562/Security #563 on exact head 8e5c94c676ce4661466831a77eae8cafb1df6176 produced attributable API/browser RED; the unrelated US2 browser failure and no-vulnerability Security result are not T071 blockers"
   },
   "preserved_boundaries": [
     "T071 remains unchecked.",
-    "T072-T076 are not implemented.",
+    "T072 is in progress; T073-T076 are not implemented.",
     "No Web3, wallet, token, provenance or unrelated work was started.",
     "PR #92 and repository rulesets were not modified.",
     "Issue #89 remains open for human research completion."
   ],
-  "next_action": "Rerun exact-head CI/Security after the format-only fix, capture attributable API/browser RED, then dispatch only T072."
+  "next_action": "Publish T072 against the current PR head, read back the new exact head, and rerun CI/Security; do not start T073+ until T072 API evidence passes."
 }
