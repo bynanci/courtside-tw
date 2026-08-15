@@ -8,10 +8,13 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.time.Instant;
 
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import tw.basketball.magazine.publication.PublicIssueApiIntegrationTestSupport;
+import tw.basketball.magazine.publication.application.OfflineManifestService;
 
 /**
  * T071 RED contract for the public offline manifest boundary.
@@ -21,6 +24,13 @@ import tw.basketball.magazine.publication.PublicIssueApiIntegrationTestSupport;
  * rights-ineligible data while exposing only bounded versioned metadata.
  */
 final class OfflineManifestApiIT extends PublicIssueApiIntegrationTestSupport {
+    @BeforeEach
+    void createOfflineManifestController() {
+        mockMvc = MockMvcBuilders.standaloneSetup(
+                new OfflineManifestController(new OfflineManifestService(jdbcTemplate))
+        ).build();
+    }
+
     @Test
     void returnsABoundedVersionedManifestForAPublishedIssue() throws Exception {
         IssueFixture issue = createIssue(
