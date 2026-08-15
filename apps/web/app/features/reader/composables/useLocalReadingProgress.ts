@@ -55,6 +55,15 @@ type StoredReadingProgress = ReadingProgressLocation & {
   articleId: string
   revisionId: string
   articleSlug: string
+  updatedAt?: string
+}
+
+export type MergeableLocalProgress = {
+  articleId: string
+  revisionId: string
+  blockId: string
+  percent: number
+  updatedAt: string
 }
 
 type ResumePrompt = {
@@ -104,6 +113,55 @@ export function progressSlugKey(articleSlug: string): string {
 
 export function legacyProgressKey(articleSlug: string, revisionNumber: number): string {
   return LEGACY_STORAGE_PREFIX + articleSlug + ":revision-" + String(revisionNumber)
+}
+
+/** Return only canonical, timestamped records selected by the per-article index. */
+export function readMergeableLocalProgress(storage: ProgressStorage): MergeableLocalProgress[] {
+  if (typeof storage.length !== "number" || typeof storage.key !== "function") {
+    return []
+  }
+  const indexPrefix = STORAGE_PREFIX + "index:"
+  const records: MergeableLocalProgress[] = []
+  const seen = new Set<string>()
+  try {
+    const keys = Array.from({ length: storage.length }, (_, index) => storage.key?.(index) ?? null)
+    for (const indexKey of keys) {
+      if (!indexKey?.startsWith(indexPrefix)) continue
+      const articleId = decodeStorageSegment(indexKey.slice(indexPrefix.length))
+      if (!articleId || seen.has(articleId) || !validIdentifier(articleId)) continue
+      const recordKey = storage.getItem(indexKey)
+      if (!recordKey || !isRecordKeyForArticle(recordKey, articleId)) continue
+      const raw = storage.getItem(recordKey)
+      const stored = raw ? parseStoredProgress(raw) : null
+      if (!stored || stored.articleId !== articleId || !validTimestamp(stored.updatedAt)) continue
+      seen.add(articleId)
+      records.push({
+        articleId,
+        revisionId: stored.revisionId,
+        blockId: stored.blockId,
+        percent: Math.round(stored.documentProgress * 10_000) / 100,
+        updatedAt: stored.updatedAt
+      })
+    }
+  } catch {
+    return []
+  }
+  return records
+}
+
+/** Remove every owned local/legacy progress key after verified account erasure. */
+export function clearAllLocalReadingProgress(storage: ProgressStorage): void {
+  if (typeof storage.length !== "number" || typeof storage.key !== "function") return
+  try {
+    const keys = Array.from({ length: storage.length }, (_, index) => storage.key?.(index) ?? null)
+    for (const key of keys) {
+      if (key?.startsWith(STORAGE_PREFIX) || key?.startsWith(LEGACY_STORAGE_PREFIX)) {
+        storage.removeItem(key)
+      }
+    }
+  } catch {
+    // Erasure remains complete server-side even if browser storage is unavailable.
+  }
 }
 
 export function selectViewportProgress(
@@ -238,6 +296,7 @@ export function useLocalReadingProgress() {
       articleId: context.articleId,
       revisionId: context.revisionId,
       articleSlug: context.articleSlug,
+      updatedAt: new Date().toISOString(),
       ...location
     })
   }
@@ -351,6 +410,7 @@ export function useLocalReadingProgress() {
         articleId: context.articleId,
         revisionId: context.revisionId,
         articleSlug: context.articleSlug,
+        updatedAt: new Date().toISOString(),
         blockId: block.id,
         blockLabel: block.label,
         offset: value.offset,
@@ -797,7 +857,8 @@ function parseStoredProgress(value: string): StoredReadingProgress | null {
       !validIdentifier(parsed.blockId) ||
       !validLabel(parsed.blockLabel) ||
       !isUnitInterval(parsed.offset) ||
-      !isUnitInterval(parsed.documentProgress)
+      !isUnitInterval(parsed.documentProgress) ||
+      (parsed.updatedAt !== undefined && !validTimestamp(parsed.updatedAt))
     ) {
       return null
     }
@@ -904,6 +965,15 @@ function validLabel(value: unknown): value is string {
 
 function isUnitInterval(value: unknown): value is number {
   return typeof value === "number" && Number.isFinite(value) && value >= 0 && value <= 1
+}
+
+function validTimestamp(value: unknown): value is string {
+  return (
+    typeof value === "string" &&
+    value.length <= 64 &&
+    Number.isFinite(Date.parse(value)) &&
+    !Array.from(value).some(containsControlCharacter)
+  )
 }
 
 function isResumeRange(value: number): boolean {

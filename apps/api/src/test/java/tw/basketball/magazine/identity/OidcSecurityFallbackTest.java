@@ -1,5 +1,6 @@
 package tw.basketball.magazine.identity;
 
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -45,6 +46,17 @@ final class OidcSecurityFallbackTest {
                 .andExpect(status().isUnauthorized())
                 .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
                 .andExpect(header().string("X-Request-Id", "req-fallback"))
+                .andExpect(jsonPath("$.code").value("AUTHENTICATION_REQUIRED"));
+    }
+
+    @Test
+    void protectsTheExactAccountDeletionPathWithoutIssuer() throws Exception {
+        mockMvc.perform(delete("/api/v1/me")
+                        .header("Authorization", "Bearer fixture")
+                        .header("X-Request-Id", "req-delete-fallback"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().contentTypeCompatibleWith("application/problem+json"))
+                .andExpect(header().string("X-Request-Id", "req-delete-fallback"))
                 .andExpect(jsonPath("$.code").value("AUTHENTICATION_REQUIRED"));
     }
 }

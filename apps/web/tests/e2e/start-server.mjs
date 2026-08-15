@@ -284,6 +284,50 @@ let studioIssueSections = createStudioIssueSections()
 let studioAuditEvents = []
 let studioReceipts = new Map()
 let studioTaxonomyTerms = []
+let readerLibraryState = createReaderLibraryState(false)
+
+function createReaderLibraryState(withdrawn) {
+  const opening = articleProjections.get("opening-night")
+  const notes = articleProjections.get("courtside-notes")
+  const openingBlockId = opening.content.blocks[0].id
+  return {
+    identifiableProfiles: 1,
+    bookmarks: withdrawn
+      ? [
+          {
+            articleId: opening.articleId,
+            createdAt: "2026-08-01T00:00:00Z",
+            available: false,
+            unavailableReason: "WITHDRAWN",
+            slug: null,
+            title: "Opening Night"
+          }
+        ]
+      : [
+          {
+            articleId: notes.articleId,
+            createdAt: "2026-08-01T00:00:00Z",
+            available: true,
+            unavailableReason: null,
+            slug: notes.slug,
+            title: "Courtside Notes"
+          }
+        ],
+    progress: [
+      {
+        articleId: opening.articleId,
+        revisionId: opening.revisionId,
+        blockId: openingBlockId,
+        percent: 35,
+        updatedAt: "2026-08-01T00:00:00Z"
+      }
+    ]
+  }
+}
+
+function resetReaderLibraryState(withdrawn = false) {
+  readerLibraryState = createReaderLibraryState(withdrawn)
+}
 
 function createStudioIssueState() {
   return {
@@ -382,6 +426,10 @@ function isStudioAuthorizationValid(request) {
   return request.headers.authorization === `Bearer ${STUDIO_ACCESS_TOKEN}`
 }
 
+function isReaderAuthorizationValid(request) {
+  return request.headers.authorization === `Bearer ${STUDIO_ACCESS_TOKEN}`
+}
+
 async function readJson(request) {
   const text = await readBodyText(request)
   if (!text) return {}
@@ -432,6 +480,142 @@ const apiServer = createServer(async (request, response) => {
     const allowedStates = new Set(["DRAFT", "APPROVED", "PUBLISHED"])
     resetStudioState(allowedStates.has(requestedState) ? requestedState : "DRAFT")
     writeJson(response, 204, null)
+    return
+  }
+
+  if (requestUrl.pathname === "/test/reader-library/reset" && request.method === "POST") {
+    resetReaderLibraryState(requestUrl.searchParams.get("withdrawn") === "true")
+    writeJson(response, 204, null)
+    return
+  }
+  if (requestUrl.pathname === "/test/reader-library/state" && request.method === "GET") {
+    writeJson(response, 200, {
+      bookmarks: readerLibraryState.bookmarks.length,
+      progress: readerLibraryState.progress.length,
+      identifiableProfiles: readerLibraryState.identifiableProfiles
+    })
+    return
+  }
+
+  const isReaderRequest =
+    requestUrl.pathname === "/api/v1/me" || requestUrl.pathname.startsWith("/api/v1/me/")
+  if (isReaderRequest) {
+    response.setHeader("cache-control", "no-store")
+    if (!isReaderAuthorizationValid(request)) {
+      writeProblem(
+        response,
+        401,
+        "Reader fixture requires a server-side session bearer.",
+        "AUTHENTICATION_REQUIRED"
+      )
+      return
+    }
+
+    if (requestUrl.pathname === "/api/v1/me/bookmarks" && request.method === "GET") {
+      writeJson(response, 200, {
+        items: readerLibraryState.bookmarks,
+        page: { nextCursor: null, limit: 20 }
+      })
+      return
+    }
+    const bookmarkPrefix = "/api/v1/me/bookmarks/"
+    if (requestUrl.pathname.startsWith(bookmarkPrefix)) {
+      const articleId = requestUrl.pathname.slice(bookmarkPrefix.length)
+      if (request.method === "PUT") {
+        const article = Array.from(articleProjections.values()).find(
+          (candidate) => candidate.articleId === articleId
+        )
+        if (!article) {
+          writeProblem(response, 404, "Article not found.", "RESOURCE_NOT_FOUND")
+          return
+        }
+        if (!readerLibraryState.bookmarks.some((bookmark) => bookmark.articleId === articleId)) {
+          readerLibraryState.bookmarks.unshift({
+            articleId,
+            createdAt: new Date().toISOString(),
+            available: true,
+            unavailableReason: null,
+            slug: article.slug,
+            title: article.slug === "opening-night" ? "Opening Night" : article.title
+          })
+        }
+        writeJson(response, 204, null)
+        return
+      }
+      if (request.method === "DELETE") {
+        readerLibraryState.bookmarks = readerLibraryState.bookmarks.filter(
+          (bookmark) => bookmark.articleId !== articleId
+        )
+        writeJson(response, 204, null)
+        return
+      }
+    }
+
+    if (requestUrl.pathname === "/api/v1/me/progress" && request.method === "GET") {
+      writeJson(response, 200, {
+        items: readerLibraryState.progress,
+        page: { nextCursor: null, limit: 20 }
+      })
+      return
+    }
+    const progressPrefix = "/api/v1/me/progress/"
+    if (requestUrl.pathname.startsWith(progressPrefix) && request.method === "PUT") {
+      const articleId = requestUrl.pathname.slice(progressPrefix.length)
+      const body = await readJson(request)
+      const next = {
+        articleId,
+        revisionId: body.revisionId,
+        blockId: body.blockId,
+        percent: Number(body.percent),
+        updatedAt: new Date().toISOString()
+      }
+      readerLibraryState.progress = readerLibraryState.progress
+        .filter((item) => item.articleId !== articleId)
+        .concat(next)
+      writeJson(response, 200, next)
+      return
+    }
+    if (requestUrl.pathname === "/api/v1/me/progress:merge" && request.method === "POST") {
+      const body = await readJson(request)
+      const items = Array.isArray(body.items) ? body.items : []
+      const accepted = items.map((local) => {
+        const server = readerLibraryState.progress.find(
+          (candidate) => candidate.articleId === local.articleId
+        )
+        if (!server) return local
+        return Date.parse(local.updatedAt) > Date.parse(server.updatedAt) ? local : server
+      })
+      if (body.mode === "apply") {
+        for (const selected of accepted) {
+          readerLibraryState.progress = readerLibraryState.progress
+            .filter((item) => item.articleId !== selected.articleId)
+            .concat(selected)
+        }
+      }
+      writeJson(response, 200, { mode: body.mode, accepted, conflicts: [] })
+      return
+    }
+    if (requestUrl.pathname === "/api/v1/me/export" && request.method === "GET") {
+      writeJson(response, 200, {
+        issuer: "http://127.0.0.1/e2e",
+        subject: "reader-e2e-user",
+        bookmarks: readerLibraryState.bookmarks,
+        progress: readerLibraryState.progress,
+        generatedAt: new Date().toISOString()
+      })
+      return
+    }
+    if (requestUrl.pathname === "/api/v1/me" && request.method === "DELETE") {
+      readerLibraryState.bookmarks = []
+      readerLibraryState.progress = []
+      readerLibraryState.identifiableProfiles = 0
+      writeJson(response, 202, {
+        requestId: "00000000-0000-4000-8000-000000000701",
+        status: "COMPLETED"
+      })
+      return
+    }
+    writeProblem(response, 404, "Reader resource not found.", "RESOURCE_NOT_FOUND")
     return
   }
 
@@ -958,7 +1142,10 @@ const oidcServer = createServer(async (request, response) => {
       return
     }
     pendingAuthorizationCodes.delete(body.get("code"))
-    const idToken = await new SignJWT({ roles: ["EDITOR", "PUBLISHER"], nonce: code.nonce })
+    const idToken = await new SignJWT({
+      roles: ["READER", "EDITOR", "PUBLISHER"],
+      nonce: code.nonce
+    })
       .setProtectedHeader({ alg: "RS256", kid: oidcKeyId })
       .setIssuer(oidcIssuer)
       .setSubject("studio-e2e-user")

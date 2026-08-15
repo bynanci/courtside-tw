@@ -21,7 +21,8 @@ final class ModuleBoundaryTest {
                     "..media..",
                     "..outbox..",
                     "..publication..",
-                    "..provenance.."
+                    "..provenance..",
+                    "..readerlibrary.."
             )
             .allowEmptyShould(true);
 
@@ -40,6 +41,18 @@ final class ModuleBoundaryTest {
                     "..media..",
                     "..outbox..",
                     "..publication..",
-                    "..provenance.."
+                    "..provenance..",
+                    "..readerlibrary.."
+            );
+
+    @ArchTest
+    static final ArchRule readerLibraryDomainDoesNotDependOnApplicationOrInfrastructure = noClasses()
+            .that().resideInAnyPackage("..readerlibrary.domain..")
+            .should().dependOnClassesThat().resideInAnyPackage(
+                    "..readerlibrary.api..",
+                    "..readerlibrary.application..",
+                    "..identity..",
+                    "..audit..",
+                    "..shared.."
             );
 }

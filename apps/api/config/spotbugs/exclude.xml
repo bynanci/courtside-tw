@@ -35,4 +35,14 @@
     <Field name="service"/>
     <Bug pattern="EI_EXPOSE_REP2"/>
   </Match>
+  <Match>
+    <Class name="tw.basketball.magazine.identity.api.AccountController"/>
+    <Field name="service"/>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
+  <Match>
+    <Class name="tw.basketball.magazine.readerlibrary.api.ReaderLibraryController"/>
+    <Field name="service"/>
+    <Bug pattern="EI_EXPOSE_REP2"/>
+  </Match>
 </FindBugsFilter>

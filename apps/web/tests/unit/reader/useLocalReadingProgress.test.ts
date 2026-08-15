@@ -2,11 +2,13 @@ import assert from "node:assert/strict"
 import test from "node:test"
 
 import {
+  clearAllLocalReadingProgress,
   legacyProgressKey,
   MAX_LOCAL_PROGRESS_ARTICLES,
   progressIndexKey,
   progressRecordKey,
   progressSlugKey,
+  readMergeableLocalProgress,
   selectViewportProgress,
   useLocalReadingProgress,
   type LocalReadingContext,
@@ -566,4 +568,50 @@ test("malformed and unavailable storage fail closed without breaking reading", (
     false
   )
   assert.equal(degraded.storageDisabled.value, true)
+})
+
+test("exports only the canonical timestamped local record for explicit merge", () => {
+  const storage = new MemoryStorage()
+  const progress = useLocalReadingProgress()
+  progress.save(storage, context, {
+    blockId: blocks[1]!.id,
+    blockLabel: blocks[1]!.label,
+    offset: 0.2,
+    documentProgress: 0.72
+  })
+  storage.setItem(
+    progressRecordKey(context.articleId, "stale-revision", blocks[0]!.id),
+    JSON.stringify({
+      schemaVersion: 1,
+      articleId: context.articleId,
+      revisionId: "stale-revision",
+      articleSlug: context.articleSlug,
+      blockId: blocks[0]!.id,
+      blockLabel: blocks[0]!.label,
+      offset: 0.1,
+      documentProgress: 0.1,
+      updatedAt: "2026-08-01T00:00:00.000Z"
+    })
+  )
+
+  const records = readMergeableLocalProgress(storage)
+  assert.equal(records.length, 1)
+  assert.equal(records[0]?.articleId, context.articleId)
+  assert.equal(records[0]?.revisionId, context.revisionId)
+  assert.equal(records[0]?.blockId, blocks[1]!.id)
+  assert.equal(records[0]?.percent, 72)
+  assert.match(records[0]?.updatedAt ?? "", /^\d{4}-\d{2}-\d{2}T/u)
+})
+
+test("verified erasure cleanup removes owned current and legacy progress only", () => {
+  const storage = new MemoryStorage()
+  useLocalReadingProgress().save(storage, context, readingLocation())
+  storage.setItem(legacyProgressKey(context.articleSlug, 1), "legacy")
+  storage.setItem("unrelated.preference", "keep")
+
+  clearAllLocalReadingProgress(storage)
+
+  assert.equal(storage.getItem(progressIndexKey(context.articleId)), null)
+  assert.equal(storage.getItem(legacyProgressKey(context.articleSlug, 1)), null)
+  assert.equal(storage.getItem("unrelated.preference"), "keep")
 })
