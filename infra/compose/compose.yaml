@@ -2,7 +2,7 @@ name: ${COMPOSE_PROJECT_NAME:-courtside-tw-local}
 
 services:
   postgres:
-    image: courtside-tw/postgres:18.4-alpine3.24-gosu-go1.25.12
+    image: courtside-tw/postgres:18.4-alpine3.24-gosu-go1.26.6
     build:
       context: ./postgres
       args:
