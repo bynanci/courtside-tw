@@ -1,13 +1,13 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-p1-review-remediation-20260814",
-  "graph_version": 9,
+  "graph_version": 10,
   "run_id": "courtside-p1-review-remediation-20260814",
   "status": "verifying",
-  "iteration": 6,
+  "iteration": 7,
   "started_at": "2026-08-14T03:51:03Z",
-  "updated_at": "2026-08-15T07:27:22Z",
-  "current_frontier": ["p-exact-head", "review-thread-resolution", "protected-merge-gate"],
+  "updated_at": "2026-08-15T07:35:15Z",
+  "current_frontier": ["p-exact-head", "s-terminal"],
   "blocked_nodes": [],
   "terminal_state": "verifying",
   "next_action": "Publish the current-main reconciliation head, require all 12 exact-head contexts to pass, resolve only demonstrably addressed review threads, then exercise the protected merge and read back main. Do not start T064.",
@@ -732,7 +732,7 @@
             "op": "replace",
             "path": "current_frontier",
             "before": ["p-exact-head", "a-ruleset-readback"],
-            "after": ["p-exact-head", "review-thread-resolution", "protected-merge-gate"]
+            "after": ["p-exact-head", "s-terminal"]
           },
           {
             "op": "repair_precondition",
@@ -798,6 +798,50 @@
         "total": 0
       },
       "terminal_reason": "The resulting reconciliation head, exact-head required contexts, and review-thread resolution are not yet authoritatively proven."
+    },
+    {
+      "event_id": "evt-012-frontier-node-reconciliation",
+      "at": "2026-08-15T07:35:15Z",
+      "actor": "codex-supervisor",
+      "type": "ledger_replay_correction",
+      "base_graph_version": 9,
+      "new_graph_version": 10,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "repair_precondition",
+            "path": "events/evt-011-current-main-governance-reconciliation/graph_delta/operations/5/after",
+            "before": ["p-exact-head", "review-thread-resolution", "protected-merge-gate"],
+            "after": ["p-exact-head", "s-terminal"],
+            "reason": "current_frontier entries must resolve to declared graph node IDs"
+          },
+          {
+            "op": "append",
+            "path": "events",
+            "value": "evt-012-frontier-node-reconciliation"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/p1-remediation-graphify-loop.yaml",
+        ".loop/p1-remediation-ledger.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "current_frontier node membership",
+          "result": "pass",
+          "frontier": ["p-exact-head", "s-terminal"]
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Anchor the executable frontier only to declared graph nodes; thread resolution and protected merge remain acceptance conditions of s-terminal.",
+      "token_usage": {
+        "estimated": 800,
+        "input": 0,
+        "output": 0,
+        "total": 0
+      },
+      "terminal_reason": "Exact-head proof and terminal protected-merge acceptance remain pending."
     }
   ]
 }
