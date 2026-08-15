@@ -1,0 +1,30 @@
+{
+  "schema": "courtside-tw/loop-memory/v1",
+  "lane": "t064-t070-us5-reader-library",
+  "updated_at": "2026-08-15T12:40:00Z",
+  "summary": "US5 T064-T070 is implemented on immutable subject 0ff6e2119fa344bae908e306f8701325e173ebd0. CI #556 and Security #557 passed all 12 protected contexts after resolving endpoint-registration 404s and an upsert SQL delimiter error. The evidence-only task-state commit still requires its own exact-head gate before PR #99 can leave draft or merge.",
+  "decisions": [
+    "Use V014 for reader-library persistence because V006 is occupied.",
+    "Keep anonymous progress local and synchronize only authenticated READER sessions.",
+    "Preview never mutates; apply requires explicit confirmation and preserves the newer valid candidate.",
+    "Return withdrawn bookmark metadata without restricted content and deny stale revision positions.",
+    "Require fresh authentication for deletion and preserve only a non-identifying append-only receipt.",
+    "Bind checked-in evidence to immutable payload digests and bind the mutable merge gate externally to GitHub's final exact head."
+  ],
+  "proof": {
+    "implementation_head": "0ff6e2119fa344bae908e306f8701325e173ebd0",
+    "payload_manifest_sha256": "8eeb91e04f735627ce9115e884d02bd80eb06eb6b40866503e0bd8bebbc3119e",
+    "ci": "https://github.com/bynanci/courtside-tw/actions/runs/31884868847",
+    "security": "https://github.com/bynanci/courtside-tw/actions/runs/31884868821",
+    "required_contexts": "12/12",
+    "unresolved_threads": 0,
+    "ruleset": 20822671
+  },
+  "preserved_boundaries": [
+    "T071+ remains unchecked and unstarted.",
+    "No Web3, wallet, token, credential or provenance runtime work was started.",
+    "PR #92 and repository protection were not modified.",
+    "Issue #89 remains open for its explicit human research items."
+  ],
+  "next_action": "Publish the metadata-only receipt, rerun all final exact-head protected checks, then ready/merge PR #99 only if the live gate remains fully green."
+}

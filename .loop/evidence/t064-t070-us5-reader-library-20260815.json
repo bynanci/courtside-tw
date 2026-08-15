@@ -1,0 +1,365 @@
+{
+  "schema": "courtside-tw/task-evidence/v1",
+  "issue": 89,
+  "pull_request": 99,
+  "status": "IMPLEMENTATION_PASS_FINAL_METADATA_GATE_PENDING",
+  "result": "pending",
+  "recorded_at": "2026-08-15T12:40:00Z",
+  "baseline_main": "a48584fbeaa5d3f9b3663afa2697f8736f702508",
+  "self_reference_rule": "This checked-in receipt proves the immutable implementation subject and its historical runs. The resulting metadata head, current checks, reviews, threads, mergeability and ruleset are read live before protected merge.",
+  "implementation_subject": {
+    "commit": "0ff6e2119fa344bae908e306f8701325e173ebd0",
+    "tree": "275467d59a34ccb9716151b662656a75959e6ddf",
+    "changed_files": 37,
+    "additions": 3968,
+    "deletions": 6,
+    "payload_manifest_sha256": "8eeb91e04f735627ce9115e884d02bd80eb06eb6b40866503e0bd8bebbc3119e",
+    "payload_manifest_algorithm": "Sort the 37 lines '<file sha256>  <path>' by path, concatenate with LF endings, then SHA-256 the manifest."
+  },
+  "tasks": {
+    "T064": "ReaderLibraryApiIT, ProgressMergePolicyTest and six browser scenarios cover API contracts, generated merge behavior, two-device synchronization, logout/session expiry, revision invalidation, withdrawal and deletion.",
+    "T065": "V014 adds reader profiles, unique bookmarks, bounded revision-aware progress, erasure jobs and append-only receipt protection; V006 was already occupied.",
+    "T066": "Authenticated bookmark/progress APIs are idempotent, deny stale revision positions and return withdrawn metadata without article bodies.",
+    "T067": "Preview is side-effect free, apply is explicit, invalid candidates are rejected and the newer valid candidate wins deterministically.",
+    "T068": "Reader controls and /library synchronize authenticated state while preserving unavailable-content and anonymous-local behavior.",
+    "T069": "Export/deletion requires a fresh authenticated reader, removes identifiable library data and keeps only a non-identifying append-only receipt.",
+    "T070": "The complete browser regression exercises concurrent devices, logout, session expiry, revision change and withdrawn bookmarks; reading-progress.md records the merge contract."
+  },
+  "tests_first": {
+    "subject_commit": "98e039c54e7d2f92ec5e1a1c3c0393b280b53941",
+    "subject_tree": "c6e1367788ae721c2351a57a4b86980c7e4135ec",
+    "expected_red_contract": [
+      "No authenticated reader-library API or persistence seam existed.",
+      "No deterministic preview/apply merge policy existed.",
+      "No cross-device, revision-invalidation, withdrawn-bookmark or verified-deletion browser fixture existed."
+    ]
+  },
+  "historical_exact_head_attempts": [
+    {
+      "head": "15789a21f6ba0964501542726ab483713bdc6dc6",
+      "ci": {
+        "run_id": 31883706899,
+        "run_number": 554,
+        "conclusion": "failure",
+        "java_job": 95009738133
+      },
+      "security": { "run_id": 31883706949, "run_number": 555, "conclusion": "failure" },
+      "artifact": {
+        "id": 9246729441,
+        "digest": "sha256:bce35b6b3ab0ca1945983e1d775130db9b0171bc8d1d94a123e870a035a49d94"
+      },
+      "attributable_failure": "ReaderLibraryApiIT 0/5: every endpoint returned 404 because conditional controller registration ran before JdbcTemplate auto-configuration.",
+      "non_attributable_failures": [],
+      "superseded_by": "cd7437ce454c4f263bbe8994bd700ecb48ef5ad7"
+    },
+    {
+      "head": "cd7437ce454c4f263bbe8994bd700ecb48ef5ad7",
+      "ci": {
+        "run_id": 31884382491,
+        "run_number": 555,
+        "conclusion": "failure",
+        "java_job": 95011428511
+      },
+      "security": { "run_id": 31884382489, "run_number": 556, "conclusion": "failure" },
+      "artifact": {
+        "id": 9246906587,
+        "digest": "sha256:0e952e2d16080cc748bb683401c048b9b881aafd3d9dc2c05fc9b0cf37657292"
+      },
+      "attributable_failure": "ReaderLibraryApiIT 4/5: dynamic upsert SQL rendered updated_atRETURNING without a delimiter.",
+      "non_attributable_failures": [],
+      "superseded_by": "0ff6e2119fa344bae908e306f8701325e173ebd0"
+    }
+  ],
+  "implementation_exact_head_proof": {
+    "head": "0ff6e2119fa344bae908e306f8701325e173ebd0",
+    "result": "pass",
+    "ci": {
+      "run_id": 31884868847,
+      "run_number": 556,
+      "url": "https://github.com/bynanci/courtside-tw/actions/runs/31884868847",
+      "conclusion": "success",
+      "jobs": [
+        {
+          "id": 95012595427,
+          "name": "Frontend and contract verification",
+          "conclusion": "success"
+        },
+        { "id": 95012595415, "name": "Docker Compose dependency health", "conclusion": "success" },
+        {
+          "id": 95012595488,
+          "name": "Java quality and unit verification",
+          "conclusion": "success",
+          "tests": 197,
+          "failures": 0,
+          "errors": 0,
+          "skipped": 0,
+          "reader_library_api": "5/5",
+          "merge_policy": "2/2"
+        },
+        {
+          "id": 95012705760,
+          "name": "Public magazine browser verification",
+          "conclusion": "success",
+          "full_regression": "43/43",
+          "us5": "6/6"
+        }
+      ],
+      "artifacts": [
+        {
+          "id": 9247030654,
+          "name": "ci-java-reports",
+          "digest": "sha256:c531978853bacbaac0856925999e67588247ed1437b51b61272b3182993b6edc"
+        },
+        {
+          "id": 9247029744,
+          "name": "ci-web-e2e-reports",
+          "digest": "sha256:991b2a329cf4d486e986bf1412c2571de33ce1e3a03191ef0539f4a4bf1c4b1c"
+        },
+        {
+          "id": 9246991667,
+          "name": "ci-frontend-reports",
+          "digest": "sha256:7c0cd6ac74a95b6d7845f9a844d3620cef387b98c34494a1e3cee1a65d06ae06"
+        },
+        {
+          "id": 9247007005,
+          "name": "ci-dependency-reports",
+          "digest": "sha256:9f8f2c13d05cdb3b90d7980cc2df0f71b8d2abf5c9e91aa895988fd91d73f53b"
+        }
+      ]
+    },
+    "security": {
+      "run_id": 31884868821,
+      "run_number": 557,
+      "url": "https://github.com/bynanci/courtside-tw/actions/runs/31884868821",
+      "conclusion": "success",
+      "jobs": [
+        { "id": 95012595296, "name": "Resolve Compose images", "conclusion": "success" },
+        { "id": 95012595326, "name": "Trivy (filesystem)", "conclusion": "success" },
+        { "id": 95012595340, "name": "CodeQL (javascript-typescript)", "conclusion": "success" },
+        { "id": 95012595355, "name": "CodeQL (java-kotlin)", "conclusion": "success" },
+        { "id": 95012595361, "name": "Dependency audit and reports", "conclusion": "success" },
+        { "id": 95012615582, "name": "Trivy (image s3)", "conclusion": "success" },
+        { "id": 95012615575, "name": "Trivy (image postgres)", "conclusion": "success" },
+        { "id": 95012615642, "name": "Trivy (image oidc)", "conclusion": "success" }
+      ],
+      "artifacts": [
+        {
+          "id": 9247044478,
+          "name": "security-dependency-reports",
+          "digest": "sha256:190e6e5f0586f6597bd9b724cefdd559d69d69256bb89a5132dbe10b01ac6588"
+        },
+        {
+          "id": 9246986260,
+          "name": "security-trivy-filesystem",
+          "digest": "sha256:78218f5406d8470022c61c331a950b64ddd698371087a859005ec46b8a92c4e2"
+        },
+        {
+          "id": 9246991605,
+          "name": "security-trivy-postgres",
+          "digest": "sha256:2b92e59f74a0cce515bfd9348b8bec8a4ca58f37da95481e28e308557e4c967d"
+        }
+      ]
+    }
+  },
+  "ruleset_readback": {
+    "id": 20822671,
+    "name": "main-protected-release-gate",
+    "enforcement": "active",
+    "include": ["refs/heads/main"],
+    "exclude": [],
+    "bypass_actors": [],
+    "current_user_can_bypass": "never",
+    "deletion_prohibited": true,
+    "force_push_prohibited": true,
+    "pull_request_only": true,
+    "required_approving_review_count": 0,
+    "required_review_thread_resolution": true,
+    "strict_required_status_checks_policy": true,
+    "required_status_checks": [
+      "Frontend and contract verification",
+      "Docker Compose dependency health",
+      "Java quality and unit verification",
+      "Public magazine browser verification",
+      "CodeQL (javascript-typescript)",
+      "Resolve Compose images",
+      "CodeQL (java-kotlin)",
+      "Trivy (filesystem)",
+      "Dependency audit and reports",
+      "Trivy (image s3)",
+      "Trivy (image postgres)",
+      "Trivy (image oidc)"
+    ]
+  },
+  "review_and_scope_readback": {
+    "implementation_head_unresolved_threads": 0,
+    "implementation_head_reviews": 0,
+    "approval_requirement": 0,
+    "mergeable": true,
+    "changed_files": 37,
+    "all_files_attributable_to_T064_T070": true,
+    "pr_92_modified": false,
+    "repository_protection_modified": false,
+    "web3_modified": false,
+    "T071_plus_modified": false
+  },
+  "payload_manifest": [
+    {
+      "sha256": "208cd9b9e8f3075de1bba6646282648b953a130420ac07e3492a0c44a7e81390",
+      "path": "apps/api/config/spotbugs/exclude.xml"
+    },
+    {
+      "sha256": "129b0c87bc819dced3e0d732305a58af9ef4c16fd9faaa800c3dd3cf85356936",
+      "path": "apps/api/src/main/java/tw/basketball/magazine/identity/IdentityAccountConfiguration.java"
+    },
+    {
+      "sha256": "a0fb72b292379ff8de0d117c9f8fa5da0af0ac4b05ee4a62abc6968dd91e2021",
+      "path": "apps/api/src/main/java/tw/basketball/magazine/identity/OidcSecurityConfiguration.java"
+    },
+    {
+      "sha256": "fb85e31367f1fbfe07f85ab96d75b5c5a93151cd586084277702fd8ec199997f",
+      "path": "apps/api/src/main/java/tw/basketball/magazine/identity/api/AccountApiExceptionHandler.java"
+    },
+    {
+      "sha256": "bb36067afa9269a01bf4e3b297ef20d52c99a8fbdb28fd266996eec795a91ec0",
+      "path": "apps/api/src/main/java/tw/basketball/magazine/identity/api/AccountController.java"
+    },
+    {
+      "sha256": "a1990198c04d2bdaf380958ae64f8293a62cc5ed05c3036da6fbb3753cf063e4",
+      "path": "apps/api/src/main/java/tw/basketball/magazine/identity/application/AccountDataService.java"
+    },
+    {
+      "sha256": "394ee9722c0f79b833985e958a95875f5f1658c3f598e2c0b2e1c4563e64d10d",
+      "path": "apps/api/src/main/java/tw/basketball/magazine/identity/application/AccountProblemException.java"
+    },
+    {
+      "sha256": "976064806c0e0398d1bac02cae0fb81e7ba306db836403db8960c9afe8a7a300",
+      "path": "apps/api/src/main/java/tw/basketball/magazine/identity/application/AuthenticatedReader.java"
+    },
+    {
+      "sha256": "32db32c7e7590b872289b2b3a75285abf5ae6c769ba8b8e0c720a5681b8f8907",
+      "path": "apps/api/src/main/java/tw/basketball/magazine/readerlibrary/ReaderLibraryConfiguration.java"
+    },
+    {
+      "sha256": "8d6182874aab664e00e248ac89e53203e2c873010225ad206b04824493db16ac",
+      "path": "apps/api/src/main/java/tw/basketball/magazine/readerlibrary/api/ReaderLibraryApiExceptionHandler.java"
+    },
+    {
+      "sha256": "58b7f6ccf56b562993830ffad2664338aae66415ae1e237831514c4293ee65e3",
+      "path": "apps/api/src/main/java/tw/basketball/magazine/readerlibrary/api/ReaderLibraryController.java"
+    },
+    {
+      "sha256": "bbbc158cdcfe5dfec2815b1a2836b2e70ecda61afdb7ba89440d92d76a734822",
+      "path": "apps/api/src/main/java/tw/basketball/magazine/readerlibrary/application/ReaderLibraryProblemException.java"
+    },
+    {
+      "sha256": "5df15a43497b7c76497ee1c3c8ea802e5dd04a4b5e28c87d9dc24bd0bb9701af",
+      "path": "apps/api/src/main/java/tw/basketball/magazine/readerlibrary/application/ReaderLibraryService.java"
+    },
+    {
+      "sha256": "96d5a807bb85976eeca41f3e246ab58692aec760a384fe51292f6cfe4e8e965f",
+      "path": "apps/api/src/main/java/tw/basketball/magazine/readerlibrary/domain/ProgressMergePolicy.java"
+    },
+    {
+      "sha256": "b571a85298587b20c4481a008d3fe7756e049da11962c0dc973653e7496cfd82",
+      "path": "apps/api/src/main/resources/db/migration/V014__reader_library.sql"
+    },
+    {
+      "sha256": "f1acb782dfe97b4fdf2637ac8e307f193821fd6a5b012f75ebc3791c51bc5c9b",
+      "path": "apps/api/src/test/java/tw/basketball/magazine/architecture/ModuleBoundaryTest.java"
+    },
+    {
+      "sha256": "7ca41dafb9c6890a1d527f7378260c72736ac3a1736fd7a866b094a16278eecd",
+      "path": "apps/api/src/test/java/tw/basketball/magazine/identity/OidcSecurityFallbackTest.java"
+    },
+    {
+      "sha256": "bf07f0d82fbd012d579d147e986858efef6c9bcadc9ed11ba0cbba7fd979ce8e",
+      "path": "apps/api/src/test/java/tw/basketball/magazine/readerlibrary/ReaderLibraryApiIT.java"
+    },
+    {
+      "sha256": "b3f72accb4f841c9030acd7cec87510437e4938c800b6ca862de7dc887c7d720",
+      "path": "apps/api/src/test/java/tw/basketball/magazine/readerlibrary/domain/ProgressMergePolicyTest.java"
+    },
+    {
+      "sha256": "0d91e1572420c4c892a6c362cf58f0d069026990323749f872b87a6852c1612f",
+      "path": "apps/web/app/features/library/composables/useProgressMerge.ts"
+    },
+    {
+      "sha256": "10e82abc9a7b69d7f174bf665c6c22beb6dc1752ac84d16cebb14ca9285c4012",
+      "path": "apps/web/app/features/library/reader-library-api.ts"
+    },
+    {
+      "sha256": "babca42c53c062c3ae314e3682d2155117cab5eb53ba7735e8a788d7e9169d70",
+      "path": "apps/web/app/features/reader/components/BookmarkControl.vue"
+    },
+    {
+      "sha256": "a1edd07bcdb88e099c65d53edcb9d8a6a7d745f88a7d4c03a09ba37713aef511",
+      "path": "apps/web/app/features/reader/composables/useLocalReadingProgress.ts"
+    },
+    {
+      "sha256": "6998793da6da98400dee3d1dbeb7b5252734d77fe80c3eff251e445dd1f1c1ce",
+      "path": "apps/web/app/pages/articles/[articleSlug].vue"
+    },
+    {
+      "sha256": "86cde907ff6b384072c3205e535205577e672f37d00d81b034e40164a62a8174",
+      "path": "apps/web/app/pages/library.vue"
+    },
+    {
+      "sha256": "d2f7e1809a064bb37b56c272fca692e902fe791354f1ddac1f751eb762b8ed75",
+      "path": "apps/web/app/pages/settings/privacy.vue"
+    },
+    {
+      "sha256": "790868832dab742df0ef86c64dfc40a255f2528ef05831045c7844fed09c327e",
+      "path": "apps/web/package.json"
+    },
+    {
+      "sha256": "8279216bf1eaead1be1b97cf4d9dac3071d17f526b5ff76788c60d0c83286cf5",
+      "path": "apps/web/server/api/reader/[...path].ts"
+    },
+    {
+      "sha256": "9297281a59e6d6c9bcc4bf3b96d3566a5a5b6518b0cae2fe7e8dcc1d4407c778",
+      "path": "apps/web/tests/e2e/start-server.mjs"
+    },
+    {
+      "sha256": "8e40f98cb730e164e46a10e249d54182eda282b2433c9d27b786aa50760109f7",
+      "path": "apps/web/tests/e2e/us5-account-deletion.spec.ts"
+    },
+    {
+      "sha256": "1b1ae5b56b3f523cd6940efe7b874f8c2f03b44faf97f7de2bbd7fafc313e6c0",
+      "path": "apps/web/tests/e2e/us5-reader-library.spec.ts"
+    },
+    {
+      "sha256": "44bdaac875923ec1bc40073502adb7920738a1694f29903316bdf52a7bb52741",
+      "path": "apps/web/tests/integration/reader-library-bff.test.ts"
+    },
+    {
+      "sha256": "f6f143e5629c38d2044a42628e2f620de1c2434eec274803a5ffd94239d09b23",
+      "path": "apps/web/tests/unit/reader/useLocalReadingProgress.test.ts"
+    },
+    {
+      "sha256": "24a066d73135ee2e993f4a31840ed75ed146ca17d3e835f166008dd544ff7858",
+      "path": "contracts/openapi.yaml"
+    },
+    {
+      "sha256": "ce14a034dbf37d38500db1a95a10f99565096b793633ed317be039dd091bc787",
+      "path": "docs/product/reading-progress.md"
+    },
+    {
+      "sha256": "5fe2d8c9a1ac3bf84466b2e176ae444b71be6f6f545abbe8273a2cb3a072682a",
+      "path": "packages/api-client/src/generated/openapi.d.ts"
+    },
+    {
+      "sha256": "a54322c9bacb23327b6932208c11e0241a0f761a04bc97ad079a7e6b0fc7142b",
+      "path": "scripts/validate-openapi.mjs"
+    }
+  ],
+  "final_metadata_head_gate": {
+    "result": "pending",
+    "required": [
+      "Publish this receipt and tasks.md as one metadata-only commit.",
+      "Verify all 12 protected contexts on the resulting exact head.",
+      "Verify zero unresolved threads, attributable scope, mergeability and the live ruleset.",
+      "Convert PR #99 from draft to ready only after the gate is green.",
+      "Merge through the protected gate, then read back main and tasks.md."
+    ]
+  }
+}
