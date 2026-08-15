@@ -73,6 +73,12 @@ function deriveRightsDecision(rights: SeedManifest["rightsCases"][number]): stri
   if (validUntil <= validFrom) {
     throw new Error(`invalid rights window for ${rights.id}: validUntil must be after validFrom`)
   }
+  if (
+    !Array.isArray(rights.allowedChannels) ||
+    rights.allowedChannels.some((channel) => typeof channel !== "string")
+  ) {
+    throw new Error(`invalid rights channels for ${rights.id}`)
+  }
   if (rights.status === "REVOKED") {
     return "RIGHTS_REVOKED"
   }
