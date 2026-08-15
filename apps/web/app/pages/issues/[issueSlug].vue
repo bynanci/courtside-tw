@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import IssueToc from "../../components/issues/IssueToc.vue"
 import ReadingState from "../../components/issues/ReadingState.vue"
+import OfflineDownloadPanel from "../../features/offline/components/OfflineDownloadPanel.vue"
 import { canonicalUrl, jsonLd } from "../../composables/public-seo"
 import {
   fetchPublicIssue,
@@ -122,6 +123,11 @@ useHead(() => {
       </section>
 
       <IssueToc v-if="issue" :issue="issue" />
+      <OfflineDownloadPanel
+        v-if="issue"
+        :api-base-url="config.public.apiBaseUrl"
+        :issue-slug="issueSlug"
+      />
       <ReadingState
         v-else-if="error instanceof PublicIssueApiError && error.statusCode === 404"
         title="找不到這一期"
@@ -137,3 +143,4 @@ useHead(() => {
     </main>
   </div>
 </template>
+
