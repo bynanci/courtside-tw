@@ -1,12 +1,12 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-p1-review-remediation-20260814",
-  "graph_version": 7,
+  "graph_version": 8,
   "run_id": "courtside-p1-review-remediation-20260814",
   "status": "needs_human",
   "iteration": 5,
   "started_at": "2026-08-14T03:51:03Z",
-  "updated_at": "2026-08-15T02:06:11Z",
+  "updated_at": "2026-08-15T02:23:04Z",
   "current_frontier": [
     "p-exact-head",
     "a-ruleset-readback"
@@ -633,6 +633,79 @@
         "total": 0
       },
       "terminal_reason": "Security #540 is not green; non-author approval and protected ruleset readback remain absent."
+    },
+    {
+      "event_id": "evt-010-channel-shape-guard-and-exact-head",
+      "at": "2026-08-15T02:23:04Z",
+      "actor": "codex-agent",
+      "type": "code_remediation_and_evidence_delta",
+      "base_graph_version": 7,
+      "new_graph_version": 8,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "scripts/content/import-seed.ts/deriveRightsDecision",
+            "before": "rights.allowedChannels.includes accepts runtime strings",
+            "after": "reject non-array or non-string channel values"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-diff/confidence/evidence_refs",
+            "before": "...a6176aa",
+            "after": "...cfca74edad35883a1a08bc76e6d3151315861037"
+          },
+          {
+            "op": "replace",
+            "path": "graph.nodes/p-exact-head/confidence/basis",
+            "before": "CI #539 / Security #540 on a6176aa",
+            "after": "CI #541 / Security #542 on cfca74e"
+          },
+          {
+            "op": "append",
+            "path": "events",
+            "value": "evt-010-channel-shape-guard-and-exact-head"
+          }
+        ]
+      },
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/compare/88d31b9709339e94e7cf7a3af80f5da773cbed70...cfca74edad35883a1a08bc76e6d3151315861037",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31858750629",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31858750661",
+        "https://github.com/bynanci/courtside-tw/commit/cfca74edad35883a1a08bc76e6d3151315861037"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "allowedChannels runtime shape guard",
+          "result": "implemented",
+          "head_sha": "cfca74edad35883a1a08bc76e6d3151315861037"
+        },
+        {
+          "proof": "PR #92 CI #541",
+          "result": "pass",
+          "head_sha": "cfca74edad35883a1a08bc76e6d3151315861037",
+          "run_id": 31858750629,
+          "browser_job_id": 94948266143
+        },
+        {
+          "proof": "PR #92 Security #542",
+          "result": "blocked",
+          "head_sha": "cfca74edad35883a1a08bc76e6d3151315861037",
+          "run_id": 31858750661,
+          "failed_job_id": 94948162984,
+          "failed_job": "Trivy (image postgres)",
+          "failure_signature": "external-postgres-image-go-stdlib-high-cves"
+        }
+      ],
+      "failure_signature": "external-postgres-image-go-stdlib-high-cves",
+      "decision": "Keep the aggregate blocked on the external postgres image baseline; re-run both workflows on the resulting evidence commit before any merge decision.",
+      "token_usage": {
+        "estimated": 3000,
+        "input": 0,
+        "output": 0,
+        "total": 0
+      },
+      "terminal_reason": "Security #542 is not green; non-author approval and protected ruleset readback remain absent."
     }
   ]
 }

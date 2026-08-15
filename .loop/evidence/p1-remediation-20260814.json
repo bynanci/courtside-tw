@@ -1,20 +1,20 @@
 {
   "schema_version": "p1-remediation-evidence/v1",
-  "captured_at": "2026-08-15T02:06:11Z",
+  "captured_at": "2026-08-15T02:23:04Z",
   "repository": "bynanci/courtside-tw",
   "base_sha": "88d31b9709339e94e7cf7a3af80f5da773cbed70",
   "pull_request": {
     "number": 92,
     "url": "https://github.com/bynanci/courtside-tw/pull/92",
     "branch": "codex/remediate-p1-review-blockers",
-    "head_sha_before_evidence": "a6176aa80b0bf46c486e42a88992394b592bf9b5",
+    "head_sha_before_evidence": "cfca74edad35883a1a08bc76e6d3151315861037",
     "draft": false,
-    "head_sha_verified_at": "2026-08-15T02:06:11Z",
+    "head_sha_verified_at": "2026-08-15T02:23:04Z",
     "last_reviewed_head_sha": "a6176aa80b0bf46c486e42a88992394b592bf9b5",
-    "last_code_change_sha": "442f76f1f518da5a92391c649e6086c5d5e5b329",
+    "last_code_change_sha": "cfca74edad35883a1a08bc76e6d3151315861037",
     "exact_head_proof_status": "blocked_external_security",
-    "receipt_commit_sha": "a6176aa80b0bf46c486e42a88992394b592bf9b5",
-    "current_revalidation_subject_sha": "a6176aa80b0bf46c486e42a88992394b592bf9b5"
+    "receipt_commit_sha": "cfca74edad35883a1a08bc76e6d3151315861037",
+    "current_revalidation_subject_sha": "cfca74edad35883a1a08bc76e6d3151315861037"
   },
   "review_blockers": {
     "source": "https://github.com/bynanci/courtside-tw/pull/91",
@@ -29,7 +29,7 @@
   },
   "diff_proof": {
     "result": "pass",
-    "compare_url": "https://github.com/bynanci/courtside-tw/compare/88d31b9709339e94e7cf7a3af80f5da773cbed70...442f76f1f518da5a92391c649e6086c5d5e5b329",
+    "compare_url": "https://github.com/bynanci/courtside-tw/compare/88d31b9709339e94e7cf7a3af80f5da773cbed70...cfca74edad35883a1a08bc76e6d3151315861037",
     "changed_files": [
       ".loop/evidence/p1-remediation-20260814.json",
       ".loop/p1-remediation-graphify-loop.yaml",
@@ -38,18 +38,18 @@
       "scripts/content/import-seed.ts",
       "apps/api/src/test/resources/fixtures/first-issue/manifest.json"
     ],
-    "last_code_change_sha": "442f76f1f518da5a92391c649e6086c5d5e5b329"
+    "last_code_change_sha": "cfca74edad35883a1a08bc76e6d3151315861037"
   },
   "exact_head_proof": {
     "result": "fail",
-    "verified_head_sha": "a6176aa80b0bf46c486e42a88992394b592bf9b5",
-    "ci_run_id": 31857842544,
-    "ci_url": "https://github.com/bynanci/courtside-tw/actions/runs/31857842544",
-    "security_run_id": 31857842559,
-    "security_url": "https://github.com/bynanci/courtside-tw/actions/runs/31857842559",
-    "browser_job_id": 94946382794,
+    "verified_head_sha": "cfca74edad35883a1a08bc76e6d3151315861037",
+    "ci_run_id": 31858750629,
+    "ci_url": "https://github.com/bynanci/courtside-tw/actions/runs/31858750629",
+    "security_run_id": 31858750661,
+    "security_url": "https://github.com/bynanci/courtside-tw/actions/runs/31858750661",
+    "browser_job_id": 94948266143,
     "browser_job": "Public magazine browser verification",
-    "verified_at": "2026-08-15T02:06:11Z",
+    "verified_at": "2026-08-15T02:23:04Z",
     "required_workflows": [
       "CI",
       "Security"
@@ -68,21 +68,21 @@
       "attributable_to_pr_scope": false,
       "note": "Failure is outside this PR's production and fixture scope; do not suppress or widen this PR to remediate the image."
     },
-    "note": "This receipt update is metadata-only; the checks recorded here are for the preceding metadata head. Re-run CI/Security on the resulting evidence commit before merge.",
+    "note": "This receipt update is metadata-only; the checks recorded here are for the preceding code head. Re-run CI/Security on the resulting evidence commit before merge.",
     "post_receipt_revalidation_status": "blocked_external_security",
     "final_head_revalidation": {
       "result": "fail",
-      "verified_head_sha": "a6176aa80b0bf46c486e42a88992394b592bf9b5",
-      "ci_run_id": 31857842544,
-      "ci_url": "https://github.com/bynanci/courtside-tw/actions/runs/31857842544",
-      "security_run_id": 31857842559,
-      "security_url": "https://github.com/bynanci/courtside-tw/actions/runs/31857842559",
-      "browser_job_id": 94946382794,
+      "verified_head_sha": "cfca74edad35883a1a08bc76e6d3151315861037",
+      "ci_run_id": 31858750629,
+      "ci_url": "https://github.com/bynanci/courtside-tw/actions/runs/31858750629",
+      "security_run_id": 31858750661,
+      "security_url": "https://github.com/bynanci/courtside-tw/actions/runs/31858750661",
+      "browser_job_id": 94948266143,
       "browser_job": "Public magazine browser verification",
-      "java_job_id": 94946383123,
+      "java_job_id": 94948148987,
       "ci_result": "pass",
       "security_result": "fail",
-      "failed_job_id": 94945805916,
+      "failed_job_id": 94948162984,
       "failed_job": "Trivy (image postgres)",
       "failure": "gosu embeds Go stdlib v1.26.5; HIGH CVE-2026-39821 and CVE-2026-46600 require v1.26.6+",
       "attributable_to_pr_scope": false,
@@ -205,12 +205,12 @@
     "observed": "bounded-heavy-one was returned after matching media and PUBLIC_WEB rights were created",
     "remediation": "assert next.slug is bounded-heavy-one",
     "final_result": "pass",
-    "exact_head_sha": "a6176aa80b0bf46c486e42a88992394b592bf9b5",
-    "ci_run_id": 31857842544,
+    "exact_head_sha": "cfca74edad35883a1a08bc76e6d3151315861037",
+    "ci_run_id": 31858750629,
     "additional_regression": "GET bounded-heavy-two returns 200 after the trailing 88-reference batch",
     "final_exact_head_result": "blocked_external_security",
-    "security_run_id": 31857842559,
-    "browser_job_id": 94946382794,
+    "security_run_id": 31858750661,
+    "browser_job_id": 94948266143,
     "post_receipt_revalidation": {
       "result": "blocked",
       "head_sha": "3d38d6117b42ff0071e417a782039234e4b70da3",
@@ -219,10 +219,10 @@
       "security_failure": "Trivy (image postgres)"
     },
     "latest_final_head_revalidation": {
-      "head_sha": "a6176aa80b0bf46c486e42a88992394b592bf9b5",
-      "ci_run_id": 31857842544,
-      "security_run_id": 31857842559,
-      "browser_job_id": 94946382794,
+      "head_sha": "cfca74edad35883a1a08bc76e6d3151315861037",
+      "ci_run_id": 31858750629,
+      "security_run_id": 31858750661,
+      "browser_job_id": 94948266143,
       "result": "ci_pass_security_blocked",
       "failed_job": "Trivy (image postgres)"
     }
