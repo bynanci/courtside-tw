@@ -1,8 +1,8 @@
 {
   "schema": "courtside-tw/loop-memory/v1",
   "lane": "t071-us6-offline-tests-first",
-  "updated_at": "2026-08-15T15:42:00Z",
-  "summary": "T072 implementation is verified on exact head a1ab39f1a19e4261558712e060b5023ddf5f424b: CI #566 Java/API, frontend/contract and Compose checks passed, and Security #567 dependency audit, CodeQL and Trivy checks passed. T071 remains an authoritative RED contract because the five browser scenarios still fail at the absent downstream offline-download control.",
+  "updated_at": "2026-08-15T15:55:00Z",
+  "summary": "T072 implementation is reverified on final exact head e2436f0d5c063d029c66226cd01afdd43fee99d3: CI #567 Java/API, frontend/contract and Compose checks passed, and Security #568 dependency audit, CodeQL and Trivy checks passed. T071 remains an authoritative RED contract because the five browser scenarios still fail at the absent downstream offline-download control.",
   "decisions": [
     "Keep offline manifests and withdrawals public and unauthenticated, matching contracts/openapi.yaml.",
     "Keep draft, withdrawn and rights-ineligible issues fail-closed without metadata leakage.",
@@ -23,7 +23,7 @@
     "tests_first_commit": "fe7f0ffe6fc1c4ff8c93936ba81968b229183434",
     "contracts": "API manifest/withdrawal and five browser failure-injection scenarios authored",
     "static_checks": "diff check and TypeScript syntax pass",
-    "runtime": "T071 browser RED is replayed on exact head a1ab39f1a19e4261558712e060b5023ddf5f424b by CI #566 browser job 95032247474 (5 authored failures, 43 passes); T072 Java/API and Security acceptance passed on the same head and T072 is checked"
+    "runtime": "T071 browser RED is replayed on final exact head e2436f0d5c063d029c66226cd01afdd43fee99d3 by CI #567 browser job 95033743342 (5 authored failures, 43 passes); T072 Java/API and Security acceptance passed on the same head and T072 is checked"
   },
   "preserved_boundaries": [
     "T071 remains unchecked.",

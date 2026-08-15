@@ -2,10 +2,10 @@
   "schema": "courtside-tw/task-evidence/v1",
   "task": "T072",
   "status": "PASS_IMPLEMENTATION",
-  "recorded_at": "2026-08-15T15:42:00Z",
+  "recorded_at": "2026-08-15T15:55:00Z",
   "baseline_main": "73bbb0851d90a108f6a8c9d93c284670afbfd152",
-  "parent_exact_head": "c3bade958cc52086576b2351bb974f0bfde1ac27",
-  "current_exact_head": "a1ab39f1a19e4261558712e060b5023ddf5f424b",
+  "parent_exact_head": "a1ab39f1a19e4261558712e060b5023ddf5f424b",
+  "current_exact_head": "e2436f0d5c063d029c66226cd01afdd43fee99d3",
   "changed_files": [
     "apps/api/src/main/java/tw/basketball/magazine/publication/api/OfflineManifestController.java",
     "apps/api/src/main/java/tw/basketball/magazine/publication/application/OfflineManifestService.java",
@@ -45,17 +45,18 @@
   ],
   "proof": {
     "local_diff_check": "PASS",
-    "openapi_validation": "PASS: CI #566 job 95032106331 validated contracts/openapi.yaml and frontend/contract checks",
-    "java_compile_and_test": "PASS: CI #566 job 95032106342; OfflineManifestApiIT completed successfully after the integration fixture wiring and snapshot-version assertion were corrected",
-    "exact_head_ci": "PASS for T072: CI #566 on a1ab39f1a19e4261558712e060b5023ddf5f424b; frontend/contract, Compose health and Java quality/unit passed. The separate browser job 95032247474 failed only the five pre-existing T071 downstream offline-control contracts (43 browser tests passed).",
-    "exact_head_security": "PASS: Security #567 on a1ab39f1a19e4261558712e060b5023ddf5f424b; dependency audit, CodeQL Java/Kotlin, CodeQL JavaScript/TypeScript, filesystem Trivy, Compose image resolution and Trivy postgres/oidc/s3 all passed with no HIGH/CRITICAL image finding.",
+    "openapi_validation": "PASS: CI #567 job 95033618852 validated contracts/openapi.yaml and frontend/contract checks",
+    "java_compile_and_test": "PASS: CI #567 job 95033618890; OfflineManifestApiIT completed successfully after the integration fixture wiring and snapshot-version assertion were corrected",
+    "exact_head_ci": "PASS for T072: CI #567 on e2436f0d5c063d029c66226cd01afdd43fee99d3; frontend/contract job 95033618852, Compose health job 95033618875 and Java quality/unit job 95033618890 passed. The separate browser job 95033743342 failed only the five T071 downstream offline-control contracts (43 browser tests passed).",
+    "exact_head_security": "PASS: Security #568 on e2436f0d5c063d029c66226cd01afdd43fee99d3; dependency audit job 95033618770, CodeQL jobs 95033618785/95033618796, filesystem Trivy 95033618824, Compose image resolution 95033618964 and Trivy postgres/oidc/s3 jobs 95033638269/95033638274/95033638236 all passed with no HIGH/CRITICAL image finding.",
     "fixture_replay": "PASS: addArticle refreshes the issue snapshot to version 2; the T072 integration assertion now checks the current bounded snapshot version.",
     "historical_attributable_failures_resolved": [
       "RowMapper lambdas now pass the required row number",
       "Nullable linked-asset count now uses Integer",
       "packages/api-client/src/generated/openapi.d.ts is synchronized with contracts/openapi.yaml"
     ],
-    "downstream_blocker_not_t072": "The browser job reports five T071 contracts failing at the absent offline-download control; this remains outside the T072 API manifest scope."
+    "downstream_blocker_not_t072": "The final-head browser job reports five T071 contracts failing at the absent offline-download control; this remains outside the T072 API manifest scope.",
+    "previous_exact_head_replay": "a1ab39f1a19e4261558712e060b5023ddf5f424b passed the same T072 acceptance before the evidence-only revalidation commit."
   },
   "scope_guard": {
     "T071_contracts_preserved": true,

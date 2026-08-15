@@ -2,8 +2,8 @@
   "schema": "courtside-tw/loop-ledger/v1",
   "lane": "t071-us6-offline-tests-first",
   "version": 1,
-  "recorded_at": "2026-08-15T15:42:00Z",
-  "decision": "Record T072 exact-head acceptance while preserving the T071 downstream browser RED and stop before T073+.",
+  "recorded_at": "2026-08-15T15:55:00Z",
+  "decision": "Revalidate the checked-in T072 acceptance receipt on e2436f0d and preserve the T071 downstream browser RED; stop before T073+.",
   "terminal_state": "blocked_on_t071_downstream_contract",
   "scope": {
     "issue": 89,
@@ -151,6 +151,42 @@
         "https://github.com/bynanci/courtside-tw/actions/runs/31893058818",
         "https://github.com/bynanci/courtside-tw/actions/runs/31893058816"
       ]
+    },
+    {
+      "sequence": 8,
+      "type": "final_head_evidence_revalidated",
+      "result": "t072_pass_reconfirmed_t071_browser_red_preserved",
+      "source_head": "e2436f0d5c063d029c66226cd01afdd43fee99d3",
+      "parent_head": "a1ab39f1a19e4261558712e060b5023ddf5f424b",
+      "ci_run": 567,
+      "security_run": 568,
+      "ci_jobs": [95033618852, 95033618875, 95033618890, 95033743342],
+      "security_jobs": [95033618770, 95033618785, 95033618796, 95033618824, 95033618964, 95033638236, 95033638269, 95033638274],
+      "passed_gates": [
+        "Frontend and contract verification",
+        "Docker Compose dependency health",
+        "Java quality and unit verification",
+        "Security dependency audit",
+        "CodeQL Java/Kotlin",
+        "CodeQL JavaScript/TypeScript",
+        "Trivy filesystem",
+        "Resolve Compose images",
+        "Trivy image oidc",
+        "Trivy image postgres",
+        "Trivy image s3"
+      ],
+      "failure_signature": "five T071 browser contracts fail at the absent offline-download control; 43 browser tests passed",
+      "attribution": "The T072 API/manifest implementation remains green. The only RED is the authored T071 downstream offline UI/manager boundary; no unrelated task or baseline failure was attributed.",
+      "scope_guard": [
+        "T071 remains unchecked",
+        "T072 remains checked",
+        "T073-T076 not started",
+        "PR #92, Web3, repository protection and issue #89 human research state untouched"
+      ],
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/actions/runs/31893686999",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31893686973"
+      ]
     }
   ],
   "graph_delta": {
@@ -163,8 +199,8 @@
   "proof_coverage": {
     "api_contracts": "authored",
     "browser_contracts": "5/5 scenarios authored",
-    "runtime_red": "T071 browser RED replayed on exact head a1ab39f1a19e4261558712e060b5023ddf5f424b by CI #566 browser job 95032247474",
-    "passing_implementation": "T072 passed exact-head Java/API, OpenAPI/frontend contract, and Security checks on a1ab39f1a19e4261558712e060b5023ddf5f424b; T072 checkbox is checked"
+    "runtime_red": "T071 browser RED replayed on final exact head e2436f0d5c063d029c66226cd01afdd43fee99d3 by CI #567 browser job 95033743342",
+    "passing_implementation": "T072 passed exact-head Java/API, OpenAPI/frontend contract, and Security checks on e2436f0d5c063d029c66226cd01afdd43fee99d3; T072 checkbox is checked"
   },
   "min_cut": [
     "pinned CI toolchain execution of OfflineManifestApiIT",
