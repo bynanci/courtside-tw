@@ -23,7 +23,7 @@
     "tests_first_commit": "fe7f0ffe6fc1c4ff8c93936ba81968b229183434",
     "contracts": "API manifest/withdrawal and five browser failure-injection scenarios authored",
     "static_checks": "diff check and TypeScript syntax pass",
-    "runtime": "pending pinned CI/toolchain replay"
+    "runtime": "CI #559 reached the repository format guard before runtime replay; formatting was fixed and exact-head CI/Security must be rerun"
   },
   "preserved_boundaries": [
     "T071 remains unchecked.",
@@ -32,5 +32,5 @@
     "PR #92 and repository rulesets were not modified.",
     "Issue #89 remains open for human research completion."
   ],
-  "next_action": "Run the targeted Java/Testcontainers and Playwright RED contracts on the pinned CI toolchain, then dispatch only T072."
+  "next_action": "Rerun exact-head CI/Security after the format-only fix, capture attributable API/browser RED, then dispatch only T072."
 }
