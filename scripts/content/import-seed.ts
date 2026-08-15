@@ -61,10 +61,15 @@ function parseStrictUtcTimestamp(value: string, label: string): number {
 }
 
 const checkedAt = parseStrictUtcTimestamp("2026-08-01T00:00:00Z", "checkedAt")
+const knownRightsStatuses = new Set(["UNKNOWN", "PENDING", "VALID", "EXPIRED", "REVOKED", "BLOCKED"])
+
 function deriveRightsDecision(rights: SeedManifest["rightsCases"][number]): string {
   const validFrom = parseStrictUtcTimestamp(rights.validFrom, `rights validFrom for ${rights.id}`)
   const validUntil = parseStrictUtcTimestamp(rights.validUntil, `rights validUntil for ${rights.id}`)
 
+  if (!knownRightsStatuses.has(rights.status)) {
+    throw new Error(`invalid rights status for ${rights.id}: ${rights.status}`)
+  }
   if (validUntil <= validFrom) {
     throw new Error(`invalid rights window for ${rights.id}: validUntil must be after validFrom`)
   }
