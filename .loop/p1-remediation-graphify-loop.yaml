@@ -1,0 +1,537 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-p1-review-remediation-20260814
+objective: Integrate PR #92's unique P1 fixes onto current main and complete a protected merge only after exact-head CI, Security, browser, review-thread, and ruleset proof pass.
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - scripts/content/import-seed.ts canonical ContentDocument validation, rights derivation, and source-order validation.
+    - PublicArticleApiIT matching media, variants, frozen envelopes, and PUBLIC_WEB rights for the 5000-plus media-reference regression.
+    - PR #92 reconciliation with current main f1805496010cd9eac9767e0f1efe357fe8e45a92.
+    - PR #92 exact-head CI, Security, browser, review-thread, and changed-file verification.
+    - Authoritative readback of main protected ruleset 20822671 under issue #97's solo-maintainer policy.
+  out:
+    - T064 or later task execution.
+    - Reader Stamp, Season Passport, or other T4/T5 runtime work.
+    - Web3, deployment, secrets, providers, payments, ruleset mutation, or unrelated task updates.
+
+policy:
+  authority:
+    allowed:
+      - Read authoritative GitHub source, review threads, ruleset, and workflow state.
+      - Preserve the three scoped code/fixture fixes and reconcile this remediation graph/ledger on the dedicated branch.
+      - Read exact-head proof and resolve review threads whose findings are demonstrably addressed.
+      - Merge PR #92 after all configured protected gates pass; user authorization was granted on 2026-08-15.
+    requires_approval:
+      - Apply, weaken, or bypass repository protected-branch policy.
+      - Start T064 or unrelated work.
+    forbidden:
+      - Treat expectedDecision as rights proof.
+      - Hide malformed ContentDocuments or missing media/rights fixtures.
+      - Mark required proof successful from source inspection alone.
+      - Modify tasks.md or check T064/T4/T5 before their runtime and human evidence exists.
+  human_gates:
+    - none; the active solo-maintainer policy requires zero approvals and the user authorized a protected merge
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+graph:
+  entry_nodes:
+    - t-remediation-entry
+  terminal_nodes:
+    - s-terminal
+  loops:
+    - id: l1-code-remediation
+      layer: L1
+      owner: codex-agent
+      trigger_nodes: [t-review-threads]
+      action_nodes: [a-seed-validator, a-media-boundary]
+      proof_nodes: [p-diff, p-exact-head]
+      memory_nodes: [m-ledger]
+      stop_nodes: [s-terminal]
+      budgets:
+        max_iterations: 3
+        max_minutes: 90
+        max_same_failure: 2
+        max_graph_changes: 8
+        max_tokens: 30000
+    - id: l2-governance-reconciliation
+      layer: L2
+      owner: codex-supervisor
+      trigger_nodes: [t-ruleset-gap]
+      action_nodes: [a-ruleset-readback]
+      proof_nodes: [p-ruleset-readback]
+      memory_nodes: [m-l2-ledger]
+      stop_nodes: [s-terminal]
+      budgets:
+        max_iterations: 2
+        max_minutes: 30
+        max_same_failure: 2
+        max_graph_changes: 4
+        max_tokens: 10000
+
+  nodes:
+    - id: t-remediation-entry
+      kind: trigger
+      layer: GLOBAL
+      label: P1 remediation entry fans into review and governance lanes
+      owner: codex-supervisor
+      status: done
+      risk: critical
+      confidence:
+        score: 0.98
+        basis: Single declared entry makes both scoped remediation lanes reachable.
+        evidence_refs:
+          [
+            https://github.com/bynanci/courtside-tw/pull/92,
+            https://api.github.com/repos/bynanci/courtside-tw/rulesets/20822671
+          ]
+      budget: { effort_hours: 0.1, tokens: 1000 }
+      config:
+        condition: PR #92 remediation requires both review-thread and protected-ruleset lanes.
+        inputs_required: [PR review readback, ruleset readback]
+        dedupe: pr-number plus ruleset-id
+    - id: t-review-threads
+      kind: trigger
+      layer: L1
+      label: PR #91 blockers are implemented and PR #92 threads require final reconciliation
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 0.98
+        basis: GitHub review-thread readback on PR #91.
+        evidence_refs: [https://github.com/bynanci/courtside-tw/pull/91]
+      budget: { effort_hours: 0.1, tokens: 1000 }
+      config:
+        condition: The unique PR #92 code and fixture changes address the PR #91 findings; current PR #92 threads must be resolved only after resulting-head review.
+        inputs_required: [review-thread readback, main head SHA]
+        dedupe: pr-number plus unresolved-thread-fingerprint
+    - id: t-ruleset-gap
+      kind: trigger
+      layer: L2
+      label: Main ruleset gap is resolved by issue #97's solo-maintainer policy
+      owner: codex-supervisor
+      status: done
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: Authoritative GitHub ruleset 20822671 readback confirms issue #97's active policy.
+        evidence_refs: [https://api.github.com/repos/bynanci/courtside-tw/rulesets/20822671]
+      budget: { effort_hours: 0.1, tokens: 1000 }
+      config:
+        condition: main ruleset is active, main-only, has strict 12 checks, zero approvals, conversation resolution, no bypass, and deletion/non-fast-forward protection.
+        inputs_required: [ruleset readback, exact CI/Security check names]
+        dedupe: ruleset-id plus updated-at
+    - id: a-seed-validator
+      kind: action
+      layer: L1
+      label: Close seed validator and order/rights derivation defects
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 0.92
+        basis: PR #92 diff shows canonical validation, validFrom/validUntil derivation, nonempty allowlisted channel validation, strict runtime shapes, and copied sort input.
+        evidence_refs: [https://github.com/bynanci/courtside-tw/pull/92]
+      budget: { effort_hours: 0.75, tokens: 9000 }
+      config:
+        workflow:
+          [
+            read canonical validator and RightsPolicy,
+            patch minimal seed script,
+            run exact-head proof
+          ]
+        allowed:
+          [
+            edit scripts/content/import-seed.ts,
+            edit apps/api/src/test/resources/fixtures/first-issue/manifest.json
+          ]
+        requires_approval: [merge]
+        forbidden: [trust expectedDecision as source of truth]
+    - id: a-media-boundary
+      kind: action
+      layer: L1
+      label: Make the 5000-plus media regression create matching media and rights
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        score: 0.94
+        basis: PR #92 diff calls addFixtureMedia for both heavy documents.
+        evidence_refs: [https://github.com/bynanci/courtside-tw/pull/92]
+      budget: { effort_hours: 0.5, tokens: 6000 }
+      config:
+        workflow:
+          [
+            read fixture helper,
+            bind generated document,
+            create media/variant/rights rows,
+            run API proof
+          ]
+        allowed: [edit PublicArticleApiIT.java]
+        requires_approval: [merge]
+        forbidden: [assert only on synthetic references without matching rights]
+    - id: a-ruleset-readback
+      kind: action
+      layer: L2
+      label: Read back the active main-only protected ruleset
+      owner: codex-supervisor
+      status: done
+      risk: critical
+      confidence:
+        score: 0.98
+        basis: Issue #97 is complete and ruleset 20822671 authoritatively matches the solo-maintainer policy.
+        evidence_refs: [https://api.github.com/repos/bynanci/courtside-tw/rulesets/20822671]
+      budget: { effort_hours: 0.25, tokens: 3000 }
+      config:
+        workflow:
+          [
+            read current ruleset,
+            compare exact check contexts and pull-request parameters,
+            record readback
+          ]
+        allowed: [read ruleset, record policy evidence]
+        requires_approval: [ruleset mutation]
+        forbidden: [claim protection is active without readback]
+    - id: p-diff
+      kind: proof
+      layer: L1
+      label: Source diff closes each unresolved review thread
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        score: 0.98
+        basis: Current-main reconciliation preserves exactly six PR-scoped files, including validFrom/status/channel-shape validation and the 5000-plus media boundary.
+        evidence_refs:
+          [
+            https://github.com/bynanci/courtside-tw/pull/92/files,
+            .loop/evidence/p1-remediation-20260814.json
+          ]
+      budget: { effort_hours: 0.1, tokens: 1500 }
+      config:
+        level: P1
+        claim: The remediation diff addresses all four review-thread defects without unrelated scope.
+        method: GitHub compare and targeted source readback.
+        evidence_path: .loop/evidence/p1-remediation-20260814.json
+        required: true
+        baseline_required: true
+    - id: p-exact-head
+      kind: proof
+      layer: L1
+      label: PR #92 exact-head CI Security and browser checks pass
+      owner: codex-agent
+      status: verifying
+      risk: critical
+      confidence:
+        score: 0.98
+        basis: Current main contains PR #96's postgres/gosu remediation; fresh CI and Security must now pass on the resulting PR #92 reconciliation head.
+        evidence_refs:
+          [
+            https://github.com/bynanci/courtside-tw/pull/92,
+            https://github.com/bynanci/courtside-tw/pull/96
+          ]
+      budget: { effort_hours: 1.5, tokens: 5000 }
+      config:
+        level: P2
+        claim: Final CI, Security, and the Public magazine browser job must pass on the final PR head; historical runs are not reused as final proof.
+        method: GitHub Actions workflow readback keyed by final head SHA.
+        evidence_path: .loop/evidence/p1-remediation-20260814.json
+        required: true
+        baseline_required: true
+    - id: p-ruleset-readback
+      kind: proof
+      layer: L2
+      label: Main ruleset readback confirms the protected release gate
+      owner: codex-supervisor
+      status: done
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: Ruleset 20822671 readback proves active main-only strict checks, solo-maintainer review policy, conversation resolution, no bypass, and destructive-update protection.
+        evidence_refs: [https://api.github.com/repos/bynanci/courtside-tw/rulesets/20822671]
+      budget: { effort_hours: 0.25, tokens: 2000 }
+      config:
+        level: P2
+        claim: main targets only refs/heads/main, requires 12 CI/Security checks, requires zero approvals under the solo-maintainer policy, requires conversation resolution, and has no bypass.
+        method: Authoritative ruleset GET after issue #97 completion.
+        evidence_path: .loop/evidence/p1-remediation-20260814.json
+        required: true
+        baseline_required: true
+    - id: m-ledger
+      kind: memory
+      layer: L1
+      label: P1 remediation graph ledger
+      owner: codex-supervisor
+      status: ready
+      risk: medium
+      confidence:
+        score: 0.95
+        basis: Dedicated append-only ledger is versioned with the remediation PR.
+        evidence_refs: [.loop/p1-remediation-ledger.json]
+      budget: { effort_hours: 0.1, tokens: 1500 }
+      config:
+        path: .loop/p1-remediation-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: work-memory/v1
+        memory_role: graph_ledger
+        receipt_required: true
+        write_failure_state: blocked
+    - id: m-l2-ledger
+      kind: memory
+      layer: L2
+      label: P1 governance reconciliation ledger
+      owner: codex-supervisor
+      status: ready
+      risk: medium
+      confidence:
+        score: 0.95
+        basis: Dedicated append-only ledger is shared by the scoped governance loop.
+        evidence_refs: [.loop/p1-remediation-ledger.json]
+      budget: { effort_hours: 0.1, tokens: 1500 }
+      config:
+        path: .loop/p1-remediation-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: work-memory/v1
+        memory_role: graph_ledger
+        receipt_required: true
+        write_failure_state: blocked
+    - id: s-terminal
+      kind: stop
+      layer: GLOBAL
+      label: Stop at protected merge success or an authoritative gate failure
+      owner: codex-supervisor
+      status: verifying
+      risk: critical
+      confidence:
+        score: 0.95
+        basis: User merge authorization is recorded; exact-head checks and conversation resolution remain machine-enforced gates.
+        evidence_refs: [.loop/p1-remediation-ledger.json]
+      budget: { effort_hours: 0.0, tokens: 0 }
+      config:
+        states:
+          success: Code proof, all exact-head required contexts, review-thread resolution, protected merge, and main readback pass.
+          no_op: No authoritative blocker remains.
+          blocked: Ruleset mutation or required proof is unavailable.
+          stalled: Same failure or no evidence delta reaches the configured limit.
+          exhausted: A loop budget is reached.
+          needs_human: A genuinely non-automatable decision or authority gap remains.
+
+  edges:
+    - {
+        id: e-review-seed,
+        from: t-review-threads,
+        to: a-seed-validator,
+        type: enables,
+        required: true,
+        confidence: 0.98,
+        token_capacity: 10000
+      }
+    - {
+        id: e-remediation-entry-review,
+        from: t-remediation-entry,
+        to: t-review-threads,
+        type: enables,
+        required: true,
+        confidence: 0.98,
+        token_capacity: 10000
+      }
+    - {
+        id: e-remediation-entry-ruleset,
+        from: t-remediation-entry,
+        to: t-ruleset-gap,
+        type: enables,
+        required: true,
+        confidence: 0.98,
+        token_capacity: 4000
+      }
+    - {
+        id: e-review-media,
+        from: t-review-threads,
+        to: a-media-boundary,
+        type: enables,
+        required: true,
+        confidence: 0.98,
+        token_capacity: 10000
+      }
+    - {
+        id: e-seed-diff,
+        from: a-seed-validator,
+        to: p-diff,
+        type: verifies,
+        required: true,
+        confidence: 0.95,
+        token_capacity: 10000
+      }
+    - {
+        id: e-media-diff,
+        from: a-media-boundary,
+        to: p-diff,
+        type: verifies,
+        required: true,
+        confidence: 0.95,
+        token_capacity: 10000
+      }
+    - {
+        id: e-seed-ci,
+        from: a-seed-validator,
+        to: p-exact-head,
+        type: verifies,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 10000
+      }
+    - {
+        id: e-media-ci,
+        from: a-media-boundary,
+        to: p-exact-head,
+        type: verifies,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 10000
+      }
+    - {
+        id: e-diff-ledger,
+        from: p-diff,
+        to: m-ledger,
+        type: records,
+        required: true,
+        confidence: 0.95,
+        token_capacity: 3000
+      }
+    - {
+        id: e-ci-ledger,
+        from: p-exact-head,
+        to: m-ledger,
+        type: records,
+        required: true,
+        confidence: 0.95,
+        token_capacity: 3000
+      }
+    - {
+        id: e-ledger-seed,
+        from: m-ledger,
+        to: a-seed-validator,
+        type: reads,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 3000
+      }
+    - {
+        id: e-ledger-media,
+        from: m-ledger,
+        to: a-media-boundary,
+        type: reads,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 3000
+      }
+    - {
+        id: e-ci-terminal,
+        from: p-exact-head,
+        to: s-terminal,
+        type: enables,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 10000
+      }
+    - {
+        id: e-diff-terminal,
+        from: p-diff,
+        to: s-terminal,
+        type: enables,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 10000
+      }
+    - {
+        id: e-ci-feedback,
+        from: p-exact-head,
+        to: t-review-threads,
+        type: feedback,
+        required: false,
+        confidence: 0.8,
+        token_capacity: 5000
+      }
+    - {
+        id: e-ruleset-action,
+        from: t-ruleset-gap,
+        to: a-ruleset-readback,
+        type: enables,
+        required: true,
+        confidence: 0.98,
+        token_capacity: 4000
+      }
+    - {
+        id: e-ruleset-proof,
+        from: a-ruleset-readback,
+        to: p-ruleset-readback,
+        type: verifies,
+        required: true,
+        confidence: 0.8,
+        token_capacity: 4000
+      }
+    - {
+        id: e-ruleset-ledger,
+        from: p-ruleset-readback,
+        to: m-l2-ledger,
+        type: records,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 3000
+      }
+    - {
+        id: e-ledger-ruleset,
+        from: m-l2-ledger,
+        to: a-ruleset-readback,
+        type: reads,
+        required: true,
+        confidence: 0.8,
+        token_capacity: 3000
+      }
+    - {
+        id: e-ruleset-terminal,
+        from: p-ruleset-readback,
+        to: s-terminal,
+        type: enables,
+        required: true,
+        confidence: 0.8,
+        token_capacity: 4000
+      }
+    - {
+        id: e-ruleset-feedback,
+        from: p-ruleset-readback,
+        to: t-ruleset-gap,
+        type: feedback,
+        required: false,
+        confidence: 0.8,
+        token_capacity: 2000
+      }
+
+flow:
+  source: t-remediation-entry
+  sink: s-terminal
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - next_action

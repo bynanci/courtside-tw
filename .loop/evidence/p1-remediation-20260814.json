@@ -1,0 +1,141 @@
+{
+  "schema_version": "p1-remediation-evidence/v2",
+  "captured_at": "2026-08-15T08:04:26Z",
+  "repository": "bynanci/courtside-tw",
+  "base_sha": "f1805496010cd9eac9767e0f1efe357fe8e45a92",
+  "pull_request": {
+    "number": 92,
+    "url": "https://github.com/bynanci/courtside-tw/pull/92",
+    "branch": "codex/remediate-p1-review-blockers",
+    "head_sha_before_main_reconciliation": "3873ef8d59ded36aef208b48fcade611c794e7ee",
+    "source_change_binding": "the resulting PR head containing this receipt, bound externally by GitHub exact-head checks and internally by immutable payload digests",
+    "current_status": "awaiting_resulting_head_ci_security_and_thread_resolution"
+  },
+  "review_blockers": {
+    "source": "https://github.com/bynanci/courtside-tw/pull/91",
+    "result": "addressed_in_pr_92",
+    "addressed": [
+      "canonical ContentDocument validation in scripts/content/import-seed.ts",
+      "rights decision derived from status, allowedChannels, validFrom, checkedAt, and validUntil",
+      "section order checked without mutating manifest.sections",
+      "5000-plus media references backed by matching media, variants, frozen envelope, and PUBLIC_WEB rights",
+      "malformed allowedChannels runtime shapes rejected before membership checks",
+      "empty and unsupported rights channels rejected against the persisted channel allowlist"
+    ],
+    "pr_92_thread_resolution": "pending_resulting_head_review"
+  },
+  "diff_proof": {
+    "result": "pass",
+    "base_sha": "f1805496010cd9eac9767e0f1efe357fe8e45a92",
+    "changed_files": [
+      ".loop/evidence/p1-remediation-20260814.json",
+      ".loop/p1-remediation-graphify-loop.yaml",
+      ".loop/p1-remediation-ledger.json",
+      "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java",
+      "apps/api/src/test/resources/fixtures/first-issue/manifest.json",
+      "scripts/content/import-seed.ts"
+    ],
+    "scope_note": "The current-main reconciliation contributes no additional PR-scoped production files; the compare against main remains the six files above."
+  },
+  "immutable_payload_digests": {
+    "algorithm": "sha256",
+    "files": {
+      "scripts/content/import-seed.ts": "7917e211b1887beace7bcc6f80a449ef1ab888ec1488e0839c51266d3911b908",
+      "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java": "b0e7bf1f4a66cd3c2fb8dd16106d1485679c68ab9a4284e65eb51b3cee74d36a",
+      "apps/api/src/test/resources/fixtures/first-issue/manifest.json": "6ba9f64d8cd41d4511b824a3d9d3771d455823fd1984607f3a55248c4b299e21"
+    }
+  },
+  "exact_head_proof": {
+    "result": "pending",
+    "subject": "the resulting PR head containing this reconciliation receipt",
+    "required_workflows": ["CI", "Security"],
+    "required_contexts": [
+      "Frontend and contract verification",
+      "Docker Compose dependency health",
+      "Java quality and unit verification",
+      "Public magazine browser verification",
+      "CodeQL (javascript-typescript)",
+      "Resolve Compose images",
+      "CodeQL (java-kotlin)",
+      "Trivy (filesystem)",
+      "Dependency audit and reports",
+      "Trivy (image s3)",
+      "Trivy (image postgres)",
+      "Trivy (image oidc)"
+    ],
+    "acceptance": "All required contexts must conclude success on one identical resulting head before merge.",
+    "note": "This checked-in receipt intentionally does not claim its own commit SHA. GitHub check suites and the protected merge read-back provide the authoritative exact-head binding."
+  },
+  "historical_exact_head_attempts": [
+    {
+      "head_sha": "cfca74edad35883a1a08bc76e6d3151315861037",
+      "ci_run_id": 31858750629,
+      "ci_result": "pass",
+      "security_run_id": 31858750661,
+      "security_result": "fail",
+      "failed_job": "Trivy (image postgres)",
+      "failure": "gosu embedded Go stdlib v1.26.5 with HIGH CVE-2026-39821 and CVE-2026-46600",
+      "attributable_to_pr_scope": false,
+      "superseded_by": "PR #96 merged to main at d03955f"
+    }
+  ],
+  "external_security_remediation": {
+    "result": "resolved_on_current_base",
+    "issue": "https://github.com/bynanci/courtside-tw/issues/95",
+    "pull_request": "https://github.com/bynanci/courtside-tw/pull/96",
+    "main_merge_commit": "d03955f",
+    "proof": "PR #96 CI #543 and Security #544 passed, including Trivy (image postgres) with no HIGH/CRITICAL finding",
+    "revalidation_required": "Security must still pass again on PR #92's resulting exact head."
+  },
+  "ruleset_readback": {
+    "result": "pass",
+    "endpoint": "https://api.github.com/repos/bynanci/courtside-tw/rulesets/20822671",
+    "issue": "https://github.com/bynanci/courtside-tw/issues/97",
+    "id": 20822671,
+    "name": "main-protected-release-gate",
+    "enforcement": "active",
+    "scope": {
+      "include": ["refs/heads/main"],
+      "exclude": []
+    },
+    "bypass_actors": [],
+    "current_user_can_bypass": "never",
+    "deletion_prohibited": true,
+    "non_fast_forward_prohibited": true,
+    "strict_required_status_checks": true,
+    "required_status_check_count": 12,
+    "pull_request": {
+      "required_approving_review_count": 0,
+      "dismiss_stale_reviews_on_push": false,
+      "require_last_push_approval": false,
+      "required_review_thread_resolution": true
+    },
+    "policy": "issue #97 solo-maintainer policy"
+  },
+  "historical_desired_main_ruleset": {
+    "result": "superseded",
+    "previous_policy": "one non-author approval and last-push approval",
+    "superseded_by": "issue #97 solo-maintainer policy and authoritative ruleset 20822671 read-back"
+  },
+  "governance_proof": {
+    "result": "pass",
+    "required_readback": [
+      "scope is refs/heads/main only",
+      "all 12 CI/Security contexts are strict required checks",
+      "solo-maintainer approval count is zero",
+      "conversation resolution is required",
+      "no bypass actor exists",
+      "deletion and non-fast-forward updates are prohibited"
+    ],
+    "remaining_gate": "The configured rules must be exercised by a protected merge after exact-head checks and thread resolution pass."
+  },
+  "test_delta": {
+    "initial_result": "fail",
+    "failing_test": "oversizedIssueMediaGraphDoesNotHideTheCurrentArticle",
+    "failure": "expected $.issueNavigation.next to be null",
+    "observed": "bounded-heavy-one was returned after matching media and PUBLIC_WEB rights were created",
+    "remediation": "assert next.slug is bounded-heavy-one and GET bounded-heavy-two returns 200 after the trailing 88-reference batch",
+    "code_payload_result": "pass_on_historical_code_head",
+    "final_exact_head_result": "pending"
+  }
+}

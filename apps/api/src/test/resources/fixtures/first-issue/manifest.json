@@ -48,6 +48,7 @@
       "id": "first-issue-cover-valid",
       "status": "VALID",
       "allowedChannels": ["PUBLIC_WEB"],
+      "validFrom": "2026-07-01T00:00:00Z",
       "validUntil": "2026-12-31T23:59:59Z",
       "expectedDecision": "ALLOW"
     },
@@ -55,8 +56,17 @@
       "id": "first-issue-blocked-expired",
       "status": "VALID",
       "allowedChannels": ["PUBLIC_WEB"],
+      "validFrom": "2026-07-01T00:00:00Z",
       "validUntil": "2026-07-31T23:59:59Z",
       "expectedDecision": "RIGHTS_EXPIRED"
+    },
+    {
+      "id": "first-issue-not-yet-active",
+      "status": "VALID",
+      "allowedChannels": ["PUBLIC_WEB"],
+      "validFrom": "2026-08-02T00:00:00Z",
+      "validUntil": "2026-12-31T23:59:59Z",
+      "expectedDecision": "RIGHTS_MISSING"
     }
   ]
 }
