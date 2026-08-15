@@ -42,6 +42,18 @@
       ],
       "failure_signature": "environment_toolchain_unavailable",
       "attribution": "not attributable to the T071 contract content"
+    },
+    {
+      "sequence": 3,
+      "type": "ci_format_guard_rejected_head",
+      "result": "fixed_before_runtime_red_replay",
+      "source_head": "da477479dd915cb7b418883abbf7375d51c576ad",
+      "ci_run": 559,
+      "ci_job": "Frontend and contract verification",
+      "ci_job_id": 95022888107,
+      "failure_signature": "prettier_rejected_apps_web_tests_e2e_us6_offline_issue_spec_ts",
+      "attribution": "attributable_to_tests_first_file_formatting; not an API/browser behavior RED",
+      "disposition": "format-only follow-up head prepared; re-run exact-head CI/Security before T072"
     }
   ],
   "graph_delta": {
@@ -53,7 +65,7 @@
   "proof_coverage": {
     "api_contracts": "authored",
     "browser_contracts": "5/5 scenarios authored",
-    "runtime_red": "pending toolchain",
+    "runtime_red": "pending after format guard fix",
     "passing_implementation": "0/0; not started"
   },
   "min_cut": [
@@ -61,5 +73,5 @@
     "pinned Playwright execution of us6-offline-issue.spec.ts",
     "attributable RED failure before T072 implementation"
   ],
-  "next_action": "Execute targeted RED replay in CI or a repo-pinned local environment; only then begin T072."
+  "next_action": "Execute exact-head CI/Security again, then preserve attributable API/browser RED replay; only then begin T072."
 }
