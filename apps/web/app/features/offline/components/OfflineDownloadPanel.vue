@@ -47,11 +47,12 @@ async function downloadIssue(): Promise<void> {
   statusMessage.value = "正在準備離線內容……"
 
   try {
-    installed.value = await manager.download(currentProgress => {
+    installed.value = await manager.download((currentProgress) => {
       progress.value = currentProgress
-      statusMessage.value = currentProgress.total > 0
-        ? `正在下載 ${currentProgress.completed}/${currentProgress.total} 個資產……`
-        : "正在建立離線內容……"
+      statusMessage.value =
+        currentProgress.total > 0
+          ? `正在下載 ${currentProgress.completed}/${currentProgress.total} 個資產……`
+          : "正在建立離線內容……"
     })
     status.value = "installed"
     statusMessage.value = "下載完成，這一期已保存。"
@@ -100,7 +101,11 @@ async function reconcileWithdrawal(): Promise<void> {
 </script>
 
 <template>
-  <section class="offline-panel" data-testid="offline-panel" aria-labelledby="offline-panel-heading">
+  <section
+    class="offline-panel"
+    data-testid="offline-panel"
+    aria-labelledby="offline-panel-heading"
+  >
     <div class="offline-panel__copy">
       <p class="eyebrow">Offline reader</p>
       <h2 id="offline-panel-heading">下載這一期，離線也能讀</h2>
@@ -139,22 +144,43 @@ async function reconcileWithdrawal(): Promise<void> {
         檢查撤回狀態
       </button>
 
-      <p data-testid="offline-download-status" class="offline-panel__status" role="status" aria-live="polite">
+      <p
+        data-testid="offline-download-status"
+        class="offline-panel__status"
+        role="status"
+        aria-live="polite"
+      >
         {{ statusMessage }}
       </p>
       <p v-if="progress && isBusy" class="offline-panel__progress" aria-live="polite">
         {{ progress.completed }} / {{ progress.total }}
       </p>
-      <p v-if="errorMessage" data-testid="offline-download-error" class="offline-panel__error" role="alert">
+      <p
+        v-if="errorMessage"
+        data-testid="offline-download-error"
+        class="offline-panel__error"
+        role="alert"
+      >
         {{ errorMessage }}
       </p>
 
-      <div v-if="hasInstalled && installed" data-testid="offline-installed" class="offline-panel__installed">
+      <div
+        v-if="hasInstalled && installed"
+        data-testid="offline-installed"
+        class="offline-panel__installed"
+      >
         <span>已保存版本</span>
-        <strong data-testid="offline-manifest-version">{{ installed.manifest.manifestVersion }}</strong>
+        <strong data-testid="offline-manifest-version">{{
+          installed.manifest.manifestVersion
+        }}</strong>
       </div>
 
-      <p v-if="isUnavailable" data-testid="offline-unavailable" class="offline-panel__error" role="alert">
+      <p
+        v-if="isUnavailable"
+        data-testid="offline-unavailable"
+        class="offline-panel__error"
+        role="alert"
+      >
         這一期已撤回，離線文章不可用。
       </p>
     </div>

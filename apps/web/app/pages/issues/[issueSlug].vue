@@ -143,4 +143,3 @@ useHead(() => {
     </main>
   </div>
 </template>
-

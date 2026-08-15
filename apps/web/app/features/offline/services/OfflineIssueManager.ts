@@ -58,12 +58,7 @@ export type OfflineDownloadProgress = {
 }
 
 export type OfflineIssueErrorCode =
-  | "interrupted"
-  | "corrupt"
-  | "quota"
-  | "network"
-  | "storage"
-  | "withdrawn"
+  "interrupted" | "corrupt" | "quota" | "network" | "storage" | "withdrawn"
 
 export class OfflineIssueError extends Error {
   readonly code: OfflineIssueErrorCode
@@ -98,7 +93,7 @@ export async function sha256Hex(bytes: ArrayBuffer): Promise<string> {
     throw new OfflineIssueError("storage", "此瀏覽器不支援離線內容校驗。")
   }
   const digest = await globalThis.crypto.subtle.digest("SHA-256", bytes)
-  return Array.from(new Uint8Array(digest), byte => byte.toString(16).padStart(2, "0")).join("")
+  return Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("")
 }
 
 export class OfflineIssueManager {
@@ -194,14 +189,14 @@ export class OfflineIssueManager {
       if (!response.ok) {
         throw new OfflineIssueError("network", "撤回清單暫時無法取得。")
       }
-      manifest = await response.json() as WithdrawalManifest
+      manifest = (await response.json()) as WithdrawalManifest
       validateWithdrawalManifest(manifest)
     } catch (error) {
       throw asOfflineIssueError(error)
     }
 
     const withdrawn = new Set(manifest.withdrawals)
-    const hasWithdrawnArticle = installed.manifest.articles.some(article =>
+    const hasWithdrawnArticle = installed.manifest.articles.some((article) =>
       withdrawn.has(article.articleId)
     )
     if (!hasWithdrawnArticle) {
@@ -222,7 +217,7 @@ export class OfflineIssueManager {
       if (!response.ok) {
         throw new OfflineIssueError("network", "離線下載清單暫時無法取得。")
       }
-      const manifest = await response.json() as OfflineManifest
+      const manifest = (await response.json()) as OfflineManifest
       validateManifest(manifest, this.issueSlug)
       return manifest
     } catch (error) {
@@ -282,7 +277,9 @@ function validateManifest(manifest: OfflineManifest, issueSlug: string): void {
   assertSha256(manifest.checksum, "manifest")
   if (
     manifest.assetBytes !== undefined &&
-    (!Number.isSafeInteger(manifest.assetBytes) || manifest.assetBytes < 0 || manifest.assetBytes > MAX_DOWNLOAD_BYTES)
+    (!Number.isSafeInteger(manifest.assetBytes) ||
+      manifest.assetBytes < 0 ||
+      manifest.assetBytes > MAX_DOWNLOAD_BYTES)
   ) {
     throw new OfflineIssueError("corrupt", "離線下載清單大小超出安全上限。")
   }
@@ -305,7 +302,9 @@ function validateManifest(manifest: OfflineManifest, issueSlug: string): void {
       }
       if (
         asset.byteSize !== undefined &&
-        (!Number.isSafeInteger(asset.byteSize) || asset.byteSize < 1 || asset.byteSize > MAX_DOWNLOAD_BYTES)
+        (!Number.isSafeInteger(asset.byteSize) ||
+          asset.byteSize < 1 ||
+          asset.byteSize > MAX_DOWNLOAD_BYTES)
       ) {
         throw new OfflineIssueError("corrupt", "離線資產大小無效。")
       }
@@ -319,7 +318,7 @@ function validateWithdrawalManifest(manifest: WithdrawalManifest): void {
     !Number.isInteger(manifest.version) ||
     manifest.version < 1 ||
     !Array.isArray(manifest.withdrawals) ||
-    manifest.withdrawals.some(articleId => {
+    manifest.withdrawals.some((articleId) => {
       try {
         assertSafeArticleId(articleId)
         return false
@@ -337,13 +336,13 @@ function validateWithdrawalManifest(manifest: WithdrawalManifest): void {
 
 function downloadAssetsFor(manifest: OfflineManifest): DownloadAsset[] {
   if (manifest.assets && manifest.assets.length > 0) {
-    return manifest.assets.map(asset => ({
+    return manifest.assets.map((asset) => ({
       url: asset.url!,
       checksum: asset.checksum,
       byteSize: asset.byteSize
     }))
   }
-  return manifest.articles.map(article => ({
+  return manifest.articles.map((article) => ({
     url: getOfflineFallbackAssetPath(article.articleId)
   }))
 }
@@ -437,7 +436,8 @@ function asOfflineIssueError(error: unknown): OfflineIssueError {
 }
 
 function candidateCacheNameFor(issueSlug: string, manifest: OfflineManifest): string {
-  const suffix = globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`
+  const suffix =
+    globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`
   return `${CACHE_PREFIX}:candidate:${encodeURIComponent(issueSlug)}:${manifest.manifestVersion}:${manifest.checksum}:${suffix}`
 }
 
@@ -453,7 +453,8 @@ function openDatabase(): Promise<IDBDatabase> {
       }
     }
     request.onsuccess = () => resolve(request.result)
-    request.onerror = () => reject(new OfflineIssueError("storage", "離線狀態儲存無法開啟。", { cause: request.error }))
+    request.onerror = () =>
+      reject(new OfflineIssueError("storage", "離線狀態儲存無法開啟。", { cause: request.error }))
   })
 }
 
@@ -484,11 +485,15 @@ async function writeState(state: InstalledOfflineIssue): Promise<void> {
     }
     transaction.onerror = () => {
       database.close()
-      reject(new OfflineIssueError("storage", "離線安裝狀態無法提交。", { cause: transaction.error }))
+      reject(
+        new OfflineIssueError("storage", "離線安裝狀態無法提交。", { cause: transaction.error })
+      )
     }
     transaction.onabort = () => {
       database.close()
-      reject(new OfflineIssueError("storage", "離線安裝狀態無法提交。", { cause: transaction.error }))
+      reject(
+        new OfflineIssueError("storage", "離線安裝狀態無法提交。", { cause: transaction.error })
+      )
     }
   })
 }
@@ -504,11 +509,15 @@ async function deleteState(issueSlug: string): Promise<void> {
     }
     transaction.onerror = () => {
       database.close()
-      reject(new OfflineIssueError("storage", "離線安裝狀態無法移除。", { cause: transaction.error }))
+      reject(
+        new OfflineIssueError("storage", "離線安裝狀態無法移除。", { cause: transaction.error })
+      )
     }
     transaction.onabort = () => {
       database.close()
-      reject(new OfflineIssueError("storage", "離線安裝狀態無法移除。", { cause: transaction.error }))
+      reject(
+        new OfflineIssueError("storage", "離線安裝狀態無法移除。", { cause: transaction.error })
+      )
     }
   })
 }
@@ -523,6 +532,8 @@ async function removeStateAndCache(state: InstalledOfflineIssue): Promise<void> 
     await deleteState(state.issueSlug)
   }
   if (cacheError) {
-    throw new OfflineIssueError("storage", "離線內容已撤回，但舊快取清理未完成。", { cause: cacheError })
+    throw new OfflineIssueError("storage", "離線內容已撤回，但舊快取清理未完成。", {
+      cause: cacheError
+    })
   }
 }
