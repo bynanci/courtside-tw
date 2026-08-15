@@ -88,9 +88,7 @@ test.describe("US6 offline issue", () => {
     await openOfflineIssue(page)
     await page.getByTestId("offline-download").click()
 
-    await expect(page.getByTestId("offline-download-error")).toContainText(
-      /checksum|校驗|corrupt/i
-    )
+    await expect(page.getByTestId("offline-download-error")).toContainText(/checksum|校驗|corrupt/i)
     await expect(page.getByTestId("offline-installed")).toHaveCount(0)
   })
 
@@ -112,9 +110,7 @@ test.describe("US6 offline issue", () => {
     await openOfflineIssue(page)
     await page.getByTestId("offline-download").click()
 
-    await expect(page.getByTestId("offline-download-error")).toContainText(
-      /quota|儲存空間|容量/i
-    )
+    await expect(page.getByTestId("offline-download-error")).toContainText(/quota|儲存空間|容量/i)
     await expect(page.getByTestId("offline-installed")).toHaveCount(0)
   })
 
@@ -138,7 +134,9 @@ test.describe("US6 offline issue", () => {
     await expect(page.getByTestId("offline-installed")).toBeVisible()
   })
 
-  test("reconciles an online withdrawal before exposing cached article content", async ({ page }) => {
+  test("reconciles an online withdrawal before exposing cached article content", async ({
+    page
+  }) => {
     await page.route("**/api/v1/public/offline/issues/**/manifest", (route) =>
       route.fulfill({
         status: 200,
@@ -158,9 +156,7 @@ test.describe("US6 offline issue", () => {
     await page.getByTestId("offline-download").click()
     await page.getByTestId("offline-reconcile").click()
 
-    await expect(page.getByTestId("offline-unavailable")).toContainText(
-      /withdrawn|撤回|不可用/i
-    )
+    await expect(page.getByTestId("offline-unavailable")).toContainText(/withdrawn|撤回|不可用/i)
     await expect(page.getByTestId("offline-article-body")).toHaveCount(0)
   })
 })
