@@ -1,15 +1,20 @@
 package tw.basketball.magazine.readerlibrary.api;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 import jakarta.servlet.http.HttpServletRequest;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.core.Authentication;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -24,21 +29,44 @@ import tw.basketball.magazine.readerlibrary.application.ReaderLibraryProblemExce
 import tw.basketball.magazine.readerlibrary.application.ReaderLibraryService;
 import tw.basketball.magazine.readerlibrary.application.ReaderLibraryService.ProgressMergeRequest;
 import tw.basketball.magazine.readerlibrary.application.ReaderLibraryService.ProgressUpsert;
+import tw.basketball.magazine.shared.ApplicationClock;
 import tw.basketball.magazine.shared.ProblemCode;
 import tw.basketball.magazine.shared.RequestId;
 import tw.basketball.magazine.shared.RoleCode;
 
 /** Authenticated reader bookmark and progress API. */
 @RestController
-@ConditionalOnBean(ReaderLibraryService.class)
 public final class ReaderLibraryController {
     private static final String BASE_PATH = "/api/v1/me";
     private static final String REQUEST_ID_HEADER = "X-Request-Id";
 
-    private final ReaderLibraryService service;
+    private final Supplier<ReaderLibraryService> serviceResolver;
+    private volatile ReaderLibraryService resolvedService;
 
-    public ReaderLibraryController(ReaderLibraryService service) {
-        this.service = service;
+    /**
+     * Resolves JDBC lazily because component scanning precedes JDBC
+     * auto-configuration in the production application context.
+     */
+    @Autowired
+    public ReaderLibraryController(
+            ObjectProvider<ReaderLibraryService> serviceProvider,
+            ObjectProvider<JdbcTemplate> jdbcTemplateProvider,
+            ObjectProvider<PlatformTransactionManager> transactionManagerProvider
+    ) {
+        Objects.requireNonNull(serviceProvider, "serviceProvider");
+        Objects.requireNonNull(jdbcTemplateProvider, "jdbcTemplateProvider");
+        Objects.requireNonNull(transactionManagerProvider, "transactionManagerProvider");
+        serviceResolver = () -> {
+            ReaderLibraryService configured = serviceProvider.getIfAvailable();
+            return configured != null
+                    ? configured
+                    : resolveJdbcService(jdbcTemplateProvider, transactionManagerProvider);
+        };
+    }
+
+    ReaderLibraryController(ReaderLibraryService service) {
+        ReaderLibraryService fixed = Objects.requireNonNull(service, "service");
+        serviceResolver = () -> fixed;
     }
 
     @GetMapping(path = BASE_PATH + "/bookmarks", produces = MediaType.APPLICATION_JSON_VALUE)
@@ -47,7 +75,7 @@ public final class ReaderLibraryController {
             Authentication authentication,
             HttpServletRequest request
     ) {
-        return ok(service.bookmarks(reader(authentication), limit), request);
+        return ok(service().bookmarks(reader(authentication), limit), request);
     }
 
     @PutMapping(path = BASE_PATH + "/bookmarks/{articleId}")
@@ -56,7 +84,7 @@ public final class ReaderLibraryController {
             Authentication authentication,
             HttpServletRequest request
     ) {
-        service.putBookmark(reader(authentication), uuid(articleId, "/articleId"));
+        service().putBookmark(reader(authentication), uuid(articleId, "/articleId"));
         return noContent(request);
     }
 
@@ -66,7 +94,7 @@ public final class ReaderLibraryController {
             Authentication authentication,
             HttpServletRequest request
     ) {
-        service.deleteBookmark(reader(authentication), uuid(articleId, "/articleId"));
+        service().deleteBookmark(reader(authentication), uuid(articleId, "/articleId"));
         return noContent(request);
     }
 
@@ -76,7 +104,7 @@ public final class ReaderLibraryController {
             Authentication authentication,
             HttpServletRequest request
     ) {
-        return ok(service.progress(reader(authentication), limit), request);
+        return ok(service().progress(reader(authentication), limit), request);
     }
 
     @PutMapping(
@@ -91,7 +119,7 @@ public final class ReaderLibraryController {
             HttpServletRequest request
     ) {
         return ok(
-                service.putProgress(
+                service().putProgress(
                         reader(authentication),
                         uuid(articleId, "/articleId"),
                         input
@@ -110,7 +138,37 @@ public final class ReaderLibraryController {
             Authentication authentication,
             HttpServletRequest request
     ) {
-        return ok(service.merge(reader(authentication), input), request);
+        return ok(service().merge(reader(authentication), input), request);
+    }
+
+    private ReaderLibraryService service() {
+        ReaderLibraryService service = serviceResolver.get();
+        if (service == null) {
+            throw new IllegalStateException("reader-library persistence is unavailable");
+        }
+        return service;
+    }
+
+    private ReaderLibraryService resolveJdbcService(
+            ObjectProvider<JdbcTemplate> jdbcTemplateProvider,
+            ObjectProvider<PlatformTransactionManager> transactionManagerProvider
+    ) {
+        ReaderLibraryService current = resolvedService;
+        if (current != null) {
+            return current;
+        }
+        JdbcTemplate jdbcTemplate = jdbcTemplateProvider.getIfAvailable();
+        PlatformTransactionManager transactionManager = transactionManagerProvider.getIfAvailable();
+        if (jdbcTemplate == null || transactionManager == null) {
+            return null;
+        }
+        ReaderLibraryService created = new ReaderLibraryService(
+                jdbcTemplate,
+                transactionManager,
+                ApplicationClock.systemUtc()
+        );
+        resolvedService = created;
+        return created;
     }
 
     private static ResponseEntity<?> ok(Object body, HttpServletRequest request) {
