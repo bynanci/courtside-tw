@@ -18,6 +18,7 @@ type SeedManifest = {
     id: string
     status: string
     allowedChannels: string[]
+    validFrom: string
     validUntil: string
     expectedDecision: string
   }>
@@ -61,8 +62,12 @@ function parseStrictUtcTimestamp(value: string, label: string): number {
 
 const checkedAt = parseStrictUtcTimestamp("2026-08-01T00:00:00Z", "checkedAt")
 function deriveRightsDecision(rights: SeedManifest["rightsCases"][number]): string {
+  const validFrom = parseStrictUtcTimestamp(rights.validFrom, `rights validFrom for ${rights.id}`)
   const validUntil = parseStrictUtcTimestamp(rights.validUntil, `rights validUntil for ${rights.id}`)
 
+  if (validUntil <= validFrom) {
+    throw new Error(`invalid rights window for ${rights.id}: validUntil must be after validFrom`)
+  }
   if (rights.status === "REVOKED") {
     return "RIGHTS_REVOKED"
   }
@@ -70,6 +75,9 @@ function deriveRightsDecision(rights: SeedManifest["rightsCases"][number]): stri
     return "RIGHTS_EXPIRED"
   }
   if (rights.status !== "VALID") {
+    return "RIGHTS_MISSING"
+  }
+  if (checkedAt < validFrom) {
     return "RIGHTS_MISSING"
   }
   if (validUntil <= checkedAt) {
@@ -96,7 +104,8 @@ if (
   rightsDecisions.length < 2 ||
   rightsDecisions.some((rights) => rights.expectedDecision !== rights.decision) ||
   !rightsDecisions.some((rights) => rights.decision === "ALLOW") ||
-  !rightsDecisions.some((rights) => rights.decision === "RIGHTS_EXPIRED")
+  !rightsDecisions.some((rights) => rights.decision === "RIGHTS_EXPIRED"),
+  !rightsDecisions.some((rights) => rights.decision === "RIGHTS_MISSING")
 ) {
   throw new Error("first-issue seed manifest is incomplete, non-deterministic, or rights-invalid")
 }
