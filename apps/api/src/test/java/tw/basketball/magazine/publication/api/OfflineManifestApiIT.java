@@ -46,7 +46,7 @@ final class OfflineManifestApiIT extends PublicIssueApiIntegrationTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.issueSlug").value(issue.slug()))
-                .andExpect(jsonPath("$.manifestVersion").value(1))
+                .andExpect(jsonPath("$.manifestVersion").value(2))
                 .andExpect(jsonPath("$.checksum").value(Matchers.matchesPattern("[0-9a-f]{64}")))
                 .andExpect(jsonPath("$.expiresAt").exists())
                 .andExpect(jsonPath("$.assetBytes").value(512))
