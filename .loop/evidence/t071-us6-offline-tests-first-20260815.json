@@ -60,6 +60,7 @@
     "typescript_syntax": "PASS via node --experimental-strip-types --check",
     "java_runtime_red": "PENDING: local worktree has no Gradle executable; CI/Testcontainers replay is required",
     "browser_runtime_red": "PENDING: repo-pinned pnpm/node are unavailable locally and the staged worktree has no package install",
+    "ci_format_guard": "FAIL on CI #559 job Frontend and contract verification: Prettier rejected apps/web/tests/e2e/us6-offline-issue.spec.ts; fixed in the follow-up head before targeted RED replay",
     "source_readback": "PASS: no OfflineManifestController, OfflineManifestService, OfflineIssueManager, WithdrawalReconciler or offline UI test IDs exist on baseline main",
     "exact_head_ci_security": "PENDING: T071 is tests-first only; no implementation head is eligible for protected merge"
   },
@@ -71,5 +72,5 @@
     "repository_protection_modified": false,
     "web3_or_unrelated_work_started": false
   },
-  "next_action": "Run the two targeted contracts on the pinned CI toolchain, preserve the attributable RED receipt, then dispatch T072 only; do not mark T071 complete yet."
+  "next_action": "Re-run exact-head CI/Security after the formatting fix, then preserve only an attributable API/browser RED receipt before dispatching T072; do not mark T071 complete yet."
 }
