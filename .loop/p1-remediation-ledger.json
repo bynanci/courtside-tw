@@ -1,12 +1,12 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-p1-review-remediation-20260814",
-  "graph_version": 11,
+  "graph_version": 12,
   "run_id": "courtside-p1-review-remediation-reconciliation-20260815",
   "status": "verifying",
-  "iteration": 1,
+  "iteration": 2,
   "started_at": "2026-08-15T07:44:55Z",
-  "updated_at": "2026-08-15T07:44:55Z",
+  "updated_at": "2026-08-15T08:04:26Z",
   "previous_run": {
     "run_id": "courtside-p1-review-remediation-20260814",
     "started_at": "2026-08-14T03:51:03Z",
@@ -929,6 +929,66 @@
         "total": 0
       },
       "terminal_reason": "The source change requires one fresh exact-head CI and Security cycle before terminal acceptance."
+    },
+    {
+      "event_id": "evt-014-resulting-head-source-binding",
+      "at": "2026-08-15T08:04:26Z",
+      "actor": "codex-supervisor",
+      "type": "evidence_binding_correction",
+      "base_graph_version": 11,
+      "new_graph_version": 12,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "remove",
+            "path": "evidence/pull_request/last_code_change_sha",
+            "before": "cfca74edad35883a1a08bc76e6d3151315861037",
+            "reason": "a checked-in receipt cannot truthfully self-reference the commit that contains it"
+          },
+          {
+            "op": "add",
+            "path": "evidence/pull_request/source_change_binding",
+            "after": "resulting PR head plus immutable payload digest and GitHub exact-head checks"
+          },
+          {
+            "op": "append",
+            "path": "events",
+            "value": "evt-014-resulting-head-source-binding"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/p1-remediation-20260814.json",
+        "scripts/content/import-seed.ts"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "source payload binding",
+          "result": "pass",
+          "sha256": "7917e211b1887beace7bcc6f80a449ef1ab888ec1488e0839c51266d3911b908"
+        },
+        {
+          "proof": "prior exact-head CI #551 and Security #552",
+          "result": "pass_but_superseded_by_evidence_change",
+          "head_sha": "9f566d1cab3dff9866ec120c5e9cf5831d331139"
+        },
+        {
+          "proof": "current run budget",
+          "result": "pass",
+          "iteration": 2,
+          "l1_max_iterations": 3,
+          "l2_max_iterations": 2
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Remove the stale source SHA and bind the resulting source through immutable payload digests plus GitHub's external exact-head checks.",
+      "token_usage": {
+        "estimated": 900,
+        "input": 0,
+        "output": 0,
+        "total": 0
+      },
+      "terminal_reason": "The evidence-only correction creates a new resulting head that requires one final protected check cycle."
     }
   ]
 }

@@ -1,6 +1,6 @@
 {
   "schema_version": "p1-remediation-evidence/v2",
-  "captured_at": "2026-08-15T07:27:22Z",
+  "captured_at": "2026-08-15T08:04:26Z",
   "repository": "bynanci/courtside-tw",
   "base_sha": "f1805496010cd9eac9767e0f1efe357fe8e45a92",
   "pull_request": {
@@ -8,7 +8,7 @@
     "url": "https://github.com/bynanci/courtside-tw/pull/92",
     "branch": "codex/remediate-p1-review-blockers",
     "head_sha_before_main_reconciliation": "3873ef8d59ded36aef208b48fcade611c794e7ee",
-    "last_code_change_sha": "cfca74edad35883a1a08bc76e6d3151315861037",
+    "source_change_binding": "the resulting PR head containing this receipt, bound externally by GitHub exact-head checks and internally by immutable payload digests",
     "current_status": "awaiting_resulting_head_ci_security_and_thread_resolution"
   },
   "review_blockers": {
