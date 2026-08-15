@@ -1,32 +1,33 @@
 {
   "schema_version": "p1-remediation-evidence/v1",
-  "captured_at": "2026-08-14T13:26:01Z",
+  "captured_at": "2026-08-15T00:18:05.465Z",
   "repository": "bynanci/courtside-tw",
-  "base_sha": "e5baa0702f4e8f730f86378a143eca8b36b084d8",
+  "base_sha": "88d31b9709339e94e7cf7a3af80f5da773cbed70",
   "pull_request": {
     "number": 92,
     "url": "https://github.com/bynanci/courtside-tw/pull/92",
     "branch": "codex/remediate-p1-review-blockers",
-    "head_sha_before_evidence": "d6b04b932be10712612affae8f26f10de20995af",
+    "head_sha_before_evidence": "41f1d6e90cda14cb3fa1290289114e2c5012f5ca",
     "draft": false,
-    "head_sha_verified_at": "2026-08-14T06:55:57Z",
-    "last_reviewed_head_sha": "9a660add74cbf9bd8cd05fd37701ff93efbc5d69",
-    "last_code_change_sha": "aa2b6b73f9011e86ae8df1ed3d263b51192d9ac7",
-    "exact_head_proof_status": "pending_final_head_readback"
+    "head_sha_verified_at": "2026-08-14T15:55:57Z",
+    "last_reviewed_head_sha": "41f1d6e90cda14cb3fa1290289114e2c5012f5ca",
+    "last_code_change_sha": "3852b30d688d5abbc0dafe0dae66fed704f44138",
+    "exact_head_proof_status": "pending_post_receipt_rerun"
   },
   "review_blockers": {
     "source": "https://github.com/bynanci/courtside-tw/pull/91",
-    "unresolved_count": 4,
+    "unresolved_count": 0,
     "addressed": [
       "canonical ContentDocument validation in scripts/content/import-seed.ts",
       "rights decision derived from status, allowedChannels, and fixed checkedAt/validUntil",
       "section order checked without mutating manifest.sections",
       "5000-plus media references backed by matching media, variants, frozen envelope, and PUBLIC_WEB rights"
-    ]
+    ],
+    "reviewed_head_sha": "41f1d6e90cda14cb3fa1290289114e2c5012f5ca"
   },
   "diff_proof": {
     "result": "pass",
-    "compare_url": "https://github.com/bynanci/courtside-tw/compare/e5baa0702f4e8f730f86378a143eca8b36b084d8...aa2b6b73f9011e86ae8df1ed3d263b51192d9ac7",
+    "compare_url": "https://github.com/bynanci/courtside-tw/compare/88d31b9709339e94e7cf7a3af80f5da773cbed70...41f1d6e90cda14cb3fa1290289114e2c5012f5ca",
     "changed_files": [
       ".loop/evidence/p1-remediation-20260814.json",
       ".loop/p1-remediation-graphify-loop.yaml",
@@ -34,21 +35,24 @@
       "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java",
       "scripts/content/import-seed.ts"
     ],
-    "last_code_change_sha": "aa2b6b73f9011e86ae8df1ed3d263b51192d9ac7"
+    "last_code_change_sha": "3852b30d688d5abbc0dafe0dae66fed704f44138"
   },
   "exact_head_proof": {
-    "result": "pending",
-    "previous_verified_head": "9a660add74cbf9bd8cd05fd37701ff93efbc5d69",
-    "previous_ci_run_id": 31802866086,
-    "previous_security_run_id": 31802866109,
-    "previous_browser_job_id": 94774996267,
-    "previous_verified_at": "2026-08-14T13:06:20Z",
-    "revalidation_required_for": "final head after trailing media-batch assertion",
+    "result": "pass",
+    "verified_head_sha": "41f1d6e90cda14cb3fa1290289114e2c5012f5ca",
+    "ci_run_id": 31816417999,
+    "ci_url": "https://github.com/bynanci/courtside-tw/actions/runs/31816417999",
+    "security_run_id": 31816417976,
+    "security_url": "https://github.com/bynanci/courtside-tw/actions/runs/31816417976",
+    "browser_job_id": 94819399671,
+    "browser_job": "Public magazine browser verification",
+    "verified_at": "2026-08-14T15:55:57Z",
     "required_workflows": [
       "CI",
       "Security"
     ],
-    "browser_job": "Public magazine browser verification"
+    "post_receipt_revalidation": "pending",
+    "note": "This receipt sync is metadata-only; rerun CI/Security on the resulting final PR head before merge."
   },
   "ruleset_baseline": {
     "endpoint": "https://api.github.com/repos/bynanci/courtside-tw/rulesets/20822671",
@@ -172,9 +176,12 @@
     "observed": "bounded-heavy-one was returned after matching media and PUBLIC_WEB rights were created",
     "remediation": "assert next.slug is bounded-heavy-one",
     "final_result": "pass",
-    "exact_head_sha": "689614f1dfd85392c25797f8d840f6caf0b7a426",
-    "ci_run_id": 31777745360,
+    "exact_head_sha": "41f1d6e90cda14cb3fa1290289114e2c5012f5ca",
+    "ci_run_id": 31816417999,
     "additional_regression": "GET bounded-heavy-two returns 200 after the trailing 88-reference batch",
-    "final_exact_head_result": "pending"
+    "final_exact_head_result": "pass",
+    "security_run_id": 31816417976,
+    "browser_job_id": 94819399671,
+    "post_receipt_revalidation": "pending"
   }
 }
