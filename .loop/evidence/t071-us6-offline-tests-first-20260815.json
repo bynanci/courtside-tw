@@ -1,0 +1,75 @@
+{
+  "schema": "courtside-tw/task-evidence/v1",
+  "task": "T071",
+  "status": "RED_CONTRACT_AUTHORED",
+  "recorded_at": "2026-08-15T00:00:00Z",
+  "baseline_main": "73bbb0851d90a108f6a8c9d93c284670afbfd152",
+  "tests_first_commit": "fe7f0ffe6fc1c4ff8c93936ba81968b229183434",
+  "changed_files": [
+    "apps/api/src/test/java/tw/basketball/magazine/publication/api/OfflineManifestApiIT.java",
+    "apps/web/tests/e2e/us6-offline-issue.spec.ts",
+    ".loop/t071-us6-offline-graphify-loop.yaml",
+    ".loop/evidence/t071-us6-offline-tests-first-20260815.json",
+    ".loop/t071-us6-offline-ledger.json",
+    ".loop/memory/t071-us6-offline.json"
+  ],
+  "contract_matrix": [
+    {
+      "scenario": "interrupted download",
+      "production_seam": "offline issue download manager and temporary asset cache",
+      "test": "apps/web/tests/e2e/us6-offline-issue.spec.ts :: does not install a partially downloaded issue after interruption",
+      "fixture": "manifestV1 plus aborted **/media/offline/** response",
+      "expected_red": "offline-download control is absent before T074/T075; once present, the pre-atomic-install path must report interrupted",
+      "pass_assertion": "offline-download-status reports interruption and offline-installed remains absent"
+    },
+    {
+      "scenario": "corrupted asset",
+      "production_seam": "checksum verification before atomic install",
+      "test": "apps/web/tests/e2e/us6-offline-issue.spec.ts :: rejects a corrupted asset before marking the issue installed",
+      "fixture": "manifestV1 plus corrupt text response for **/media/offline/**",
+      "expected_red": "offline-download control is absent before T074/T075",
+      "pass_assertion": "offline-download-error reports checksum/corruption and offline-installed remains absent"
+    },
+    {
+      "scenario": "quota denial",
+      "production_seam": "navigator.storage.estimate guard before temporary cache allocation",
+      "test": "apps/web/tests/e2e/us6-offline-issue.spec.ts :: surfaces quota denial without leaving a partial installation",
+      "fixture": "navigator.storage.estimate returns quota=usage=1024 and manifestV1",
+      "expected_red": "offline-download control is absent before T074/T075",
+      "pass_assertion": "offline-download-error reports quota/capacity and offline-installed remains absent"
+    },
+    {
+      "scenario": "manifest update",
+      "production_seam": "versioned manifest fetch plus atomic replacement of installed content",
+      "test": "apps/web/tests/e2e/us6-offline-issue.spec.ts :: atomically replaces an installed issue with a newer manifest",
+      "fixture": "first manifestV1, then manifestV2 with a new version and checksum",
+      "expected_red": "offline-download/update controls are absent before T074/T075",
+      "pass_assertion": "installed manifest version changes from 1 to 2 and remains installed"
+    },
+    {
+      "scenario": "withdrawal reconciliation",
+      "production_seam": "GET /api/v1/public/withdrawals plus online cache invalidation",
+      "test": "apps/web/tests/e2e/us6-offline-issue.spec.ts :: reconciles an online withdrawal before exposing cached article content",
+      "fixture": "manifestV1 plus withdrawalManifest containing the article UUID",
+      "expected_red": "offline reconciliation control is absent before T072/T074/T076",
+      "pass_assertion": "offline-unavailable is shown and offline-article-body is absent"
+    }
+  ],
+  "proof": {
+    "git_diff_check": "PASS",
+    "typescript_syntax": "PASS via node --experimental-strip-types --check",
+    "java_runtime_red": "PENDING: local worktree has no Gradle executable; CI/Testcontainers replay is required",
+    "browser_runtime_red": "PENDING: repo-pinned pnpm/node are unavailable locally and the staged worktree has no package install",
+    "source_readback": "PASS: no OfflineManifestController, OfflineManifestService, OfflineIssueManager, WithdrawalReconciler or offline UI test IDs exist on baseline main",
+    "exact_head_ci_security": "PENDING: T071 is tests-first only; no implementation head is eligible for protected merge"
+  },
+  "scope_guard": {
+    "production_code_changed": false,
+    "tasks_checkbox_changed": false,
+    "issue_89_changed": false,
+    "pr_92_modified": false,
+    "repository_protection_modified": false,
+    "web3_or_unrelated_work_started": false
+  },
+  "next_action": "Run the two targeted contracts on the pinned CI toolchain, preserve the attributable RED receipt, then dispatch T072 only; do not mark T071 complete yet."
+}

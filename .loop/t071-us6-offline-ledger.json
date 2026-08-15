@@ -1,0 +1,65 @@
+{
+  "schema": "courtside-tw/loop-ledger/v1",
+  "lane": "t071-us6-offline-tests-first",
+  "version": 1,
+  "recorded_at": "2026-08-15T00:00:00Z",
+  "decision": "Author the bounded T071 RED contracts and stop before runtime implementation.",
+  "terminal_state": "needs_next_action",
+  "scope": {
+    "issue": 89,
+    "tasks": ["T071"],
+    "baseline_main": "73bbb0851d90a108f6a8c9d93c284670afbfd152",
+    "tests_first_commit": "fe7f0ffe6fc1c4ff8c93936ba81968b229183434",
+    "excluded": ["T072+", "Web3", "PR #92", "ruleset mutation", "unrelated task state", "human research closure"]
+  },
+  "events": [
+    {
+      "sequence": 1,
+      "type": "tests_first_contract_authored",
+      "result": "red_contract_defined",
+      "evidence_refs": [
+        ".loop/evidence/t071-us6-offline-tests-first-20260815.json",
+        "apps/api/src/test/java/tw/basketball/magazine/publication/api/OfflineManifestApiIT.java",
+        "apps/web/tests/e2e/us6-offline-issue.spec.ts"
+      ],
+      "matrix": [
+        "interruption",
+        "corruption",
+        "quota denial",
+        "manifest update",
+        "withdrawal reconciliation"
+      ]
+    },
+    {
+      "sequence": 2,
+      "type": "local_static_verification",
+      "result": "pass_with_runtime_replay_pending",
+      "proof": [
+        "git diff --check passed",
+        "Node TypeScript syntax check passed",
+        "local Gradle executable is unavailable",
+        "repo-pinned pnpm/node toolchain and local web dependencies are unavailable"
+      ],
+      "failure_signature": "environment_toolchain_unavailable",
+      "attribution": "not attributable to the T071 contract content"
+    }
+  ],
+  "graph_delta": {
+    "opened": ["T071", "api_red", "browser_red"],
+    "ready_frontier": ["targeted_runtime_red_replay"],
+    "blocked": ["T072", "T073", "T074", "T075", "T076"],
+    "preserved": ["issue #89 human research items", "T071 unchecked", "PR #92 and repository protection untouched"]
+  },
+  "proof_coverage": {
+    "api_contracts": "authored",
+    "browser_contracts": "5/5 scenarios authored",
+    "runtime_red": "pending toolchain",
+    "passing_implementation": "0/0; not started"
+  },
+  "min_cut": [
+    "pinned CI toolchain execution of OfflineManifestApiIT",
+    "pinned Playwright execution of us6-offline-issue.spec.ts",
+    "attributable RED failure before T072 implementation"
+  ],
+  "next_action": "Execute targeted RED replay in CI or a repo-pinned local environment; only then begin T072."
+}
