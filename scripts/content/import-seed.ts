@@ -104,7 +104,7 @@ if (
   rightsDecisions.length < 2 ||
   rightsDecisions.some((rights) => rights.expectedDecision !== rights.decision) ||
   !rightsDecisions.some((rights) => rights.decision === "ALLOW") ||
-  !rightsDecisions.some((rights) => rights.decision === "RIGHTS_EXPIRED"),
+  !rightsDecisions.some((rights) => rights.decision === "RIGHTS_EXPIRED") ||
   !rightsDecisions.some((rights) => rights.decision === "RIGHTS_MISSING")
 ) {
   throw new Error("first-issue seed manifest is incomplete, non-deterministic, or rights-invalid")
