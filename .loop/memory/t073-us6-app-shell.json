@@ -1,0 +1,13 @@
+{
+  "schema": "courtside-tw/work-memory/v1",
+  "lane": "t073-us6-app-shell",
+  "recorded_at": "2026-08-16T02:35:00Z",
+  "durable_facts": [
+    "T073 is the checked US6 frontier after T071 and T072.",
+    "App-shell cache is courtside-app-shell-v1; issue-content caches remain courtside-offline:*.",
+    "Only /, /issues and /search are precached; editorial, article, studio and preview descendants are excluded.",
+    "T073 RED at 1886a88 was attributable to the intentionally missing worker module and is preserved.",
+    "T074, T075 and T076 remain unchecked; Web3 and issue #89 human research remain out of scope."
+  ],
+  "next_action": "Stop at the T073 verified boundary; do not start T074+ without a new bounded task."
+}
