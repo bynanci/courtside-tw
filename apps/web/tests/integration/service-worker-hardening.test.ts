@@ -93,7 +93,8 @@ function navigateRequest(
 
 function createWorkerHarness(
   storage: FakeCacheStorage,
-  fetchImplementation: (request: unknown) => Promise<Response>
+  fetchImplementation: (request: unknown) => Promise<Response>,
+  cacheOpen: () => Promise<FakeCache> = async () => storage.cache
 ) {
   const listeners = new Map<
     string,
@@ -113,7 +114,7 @@ function createWorkerHarness(
     Request,
     Response,
     URL,
-    caches: { open: async () => storage.cache },
+    caches: { open: cacheOpen },
     fetch: fetchImplementation,
     self
   })
@@ -189,6 +190,21 @@ test("same-origin app-shell responses update cache from a clone", async () => {
   deepEqual(storage.consumedBodies, ["fresh-app-shell"])
   const cached = await storage.cache.match("/search")
   strictEqual(await cached?.text(), "fresh-app-shell")
+})
+
+test("cache storage open failure does not replace a successful network response", async () => {
+  const storage = createFakeCacheStorage()
+  const worker = createWorkerHarness(
+    storage,
+    async () => new Response("online-app-shell"),
+    async () => {
+      throw new Error("cache unavailable")
+    }
+  )
+
+  const response = await worker.dispatchFetch(navigateRequest("/search"))
+
+  strictEqual(await response.text(), "online-app-shell")
 })
 
 test("offline fallback looks up the normalized pathname", async () => {

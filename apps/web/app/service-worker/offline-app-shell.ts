@@ -164,11 +164,8 @@ self.addEventListener("fetch", (event) => {
 
         return caches
           .open(CACHE_NAME)
-          .then((cache) =>
-            cache
-              .put(buildAppShellCacheRequest(request), response.clone())
-              .catch(() => undefined)
-          )
+          .then((cache) => cache.put(buildAppShellCacheRequest(request), response.clone()))
+          .catch(() => undefined)
           .then(() => response)
       })
       .catch(() => readCachedAppShell(request))
