@@ -94,6 +94,9 @@ export async function fetchPublicArticle(
   } catch (error) {
     if (error instanceof PublicArticleApiError) {
       statusCode = error.statusCode
+      if (statusCode < 500) {
+        throw error
+      }
     }
   }
 

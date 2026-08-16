@@ -113,12 +113,15 @@ export class OfflineIssueManager {
 
   async getInstalled(): Promise<InstalledOfflineIssue | null> {
     const state = await readState(this.issueSlug)
+    if (!cacheStorageAvailable()) {
+      if (!state) {
+        return null
+      }
+      throw new OfflineIssueError("storage", "此瀏覽器無法存取離線儲存空間。")
+    }
+    await sweepCandidateCaches(this.issueSlug, state?.cacheName)
     if (!state) {
       return null
-    }
-
-    if (!cacheStorageAvailable()) {
-      throw new OfflineIssueError("storage", "此瀏覽器無法存取離線儲存空間。")
     }
 
     try {
@@ -138,12 +141,13 @@ export class OfflineIssueManager {
   async download(
     onProgress?: (progress: OfflineDownloadProgress) => void
   ): Promise<InstalledOfflineIssue> {
+    const cacheStorage = getCacheStorage()
+    const previous = await readState(this.issueSlug)
+    await sweepCandidateCaches(this.issueSlug, previous?.cacheName)
     const manifest = await this.fetchManifest()
     const assets = downloadAssetsFor(manifest)
     await assertStorageCapacity(manifest.assetBytes)
 
-    const cacheStorage = getCacheStorage()
-    const previous = await readState(this.issueSlug)
     const candidateCacheName = candidateCacheNameFor(this.issueSlug, manifest)
     let committed = false
 
@@ -657,7 +661,29 @@ function asOfflineIssueError(error: unknown): OfflineIssueError {
 function candidateCacheNameFor(issueSlug: string, manifest: OfflineManifest): string {
   const suffix =
     globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`
-  return `${CACHE_PREFIX}:candidate:${encodeURIComponent(issueSlug)}:${manifest.manifestVersion}:${manifest.checksum}:${suffix}`
+  return `${candidateCachePrefixFor(issueSlug)}${manifest.manifestVersion}:${manifest.checksum}:${suffix}`
+}
+
+function candidateCachePrefixFor(issueSlug: string): string {
+  return `${CACHE_PREFIX}:candidate:${encodeURIComponent(issueSlug)}:`
+}
+
+async function sweepCandidateCaches(issueSlug: string, preservedCacheName?: string): Promise<void> {
+  const cacheStorage = getCacheStorage()
+  try {
+    const cacheNames = await cacheStorage.keys()
+    await Promise.all(
+      cacheNames
+        .filter(
+          (cacheName) =>
+            cacheName.startsWith(candidateCachePrefixFor(issueSlug)) &&
+            cacheName !== preservedCacheName
+        )
+        .map((cacheName) => cacheStorage.delete(cacheName))
+    )
+  } catch (error) {
+    throw new OfflineIssueError("storage", "未完成的離線下載無法清理。", { cause: error })
+  }
 }
 
 function openDatabase(): Promise<IDBDatabase> {

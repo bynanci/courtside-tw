@@ -217,7 +217,7 @@ public final class OfflineManifestService {
     }
 
     public Optional<OfflineManifest> findIssueManifest(String issueSlug) {
-        return findPackage(issueSlug).map(OfflinePackage::manifest);
+        return buildIssueManifest(issueSlug);
     }
 
     public Optional<OfflineArticleContent> findIssueArticleContent(
@@ -227,9 +227,53 @@ public final class OfflineManifestService {
     ) {
         Objects.requireNonNull(articleId, "articleId");
         Objects.requireNonNull(revisionId, "revisionId");
-        return findPackage(issueSlug).flatMap(packageValue -> Optional.ofNullable(
-                packageValue.content().get(new ContentKey(articleId, revisionId))
-        ));
+        Instant now = clock.instant();
+        Optional<IssueRow> issueValue = findIssueRow(issueSlug, now);
+        if (issueValue.isEmpty()) {
+            return Optional.empty();
+        }
+
+        IssueRow issue = issueValue.get();
+        try {
+            JsonNode issueSnapshot = objectMapper.readTree(issue.document());
+            List<SnapshotArticle> snapshotArticles = snapshotArticles(issueSnapshot);
+            int articleIndex = -1;
+            for (int index = 0; index < snapshotArticles.size(); index++) {
+                SnapshotArticle candidate = snapshotArticles.get(index);
+                if (candidate.articleId().equals(articleId)) {
+                    articleIndex = index;
+                    break;
+                }
+            }
+            if (articleIndex < 0) {
+                return Optional.empty();
+            }
+
+            SnapshotArticle frozen = snapshotArticles.get(articleIndex);
+            if (frozen.revisionId() != null && !frozen.revisionId().equals(revisionId)) {
+                return Optional.empty();
+            }
+            Optional<ArticleRow> rowValue = findArticleRow(frozen, issue.snapshotCreatedAt(), now);
+            if (rowValue.isEmpty() || !rowValue.get().revisionId().equals(revisionId)) {
+                return Optional.empty();
+            }
+
+            ArticleRow row = rowValue.get();
+            AssetBundle assetBundle = assets(List.of(issue.snapshotId(), row.snapshotId()), now);
+            if (!assetBundle.complete()) {
+                return Optional.empty();
+            }
+            byte[] body = articleProjection(
+                    issue.slug(),
+                    snapshotArticles,
+                    articleIndex,
+                    frozen,
+                    row
+            );
+            return Optional.of(new OfflineArticleContent(body, digest(body)));
+        } catch (JacksonException | IllegalArgumentException | IllegalStateException exception) {
+            return Optional.empty();
+        }
     }
 
     public WithdrawalManifest withdrawalManifest() {
@@ -253,24 +297,14 @@ public final class OfflineManifestService {
         );
     }
 
-    private Optional<OfflinePackage> findPackage(String issueSlug) {
-        if (issueSlug == null || issueSlug.length() > 128 || !ISSUE_SLUG.matcher(issueSlug).matches()) {
-            return Optional.empty();
-        }
+    private Optional<OfflineManifest> buildIssueManifest(String issueSlug) {
         Instant now = clock.instant();
-        List<IssueRow> rows = jdbcTemplate.query(
-                ISSUE_SQL,
-                (resultSet, rowNumber) -> mapIssue(resultSet),
-                Timestamp.from(now),
-                Timestamp.from(now),
-                issueSlug,
-                Timestamp.from(now)
-        );
-        if (rows.isEmpty()) {
+        Optional<IssueRow> issueValue = findIssueRow(issueSlug, now);
+        if (issueValue.isEmpty()) {
             return Optional.empty();
         }
 
-        IssueRow issue = rows.getFirst();
+        IssueRow issue = issueValue.get();
         try {
             JsonNode issueSnapshot = objectMapper.readTree(issue.document());
             List<SnapshotArticle> snapshotArticles = snapshotArticles(issueSnapshot);
@@ -279,7 +313,6 @@ public final class OfflineManifestService {
             }
 
             List<PackagedArticle> packagedArticles = new ArrayList<>();
-            Map<ContentKey, OfflineArticleContent> content = new LinkedHashMap<>();
             List<UUID> snapshotIds = new ArrayList<>();
             snapshotIds.add(issue.snapshotId());
             for (int index = 0; index < snapshotArticles.size(); index++) {
@@ -308,10 +341,6 @@ public final class OfflineManifestService {
                         checksum
                 );
                 packagedArticles.add(new PackagedArticle(article, row.snapshotChecksum()));
-                content.put(
-                        new ContentKey(frozen.articleId(), row.revisionId()),
-                        new OfflineArticleContent(body, checksum)
-                );
                 snapshotIds.add(row.snapshotId());
             }
 
@@ -348,11 +377,29 @@ public final class OfflineManifestService {
                     downloadableBytes,
                     assetBundle.assets()
             );
-            return Optional.of(new OfflinePackage(manifest, content));
+            return Optional.of(manifest);
         } catch (JacksonException | IllegalArgumentException | IllegalStateException
                  | ArithmeticException exception) {
             return Optional.empty();
         }
+    }
+
+    private Optional<IssueRow> findIssueRow(String issueSlug, Instant now) {
+        if (issueSlug == null || issueSlug.length() > 128 || !ISSUE_SLUG.matcher(issueSlug).matches()) {
+            return Optional.empty();
+        }
+        List<IssueRow> rows = jdbcTemplate.query(
+                ISSUE_SQL,
+                (resultSet, rowNumber) -> mapIssue(resultSet),
+                Timestamp.from(now),
+                Timestamp.from(now),
+                issueSlug,
+                Timestamp.from(now)
+        );
+        if (rows.isEmpty()) {
+            return Optional.empty();
+        }
+        return Optional.of(rows.getFirst());
     }
 
     private Optional<ArticleRow> findArticleRow(
@@ -885,15 +932,4 @@ public final class OfflineManifestService {
     private record AssetBundle(List<OfflineAsset> assets, boolean complete) {
     }
 
-    private record ContentKey(UUID articleId, UUID revisionId) {
-    }
-
-    private record OfflinePackage(
-            OfflineManifest manifest,
-            Map<ContentKey, OfflineArticleContent> content
-    ) {
-        private OfflinePackage {
-            content = Map.copyOf(content);
-        }
-    }
 }
