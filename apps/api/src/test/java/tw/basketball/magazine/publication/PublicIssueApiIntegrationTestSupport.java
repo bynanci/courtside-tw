@@ -69,6 +69,7 @@ public abstract class PublicIssueApiIntegrationTestSupport {
         applyMigration(dataSource, "/db/migration/V004__editorial_publication_workflow.sql");
         applyMigration(dataSource, "/db/migration/V005__editorial_publication_gate_hardening.sql");
         applyMigration(dataSource, TAXONOMY_SEARCH_MIGRATION);
+        applyMigration(dataSource, "/db/migration/V015__offline_withdrawal_manifest_version.sql");
         jdbcTemplate = new JdbcTemplate(dataSource);
     }
 

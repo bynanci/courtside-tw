@@ -67,17 +67,34 @@ export async function disableOfflineAppShell(
   serviceWorker: AppShellServiceWorkerContainerLike,
   cacheStorage: AppShellCacheStorageLike
 ): Promise<void> {
-  const registrations = await serviceWorker.getRegistrations()
-  await Promise.all(
-    registrations.filter(isAppShellRegistration).map((registration) => registration.unregister())
-  )
+  const errors: unknown[] = []
+  const [registrationLookup, cacheLookup] = await Promise.allSettled([
+    serviceWorker.getRegistrations(),
+    cacheStorage.keys()
+  ])
+  if (registrationLookup.status === "rejected") errors.push(registrationLookup.reason)
+  if (cacheLookup.status === "rejected") errors.push(cacheLookup.reason)
 
-  const cacheNames = await cacheStorage.keys()
-  await Promise.all(
-    cacheNames
-      .filter((cacheName) => cacheName.startsWith(APP_SHELL_CACHE_PREFIX))
-      .map((cacheName) => cacheStorage.delete(cacheName))
+  const unregisterResults = await Promise.allSettled(
+    registrationLookup.status === "fulfilled"
+      ? registrationLookup.value
+          .filter(isAppShellRegistration)
+          .map((registration) => registration.unregister())
+      : []
   )
+  const deleteResults = await Promise.allSettled(
+    cacheLookup.status === "fulfilled"
+      ? cacheLookup.value
+          .filter((cacheName) => cacheName.startsWith(APP_SHELL_CACHE_PREFIX))
+          .map((cacheName) => cacheStorage.delete(cacheName))
+      : []
+  )
+  for (const result of [...unregisterResults, ...deleteResults]) {
+    if (result.status === "rejected") errors.push(result.reason)
+  }
+  if (errors.length > 0) {
+    throw new AggregateError(errors, "offline app-shell cleanup was incomplete")
+  }
 }
 
 export function buildOfflineAppShellWorker(): string {
@@ -111,6 +128,10 @@ function buildAppShellCacheRequest(request) {
 
 function isSameOriginResponse(response) {
   return !response.url || new URL(response.url).origin === self.location.origin
+}
+
+function isRedirectResponse(response) {
+  return response.type === "opaqueredirect" || (response.status >= 300 && response.status < 400)
 }
 
 function readCachedAppShell(request) {
@@ -158,15 +179,22 @@ self.addEventListener("fetch", (event) => {
   event.respondWith(
     fetch(request)
       .then((response) => {
+        if (isRedirectResponse(response)) {
+          return response
+        }
         if (!response.ok || !isSameOriginResponse(response)) {
           return readCachedAppShell(request)
         }
+        if (url.search) {
+          return response
+        }
 
-        return caches
+        const cacheWrite = caches
           .open(CACHE_NAME)
           .then((cache) => cache.put(buildAppShellCacheRequest(request), response.clone()))
           .catch(() => undefined)
-          .then(() => response)
+        event.waitUntil(cacheWrite)
+        return response
       })
       .catch(() => readCachedAppShell(request))
   )

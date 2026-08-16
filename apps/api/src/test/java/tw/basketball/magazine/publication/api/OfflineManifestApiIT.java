@@ -63,7 +63,7 @@ final class OfflineManifestApiIT extends PublicIssueApiIntegrationTestSupport {
                 .andExpect(jsonPath("$.manifestVersion").value(2))
                 .andExpect(jsonPath("$.checksum").value(Matchers.matchesPattern("[0-9a-f]{64}")))
                 .andExpect(jsonPath("$.expiresAt").exists())
-                .andExpect(jsonPath("$.assetBytes").value(512))
+                .andExpect(jsonPath("$.assetBytes").value(Matchers.greaterThan(512)))
                 .andExpect(jsonPath("$.assets[0].byteSize").value(512))
                 .andExpect(jsonPath("$.assets[0].checksum").value(Matchers.matchesPattern("[0-9a-f]{64}")))
                 .andExpect(jsonPath("$.assets[0].expiresAt").exists())
@@ -72,6 +72,8 @@ final class OfflineManifestApiIT extends PublicIssueApiIntegrationTestSupport {
                 .andExpect(jsonPath("$.articles[0].position").value(1))
                 .andExpect(jsonPath("$.articles[0].revisionId").isNotEmpty())
                 .andExpect(jsonPath("$.articles[0].revisionNumber").value(1))
+                .andExpect(jsonPath("$.articles[0].contentUrl").isNotEmpty())
+                .andExpect(jsonPath("$.articles[0].byteSize").value(Matchers.greaterThan(0)))
                 .andExpect(jsonPath("$.articles[0].checksum").value(Matchers.matchesPattern("[0-9a-f]{64}")));
     }
 

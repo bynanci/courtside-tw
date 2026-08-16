@@ -21,6 +21,7 @@ const expectedPaths = {
   "/api/v1/public/withdrawals": ["get"],
   "/api/v1/public/issues/{issueSlug}/provenance": ["get"],
   "/api/v1/public/offline/issues/{issueSlug}/manifest": ["get"],
+  "/api/v1/public/offline/issues/{issueSlug}/articles/{articleId}/revisions/{revisionId}": ["get"],
   "/api/v1/me/bookmarks": ["get"],
   "/api/v1/me/bookmarks/{articleId}": ["put", "delete"],
   "/api/v1/me/progress": ["get"],

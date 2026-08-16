@@ -23,6 +23,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import tw.basketball.magazine.publication.application.OfflineManifestService;
+import tw.basketball.magazine.publication.application.OfflineManifestService.OfflineArticleContent;
 import tw.basketball.magazine.publication.application.OfflineManifestService.OfflineManifest;
 import tw.basketball.magazine.publication.application.OfflineManifestService.WithdrawalManifest;
 import tw.basketball.magazine.shared.ProblemCode;
@@ -82,6 +83,31 @@ public final class OfflineManifestController {
                 .orElseGet(() -> notFound(requestId));
     }
 
+    @GetMapping(
+            path = "/offline/issues/{issueSlug}/articles/{articleId}/revisions/{revisionId}",
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<?> issueArticleContent(
+            @PathVariable String issueSlug,
+            @PathVariable UUID articleId,
+            @PathVariable UUID revisionId,
+            @RequestHeader(value = HttpHeaders.IF_NONE_MATCH, required = false) String ifNoneMatch,
+            HttpServletRequest request
+    ) {
+        RequestId requestId = requestId(request);
+        OfflineManifestService service = service();
+        if (service == null) {
+            return notFound(requestId);
+        }
+        return service.findIssueArticleContent(issueSlug, articleId, revisionId)
+                .<ResponseEntity<?>>map(content -> conditionalContentResponse(
+                        content,
+                        ifNoneMatch,
+                        requestId
+                ))
+                .orElseGet(() -> notFound(requestId));
+    }
+
     @GetMapping(path = "/withdrawals", produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<WithdrawalManifest> withdrawalManifest(HttpServletRequest request) {
         RequestId requestId = requestId(request);
@@ -118,6 +144,26 @@ public final class OfflineManifestController {
                 .cacheControl(MANIFEST_CACHE_CONTROL)
                 .header(REQUEST_ID_HEADER, requestId.value())
                 .body(manifest);
+    }
+
+    private static ResponseEntity<?> conditionalContentResponse(
+            OfflineArticleContent content,
+            String ifNoneMatch,
+            RequestId requestId
+    ) {
+        if (etagMatches(ifNoneMatch, content.checksum())) {
+            return ResponseEntity.status(HttpStatus.NOT_MODIFIED)
+                    .eTag(content.checksum())
+                    .cacheControl(MANIFEST_CACHE_CONTROL)
+                    .header(REQUEST_ID_HEADER, requestId.value())
+                    .build();
+        }
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_JSON)
+                .eTag(content.checksum())
+                .cacheControl(MANIFEST_CACHE_CONTROL)
+                .header(REQUEST_ID_HEADER, requestId.value())
+                .body(content.body());
     }
 
     private static ResponseEntity<ProblemDetails> notFound(RequestId requestId) {

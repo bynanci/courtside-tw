@@ -213,6 +213,17 @@ test.describe("US6 offline issue", () => {
     await page.getByTestId("offline-download").click()
     await expect(page.getByTestId("offline-installed")).toBeVisible()
 
+    const cachedUrls = await page.evaluate(async () => {
+      const cacheName = (await caches.keys()).find((name) =>
+        name.startsWith("courtside-offline:candidate:")
+      )
+      if (!cacheName) return []
+      const requests = await (await caches.open(cacheName)).keys()
+      return requests.map((request) => request.url)
+    })
+    expect(cachedUrls).toContain(`http://127.0.0.1:4010${ARTICLE_CONTENT_PATH}`)
+    expect(cachedUrls.every((url) => url.startsWith("http://127.0.0.1:4010/"))).toBe(true)
+
     await page.route("**/api/v1/public/articles/**", (route) => route.abort("failed"))
     await page.getByTestId("article-link").first().click()
 

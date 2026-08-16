@@ -105,7 +105,7 @@ const {
   pending
 } = await useAsyncData<PublicArticleProjection | null>("public-article-" + articleSlug, () =>
   articleSlugValid
-    ? fetchPublicArticle(config.public.apiBaseUrl, articleSlug)
+    ? fetchPublicArticle(config.public.apiBaseUrl, articleSlug, issueSlugFromQuery)
     : Promise.resolve(null)
 )
 const articleUnavailable = computed(
