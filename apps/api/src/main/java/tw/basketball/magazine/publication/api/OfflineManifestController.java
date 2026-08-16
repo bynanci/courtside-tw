@@ -138,10 +138,22 @@ public final class OfflineManifestController {
         if (ifNoneMatch == null || ifNoneMatch.isBlank()) {
             return false;
         }
+        String normalizedEtag = normalizeEtag(etag);
         return java.util.Arrays.stream(ifNoneMatch.split(","))
                 .map(String::trim)
-                .map(candidate -> candidate.startsWith("W/") ? candidate.substring(2) : candidate)
-                .anyMatch(candidate -> candidate.equals("*") || candidate.equals(etag));
+                .anyMatch(candidate -> candidate.equals("*")
+                        || normalizeEtag(candidate).equals(normalizedEtag));
+    }
+
+    private static String normalizeEtag(String value) {
+        String normalized = value.trim();
+        if (normalized.startsWith("W/")) {
+            normalized = normalized.substring(2).trim();
+        }
+        if (normalized.length() >= 2 && normalized.startsWith("\"") && normalized.endsWith("\"")) {
+            return normalized.substring(1, normalized.length() - 1);
+        }
+        return normalized;
     }
 
     private static RequestId requestId(HttpServletRequest request) {

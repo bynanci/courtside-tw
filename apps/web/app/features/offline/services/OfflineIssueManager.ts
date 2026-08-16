@@ -199,12 +199,32 @@ export class OfflineIssueManager {
     const hasWithdrawnArticle = installed.manifest.articles.some((article) =>
       withdrawn.has(article.articleId)
     )
-    if (!hasWithdrawnArticle) {
+    const issueAvailable = await this.isIssueAvailable()
+    if (issueAvailable && !hasWithdrawnArticle) {
       return { status: "available", state: installed }
     }
 
     await removeStateAndCache(installed)
     return { status: "withdrawn" }
+  }
+
+  private async isIssueAvailable(): Promise<boolean> {
+    try {
+      const response = await fetch(this.endpoint(getOfflineIssueManifestPath(this.issueSlug)), {
+        cache: "no-store",
+        credentials: "omit",
+        redirect: "error"
+      })
+      if (response.status === 404) {
+        return false
+      }
+      if (!response.ok) {
+        throw new OfflineIssueError("network", "離線下載清單暫時無法取得。")
+      }
+      return true
+    } catch (error) {
+      throw asOfflineIssueError(error)
+    }
   }
 
   private async fetchManifest(): Promise<OfflineManifest> {
