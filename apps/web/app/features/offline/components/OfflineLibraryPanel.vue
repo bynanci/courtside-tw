@@ -65,14 +65,14 @@ async function removeIssue(issue: InstalledOfflineIssue): Promise<void> {
     installedIssues.value = installedIssues.value.filter(
       (candidate) => candidate.issueSlug !== issue.issueSlug
     )
-    statusMessage.value = `${issue.issueSlug} 已從這台裝置移除。`
+    statusMessage.value = `已移除 ${issue.issueSlug} 的本機離線內容。`
   } catch {
     const remaining = await manager.getInstalled().catch(() => null)
     if (!remaining) {
       installedIssues.value = installedIssues.value.filter(
         (candidate) => candidate.issueSlug !== issue.issueSlug
       )
-      statusMessage.value = `${issue.issueSlug} 已從這台裝置移除。`
+      statusMessage.value = `已移除 ${issue.issueSlug} 的本機離線內容。`
       errorMessage.value = "舊快取清理尚未完成，瀏覽器稍後會重試。"
     } else {
       statusMessage.value = "本機離線內容暫時無法移除。"
