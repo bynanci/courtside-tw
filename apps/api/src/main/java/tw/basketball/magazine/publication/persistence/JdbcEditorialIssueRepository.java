@@ -359,7 +359,8 @@ public final class JdbcEditorialIssueRepository implements EditorialIssueReposit
         for (Map<String, Object> section : sectionRows) {
             UUID sectionId = UUID.fromString((String) section.get("sectionId"));
             List<Map<String, Object>> articles = jdbcTemplate.query("""
-                    SELECT article.id, article.slug, revision.title, issue_article.position
+                    SELECT article.id, article.slug, revision.id AS revision_id,
+                           revision.revision_number, revision.title, issue_article.position
                     FROM issue_article
                     JOIN article ON article.id = issue_article.article_id
                     JOIN article_revision revision
@@ -374,6 +375,8 @@ public final class JdbcEditorialIssueRepository implements EditorialIssueReposit
                     """, (resultSet, rowNumber) -> {
                 Map<String, Object> row = new LinkedHashMap<>();
                 row.put("articleId", uuid(resultSet, "id").toString());
+                row.put("revisionId", uuid(resultSet, "revision_id").toString());
+                row.put("revisionNumber", resultSet.getInt("revision_number"));
                 row.put("slug", resultSet.getString("slug"));
                 row.put("title", resultSet.getString("title"));
                 row.put("position", resultSet.getInt("position"));

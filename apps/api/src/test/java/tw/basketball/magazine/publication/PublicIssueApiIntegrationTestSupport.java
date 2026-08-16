@@ -29,6 +29,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.testcontainers.postgresql.PostgreSQLContainer;
 
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.node.ObjectNode;
 import tw.basketball.magazine.content.api.PublicArticleController;
 import tw.basketball.magazine.content.application.PublicArticleService;
 import tw.basketball.magazine.content.persistence.JdbcPublicArticleRepository;
@@ -68,6 +69,7 @@ public abstract class PublicIssueApiIntegrationTestSupport {
         applyMigration(dataSource, "/db/migration/V004__editorial_publication_workflow.sql");
         applyMigration(dataSource, "/db/migration/V005__editorial_publication_gate_hardening.sql");
         applyMigration(dataSource, TAXONOMY_SEARCH_MIGRATION);
+        applyMigration(dataSource, "/db/migration/V015__offline_withdrawal_manifest_version.sql");
         jdbcTemplate = new JdbcTemplate(dataSource);
     }
 
@@ -137,7 +139,7 @@ public abstract class PublicIssueApiIntegrationTestSupport {
                 """,
                 rightsId,
                 coverAssetId,
-                validPublicWebRights ? "{PUBLIC_WEB}" : "{READER_LIBRARY}",
+                validPublicWebRights ? "{PUBLIC_WEB,OFFLINE}" : "{READER_LIBRARY}",
                 Timestamp.from(publishedAt.minusSeconds(86_400)),
                 Timestamp.from(publishedAt.plusSeconds(31_536_000))
         );
@@ -277,6 +279,81 @@ public abstract class PublicIssueApiIntegrationTestSupport {
         refreshSnapshot(issue.id());
     }
 
+    protected UUID publishReplacementRevision(String articleSlug) {
+        ArticleRevisionFixture current = jdbcTemplate.queryForObject("""
+                SELECT article.id AS article_id,
+                       revision.id AS revision_id,
+                       revision.revision_number,
+                       revision.title,
+                       revision.dek,
+                       revision.content_document::text AS content_document
+                FROM article
+                JOIN article_revision revision ON revision.id = article.published_revision_id
+                WHERE article.slug = ?
+                """, (resultSet, rowNumber) -> new ArticleRevisionFixture(
+                resultSet.getObject("article_id", UUID.class),
+                resultSet.getObject("revision_id", UUID.class),
+                resultSet.getInt("revision_number"),
+                resultSet.getString("title"),
+                resultSet.getString("dek"),
+                resultSet.getString("content_document")
+        ), articleSlug);
+        Objects.requireNonNull(current, "replacement revision target");
+
+        UUID revisionId = UUID.randomUUID();
+        int revisionNumber = current.revisionNumber() + 1;
+        String title = current.title() + " updated";
+        jdbcTemplate.update("""
+                INSERT INTO article_revision (
+                    id, article_id, revision_number, title, dek, content_document, state
+                ) VALUES (?, ?, ?, ?, ?, ?::jsonb, 'PUBLISHED')
+                """,
+                revisionId,
+                current.articleId(),
+                revisionNumber,
+                title,
+                current.dek(),
+                current.contentDocument()
+        );
+
+        String snapshotDocument = jdbcTemplate.queryForObject("""
+                SELECT content_document::text
+                FROM publication_snapshot
+                WHERE aggregate_type = 'ARTICLE'
+                  AND aggregate_id = ?
+                  AND revision_id = ?
+                ORDER BY snapshot_version DESC, id DESC
+                LIMIT 1
+                """, String.class, current.articleId(), current.revisionId());
+        try {
+            var snapshot = (ObjectNode) JSON.readTree(Objects.requireNonNull(snapshotDocument)).deepCopy();
+            snapshot.put("revisionId", revisionId.toString());
+            snapshot.put("revisionNumber", revisionNumber);
+            snapshot.put("title", title);
+            snapshot.put("updatedAt", "2026-08-02T00:00:00Z");
+            jdbcTemplate.update("""
+                    INSERT INTO publication_snapshot (
+                        aggregate_type, aggregate_id, revision_id, snapshot_version,
+                        content_document, checksum_sha256, created_by
+                    ) VALUES ('ARTICLE', ?, ?, ?, ?::jsonb, ?, 'replacement-fixture')
+                    """,
+                    current.articleId(),
+                    revisionId,
+                    revisionNumber,
+                    JSON.writeValueAsString(snapshot),
+                    "b".repeat(64)
+            );
+        } catch (Exception exception) {
+            throw new IllegalStateException("replacement snapshot serialization failed", exception);
+        }
+        jdbcTemplate.update("""
+                UPDATE article
+                SET published_revision_id = ?, version = version + 1
+                WHERE id = ?
+                """, revisionId, current.articleId());
+        return revisionId;
+    }
+
     protected void refreshSnapshot(UUID issueId) {
         Map<String, Object> document = jdbcTemplate.queryForObject("""
                 SELECT issue_number, slug, title, summary, cover_asset_id
@@ -309,7 +386,8 @@ public abstract class PublicIssueApiIntegrationTestSupport {
         for (Map<String, Object> section : sectionRows) {
             UUID sectionId = UUID.fromString((String) section.get("sectionId"));
             List<Map<String, Object>> articles = jdbcTemplate.query("""
-                    SELECT article.id, article.slug, revision.title, issue_article.position
+                    SELECT article.id, article.slug, revision.id AS revision_id,
+                           revision.revision_number, revision.title, issue_article.position
                     FROM issue_article
                     JOIN article ON article.id = issue_article.article_id
                     JOIN article_revision revision ON revision.id = article.published_revision_id
@@ -319,6 +397,8 @@ public abstract class PublicIssueApiIntegrationTestSupport {
                     """, (resultSet, rowNumber) -> {
                 Map<String, Object> value = new LinkedHashMap<>();
                 value.put("articleId", resultSet.getObject("id", UUID.class).toString());
+                value.put("revisionId", resultSet.getObject("revision_id", UUID.class).toString());
+                value.put("revisionNumber", resultSet.getInt("revision_number"));
                 value.put("slug", resultSet.getString("slug"));
                 value.put("title", resultSet.getString("title"));
                 value.put("position", resultSet.getInt("position"));
@@ -368,5 +448,15 @@ public abstract class PublicIssueApiIntegrationTestSupport {
     }
 
     protected record IssueFixture(UUID id, String slug) {
+    }
+
+    private record ArticleRevisionFixture(
+            UUID articleId,
+            UUID revisionId,
+            int revisionNumber,
+            String title,
+            String dek,
+            String contentDocument
+    ) {
     }
 }

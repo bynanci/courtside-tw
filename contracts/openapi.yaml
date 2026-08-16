@@ -398,6 +398,80 @@ paths:
           $ref: "#/components/responses/Problem404"
         "429":
           $ref: "#/components/responses/Problem429"
+  /api/v1/public/offline/issues/{issueSlug}/articles/{articleId}/revisions/{revisionId}:
+    get:
+      tags:
+        - Offline
+      operationId: getOfflineIssueArticle
+      summary: Get the immutable article bytes declared by an offline manifest
+      description: Returns only the frozen revision in the current rights-eligible issue package.
+      security: []
+      parameters:
+        - $ref: "#/components/parameters/IssueSlug"
+        - name: articleId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/Uuid"
+        - name: revisionId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/Uuid"
+        - $ref: "#/components/parameters/IfNoneMatch"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArticleProjection"
+              examples:
+                valid:
+                  value:
+                    articleId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    revisionId: 0190f7b0-7c4b-7e3a-8f12-123456789abd
+                    revisionNumber: 1
+                    slug: article-1
+                    title: Article 1
+                    plainText: Article 1 body
+                    readingTimeMinutes: 1
+                    publishedAt: 2026-08-01T00:00:00Z
+                    updatedAt: 2026-08-01T00:00:00Z
+                    canonicalPath: /articles/article-1
+                    content:
+                      schemaVersion: 1
+                      documentId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                      blocks:
+                        - id: 00000000-0000-4000-8000-000000000101
+                          type: paragraph
+                          version: 1
+                          payload:
+                            content:
+                              - kind: text
+                                text: Article 1 body
+                    media: []
+                    contributors: []
+                    issueNavigation:
+                      issueSlug: issue-1
+                      previous: null
+                      next: null
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+            ETag:
+              $ref: "#/components/headers/ETag"
+        "304":
+          description: The current representation matches If-None-Match.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+            ETag:
+              $ref: "#/components/headers/ETag"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "429":
+          $ref: "#/components/responses/Problem429"
   /api/v1/me/bookmarks:
     get:
       tags:
@@ -4381,6 +4455,8 @@ components:
         - slug
         - title
         - position
+        - contentUrl
+        - byteSize
         - checksum
       properties:
         articleId:
@@ -4400,6 +4476,14 @@ components:
           maxLength: 250
         position:
           type: integer
+          minimum: 1
+        contentUrl:
+          type: string
+          pattern: "^/api/v1/public/offline/issues/[a-z0-9]+(?:-[a-z0-9]+)*/articles/[0-9a-f-]{36}/revisions/[0-9a-f-]{36}$"
+          maxLength: 512
+        byteSize:
+          type: integer
+          format: int64
           minimum: 1
         checksum:
           type: string

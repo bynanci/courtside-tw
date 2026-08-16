@@ -164,6 +164,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  "/api/v1/public/offline/issues/{issueSlug}/articles/{articleId}/revisions/{revisionId}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get the immutable article bytes declared by an offline manifest
+     * @description Returns only the frozen revision in the current rights-eligible issue package.
+     */
+    get: operations["getOfflineIssueArticle"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   "/api/v1/me/bookmarks": {
     parameters: {
       query?: never
@@ -1406,6 +1426,9 @@ export interface components {
       slug: string
       title: string
       position: number
+      contentUrl: string
+      /** Format: int64 */
+      byteSize: number
       checksum: string
     }
     OfflineAsset: {
@@ -2153,6 +2176,46 @@ export interface operations {
         }
       }
       400: components["responses"]["Problem400"]
+      404: components["responses"]["Problem404"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  getOfflineIssueArticle: {
+    parameters: {
+      query?: never
+      header?: {
+        /** @description Current entity tag for a conditional public GET. */
+        "If-None-Match"?: components["parameters"]["IfNoneMatch"]
+      }
+      path: {
+        issueSlug: components["parameters"]["IssueSlug"]
+        articleId: components["schemas"]["Uuid"]
+        revisionId: components["schemas"]["Uuid"]
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response. */
+      200: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          ETag: components["headers"]["ETag"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ArticleProjection"]
+        }
+      }
+      /** @description The current representation matches If-None-Match. */
+      304: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          ETag: components["headers"]["ETag"]
+          [name: string]: unknown
+        }
+        content?: never
+      }
       404: components["responses"]["Problem404"]
       429: components["responses"]["Problem429"]
     }

@@ -1,4 +1,5 @@
-import { publicMediaUrl } from "../../issues/public-issue-api.ts"
+import type { components } from "@courtside/api-client"
+
 import { parsePublicIssueSlug } from "../../issues/public-issue-contract.ts"
 
 const DATABASE_NAME = "courtside-offline"
@@ -6,44 +7,49 @@ const DATABASE_VERSION = 1
 const STATE_STORE = "installed-issues"
 const CACHE_PREFIX = "courtside-offline"
 const MAX_ASSETS = 512
+const MAX_WITHDRAWALS = 100_000
 const MAX_DOWNLOAD_BYTES = 250 * 1024 * 1024
 
 export type OfflineArticle = {
   articleId: string
-  slug?: string
-  title?: string
-  position?: number
-  revisionId?: string
-  revisionNumber?: number
-  checksum?: string
+  slug: string
+  title: string
+  position: number
+  revisionId: string
+  revisionNumber: number
+  contentUrl: string
+  byteSize: number
+  checksum: string
 }
 
 export type OfflineAsset = {
-  assetId?: string
-  variant?: string
-  url?: string
-  mimeType?: string
-  byteSize?: number
-  checksum?: string
-  expiresAt?: string
+  assetId: string
+  variant: string
+  url: string
+  mimeType: string
+  byteSize: number
+  checksum: string
+  expiresAt: string
 }
 
 export type OfflineManifest = {
   issueSlug: string
   manifestVersion: number
   checksum: string
-  expiresAt?: string
-  assetBytes?: number
+  expiresAt: string
+  assetBytes: number
   articles: OfflineArticle[]
-  assets?: OfflineAsset[]
+  assets: OfflineAsset[]
 }
 
 export type WithdrawalManifest = {
   version: number
-  generatedAt?: string
+  generatedAt: string
   withdrawals: string[]
-  checksum?: string
+  checksum: string
 }
+
+export type PublicArticleProjection = components["schemas"]["ArticleProjection"]
 
 export type InstalledOfflineIssue = {
   issueSlug: string
@@ -76,8 +82,8 @@ type StoredOfflineIssue = InstalledOfflineIssue & {
 
 type DownloadAsset = {
   url: string
-  checksum?: string
-  byteSize?: number
+  checksum: string
+  byteSize: number
 }
 
 export function getOfflineIssueManifestPath(issueSlug: string): string {
@@ -107,12 +113,26 @@ export class OfflineIssueManager {
 
   async getInstalled(): Promise<InstalledOfflineIssue | null> {
     const state = await readState(this.issueSlug)
+    if (!cacheStorageAvailable()) {
+      if (!state) {
+        return null
+      }
+      throw new OfflineIssueError("storage", "此瀏覽器無法存取離線儲存空間。")
+    }
+    await sweepCandidateCaches(this.issueSlug, state?.cacheName)
     if (!state) {
       return null
     }
 
-    if (!cacheStorageAvailable()) {
-      throw new OfflineIssueError("storage", "此瀏覽器無法存取離線儲存空間。")
+    try {
+      validateManifest(state.manifest, this.issueSlug)
+    } catch {
+      await removeStateAndCache(state)
+      return null
+    }
+    if (isExpired(state.manifest.expiresAt)) {
+      await removeStateAndCache(state)
+      return null
     }
 
     return state
@@ -121,12 +141,13 @@ export class OfflineIssueManager {
   async download(
     onProgress?: (progress: OfflineDownloadProgress) => void
   ): Promise<InstalledOfflineIssue> {
-    const manifest = await this.fetchManifest()
-    const assets = downloadAssetsFor(manifest)
-    await assertStorageCapacity(manifest.assetBytes ?? 0)
-
     const cacheStorage = getCacheStorage()
     const previous = await readState(this.issueSlug)
+    await sweepCandidateCaches(this.issueSlug, previous?.cacheName)
+    const manifest = await this.fetchManifest()
+    const assets = downloadAssetsFor(manifest)
+    await assertStorageCapacity(manifest.assetBytes)
+
     const candidateCacheName = candidateCacheNameFor(this.issueSlug, manifest)
     let committed = false
 
@@ -135,10 +156,11 @@ export class OfflineIssueManager {
       onProgress?.({ completed: 0, total: assets.length })
 
       for (const [index, asset] of assets.entries()) {
-        const response = await fetchAsset(this.apiBaseUrl, asset.url)
+        const resourceUrl = offlineResourceUrl(this.apiBaseUrl, asset.url)
+        const response = await fetchAsset(resourceUrl)
         const bytes = await readAndVerifyAsset(response, asset)
         await cache.put(
-          asset.url,
+          resourceUrl,
           new Response(bytes, {
             status: 200,
             headers: response.headers
@@ -190,17 +212,33 @@ export class OfflineIssueManager {
         throw new OfflineIssueError("network", "撤回清單暫時無法取得。")
       }
       manifest = (await response.json()) as WithdrawalManifest
-      validateWithdrawalManifest(manifest)
+      await validateWithdrawalManifest(manifest)
     } catch (error) {
-      throw asOfflineIssueError(error)
+      await removeStateAndCache(installed)
+      throw new OfflineIssueError("withdrawn", "撤回狀態無法驗證；本機離線內容已停用。", {
+        cause: error
+      })
     }
 
     const withdrawn = new Set(manifest.withdrawals)
     const hasWithdrawnArticle = installed.manifest.articles.some((article) =>
       withdrawn.has(article.articleId)
     )
-    const issueAvailable = await this.isIssueAvailable()
-    if (issueAvailable && !hasWithdrawnArticle) {
+    if (hasWithdrawnArticle) {
+      await removeStateAndCache(installed)
+      return { status: "withdrawn" }
+    }
+
+    let issueAvailable: boolean
+    try {
+      issueAvailable = await this.isIssueAvailable()
+    } catch (error) {
+      await removeStateAndCache(installed)
+      throw new OfflineIssueError("withdrawn", "離線期數無法重新驗證；本機離線內容已停用。", {
+        cause: error
+      })
+    }
+    if (issueAvailable) {
       return { status: "available", state: installed }
     }
 
@@ -221,7 +259,9 @@ export class OfflineIssueManager {
       if (!response.ok) {
         throw new OfflineIssueError("network", "離線下載清單暫時無法取得。")
       }
-      return true
+      const manifest = (await response.json()) as OfflineManifest
+      validateManifest(manifest, this.issueSlug)
+      return !isExpired(manifest.expiresAt)
     } catch (error) {
       throw asOfflineIssueError(error)
     }
@@ -239,6 +279,9 @@ export class OfflineIssueManager {
       }
       const manifest = (await response.json()) as OfflineManifest
       validateManifest(manifest, this.issueSlug)
+      if (isExpired(manifest.expiresAt)) {
+        throw new OfflineIssueError("withdrawn", "離線下載清單已過期。")
+      }
       return manifest
     } catch (error) {
       throw asOfflineIssueError(error)
@@ -251,6 +294,49 @@ export class OfflineIssueManager {
       throw new OfflineIssueError("network", "離線內容來源不受信任。")
     }
     return url.toString()
+  }
+}
+
+export async function readCachedOfflineArticle(
+  apiBaseUrl: string,
+  issueSlug: string,
+  articleSlug: string
+): Promise<PublicArticleProjection | null> {
+  if (!cacheStorageAvailable() || typeof globalThis.indexedDB === "undefined") {
+    return null
+  }
+  const normalizedIssueSlug = parsePublicIssueSlug(issueSlug)
+  const state = await readState(normalizedIssueSlug)
+  if (!state) {
+    return null
+  }
+
+  try {
+    validateManifest(state.manifest, normalizedIssueSlug)
+    if (isExpired(state.manifest.expiresAt)) {
+      await removeStateAndCache(state)
+      return null
+    }
+    const article = state.manifest.articles.find((candidate) => candidate.slug === articleSlug)
+    if (!article) {
+      return null
+    }
+    const resourceUrl = offlineResourceUrl(normalizedApiBaseUrl(apiBaseUrl), article.contentUrl)
+    const cache = await getCacheStorage().open(state.cacheName)
+    const response = await cache.match(resourceUrl)
+    if (!response) {
+      throw new OfflineIssueError("corrupt", "離線文章快取不完整。")
+    }
+    const bytes = await readAndVerifyAsset(response, {
+      url: article.contentUrl,
+      checksum: article.checksum,
+      byteSize: article.byteSize
+    })
+    const projection = JSON.parse(new TextDecoder().decode(bytes)) as unknown
+    return validateCachedArticleProjection(projection, normalizedIssueSlug, articleSlug, article)
+  } catch {
+    await removeStateAndCache(state).catch(() => undefined)
+    return null
   }
 }
 
@@ -271,7 +357,10 @@ function normalizedApiBaseUrl(value: string): URL {
 }
 
 function assertSafeArticleId(articleId: string): string {
-  if (typeof articleId !== "string" || !/^[a-zA-Z0-9][a-zA-Z0-9._~-]{0,127}$/.test(articleId)) {
+  if (
+    typeof articleId !== "string" ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(articleId)
+  ) {
     throw new OfflineIssueError("corrupt", "離線文章識別碼無效。")
   }
   return articleId
@@ -290,54 +379,96 @@ function validateManifest(manifest: OfflineManifest, issueSlug: string): void {
     !Number.isInteger(manifest.manifestVersion) ||
     manifest.manifestVersion < 1 ||
     !Array.isArray(manifest.articles) ||
-    manifest.articles.length > MAX_ASSETS
+    manifest.articles.length > MAX_ASSETS ||
+    !Array.isArray(manifest.assets) ||
+    manifest.assets.length > MAX_ASSETS ||
+    !Number.isSafeInteger(manifest.assetBytes) ||
+    manifest.assetBytes < 0 ||
+    manifest.assetBytes > MAX_DOWNLOAD_BYTES ||
+    !validInstant(manifest.expiresAt)
   ) {
     throw new OfflineIssueError("corrupt", "離線下載清單格式無效。")
   }
   assertSha256(manifest.checksum, "manifest")
-  if (
-    manifest.assetBytes !== undefined &&
-    (!Number.isSafeInteger(manifest.assetBytes) ||
-      manifest.assetBytes < 0 ||
-      manifest.assetBytes > MAX_DOWNLOAD_BYTES)
-  ) {
-    throw new OfflineIssueError("corrupt", "離線下載清單大小超出安全上限。")
-  }
+  const articleIds = new Set<string>()
+  const revisionIds = new Set<string>()
+  const slugs = new Set<string>()
+  const resourceUrls = new Set<string>()
+  let declaredBytes = 0
   for (const article of manifest.articles) {
-    if (!article || typeof article !== "object" || typeof article.articleId !== "string") {
+    if (
+      !article ||
+      typeof article !== "object" ||
+      typeof article.articleId !== "string" ||
+      typeof article.revisionId !== "string" ||
+      !Number.isInteger(article.revisionNumber) ||
+      article.revisionNumber < 1 ||
+      typeof article.slug !== "string" ||
+      !/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(article.slug) ||
+      typeof article.title !== "string" ||
+      article.title.trim().length < 1 ||
+      !Number.isInteger(article.position) ||
+      article.position < 1 ||
+      typeof article.contentUrl !== "string" ||
+      !Number.isSafeInteger(article.byteSize) ||
+      article.byteSize < 1 ||
+      article.byteSize > MAX_DOWNLOAD_BYTES
+    ) {
       throw new OfflineIssueError("corrupt", "離線文章資料格式無效。")
     }
     assertSafeArticleId(article.articleId)
+    assertSafeArticleId(article.revisionId)
+    assertSha256(article.checksum, "article")
+    const expectedContentUrl = `/api/v1/public/offline/issues/${issueSlug}/articles/${article.articleId}/revisions/${article.revisionId}`
+    if (
+      article.contentUrl !== expectedContentUrl ||
+      !articleIds.add(article.articleId) ||
+      !revisionIds.add(article.revisionId) ||
+      !slugs.add(article.slug) ||
+      !resourceUrls.add(article.contentUrl)
+    ) {
+      throw new OfflineIssueError("corrupt", "離線文章版本識別不一致。")
+    }
+    declaredBytes += article.byteSize
   }
-  if (manifest.assets !== undefined) {
-    if (!Array.isArray(manifest.assets) || manifest.assets.length > MAX_ASSETS) {
-      throw new OfflineIssueError("corrupt", "離線資產數量超出安全上限。")
+  for (const asset of manifest.assets) {
+    if (
+      !asset ||
+      typeof asset !== "object" ||
+      typeof asset.assetId !== "string" ||
+      typeof asset.variant !== "string" ||
+      !/^[a-z0-9][a-z0-9-]{0,31}$/.test(asset.variant) ||
+      typeof asset.url !== "string" ||
+      typeof asset.mimeType !== "string" ||
+      !["image/avif", "image/jpeg", "image/png", "image/webp"].includes(asset.mimeType) ||
+      !Number.isSafeInteger(asset.byteSize) ||
+      asset.byteSize < 1 ||
+      asset.byteSize > MAX_DOWNLOAD_BYTES ||
+      !validInstant(asset.expiresAt) ||
+      Date.parse(asset.expiresAt) < Date.parse(manifest.expiresAt)
+    ) {
+      throw new OfflineIssueError("corrupt", "離線資產格式無效。")
     }
-    for (const asset of manifest.assets) {
-      if (!asset || typeof asset !== "object" || !asset.url) {
-        throw new OfflineIssueError("corrupt", "離線資產缺少安全來源。")
-      }
-      if (asset.checksum) {
-        assertSha256(asset.checksum, "asset")
-      }
-      if (
-        asset.byteSize !== undefined &&
-        (!Number.isSafeInteger(asset.byteSize) ||
-          asset.byteSize < 1 ||
-          asset.byteSize > MAX_DOWNLOAD_BYTES)
-      ) {
-        throw new OfflineIssueError("corrupt", "離線資產大小無效。")
-      }
+    assertSafeArticleId(asset.assetId)
+    assertSha256(asset.checksum, "asset")
+    if (!resourceUrls.add(asset.url)) {
+      throw new OfflineIssueError("corrupt", "離線資產來源重複。")
     }
+    declaredBytes += asset.byteSize
+  }
+  if (!Number.isSafeInteger(declaredBytes) || declaredBytes !== manifest.assetBytes) {
+    throw new OfflineIssueError("corrupt", "離線下載清單大小不一致。")
   }
 }
 
-function validateWithdrawalManifest(manifest: WithdrawalManifest): void {
+async function validateWithdrawalManifest(manifest: WithdrawalManifest): Promise<void> {
   if (
     !manifest ||
     !Number.isInteger(manifest.version) ||
     manifest.version < 1 ||
     !Array.isArray(manifest.withdrawals) ||
+    manifest.withdrawals.length > MAX_WITHDRAWALS ||
+    !validInstant(manifest.generatedAt) ||
     manifest.withdrawals.some((articleId) => {
       try {
         assertSafeArticleId(articleId)
@@ -349,22 +480,100 @@ function validateWithdrawalManifest(manifest: WithdrawalManifest): void {
   ) {
     throw new OfflineIssueError("corrupt", "撤回清單格式無效。")
   }
-  if (manifest.checksum) {
-    assertSha256(manifest.checksum, "withdrawal manifest")
+  if (new Set(manifest.withdrawals).size !== manifest.withdrawals.length) {
+    throw new OfflineIssueError("corrupt", "撤回清單含有重複識別碼。")
+  }
+  assertSha256(manifest.checksum, "withdrawal manifest")
+  const canonical = `${manifest.version}\n${[...manifest.withdrawals].sort().join("\n")}`
+  const checksum = await sha256Hex(new TextEncoder().encode(canonical).buffer as ArrayBuffer)
+  if (checksum !== manifest.checksum) {
+    throw new OfflineIssueError("corrupt", "撤回清單 checksum 校驗失敗。")
   }
 }
 
 function downloadAssetsFor(manifest: OfflineManifest): DownloadAsset[] {
-  if (manifest.assets && manifest.assets.length > 0) {
-    return manifest.assets.map((asset) => ({
-      url: asset.url!,
+  return [
+    ...manifest.articles.map((article) => ({
+      url: article.contentUrl,
+      checksum: article.checksum,
+      byteSize: article.byteSize
+    })),
+    ...manifest.assets.map((asset) => ({
+      url: asset.url,
       checksum: asset.checksum,
       byteSize: asset.byteSize
     }))
+  ]
+}
+
+function validInstant(value: unknown): value is string {
+  return typeof value === "string" && Number.isFinite(Date.parse(value))
+}
+
+function isExpired(expiresAt: string): boolean {
+  return Date.parse(expiresAt) <= Date.now()
+}
+
+function offlineResourceUrl(apiBaseUrl: URL, path: string): string {
+  if (
+    typeof path !== "string" ||
+    !path.startsWith("/") ||
+    path.includes("..") ||
+    path.includes("//") ||
+    path.includes("/./") ||
+    path.endsWith("/")
+  ) {
+    throw new OfflineIssueError("corrupt", "離線資產來源不受信任。")
   }
-  return manifest.articles.map((article) => ({
-    url: getOfflineFallbackAssetPath(article.articleId)
-  }))
+  const mediaPath = /^\/media\/[a-z0-9][a-z0-9._/-]{0,255}$/.test(path)
+  const articlePath =
+    /^\/api\/v1\/public\/offline\/issues\/[a-z0-9]+(?:-[a-z0-9]+)*\/articles\/[0-9a-f-]{36}\/revisions\/[0-9a-f-]{36}$/.test(
+      path
+    )
+  if (!mediaPath && !articlePath) {
+    throw new OfflineIssueError("corrupt", "離線資產來源不受信任。")
+  }
+  const url = new URL(path, apiBaseUrl)
+  if (
+    url.origin !== apiBaseUrl.origin ||
+    url.pathname !== path ||
+    url.search !== "" ||
+    url.hash !== ""
+  ) {
+    throw new OfflineIssueError("corrupt", "離線資產來源不受信任。")
+  }
+  return url.toString()
+}
+
+function validateCachedArticleProjection(
+  value: unknown,
+  issueSlug: string,
+  articleSlug: string,
+  manifestArticle: OfflineArticle
+): PublicArticleProjection {
+  if (
+    !isRecord(value) ||
+    value.articleId !== manifestArticle.articleId ||
+    value.revisionId !== manifestArticle.revisionId ||
+    value.revisionNumber !== manifestArticle.revisionNumber ||
+    value.slug !== articleSlug ||
+    value.canonicalPath !== `/articles/${articleSlug}` ||
+    typeof value.title !== "string" ||
+    !isRecord(value.content) ||
+    typeof value.plainText !== "string" ||
+    !Number.isInteger(value.readingTimeMinutes) ||
+    !Array.isArray(value.media) ||
+    !Array.isArray(value.contributors) ||
+    !isRecord(value.issueNavigation) ||
+    value.issueNavigation.issueSlug !== issueSlug
+  ) {
+    throw new OfflineIssueError("corrupt", "離線文章內容格式無效。")
+  }
+  return value as PublicArticleProjection
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null && !Array.isArray(value)
 }
 
 function cacheStorageAvailable(): boolean {
@@ -395,13 +604,7 @@ async function assertStorageCapacity(requiredBytes: number): Promise<void> {
   }
 }
 
-async function fetchAsset(apiBaseUrl: URL, path: string): Promise<Response> {
-  let url: string
-  try {
-    url = publicMediaUrl(apiBaseUrl.toString(), path)
-  } catch {
-    throw new OfflineIssueError("corrupt", "離線資產來源不受信任。")
-  }
+async function fetchAsset(url: string): Promise<Response> {
   try {
     const response = await fetch(url, {
       cache: "no-store",
@@ -458,7 +661,29 @@ function asOfflineIssueError(error: unknown): OfflineIssueError {
 function candidateCacheNameFor(issueSlug: string, manifest: OfflineManifest): string {
   const suffix =
     globalThis.crypto?.randomUUID?.() ?? `${Date.now()}-${Math.random().toString(16).slice(2)}`
-  return `${CACHE_PREFIX}:candidate:${encodeURIComponent(issueSlug)}:${manifest.manifestVersion}:${manifest.checksum}:${suffix}`
+  return `${candidateCachePrefixFor(issueSlug)}${manifest.manifestVersion}:${manifest.checksum}:${suffix}`
+}
+
+function candidateCachePrefixFor(issueSlug: string): string {
+  return `${CACHE_PREFIX}:candidate:${encodeURIComponent(issueSlug)}:`
+}
+
+async function sweepCandidateCaches(issueSlug: string, preservedCacheName?: string): Promise<void> {
+  const cacheStorage = getCacheStorage()
+  try {
+    const cacheNames = await cacheStorage.keys()
+    await Promise.all(
+      cacheNames
+        .filter(
+          (cacheName) =>
+            cacheName.startsWith(candidateCachePrefixFor(issueSlug)) &&
+            cacheName !== preservedCacheName
+        )
+        .map((cacheName) => cacheStorage.delete(cacheName))
+    )
+  } catch (error) {
+    throw new OfflineIssueError("storage", "未完成的離線下載無法清理。", { cause: error })
+  }
 }
 
 function openDatabase(): Promise<IDBDatabase> {

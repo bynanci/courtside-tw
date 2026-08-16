@@ -5,6 +5,7 @@ import {
   parsePublicIssueSlug,
   publicIssueApiPath
 } from "./public-issue-contract.ts"
+import { readCachedOfflineArticle } from "../offline/services/OfflineIssueManager.ts"
 
 export type PublicIssuePage = components["schemas"]["IssueSummaryPage"]
 export type PublicIssueDetail = components["schemas"]["IssueDetail"]
@@ -76,9 +77,11 @@ export async function fetchPublicIssue(
 
 export async function fetchPublicArticle(
   baseUrl: string,
-  articleSlug: string
+  articleSlug: string,
+  issueSlug?: string | null
 ): Promise<PublicArticleProjection> {
   const slug = parsePublicArticleSlug(articleSlug)
+  let statusCode = 503
   try {
     const client = createApiClient({ baseUrl: normalizedApiBaseUrl(baseUrl) })
     const { data, response } = await client.GET("/api/v1/public/articles/{articleSlug}", {
@@ -90,10 +93,24 @@ export async function fetchPublicArticle(
     return data
   } catch (error) {
     if (error instanceof PublicArticleApiError) {
-      throw error
+      statusCode = error.statusCode
+      if (statusCode < 500) {
+        throw error
+      }
     }
-    throw new PublicArticleApiError(503)
   }
+
+  if (issueSlug) {
+    try {
+      const cached = await readCachedOfflineArticle(baseUrl, issueSlug, slug)
+      if (cached) {
+        return cached
+      }
+    } catch {
+      // A malformed or unavailable local package must never mask the API failure.
+    }
+  }
+  throw new PublicArticleApiError(statusCode)
 }
 
 export function apiPathForPublicIssue(issueSlug: string): string {

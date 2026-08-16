@@ -93,9 +93,10 @@ async function reconcileWithdrawal(): Promise<void> {
     status.value = "installed"
     statusMessage.value = "內容仍可離線閱讀。"
   } catch {
-    status.value = "error"
-    errorMessage.value = "撤回狀態暫時無法確認，暫不開放離線內容。"
-    statusMessage.value = "同步未完成，請在連線後重試。"
+    installed.value = null
+    status.value = "unavailable"
+    errorMessage.value = "撤回狀態無法驗證，本機離線內容已停用。"
+    statusMessage.value = "內容已 fail closed；連線後可重新下載可用版本。"
   }
 }
 </script>
