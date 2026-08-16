@@ -218,6 +218,69 @@ test.describe("US6 offline issue", () => {
     await expect(page.getByTestId("offline-installed")).toBeVisible()
   })
 
+  test("shows storage, progress and expiry before removing an issue locally", async ({ page }) => {
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator.storage, "estimate", {
+        configurable: true,
+        value: async () => ({ quota: 10 * 1024 * 1024, usage: 2 * 1024 * 1024 })
+      })
+    })
+    await routeManifest(page)
+
+    let releaseArticle: (() => void) | undefined
+    const articleRelease = new Promise<void>((resolve) => {
+      releaseArticle = resolve
+    })
+    await page.route("**/api/v1/public/offline/issues/**/articles/**", async (route) => {
+      await articleRelease
+      await route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: articleContentJson
+      })
+    })
+
+    await openOfflineIssue(page)
+    await expect(page.getByTestId("offline-storage-estimate")).toContainText(/2 MB.*10 MB/i)
+
+    await page.getByTestId("offline-download").click()
+    await expect(page.getByTestId("offline-progress")).toHaveAttribute("max", "1")
+    await expect(page.getByTestId("offline-progress")).toHaveAttribute("value", "0")
+    releaseArticle?.()
+
+    await expect(page.getByTestId("offline-installed")).toBeVisible()
+    await expect(page.getByTestId("offline-expiry")).toHaveAttribute(
+      "datetime",
+      manifestV1.expiresAt
+    )
+    await expect(page.getByTestId("offline-expiry")).toContainText(/到期|有效期限/)
+
+    await page.getByTestId("offline-remove").click()
+    await expect(page.getByTestId("offline-installed")).toHaveCount(0)
+    await expect(page.getByTestId("offline-download-status")).toContainText(/已移除/)
+  })
+
+  test("manages the same local offline install from the reader library", async ({ page }) => {
+    await routeManifest(page)
+    await routeArticleContent(page)
+    await openOfflineIssue(page)
+    await page.getByTestId("offline-download").click()
+    await expect(page.getByTestId("offline-installed")).toBeVisible()
+
+    await page.goto("/library", { waitUntil: "domcontentloaded" })
+    const libraryItem = page.getByTestId("offline-library-item")
+    await expect(page.getByTestId("offline-library-panel")).toBeVisible()
+    await expect(libraryItem).toContainText(ISSUE_SLUG)
+    await expect(libraryItem).toContainText(/版本\s*1/)
+
+    await libraryItem.getByTestId("offline-library-remove").click()
+    await expect(libraryItem).toHaveCount(0)
+    await expect(page.getByTestId("offline-library-status")).toContainText(/已移除/)
+
+    await openOfflineIssue(page)
+    await expect(page.getByTestId("offline-installed")).toHaveCount(0)
+  })
+
   test("reads the cached article when the cross-origin article API is unavailable", async ({
     page
   }) => {
