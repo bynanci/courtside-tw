@@ -42,10 +42,13 @@ adb shell am force-stop com.android.chrome
 adb shell 'echo "chrome --disable-fre --no-first-run --no-default-browser-check --disable-default-apps" > /data/local/tmp/chrome-command-line'
 adb shell input keyevent KEYCODE_WAKEUP
 adb shell wm dismiss-keyguard || true
-adb shell am start -W -a android.intent.action.VIEW \
+adb shell dumpsys package com.android.chrome | sed -n '/versionName=/p' \
+  >"$artifact_dir/chrome-version.txt"
+adb shell am start -W \
+  -n com.android.chrome/com.google.android.apps.chrome.Main \
+  -a android.intent.action.VIEW \
   -d http://127.0.0.1:4173/issues/issue-2026-01 \
-  --ez skip_first_run_experience true \
-  com.android.chrome
+  --ez skip_first_run_experience true
 adb forward tcp:9222 localabstract:chrome_devtools_remote
 
 cdp_ready=false
@@ -60,13 +63,12 @@ if [[ "$cdp_ready" != "true" ]]; then
   adb shell uiautomator dump /sdcard/courtside-window.xml || true
   adb pull /sdcard/courtside-window.xml "$artifact_dir/window.xml" || true
   adb shell dumpsys activity activities >"$artifact_dir/activities.txt" || true
+  adb logcat -d -v threadtime >"$artifact_dir/logcat.txt" || true
   adb exec-out screencap -p >"$artifact_dir/screenshot.png" || true
   exit 1
 fi
 curl --fail --silent --show-error http://127.0.0.1:9222/json/version \
   >"$artifact_dir/cdp-version.json"
-adb shell dumpsys package com.android.chrome | sed -n '/versionName=/p' \
-  >"$artifact_dir/chrome-version.txt"
 
 pnpm --filter @courtside/web exec node scripts/android-chrome-offline-smoke.mjs \
   | tee "$smoke_log"
