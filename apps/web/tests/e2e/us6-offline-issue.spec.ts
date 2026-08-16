@@ -156,7 +156,9 @@ test.describe("US6 offline issue", () => {
     await page.getByTestId("offline-download").click()
     await page.getByTestId("offline-reconcile").click()
 
-    await expect(page.getByTestId("offline-unavailable")).toContainText(/withdrawn|撤回|不可用/i)
+    await expect(page.getByTestId("offline-unavailable")).toContainText(
+      /withdrawn|撤回|不可用/i
+    )
     await expect(page.getByTestId("offline-article-body")).toHaveCount(0)
   })
   test("invalidates an installed issue when its manifest is withdrawn", async ({ page }) => {
