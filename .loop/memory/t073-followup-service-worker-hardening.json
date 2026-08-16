@@ -1,0 +1,13 @@
+{
+  "schema": "courtside-tw/work-memory/v1",
+  "lane": "t073-followup-service-worker-hardening",
+  "recorded_at": "2026-08-16T03:45:00Z",
+  "durable_facts": [
+    "main is 3add8f63b9fad6acc1f69058794f42ebb750ee2e with T073 checked and T074/T075/T076 unchecked.",
+    "PR #102 is a draft follow-up from tests-first RED ac234aaaa54d3a02d4a7b1432168b9f258b81a0a.",
+    "The four local regression tests pass on implementation head 6a413fc48af276406dbb5858bc0ea9389116f9cf.",
+    "App-shell cleanup is prefix- and worker-identity-scoped; courtside-offline:* is preserved.",
+    "T074+, Web3 and issue #89 human research remain out of scope."
+  ],
+  "next_action": "Authoritatively verify the final PR head, required CI/Security, browser regression and changed-file scope."
+}
