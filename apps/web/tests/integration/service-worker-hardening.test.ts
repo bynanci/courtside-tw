@@ -1,4 +1,4 @@
-import { deepEqual, strictEqual } from "node:assert/strict"
+import { deepEqual, rejects, strictEqual } from "node:assert/strict"
 import { test } from "node:test"
 import { runInNewContext } from "node:vm"
 
@@ -98,8 +98,13 @@ function createWorkerHarness(
 ) {
   const listeners = new Map<
     string,
-    (event: { request: unknown; respondWith: (response: Promise<Response>) => void }) => void
+    (event: {
+      request: unknown
+      respondWith: (response: Promise<Response>) => void
+      waitUntil: (effect: Promise<unknown>) => void
+    }) => void
   >()
+  const sideEffects: Promise<unknown>[] = []
   const self = {
     addEventListener(type: string, listener: (event: never) => void) {
       listeners.set(type, listener as never)
@@ -130,12 +135,18 @@ function createWorkerHarness(
         request,
         respondWith(response) {
           responsePromise = response
+        },
+        waitUntil(effect) {
+          sideEffects.push(Promise.resolve(effect))
         }
       })
       if (!responsePromise) {
         throw new Error("fetch listener did not call respondWith")
       }
       return responsePromise
+    },
+    async waitForSideEffects() {
+      await Promise.allSettled(sideEffects)
     }
   }
 }
@@ -179,17 +190,86 @@ test("disabled flag only unregisters the app-shell worker and clears its caches"
   deepEqual(deleted, [APP_SHELL_CACHE_NAME, "courtside-app-shell-old"])
 })
 
-test("same-origin app-shell responses update cache from a clone", async () => {
+test("disabled cleanup still removes caches when worker unregister fails", async () => {
+  const deleted: string[] = []
+
+  await rejects(
+    disableOfflineAppShell(
+      {
+        getRegistrations: async () => [
+          {
+            scope: `${ORIGIN}/`,
+            active: { scriptURL: `${ORIGIN}/offline-sw.js` },
+            async unregister() {
+              throw new Error("registration update in progress")
+            }
+          }
+        ]
+      },
+      {
+        async keys() {
+          return [APP_SHELL_CACHE_NAME, "courtside-offline:issue-1"]
+        },
+        async delete(name: string) {
+          deleted.push(name)
+          return true
+        }
+      }
+    )
+  )
+
+  deepEqual(deleted, [APP_SHELL_CACHE_NAME])
+})
+
+test("same-origin canonical app-shell responses update cache from a clone", async () => {
   const storage = createFakeCacheStorage()
   const worker = createWorkerHarness(storage, async () => new Response("fresh-app-shell"))
 
-  const response = await worker.dispatchFetch(navigateRequest("/search", "?section=top"))
+  const response = await worker.dispatchFetch(navigateRequest("/search"))
+  await worker.waitForSideEffects()
 
   strictEqual(await response.text(), "fresh-app-shell")
   deepEqual(storage.putRequests, ["/search"])
   deepEqual(storage.consumedBodies, ["fresh-app-shell"])
   const cached = await storage.cache.match("/search")
   strictEqual(await cached?.text(), "fresh-app-shell")
+})
+
+test("query-specific SSR responses do not overwrite the canonical shell cache", async () => {
+  const storage = createFakeCacheStorage()
+  const worker = createWorkerHarness(storage, async () => new Response("query-a-results"))
+
+  const response = await worker.dispatchFetch(navigateRequest("/search", "?q=A"))
+  await worker.waitForSideEffects()
+
+  strictEqual(await response.text(), "query-a-results")
+  deepEqual(storage.putRequests, [])
+})
+
+test("healthy navigation response is returned before asynchronous cache persistence", async () => {
+  const storage = createFakeCacheStorage()
+  const originalPut = storage.cache.put
+  let releaseCacheWrite: (() => void) | undefined
+  storage.cache.put = async (request, response) => {
+    await new Promise<void>((resolve) => {
+      releaseCacheWrite = resolve
+    })
+    await originalPut(request, response)
+  }
+  const worker = createWorkerHarness(storage, async () => new Response("streamable-shell"))
+
+  const responsePromise = worker.dispatchFetch(navigateRequest("/issues"))
+  let settled = false
+  void responsePromise.then(() => {
+    settled = true
+  })
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  strictEqual(settled, true)
+
+  releaseCacheWrite?.()
+  const response = await responsePromise
+  strictEqual(await response.text(), "streamable-shell")
+  await worker.waitForSideEffects()
 })
 
 test("cache storage open failure does not replace a successful network response", async () => {
@@ -237,4 +317,17 @@ test("non-ok responses and network rejection both use cached app-shell responses
 
     strictEqual(await response.text(), "cached-issues")
   }
+})
+
+test("navigation redirects pass through instead of being replaced by a cached shell", async () => {
+  const storage = createFakeCacheStorage()
+  storage.seed("/issues", "cached-issues")
+  const worker = createWorkerHarness(storage, async () =>
+    Response.redirect(`${ORIGIN}/issues/`, 302)
+  )
+
+  const response = await worker.dispatchFetch(navigateRequest("/issues"))
+
+  strictEqual(response.status, 302)
+  strictEqual(response.headers.get("location"), `${ORIGIN}/issues/`)
 })
