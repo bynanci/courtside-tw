@@ -159,4 +159,30 @@ test.describe("US6 offline issue", () => {
     await expect(page.getByTestId("offline-unavailable")).toContainText(/withdrawn|撤回|不可用/i)
     await expect(page.getByTestId("offline-article-body")).toHaveCount(0)
   })
+  test("invalidates an installed issue when its manifest is withdrawn", async ({ page }) => {
+    let manifestCalls = 0
+    await page.route("**/api/v1/public/offline/issues/**/manifest", (route) => {
+      manifestCalls += 1
+      return route.fulfill({
+        status: manifestCalls === 1 ? 200 : 404,
+        contentType: "application/json",
+        body: JSON.stringify(manifestCalls === 1 ? manifestV1 : {})
+      })
+    })
+    await page.route("**/api/v1/public/withdrawals", (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify({ ...withdrawalManifest, withdrawals: [] })
+      })
+    )
+
+    await openOfflineIssue(page)
+    await page.getByTestId("offline-download").click()
+    await page.getByTestId("offline-reconcile").click()
+
+    await expect(page.getByTestId("offline-unavailable")).toContainText(/withdrawn|撤回|不可用/i)
+    await expect(page.getByTestId("offline-installed")).toHaveCount(0)
+  })
+
 })

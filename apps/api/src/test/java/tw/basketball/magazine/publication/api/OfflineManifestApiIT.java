@@ -10,7 +10,9 @@ import java.time.Instant;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import tw.basketball.magazine.publication.PublicIssueApiIntegrationTestSupport;
@@ -59,6 +61,32 @@ final class OfflineManifestApiIT extends PublicIssueApiIntegrationTestSupport {
                 .andExpect(jsonPath("$.articles[0].revisionId").isNotEmpty())
                 .andExpect(jsonPath("$.articles[0].revisionNumber").value(1))
                 .andExpect(jsonPath("$.articles[0].checksum").value(Matchers.matchesPattern("[0-9a-f]{64}")));
+    }
+
+    @Test
+    void honorsStandardQuotedIfNoneMatchHeader() throws Exception {
+        IssueFixture issue = createIssue(
+                "issue-2026-01-etag",
+                5,
+                Instant.parse("2026-08-01T00:00:00Z"),
+                "PUBLISHED",
+                true
+        );
+        addArticle(issue, "Featured", 1, "etag-article", 1, "PUBLISHED");
+
+        MvcResult initial = mockMvc.perform(
+                get("/api/v1/public/offline/issues/{issueSlug}/manifest", issue.slug())
+        ).andExpect(status().isOk()).andReturn();
+        String responseTag = initial.getResponse().getHeader(HttpHeaders.ETAG);
+        if (responseTag == null) {
+            throw new AssertionError("offline manifest response must include an ETag");
+        }
+        String standardTag = responseTag.startsWith("\"") ? responseTag : "\"" + responseTag + "\"";
+
+        mockMvc.perform(
+                get("/api/v1/public/offline/issues/{issueSlug}/manifest", issue.slug())
+                        .header(HttpHeaders.IF_NONE_MATCH, standardTag)
+        ).andExpect(status().isNotModified());
     }
 
     @Test
