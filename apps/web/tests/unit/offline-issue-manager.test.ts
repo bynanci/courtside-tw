@@ -240,6 +240,16 @@ test("offline manager commits updates once and removes installed state fail clos
   const versionOne = await offlineFixture(1)
   const versionTwo = await offlineFixture(2)
   let fixture = versionOne
+  let rejectNextManifest = false
+  let releaseFirstArticle: (() => void) | undefined
+  let markFirstArticleRequested: (() => void) | undefined
+  const firstArticleRequested = new Promise<void>((resolve) => {
+    markFirstArticleRequested = resolve
+  })
+  const firstArticleRelease = new Promise<void>((resolve) => {
+    releaseFirstArticle = resolve
+  })
+  let firstArticleBlocked = true
 
   Object.defineProperty(globalThis, "caches", { configurable: true, value: cacheStorage })
   Object.defineProperty(globalThis, "indexedDB", {
@@ -249,9 +259,18 @@ test("offline manager commits updates once and removes installed state fail clos
   globalThis.fetch = async (input) => {
     const url = requestUrl(input)
     if (url.endsWith(`/offline/issues/${ISSUE_SLUG}/manifest`)) {
+      if (rejectNextManifest) {
+        rejectNextManifest = false
+        throw new Error("competing manifest request failed")
+      }
       return Response.json(fixture.manifest)
     }
     if (url.endsWith(ARTICLE_PATH)) {
+      if (firstArticleBlocked) {
+        firstArticleBlocked = false
+        markFirstArticleRequested?.()
+        await firstArticleRelease
+      }
       return new Response(fixture.articleBody, {
         headers: { "content-type": "application/json" }
       })
@@ -261,8 +280,24 @@ test("offline manager commits updates once and removes installed state fail clos
 
   try {
     const manager = new OfflineIssueManager("https://api.courtside.test", ISSUE_SLUG)
-    const installedOne = await manager.download()
+    const firstDownload = manager.download()
+    await firstArticleRequested
+
+    rejectNextManifest = true
+    const competingManager = new OfflineIssueManager("https://api.courtside.test", ISSUE_SLUG)
+    const competingFailure = rejects(
+      competingManager.download(),
+      (error: unknown) => error instanceof OfflineIssueError && error.code === "network"
+    )
+    for (let attempt = 0; attempt < 20 && rejectNextManifest; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 0))
+    }
+    releaseFirstArticle?.()
+
+    const installedOne = await firstDownload
+    await competingFailure
     equal(installedOne.manifest.manifestVersion, 1)
+    equal(await cacheStorage.has(installedOne.cacheName), true)
 
     fixture = versionTwo
     cacheStorage.failNextDelete(installedOne.cacheName)
