@@ -15,6 +15,7 @@ cleanup() {
   adb forward --remove tcp:9222 >/dev/null 2>&1 || true
   adb reverse --remove tcp:4173 >/dev/null 2>&1 || true
   adb reverse --remove tcp:4010 >/dev/null 2>&1 || true
+  adb shell am clear-debug-app >/dev/null 2>&1 || true
 }
 trap cleanup EXIT
 
@@ -39,6 +40,11 @@ curl --fail --silent --show-error http://127.0.0.1:4173/issues/issue-2026-01 >/d
 adb reverse tcp:4173 tcp:4173
 adb reverse tcp:4010 tcp:4010
 adb shell am force-stop com.android.chrome
+# Chrome's production Android build only reads /data/local/tmp/chrome-command-line
+# when the package is the active debug app (or the image is eng/userdebug). This
+# keeps the Play Store system image on the real Chrome binary while making the
+# documented automation-only --disable-fre switch effective.
+adb shell am set-debug-app --persistent com.android.chrome
 adb shell 'echo "chrome --disable-fre --no-first-run --no-default-browser-check --disable-default-apps" > /data/local/tmp/chrome-command-line'
 adb shell input keyevent KEYCODE_WAKEUP
 adb shell wm dismiss-keyguard || true
