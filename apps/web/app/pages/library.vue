@@ -2,6 +2,7 @@
 import { navigateTo } from "#app"
 import { onMounted, ref } from "vue"
 
+import OfflineLibraryPanel from "../features/offline/components/OfflineLibraryPanel.vue"
 import { useProgressMerge } from "../features/library/composables/useProgressMerge"
 import {
   listBookmarks,
@@ -12,6 +13,7 @@ import {
 } from "../features/library/reader-library-api"
 
 const route = useRoute()
+const config = useRuntimeConfig()
 const bookmarks = ref<BookmarkItem[]>([])
 const progress = ref<ReadingProgress[]>([])
 const loading = ref(true)
@@ -82,6 +84,8 @@ function login(): void {
         <h1>跨裝置接續閱讀</h1>
         <p>書籤直接同步；本機進度必須先預覽，再由你確認套用。</p>
       </header>
+
+      <OfflineLibraryPanel :api-base-url="config.public.apiBaseUrl" />
 
       <p v-if="loading" role="status">正在讀取收藏與閱讀進度…</p>
       <section v-else-if="!signedIn" class="reading-state">

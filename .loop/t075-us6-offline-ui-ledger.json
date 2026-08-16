@@ -1,0 +1,107 @@
+{
+  "schema": "courtside-tw/loop-ledger/v1",
+  "lane": "t075-us6-offline-ui",
+  "version": 1,
+  "recorded_at": "2026-08-16T15:23:25Z",
+  "decision": "Complete T075 offline management UI and stop before T076.",
+  "terminal_state": "t075_final_implementation_verified_pending_receipt_head",
+  "scope": {
+    "issue": 89,
+    "tasks": ["T075"],
+    "baseline_main": "a0c506f139fdef64888c35e9a2defca6993373ec",
+    "tests_first_head": "7ba74531b13a44942523433eaa2142c6df9f7f15",
+    "first_implementation_head": "d0172ef07137c69fd43c6b870f35b47e3558524c",
+    "implementation_head": "abd4456564b39797c85ef98ec158a198dabdf2f7",
+    "excluded": [
+      "T076",
+      "T078+ release gates",
+      "T087+ Web3",
+      "issue #89 human research closure"
+    ]
+  },
+  "events": [
+    {
+      "sequence": 1,
+      "type": "tests_first_contract_authored",
+      "result": "red_contract_defined",
+      "evidence_refs": ["apps/web/tests/e2e/us6-offline-issue.spec.ts"],
+      "matrix": [
+        "issue-page storage, progress, expiry and local removal",
+        "reader-library listing and removal of the same local install"
+      ]
+    },
+    {
+      "sequence": 2,
+      "type": "ci_attributable_red_replayed",
+      "result": "red_receipt_proven",
+      "source_head": "7ba74531b13a44942523433eaa2142c6df9f7f15",
+      "ci_run": 602,
+      "ci_run_id": 31954130883,
+      "ci_job": 95182150708,
+      "failure_signature": "56 browser tests; 54 passed; only the two new T075 surface contracts failed",
+      "attribution": "T075 UI seams were absent while frontend and non-T075 browser contracts passed"
+    },
+    {
+      "sequence": 3,
+      "type": "first_implementation_reviewed",
+      "result": "superseded_by_copy_contract_fix",
+      "source_head": "d0172ef07137c69fd43c6b870f35b47e3558524c",
+      "evidence": [
+        "issue-page T075 browser scenario passed",
+        "library removal succeeded but status wording did not contain contiguous 已移除",
+        "Security image failures were traced to transient Alpine repository TLS/index availability and were not accepted as final evidence"
+      ]
+    },
+    {
+      "sequence": 4,
+      "type": "final_implementation_exact_head_green",
+      "result": "t075_contract_passed",
+      "source_head": "abd4456564b39797c85ef98ec158a198dabdf2f7",
+      "ci_run": 604,
+      "ci_run_id": 31955086294,
+      "security_run": 605,
+      "security_run_id": 31955086288,
+      "ci_jobs": [95184394765, 95184394839, 95184394920, 95184558434],
+      "security_jobs": [
+        95184394395,
+        95184394419,
+        95184394446,
+        95184394453,
+        95184394486,
+        95184412344,
+        95184412387,
+        95184412402
+      ],
+      "passed_gates": [
+        "106/106 web tests",
+        "Java quality and unit verification",
+        "Docker Compose dependency health",
+        "both T075 browser scenarios",
+        "complete browser job with 55 clean tests and one unrelated existing creative-lifecycle retry",
+        "mobile Lighthouse budgets",
+        "dependency audit",
+        "CodeQL Java/Kotlin",
+        "CodeQL JavaScript/TypeScript",
+        "Trivy filesystem and all Compose images"
+      ],
+      "review": {
+        "result": "pass",
+        "p0": 0,
+        "p1": 0,
+        "notes": [
+          "malformed and expired local records remain fail closed",
+          "library operations use the T074 per-issue lifecycle lock",
+          "browser-wide storage estimates are labelled as estimates rather than reserved capacity",
+          "T076 remains untouched"
+        ]
+      }
+    }
+  ],
+  "invariants": [
+    "invalid, corrupt or expired local state is never presented as installed",
+    "local listing and removal are serialized with install, update, reconciliation and cached reads",
+    "rights expiry is displayed from the installed manifest",
+    "offline storage is explicitly described as neither DRM nor permanent authorization"
+  ],
+  "next_action": "Verify the receipt head, merge PR #105, and read back main before beginning T076."
+}
