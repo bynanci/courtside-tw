@@ -1,0 +1,102 @@
+{
+  "schema": "courtside-tw/task-evidence/v1",
+  "task": "T071",
+  "status": "PASS_IMPLEMENTATION",
+  "recorded_at": "2026-08-16T00:06:08Z",
+  "baseline_main": "73bbb0851d90a108f6a8c9d93c284670afbfd152",
+  "tests_first_commit": "fe7f0ffe6fc1c4ff8c93936ba81968b229183434",
+  "changed_files": [
+    "apps/api/src/test/java/tw/basketball/magazine/publication/api/OfflineManifestApiIT.java",
+    "apps/web/tests/e2e/us6-offline-issue.spec.ts",
+    ".loop/t071-us6-offline-graphify-loop.yaml",
+    ".loop/evidence/t071-us6-offline-tests-first-20260815.json",
+    ".loop/t071-us6-offline-ledger.json",
+    ".loop/memory/t071-us6-offline.json",
+    "apps/web/app/features/offline/components/OfflineDownloadPanel.vue",
+    "apps/web/app/features/offline/services/OfflineIssueManager.ts",
+    "apps/web/app/pages/issues/[issueSlug].vue",
+    "apps/web/app/assets/css/main.css",
+    "apps/web/tests/unit/offline-issue-manager.test.ts",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+  ],
+  "contract_matrix": [
+    {
+      "scenario": "interrupted download",
+      "production_seam": "offline issue download manager and temporary asset cache",
+      "test": "apps/web/tests/e2e/us6-offline-issue.spec.ts :: does not install a partially downloaded issue after interruption",
+      "fixture": "manifestV1 plus aborted **/media/offline/** response",
+      "expected_red": "offline-download control is absent before T074/T075; once present, the pre-atomic-install path must report interrupted",
+      "pass_assertion": "offline-download-status reports interruption and offline-installed remains absent",
+      "resolution": "PASS on exact head 7890229a5e6e91bb859445d2932cd7dc89281995; browser job 95088190283 exercised the failure injection and retained the no-partial-install/withdrawal assertions."
+    },
+    {
+      "scenario": "corrupted asset",
+      "production_seam": "checksum verification before atomic install",
+      "test": "apps/web/tests/e2e/us6-offline-issue.spec.ts :: rejects a corrupted asset before marking the issue installed",
+      "fixture": "manifestV1 plus corrupt text response for **/media/offline/**",
+      "expected_red": "offline-download control is absent before T074/T075",
+      "pass_assertion": "offline-download-error reports checksum/corruption and offline-installed remains absent",
+      "resolution": "PASS on exact head 7890229a5e6e91bb859445d2932cd7dc89281995; browser job 95088190283 exercised the failure injection and retained the no-partial-install/withdrawal assertions."
+    },
+    {
+      "scenario": "quota denial",
+      "production_seam": "navigator.storage.estimate guard before temporary cache allocation",
+      "test": "apps/web/tests/e2e/us6-offline-issue.spec.ts :: surfaces quota denial without leaving a partial installation",
+      "fixture": "navigator.storage.estimate returns quota=usage=1024 and manifestV1",
+      "expected_red": "offline-download control is absent before T074/T075",
+      "pass_assertion": "offline-download-error reports quota/capacity and offline-installed remains absent",
+      "resolution": "PASS on exact head 7890229a5e6e91bb859445d2932cd7dc89281995; browser job 95088190283 exercised the failure injection and retained the no-partial-install/withdrawal assertions."
+    },
+    {
+      "scenario": "manifest update",
+      "production_seam": "versioned manifest fetch plus atomic replacement of installed content",
+      "test": "apps/web/tests/e2e/us6-offline-issue.spec.ts :: atomically replaces an installed issue with a newer manifest",
+      "fixture": "first manifestV1, then manifestV2 with a new version and checksum",
+      "expected_red": "offline-download/update controls are absent before T074/T075",
+      "pass_assertion": "installed manifest version changes from 1 to 2 and remains installed",
+      "resolution": "PASS on exact head 7890229a5e6e91bb859445d2932cd7dc89281995; browser job 95088190283 exercised the failure injection and retained the no-partial-install/withdrawal assertions."
+    },
+    {
+      "scenario": "withdrawal reconciliation",
+      "production_seam": "GET /api/v1/public/withdrawals plus online cache invalidation",
+      "test": "apps/web/tests/e2e/us6-offline-issue.spec.ts :: reconciles an online withdrawal before exposing cached article content",
+      "fixture": "manifestV1 plus withdrawalManifest containing the article UUID",
+      "expected_red": "offline reconciliation control is absent before T072/T074/T076",
+      "pass_assertion": "offline-unavailable is shown and offline-article-body is absent",
+      "resolution": "PASS on exact head 7890229a5e6e91bb859445d2932cd7dc89281995; browser job 95088190283 exercised the failure injection and retained the no-partial-install/withdrawal assertions."
+    }
+  ],
+  "proof": {
+    "git_diff_check": "PASS",
+    "typescript_syntax": "PASS via node --experimental-strip-types --check",
+    "java_runtime_red": "PASS: CI #562 job 95023797686 failed only on the two new OfflineManifestApiIT assertions for the absent T072 seam",
+    "browser_runtime_red": "PASS: CI #562 browser job 95023941694 observed the five new US6 contracts failing at absent offline controls; one unrelated US2 baseline failure was excluded",
+    "ci_format_guard": "FAIL on CI #559 job Frontend and contract verification: Prettier rejected apps/web/tests/e2e/us6-offline-issue.spec.ts; fixed in the follow-up head before targeted RED replay",
+    "source_readback": "PASS: no OfflineManifestController, OfflineManifestService, OfflineIssueManager, WithdrawalReconciler or offline UI test IDs exist on baseline main",
+    "exact_head_ci_security": "Initial RED receipt: exact head 8e5c94c676ce4661466831a77eae8cafb1df6176, CI #562 and Security #563; Security failures were the same attributable API RED, with no vulnerability finding",
+    "latest_exact_head_replay": "RED preserved on exact head e2436f0d5c063d029c66226cd01afdd43fee99d3: CI #567 browser job 95033743342 failed the five authored US6 browser contracts at the absent offline-download control, while 43 browser tests passed; Security #568 passed all jobs. This confirms T071 remains an executable downstream RED contract after T072 API implementation.",
+    "prettier": "PASS via pinned Prettier 3.9.6 on the three initially rejected files",
+    "unit_runtime": "PASS: offline-issue-manager.test.ts, 3 tests",
+    "exact_head_ci": "PASS: CI #570 (run 31916121547) frontend/contract, browser, Java quality, Compose health and Lighthouse all passed on current_exact_head.",
+    "browser_runtime": "PASS: job 95088190283 ran the complete suite; US6 offline issue scenarios 44-48 passed and the combined browser suite reported 48 passed.",
+    "security_runtime": "PASS: Security #571 (run 31916121517) dependency audit, CodeQL Java/Kotlin, CodeQL JavaScript/TypeScript, filesystem Trivy, Compose image resolution and Trivy postgres/oidc/s3 all passed.",
+    "current_exact_head": "7890229a5e6e91bb859445d2932cd7dc89281995"
+  },
+  "scope_guard": {
+    "production_code_changed": true,
+    "tasks_checkbox_changed": true,
+    "issue_89_changed": false,
+    "pr_92_modified": false,
+    "repository_protection_modified": false,
+    "web3_or_unrelated_work_started": false
+  },
+  "next_action": "T071 is verified and checked. Stop before T073+; keep the PR draft and preserve issue #89 human research, Web3, PR #92, repository protection and unrelated task state.",
+  "parent_exact_head": "0e53baf14c4f5a181ef1cfc9fd0aae6a55714a4a",
+  "implementation_commits": [
+    "e0a24d0cca6630d8c079b3075947af1adb27c03e",
+    "7890229a5e6e91bb859445d2932cd7dc89281995"
+  ],
+  "current_exact_head": "7890229a5e6e91bb859445d2932cd7dc89281995",
+  "historical_red_attribution": "Preserved: the prior T071 RED receipt was attributable to the absent offline-download control on 0e53baf14c4f5a181ef1cfc9fd0aae6a55714a4a; it is resolved by the bounded implementation on the current head."
+}
+

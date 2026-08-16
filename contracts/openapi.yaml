@@ -318,6 +318,7 @@ paths:
                     version: 1
                     generatedAt: 2026-08-07T15:00:00Z
                     withdrawals: []
+                    checksum: "0000000000000000000000000000000000000000000000000000000000000000"
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -385,6 +386,9 @@ paths:
                     manifestVersion: 1
                     checksum: "0000000000000000000000000000000000000000000000000000000000000000"
                     articles: []
+                    expiresAt: 2027-08-01T00:00:00Z
+                    assetBytes: 0
+                    assets: []
           headers:
             X-Request-Id:
               $ref: "#/components/headers/XRequestId"
@@ -4367,6 +4371,77 @@ components:
         version:
           type: integer
           minimum: 0
+    OfflineArticle:
+      type: object
+      additionalProperties: false
+      required:
+        - articleId
+        - revisionId
+        - revisionNumber
+        - slug
+        - title
+        - position
+        - checksum
+      properties:
+        articleId:
+          $ref: "#/components/schemas/Uuid"
+        revisionId:
+          $ref: "#/components/schemas/Uuid"
+        revisionNumber:
+          type: integer
+          minimum: 1
+        slug:
+          type: string
+          pattern: "^[a-z0-9]+(?:-[a-z0-9]+)*$"
+          maxLength: 128
+        title:
+          type: string
+          minLength: 1
+          maxLength: 250
+        position:
+          type: integer
+          minimum: 1
+        checksum:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+    OfflineAsset:
+      type: object
+      additionalProperties: false
+      required:
+        - assetId
+        - variant
+        - url
+        - mimeType
+        - byteSize
+        - checksum
+        - expiresAt
+      properties:
+        assetId:
+          $ref: "#/components/schemas/Uuid"
+        variant:
+          type: string
+          pattern: "^[a-z0-9][a-z0-9-]{0,31}$"
+        url:
+          type: string
+          pattern: "^/media/"
+          maxLength: 512
+        mimeType:
+          type: string
+          enum:
+            - image/avif
+            - image/jpeg
+            - image/png
+            - image/webp
+        byteSize:
+          type: integer
+          format: int64
+          minimum: 1
+        checksum:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        expiresAt:
+          type: string
+          format: date-time
     OfflineManifest:
       type: object
       additionalProperties: false
@@ -4375,6 +4450,9 @@ components:
         - manifestVersion
         - checksum
         - articles
+        - expiresAt
+        - assetBytes
+        - assets
       properties:
         issueSlug:
           type: string
@@ -4387,10 +4465,18 @@ components:
         articles:
           type: array
           items:
-            $ref: "#/components/schemas/ArticleSummary"
+            $ref: "#/components/schemas/OfflineArticle"
         expiresAt:
           type: string
           format: date-time
+        assetBytes:
+          type: integer
+          format: int64
+          minimum: 0
+        assets:
+          type: array
+          items:
+            $ref: "#/components/schemas/OfflineAsset"
     WithdrawalManifest:
       type: object
       additionalProperties: false
@@ -4398,6 +4484,7 @@ components:
         - version
         - generatedAt
         - withdrawals
+        - checksum
       properties:
         version:
           type: integer
@@ -4409,6 +4496,9 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/Uuid"
+        checksum:
+          type: string
+          pattern: ^[0-9a-f]{64}$
     ProvenanceManifest:
       type: object
       additionalProperties: false

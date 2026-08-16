@@ -1,0 +1,354 @@
+{
+  "schema": "courtside-tw/loop-ledger/v1",
+  "lane": "t071-us6-offline-tests-first",
+  "version": 1,
+  "recorded_at": "2026-08-16T00:06:08Z",
+  "decision": "Record T071 bounded offline UI/download manager exact-head pass and stop before T073+.",
+  "terminal_state": "t071_verified_bounded_stop",
+  "scope": {
+    "issue": 89,
+    "tasks": [
+      "T071",
+      "T072"
+    ],
+    "baseline_main": "73bbb0851d90a108f6a8c9d93c284670afbfd152",
+    "tests_first_commit": "fe7f0ffe6fc1c4ff8c93936ba81968b229183434",
+    "excluded": [
+      "T073+",
+      "Web3",
+      "PR #92",
+      "ruleset mutation",
+      "unrelated task state",
+      "human research closure"
+    ]
+  },
+  "events": [
+    {
+      "sequence": 1,
+      "type": "tests_first_contract_authored",
+      "result": "red_contract_defined",
+      "evidence_refs": [
+        ".loop/evidence/t071-us6-offline-tests-first-20260815.json",
+        "apps/api/src/test/java/tw/basketball/magazine/publication/api/OfflineManifestApiIT.java",
+        "apps/web/tests/e2e/us6-offline-issue.spec.ts"
+      ],
+      "matrix": [
+        "interruption",
+        "corruption",
+        "quota denial",
+        "manifest update",
+        "withdrawal reconciliation"
+      ]
+    },
+    {
+      "sequence": 2,
+      "type": "local_static_verification",
+      "result": "pass_with_runtime_replay_pending",
+      "proof": [
+        "git diff --check passed",
+        "Node TypeScript syntax check passed",
+        "local Gradle executable is unavailable",
+        "repo-pinned pnpm/node toolchain and local web dependencies are unavailable"
+      ],
+      "failure_signature": "environment_toolchain_unavailable",
+      "attribution": "not attributable to the T071 contract content"
+    },
+    {
+      "sequence": 3,
+      "type": "ci_format_guard_rejected_head",
+      "result": "fixed_before_runtime_red_replay",
+      "source_head": "da477479dd915cb7b418883abbf7375d51c576ad",
+      "ci_run": 559,
+      "ci_job": "Frontend and contract verification",
+      "ci_job_id": 95022888107,
+      "failure_signature": "prettier_rejected_apps_web_tests_e2e_us6_offline_issue_spec_ts",
+      "attribution": "attributable_to_tests_first_file_formatting; not an API/browser behavior RED",
+      "disposition": "format-only follow-up head prepared; re-run exact-head CI/Security before T072"
+    },
+    {
+      "sequence": 4,
+      "type": "ci_attributable_red_replayed",
+      "result": "red_receipt_proven",
+      "source_head": "8e5c94c676ce4661466831a77eae8cafb1df6176",
+      "ci_run": 562,
+      "security_run": 563,
+      "ci_jobs": [
+        95023797686,
+        95023941694
+      ],
+      "security_jobs": [
+        95023799329,
+        95023799351,
+        95023799390,
+        95023799394,
+        95023799464,
+        95023814036,
+        95023814064,
+        95023814106
+      ],
+      "failure_signature": "OfflineManifestApiIT_missing_public_manifest_seam_and_five_offline_ui_controls",
+      "attribution": "attributable_to_T072_and_downstream_US6_seams; unrelated_us2_browser_failure_excluded; Security reported no vulnerability finding",
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/pull/100#issuecomment-5302666548",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31889590750",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31889590774"
+      ]
+    },
+    {
+      "sequence": 5,
+      "type": "t072_implementation_started",
+      "result": "bounded_production_seam_added_pending_ci",
+      "changed_files": [
+        "apps/api/src/main/java/tw/basketball/magazine/publication/api/OfflineManifestController.java",
+        "apps/api/src/main/java/tw/basketball/magazine/publication/application/OfflineManifestService.java",
+        "contracts/openapi.yaml",
+        "apps/api/src/test/java/tw/basketball/magazine/publication/api/OfflineManifestApiIT.java"
+      ],
+      "local_proof": [
+        "git diff --check passed",
+        "OpenAPI validator could not run because local yaml dependency is unavailable",
+        "Java compile remains pending pinned CI/Testcontainers"
+      ],
+      "scope_guard": [
+        "T073-T076 untouched",
+        "PR #92 untouched",
+        "Web3 and repository protection untouched",
+        "issue #89 human research state preserved"
+      ]
+    },
+    {
+      "sequence": 6,
+      "type": "t072_exact_head_compile_and_contract_rejected",
+      "result": "red_implementation_receipt",
+      "source_head": "03d07aa3273655570d3bace7b98e0c27f2ff7df1",
+      "ci_run": 563,
+      "security_run": 564,
+      "ci_jobs": [
+        95028315634,
+        95028315833
+      ],
+      "security_jobs": [
+        95028315650,
+        95028315652
+      ],
+      "passed_gates": [
+        "OpenAPI validation",
+        "Trivy filesystem",
+        "Trivy postgres",
+        "Trivy s3",
+        "Trivy oidc",
+        "Compose image resolution",
+        "CodeQL JavaScript/TypeScript"
+      ],
+      "failure_signature": "OfflineManifestService_compile_errors_and_generated_openapi_dts_drift",
+      "attribution": "attributable_to_T072_implementation; no unrelated task or vulnerability finding",
+      "minimal_fix": [
+        "pass row number to mapIssue/mapArticle/mapAsset",
+        "use Integer for nullable linked asset count",
+        "check in generated packages/api-client/src/generated/openapi.d.ts"
+      ],
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/actions/runs/31891497804",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31891497792"
+      ]
+    },
+    {
+      "sequence": 7,
+      "type": "t072_exact_head_verified_with_t071_browser_red",
+      "result": "t072_implementation_passed_t071_remains_blocked",
+      "source_head": "a1ab39f1a19e4261558712e060b5023ddf5f424b",
+      "parent_head": "c3bade958cc52086576b2351bb974f0bfde1ac27",
+      "ci_run": 566,
+      "security_run": 567,
+      "ci_jobs": [
+        95032106310,
+        95032106331,
+        95032106342,
+        95032247474
+      ],
+      "security_jobs": [
+        95032106395,
+        95032106413,
+        95032106419,
+        95032106426,
+        95032106437,
+        95032134221,
+        95032134244,
+        95032134334
+      ],
+      "passed_gates": [
+        "Frontend and contract verification",
+        "Docker Compose dependency health",
+        "Java quality and unit verification",
+        "Security dependency audit",
+        "CodeQL Java/Kotlin",
+        "CodeQL JavaScript/TypeScript",
+        "Trivy filesystem",
+        "Resolve Compose images",
+        "Trivy image oidc",
+        "Trivy image postgres",
+        "Trivy image s3"
+      ],
+      "failure_signature": "five T071 browser contracts fail at the absent offline-download control; 43 browser tests passed",
+      "attribution": "T072 public manifest/withdrawal API is not the failing seam; the remaining RED is the downstream T071 offline UI/manager contract. No unrelated baseline failure was attributed in this run.",
+      "scope_guard": [
+        "T071 remains unchecked",
+        "T072 checkbox advanced only after exact-head Java/API and Security proof",
+        "T073-T076 not started",
+        "PR #92, Web3, repository protection and issue #89 human research state untouched"
+      ],
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/actions/runs/31893058818",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31893058816"
+      ]
+    },
+    {
+      "sequence": 8,
+      "type": "final_head_evidence_revalidated",
+      "result": "t072_pass_reconfirmed_t071_browser_red_preserved",
+      "source_head": "e2436f0d5c063d029c66226cd01afdd43fee99d3",
+      "parent_head": "a1ab39f1a19e4261558712e060b5023ddf5f424b",
+      "ci_run": 567,
+      "security_run": 568,
+      "ci_jobs": [
+        95033618852,
+        95033618875,
+        95033618890,
+        95033743342
+      ],
+      "security_jobs": [
+        95033618770,
+        95033618785,
+        95033618796,
+        95033618824,
+        95033618964,
+        95033638236,
+        95033638269,
+        95033638274
+      ],
+      "passed_gates": [
+        "Frontend and contract verification",
+        "Docker Compose dependency health",
+        "Java quality and unit verification",
+        "Security dependency audit",
+        "CodeQL Java/Kotlin",
+        "CodeQL JavaScript/TypeScript",
+        "Trivy filesystem",
+        "Resolve Compose images",
+        "Trivy image oidc",
+        "Trivy image postgres",
+        "Trivy image s3"
+      ],
+      "failure_signature": "five T071 browser contracts fail at the absent offline-download control; 43 browser tests passed",
+      "attribution": "The T072 API/manifest implementation remains green. The only RED is the authored T071 downstream offline UI/manager boundary; no unrelated task or baseline failure was attributed.",
+      "scope_guard": [
+        "T071 remains unchecked",
+        "T072 remains checked",
+        "T073-T076 not started",
+        "PR #92, Web3, repository protection and issue #89 human research state untouched"
+      ],
+      "evidence_refs": [
+        "https://github.com/bynanci/courtside-tw/actions/runs/31893686999",
+        "https://github.com/bynanci/courtside-tw/actions/runs/31893686973"
+      ]
+    },
+    {
+      "sequence": 9,
+      "type": "t071_bounded_offline_ui_manager_verified",
+      "result": "pass_t071_browser_contracts",
+      "source_head": "7890229a5e6e91bb859445d2932cd7dc89281995",
+      "parent_head": "0e53baf14c4f5a181ef1cfc9fd0aae6a55714a4a",
+      "implementation_commits": [
+        "e0a24d0cca6630d8c079b3075947af1adb27c03e",
+        "7890229a5e6e91bb859445d2932cd7dc89281995"
+      ],
+      "changed_files": [
+        "apps/web/app/features/offline/components/OfflineDownloadPanel.vue",
+        "apps/web/app/features/offline/services/OfflineIssueManager.ts",
+        "apps/web/app/pages/issues/[issueSlug].vue",
+        "apps/web/app/assets/css/main.css",
+        "apps/web/tests/unit/offline-issue-manager.test.ts"
+      ],
+      "ci_run": 570,
+      "security_run": 571,
+      "ci_jobs": [
+        95088156113,
+        95088190283,
+        95088056201,
+        95088056117
+      ],
+      "security_jobs": [
+        95088059955,
+        95088059956,
+        95088060018,
+        95088059969,
+        95088060004,
+        95088078737,
+        95088078668,
+        95088078700
+      ],
+      "passed_gates": [
+        "Frontend and contract verification",
+        "Public magazine browser verification",
+        "Docker Compose dependency health",
+        "Java quality and unit verification",
+        "Security dependency audit",
+        "CodeQL Java/Kotlin",
+        "CodeQL JavaScript/TypeScript",
+        "Trivy filesystem",
+        "Resolve Compose images",
+        "Trivy image oidc",
+        "Trivy image postgres",
+        "Trivy image s3"
+      ],
+      "failure_signature": "none; complete browser suite reported 48 passed",
+      "attribution": "Historical T071 RED attribution remains in events 4, 7 and 8; current head resolves only the bounded offline UI/manager seam.",
+      "scope_guard": [
+        "T071 checked after exact-head browser and Security proof",
+        "T072 remains checked",
+        "T073+ not started",
+        "PR #92, Web3, repository protection and issue #89 human research state untouched"
+      ]
+    }
+  ],
+  "graph_delta": {
+    "opened": [
+      "T071",
+      "api_red",
+      "browser_red"
+    ],
+    "closed": [
+      "T072_minimal_compile_and_generated_contract_fix",
+      "T071_downstream_browser_red"
+    ],
+    "ready_frontier": [
+      "human_gate_before_T073"
+    ],
+    "blocked": [
+      "T073+"
+    ],
+    "preserved": [
+      "issue #89 human research items",
+      "T071 checked after exact-head proof",
+      "PR #92 and repository protection untouched",
+      "historical T071 RED attribution",
+      "T073+ stop boundary"
+    ]
+  },
+  "proof_coverage": {
+    "api_contracts": "authored",
+    "browser_contracts": "5/5 scenarios authored",
+    "runtime_red": "Historical T071 browser RED replayed on exact head e2436f0d5c063d029c66226cd01afdd43fee99d3 by CI #567 browser job 95033743342; resolved on the current head.",
+    "passing_implementation": "T071 and T072 passed exact-head frontend/browser/Java/API, OpenAPI/frontend contract and Security checks on the current implementation head; T071 and T072 checkboxes are checked",
+    "runtime": "T071 browser contracts pass on exact head 7890229a5e6e91bb859445d2932cd7dc89281995: CI #570 browser job 95088190283 ran the full suite and reported 48 passed.",
+    "exact_head_ci_security": "T071/T072 pass on 7890229a5e6e91bb859445d2932cd7dc89281995: CI #570 and Security #571 all required jobs passed.",
+    "downstream_t071_browser_red": "resolved_on_current_head; historical RED receipt retained in the append-only event history",
+    "bounded_scope": "Minimal issue-page offline UI/download manager seam only; no service worker, Web3, issue #89 human research or unrelated work."
+  },
+  "min_cut": [
+    "pinned CI toolchain execution of OfflineManifestApiIT",
+    "pinned Playwright execution of us6-offline-issue.spec.ts",
+    "T072 exact-head Java/API proof and contract validation"
+  ],
+  "next_action": "Stop before T073+; keep the PR draft until a separate human gate authorizes the next offline task."
+}

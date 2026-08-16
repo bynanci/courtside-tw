@@ -1399,19 +1399,44 @@ export interface components {
       status: "REVOKED" | "BLOCKED" | "NO_IMPACT"
       version?: number
     }
+    OfflineArticle: {
+      articleId: components["schemas"]["Uuid"]
+      revisionId: components["schemas"]["Uuid"]
+      revisionNumber: number
+      slug: string
+      title: string
+      position: number
+      checksum: string
+    }
+    OfflineAsset: {
+      assetId: components["schemas"]["Uuid"]
+      variant: string
+      url: string
+      /** @enum {string} */
+      mimeType: "image/avif" | "image/jpeg" | "image/png" | "image/webp"
+      /** Format: int64 */
+      byteSize: number
+      checksum: string
+      /** Format: date-time */
+      expiresAt: string
+    }
     OfflineManifest: {
       issueSlug: string
       manifestVersion: number
       checksum: string
-      articles: components["schemas"]["ArticleSummary"][]
+      articles: components["schemas"]["OfflineArticle"][]
       /** Format: date-time */
-      expiresAt?: string
+      expiresAt: string
+      /** Format: int64 */
+      assetBytes: number
+      assets: components["schemas"]["OfflineAsset"][]
     }
     WithdrawalManifest: {
       version: number
       /** Format: date-time */
       generatedAt: string
       withdrawals: components["schemas"]["Uuid"][]
+      checksum: string
     }
     ProvenanceManifest: {
       snapshotId: components["schemas"]["Uuid"]

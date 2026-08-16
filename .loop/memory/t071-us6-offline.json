@@ -1,0 +1,40 @@
+{
+  "schema": "courtside-tw/loop-memory/v1",
+  "lane": "t071-us6-offline-tests-first",
+  "updated_at": "2026-08-16T00:06:08Z",
+  "summary": "T071 bounded offline UI/download manager is verified on exact head 7890229a5e6e91bb859445d2932cd7dc89281995: CI #570 frontend/contract, browser (48 passed), Compose, Java quality and Lighthouse passed; Security #571 dependency audit, CodeQL and all Trivy checks passed. The historical T071 RED attribution is retained, and the bounded loop stops before T073+.",
+  "decisions": [
+    "Keep offline manifests and withdrawals public and unauthenticated, matching contracts/openapi.yaml.",
+    "Keep draft, withdrawn and rights-ineligible issues fail-closed without metadata leakage.",
+    "Do not mark partial downloads installed; checksum and quota failures must leave no installed state.",
+    "Require a newer complete manifest to replace an older installed version atomically.",
+    "Withdrawal reconciliation removes the installed cache pointer before exposing any cached article content.",
+    "T071 is checked after exact-head browser/Security proof on 7890229a5e6e91bb859445d2932cd7dc89281995; stop before T073+ and preserve issue #89 human research items."
+  ],
+  "source_refs": [
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    "contracts/openapi.yaml",
+    "specs/001-taiwan-basketball-magazine-ebook/plan.md",
+    ".loop/evidence/t071-us6-offline-tests-first-20260815.json",
+    ".loop/t071-us6-offline-graphify-loop.yaml",
+    ".loop/t071-us6-offline-ledger.json"
+  ],
+  "proof": {
+    "baseline_main": "73bbb0851d90a108f6a8c9d93c284670afbfd152",
+    "tests_first_commit": "fe7f0ffe6fc1c4ff8c93936ba81968b229183434",
+    "contracts": "API manifest/withdrawal and five browser failure-injection scenarios authored",
+    "static_checks": "PASS: pinned Prettier 3.9.6, Node TypeScript syntax check and 3 offline manager unit tests.",
+    "runtime": "PASS: CI #570 browser job 95088190283 ran all US6 scenarios (tests 44-48) and reported 48 passed; Security #571 passed all jobs.",
+    "current_exact_head": "7890229a5e6e91bb859445d2932cd7dc89281995"
+  },
+  "preserved_boundaries": [
+    "T071 is checked after current exact-head proof.",
+    "T072 is verified and checked; T073+ are not implemented.",
+    "No Web3, wallet, token, provenance or unrelated work was started.",
+    "PR #92 and repository rulesets were not modified.",
+    "Issue #89 remains open for human research completion.",
+    "Historical T071 RED attribution remains in the ledger event history."
+  ],
+  "next_action": "Stop before T073+ and keep the PR draft pending a separate human gate."
+}
+

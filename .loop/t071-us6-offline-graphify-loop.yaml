@@ -1,0 +1,96 @@
+schema: courtside-tw/graphify-loop/v1
+lane: t071-us6-offline-downstream
+recorded_at: 2026-08-16T00:06:08Z
+decision: record_t071_bounded_offline_ui_manager_pass_and_stop_before_t073_plus
+terminal_state: t071_verified_bounded_stop
+
+scope:
+  issue: 89
+  tasks: [T071, T072]
+  included:
+    - public offline issue manifest contract
+    - public withdrawal manifest contract
+    - browser failure-injection contracts for interruption, corruption, quota, update and withdrawal
+    - rights-checked versioned manifest service/controller and OpenAPI schema
+    - checked-in evidence, graph delta, append-only ledger and project memory
+  excluded:
+    - T073+ follow-up implementation (service worker, full offline task decomposition and cross-browser smoke)
+    - Web3, wallet, token, provenance and unrelated task state
+    - issue #89 human research completion
+    - PR #92 and repository ruleset mutation
+
+invariants:
+  - T071 is checked only after its browser contract suite is executable and green on the pinned repository toolchain.
+  - No offline content is marked installed after interruption, corruption or quota denial.
+  - A newer complete manifest replaces an older installed version atomically.
+  - Withdrawal reconciliation removes or blocks cached article content before it is exposed.
+  - Draft, withdrawn and rights-ineligible issues fail closed without metadata leakage.
+
+nodes:
+  T071:
+    kind: tests_first_contract
+    state: implementation_verified
+    proof:
+      - apps/api/src/test/java/tw/basketball/magazine/publication/api/OfflineManifestApiIT.java
+      - apps/web/tests/e2e/us6-offline-issue.spec.ts
+      - apps/web/app/features/offline/services/OfflineIssueManager.ts
+      - apps/web/app/features/offline/components/OfflineDownloadPanel.vue
+      - CI #570 browser job 95088190283: 48 passed
+  api_red:
+    kind: expected_red
+    state: resolved_after_t072
+    seam: public offline manifest and withdrawal HTTP endpoints
+    expected_failure: CI #562 OfflineManifestApiIT fails at the absent T072 production seam
+  browser_red:
+    kind: expected_red
+    state: resolved_on_current_head
+    seam: issue page offline download/update/reconcile controls
+    expected_failure: historical CI #562 browser run failed at absent offline controls; this attribution is preserved
+    resolution: CI #570 browser job 95088190283 passed all five T071 scenarios and reported 48 passed
+  T072:
+    kind: implementation_verified
+    state: implementation_verified
+    proof:
+      - apps/api/src/main/java/tw/basketball/magazine/publication/api/OfflineManifestController.java
+      - apps/api/src/main/java/tw/basketball/magazine/publication/application/OfflineManifestService.java
+      - contracts/openapi.yaml
+      - packages/api-client/src/generated/openapi.d.ts
+      - .loop/evidence/t072-us6-offline-manifest-20260815.json
+    acceptance: exact-head Java/API tests, generated contract, OpenAPI validation and Security passed on e2436f0d5c063d029c66226cd01afdd43fee99d3; the current head remains green.
+    verification: CI #570 Java job 95088056201 and Security #571 jobs all passed; tasks.md T072 remains checked.
+    current_state: CI #570 browser job 95088190283 is green; the five T071 downstream offline-control contracts are resolved
+  human_research:
+    kind: external_gate
+    state: open
+    proof: issue-89 human accessibility, performance, threat-model, DR and participant research items remain separate
+
+edges:
+  - [T071, api_red]
+  - [T071, browser_red]
+  - [api_red, T072]
+  - [browser_red, T072]
+  - [T072, T073]
+
+ready_frontier: [human_gate_before_T073]
+critical_path:
+  - T071
+  - API and browser RED replay
+  - T072 manifest service/controller
+  - T073 service-worker cache policy
+  - T074 atomic offline install/update/delete
+  - T075 offline UI
+  - T076 withdrawal reconciliation
+min_cut:
+  - T071 API/browser RED is attributable to the absent production seams
+  - T072 tests compile and execute on pinned CI toolchain
+  - rights, revision, checksum and byte-size fields are checked in the public contract
+  - no task checkbox is advanced without a passing implementation head
+proof_coverage:
+  api_contracts: authored
+  browser_failure_injection_matrix: 5_scenarios_authored
+  local_runtime_red: blocked_by_toolchain
+  exact_head_ci_security: T071_and_T072_pass_on_7890229a5e6e91bb859445d2932cd7dc89281995_CI_570_Security_571
+  attributable_t072_fix: resolved_and_checked
+  downstream_t071_browser_red: resolved_on_current_head; historical_RED_attribution_preserved
+
+next_action: stop_before_T073_plus_and_keep_the_pr_draft

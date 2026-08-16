@@ -1,0 +1,71 @@
+{
+  "schema": "courtside-tw/task-evidence/v1",
+  "task": "T072",
+  "status": "PASS_IMPLEMENTATION",
+  "recorded_at": "2026-08-15T15:55:00Z",
+  "baseline_main": "73bbb0851d90a108f6a8c9d93c284670afbfd152",
+  "parent_exact_head": "a1ab39f1a19e4261558712e060b5023ddf5f424b",
+  "current_exact_head": "e2436f0d5c063d029c66226cd01afdd43fee99d3",
+  "changed_files": [
+    "apps/api/src/main/java/tw/basketball/magazine/publication/api/OfflineManifestController.java",
+    "apps/api/src/main/java/tw/basketball/magazine/publication/application/OfflineManifestService.java",
+    "apps/api/src/test/java/tw/basketball/magazine/publication/api/OfflineManifestApiIT.java",
+    "contracts/openapi.yaml",
+    "packages/api-client/src/generated/openapi.d.ts",
+    ".loop/evidence/t072-us6-offline-manifest-20260815.json",
+    ".loop/t071-us6-offline-graphify-loop.yaml",
+    ".loop/t071-us6-offline-ledger.json",
+    ".loop/memory/t071-us6-offline.json"
+  ],
+  "acceptance_matrix": [
+    {
+      "contract": "published issue manifest",
+      "seam": "OfflineManifestController GET /api/v1/public/offline/issues/{issueSlug}/manifest",
+      "fixture": "published issue with published article revision, cover variant and valid PUBLIC_WEB rights",
+      "pass_assertion": "200 response is bounded/versioned, includes article revision ID/number/checksum, asset bytes/checksum and rights expiry"
+    },
+    {
+      "contract": "rights and publication fail closed",
+      "seam": "OfflineManifestService ISSUE_SQL and ASSET_SQL",
+      "fixture": "draft, withdrawn and reader-only rights fixtures",
+      "pass_assertion": "404 with no manifest metadata; valid_from/valid_until and status/channel predicates are enforced at query time"
+    },
+    {
+      "contract": "withdrawal manifest",
+      "seam": "OfflineManifestController GET /api/v1/public/withdrawals",
+      "fixture": "issue/article states and revision states including withdrawn/archived values",
+      "pass_assertion": "200 versioned UUID list with generatedAt and SHA-256 checksum"
+    },
+    {
+      "contract": "conditional cache boundary",
+      "seam": "OfflineManifestController ETag/cache headers",
+      "fixture": "If-None-Match matching the manifest checksum",
+      "pass_assertion": "304 without body; 200 responses are public, short-lived and must-revalidate"
+    }
+  ],
+  "proof": {
+    "local_diff_check": "PASS",
+    "openapi_validation": "PASS: CI #567 job 95033618852 validated contracts/openapi.yaml and frontend/contract checks",
+    "java_compile_and_test": "PASS: CI #567 job 95033618890; OfflineManifestApiIT completed successfully after the integration fixture wiring and snapshot-version assertion were corrected",
+    "exact_head_ci": "PASS for T072: CI #567 on e2436f0d5c063d029c66226cd01afdd43fee99d3; frontend/contract job 95033618852, Compose health job 95033618875 and Java quality/unit job 95033618890 passed. The separate browser job 95033743342 failed only the five T071 downstream offline-control contracts (43 browser tests passed).",
+    "exact_head_security": "PASS: Security #568 on e2436f0d5c063d029c66226cd01afdd43fee99d3; dependency audit job 95033618770, CodeQL jobs 95033618785/95033618796, filesystem Trivy 95033618824, Compose image resolution 95033618964 and Trivy postgres/oidc/s3 jobs 95033638269/95033638274/95033638236 all passed with no HIGH/CRITICAL image finding.",
+    "fixture_replay": "PASS: addArticle refreshes the issue snapshot to version 2; the T072 integration assertion now checks the current bounded snapshot version.",
+    "historical_attributable_failures_resolved": [
+      "RowMapper lambdas now pass the required row number",
+      "Nullable linked-asset count now uses Integer",
+      "packages/api-client/src/generated/openapi.d.ts is synchronized with contracts/openapi.yaml"
+    ],
+    "downstream_blocker_not_t072": "The final-head browser job reports five T071 contracts failing at the absent offline-download control; this remains outside the T072 API manifest scope.",
+    "previous_exact_head_replay": "a1ab39f1a19e4261558712e060b5023ddf5f424b passed the same T072 acceptance before the evidence-only revalidation commit."
+  },
+  "scope_guard": {
+    "T071_contracts_preserved": true,
+    "T073_plus_changed": false,
+    "tasks_checkbox_changed": true,
+    "issue_89_changed": false,
+    "pr_92_modified": false,
+    "repository_protection_modified": false,
+    "web3_or_unrelated_work_started": false
+  },
+  "next_action": "Keep T071 unchecked because the five browser contracts still fail at the absent downstream offline controls; stop before T073+ and do not treat the overall CI run as green."
+}
