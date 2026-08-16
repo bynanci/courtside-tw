@@ -8,18 +8,27 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Proxy;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.time.Instant;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.sql.DataSource;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.datasource.DelegatingDataSource;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
@@ -236,6 +245,56 @@ final class OfflineManifestApiIT extends PublicIssueApiIntegrationTestSupport {
         byte[] bytes = contentResult.getResponse().getContentAsByteArray();
         assertEquals(article.get("byteSize").asLong(), bytes.length);
         assertEquals(article.get("checksum").asString(), digest(bytes));
+        String etag = contentResult.getResponse().getHeader(HttpHeaders.ETAG);
+        assertEquals('"' + article.get("checksum").asString() + '"', etag);
+        mockMvc.perform(get(article.get("contentUrl").asString())
+                        .header(HttpHeaders.IF_NONE_MATCH, etag))
+                .andExpect(status().isNotModified());
+    }
+
+    @Test
+    void servesOneArticleWithABoundedNumberOfDatabaseRoundTrips() throws Exception {
+        IssueFixture issue = createIssue(
+                "issue-bounded-content-query",
+                10,
+                Instant.parse("2026-08-01T00:00:00Z"),
+                "PUBLISHED",
+                true
+        );
+        for (int index = 1; index <= 8; index++) {
+            addArticle(issue, "Section " + index, index, "bounded-article-" + index, index, "PUBLISHED");
+        }
+        ArticleIdentity target = Objects.requireNonNull(jdbcTemplate.queryForObject("""
+                SELECT article.id AS article_id, revision.id AS revision_id
+                FROM article
+                JOIN article_revision revision ON revision.id = article.published_revision_id
+                WHERE article.slug = 'bounded-article-1'
+                """, (resultSet, rowNumber) -> new ArticleIdentity(
+                resultSet.getObject("article_id", UUID.class),
+                resultSet.getObject("revision_id", UUID.class)
+        )));
+
+        CountingDataSource countingDataSource = new CountingDataSource(
+                Objects.requireNonNull(jdbcTemplate.getDataSource())
+        );
+        MockMvcBuilders.standaloneSetup(
+                new OfflineManifestController(
+                        new OfflineManifestService(new org.springframework.jdbc.core.JdbcTemplate(countingDataSource))
+                )
+        ).build().perform(get(
+                        "/api/v1/public/offline/issues/{issueSlug}/articles/{articleId}/revisions/{revisionId}",
+                        issue.slug(),
+                        target.articleId(),
+                        target.revisionId()
+                ))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.slug").value("bounded-article-1"));
+
+        assertTrue(
+                countingDataSource.preparedStatementCount() <= 6,
+                "one article read must not rebuild every article in the issue; statements="
+                        + countingDataSource.preparedStatementCount()
+        );
     }
 
     @Test
@@ -288,5 +347,47 @@ final class OfflineManifestApiIT extends PublicIssueApiIntegrationTestSupport {
 
     private static String digest(byte[] bytes) throws Exception {
         return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(bytes));
+    }
+
+    private record ArticleIdentity(UUID articleId, UUID revisionId) {
+    }
+
+    private static final class CountingDataSource extends DelegatingDataSource {
+        private final AtomicInteger preparedStatements = new AtomicInteger();
+
+        private CountingDataSource(DataSource targetDataSource) {
+            super(targetDataSource);
+        }
+
+        @Override
+        public Connection getConnection() throws SQLException {
+            return countingConnection(super.getConnection());
+        }
+
+        @Override
+        public Connection getConnection(String username, String password) throws SQLException {
+            return countingConnection(super.getConnection(username, password));
+        }
+
+        private int preparedStatementCount() {
+            return preparedStatements.get();
+        }
+
+        private Connection countingConnection(Connection connection) {
+            return (Connection) Proxy.newProxyInstance(
+                    OfflineManifestApiIT.class.getClassLoader(),
+                    new Class<?>[] {Connection.class},
+                    (proxy, method, arguments) -> {
+                        if (method.getName().equals("prepareStatement")) {
+                            preparedStatements.incrementAndGet();
+                        }
+                        try {
+                            return method.invoke(connection, arguments);
+                        } catch (InvocationTargetException exception) {
+                            throw exception.getCause();
+                        }
+                    }
+            );
+        }
     }
 }

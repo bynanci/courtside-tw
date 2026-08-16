@@ -153,6 +153,20 @@ test.describe("US6 offline issue", () => {
     await expect(page.getByTestId("offline-installed")).toHaveCount(0)
   })
 
+  test("sweeps an unreferenced candidate cache on startup", async ({ page }) => {
+    const orphanCacheName = `courtside-offline:candidate:${ISSUE_SLUG}:orphan`
+
+    await openOfflineIssue(page)
+    await page.evaluate(async (cacheName) => {
+      await caches.open(cacheName)
+    }, orphanCacheName)
+    await page.reload({ waitUntil: "domcontentloaded" })
+
+    await expect
+      .poll(async () => page.evaluate(async () => await caches.keys()))
+      .not.toContain(orphanCacheName)
+  })
+
   test("rejects checksum corruption before marking the issue installed", async ({ page }) => {
     await routeManifest(page)
     await routeArticleContent(
@@ -229,6 +243,27 @@ test.describe("US6 offline issue", () => {
 
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("主場燈光亮起之前")
     await expect(page.getByTestId("article-content")).toContainText("離線文章仍保留完整閱讀內容。")
+  })
+
+  test("does not serve cached article content after an authoritative 404", async ({ page }) => {
+    await routeManifest(page)
+    await routeArticleContent(page)
+    await openOfflineIssue(page)
+    await page.getByTestId("offline-download").click()
+    await expect(page.getByTestId("offline-installed")).toBeVisible()
+
+    await page.route("**/api/v1/public/articles/**", (route) =>
+      route.fulfill({
+        status: 404,
+        contentType: "application/problem+json",
+        body: JSON.stringify({ status: 404, title: "Not Found" })
+      })
+    )
+    await page.getByTestId("article-link").first().click()
+
+    await expect(page.getByTestId("article-error-state")).toBeVisible()
+    await expect(page.getByTestId("article-content")).toHaveCount(0)
+    await expect(page.getByText("離線文章仍保留完整閱讀內容。")).toHaveCount(0)
   })
 
   test("removes an installed issue when its rights expiry has passed", async ({ page }) => {
