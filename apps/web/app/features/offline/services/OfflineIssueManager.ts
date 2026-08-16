@@ -1,6 +1,7 @@
 import type { components } from "@courtside/api-client"
 
 import { parsePublicIssueSlug } from "../../issues/public-issue-contract.ts"
+import { withBoundedRetry } from "./WithdrawalReconciler.ts"
 
 const DATABASE_NAME = "courtside-offline"
 const DATABASE_VERSION = 1
@@ -76,6 +77,13 @@ export class OfflineIssueError extends Error {
     super(message, options)
     this.name = "OfflineIssueError"
     this.code = code
+  }
+}
+
+class RetryableWithdrawalError extends OfflineIssueError {
+  constructor(message: string, options?: { cause?: unknown }) {
+    super("network", message, options)
+    this.name = "RetryableWithdrawalError"
   }
 }
 
@@ -223,16 +231,9 @@ export class OfflineIssueManager {
 
     let manifest: WithdrawalManifest
     try {
-      const response = await fetch(this.endpoint("/api/v1/public/withdrawals"), {
-        cache: "no-store",
-        credentials: "omit",
-        redirect: "error"
+      manifest = await withBoundedRetry(() => this.fetchWithdrawalManifestOnce(), {
+        shouldRetry: (error) => error instanceof RetryableWithdrawalError
       })
-      if (!response.ok) {
-        throw new OfflineIssueError("network", "撤回清單暫時無法取得。")
-      }
-      manifest = (await response.json()) as WithdrawalManifest
-      await validateWithdrawalManifest(manifest)
     } catch (error) {
       await removeStateAndCache(installed)
       throw new OfflineIssueError("withdrawn", "撤回狀態無法驗證；本機離線內容已停用。", {
@@ -267,24 +268,42 @@ export class OfflineIssueManager {
   }
 
   private async isIssueAvailable(): Promise<boolean> {
+    return withBoundedRetry(() => this.isIssueAvailableOnce(), {
+      shouldRetry: (error) => error instanceof RetryableWithdrawalError
+    })
+  }
+
+  private async fetchWithdrawalManifestOnce(): Promise<WithdrawalManifest> {
+    const response = await fetchWithdrawalResource(
+      this.endpoint("/api/v1/public/withdrawals"),
+      "撤回清單暫時無法取得。"
+    )
+    const manifest = await readJsonPayload<WithdrawalManifest>(response, "撤回清單格式無效。")
+    await validateWithdrawalManifest(manifest)
+    return manifest
+  }
+
+  private async isIssueAvailableOnce(): Promise<boolean> {
+    const url = this.endpoint(getOfflineIssueManifestPath(this.issueSlug))
+    let response: Response
     try {
-      const response = await fetch(this.endpoint(getOfflineIssueManifestPath(this.issueSlug)), {
+      response = await fetch(url, {
         cache: "no-store",
         credentials: "omit",
         redirect: "error"
       })
-      if (response.status === 404) {
-        return false
-      }
-      if (!response.ok) {
-        throw new OfflineIssueError("network", "離線下載清單暫時無法取得。")
-      }
-      const manifest = (await response.json()) as OfflineManifest
-      validateManifest(manifest, this.issueSlug)
-      return !isExpired(manifest.expiresAt)
     } catch (error) {
-      throw asOfflineIssueError(error)
+      throw new RetryableWithdrawalError("離線下載清單暫時無法取得。", { cause: error })
     }
+    if (response.status === 404) {
+      return false
+    }
+    if (!response.ok) {
+      throw responseError(response, "離線下載清單暫時無法取得。")
+    }
+    const manifest = await readJsonPayload<OfflineManifest>(response, "離線下載清單格式無效。")
+    validateManifest(manifest, this.issueSlug)
+    return !isExpired(manifest.expiresAt)
   }
 
   private async fetchManifest(): Promise<OfflineManifest> {
@@ -314,6 +333,38 @@ export class OfflineIssueManager {
       throw new OfflineIssueError("network", "離線內容來源不受信任。")
     }
     return url.toString()
+  }
+}
+
+async function fetchWithdrawalResource(url: string, message: string): Promise<Response> {
+  let response: Response
+  try {
+    response = await fetch(url, {
+      cache: "no-store",
+      credentials: "omit",
+      redirect: "error"
+    })
+  } catch (error) {
+    throw new RetryableWithdrawalError(message, { cause: error })
+  }
+  if (!response.ok) {
+    throw responseError(response, message)
+  }
+  return response
+}
+
+function responseError(response: Response, message: string): OfflineIssueError {
+  if (response.status === 408 || response.status === 429 || response.status >= 500) {
+    return new RetryableWithdrawalError(message)
+  }
+  return new OfflineIssueError("network", message)
+}
+
+async function readJsonPayload<T>(response: Response, message: string): Promise<T> {
+  try {
+    return (await response.json()) as T
+  } catch (error) {
+    throw new OfflineIssueError("corrupt", message, { cause: error })
   }
 }
 

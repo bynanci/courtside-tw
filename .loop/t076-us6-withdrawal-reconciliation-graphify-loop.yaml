@@ -1,0 +1,93 @@
+schema: courtside-tw/graphify-loop/v1
+lane: t076-us6-withdrawal-reconciliation
+recorded_at: 2026-08-16T16:47:34Z
+decision: complete_t076_online_withdrawal_reconciliation_and_stop_before_t078_plus
+terminal_state: t076_final_implementation_verified_pending_receipt_head
+
+scope:
+  issue: 89
+  tasks: [T076]
+  baseline_main: 4005241cd848d0c2cb2c61bc0208434eb16cfacc
+  included:
+    - reconciliation on client start, reconnect and a bounded online interval
+    - fixed three-attempt retry budget for transient network, 408, 429 and 5xx failures
+    - fail-closed handling for malformed payloads, checksum failures, expiry and stable 4xx denials
+    - per-issue serialization across reconciliation, install, update, removal and cached reads
+    - complete Pixel 7 Chromium-mobile regression and Lighthouse budgets
+    - real Android Google Chrome reconnect and withdrawal smoke
+    - deterministic creative observer teardown before browser lifecycle baselining
+  excluded:
+    - T078 through T086 release gates
+    - T087+ Web3 work
+    - completion of issue 89 human research T2 through T6
+
+invariants:
+  - a confirmed withdrawal removes both cached bytes and IndexedDB install authority
+  - transient failures retry no more than three total attempts
+  - malformed, corrupt, expired or denied authority never retries into an accepted install
+  - only one same-issue lifecycle operation may mutate local authority at a time
+  - Android support is claimed only from a real Google Chrome emulator run, not desktop emulation
+
+nodes:
+  baseline:
+    kind: merged_main
+    state: resolved
+    source_head: 4005241cd848d0c2cb2c61bc0208434eb16cfacc
+  t076_red:
+    kind: tests_first_expected_red
+    state: resolved
+    source_head: fd988ed35be97d751d0d0317279526dadf751520
+    ci_run: 607
+    ci_job: 95187951373
+    proof: 56 browser tests; 55 passed; only the new reconnect contract failed twice with zero of three expected withdrawal calls
+  t076_android_harness:
+    kind: implementation_green_except_android_harness
+    state: superseded
+    source_heads:
+      - 6e1b7d5d9800646ef876cbf2022e1eb8018bb343
+      - d874b28de1177a39489c779cada167600f62ca98
+      - 7ad673644ad0561a377e60e5008e26fc6642886b
+      - 23ee99287800fd7bf1175d9c9ff2263c2f43f6a9
+    proof:
+      - product and Chromium-mobile gates were green before Android support was claimed
+      - artifacts showed Play Store Chrome 124 routing through FirstRunActivity before CDP
+      - Chromium logged a Play services Dynamite configuration restart and self SIGKILL
+      - making Chrome the active debug app enabled its existing automation command line and disable-fre switch
+      - Android job 95193608873 then passed with three retries and fail-closed local removal
+      - two same-head browser attempts exposed an existing asynchronous observer-baseline race
+  t076:
+    kind: final_implementation_verified
+    state: green_pending_receipt_head
+    source_head: 2d1063c5b7f623708c8585f8c1333219d4602b59
+    proof:
+      - CI #613 run 31959332692 passed all five jobs
+      - Security #614 run 31959332686 passed all eight contexts
+      - frontend passed 112 of 112 web tests and the production bundle gate
+      - browser passed US1, US2, their combined path and the complete 57-test regression
+      - Lighthouse accessibility scored 1.0 and SEO met 0.95 for both representative article routes
+      - Android Google Chrome job 95194959102 reached ChromeTabbedActivity on an Android platform UA
+      - Android smoke observed three withdrawal attempts, cacheRemoved true and installedState null
+
+edges:
+  - [baseline, t076_red]
+  - [t076_red, t076_android_harness]
+  - [t076_android_harness, t076]
+
+ready_frontier: []
+blocked:
+  - T078_until_T076_receipt_head_green_and_main_readback
+  - T087_plus_until_T078_through_T086
+  - T3_through_T6_until_human_T2_and_corresponding_product_surfaces
+
+proof_coverage:
+  tests_first_red: attributable_missing_reconnect_reconciliation
+  retry: transient_only_three_attempt_budget
+  fail_closed: malformed_checksum_expiry_stable_4xx_and_exhaustion
+  lifecycle_serialization: per_issue_lock_spans_retry_and_removal
+  chromium_mobile: complete_57_test_suite
+  android_chrome: real_play_store_chrome_124_three_attempt_removal
+  security: eight_required_contexts_passed
+  review: zero_p0_zero_p1_and_no_review_threads
+  scope_guard: T078_plus_and_human_research_unchanged
+
+next_action: verify_receipt_head_then_merge_and_read_back_main_before_T078

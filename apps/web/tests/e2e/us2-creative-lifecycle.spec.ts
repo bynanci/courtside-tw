@@ -88,6 +88,7 @@ test("twenty client-side article switches leave zero per-instance creative lifec
   await expect(page).toHaveURL(/\/articles\/courtside-notes/)
   await expect(page.getByTestId("creative-runtime")).toHaveCount(0)
   await expect(page.locator("canvas")).toHaveCount(0)
+  await expect.poll(async () => (await lifecycleSnapshot(page)).intersectionTargets).toBe(0)
   const baseline = await lifecycleSnapshot(page)
 
   for (let switchIndex = 1; switchIndex <= 20; switchIndex += 1) {

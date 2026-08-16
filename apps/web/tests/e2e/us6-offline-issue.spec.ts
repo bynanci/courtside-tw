@@ -346,6 +346,48 @@ test.describe("US6 offline issue", () => {
     )
   })
 
+  test("reconciles a withdrawal on reconnect with bounded retry", async ({ page }) => {
+    await routeManifest(page)
+    await routeArticleContent(page)
+
+    let withdrawalCalls = 0
+    await page.route("**/api/v1/public/withdrawals", (route) => {
+      withdrawalCalls += 1
+      if (withdrawalCalls < 3) {
+        return route.fulfill({
+          status: 503,
+          contentType: "application/problem+json",
+          body: JSON.stringify({ status: 503, title: "Temporarily unavailable" })
+        })
+      }
+      return route.fulfill({
+        status: 200,
+        contentType: "application/json",
+        body: JSON.stringify(withdrawalManifest(5, [ARTICLE_ID]))
+      })
+    })
+
+    await openOfflineIssue(page)
+    await page.getByTestId("offline-download").click()
+    await expect(page.getByTestId("offline-installed")).toBeVisible()
+
+    await page.evaluate(() => window.dispatchEvent(new Event("online")))
+
+    await expect.poll(() => withdrawalCalls).toBe(3)
+    await expect
+      .poll(async () =>
+        page.evaluate(async () =>
+          (await caches.keys()).some((cacheName) =>
+            cacheName.startsWith("courtside-offline:candidate:")
+          )
+        )
+      )
+      .toBe(false)
+
+    await page.reload({ waitUntil: "domcontentloaded" })
+    await expect(page.getByTestId("offline-installed")).toHaveCount(0)
+  })
+
   test("honors a confirmed withdrawal even when issue revalidation fails", async ({ page }) => {
     let manifestCalls = 0
     await page.route("**/api/v1/public/offline/issues/**/manifest", (route) => {

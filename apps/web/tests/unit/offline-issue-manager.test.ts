@@ -321,3 +321,60 @@ test("offline manager commits updates once and removes installed state fail clos
     globalThis.fetch = originalFetch
   }
 })
+
+test("offline manager retries transient withdrawal reads before confirmed fail-closed removal", async () => {
+  const originalCaches = globalThis.caches
+  const originalFetch = globalThis.fetch
+  const originalIndexedDb = globalThis.indexedDB
+  const cacheStorage = createFakeCacheStorage()
+  const fixture = await offlineFixture(1)
+  const withdrawalChecksum = await sha256Hex(new TextEncoder().encode(`5\n${ARTICLE_ID}`).buffer)
+  let withdrawalCalls = 0
+
+  Object.defineProperty(globalThis, "caches", { configurable: true, value: cacheStorage })
+  Object.defineProperty(globalThis, "indexedDB", {
+    configurable: true,
+    value: createFakeIndexedDb()
+  })
+  globalThis.fetch = async (input) => {
+    const url = requestUrl(input)
+    if (url.endsWith(`/offline/issues/${ISSUE_SLUG}/manifest`)) {
+      return Response.json(fixture.manifest)
+    }
+    if (url.endsWith(ARTICLE_PATH)) {
+      return new Response(fixture.articleBody, {
+        headers: { "content-type": "application/json" }
+      })
+    }
+    if (url.endsWith("/public/withdrawals")) {
+      withdrawalCalls += 1
+      if (withdrawalCalls < 3) {
+        return Response.json({ status: 503 }, { status: 503 })
+      }
+      return Response.json({
+        version: 5,
+        generatedAt: "2026-08-16T00:00:00Z",
+        withdrawals: [ARTICLE_ID],
+        checksum: withdrawalChecksum
+      })
+    }
+    return new Response(null, { status: 404 })
+  }
+
+  try {
+    const manager = new OfflineIssueManager("https://api.courtside.test", ISSUE_SLUG)
+    await manager.download()
+
+    deepEqual(await manager.reconcileWithdrawal(), { status: "withdrawn" })
+    equal(withdrawalCalls, 3)
+    equal(await manager.getInstalled(), null)
+    deepEqual(await cacheStorage.keys(), [])
+  } finally {
+    Object.defineProperty(globalThis, "caches", { configurable: true, value: originalCaches })
+    Object.defineProperty(globalThis, "indexedDB", {
+      configurable: true,
+      value: originalIndexedDb
+    })
+    globalThis.fetch = originalFetch
+  }
+})

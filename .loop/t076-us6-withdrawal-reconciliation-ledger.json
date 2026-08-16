@@ -1,0 +1,127 @@
+{
+  "schema": "courtside-tw/loop-ledger/v1",
+  "lane": "t076-us6-withdrawal-reconciliation",
+  "version": 1,
+  "recorded_at": "2026-08-16T16:47:34Z",
+  "decision": "Complete T076 online withdrawal reconciliation and stop before T078+.",
+  "terminal_state": "t076_final_implementation_verified_pending_receipt_head",
+  "scope": {
+    "issue": 89,
+    "tasks": [
+      "T076"
+    ],
+    "baseline_main": "4005241cd848d0c2cb2c61bc0208434eb16cfacc",
+    "tests_first_head": "fd988ed35be97d751d0d0317279526dadf751520",
+    "implementation_head": "2d1063c5b7f623708c8585f8c1333219d4602b59",
+    "excluded": [
+      "T078 through T086 release gates",
+      "T087+ Web3",
+      "issue #89 human research T2 through T6"
+    ]
+  },
+  "events": [
+    {
+      "sequence": 1,
+      "type": "tests_first_contract_authored",
+      "result": "red_contract_defined",
+      "evidence_refs": [
+        "apps/web/tests/e2e/us6-offline-issue.spec.ts",
+        "apps/web/tests/unit/withdrawal-reconciler.test.ts"
+      ],
+      "matrix": [
+        "reconcile on reconnect",
+        "retry transient withdrawal failures exactly three times",
+        "remove cache and IndexedDB authority after a confirmed withdrawal",
+        "do not retry malformed, checksum-invalid or stable-denial responses"
+      ]
+    },
+    {
+      "sequence": 2,
+      "type": "ci_attributable_red_replayed",
+      "result": "red_receipt_proven",
+      "source_head": "fd988ed35be97d751d0d0317279526dadf751520",
+      "ci_run": 607,
+      "ci_job": 95187951373,
+      "failure_signature": "56 browser tests; 55 passed; the new reconnect contract failed on both attempts with zero of three expected withdrawal calls",
+      "attribution": "T076 reconciliation was absent; the first browser attempt was rejected because an unrelated creative-lifecycle flake prevented attributable evidence"
+    },
+    {
+      "sequence": 3,
+      "type": "implementation_and_android_harness_reviewed",
+      "result": "superseded_until_real_android_chrome_green",
+      "source_heads": [
+        "6e1b7d5d9800646ef876cbf2022e1eb8018bb343",
+        "d874b28de1177a39489c779cada167600f62ca98",
+        "7ad673644ad0561a377e60e5008e26fc6642886b",
+        "23ee99287800fd7bf1175d9c9ff2263c2f43f6a9"
+      ],
+      "evidence": [
+        "product, unit, Security and Chromium-mobile paths were green before Android support was claimed",
+        "Android artifacts proved Chrome 124 entered FirstRunActivity and never exposed CDP",
+        "Play services Dynamite configuration changed during first run and Chromium sent itself SIGKILL",
+        "the production Chrome command line became effective only after the package was marked as the active debug app",
+        "Android job 95193608873 then passed with an Android UA, three attempts, cache removal and null IndexedDB authority",
+        "two same-head browser reruns exposed a pre-existing observer baseline sampled before asynchronous disconnect"
+      ]
+    },
+    {
+      "sequence": 4,
+      "type": "final_implementation_exact_head_green",
+      "result": "t076_contract_and_supported_android_smoke_passed",
+      "source_head": "2d1063c5b7f623708c8585f8c1333219d4602b59",
+      "ci_run": 613,
+      "ci_run_id": 31959332692,
+      "security_run": 614,
+      "security_run_id": 31959332686,
+      "ci_jobs": [
+        95194829458,
+        95194829468,
+        95194829481,
+        95194959102,
+        95194959106
+      ],
+      "security_jobs": [
+        95194829757,
+        95194829771,
+        95194829789,
+        95194829792,
+        95194829808,
+        95194848340,
+        95194848378,
+        95194848379
+      ],
+      "passed_gates": [
+        "112/112 web tests and production reader bundle budget",
+        "Java quality and unit verification",
+        "Docker Compose dependency health",
+        "57/57 complete Chromium-mobile browser regression",
+        "Lighthouse accessibility 1.0 and SEO at least 0.95 on both representative article routes",
+        "Android Google Chrome 124 smoke with three attempts, cacheRemoved true and installedState null",
+        "dependency audit",
+        "CodeQL Java/Kotlin and JavaScript/TypeScript",
+        "Trivy filesystem and all Compose images"
+      ],
+      "review": {
+        "result": "pass",
+        "p0": 0,
+        "p1": 0,
+        "review_threads": 0,
+        "notes": [
+          "retry remains bounded and transient-only",
+          "all malformed or unauthorized states remain fail closed",
+          "the per-issue lock spans retry and confirmed removal",
+          "the creative lifecycle gate now waits for observer teardown before its baseline",
+          "T078+ and human research remain untouched"
+        ]
+      }
+    }
+  ],
+  "invariants": [
+    "confirmed withdrawal removes local cache bytes and IndexedDB install authority",
+    "transient retry performs no more than three total attempts",
+    "malformed, corrupt, expired or denied authority never becomes installed",
+    "same-issue lifecycle mutations remain serialized across tabs",
+    "Android support requires evidence from real Android Google Chrome"
+  ],
+  "next_action": "Verify the receipt head, merge PR #106, and read back main before beginning T078."
+}
