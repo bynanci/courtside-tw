@@ -1,0 +1,100 @@
+schema: courtside-tw/graphify-loop/v1
+lane: t074-us6-atomic-lifecycle
+recorded_at: 2026-08-16T14:39:13Z
+decision: complete_t074_atomic_manager_lifecycle_and_stop_before_t075_plus
+terminal_state: t074_final_implementation_verified_pending_receipt_head
+
+scope:
+  issue: 89
+  tasks: [T074]
+  baseline_main: aac7c68a61b25642ec823a7bb0999b50cf346a93
+  included:
+    - temporary candidate-cache download
+    - per-resource byte-size and SHA-256 verification
+    - IndexedDB manifest state as the atomic commit point
+    - update rollback before commit and best-effort superseded-cache cleanup after commit
+    - manager-level fail-closed removal
+    - same-issue lifecycle serialization across tabs, including cached offline reads
+    - exact-head CI, Security and complete browser verification
+  excluded:
+    - T075 offline storage and removal UI
+    - T076 WithdrawalReconciler extraction, bounded retry and Android smoke
+    - T078+ release gates, T087+ Web3 and human research completion
+
+invariants:
+  - candidate cache content is never complete until the IndexedDB state write commits
+  - interruption or checksum failure before commit deletes the candidate and preserves any prior install
+  - failure to delete a superseded cache after commit does not reverse or misreport the committed update
+  - delete removes IndexedDB authority even when physical cache cleanup reports an error
+  - same-issue installs, updates, removals, reconciliation and reads do not race across tabs
+  - startup and install sweeps retry orphan candidate cleanup
+
+nodes:
+  baseline:
+    kind: merged_main
+    state: resolved
+    source_head: aac7c68a61b25642ec823a7bb0999b50cf346a93
+  t074_red:
+    kind: tests_first_expected_red
+    state: resolved
+    source_head: 1ad03e6a5f05c5966c09c7ec234f5e7ccc2df731
+    ci_run: 595
+    ci_job: 95176817668
+    proof: 104 tests; 103 passed; one intended atomic lifecycle failure
+  t074_first_fix:
+    kind: implementation_green_superseded_by_review
+    state: resolved
+    source_head: c66aa78804f74c85d2b9a05c4cb65ce591f241a1
+    proof:
+      - apps/web/app/features/offline/services/OfflineIssueManager.ts
+      - apps/web/tests/unit/offline-issue-manager.test.ts
+      - CI #596: all four jobs passed
+      - Security #597: all eight contexts passed
+      - frontend: 104 of 104 web tests passed
+      - browser: complete regression 54 passed and Lighthouse budgets passed
+  t074_concurrency_red:
+    kind: review_driven_tests_first_expected_red
+    state: resolved
+    source_head: 374cad4a12fed29d73975c1153cee34eabd8d223
+    ci_run: 598
+    ci_run_id: 31952767541
+    ci_job: 95178743682
+    proof: 104 tests; 103 passed; competing same-issue operation deleted an in-flight candidate
+  t074:
+    kind: final_implementation_verified
+    state: green_pending_receipt_head
+    source_head: d2eeffc0c038991493e1b7fd859ecce6ee9b844e
+    proof:
+      - same-issue lifecycle operations use an exclusive Web Lock when available
+      - a same-realm queue preserves serialization when Web Locks are unavailable
+      - CI #599 run 31953022433: all four jobs passed
+      - Security #600 run 31953022415: all eight contexts passed
+      - frontend: 104 of 104 web tests passed
+      - browser: complete regression 54 passed and Lighthouse budgets passed
+
+edges:
+  - [baseline, t074_red]
+  - [t074_red, t074_first_fix]
+  - [t074_first_fix, t074_concurrency_red]
+  - [t074_concurrency_red, t074]
+
+ready_frontier: [T075]
+blocked:
+  - T076_until_T075
+  - T078_plus_until_T076
+  - T087_plus_until_T078_T086
+  - issue_89_human_research
+
+proof_coverage:
+  tests_first_red: attributable_atomic_commit_boundary_failure
+  review_red: attributable_same_issue_cross_tab_candidate_race
+  temporary_download: covered_by_existing_interruption_and_candidate_sweep_browser_contracts
+  checksum: covered_by_existing_corruption_browser_contract
+  atomic_update_delete: covered_by_direct_manager_lifecycle_and_concurrency_tests
+  lifecycle_serialization: covers_install_update_remove_reconciliation_and_cached_reads
+  indexeddb_state: exercised_by_direct_manager_lifecycle_test
+  browser_regression: complete_suite_54_passed
+  security: eight_required_contexts_passed
+  scope_guard: T075_plus_unchanged
+
+next_action: verify_receipt_head_then_merge_before_T075
