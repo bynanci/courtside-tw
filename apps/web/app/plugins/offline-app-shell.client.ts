@@ -1,4 +1,6 @@
-export default function registerOfflineAppShell(): void {
+import { defineNuxtPlugin } from "#app"
+
+export default defineNuxtPlugin(() => {
   const config = useRuntimeConfig()
   const policy = config.public.offlineAppShell
 
@@ -9,4 +11,4 @@ export default function registerOfflineAppShell(): void {
   void navigator.serviceWorker
     .register(policy.scriptPath, { scope: policy.scope })
     .catch(() => undefined)
-}
+})
