@@ -9,6 +9,8 @@ const CACHE_PREFIX = "courtside-offline"
 const MAX_ASSETS = 512
 const MAX_WITHDRAWALS = 100_000
 const MAX_DOWNLOAD_BYTES = 250 * 1024 * 1024
+const ISSUE_LIFECYCLE_LOCK_PREFIX = "courtside-offline:lifecycle:"
+const localIssueLifecycleTails = new Map<string, Promise<void>>()
 
 export type OfflineArticle = {
   articleId: string
@@ -112,6 +114,10 @@ export class OfflineIssueManager {
   }
 
   async getInstalled(): Promise<InstalledOfflineIssue | null> {
+    return withIssueLifecycleLock(this.issueSlug, () => this.getInstalledLocked())
+  }
+
+  private async getInstalledLocked(): Promise<InstalledOfflineIssue | null> {
     const state = await readState(this.issueSlug)
     if (!cacheStorageAvailable()) {
       if (!state) {
@@ -139,6 +145,12 @@ export class OfflineIssueManager {
   }
 
   async download(
+    onProgress?: (progress: OfflineDownloadProgress) => void
+  ): Promise<InstalledOfflineIssue> {
+    return withIssueLifecycleLock(this.issueSlug, () => this.downloadLocked(onProgress))
+  }
+
+  private async downloadLocked(
     onProgress?: (progress: OfflineDownloadProgress) => void
   ): Promise<InstalledOfflineIssue> {
     const cacheStorage = getCacheStorage()
@@ -198,6 +210,10 @@ export class OfflineIssueManager {
   }
 
   async remove(): Promise<boolean> {
+    return withIssueLifecycleLock(this.issueSlug, () => this.removeLocked())
+  }
+
+  private async removeLocked(): Promise<boolean> {
     const installed = await readState(this.issueSlug)
     if (!installed) {
       await sweepCandidateCaches(this.issueSlug)
@@ -210,6 +226,14 @@ export class OfflineIssueManager {
   }
 
   async reconcileWithdrawal(): Promise<
+    | { status: "none" }
+    | { status: "available"; state: InstalledOfflineIssue }
+    | { status: "withdrawn" }
+  > {
+    return withIssueLifecycleLock(this.issueSlug, () => this.reconcileWithdrawalLocked())
+  }
+
+  private async reconcileWithdrawalLocked(): Promise<
     | { status: "none" }
     | { status: "available"; state: InstalledOfflineIssue }
     | { status: "withdrawn" }
@@ -324,6 +348,16 @@ export async function readCachedOfflineArticle(
     return null
   }
   const normalizedIssueSlug = parsePublicIssueSlug(issueSlug)
+  return withIssueLifecycleLock(normalizedIssueSlug, () =>
+    readCachedOfflineArticleLocked(apiBaseUrl, normalizedIssueSlug, articleSlug)
+  )
+}
+
+async function readCachedOfflineArticleLocked(
+  apiBaseUrl: string,
+  normalizedIssueSlug: string,
+  articleSlug: string
+): Promise<PublicArticleProjection | null> {
   const state = await readState(normalizedIssueSlug)
   if (!state) {
     return null
@@ -355,6 +389,35 @@ export async function readCachedOfflineArticle(
   } catch {
     await removeStateAndCache(state).catch(() => undefined)
     return null
+  }
+}
+
+async function withIssueLifecycleLock<T>(
+  issueSlug: string,
+  operation: () => Promise<T>
+): Promise<T> {
+  const lockName = ISSUE_LIFECYCLE_LOCK_PREFIX + encodeURIComponent(issueSlug)
+  const lockManager = globalThis.navigator?.locks
+  if (lockManager && typeof lockManager.request === "function") {
+    return lockManager.request(lockName, { mode: "exclusive" }, operation)
+  }
+
+  const predecessor = localIssueLifecycleTails.get(lockName) ?? Promise.resolve()
+  let release: (() => void) | undefined
+  const gate = new Promise<void>((resolve) => {
+    release = resolve
+  })
+  const tail = predecessor.catch(() => undefined).then(() => gate)
+  localIssueLifecycleTails.set(lockName, tail)
+
+  await predecessor.catch(() => undefined)
+  try {
+    return await operation()
+  } finally {
+    release?.()
+    if (localIssueLifecycleTails.get(lockName) === tail) {
+      localIssueLifecycleTails.delete(lockName)
+    }
   }
 }
 
