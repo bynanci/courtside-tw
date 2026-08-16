@@ -1,4 +1,4 @@
-import { defineConfig } from "@playwright/test"
+import { defineConfig, devices } from "@playwright/test"
 
 const webPort = 4173
 
@@ -12,9 +12,14 @@ export default defineConfig({
   reporter: process.env.CI
     ? [["html", { outputFolder: "playwright-report", open: "never" }], ["list"]]
     : "list",
+  projects: [
+    {
+      name: "chromium-mobile",
+      use: { ...devices["Pixel 7"] }
+    }
+  ],
   use: {
     baseURL: "http://127.0.0.1:" + webPort,
-    viewport: { width: 375, height: 812 },
     trace: "retain-on-failure",
     screenshot: "only-on-failure"
   },

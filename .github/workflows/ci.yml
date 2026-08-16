@@ -159,6 +159,66 @@ jobs:
           if-no-files-found: warn
           retention-days: 14
 
+  android-chrome-smoke:
+    name: Android Chrome offline smoke
+    needs: frontend-contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          persist-credentials: false
+
+      - name: Verify exact source head
+        env:
+          EXPECTED_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: bash scripts/ci/verify-source-head.sh
+
+      - name: Set up pnpm and Node.js
+        uses: pnpm/setup@4700d737c3d7a2e7199f3d42a920f0bf7f34e411 # v2.0.1
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          runtime: node@${{ env.NODE_VERSION }}
+          cache: true
+          cache-dependency-path: pnpm-lock.yaml
+          install: false
+
+      - name: Install JavaScript dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' \
+            | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run Android Chrome offline withdrawal smoke
+        uses: reactivecircus/android-emulator-runner@a421e43855164a8197daf9d8d40fe71c6996bb0d # v2.38.0
+        with:
+          api-level: 35
+          target: google_apis_playstore
+          arch: x86_64
+          profile: pixel_7
+          emulator-options: >-
+            -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+            -camera-back none -camera-front none
+          disable-animations: true
+          script: bash scripts/test/run-android-chrome-offline-smoke.sh
+
+      - name: Upload Android Chrome smoke reports
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: ci-android-chrome-reports
+          path: |
+            artifacts/android-chrome
+            artifacts/exact-head.json
+          if-no-files-found: warn
+          retention-days: 14
+
   java-quality:
     name: Java quality and unit verification
     runs-on: ubuntu-latest
