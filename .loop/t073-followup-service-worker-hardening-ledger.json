@@ -1,0 +1,44 @@
+{
+  "schema": "courtside-tw/loop-ledger/v1",
+  "lane": "t073-followup-service-worker-hardening",
+  "version": 1,
+  "recorded_at": "2026-08-16T03:45:00Z",
+  "decision": "Harden the four post-merge T073 app-shell regressions and stop before T074+.",
+  "scope": {
+    "issue": 89,
+    "tasks": [
+      "T073-followup"
+    ],
+    "baseline_main": "3add8f63b9fad6acc1f69058794f42ebb750ee2e",
+    "excluded": [
+      "T074+",
+      "Web3",
+      "issue #89 human research",
+      "tasks.md",
+      "unrelated work"
+    ]
+  },
+  "events": [
+    {
+      "sequence": 1,
+      "type": "tests_first_red",
+      "source_head": "ac234aaaa54d3a02d4a7b1432168b9f258b81a0a",
+      "result": "attributable",
+      "evidence": "service-worker-hardening.test.ts imports intentionally absent disableOfflineAppShell"
+    },
+    {
+      "sequence": 2,
+      "type": "minimal_implementation",
+      "source_head": "6a413fc48af276406dbb5858bc0ea9389116f9cf",
+      "result": "local_green",
+      "tests": "4/4 service-worker hardening regressions passed"
+    }
+  ],
+  "invariants": [
+    "disabled cleanup filters app-shell worker script/scope and courtside-app-shell-* only",
+    "successful network response is cached with response.clone()",
+    "cache lookup key is normalized pathname",
+    "!response.ok and rejected fetch both use cached app-shell response"
+  ],
+  "next_action": "wait for exact-head CI/Security/browser evidence; do not begin T074+"
+}
