@@ -43,15 +43,26 @@ adb shell 'echo "chrome --disable-fre --no-first-run --no-default-browser-check 
 adb shell input keyevent KEYCODE_WAKEUP
 adb shell wm dismiss-keyguard || true
 adb shell am start -W -a android.intent.action.VIEW \
-  -d http://127.0.0.1:4173/issues/issue-2026-01 com.android.chrome
+  -d http://127.0.0.1:4173/issues/issue-2026-01 \
+  --ez skip_first_run_experience true \
+  com.android.chrome
 adb forward tcp:9222 localabstract:chrome_devtools_remote
 
+cdp_ready=false
 for _ in $(seq 1 60); do
   if curl --fail --silent --show-error http://127.0.0.1:9222/json/version >/dev/null; then
+    cdp_ready=true
     break
   fi
   sleep 2
 done
+if [[ "$cdp_ready" != "true" ]]; then
+  adb shell uiautomator dump /sdcard/courtside-window.xml || true
+  adb pull /sdcard/courtside-window.xml "$artifact_dir/window.xml" || true
+  adb shell dumpsys activity activities >"$artifact_dir/activities.txt" || true
+  adb exec-out screencap -p >"$artifact_dir/screenshot.png" || true
+  exit 1
+fi
 curl --fail --silent --show-error http://127.0.0.1:9222/json/version \
   >"$artifact_dir/cdp-version.json"
 adb shell dumpsys package com.android.chrome | sed -n '/versionName=/p' \
