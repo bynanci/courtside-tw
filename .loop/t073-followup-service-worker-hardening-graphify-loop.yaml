@@ -1,0 +1,51 @@
+schema: courtside-tw/graphify-loop/v1
+lane: t073-followup-service-worker-hardening
+recorded_at: 2026-08-16T03:45:00Z
+decision: harden_four_post_merge_t073_service_worker_regressions
+terminal_state: green_pending_exact_head_verification
+
+scope:
+  issue: 89
+  tasks: [T073-followup]
+  baseline_main: 3add8f63b9fad6acc1f69058794f42ebb750ee2e
+  included:
+    - disabled app-shell worker and cache cleanup
+    - successful same-origin app-shell cache update from response.clone()
+    - normalized pathname cache lookup
+    - HTTP non-ok and network rejection fallback
+  excluded:
+    - T074+
+    - Web3
+    - issue #89 human research
+    - tasks.md and unrelated runtime paths
+
+invariants:
+  - only courtside-app-shell-* registrations/caches are disabled or removed
+  - courtside-offline:* issue-content caches are never touched
+  - only same-origin GET navigation requests on the app-shell allowlist are intercepted
+  - editorial, preview and issue-content descendants remain excluded from precache
+  - cache writes consume a clone and do not consume the network response returned to the browser
+
+nodes:
+  red:
+    kind: tests_first
+    state: proven
+    source_head: ac234aaaa54d3a02d4a7b1432168b9f258b81a0a
+    failure: missing disableOfflineAppShell export
+  green:
+    kind: implementation
+    state: local_verified
+    implementation_head: 6a413fc48af276406dbb5858bc0ea9389116f9cf
+    proof:
+      - apps/web/tests/integration/service-worker-hardening.test.ts
+      - local node test: 4 passed
+      - apps/web/app/service-worker/offline-app-shell.ts
+      - apps/web/app/plugins/offline-app-shell.client.ts
+
+edges:
+  - [red, green]
+
+stop_condition:
+  - exact-head CI and Security pass
+  - browser regression remains green
+  - changed-file scope remains T073-only
