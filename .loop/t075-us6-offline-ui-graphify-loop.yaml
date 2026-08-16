@@ -1,0 +1,86 @@
+schema: courtside-tw/graphify-loop/v1
+lane: t075-us6-offline-ui
+recorded_at: 2026-08-16T15:23:25Z
+decision: complete_t075_offline_management_ui_and_stop_before_t076
+terminal_state: t075_final_implementation_verified_pending_receipt_head
+
+scope:
+  issue: 89
+  tasks: [T075]
+  baseline_main: a0c506f139fdef64888c35e9a2defca6993373ec
+  included:
+    - browser storage estimate with unavailable fallback
+    - semantic per-resource download progress
+    - installed manifest version and rights-expiry display
+    - explicit issue-page update and local removal
+    - reader-library listing and removal of valid local installs
+    - clear non-DRM and non-permanent-availability copy
+    - exact-head CI, Security and browser verification
+  excluded:
+    - T076 WithdrawalReconciler extraction, bounded retry and Android smoke
+    - T078+ release gates, T087+ Web3 and human research completion
+
+invariants:
+  - local UI never upgrades an invalid, corrupt or expired IndexedDB record into an install
+  - listing and removal share the T074 per-issue lifecycle lock
+  - storage values are browser estimates and never represented as reserved offline capacity
+  - expiry is rendered from the authoritative installed manifest
+  - local removal clears install authority even when stale physical cache cleanup reports an error
+
+nodes:
+  baseline:
+    kind: merged_main
+    state: resolved
+    source_head: a0c506f139fdef64888c35e9a2defca6993373ec
+  t075_red:
+    kind: tests_first_expected_red
+    state: resolved
+    source_head: 7ba74531b13a44942523433eaa2142c6df9f7f15
+    ci_run: 602
+    ci_run_id: 31954130883
+    ci_job: 95182150708
+    proof: 56 browser tests; 54 passed; only the two new T075 surfaces failed
+  t075_first_fix:
+    kind: implementation_green_except_copy_contract
+    state: superseded
+    source_head: d0172ef07137c69fd43c6b870f35b47e3558524c
+    proof:
+      - issue-page T075 flow passed
+      - library removal completed but its status words did not satisfy the intended contiguous 已移除 contract
+      - earlier image-security failures were transient Alpine repository TLS/index failures, not accepted merge evidence
+  t075:
+    kind: final_implementation_verified
+    state: green_pending_receipt_head
+    source_head: abd4456564b39797c85ef98ec158a198dabdf2f7
+    proof:
+      - CI #604 run 31955086294 passed all four jobs
+      - Security #605 run 31955086288 passed all eight contexts
+      - frontend: 106 of 106 web tests passed
+      - both T075 browser scenarios passed
+      - complete browser job passed with 55 clean tests and one unrelated existing creative-lifecycle retry
+      - Lighthouse accessibility and SEO budgets passed for both protected article routes
+
+edges:
+  - [baseline, t075_red]
+  - [t075_red, t075_first_fix]
+  - [t075_first_fix, t075]
+
+ready_frontier: []
+blocked:
+  - T076_until_T075_receipt_head_green_and_main_readback
+  - T078_plus_until_T076
+  - T087_plus_until_T078_T086
+  - issue_89_human_research
+
+proof_coverage:
+  tests_first_red: attributable_missing_issue_and_library_management_surfaces
+  storage_estimate: browser_estimate_and_unavailable_fallback
+  progress: native_progress_element_with_completed_and_total
+  update_remove: issue_page_and_reader_library_browser_contracts
+  expiry: semantic_time_from_manifest_rights_expiry
+  local_state: bounded_enumeration_and_per_issue_validation_lock
+  browser_regression: green_with_one_unrelated_existing_retry_recorded
+  security: eight_required_contexts_passed
+  scope_guard: T076_plus_unchanged
+
+next_action: verify_receipt_head_then_merge_and_read_back_main_before_T076
