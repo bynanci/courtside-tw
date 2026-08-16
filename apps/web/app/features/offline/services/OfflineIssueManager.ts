@@ -9,6 +9,7 @@ const CACHE_PREFIX = "courtside-offline"
 const MAX_ASSETS = 512
 const MAX_WITHDRAWALS = 100_000
 const MAX_DOWNLOAD_BYTES = 250 * 1024 * 1024
+const MAX_INSTALLED_ISSUES = 100
 const ISSUE_LIFECYCLE_LOCK_PREFIX = "courtside-offline:lifecycle:"
 const localIssueLifecycleTails = new Map<string, Promise<void>>()
 
@@ -118,30 +119,7 @@ export class OfflineIssueManager {
   }
 
   private async getInstalledLocked(): Promise<InstalledOfflineIssue | null> {
-    const state = await readState(this.issueSlug)
-    if (!cacheStorageAvailable()) {
-      if (!state) {
-        return null
-      }
-      throw new OfflineIssueError("storage", "此瀏覽器無法存取離線儲存空間。")
-    }
-    await sweepCandidateCaches(this.issueSlug, state?.cacheName)
-    if (!state) {
-      return null
-    }
-
-    try {
-      validateManifest(state.manifest, this.issueSlug)
-    } catch {
-      await removeStateAndCache(state)
-      return null
-    }
-    if (isExpired(state.manifest.expiresAt)) {
-      await removeStateAndCache(state)
-      return null
-    }
-
-    return state
+    return readValidatedInstalledIssue(this.issueSlug)
   }
 
   async download(
@@ -339,6 +317,36 @@ export class OfflineIssueManager {
   }
 }
 
+export async function listInstalledOfflineIssues(): Promise<InstalledOfflineIssue[]> {
+  if (!cacheStorageAvailable() || typeof globalThis.indexedDB === "undefined") {
+    return []
+  }
+
+  const records = await readAllStates()
+  const issueSlugs = new Set<string>()
+  for (const record of records) {
+    if (!isRecord(record) || typeof record.issueSlug !== "string") {
+      continue
+    }
+    try {
+      issueSlugs.add(parsePublicIssueSlug(record.issueSlug))
+    } catch {
+      // Ignore malformed local records; they cannot be addressed by public issue routes.
+    }
+  }
+
+  const installed: InstalledOfflineIssue[] = []
+  for (const issueSlug of issueSlugs) {
+    const state = await withIssueLifecycleLock(issueSlug, () =>
+      readValidatedInstalledIssue(issueSlug)
+    ).catch(() => null)
+    if (state) {
+      installed.push(state)
+    }
+  }
+  return installed.sort((left, right) => right.installedAt.localeCompare(left.installedAt))
+}
+
 export async function readCachedOfflineArticle(
   apiBaseUrl: string,
   issueSlug: string,
@@ -419,6 +427,35 @@ async function withIssueLifecycleLock<T>(
       localIssueLifecycleTails.delete(lockName)
     }
   }
+}
+
+async function readValidatedInstalledIssue(
+  issueSlug: string
+): Promise<InstalledOfflineIssue | null> {
+  const state = await readState(issueSlug)
+  if (!cacheStorageAvailable()) {
+    if (!state) {
+      return null
+    }
+    throw new OfflineIssueError("storage", "此瀏覽器無法存取離線儲存空間。")
+  }
+  await sweepCandidateCaches(issueSlug, state?.cacheName)
+  if (!state) {
+    return null
+  }
+
+  try {
+    validateManifest(state.manifest, issueSlug)
+  } catch {
+    await removeStateAndCache(state)
+    return null
+  }
+  if (isExpired(state.manifest.expiresAt)) {
+    await removeStateAndCache(state)
+    return null
+  }
+
+  return state
 }
 
 function normalizedApiBaseUrl(value: string): URL {
@@ -796,6 +833,22 @@ async function readState(issueSlug: string): Promise<StoredOfflineIssue | null> 
     request.onerror = () => {
       database.close()
       reject(new OfflineIssueError("storage", "離線狀態無法讀取。", { cause: request.error }))
+    }
+  })
+}
+
+async function readAllStates(): Promise<unknown[]> {
+  const database = await openDatabase()
+  return new Promise((resolve, reject) => {
+    const transaction = database.transaction(STATE_STORE, "readonly")
+    const request = transaction.objectStore(STATE_STORE).getAll(undefined, MAX_INSTALLED_ISSUES)
+    request.onsuccess = () => {
+      database.close()
+      resolve(Array.isArray(request.result) ? request.result : [])
+    }
+    request.onerror = () => {
+      database.close()
+      reject(new OfflineIssueError("storage", "離線安裝清單無法讀取。", { cause: request.error }))
     }
   })
 }

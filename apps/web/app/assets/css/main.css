@@ -1730,6 +1730,17 @@ a:focus-visible {
   color: #191916;
 }
 
+.offline-panel__controls .offline-panel__remove {
+  color: #8c2d20;
+}
+
+.offline-panel__storage {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+}
+
 .offline-panel__status,
 .offline-panel__progress,
 .offline-panel__error {
@@ -1743,6 +1754,18 @@ a:focus-visible {
   color: var(--muted);
 }
 
+.offline-panel__progress {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.offline-panel__progress progress {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
 .offline-panel__error {
   border-left: 2px solid var(--accent);
   padding-left: 0.75rem;
@@ -1751,6 +1774,7 @@ a:focus-visible {
 
 .offline-panel__installed {
   display: flex;
+  flex-wrap: wrap;
   align-items: baseline;
   justify-content: space-between;
   gap: 1rem;
@@ -1760,6 +1784,19 @@ a:focus-visible {
   font-size: 0.75rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+}
+
+.offline-panel__installed > span {
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
+}
+
+.offline-panel__installed time {
+  color: #191916;
+  font-size: 0.8125rem;
+  letter-spacing: 0;
+  text-transform: none;
 }
 
 .offline-panel__installed strong {

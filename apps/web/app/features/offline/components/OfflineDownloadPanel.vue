@@ -7,6 +7,12 @@ import {
   type InstalledOfflineIssue,
   type OfflineDownloadProgress
 } from "../services/OfflineIssueManager"
+import {
+  formatOfflineExpiry,
+  formatStorageBytes,
+  readBrowserStorageEstimate,
+  type BrowserStorageEstimate
+} from "../services/offline-ui-contract"
 
 const props = defineProps<{
   apiBaseUrl: string
@@ -15,16 +21,27 @@ const props = defineProps<{
 
 const manager = new OfflineIssueManager(props.apiBaseUrl, props.issueSlug)
 const installed = ref<InstalledOfflineIssue | null>(null)
-const status = ref<"idle" | "downloading" | "installed" | "error" | "unavailable">("idle")
+const status = ref<"idle" | "downloading" | "removing" | "installed" | "error" | "unavailable">(
+  "idle"
+)
 const statusMessage = ref("尚未保存離線內容。")
 const errorMessage = ref("")
 const progress = ref<OfflineDownloadProgress | null>(null)
+const storageEstimate = ref<BrowserStorageEstimate | null>(null)
 
-const isBusy = computed(() => status.value === "downloading")
+const isBusy = computed(() => status.value === "downloading" || status.value === "removing")
 const hasInstalled = computed(() => installed.value !== null && status.value !== "unavailable")
 const isUnavailable = computed(() => status.value === "unavailable")
+const storageEstimateMessage = computed(() => {
+  const estimate = storageEstimate.value
+  if (!estimate) {
+    return "瀏覽器未提供容量估計；下載前仍會檢查可用空間。"
+  }
+  return `瀏覽器儲存空間：已使用 ${formatStorageBytes(estimate.usage)} / 共 ${formatStorageBytes(estimate.quota)}（可用 ${formatStorageBytes(estimate.available)}）`
+})
 
 onMounted(async () => {
+  void refreshStorageEstimate()
   try {
     installed.value = await manager.getInstalled()
     if (installed.value) {
@@ -35,6 +52,10 @@ onMounted(async () => {
     // The public issue remains readable when this optional local cache is unavailable.
   }
 })
+
+async function refreshStorageEstimate(): Promise<void> {
+  storageEstimate.value = await readBrowserStorageEstimate()
+}
 
 async function downloadIssue(): Promise<void> {
   if (isBusy.value || isUnavailable.value) {
@@ -56,6 +77,7 @@ async function downloadIssue(): Promise<void> {
     })
     status.value = "installed"
     statusMessage.value = "下載完成，這一期已保存。"
+    await refreshStorageEstimate()
   } catch (error) {
     status.value = "error"
     const issueError = error instanceof OfflineIssueError ? error : null
@@ -71,6 +93,36 @@ async function downloadIssue(): Promise<void> {
       errorMessage.value = "離線內容暫時無法取得，請稍後再試。"
       statusMessage.value = "下載未完成，沒有安裝部分內容。"
     }
+  }
+}
+
+async function removeIssue(): Promise<void> {
+  if (!hasInstalled.value || isBusy.value) {
+    return
+  }
+
+  status.value = "removing"
+  errorMessage.value = ""
+  statusMessage.value = "正在移除本機離線內容……"
+  try {
+    await manager.remove()
+    installed.value = null
+    progress.value = null
+    status.value = "idle"
+    statusMessage.value = "本機離線內容已移除。"
+  } catch {
+    installed.value = await manager.getInstalled().catch(() => null)
+    if (!installed.value) {
+      status.value = "idle"
+      statusMessage.value = "本機離線內容已移除。"
+      errorMessage.value = "舊快取清理尚未完成，瀏覽器稍後會重試。"
+    } else {
+      status.value = "error"
+      statusMessage.value = "本機離線內容暫時無法移除。"
+      errorMessage.value = "請稍後再試。"
+    }
+  } finally {
+    await refreshStorageEstimate()
   }
 }
 
@@ -116,6 +168,9 @@ async function reconcileWithdrawal(): Promise<void> {
     </div>
 
     <div class="offline-panel__controls">
+      <p data-testid="offline-storage-estimate" class="offline-panel__storage">
+        {{ storageEstimateMessage }}
+      </p>
       <button
         data-testid="offline-download"
         type="button"
@@ -144,6 +199,16 @@ async function reconcileWithdrawal(): Promise<void> {
       >
         檢查撤回狀態
       </button>
+      <button
+        v-if="hasInstalled"
+        data-testid="offline-remove"
+        type="button"
+        class="offline-panel__secondary offline-panel__remove"
+        :disabled="isBusy"
+        @click="removeIssue"
+      >
+        從這台裝置移除
+      </button>
 
       <p
         data-testid="offline-download-status"
@@ -153,9 +218,15 @@ async function reconcileWithdrawal(): Promise<void> {
       >
         {{ statusMessage }}
       </p>
-      <p v-if="progress && isBusy" class="offline-panel__progress" aria-live="polite">
-        {{ progress.completed }} / {{ progress.total }}
-      </p>
+      <div v-if="progress && status === 'downloading'" class="offline-panel__progress">
+        <progress
+          data-testid="offline-progress"
+          :max="Math.max(progress.total, 1)"
+          :value="progress.completed"
+          aria-label="離線下載進度"
+        />
+        <span aria-live="polite">{{ progress.completed }} / {{ progress.total }}</span>
+      </div>
       <p
         v-if="errorMessage"
         data-testid="offline-download-error"
@@ -170,10 +241,18 @@ async function reconcileWithdrawal(): Promise<void> {
         data-testid="offline-installed"
         class="offline-panel__installed"
       >
-        <span>已保存版本</span>
-        <strong data-testid="offline-manifest-version">{{
-          installed.manifest.manifestVersion
-        }}</strong>
+        <span>
+          已保存版本
+          <strong data-testid="offline-manifest-version">{{
+            installed.manifest.manifestVersion
+          }}</strong>
+        </span>
+        <span>
+          離線權利有效期限
+          <time data-testid="offline-expiry" :datetime="installed.manifest.expiresAt"
+            >{{ formatOfflineExpiry(installed.manifest.expiresAt) }} 到期</time
+          >
+        </span>
       </div>
 
       <p
