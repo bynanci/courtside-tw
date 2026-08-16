@@ -1,0 +1,76 @@
+{
+  "schema": "courtside-tw/loop-ledger/v1",
+  "lane": "t074-us6-atomic-lifecycle",
+  "version": 1,
+  "recorded_at": "2026-08-16T14:21:17Z",
+  "decision": "Complete T074 atomic offline manager lifecycle and stop before T075+.",
+  "terminal_state": "t074_implementation_verified_pending_receipt_head",
+  "scope": {
+    "issue": 89,
+    "tasks": ["T074"],
+    "baseline_main": "aac7c68a61b25642ec823a7bb0999b50cf346a93",
+    "tests_first_head": "1ad03e6a5f05c5966c09c7ec234f5e7ccc2df731",
+    "implementation_head": "c66aa78804f74c85d2b9a05c4cb65ce591f241a1",
+    "excluded": [
+      "T075+",
+      "T078+ release gates",
+      "T087+ Web3",
+      "issue #89 human research closure"
+    ]
+  },
+  "events": [
+    {
+      "sequence": 1,
+      "type": "tests_first_contract_authored",
+      "result": "red_contract_defined",
+      "evidence_refs": ["apps/web/tests/unit/offline-issue-manager.test.ts"],
+      "matrix": [
+        "committed update survives superseded-cache cleanup failure",
+        "manager-level remove",
+        "delete remains fail closed when cache deletion fails"
+      ]
+    },
+    {
+      "sequence": 2,
+      "type": "ci_attributable_red_replayed",
+      "result": "red_receipt_proven",
+      "source_head": "1ad03e6a5f05c5966c09c7ec234f5e7ccc2df731",
+      "ci_run": 595,
+      "ci_job": 95176817668,
+      "failure_signature": "104 tests; 103 passed; committed update was misreported after old-cache delete failure",
+      "attribution": "T074 production commit-boundary behavior; format, schema, seed and OpenAPI checks passed"
+    },
+    {
+      "sequence": 3,
+      "type": "implementation_exact_head_green",
+      "result": "atomic_lifecycle_passed",
+      "source_head": "c66aa78804f74c85d2b9a05c4cb65ce591f241a1",
+      "ci_run": 596,
+      "security_run": 597,
+      "ci_jobs": [95177272615, 95177272648, 95177272660, 95177415107],
+      "passed_gates": [
+        "104/104 web tests",
+        "Java quality and unit verification",
+        "Docker Compose dependency health",
+        "complete browser regression 54 passed",
+        "mobile Lighthouse budgets",
+        "dependency audit",
+        "CodeQL Java/Kotlin",
+        "CodeQL JavaScript/TypeScript",
+        "Trivy filesystem and all Compose images"
+      ],
+      "scope_guard": [
+        "T075 and T076 remain unchecked",
+        "T078+ and T087+ remain unchecked",
+        "human validation remains separate"
+      ]
+    }
+  ],
+  "invariants": [
+    "IndexedDB state is the install/update commit point",
+    "partial or corrupt candidates are never marked complete",
+    "post-commit cleanup failure cannot reverse a committed update",
+    "delete removes local authority before surfacing incomplete physical cleanup"
+  ],
+  "next_action": "Verify the receipt head, merge PR #104, then begin T075."
+}
