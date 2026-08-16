@@ -179,7 +179,13 @@ export class OfflineIssueManager {
       committed = true
 
       if (previous && previous.cacheName !== candidateCacheName) {
-        await cacheStorage.delete(previous.cacheName)
+        try {
+          await cacheStorage.delete(previous.cacheName)
+        } catch {
+          // IndexedDB is the commit point. A failed old-cache cleanup must not
+          // turn an already committed update into a reported download failure;
+          // the next load/install sweep retries removal of the orphan.
+        }
       }
 
       return installed
@@ -189,6 +195,18 @@ export class OfflineIssueManager {
       }
       throw asOfflineIssueError(error)
     }
+  }
+
+  async remove(): Promise<boolean> {
+    const installed = await readState(this.issueSlug)
+    if (!installed) {
+      await sweepCandidateCaches(this.issueSlug)
+      return false
+    }
+
+    await removeStateAndCache(installed)
+    await sweepCandidateCaches(this.issueSlug)
+    return true
   }
 
   async reconcileWithdrawal(): Promise<
