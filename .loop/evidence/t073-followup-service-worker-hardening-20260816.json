@@ -1,0 +1,111 @@
+{
+  "schema": "courtside-tw/t073-followup-evidence/v1",
+  "task": "T073-followup",
+  "pr": 102,
+  "branch": "agent/t073-service-worker-hardening",
+  "recorded_at": "2026-08-16T04:00:00Z",
+  "baseline_main": "3add8f63b9fad6acc1f69058794f42ebb750ee2e",
+  "tests_first": {
+    "head": "ac234aaaa54d3a02d4a7b1432168b9f258b81a0a",
+    "file": "apps/web/tests/integration/service-worker-hardening.test.ts",
+    "red_signature": "offline-app-shell.ts does not provide an export named disableOfflineAppShell",
+    "attribution": "Tests-only commit; production implementation was intentionally absent."
+  },
+  "verification_attempts": [
+    {
+      "head": "794f64f4942672c6baf3bb7ac2a6249297c3e2be",
+      "ci": 584,
+      "security": 585,
+      "result": "failed",
+      "root_cause": "Repository format check reported the two changed TypeScript files."
+    },
+    {
+      "head": "854aac47963b0735712aa8c7be28f28437500cbf",
+      "ci": 585,
+      "security": 586,
+      "result": "failed",
+      "root_cause": "The local formatter had been run without repository prettier.config.mjs; CI reported the same two files."
+    },
+    {
+      "head": "9ef532a3dc3fb7752dac272c92c94f72ccdd8074",
+      "ci_run": 586,
+      "security_run": 587,
+      "result": "passed",
+      "ci_jobs": {
+        "frontend_contract": 95111419013,
+        "compose": 95111418962,
+        "java": 95111418936,
+        "browser": 95111529789
+      },
+      "security_jobs": {
+        "dependency_audit": 95111419778,
+        "trivy_filesystem": 95111419785,
+        "codeql_java": 95111419811,
+        "codeql_javascript": 95111419827,
+        "resolve_compose_images": 95111419833,
+        "trivy_oidc": 95111439560,
+        "trivy_s3": 95111439565,
+        "trivy_postgres": 95111439601
+      },
+      "browser": [
+        "US1: 4 passed",
+        "US2: 24 passed",
+        "US1+US2 combined: 28 passed",
+        "complete suite: 49 passed",
+        "mobile Lighthouse budgets: passed"
+      ],
+      "frontend": [
+        "root contract: pass",
+        "workspace verification: pass",
+        "Nuxt client/server build: pass"
+      ]
+    }
+  ],
+  "changed_files": [
+    ".loop/evidence/t073-followup-service-worker-hardening-20260816.json",
+    ".loop/memory/t073-followup-service-worker-hardening.json",
+    ".loop/t073-followup-service-worker-hardening-graphify-loop.yaml",
+    ".loop/t073-followup-service-worker-hardening-ledger.json",
+    "apps/web/app/plugins/offline-app-shell.client.ts",
+    "apps/web/app/service-worker/offline-app-shell.ts",
+    "apps/web/tests/integration/service-worker-hardening.test.ts"
+  ],
+  "minimal_diff": {
+    "client": "Disabled policy now calls the scoped cleanup seam before returning.",
+    "cleanup": "Only registrations at / with /offline-sw.js and courtside-app-shell-* caches are touched; courtside-offline:* remains untouched.",
+    "worker": "Successful same-origin app-shell navigations put a normalized pathname with response.clone(); non-ok and rejected fetches read the same normalized key.",
+    "tests": "One runtime harness covers four regression groups; the existing T073 policy tests are unchanged."
+  },
+  "policy_invariants": [
+    "App-shell cache namespace is courtside-app-shell-*.",
+    "Issue-content namespace courtside-offline:* is never deleted or used by the worker.",
+    "Only same-origin GET navigation requests on exact normalized app-shell paths are handled.",
+    "Editorial, preview and issue-content descendant routes remain excluded from precache.",
+    "Returned successful network responses remain readable because cache.put receives response.clone()."
+  ],
+  "review": {
+    "decision": "PASS WITH NON-BLOCKING COVERAGE NOTE",
+    "findings": [
+      "The four requested regressions are covered by runtime VM tests against the generated worker plus the disabled cleanup seam.",
+      "The existing browser regression does not install a real ServiceWorker in Chromium; this remains a P2 coverage gap, not a blocker for this scoped follow-up.",
+      "No review-thread resolution, merge, task-state change or unrelated research is included."
+    ]
+  },
+  "governance": {
+    "risk_tier": "G2",
+    "controls": [
+      "least-privilege cache prefix and worker identity filters",
+      "same-origin and exact navigation boundary",
+      "tests-first RED attribution",
+      "revertable PR-only change; no main/ruleset mutation"
+    ],
+    "rollback": "Revert PR #102; no data migration or issue-content cache mutation is introduced."
+  },
+  "scope_guard": {
+    "t071_red_attribution": "preserved on main",
+    "t074_t075_t076": "unchanged and unchecked",
+    "web3": "untouched",
+    "issue_89_human_research": "untouched",
+    "merge": "not performed"
+  }
+}

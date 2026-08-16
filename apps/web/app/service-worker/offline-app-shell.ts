@@ -28,6 +28,58 @@ export function shouldPrecacheAppShellPath(pathname: string): boolean {
   return APP_SHELL_ROUTES.some((route) => normalized === route)
 }
 
+type AppShellRegistrationLike = {
+  scope: string
+  active?: { scriptURL: string } | null
+  waiting?: { scriptURL: string } | null
+  installing?: { scriptURL: string } | null
+  unregister: () => Promise<boolean>
+}
+
+type AppShellServiceWorkerContainerLike = {
+  getRegistrations: () => Promise<readonly AppShellRegistrationLike[]>
+}
+
+type AppShellCacheStorageLike = {
+  keys: () => Promise<readonly string[]>
+  delete: (cacheName: string) => Promise<boolean>
+}
+
+function getPathname(rawUrl: string): string | null {
+  try {
+    return new URL(rawUrl, "https://courtside.tw").pathname
+  } catch {
+    return null
+  }
+}
+
+function isAppShellRegistration(registration: AppShellRegistrationLike): boolean {
+  if (getPathname(registration.scope) !== APP_SHELL_SCOPE) {
+    return false
+  }
+
+  return [registration.active, registration.waiting, registration.installing].some(
+    (worker) => worker && getPathname(worker.scriptURL) === APP_SHELL_WORKER_PATH
+  )
+}
+
+export async function disableOfflineAppShell(
+  serviceWorker: AppShellServiceWorkerContainerLike,
+  cacheStorage: AppShellCacheStorageLike
+): Promise<void> {
+  const registrations = await serviceWorker.getRegistrations()
+  await Promise.all(
+    registrations.filter(isAppShellRegistration).map((registration) => registration.unregister())
+  )
+
+  const cacheNames = await cacheStorage.keys()
+  await Promise.all(
+    cacheNames
+      .filter((cacheName) => cacheName.startsWith(APP_SHELL_CACHE_PREFIX))
+      .map((cacheName) => cacheStorage.delete(cacheName))
+  )
+}
+
 export function buildOfflineAppShellWorker(): string {
   const appShellRoutes = JSON.stringify(APP_SHELL_ROUTES)
   const excludedRoutes = JSON.stringify(EXCLUDED_PRECACHE_ROUTE_PREFIXES)
@@ -49,6 +101,23 @@ function isAppShellPath(rawPathname) {
   return (
     APP_SHELL_ROUTES.some((route) => pathname === route) &&
     !EXCLUDED_PRECACHE_ROUTE_PREFIXES.some((prefix) => pathname.startsWith(prefix))
+  )
+}
+
+function buildAppShellCacheRequest(request) {
+  const url = new URL(request.url)
+  return new Request(new URL(normalizePathname(url.pathname), url.origin))
+}
+
+function isSameOriginResponse(response) {
+  return !response.url || new URL(response.url).origin === self.location.origin
+}
+
+function readCachedAppShell(request) {
+  return caches.open(CACHE_NAME).then((cache) =>
+    cache
+      .match(buildAppShellCacheRequest(request), { ignoreSearch: true })
+      .then((cached) => cached || Response.error())
   )
 }
 
@@ -87,11 +156,19 @@ self.addEventListener("fetch", (event) => {
   }
 
   event.respondWith(
-    fetch(request).catch(() =>
-      caches.open(CACHE_NAME).then((cache) =>
-        cache.match(request, { ignoreSearch: true }).then((cached) => cached || Response.error())
-      )
-    )
+    fetch(request)
+      .then((response) => {
+        if (!response.ok || !isSameOriginResponse(response)) {
+          return readCachedAppShell(request)
+        }
+
+        return caches
+          .open(CACHE_NAME)
+          .then((cache) => cache.put(buildAppShellCacheRequest(request), response.clone()))
+          .catch(() => undefined)
+          .then(() => response)
+      })
+      .catch(() => readCachedAppShell(request))
   )
 })
 `
