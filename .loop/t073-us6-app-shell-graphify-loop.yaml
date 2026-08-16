@@ -1,0 +1,71 @@
+schema: courtside-tw/graphify-loop/v1
+lane: t073-us6-app-shell
+recorded_at: 2026-08-16T02:35:00Z
+decision: implement_t073_app_shell_policy_and_stop_before_t074_plus
+terminal_state: t073_verified_bounded_stop
+
+scope:
+  issue: 89
+  tasks: [T073]
+  included:
+    - tests-first service-worker policy contract
+    - separate versioned app-shell cache and issue-content cache namespace
+    - exact app-shell precache allowlist
+    - editorial and preview route exclusion
+    - same-origin navigation fallback and Nuxt registration seam
+    - exact-head CI, Security and browser verification
+  excluded:
+    - T074+ offline install/update/delete and UI work
+    - Web3, wallet, token, provenance and unrelated task state
+    - issue #89 human research completion
+    - PR merge or repository ruleset mutation
+
+invariants:
+  - app-shell cache names start with courtside-app-shell- and never courtside-offline
+  - app-shell precache is an explicit allowlist of /, /issues and /search
+  - article, issue-content, studio and preview paths are never precached
+  - service-worker fetch handling is same-origin GET navigation only
+  - T071 RED attribution and T074+ task state remain preserved
+
+nodes:
+  t073_red:
+    kind: tests_first_expected_red
+    state: resolved
+    source_head: 1886a8816092151c70b925249746dc91eeff4e6e
+    expected_failure: missing apps/web/app/service-worker/offline-app-shell.ts import
+    ci_run: 577
+    ci_job: 95102206942
+  t073:
+    kind: implementation_verified
+    state: green_pending_receipt_head
+    source_head: 3170b86f2b9d1fd1022969be2c3d54dd1a5cd224
+    proof:
+      - apps/web/app/service-worker/offline-app-shell.ts
+      - apps/web/app/plugins/offline-app-shell.client.ts
+      - apps/web/server/routes/offline-sw.js.ts
+      - apps/web/tests/integration/service-worker-policy.test.ts
+      - CI #579 browser job 95103122322: 49 passed
+      - Security #580: all eight contexts passed
+
+edges:
+  - [t073_red, t073]
+
+ready_frontier: [T074]
+blocked:
+  - T074+
+  - issue_89_human_research
+
+critical_path:
+  - T073 policy tests
+  - app-shell worker delivery and registration
+  - exact-head CI/Security/browser receipt
+  - T074 atomic offline install/update/delete
+
+proof_coverage:
+  tests_first_red: attributable_missing_worker_seam
+  policy_integration: 3_tests_passed_in_frontend_contract_job
+  browser_regression: complete_suite_49_passed
+  security: eight_required_contexts_passed
+  scope_guard: T074_plus_unchanged
+
+next_action: stop_before_T074_plus

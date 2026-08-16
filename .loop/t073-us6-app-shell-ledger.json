@@ -1,0 +1,94 @@
+{
+  "schema": "courtside-tw/loop-ledger/v1",
+  "lane": "t073-us6-app-shell-tests-first",
+  "version": 1,
+  "recorded_at": "2026-08-16T02:35:00Z",
+  "decision": "Record T073 app-shell service-worker policy exact-head pass and stop before T074+.",
+  "terminal_state": "t073_verified_bounded_stop",
+  "scope": {
+    "issue": 89,
+    "tasks": [
+      "T073"
+    ],
+    "baseline_main": "9e3af36704cce1b37f6ff31edddce29c5d1c0417",
+    "tests_first_commit": "1886a8816092151c70b925249746dc91eeff4e6e",
+    "implementation_head": "3170b86f2b9d1fd1022969be2c3d54dd1a5cd224",
+    "excluded": [
+      "T074+",
+      "Web3",
+      "PR merge",
+      "repository ruleset mutation",
+      "unrelated task state",
+      "issue #89 human research closure"
+    ]
+  },
+  "events": [
+    {
+      "sequence": 1,
+      "type": "tests_first_contract_authored",
+      "result": "red_contract_defined",
+      "evidence_refs": [
+        "apps/web/tests/integration/service-worker-policy.test.ts"
+      ],
+      "matrix": [
+        "cache namespace separation",
+        "precache allowlist",
+        "editorial/preview exclusion",
+        "navigation boundary"
+      ]
+    },
+    {
+      "sequence": 2,
+      "type": "ci_attributable_red_replayed",
+      "result": "red_receipt_proven",
+      "source_head": "1886a8816092151c70b925249746dc91eeff4e6e",
+      "ci_run": 577,
+      "ci_job": 95102206942,
+      "failure_signature": "ERR_MODULE_NOT_FOUND for apps/web/app/service-worker/offline-app-shell.ts",
+      "attribution": "T073 production seam intentionally absent; existing web tests passed"
+    },
+    {
+      "sequence": 3,
+      "type": "implementation_green",
+      "result": "policy_and_runtime_seam_passed",
+      "source_head": "3170b86f2b9d1fd1022969be2c3d54dd1a5cd224",
+      "ci_run": 579,
+      "security_run": 580,
+      "ci_jobs": [
+        95102982556,
+        95102982567,
+        95102982585,
+        95103122322
+      ],
+      "security_jobs": [
+        95102998302,
+        95102998329,
+        95102998368,
+        95102998375,
+        95102998418,
+        95103014179,
+        95103014190,
+        95103014268
+      ],
+      "browser_summary": [
+        "US1 4 passed",
+        "US2 24 passed",
+        "combined 28 passed",
+        "complete regression 49 passed"
+      ],
+      "scope_guard": [
+        "T071 RED attribution retained",
+        "T074+ untouched",
+        "Web3 and issue #89 human research untouched"
+      ]
+    }
+  ],
+  "invariants": [
+    "courtside-app-shell-v1 is not an issue-content cache",
+    "APP_SHELL_ROUTES is an explicit exact-path allowlist",
+    "articles, issue-content descendants, studio and preview descendants are excluded",
+    "worker never intercepts non-GET, non-navigation, cross-origin or non-app-shell requests",
+    "activation deletes only old courtside-app-shell-* caches"
+  ],
+  "next_action": "stop_before_T074_plus"
+}

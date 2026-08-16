@@ -1,0 +1,90 @@
+{
+  "schema": "courtside-tw/t073-evidence/v1",
+  "task": "T073",
+  "pr": 101,
+  "recorded_at": "2026-08-16T02:35:00Z",
+  "baseline_main": "9e3af36704cce1b37f6ff31edddce29c5d1c0417",
+  "red": {
+    "tests_first_head": "1886a8816092151c70b925249746dc91eeff4e6e",
+    "ci_run": 577,
+    "ci_job": 95102206942,
+    "signature": "ERR_MODULE_NOT_FOUND: ../../app/service-worker/offline-app-shell.ts",
+    "attribution": "Only the new T073 integration test failed; existing web tests passed. This historical RED is retained."
+  },
+  "green": {
+    "implementation_head": "3170b86f2b9d1fd1022969be2c3d54dd1a5cd224",
+    "ci_run": 579,
+    "security_run": 580,
+    "ci_jobs": {
+      "compose": 95102982556,
+      "frontend_contract": 95102982567,
+      "java": 95102982585,
+      "browser": 95103122322
+    },
+    "security_jobs": {
+      "dependency_audit": 95102998302,
+      "compose_images": 95102998329,
+      "codeql_java": 95102998368,
+      "codeql_js": 95102998375,
+      "trivy_filesystem": 95102998418,
+      "trivy_s3": 95103014179,
+      "trivy_postgres": 95103014190,
+      "trivy_oidc": 95103014268
+    },
+    "browser": [
+      "US1 4 passed",
+      "US2 24 passed",
+      "US1+US2 combined 28 passed",
+      "complete suite 49 passed"
+    ],
+    "frontend": [
+      "service-worker policy integration tests passed",
+      "verify: pass",
+      "Nuxt build passed"
+    ],
+    "java": "BUILD SUCCESSFUL",
+    "security": "all eight required contexts passed"
+  },
+  "changed_files": [
+    "apps/web/nuxt.config.ts",
+    "apps/web/app/service-worker/offline-app-shell.ts",
+    "apps/web/app/plugins/offline-app-shell.client.ts",
+    "apps/web/server/routes/offline-sw.js.ts",
+    "apps/web/tests/integration/service-worker-policy.test.ts"
+  ],
+  "policy_invariants": {
+    "app_shell_cache": "courtside-app-shell-v1",
+    "app_shell_prefix": "courtside-app-shell-",
+    "issue_content_prefix": "courtside-offline",
+    "precache_allowlist": [
+      "/",
+      "/issues",
+      "/search"
+    ],
+    "excluded_prefixes": [
+      "/articles/",
+      "/issues/",
+      "/studio/",
+      "/preview/",
+      "/editorial-preview/"
+    ],
+    "fetch_boundary": "same-origin GET navigate requests for exact app-shell paths only"
+  },
+  "review": {
+    "decision": "PASS WITH FOLLOW-UP",
+    "findings": [
+      {
+        "severity": "P2",
+        "finding": "The policy integration test inspects the generated worker source; browser regression validates the Nuxt build and existing journeys but does not install a real ServiceWorker in Chromium.",
+        "disposition": "non-blocking evidence gap; keep runtime install/cache API coverage for a later offline hardening task"
+      }
+    ]
+  },
+  "scope_guard": {
+    "t071_red_attribution": "preserved",
+    "t074_t075_t076": "unchanged and unchecked",
+    "web3": "untouched",
+    "issue_89_human_research": "untouched",
+    "merge": "not performed"
+  }
+}
