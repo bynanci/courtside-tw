@@ -5,7 +5,7 @@
 # from its pinned upstream source with a patched Go toolchain and x/sys version.
 # Go 1.26.6 also removes the Go stdlib versions flagged by CVE-2026-39821 and
 # CVE-2026-46600 in the previous build stage.
-FROM golang:1.26.6@sha256:640a234f4bea3e399c056b7b8f9c667c4939befae8db2f14e9785e16eccd4205 AS gosu-build
+FROM golang:1.26.6@sha256:0d1d3a794be25f809dd2cb3160d8c73276c4056a9f8242a138e908ddeee7b6b6 AS gosu-build
 
 ARG GOSU_COMMIT=40506998e34a7a679e6dae41374c1b7aa37eb73f
 ARG GOSU_X_SYS_VERSION=0.44.0
@@ -33,7 +33,7 @@ RUN set -eux; \
 # mounted data directory, then drops privileges through gosu.
 USER nobody
 
-FROM postgres:18.4-alpine3.24@sha256:9a8afca54e7861fd90fab5fdf4c42477a6b1cb7d293595148e674e0a3181de15
+FROM postgres:18.6-alpine3.24@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2
 
 COPY --from=gosu-build /out/gosu /usr/local/bin/gosu
 
