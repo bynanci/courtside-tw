@@ -143,7 +143,7 @@ function findP5ChunkName(): string {
       return false
     }
     const source = readFileSync(assetDirectory + fileName, "utf8")
-    return source.includes("p5.Geometry") && source.includes("createCanvas")
+    return source.includes("courtside-p5-core-color-shape") && source.includes("createCanvas")
   })
   expect(candidates).toHaveLength(1)
   return candidates[0] ?? "missing-p5-chunk"

@@ -2,6 +2,7 @@
 import {
   boundedCanvasWidth,
   creativeActiveLoop,
+  nextFrameThrottleState,
   nextPauseTimerState,
   normalizeCourtPulseParameters,
   resolveCreativePreset,
@@ -21,10 +22,14 @@ type Props = {
   reducedMotion: boolean
 }
 
+const SUSPEND_AFTER_FRAME_GAP_MILLISECONDS = 200
+const SUSPEND_AFTER_CONSECUTIVE_FRAME_GAPS = 2
+
 const props = defineProps<Props>()
 const container = ref<HTMLDivElement | null>(null)
 const nearViewport = ref(false)
 const intersectionRatio = ref(0)
+const appInForeground = ref(true)
 const runtimeStatus = ref<"idle" | "loading" | "running" | "paused" | "error" | "removed">("idle")
 const frameTick = ref(0)
 let sketch: p5 | null = null
@@ -34,7 +39,11 @@ let resizeObserver: ResizeObserver | null = null
 let pauseTimer: ReturnType<typeof setTimeout> | null = null
 let resizeTimer: ReturnType<typeof setTimeout> | null = null
 let selectionFrame: number | null = null
-let setupFrame: number | null = null
+let drawFrame: number | null = null
+let lastDrawTimestamp = 0
+let consecutiveSlowDrawFrames = 0
+let renderFrame: (() => void) | null = null
+let resizeCanvas: ((width: number, height: number) => void) | null = null
 let runtimeModules: Promise<{
   P5: (typeof import("p5"))["default"]
   presetModule: CreativePresetModule
@@ -45,11 +54,15 @@ function hostWidth(): number {
   return boundedCanvasWidth(container.value?.getBoundingClientRect().width ?? 280, 180, 1)
 }
 
+function documentActive(): boolean {
+  return !document.hidden && appInForeground.value
+}
+
 function shouldMount(): boolean {
   return (
     runtimeVisibilityDecision({
       intersectionRatio: intersectionRatio.value,
-      documentVisible: !document.hidden
+      documentVisible: documentActive()
     }).run && props.enabled
   )
 }
@@ -98,10 +111,70 @@ function clearPauseTimer(): void {
   }
 }
 
+function cancelDrawFrame(): void {
+  if (drawFrame !== null) {
+    window.cancelAnimationFrame(drawFrame)
+    drawFrame = null
+  }
+  lastDrawTimestamp = 0
+  consecutiveSlowDrawFrames = 0
+}
+
+function runDrawFrame(timestamp: number): void {
+  drawFrame = null
+  if (!sketch || !renderFrame || disposed || runtimeStatus.value !== "running") {
+    return
+  }
+  const throttleState = nextFrameThrottleState({
+    previousTimestamp: lastDrawTimestamp,
+    currentTimestamp: timestamp,
+    consecutiveSlowFrames: consecutiveSlowDrawFrames,
+    thresholdMilliseconds: SUSPEND_AFTER_FRAME_GAP_MILLISECONDS,
+    requiredConsecutiveSlowFrames: SUSPEND_AFTER_CONSECUTIVE_FRAME_GAPS
+  })
+  consecutiveSlowDrawFrames = throttleState.consecutiveSlowFrames
+  if (throttleState.suspend) {
+    pauseSketch()
+    return
+  }
+  if (lastDrawTimestamp === 0 || timestamp - lastDrawTimestamp >= 1000 / 30) {
+    lastDrawTimestamp = timestamp
+    try {
+      renderFrame()
+    } catch {
+      creativeActiveLoop.release(props.ownerId)
+      sketch.noLoop()
+      runtimeStatus.value = "error"
+      return
+    }
+  }
+  scheduleDrawFrame()
+}
+
+function scheduleDrawFrame(): void {
+  if (
+    drawFrame !== null ||
+    !sketch ||
+    !renderFrame ||
+    disposed ||
+    runtimeStatus.value !== "running"
+  ) {
+    return
+  }
+  drawFrame = window.requestAnimationFrame((timestamp) => {
+    runDrawFrame(timestamp)
+  })
+}
+
+function haltSketchLoop(): void {
+  cancelDrawFrame()
+  sketch?.noLoop()
+}
+
 function pauseSketch(): void {
   clearPauseTimer()
   creativeActiveLoop.release(props.ownerId)
-  sketch?.noLoop()
+  haltSketchLoop()
   runtimeStatus.value = sketch ? "paused" : "idle"
 }
 
@@ -121,9 +194,9 @@ function applyLoopState(): void {
   }
   const decision = runtimeVisibilityDecision({
     intersectionRatio: intersectionRatio.value,
-    documentVisible: !document.hidden
+    documentVisible: documentActive()
   })
-  if (!props.enabled || props.reducedMotion || document.hidden) {
+  if (!props.enabled || props.reducedMotion || !documentActive()) {
     pauseSketch()
     return
   }
@@ -144,21 +217,28 @@ function applyLoopState(): void {
     return
   }
   creativeActiveLoop.claim(props.ownerId, () => {
-    sketch?.noLoop()
+    haltSketchLoop()
     runtimeStatus.value = "paused"
   })
-  sketch.loop()
+  sketch.noLoop()
   runtimeStatus.value = "running"
+  scheduleDrawFrame()
 }
 
 async function preloadRuntime() {
   const preset = resolveCreativePreset(props.presetId)
-  if (!props.enabled || (!nearViewport.value && !shouldMount()) || !preset || disposed) {
+  if (
+    !props.enabled ||
+    !documentActive() ||
+    (!nearViewport.value && !shouldMount()) ||
+    !preset ||
+    disposed
+  ) {
     return null
   }
   if (!runtimeModules) {
     runtimeStatus.value = "loading"
-    runtimeModules = Promise.all([import("p5"), preset.load()]).then(
+    runtimeModules = Promise.all([import("./p5-court-runtime"), preset.load()]).then(
       ([{ default: P5 }, presetModule]) => {
         if (!sketch && !shouldMount()) {
           runtimeStatus.value = "paused"
@@ -190,18 +270,16 @@ async function mountSketch(): Promise<void> {
     const createSketch = presetModule.createSketch({
       seed: props.seed,
       parameters: normalizeCourtPulseParameters(props.parameters),
-      host,
       width: hostWidth,
+      onRenderReady: (controller) => {
+        if (!disposed) {
+          renderFrame = controller.render
+          resizeCanvas = controller.resize
+          scheduleDrawFrame()
+        }
+      },
       onFrame: (frame) => {
         frameTick.value = frame
-        if (frame === 0 && setupFrame === null) {
-          setupFrame = window.requestAnimationFrame(() => {
-            setupFrame = null
-            if (!disposed) {
-              applyLoopState()
-            }
-          })
-        }
       }
     })
     sketch = new P5(createSketch as (instance: p5) => void, host)
@@ -210,6 +288,8 @@ async function mountSketch(): Promise<void> {
     applyLoopState()
   } catch {
     creativeActiveLoop.release(props.ownerId)
+    renderFrame = null
+    resizeCanvas = null
     sketch?.remove()
     sketch = null
     runtimeStatus.value = "error"
@@ -229,9 +309,9 @@ function observeResize(host: HTMLDivElement): void {
       if (!sketch) {
         return
       }
-      sketch.resizeCanvas(hostWidth(), 180, true)
-      if (!sketch.isLooping()) {
-        sketch.redraw()
+      resizeCanvas?.(hostWidth(), 180)
+      if (runtimeStatus.value !== "running") {
+        renderFrame?.()
       }
     }, 100)
   })
@@ -239,11 +319,24 @@ function observeResize(host: HTMLDivElement): void {
 }
 
 function handleVisibility(): void {
-  if (document.hidden) {
+  appInForeground.value = !document.hidden
+  if (!documentActive()) {
     pauseSketch()
     return
   }
   void mountSketch()
+}
+
+function handleBackground(): void {
+  appInForeground.value = false
+  pauseSketch()
+}
+
+function handleForeground(): void {
+  appInForeground.value = true
+  if (!document.hidden) {
+    void mountSketch()
+  }
 }
 
 function syncViewportSelection(): void {
@@ -252,6 +345,10 @@ function syncViewportSelection(): void {
     return
   }
   intersectionRatio.value = measuredViewportRatio(host)
+  if (intersectionRatio.value === 0) {
+    pauseSketch()
+    return
+  }
   if (intersectionRatio.value >= 0.25) {
     void mountSketch()
   } else {
@@ -260,6 +357,16 @@ function syncViewportSelection(): void {
 }
 
 function handleViewportSelection(): void {
+  const host = container.value
+  if (!host) {
+    return
+  }
+  const currentRatio = measuredViewportRatio(host)
+  if (currentRatio === 0) {
+    intersectionRatio.value = 0
+    pauseSketch()
+    return
+  }
   if (selectionFrame !== null) {
     return
   }
@@ -287,6 +394,12 @@ onMounted(() => {
     return
   }
   document.addEventListener("visibilitychange", handleVisibility)
+  document.addEventListener("freeze", handleBackground)
+  document.addEventListener("resume", handleForeground)
+  window.addEventListener("blur", handleBackground)
+  window.addEventListener("focus", handleForeground)
+  window.addEventListener("pagehide", handleBackground)
+  window.addEventListener("pageshow", handleForeground)
   window.addEventListener("scroll", handleViewportSelection, { passive: true })
   if (typeof IntersectionObserver === "undefined") {
     nearViewport.value = true
@@ -308,7 +421,9 @@ onMounted(() => {
   visibilityObserver = new IntersectionObserver(
     ([entry]) => {
       intersectionRatio.value = entry?.isIntersecting ? entry.intersectionRatio : 0
-      if (intersectionRatio.value >= 0.25) {
+      if (intersectionRatio.value === 0) {
+        pauseSketch()
+      } else if (intersectionRatio.value >= 0.25) {
         void mountSketch()
       } else {
         applyLoopState()
@@ -331,12 +446,17 @@ onBeforeUnmount(() => {
     window.cancelAnimationFrame(selectionFrame)
     selectionFrame = null
   }
-  if (setupFrame !== null) {
-    window.cancelAnimationFrame(setupFrame)
-    setupFrame = null
-  }
+  cancelDrawFrame()
+  renderFrame = null
+  resizeCanvas = null
   creativeActiveLoop.release(props.ownerId)
   document.removeEventListener("visibilitychange", handleVisibility)
+  document.removeEventListener("freeze", handleBackground)
+  document.removeEventListener("resume", handleForeground)
+  window.removeEventListener("blur", handleBackground)
+  window.removeEventListener("focus", handleForeground)
+  window.removeEventListener("pagehide", handleBackground)
+  window.removeEventListener("pageshow", handleForeground)
   window.removeEventListener("scroll", handleViewportSelection)
   preloadObserver?.disconnect()
   preloadObserver = null

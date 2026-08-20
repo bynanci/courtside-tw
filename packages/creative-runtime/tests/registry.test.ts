@@ -5,6 +5,7 @@ import test from "node:test"
 import {
   boundedCanvasWidth,
   createActiveLoopCoordinator,
+  nextFrameThrottleState,
   nextPauseTimerState,
   normalizeCourtPulseParameters,
   runtimeVisibilityDecision,
@@ -14,12 +15,17 @@ import { createSketch } from "../src/presets/court-pulse-v1.ts"
 
 function courtPulseCommandDigest(seed: number, density = 12): string {
   const commands: unknown[][] = []
+  let renderFrame: () => void = () => undefined
   const record = (name: string, ...values: unknown[]) => commands.push([name, ...values])
   const instance = {
-    HALF_PI: Math.PI / 2,
-    frameCount: 7,
     width: 640,
     height: 180,
+    drawingContext: {
+      beginPath: () => record("beginPath"),
+      arc: (...values: number[]) => record("arc", ...values),
+      stroke: () => record("contextStroke"),
+      fill: () => record("contextFill")
+    },
     setup: () => undefined,
     draw: () => undefined,
     background: (...values: number[]) => record("background", ...values),
@@ -33,16 +39,14 @@ function courtPulseCommandDigest(seed: number, density = 12): string {
     rect: (x: number, y: number, width: number, height: number, radius?: number) =>
       record("rect", x, y, width, height, ...(radius === undefined ? [] : [radius])),
     line: (...values: number[]) => record("line", ...values),
-    arc: (...values: number[]) => record("arc", ...values),
-    circle: (...values: number[]) => record("circle", ...values),
     createCanvas: (width: number, height: number) => {
       record("createCanvas", width, height)
-      return { parent: () => record("parent") }
+      return {
+        pixelDensity: (value: number) => record("pixelDensity", value),
+        resize: (resizedWidth: number, resizedHeight: number) =>
+          record("resize", resizedWidth, resizedHeight)
+      }
     },
-    pixelDensity: (value: number) => record("pixelDensity", value),
-    frameRate: (value: number) => record("frameRate", value),
-    randomSeed: (value: number) => record("randomSeed", value),
-    noiseSeed: (value: number) => record("noiseSeed", value),
     noLoop: () => record("noLoop")
   }
   const render = createSketch({
@@ -53,13 +57,16 @@ function courtPulseCommandDigest(seed: number, density = 12): string {
       lineWeight: 2,
       numericSequence: [0.1, 0.5, 0.9]
     }),
-    host: {} as HTMLElement,
     width: () => 640,
+    onRenderReady: (controller) => {
+      renderFrame = controller.render
+      controller.resize(320, 180)
+    },
     onFrame: (frame) => record("frame", frame)
   })
   render(instance)
   instance.setup()
-  instance.draw()
+  renderFrame()
   return JSON.stringify(commands)
 }
 
@@ -98,6 +105,35 @@ test("the runtime coordinator permits only one active loop", () => {
   assert.equal(coordinator.currentOwner(), "second")
   coordinator.release("second")
   assert.equal(coordinator.currentOwner(), null)
+})
+
+test("frame throttling requires sustained slow gaps and resets after a normal frame", () => {
+  const firstSlowFrame = nextFrameThrottleState({
+    previousTimestamp: 1_000,
+    currentTimestamp: 1_250,
+    consecutiveSlowFrames: 0,
+    thresholdMilliseconds: 200,
+    requiredConsecutiveSlowFrames: 2
+  })
+  assert.deepEqual(firstSlowFrame, { consecutiveSlowFrames: 1, suspend: false })
+
+  const recoveredFrame = nextFrameThrottleState({
+    previousTimestamp: 1_250,
+    currentTimestamp: 1_267,
+    consecutiveSlowFrames: firstSlowFrame.consecutiveSlowFrames,
+    thresholdMilliseconds: 200,
+    requiredConsecutiveSlowFrames: 2
+  })
+  assert.deepEqual(recoveredFrame, { consecutiveSlowFrames: 0, suspend: false })
+
+  const secondSlowFrame = nextFrameThrottleState({
+    previousTimestamp: 1_250,
+    currentTimestamp: 1_550,
+    consecutiveSlowFrames: firstSlowFrame.consecutiveSlowFrames,
+    thresholdMilliseconds: 200,
+    requiredConsecutiveSlowFrames: 2
+  })
+  assert.deepEqual(secondSlowFrame, { consecutiveSlowFrames: 2, suspend: true })
 })
 
 test("preset modules are selected only by the trusted registry", async () => {
@@ -153,6 +189,9 @@ test("canvas bitmap width stays within the 1.5M pixel envelope", () => {
 
 test("court-pulse drawing is deterministic and the fixed seed changes geometry", () => {
   const first = courtPulseCommandDigest(2026)
+  assert.match(first, /\["resize",320,180\]/u)
+  assert.match(first, /\["arc",320,90,32,0,6\.283185307179586\]/u)
+  assert.match(first, /\["frame",1\]/u)
   assert.equal(first, courtPulseCommandDigest(2026))
   assert.notEqual(first, courtPulseCommandDigest(2027))
   assert.notEqual(first, courtPulseCommandDigest(2026, 13))
