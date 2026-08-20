@@ -165,7 +165,7 @@ cleanup() {
 }
 trap cleanup EXIT
 
-RESTORE_START_NS=$(date +%s%N)
+RESTORE_START_NS=$(python3 -c 'import time; print(time.monotonic_ns())')
 
 pg_restore \
   --exit-on-error \
@@ -185,7 +185,6 @@ psql \
   --file="$METADATA_QUERY_FILE" \
   "$RESTORE_DATABASE_URL" > "$TEMP_DIR/restored-media-metadata.csv"
 
-RESTORE_END_NS=$(date +%s%N)
 mkdir -p "$(dirname -- "$RECEIPT_PATH")"
 
 python3 \
@@ -197,7 +196,6 @@ python3 \
   "$MAX_RPO_HOURS" \
   "$MAX_RTO_MINUTES" \
   "$RESTORE_START_NS" \
-  "$RESTORE_END_NS" \
   "$RECEIPT_PATH" <<'PY'
 import csv
 from datetime import datetime, timezone
@@ -205,6 +203,7 @@ import json
 from pathlib import Path
 import re
 import sys
+import time
 
 (
     manifest_path,
@@ -215,7 +214,6 @@ import sys
     max_rpo_text,
     max_rto_text,
     restore_start_ns,
-    restore_end_ns,
     receipt_path,
 ) = sys.argv[1:]
 
@@ -277,7 +275,7 @@ for row in sample:
     if variant_checksum and not checksum_pattern.fullmatch(variant_checksum):
         raise SystemExit("sample contains an invalid variant SHA-256 checksum")
 
-rto_minutes = (int(restore_end_ns) - int(restore_start_ns)) / 1_000_000_000 / 60
+rto_minutes = (time.monotonic_ns() - int(restore_start_ns)) / 1_000_000_000 / 60
 if rto_minutes > float(max_rto_text):
     raise SystemExit(f"RTO exceeded: {rto_minutes:.3f}m > {max_rto_text}m")
 
