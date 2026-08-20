@@ -31,9 +31,6 @@ fail() {
 require_runtime() {
   command -v docker >/dev/null 2>&1 || fail "Docker CLI is required"
   docker compose version >/dev/null 2>&1 || fail "Docker Compose v2 is required"
-  command -v pg_dump >/dev/null 2>&1 || fail "pg_dump is required on the test runner"
-  command -v pg_restore >/dev/null 2>&1 || fail "pg_restore is required on the test runner"
-  command -v psql >/dev/null 2>&1 || fail "psql is required on the test runner"
   [ -r "$COMPOSE_FILE" ] || fail "missing Compose file: $COMPOSE_FILE"
   [ -r "$ENV_FILE" ] || fail "missing Compose env file: $ENV_FILE"
   [ -r "$MIGRATION_FILE" ] || fail "missing foundation migration: $MIGRATION_FILE"
@@ -91,6 +88,29 @@ mkdir -p "$ARTIFACT_DIR"
 compose config --quiet
 compose up --build --detach postgres >/dev/null
 wait_for_healthy
+
+POSTGRES_CONTAINER="$(compose ps --quiet postgres)"
+CLIENT_IMAGE="$(docker inspect --format '{{.Config.Image}}' "$POSTGRES_CONTAINER")"
+CLIENT_BIN_DIR="$ARTIFACT_DIR/client-bin"
+mkdir -p "$CLIENT_BIN_DIR"
+export T081_CLIENT_IMAGE="$CLIENT_IMAGE"
+
+cat > "$CLIENT_BIN_DIR/pg_dump" <<'SH'
+#!/usr/bin/env sh
+set -eu
+exec docker run --rm --pull=never --network host -i "$T081_CLIENT_IMAGE" pg_dump "$@"
+SH
+cat > "$CLIENT_BIN_DIR/psql" <<'SH'
+#!/usr/bin/env sh
+set -eu
+exec docker run --rm --pull=never --network host -i "$T081_CLIENT_IMAGE" psql "$@"
+SH
+cat > "$CLIENT_BIN_DIR/pg_restore" <<'SH'
+#!/usr/bin/env sh
+set -eu
+exec docker run --rm --pull=never --network host -i "$T081_CLIENT_IMAGE" pg_restore "$@"
+SH
+chmod 700 "$CLIENT_BIN_DIR/pg_dump" "$CLIENT_BIN_DIR/psql" "$CLIENT_BIN_DIR/pg_restore"
 
 sql -f - < "$MIGRATION_FILE" >/dev/null
 
@@ -156,7 +176,9 @@ SOURCE_DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.
 BACKUP_ID="t081-$$"
 SOURCE_AS_OF="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
-bash "$REPO_ROOT/infra/deployment/backup/backup.sh" \
+PG_DUMP_BIN="$CLIENT_BIN_DIR/pg_dump" \
+PSQL_BIN="$CLIENT_BIN_DIR/psql" \
+  bash "$REPO_ROOT/infra/deployment/backup/backup.sh" \
   --database-url "$SOURCE_DATABASE_URL" \
   --output-root "$ARTIFACT_DIR" \
   --backup-id "$BACKUP_ID" \
@@ -183,6 +205,8 @@ RESTORE_DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0
 RESTORE_RECEIPT="$ARTIFACT_DIR/restore-receipt.json"
 
 ISOLATED_RESTORE_CONFIRM=I_UNDERSTAND_ISOLATED_TARGET \
+PG_RESTORE_BIN="$CLIENT_BIN_DIR/pg_restore" \
+PSQL_BIN="$CLIENT_BIN_DIR/psql" \
   bash "$REPO_ROOT/scripts/operations/restore-verify.sh" \
   --backup-dir "$BACKUP_DIR" \
   --restore-database-url "$RESTORE_DATABASE_URL" \
