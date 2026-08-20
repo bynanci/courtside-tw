@@ -16,6 +16,7 @@ import {
   type RuntimeAuthContext
 } from "../../middleware/auth.ts"
 import { AuthSessionError } from "../../auth/errors.ts"
+import { validateTrustedApiOrigin } from "../../security/headers.ts"
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"])
 const EXACT_PATHS = new Set(["me", "me/export", "me/bookmarks", "me/progress", "me/progress:merge"])
@@ -64,12 +65,11 @@ async function proxyReaderRequest(
   }
   let target: URL
   try {
+    const trustedOrigin = validateTrustedApiOrigin(apiBaseUrl, {
+      allowPrivateNetwork: process.env.COURTSIDE_E2E === "1"
+    })
     const base = new URL(apiBaseUrl)
-    if (
-      (base.protocol !== "https:" && base.protocol !== "http:") ||
-      base.username ||
-      base.password
-    ) {
+    if (!trustedOrigin) {
       throw new Error("unsafe API base URL")
     }
     target = new URL(`/api/v1/${normalizedPath}`, base)

@@ -1,0 +1,9 @@
+{
+  "schema_version": "t080-red-evidence/v1",
+  "result": "pass",
+  "claim": "T080 contracts failed before implementation.",
+  "web": {"command": "node --experimental-strip-types --test tests/integration/t080-security-policy.test.ts", "result": "fail", "failure": "headers.ts did not export validateTrustedApiOrigin"},
+  "java": {"command": "gradle -p apps/api test --tests tw.basketball.magazine.security.ExternalReferencePolicyTest --tests tw.basketball.magazine.security.ThreatModelContractTest", "result": "blocked_local", "reason": "No Gradle wrapper/runtime was available before implementation; exact-head CI is required for Java proof."},
+  "commit": "499d5d78e57f4f752015b835e2bae8229204801d",
+  "interpretation": "RED tests were committed before the implementation commit; the Java tooling limitation is recorded rather than hidden."
+}

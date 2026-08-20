@@ -1,6 +1,6 @@
 import { randomBytes } from "node:crypto"
 
-import { applySecurityHeaders } from "../security/headers"
+import { applySecurityHeaders, validateTrustedApiOrigin } from "../security/headers"
 
 export default defineNitroPlugin((nitroApp) => {
   nitroApp.hooks.hook("request", (event) => {
@@ -34,11 +34,9 @@ function configuredApiOrigin(): string | undefined {
     return undefined
   }
   try {
-    const url = new URL(value)
-    if ((url.protocol !== "https:" && url.protocol !== "http:") || url.username || url.password) {
-      return undefined
-    }
-    return url.origin
+    return validateTrustedApiOrigin(value, {
+      allowPrivateNetwork: process.env.COURTSIDE_E2E === "1"
+    })
   } catch {
     return undefined
   }

@@ -1,0 +1,46 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-t080-threat-model-and-hardening",
+  "graph_version": 1,
+  "run_id": "courtside-t080-20260820",
+  "status": "needs_human",
+  "iteration": 2,
+  "started_at": "2026-08-20T13:36:00Z",
+  "updated_at": "2026-08-20T13:36:00Z",
+  "current_frontier": ["t-release-review"],
+  "blocked_nodes": ["p-protected", "g-merge"],
+  "terminal_state": "needs_human",
+  "next_action": "Create or refresh the T080 draft PR, then read back exact-head CI/Security and review threads; do not merge or change the checkbox without release-owner approval.",
+  "events": [
+    {
+      "event_id": "evt-t080-001-readback",
+      "at": "2026-08-20T13:36:00Z",
+      "actor": "codex-supervisor",
+      "type": "t080_scope_reconciled",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {"operations": [{"op": "add", "path": "t080.scope", "after": "T080 only; T078/T079 checked; T081+/Web3/participant research forbidden"}]},
+      "evidence_refs": [".loop/evidence/t080-dispatch.json"],
+      "proof_receipts": [{"proof": "main/tasks/Issue #111 read-back", "result": "pass", "details": "main b33d126c; T078/T079 checked; T080 next unchecked item"}],
+      "failure_signature": null,
+      "decision": "Allow T080 tests-first implementation only.",
+      "token_usage": {"estimated": 6000, "input": 0, "output": 0, "total": 6000},
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-t080-002-implementation-proof",
+      "at": "2026-08-20T13:36:00Z",
+      "actor": "codex-agent",
+      "type": "t080_hardening_local_proof",
+      "base_graph_version": 1,
+      "new_graph_version": 1,
+      "graph_delta": {"operations": [{"op": "add", "path": "docs/security/threat-model.md", "after": "Executable T080 threat model and acceptance contract"}, {"op": "add", "path": "apps/api/src/main/java/tw/basketball/magazine/security/ExternalReferencePolicy.java", "after": "Public HTTPS/no-credential/no-private-destination policy"}, {"op": "replace", "path": "web BFF API origin handling", "after": "Trusted-origin validation before fetch/CSP"}]},
+      "evidence_refs": [".loop/evidence/t080-red.json", ".loop/evidence/t080-local-proof.json"],
+      "proof_receipts": [{"proof": "web tests", "result": "pass", "details": "116 tests including four T080 policy contracts"}, {"proof": "typecheck/lint/format", "result": "pass", "details": "All local checks pass with pinned-version deviation recorded"}, {"proof": "Java CI", "result": "pending", "details": "Gradle plugin resolution unavailable locally; exact-head CI required"}],
+      "failure_signature": "local-java-tooling-unavailable",
+      "decision": "Advance only to exact-head draft-PR review; keep merge gate needs_human.",
+      "token_usage": {"estimated": 22000, "input": 0, "output": 0, "total": 22000},
+      "terminal_reason": null
+    }
+  ]
+}

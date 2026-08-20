@@ -1,0 +1,14 @@
+{
+  "schema_version": "t080-local-proof/v1",
+  "result": "pass_with_ci_pending",
+  "branch_base": "b33d126c7fadf9c009c5ab44ed7aafb67f5b4405",
+  "checks": [
+    {"command": "python3 validate_graphify_loop.py .loop/t080-threat-model-graphify-loop.yaml --strict --json", "result": "pass", "graph": {"nodes": 17, "edges": 23, "errors": 0, "warnings": 0, "confidence_floor": 0.9}},
+    {"command": "node --experimental-strip-types --test apps/web/tests/integration/t080-security-policy.test.ts", "result": "pass", "tests": 4},
+    {"command": "pnpm --filter @courtside/web test", "result": "pass", "tests": 116, "environment_note": "Node 24.19.0 with engine warnings; CI pins Node 24.14.0"},
+    {"command": "pnpm --filter @courtside/web typecheck", "result": "pass", "environment_note": "Node 24.19.0 with engine warnings; CI pins Node 24.14.0"},
+    {"command": "pnpm --filter @courtside/web lint", "result": "pass", "environment_note": "Node 24.19.0 with engine warnings; CI pins Node 24.14.0"},
+    {"command": "pnpm format:check", "result": "pass", "environment_note": "Node 24.19.0 with engine warnings; CI pins Node 24.14.0"}
+  ],
+  "remaining_gate": "Exact-head CI, Security, zero unresolved threads and protected merge are pending GitHub release review."
+}
