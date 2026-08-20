@@ -314,6 +314,12 @@ jobs:
           set -o pipefail
           bash scripts/test/verify-editorial-publication-migration.sh 2>&1 | tee artifacts/dependencies/editorial-publication-migration.log
 
+      - name: Verify T081 isolated backup restore
+        run: |
+          set -o pipefail
+          mkdir -p artifacts/dependencies/t081
+          T081_ARTIFACT_DIR=artifacts/dependencies/t081 bash scripts/test/verify-backup-restore.sh 2>&1 | tee artifacts/dependencies/t081/restore-verify.log
+
       - name: Capture dependency status and clean up
         if: ${{ always() }}
         run: |
