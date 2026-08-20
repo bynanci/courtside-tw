@@ -16,6 +16,11 @@ Web3 是可選的出版來源驗證與 credential delivery 基礎設施，不是
 - ADR-0001～0006 的既有 decision content 維持不變；T002 approval／status reconciliation 由 PR #4 與本輪 `.loop/evidence/t002-current-main-reconciliation.json` 留下可追溯紀錄。ADR-0007、0008 為本輪 draft。
 - T006 已完成：PR #20 合併 shared quality gates，PR #21 完成 T006 checkbox／Graphify completion；最终 main read-back 见 `.loop/evidence/t006-main-readback.json`。T007 implementation PR #24 以 Mark 明確核准的 bounded follow-up 方式進入合併流程：static proof PASS，Docker container health proof 保留為 T008 CI 的重驗項目。
 - T008 已完成：implementation PR #25 已合併至 `main@e857d50`，completion PR #28 已合併至 `main@65f406c`；CI run #14 與 Security run #14 全部通過，包含 PostgreSQL、S3 與 OIDC image security gate；最終 main read-back receipt 為 `.loop/evidence/t008-main-readback.json`，runtime receipt 為 `.loop/evidence/t008-runtime-verification-final.json`。T009 仍未 dispatch。
+### P1 release gates
+
+- T080 已完成：[`PR #117`](https://github.com/bynanci/courtside-tw/pull/117) 已合併至 `main@69de82df855c62550458bbf5ea6f8d0620ba19d0`；final exact head `fdfcf7833e7d05a1e29648c0b1eb2b1651fecac7`、CI #795 與 Security #797 通過；T081+、Web3 與 participant research 維持 out of scope。
+- T081 已完成：[`PR #118`](https://github.com/bynanci/courtside-tw/pull/118) 已合併至 `main@51ada85022abdcaa8afa2847daece81141d5ce43`，final exact head `3fcc7f2f29e5c3d41370fffcebd34d925c4c9911`；[`CI #816`](https://github.com/bynanci/courtside-tw/actions/runs/32390737392) 與 [`Security #818`](https://github.com/bynanci/courtside-tw/actions/runs/32390737362) 通過。Final-head artifact [`9414805375`](https://github.com/bynanci/courtside-tw/actions/runs/32390737392/artifacts/9414805375) 驗證 2/2 metadata rows、2/2 SHA-256 sample、RPO 0.001h、RTO 0.037m、explicit isolated target、`release_ready=true`。
+- 下一個未完成的 P1 release gate 是 T082；T082+、Web3 與 participant research 不因 T081 合併而提前 dispatch。
 
 根目錄固定：
 
