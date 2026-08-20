@@ -8,7 +8,9 @@ export {
 export {
   createActiveLoopCoordinator,
   creativeActiveLoop,
-  type ActiveLoopCoordinator
+  nextFrameThrottleState,
+  type ActiveLoopCoordinator,
+  type FrameThrottleState
 } from "./loop-coordinator.ts"
 export { boundedCanvasWidth, nextPauseTimerState, runtimeVisibilityDecision } from "./lifecycle.ts"
 export { resolveCreativePreset } from "./registry.ts"

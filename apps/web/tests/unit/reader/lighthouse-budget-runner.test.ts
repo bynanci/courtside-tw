@@ -9,19 +9,24 @@ import {
 const require = createRequire(import.meta.url)
 const lighthouseConfig = require("../../../lighthouserc.cjs")
 
-test("mobile Lighthouse config preserves both public reader URLs and protected budgets", () => {
+test("mobile Lighthouse config preserves all T079 public reader workloads and budgets", () => {
   const { assertions, collect, outputDir } = validateLighthouseConfig(lighthouseConfig)
 
+  assert.equal(collect.startServerCommand, "node ../../tests/performance/start-server.mjs")
+  assert.equal(collect.startServerReadyPattern, "Performance fixture listening")
   assert.deepEqual(collect.url, [
-    "http://127.0.0.1:4173/articles/courtside-notes?issue=issue-2026-01",
-    "http://127.0.0.1:4173/articles/opening-night?issue=issue-2026-01"
+    "http://127.0.0.1:4173/issues/performance-issue",
+    "http://127.0.0.1:4173/articles/performance-article-01?issue=performance-issue",
+    "http://127.0.0.1:4173/articles/performance-article-20?issue=performance-issue"
   ])
   assert.equal(collect.numberOfRuns, 3)
   assert.equal(collect.settings.formFactor, "mobile")
   assert.equal(outputDir, "artifacts/lighthouse")
+  assert.equal(assertions["categories:performance"][1].minScore, 0.8)
   assert.equal(assertions["largest-contentful-paint"][1].maxNumericValue, 2_500)
   assert.equal(assertions["cumulative-layout-shift"][1].maxNumericValue, 0.1)
   assert.equal(assertions["total-blocking-time"][1].maxNumericValue, 200)
+  assert.equal(assertions["total-byte-weight"][1].maxNumericValue, 1_500 * 1_024)
   assert.deepEqual(assertions["categories:accessibility"], ["error", { minScore: 1 }])
 })
 

@@ -4,6 +4,7 @@ set -euo pipefail
 artifact_dir="artifacts/android-chrome"
 server_log="$artifact_dir/e2e-server.log"
 smoke_log="$artifact_dir/offline-smoke.json"
+performance_log="$artifact_dir/performance-smoke.json"
 mkdir -p "$artifact_dir"
 
 server_pid=""
@@ -78,3 +79,5 @@ curl --fail --silent --show-error http://127.0.0.1:9222/json/version \
 
 pnpm --filter @courtside/web exec node scripts/android-chrome-offline-smoke.mjs \
   | tee "$smoke_log"
+pnpm --filter @courtside/web exec node scripts/android-chrome-performance-smoke.mjs \
+  | tee "$performance_log"

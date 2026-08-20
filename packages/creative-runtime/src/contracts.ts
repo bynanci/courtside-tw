@@ -13,11 +13,22 @@ export type CourtPulsePresetInput = {
   parameters: CourtPulseParameters
 }
 
+export type CourtPulseDrawingContext = {
+  beginPath: () => void
+  arc: (x: number, y: number, radius: number, startAngle: number, endAngle: number) => void
+  stroke: () => void
+  fill: () => void
+}
+
+export type CreativeRuntimeController = {
+  render: () => void
+  resize: (width: number, height: number) => void
+}
+
 export type CourtPulseP5 = {
-  readonly HALF_PI: number
-  readonly frameCount: number
   readonly height: number
   readonly width: number
+  readonly drawingContext: CourtPulseDrawingContext
   setup: () => void
   draw: () => void
   background: (...values: number[]) => void
@@ -30,21 +41,15 @@ export type CourtPulseP5 = {
   noStroke: () => void
   rect: (x: number, y: number, width: number, height: number, radius?: number) => void
   line: (x1: number, y1: number, x2: number, y2: number) => void
-  arc: (x: number, y: number, width: number, height: number, start: number, stop: number) => void
-  circle: (x: number, y: number, diameter: number) => void
-  createCanvas: (width: number, height: number) => { parent: (host: HTMLElement) => void }
-  pixelDensity: (value: number) => void
-  frameRate: (value: number) => void
-  randomSeed: (value: number) => void
-  noiseSeed: (value: number) => void
+  createCanvas: (width: number, height: number) => unknown
   noLoop: () => void
 }
 
 export type CreativePresetModule = {
   createSketch: (
     input: CourtPulsePresetInput & {
-      host: HTMLElement
       width: () => number
+      onRenderReady: (controller: CreativeRuntimeController) => void
       onFrame: (frame: number) => void
     }
   ) => (instance: CourtPulseP5) => void

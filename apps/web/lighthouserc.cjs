@@ -3,16 +3,21 @@ const MOBILE_CORE_WEB_VITALS = Object.freeze({
   inpMilliseconds: 200,
   cls: 0.1
 })
+const MOBILE_PERFORMANCE_BUDGETS = Object.freeze({
+  performanceScore: 0.8,
+  totalByteWeightBytes: 1500 * 1024
+})
 
 module.exports = {
   ci: {
     collect: {
-      startServerCommand: "node tests/e2e/start-server.mjs",
-      startServerReadyPattern: "Listening on",
+      startServerCommand: "node ../../tests/performance/start-server.mjs",
+      startServerReadyPattern: "Performance fixture listening",
       startServerReadyTimeout: 120000,
       url: [
-        "http://127.0.0.1:4173/articles/courtside-notes?issue=issue-2026-01",
-        "http://127.0.0.1:4173/articles/opening-night?issue=issue-2026-01"
+        "http://127.0.0.1:4173/issues/performance-issue",
+        "http://127.0.0.1:4173/articles/performance-article-01?issue=performance-issue",
+        "http://127.0.0.1:4173/articles/performance-article-20?issue=performance-issue"
       ],
       numberOfRuns: 3,
       settings: {
@@ -35,6 +40,10 @@ module.exports = {
     },
     assert: {
       assertions: {
+        "categories:performance": [
+          "error",
+          { minScore: MOBILE_PERFORMANCE_BUDGETS.performanceScore, aggregationMethod: "median" }
+        ],
         "categories:accessibility": ["error", { minScore: 1 }],
         "categories:seo": ["error", { minScore: 0.95 }],
         "largest-contentful-paint": [
@@ -55,6 +64,13 @@ module.exports = {
           "error",
           {
             maxNumericValue: MOBILE_CORE_WEB_VITALS.inpMilliseconds,
+            aggregationMethod: "median"
+          }
+        ],
+        "total-byte-weight": [
+          "error",
+          {
+            maxNumericValue: MOBILE_PERFORMANCE_BUDGETS.totalByteWeightBytes,
             aggregationMethod: "median"
           }
         ],
