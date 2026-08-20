@@ -131,16 +131,14 @@ mkdir "$STAGING_DIR"
   --format=custom \
   --no-owner \
   --no-acl \
-  --file="$STAGING_DIR/database.dump" \
-  "$DATABASE_URL"
+  "$DATABASE_URL" > "$STAGING_DIR/database.dump"
 
-psql \
+"$PSQL_BIN" \
   -X \
   -v ON_ERROR_STOP=1 \
   --csv \
   -P footer=off \
-  --file="$METADATA_QUERY_FILE" \
-  "$DATABASE_URL" > "$STAGING_DIR/media-metadata.csv"
+  "$DATABASE_URL" < "$METADATA_QUERY_FILE" > "$STAGING_DIR/media-metadata.csv"
 
 python3 - "$STAGING_DIR" "$BACKUP_ID" "$SOURCE_AS_OF" "$METADATA_QUERY_FILE" <<'PY'
 import csv
