@@ -45,6 +45,7 @@ useHead(() => ({
 
 <template>
   <div class="site-page">
+    <a class="skip-link" href="#main-content">跳到主要內容</a>
     <header class="site-header">
       <NuxtLink to="/" class="site-brand" aria-label="Courtside TW 首頁">Courtside TW</NuxtLink>
       <nav aria-label="主要導覽">
@@ -53,10 +54,10 @@ useHead(() => ({
       </nav>
     </header>
 
-    <main class="site-shell">
+    <main id="main-content" class="site-shell" tabindex="-1">
       <section class="home-hero" aria-labelledby="home-heading">
         <p class="eyebrow">Taiwan Hoops Magazine</p>
-        <h1 id="home-heading">先閱讀，\n再決定你要記住什麼。</h1>
+        <h1 id="home-heading">先閱讀，<br aria-hidden="true" />再決定你要記住什麼。</h1>
         <p class="home-hero__lede">
           Courtside TW 把每一期做成可直接閱讀的籃球雜誌；不需要登入、錢包或外部服務。
         </p>

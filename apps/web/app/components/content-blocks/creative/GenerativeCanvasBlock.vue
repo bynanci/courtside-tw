@@ -36,6 +36,10 @@ const posterHeight = computed(() => props.getAssetHeight(props.payload.posterAss
 const posterAttribution = computed(() =>
   props.getAssetAttribution(props.payload.posterAssetId, "wide", props.payload.credit)
 )
+const creativeControlLabel = computed(() => {
+  const altText = stringValue(props.payload.altText).trim()
+  return altText ? `顯示互動視覺：${altText}` : "顯示互動視覺"
+})
 
 async function enable(): Promise<void> {
   manualOverride.value = true
@@ -94,6 +98,7 @@ onMounted(() => {
       type="button"
       class="button-link creative-enable"
       data-testid="creative-enable"
+      :aria-label="creativeControlLabel"
       @click="enable"
     >
       顯示互動視覺
@@ -103,8 +108,7 @@ onMounted(() => {
       :data-creative-block-id="props.blockId"
       :data-seed="String(numberValue(props.payload.seed))"
       :data-runtime-enabled="String(runtimeEnabled)"
-      role="group"
-      :aria-label="stringValue(props.payload.altText)"
+      aria-hidden="true"
     >
       <P5CanvasHost
         v-if="runtimeEnabled"

@@ -63,6 +63,6 @@ const props = defineProps<{
     class="article-return-toc"
     data-testid="article-return-issue-toc"
   >
-    返回本期目錄
+    讀完了，返回本期目錄
   </NuxtLink>
 </template>
