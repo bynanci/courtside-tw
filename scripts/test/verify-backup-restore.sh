@@ -80,7 +80,7 @@ RESTORE_DB_NAME="t081_restore_$$"
 RESTORE_DATABASE_CREATED=0
 cleanup() {
   if [[ "$RESTORE_DATABASE_CREATED" = 1 ]]; then
-    sql -c "DROP DATABASE IF EXISTS \\"$RESTORE_DB_NAME\\" WITH (FORCE);" >/dev/null 2>&1 || true
+    sql -c "DROP DATABASE IF EXISTS \"$RESTORE_DB_NAME\" WITH (FORCE);" >/dev/null 2>&1 || true
   fi
   compose down --volumes --remove-orphans >/dev/null 2>&1 || true
 }
@@ -166,7 +166,18 @@ bash "$REPO_ROOT/infra/deployment/backup/backup.sh" \
 BACKUP_DIR="$ARTIFACT_DIR/$BACKUP_ID"
 [ -r "$BACKUP_DIR/manifest.json" ] || fail "backup manifest was not created"
 
-sql -c "CREATE DATABASE \\"$RESTORE_DB_NAME\\";"
+if ISOLATED_RESTORE_CONFIRM= \
+  bash "$REPO_ROOT/scripts/operations/restore-verify.sh" \
+  --backup-dir "$BACKUP_DIR" \
+  --restore-database-url "postgresql://invalid-isolated-target" \
+  --receipt "$ARTIFACT_DIR/should-not-exist.json" \
+  > /dev/null 2> "$ARTIFACT_DIR/restore-safety.log"; then
+  fail "restore unexpectedly accepted an unconfirmed target"
+fi
+grep -q "refusing restore without ISOLATED_RESTORE_CONFIRM" "$ARTIFACT_DIR/restore-safety.log" \
+  || fail "restore safety denial did not explain the required confirmation"
+
+sql -c "CREATE DATABASE \"$RESTORE_DB_NAME\";"
 RESTORE_DATABASE_CREATED=1
 RESTORE_DATABASE_URL="postgresql://\${POSTGRES_USER}:\${POSTGRES_PASSWORD}@127.0.0.1:\${SOURCE_PORT}/\${RESTORE_DB_NAME}"
 RESTORE_RECEIPT="$ARTIFACT_DIR/restore-receipt.json"
