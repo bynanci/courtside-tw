@@ -22,6 +22,8 @@ const error = ref<string | null>(null)
 const mergeDecision = ref<string | null>(null)
 const merge = useProgressMerge()
 
+useHead({ title: "我的收藏 — Courtside TW" })
+
 onMounted(loadLibrary)
 
 async function loadLibrary(): Promise<void> {
@@ -69,6 +71,7 @@ function login(): void {
 
 <template>
   <div class="site-page">
+    <a class="skip-link" href="#main-content">跳到主要內容</a>
     <header class="site-header">
       <NuxtLink to="/" class="site-brand">Courtside TW</NuxtLink>
       <nav aria-label="主要導覽">
@@ -78,7 +81,7 @@ function login(): void {
       </nav>
     </header>
 
-    <main class="site-shell library-page">
+    <main id="main-content" class="site-shell library-page" tabindex="-1">
       <header class="page-intro">
         <p class="eyebrow">Reader Library</p>
         <h1>跨裝置接續閱讀</h1>

@@ -42,6 +42,7 @@ useHead(() => ({
 
 <template>
   <div class="site-page">
+    <a class="skip-link" href="#main-content">跳到主要內容</a>
     <header class="site-header">
       <NuxtLink to="/" class="site-brand">Courtside TW</NuxtLink>
       <nav aria-label="主要導覽">
@@ -50,7 +51,7 @@ useHead(() => ({
       </nav>
     </header>
 
-    <main class="site-shell issue-index">
+    <main id="main-content" class="site-shell issue-index" tabindex="-1">
       <div class="page-intro">
         <p class="eyebrow">Magazine Archive</p>
         <h1>所有期數</h1>

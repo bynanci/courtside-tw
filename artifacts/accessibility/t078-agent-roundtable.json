@@ -1,0 +1,132 @@
+{
+  "schema": "courtside-tw/t078-agent-roundtable/v2",
+  "reviewId": "t078-112-6c4dd60f-20260820",
+  "reviewedAt": "2026-08-20T11:31:00Z",
+  "mode": "agent-roundtable",
+  "source": {
+    "repo": "bynanci/courtside-tw",
+    "pullRequest": 112,
+    "baseSha": "5cc54f43a9c6dc191d2620939ef98bf2589a3ec9",
+    "reviewedImplementationHeadSha": "6c4dd60ffabecb7dbc8c87eb8ed66907bb230aa3",
+    "testPlan": "docs/quality/accessibility-test-plan.md",
+    "finalHeadBinding": {
+      "location": "https://github.com/bynanci/courtside-tw/pull/112#issuecomment-final-exact-head",
+      "status": "REQUIRED_BEFORE_MERGE",
+      "headSha": null,
+      "ciRun": null,
+      "securityRun": null,
+      "artifactHashes": []
+    }
+  },
+  "securityBaseline": {
+    "issue": 115,
+    "remediationPullRequest": 116,
+    "mainSha": "5cc54f43a9c6dc191d2620939ef98bf2589a3ec9",
+    "status": "INTEGRATED",
+    "substitutesForAccessibilityEvidence": false
+  },
+  "policy": {
+    "nativeSixReplaced": true,
+    "nativeRuntimeClaim": "WAIVED_NOT_RUN",
+    "releaseLabel": "agent-assessment-only",
+    "waiverAuthority": "release-owner request in PR #112 review sequence",
+    "agentInferenceNeverPromotesToNative": true,
+    "exactHeadSecurityStillRequired": true,
+    "protectedMergeStillRequired": true
+  },
+  "layers": [
+    {
+      "id": "keyboard-focus-traversal",
+      "agentVerdict": "MACHINE_PASS_WITH_LIMITATIONS",
+      "machineEvidence": ["keyboard-journey.json", "keyboard-offline-control.json", "final-head browser workflow"],
+      "waivedClaims": ["real keyboard operator", "OS focus ring", "cross-device focus retention"],
+      "reasonCodes": ["NATIVE_FOCUS_NOT_OBSERVED"]
+    },
+    {
+      "id": "desktop-at-bridge",
+      "agentVerdict": "MACHINE_PASS_WITH_LIMITATIONS",
+      "machineEvidence": ["axe report", "route aria snapshots", "creative-fallback.json", "final-head browser workflow"],
+      "waivedClaims": ["NVDA/UIA", "VoiceOver/AXUIElement", "Orca/AT-SPI2", "native TTS timing"],
+      "reasonCodes": ["NATIVE_AT_NOT_OBSERVED"]
+    },
+    {
+      "id": "android-talkback",
+      "agentVerdict": "MACHINE_PASS_WITH_LIMITATIONS",
+      "machineEvidence": ["Android Chrome offline smoke", "creative fallback contract", "final-head CI workflow"],
+      "waivedClaims": ["AccessibilityNodeInfo", "touch exploration", "TalkBack double-tap", "native status announcement"],
+      "reasonCodes": ["TALKBACK_NOT_OBSERVED"]
+    },
+    {
+      "id": "browser-zoom-layout-paint",
+      "agentVerdict": "MACHINE_PASS_WITH_LIMITATIONS",
+      "machineEvidence": ["reflow-320.json", "reflow-640.json", "long-token and clipped-control checks", "final-head browser workflow"],
+      "waivedClaims": ["real browser zoom 200%", "real browser zoom 400%", "Blink/WebKit compositor screenshot"],
+      "reasonCodes": ["REAL_ZOOM_NOT_OBSERVED"]
+    },
+    {
+      "id": "vestibular-motion-pacing",
+      "agentVerdict": "MACHINE_PASS_WITH_LIMITATIONS",
+      "machineEvidence": ["reduced-motion.json", "creative lifecycle checks", "final-head browser workflow"],
+      "waivedClaims": ["OS setting synchronization", "60/120Hz GPU pacing", "full-motion vestibular disposition"],
+      "reasonCodes": ["VESTIBULAR_RUNTIME_NOT_OBSERVED"]
+    },
+    {
+      "id": "zh-hant-text-shaping",
+      "agentVerdict": "MACHINE_PASS_WITH_LIMITATIONS",
+      "machineEvidence": ["traditional-chinese-typography.json", "CSS contract", "long-token/code wrapping probe", "final-head browser workflow"],
+      "waivedClaims": ["PingFang/Microsoft JhengHei glyph shaping", "ICU/HarfBuzz visual metrics", "100/200/400% screenshots"],
+      "reasonCodes": ["FONT_RUNTIME_NOT_OBSERVED"]
+    }
+  ],
+  "agentReviews": [
+    {
+      "agentId": "runtime_at_review",
+      "role": "runtime and assistive-technology boundary",
+      "verdict": "ACCEPT_WITH_NATIVE_LIMITATIONS",
+      "claim": "Machine preflight is attributable; native OS/AT claims remain unobserved and waived"
+    },
+    {
+      "agentId": "evidence_design_review",
+      "role": "evidence schema and adversarial integrity",
+      "verdict": "ACCEPT_TWO_STAGE_BINDING",
+      "claim": "The implementation parent is committed; the immutable final head and workflow artifacts must be bound externally after checks"
+    },
+    {
+      "agentId": "github_governance_review",
+      "role": "GitHub task and release governance",
+      "verdict": "ACCEPT_PENDING_FINAL_HEAD_GATES",
+      "claim": "Security #115 is independently integrated; T078 still requires final-head CI, Security, zero threads and mergeability"
+    }
+  ],
+  "dissent": [],
+  "residualRisk": [
+    "Native keyboard, desktop AT, TalkBack, browser zoom, vestibular and OS/font execution were not observed",
+    "Blink/WebKit, AT bridge and device-specific timing differences remain outside machine evidence",
+    "T079 must be rebased and rerun after T078 reaches main"
+  ],
+  "decision": {
+    "agentVerdict": "PASS_WITH_LIMITATIONS",
+    "t078Verdict": "ACCEPTABLE_AFTER_FINAL_HEAD_GATES",
+    "nativeEvidence": "WAIVED_NOT_RUN",
+    "securityBaselineVerdict": "PASS_ON_MAIN",
+    "releaseVerdict": "PENDING_FINAL_HEAD_WORKFLOWS",
+    "reasonCodes": ["NATIVE_SIX_WAIVED", "SECURITY_115_INTEGRATED", "FINAL_HEAD_RECEIPT_REQUIRED"],
+    "chair": "root-release-recorder"
+  },
+  "integrity": {
+    "reviewedImplementationHeadMatch": true,
+    "finalHeadSelfReferenceAvoided": true,
+    "finalReceiptMustBeExternal": true,
+    "artifactHashesVerified": false,
+    "schemaValidated": true,
+    "note": "A committed file cannot truthfully contain the SHA of the commit that contains itself. This archived adjudication binds the implementation parent; the protected PR receipt binds the immutable final head and completed workflows without mutating that head."
+  },
+  "scopeGuard": {
+    "t080Started": false,
+    "postMvpStarted": false,
+    "t079Rebased": false,
+    "t078CheckedInReceiptCommit": true,
+    "pr112Merged": false,
+    "pr114Merged": false
+  }
+}

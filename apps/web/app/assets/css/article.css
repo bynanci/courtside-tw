@@ -4,6 +4,17 @@
   --reader-focus: #ae3828;
 }
 
+html[lang^="zh-Hant"] body {
+  line-break: strict;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+
+html[lang^="zh-Hant"] :is(pre, code) {
+  overflow-wrap: normal;
+  word-break: normal;
+}
+
 .skip-link {
   position: fixed;
   z-index: 100;
@@ -52,6 +63,7 @@
 
 .article-generative-fallback {
   width: 100%;
+  margin: 0;
   overflow: hidden;
 }
 

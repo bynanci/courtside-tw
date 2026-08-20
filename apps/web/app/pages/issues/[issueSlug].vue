@@ -93,6 +93,7 @@ useHead(() => {
 
 <template>
   <div class="site-page">
+    <a class="skip-link" href="#main-content">跳到主要內容</a>
     <header class="site-header">
       <NuxtLink to="/" class="site-brand">Courtside TW</NuxtLink>
       <nav aria-label="主要導覽">
@@ -101,7 +102,7 @@ useHead(() => {
       </nav>
     </header>
 
-    <main class="site-shell issue-page">
+    <main id="main-content" class="site-shell issue-page" tabindex="-1">
       <NuxtLink to="/issues" class="back-link">← 返回所有期數</NuxtLink>
 
       <section v-if="issue" class="issue-header" aria-labelledby="issue-heading">
