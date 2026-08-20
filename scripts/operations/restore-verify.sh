@@ -6,14 +6,14 @@ SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)
 DEFAULT_METADATA_QUERY="$REPO_ROOT/infra/deployment/backup/media-metadata.sql"
 
-BACKUP_DIR="\${BACKUP_DIR:-}"
-RESTORE_DATABASE_URL="\${RESTORE_DATABASE_URL:-}"
-RECEIPT_PATH="\${RESTORE_RECEIPT_PATH:-$REPO_ROOT/artifacts/t081-restore-receipt.json}"
-SAMPLE_SIZE="\${RESTORE_SAMPLE_SIZE:-5}"
-VERIFIED_AT="\${RESTORE_VERIFIED_AT:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
-MAX_RPO_HOURS="\${MAX_RPO_HOURS:-24}"
-MAX_RTO_MINUTES="\${MAX_RTO_MINUTES:-240}"
-METADATA_QUERY_FILE="\${MEDIA_METADATA_QUERY_FILE:-$DEFAULT_METADATA_QUERY}"
+BACKUP_DIR="${BACKUP_DIR:-}"
+RESTORE_DATABASE_URL="${RESTORE_DATABASE_URL:-}"
+RECEIPT_PATH="${RESTORE_RECEIPT_PATH:-$REPO_ROOT/artifacts/t081-restore-receipt.json}"
+SAMPLE_SIZE="${RESTORE_SAMPLE_SIZE:-5}"
+VERIFIED_AT="${RESTORE_VERIFIED_AT:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
+MAX_RPO_HOURS="${MAX_RPO_HOURS:-24}"
+MAX_RTO_MINUTES="${MAX_RTO_MINUTES:-240}"
+METADATA_QUERY_FILE="${MEDIA_METADATA_QUERY_FILE:-$DEFAULT_METADATA_QUERY}"
 
 usage() {
   cat <<'EOF'
@@ -107,7 +107,7 @@ done
 
 [[ -n "$BACKUP_DIR" ]] || fail "--backup-dir or BACKUP_DIR is required"
 [[ -n "$RESTORE_DATABASE_URL" ]] || fail "--restore-database-url or RESTORE_DATABASE_URL is required"
-[[ "\${ISOLATED_RESTORE_CONFIRM:-}" == "I_UNDERSTAND_ISOLATED_TARGET" ]] || {
+[[ "${ISOLATED_RESTORE_CONFIRM:-}" == "I_UNDERSTAND_ISOLATED_TARGET" ]] || {
   fail "refusing restore without ISOLATED_RESTORE_CONFIRM=I_UNDERSTAND_ISOLATED_TARGET"
 }
 [[ "$SAMPLE_SIZE" =~ ^[1-9][0-9]*$ ]] || fail "sample size must be a positive integer"
@@ -159,7 +159,7 @@ PY
   sha256sum --strict --check checksums.sha256
 )
 
-TEMP_DIR=$(mktemp -d "\${TMPDIR:-/tmp}/courtside-t081-restore-XXXXXX")
+TEMP_DIR=$(mktemp -d "${TMPDIR:-/tmp}/courtside-t081-restore-XXXXXX")
 cleanup() {
   rm -rf "$TEMP_DIR"
 }
