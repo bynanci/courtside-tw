@@ -188,7 +188,7 @@ RESTORE_START_NS=$(python3 -c 'import time; print(time.monotonic_ns())')
 
 mkdir -p "$(dirname -- "$RECEIPT_PATH")"
 
-python3 \
+python3 - \
   "$MANIFEST_PATH" \
   "$MEDIA_METADATA" \
   "$TEMP_DIR/restored-media-metadata.csv" \
