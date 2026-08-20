@@ -202,6 +202,7 @@ Do not mark T078 complete until the protected PR conversation contains the final
 | Evidence | Status |
 | --- | --- |
 | Tests-first RED attribution | Captured on `f77a8f1a98aef408c3dc6b4370c7c5f3ac21104e` |
+| Reviewed implementation parent | `6c4dd60ffabecb7dbc8c87eb8ed66907bb230aa3` |
 | Simulated review remediation | Issue #113; must pass final-head regression |
 | Final exact-head CI and Security | Required in protected PR receipt |
 | T078 Playwright release contracts | Required in final-head browser artifact |
