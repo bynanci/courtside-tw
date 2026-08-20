@@ -20,8 +20,7 @@ The following work is intentionally unchanged and remains gated separately:
   adapters, Fan Passport, archive and participant research.
 
 No task checkbox is changed by this document. T080 can be accepted only from a
-final exact source head with passing CI and Security checks, zero unresolved
-threads (that is, zero unresolved review threads), attributable evidence and a
+final exact source head with passing CI and Security checks, zero unresolved threads (that is, zero unresolved review threads), attributable evidence and a
 protected merge. The RED tests must be present before the hardening
 implementation; a green local run is not an exact-head release receipt.
 
