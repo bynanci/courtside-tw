@@ -22,6 +22,7 @@ fi
 POSTGRES_DB="${POSTGRES_DB:-courtside}"
 POSTGRES_USER="${POSTGRES_USER:-courtside}"
 POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-courtside-local-only}"
+T081_POSTGRES_PORT="${T081_POSTGRES_PORT:-$(python3 -c 'import socket; s = socket.socket(); s.bind(("127.0.0.1", 0)); print(s.getsockname()[1]); s.close()')}"
 
 fail() {
   echo "verify-backup-restore: $*" >&2
@@ -31,13 +32,14 @@ fail() {
 require_runtime() {
   command -v docker >/dev/null 2>&1 || fail "Docker CLI is required"
   docker compose version >/dev/null 2>&1 || fail "Docker Compose v2 is required"
+  command -v python3 >/dev/null 2>&1 || fail "python3 is required to allocate an isolated host port"
   [ -r "$COMPOSE_FILE" ] || fail "missing Compose file: $COMPOSE_FILE"
   [ -r "$ENV_FILE" ] || fail "missing Compose env file: $ENV_FILE"
   [ -r "$MIGRATION_FILE" ] || fail "missing foundation migration: $MIGRATION_FILE"
 }
 
 compose() {
-  POSTGRES_PORT=0 docker compose \
+  POSTGRES_PORT="$T081_POSTGRES_PORT" docker compose \
     --project-name "$PROJECT_NAME" \
     --env-file "$ENV_FILE" \
     --file "$COMPOSE_FILE" \
