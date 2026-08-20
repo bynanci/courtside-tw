@@ -14,6 +14,8 @@ VERIFIED_AT="${RESTORE_VERIFIED_AT:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
 MAX_RPO_HOURS="${MAX_RPO_HOURS:-24}"
 MAX_RTO_MINUTES="${MAX_RTO_MINUTES:-240}"
 METADATA_QUERY_FILE="${MEDIA_METADATA_QUERY_FILE:-$DEFAULT_METADATA_QUERY}"
+PG_RESTORE_BIN="${PG_RESTORE_BIN:-pg_restore}"
+PSQL_BIN="${PSQL_BIN:-psql}"
 
 usage() {
   cat <<'EOF'
@@ -114,7 +116,7 @@ done
 [[ -r "$METADATA_QUERY_FILE" ]] || fail "media metadata query is not readable: $METADATA_QUERY_FILE"
 validate_timestamp "$VERIFIED_AT"
 
-for command_name in pg_restore psql python3 sha256sum date; do
+for command_name in "$PG_RESTORE_BIN" "$PSQL_BIN" python3 sha256sum date; do
   require_command "$command_name"
 done
 
