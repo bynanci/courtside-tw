@@ -1,0 +1,15 @@
+{
+  "schema_version": "t080-dispatch-evidence/v1",
+  "captured_at": "2026-08-20T13:36:00Z",
+  "repository": "bynanci/courtside-tw",
+  "main_sha": "b33d126c7fadf9c009c5ab44ed7aafb67f5b4405",
+  "issue": {"number": 111, "state": "open", "next_wave_item": "T080"},
+  "merged_sequence": [
+    {"pull_request": 116, "task": "Security #115", "merge_sha": "5cc54f43a9c6dc191d2620939ef98bf2589a3ec9"},
+    {"pull_request": 112, "task": "T078", "merge_sha": "e2a105a8d6596aa0d2a06db3aa4e3525a4338ade"},
+    {"pull_request": 114, "task": "T079", "merge_sha": "b33d126c7fadf9c009c5ab44ed7aafb67f5b4405"}
+  ],
+  "task_readback": {"T078": "checked", "T079": "checked", "T080": "unchecked", "T081": "unchecked", "T087": "unchecked", "T098": "unchecked"},
+  "scope_decision": "Dispatch only T080; leave T081+ Web3 and participant research untouched.",
+  "authority": {"allowed": ["T080 threat model and necessary P1 hardening", "tests-first evidence", "draft PR and exact-head checks"], "requires_approval": ["protected merge", "task checkbox change"], "forbidden": ["T081+ implementation", "Web3 runtime", "participant research"]}
+}

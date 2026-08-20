@@ -4,6 +4,7 @@ import java.net.URI;
 import java.util.Objects;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import tw.basketball.magazine.security.ExternalReferencePolicy;
 
 /**
  * Provider-neutral OIDC resource-server settings.
@@ -76,7 +77,7 @@ public record OidcSecurityProperties(
                     name + " must use HTTPS unless local HTTP is explicitly enabled"
             );
         }
-        return text;
+        return ExternalReferencePolicy.requireSafe(text, allowHttp);
     }
 
     private static String validateOptionalText(String name, String value, int maxLength) {

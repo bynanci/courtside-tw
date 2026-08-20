@@ -1,0 +1,306 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-t080-threat-model-and-hardening
+objective: Produce an executable P1 threat model and hardening receipt without changing T081+ or future Web3/runtime research scope.
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - Authoritative main/tasks.md/Issue #111 read-back at b33d126c7fadf9c009c5ab44ed7aafb67f5b4405.
+    - T080 content, OIDC, CSRF, upload, SSRF/embed, p5, authorization, dependency and future provider/SIWE/signer boundaries.
+    - Tests-first RED contract, local regression proof and protected exact-head CI/Security merge gate.
+  out:
+    - T081–T086 implementation.
+    - T087–T096, T098–T112, wallet/provider runtime, participant research, deployment or production writes.
+
+policy:
+  human_gates:
+    - Protected-branch merge and final T080 acceptance remain release-owner decisions.
+    - Exact-head CI and Security success, zero unresolved threads and task receipt are mandatory.
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+memory_workflow:
+  contract: work-memory/v1
+  control_ledger: Append T080 graph deltas, proof receipts and token usage every iteration.
+  semantic_memory: Capture only durable T080 boundary decisions that can change the next action.
+  modes: [recall, capture, update, forget, no_op]
+  retrieval:
+    levels: [index, timeline_relations, details]
+    max_index_results: 10
+    stop_on_sufficient_evidence: true
+  capture:
+    allowed_kinds: [decision, constraint, fact, attempt, task_state, evidence]
+    requires_downstream_proof: true
+    requires_write_receipt: true
+  lifecycle: [seed, verified, stable, needs_update, disputed, archived]
+  failure_policy:
+    write_pending: blocked
+    stale_or_disputed: needs_human
+    redact_secrets: true
+
+graph:
+  entry_nodes: [x-main-readback, t-main-readback, t080-ready, t-release-review]
+  terminal_nodes: [s-terminal]
+  loops:
+    - id: l2-t080-supervision
+      layer: L2
+      owner: codex-supervisor
+      trigger_nodes: [t-main-readback]
+      action_nodes: [a-reconcile]
+      proof_nodes: [p-reconcile]
+      memory_nodes: [m-l2-ledger]
+      stop_nodes: [s-terminal]
+      budgets: {max_iterations: 2, max_minutes: 20, max_same_failure: 2, max_graph_changes: 8, max_tokens: 12000}
+    - id: l1-t080-execution
+      layer: L1
+      owner: codex-agent
+      trigger_nodes: [t080-ready]
+      action_nodes: [a-red-contract, a-hardening]
+      proof_nodes: [p-red, p-local]
+      memory_nodes: [m-l1-ledger]
+      stop_nodes: [s-terminal]
+      budgets: {max_iterations: 4, max_minutes: 60, max_same_failure: 2, max_graph_changes: 12, max_tokens: 30000}
+    - id: l3-t080-release-gate
+      layer: L3
+      owner: release-owner
+      trigger_nodes: [t-release-review]
+      action_nodes: [a-release-review]
+      proof_nodes: [p-protected]
+      memory_nodes: [m-l3-ledger]
+      stop_nodes: [s-terminal]
+      budgets: {max_iterations: 2, max_minutes: 60, max_same_failure: 2, max_graph_changes: 6, max_tokens: 12000}
+  nodes:
+    - id: x-main-readback
+      kind: external
+      layer: EXTERNAL
+      label: Current main and Issue #111 authority
+      owner: github
+      status: done
+      risk: medium
+      confidence: {score: 0.99, basis: "GitHub blob, issue and merged PR read-back", evidence_refs: [.loop/evidence/t080-dispatch.json]}
+      budget: {effort_hours: 0.2, tokens: 2500}
+      config: {source_type: github, freshness: "exact main SHA and current Issue #111", limitations: "issue planning text may retain historical baseline prose"}
+    - id: t-main-readback
+      kind: trigger
+      layer: L2
+      label: T078 and T079 are checked and T080 is the next unchecked Wave 2 item
+      owner: codex-supervisor
+      status: done
+      risk: medium
+      confidence: {score: 0.99, basis: "tasks.md and Issue #111 agree on the T080 frontier", evidence_refs: [.loop/evidence/t080-dispatch.json]}
+      budget: {effort_hours: 0.0, tokens: 0}
+      config: {condition: "Read back main, tasks.md, Issue #111 and merged PR sequence", inputs_required: ["main SHA", "tasks.md", "Issue #111"], dedupe: main-SHA-plus-T080}
+    - id: a-reconcile
+      kind: action
+      layer: L2
+      label: Reconcile T080 scope and preserve future-task blockers
+      owner: codex-supervisor
+      status: done
+      risk: high
+      confidence: {score: 0.99, basis: "Scope inventory excludes T081+, Web3 and participant research", evidence_refs: [.loop/evidence/t080-dispatch.json]}
+      budget: {effort_hours: 0.4, tokens: 4000}
+      config:
+        workflow: [read authoritative state, compare task receipts, bind paths, record forbidden work]
+        allowed: [read GitHub and repository state, write T080 graph/evidence]
+        requires_approval: [protected merge, checkbox change, dispatch outside T080]
+        forbidden: [T081+ implementation, Web3 runtime, participant research]
+    - id: p-reconcile
+      kind: proof
+      layer: L2
+      label: T080 authority and scope reconciliation
+      owner: verifier
+      status: done
+      risk: high
+      confidence: {score: 0.99, basis: "Main and tasks/Issue #111 read-back is attributable", evidence_refs: [.loop/evidence/t080-dispatch.json]}
+      budget: {effort_hours: 0.2, tokens: 2000}
+      config: {level: P2, claim: "T078/T079 are complete and T080 is the only dispatched scope", method: "deterministic GitHub and file read-back", evidence_path: .loop/evidence/t080-dispatch.json, required: true, baseline_required: true}
+    - id: t080-ready
+      kind: trigger
+      layer: L1
+      label: T080 bounded implementation is ready
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence: {score: 0.99, basis: "Reconciliation proof and explicit user authorization", evidence_refs: [.loop/evidence/t080-dispatch.json]}
+      budget: {effort_hours: 0.0, tokens: 0}
+      config: {condition: "T080 is next and no future task is authorized", inputs_required: [p-reconcile, "Issue #111"], dedupe: T080-plus-main-SHA}
+    - id: a-red-contract
+      kind: action
+      layer: L1
+      label: Establish failing T080 external-reference and document contracts
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence: {score: 0.98, basis: "RED tests were committed before implementation", evidence_refs: [.loop/evidence/t080-red.json]}
+      budget: {effort_hours: 0.4, tokens: 4500}
+      config: {workflow: [add failing tests, run available local proof, record missing implementation], allowed: [T080 tests only], requires_approval: [none], forbidden: ["skip RED or weaken assertions"]}
+    - id: p-red
+      kind: proof
+      layer: L1
+      label: T080 RED baseline
+      owner: verifier
+      status: done
+      risk: high
+      confidence: {score: 0.95, basis: "Web test failed on missing export; Java execution was unavailable locally and is delegated to CI", evidence_refs: [.loop/evidence/t080-red.json]}
+      budget: {effort_hours: 0.2, tokens: 1800}
+      config: {level: P2, claim: "Contract fails before hardening implementation", method: "node test output plus recorded Java tooling limitation", evidence_path: .loop/evidence/t080-red.json, required: true, baseline_required: true}
+    - id: a-hardening
+      kind: action
+      layer: L1
+      label: Implement T080 threat model and minimum P1 hardening
+      owner: codex-agent
+      status: done
+      risk: critical
+      confidence: {score: 0.9, basis: "New policy is integrated into OIDC properties, BFF fetch targets and CSP origin copying", evidence_refs: [docs/security/threat-model.md]}
+      budget: {effort_hours: 2.5, tokens: 18000}
+      config:
+        workflow: [add threat model, add external-reference policy, bind trusted API origin, preserve existing content/CSRF/upload/p5/auth/dependency controls, inspect diff]
+        allowed: [docs/security/threat-model.md, apps/api/src/main/java/tw/basketball/magazine/security/**, apps/api/src/main/java/tw/basketball/magazine/identity/OidcSecurityProperties.java, apps/api/src/test/java/tw/basketball/magazine/security/**, apps/web/server/security/**, apps/web/server/api/reader/**, apps/web/server/api/studio/**, apps/web/server/plugins/security.ts, apps/web/tests/integration/t080-security-policy.test.ts, .loop/t080-*]
+        requires_approval: [protected merge, task checkbox change]
+        forbidden: [T081+ files, Web3 runtime, participant research]
+    - id: p-local
+      kind: proof
+      layer: L1
+      label: T080 local regression and contract proof
+      owner: verifier
+      status: done
+      risk: high
+      confidence: {score: 0.94, basis: "Web full suite, typecheck, lint and format check pass; Gradle dependency resolution is a CI-only proof", evidence_refs: [.loop/evidence/t080-local-proof.json]}
+      budget: {effort_hours: 0.5, tokens: 6000}
+      config: {level: P2, claim: "T080 behavior is covered without changing future-task scope", method: "targeted web tests, full web tests, lint, typecheck, format and exact changed-path review", evidence_path: .loop/evidence/t080-local-proof.json, required: true, baseline_required: true}
+    - id: m-l2-ledger
+      kind: memory
+      layer: L2
+      label: T080 supervisor ledger
+      owner: codex-supervisor
+      status: done
+      risk: medium
+      confidence: {score: 0.95, basis: "Append-only T080 graph/evidence record", evidence_refs: [.loop/t080-threat-model-ledger.json]}
+      budget: {effort_hours: 0.1, tokens: 800}
+      config: {path: .loop/t080-threat-model-ledger.json, read_before_action: true, write_after_iteration: true, append_only: true, contract: work-memory/v1, memory_role: hybrid, receipt_required: true, write_failure_state: blocked}
+    - id: m-l1-ledger
+      kind: memory
+      layer: L1
+      label: T080 execution ledger
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence: {score: 0.95, basis: "RED, implementation and proof events are append-only", evidence_refs: [.loop/t080-threat-model-ledger.json]}
+      budget: {effort_hours: 0.1, tokens: 800}
+      config: {path: .loop/t080-threat-model-ledger.json, read_before_action: true, write_after_iteration: true, append_only: true, contract: work-memory/v1, memory_role: hybrid, receipt_required: true, write_failure_state: blocked}
+    - id: t-release-review
+      kind: trigger
+      layer: L3
+      label: T080 is ready for exact-head release-owner review
+      owner: release-owner
+      status: ready
+      risk: critical
+      confidence: {score: 0.7, basis: "Local proof is complete but exact-head CI/Security and protected merge are pending", evidence_refs: [.loop/evidence/t080-local-proof.json]}
+      budget: {effort_hours: 0.0, tokens: 0}
+      config: {condition: "Draft PR exists at one exact head and all T080 review threads are resolved", inputs_required: ["PR head SHA", CI, Security, "review thread read-back"], dedupe: exact-head-plus-receipt}
+    - id: a-release-review
+      kind: action
+      layer: L3
+      label: Review exact-head CI/Security and protected merge readiness
+      owner: release-owner
+      status: planned
+      risk: critical
+      confidence: {score: 0.6, basis: "Requires GitHub checks and thread state after PR creation", evidence_refs: []}
+      budget: {effort_hours: 0.5, tokens: 4500}
+      config: {workflow: [read exact head, verify CI/Security, verify zero threads, inspect changed paths, leave draft until explicit acceptance], allowed: [GitHub read-back and review metadata], requires_approval: [protected merge and checkbox change], forbidden: ["self-approve or merge without release owner"]}
+    - id: p-protected
+      kind: proof
+      layer: L3
+      label: Final exact-head and protected merge receipt
+      owner: release-owner
+      status: needs_human
+      risk: critical
+      confidence: {score: 0.0, basis: "Cannot be inferred before GitHub runs and release-owner acceptance", evidence_refs: []}
+      budget: {effort_hours: 0.5, tokens: 5000}
+      config: {level: P4, claim: "Exact head passes required CI/Security, has zero unresolved threads and is protected-mergeable", method: "GitHub check-suite and PR read-back", evidence_path: .loop/evidence/t080-exact-head-receipt.json, required: true, baseline_required: true}
+    - id: g-merge
+      kind: gate
+      layer: L3
+      label: Protected T080 merge gate
+      owner: release-owner
+      status: needs_human
+      risk: critical
+      confidence: {score: 1.0, basis: Branch protection is externally enforced, evidence_refs: []}
+      budget: {effort_hours: 0.1, tokens: 500}
+      config: {condition: "Exact-head receipt passes and release owner explicitly accepts T080", approver: release-owner, required: true}
+    - id: m-l3-ledger
+      kind: memory
+      layer: L3
+      label: T080 release review ledger
+      owner: release-owner
+      status: ready
+      risk: medium
+      confidence: {score: 0.9, basis: "Pending exact-head receipt is kept separate from local proof", evidence_refs: [.loop/t080-threat-model-ledger.json]}
+      budget: {effort_hours: 0.1, tokens: 700}
+      config: {path: .loop/t080-threat-model-ledger.json, read_before_action: true, write_after_iteration: true, append_only: true, contract: work-memory/v1, memory_role: hybrid, receipt_required: true, write_failure_state: blocked}
+    - id: s-terminal
+      kind: stop
+      layer: GLOBAL
+      label: T080 terminal policy
+      owner: policy
+      status: needs_human
+      risk: critical
+      confidence: {score: 1.0, basis: Exact-head merge gate is explicit, evidence_refs: []}
+      budget: {effort_hours: 0.0, tokens: 0}
+      config:
+        states:
+          success: Exact-head CI/Security, zero threads and protected merge pass; task receipt may then be accepted.
+          blocked: GitHub checks, permission or required evidence unavailable.
+          needs_human: Release owner has not accepted the protected merge.
+          stalled: Same failure or no-evidence-delta budget is reached.
+          no_op: Authoritative T080 state already satisfies the requested bounded change.
+          exhausted: Iteration, time, graph-change or token budget is reached.
+          cancelled: User cancels T080 or changes scope.
+  edges:
+    - {id: e-x-trigger, from: x-main-readback, to: t-main-readback, type: enables, required: true, confidence: 0.99, token_capacity: 5000}
+    - {id: e-readback-reconcile, from: t-main-readback, to: a-reconcile, type: enables, required: true, confidence: 0.99, token_capacity: 6000}
+    - {id: e-reconcile-proof, from: a-reconcile, to: p-reconcile, type: verifies, required: true, confidence: 0.99, token_capacity: 5000}
+    - {id: e-reconcile-ready, from: p-reconcile, to: t080-ready, type: enables, required: true, confidence: 0.99, token_capacity: 5000}
+    - {id: e-ready-red, from: t080-ready, to: a-red-contract, type: enables, required: true, confidence: 0.99, token_capacity: 5000}
+    - {id: e-red-proof, from: a-red-contract, to: p-red, type: verifies, required: true, confidence: 0.98, token_capacity: 5000}
+    - {id: e-red-hardening, from: p-red, to: a-hardening, type: enables, required: true, confidence: 0.98, token_capacity: 9000}
+    - {id: e-hardening-local, from: a-hardening, to: p-local, type: verifies, required: true, confidence: 0.94, token_capacity: 9000}
+    - {id: e-local-stop, from: p-local, to: s-terminal, type: enables, required: false, confidence: 0.8, token_capacity: 3000}
+    - {id: e-local-release, from: p-local, to: t-release-review, type: feedback, required: true, confidence: 0.9, token_capacity: 6000}
+    - {id: e-release-review, from: t-release-review, to: a-release-review, type: enables, required: true, confidence: 0.9, token_capacity: 6000}
+    - {id: e-release-proof, from: a-release-review, to: p-protected, type: verifies, required: true, confidence: 0.9, token_capacity: 8000}
+    - {id: e-proof-gate, from: p-protected, to: g-merge, type: requires_approval, required: true, confidence: 1.0, token_capacity: 5000}
+    - {id: e-gate-stop, from: g-merge, to: s-terminal, type: approves, required: true, confidence: 1.0, token_capacity: 5000}
+    - {id: e-reconcile-memory, from: a-reconcile, to: m-l2-ledger, type: records, required: true, confidence: 0.9, token_capacity: 2000}
+    - {id: e-red-memory, from: a-red-contract, to: m-l1-ledger, type: records, required: true, confidence: 0.9, token_capacity: 2000}
+    - {id: e-hardening-memory, from: a-hardening, to: m-l1-ledger, type: records, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-local-memory, from: p-local, to: m-l1-ledger, type: records, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-release-memory, from: a-release-review, to: m-l3-ledger, type: records, required: true, confidence: 0.9, token_capacity: 2000}
+    - {id: e-l2-read, from: m-l2-ledger, to: a-reconcile, type: reads, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-l1-read, from: m-l1-ledger, to: a-hardening, type: reads, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-l3-read, from: m-l3-ledger, to: a-release-review, type: reads, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-l1-feedback, from: p-local, to: a-hardening, type: feedback, required: false, confidence: 0.8, token_capacity: 3000}
+  
+flow:
+  source: x-main-readback
+  sink: s-terminal
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - memory_receipt
+  - next_action
