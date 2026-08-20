@@ -10,14 +10,14 @@ The release gate is explicit:
 
 | Signal | Acceptance |
 | --- | --- |
-| Backup format | PostgreSQL custom-format dump with \`--no-owner --no-acl\` |
-| Media metadata | Canonical CSV projection from \`infra/deployment/backup/media-metadata.sql\` |
+| Backup format | PostgreSQL custom-format dump with `--no-owner --no-acl` |
+| Media metadata | Canonical CSV projection from `infra/deployment/backup/media-metadata.sql` |
 | Integrity | SHA-256 checksums for the dump and metadata projection |
 | Restore target | Caller-supplied isolated PostgreSQL database only |
 | Row verification | Backup and restored media metadata projections match exactly |
-| Checksum sample | Deterministic first N rows after \`asset_id, variant\` ordering |
-| RPO | \`<= 24h\` from declared \`source_as_of\` to verification |
-| RTO | \`<= 4h\` from restore start through metadata verification |
+| Checksum sample | Deterministic first N rows after `asset_id, variant` ordering |
+| RPO | `<= 24h` from declared `source_as_of` to verification |
+| RTO | `<= 4h` from restore start through metadata verification |
 | Receipt | JSON with no database URL, password, token, private key or participant PII |
 
 The RPO proof measures snapshot freshness. It does not claim that an external
@@ -44,10 +44,10 @@ bash infra/deployment/backup/backup.sh
 
 The command writes a new immutable directory containing:
 
-- \`database.dump\`
-- \`media-metadata.csv\`
-- \`manifest.json\`
-- \`checksums.sha256\`
+- `database.dump`
+- `media-metadata.csv`
+- `manifest.json`
+- `checksums.sha256`
 
 The directory is first written under a staging name and atomically renamed.
 A same-named snapshot is rejected. The backup lock prevents concurrent writers
@@ -80,8 +80,8 @@ bash scripts/operations/restore-verify.sh \
 ~~~
 
 The script refuses to run without the exact confirmation token. It verifies
-the backup files before invoking \`pg_restore --single-transaction --clean
---if-exists\`, then queries the restored database using the same media metadata
+the backup files before invoking `pg_restore --single-transaction --clean
+--if-exists`, then queries the restored database using the same media metadata
 projection. It removes no database and cannot infer a production target; the
 operator owns creation and cleanup of the isolated target.
 
@@ -110,13 +110,13 @@ media bytes.
 
 ## Failure and hold conditions
 
-Keep T081 \`HOLD\` when any of the following occurs:
+Keep T081 `HOLD` when any of the following occurs:
 
 - the backup manifest or checksum file is missing or inconsistent;
 - the restore target is not explicitly isolated;
-- \`pg_restore\` fails or the restored media projection differs;
+- `pg_restore` fails or the restored media projection differs;
 - the deterministic checksum sample is empty, invalid or mismatched;
-- \`RPO > 24h\` or \`RTO > 4h\`;
+- `RPO > 24h` or `RTO > 4h`;
 - the receipt contains credentials, private keys, tokens or participant data;
 - the storage-provider byte backup policy is absent for a release that claims
   recoverable original media.
