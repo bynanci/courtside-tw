@@ -1,176 +1,156 @@
 # Courtside TW
 
-Courtside TW 是以台灣籃球為核心的 mobile-first 數位雜誌與文化檔案平台，採 anonymous-first、free-first、SSR-first 的公開閱讀邊界，並以 immutable publication、rights-before-release、可驗證 evidence 與 progressive enhancement 作為工程基線。
+## 一份屬於台灣籃球的數位雜誌
 
-> 本文件是 repository orientation 與 current-state summary；完整 task checkbox 以 [`tasks.md`](./specs/001-taiwan-basketball-magazine-ebook/tasks.md) 為準，PR、CI/Security run 與 release artifact 才是可歸因的 completion proof。
+Courtside TW 是一個以台灣籃球為核心的數位雜誌與文化檔案平台。
 
-## Current status
+我們相信，讀者打開雜誌，不只是想找到一篇文章，而是想進入一種值得信任的觀點：知道這一期為什麼這樣編排、這篇文章與其他內容如何互相呼應，也能在時間過去之後重新回來閱讀。
 
-- Current `main`：`51ada85022abdcaa8afa2847daece81141d5ce43`，已包含 PR #118 的 T081 backup/isolated-restore implementation。
-- `tasks.md` 目前標記 82 個完成項：`T001–T081` 與 `T097`。
-- 下一個 ready frontier 是 T082；尚未 dispatch 的工作為 `T082–T096` 與 `T098–T112`。
-- Web3、wallet、participant research 與台灣籃球 P2 domain work 不會因 P1 task 完成而自動啟動。
-- README 的完成狀態不代表 production/GA release；仍須依 Issue #111 的 release-gate、人工驗證、ruleset read-back 與 beta checklist 執行。
+Courtside TW 的目標，是把台灣籃球的當下報導、人物故事與跨賽季記憶，整理成具有編輯觀點、閱讀節奏與長期價值的內容體驗。
 
-## Completed task ledger
+> 先把雜誌做好，再談 Web3。Web3 是未來可選的出版驗證與文化連續性工具，不是閱讀門檻。
 
-`tasks.md` 的 `[x]` 完成清單依工作流整理如下：
+## 我們要解決的問題
 
-| Workstream | Completed tasks | Result |
+目前的籃球內容大多分散在即時訊息、社群貼文與短期流量之中。讀者可以很快知道發生了什麼，卻不一定能理解事情為什麼重要、人物如何走到今天，以及一個賽季如何形成完整的故事。
+
+Courtside TW 聚焦三個問題：
+
+- **內容太碎片化**：用一期一期的編輯策展，重新建立閱讀脈絡與內容關係。
+- **演算法不等於品味**：推薦可以帶來流量，但編輯觀點才能讓讀者感受到「這是我想讀的雜誌」。
+- **記憶缺少延續性**：讓文章、賽季、人物與讀者自己的閱讀歷程，逐步形成可回看的文化檔案。
+
+## 產品願景
+
+Courtside TW 不只是文章集合，也不是把雜誌換成另一種內容管理系統。
+
+我們正在建立一個由三個層次組成的產品：
+
+1. **Magazine**：以 Issue、TOC、Article 為核心的公開閱讀體驗，讓讀者先看見編輯選擇，再進入完整內容。
+2. **Taiwan Hoops Archive**：整理中華隊、旅外球員、TPBL、P. LEAGUE+、SBL 與跨賽季的故事、人物與證據脈絡。
+3. **Fan Season Passport**：把閱讀、活動與文化貢獻累積成球迷的季節記憶；先從不涉及金融的 Reader Stamp 開始。
+
+## 讀者體驗
+
+| 階段 | 讀者感受 | 產品承諾 | 目前狀態 |
+| --- | --- | --- | --- |
+| 先看見 | 這一期在談什麼？為什麼值得讀？ | 以 Issue 與編輯策展建立第一眼的方向 | 已完成核心閱讀入口 |
+| 讀進去 | 我可以順暢讀完一篇長文嗎？ | 文章、目錄、圖片、引用與閱讀進度保持連續 | 已完成核心長文閱讀 |
+| 看懂脈絡 | 這個故事與球員、賽季、球隊有什麼關係？ | 透過內容結構與未來的台灣籃球資料層補足上下文 | P1 已建立基礎；P2 domain 尚未開始 |
+| 留下記憶 | 我下次回來，還能接著讀嗎？ | 書籤、跨裝置進度、離線閱讀與 Reader Stamp | 已完成主要 P2/P3 閱讀延續能力 |
+| 驗證來源 | 我能相信這份出版內容嗎？ | 在不影響公開閱讀的前提下，提供出版版本與來源驗證 | Web3/provenance 尚未開始 |
+
+## 產品原則
+
+- **編輯觀點優先於無止境的資訊流**：我們要讓讀者感受到選擇、節奏與品味。
+- **閱讀優先於登入與交易**：公開內容不以帳號、wallet、token 或付費牆作為基本閱讀門檻。
+- **連續性高於價格**：Reader Stamp 與 Season Passport 的價值，是留下共同閱讀與球季記憶，不是投機性資產。
+- **權利先於發佈**：內容、圖片、公開版本與撤回狀態必須在出版前被清楚管理。
+- **來源驗證是加值，不是阻礙**：Provenance 與 Web3 只能強化信任，不能降低匿名讀者的閱讀體驗。
+- **自動化證據不冒充人工研究**：瀏覽器測試、效能測試與安全掃描，不能取代真實使用者、原生輔助科技或參與者研究。
+
+## 目前進度
+
+截至目前，`tasks.md` 已記錄 82 個完成項目：`T001–T081` 與 `T097`。這代表產品已經從基礎契約與公開閱讀，推進到出版流程、搜尋、閱讀延續、離線能力，以及第一階段的品質與復原準備。
+
+| 產品階段 | 已完成 | 下一步／狀態 |
 | --- | --- | --- |
-| Setup and governance | T001–T008 | Repository constitution、ADR、toolchain、workspace baseline 與 CI/Security foundation |
-| Foundational contracts and infrastructure | T009–T023 | Content/API/database/security/media 基礎契約與共享邊界 |
-| User Story 1 — browse and start reading | T024–T031 | Issue discovery、TOC、public reading entry 與 anonymous-first surface |
-| User Story 2 — long-form article | T032–T041 | Article identity、revision、renderer、reading-time、media/rights projection |
-| User Story 3 — editorial publication | T042–T056 | Draft/review/publish、withdrawal、outbox、cache/search freshness 與 reliability seams |
-| User Story 4 — search and explore | T057–T063 | Search projection、freshness、retry、withdrawal 與 partial-failure behavior |
-| User Story 5 — bookmark and continue | T064–T070 | OIDC reader library、email/reader stamp、cross-device progress 與 privacy boundary |
-| User Story 6 — offline issue | T071–T076 | Offline contract、manifest、staging、checksum、expiry、withdrawal 與 fail-closed behavior |
-| Production readiness | T077–T081 | First-issue seed、accessibility/performance gates、T080 threat hardening、T081 restore verification |
-| Product / architecture alignment | T097 | Taiwan basketball、evidence graph、Fan Passport 與 Web3 boundary 的 spec-only alignment |
+| 基礎與治理 | T001–T023 | 已完成：產品規則、內容/API/資料基礎與共用能力 |
+| 公開閱讀 MVP | T024–T041 | 已完成：Issue、TOC、Article、長文閱讀與媒體權利邊界 |
+| 編輯出版 | T042–T056 | 已完成：編輯、審閱、發佈、撤回與可靠性場景 |
+| 搜尋與探索 | T057–T063 | 已完成：搜尋、更新、重試、撤回與部分失敗處理 |
+| 閱讀延續 | T064–T076 | 已完成：書籤、跨裝置進度、Reader Stamp 基礎與離線閱讀 |
+| P1 品質與復原 | T077–T081 | 已完成：first issue、品質驗證、威脅模型、備份與 isolated restore |
+| 產品／架構對齊 | T097 | 已完成：台灣籃球、evidence graph、Fan Passport 與 Web3 邊界 |
+| 生產準備 | T082–T086 | 下一階段：部署、rollback、觀測、隱私分析與 beta checklist |
+| Provenance／Web3 | T087–T096 | 尚未開始，等待 P1 release gates 與必要決策 |
+| 台灣籃球資料與文化延伸 | T098–T112 | 尚未開始，包含 domain、evidence、Passport、credential 與 archive |
 
-### Not yet completed
+### 目前產品狀態摘要
 
-- `T082–T086`：deployment、rollback、observability、privacy analytics 與 staged beta release gate。
-- `T087–T096`：optional provenance、IPFS/chain、SIWE、wallet 與 Web3 delivery；必須等 P1 gate 與前置 ADR/rights 條件。
-- `T098–T112`：Taiwan basketball domain、evidence layer、data adapters、Fan Passport、optional credential 與 archive recap。
+- **可以展示的核心**：從 Home／Issue 進入 TOC、Article、Closure 的公開閱讀旅程。
+- **已建立的產品信任基礎**：出版版本、權利判定、撤回、搜尋／快取／離線同步，以及可驗證的備份復原流程。
+- **下一個產品準備工作**：完成部署與 rollback 的操作準備，再進入 beta release checklist。
+- **刻意暫緩的方向**：Web3、wallet、IPFS、chain attestation、參與者研究與更深的台灣籃球資料建模。
 
-## Final release-gate evidence
+## 完成證據
 
-### T080 — threat model and hardening
+### T080｜內容與安全邊界
 
 - [`PR #117`](https://github.com/bynanci/courtside-tw/pull/117) 已合併至 `main@69de82df855c62550458bbf5ea6f8d0620ba19d0`。
-- Final implementation head：`fdfcf7833e7d05a1e29648c0b1eb2b1651fecac7`。
-- CI #795、Security #797 通過；release-owner review 為 PASS/no findings；review threads 為 0。
-- T081+、Web3 與 participant research 維持 out of scope。
+- 最終實作版本：`fdfcf7833e7d05a1e29648c0b1eb2b1651fecac7`。
+- CI #795、Security #797 通過；release-owner review 為 PASS；review threads 為 0。
+- 覆蓋 content、OIDC、CSRF、upload、SSRF/embed、創意內容 payload、授權與 dependency 邊界。
 
-### T081 — backup and isolated restore
+### T081｜備份與獨立復原
 
-- [`PR #118`](https://github.com/bynanci/courtside-tw/pull/118) 已由 Draft 轉 Ready，並合併至 `main@51ada85022abdcaa8afa2847daece81141d5ce43`。
-- Final exact head：`3fcc7f2f29e5c3d41370fffcebd34d925c4c9911`。
-- [`CI #816`](https://github.com/bynanci/courtside-tw/actions/runs/32390737392) 與 [`Security #818`](https://github.com/bynanci/courtside-tw/actions/runs/32390737362) 通過；12 個 required contexts 全部成功，Android offline smoke 為額外成功 job。
-- Final-head dependency artifact [`9414805375`](https://github.com/bynanci/courtside-tw/actions/runs/32390737392/artifacts/9414805375)，digest：`sha256:2572e7202c4f8b5429654c7f052ebea5e88e20650c845863925ea54e1264a5b7`。
-- Isolated PostgreSQL drill：2 media assets/2 variants、2/2 metadata rows、2/2 SHA-256 sample、RPO `0.001h <= 24h`、RTO `0.037m <= 240m`、explicit isolated target、`release_ready=true`。
-- Restore receipt 不保存 database URL、password、token、private key 或 participant PII；original media bytes 的 provider backup 與 production scheduler proof 仍是明確限制。
+- [`PR #118`](https://github.com/bynanci/courtside-tw/pull/118) 已合併至 `main@51ada85022abdcaa8afa2847daece81141d5ce43`。
+- 最終版本：`3fcc7f2f29e5c3d41370fffcebd34d925c4c9911`。
+- [`CI #816`](https://github.com/bynanci/courtside-tw/actions/runs/32390737392) 與 [`Security #818`](https://github.com/bynanci/courtside-tw/actions/runs/32390737362) 通過。
+- Final-head artifact [`9414805375`](https://github.com/bynanci/courtside-tw/actions/runs/32390737392/artifacts/9414805375) 驗證：2/2 metadata rows、2/2 SHA-256 sample、RPO `0.001h <= 24h`、RTO `0.037m <= 240m`、明確的 isolated target，以及 `release_ready=true`。
+- 這項能力證明的是資料庫與媒體 metadata 的復原流程；原始媒體檔案的 provider backup、正式排程與 production rollback 仍是後續工作。
 
-### Evidence interpretation
+### 證據閱讀原則
 
-- CI/Security 與 artifact 必須綁定同一個 final head；舊 head、舊 run 或 superseded artifact 只能作歷史紀錄。
-- T078 的 native OS/AT/device/font execution 必須維持 WAIVED/NOT_RUN 分類，不能被自動化 browser proof 冒充人工 Pass。
-- T079 的 performance/bundle/Android evidence 必須使用其 final-head artifact；T079 不取代 T078，也不解除 T080/T081 以外的 release gate。
-- README 與 tasks checkbox 是狀態索引，不取代 PR review、ruleset read-back 或人工 gate。
+- 每一項完成證據都必須對應同一個 final version；舊版本與 superseded artifact 只能作為歷史紀錄。
+- T078 的原生 OS／輔助科技／裝置／字體驗證仍須依原紀錄標示為 WAIVED 或 NOT_RUN，不將自動化測試寫成人工通過。
+- T079 的效能與 Android 證據不取代 T078，也不會自動解除後續 release gate。
+- `tasks.md` 是進度索引；PR、驗證紀錄與人工 gate 才是完整完成判定的依據。
 
-## Product contract
+## 產品邊界
 
-- **Magazine**：Issue → TOC → Article → Closure 的公開閱讀流程；不以登入、wallet 或 token gate 阻擋 anonymous reading。
-- **Editorial publication**：draft/review/publish、immutable revision、rights decision、withdrawal、cache/search/offline invalidation 與 audit/outbox。
-- **Taiwan Hoops Archive**：中華隊、旅外球員、TPBL、P. LEAGUE+、SBL 與跨賽季 evidence timeline。
-- **Fan Season Passport**：先以 off-chain Reader Stamp、活動與文化貢獻建立非金融的球迷季節年鑑。
-- **Web3**：只作 optional provenance verification 與 credential delivery 基礎設施，不是閱讀門檻、金融資產或產品本身。
+### 現在承諾的內容
 
-## System shape
+- 任何讀者都能閱讀公開雜誌內容，不必先註冊或連接錢包。
+- 內容具有清楚的 issue、文章、版本、權利與撤回脈絡。
+- 讀者可以逐步累積書籤、閱讀進度、離線內容與閱讀記憶。
+- 編輯可以用一致的內容結構，建立可長期維護的台灣籃球出版物。
 
-```text
-Editorial source
-  → contract/schema validation
-  → draft/review/publish + rights decision
-  → immutable publication snapshot
-  → public SSR/read model
-  → cache/search/offline projections
-  → withdrawal and audit/outbox propagation
-```
+### 現在不承諾的內容
 
-- `apps/web`：Nuxt SSR、public reader、editorial UI 與 progressive enhancement。
-- `apps/api`：Java 21/Spring Boot modular monolith、domain/application/ports、API 與 worker profiles。
-- `packages`：content schema、API client、creative runtime、Web3 adapter 等可獨立契約。
-- `contracts`：OpenAPI、JSON Schema、fixtures 與 provenance/content contracts。
-- `infra`：Compose、database migration、backup/restore、deployment 與 security image baseline。
-- `docs`：ADR、product、quality、security、operations、research 與 evidence policy。
-- `specs`：Spec Kit 的 spec/plan/tasks；task checkbox 與 completion proof 的主要索引。
+- 尚未承諾 chain attestation、IPFS mirror、SIWE、wallet credential 或任何金融／投機用途。
+- 尚未承諾完成正式 participant study、使用者採用率、留存率或營收驗證。
+- 尚未宣稱 beta/GA release；部署、rollback、觀測與 release checklist 仍在 T082–T086。
 
-## Repository map
+## 下一步路線
 
-```text
-apps/web/                         Nuxt web application
-apps/api/                         Spring Boot modular monolith
-packages/                         Shared schemas, clients and adapters
-contracts/                        OpenAPI and JSON Schema contracts
-infra/compose/                    Local PostgreSQL, S3 and OIDC dependencies
-infra/deployment/backup/          T081 backup and metadata export
-scripts/operations/               Restore and operational verification
-scripts/test/                     Deterministic integration/acceptance drills
-docs/                             Product, ADR, quality, security and operations
-specs/001-taiwan-basketball-.../  Spec, plan and task ledger
-.github/workflows/                CI and Security required checks
-```
+1. **T082**：補齊部署、資料庫 migration 與 application rollback 的可執行流程。
+2. **T083–T086**：建立服務觀測、隱私友善的產品分析、可靠性準備與 beta checklist。
+3. **完成 P1 release gates 後**：再評估 T087–T096 的 provenance／Web3 方向。
+4. **更後續**：依產品決策與使用者研究結果，才進入 T098–T112 的台灣籃球 domain、evidence、Fan Passport 與 archive。
 
-## Local development
+## 給協作者
 
-固定 toolchain：Node.js `24.14.0`、pnpm `11.7.0`。在 repository root 執行：
+如果你想了解產品決策，先閱讀：
 
-| Command | Contract |
-| --- | --- |
-| `make setup` | 驗證 pinned toolchain；依 lockfile 執行 deterministic install，停用 install scripts |
-| `make dev` | 執行 workspace `dev` scripts；尚未有 app 時允許 no-op |
-| `make lint` | 執行 workspace lint |
-| `make typecheck` | 執行 strict type checks |
-| `make test` | 執行 unit/integration tests |
-| `make contract` | 驗證 schema、OpenAPI 與 contract fixtures |
-| `make verify` | 依序執行 root contract、lint、typecheck、test、contract |
+- [`specs/001-taiwan-basketball-magazine-ebook/spec.md`](./specs/001-taiwan-basketball-magazine-ebook/spec.md)：產品需求與使用者故事。
+- [`specs/001-taiwan-basketball-magazine-ebook/plan.md`](./specs/001-taiwan-basketball-magazine-ebook/plan.md)：執行順序與依賴。
+- [`specs/001-taiwan-basketball-magazine-ebook/tasks.md`](./specs/001-taiwan-basketball-magazine-ebook/tasks.md)：完整任務與完成狀態。
+- [`DESIGN.md`](./DESIGN.md)：Arena Editorial 的體驗與設計原則。
+- [`docs/product/`](./docs/product/)：產品願景、台灣籃球內容地圖與 evidence policy。
+- [`docs/operations/disaster-recovery.md`](./docs/operations/disaster-recovery.md)：T081 復原能力與限制。
+- [`Issue #111`](https://github.com/bynanci/courtside-tw/issues/111)：P1 beta release-gate 計畫。
+- [`Issue #97`](https://github.com/bynanci/courtside-tw/issues/97)：main protected ruleset 政策與 read-back。
+
+### 本地驗證
+
+一般協作者只需要：
 
 ```sh
 make setup
 make verify
 ```
 
-`make verify` 不會自動啟動 dev server，也不會取得 production secrets。依賴 lockfile 加入後，`setup` 使用 frozen resolution，避免未審查的 dependency drift。
+完整工具鏈、資料庫與安全驗證規則，請以 repository 的 `Makefile`、`.github/workflows/` 與各 `docs/` 文件為準。
 
-## Engineering rules
+## 研究與 Web3 的位置
 
-1. **Contract first**：先寫 schema、fixture、API contract 與失敗測試，再實作。
-2. **RED → GREEN → PROVE**：測試必須先以預期原因失敗；修正後綁定 exact-head proof。
-3. **Immutable publication**：已發佈 revision 不就地覆寫；withdrawal 必須優先於 cache、search、offline 與任何外部投影。
-4. **Rights before release**：private/public storage key、rights status、validity 與 allowed channels 必須可追溯。
-5. **Least agency**：wallet、IPFS、chain、signer 與外部 provider 皆為 opt-in、allowlisted、可 rollback 的邊界。
-6. **No sensitive receipts**：artifact/receipt 不得保存 production URL、secret、private key、token 或 participant PII。
-7. **Scope discipline**：完成一個 task 不得順手 dispatch 後續 task；tasks.md 的 unchecked state 是硬邊界。
+研究與 Web3 都是產品的延伸，不是產品的起點。
 
-## Merge and release gate
+`docs/research/` 可以保存假設、研究設計與 participant study materials，但研究設計不等於實際使用者結果。只有完成招募、執行、量測、分析與 decision receipt 後，才能把研究結果用於產品方向。
 
-每個可合併 PR 必須具備：
-
-- current exact head 與 current-base mergeability。
-- required CI/Security checks 全部成功，且 artifact/receipt 綁定同一 head。
-- changed-file scope 與 task/issue 一致。
-- 0 unresolved review threads；review findings 已處理或明確記錄。
-- main protected ruleset 的 PR-only、required checks、conversation resolution、禁止 deletion/force-push 與 bypass policy read-back。
-- draft PR 必須在 release evidence 完整後才轉 Ready；未經明確授權不得 merge。
-
-Repository 的 main ruleset evidence 與 release-gate policy 維護於 [Issue #97](https://github.com/bynanci/courtside-tw/issues/97) 與 [Issue #111](https://github.com/bynanci/courtside-tw/issues/111)。
-
-## Next execution order
-
-1. **T082**：建立 production deployment、expand/migrate/contract migration 與 application rollback runbook；先完成 tests-first 與 non-destructive verification。
-2. **T083–T086**：observability、privacy-aware analytics、reliability/readiness 與 staged beta checklist。
-3. 完成 T078–T086 release-gate read-back 後，才重新評估 T087+ provenance/Web3。
-4. T098+ basketball domain、evidence、Fan Passport 與 archive work 必須維持各自的 dependency、rights、privacy 與 human approval gate。
-
-## Research boundary
-
-`docs/research/` 保存籃球雜誌 × Web3 hypothesis、research design 與 future participant study materials。研究設計不等於 participant result，也不等於 adoption、retention 或 revenue evidence；只有完成研究、量測、adjudication 與 decision receipt 後，才能更新產品方向。
-
-## Documentation index
-
-- [`DESIGN.md`](./DESIGN.md)：Arena Editorial 與 system-adaptive UI contract。
-- [`docs/adr/`](./docs/adr/)：架構與產品邊界決策。
-- [`docs/security/threat-model.md`](./docs/security/threat-model.md)：T080 threat model。
-- [`docs/operations/disaster-recovery.md`](./docs/operations/disaster-recovery.md)：T081 backup/restore contract。
-- [`specs/001-taiwan-basketball-magazine-ebook/spec.md`](./specs/001-taiwan-basketball-magazine-ebook/spec.md)：product/spec contract。
-- [`specs/001-taiwan-basketball-magazine-ebook/plan.md`](./specs/001-taiwan-basketball-magazine-ebook/plan.md)：execution plan。
-- [`specs/001-taiwan-basketball-magazine-ebook/tasks.md`](./specs/001-taiwan-basketball-magazine-ebook/tasks.md)：authoritative task ledger。
-- [`Issue #111`](https://github.com/bynanci/courtside-tw/issues/111)：T078–T086 P1 beta release-gate plan。
-- [`Issue #97`](https://github.com/bynanci/courtside-tw/issues/97)：main protected ruleset policy/read-back。
+Web3 的正確位置，是在出版內容已經值得閱讀之後，提供來源驗證、文化記憶與可選的身份連續性；它不應該成為讀者進入雜誌前必須理解的技術。
 
 ## Status note
 
-本 README 描述的是目前 repository 的工程狀態與邊界，不宣稱所有產品願景、Web3 能力、participant research 或 production operations 已完成。任何新 task 都必須先更新 spec/plan/tasks 的依賴與 acceptance，再建立可驗證的 execution loop。
+本 README 以產品經理視角描述 Courtside TW 的價值、範圍與進度。工程細節不是被忽略，而是被放回正確位置：用來支持產品承諾、風險控制與可驗證交付，而不是取代產品本身。
