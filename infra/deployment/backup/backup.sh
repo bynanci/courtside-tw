@@ -6,11 +6,11 @@ SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/../../.." && pwd)
 DEFAULT_METADATA_QUERY="$SCRIPT_DIR/media-metadata.sql"
 
-DATABASE_URL="\${DATABASE_URL:-}"
-BACKUP_ROOT="\${BACKUP_ROOT:-$REPO_ROOT/artifacts/t081-backups}"
-SOURCE_AS_OF="\${SOURCE_AS_OF:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
-BACKUP_ID="\${BACKUP_ID:-$(date -u +%Y%m%dT%H%M%SZ)-$$}"
-METADATA_QUERY_FILE="\${MEDIA_METADATA_QUERY_FILE:-$DEFAULT_METADATA_QUERY}"
+DATABASE_URL="${DATABASE_URL:-}"
+BACKUP_ROOT="${BACKUP_ROOT:-$REPO_ROOT/artifacts/t081-backups}"
+SOURCE_AS_OF="${SOURCE_AS_OF:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
+BACKUP_ID="${BACKUP_ID:-$(date -u +%Y%m%dT%H%M%SZ)-$$}"
+METADATA_QUERY_FILE="${MEDIA_METADATA_QUERY_FILE:-$DEFAULT_METADATA_QUERY}"
 
 usage() {
   cat <<'EOF'
