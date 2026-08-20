@@ -11,6 +11,8 @@ BACKUP_ROOT="${BACKUP_ROOT:-$REPO_ROOT/artifacts/t081-backups}"
 SOURCE_AS_OF="${SOURCE_AS_OF:-$(date -u +%Y-%m-%dT%H:%M:%SZ)}"
 BACKUP_ID="${BACKUP_ID:-$(date -u +%Y%m%dT%H%M%SZ)-$$}"
 METADATA_QUERY_FILE="${MEDIA_METADATA_QUERY_FILE:-$DEFAULT_METADATA_QUERY}"
+PG_DUMP_BIN="${PG_DUMP_BIN:-pg_dump}"
+PSQL_BIN="${PSQL_BIN:-psql}"
 
 usage() {
   cat <<'EOF'
@@ -100,7 +102,7 @@ done
 [[ "$BACKUP_ID" =~ ^[A-Za-z0-9][A-Za-z0-9._-]{0,95}$ ]] || fail "backup id contains unsupported characters: $BACKUP_ID"
 validate_timestamp "$SOURCE_AS_OF"
 
-for command_name in pg_dump psql python3 sha256sum; do
+for command_name in "$PG_DUMP_BIN" "$PSQL_BIN" python3 sha256sum; do
   require_command "$command_name"
 done
 
@@ -125,7 +127,7 @@ trap cleanup EXIT
 umask 077
 mkdir "$STAGING_DIR"
 
-pg_dump \
+"$PG_DUMP_BIN" \
   --format=custom \
   --no-owner \
   --no-acl \
