@@ -21,9 +21,9 @@ The following work is intentionally unchanged and remains gated separately:
 
 No task checkbox is changed by this document. T080 can be accepted only from a
 final exact source head with passing CI and Security checks, zero unresolved
-review threads, attributable evidence and a protected merge. The RED tests
-must be present before the hardening implementation; a green local run is not
-an exact-head release receipt.
+threads (that is, zero unresolved review threads), attributable evidence and a
+protected merge. The RED tests must be present before the hardening
+implementation; a green local run is not an exact-head release receipt.
 
 ## Assets, actors and trust boundaries
 
@@ -79,4 +79,3 @@ an exact-head release receipt.
 | Security | successful exact-head Security run URL/ID; no untracked high/critical finding |
 | Review | zero unresolved threads; scope limited to T080 |
 | Merge gate | protected branch reports mergeable and merge performed only by release owner |
-
