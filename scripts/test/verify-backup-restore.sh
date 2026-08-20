@@ -6,11 +6,11 @@ SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
 REPO_ROOT=$(CDPATH= cd -- "$SCRIPT_DIR/../.." && pwd)
 COMPOSE_DIR="$REPO_ROOT/infra/compose"
 COMPOSE_FILE="$COMPOSE_DIR/compose.yaml"
-ENV_FILE="\${COMPOSE_ENV_FILE:-$COMPOSE_DIR/.env.example}"
+ENV_FILE="${COMPOSE_ENV_FILE:-$COMPOSE_DIR/.env.example}"
 MIGRATION_FILE="$REPO_ROOT/apps/api/src/main/resources/db/migration/V001__foundation.sql"
-ARTIFACT_DIR="\${T081_ARTIFACT_DIR:-$REPO_ROOT/artifacts/t081}"
+ARTIFACT_DIR="${T081_ARTIFACT_DIR:-$REPO_ROOT/artifacts/t081}"
 PROJECT_NAME="courtside-t081-$$"
-TIMEOUT_SECONDS="\${T081_TIMEOUT_SECONDS:-120}"
+TIMEOUT_SECONDS="${T081_TIMEOUT_SECONDS:-120}"
 
 if [[ -r "$ENV_FILE" ]]; then
   set -a
@@ -19,9 +19,9 @@ if [[ -r "$ENV_FILE" ]]; then
   set +a
 fi
 
-POSTGRES_DB="\${POSTGRES_DB:-courtside}"
-POSTGRES_USER="\${POSTGRES_USER:-courtside}"
-POSTGRES_PASSWORD="\${POSTGRES_PASSWORD:-courtside-local-only}"
+POSTGRES_DB="${POSTGRES_DB:-courtside}"
+POSTGRES_USER="${POSTGRES_USER:-courtside}"
+POSTGRES_PASSWORD="${POSTGRES_PASSWORD:-courtside-local-only}"
 
 fail() {
   echo "verify-backup-restore: $*" >&2
@@ -73,7 +73,7 @@ wait_for_healthy() {
   done
 
   compose logs --no-color --tail=80 postgres >&2 || true
-  fail "postgres did not become healthy within \${TIMEOUT_SECONDS}s"
+  fail "postgres did not become healthy within ${TIMEOUT_SECONDS}s"
 }
 
 RESTORE_DB_NAME="t081_restore_$$"
@@ -152,7 +152,7 @@ SQL
 
 SOURCE_PORT="$(compose port postgres 5432 | awk -F: 'END {print $NF}' | tr -d '\r')"
 [[ "$SOURCE_PORT" =~ ^[0-9]+$ ]] || fail "unable to resolve the isolated PostgreSQL port"
-SOURCE_DATABASE_URL="postgresql://\${POSTGRES_USER}:\${POSTGRES_PASSWORD}@127.0.0.1:\${SOURCE_PORT}/\${POSTGRES_DB}"
+SOURCE_DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:${SOURCE_PORT}/${POSTGRES_DB}"
 BACKUP_ID="t081-$$"
 SOURCE_AS_OF="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
 
@@ -179,7 +179,7 @@ grep -q "refusing restore without ISOLATED_RESTORE_CONFIRM" "$ARTIFACT_DIR/resto
 
 sql -c "CREATE DATABASE \"$RESTORE_DB_NAME\";"
 RESTORE_DATABASE_CREATED=1
-RESTORE_DATABASE_URL="postgresql://\${POSTGRES_USER}:\${POSTGRES_PASSWORD}@127.0.0.1:\${SOURCE_PORT}/\${RESTORE_DB_NAME}"
+RESTORE_DATABASE_URL="postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@127.0.0.1:${SOURCE_PORT}/${RESTORE_DB_NAME}"
 RESTORE_RECEIPT="$ARTIFACT_DIR/restore-receipt.json"
 
 ISOLATED_RESTORE_CONFIRM=I_UNDERSTAND_ISOLATED_TARGET \
