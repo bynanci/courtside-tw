@@ -169,7 +169,7 @@ trap cleanup EXIT
 
 RESTORE_START_NS=$(python3 -c 'import time; print(time.monotonic_ns())')
 
-pg_restore \
+"$PG_RESTORE_BIN" \
   --exit-on-error \
   --single-transaction \
   --clean \
@@ -177,15 +177,14 @@ pg_restore \
   --no-owner \
   --no-privileges \
   --dbname="$RESTORE_DATABASE_URL" \
-  "$DATABASE_DUMP"
+  < "$DATABASE_DUMP"
 
-psql \
+"$PSQL_BIN" \
   -X \
   -v ON_ERROR_STOP=1 \
   --csv \
   -P footer=off \
-  --file="$METADATA_QUERY_FILE" \
-  "$RESTORE_DATABASE_URL" > "$TEMP_DIR/restored-media-metadata.csv"
+  "$RESTORE_DATABASE_URL" < "$METADATA_QUERY_FILE" > "$TEMP_DIR/restored-media-metadata.csv"
 
 mkdir -p "$(dirname -- "$RECEIPT_PATH")"
 
