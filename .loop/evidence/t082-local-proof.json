@@ -3,7 +3,7 @@
   "captured_at": "2026-08-21T00:45:16Z",
   "repository": "bynanci/courtside-tw",
   "baseline_main": "0470b5ab87663a7c363c84782ccdda3e677370a4",
-  "tests_first_commit": "80d0f46d7e7ece502c2039a71ec142c76a8e8f40",
+  "tests_first_commit": "8dcb9c6e9cd87266a338c6e6e041c7b0d3bdb705",
   "result": "pass",
   "claim": "The isolated T082 state machine activates only healthy immutable releases and can roll application traffic back while preserving the forward database schema.",
   "commands": [
