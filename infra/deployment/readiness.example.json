@@ -1,0 +1,16 @@
+{
+  "checks": [
+    {
+      "name": "api-readiness",
+      "status": "healthy"
+    },
+    {
+      "name": "public-web-readiness",
+      "status": "healthy"
+    }
+  ],
+  "database_schema": 10,
+  "release_id": "release-20260821-001",
+  "schema_version": 1,
+  "status": "healthy"
+}

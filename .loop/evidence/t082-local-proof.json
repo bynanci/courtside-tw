@@ -1,0 +1,85 @@
+{
+  "schema_version": "t082-local-proof/v1",
+  "captured_at": "2026-08-21T00:45:16Z",
+  "repository": "bynanci/courtside-tw",
+  "baseline_main": "0470b5ab87663a7c363c84782ccdda3e677370a4",
+  "tests_first_commit": "80d0f46d7e7ece502c2039a71ec142c76a8e8f40",
+  "result": "pass",
+  "claim": "The isolated T082 state machine activates only healthy immutable releases and can roll application traffic back while preserving the forward database schema.",
+  "commands": [
+    {
+      "command": "T082_ARTIFACT_DIR=artifacts/dependencies/t082 bash scripts/test/verify-deployment-rollback.sh",
+      "exit_code": 0,
+      "result": "pass"
+    },
+    {
+      "command": "python3 validate_graphify_loop.py .loop/t082-deployment-rollback-graphify-loop.yaml --strict --json",
+      "exit_code": 0,
+      "result": "pass"
+    },
+    {
+      "command": "python3 validate_governance.py .loop/governance/t082-system-card.json --strict --json",
+      "exit_code": 0,
+      "result": "pass"
+    },
+    {
+      "command": "python3 validate_governance.py .loop/governance/t082-risk-register.json --strict --json",
+      "exit_code": 0,
+      "result": "pass"
+    },
+    {
+      "command": "Python compile, bash -n, YAML parse, Prettier and git diff --check",
+      "exit_code": 0,
+      "result": "pass"
+    }
+  ],
+  "rollback_receipt": {
+    "path": "artifacts/dependencies/t082/t082-deployment-rollback-receipt.json",
+    "sha256": "eb7f8e61e61e01294f2eb7f5c1c8e586ceccbeb27dd902e496de694e370b3c83",
+    "environment": "isolated-test",
+    "database_schema_before": 10,
+    "database_schema_after": 10,
+    "schema_rollback_performed": false,
+    "destructive_schema_action": false
+  },
+  "negative_paths": [
+    "failed candidate rejected",
+    "degraded candidate rejected",
+    "mismatched schema read-back rejected",
+    "mutable image rejected",
+    "contract phase rejected during rollback window",
+    "interrupted receipt sink reconciled through the state-embedded receipt",
+    "unknown rollback target rejected",
+    "incompatible forward schema rejected",
+    "unconfirmed production mutation rejected"
+  ],
+  "scope": {
+    "included": [
+      "T082 release packaging and provider-neutral candidate runtime",
+      "expand/migrate/activate/contract-later sequencing",
+      "application rollback runbook and isolated evidence",
+      "minimal exact-head CI wiring"
+    ],
+    "excluded": [
+      "production deployment or provider traffic switch",
+      "destructive schema rollback or contract migration",
+      "T083+ implementation",
+      "Web3",
+      "participant research"
+    ]
+  },
+  "local_runner": {
+    "node": "v24.19.0",
+    "pnpm": "11.19.0",
+    "repository_required_node": "24.14.0",
+    "repository_required_pnpm": "11.7.0",
+    "docker_available": false,
+    "gradle_available": false
+  },
+  "limitations": [
+    "The local runner does not match the pinned Node/pnpm toolchain, so full repository validation remains exact-head CI evidence.",
+    "Docker and Gradle are unavailable locally; OCI build, image provenance and vulnerability evidence remain exact-head CI/Security gates.",
+    "No production environment, database, provider, credential or public traffic switch was accessed.",
+    "Production activation, contract migration, protected merge and the T082 checkbox remain accountable human gates."
+  ]
+}

@@ -7,6 +7,9 @@ DEPLOYMENT_DOC="$REPO_ROOT/docs/operations/deployment.md"
 ROLLBACK_DOC="$REPO_ROOT/docs/operations/rollback.md"
 API_DOCKERFILE="$REPO_ROOT/infra/docker/api.Dockerfile"
 WEB_DOCKERFILE="$REPO_ROOT/infra/docker/web.Dockerfile"
+RELEASE_COMPOSE="$REPO_ROOT/infra/deployment/release.compose.yaml"
+MANIFEST_EXAMPLE="$REPO_ROOT/infra/deployment/release-manifest.example.json"
+READINESS_EXAMPLE="$REPO_ROOT/infra/deployment/readiness.example.json"
 ARTIFACT_DIR="${T082_ARTIFACT_DIR:-$REPO_ROOT/artifacts/deployment/t082}"
 
 fail() {
@@ -19,7 +22,10 @@ for required in \
   "$DEPLOYMENT_DOC" \
   "$ROLLBACK_DOC" \
   "$API_DOCKERFILE" \
-  "$WEB_DOCKERFILE"; do
+  "$WEB_DOCKERFILE" \
+  "$RELEASE_COMPOSE" \
+  "$MANIFEST_EXAMPLE" \
+  "$READINESS_EXAMPLE"; do
   [ -r "$required" ] || fail "missing T082 artifact: ${required#"$REPO_ROOT/"}"
 done
 
@@ -88,18 +94,20 @@ write_readiness() {
   local path="$1"
   local release_id="$2"
   local status="$3"
+  local database_schema="$4"
 
-  python3 - "$path" "$release_id" "$status" <<'PY'
+  python3 - "$path" "$release_id" "$status" "$database_schema" <<'PY'
 import json
 import sys
 
-path, release_id, status = sys.argv[1:]
+path, release_id, status, database_schema = sys.argv[1:]
 with open(path, "w", encoding="utf-8") as handle:
     json.dump(
         {
             "schema_version": 1,
             "release_id": release_id,
             "status": status,
+            "database_schema": int(database_schema),
             "checks": [
                 {"name": "api-readiness", "status": status},
                 {"name": "web-readiness", "status": status},
@@ -135,18 +143,19 @@ SOURCE_A="aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
 SOURCE_B="bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
 SOURCE_C="cccccccccccccccccccccccccccccccccccccccc"
 SOURCE_D="dddddddddddddddddddddddddddddddddddddddd"
+SOURCE_E="eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee"
 DIGEST_A="registry.example.invalid/courtside-api@sha256:$(printf '1%.0s' {1..64})"
 DIGEST_B="registry.example.invalid/courtside-web@sha256:$(printf '2%.0s' {1..64})"
 DIGEST_C="registry.example.invalid/courtside-api@sha256:$(printf '3%.0s' {1..64})"
 DIGEST_D="registry.example.invalid/courtside-web@sha256:$(printf '4%.0s' {1..64})"
 
 write_manifest "$WORK_DIR/release-a.json" release-a "$SOURCE_A" "$DIGEST_A" "$DIGEST_B" 9 9 10 expand
-write_readiness "$WORK_DIR/readiness-a.json" release-a healthy
+write_readiness "$WORK_DIR/readiness-a.json" release-a healthy 9
 run_controller "$WORK_DIR/register-a.json" register --manifest "$WORK_DIR/release-a.json"
 run_controller "$WORK_DIR/activate-a.json" activate --release release-a --readiness "$WORK_DIR/readiness-a.json"
 
 write_manifest "$WORK_DIR/release-b.json" release-b "$SOURCE_B" "$DIGEST_C" "$DIGEST_D" 10 9 11 migrate
-write_readiness "$WORK_DIR/readiness-b.json" release-b healthy
+write_readiness "$WORK_DIR/readiness-b.json" release-b healthy 10
 run_controller "$WORK_DIR/register-b.json" register --manifest "$WORK_DIR/release-b.json"
 run_controller "$WORK_DIR/activate-b.json" activate --release release-b --readiness "$WORK_DIR/readiness-b.json"
 
@@ -162,6 +171,8 @@ state = json.load(open(sys.argv[1], encoding="utf-8"))
 receipt = json.load(open(sys.argv[2], encoding="utf-8"))
 assert state["active_release"] == "release-a", state
 assert state["database_schema_version"] == 10, state
+assert state["last_action_receipt"]["action"] == "rollback", state
+assert state["last_action_receipt"]["active_after"] == "release-a", state
 assert receipt["active_before"] == "release-b", receipt
 assert receipt["active_after"] == "release-a", receipt
 assert receipt["database_schema_before"] == 10, receipt
@@ -186,10 +197,12 @@ PY
 # A failed or degraded candidate may never replace the last healthy release.
 write_manifest "$WORK_DIR/release-c.json" release-c "$SOURCE_C" "$DIGEST_A" "$DIGEST_D" 10 10 11 expand
 run_controller "$WORK_DIR/register-c.json" register --manifest "$WORK_DIR/release-c.json"
-write_readiness "$WORK_DIR/readiness-c-failed.json" release-c failed
-write_readiness "$WORK_DIR/readiness-c-degraded.json" release-c degraded
+write_readiness "$WORK_DIR/readiness-c-failed.json" release-c failed 10
+write_readiness "$WORK_DIR/readiness-c-degraded.json" release-c degraded 10
+write_readiness "$WORK_DIR/readiness-c-wrong-schema.json" release-c healthy 11
 expect_failure "failed candidate" run_controller "$WORK_DIR/failed-c.json" activate --release release-c --readiness "$WORK_DIR/readiness-c-failed.json"
 expect_failure "degraded candidate" run_controller "$WORK_DIR/degraded-c.json" activate --release release-c --readiness "$WORK_DIR/readiness-c-degraded.json"
+expect_failure "mismatched schema read-back" run_controller "$WORK_DIR/wrong-schema-c.json" activate --release release-c --readiness "$WORK_DIR/readiness-c-wrong-schema.json"
 
 python3 - "$STATE" <<'PY'
 import json
@@ -209,9 +222,40 @@ expect_failure "automated contract phase" run_controller "$WORK_DIR/register-con
 write_manifest "$WORK_DIR/release-mutable.json" release-mutable "$SOURCE_D" "registry.example.invalid/api:latest" "$DIGEST_B" 10 10 10 expand
 expect_failure "mutable image" run_controller "$WORK_DIR/register-mutable.json" register --manifest "$WORK_DIR/release-mutable.json"
 
+# Simulate an interruption after the atomic state commit but before the
+# separate operator receipt can be written. The state-embedded receipt must
+# make the completed effect unambiguous, and a retry must be a no-op.
+write_manifest "$WORK_DIR/release-e.json" release-e "$SOURCE_E" "$DIGEST_C" "$DIGEST_B" 10 9 11 expand
+touch "$WORK_DIR/receipt-target.json"
+ln -s "$WORK_DIR/receipt-target.json" "$WORK_DIR/interrupted-receipt.json"
+expect_failure "interrupted receipt sink" run_controller "$WORK_DIR/interrupted-receipt.json" register --manifest "$WORK_DIR/release-e.json"
+
+python3 - "$STATE" <<'PY'
+import json
+import sys
+
+state = json.load(open(sys.argv[1], encoding="utf-8"))
+assert "release-e" in state["releases"], state
+assert state["last_action_receipt"]["action"] == "register", state
+assert state["last_action_receipt"]["release_id"] == "release-e", state
+assert state["last_action_receipt"]["result"] == "pass", state
+PY
+
+run_controller "$WORK_DIR/retry-e.json" register --manifest "$WORK_DIR/release-e.json"
+python3 - "$WORK_DIR/retry-e.json" <<'PY'
+import json
+import sys
+
+receipt = json.load(open(sys.argv[1], encoding="utf-8"))
+assert receipt["result"] == "no_op", receipt
+assert receipt["release_id"] == "release-e", receipt
+PY
+
+expect_failure "unknown rollback target" run_controller "$WORK_DIR/rollback-unknown.json" rollback --release missing-release
+
 write_manifest "$WORK_DIR/release-d.json" release-d "$SOURCE_D" "$DIGEST_A" "$DIGEST_B" 12 10 12 migrate
 run_controller "$WORK_DIR/register-d.json" register --manifest "$WORK_DIR/release-d.json"
-write_readiness "$WORK_DIR/readiness-d.json" release-d healthy
+write_readiness "$WORK_DIR/readiness-d.json" release-d healthy 12
 expect_failure "incompatible previous release" run_controller "$WORK_DIR/activate-d.json" activate --release release-d --readiness "$WORK_DIR/readiness-d.json"
 
 # A production mutation is a protected action and must not run without the
@@ -247,6 +291,22 @@ for dockerfile in (root / "infra/docker/api.Dockerfile", root / "infra/docker/we
     assert "ARG " in text and "RUNTIME_IMAGE" in text, f"{dockerfile} must require an approved runtime image"
     assert "PASSWORD" not in text and "TOKEN" not in text and "SECRET" not in text
 
+compose = (root / "infra/deployment/release.compose.yaml").read_text(encoding="utf-8")
+assert "build:" not in compose, "release runtime must consume already pinned images"
+assert "ports:" not in compose, "candidate runtime must not publish a host port"
+assert "cap_drop: [ALL]" in compose and "no-new-privileges:true" in compose
+assert "10001:10001" in compose
+
+manifest_example = json.loads(
+    (root / "infra/deployment/release-manifest.example.json").read_text(encoding="utf-8")
+)
+readiness_example = json.loads(
+    (root / "infra/deployment/readiness.example.json").read_text(encoding="utf-8")
+)
+assert all("@sha256:" in image for image in manifest_example["images"].values())
+assert readiness_example["release_id"] == manifest_example["release_id"]
+assert readiness_example["database_schema"] == manifest_example["database"]["target_schema"]
+
 receipt = {
     "schema_version": 1,
     "task": "T082",
@@ -266,8 +326,11 @@ receipt = {
     "negative_paths": [
         "failed candidate rejected",
         "degraded candidate rejected",
+        "mismatched schema read-back rejected",
         "mutable image rejected",
         "contract phase rejected during rollback window",
+        "interrupted receipt sink reconciled",
+        "unknown rollback target rejected",
         "incompatible forward schema rejected",
         "unconfirmed production mutation rejected",
     ],
