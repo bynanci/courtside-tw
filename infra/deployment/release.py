@@ -72,6 +72,18 @@ def read_json(path: Path, label: str) -> dict[str, Any]:
     return parsed
 
 
+def validate_image_map(value: Any, label: str) -> dict[str, str]:
+    if not isinstance(value, dict):
+        raise ReleaseError(f"{label} must be an object")
+    require_exact_keys(value, {"api", "web"}, label)
+    normalized: dict[str, str] = {}
+    for name, image in value.items():
+        if not isinstance(image, str) or not IMAGE_DIGEST_PATTERN.fullmatch(image):
+            raise ReleaseError(f"{label}.{name} must be pinned with @sha256:<64 hex>")
+        normalized[name] = image
+    return normalized
+
+
 def atomic_write_json(path: Path, payload: dict[str, Any]) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     if path.exists() and path.is_symlink():
@@ -113,13 +125,7 @@ def validate_manifest(raw: dict[str, Any]) -> dict[str, Any]:
     if not isinstance(source_sha, str) or not SOURCE_SHA_PATTERN.fullmatch(source_sha):
         raise ReleaseError("source_sha must be a full 40- or 64-character lowercase SHA")
 
-    images = raw["images"]
-    if not isinstance(images, dict):
-        raise ReleaseError("images must be an object")
-    require_exact_keys(images, {"api", "web"}, "images")
-    for name, image in images.items():
-        if not isinstance(image, str) or not IMAGE_DIGEST_PATTERN.fullmatch(image):
-            raise ReleaseError(f"images.{name} must be pinned with @sha256:<64 hex>")
+    images = validate_image_map(raw["images"], "images")
 
     database = raw["database"]
     if not isinstance(database, dict):
@@ -161,16 +167,32 @@ def validate_manifest(raw: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def validate_readiness(raw: dict[str, Any], release_id: str) -> int:
+def validate_readiness(raw: dict[str, Any], candidate: dict[str, Any]) -> int:
     require_exact_keys(
         raw,
-        {"schema_version", "release_id", "status", "database_schema", "checks"},
+        {
+            "schema_version",
+            "release_id",
+            "source_sha",
+            "images",
+            "status",
+            "database_schema",
+            "checks",
+        },
         "readiness receipt",
     )
     if raw["schema_version"] != 1:
         raise ReleaseError("readiness schema_version must be 1")
-    if raw["release_id"] != release_id:
+    if raw["release_id"] != candidate["release_id"]:
         raise ReleaseError("readiness release_id does not match the candidate")
+    source_sha = raw["source_sha"]
+    if not isinstance(source_sha, str) or not SOURCE_SHA_PATTERN.fullmatch(source_sha):
+        raise ReleaseError("readiness source_sha must be a full lowercase SHA")
+    if source_sha != candidate["source_sha"]:
+        raise ReleaseError("readiness source_sha does not match the candidate")
+    images = validate_image_map(raw["images"], "readiness images")
+    if images != candidate["images"]:
+        raise ReleaseError("readiness images do not match the candidate")
     status = raw["status"]
     if status not in {"healthy", "degraded", "failed"}:
         raise ReleaseError("readiness status must be healthy, degraded or failed")
@@ -306,7 +328,7 @@ def activate_release(
     candidate = state["releases"].get(release_id)
     if candidate is None:
         raise ReleaseError("candidate release is not registered")
-    observed_schema = validate_readiness(readiness, release_id)
+    observed_schema = validate_readiness(readiness, candidate)
     if state["active_release"] == release_id:
         receipt.update({"result": "no_op", "release_id": release_id})
         return receipt, False
@@ -465,3 +487,4 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

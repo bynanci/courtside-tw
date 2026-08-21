@@ -93,6 +93,42 @@ PY
 write_readiness() {
   local path="$1"
   local release_id="$2"
+  local source_sha="$3"
+  local api_digest="$4"
+  local web_digest="$5"
+  local status="$6"
+  local database_schema="$7"
+
+  python3 - "$path" "$release_id" "$source_sha" "$api_digest" "$web_digest" "$status" "$database_schema" <<'PY'
+import json
+import sys
+
+path, release_id, source_sha, api_digest, web_digest, status, database_schema = sys.argv[1:]
+with open(path, "w", encoding="utf-8") as handle:
+    json.dump(
+        {
+            "schema_version": 1,
+            "release_id": release_id,
+            "source_sha": source_sha,
+            "images": {"api": api_digest, "web": web_digest},
+            "status": status,
+            "database_schema": int(database_schema),
+            "checks": [
+                {"name": "api-readiness", "status": status},
+                {"name": "web-readiness", "status": status},
+            ],
+        },
+        handle,
+        indent=2,
+        sort_keys=True,
+    )
+    handle.write("\n")
+PY
+}
+
+write_unbound_readiness() {
+  local path="$1"
+  local release_id="$2"
   local status="$3"
   local database_schema="$4"
 
@@ -150,12 +186,14 @@ DIGEST_C="registry.example.invalid/courtside-api@sha256:$(printf '3%.0s' {1..64}
 DIGEST_D="registry.example.invalid/courtside-web@sha256:$(printf '4%.0s' {1..64})"
 
 write_manifest "$WORK_DIR/release-a.json" release-a "$SOURCE_A" "$DIGEST_A" "$DIGEST_B" 9 9 10 expand
-write_readiness "$WORK_DIR/readiness-a.json" release-a healthy 9
+write_readiness "$WORK_DIR/readiness-a.json" release-a "$SOURCE_A" "$DIGEST_A" "$DIGEST_B" healthy 9
 run_controller "$WORK_DIR/register-a.json" register --manifest "$WORK_DIR/release-a.json"
+write_unbound_readiness "$WORK_DIR/unbound-readiness-a.json" release-a healthy 9
+expect_failure "unbound readiness identity" run_controller "$WORK_DIR/unbound-readiness-a-receipt.json" activate --release release-a --readiness "$WORK_DIR/unbound-readiness-a.json"
 run_controller "$WORK_DIR/activate-a.json" activate --release release-a --readiness "$WORK_DIR/readiness-a.json"
 
 write_manifest "$WORK_DIR/release-b.json" release-b "$SOURCE_B" "$DIGEST_C" "$DIGEST_D" 10 9 11 migrate
-write_readiness "$WORK_DIR/readiness-b.json" release-b healthy 10
+write_readiness "$WORK_DIR/readiness-b.json" release-b "$SOURCE_B" "$DIGEST_C" "$DIGEST_D" healthy 10
 run_controller "$WORK_DIR/register-b.json" register --manifest "$WORK_DIR/release-b.json"
 run_controller "$WORK_DIR/activate-b.json" activate --release release-b --readiness "$WORK_DIR/readiness-b.json"
 
@@ -197,12 +235,14 @@ PY
 # A failed or degraded candidate may never replace the last healthy release.
 write_manifest "$WORK_DIR/release-c.json" release-c "$SOURCE_C" "$DIGEST_A" "$DIGEST_D" 10 10 11 expand
 run_controller "$WORK_DIR/register-c.json" register --manifest "$WORK_DIR/release-c.json"
-write_readiness "$WORK_DIR/readiness-c-failed.json" release-c failed 10
-write_readiness "$WORK_DIR/readiness-c-degraded.json" release-c degraded 10
-write_readiness "$WORK_DIR/readiness-c-wrong-schema.json" release-c healthy 11
+write_readiness "$WORK_DIR/readiness-c-failed.json" release-c "$SOURCE_C" "$DIGEST_A" "$DIGEST_D" failed 10
+write_readiness "$WORK_DIR/readiness-c-degraded.json" release-c "$SOURCE_C" "$DIGEST_A" "$DIGEST_D" degraded 10
+write_readiness "$WORK_DIR/readiness-c-wrong-schema.json" release-c "$SOURCE_C" "$DIGEST_A" "$DIGEST_D" healthy 11
 expect_failure "failed candidate" run_controller "$WORK_DIR/failed-c.json" activate --release release-c --readiness "$WORK_DIR/readiness-c-failed.json"
 expect_failure "degraded candidate" run_controller "$WORK_DIR/degraded-c.json" activate --release release-c --readiness "$WORK_DIR/readiness-c-degraded.json"
 expect_failure "mismatched schema read-back" run_controller "$WORK_DIR/wrong-schema-c.json" activate --release release-c --readiness "$WORK_DIR/readiness-c-wrong-schema.json"
+write_readiness "$WORK_DIR/readiness-c-wrong-identity.json" release-c "$SOURCE_B" "$DIGEST_C" "$DIGEST_D" healthy 10
+expect_failure "mismatched readiness identity" run_controller "$WORK_DIR/wrong-identity-c.json" activate --release release-c --readiness "$WORK_DIR/readiness-c-wrong-identity.json"
 
 python3 - "$STATE" <<'PY'
 import json
@@ -255,7 +295,7 @@ expect_failure "unknown rollback target" run_controller "$WORK_DIR/rollback-unkn
 
 write_manifest "$WORK_DIR/release-d.json" release-d "$SOURCE_D" "$DIGEST_A" "$DIGEST_B" 12 10 12 migrate
 run_controller "$WORK_DIR/register-d.json" register --manifest "$WORK_DIR/release-d.json"
-write_readiness "$WORK_DIR/readiness-d.json" release-d healthy 12
+write_readiness "$WORK_DIR/readiness-d.json" release-d "$SOURCE_D" "$DIGEST_A" "$DIGEST_B" healthy 12
 expect_failure "incompatible previous release" run_controller "$WORK_DIR/activate-d.json" activate --release release-d --readiness "$WORK_DIR/readiness-d.json"
 
 # A production mutation is a protected action and must not run without the
@@ -306,6 +346,8 @@ readiness_example = json.loads(
 assert all("@sha256:" in image for image in manifest_example["images"].values())
 assert readiness_example["release_id"] == manifest_example["release_id"]
 assert readiness_example["database_schema"] == manifest_example["database"]["target_schema"]
+assert readiness_example["source_sha"] == manifest_example["source_sha"]
+assert readiness_example["images"] == manifest_example["images"]
 
 receipt = {
     "schema_version": 1,
@@ -327,6 +369,8 @@ receipt = {
         "failed candidate rejected",
         "degraded candidate rejected",
         "mismatched schema read-back rejected",
+        "unbound readiness identity rejected",
+        "mismatched readiness identity rejected",
         "mutable image rejected",
         "contract phase rejected during rollback window",
         "interrupted receipt sink reconciled",
@@ -348,3 +392,4 @@ if grep -R --fixed-strings "$SENTINEL" "$ARTIFACT_DIR" "$WORK_DIR" --include='*.
 fi
 
 echo "verify-deployment-rollback: PASS (isolated state machine; forward schema preserved)"
+

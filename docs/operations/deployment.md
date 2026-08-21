@@ -122,8 +122,11 @@ readiness receipt:
 Only `healthy` may activate. `degraded`, `failed`, missing or mismatched
 receipts leave the current healthy release active. The receipt also carries the
 database schema version read back after the forward migration; it must equal the
-candidate target. The controller records this observation but never runs SQL or
-promotes a schema version from the manifest alone.
+candidate target. It carries the candidate source SHA and API/web image digests
+as well, and the controller requires those immutable identities to match the
+registered release manifest before activation. The controller records these
+observations but never runs SQL or promotes a schema version from the manifest
+alone.
 
 ### 5. Register and activate
 
@@ -197,3 +200,4 @@ This isolated drill validates registration, readiness states, compatibility,
 idempotency, production denial, failed-candidate containment and application
 rollback. It does not contact a registry, database, provider or production
 network.
+
