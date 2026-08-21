@@ -1,0 +1,46 @@
+{
+  "schema_version": "t082-dispatch-evidence/v1",
+  "captured_at": "2026-08-21T00:26:03Z",
+  "repository": "bynanci/courtside-tw",
+  "main_sha": "0470b5ab87663a7c363c84782ccdda3e677370a4",
+  "main_protected": true,
+  "tasks_blob_sha": "96aa689aa086cffae788db838fed9babda813823",
+  "task_readback": {
+    "checked_count": 82,
+    "unchecked_count": 30,
+    "T081": "checked",
+    "T082": "unchecked",
+    "T083": "unchecked",
+    "T087": "unchecked",
+    "T098": "unchecked"
+  },
+  "sources": [
+    "https://github.com/bynanci/courtside-tw/tree/0470b5ab87663a7c363c84782ccdda3e677370a4",
+    "https://github.com/bynanci/courtside-tw/pull/118",
+    "https://github.com/bynanci/courtside-tw/issues/111",
+    "https://github.com/bynanci/courtside-tw/issues/120"
+  ],
+  "dedupe": {
+    "matching_open_t082_pull_requests": 0,
+    "current_execution_issue": 120
+  },
+  "decision": "Dispatch only T082 tests-first implementation from current protected main.",
+  "authority": {
+    "allowed": [
+      "T082 deployment and rollback contracts",
+      "isolated non-production behavioral drill",
+      "draft PR and exact-head checks"
+    ],
+    "requires_approval": [
+      "production deployment",
+      "destructive contract migration",
+      "protected merge and T082 checkbox"
+    ],
+    "forbidden": [
+      "T083+ implementation",
+      "Web3",
+      "participant research",
+      "production secrets or data"
+    ]
+  }
+}

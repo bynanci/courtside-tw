@@ -1,0 +1,16 @@
+{
+  "schema_version": "t082-red-evidence/v1",
+  "captured_at": "2026-08-21T00:26:03Z",
+  "result": "pass",
+  "claim": "The T082 drill failed before implementation at the intended missing deployment controller seam.",
+  "command": "bash scripts/test/verify-deployment-rollback.sh",
+  "exit_code": 1,
+  "observed": "verify-deployment-rollback: missing T082 artifact: infra/deployment/release.py",
+  "failure_signature": "missing-t082-release-controller",
+  "baseline_main": "0470b5ab87663a7c363c84782ccdda3e677370a4",
+  "limitations": [
+    "Docker and Gradle are unavailable in the local runner; image build and full repository checks remain exact-head CI proof.",
+    "No production environment, database, provider, secret or external traffic switch was accessed."
+  ],
+  "interpretation": "The failure is behavioral and attributable, not a syntax, dependency-install or environment setup failure."
+}
