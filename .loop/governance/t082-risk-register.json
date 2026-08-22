@@ -1,0 +1,151 @@
+{
+  "schema_version": "mark-ai-governance/v1",
+  "kind": "risk-register",
+  "artifact_id": "courtside-t082-release-risk-register",
+  "version": "1.0.0",
+  "as_of": "2026-08-21T00:31:40Z",
+  "owner": "Mark / Courtside TW release owner",
+  "system_id": "courtside-t082-coding-and-release-control",
+  "risks": [
+    {
+      "risk_id": "T082-RISK-001",
+      "title": "Application rollback destroys or reverses the database schema",
+      "category": "recovery",
+      "claim_status": "CONFIRMED",
+      "threat_refs": ["SAFE-002", "SAFE-005", "EVAL-013"],
+      "assets": ["production database", "immutable publication and audit state"],
+      "affected_parties": ["readers", "editors", "operators"],
+      "impact": "CRITICAL",
+      "likelihood": "MEDIUM",
+      "uncertainty": "MEDIUM",
+      "inherent_tier": "G3",
+      "controls": [
+        {
+          "id": "OPS-003",
+          "status": "VERIFIED",
+          "proof_refs": ["scripts/test/verify-deployment-rollback.sh"]
+        },
+        { "id": "AGT-007", "status": "VERIFIED", "proof_refs": ["infra/deployment/release.py"] }
+      ],
+      "residual_tier": "G3",
+      "decision": "REVIEW_REQUIRED",
+      "owner": "Courtside TW release owner",
+      "status": "OPEN",
+      "evidence_refs": ["docs/operations/rollback.md"],
+      "assumptions": ["production migration runner remains separate from the application identity"],
+      "invalidation_conditions": [
+        "controller gains SQL execution or a database down/contract command"
+      ],
+      "acceptance": null,
+      "next_review_at": "2026-11-19T00:00:00Z"
+    },
+    {
+      "risk_id": "T082-RISK-002",
+      "title": "A failed or incompatible candidate replaces the last healthy release",
+      "category": "availability",
+      "claim_status": "CONFIRMED",
+      "threat_refs": ["MOD-005", "AGT-004", "EVAL-013"],
+      "assets": ["public reading availability", "editorial workflow"],
+      "affected_parties": ["readers", "editors"],
+      "impact": "HIGH",
+      "likelihood": "MEDIUM",
+      "uncertainty": "MEDIUM",
+      "inherent_tier": "G3",
+      "controls": [
+        {
+          "id": "AGT-004",
+          "status": "VERIFIED",
+          "proof_refs": ["scripts/test/verify-deployment-rollback.sh"]
+        },
+        {
+          "id": "AGT-007",
+          "status": "VERIFIED",
+          "proof_refs": ["scripts/test/verify-deployment-rollback.sh"]
+        }
+      ],
+      "residual_tier": "G3",
+      "decision": "REVIEW_REQUIRED",
+      "owner": "Courtside TW release owner",
+      "status": "OPEN",
+      "evidence_refs": ["infra/deployment/release.py", "docs/operations/deployment.md"],
+      "assumptions": ["production ingress supports an atomic provider-specific switch"],
+      "invalidation_conditions": ["readiness can be omitted or production routing is non-atomic"],
+      "acceptance": null,
+      "next_review_at": "2026-11-19T00:00:00Z"
+    },
+    {
+      "risk_id": "T082-RISK-003",
+      "title": "Deployment evidence leaks production credentials or participant data",
+      "category": "data-security",
+      "claim_status": "CONFIRMED",
+      "threat_refs": ["LLM02", "DAT-003", "EVAL-015"],
+      "assets": ["database credentials", "OIDC secrets", "participant privacy"],
+      "affected_parties": ["operators", "participants"],
+      "impact": "CRITICAL",
+      "likelihood": "MEDIUM",
+      "uncertainty": "MEDIUM",
+      "inherent_tier": "G3",
+      "controls": [
+        {
+          "id": "DAT-003",
+          "status": "VERIFIED",
+          "proof_refs": ["scripts/test/verify-deployment-rollback.sh"]
+        },
+        {
+          "id": "DAT-007",
+          "status": "VERIFIED",
+          "proof_refs": ["artifacts/dependencies/t082/t082-deployment-rollback-receipt.json"]
+        }
+      ],
+      "residual_tier": "G3",
+      "decision": "REVIEW_REQUIRED",
+      "owner": "Courtside TW release owner",
+      "status": "OPEN",
+      "evidence_refs": ["docs/operations/deployment.md"],
+      "assumptions": [
+        "production secrets are injected by a provider secret manager outside the Agent context"
+      ],
+      "invalidation_conditions": [
+        "a credential appears in a manifest, command preview, log or retained artifact"
+      ],
+      "acceptance": null,
+      "next_review_at": "2026-11-19T00:00:00Z"
+    },
+    {
+      "risk_id": "T082-RISK-004",
+      "title": "The coding Agent self-approves a protected merge or production action",
+      "category": "agent-authority",
+      "claim_status": "CONFIRMED",
+      "threat_refs": ["ASI03", "ASI10", "SAFE-010"],
+      "assets": ["protected main", "production environment"],
+      "affected_parties": ["maintainers", "readers", "editors"],
+      "impact": "CRITICAL",
+      "likelihood": "LOW",
+      "uncertainty": "LOW",
+      "inherent_tier": "G3",
+      "controls": [
+        {
+          "id": "GOV-002",
+          "status": "IMPLEMENTED",
+          "proof_refs": [".loop/t082-deployment-rollback-graphify-loop.yaml"]
+        },
+        {
+          "id": "AGT-003",
+          "status": "IMPLEMENTED",
+          "proof_refs": ["docs/operations/deployment.md"]
+        }
+      ],
+      "residual_tier": "G3",
+      "decision": "REVIEW_REQUIRED",
+      "owner": "Mark / Courtside TW release owner",
+      "status": "OPEN",
+      "evidence_refs": [".loop/evidence/t082-dispatch.json"],
+      "assumptions": ["main protection remains enabled and no bypass actor is introduced"],
+      "invalidation_conditions": [
+        "ruleset is weakened, bypass added or approval is inferred from CI"
+      ],
+      "acceptance": null,
+      "next_review_at": "2026-11-19T00:00:00Z"
+    }
+  ]
+}

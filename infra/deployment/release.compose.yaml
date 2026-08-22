@@ -1,0 +1,67 @@
+name: courtside-${COURTSIDE_RELEASE_ID:?release id is required}
+
+services:
+  api:
+    image: ${COURTSIDE_API_IMAGE:?pinned API image digest is required}
+    user: "10001:10001"
+    read_only: true
+    init: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m
+    environment:
+      SPRING_PROFILES_ACTIVE: api
+      SERVER_PORT: "8080"
+      DATABASE_URL: ${DATABASE_URL:?runtime-injected database URL is required}
+      COURTSIDE_RELEASE_ID: ${COURTSIDE_RELEASE_ID}
+    expose: ["8080"]
+    networks: [backend]
+    restart: unless-stopped
+    stop_grace_period: 30s
+
+  worker:
+    image: ${COURTSIDE_API_IMAGE:?pinned API image digest is required}
+    user: "10001:10001"
+    read_only: true
+    init: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m
+    command: ["--spring.profiles.active=worker"]
+    environment:
+      DATABASE_URL: ${DATABASE_URL:?runtime-injected database URL is required}
+      COURTSIDE_RELEASE_ID: ${COURTSIDE_RELEASE_ID}
+    networks: [backend]
+    restart: unless-stopped
+    stop_grace_period: 60s
+
+  web:
+    image: ${COURTSIDE_WEB_IMAGE:?pinned web image digest is required}
+    user: "10001:10001"
+    read_only: true
+    init: true
+    cap_drop: [ALL]
+    security_opt: [no-new-privileges:true]
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,nodev,size=64m
+    environment:
+      NODE_ENV: production
+      NITRO_HOST: 0.0.0.0
+      NITRO_PORT: "3000"
+      NUXT_PUBLIC_API_BASE_URL: ${NUXT_PUBLIC_API_BASE_URL:?trusted API origin is required}
+      NUXT_PUBLIC_SITE_URL: ${NUXT_PUBLIC_SITE_URL:?canonical site origin is required}
+      COURTSIDE_RELEASE_ID: ${COURTSIDE_RELEASE_ID}
+    expose: ["3000"]
+    networks: [frontend, backend]
+    restart: unless-stopped
+    stop_grace_period: 30s
+
+networks:
+  frontend:
+    external: true
+    name: ${COURTSIDE_FRONTEND_NETWORK:?frontend network is required}
+  backend:
+    external: true
+    name: ${COURTSIDE_BACKEND_NETWORK:?backend network is required}

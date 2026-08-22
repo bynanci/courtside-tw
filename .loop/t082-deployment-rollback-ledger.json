@@ -1,0 +1,123 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-t082-deployment-and-nondestructive-rollback",
+  "graph_version": 2,
+  "run_id": "courtside-t082-20260821",
+  "status": "running",
+  "iteration": 3,
+  "started_at": "2026-08-21T00:26:03Z",
+  "updated_at": "2026-08-21T00:45:16Z",
+  "current_frontier": ["t-release-review"],
+  "blocked_nodes": ["t-release-review", "p-exact-head", "g-merge"],
+  "terminal_state": "running",
+  "next_action": "Commit and push the verified T082-only scope, open one draft PR, then read exact-head CI, Security, review threads and protected-main gates.",
+  "events": [
+    {
+      "event_id": "evt-t082-001-dispatch",
+      "at": "2026-08-21T00:26:03Z",
+      "actor": "codex-supervisor",
+      "type": "t082_scope_reconciled",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "t082.scope",
+            "after": "T082 only; production and protected merge remain human gates"
+          }
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t082-dispatch.json"],
+      "proof_receipts": [
+        {
+          "proof": "main/tasks/Issue read-back",
+          "result": "pass",
+          "details": "main 0470b5a; T081 checked; T082 next; no active T082 PR"
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Allow only T082 tests-first implementation.",
+      "token_usage": { "estimated": 6000, "input": 0, "output": 0, "total": 6000 },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-t082-002-red",
+      "at": "2026-08-21T00:26:03Z",
+      "actor": "codex-agent",
+      "type": "t082_tests_first_red",
+      "base_graph_version": 1,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "add",
+            "path": "scripts/test/verify-deployment-rollback.sh",
+            "after": "Failing T082 deployment and rollback behavioral contract"
+          }
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t082-red.json"],
+      "proof_receipts": [
+        {
+          "proof": "tests-first RED",
+          "result": "pass",
+          "details": "Exit 1: missing infra/deployment/release.py"
+        }
+      ],
+      "failure_signature": "missing-t082-release-controller",
+      "decision": "RED is attributable; implementation may begin without changing acceptance.",
+      "token_usage": { "estimated": 5000, "input": 0, "output": 0, "total": 5000 },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-t082-003-local-green",
+      "at": "2026-08-21T00:45:16Z",
+      "actor": "codex-agent",
+      "type": "t082_isolated_green",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          {
+            "op": "replace",
+            "path": "nodes.a-implement.status",
+            "before": "planned",
+            "after": "done"
+          },
+          {
+            "op": "replace",
+            "path": "nodes.p-local.status",
+            "before": "planned",
+            "after": "done"
+          }
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t082-local-proof.json",
+        "artifacts/dependencies/t082/t082-deployment-rollback-receipt.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "isolated application rollback",
+          "result": "pass",
+          "details": "Application B rolled back to compatible A while database schema remained 10; destructive schema flags remained false; interrupted receipt reconciliation and unknown targets were exercised."
+        },
+        {
+          "proof": "governance structure",
+          "result": "pass",
+          "details": "System card and risk register passed strict validation with production, contract and merge retained as G3 gates."
+        }
+      ],
+      "failure_signature": null,
+      "decision": "Local T082 proof is sufficient to create a draft PR; production deployment and merge are not authorized.",
+      "token_usage": {
+        "estimated": 12000,
+        "input": 0,
+        "output": 0,
+        "total": 12000
+      },
+      "terminal_reason": null
+    }
+  ]
+}

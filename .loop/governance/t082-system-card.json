@@ -1,0 +1,255 @@
+{
+  "schema_version": "mark-ai-governance/v1",
+  "kind": "ai-system-card",
+  "artifact_id": "courtside-t082-coding-and-release-control",
+  "version": "1.0.0",
+  "as_of": "2026-08-21T00:31:40Z",
+  "owner": "Mark / Courtside TW release owner",
+  "system": {
+    "name": "Courtside TW T082 coding and release-control workflow",
+    "purpose": "Create and verify a forward-only application deployment and rollback contract without executing production actions.",
+    "lifecycle_stage": "EVALUATE",
+    "environments": ["isolated-development", "GitHub-draft-PR", "production-design-only"],
+    "accountable_owner": "Mark / Courtside TW release owner",
+    "users": ["Courtside TW maintainers and release operators"],
+    "affected_parties": ["Courtside TW readers, editors and operators"],
+    "models": [
+      {
+        "provider": "OpenAI",
+        "model": "Codex",
+        "version": "platform-session-fingerprint-UNKNOWN"
+      }
+    ],
+    "tools": [
+      {
+        "id": "workspace",
+        "operations": ["read", "patch", "test"],
+        "resources": ["isolated T082 worktree"]
+      },
+      {
+        "id": "github-connector",
+        "operations": ["authoritative-read", "bounded-branch-write", "draft-PR"],
+        "resources": ["bynanci/courtside-tw"]
+      }
+    ],
+    "data_stores": ["Git repository", "temporary isolated release state", "redacted CI artifacts"],
+    "external_services": [
+      "GitHub and GitHub Actions",
+      "OCI registry at future production release",
+      "production deployment platform UNKNOWN"
+    ],
+    "identities": [
+      "bounded GitHub connector identity",
+      "production migration and traffic-switch identities not provided to the Agent"
+    ]
+  },
+  "data_flows": [
+    {
+      "id": "flow-t082-001",
+      "source": "GitHub issues, repository and task ledger",
+      "destination": "bounded Codex worktree",
+      "data_class": "INTERNAL",
+      "untrusted": true,
+      "purpose": "T082 scope and implementation",
+      "authorization_point": "repository and task read-back before mutation",
+      "retention": "version-controlled evidence without credentials",
+      "cross_border": "UNKNOWN"
+    },
+    {
+      "id": "flow-t082-002",
+      "source": "isolated release manifests and readiness fixtures",
+      "destination": "release.py state machine",
+      "data_class": "INTERNAL",
+      "untrusted": true,
+      "purpose": "behavioral compatibility and rollback verification",
+      "authorization_point": "strict JSON schema and immutable digest validation",
+      "retention": "temporary fixtures; redacted receipt retained 14 days in CI",
+      "cross_border": "not applicable"
+    },
+    {
+      "id": "flow-t082-003",
+      "source": "reviewed branch",
+      "destination": "GitHub draft PR",
+      "data_class": "INTERNAL",
+      "untrusted": false,
+      "purpose": "independent exact-head CI, Security and review",
+      "authorization_point": "explicit T082 user direction plus protected-branch rules",
+      "retention": "Git history and PR evidence",
+      "cross_border": "UNKNOWN"
+    },
+    {
+      "id": "flow-t082-004",
+      "source": "approved immutable release manifest",
+      "destination": "production registry and deployment platform",
+      "data_class": "INTERNAL",
+      "untrusted": true,
+      "purpose": "future production release",
+      "authorization_point": "pending exact-target G3 human approval",
+      "retention": "UNKNOWN pending provider decision",
+      "cross_border": "UNKNOWN"
+    }
+  ],
+  "risk": {
+    "inherent_tier": "G3",
+    "residual_tier": "G3",
+    "decision": "REVIEW_REQUIRED",
+    "operational_state": "ELEVATED",
+    "hard_overrides": ["SAFE-005 Production and Identity", "SAFE-010 Self-approval"],
+    "lethal_trifecta": false,
+    "unknowns": [
+      "production platform atomic traffic-switch implementation",
+      "production secret-manager and migration-runner identities",
+      "final OCI runtime images and vulnerability/SBOM receipts",
+      "T083 production monitoring and alert route"
+    ]
+  },
+  "controls": [
+    {
+      "id": "GOV-001",
+      "status": "VERIFIED",
+      "owner": "Courtside TW release owner",
+      "implementation": "Versioned T082 System Card and scope graph",
+      "proof_refs": [".loop/governance/t082-system-card.json", ".loop/evidence/t082-dispatch.json"],
+      "failure_condition": "deployed scope, identity or environment differs from the inventory",
+      "next_review_at": "2026-11-19T00:00:00Z"
+    },
+    {
+      "id": "GOV-002",
+      "status": "IMPLEMENTED",
+      "owner": "Courtside TW release owner",
+      "implementation": "Production, contract migration and protected merge are separate human gates",
+      "proof_refs": [
+        "docs/operations/deployment.md",
+        ".loop/t082-deployment-rollback-graphify-loop.yaml"
+      ],
+      "failure_condition": "the Agent can approve or execute its own protected action",
+      "next_review_at": "2026-11-19T00:00:00Z"
+    },
+    {
+      "id": "DAT-003",
+      "status": "VERIFIED",
+      "owner": "T082 implementer",
+      "implementation": "No secret fields in manifests; production identities remain outside the controller",
+      "proof_refs": ["scripts/test/verify-deployment-rollback.sh"],
+      "failure_condition": "a secret sentinel appears in a retained receipt or artifact",
+      "next_review_at": "2026-11-19T00:00:00Z"
+    },
+    {
+      "id": "DAT-007",
+      "status": "VERIFIED",
+      "owner": "T082 implementer",
+      "implementation": "Strict redacted machine receipts with bounded identifiers and no runtime URL",
+      "proof_refs": ["artifacts/dependencies/t082/t082-deployment-rollback-receipt.json"],
+      "failure_condition": "receipt contains a credential, private URL, participant data or content body",
+      "next_review_at": "2026-11-19T00:00:00Z"
+    },
+    {
+      "id": "AGT-001",
+      "status": "VERIFIED",
+      "owner": "Codex operator",
+      "implementation": "T082-only file allowlist and explicit production/T083+ prohibitions",
+      "proof_refs": [".loop/evidence/t082-dispatch.json"],
+      "failure_condition": "changed-file scope includes T083+, Web3, participant research or production credentials",
+      "next_review_at": "2026-11-19T00:00:00Z"
+    },
+    {
+      "id": "AGT-003",
+      "status": "IMPLEMENTED",
+      "owner": "Courtside TW release owner",
+      "implementation": "Exact production confirmation plus a separate provider traffic-switch approval",
+      "proof_refs": ["infra/deployment/release.py", "docs/operations/deployment.md"],
+      "failure_condition": "a production mutation runs with no current exact-target approval",
+      "next_review_at": "2026-11-19T00:00:00Z"
+    },
+    {
+      "id": "AGT-004",
+      "status": "VERIFIED",
+      "owner": "T082 implementer",
+      "implementation": "Serialized atomic release state, immutable registration and idempotent no-op",
+      "proof_refs": ["scripts/test/verify-deployment-rollback.sh"],
+      "failure_condition": "retry changes active release twice or leaves an unverifiable partial state",
+      "next_review_at": "2026-11-19T00:00:00Z"
+    },
+    {
+      "id": "AGT-007",
+      "status": "VERIFIED",
+      "owner": "T082 implementer",
+      "implementation": "Fail-closed readiness, compatibility, mutable-image and production gates",
+      "proof_refs": ["scripts/test/verify-deployment-rollback.sh"],
+      "failure_condition": "a failed, degraded or incompatible candidate replaces the healthy active release",
+      "next_review_at": "2026-11-19T00:00:00Z"
+    },
+    {
+      "id": "SUP-001",
+      "status": "IMPLEMENTED",
+      "owner": "Release build owner",
+      "implementation": "Source SHA, OCI digest and explicit runtime-image build arguments",
+      "proof_refs": [
+        "infra/deployment/release-manifest.example.json",
+        "infra/docker/api.Dockerfile",
+        "infra/docker/web.Dockerfile"
+      ],
+      "failure_condition": "runtime or release image is mutable, unscanned or lacks provenance",
+      "next_review_at": "2026-11-19T00:00:00Z"
+    },
+    {
+      "id": "OPS-001",
+      "status": "VERIFIED",
+      "owner": "T082 implementer",
+      "implementation": "Atomic redacted action receipts and append-only task evidence",
+      "proof_refs": ["infra/deployment/release.py", ".loop/t082-deployment-rollback-ledger.json"],
+      "failure_condition": "an action cannot be reconstructed from state, receipt and exact source head",
+      "next_review_at": "2026-11-19T00:00:00Z"
+    },
+    {
+      "id": "OPS-003",
+      "status": "VERIFIED",
+      "owner": "T082 implementer",
+      "implementation": "Application rollback preserves forward schema; T081 restore remains separate",
+      "proof_refs": ["scripts/test/verify-deployment-rollback.sh", "docs/operations/rollback.md"],
+      "failure_condition": "application rollback issues a destructive schema action or moves schema backward",
+      "next_review_at": "2026-11-19T00:00:00Z"
+    }
+  ],
+  "human_gates": [
+    {
+      "id": "gate-t082-production",
+      "condition": "Approve exact production environment, manifest, traffic switch, monitoring and rollback preview",
+      "approver": "Mark / Courtside TW release owner",
+      "status": "PENDING"
+    },
+    {
+      "id": "gate-t082-contract",
+      "condition": "Approve a later contract migration after the rollback window closes",
+      "approver": "Mark / Courtside TW release owner",
+      "status": "PENDING"
+    },
+    {
+      "id": "gate-t082-merge",
+      "condition": "Accept final exact-head CI, Security, artifact, review-thread and mergeability evidence",
+      "approver": "Mark / Courtside TW release owner",
+      "status": "PENDING"
+    }
+  ],
+  "monitoring": {
+    "signals": [
+      "candidate readiness",
+      "release-state denial",
+      "schema compatibility",
+      "exact-head CI and Security"
+    ],
+    "owner": "Courtside TW release owner",
+    "alert_route": "Production monitoring remains T083; production activation stays HOLD"
+  },
+  "rollback": {
+    "method": "Atomically route to a registered compatible prior application while preserving the forward database schema",
+    "tested": true,
+    "proof_refs": ["scripts/test/verify-deployment-rollback.sh", "docs/operations/rollback.md"]
+  },
+  "evidence_refs": [
+    ".loop/evidence/t082-dispatch.json",
+    ".loop/evidence/t082-red.json",
+    "artifacts/dependencies/t082/t082-deployment-rollback-receipt.json"
+  ],
+  "next_review_at": "2026-11-19T00:00:00Z"
+}

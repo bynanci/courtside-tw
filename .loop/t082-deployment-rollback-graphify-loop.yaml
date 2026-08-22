@@ -1,0 +1,675 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-t082-deployment-and-nondestructive-rollback
+objective: Prove a pinned application release can advance and roll back while the database schema remains forward-only.
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - T082 deployment contracts, immutable image inputs, expand/migrate/contract sequencing, readiness and rollback runbooks.
+    - Isolated tests-first drill, redacted receipt, minimal CI wiring and one draft PR.
+  out:
+    - Real production deployment, provider or secret changes, destructive schema rollback and protected merge.
+    - T083+, Web3, participant research and unrelated task state.
+
+policy:
+  human_gates:
+    - Production activation, destructive contract migration and protected merge require current Mark approval.
+    - Exact-head CI and Security, zero unresolved threads and protected-main enforcement remain mandatory.
+  no_progress: { max_same_failure: 2, max_no_evidence_delta: 2 }
+  mutation: { append_only_evidence: true, require_graph_delta: true }
+
+graph:
+  entry_nodes: [t-readback, t-t082-ready, t-release-review]
+  terminal_nodes: [s-terminal]
+  loops:
+    - id: l2-t082-supervision
+      layer: L2
+      owner: codex-supervisor
+      trigger_nodes: [t-readback]
+      action_nodes: [a-reconcile]
+      proof_nodes: [p-scope]
+      memory_nodes: [m-supervisor]
+      stop_nodes: [s-terminal]
+      budgets:
+        {
+          max_iterations: 2,
+          max_minutes: 20,
+          max_same_failure: 2,
+          max_graph_changes: 8,
+          max_tokens: 12000
+        }
+    - id: l1-t082-execution
+      layer: L1
+      owner: codex-agent
+      trigger_nodes: [t-t082-ready]
+      action_nodes: [a-red, a-implement]
+      proof_nodes: [p-red, p-local]
+      memory_nodes: [m-execution]
+      stop_nodes: [s-terminal]
+      budgets:
+        {
+          max_iterations: 4,
+          max_minutes: 90,
+          max_same_failure: 2,
+          max_graph_changes: 12,
+          max_tokens: 36000
+        }
+    - id: l3-t082-release
+      layer: L3
+      owner: release-owner
+      trigger_nodes: [t-release-review]
+      action_nodes: [a-review]
+      proof_nodes: [p-exact-head]
+      memory_nodes: [m-release]
+      stop_nodes: [s-terminal]
+      budgets:
+        {
+          max_iterations: 2,
+          max_minutes: 60,
+          max_same_failure: 2,
+          max_graph_changes: 6,
+          max_tokens: 14000
+        }
+  nodes:
+    - id: t-readback
+      kind: trigger
+      layer: L2
+      label: Current main and task ledger require reconciliation
+      owner: codex-supervisor
+      status: done
+      risk: medium
+      confidence:
+        {
+          score: 0.99,
+          basis: "GitHub branch, PR #118, tasks.md and Issues #111/#120 read-back",
+          evidence_refs: [.loop/evidence/t082-dispatch.json]
+        }
+      budget: { effort_hours: 0.1, tokens: 2000 }
+      config:
+        {
+          condition: "T081 is complete and T082 is the next unchecked Wave 2 item",
+          inputs_required: [main SHA, tasks.md, Issue 111, Issue 120],
+          dedupe: main-SHA-plus-T082
+        }
+    - id: a-reconcile
+      kind: action
+      layer: L2
+      label: Bind T082 scope and preserve later-task blockers
+      owner: codex-supervisor
+      status: done
+      risk: high
+      confidence:
+        {
+          score: 0.99,
+          basis: "No existing T082 PR and explicit scope exclusions",
+          evidence_refs: [.loop/evidence/t082-dispatch.json]
+        }
+      budget: { effort_hours: 0.3, tokens: 3500 }
+      config:
+        workflow: [read authoritative state, deduplicate active work, bind scope and gates]
+        allowed: [read GitHub and repository state, record T082 graph and evidence]
+        requires_approval: [production deploy, protected merge, destructive migration]
+        forbidden: [T083+ implementation, Web3, participant research, task checkbox change]
+    - id: p-scope
+      kind: proof
+      layer: L2
+      label: T082 scope reconciliation
+      owner: verifier
+      status: done
+      risk: high
+      confidence:
+        {
+          score: 0.99,
+          basis: "System-of-record read-back",
+          evidence_refs: [.loop/evidence/t082-dispatch.json]
+        }
+      budget: { effort_hours: 0.2, tokens: 1500 }
+      config:
+        {
+          level: P2,
+          claim: "T082 is the only dispatched task",
+          method: "GitHub and tasks.md reconciliation",
+          evidence_path: .loop/evidence/t082-dispatch.json,
+          required: true,
+          baseline_required: true
+        }
+    - id: m-supervisor
+      kind: memory
+      layer: L2
+      label: T082 supervisor ledger
+      owner: codex-supervisor
+      status: done
+      risk: medium
+      confidence:
+        {
+          score: 0.95,
+          basis: "Append-only task ledger",
+          evidence_refs: [.loop/t082-deployment-rollback-ledger.json]
+        }
+      budget: { effort_hours: 0.1, tokens: 700 }
+      config:
+        {
+          path: .loop/t082-deployment-rollback-ledger.json,
+          read_before_action: true,
+          write_after_iteration: true,
+          append_only: true
+        }
+    - id: t-t082-ready
+      kind: trigger
+      layer: L1
+      label: T082 tests-first implementation is ready
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        {
+          score: 0.99,
+          basis: "Scope proof plus explicit user direction",
+          evidence_refs: [.loop/evidence/t082-dispatch.json]
+        }
+      budget: { effort_hours: 0.0, tokens: 0 }
+      config:
+        {
+          condition: "T082 is next and production activation is excluded",
+          inputs_required: [p-scope, Issue 120],
+          dedupe: T082-plus-main-SHA
+        }
+    - id: a-red
+      kind: action
+      layer: L1
+      label: Establish failing deployment and rollback drill
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        {
+          score: 0.98,
+          basis: "Drill failed at the missing release controller before implementation",
+          evidence_refs: [.loop/evidence/t082-red.json]
+        }
+      budget: { effort_hours: 0.5, tokens: 5000 }
+      config:
+        workflow: [add bounded drill, execute missing-seam baseline, preserve failure receipt]
+        allowed: [scripts/test/verify-deployment-rollback.sh, T082 graph and evidence]
+        requires_approval: [none]
+        forbidden: [implementation before attributable RED, acceptance weakening]
+    - id: p-red
+      kind: proof
+      layer: L1
+      label: T082 attributable RED baseline
+      owner: verifier
+      status: done
+      risk: high
+      confidence:
+        {
+          score: 0.98,
+          basis: "Exit 1 identified the intended missing T082 controller seam",
+          evidence_refs: [.loop/evidence/t082-red.json]
+        }
+      budget: { effort_hours: 0.2, tokens: 1600 }
+      config:
+        {
+          level: P2,
+          claim: "Drill fails on the missing T082 deployment seam",
+          method: "bash scripts/test/verify-deployment-rollback.sh",
+          evidence_path: .loop/evidence/t082-red.json,
+          required: true,
+          baseline_required: true
+        }
+    - id: a-implement
+      kind: action
+      layer: L1
+      label: Implement minimum forward-only release controller and runbooks
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        {
+          score: 0.98,
+          basis: "Minimum forward-only release controller, OCI runtime contracts and runbooks pass the isolated drill",
+          evidence_refs: [.loop/evidence/t082-local-proof.json]
+        }
+      budget: { effort_hours: 3.0, tokens: 20000 }
+      config:
+        workflow:
+          [
+            validate immutable manifest,
+            enforce readiness and compatibility,
+            atomically activate or roll back application,
+            write redacted receipt
+          ]
+        allowed:
+          [
+            infra/deployment,
+            infra/docker,
+            docs/operations/deployment.md,
+            docs/operations/rollback.md,
+            minimal CI wiring,
+            T082 evidence
+          ]
+        requires_approval: [production deploy, protected merge, destructive contract phase]
+        forbidden: [database down migration, secrets, T083+, Web3, participant research]
+    - id: p-local
+      kind: proof
+      layer: L1
+      label: Isolated non-destructive rollback and regression proof
+      owner: verifier
+      status: done
+      risk: high
+      confidence:
+        {
+          score: 0.99,
+          basis: "Rollback receipt preserves schema 10 and all unsafe candidate paths fail closed",
+          evidence_refs: [.loop/evidence/t082-local-proof.json]
+        }
+      budget: { effort_hours: 0.6, tokens: 5000 }
+      config:
+        {
+          level: P2,
+          claim: "Application rollback preserves the forward schema and rejects unsafe candidates",
+          method: "T082 drill plus repository verification and scope scan",
+          evidence_path: .loop/evidence/t082-local-proof.json,
+          required: true,
+          baseline_required: true
+        }
+    - id: m-execution
+      kind: memory
+      layer: L1
+      label: T082 execution ledger
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        {
+          score: 0.9,
+          basis: "Task-specific RED and local-green events recorded",
+          evidence_refs: [.loop/t082-deployment-rollback-ledger.json]
+        }
+      budget: { effort_hours: 0.1, tokens: 900 }
+      config:
+        {
+          path: .loop/t082-deployment-rollback-ledger.json,
+          read_before_action: true,
+          write_after_iteration: true,
+          append_only: true
+        }
+    - id: t-release-review
+      kind: trigger
+      layer: L3
+      label: T082 draft PR requires exact-head review
+      owner: release-owner
+      status: planned
+      risk: critical
+      confidence: { score: 0.6, basis: "Local proof and PR do not yet exist", evidence_refs: [] }
+      budget: { effort_hours: 0.0, tokens: 0 }
+      config:
+        {
+          condition: "One draft PR exists at a final candidate head",
+          inputs_required: [PR head, CI, Security, review threads, mergeability],
+          dedupe: PR-head-SHA
+        }
+    - id: a-review
+      kind: action
+      layer: L3
+      label: Review exact-head checks, scope and rollback artifact
+      owner: release-owner
+      status: planned
+      risk: critical
+      confidence: { score: 0.5, basis: "Requires GitHub post-push evidence", evidence_refs: [] }
+      budget: { effort_hours: 0.5, tokens: 4500 }
+      config:
+        workflow:
+          [
+            read exact head,
+            verify CI and Security,
+            download receipt,
+            inspect threads and mergeability
+          ]
+        allowed: [GitHub read-back and accountable review]
+        requires_approval: [protected merge, T082 checkbox]
+        forbidden: [self-approval, production activation]
+    - id: p-exact-head
+      kind: proof
+      layer: L3
+      label: Final exact-head protected evidence
+      owner: verifier
+      status: planned
+      risk: critical
+      confidence: { score: 0.0, basis: "No exact-head run exists yet", evidence_refs: [] }
+      budget: { effort_hours: 0.5, tokens: 5000 }
+      config:
+        {
+          level: P4,
+          claim: "Final head passes required gates with zero unresolved threads",
+          method: "GitHub CI, Security, artifact and ruleset read-back",
+          evidence_path: .loop/evidence/t082-exact-head-receipt.json,
+          required: true,
+          baseline_required: true
+        }
+    - id: g-merge
+      kind: gate
+      layer: L3
+      label: T082 protected merge gate
+      owner: release-owner
+      status: needs_human
+      risk: critical
+      confidence:
+        { score: 1.0, basis: "Protected merge cannot be self-approved", evidence_refs: [] }
+      budget: { effort_hours: 0.1, tokens: 500 }
+      config:
+        {
+          condition: "Exact-head proof passes and Mark accepts the T082 receipt",
+          approver: human-mark,
+          required: true
+        }
+    - id: m-release
+      kind: memory
+      layer: L3
+      label: T082 release ledger
+      owner: release-owner
+      status: ready
+      risk: medium
+      confidence:
+        {
+          score: 0.9,
+          basis: "Pending evidence remains separate from local proof",
+          evidence_refs: [.loop/t082-deployment-rollback-ledger.json]
+        }
+      budget: { effort_hours: 0.1, tokens: 700 }
+      config:
+        {
+          path: .loop/t082-deployment-rollback-ledger.json,
+          read_before_action: true,
+          write_after_iteration: true,
+          append_only: true
+        }
+    - id: s-terminal
+      kind: stop
+      layer: GLOBAL
+      label: T082 terminal policy
+      owner: policy
+      status: planned
+      risk: critical
+      confidence: { score: 1.0, basis: "Named deterministic stop policy", evidence_refs: [] }
+      budget: { effort_hours: 0.0, tokens: 0 }
+      config:
+        states:
+          success: Exact-head proof, protected merge and main read-back pass.
+          blocked: Required input, permission, CI, Security, artifact or rollback proof is unavailable.
+          needs_human: Production action, destructive contract migration or protected merge awaits Mark.
+          stalled: Same failure or no-evidence-delta limit is reached.
+          no_op: Current main already satisfies T082 with authoritative proof.
+          exhausted: Iteration, time, graph-change or token budget is reached.
+  edges:
+    - {
+        id: e-readback-reconcile,
+        from: t-readback,
+        to: a-reconcile,
+        type: enables,
+        required: true,
+        confidence: 0.99,
+        token_capacity: 6000
+      }
+    - {
+        id: e-reconcile-proof,
+        from: a-reconcile,
+        to: p-scope,
+        type: verifies,
+        required: true,
+        confidence: 0.99,
+        token_capacity: 5000
+      }
+    - {
+        id: e-scope-ready,
+        from: p-scope,
+        to: t-t082-ready,
+        type: enables,
+        required: true,
+        confidence: 0.99,
+        token_capacity: 5000
+      }
+    - {
+        id: e-ready-red,
+        from: t-t082-ready,
+        to: a-red,
+        type: enables,
+        required: true,
+        confidence: 0.99,
+        token_capacity: 5000
+      }
+    - {
+        id: e-red-proof,
+        from: a-red,
+        to: p-red,
+        type: verifies,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 4500
+      }
+    - {
+        id: e-red-implement,
+        from: p-red,
+        to: a-implement,
+        type: enables,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 9000
+      }
+    - {
+        id: e-implement-local,
+        from: a-implement,
+        to: p-local,
+        type: verifies,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 9000
+      }
+    - {
+        id: e-local-stop,
+        from: p-local,
+        to: s-terminal,
+        type: enables,
+        required: false,
+        confidence: 0.8,
+        token_capacity: 3000
+      }
+    - {
+        id: e-local-release,
+        from: p-local,
+        to: t-release-review,
+        type: feedback,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 6000
+      }
+    - {
+        id: e-release-review,
+        from: t-release-review,
+        to: a-review,
+        type: enables,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 6000
+      }
+    - {
+        id: e-review-proof,
+        from: a-review,
+        to: p-exact-head,
+        type: verifies,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 7000
+      }
+    - {
+        id: e-proof-gate,
+        from: p-exact-head,
+        to: g-merge,
+        type: requires_approval,
+        required: true,
+        confidence: 1.0,
+        token_capacity: 5000
+      }
+    - {
+        id: e-gate-stop,
+        from: g-merge,
+        to: s-terminal,
+        type: approves,
+        required: true,
+        confidence: 1.0,
+        token_capacity: 5000
+      }
+    - {
+        id: e-reconcile-memory,
+        from: a-reconcile,
+        to: m-supervisor,
+        type: records,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 2200
+      }
+    - {
+        id: e-scope-memory,
+        from: p-scope,
+        to: m-supervisor,
+        type: records,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 2200
+      }
+    - {
+        id: e-supervisor-read,
+        from: m-supervisor,
+        to: a-reconcile,
+        type: reads,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 3000
+      }
+    - {
+        id: e-supervisor-feedback,
+        from: m-supervisor,
+        to: a-reconcile,
+        type: feedback,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 3000
+      }
+    - {
+        id: e-red-memory,
+        from: a-red,
+        to: m-execution,
+        type: records,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 2200
+      }
+    - {
+        id: e-red-proof-memory,
+        from: p-red,
+        to: m-execution,
+        type: records,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 2200
+      }
+    - {
+        id: e-implement-memory,
+        from: a-implement,
+        to: m-execution,
+        type: records,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 3000
+      }
+    - {
+        id: e-local-memory,
+        from: p-local,
+        to: m-execution,
+        type: records,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 2600
+      }
+    - {
+        id: e-execution-read-red,
+        from: m-execution,
+        to: a-red,
+        type: reads,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 3000
+      }
+    - {
+        id: e-execution-read-implement,
+        from: m-execution,
+        to: a-implement,
+        type: reads,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 4000
+      }
+    - {
+        id: e-execution-feedback,
+        from: m-execution,
+        to: a-red,
+        type: feedback,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 3500
+      }
+    - {
+        id: e-review-memory,
+        from: a-review,
+        to: m-release,
+        type: records,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 2500
+      }
+    - {
+        id: e-exact-memory,
+        from: p-exact-head,
+        to: m-release,
+        type: records,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 2500
+      }
+    - {
+        id: e-release-read,
+        from: m-release,
+        to: a-review,
+        type: reads,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 3000
+      }
+    - {
+        id: e-release-feedback,
+        from: m-release,
+        to: a-review,
+        type: feedback,
+        required: true,
+        confidence: 0.9,
+        token_capacity: 3000
+      }
+
+flow:
+  source: t-readback
+  sink: s-terminal
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - memory_receipt
+  - next_action
