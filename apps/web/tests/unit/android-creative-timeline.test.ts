@@ -507,7 +507,12 @@ test("native Android background refuses HOME when the target loses focus during 
         },
         armRuntimeObservation: () => {
           armCalls += 1
-          return Promise.resolve({ at: 10_000, frame: 35, runningCount: 1, targetStatus: "running" })
+          return Promise.resolve({
+            at: 10_000,
+            frame: 35,
+            runningCount: 1,
+            targetStatus: "running"
+          })
         },
         epochNow: () => 100_000,
         monotonicNow: () => 500,
@@ -535,10 +540,7 @@ test("native Android performance harness invokes the behavioral boundaries", () 
   )
   match(performanceHarness, /const boundary = await establishNativeAndroidBackgroundBoundary\(\{/u)
   match(performanceHarness, /acquireChromeForegroundActivityAtBoundary\(\{/u)
-  match(
-    performanceHarness,
-    /const ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS = 250\b/u
-  )
+  match(performanceHarness, /const ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS = 250\b/u)
   match(performanceHarness, /const ANDROID_ACTIVITY_RECEIPT_HISTORY_LIMIT = 64\b/u)
   match(performanceHarness, /const CHROME_AUTOMATION_POLL_MILLISECONDS = 100\b/u)
   match(performanceHarness, /const CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS = 5_000\b/u)
@@ -554,14 +556,8 @@ test("native Android performance harness invokes the behavioral boundaries", () 
     performanceHarness,
     /maximumReadMilliseconds:\s*ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS/u
   )
-  match(
-    performanceHarness,
-    /maximumPollMilliseconds:\s*CHROME_AUTOMATION_POLL_MILLISECONDS/u
-  )
-  match(
-    performanceHarness,
-    /maximumAttempts:\s*ANDROID_ACTIVITY_RECEIPT_HISTORY_LIMIT/u
-  )
+  match(performanceHarness, /maximumPollMilliseconds:\s*CHROME_AUTOMATION_POLL_MILLISECONDS/u)
+  match(performanceHarness, /maximumAttempts:\s*ANDROID_ACTIVITY_RECEIPT_HISTORY_LIMIT/u)
   match(performanceHarness, /bringToFront:\s*\(\) => page\.bringToFront\(\)/u)
   equal(performanceHarness.match(/page\.bringToFront\(\)/gu)?.length, 1)
   equal(performanceHarness.match(/"KEYCODE_HOME"/gu)?.length, 1)
