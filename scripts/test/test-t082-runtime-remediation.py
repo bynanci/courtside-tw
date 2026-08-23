@@ -542,6 +542,112 @@ class T082RuntimeRemediationTests(unittest.TestCase):
                     1,
                 )
 
+    def test_migration_reports_legacy_backup_io_failure_as_blocked(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            state_path = root / "release-state.json"
+            receipt_path = root / "migration-receipt.json"
+            blocked_parent = root / "not-a-directory"
+            backup_path = blocked_parent / "release-state.v1.json"
+            release_a = manifest("release-a", "a", 9, 9, 10)
+            legacy_state: dict[str, object] = {
+                "schema_version": 1,
+                "revision": 1,
+                "database_schema_version": 9,
+                "active_release": "release-a",
+                "previous_release": None,
+                "last_action_receipt": {"action": "activate", "result": "pass"},
+                "releases": {"release-a": release_a},
+            }
+            state_path.write_text(
+                json.dumps(legacy_state, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            blocked_parent.write_text("not a directory", encoding="utf-8")
+
+            migration = subprocess.run(
+                [
+                    sys.executable,
+                    str(CONTROLLER_PATH),
+                    "--state",
+                    str(state_path),
+                    "--receipt",
+                    str(receipt_path),
+                    "--environment",
+                    "staging",
+                    "migrate-state",
+                    "--legacy-backup",
+                    str(backup_path),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertNotEqual(migration.returncode, 0)
+            self.assertNotIn("Traceback", migration.stderr)
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            self.assertEqual(receipt["result"], "blocked")
+            self.assertIn("legacy release-state backup", receipt["reason"])
+            self.assertEqual(
+                json.loads(state_path.read_text(encoding="utf-8"))["schema_version"],
+                1,
+            )
+
+    def test_migration_rejects_release_state_lock_as_legacy_backup(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            state_path = root / "release-state.json"
+            receipt_path = root / "migration-receipt.json"
+            lock_path = state_path.with_suffix(f"{state_path.suffix}.lock")
+            release_a = manifest("release-a", "a", 9, 9, 10)
+            legacy_state: dict[str, object] = {
+                "schema_version": 1,
+                "revision": 1,
+                "database_schema_version": 9,
+                "active_release": "release-a",
+                "previous_release": None,
+                "last_action_receipt": {"action": "activate", "result": "pass"},
+                "releases": {"release-a": release_a},
+            }
+            state_path.write_text(
+                json.dumps(legacy_state, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+
+            try:
+                migration = subprocess.run(
+                    [
+                        sys.executable,
+                        str(CONTROLLER_PATH),
+                        "--state",
+                        str(state_path),
+                        "--receipt",
+                        str(receipt_path),
+                        "--environment",
+                        "staging",
+                        "migrate-state",
+                        "--legacy-backup",
+                        str(lock_path),
+                    ],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=2,
+                )
+            except subprocess.TimeoutExpired as error:
+                self.fail(f"migration deadlocked on the release-state lock: {error}")
+
+            self.assertNotEqual(migration.returncode, 0)
+            self.assertNotIn("Traceback", migration.stderr)
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            self.assertEqual(receipt["result"], "blocked")
+            self.assertIn("release-state lock", receipt["reason"])
+            self.assertEqual(
+                json.loads(state_path.read_text(encoding="utf-8"))["schema_version"],
+                1,
+            )
+
     def test_legacy_backup_creation_is_exclusive_across_state_files(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             backup_path = Path(directory) / "shared-v1-backup.json"
