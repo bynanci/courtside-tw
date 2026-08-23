@@ -1,6 +1,15 @@
 import { deepEqual, doesNotMatch, equal, match, throws } from "node:assert/strict"
 import { spawnSync } from "node:child_process"
-import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import {
+  chmodSync,
+  existsSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync
+} from "node:fs"
 import { tmpdir } from "node:os"
 import { delimiter, join } from "node:path"
 import { test } from "node:test"
@@ -993,7 +1002,7 @@ test("emulator environment CLI canonicalizes and joins host, resolved and live i
     fakeAdb,
     `#!/usr/bin/env node
 const command = process.argv.slice(2).join(" ")
-if (command === "emu avd name") process.stdout.write("${ANDROID_AVD_NAME}\\nOK\\n")
+if (command === "emu avd name") process.stdout.write((process.env.FAKE_AVD_NAME ?? "${ANDROID_AVD_NAME}") + "\\nOK\\n")
 else if (command === "exec-out cat /sys/devices/system/cpu/online") process.stdout.write("0-3\\n")
 else if (command === "exec-out cat /proc/meminfo") process.stdout.write("MemTotal: 3973120 kB\\n")
 else if (command === "exec-out getprop dalvik.vm.heapsize") process.stdout.write("576m\\n")
@@ -1073,6 +1082,21 @@ else { process.stderr.write("unexpected fake adb command"); process.exitCode = 1
     equal(receipt.phase, "verify")
     equal(receipt.sourceHeadSha, EXACT_HEAD_SHA)
     equal(receipt.liveGuest.avdName, ANDROID_AVD_NAME)
+    deepEqual(receipt.canonicalConfig, {
+      avdName: ANDROID_AVD_NAME,
+      profile: ANDROID_PROFILE,
+      cpuCores: 4,
+      ramMegabytes: 4096,
+      heapMegabytes: 576
+    })
+    deepEqual(receipt.resolvedHardware, {
+      avdName: ANDROID_AVD_NAME,
+      avdId: ANDROID_AVD_NAME,
+      profile: ANDROID_PROFILE,
+      cpuCores: 4,
+      ramMegabytes: 4096,
+      heapMegabytes: 576
+    })
     deepEqual(
       receipt.commands.map((command: { name: string }) => command.name),
       ["live-avd-name", "guest-cpu-online", "guest-meminfo", "guest-heap-size"]
@@ -1085,6 +1109,131 @@ else { process.stderr.write("unexpected fake adb command"); process.exitCode = 1
       equal(command.stderr, "")
       equal(command.stderrTruncated, false)
     }
+
+    const verifiedCanonicalConfig = readFileSync(configPath, "utf8")
+    writeFileSync(
+      configPath,
+      verifiedCanonicalConfig.replace(`AvdId=${ANDROID_AVD_NAME}`, "AvdId=other-avd"),
+      "utf8"
+    )
+    const canonicalDrift = spawnSync(
+      process.execPath,
+      [scriptPath, "verify", "artifacts/android-chrome/canonical-drift.json"],
+      { cwd: fixtureRoot, encoding: "utf8", env: environment }
+    )
+    equal(canonicalDrift.status, 1)
+    const canonicalDriftReceipt = JSON.parse(
+      readFileSync(join(artifactDirectory, "canonical-drift.json"), "utf8")
+    )
+    equal(canonicalDriftReceipt.result, "FAIL")
+    equal("liveGuest" in canonicalDriftReceipt, false)
+    match(canonicalDriftReceipt.reason, /canonical AVD identity drift/u)
+    writeFileSync(configPath, verifiedCanonicalConfig, "utf8")
+
+    const verifiedResolvedHardware = readFileSync(resolvedPath, "utf8")
+    writeFileSync(
+      resolvedPath,
+      verifiedResolvedHardware.replace(
+        `hw.device.name = ${ANDROID_PROFILE}`,
+        "hw.device.name = other_profile"
+      ),
+      "utf8"
+    )
+    const resolvedDrift = spawnSync(
+      process.execPath,
+      [scriptPath, "verify", "artifacts/android-chrome/resolved-drift.json"],
+      { cwd: fixtureRoot, encoding: "utf8", env: environment }
+    )
+    equal(resolvedDrift.status, 1)
+    const resolvedDriftReceipt = JSON.parse(
+      readFileSync(join(artifactDirectory, "resolved-drift.json"), "utf8")
+    )
+    equal(resolvedDriftReceipt.result, "FAIL")
+    equal("liveGuest" in resolvedDriftReceipt, false)
+    match(resolvedDriftReceipt.reason, /resolved profile drift/u)
+    writeFileSync(resolvedPath, verifiedResolvedHardware, "utf8")
+
+    const liveDrift = spawnSync(
+      process.execPath,
+      [scriptPath, "verify", "artifacts/android-chrome/live-drift.json"],
+      {
+        cwd: fixtureRoot,
+        encoding: "utf8",
+        env: { ...environment, FAKE_AVD_NAME: "other-avd" }
+      }
+    )
+    equal(liveDrift.status, 1)
+    const liveDriftReceipt = JSON.parse(
+      readFileSync(join(artifactDirectory, "live-drift.json"), "utf8")
+    )
+    equal(liveDriftReceipt.result, "FAIL")
+    equal("liveGuest" in liveDriftReceipt, false)
+    match(liveDriftReceipt.reason, /live AVD identity drift/u)
+
+    const malformedConfig = verifiedCanonicalConfig.replace(
+      `hw.device.name=${ANDROID_PROFILE}\n`,
+      ""
+    )
+    writeFileSync(configPath, malformedConfig, "utf8")
+    const failedPrepare = spawnSync(
+      process.execPath,
+      [scriptPath, "prepare", "artifacts/android-chrome/prepare-failure.json"],
+      { cwd: fixtureRoot, encoding: "utf8", env: environment }
+    )
+    equal(failedPrepare.status, 1)
+    equal(readFileSync(configPath, "utf8"), malformedConfig)
+    const failedPrepareReceipt = JSON.parse(
+      readFileSync(join(artifactDirectory, "prepare-failure.json"), "utf8")
+    )
+    equal(failedPrepareReceipt.result, "FAIL")
+    equal(failedPrepareReceipt.phase, "prepare")
+    match(failedPrepareReceipt.reason, /missing canonical profile/u)
+  } finally {
+    rmSync(fixtureRoot, { force: true, recursive: true })
+  }
+})
+
+test("emulator environment CLI refuses a symlinked fixed artifact directory", () => {
+  const fixtureRoot = mkdtempSync(join(tmpdir(), "courtside-emulator-symlink-"))
+  const avdHome = join(fixtureRoot, "avd-home")
+  const avdDirectory = join(avdHome, `${ANDROID_AVD_NAME}.avd`)
+  const artifactsDirectory = join(fixtureRoot, "artifacts")
+  const externalDirectory = join(fixtureRoot, "external-receipts")
+  const artifactDirectory = join(artifactsDirectory, "android-chrome")
+  const scriptPath = fileURLToPath(
+    new URL("../../scripts/android-emulator-environment.mjs", import.meta.url)
+  )
+  const externalReceiptPath = join(externalDirectory, "emulator-environment-prepare.json")
+
+  mkdirSync(avdDirectory, { recursive: true })
+  mkdirSync(artifactsDirectory, { recursive: true })
+  mkdirSync(externalDirectory, { recursive: true })
+  symlinkSync(externalDirectory, artifactDirectory, "dir")
+  writeFileSync(
+    join(artifactsDirectory, "exact-head.json"),
+    `${JSON.stringify({ source_head_sha: EXACT_HEAD_SHA })}\n`,
+    "utf8"
+  )
+  writeFileSync(
+    join(avdDirectory, "config.ini"),
+    `AvdId=${ANDROID_AVD_NAME}\nhw.device.name=${ANDROID_PROFILE}\nhw.cpu.ncore=4\nhw.ramSize=4096\nvm.heapSize=576\n`,
+    "utf8"
+  )
+  const environment = {
+    ...process.env,
+    ANDROID_AVD_HOME: avdHome,
+    COURTSIDE_ANDROID_AVD_NAME: ANDROID_AVD_NAME
+  }
+
+  try {
+    const result = spawnSync(
+      process.execPath,
+      [scriptPath, "prepare", "artifacts/android-chrome/emulator-environment-prepare.json"],
+      { cwd: fixtureRoot, encoding: "utf8", env: environment }
+    )
+    equal(result.status, 1)
+    match(result.stderr, /physical fixed artifact directory/u)
+    equal(existsSync(externalReceiptPath), false)
   } finally {
     rmSync(fixtureRoot, { force: true, recursive: true })
   }
