@@ -858,6 +858,8 @@ html[data-reader-motion-feedback="enabled"] .button-link:not(:disabled):active {
 }
 
 .issue-hero {
+  --muted: var(--color-text-muted-on-hero);
+
   position: relative;
   overflow: hidden;
   border-bottom: 1px solid var(--color-line-on-hero);
@@ -1588,6 +1590,7 @@ html[data-reader-motion-feedback="enabled"] .button-link:not(:disabled):active {
   min-height: 100svh;
   grid-template-columns: 15.5rem minmax(0, 1fr);
   background: var(--studio-paper);
+  color-scheme: light;
   color: var(--studio-ink);
   font-family: Inter, ui-sans-serif, system-ui, sans-serif;
 }

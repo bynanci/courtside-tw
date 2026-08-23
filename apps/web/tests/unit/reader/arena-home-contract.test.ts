@@ -69,3 +69,10 @@ test("Issue and reader utility surfaces preserve the Arena hero and adaptive con
   assert.match(privacyPage, /background:\s*var\(--color-danger\)/)
   assert.match(privacyPage, /color:\s*var\(--color-on-danger\)/)
 })
+
+test("fixed-dark issue copy and light-only Studio controls isolate their color schemes", async () => {
+  const mainCss = await read("app/assets/css/main.css")
+
+  assert.match(mainCss, /\.issue-hero\s*\{[^}]*--muted:\s*var\(--color-text-muted-on-hero\)/s)
+  assert.match(mainCss, /\.studio-app\s*\{[^}]*color-scheme:\s*light/s)
+})

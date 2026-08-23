@@ -80,6 +80,63 @@ for (const route of coreRoutes) {
   })
 }
 
+test("issue hero summary and time retain AA contrast", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" })
+  await page.goto("/issues/issue-2026-01", { waitUntil: "networkidle" })
+
+  const samples = await page.locator(".issue-hero").evaluate((hero) => {
+    function rgbChannels(value: string): [number, number, number] {
+      const channels = value
+        .match(/[\d.]+/g)
+        ?.slice(0, 3)
+        .map(Number)
+      if (!channels || channels.length !== 3) {
+        throw new Error(`Expected an RGB color, received ${value}`)
+      }
+      return channels as [number, number, number]
+    }
+
+    function relativeLuminance(value: string): number {
+      const channels = rgbChannels(value).map((channel) => {
+        const normalized = channel / 255
+        return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4
+      })
+      return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]
+    }
+
+    const background = getComputedStyle(hero).backgroundColor
+    return [
+      ["summary", ".issue-header__copy > p:not(.eyebrow)"],
+      ["time", ".issue-header__copy time"]
+    ].map(([name, selector]) => {
+      const element = hero.querySelector(selector)
+      if (!element) {
+        throw new Error(`Missing ${name} contrast target`)
+      }
+      const foreground = getComputedStyle(element).color
+      const lighter = Math.max(relativeLuminance(foreground), relativeLuminance(background))
+      const darker = Math.min(relativeLuminance(foreground), relativeLuminance(background))
+      return { name, foreground, background, ratio: (lighter + 0.05) / (darker + 0.05) }
+    })
+  })
+
+  expect(samples).toEqual([
+    expect.objectContaining({
+      name: "summary",
+      foreground: "rgb(184, 177, 167)",
+      background: "rgb(8, 8, 8)"
+    }),
+    expect.objectContaining({
+      name: "time",
+      foreground: "rgb(184, 177, 167)",
+      background: "rgb(8, 8, 8)"
+    })
+  ])
+  for (const sample of samples) {
+    expect(sample.ratio).toBeGreaterThanOrEqual(4.5)
+  }
+})
+
 test("sequential keyboard path follows Home → Issue → TOC → Article", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" })
   await page.goto("/", { waitUntil: "networkidle" })
