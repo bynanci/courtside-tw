@@ -5,13 +5,13 @@ import { chromium, expect } from "@playwright/test"
 import {
   boundedAndroidPollDelay,
   calibrateBrowserClockToHost,
+  captureChromeSurfaceProbeBoundary,
   classifyAndroidActivityLine,
   classifyChromeAutomationSurface,
   evaluateAndroidBackgroundTimeline,
   evaluateAndroidForegroundFrameTimeline,
   normalizeBrowserRuntimeSnapshot,
   requireAndroidActivityAtBoundary,
-  requireChromeForegroundActivityAtBoundary,
   retainFirstPausedSnapshot
 } from "./android-creative-timeline.mjs"
 
@@ -524,12 +524,21 @@ function probeChromeContentSurface(probeTimeoutMilliseconds) {
   }
 }
 
+function probeChromeContentSurfaceAtActivityBoundary(probeTimeoutMilliseconds) {
+  return captureChromeSurfaceProbeBoundary({
+    readActivity: resumedActivityLine,
+    probeSurface: () => probeChromeContentSurface(probeTimeoutMilliseconds)
+  })
+}
+
 function surfaceReceipt(surface) {
   return {
     status: surface.status,
     reason: surface.reason ?? null,
     probeMilliseconds: surface.probeMilliseconds,
-    hierarchyBytes: surface.hierarchyBytes
+    hierarchyBytes: surface.hierarchyBytes,
+    activityBefore: surface.activityBefore,
+    activityAfter: surface.activityAfter
   }
 }
 
@@ -540,24 +549,21 @@ async function normalizeChromeContentSurface() {
   let dismissTap = null
 
   while (performance.now() < deadline) {
-    const activity = requireChromeForegroundActivityAtBoundary(resumedActivityLine())
     const remainingMilliseconds = deadline - performance.now()
-    const surface = probeChromeContentSurface(
+    const surface = probeChromeContentSurfaceAtActivityBoundary(
       Math.max(
         1,
         Math.ceil(Math.min(CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS, remainingMilliseconds))
       )
     )
-    attempts.push({
-      ...surfaceReceipt(surface),
-      activity: activity.activity
-    })
+    attempts.push(surfaceReceipt(surface))
     if (surface.status === "clear") {
       return {
         status: surface.status,
         dismissedKnownPrompt,
         dismissTap,
-        activity: activity.activity,
+        activityBefore: surface.activityBefore,
+        activityAfter: surface.activityAfter,
         attempts
       }
     }
@@ -585,18 +591,16 @@ async function normalizeChromeContentSurface() {
 }
 
 function requireClearChromeContentSurface() {
-  const activity = requireChromeForegroundActivityAtBoundary(resumedActivityLine())
-  const surface = probeChromeContentSurface(CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS)
+  const surface = probeChromeContentSurfaceAtActivityBoundary(
+    CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS
+  )
   if (surface.status !== "clear") {
     throw new Error(
       `Android Chrome content surface was not clear at the foreground observation boundary; ` +
         `status=${surface.status}`
     )
   }
-  return {
-    ...surfaceReceipt(surface),
-    activity: activity.activity
-  }
+  return surfaceReceipt(surface)
 }
 
 function observeForegroundFrameTimeline(

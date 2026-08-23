@@ -58,6 +58,16 @@ function xmlAttribute(node, name) {
   return node.match(new RegExp(`(?:^|\\s)${name}="([^"]*)"`, "u"))?.[1] ?? null
 }
 
+function parseAndroidBounds(node) {
+  const match = xmlAttribute(node, "bounds")?.match(/^\[(\d+),(\d+)\]\[(\d+),(\d+)\]$/u)
+  if (!match) return null
+  const values = match.slice(1).map(Number)
+  if (!values.every(Number.isSafeInteger)) return null
+  const [left, top, right, bottom] = values
+  if (right <= left || bottom <= top) return null
+  return { left, top, right, bottom }
+}
+
 export function classifyChromeAutomationSurface(value) {
   if (typeof value !== "string") {
     throw new Error("Chrome automation hierarchy must be a string")
@@ -79,7 +89,12 @@ export function classifyChromeAutomationSurface(value) {
   const negativeButtonId = "com.android.chrome:id/negative_button"
   const knownTitle = "Chrome notifications make things easier"
   const hasChromeNode = nodes.some((node) => xmlAttribute(node, "package") === "com.android.chrome")
-  const hasModal = nodes.some((node) => xmlAttribute(node, "resource-id") === modalId)
+  const modal = nodes.find(
+    (node) =>
+      xmlAttribute(node, "package") === "com.android.chrome" &&
+      xmlAttribute(node, "resource-id") === modalId
+  )
+  const hasModal = Boolean(modal)
   const hasKnownMarker = nodes.some((node) => {
     const resourceId = xmlAttribute(node, "resource-id")
     return (
@@ -122,25 +137,25 @@ export function classifyChromeAutomationSurface(value) {
     return blocked
   }
 
-  const bounds = xmlAttribute(negativeButton, "bounds")?.match(/^\[(\d+),(\d+)\]\[(\d+),(\d+)\]$/u)
-  if (!bounds) {
+  const modalBounds = parseAndroidBounds(modal)
+  const buttonBounds = parseAndroidBounds(negativeButton)
+  if (
+    !modalBounds ||
+    !buttonBounds ||
+    buttonBounds.left < modalBounds.left ||
+    buttonBounds.top < modalBounds.top ||
+    buttonBounds.right > modalBounds.right ||
+    buttonBounds.bottom > modalBounds.bottom
+  ) {
     return blocked
   }
-  const [, rawLeft, rawTop, rawRight, rawBottom] = bounds
-  const left = Number(rawLeft)
-  const top = Number(rawTop)
-  const right = Number(rawRight)
-  const bottom = Number(rawBottom)
-  if (right <= left || bottom <= top) {
-    return blocked
-  }
+  const x = buttonBounds.left + Math.floor((buttonBounds.right - buttonBounds.left) / 2)
+  const y = buttonBounds.top + Math.floor((buttonBounds.bottom - buttonBounds.top) / 2)
+  if (!Number.isSafeInteger(x) || !Number.isSafeInteger(y)) return blocked
 
   return {
     status: "known-notification-prompt",
-    dismissTap: {
-      x: Math.floor((left + right) / 2),
-      y: Math.floor((top + bottom) / 2)
-    }
+    dismissTap: { x, y }
   }
 }
 
@@ -178,6 +193,23 @@ export function requireChromeForegroundActivityAtBoundary(value) {
     throw new Error(`Chrome is not the resumed Android activity: ${activity.activity}`)
   }
   return activity
+}
+
+export function captureChromeSurfaceProbeBoundary({ readActivity, probeSurface }) {
+  if (typeof readActivity !== "function" || typeof probeSurface !== "function") {
+    throw new Error("Chrome surface boundary dependencies must be functions")
+  }
+  const activityBefore = requireChromeForegroundActivityAtBoundary(readActivity())
+  const surface = probeSurface()
+  if (typeof surface !== "object" || surface === null || Array.isArray(surface)) {
+    throw new Error("Chrome surface probe must return an object")
+  }
+  const activityAfter = requireChromeForegroundActivityAtBoundary(readActivity())
+  return {
+    ...surface,
+    activityBefore: activityBefore.activity,
+    activityAfter: activityAfter.activity
+  }
 }
 
 export function retainFirstPausedSnapshot(currentSnapshot, candidateSnapshot) {
