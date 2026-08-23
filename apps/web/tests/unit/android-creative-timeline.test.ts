@@ -25,6 +25,8 @@ type TimelineFixtureOptions = {
   activeRunningCount?: number
   activityAt?: number
   activityTransitions?: ActivityTransition[]
+  clockMaximumUncertaintyMilliseconds?: number
+  observationAt?: number
   observationFrame?: number
   observationRunningCount?: number
   pauseAt?: number
@@ -37,6 +39,8 @@ function timeline({
   activeRunningCount = 1,
   activityAt = 120,
   activityTransitions,
+  clockMaximumUncertaintyMilliseconds = 0,
+  observationAt = 1_640,
   observationFrame = 42,
   observationRunningCount = 0,
   pauseAt = 140,
@@ -45,6 +49,7 @@ function timeline({
   pauseSnapshot
 }: TimelineFixtureOptions = {}) {
   return {
+    clockMaximumUncertaintyMilliseconds,
     homeSignal: { at: 100, signal: "Android KEYCODE_HOME" },
     activeSnapshot: {
       at: 90,
@@ -65,7 +70,7 @@ function timeline({
           }
         : pauseSnapshot,
     observationSnapshot: {
-      at: 1_640,
+      at: observationAt,
       frame: observationFrame,
       runningCount: observationRunningCount,
       targetStatus: "paused"
@@ -113,7 +118,15 @@ test("browser runtime epochs are normalized into the bracketed host clock", () =
 })
 
 test("activity classification ignores unresolved dumpsys output instead of treating it as background", () => {
-  for (const activity of ["", "   ", "mResumedActivity: null", "topResumedActivity=null"]) {
+  for (const activity of [
+    "",
+    "   ",
+    "mResumedActivity: null",
+    "topResumedActivity=null",
+    "mResumedActivity: garbage",
+    "topResumedActivity=ActivityRecord{}",
+    "unexpected launcher output"
+  ]) {
     equal(classifyAndroidActivityLine(activity), null)
   }
 
@@ -163,6 +176,18 @@ test("paused and observed snapshots require zero running runtimes", () => {
     () => evaluateAndroidBackgroundTimeline(timeline({ observationRunningCount: 1 }), BUDGETS),
     /background observation snapshot must contain zero running canvases/
   )
+  for (const targetStatus of ["idle", "loading", "error", "removed", "missing"]) {
+    const candidate = { at: 140, frame: 40, runningCount: 0, targetStatus }
+    equal(retainFirstPausedSnapshot(null, candidate), null)
+    throws(
+      () =>
+        evaluateAndroidBackgroundTimeline(
+          { ...timeline(), pauseSnapshot: candidate },
+          BUDGETS
+        ),
+      /runtime pause snapshot must have paused status/
+    )
+  }
 })
 
 test("background timeline fails closed when the runtime never pauses", () => {
@@ -218,4 +243,19 @@ test("blocking ADB polls clamp an expired timer instead of scheduling a negative
   equal(boundedAndroidPollDelay(-57.6, 100), 0)
   equal(boundedAndroidPollDelay(40, 100), 40)
   equal(boundedAndroidPollDelay(140, 100), 100)
+})
+
+test("clock uncertainty is charged against the runtime background deadline", () => {
+  throws(
+    () =>
+      evaluateAndroidBackgroundTimeline(
+        timeline({
+          clockMaximumUncertaintyMilliseconds: 20,
+          pauseAt: 5_085,
+          observationAt: 5_200
+        }),
+        BUDGETS
+      ),
+    /runtime background pause upper bound: expected <= 5000, received 5005/
+  )
 })
