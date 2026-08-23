@@ -57,6 +57,24 @@ function samePhysicalFileMetadata(left, right) {
   )
 }
 
+export function requireStablePhysicalFileRead(value) {
+  const openedSize = Number(value.beforeReadMetadata.size)
+  if (
+    !Number.isSafeInteger(openedSize) ||
+    openedSize <= 0 ||
+    !Buffer.isBuffer(value.firstRead) ||
+    !Buffer.isBuffer(value.secondRead) ||
+    value.firstBytesRead !== openedSize ||
+    value.secondBytesRead !== openedSize ||
+    !value.firstRead.equals(value.secondRead) ||
+    !samePhysicalFileMetadata(value.beforeReadMetadata, value.betweenReadMetadata) ||
+    !samePhysicalFileMetadata(value.beforeReadMetadata, value.afterReadMetadata)
+  ) {
+    throw new Error(`${value.label} physical file changed while being read`)
+  }
+  return value.firstRead.subarray(0, openedSize)
+}
+
 function requirePhysicalDirectory(path, label, create = false) {
   if (!existsSync(path)) {
     if (!create) throw new Error(`${label} does not exist`)
@@ -69,7 +87,7 @@ function requirePhysicalDirectory(path, label, create = false) {
   return path
 }
 
-function readPhysicalFile(path, label) {
+function readPhysicalFileSnapshot(path, label) {
   requirePhysicalDirectory(dirname(path), `${label} parent directory`)
   const metadata = lstatSync(path)
   if (metadata.isSymbolicLink() || !metadata.isFile() || realpathSync(path) !== path) {
@@ -98,23 +116,28 @@ function readPhysicalFile(path, label) {
     const secondRead = Buffer.alloc(openedSize + 1)
     const secondBytesRead = readSync(descriptor, secondRead, 0, secondRead.length, 0)
     const afterReadMetadata = fstatSync(descriptor, { bigint: true })
-    if (
-      firstBytesRead !== openedSize ||
-      secondBytesRead !== openedSize ||
-      !firstRead.equals(secondRead) ||
-      !samePhysicalFileMetadata(beforeReadMetadata, betweenReadMetadata) ||
-      !samePhysicalFileMetadata(beforeReadMetadata, afterReadMetadata)
-    ) {
-      throw new Error(`${label} physical file changed while being read`)
-    }
-    const value = firstRead.subarray(0, firstBytesRead).toString("utf8")
-    if (Buffer.byteLength(value, "utf8") !== firstBytesRead || value.includes("\0")) {
+    const stableBytes = requireStablePhysicalFileRead({
+      label,
+      beforeReadMetadata,
+      betweenReadMetadata,
+      afterReadMetadata,
+      firstRead,
+      secondRead,
+      firstBytesRead,
+      secondBytesRead
+    })
+    const value = stableBytes.toString("utf8")
+    if (Buffer.byteLength(value, "utf8") !== stableBytes.length || value.includes("\0")) {
       throw new Error(`${label} must be bounded non-empty text`)
     }
-    return value
+    return { value, fingerprint: afterReadMetadata }
   } finally {
     if (descriptor !== null) closeSync(descriptor)
   }
+}
+
+function readPhysicalFile(path, label) {
+  return readPhysicalFileSnapshot(path, label).value
 }
 
 function requirePhysicalArtifactRoot() {
@@ -223,7 +246,8 @@ function avdPaths() {
 }
 
 function readAvdRegistry(paths) {
-  const registry = readPhysicalFile(paths.registry, "Android AVD registry")
+  const registrySnapshot = readPhysicalFileSnapshot(paths.registry, "Android AVD registry")
+  const registry = registrySnapshot.value
   const pathLines = registry.split("\n").filter((line) => /^\s*path(?:\s*=|\s*$)/u.test(line))
   if (pathLines.length === 0) {
     throw new Error("missing AVD registry path")
@@ -256,6 +280,7 @@ function readAvdRegistry(paths) {
   requirePhysicalDirectory(resolvedPath, "Android AVD registry target")
   return {
     source: registry,
+    fingerprint: registrySnapshot.fingerprint,
     receipt: {
       avdName: paths.avdName,
       registryFile: basename(paths.registry),
@@ -266,26 +291,35 @@ function readAvdRegistry(paths) {
 
 function readVerifiedHostEnvironment(paths) {
   const avdRegistry = readAvdRegistry(paths)
-  const canonicalConfig = readPhysicalFile(paths.config, "Canonical Android AVD config")
-  const resolvedHardware = readPhysicalFile(paths.resolvedHardware, "Resolved Android hardware")
+  const canonicalConfig = readPhysicalFileSnapshot(paths.config, "Canonical Android AVD config")
+  const resolvedHardware = readPhysicalFileSnapshot(
+    paths.resolvedHardware,
+    "Resolved Android hardware"
+  )
   evaluateAndroidEmulatorHostEnvironment({
     requested: REQUESTED_ENVIRONMENT,
-    canonicalConfig,
-    resolvedHardware
+    canonicalConfig: canonicalConfig.value,
+    resolvedHardware: resolvedHardware.value
   })
   return {
     registrySource: avdRegistry.source,
+    registryFingerprint: avdRegistry.fingerprint,
     avdRegistry: avdRegistry.receipt,
-    canonicalConfig,
-    resolvedHardware
+    canonicalConfig: canonicalConfig.value,
+    canonicalFingerprint: canonicalConfig.fingerprint,
+    resolvedHardware: resolvedHardware.value,
+    resolvedFingerprint: resolvedHardware.fingerprint
   }
 }
 
 function requireUnchangedHostEnvironment(before, after) {
   if (
     before.registrySource !== after.registrySource ||
+    !samePhysicalFileMetadata(before.registryFingerprint, after.registryFingerprint) ||
     before.canonicalConfig !== after.canonicalConfig ||
-    before.resolvedHardware !== after.resolvedHardware
+    !samePhysicalFileMetadata(before.canonicalFingerprint, after.canonicalFingerprint) ||
+    before.resolvedHardware !== after.resolvedHardware ||
+    !samePhysicalFileMetadata(before.resolvedFingerprint, after.resolvedFingerprint)
   ) {
     throw new Error("Android emulator host evidence changed during live probes")
   }
