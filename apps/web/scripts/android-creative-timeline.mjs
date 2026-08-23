@@ -759,6 +759,39 @@ export function boundedAndroidPollDelay(remainingMilliseconds, maximumPollMillis
   return Math.max(0, Math.min(maximum, remaining))
 }
 
+export function requireAndroidBrowserForegroundReceipt(value, expectedUrl) {
+  const receipt = requireRecord(value, "Android browser foreground receipt")
+  if (typeof expectedUrl !== "string" || expectedUrl.length === 0 || receipt.url !== expectedUrl) {
+    throw new Error("Android browser foreground receipt URL is not the exact target")
+  }
+  if (
+    receipt.visibilityState !== "visible" ||
+    receipt.hidden !== false ||
+    receipt.hasFocus !== true
+  ) {
+    throw new Error("Android browser foreground receipt is not visible and focused")
+  }
+  return Object.freeze({
+    url: receipt.url,
+    visibilityState: receipt.visibilityState,
+    hidden: receipt.hidden,
+    hasFocus: receipt.hasFocus
+  })
+}
+
+export async function disableSyntheticPageFocus(session) {
+  const cdpSession = requireRecord(session, "Android lifecycle CDP session")
+  if (typeof cdpSession.send !== "function") {
+    throw new Error("Android lifecycle CDP session must expose send")
+  }
+  const command = Object.freeze({
+    method: "Emulation.setFocusEmulationEnabled",
+    parameters: Object.freeze({ enabled: false })
+  })
+  await cdpSession.send(command.method, command.parameters)
+  return command
+}
+
 export function androidCommandTimeoutMilliseconds(deadlineAt, nowAt, maximumMilliseconds) {
   const deadline = requireTimestamp(deadlineAt, "Android command deadline")
   const now = requireTimestamp(nowAt, "Android command current time")

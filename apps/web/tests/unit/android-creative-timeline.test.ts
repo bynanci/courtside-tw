@@ -152,10 +152,7 @@ test("background timeline accepts activity-to-pause and pause-to-activity orderi
 })
 
 test("native Android background focus override sends the exact CDP command and fails closed", async () => {
-  const disableSyntheticPageFocus = Reflect.get(
-    timelineHelpers,
-    "disableSyntheticPageFocus"
-  )
+  const disableSyntheticPageFocus = Reflect.get(timelineHelpers, "disableSyntheticPageFocus")
   equal(typeof disableSyntheticPageFocus, "function")
   if (typeof disableSyntheticPageFocus !== "function") return
 
@@ -196,8 +193,7 @@ test("native Android background binds the exact browser foreground receipt", () 
   equal(typeof requireAndroidBrowserForegroundReceipt, "function")
   if (typeof requireAndroidBrowserForegroundReceipt !== "function") return
 
-  const expectedUrl =
-    "http://127.0.0.1:4173/articles/opening-night?issue=issue-2026-01"
+  const expectedUrl = "http://127.0.0.1:4173/articles/opening-night?issue=issue-2026-01"
   const foreground = {
     url: expectedUrl,
     visibilityState: "visible",

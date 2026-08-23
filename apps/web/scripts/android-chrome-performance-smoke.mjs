@@ -10,11 +10,14 @@ import {
   classifyAndroidActivityLine,
   classifyAndroidActivityProbeResult,
   classifyChromeAutomationSurface,
+  disableSyntheticPageFocus,
   evaluateAndroidBackgroundTimeline,
   evaluateAndroidForegroundFrameTimeline,
   normalizeBrowserRuntimeSnapshot,
   parseAndroidDisplaySize,
   requireAndroidActivityAtBoundary,
+  requireAndroidBrowserForegroundReceipt,
+  requireChromeForegroundActivityAtBoundary,
   retainFirstPausedSnapshot
 } from "./android-creative-timeline.mjs"
 
@@ -941,6 +944,19 @@ async function observeBackgroundActivity(activityTransitions) {
 }
 
 async function verifyAndroidOperatingSystemBackground(page, targetIndex) {
+  const lifecycleSession = await page.context().newCDPSession(page)
+  await page.bringToFront()
+  const focusEmulation = await disableSyntheticPageFocus(lifecycleSession)
+  const browserForeground = requireAndroidBrowserForegroundReceipt(
+    await page.evaluate(() => ({
+      url: window.location.href,
+      visibilityState: document.visibilityState,
+      hidden: document.hidden,
+      hasFocus: document.hasFocus()
+    })),
+    ARTICLE_URL
+  )
+  const foregroundActivity = requireChromeForegroundActivityAtBoundary(resumedActivityLine())
   const hostEpochBeforeArm = Date.now()
   const rawActiveSnapshot = await armOperatingSystemPauseObservation(page, targetIndex)
   const hostEpochAfterArm = Date.now()
@@ -980,6 +996,13 @@ async function verifyAndroidOperatingSystemBackground(page, targetIndex) {
 
   return {
     signal: homeSignal.signal,
+    focusEmulation,
+    browserForeground,
+    foregroundActivityBeforeHome: {
+      activity: foregroundActivity.activity,
+      recordId: foregroundActivity.recordId,
+      taskId: foregroundActivity.taskId
+    },
     commandMilliseconds,
     clockCalibration: {
       ...clockCalibration,
