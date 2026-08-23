@@ -54,6 +54,79 @@ function validateSnapshot(value, label) {
   return normalized
 }
 
+function xmlAttribute(node, name) {
+  return node.match(new RegExp(`(?:^|\\s)${name}="([^"]*)"`, "u"))?.[1] ?? null
+}
+
+export function classifyChromeAutomationSurface(value) {
+  if (typeof value !== "string") {
+    throw new Error("Chrome automation hierarchy must be a string")
+  }
+  const hierarchy = value.trim()
+  const blocked = {
+    status: "blocked",
+    reason: "unrecognized-or-malformed-chrome-modal"
+  }
+  if (!hierarchy || !/<hierarchy(?:\s|>)/u.test(hierarchy)) {
+    return blocked
+  }
+
+  const nodes = hierarchy.match(/<node\b[^>]*>/gu) ?? []
+  const modalId = "com.android.chrome:id/modal_dialog_view"
+  const negativeButtonId = "com.android.chrome:id/negative_button"
+  const knownTitle = "Chrome notifications make things easier"
+  const hasModal = nodes.some((node) => xmlAttribute(node, "resource-id") === modalId)
+  const hasKnownMarker = nodes.some((node) => {
+    const resourceId = xmlAttribute(node, "resource-id")
+    return (
+      resourceId === modalId ||
+      resourceId === negativeButtonId ||
+      xmlAttribute(node, "text") === knownTitle
+    )
+  })
+  if (!hasModal) {
+    return hasKnownMarker ? blocked : { status: "clear" }
+  }
+
+  const hasKnownTitle = nodes.some(
+    (node) =>
+      xmlAttribute(node, "package") === "com.android.chrome" &&
+      xmlAttribute(node, "text") === knownTitle
+  )
+  const negativeButton = nodes.find(
+    (node) =>
+      xmlAttribute(node, "package") === "com.android.chrome" &&
+      xmlAttribute(node, "resource-id") === negativeButtonId &&
+      xmlAttribute(node, "text") === "No thanks" &&
+      xmlAttribute(node, "clickable") === "true" &&
+      xmlAttribute(node, "enabled") === "true"
+  )
+  if (!hasKnownTitle || !negativeButton) {
+    return blocked
+  }
+
+  const bounds = xmlAttribute(negativeButton, "bounds")?.match(/^\[(\d+),(\d+)\]\[(\d+),(\d+)\]$/u)
+  if (!bounds) {
+    return blocked
+  }
+  const [, rawLeft, rawTop, rawRight, rawBottom] = bounds
+  const left = Number(rawLeft)
+  const top = Number(rawTop)
+  const right = Number(rawRight)
+  const bottom = Number(rawBottom)
+  if (right <= left || bottom <= top) {
+    return blocked
+  }
+
+  return {
+    status: "known-notification-prompt",
+    dismissTap: {
+      x: Math.floor((left + right) / 2),
+      y: Math.floor((top + bottom) / 2)
+    }
+  }
+}
+
 export function classifyAndroidActivityLine(value) {
   if (typeof value !== "string") {
     throw new Error("Android activity line must be a string")
