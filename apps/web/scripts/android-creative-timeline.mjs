@@ -74,6 +74,14 @@ export function classifyAndroidActivityLine(value) {
   }
 }
 
+export function requireAndroidActivityAtBoundary(value) {
+  const classified = classifyAndroidActivityLine(value)
+  if (!classified) {
+    throw new Error("Android activity identity is unresolved at the observation boundary")
+  }
+  return classified
+}
+
 export function retainFirstPausedSnapshot(currentSnapshot, candidateSnapshot) {
   if (currentSnapshot !== null && currentSnapshot !== undefined) {
     return validateSnapshot(currentSnapshot, "retained runtime pause snapshot")
@@ -194,8 +202,7 @@ export function evaluateAndroidBackgroundTimeline(rawTimeline, rawBudgets) {
   }
   if (pauseSnapshot.targetStatus !== "paused") {
     throw new Error(
-      `runtime pause snapshot must have paused status; ` +
-        `received ${pauseSnapshot.targetStatus}`
+      `runtime pause snapshot must have paused status; ` + `received ${pauseSnapshot.targetStatus}`
     )
   }
   if (pauseSnapshot.runningCount !== 0) {

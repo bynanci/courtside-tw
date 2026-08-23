@@ -31,16 +31,17 @@ capture_diagnostics() {
     printf 'line=%s\n' "$failed_line"
     printf 'command=%s\n' "$failed_command"
   } >"$artifact_dir/failure-context.txt"
-  adb get-state >"$artifact_dir/adb-state.txt" 2>&1 || true
-  adb shell uiautomator dump /sdcard/courtside-window.xml \
+  timeout 15s adb get-state >"$artifact_dir/adb-state.txt" 2>&1 || true
+  timeout 15s adb shell uiautomator dump /sdcard/courtside-window.xml \
     >"$artifact_dir/uiautomator.txt" 2>&1 || true
-  adb pull /sdcard/courtside-window.xml "$artifact_dir/window.xml" \
+  timeout 15s adb pull /sdcard/courtside-window.xml "$artifact_dir/window.xml" \
     >"$artifact_dir/window-pull.txt" 2>&1 || true
-  adb shell dumpsys activity activities >"$artifact_dir/activities.txt" 2>&1 || true
-  adb shell dumpsys window windows >"$artifact_dir/windows.txt" 2>&1 || true
-  adb logcat -d -v threadtime -t 2000 >"$artifact_dir/logcat.txt" 2>&1 || true
-  adb exec-out screencap -p >"$artifact_dir/screenshot.png" 2>/dev/null || true
-  curl --fail --silent --show-error http://127.0.0.1:9222/json/version \
+  timeout 15s adb shell dumpsys activity activities >"$artifact_dir/activities.txt" 2>&1 || true
+  timeout 15s adb shell dumpsys window windows >"$artifact_dir/windows.txt" 2>&1 || true
+  timeout 15s adb logcat -d -v threadtime -t 2000 \
+    >"$artifact_dir/logcat.txt" 2>&1 || true
+  timeout 15s adb exec-out screencap -p >"$artifact_dir/screenshot.png" 2>/dev/null || true
+  curl --max-time 5 --fail --silent --show-error http://127.0.0.1:9222/json/version \
     >"$artifact_dir/cdp-version-failure.json" 2>"$artifact_dir/cdp-version-failure.txt" || true
 }
 

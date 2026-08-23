@@ -8,6 +8,7 @@ import {
   classifyAndroidActivityLine,
   evaluateAndroidBackgroundTimeline,
   normalizeBrowserRuntimeSnapshot,
+  requireAndroidActivityAtBoundary,
   retainFirstPausedSnapshot
 } from "./android-creative-timeline.mjs"
 
@@ -325,7 +326,7 @@ function measureOffscreenPause(page, targetIndex) {
           }
           if (outside && pauseSnapshot === null) {
             const observed = snapshot()
-            if (observed.runningCount === 0 && observed.targetStatus !== "running") {
+            if (observed.runningCount === 0 && observed.targetStatus === "paused") {
               pauseSnapshot = { ...observed, performanceAt: performance.now() }
             }
           }
@@ -397,7 +398,7 @@ function measureBackgroundEventPause(page, targetIndex) {
         const inspect = () => {
           if (settled) return
           const pauseSnapshot = snapshot()
-          if (pauseSnapshot.runningCount !== 0 || pauseSnapshot.targetStatus === "running") return
+          if (pauseSnapshot.runningCount !== 0 || pauseSnapshot.targetStatus !== "paused") return
           settled = true
           const pausedAt = performance.now()
           cleanup()
@@ -554,7 +555,7 @@ async function armOperatingSystemPauseObservation(page, targetIndex) {
     }
     const inspect = () => {
       const observed = snapshot()
-      if (observed.runningCount === 0 && observed.targetStatus !== "running") {
+      if (observed.runningCount === 0 && observed.targetStatus === "paused") {
         window.__courtsideT079AndroidBackgroundState.pauseSnapshot ??= observed
       }
     }
@@ -573,7 +574,9 @@ async function armOperatingSystemPauseObservation(page, targetIndex) {
 function readOperatingSystemPauseSnapshot(page, targetIndex) {
   return page.evaluate((index) => {
     const observed = window.__courtsideT079AndroidBackgroundState?.pauseSnapshot
-    if (observed) return { ...observed, source: "lifecycle-observer" }
+    if (observed?.runningCount === 0 && observed.targetStatus === "paused") {
+      return { ...observed, source: "lifecycle-observer" }
+    }
 
     const runtimes = Array.from(document.querySelectorAll('[data-testid="creative-runtime"]'))
     const target = runtimes[index]
@@ -585,7 +588,8 @@ function readOperatingSystemPauseSnapshot(page, targetIndex) {
         (runtime) => runtime.getAttribute("data-runtime-status") === "running"
       ).length,
       targetStatus: target.getAttribute("data-runtime-status") ?? "missing",
-      source: "live-atomic-fallback"
+      source: "live-atomic-fallback",
+      observerSnapshot: observed ?? null
     }
   }, targetIndex)
 }
@@ -657,7 +661,10 @@ async function observeBackgroundActivity(activityTransitions) {
     activity = resumedActivityLine()
     recordActivityTransition(activityTransitions, activity, Date.now())
   }
-  return activity
+  const boundaryObservedAt = Date.now()
+  const boundary = requireAndroidActivityAtBoundary(resumedActivityLine())
+  recordActivityTransition(activityTransitions, boundary.activity, boundaryObservedAt)
+  return { ...boundary, observedAt: boundaryObservedAt }
 }
 
 async function verifyAndroidOperatingSystemBackground(page, targetIndex) {
@@ -675,7 +682,7 @@ async function verifyAndroidOperatingSystemBackground(page, targetIndex) {
   adb("shell", "input", "keyevent", "KEYCODE_HOME")
   const commandMilliseconds = performance.now() - commandStartedAt
   const convergence = await waitForBackgroundConvergence(page, homeSignal, targetIndex)
-  const activityAfterObservation = await observeBackgroundActivity(convergence.activityTransitions)
+  const activityBoundary = await observeBackgroundActivity(convergence.activityTransitions)
   const pauseSnapshot = normalizeBrowserRuntimeSnapshot(convergence.pauseSnapshot, clockCalibration)
   const observationSnapshot = normalizeBrowserRuntimeSnapshot(
     await captureRuntimeSnapshot(page, targetIndex),
@@ -709,9 +716,10 @@ async function verifyAndroidOperatingSystemBackground(page, targetIndex) {
     runtimePauseUpperBoundMilliseconds: evaluation.runtimePauseUpperBoundMilliseconds,
     transitionOrder: evaluation.transitionOrder,
     backgroundActivity: evaluation.backgroundActivity,
-    activityAfterObservation,
+    activityAfterObservation: activityBoundary.activity,
+    activityBoundaryObservedAt: activityBoundary.observedAt,
     activityTransitions: evaluation.activityTransitions,
-    chromeForeground: false,
+    chromeForeground: activityBoundary.chromeForeground,
     observationMilliseconds: BUDGETS.backgroundObservationMilliseconds,
     frameBeforeTransition: activeSnapshot.frame,
     frameAtPause: evaluation.frameAtPause,

@@ -200,11 +200,7 @@ test("paused and observed snapshots require zero running runtimes", () => {
     const candidate = { at: 140, frame: 40, runningCount: 0, targetStatus }
     equal(retainFirstPausedSnapshot(null, candidate), null)
     throws(
-      () =>
-        evaluateAndroidBackgroundTimeline(
-          { ...timeline(), pauseSnapshot: candidate },
-          BUDGETS
-        ),
+      () => evaluateAndroidBackgroundTimeline({ ...timeline(), pauseSnapshot: candidate }, BUDGETS),
       /runtime pause snapshot must have paused status/
     )
     throws(
