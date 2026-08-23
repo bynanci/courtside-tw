@@ -296,6 +296,38 @@ test("native Android foreground activity caps unresolved receipt history", async
   equal(reads, 2)
 })
 
+test("native Android foreground activity rejects a resolved receipt completed at its deadline", async () => {
+  const acquireChromeForegroundActivityAtBoundary = Reflect.get(
+    timelineHelpers,
+    "acquireChromeForegroundActivityAtBoundary"
+  )
+  equal(typeof acquireChromeForegroundActivityAtBoundary, "function")
+  if (typeof acquireChromeForegroundActivityAtBoundary !== "function") return
+
+  const activity =
+    "topResumedActivity=ActivityRecord{late123 u0 com.android.chrome/com.google.android.apps.chrome.Main t9}"
+  let nowAt = 1_000
+  let reads = 0
+  await rejects(
+    () =>
+      acquireChromeForegroundActivityAtBoundary({
+        readActivityReceipt: async () => {
+          reads += 1
+          nowAt = 2_000
+          return { status: "resolved", activity }
+        },
+        deadlineAt: 2_000,
+        now: () => nowAt,
+        maximumReadMilliseconds: 250,
+        maximumPollMilliseconds: 100,
+        maximumAttempts: 4,
+        delay: () => Promise.resolve()
+      }),
+    /did not resolve.*attempts=\[\{"status":"resolved","activity":"topResumedActivity=ActivityRecord\{late123/u
+  )
+  equal(reads, 1)
+})
+
 test("native Android background behaviorally binds and orders the exact HOME boundary", async () => {
   const establishNativeAndroidBackgroundBoundary = Reflect.get(
     timelineHelpers,
