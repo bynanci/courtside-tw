@@ -139,6 +139,107 @@ export function normalizeBrowserRuntimeSnapshot(rawSnapshot, rawCalibration) {
   }
 }
 
+export function evaluateAndroidForegroundFrameTimeline(rawTimeline, rawBudgets) {
+  const timeline = requireRecord(rawTimeline, "Android foreground frame timeline")
+  const budgets = requireRecord(rawBudgets, "Android foreground frame budgets")
+  const readinessTimeoutMilliseconds = requireCount(
+    timeline.readinessTimeoutMilliseconds,
+    "foreground frame readiness timeout"
+  )
+  const observationMilliseconds = requireCount(
+    budgets.foregroundObservationMilliseconds,
+    "foregroundObservationMilliseconds"
+  )
+  const minimumForegroundFrames = requireCount(
+    budgets.minimumForegroundFrames,
+    "minimumForegroundFrames"
+  )
+  const maximumRunningCanvases = requireCount(
+    budgets.maximumRunningCanvases,
+    "maximumRunningCanvases"
+  )
+  if (maximumRunningCanvases !== 1) {
+    throw new Error("maximumRunningCanvases must remain exactly one")
+  }
+
+  const requireActive = (value, label) => {
+    const snapshot = validateSnapshot(value, label)
+    if (snapshot.runningCount !== 1 || snapshot.targetStatus !== "running") {
+      throw new Error(
+        `${label} must contain exactly one running canvas; ` +
+          `runningCount=${snapshot.runningCount}, targetStatus=${snapshot.targetStatus}`
+      )
+    }
+    return snapshot
+  }
+
+  const armedSnapshot = requireActive(timeline.armedSnapshot, "foreground frame armed snapshot")
+  if (!Array.isArray(timeline.samples) || timeline.samples.length === 0) {
+    throw new Error(
+      `Android creative frame counter did not advance within ` +
+        `${readinessTimeoutMilliseconds} ms`
+    )
+  }
+  const samples = timeline.samples.map((value, index) =>
+    validateSnapshot(value, `foreground frame sample[${index}]`)
+  )
+  let previous = armedSnapshot
+  for (const sample of samples) {
+    if (sample.at < previous.at) {
+      throw new Error("Android foreground frame timeline timestamps must be monotonic")
+    }
+    if (sample.frame < previous.frame) {
+      throw new Error("Android foreground frame counter regressed")
+    }
+    previous = sample
+  }
+
+  const firstFrame = requireActive(samples[0], "foreground frame sample")
+  if (firstFrame.frame <= armedSnapshot.frame) {
+    throw new Error("Android foreground frame receipt must advance beyond the armed snapshot")
+  }
+  const startupMilliseconds = firstFrame.at - armedSnapshot.at
+  if (startupMilliseconds > readinessTimeoutMilliseconds) {
+    throw new Error(
+      `Android creative frame counter did not advance within ` +
+        `${readinessTimeoutMilliseconds} ms`
+    )
+  }
+
+  const observationDeadlineAt = firstFrame.at + observationMilliseconds
+  const samplesInsideBudget = samples.filter((sample) => sample.at <= observationDeadlineAt)
+  for (const sample of samplesInsideBudget) {
+    requireActive(sample, "foreground frame sample")
+  }
+  const finalFrame = samplesInsideBudget.at(-1)
+  const frameDelta = finalFrame.frame - firstFrame.frame
+  if (frameDelta < minimumForegroundFrames) {
+    throw new Error(
+      `Android foreground creative frames: expected >= ${minimumForegroundFrames}, ` +
+        `received ${frameDelta}`
+    )
+  }
+
+  return {
+    observationMilliseconds,
+    observationStartedAt: firstFrame.at,
+    observationDeadlineAt,
+    frameBefore: firstFrame.frame,
+    frameAfter: finalFrame.frame,
+    frameDelta,
+    runningCountBefore: firstFrame.runningCount,
+    runningCountAfter: finalFrame.runningCount,
+    status: finalFrame.targetStatus,
+    samples: samplesInsideBudget,
+    readiness: {
+      timeoutMilliseconds: readinessTimeoutMilliseconds,
+      startupMilliseconds,
+      frameBefore: armedSnapshot.frame,
+      frameAfter: firstFrame.frame
+    }
+  }
+}
+
 export function evaluateAndroidBackgroundTimeline(rawTimeline, rawBudgets) {
   const timeline = requireRecord(rawTimeline, "Android background timeline")
   const budgets = requireRecord(rawBudgets, "Android background budgets")

@@ -7,6 +7,7 @@ import {
   calibrateBrowserClockToHost,
   classifyAndroidActivityLine,
   evaluateAndroidBackgroundTimeline,
+  evaluateAndroidForegroundFrameTimeline,
   normalizeBrowserRuntimeSnapshot,
   requireAndroidActivityAtBoundary,
   retainFirstPausedSnapshot
@@ -151,15 +152,9 @@ try {
   await waitForActiveRuntimeSnapshot(page, 0, 10_000)
 
   await markPhase(page, "foreground-frame-observation")
-  const foregroundFrameReady = await waitForFrameAdvance(page, 0, 5_000)
-  const foregroundFrames = {
-    ...(await observeFrameDelta(page, 0, BUDGETS.foregroundObservationMilliseconds)),
-    readiness: foregroundFrameReady
-  }
-  assertAtLeast(
-    foregroundFrames.frameDelta,
-    BUDGETS.minimumForegroundFrames,
-    "Android foreground creative frames"
+  const foregroundFrames = evaluateAndroidForegroundFrameTimeline(
+    await observeForegroundFrameTimeline(page, 0, 5_000, BUDGETS.foregroundObservationMilliseconds),
+    BUDGETS
   )
 
   await markPhase(page, "creative-long-task-budget")
@@ -487,45 +482,87 @@ async function waitForActiveRuntimeSnapshot(page, targetIndex, timeoutMillisecon
   return snapshot
 }
 
-async function waitForFrameAdvance(page, targetIndex, timeoutMilliseconds) {
-  const initialSnapshot = await captureRuntimeSnapshot(page, targetIndex)
-  assertActiveRuntimeSnapshot(initialSnapshot, "Android frame readiness")
-  const startedAt = performance.now()
-  const deadline = performance.now() + timeoutMilliseconds
+function observeForegroundFrameTimeline(
+  page,
+  targetIndex,
+  readinessTimeoutMilliseconds,
+  observationMilliseconds
+) {
+  return page.evaluate(
+    ({ index, readinessTimeout, observationDuration }) =>
+      new Promise((resolve, reject) => {
+        const runtimes = Array.from(document.querySelectorAll('[data-testid="creative-runtime"]'))
+        const target = runtimes[index]
+        if (!target) {
+          reject(new Error(`Creative runtime ${index} is missing`))
+          return
+        }
+        const snapshot = () => ({
+          at: performance.now(),
+          frame: Number(target.getAttribute("data-runtime-frame")),
+          runningCount: runtimes.filter(
+            (runtime) => runtime.getAttribute("data-runtime-status") === "running"
+          ).length,
+          targetStatus: target.getAttribute("data-runtime-status") ?? "missing"
+        })
+        const armedSnapshot = snapshot()
+        const samples = []
+        let observationTimer = null
+        let settled = false
 
-  while (performance.now() < deadline) {
-    const currentSnapshot = await captureRuntimeSnapshot(page, targetIndex)
-    assertActiveRuntimeSnapshot(currentSnapshot, "Android frame readiness")
-    if (currentSnapshot.frame > initialSnapshot.frame) {
-      return {
-        timeoutMilliseconds,
-        startupMilliseconds: performance.now() - startedAt,
-        frameBefore: initialSnapshot.frame,
-        frameAfter: currentSnapshot.frame
-      }
+        const cleanup = () => {
+          observer.disconnect()
+          clearTimeout(readinessTimer)
+          if (observationTimer !== null) clearTimeout(observationTimer)
+        }
+        const finish = (captureBoundary) => {
+          if (settled) return
+          settled = true
+          if (captureBoundary) inspect()
+          cleanup()
+          resolve({
+            armedSnapshot,
+            readinessTimeoutMilliseconds: readinessTimeout,
+            samples
+          })
+        }
+        const retainChangedSnapshot = (observed) => {
+          const previous = samples.at(-1)
+          if (
+            !previous ||
+            previous.frame !== observed.frame ||
+            previous.runningCount !== observed.runningCount ||
+            previous.targetStatus !== observed.targetStatus
+          ) {
+            samples.push(observed)
+          }
+        }
+        const inspect = () => {
+          const observed = snapshot()
+          if (samples.length === 0) {
+            if (observed.frame <= armedSnapshot.frame) return
+            retainChangedSnapshot(observed)
+            clearTimeout(readinessTimer)
+            observationTimer = setTimeout(() => finish(true), observationDuration)
+            return
+          }
+          retainChangedSnapshot(observed)
+        }
+        const observer = new MutationObserver(inspect)
+        const readinessTimer = setTimeout(() => finish(false), readinessTimeout)
+        observer.observe(document.documentElement, {
+          attributes: true,
+          attributeFilter: ["data-runtime-frame", "data-runtime-status"],
+          subtree: true
+        })
+        inspect()
+      }),
+    {
+      index: targetIndex,
+      readinessTimeout: readinessTimeoutMilliseconds,
+      observationDuration: observationMilliseconds
     }
-    const remainingMilliseconds = deadline - performance.now()
-    await new Promise((resolve) => setTimeout(resolve, Math.min(50, remainingMilliseconds)))
-  }
-
-  throw new Error(`Android creative frame counter did not advance within ${timeoutMilliseconds} ms`)
-}
-
-async function observeFrameDelta(page, targetIndex, observationMilliseconds) {
-  const before = await captureRuntimeSnapshot(page, targetIndex)
-  assertActiveRuntimeSnapshot(before, "Android foreground observation start")
-  await new Promise((resolve) => setTimeout(resolve, observationMilliseconds))
-  const after = await captureRuntimeSnapshot(page, targetIndex)
-  assertActiveRuntimeSnapshot(after, "Android foreground observation end")
-  return {
-    observationMilliseconds,
-    frameBefore: before.frame,
-    frameAfter: after.frame,
-    frameDelta: Math.max(0, after.frame - before.frame),
-    runningCountBefore: before.runningCount,
-    runningCountAfter: after.runningCount,
-    status: after.targetStatus
-  }
+  )
 }
 
 async function armOperatingSystemPauseObservation(page, targetIndex) {
@@ -815,11 +852,5 @@ function summarizeLongTasks(entries, phaseTimeline = []) {
 function assertAtMost(actual, maximum, label) {
   if (!Number.isFinite(actual) || actual > maximum) {
     throw new Error(`${label}: expected <= ${maximum}, received ${actual}`)
-  }
-}
-
-function assertAtLeast(actual, minimum, label) {
-  if (!Number.isFinite(actual) || actual < minimum) {
-    throw new Error(`${label}: expected >= ${minimum}, received ${actual}`)
   }
 }
