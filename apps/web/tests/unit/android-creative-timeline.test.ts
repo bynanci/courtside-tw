@@ -995,7 +995,10 @@ test("native surface normalization taps each exact safe prompt at most once", ()
   )
   for (const surface of [
     { status: "known-pixel-launcher-anr", dismissTap: { x: 0, y: 1363 } },
+    { status: "known-pixel-launcher-anr", dismissTap: { x: 540, y: 1237 } },
+    { status: "known-pixel-launcher-anr", dismissTap: { x: 592, y: 1753 } },
     { status: "known-notification-prompt", dismissTap: { x: 592, y: 99_999 } },
+    { status: "known-notification-prompt", dismissTap: { x: 540, y: 1363 } },
     { status: "known-pixel-launcher-anr", dismissTap: { x: "540", y: 1363 } }
   ]) {
     throws(() => planChromeAutomationSurfaceNormalization(surface, []), /dismiss|coordinate/u)
@@ -1241,6 +1244,21 @@ test("native Android normalization adapters preserve raw receipts and exact boun
     "post-tap activity acceptance"
   ])
   equal(result.surface.status, "clear")
+
+  const rejectedAdbCalls: unknown[] = []
+  throws(
+    () =>
+      executeBoundChromeSurfaceTap({
+        deadlineAt,
+        maximumMilliseconds: 5_000,
+        dismissTap: { x: 540, y: 1237 },
+        label: "Pixel Launcher ANR wait tap",
+        remainingMilliseconds: () => 1_000,
+        runAdb: (...arguments_: unknown[]) => rejectedAdbCalls.push(arguments_)
+      }),
+    /tap does not match the exact known prompt target/u
+  )
+  equal(rejectedAdbCalls.length, 0)
 })
 
 test("native surface normalization requires fresh probes after each bounded prompt action", async () => {
