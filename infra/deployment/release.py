@@ -22,10 +22,13 @@ from typing import Any
 
 
 STATE_SCHEMA_VERSION = 2
+LEGACY_STATE_SCHEMA_VERSION = 1
 MAX_JSON_BYTES = 64 * 1024
 MAX_STATE_BYTES = 48 * 1024
+MAX_RECEIPT_HISTORY_ITEMS = 16
 SCHEMA_READBACK_MAX_AGE_SECONDS = 10 * 60
 PRODUCTION_CONFIRMATION = "I_UNDERSTAND_PROTECTED_PRODUCTION_ACTION"
+STATE_UPGRADE_CONFIRMATION = "I_UNDERSTAND_STATE_SCHEMA_UPGRADE"
 REQUIRED_READINESS_CHECKS = frozenset(
     {"api-readiness", "worker-readiness", "public-web-readiness"}
 )
@@ -277,29 +280,166 @@ def new_state(environment: str) -> dict[str, Any]:
         "active_release": None,
         "previous_release": None,
         "last_action_receipt": None,
+        "receipt_history": [],
         "activated_releases": [],
         "releases": {},
     }
 
 
-def validate_state(
-    raw: dict[str, Any], expected_environment: str
+def validate_legacy_state(raw: dict[str, Any]) -> dict[str, Any]:
+    """Validate the pre-environment-bound state without treating it as safe."""
+
+    require_exact_keys(
+        raw,
+        {
+            "schema_version",
+            "revision",
+            "database_schema_version",
+            "active_release",
+            "previous_release",
+            "last_action_receipt",
+            "releases",
+        },
+        "legacy release state",
+    )
+    if raw["schema_version"] != LEGACY_STATE_SCHEMA_VERSION:
+        raise ReleaseError("legacy release state schema_version must be 1")
+    require_integer(raw["revision"], "legacy release state revision")
+    database_schema = raw["database_schema_version"]
+    if database_schema is not None:
+        require_integer(database_schema, "legacy release state database_schema_version")
+    last_action_receipt = raw["last_action_receipt"]
+    if last_action_receipt is not None and not isinstance(last_action_receipt, dict):
+        raise ReleaseError("legacy release state last_action_receipt must be an object or null")
+    releases = raw["releases"]
+    if not isinstance(releases, dict):
+        raise ReleaseError("legacy release state releases must be an object")
+    normalized_releases: dict[str, Any] = {}
+    for release_id, manifest in releases.items():
+        if not isinstance(manifest, dict):
+            raise ReleaseError("legacy stored release manifest must be an object")
+        normalized = validate_manifest(manifest)
+        if normalized["release_id"] != release_id:
+            raise ReleaseError("legacy stored release key does not match its release_id")
+        normalized_releases[release_id] = normalized
+    for pointer in ("active_release", "previous_release"):
+        value = raw[pointer]
+        if value is not None and (
+            not isinstance(value, str) or value not in normalized_releases
+        ):
+            raise ReleaseError(f"legacy release state {pointer} points to an unknown release")
+    raw["releases"] = normalized_releases
+    return raw
+
+
+def validate_upgrade_evidence(
+    raw: dict[str, Any], legacy: dict[str, Any], expected_environment: str
 ) -> dict[str, Any]:
     require_exact_keys(
         raw,
         {
             "schema_version",
             "environment",
-            "revision",
-            "database_schema_version",
+            "activated_releases",
             "active_release",
             "previous_release",
-            "last_action_receipt",
-            "activated_releases",
-            "releases",
         },
-        "release state",
+        "state upgrade evidence",
     )
+    if raw["schema_version"] != LEGACY_STATE_SCHEMA_VERSION:
+        raise ReleaseError("state upgrade evidence schema_version must be 1")
+    if raw["environment"] != expected_environment:
+        raise ReleaseError("state upgrade evidence environment does not match the target environment")
+    activated_releases = raw["activated_releases"]
+    if not isinstance(activated_releases, list):
+        raise ReleaseError("state upgrade activation history must be a list")
+    if any(not isinstance(release_id, str) for release_id in activated_releases):
+        raise ReleaseError("state upgrade activation history entries must be release IDs")
+    if len(activated_releases) != len(set(activated_releases)):
+        raise ReleaseError("state upgrade activation history must be unique")
+    if not activated_releases and (
+        legacy["active_release"] is not None or legacy["previous_release"] is not None
+    ):
+        raise ReleaseError(
+            "state upgrade activation history cannot be empty when legacy pointers exist"
+        )
+    known_releases = set(legacy["releases"])
+    for release_id in activated_releases:
+        if release_id not in known_releases:
+            raise ReleaseError("state upgrade activation history points to an unknown release")
+    for pointer in ("active_release", "previous_release"):
+        value = raw[pointer]
+        if value is not None and value not in activated_releases:
+            raise ReleaseError(
+                f"state upgrade activation history does not contain {pointer}"
+            )
+        if value != legacy[pointer]:
+            raise ReleaseError(
+                f"state upgrade {pointer} does not match the legacy release state"
+            )
+    return {
+        "schema_version": LEGACY_STATE_SCHEMA_VERSION,
+        "environment": expected_environment,
+        "activated_releases": list(activated_releases),
+        "active_release": raw["active_release"],
+        "previous_release": raw["previous_release"],
+    }
+
+
+def migrate_v1_state(
+    raw: dict[str, Any],
+    expected_environment: str,
+    upgrade_evidence: dict[str, Any],
+    confirmation: str,
+) -> dict[str, Any]:
+    """Convert a v1 ledger only with explicit environment and history evidence."""
+
+    if confirmation != STATE_UPGRADE_CONFIRMATION:
+        raise ReleaseError("state upgrade requires the exact operator confirmation")
+    legacy = validate_legacy_state(json.loads(json.dumps(raw)))
+    evidence = validate_upgrade_evidence(upgrade_evidence, legacy, expected_environment)
+    legacy_receipt = legacy["last_action_receipt"]
+    if isinstance(legacy_receipt, dict):
+        if legacy_receipt.get("environment") != expected_environment:
+            raise ReleaseError("legacy action receipt environment does not match the target environment")
+    migrated = new_state(expected_environment)
+    migrated.update(
+        {
+            "revision": legacy["revision"],
+            "database_schema_version": legacy["database_schema_version"],
+            "active_release": evidence["active_release"],
+            "previous_release": evidence["previous_release"],
+            "last_action_receipt": legacy_receipt,
+            "receipt_history": [legacy_receipt] if isinstance(legacy_receipt, dict) else [],
+            "activated_releases": evidence["activated_releases"],
+            "releases": legacy["releases"],
+        }
+    )
+    return validate_state(migrated, expected_environment)
+
+
+def validate_state(
+    raw: dict[str, Any], expected_environment: str
+) -> dict[str, Any]:
+    required_keys = {
+        "schema_version",
+        "environment",
+        "revision",
+        "database_schema_version",
+        "active_release",
+        "previous_release",
+        "last_action_receipt",
+        "activated_releases",
+        "releases",
+    }
+    optional_keys = {"receipt_history"}
+    if set(raw) not in (required_keys, required_keys | optional_keys):
+        missing = sorted(required_keys - set(raw))
+        unexpected = sorted(set(raw) - required_keys - optional_keys)
+        raise ReleaseError(
+            "release state keys do not match the contract; "
+            f"missing={missing}, unexpected={unexpected}"
+        )
     if raw["schema_version"] != STATE_SCHEMA_VERSION:
         raise ReleaseError("unsupported release state schema_version")
     if raw["environment"] != expected_environment:
@@ -311,6 +451,16 @@ def validate_state(
     last_action_receipt = raw["last_action_receipt"]
     if last_action_receipt is not None and not isinstance(last_action_receipt, dict):
         raise ReleaseError("release state last_action_receipt must be an object or null")
+    receipt_history = raw.get("receipt_history", [])
+    if not isinstance(receipt_history, list):
+        raise ReleaseError("release state receipt_history must be a list")
+    if len(receipt_history) > MAX_RECEIPT_HISTORY_ITEMS:
+        raise ReleaseError(
+            f"release state receipt_history exceeds {MAX_RECEIPT_HISTORY_ITEMS} entries"
+        )
+    if any(not isinstance(receipt, dict) for receipt in receipt_history):
+        raise ReleaseError("release state receipt_history entries must be objects")
+    raw["receipt_history"] = receipt_history
     releases = raw["releases"]
     if not isinstance(releases, dict):
         raise ReleaseError("release state releases must be an object")
@@ -332,7 +482,9 @@ def validate_state(
         raise ReleaseError("release state activated_releases must be unique")
     for pointer in ("active_release", "previous_release"):
         value = raw[pointer]
-        if value is not None and value not in normalized_releases:
+        if value is not None and (
+            not isinstance(value, str) or value not in normalized_releases
+        ):
             raise ReleaseError(f"release state {pointer} points to an unknown release")
         if value is not None and value not in activated_releases:
             raise ReleaseError(
@@ -345,12 +497,30 @@ def validate_state(
 def load_state(path: Path, expected_environment: str) -> dict[str, Any]:
     if not path.exists():
         return new_state(expected_environment)
-    return validate_state(read_json(path, "release state"), expected_environment)
+    raw = read_json(path, "release state")
+    if raw.get("schema_version") == LEGACY_STATE_SCHEMA_VERSION:
+        raise ReleaseError(
+            "release state schema v1 requires an explicit environment-bound upgrade-state command"
+        )
+    return validate_state(raw, expected_environment)
 
 
 def supports_schema(manifest: dict[str, Any], schema_version: int) -> bool:
     compatible = manifest["database"]["compatible_schema"]
     return compatible["min"] <= schema_version <= compatible["max"]
+
+
+def record_action_receipt(state: dict[str, Any], receipt: dict[str, Any]) -> None:
+    """Keep the latest receipt plus a bounded, oldest-first recovery history."""
+
+    previous = state.get("last_action_receipt")
+    history = list(state.get("receipt_history", []))
+    if isinstance(previous, dict) and (not history or history[-1] != previous):
+        history.append(previous)
+    if not history or history[-1] != receipt:
+        history.append(receipt)
+    state["receipt_history"] = history[-MAX_RECEIPT_HISTORY_ITEMS:]
+    state["last_action_receipt"] = receipt
 
 
 def receipt_base(action: str, environment: str, state: dict[str, Any]) -> dict[str, Any]:
@@ -529,6 +699,13 @@ def parse_args() -> argparse.Namespace:
     rollback.add_argument("--release", required=True)
     rollback.add_argument("--schema-readback", type=Path, required=True)
 
+    upgrade = commands.add_parser(
+        "upgrade-state",
+        help="Upgrade a v1 ledger with explicit environment and activation evidence",
+    )
+    upgrade.add_argument("--activation-history", type=Path, required=True)
+    upgrade.add_argument("--confirmation", required=True)
+
     commands.add_parser("status", help="Read the release state without mutation")
     return parser.parse_args()
 
@@ -557,8 +734,31 @@ def main() -> int:
             raise ReleaseError("release-state lock must not be a symbolic link")
         with lock_path.open("a+", encoding="utf-8") as lock:
             fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
-            state = load_state(args.state, args.environment)
             changed = False
+            if args.action == "upgrade-state":
+                legacy = read_json(args.state, "legacy release state")
+                evidence = read_json(args.activation_history, "state upgrade evidence")
+                state = migrate_v1_state(
+                    legacy,
+                    args.environment,
+                    evidence,
+                    args.confirmation,
+                )
+                state["revision"] += 1
+                receipt = receipt_base("upgrade-state", args.environment, state)
+                receipt.update(
+                    {
+                        "result": "pass",
+                        "from_schema_version": LEGACY_STATE_SCHEMA_VERSION,
+                        "to_schema_version": STATE_SCHEMA_VERSION,
+                        "active_after": state["active_release"],
+                        "state_revision": state["revision"],
+                    }
+                )
+                record_action_receipt(state, receipt)
+                changed = True
+            else:
+                state = load_state(args.state, args.environment)
             if args.action == "register":
                 manifest = validate_manifest(read_json(args.manifest, "release manifest"))
                 receipt, changed = register_release(state, manifest, args.environment)
@@ -576,13 +776,15 @@ def main() -> int:
                     schema_readback,
                 )
             else:
-                receipt = receipt_base("status", args.environment, state)
-                receipt.update({"result": "pass", "state": state})
+                if args.action == "status":
+                    receipt = receipt_base("status", args.environment, state)
+                    receipt.update({"result": "pass", "state": state})
             if changed:
                 # Keep an authoritative recovery receipt in the atomic state.
                 # If the separate receipt path later fails, a retry can read the
                 # completed effect instead of guessing whether it occurred.
-                state["last_action_receipt"] = receipt
+                if args.action != "upgrade-state":
+                    record_action_receipt(state, receipt)
                 atomic_write_json(
                     args.state,
                     state,

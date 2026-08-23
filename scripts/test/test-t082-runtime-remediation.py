@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regression contract for the seven post-merge T082 runtime findings."""
+"""Tests-first regression contract for the bounded T082 runtime remediation."""
 
 from __future__ import annotations
 
@@ -101,6 +101,53 @@ def activated_state() -> tuple[dict[str, object], dict[str, object]]:
     return state, release_a
 
 
+def legacy_state() -> dict[str, object]:
+    release_a = manifest("release-a", "a", 9, 9, 10)
+    release_b = manifest("release-b", "b", 10, 9, 11)
+    return {
+        "schema_version": 1,
+        "revision": 4,
+        "database_schema_version": 10,
+        "active_release": "release-b",
+        "previous_release": "release-a",
+        "last_action_receipt": {
+            "schema_version": 1,
+            "task": "T082",
+            "action": "activate",
+            "environment": "test",
+            "observed_at": "2026-08-23T00:00:00Z",
+            "active_before": "release-a",
+            "active_after": "release-b",
+            "database_schema_before": 9,
+            "database_schema_after": 10,
+            "schema_rollback_performed": False,
+            "destructive_schema_action": False,
+            "state_revision": 4,
+        },
+        "releases": {"release-a": release_a, "release-b": release_b},
+    }
+
+
+def upgrade_evidence(
+    *,
+    environment: str = "test",
+    activated_releases: list[str] | None = None,
+    active_release: str | None = "release-b",
+    previous_release: str | None = "release-a",
+) -> dict[str, object]:
+    return {
+        "schema_version": 1,
+        "environment": environment,
+        "activated_releases": (
+            ["release-a", "release-b"]
+            if activated_releases is None
+            else activated_releases
+        ),
+        "active_release": active_release,
+        "previous_release": previous_release,
+    }
+
+
 class T082RuntimeRemediationTests(unittest.TestCase):
     def test_datasource_is_bound_to_spring_for_api_and_worker(self) -> None:
         compose = COMPOSE_PATH.read_text(encoding="utf-8")
@@ -166,6 +213,123 @@ class T082RuntimeRemediationTests(unittest.TestCase):
                 release.atomic_write_json(state_path, oversized)
             self.assertEqual(json.loads(state_path.read_text(encoding="utf-8")), original)
             self.assertLessEqual(state_path.stat().st_size, release.MAX_JSON_BYTES)
+
+    def test_v1_state_requires_an_explicit_environment_bound_upgrade(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            state_path = Path(directory) / "state.json"
+            state_path.write_text(json.dumps(legacy_state()), encoding="utf-8")
+            with self.assertRaisesRegex(release.ReleaseError, "explicit.*upgrade"):
+                release.load_state(state_path, "test")
+
+    def test_v1_upgrade_preserves_environment_and_healthy_activation_history(self) -> None:
+        migrated = release.migrate_v1_state(
+            legacy_state(),
+            "test",
+            upgrade_evidence(),
+            release.STATE_UPGRADE_CONFIRMATION,
+        )
+
+        self.assertEqual(migrated["schema_version"], release.STATE_SCHEMA_VERSION)
+        self.assertEqual(migrated["environment"], "test")
+        self.assertEqual(migrated["activated_releases"], ["release-a", "release-b"])
+        self.assertEqual(migrated["active_release"], "release-b")
+        self.assertEqual(migrated["previous_release"], "release-a")
+        self.assertEqual(
+            migrated["receipt_history"], [legacy_state()["last_action_receipt"]]
+        )
+        release.validate_state(migrated, "test")
+
+    def test_v1_upgrade_rejects_environment_or_history_mismatch(self) -> None:
+        with self.assertRaisesRegex(release.ReleaseError, "environment"):
+            release.migrate_v1_state(
+                legacy_state(),
+                "production",
+                upgrade_evidence(environment="staging"),
+                release.STATE_UPGRADE_CONFIRMATION,
+            )
+
+        with self.assertRaisesRegex(release.ReleaseError, "activation history"):
+            release.migrate_v1_state(
+                legacy_state(),
+                "test",
+                upgrade_evidence(activated_releases=["release-b"]),
+                release.STATE_UPGRADE_CONFIRMATION,
+            )
+
+    def test_v1_upgrade_rejects_missing_confirmation_and_unknown_history_targets(self) -> None:
+        with self.assertRaisesRegex(release.ReleaseError, "confirmation"):
+            release.migrate_v1_state(
+                legacy_state(),
+                "test",
+                upgrade_evidence(),
+                "",
+            )
+
+        with self.assertRaisesRegex(release.ReleaseError, "unknown release"):
+            release.migrate_v1_state(
+                legacy_state(),
+                "test",
+                upgrade_evidence(activated_releases=["release-a", "missing"]),
+                release.STATE_UPGRADE_CONFIRMATION,
+            )
+
+    def test_v1_empty_ledger_can_upgrade_with_empty_activation_history(self) -> None:
+        legacy = legacy_state()
+        legacy.update(
+            {
+                "active_release": None,
+                "previous_release": None,
+                "last_action_receipt": None,
+                "releases": {},
+            }
+        )
+
+        migrated = release.migrate_v1_state(
+            legacy,
+            "test",
+            upgrade_evidence(
+                activated_releases=[],
+                active_release=None,
+                previous_release=None,
+            ),
+            release.STATE_UPGRADE_CONFIRMATION,
+        )
+
+        self.assertEqual(migrated["schema_version"], release.STATE_SCHEMA_VERSION)
+        self.assertEqual(migrated["activated_releases"], [])
+        self.assertEqual(migrated["receipt_history"], [])
+
+    def test_v1_upgrade_rejects_non_string_history_entries(self) -> None:
+        with self.assertRaisesRegex(release.ReleaseError, "entries must be release IDs"):
+            release.migrate_v1_state(
+                legacy_state(),
+                "test",
+                upgrade_evidence(activated_releases=["release-a", {"release": "b"}]),
+                release.STATE_UPGRADE_CONFIRMATION,
+            )
+
+    def test_receipt_history_is_bounded_and_keeps_the_latest_recovery_window(self) -> None:
+        state = release.new_state("test")
+        state["receipt_history"] = [
+            {"action": "register", "state_revision": index}
+            for index in range(release.MAX_RECEIPT_HISTORY_ITEMS + 3)
+        ]
+        release.record_action_receipt(
+            state,
+            {"action": "activate", "state_revision": 99},
+        )
+
+        self.assertEqual(len(state["receipt_history"]), release.MAX_RECEIPT_HISTORY_ITEMS)
+        self.assertEqual(state["receipt_history"][-1]["state_revision"], 99)
+        release.validate_state(state, "test")
+
+    def test_existing_v2_state_without_history_is_readable_and_normalized(self) -> None:
+        state = release.new_state("test")
+        state.pop("receipt_history")
+
+        normalized = release.validate_state(state, "test")
+
+        self.assertEqual(normalized["receipt_history"], [])
 
 
 if __name__ == "__main__":

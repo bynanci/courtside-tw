@@ -163,6 +163,49 @@ replace the platform traffic-switch approval. State commits are capped at
 48 KiB, below the controller's 64 KiB read limit; an over-budget registration
 fails before replacing the last readable state.
 
+### v1 ledger upgrade (bounded and explicit)
+
+State schema v1 predates the environment binding and has no authoritative
+activation history. The controller therefore fails closed when a v1 file is
+read; `status`, registration, activation and rollback do not reinterpret it as
+staging or production. An operator must provide a separate, bounded evidence
+file from the authoritative activation ledger and confirm the exact target
+environment:
+
+```json
+{
+  "schema_version": 1,
+  "environment": "staging",
+  "activated_releases": ["release-20260821-001", "release-20260822-002"],
+  "active_release": "release-20260822-002",
+  "previous_release": "release-20260821-001"
+}
+```
+
+The evidence must name the same environment passed to the command, list only
+known release IDs, preserve the legacy active/previous pointers and be unique.
+The controller never infers activation from registration, manifests or a
+cached pointer. A v1 receipt with an environment must also match the target.
+Run the migration as a state-only operation, with no SQL, provider traffic
+switch, image promotion, secret change or production activation:
+
+```bash
+python3 infra/deployment/release.py \
+  --state /var/lib/courtside/releases/state.json \
+  --environment staging \
+  --receipt /change/state-upgrade-receipt.json \
+  upgrade-state \
+  --activation-history /change/v1-activation-evidence.json \
+  --confirmation I_UNDERSTAND_STATE_SCHEMA_UPGRADE
+```
+
+The resulting v2 state carries the environment, the explicitly evidenced
+healthy activation history and the prior receipt before normal commands are
+allowed. Its `receipt_history` keeps the latest 16 receipts, while the entire
+state remains under the 48 KiB atomic-write budget; older entries are pruned
+oldest-first. Any environment mismatch, unknown target, ambiguous history or
+over-budget result remains `HOLD`.
+
 Rollback additionally requires a fresh live schema read-back produced by the
 environment's database migration/read-only inspection identity, not a manifest
 value or cached controller field. The JSON contract is exact and contains only:

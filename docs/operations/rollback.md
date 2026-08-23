@@ -79,6 +79,14 @@ records the application pointer and explicitly reports:
 - `destructive_schema_action=false`;
 - `pass`, `no_op` or a fail-closed `blocked` result.
 
+If the state file still has schema v1, stop before rollback. Do not select an
+environment by guesswork or treat a registered manifest as activation history.
+Use the deployment runbook's explicit `upgrade-state` command with an
+environment-bound activation evidence file, preserve the prior receipt and
+re-run the current live schema read-back. The v2 ledger retains only the latest
+16 receipts and prunes older entries before the 48 KiB atomic state-write
+limit; if that budget cannot be met, keep the rollback window in `HOLD`.
+
 Only after that receipt passes may the accountable release owner authorize the
 platform-specific ingress switch. The operator then:
 
