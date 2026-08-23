@@ -247,13 +247,27 @@ test("native Android foreground activity retries incomplete receipts within one 
     maximumPollMilliseconds: 100,
     maximumAttempts: 4,
     delay: async (milliseconds: number) => {
-      events.push("delay", milliseconds)
+      events.push("delay:start", milliseconds)
       await Promise.resolve()
       nowAt += milliseconds
+      events.push("delay:end")
     }
   })
 
-  deepEqual(events, ["read", 250, "delay", 100, "read", 250, "delay", 100, "read", 250])
+  deepEqual(events, [
+    "read",
+    250,
+    "delay:start",
+    100,
+    "delay:end",
+    "read",
+    250,
+    "delay:start",
+    100,
+    "delay:end",
+    "read",
+    250
+  ])
   deepEqual(result, {
     activity,
     chromeForeground: true,
@@ -358,8 +372,10 @@ test("native Android background behaviorally binds and orders the exact HOME bou
       }
     },
     expectedUrl,
-    readChromeForegroundActivity: () => {
-      events.push("activity")
+    readChromeForegroundActivity: async () => {
+      events.push("activity:start")
+      await Promise.resolve()
+      events.push("activity:end")
       const activity =
         "topResumedActivity=ActivityRecord{abc123 u0 com.android.chrome/com.google.android.apps.chrome.Main t8}"
       return {
@@ -400,7 +416,10 @@ test("native Android background behaviorally binds and orders the exact HOME bou
     "bring:end",
     "browser:start",
     "browser:end",
-    "activity",
+    "activity:start",
+    "activity:end",
+    "browser:start",
+    "browser:end",
     "epoch",
     "arm:start",
     "arm:end",
@@ -443,6 +462,67 @@ test("native Android background behaviorally binds and orders the exact HOME bou
   })
 })
 
+test("native Android background refuses HOME when the target loses focus during activity retries", async () => {
+  const establishNativeAndroidBackgroundBoundary = Reflect.get(
+    timelineHelpers,
+    "establishNativeAndroidBackgroundBoundary"
+  )
+  equal(typeof establishNativeAndroidBackgroundBoundary, "function")
+  if (typeof establishNativeAndroidBackgroundBoundary !== "function") return
+
+  const expectedUrl = "http://127.0.0.1:4173/articles/opening-night?issue=issue-2026-01"
+  let browserReads = 0
+  let armCalls = 0
+  let homeCalls = 0
+  const activity =
+    "topResumedActivity=ActivityRecord{abc123 u0 com.android.chrome/com.google.android.apps.chrome.Main t8}"
+
+  await rejects(
+    () =>
+      establishNativeAndroidBackgroundBoundary({
+        bringToFront: () => Promise.resolve(),
+        readBrowserForeground: async () => {
+          browserReads += 1
+          await Promise.resolve()
+          return {
+            url: expectedUrl,
+            visibilityState: "visible",
+            hidden: false,
+            hasFocus: browserReads === 1
+          }
+        },
+        expectedUrl,
+        readChromeForegroundActivity: async () => {
+          await Promise.resolve()
+          return {
+            activity,
+            chromeForeground: true,
+            recordId: "abc123",
+            taskId: "t8",
+            attempts: [
+              { status: "unresolved", activity: "" },
+              { status: "resolved", activity }
+            ]
+          }
+        },
+        armRuntimeObservation: () => {
+          armCalls += 1
+          return Promise.resolve({ at: 10_000, frame: 35, runningCount: 1, targetStatus: "running" })
+        },
+        epochNow: () => 100_000,
+        monotonicNow: () => 500,
+        sendHome: () => {
+          homeCalls += 1
+          return Promise.resolve()
+        }
+      }),
+    /Android browser foreground receipt is not visible and focused/u
+  )
+  equal(browserReads, 2)
+  equal(armCalls, 0)
+  equal(homeCalls, 0)
+})
+
 test("native Android performance harness invokes the behavioral boundaries", () => {
   const performanceHarness = readFileSync(
     new URL("../../scripts/android-chrome-performance-smoke.mjs", import.meta.url),
@@ -455,6 +535,33 @@ test("native Android performance harness invokes the behavioral boundaries", () 
   )
   match(performanceHarness, /const boundary = await establishNativeAndroidBackgroundBoundary\(\{/u)
   match(performanceHarness, /acquireChromeForegroundActivityAtBoundary\(\{/u)
+  match(
+    performanceHarness,
+    /const ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS = 250\b/u
+  )
+  match(performanceHarness, /const ANDROID_ACTIVITY_RECEIPT_HISTORY_LIMIT = 64\b/u)
+  match(performanceHarness, /const CHROME_AUTOMATION_POLL_MILLISECONDS = 100\b/u)
+  match(performanceHarness, /const CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS = 5_000\b/u)
+  match(
+    performanceHarness,
+    /readActivityReceipt:\s*\(timeoutMilliseconds\)\s*=>\s*resumedActivityReceipt\(timeoutMilliseconds\)/u
+  )
+  match(
+    performanceHarness,
+    /deadlineAt:\s*performance\.now\(\)\s*\+\s*CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS/u
+  )
+  match(
+    performanceHarness,
+    /maximumReadMilliseconds:\s*ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS/u
+  )
+  match(
+    performanceHarness,
+    /maximumPollMilliseconds:\s*CHROME_AUTOMATION_POLL_MILLISECONDS/u
+  )
+  match(
+    performanceHarness,
+    /maximumAttempts:\s*ANDROID_ACTIVITY_RECEIPT_HISTORY_LIMIT/u
+  )
   match(performanceHarness, /bringToFront:\s*\(\) => page\.bringToFront\(\)/u)
   equal(performanceHarness.match(/page\.bringToFront\(\)/gu)?.length, 1)
   equal(performanceHarness.match(/"KEYCODE_HOME"/gu)?.length, 1)
