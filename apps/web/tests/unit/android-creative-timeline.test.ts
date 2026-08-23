@@ -217,6 +217,14 @@ test("unknown or malformed Chrome native modals fail closed without a tap target
       'resource-id="com.android.chrome:id/negative_button"',
       'resource-id="com.android.chrome:id/positive_button"'
     ),
+    ATTEMPT_2_CHROME_MODAL_XML.replace(
+      'bounds="[477,1690][708,1816]"',
+      'bounds="[0,0][999999,999999]"'
+    ),
+    ATTEMPT_2_CHROME_MODAL_XML.replace(
+      'bounds="[477,1690][708,1816]"',
+      `bounds="[477,1690][${"9".repeat(400)},1816]"`
+    ),
     '<hierarchy><node text="No thanks" resource-id="com.android.chrome:id/negative_button" bounds="[477,1690][708,1816]" /></hierarchy>',
     '<hierarchy rotation="0"><node package="com.android.chrome" text="Courtside TW" />',
     '<hierarchy rotation="0"><node package="com.android.chrome" resource-id="com.android.chrome:id/update_dialog" class="android.app.Dialog" text="Update Chrome" clickable="true" enabled="true" bounds="[28,615][1052,1858]" /></hierarchy>',
@@ -572,8 +580,9 @@ test("Android smoke diagnostics preserve the failing producer and bound probes",
   match(performanceHarness, /timeout: probeTimeoutMilliseconds/u)
   match(
     performanceHarness,
-    /requireChromeForegroundActivityAtBoundary\(resumedActivityLine\(\)\)[\s\S]*probeChromeContentSurface/u
+    /function probeChromeContentSurfaceAtActivityBoundary\(probeTimeoutMilliseconds\) \{[\s\S]*activityBefore = requireChromeForegroundActivityAtBoundary\(resumedActivityLine\(\)\)[\s\S]*surface = probeChromeContentSurface\(probeTimeoutMilliseconds\)[\s\S]*activityAfter = requireChromeForegroundActivityAtBoundary\(resumedActivityLine\(\)\)/u
   )
+  equal(performanceHarness.match(/probeChromeContentSurfaceAtActivityBoundary\(/gu)?.length, 3)
   match(ciWorkflow, /profile: pixel_7\s+ram-size: 4096M/u)
   doesNotMatch(performanceHarness, /pm["',\s]+grant/u)
   doesNotMatch(
