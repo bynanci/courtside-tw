@@ -91,7 +91,7 @@ export function classifyChromeAutomationSurface(value) {
   const hasNativeDialogMarker = nodes.some((node) => {
     const resourceId = xmlAttribute(node, "resource-id") ?? ""
     const className = xmlAttribute(node, "class") ?? ""
-    return /(?:dialog|modal)/iu.test(resourceId) || /(?:^|[.$])Dialog$/u.test(className)
+    return /(?:dialog|modal)/iu.test(resourceId) || /Dialog(?:Fragment)?$/u.test(className)
   })
   if (!hasChromeNode) {
     return hasKnownMarker
