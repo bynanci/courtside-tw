@@ -218,6 +218,15 @@ test("activity probe receipts reject timed-out partial output and resolve only o
       activity: ""
     })
   }
+  throws(
+    () =>
+      classifyProbe({
+        errorCode: "EPIPE",
+        status: 0,
+        stdout: ATTEMPT_1_ACTIVITY_DUMP_PREFIX
+      }),
+    /activity probe failed/
+  )
 })
 
 test("native surface readiness retries whole attempts without probing or tapping from timeout receipts", () => {
@@ -291,6 +300,53 @@ test("native surface readiness still fails closed on a resolved foreign foregrou
     /Chrome is not the resumed Android activity/
   )
   equal(probeCalls, 0)
+})
+
+test("a ready native surface attempt preserves exact activity bracket identity", () => {
+  const captureAttempt = Reflect.get(
+    timelineHelpers,
+    "captureChromeSurfaceProbeBoundaryAttempt"
+  )
+  equal(typeof captureAttempt, "function")
+  if (typeof captureAttempt !== "function") return
+
+  const events: string[] = []
+  const receipt = captureAttempt({
+    readActivityReceipt: () => {
+      events.push("activity")
+      return { status: "resolved", activity: ATTEMPT_1_RESUMED_ACTIVITY }
+    },
+    probeSurface: () => {
+      events.push("probe")
+      return { status: "clear", probeMilliseconds: 7, hierarchyBytes: 99 }
+    }
+  })
+  deepEqual(events, ["activity", "probe", "activity"])
+  deepEqual(receipt, {
+    status: "clear",
+    probeMilliseconds: 7,
+    hierarchyBytes: 99,
+    activityBefore: ATTEMPT_1_RESUMED_ACTIVITY,
+    activityAfter: ATTEMPT_1_RESUMED_ACTIVITY
+  })
+
+  const changed = [
+    { status: "resolved", activity: ATTEMPT_1_RESUMED_ACTIVITY },
+    {
+      status: "resolved",
+      activity:
+        "topResumedActivity=ActivityRecord{different u0 com.android.chrome/com.google.android.apps.chrome.Main t10}"
+    }
+  ]
+  throws(
+    () =>
+      captureAttempt({
+        readActivityReceipt: () =>
+          changed.shift() ?? { status: "unresolved", activity: "" },
+        probeSurface: () => ({ status: "clear" })
+      }),
+    /Chrome activity identity changed during the native surface probe/
+  )
 })
 
 test("the exact attempt 2 Chrome notification modal resolves only its safe negative target", () => {
