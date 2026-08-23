@@ -23,6 +23,7 @@ type ActivityTransition = {
 }
 
 type TimelineFixtureOptions = {
+  activeAt?: number
   activeRunningCount?: number
   activityAt?: number
   activityTransitions?: ActivityTransition[]
@@ -37,6 +38,7 @@ type TimelineFixtureOptions = {
 }
 
 function timeline({
+  activeAt = 90,
   activeRunningCount = 1,
   activityAt = 120,
   activityTransitions,
@@ -53,7 +55,7 @@ function timeline({
     clockMaximumUncertaintyMilliseconds,
     homeSignal: { at: 100, signal: "Android KEYCODE_HOME" },
     activeSnapshot: {
-      at: 90,
+      at: activeAt,
       frame: 35,
       runningCount: activeRunningCount,
       targetStatus: "running"
@@ -188,6 +190,14 @@ test("paused and observed snapshots require zero running runtimes", () => {
         ),
       /runtime pause snapshot must have paused status/
     )
+    throws(
+      () =>
+        evaluateAndroidBackgroundTimeline(
+          { ...timeline(), observationSnapshot: { ...candidate, at: 1_640 } },
+          BUDGETS
+        ),
+      /background observation snapshot must have paused status/
+    )
   }
 })
 
@@ -251,6 +261,7 @@ test("clock uncertainty is charged against the runtime background deadline", () 
     () =>
       evaluateAndroidBackgroundTimeline(
         timeline({
+          activeAt: 70,
           clockMaximumUncertaintyMilliseconds: 20,
           pauseAt: 5_085,
           observationAt: 5_200
