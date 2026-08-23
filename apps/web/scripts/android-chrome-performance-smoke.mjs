@@ -3,6 +3,7 @@ import { spawnSync } from "node:child_process"
 import { chromium, expect } from "@playwright/test"
 
 import {
+  androidCommandTimeoutMilliseconds,
   boundedAndroidPollDelay,
   calibrateBrowserClockToHost,
   captureChromeSurfaceProbeBoundaryAttempt,
@@ -501,9 +502,26 @@ async function waitForActiveRuntimeSnapshot(page, targetIndex, timeoutMillisecon
   return snapshot
 }
 
-function probeChromeContentSurface(probeTimeoutMilliseconds) {
+function requireRemainingAutomationMilliseconds(deadline, maximumMilliseconds, label) {
+  const timeoutMilliseconds = androidCommandTimeoutMilliseconds(
+    deadline,
+    performance.now(),
+    maximumMilliseconds
+  )
+  if (timeoutMilliseconds === 0) {
+    throw new Error(`Android Chrome ${label} exceeded the shared automation deadline`)
+  }
+  return timeoutMilliseconds
+}
+
+function probeChromeContentSurface(deadline) {
   const startedAt = performance.now()
-  const displaySize = requireExpectedAndroidDisplaySize()
+  const displaySize = requireExpectedAndroidDisplaySize(deadline)
+  const probeTimeoutMilliseconds = requireRemainingAutomationMilliseconds(
+    deadline,
+    CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS,
+    "UIAutomator probe"
+  )
   const result = spawnSync("adb", ["exec-out", "uiautomator", "dump", "/dev/tty"], {
     encoding: "utf8",
     maxBuffer: 2 * 1024 * 1024,
@@ -529,8 +547,19 @@ function probeChromeContentSurface(probeTimeoutMilliseconds) {
   }
 }
 
-function requireExpectedAndroidDisplaySize() {
-  const displaySize = parseAndroidDisplaySize(adb("shell", "wm", "size"))
+function requireExpectedAndroidDisplaySize(deadline) {
+  const displaySize = parseAndroidDisplaySize(
+    adbWithTimeout(
+      requireRemainingAutomationMilliseconds(
+        deadline,
+        CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS,
+        "display probe"
+      ),
+      "shell",
+      "wm",
+      "size"
+    )
+  )
   if (
     displaySize.width !== EXPECTED_ANDROID_DISPLAY.width ||
     displaySize.height !== EXPECTED_ANDROID_DISPLAY.height
@@ -543,10 +572,17 @@ function requireExpectedAndroidDisplaySize() {
   return displaySize
 }
 
-function probeChromeContentSurfaceAtActivityBoundary(probeTimeoutMilliseconds) {
+function probeChromeContentSurfaceAtActivityBoundary(deadline) {
   return captureChromeSurfaceProbeBoundaryAttempt({
-    readActivityReceipt: resumedActivityReceipt,
-    probeSurface: () => probeChromeContentSurface(probeTimeoutMilliseconds)
+    readActivityReceipt: () =>
+      resumedActivityReceipt(
+        requireRemainingAutomationMilliseconds(
+          deadline,
+          ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS,
+          "activity probe"
+        )
+      ),
+    probeSurface: () => probeChromeContentSurface(deadline)
   })
 }
 
@@ -578,13 +614,7 @@ async function normalizeChromeContentSurface() {
   let dismissTap = null
 
   while (performance.now() < deadline) {
-    const remainingMilliseconds = deadline - performance.now()
-    const surface = probeChromeContentSurfaceAtActivityBoundary(
-      Math.max(
-        1,
-        Math.ceil(Math.min(CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS, remainingMilliseconds))
-      )
-    )
+    const surface = probeChromeContentSurfaceAtActivityBoundary(deadline)
     attempts.push(surfaceReceipt(surface))
     if (surface.status === "activity-unresolved") {
       const pollRemainingMilliseconds = deadline - performance.now()
@@ -597,6 +627,7 @@ async function normalizeChromeContentSurface() {
       continue
     }
     if (surface.status === "clear") {
+      requireRemainingAutomationMilliseconds(deadline, 1, "surface acceptance")
       return {
         status: surface.status,
         dismissedKnownPrompt,
@@ -611,7 +642,18 @@ async function normalizeChromeContentSurface() {
     }
     if (!dismissedKnownPrompt) {
       dismissTap = surface.dismissTap
-      adb("shell", "input", "tap", String(dismissTap.x), String(dismissTap.y))
+      adbWithTimeout(
+        requireRemainingAutomationMilliseconds(
+          deadline,
+          CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS,
+          "notification tap"
+        ),
+        "shell",
+        "input",
+        "tap",
+        String(dismissTap.x),
+        String(dismissTap.y)
+      )
       dismissedKnownPrompt = true
     }
     const pollRemainingMilliseconds = deadline - performance.now()
@@ -641,13 +683,7 @@ async function requireClearChromeContentSurface() {
   const deadline = performance.now() + CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS
   const attempts = []
   while (performance.now() < deadline) {
-    const remainingMilliseconds = deadline - performance.now()
-    const surface = probeChromeContentSurfaceAtActivityBoundary(
-      Math.max(
-        1,
-        Math.ceil(Math.min(CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS, remainingMilliseconds))
-      )
-    )
+    const surface = probeChromeContentSurfaceAtActivityBoundary(deadline)
     attempts.push(surfaceReceipt(surface))
     if (surface.status === "activity-unresolved") {
       const pollRemainingMilliseconds = deadline - performance.now()
@@ -665,6 +701,7 @@ async function requireClearChromeContentSurface() {
           `status=${surface.status}`
       )
     }
+    requireRemainingAutomationMilliseconds(deadline, 1, "surface acceptance")
     return { ...surfaceReceipt(surface), attempts }
   }
   throw new Error(
@@ -978,16 +1015,13 @@ async function verifyAndroidOperatingSystemBackground(page, targetIndex) {
   }
 }
 
-function adb(...arguments_) {
+function adbWithTimeout(timeoutMilliseconds, ...arguments_) {
   const result = spawnSync("adb", arguments_, {
     encoding: "utf8",
-    timeout: CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS
+    timeout: timeoutMilliseconds
   })
   if (result.error?.code === "ETIMEDOUT") {
-    throw new Error(
-      `adb ${arguments_.join(" ")} timed out after ` +
-        `${CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS} ms`
-    )
+    throw new Error(`adb ${arguments_.join(" ")} timed out after ${timeoutMilliseconds} ms`)
   }
   if (result.status !== 0) {
     throw new Error(
@@ -998,10 +1032,14 @@ function adb(...arguments_) {
   return result.stdout
 }
 
-function resumedActivityReceipt() {
+function adb(...arguments_) {
+  return adbWithTimeout(CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS, ...arguments_)
+}
+
+function resumedActivityReceipt(timeoutMilliseconds = ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS) {
   const result = spawnSync("adb", ["shell", "dumpsys", "activity", "activities"], {
     encoding: "utf8",
-    timeout: ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS
+    timeout: timeoutMilliseconds
   })
   try {
     return classifyAndroidActivityProbeResult({

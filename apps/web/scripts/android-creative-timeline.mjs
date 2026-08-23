@@ -403,6 +403,16 @@ export function boundedAndroidPollDelay(remainingMilliseconds, maximumPollMillis
   return Math.max(0, Math.min(maximum, remaining))
 }
 
+export function androidCommandTimeoutMilliseconds(deadlineAt, nowAt, maximumMilliseconds) {
+  const deadline = requireTimestamp(deadlineAt, "Android command deadline")
+  const now = requireTimestamp(nowAt, "Android command current time")
+  const maximum = requireCount(maximumMilliseconds, "maximum Android command timeout")
+  if (maximum === 0) {
+    throw new Error("maximum Android command timeout must be positive")
+  }
+  return Math.max(0, Math.min(maximum, Math.floor(deadline - now)))
+}
+
 export function calibrateBrowserClockToHost(rawCalibration) {
   const calibration = requireRecord(rawCalibration, "browser clock calibration")
   const browserEpochAtArm = requireTimestamp(calibration.browserEpochAtArm, "browser epoch at arm")
