@@ -219,7 +219,8 @@ test("unknown or malformed Chrome native modals fail closed without a tap target
     ),
     '<hierarchy><node text="No thanks" resource-id="com.android.chrome:id/negative_button" bounds="[477,1690][708,1816]" /></hierarchy>',
     '<hierarchy rotation="0"><node package="com.android.chrome" text="Courtside TW" />',
-    '<hierarchy rotation="0"><node package="com.android.chrome" resource-id="com.android.chrome:id/update_dialog" class="android.app.Dialog" text="Update Chrome" clickable="true" enabled="true" bounds="[28,615][1052,1858]" /></hierarchy>'
+    '<hierarchy rotation="0"><node package="com.android.chrome" resource-id="com.android.chrome:id/update_dialog" class="android.app.Dialog" text="Update Chrome" clickable="true" enabled="true" bounds="[28,615][1052,1858]" /></hierarchy>',
+    '<hierarchy><node package="com.android.chrome" resource-id="com.android.chrome:id/update_prompt" class="android.app.AlertDialog" /></hierarchy>'
   ]
 
   for (const fixture of fixtures) {
