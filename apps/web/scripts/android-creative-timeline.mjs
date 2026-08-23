@@ -68,7 +68,40 @@ function parseAndroidBounds(node) {
   return { left, top, right, bottom }
 }
 
-export function classifyChromeAutomationSurface(value) {
+function normalizeAndroidDisplaySize(value) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return null
+  const width = value.width
+  const height = value.height
+  if (
+    !Number.isSafeInteger(width) ||
+    !Number.isSafeInteger(height) ||
+    width <= 0 ||
+    height <= 0 ||
+    width > 10_000 ||
+    height > 10_000
+  ) {
+    return null
+  }
+  return { width, height }
+}
+
+export function parseAndroidDisplaySize(value) {
+  if (typeof value !== "string") {
+    throw new Error("Android display size receipt is invalid")
+  }
+  const override = value.match(/Override size:\s*(\d+)x(\d+)/u)
+  const physical = value.match(/Physical size:\s*(\d+)x(\d+)/u)
+  const match = override ?? physical
+  const displaySize = match
+    ? normalizeAndroidDisplaySize({ width: Number(match[1]), height: Number(match[2]) })
+    : null
+  if (!displaySize) {
+    throw new Error("Android display size receipt is invalid")
+  }
+  return displaySize
+}
+
+export function classifyChromeAutomationSurface(value, rawDisplaySize) {
   if (typeof value !== "string") {
     throw new Error("Chrome automation hierarchy must be a string")
   }
@@ -139,9 +172,13 @@ export function classifyChromeAutomationSurface(value) {
 
   const modalBounds = parseAndroidBounds(modal)
   const buttonBounds = parseAndroidBounds(negativeButton)
+  const displaySize = normalizeAndroidDisplaySize(rawDisplaySize)
   if (
+    !displaySize ||
     !modalBounds ||
     !buttonBounds ||
+    modalBounds.right > displaySize.width ||
+    modalBounds.bottom > displaySize.height ||
     buttonBounds.left < modalBounds.left ||
     buttonBounds.top < modalBounds.top ||
     buttonBounds.right > modalBounds.right ||
@@ -205,6 +242,12 @@ export function captureChromeSurfaceProbeBoundary({ readActivity, probeSurface }
     throw new Error("Chrome surface probe must return an object")
   }
   const activityAfter = requireChromeForegroundActivityAtBoundary(readActivity())
+  if (activityBefore.activity !== activityAfter.activity) {
+    throw new Error(
+      `Chrome activity identity changed during the native surface probe: ` +
+        `before=${activityBefore.activity}, after=${activityAfter.activity}`
+    )
+  }
   return {
     ...surface,
     activityBefore: activityBefore.activity,

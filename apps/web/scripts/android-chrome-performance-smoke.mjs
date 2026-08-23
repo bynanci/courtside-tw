@@ -11,6 +11,7 @@ import {
   evaluateAndroidBackgroundTimeline,
   evaluateAndroidForegroundFrameTimeline,
   normalizeBrowserRuntimeSnapshot,
+  parseAndroidDisplaySize,
   requireAndroidActivityAtBoundary,
   retainFirstPausedSnapshot
 } from "./android-creative-timeline.mjs"
@@ -21,6 +22,7 @@ const ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS = 250
 const CHROME_AUTOMATION_POLL_MILLISECONDS = 100
 const CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS = 5_000
 const CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS = 10_000
+const EXPECTED_ANDROID_DISPLAY = Object.freeze({ width: 1080, height: 2400 })
 const BUDGETS = Object.freeze({
   domContentLoadedMilliseconds: 5_000,
   creativeFirstRunningMilliseconds: 3_500,
@@ -500,6 +502,7 @@ async function waitForActiveRuntimeSnapshot(page, targetIndex, timeoutMillisecon
 
 function probeChromeContentSurface(probeTimeoutMilliseconds) {
   const startedAt = performance.now()
+  const displaySize = requireExpectedAndroidDisplaySize()
   const result = spawnSync("adb", ["exec-out", "uiautomator", "dump", "/dev/tty"], {
     encoding: "utf8",
     maxBuffer: 2 * 1024 * 1024,
@@ -518,10 +521,25 @@ function probeChromeContentSurface(probeTimeoutMilliseconds) {
   }
   const hierarchy = `${result.stdout ?? ""}\n${result.stderr ?? ""}`
   return {
-    ...classifyChromeAutomationSurface(hierarchy),
+    ...classifyChromeAutomationSurface(hierarchy, displaySize),
     probeMilliseconds: performance.now() - startedAt,
-    hierarchyBytes: Buffer.byteLength(hierarchy)
+    hierarchyBytes: Buffer.byteLength(hierarchy),
+    displaySize
   }
+}
+
+function requireExpectedAndroidDisplaySize() {
+  const displaySize = parseAndroidDisplaySize(adb("shell", "wm", "size"))
+  if (
+    displaySize.width !== EXPECTED_ANDROID_DISPLAY.width ||
+    displaySize.height !== EXPECTED_ANDROID_DISPLAY.height
+  ) {
+    throw new Error(
+      `Android display does not match the pinned Pixel 7 profile: ` +
+        `${displaySize.width}x${displaySize.height}`
+    )
+  }
+  return displaySize
 }
 
 function probeChromeContentSurfaceAtActivityBoundary(probeTimeoutMilliseconds) {
@@ -537,6 +555,7 @@ function surfaceReceipt(surface) {
     reason: surface.reason ?? null,
     probeMilliseconds: surface.probeMilliseconds,
     hierarchyBytes: surface.hierarchyBytes,
+    displaySize: surface.displaySize,
     activityBefore: surface.activityBefore,
     activityAfter: surface.activityAfter
   }
