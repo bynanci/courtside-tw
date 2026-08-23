@@ -24,7 +24,8 @@ The repository provides:
 - `infra/deployment/release.compose.yaml`, a provider-neutral candidate runtime
   with no database, secret, public port, or production credential embedded;
 - `infra/deployment/release.py`, an atomic release-state gate that validates
-  immutable inputs, readiness and old/new schema compatibility;
+  immutable inputs, environment-bound readiness and state, live rollback
+  schema read-back and old/new schema compatibility;
 - versioned release/readiness examples and a redacted behavioral receipt.
 
 The production platform remains responsible for its secret manager, image
@@ -124,14 +125,19 @@ receipts leave the current healthy release active. The receipt also carries the
 database schema version read back after the forward migration; it must equal the
 candidate target. It carries the candidate source SHA and API/web image digests
 as well, and the controller requires those immutable identities to match the
-registered release manifest before activation. The controller records these
-observations but never runs SQL or promotes a schema version from the manifest
-alone.
+registered release manifest before activation. The receipt must name the exact
+target environment and include healthy `api-readiness`, `worker-readiness` and
+`public-web-readiness` checks; an arbitrary or partial check set is rejected.
+The controller records these observations but never runs SQL or promotes a
+schema version from the manifest alone.
 
 ### 5. Register and activate
 
-The state file belongs in an access-controlled operations store, not the Git
-repository. A staging example is:
+The state file belongs in an access-controlled, environment-specific operations
+store, not the Git repository. State schema v2 persists the environment and
+rejects any invocation whose `--environment` differs, including `status`.
+Never share one state path across test, staging and production. A staging
+example is:
 
 ```bash
 python3 infra/deployment/release.py \
@@ -153,7 +159,26 @@ action receipt embedded for crash reconciliation, writes a separate redacted
 receipt, and returns `no_op` when the same immutable operation has already
 completed. The production command additionally requires the exact short-lived
 `COURTSIDE_PRODUCTION_DEPLOY_CONFIRM` capability. Possessing that token does not
-replace the platform traffic-switch approval.
+replace the platform traffic-switch approval. State commits are capped at
+48 KiB, below the controller's 64 KiB read limit; an over-budget registration
+fails before replacing the last readable state.
+
+Rollback additionally requires a fresh live schema read-back produced by the
+environment's database migration/read-only inspection identity, not a manifest
+value or cached controller field. The JSON contract is exact and contains only:
+
+```json
+{
+  "schema_version": 1,
+  "environment": "staging",
+  "database_schema": 10,
+  "observed_at": "2026-08-23T05:00:00Z"
+}
+```
+
+The environment must match the command and `observed_at` must be no more than
+10 minutes old. A rollback target must also have a prior healthy activation in
+the same state ledger; registration alone never makes a candidate eligible.
 
 After the controller passes, the release owner may authorize the provider's
 atomic ingress switch. Verify public read, publication authorization,
@@ -186,8 +211,11 @@ Keep deployment `HOLD` when any immutable image or source fingerprint is
 missing, a secret appears in an input or receipt, readiness is not fully
 healthy, old/new schema ranges do not overlap, the active application would not
 survive the forward target schema, backup/restore proof is stale, required
-checks or review threads are unresolved, or an atomic platform traffic switch
-and tested application rollback are unavailable.
+checks or review threads are unresolved, state/readiness/schema evidence names
+another environment, the live schema read-back is missing or stale, the target
+was never healthy-active, state history cannot remain within its write budget,
+or an atomic platform traffic switch and tested application rollback are
+unavailable.
 
 ## Repository verification
 
@@ -200,4 +228,3 @@ This isolated drill validates registration, readiness states, compatibility,
 idempotency, production denial, failed-candidate containment and application
 rollback. It does not contact a registry, database, provider or production
 network.
-
