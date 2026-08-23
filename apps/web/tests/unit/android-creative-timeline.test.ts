@@ -623,6 +623,27 @@ test("blocking ADB polls clamp an expired timer instead of scheduling a negative
   equal(boundedAndroidPollDelay(140, 100), 100)
 })
 
+test("one shared deadline charges every blocking Android automation command", () => {
+  const commandTimeout = Reflect.get(timelineHelpers, "androidCommandTimeoutMilliseconds")
+  equal(typeof commandTimeout, "function")
+  if (typeof commandTimeout !== "function") return
+
+  let now = 9_600
+  const deadline = 10_000
+  const allocate = (maximumMilliseconds: number) => {
+    const timeout = commandTimeout(deadline, now, maximumMilliseconds)
+    now += timeout
+    return timeout
+  }
+
+  equal(allocate(250), 250)
+  equal(allocate(5_000), 150)
+  equal(allocate(5_000), 0)
+  equal(now, deadline)
+  equal(commandTimeout(5_000, 4_999, 5_000), 1)
+  equal(commandTimeout(5_000, 4_999.2, 5_000), 0)
+})
+
 test("foreground frames use one exact browser timeline after the first attributable frame", () => {
   const active = (at: number, frame: number) => ({
     at,
@@ -844,7 +865,15 @@ test("Android smoke diagnostics preserve the failing producer and bound probes",
   match(performanceHarness, /timeout: probeTimeoutMilliseconds/u)
   match(
     performanceHarness,
-    /function probeChromeContentSurfaceAtActivityBoundary\(probeTimeoutMilliseconds\) \{[\s\S]*captureChromeSurfaceProbeBoundaryAttempt\(\{[\s\S]*readActivityReceipt: resumedActivityReceipt,[\s\S]*probeSurface:/u
+    /function probeChromeContentSurfaceAtActivityBoundary\(deadline\) \{[\s\S]*captureChromeSurfaceProbeBoundaryAttempt\(\{[\s\S]*resumedActivityReceipt\([\s\S]*probeChromeContentSurface\(deadline\)/u
+  )
+  match(
+    performanceHarness,
+    /function probeChromeContentSurface\(deadline\) \{[\s\S]*requireExpectedAndroidDisplaySize\(deadline\)[\s\S]*requireRemainingAutomationMilliseconds\([\s\S]*uiautomator/u
+  )
+  match(
+    performanceHarness,
+    /dismissTap[\s\S]*adbWithTimeout\([\s\S]*requireRemainingAutomationMilliseconds\(deadline/u
   )
   equal(performanceHarness.match(/probeChromeContentSurfaceAtActivityBoundary\(/gu)?.length, 3)
   match(ciWorkflow, /profile: pixel_7\s+ram-size: 4096M/u)
