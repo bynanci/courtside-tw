@@ -1,7 +1,21 @@
 #!/usr/bin/env node
 
 import { spawnSync } from "node:child_process"
-import { existsSync, mkdirSync, readFileSync, renameSync, unlinkSync, writeFileSync } from "node:fs"
+import { randomUUID } from "node:crypto"
+import {
+  closeSync,
+  constants as fsConstants,
+  existsSync,
+  fsyncSync,
+  lstatSync,
+  mkdirSync,
+  openSync,
+  readFileSync,
+  realpathSync,
+  renameSync,
+  unlinkSync,
+  writeFileSync
+} from "node:fs"
 import { basename, dirname, isAbsolute, join, relative, resolve } from "node:path"
 import { performance } from "node:perf_hooks"
 import { fileURLToPath } from "node:url"
@@ -16,8 +30,10 @@ import {
 const SCHEMA_VERSION = "courtside.android-emulator-environment/v1"
 const PROBE_TIMEOUT_MILLISECONDS = 5_000
 const STDERR_RECEIPT_MAXIMUM_BYTES = 4_096
-const ARTIFACT_ROOT = resolve("artifacts/android-chrome")
-const EXACT_HEAD_PATH = resolve("artifacts/exact-head.json")
+const WORKSPACE_ROOT = realpathSync(".")
+const ARTIFACTS_DIRECTORY = join(WORKSPACE_ROOT, "artifacts")
+const ARTIFACT_ROOT = join(ARTIFACTS_DIRECTORY, "android-chrome")
+const EXACT_HEAD_PATH = join(ARTIFACTS_DIRECTORY, "exact-head.json")
 const REQUESTED_ENVIRONMENT = Object.freeze({
   avdName: "courtside-api35-pixel7",
   profile: "pixel_7",
@@ -27,14 +43,37 @@ const REQUESTED_ENVIRONMENT = Object.freeze({
   heapMegabytes: 576
 })
 
+function requirePhysicalDirectory(path, label, create = false) {
+  if (!existsSync(path)) {
+    if (!create) throw new Error(`${label} does not exist`)
+    mkdirSync(path, { mode: 0o700 })
+  }
+  const metadata = lstatSync(path)
+  if (metadata.isSymbolicLink() || !metadata.isDirectory() || realpathSync(path) !== path) {
+    throw new Error(`${label} must be a physical directory`)
+  }
+  return path
+}
+
+function requirePhysicalArtifactRoot() {
+  requirePhysicalDirectory(ARTIFACTS_DIRECTORY, "Android artifacts directory", true)
+  return requirePhysicalDirectory(
+    ARTIFACT_ROOT,
+    "Android emulator physical fixed artifact directory",
+    true
+  )
+}
+
 function requireReceiptPath(value) {
   if (typeof value !== "string" || !value) {
     throw new Error("Android emulator receipt path is required")
   }
+  const physicalArtifactRoot = requirePhysicalArtifactRoot()
   const receiptPath = resolve(value)
-  const artifactRelativePath = relative(ARTIFACT_ROOT, receiptPath)
+  const artifactRelativePath = relative(physicalArtifactRoot, receiptPath)
   if (
     artifactRelativePath === "" ||
+    dirname(receiptPath) !== physicalArtifactRoot ||
     artifactRelativePath.startsWith(`..${process.platform === "win32" ? "\\" : "/"}`) ||
     artifactRelativePath === ".." ||
     isAbsolute(artifactRelativePath) ||
@@ -42,25 +81,53 @@ function requireReceiptPath(value) {
   ) {
     throw new Error("Android emulator receipt must stay inside the fixed artifact directory")
   }
+  if (existsSync(receiptPath) && lstatSync(receiptPath).isSymbolicLink()) {
+    throw new Error("Android emulator receipt must not replace a symbolic link")
+  }
   return receiptPath
 }
 
 function atomicWrite(path, value) {
-  mkdirSync(dirname(path), { recursive: true })
-  const temporaryPath = join(dirname(path), `.${basename(path)}.${process.pid}.tmp`)
+  const directory = dirname(path)
+  requirePhysicalDirectory(directory, "Atomic write parent directory")
+  const temporaryPath = join(directory, `.${basename(path)}.${process.pid}.${randomUUID()}.tmp`)
+  let descriptor = null
   try {
-    writeFileSync(temporaryPath, value, "utf8")
+    descriptor = openSync(
+      temporaryPath,
+      fsConstants.O_CREAT |
+        fsConstants.O_EXCL |
+        fsConstants.O_WRONLY |
+        (fsConstants.O_NOFOLLOW ?? 0),
+      0o600
+    )
+    writeFileSync(descriptor, value, "utf8")
+    fsyncSync(descriptor)
+    const completedDescriptor = descriptor
+    descriptor = null
+    closeSync(completedDescriptor)
+    requirePhysicalDirectory(directory, "Atomic write parent directory")
     renameSync(temporaryPath, path)
   } finally {
+    if (descriptor !== null) closeSync(descriptor)
     if (existsSync(temporaryPath)) unlinkSync(temporaryPath)
   }
 }
 
 function writeReceipt(path, receipt) {
+  const physicalArtifactRoot = requirePhysicalArtifactRoot()
+  if (dirname(path) !== physicalArtifactRoot) {
+    throw new Error("Android emulator receipt must stay inside the fixed artifact directory")
+  }
   atomicWrite(path, `${JSON.stringify(receipt, null, 2)}\n`)
 }
 
 function readSourceHeadSha() {
+  requirePhysicalDirectory(ARTIFACTS_DIRECTORY, "Android artifacts directory")
+  const metadata = lstatSync(EXACT_HEAD_PATH)
+  if (metadata.isSymbolicLink() || !metadata.isFile()) {
+    throw new Error("Exact-head receipt must be one physical file")
+  }
   const receipt = JSON.parse(readFileSync(EXACT_HEAD_PATH, "utf8"))
   const sourceHeadSha = receipt.source_head_sha
   if (typeof sourceHeadSha !== "string" || !/^[0-9a-f]{40}$/u.test(sourceHeadSha)) {
