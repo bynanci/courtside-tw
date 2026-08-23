@@ -14,11 +14,12 @@ import {
   establishNativeAndroidBackgroundBoundary,
   evaluateAndroidBackgroundTimeline,
   evaluateAndroidForegroundFrameTimeline,
+  executeBoundChromeSurfaceTap,
   normalizeChromeAutomationSurfaceWithinDeadline,
   normalizeBrowserRuntimeSnapshot,
   parseAndroidDisplaySize,
+  readBoundChromeSurfaceActivityReceipt,
   requireAndroidActivityAtBoundary,
-  requireChromeSurfaceNormalizationActivity,
   retainFirstPausedSnapshot
 } from "./android-creative-timeline.mjs"
 
@@ -594,18 +595,6 @@ function probeChromeContentSurfaceAtActivityBoundary(deadline) {
   })
 }
 
-function readBoundNormalizationActivity(deadline, expectedActivity, label) {
-  const receipt = resumedActivityReceipt(
-    requireRemainingAutomationMilliseconds(
-      deadline,
-      ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS,
-      label
-    )
-  )
-  requireRemainingAutomationMilliseconds(deadline, 1, `${label} acceptance`)
-  return requireChromeSurfaceNormalizationActivity(expectedActivity, receipt)
-}
-
 function surfaceReceipt(surface) {
   if (surface.status === "activity-unresolved") {
     return {
@@ -634,25 +623,23 @@ async function normalizeChromeContentSurface() {
     now: () => performance.now(),
     maximumPollMilliseconds: CHROME_AUTOMATION_POLL_MILLISECONDS,
     probeSurface: () => probeChromeContentSurfaceAtActivityBoundary(deadline),
-    readActivityReceipt: (expectedActivity, label) =>
-      readBoundNormalizationActivity(deadline, expectedActivity, label),
-    tap: (dismissTap, label) => {
-      if (label !== "Pixel Launcher ANR wait tap" && label !== "notification tap") {
-        throw new Error("Android Chrome normalization tap identity is invalid")
-      }
-      adbWithTimeout(
-        requireRemainingAutomationMilliseconds(
-          deadline,
-          CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS,
-          label
-        ),
-        "shell",
-        "input",
-        "tap",
-        String(dismissTap.x),
-        String(dismissTap.y)
-      )
-    },
+    readActivityReceipt: (_expectedActivity, label) =>
+      readBoundChromeSurfaceActivityReceipt({
+        deadlineAt: deadline,
+        maximumMilliseconds: ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS,
+        label,
+        remainingMilliseconds: requireRemainingAutomationMilliseconds,
+        readActivityReceipt: resumedActivityReceipt
+      }),
+    tap: (dismissTap, label) =>
+      executeBoundChromeSurfaceTap({
+        deadlineAt: deadline,
+        maximumMilliseconds: CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS,
+        dismissTap,
+        label,
+        remainingMilliseconds: requireRemainingAutomationMilliseconds,
+        runAdb: adbWithTimeout
+      }),
     delay: (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds))
   })
   requireRemainingAutomationMilliseconds(deadline, 1, "surface acceptance")

@@ -75,6 +75,26 @@ function parseAndroidBounds(node) {
   return { left, top, right, bottom }
 }
 
+function parseAndroidHierarchyNodes(value) {
+  const tags = value.match(/<\/?node\b[^>]*>/gu) ?? []
+  const records = []
+  const stack = []
+  for (const tag of tags) {
+    if (tag.startsWith("</")) {
+      if (!/^<\/node\s*>$/u.test(tag) || stack.length === 0) return null
+      stack.pop()
+      continue
+    }
+    const record = {
+      node: tag,
+      parentIndex: stack.length === 0 ? null : stack.at(-1)
+    }
+    records.push(record)
+    if (!/\/\s*>$/u.test(tag)) stack.push(records.length - 1)
+  }
+  return stack.length === 0 ? records : null
+}
+
 function normalizeAndroidDisplaySize(value) {
   if (typeof value !== "object" || value === null || Array.isArray(value)) return null
   const width = value.width
@@ -487,7 +507,9 @@ export function classifyChromeAutomationSurface(value, rawDisplaySize) {
 
   const hierarchyDocument = hierarchy.slice(hierarchyStart, hierarchyEnd + "</hierarchy>".length)
   const hierarchyNode = hierarchyDocument.match(/^<hierarchy\b[^>]*>/u)?.[0] ?? ""
-  const nodes = hierarchyDocument.match(/<node\b[^>]*>/gu) ?? []
+  const nodeRecords = parseAndroidHierarchyNodes(hierarchyDocument)
+  if (nodeRecords === null) return blocked
+  const nodes = nodeRecords.map((record) => record.node)
   const displaySize = normalizeAndroidDisplaySize(rawDisplaySize)
   const modalId = "com.android.chrome:id/modal_dialog_view"
   const negativeButtonId = "com.android.chrome:id/negative_button"
@@ -507,47 +529,65 @@ export function classifyChromeAutomationSurface(value, rawDisplaySize) {
     )
   })
   if (launcherAnrMarker) {
-    const resourceNodes = (resourceId) =>
-      nodes.filter((node) => xmlAttribute(node, "resource-id") === resourceId)
-    const exactNodes = (resourceId, className, text) =>
-      resourceNodes(resourceId).filter(
-        (node) =>
-          xmlAttribute(node, "package") === "android" &&
-          xmlAttribute(node, "class") === className &&
-          (text === null || xmlAttribute(node, "text") === text)
+    const resourceRecords = (resourceId) =>
+      nodeRecords.filter((record) => xmlAttribute(record.node, "resource-id") === resourceId)
+    const exactRecords = (resourceId, className, text) =>
+      resourceRecords(resourceId).filter(
+        (record) =>
+          xmlAttribute(record.node, "package") === "android" &&
+          xmlAttribute(record.node, "class") === className &&
+          (text === null || xmlAttribute(record.node, "text") === text)
       )
-    const panels = exactNodes(launcherAnrIds.panel, "android.widget.LinearLayout", "")
-    const titles = exactNodes(launcherAnrIds.title, "android.widget.TextView", launcherAnrTitle)
-    const closeButtons = exactNodes(
+    const panels = exactRecords(launcherAnrIds.panel, "android.widget.LinearLayout", "")
+    const titles = exactRecords(launcherAnrIds.title, "android.widget.TextView", launcherAnrTitle)
+    const closeButtons = exactRecords(
       launcherAnrIds.close,
       "android.widget.Button",
       "Close app"
     ).filter(
-      (node) =>
-        xmlAttribute(node, "clickable") === "true" && xmlAttribute(node, "enabled") === "true"
+      (record) =>
+        xmlAttribute(record.node, "clickable") === "true" &&
+        xmlAttribute(record.node, "enabled") === "true"
     )
-    const waitButtons = exactNodes(launcherAnrIds.wait, "android.widget.Button", "Wait").filter(
-      (node) =>
-        xmlAttribute(node, "clickable") === "true" && xmlAttribute(node, "enabled") === "true"
+    const waitButtons = exactRecords(launcherAnrIds.wait, "android.widget.Button", "Wait").filter(
+      (record) =>
+        xmlAttribute(record.node, "clickable") === "true" &&
+        xmlAttribute(record.node, "enabled") === "true"
     )
     const allNodesBelongToAndroid =
       nodes.length > 0 && nodes.every((node) => xmlAttribute(node, "package") === "android")
-    const actionableButtons = nodes.filter(
-      (node) =>
-        xmlAttribute(node, "package") === "android" &&
-        xmlAttribute(node, "class") === "android.widget.Button" &&
-        xmlAttribute(node, "clickable") === "true" &&
-        xmlAttribute(node, "enabled") === "true"
+    const actionableButtons = nodeRecords.filter(
+      (record) =>
+        xmlAttribute(record.node, "package") === "android" &&
+        xmlAttribute(record.node, "class") === "android.widget.Button" &&
+        xmlAttribute(record.node, "clickable") === "true" &&
+        xmlAttribute(record.node, "enabled") === "true"
     )
-    const actionableButtonIds = actionableButtons.map((node) => xmlAttribute(node, "resource-id"))
+    const actionableButtonIds = actionableButtons.map((record) =>
+      xmlAttribute(record.node, "resource-id")
+    )
+    const isDescendantOf = (record, ancestor) => {
+      let parentIndex = record.parentIndex
+      const ancestorIndex = nodeRecords.indexOf(ancestor)
+      while (parentIndex !== null && parentIndex !== undefined) {
+        if (parentIndex === ancestorIndex) return true
+        parentIndex = nodeRecords[parentIndex]?.parentIndex
+      }
+      return false
+    }
     if (
       xmlAttribute(hierarchyNode, "rotation") !== "0" ||
       !allNodesBelongToAndroid ||
-      Object.values(launcherAnrIds).some((resourceId) => resourceNodes(resourceId).length !== 1) ||
+      Object.values(launcherAnrIds).some(
+        (resourceId) => resourceRecords(resourceId).length !== 1
+      ) ||
       panels.length !== 1 ||
       titles.length !== 1 ||
       closeButtons.length !== 1 ||
       waitButtons.length !== 1 ||
+      !isDescendantOf(titles[0], panels[0]) ||
+      !isDescendantOf(closeButtons[0], panels[0]) ||
+      !isDescendantOf(waitButtons[0], panels[0]) ||
       actionableButtons.length !== 2 ||
       !actionableButtonIds.includes(launcherAnrIds.close) ||
       !actionableButtonIds.includes(launcherAnrIds.wait) ||
@@ -557,10 +597,10 @@ export function classifyChromeAutomationSurface(value, rawDisplaySize) {
       return blocked
     }
 
-    const panelBounds = parseAndroidBounds(panels[0])
-    const titleBounds = parseAndroidBounds(titles[0])
-    const closeBounds = parseAndroidBounds(closeButtons[0])
-    const waitBounds = parseAndroidBounds(waitButtons[0])
+    const panelBounds = parseAndroidBounds(panels[0].node)
+    const titleBounds = parseAndroidBounds(titles[0].node)
+    const closeBounds = parseAndroidBounds(closeButtons[0].node)
+    const waitBounds = parseAndroidBounds(waitButtons[0].node)
     const boundsAreInside = (inner, outer) =>
       inner &&
       outer &&
@@ -674,6 +714,10 @@ const KNOWN_CHROME_AUTOMATION_PROMPTS = Object.freeze([
   "known-notification-prompt",
   "known-pixel-launcher-anr"
 ])
+const KNOWN_CHROME_AUTOMATION_PROMPT_TAPS = Object.freeze({
+  "known-notification-prompt": Object.freeze({ x: 592, y: 1753 }),
+  "known-pixel-launcher-anr": Object.freeze({ x: 540, y: 1363 })
+})
 
 export function planChromeAutomationSurfaceNormalization(rawSurface, rawDismissedPrompts) {
   const surface = requireRecord(rawSurface, "Chrome automation surface")
@@ -699,6 +743,10 @@ export function planChromeAutomationSurfaceNormalization(rawSurface, rawDismisse
   const y = requireCount(dismissTap.y, "Chrome automation prompt dismiss y")
   if (x === 0 || y === 0 || x > 10_000 || y > 10_000) {
     throw new Error("Chrome automation prompt dismiss tap is outside the safe coordinate bound")
+  }
+  const expectedTap = KNOWN_CHROME_AUTOMATION_PROMPT_TAPS[surface.status]
+  if (x !== expectedTap.x || y !== expectedTap.y) {
+    throw new Error("Chrome automation prompt dismiss tap does not match its exact target")
   }
   return Object.freeze({
     action: "tap",
@@ -747,6 +795,100 @@ export function executeChromeSurfaceNormalizationAction(rawDependencies) {
     activityBeforeTap,
     activityAfterTap
   })
+}
+
+export function readBoundChromeSurfaceActivityReceipt(rawDependencies) {
+  const dependencies = requireRecord(
+    rawDependencies,
+    "bounded Chrome surface activity receipt dependencies"
+  )
+  const deadlineAt = requireTimestamp(
+    dependencies.deadlineAt,
+    "bounded Chrome surface activity receipt deadline"
+  )
+  const maximumMilliseconds = requireCount(
+    dependencies.maximumMilliseconds,
+    "bounded Chrome surface activity receipt maximum"
+  )
+  if (maximumMilliseconds === 0) {
+    throw new Error("bounded Chrome surface activity receipt maximum must be positive")
+  }
+  const label = dependencies.label
+  if (typeof label !== "string" || label.length === 0) {
+    throw new Error("bounded Chrome surface activity receipt label must be non-empty")
+  }
+  const remainingMilliseconds = requireCallable(
+    dependencies.remainingMilliseconds,
+    "bounded Chrome surface activity remaining-time resolver"
+  )
+  const readActivityReceipt = requireCallable(
+    dependencies.readActivityReceipt,
+    "bounded Chrome surface activity receipt reader"
+  )
+  const timeoutMilliseconds = requireCount(
+    remainingMilliseconds(deadlineAt, maximumMilliseconds, label),
+    "bounded Chrome surface activity receipt timeout"
+  )
+  if (timeoutMilliseconds === 0) {
+    throw new Error("bounded Chrome surface activity receipt deadline expired")
+  }
+  const receipt = requireAndroidActivityProbeReceipt(readActivityReceipt(timeoutMilliseconds))
+  const acceptanceMilliseconds = requireCount(
+    remainingMilliseconds(deadlineAt, 1, `${label} acceptance`),
+    "bounded Chrome surface activity acceptance timeout"
+  )
+  if (acceptanceMilliseconds === 0) {
+    throw new Error("bounded Chrome surface activity receipt completed at its deadline")
+  }
+  return receipt
+}
+
+export function executeBoundChromeSurfaceTap(rawDependencies) {
+  const dependencies = requireRecord(rawDependencies, "bounded Chrome surface tap dependencies")
+  const deadlineAt = requireTimestamp(
+    dependencies.deadlineAt,
+    "bounded Chrome surface tap deadline"
+  )
+  const maximumMilliseconds = requireCount(
+    dependencies.maximumMilliseconds,
+    "bounded Chrome surface tap maximum"
+  )
+  if (maximumMilliseconds === 0) {
+    throw new Error("bounded Chrome surface tap maximum must be positive")
+  }
+  const label = dependencies.label
+  const expectedTap =
+    label === "Pixel Launcher ANR wait tap"
+      ? KNOWN_CHROME_AUTOMATION_PROMPT_TAPS["known-pixel-launcher-anr"]
+      : label === "notification tap"
+        ? KNOWN_CHROME_AUTOMATION_PROMPT_TAPS["known-notification-prompt"]
+        : null
+  const dismissTap = requireRecord(dependencies.dismissTap, "bounded Chrome surface dismiss tap")
+  const x = requireCount(dismissTap.x, "bounded Chrome surface dismiss x")
+  const y = requireCount(dismissTap.y, "bounded Chrome surface dismiss y")
+  if (!expectedTap || x !== expectedTap.x || y !== expectedTap.y) {
+    throw new Error("bounded Chrome surface tap does not match the exact known prompt target")
+  }
+  const remainingMilliseconds = requireCallable(
+    dependencies.remainingMilliseconds,
+    "bounded Chrome surface tap remaining-time resolver"
+  )
+  const runAdb = requireCallable(dependencies.runAdb, "bounded Chrome surface adb runner")
+  const timeoutMilliseconds = requireCount(
+    remainingMilliseconds(deadlineAt, maximumMilliseconds, label),
+    "bounded Chrome surface tap timeout"
+  )
+  if (timeoutMilliseconds === 0) {
+    throw new Error("bounded Chrome surface tap deadline expired")
+  }
+  return runAdb(
+    timeoutMilliseconds,
+    "shell",
+    "input",
+    "tap",
+    String(expectedTap.x),
+    String(expectedTap.y)
+  )
 }
 
 export async function normalizeChromeAutomationSurfaceWithinDeadline(rawDependencies) {
