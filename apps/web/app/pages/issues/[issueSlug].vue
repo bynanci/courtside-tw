@@ -46,6 +46,7 @@ const canonical = computed(() =>
 const coverSrc = computed(() =>
   issue.value ? publicMediaUrl(config.public.apiBaseUrl, issue.value.cover.url) : ""
 )
+const displayIssueNumber = computed(() => String(issue.value?.issueNumber ?? 0).padStart(2, "0"))
 
 useHead(() => {
   const current = issue.value
@@ -94,53 +95,68 @@ useHead(() => {
 <template>
   <div class="site-page">
     <a class="skip-link" href="#main-content">跳到主要內容</a>
-    <header class="site-header">
-      <NuxtLink to="/" class="site-brand">Courtside TW</NuxtLink>
-      <nav aria-label="主要導覽">
-        <NuxtLink to="/">首頁</NuxtLink>
-        <NuxtLink to="/issues">所有期數</NuxtLink>
-      </nav>
-    </header>
+    <div class="issue-page-header-wrap">
+      <header class="site-header site-header--hero">
+        <NuxtLink to="/" class="site-brand">Courtside TW</NuxtLink>
+        <nav aria-label="主要導覽">
+          <NuxtLink to="/">首頁</NuxtLink>
+          <NuxtLink to="/issues">所有期數</NuxtLink>
+        </nav>
+      </header>
+    </div>
 
-    <main id="main-content" class="site-shell issue-page" tabindex="-1">
-      <NuxtLink to="/issues" class="back-link">← 返回所有期數</NuxtLink>
+    <main id="main-content" class="issue-page" tabindex="-1">
+      <section v-if="issue" class="issue-hero" aria-labelledby="issue-heading">
+        <div class="site-shell issue-hero__inner">
+          <NuxtLink to="/issues" class="back-link">← 返回所有期數</NuxtLink>
 
-      <section v-if="issue" class="issue-header" aria-labelledby="issue-heading">
-        <div class="issue-header__cover">
-          <img
-            :src="coverSrc"
-            :alt="issue.cover.alt"
-            :width="issue.cover.width"
-            :height="issue.cover.height"
-            fetchpriority="high"
-          />
-        </div>
-        <div class="issue-header__copy">
-          <p class="eyebrow">第 {{ issue.issueNumber }} 期</p>
-          <h1 id="issue-heading">{{ issue.title }}</h1>
-          <p>{{ issue.summary }}</p>
-          <time :datetime="issue.publishedAt">公開閱讀</time>
+          <div class="issue-header">
+            <div class="issue-header__cover">
+              <img
+                :src="coverSrc"
+                :alt="issue.cover.alt"
+                :width="issue.cover.width"
+                :height="issue.cover.height"
+                fetchpriority="high"
+              />
+            </div>
+            <div class="issue-header__copy">
+              <span class="issue-header__number" aria-hidden="true">
+                {{ displayIssueNumber }}
+              </span>
+              <p class="eyebrow">第 {{ issue.issueNumber }} 期</p>
+              <h1 id="issue-heading">{{ issue.title }}</h1>
+              <p>{{ issue.summary }}</p>
+              <time :datetime="issue.publishedAt">公開閱讀</time>
+              <a href="#toc" class="button-link button-link--primary" data-testid="issue-toc-link">
+                前往目錄 <span aria-hidden="true">↓</span>
+              </a>
+            </div>
+          </div>
         </div>
       </section>
 
-      <IssueToc v-if="issue" :issue="issue" />
-      <OfflineDownloadPanel
-        v-if="issue"
-        :api-base-url="config.public.apiBaseUrl"
-        :issue-slug="issueSlug"
-      />
-      <ReadingState
-        v-else-if="error instanceof PublicIssueApiError && error.statusCode === 404"
-        title="找不到這一期"
-        body="這期可能尚未發布、已撤回，或網址不正確。"
-      />
-      <ReadingState
-        v-else-if="error"
-        tone="error"
-        title="期數目錄暫時無法載入"
-        body="請稍後重試。"
-      />
-      <ReadingState v-else-if="!pending" title="找不到這一期" body="請從公開期數目錄重新開始。" />
+      <div class="site-shell issue-page__content">
+        <NuxtLink v-if="!issue" to="/issues" class="back-link">← 返回所有期數</NuxtLink>
+        <IssueToc v-if="issue" :issue="issue" />
+        <OfflineDownloadPanel
+          v-if="issue"
+          :api-base-url="config.public.apiBaseUrl"
+          :issue-slug="issueSlug"
+        />
+        <ReadingState
+          v-else-if="error instanceof PublicIssueApiError && error.statusCode === 404"
+          title="找不到這一期"
+          body="這期可能尚未發布、已撤回，或網址不正確。"
+        />
+        <ReadingState
+          v-else-if="error"
+          tone="error"
+          title="期數目錄暫時無法載入"
+          body="請稍後重試。"
+        />
+        <ReadingState v-else-if="!pending" title="找不到這一期" body="請從公開期數目錄重新開始。" />
+      </div>
     </main>
   </div>
 </template>

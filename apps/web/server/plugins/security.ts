@@ -1,6 +1,10 @@
 import { randomBytes } from "node:crypto"
 
-import { applySecurityHeaders, validateTrustedApiOrigin } from "../security/headers"
+import {
+  allowsLoopbackApiOrigin,
+  applySecurityHeaders,
+  validateTrustedApiOrigin
+} from "../security/headers"
 
 export default defineNitroPlugin((nitroApp) => {
   nitroApp.hooks.hook("request", (event) => {
@@ -35,7 +39,7 @@ function configuredApiOrigin(): string | undefined {
   }
   try {
     return validateTrustedApiOrigin(value, {
-      allowPrivateNetwork: process.env.COURTSIDE_E2E === "1"
+      allowPrivateNetwork: allowsLoopbackApiOrigin()
     })
   } catch {
     return undefined

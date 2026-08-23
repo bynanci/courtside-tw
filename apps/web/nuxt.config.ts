@@ -44,6 +44,16 @@ export default defineNuxtConfig({
       meta: [
         { name: "viewport", content: "width=device-width, initial-scale=1" },
         {
+          name: "theme-color",
+          content: "#f2eee5",
+          media: "(prefers-color-scheme: light)"
+        },
+        {
+          name: "theme-color",
+          content: "#080808",
+          media: "(prefers-color-scheme: dark)"
+        },
+        {
           name: "description",
           content: "Courtside TW 台灣籃球數位雜誌的 SSR 起始頁。"
         }
