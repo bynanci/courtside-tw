@@ -211,7 +211,7 @@ def ensure_legacy_backup(path: Path, payload: dict[str, Any]) -> bool:
             temporary.unlink()
 
     existing, _ = read_legacy_backup(path)
-    if existing != payload:
+    if serialize_json(existing).encode("utf-8") != serialized:
         raise ReleaseError("legacy release-state backup already contains different data")
     return created
 
