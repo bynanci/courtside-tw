@@ -1,6 +1,10 @@
 import { deepEqual, doesNotMatch, equal, match, throws } from "node:assert/strict"
-import { readFileSync } from "node:fs"
+import { spawnSync } from "node:child_process"
+import { chmodSync, mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs"
+import { tmpdir } from "node:os"
+import { delimiter, join } from "node:path"
 import { test } from "node:test"
+import { fileURLToPath } from "node:url"
 
 import * as timelineHelpers from "../../scripts/android-creative-timeline.mjs"
 
@@ -31,6 +35,9 @@ const FOREGROUND_BUDGETS = Object.freeze({
 })
 
 const PIXEL_7_DISPLAY = Object.freeze({ width: 1080, height: 2400 })
+const ANDROID_AVD_NAME = "courtside-api35-pixel7"
+const ANDROID_PROFILE = "pixel_7"
+const EXACT_HEAD_SHA = "1234567890abcdef1234567890abcdef12345678"
 
 const ATTEMPT_1_ACTIVITY_DUMP_PREFIX = `ACTIVITY MANAGER ACTIVITIES (dumpsys activity activities)
 Display #0 (activities from top to bottom):
@@ -688,7 +695,8 @@ test("AVD preparation removes ambiguous hardware keys before writing one canonic
   equal(
     canonicalize(
       [
-        "AvdId=test",
+        `AvdId=${ANDROID_AVD_NAME}`,
+        `hw.device.name=${ANDROID_PROFILE}`,
         "hw.cpu.ncore=2",
         "hw.ramSize=2560",
         "vm.heapSize=512",
@@ -699,7 +707,8 @@ test("AVD preparation removes ambiguous hardware keys before writing one canonic
       ].join("\n")
     ),
     [
-      "AvdId=test",
+      `AvdId=${ANDROID_AVD_NAME}`,
+      `hw.device.name=${ANDROID_PROFILE}`,
       "image.sysdir.1=system-images/android-35/google_apis_playstore/x86_64/",
       "hw.cpu.ncore=4",
       "hw.ramSize=4096",
@@ -717,14 +726,18 @@ test("emulator environment proof binds requested, resolved and live hardware", (
   deepEqual(
     evaluate({
       requested: {
-        profile: "pixel_7",
+        avdName: ANDROID_AVD_NAME,
+        profile: ANDROID_PROFILE,
         cpuCores: 4,
         ramInput: "4096M",
+        ramMegabytes: 4096,
         heapMegabytes: 576
       },
       canonicalConfig:
-        "AvdId=courtside-api35-pixel7\nhw.cpu.ncore=4\nhw.ramSize=4096\nvm.heapSize=576\n",
-      resolvedHardware: "hw.cpu.ncore = 4\nhw.ramSize = 4096\nvm.heapSize = 576\n",
+        "AvdId=courtside-api35-pixel7\nhw.device.name=pixel_7\nhw.cpu.ncore=4\nhw.ramSize=4096\nvm.heapSize=576\n",
+      resolvedHardware:
+        "hw.device.name = pixel_7\navd.name = courtside-api35-pixel7\navd.id = courtside-api35-pixel7\nhw.cpu.ncore = 4\nhw.ramSize = 4096\nvm.heapSize = 576\n",
+      liveAvdName: `${ANDROID_AVD_NAME}\nOK\n`,
       guestCpuOnline: "0-3\n",
       guestMeminfo: "MemTotal:        3973120 kB\nMemFree:          512000 kB\n",
       guestHeapSize: "576m\n"
@@ -733,15 +746,30 @@ test("emulator environment proof binds requested, resolved and live hardware", (
       schemaVersion: "courtside.android-emulator-environment/v1",
       result: "PASS",
       requested: {
-        profile: "pixel_7",
+        avdName: ANDROID_AVD_NAME,
+        profile: ANDROID_PROFILE,
         cpuCores: 4,
         ramInput: "4096M",
         ramMegabytes: 4096,
         heapMegabytes: 576
       },
-      canonicalConfig: { cpuCores: 4, ramMegabytes: 4096, heapMegabytes: 576 },
-      resolvedHardware: { cpuCores: 4, ramMegabytes: 4096, heapMegabytes: 576 },
+      canonicalConfig: {
+        avdName: ANDROID_AVD_NAME,
+        profile: ANDROID_PROFILE,
+        cpuCores: 4,
+        ramMegabytes: 4096,
+        heapMegabytes: 576
+      },
+      resolvedHardware: {
+        avdName: ANDROID_AVD_NAME,
+        avdId: ANDROID_AVD_NAME,
+        profile: ANDROID_PROFILE,
+        cpuCores: 4,
+        ramMegabytes: 4096,
+        heapMegabytes: 576
+      },
       liveGuest: {
+        avdName: ANDROID_AVD_NAME,
         cpuOnline: "0-3",
         cpuCores: 4,
         memTotalKilobytes: 3_973_120,
@@ -758,13 +786,18 @@ test("emulator environment proof rejects ambiguous, missing or drifted bindings"
 
   const valid = {
     requested: {
-      profile: "pixel_7",
+      avdName: ANDROID_AVD_NAME,
+      profile: ANDROID_PROFILE,
       cpuCores: 4,
       ramInput: "4096M",
+      ramMegabytes: 4096,
       heapMegabytes: 576
     },
-    canonicalConfig: "hw.cpu.ncore=4\nhw.ramSize=4096\nvm.heapSize=576\n",
-    resolvedHardware: "hw.cpu.ncore=4\nhw.ramSize=4096\nvm.heapSize=576\n",
+    canonicalConfig:
+      "AvdId=courtside-api35-pixel7\nhw.device.name=pixel_7\nhw.cpu.ncore=4\nhw.ramSize=4096\nvm.heapSize=576\n",
+    resolvedHardware:
+      "hw.device.name=pixel_7\navd.name=courtside-api35-pixel7\navd.id=courtside-api35-pixel7\nhw.cpu.ncore=4\nhw.ramSize=4096\nvm.heapSize=576\n",
+    liveAvdName: `${ANDROID_AVD_NAME}\nOK\n`,
     guestCpuOnline: "0-3\n",
     guestMeminfo: "MemTotal: 3973120 kB\n",
     guestHeapSize: "576m\n"
@@ -776,7 +809,10 @@ test("emulator environment proof rejects ambiguous, missing or drifted bindings"
     },
     {
       label: "missing resolved RAM",
-      value: { ...valid, resolvedHardware: "hw.cpu.ncore=4\nvm.heapSize=576\n" }
+      value: {
+        ...valid,
+        resolvedHardware: valid.resolvedHardware.replace("hw.ramSize=4096\n", "")
+      }
     },
     {
       label: "resolved CPU drift",
@@ -795,6 +831,64 @@ test("emulator environment proof rejects ambiguous, missing or drifted bindings"
         ...valid,
         resolvedHardware: valid.resolvedHardware.replace("heapSize=576", "heapSize=512")
       }
+    },
+    {
+      label: "malformed canonical RAM",
+      value: {
+        ...valid,
+        canonicalConfig: valid.canonicalConfig.replace("ramSize=4096", "ramSize=4096M")
+      }
+    },
+    {
+      label: "malformed resolved RAM",
+      value: {
+        ...valid,
+        resolvedHardware: valid.resolvedHardware.replace("ramSize=4096", "ramSize=4096M")
+      }
+    },
+    {
+      label: "malformed canonical heap",
+      value: {
+        ...valid,
+        canonicalConfig: valid.canonicalConfig.replace("heapSize=576", "heapSize=576M")
+      }
+    },
+    {
+      label: "malformed resolved heap",
+      value: {
+        ...valid,
+        resolvedHardware: valid.resolvedHardware.replace("heapSize=576", "heapSize=576M")
+      }
+    },
+    {
+      label: "canonical AVD identity drift",
+      value: {
+        ...valid,
+        canonicalConfig: valid.canonicalConfig.replace(ANDROID_AVD_NAME, "other-avd")
+      }
+    },
+    {
+      label: "missing canonical profile",
+      value: {
+        ...valid,
+        canonicalConfig: valid.canonicalConfig.replace("hw.device.name=pixel_7\n", "")
+      }
+    },
+    {
+      label: "duplicate resolved AVD name",
+      value: {
+        ...valid,
+        resolvedHardware: `${valid.resolvedHardware}avd.name=${ANDROID_AVD_NAME}\n`
+      }
+    },
+    { label: "live AVD identity drift", value: { ...valid, liveAvdName: "other-avd\nOK\n" } },
+    {
+      label: "requested AVD identity drift",
+      value: { ...valid, requested: { ...valid.requested, avdName: "other-avd" } }
+    },
+    {
+      label: "requested RAM megabytes drift",
+      value: { ...valid, requested: { ...valid.requested, ramMegabytes: 2048 } }
     },
     { label: "offline CPU", value: { ...valid, guestCpuOnline: "0-2\n" } },
     { label: "extra CPU", value: { ...valid, guestCpuOnline: "0-4\n" } },
@@ -842,9 +936,12 @@ test("Android smoke verifies one fixed emulator receipt before Chrome starts", (
   )
   const verifierCommand =
     'node apps/web/scripts/android-emulator-environment.mjs verify "$artifact_dir/emulator-environment.json"'
+  const androidJobStart = ciWorkflow.indexOf("  android-chrome-smoke:")
+  const androidJobEnd = ciWorkflow.indexOf("\n  java-quality:", androidJobStart)
+  const androidJob = ciWorkflow.slice(androidJobStart, androidJobEnd)
 
-  match(ciWorkflow, /avd-name: \$\{\{ env\.COURTSIDE_ANDROID_AVD_NAME \}\}/u)
-  match(ciWorkflow, /pre-emulator-launch-script:[^\n]*android-emulator-environment\.mjs prepare/u)
+  match(androidJob, /avd-name: \$\{\{ env\.COURTSIDE_ANDROID_AVD_NAME \}\}/u)
+  match(androidJob, /pre-emulator-launch-script:[^\n]*android-emulator-environment\.mjs prepare/u)
   match(shellHarness, /diagnostic_phase="emulator-environment"/u)
   match(shellHarness, /emulator-environment\.json/u)
   equal(shellHarness.indexOf(verifierCommand) >= 0, true)
@@ -852,6 +949,240 @@ test("Android smoke verifies one fixed emulator receipt before Chrome starts", (
     shellHarness.indexOf(verifierCommand) < shellHarness.indexOf('launch_chrome "offline"'),
     true
   )
+})
+
+test("emulator environment CLI canonicalizes and joins host, resolved and live identity", () => {
+  const fixtureRoot = mkdtempSync(join(tmpdir(), "courtside-emulator-environment-"))
+  const avdHome = join(fixtureRoot, "avd-home")
+  const avdDirectory = join(avdHome, `${ANDROID_AVD_NAME}.avd`)
+  const artifactDirectory = join(fixtureRoot, "artifacts", "android-chrome")
+  const fakeBin = join(fixtureRoot, "bin")
+  const scriptPath = fileURLToPath(
+    new URL("../../scripts/android-emulator-environment.mjs", import.meta.url)
+  )
+  const configPath = join(avdDirectory, "config.ini")
+  const resolvedPath = join(avdDirectory, "hardware-qemu.ini")
+  const prepareReceiptPath = join(artifactDirectory, "emulator-environment-prepare.json")
+  const verifyReceiptPath = join(artifactDirectory, "emulator-environment.json")
+
+  mkdirSync(avdDirectory, { recursive: true })
+  mkdirSync(artifactDirectory, { recursive: true })
+  mkdirSync(fakeBin, { recursive: true })
+  writeFileSync(
+    join(fixtureRoot, "artifacts", "exact-head.json"),
+    `${JSON.stringify({ source_head_sha: EXACT_HEAD_SHA })}\n`,
+    "utf8"
+  )
+  writeFileSync(
+    configPath,
+    [
+      `AvdId=${ANDROID_AVD_NAME}`,
+      `hw.device.name=${ANDROID_PROFILE}`,
+      "hw.cpu.ncore=2",
+      "hw.cpu.ncore=4",
+      "hw.ramSize=4096M",
+      "vm.heapSize=228",
+      "hw.heapSize=576M",
+      "image.sysdir.1=system-images/android-35/google_apis_playstore/x86_64/",
+      ""
+    ].join("\n"),
+    "utf8"
+  )
+  const fakeAdb = join(fakeBin, "adb")
+  writeFileSync(
+    fakeAdb,
+    `#!/usr/bin/env node
+const command = process.argv.slice(2).join(" ")
+if (command === "emu avd name") process.stdout.write("${ANDROID_AVD_NAME}\\nOK\\n")
+else if (command === "exec-out cat /sys/devices/system/cpu/online") process.stdout.write("0-3\\n")
+else if (command === "exec-out cat /proc/meminfo") process.stdout.write("MemTotal: 3973120 kB\\n")
+else if (command === "exec-out getprop dalvik.vm.heapsize") process.stdout.write("576m\\n")
+else { process.stderr.write("unexpected fake adb command"); process.exitCode = 1 }
+`,
+    "utf8"
+  )
+  chmodSync(fakeAdb, 0o755)
+  const environment = {
+    ...process.env,
+    ANDROID_AVD_HOME: avdHome,
+    ANDROID_SERIAL: "emulator-5554",
+    COURTSIDE_ANDROID_AVD_NAME: ANDROID_AVD_NAME,
+    PATH: `${fakeBin}${delimiter}${process.env.PATH ?? ""}`
+  }
+
+  try {
+    const prepare = spawnSync(
+      process.execPath,
+      [scriptPath, "prepare", "artifacts/android-chrome/emulator-environment-prepare.json"],
+      { cwd: fixtureRoot, encoding: "utf8", env: environment }
+    )
+    equal(prepare.status, 0, prepare.stderr)
+    const canonicalConfig = readFileSync(configPath, "utf8")
+    equal(canonicalConfig.match(/^hw\.cpu\.ncore=/gmu)?.length, 1)
+    equal(canonicalConfig.match(/^hw\.ramSize=/gmu)?.length, 1)
+    equal(canonicalConfig.match(/^vm\.heapSize=/gmu)?.length, 1)
+    doesNotMatch(canonicalConfig, /^hw\.heapSize=/mu)
+    match(canonicalConfig, /^hw\.cpu\.ncore=4$/mu)
+    match(canonicalConfig, /^hw\.ramSize=4096$/mu)
+    match(canonicalConfig, /^vm\.heapSize=576$/mu)
+    const prepareReceipt = JSON.parse(readFileSync(prepareReceiptPath, "utf8"))
+    deepEqual(prepareReceipt, {
+      schemaVersion: "courtside.android-emulator-environment/v1",
+      result: "PASS",
+      phase: "prepare",
+      sourceHeadSha: EXACT_HEAD_SHA,
+      requested: {
+        avdName: ANDROID_AVD_NAME,
+        profile: ANDROID_PROFILE,
+        cpuCores: 4,
+        ramInput: "4096M",
+        ramMegabytes: 4096,
+        heapMegabytes: 576
+      },
+      canonicalConfig: {
+        avdName: ANDROID_AVD_NAME,
+        profile: ANDROID_PROFILE,
+        cpuCores: 4,
+        ramMegabytes: 4096,
+        heapMegabytes: 576
+      },
+      capturedAt: prepareReceipt.capturedAt
+    })
+
+    writeFileSync(
+      resolvedPath,
+      [
+        `hw.device.name = ${ANDROID_PROFILE}`,
+        `avd.name = ${ANDROID_AVD_NAME}`,
+        `avd.id = ${ANDROID_AVD_NAME}`,
+        "hw.cpu.ncore = 4",
+        "hw.ramSize = 4096",
+        "vm.heapSize = 576",
+        ""
+      ].join("\n"),
+      "utf8"
+    )
+    const verify = spawnSync(
+      process.execPath,
+      [scriptPath, "verify", "artifacts/android-chrome/emulator-environment.json"],
+      { cwd: fixtureRoot, encoding: "utf8", env: environment }
+    )
+    equal(verify.status, 0, verify.stderr)
+    const receipt = JSON.parse(readFileSync(verifyReceiptPath, "utf8"))
+    equal(receipt.result, "PASS")
+    equal(receipt.phase, "verify")
+    equal(receipt.sourceHeadSha, EXACT_HEAD_SHA)
+    equal(receipt.liveGuest.avdName, ANDROID_AVD_NAME)
+    deepEqual(
+      receipt.commands.map((command: { name: string }) => command.name),
+      ["live-avd-name", "guest-cpu-online", "guest-meminfo", "guest-heap-size"]
+    )
+    for (const command of receipt.commands) {
+      equal(command.timeoutMilliseconds, 5_000)
+      equal(command.errorCode, null)
+      equal(command.signal, null)
+      equal(command.timedOut, false)
+      equal(command.stderr, "")
+      equal(command.stderrTruncated, false)
+    }
+  } finally {
+    rmSync(fixtureRoot, { force: true, recursive: true })
+  }
+})
+
+test("emulator environment CLI rejects partial timeout output with one bounded FAIL receipt", () => {
+  const fixtureRoot = mkdtempSync(join(tmpdir(), "courtside-emulator-timeout-"))
+  const avdHome = join(fixtureRoot, "avd-home")
+  const avdDirectory = join(avdHome, `${ANDROID_AVD_NAME}.avd`)
+  const artifactDirectory = join(fixtureRoot, "artifacts", "android-chrome")
+  const fakeBin = join(fixtureRoot, "bin")
+  const scriptPath = fileURLToPath(
+    new URL("../../scripts/android-emulator-environment.mjs", import.meta.url)
+  )
+  const receiptPath = join(artifactDirectory, "emulator-environment.json")
+
+  mkdirSync(avdDirectory, { recursive: true })
+  mkdirSync(artifactDirectory, { recursive: true })
+  mkdirSync(fakeBin, { recursive: true })
+  writeFileSync(
+    join(fixtureRoot, "artifacts", "exact-head.json"),
+    `${JSON.stringify({ source_head_sha: EXACT_HEAD_SHA })}\n`,
+    "utf8"
+  )
+  writeFileSync(
+    join(avdDirectory, "config.ini"),
+    `AvdId=${ANDROID_AVD_NAME}\nhw.device.name=${ANDROID_PROFILE}\nhw.cpu.ncore=4\nhw.ramSize=4096\nvm.heapSize=576\n`,
+    "utf8"
+  )
+  writeFileSync(
+    join(avdDirectory, "hardware-qemu.ini"),
+    `hw.device.name=${ANDROID_PROFILE}\navd.name=${ANDROID_AVD_NAME}\navd.id=${ANDROID_AVD_NAME}\nhw.cpu.ncore=4\nhw.ramSize=4096\nvm.heapSize=576\n`,
+    "utf8"
+  )
+  const fakeAdb = join(fakeBin, "adb")
+  writeFileSync(
+    fakeAdb,
+    `#!/usr/bin/env node
+const command = process.argv.slice(2).join(" ")
+if (command === "emu avd name") process.stdout.write("${ANDROID_AVD_NAME}\\nOK\\n")
+else if (command === "exec-out cat /sys/devices/system/cpu/online") {
+  process.stdout.write("0-3\\n")
+  process.stderr.write("E".repeat(6000))
+  setTimeout(() => {}, 10000)
+} else { process.stderr.write("unexpected fake adb command"); process.exitCode = 1 }
+`,
+    "utf8"
+  )
+  chmodSync(fakeAdb, 0o755)
+  const environment = {
+    ...process.env,
+    ANDROID_AVD_HOME: avdHome,
+    ANDROID_SERIAL: "emulator-5554",
+    COURTSIDE_ANDROID_AVD_NAME: ANDROID_AVD_NAME,
+    PATH: `${fakeBin}${delimiter}${process.env.PATH ?? ""}`
+  }
+
+  try {
+    const result = spawnSync(
+      process.execPath,
+      [scriptPath, "verify", "artifacts/android-chrome/emulator-environment.json"],
+      { cwd: fixtureRoot, encoding: "utf8", env: environment }
+    )
+    equal(result.status, 1)
+    const receipt = JSON.parse(readFileSync(receiptPath, "utf8"))
+    equal(receipt.result, "FAIL")
+    equal(receipt.phase, "verify")
+    equal(receipt.sourceHeadSha, EXACT_HEAD_SHA)
+    match(receipt.reason, /timed out/u)
+    equal("liveGuest" in receipt, false)
+    deepEqual(
+      receipt.commands.map((command: { name: string }) => command.name),
+      ["live-avd-name", "guest-cpu-online"]
+    )
+    deepEqual(receipt.commands[1], {
+      name: "guest-cpu-online",
+      timeoutMilliseconds: 5_000,
+      status: null,
+      signal: "SIGKILL",
+      errorCode: "ETIMEDOUT",
+      timedOut: true,
+      durationMilliseconds: receipt.commands[1].durationMilliseconds,
+      stdoutBytes: 4,
+      stderrBytes: 6_000,
+      stderr: "E".repeat(4_096),
+      stderrTruncated: true
+    })
+
+    const escaped = spawnSync(
+      process.execPath,
+      [scriptPath, "prepare", "../escaped-emulator-environment.json"],
+      { cwd: fixtureRoot, encoding: "utf8", env: environment }
+    )
+    equal(escaped.status, 1)
+    match(escaped.stderr, /fixed artifact directory/u)
+  } finally {
+    rmSync(fixtureRoot, { force: true, recursive: true })
+  }
 })
 
 test("foreground frames use one exact browser timeline after the first attributable frame", () => {
