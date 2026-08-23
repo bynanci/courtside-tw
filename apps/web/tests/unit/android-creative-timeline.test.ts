@@ -573,8 +573,20 @@ test("native Android performance harness invokes the behavioral boundaries", () 
     performanceHarness,
     /planChromeAutomationSurfaceNormalization\(surface, dismissedPromptStatuses\)/u
   )
+  match(
+    performanceHarness,
+    /normalizationActivity = retainChromeSurfaceNormalizationActivity\(\s*normalizationActivity,\s*surface\s*\)/u
+  )
   match(performanceHarness, /dismissedPromptStatuses\.add\(normalization\.prompt\)/u)
   match(performanceHarness, /"Pixel Launcher ANR wait tap"/u)
+  const finalSurfaceProof = performanceHarness.match(
+    /async function requireClearChromeContentSurface\(\) \{[\s\S]*?\n\}/u
+  )?.[0]
+  equal(typeof finalSurfaceProof, "string")
+  if (typeof finalSurfaceProof === "string") {
+    match(finalSurfaceProof, /surface\.status === "clear"/u)
+    doesNotMatch(finalSurfaceProof, /planChromeAutomationSurfaceNormalization/u)
+  }
   match(performanceHarness, /bringToFront:\s*\(\) => page\.bringToFront\(\)/u)
   equal(performanceHarness.match(/page\.bringToFront\(\)/gu)?.length, 1)
   equal(performanceHarness.match(/"KEYCODE_HOME"/gu)?.length, 1)
@@ -807,9 +819,34 @@ test("Pixel Launcher ANR normalization fails closed on any identity or geometry 
       "Pixel Launcher isn't responding",
       "System UI isn't responding"
     ),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace('rotation="0"', 'rotation="1"'),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace("android:id/alertTitle", "android:id/message"),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace(
+      'resource-id="android:id/alertTitle" class="android.widget.TextView"',
+      'resource-id="android:id/alertTitle" class="android.widget.Button"'
+    ),
     ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace("android:id/aerr_wait", "android:id/aerr_close"),
     ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace('text="Wait"', 'text="Close app"'),
-    ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace('clickable="true"', 'clickable="false"'),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace(
+      'text="Wait" resource-id="android:id/aerr_wait" class="android.widget.Button" package="android" clickable="true"',
+      'text="Wait" resource-id="android:id/aerr_wait" class="android.widget.Button" package="android" clickable="false"'
+    ),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace(
+      'text="Wait" resource-id="android:id/aerr_wait" class="android.widget.Button" package="android" clickable="true" enabled="true"',
+      'text="Wait" resource-id="android:id/aerr_wait" class="android.widget.Button" package="android" clickable="true" enabled="false"'
+    ),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace(
+      'resource-id="android:id/aerr_wait" class="android.widget.Button"',
+      'resource-id="android:id/aerr_wait" class="android.widget.TextView"'
+    ),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace(
+      'resource-id="android:id/aerr_close" class="android.widget.Button"',
+      'resource-id="android:id/aerr_close" class="android.widget.TextView"'
+    ),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace(
+      '<node text="Wait"',
+      '<node text="Report" resource-id="android:id/aerr_report" class="android.widget.Button" package="android" clickable="true" enabled="true" bounds="[70,1300][1010,1360]" /><node text="Wait"'
+    ),
     ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace(
       'bounds="[70,1300][1010,1426]"',
       'bounds="[0,0][999999,999999]"'
@@ -880,6 +917,54 @@ test("native surface normalization taps each exact safe prompt at most once", ()
       ),
     /blocked by an unrecognized native modal/u
   )
+  for (const surface of [
+    { status: "known-pixel-launcher-anr", dismissTap: { x: 0, y: 1363 } },
+    { status: "known-notification-prompt", dismissTap: { x: 592, y: 99_999 } },
+    { status: "known-pixel-launcher-anr", dismissTap: { x: "540", y: 1363 } }
+  ]) {
+    throws(() => planChromeAutomationSurfaceNormalization(surface, []), /dismiss|coordinate/u)
+  }
+  throws(
+    () =>
+      planChromeAutomationSurfaceNormalization(
+        { status: "known-pixel-launcher-anr", dismissTap: { x: 540, y: 1363 } },
+        ["known-pixel-launcher-anr", "known-pixel-launcher-anr"]
+      ),
+    /prompt identity is invalid/u
+  )
+})
+
+test("native surface normalization retains one Chrome authority across prompt and clear attempts", () => {
+  const retainChromeSurfaceNormalizationActivity = Reflect.get(
+    timelineHelpers,
+    "retainChromeSurfaceNormalizationActivity"
+  )
+  equal(typeof retainChromeSurfaceNormalizationActivity, "function")
+  if (typeof retainChromeSurfaceNormalizationActivity !== "function") return
+
+  const first = {
+    activityBefore: ATTEMPT_1_RESUMED_ACTIVITY,
+    activityAfter: ATTEMPT_1_RESUMED_ACTIVITY
+  }
+  equal(retainChromeSurfaceNormalizationActivity(null, first), ATTEMPT_1_RESUMED_ACTIVITY)
+  equal(
+    retainChromeSurfaceNormalizationActivity(ATTEMPT_1_RESUMED_ACTIVITY, first),
+    ATTEMPT_1_RESUMED_ACTIVITY
+  )
+  for (const changedActivity of [
+    "topResumedActivity=ActivityRecord{different u0 com.android.chrome/com.google.android.apps.chrome.Main t9}",
+    "topResumedActivity=ActivityRecord{6cf73ed u0 com.android.chrome/com.google.android.apps.chrome.Main t10}",
+    "topResumedActivity=ActivityRecord{launcher u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t1}"
+  ]) {
+    throws(
+      () =>
+        retainChromeSurfaceNormalizationActivity(ATTEMPT_1_RESUMED_ACTIVITY, {
+          activityBefore: changedActivity,
+          activityAfter: changedActivity
+        }),
+      /normalization activity identity changed|Chrome is not the resumed Android activity/u
+    )
+  }
 })
 
 test("Chrome automation surface is clear only when no native modal markers exist", () => {
