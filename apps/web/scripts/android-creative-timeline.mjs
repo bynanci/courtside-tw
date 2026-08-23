@@ -713,6 +713,8 @@ export async function acquireChromeForegroundActivityAtBoundary(rawDependencies)
       await readActivityReceipt(timeoutMilliseconds)
     )
     attempts.push(receipt)
+    const postReadAt = requireTimestamp(now(), "activity acquisition post-read time")
+    if (postReadAt >= deadlineAt) break
     if (receipt.status === "resolved") {
       return {
         ...requireChromeForegroundActivityAtBoundary(receipt.activity),
@@ -721,8 +723,7 @@ export async function acquireChromeForegroundActivityAtBoundary(rawDependencies)
     }
     if (attemptIndex + 1 >= maximumAttempts) break
 
-    const remainingMilliseconds =
-      deadlineAt - requireTimestamp(now(), "activity acquisition post-read time")
+    const remainingMilliseconds = deadlineAt - postReadAt
     if (remainingMilliseconds <= 0) break
     const delayMilliseconds = boundedAndroidPollDelay(
       remainingMilliseconds,
