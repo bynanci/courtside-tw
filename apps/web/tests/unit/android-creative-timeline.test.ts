@@ -1,7 +1,11 @@
 import { deepEqual, equal, throws } from "node:assert/strict"
 import { test } from "node:test"
 
-import { evaluateAndroidBackgroundTimeline } from "../../scripts/android-creative-timeline.mjs"
+import {
+  calibrateBrowserClockToHost,
+  evaluateAndroidBackgroundTimeline,
+  normalizeBrowserRuntimeSnapshot
+} from "../../scripts/android-creative-timeline.mjs"
 
 const BUDGETS = Object.freeze({
   maximumBackgroundFrames: 2,
@@ -82,6 +86,27 @@ test("background timeline accepts activity-to-pause and pause-to-activity orderi
   )
   equal(activityThenPause.frameAtPause, 40)
   equal(pauseThenActivity.postPauseFrames, 2)
+})
+
+test("browser runtime epochs are normalized into the bracketed host clock", () => {
+  const calibration = calibrateBrowserClockToHost({
+    browserEpochAtArm: 10_000,
+    hostEpochBeforeArm: 100_100,
+    hostEpochAfterArm: 100_120
+  })
+
+  deepEqual(calibration, {
+    browserToHostOffsetMilliseconds: 90_110,
+    hostRoundTripMilliseconds: 20,
+    maximumUncertaintyMilliseconds: 10
+  })
+  deepEqual(
+    normalizeBrowserRuntimeSnapshot(
+      { at: 10_020, frame: 40, runningCount: 0, targetStatus: "paused" },
+      calibration
+    ),
+    { at: 100_130, frame: 40, runningCount: 0, targetStatus: "paused" }
+  )
 })
 
 test("active snapshot requires exactly one running runtime", () => {
