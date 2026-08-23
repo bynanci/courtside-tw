@@ -242,6 +242,7 @@ apiServer.listen(API_PORT, HOST, () => {
     ...process.env,
     NUXT_PUBLIC_API_BASE_URL: `http://${HOST}:${API_PORT}`,
     NUXT_PUBLIC_SITE_URL: webOrigin,
+    NUXT_PUBLIC_LOCAL_READER_DEMO: "true",
     NUXT_PUBLIC_OFFLINE_APP_SHELL_ENABLED: "false",
     NUXT_TELEMETRY_DISABLED: "1",
     COURTSIDE_LOCAL_DEMO: "1",

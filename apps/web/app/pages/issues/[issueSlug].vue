@@ -147,11 +147,13 @@ useHead(() => {
       <div class="site-shell issue-page__content">
         <NuxtLink v-if="!issue" to="/issues" class="back-link">← 返回所有期數</NuxtLink>
         <IssueToc v-if="issue" :issue="issue" />
-        <OfflineDownloadPanel
-          v-if="issue"
-          :api-base-url="config.public.apiBaseUrl"
-          :issue-slug="issueSlug"
-        />
+        <template v-if="issue">
+          <OfflineDownloadPanel
+            v-if="!config.public.localReaderDemo"
+            :api-base-url="config.public.apiBaseUrl"
+            :issue-slug="issueSlug"
+          />
+        </template>
         <ReadingState
           v-else-if="error instanceof PublicIssueApiError && error.statusCode === 404"
           title="找不到這一期"

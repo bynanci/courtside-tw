@@ -43,3 +43,18 @@ test("the demo is public-read only and serves visible rights-safe media", async 
   assert.match(source, /\.output\/server\/index\.mjs/)
   assert.doesNotMatch(source, /\/authorize|clientSecret|access_token|STUDIO_ACCESS_TOKEN/)
 })
+
+test("the demo only advertises reader capabilities that its fixture serves", async () => {
+  const nuxtConfig = await read("apps/web/nuxt.config.ts")
+  const demoRunner = await read("apps/web/scripts/start-reader-demo.mjs")
+  const e2eServer = await read("apps/web/tests/e2e/start-server.mjs")
+  const performanceServer = await read("tests/performance/start-server.mjs")
+  const issuePage = await read("apps/web/app/pages/issues/[issueSlug].vue")
+
+  assert.match(nuxtConfig, /localReaderDemo:\s*false/)
+  assert.match(demoRunner, /NUXT_PUBLIC_LOCAL_READER_DEMO:\s*"true"/)
+  assert.match(e2eServer, /NUXT_PUBLIC_LOCAL_READER_DEMO:\s*"false"/)
+  assert.match(performanceServer, /NUXT_PUBLIC_LOCAL_READER_DEMO:\s*"false"/)
+  assert.match(issuePage, /<template v-if="issue">/)
+  assert.match(issuePage, /v-if="!config\.public\.localReaderDemo"/)
+})

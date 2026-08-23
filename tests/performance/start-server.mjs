@@ -164,6 +164,7 @@ const webEnvironment = {
   NITRO_PORT: String(WEB_PORT),
   NUXT_PUBLIC_API_BASE_URL: API_ORIGIN,
   NUXT_PUBLIC_SITE_URL: "https://performance.courtside.test",
+  NUXT_PUBLIC_LOCAL_READER_DEMO: "false",
   NUXT_TELEMETRY_DISABLED: "1"
 }
 let buildProcess = null

@@ -1190,6 +1190,7 @@ const webEnvironment = {
   NITRO_PORT: String(WEB_PORT),
   NUXT_PUBLIC_API_BASE_URL: "http://127.0.0.1:" + API_PORT,
   NUXT_PUBLIC_SITE_URL: "https://courtside.test",
+  NUXT_PUBLIC_LOCAL_READER_DEMO: "false",
   NUXT_OIDC_ISSUER: `http://127.0.0.1:${oidcPort}/issuer`,
   NUXT_OIDC_AUTHORIZATION_ENDPOINT: `http://127.0.0.1:${oidcPort}/authorize`,
   NUXT_OIDC_TOKEN_ENDPOINT: `http://127.0.0.1:${oidcPort}/token`,

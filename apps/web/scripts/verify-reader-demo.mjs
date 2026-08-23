@@ -96,6 +96,10 @@ async function verifyReaderJourney() {
   assert.match(issueHtml, /data-testid="issue-toc-link"/u)
   assert.match(issueHtml, /data-motion-role="target"/u)
   assert.match(issueHtml, /aria-current="step"[^>]*>.*?02/su)
+  assert.doesNotMatch(issueHtml, /data-testid="offline-panel"/u)
+  assert.doesNotMatch(issueHtml, /data-testid="offline-download"/u)
+  assert.doesNotMatch(issueHtml, /找不到這一期/u)
+  assert.doesNotMatch(issueHtml, /請從公開期數目錄重新開始/u)
 
   const article = await fetch(`${webOrigin}/articles/opening-night`)
   assert.equal(article.status, 200)
@@ -109,6 +113,11 @@ async function verifyReaderJourney() {
   assert.equal(api.status, 200)
   assert.equal(api.headers.get("access-control-allow-origin"), webOrigin)
   assert.match(await api.text(), /"slug":"issue-2026-01"/u)
+
+  const unsupportedOfflineManifest = await fetch(
+    `${apiOrigin}/api/v1/public/offline/issues/issue-2026-01/manifest`
+  )
+  assert.equal(unsupportedOfflineManifest.status, 404)
 
   const media = await fetch(`${apiOrigin}/media/demo/issue-01-cover.svg`)
   assert.equal(media.status, 200)
