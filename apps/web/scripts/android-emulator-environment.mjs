@@ -55,6 +55,15 @@ function requirePhysicalDirectory(path, label, create = false) {
   return path
 }
 
+function readPhysicalFile(path, label) {
+  requirePhysicalDirectory(dirname(path), `${label} parent directory`)
+  const metadata = lstatSync(path)
+  if (metadata.isSymbolicLink() || !metadata.isFile() || realpathSync(path) !== path) {
+    throw new Error(`${label} must be one physical file`)
+  }
+  return readFileSync(path, "utf8")
+}
+
 function requirePhysicalArtifactRoot() {
   requirePhysicalDirectory(ARTIFACTS_DIRECTORY, "Android artifacts directory", true)
   return requirePhysicalDirectory(
@@ -123,12 +132,7 @@ function writeReceipt(path, receipt) {
 }
 
 function readSourceHeadSha() {
-  requirePhysicalDirectory(ARTIFACTS_DIRECTORY, "Android artifacts directory")
-  const metadata = lstatSync(EXACT_HEAD_PATH)
-  if (metadata.isSymbolicLink() || !metadata.isFile()) {
-    throw new Error("Exact-head receipt must be one physical file")
-  }
-  const receipt = JSON.parse(readFileSync(EXACT_HEAD_PATH, "utf8"))
+  const receipt = JSON.parse(readPhysicalFile(EXACT_HEAD_PATH, "Exact-head receipt"))
   const sourceHeadSha = receipt.source_head_sha
   if (typeof sourceHeadSha !== "string" || !/^[0-9a-f]{40}$/u.test(sourceHeadSha)) {
     throw new Error("Exact-head receipt does not contain one source head SHA")
@@ -145,15 +149,62 @@ function avdPaths() {
   if (typeof avdName !== "string" || !/^[a-z0-9][a-z0-9_-]{0,63}$/u.test(avdName)) {
     throw new Error("COURTSIDE_ANDROID_AVD_NAME is invalid")
   }
+  if (avdName !== REQUESTED_ENVIRONMENT.avdName) {
+    throw new Error("requested AVD identity drift")
+  }
   const home = resolve(avdHome)
   const avdDirectory = resolve(home, `${avdName}.avd`)
   const avdRelativePath = relative(home, avdDirectory)
   if (avdRelativePath.startsWith("..") || isAbsolute(avdRelativePath)) {
     throw new Error("Android AVD path escaped ANDROID_AVD_HOME")
   }
+  requirePhysicalDirectory(home, "Android AVD home")
+  requirePhysicalDirectory(avdDirectory, "Android AVD config directory")
   return {
+    avdName,
+    avdDirectory,
+    registry: join(home, `${avdName}.ini`),
     config: join(avdDirectory, "config.ini"),
     resolvedHardware: join(avdDirectory, "hardware-qemu.ini")
+  }
+}
+
+function readAvdRegistry(paths) {
+  const registry = readPhysicalFile(paths.registry, "Android AVD registry")
+  const pathLines = registry.split("\n").filter((line) => /^\s*path(?:\s*=|\s*$)/u.test(line))
+  if (pathLines.length === 0) {
+    throw new Error("missing AVD registry path")
+  }
+  if (pathLines.length > 1) {
+    throw new Error("duplicate AVD registry path")
+  }
+  const configuredPath = pathLines[0].match(/^\s*path\s*=\s*(.+?)\s*$/u)?.[1]
+  if (!configuredPath || !isAbsolute(configuredPath)) {
+    throw new Error("malformed AVD registry path")
+  }
+  const resolvedPath = resolve(configuredPath)
+  if (resolvedPath !== paths.avdDirectory) {
+    throw new Error("AVD registry path drift")
+  }
+  const relativePathLines = registry
+    .split("\n")
+    .filter((line) => /^\s*path\.rel(?:\s*=|\s*$)/u.test(line))
+  if (relativePathLines.length > 1) {
+    throw new Error("duplicate AVD registry relative path")
+  }
+  if (relativePathLines.length === 1) {
+    const configuredRelativePath = relativePathLines[0].match(
+      /^\s*path\.rel\s*=\s*([^\s#]+)\s*$/u
+    )?.[1]
+    if (configuredRelativePath !== `avd/${paths.avdName}.avd`) {
+      throw new Error("AVD registry relative path drift")
+    }
+  }
+  requirePhysicalDirectory(resolvedPath, "Android AVD registry target")
+  return {
+    avdName: paths.avdName,
+    registryFile: basename(paths.registry),
+    avdDirectory: basename(paths.avdDirectory)
   }
 }
 
@@ -216,9 +267,12 @@ function failureReceipt(mode, sourceHeadSha, commandReceipts, error) {
 
 function prepareEnvironment() {
   const paths = avdPaths()
-  const canonicalConfig = canonicalizeAndroidAvdConfig(readFileSync(paths.config, "utf8"))
+  const avdRegistry = readAvdRegistry(paths)
+  const canonicalConfig = canonicalizeAndroidAvdConfig(
+    readPhysicalFile(paths.config, "Canonical Android AVD config")
+  )
   atomicWrite(paths.config, canonicalConfig)
-  const canonicalReadBack = readFileSync(paths.config, "utf8")
+  const canonicalReadBack = readPhysicalFile(paths.config, "Canonical Android AVD config")
   if (canonicalReadBack !== canonicalConfig) {
     throw new Error("Canonical Android AVD config read-back did not match the atomic write")
   }
@@ -227,16 +281,18 @@ function prepareEnvironment() {
     result: "PASS",
     phase: "prepare",
     requested: REQUESTED_ENVIRONMENT,
-    canonicalConfig: evaluateCanonicalAndroidAvdConfig(canonicalReadBack)
+    canonicalConfig: evaluateCanonicalAndroidAvdConfig(canonicalReadBack),
+    avdRegistry
   }
 }
 
 function verifyEnvironment(commandReceipts) {
   const paths = avdPaths()
+  const avdRegistry = readAvdRegistry(paths)
   const evidence = evaluateAndroidEmulatorEnvironment({
     requested: REQUESTED_ENVIRONMENT,
-    canonicalConfig: readFileSync(paths.config, "utf8"),
-    resolvedHardware: readFileSync(paths.resolvedHardware, "utf8"),
+    canonicalConfig: readPhysicalFile(paths.config, "Canonical Android AVD config"),
+    resolvedHardware: readPhysicalFile(paths.resolvedHardware, "Resolved Android hardware"),
     liveAvdName: probeAdb("live-avd-name", ["emu", "avd", "name"], commandReceipts),
     guestCpuOnline: probeAdb(
       "guest-cpu-online",
@@ -250,7 +306,7 @@ function verifyEnvironment(commandReceipts) {
       commandReceipts
     )
   })
-  return { ...evidence, phase: "verify", commands: commandReceipts }
+  return { ...evidence, avdRegistry, phase: "verify", commands: commandReceipts }
 }
 
 function main() {

@@ -191,14 +191,21 @@ function parseCanonicalAndroidAvdConfig(value) {
   if (unsupportedHeap.length > 0) {
     throw new Error("canonical contains unsupported hw.heapSize")
   }
+  const avdIdentityLines = iniMetricLines(value, "AvdId")
+  if (avdIdentityLines.length > 1) {
+    throw new Error("duplicate canonical AVD identity")
+  }
   return {
-    avdName: parseBoundTextMetric(
-      value,
-      "AvdId",
-      "canonical",
-      "AVD identity",
-      EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.avdName
-    ),
+    avdId:
+      avdIdentityLines.length === 0
+        ? null
+        : parseBoundTextMetric(
+            value,
+            "AvdId",
+            "canonical",
+            "AVD identity",
+            EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.avdName
+          ),
     profile: parseBoundTextMetric(
       value,
       "hw.device.name",
@@ -301,13 +308,19 @@ export function evaluateCanonicalAndroidAvdConfig(value) {
 }
 
 export function canonicalizeAndroidAvdConfig(value) {
-  parseBoundTextMetric(
-    value,
-    "AvdId",
-    "canonical",
-    "AVD identity",
-    EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.avdName
-  )
+  const avdIdentityLines = iniMetricLines(value, "AvdId")
+  if (avdIdentityLines.length > 1) {
+    throw new Error("duplicate canonical AVD identity")
+  }
+  if (avdIdentityLines.length === 1) {
+    parseBoundTextMetric(
+      value,
+      "AvdId",
+      "canonical",
+      "AVD identity",
+      EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.avdName
+    )
+  }
   parseBoundTextMetric(
     value,
     "hw.device.name",
