@@ -486,10 +486,116 @@ export function classifyChromeAutomationSurface(value, rawDisplaySize) {
   }
 
   const hierarchyDocument = hierarchy.slice(hierarchyStart, hierarchyEnd + "</hierarchy>".length)
+  const hierarchyNode = hierarchyDocument.match(/^<hierarchy\b[^>]*>/u)?.[0] ?? ""
   const nodes = hierarchyDocument.match(/<node\b[^>]*>/gu) ?? []
+  const displaySize = normalizeAndroidDisplaySize(rawDisplaySize)
   const modalId = "com.android.chrome:id/modal_dialog_view"
   const negativeButtonId = "com.android.chrome:id/negative_button"
   const knownTitle = "Chrome notifications make things easier"
+  const launcherAnrTitle = "Pixel Launcher isn't responding"
+  const launcherAnrIds = Object.freeze({
+    panel: "android:id/parentPanel",
+    title: "android:id/alertTitle",
+    close: "android:id/aerr_close",
+    wait: "android:id/aerr_wait"
+  })
+  const launcherAnrMarker = nodes.some((node) => {
+    const resourceId = xmlAttribute(node, "resource-id")
+    return (
+      Object.values(launcherAnrIds).includes(resourceId) ||
+      xmlAttribute(node, "text") === launcherAnrTitle
+    )
+  })
+  if (launcherAnrMarker) {
+    const resourceNodes = (resourceId) =>
+      nodes.filter((node) => xmlAttribute(node, "resource-id") === resourceId)
+    const exactNodes = (resourceId, className, text) =>
+      resourceNodes(resourceId).filter(
+        (node) =>
+          xmlAttribute(node, "package") === "android" &&
+          xmlAttribute(node, "class") === className &&
+          (text === null || xmlAttribute(node, "text") === text)
+      )
+    const panels = exactNodes(launcherAnrIds.panel, "android.widget.LinearLayout", "")
+    const titles = exactNodes(launcherAnrIds.title, "android.widget.TextView", launcherAnrTitle)
+    const closeButtons = exactNodes(
+      launcherAnrIds.close,
+      "android.widget.Button",
+      "Close app"
+    ).filter(
+      (node) =>
+        xmlAttribute(node, "clickable") === "true" && xmlAttribute(node, "enabled") === "true"
+    )
+    const waitButtons = exactNodes(launcherAnrIds.wait, "android.widget.Button", "Wait").filter(
+      (node) =>
+        xmlAttribute(node, "clickable") === "true" && xmlAttribute(node, "enabled") === "true"
+    )
+    const allNodesBelongToAndroid =
+      nodes.length > 0 && nodes.every((node) => xmlAttribute(node, "package") === "android")
+    const actionableButtons = nodes.filter(
+      (node) =>
+        xmlAttribute(node, "package") === "android" &&
+        xmlAttribute(node, "class") === "android.widget.Button" &&
+        xmlAttribute(node, "clickable") === "true" &&
+        xmlAttribute(node, "enabled") === "true"
+    )
+    const actionableButtonIds = actionableButtons.map((node) => xmlAttribute(node, "resource-id"))
+    if (
+      xmlAttribute(hierarchyNode, "rotation") !== "0" ||
+      !allNodesBelongToAndroid ||
+      Object.values(launcherAnrIds).some((resourceId) => resourceNodes(resourceId).length !== 1) ||
+      panels.length !== 1 ||
+      titles.length !== 1 ||
+      closeButtons.length !== 1 ||
+      waitButtons.length !== 1 ||
+      actionableButtons.length !== 2 ||
+      !actionableButtonIds.includes(launcherAnrIds.close) ||
+      !actionableButtonIds.includes(launcherAnrIds.wait) ||
+      displaySize?.width !== 1080 ||
+      displaySize.height !== 2400
+    ) {
+      return blocked
+    }
+
+    const panelBounds = parseAndroidBounds(panels[0])
+    const titleBounds = parseAndroidBounds(titles[0])
+    const closeBounds = parseAndroidBounds(closeButtons[0])
+    const waitBounds = parseAndroidBounds(waitButtons[0])
+    const boundsAreInside = (inner, outer) =>
+      inner &&
+      outer &&
+      inner.left >= outer.left &&
+      inner.top >= outer.top &&
+      inner.right <= outer.right &&
+      inner.bottom <= outer.bottom
+    const displayBounds = { left: 0, top: 0, right: displaySize.width, bottom: displaySize.height }
+    const exactBounds = (bounds, expected) =>
+      bounds !== null &&
+      bounds.left === expected.left &&
+      bounds.top === expected.top &&
+      bounds.right === expected.right &&
+      bounds.bottom === expected.bottom
+    if (
+      !boundsAreInside(panelBounds, displayBounds) ||
+      !boundsAreInside(titleBounds, panelBounds) ||
+      !boundsAreInside(closeBounds, panelBounds) ||
+      !boundsAreInside(waitBounds, panelBounds) ||
+      closeBounds.bottom > waitBounds.top ||
+      !exactBounds(panelBounds, { left: 70, top: 1025, right: 1010, bottom: 1447 }) ||
+      !exactBounds(titleBounds, { left: 133, top: 1072, right: 947, bottom: 1135 }) ||
+      !exactBounds(closeBounds, { left: 70, top: 1174, right: 1010, bottom: 1300 }) ||
+      !exactBounds(waitBounds, { left: 70, top: 1300, right: 1010, bottom: 1426 })
+    ) {
+      return blocked
+    }
+    const x = waitBounds.left + Math.floor((waitBounds.right - waitBounds.left) / 2)
+    const y = waitBounds.top + Math.floor((waitBounds.bottom - waitBounds.top) / 2)
+    if (!Number.isSafeInteger(x) || !Number.isSafeInteger(y)) return blocked
+    return {
+      status: "known-pixel-launcher-anr",
+      dismissTap: { x, y }
+    }
+  }
   const hasChromeNode = nodes.some((node) => xmlAttribute(node, "package") === "com.android.chrome")
   const modal = nodes.find(
     (node) =>
@@ -541,7 +647,6 @@ export function classifyChromeAutomationSurface(value, rawDisplaySize) {
 
   const modalBounds = parseAndroidBounds(modal)
   const buttonBounds = parseAndroidBounds(negativeButton)
-  const displaySize = normalizeAndroidDisplaySize(rawDisplaySize)
   if (
     !displaySize ||
     !modalBounds ||
@@ -563,6 +668,172 @@ export function classifyChromeAutomationSurface(value, rawDisplaySize) {
     status: "known-notification-prompt",
     dismissTap: { x, y }
   }
+}
+
+const KNOWN_CHROME_AUTOMATION_PROMPTS = Object.freeze([
+  "known-notification-prompt",
+  "known-pixel-launcher-anr"
+])
+
+export function planChromeAutomationSurfaceNormalization(rawSurface, rawDismissedPrompts) {
+  const surface = requireRecord(rawSurface, "Chrome automation surface")
+  if (!Array.isArray(rawDismissedPrompts)) {
+    throw new Error("dismissed Chrome automation prompts must be an array")
+  }
+  const dismissedPrompts = new Set()
+  for (const prompt of rawDismissedPrompts) {
+    if (!KNOWN_CHROME_AUTOMATION_PROMPTS.includes(prompt) || dismissedPrompts.has(prompt)) {
+      throw new Error("dismissed Chrome automation prompt identity is invalid")
+    }
+    dismissedPrompts.add(prompt)
+  }
+  if (surface.status === "clear") return Object.freeze({ action: "accept" })
+  if (!KNOWN_CHROME_AUTOMATION_PROMPTS.includes(surface.status)) {
+    throw new Error("Android Chrome content surface is blocked by an unrecognized native modal")
+  }
+  if (dismissedPrompts.has(surface.status)) {
+    return Object.freeze({ action: "poll", prompt: surface.status })
+  }
+  const dismissTap = requireRecord(surface.dismissTap, "Chrome automation prompt dismiss tap")
+  const x = requireCount(dismissTap.x, "Chrome automation prompt dismiss x")
+  const y = requireCount(dismissTap.y, "Chrome automation prompt dismiss y")
+  if (x === 0 || y === 0 || x > 10_000 || y > 10_000) {
+    throw new Error("Chrome automation prompt dismiss tap is outside the safe coordinate bound")
+  }
+  return Object.freeze({
+    action: "tap",
+    prompt: surface.status,
+    dismissTap: Object.freeze({ x, y })
+  })
+}
+
+export function executeChromeSurfaceNormalizationAction(rawDependencies) {
+  const dependencies = requireRecord(
+    rawDependencies,
+    "Chrome surface normalization action dependencies"
+  )
+  const normalization = planChromeAutomationSurfaceNormalization(
+    dependencies.surface,
+    dependencies.dismissedPrompts
+  )
+  if (normalization.action !== "tap") return normalization
+
+  const expectedActivity = requireChromeForegroundActivityAtBoundary(dependencies.expectedActivity)
+  const readActivityReceipt = requireCallable(
+    dependencies.readActivityReceipt,
+    "normalization activity receipt reader"
+  )
+  const tap = requireCallable(dependencies.tap, "normalization tap")
+  const recordDismissedPrompt = requireCallable(
+    dependencies.recordDismissedPrompt,
+    "normalization dismissed prompt recorder"
+  )
+  const activityBeforeTap = requireChromeSurfaceNormalizationActivity(
+    expectedActivity.activity,
+    readActivityReceipt("pre-tap activity")
+  )
+  const tapLabel =
+    normalization.prompt === "known-pixel-launcher-anr"
+      ? "Pixel Launcher ANR wait tap"
+      : "notification tap"
+  tap(normalization.dismissTap, tapLabel)
+  const activityAfterTap = requireChromeSurfaceNormalizationActivity(
+    expectedActivity.activity,
+    readActivityReceipt("post-tap activity")
+  )
+  recordDismissedPrompt(normalization.prompt)
+  return Object.freeze({
+    ...normalization,
+    activityBeforeTap,
+    activityAfterTap
+  })
+}
+
+export async function normalizeChromeAutomationSurfaceWithinDeadline(rawDependencies) {
+  const dependencies = requireRecord(
+    rawDependencies,
+    "Chrome surface normalization deadline dependencies"
+  )
+  const deadlineAt = requireTimestamp(
+    dependencies.deadlineAt,
+    "Chrome surface normalization deadline"
+  )
+  const now = requireCallable(dependencies.now, "Chrome surface normalization clock")
+  const probeSurface = requireCallable(
+    dependencies.probeSurface,
+    "Chrome surface normalization probe"
+  )
+  const readActivityReceipt = requireCallable(
+    dependencies.readActivityReceipt,
+    "Chrome surface normalization activity reader"
+  )
+  const tap = requireCallable(dependencies.tap, "Chrome surface normalization tap")
+  const delay = requireCallable(dependencies.delay, "Chrome surface normalization delay")
+  const maximumPollMilliseconds = requireCount(
+    dependencies.maximumPollMilliseconds,
+    "Chrome surface normalization maximum poll delay"
+  )
+  if (maximumPollMilliseconds === 0) {
+    throw new Error("Chrome surface normalization maximum poll delay must be positive")
+  }
+
+  const attempts = []
+  const dismissedPromptStatuses = new Set()
+  const dismissedTaps = {}
+  let normalizationActivity = null
+
+  while (requireTimestamp(now(), "Chrome surface normalization current time") < deadlineAt) {
+    const surface = requireRecord(
+      await probeSurface(),
+      "Chrome surface normalization probe receipt"
+    )
+    attempts.push(surface)
+    if (surface.status !== "activity-unresolved") {
+      normalizationActivity = retainChromeSurfaceNormalizationActivity(
+        normalizationActivity,
+        surface
+      )
+      const normalization = executeChromeSurfaceNormalizationAction({
+        surface,
+        dismissedPrompts: [...dismissedPromptStatuses],
+        expectedActivity: normalizationActivity,
+        readActivityReceipt: (label) => readActivityReceipt(normalizationActivity, label),
+        tap,
+        recordDismissedPrompt: (prompt) => dismissedPromptStatuses.add(prompt)
+      })
+      const postActionAt = requireTimestamp(now(), "Chrome surface normalization post-action time")
+      if (normalization.action === "accept") {
+        if (postActionAt >= deadlineAt) break
+        return Object.freeze({
+          surface,
+          normalizationActivity,
+          dismissedPrompts: Object.freeze([...dismissedPromptStatuses]),
+          dismissedTaps: Object.freeze({ ...dismissedTaps }),
+          attempts: Object.freeze([...attempts])
+        })
+      }
+      if (normalization.action === "tap") {
+        dismissedTaps[normalization.prompt] = normalization.dismissTap
+      }
+    }
+
+    const remainingMilliseconds =
+      deadlineAt - requireTimestamp(now(), "Chrome surface normalization poll time")
+    if (remainingMilliseconds <= 0) break
+    await delay(boundedAndroidPollDelay(remainingMilliseconds, maximumPollMilliseconds))
+  }
+
+  const lastAttempt = attempts.at(-1)
+  if (lastAttempt?.status === "activity-unresolved") {
+    throw new Error(
+      `Android Chrome activity identity did not resolve within the shared automation deadline; ` +
+        `attempts=${JSON.stringify(attempts)}`
+    )
+  }
+  throw new Error(
+    `Android Chrome known native modal did not clear within the shared automation deadline; ` +
+      `attempts=${JSON.stringify(attempts)}`
+  )
 }
 
 export function classifyAndroidActivityLine(value) {
@@ -670,6 +941,53 @@ export function requireChromeForegroundActivityAtBoundary(value) {
     recordId: identity[1],
     taskId: identity[2]
   }
+}
+
+function sameChromeActivityIdentity(left, right) {
+  return (
+    left.recordId === right.recordId &&
+    left.taskId === right.taskId &&
+    left.activity === right.activity
+  )
+}
+
+export function retainChromeSurfaceNormalizationActivity(currentActivity, rawSurface) {
+  const surface = requireRecord(rawSurface, "Chrome surface normalization receipt")
+  const activityBefore = requireChromeForegroundActivityAtBoundary(surface.activityBefore)
+  const activityAfter = requireChromeForegroundActivityAtBoundary(surface.activityAfter)
+  if (!sameChromeActivityIdentity(activityBefore, activityAfter)) {
+    throw new Error(
+      `Chrome normalization activity identity changed: ` +
+        `before=${activityBefore.activity}, after=${activityAfter.activity}`
+    )
+  }
+  if (currentActivity === null || currentActivity === undefined) {
+    return activityBefore.activity
+  }
+  const retainedActivity = requireChromeForegroundActivityAtBoundary(currentActivity)
+  if (!sameChromeActivityIdentity(retainedActivity, activityBefore)) {
+    throw new Error(
+      `Chrome normalization activity identity changed: ` +
+        `retained=${retainedActivity.activity}, current=${activityBefore.activity}`
+    )
+  }
+  return retainedActivity.activity
+}
+
+export function requireChromeSurfaceNormalizationActivity(expectedActivity, rawReceipt) {
+  const expected = requireChromeForegroundActivityAtBoundary(expectedActivity)
+  const receipt = requireAndroidActivityProbeReceipt(rawReceipt)
+  if (receipt.status !== "resolved") {
+    throw new Error("Chrome normalization activity receipt did not resolve")
+  }
+  const current = requireChromeForegroundActivityAtBoundary(receipt.activity)
+  if (!sameChromeActivityIdentity(expected, current)) {
+    throw new Error(
+      `Chrome normalization activity identity changed: ` +
+        `expected=${expected.activity}, current=${current.activity}`
+    )
+  }
+  return current
 }
 
 export async function acquireChromeForegroundActivityAtBoundary(rawDependencies) {

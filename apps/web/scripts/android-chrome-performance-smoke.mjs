@@ -14,9 +14,11 @@ import {
   establishNativeAndroidBackgroundBoundary,
   evaluateAndroidBackgroundTimeline,
   evaluateAndroidForegroundFrameTimeline,
+  normalizeChromeAutomationSurfaceWithinDeadline,
   normalizeBrowserRuntimeSnapshot,
   parseAndroidDisplaySize,
   requireAndroidActivityAtBoundary,
+  requireChromeSurfaceNormalizationActivity,
   retainFirstPausedSnapshot
 } from "./android-creative-timeline.mjs"
 
@@ -592,6 +594,18 @@ function probeChromeContentSurfaceAtActivityBoundary(deadline) {
   })
 }
 
+function readBoundNormalizationActivity(deadline, expectedActivity, label) {
+  const receipt = resumedActivityReceipt(
+    requireRemainingAutomationMilliseconds(
+      deadline,
+      ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS,
+      label
+    )
+  )
+  requireRemainingAutomationMilliseconds(deadline, 1, `${label} acceptance`)
+  return requireChromeSurfaceNormalizationActivity(expectedActivity, receipt)
+}
+
 function surfaceReceipt(surface) {
   if (surface.status === "activity-unresolved") {
     return {
@@ -615,44 +629,22 @@ function surfaceReceipt(surface) {
 
 async function normalizeChromeContentSurface() {
   const deadline = performance.now() + CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS
-  const attempts = []
-  let dismissedKnownPrompt = false
-  let dismissTap = null
-
-  while (performance.now() < deadline) {
-    const surface = probeChromeContentSurfaceAtActivityBoundary(deadline)
-    attempts.push(surfaceReceipt(surface))
-    if (surface.status === "activity-unresolved") {
-      const pollRemainingMilliseconds = deadline - performance.now()
-      await new Promise((resolve) =>
-        setTimeout(
-          resolve,
-          boundedAndroidPollDelay(pollRemainingMilliseconds, CHROME_AUTOMATION_POLL_MILLISECONDS)
-        )
-      )
-      continue
-    }
-    if (surface.status === "clear") {
-      requireRemainingAutomationMilliseconds(deadline, 1, "surface acceptance")
-      return {
-        status: surface.status,
-        dismissedKnownPrompt,
-        dismissTap,
-        activityBefore: surface.activityBefore,
-        activityAfter: surface.activityAfter,
-        attempts
+  const normalization = await normalizeChromeAutomationSurfaceWithinDeadline({
+    deadlineAt: deadline,
+    now: () => performance.now(),
+    maximumPollMilliseconds: CHROME_AUTOMATION_POLL_MILLISECONDS,
+    probeSurface: () => probeChromeContentSurfaceAtActivityBoundary(deadline),
+    readActivityReceipt: (expectedActivity, label) =>
+      readBoundNormalizationActivity(deadline, expectedActivity, label),
+    tap: (dismissTap, label) => {
+      if (label !== "Pixel Launcher ANR wait tap" && label !== "notification tap") {
+        throw new Error("Android Chrome normalization tap identity is invalid")
       }
-    }
-    if (surface.status !== "known-notification-prompt") {
-      throw new Error(`Android Chrome content surface is blocked by an unrecognized native modal`)
-    }
-    if (!dismissedKnownPrompt) {
-      dismissTap = surface.dismissTap
       adbWithTimeout(
         requireRemainingAutomationMilliseconds(
           deadline,
           CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS,
-          "notification tap"
+          label
         ),
         "shell",
         "input",
@@ -660,29 +652,22 @@ async function normalizeChromeContentSurface() {
         String(dismissTap.x),
         String(dismissTap.y)
       )
-      dismissedKnownPrompt = true
-    }
-    const pollRemainingMilliseconds = deadline - performance.now()
-    await new Promise((resolve) =>
-      setTimeout(
-        resolve,
-        boundedAndroidPollDelay(pollRemainingMilliseconds, CHROME_AUTOMATION_POLL_MILLISECONDS)
-      )
-    )
+    },
+    delay: (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds))
+  })
+  requireRemainingAutomationMilliseconds(deadline, 1, "surface acceptance")
+  const dismissedPromptStatuses = new Set(normalization.dismissedPrompts)
+  return {
+    status: normalization.surface.status,
+    dismissedKnownPrompt: dismissedPromptStatuses.has("known-notification-prompt"),
+    dismissTap: normalization.dismissedTaps["known-notification-prompt"] ?? null,
+    dismissedPixelLauncherAnr: dismissedPromptStatuses.has("known-pixel-launcher-anr"),
+    pixelLauncherAnrWaitTap: normalization.dismissedTaps["known-pixel-launcher-anr"] ?? null,
+    normalizationActivity: normalization.normalizationActivity,
+    activityBefore: normalization.surface.activityBefore,
+    activityAfter: normalization.surface.activityAfter,
+    attempts: normalization.attempts.map(surfaceReceipt)
   }
-
-  const lastAttempt = attempts.at(-1)
-  if (lastAttempt?.status === "activity-unresolved") {
-    throw new Error(
-      `Android Chrome activity identity did not resolve within ` +
-        `${CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS} ms; ` +
-        `attempts=${JSON.stringify(attempts)}`
-    )
-  }
-  throw new Error(
-    `Android Chrome notification modal did not clear within ` +
-      `${CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS} ms`
-  )
 }
 
 async function requireClearChromeContentSurface() {
