@@ -278,8 +278,17 @@ test("Chrome surface identity requires a fresh resumed Chrome activity", () => {
     {
       activity:
         "topResumedActivity=ActivityRecord{abc u0 com.android.chrome/com.google.android.apps.chrome.Main t8}",
-      chromeForeground: true
+      chromeForeground: true,
+      recordId: "abc",
+      taskId: "t8"
     }
+  )
+  throws(
+    () =>
+      requireChromeForegroundActivityAtBoundary(
+        "topResumedActivity=ActivityRecord{abc u0 com.android.chrome/com.google.android.apps.chrome.Main}"
+      ),
+    /Chrome activity identity lacks an ActivityRecord token and task id/
   )
 })
 
@@ -344,7 +353,13 @@ test("Android display receipts prefer the active override and reject malformed s
     parseAndroidDisplaySize("Physical size: 1440x3120\nOverride size: 1080x2400"),
     PIXEL_7_DISPLAY
   )
-  for (const value of ["", "Physical size: 0x2400", "Physical size: 999999x999999"]) {
+  for (const value of [
+    "",
+    "Physical size: 0x2400",
+    "Physical size: 999999x999999",
+    "Physical size: 1080x2400\nOverride size: malformed",
+    "Physical size: 1080x2400\nOverride size: 1080x2400\nOverride size: 1080x2400"
+  ]) {
     throws(() => parseAndroidDisplaySize(value), /Android display size receipt is invalid/)
   }
 })
