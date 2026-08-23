@@ -1176,6 +1176,7 @@ else { process.stderr.write("unexpected fake adb command"); process.exitCode = 1
     )
     equal(canonicalDriftReceipt.result, "FAIL")
     equal("liveGuest" in canonicalDriftReceipt, false)
+    deepEqual(canonicalDriftReceipt.commands, [])
     match(canonicalDriftReceipt.reason, /canonical AVD identity drift/u)
     writeFileSync(configPath, verifiedCanonicalConfig, "utf8")
 
@@ -1199,6 +1200,7 @@ else { process.stderr.write("unexpected fake adb command"); process.exitCode = 1
     )
     equal(resolvedDriftReceipt.result, "FAIL")
     equal("liveGuest" in resolvedDriftReceipt, false)
+    deepEqual(resolvedDriftReceipt.commands, [])
     match(resolvedDriftReceipt.reason, /resolved profile drift/u)
     writeFileSync(resolvedPath, verifiedResolvedHardware, "utf8")
 
@@ -1305,6 +1307,116 @@ else { process.stderr.write("unexpected fake adb command"); process.exitCode = 1
     equal(failedPrepareReceipt.result, "FAIL")
     equal(failedPrepareReceipt.phase, "prepare")
     match(failedPrepareReceipt.reason, /missing canonical profile/u)
+  } finally {
+    rmSync(fixtureRoot, { force: true, recursive: true })
+  }
+})
+
+test("emulator environment CLI bounds host evidence before any live probe", () => {
+  const fixtureRoot = mkdtempSync(join(tmpdir(), "courtside-emulator-host-bounds-"))
+  const avdHome = join(fixtureRoot, "avd-home")
+  const avdDirectory = join(avdHome, `${ANDROID_AVD_NAME}.avd`)
+  const artifactDirectory = join(fixtureRoot, "artifacts", "android-chrome")
+  const fakeBin = join(fixtureRoot, "bin")
+  const scriptPath = fileURLToPath(
+    new URL("../../scripts/android-emulator-environment.mjs", import.meta.url)
+  )
+  const registryPath = join(avdHome, `${ANDROID_AVD_NAME}.ini`)
+  const configPath = join(avdDirectory, "config.ini")
+  const resolvedPath = join(avdDirectory, "hardware-qemu.ini")
+  const registry =
+    `avd.ini.encoding=UTF-8\npath=${avdDirectory}\n` +
+    `path.rel=avd/${ANDROID_AVD_NAME}.avd\ntarget=android-35\n`
+  const config =
+    `hw.device.name=${ANDROID_PROFILE}\n` + "hw.cpu.ncore=4\nhw.ramSize=4096\nvm.heapSize=576\n"
+  const resolvedHardware =
+    `hw.device.name=${ANDROID_PROFILE}\n` +
+    `avd.name=${ANDROID_AVD_NAME}\navd.id=${ANDROID_AVD_NAME}\n` +
+    "hw.cpu.ncore=4\nhw.ramSize=4096\nvm.heapSize=576\n"
+
+  mkdirSync(avdDirectory, { recursive: true })
+  mkdirSync(artifactDirectory, { recursive: true })
+  mkdirSync(fakeBin, { recursive: true })
+  writeFileSync(
+    join(fixtureRoot, "artifacts", "exact-head.json"),
+    `${JSON.stringify({ source_head_sha: EXACT_HEAD_SHA })}\n`,
+    "utf8"
+  )
+  const fakeAdb = join(fakeBin, "adb")
+  writeFileSync(
+    fakeAdb,
+    `#!/usr/bin/env node
+const command = process.argv.slice(2).join(" ")
+if (command === "emu avd name") process.stdout.write("${ANDROID_AVD_NAME}\\nOK\\n")
+else if (command === "exec-out cat /sys/devices/system/cpu/online") process.stdout.write("0-3\\n")
+else if (command === "exec-out cat /proc/meminfo") process.stdout.write("MemTotal: 3973120 kB\\n")
+else if (command === "exec-out getprop dalvik.vm.heapsize") process.stdout.write("576m\\n")
+else { process.stderr.write("unexpected fake adb command"); process.exitCode = 1 }
+`,
+    "utf8"
+  )
+  chmodSync(fakeAdb, 0o755)
+  const environment = {
+    ...process.env,
+    ANDROID_AVD_HOME: avdHome,
+    ANDROID_SERIAL: "emulator-5554",
+    COURTSIDE_ANDROID_AVD_NAME: ANDROID_AVD_NAME,
+    PATH: `${fakeBin}${delimiter}${process.env.PATH ?? ""}`
+  }
+  const oversizedPadding = "#".repeat(1024 * 1024)
+  const invalidEvidence = [
+    {
+      label: "registry-oversized",
+      path: registryPath,
+      value: `${registry}${oversizedPadding}`,
+      reason: /Android AVD registry must be a bounded physical file/u
+    },
+    {
+      label: "registry-nul",
+      path: registryPath,
+      value: `${registry}\0`,
+      reason: /Android AVD registry must be bounded non-empty text/u
+    },
+    {
+      label: "canonical-oversized",
+      path: configPath,
+      value: `${config}${oversizedPadding}`,
+      reason: /Canonical Android AVD config must be a bounded physical file/u
+    },
+    {
+      label: "resolved-oversized",
+      path: resolvedPath,
+      value: `${resolvedHardware}${oversizedPadding}`,
+      reason: /Resolved Android hardware must be a bounded physical file/u
+    },
+    {
+      label: "resolved-nul",
+      path: resolvedPath,
+      value: `${resolvedHardware}\0`,
+      reason: /Resolved Android hardware must be bounded non-empty text/u
+    }
+  ]
+
+  try {
+    for (const evidence of invalidEvidence) {
+      writeFileSync(registryPath, registry, "utf8")
+      writeFileSync(configPath, config, "utf8")
+      writeFileSync(resolvedPath, resolvedHardware, "utf8")
+      writeFileSync(evidence.path, evidence.value, "utf8")
+      const receiptName = `${evidence.label}.json`
+      const result = spawnSync(
+        process.execPath,
+        [scriptPath, "verify", `artifacts/android-chrome/${receiptName}`],
+        { cwd: fixtureRoot, encoding: "utf8", env: environment }
+      )
+      equal(result.status, 1)
+      equal(readFileSync(evidence.path, "utf8"), evidence.value)
+      const receipt = JSON.parse(readFileSync(join(artifactDirectory, receiptName), "utf8"))
+      equal(receipt.result, "FAIL")
+      equal(receipt.phase, "verify")
+      deepEqual(receipt.commands, [])
+      match(receipt.reason, evidence.reason)
+    }
   } finally {
     rmSync(fixtureRoot, { force: true, recursive: true })
   }
