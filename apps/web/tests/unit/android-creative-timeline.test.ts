@@ -1,4 +1,4 @@
-import { deepEqual, doesNotMatch, equal, match, throws } from "node:assert/strict"
+import { deepEqual, doesNotMatch, equal, match, rejects, throws } from "node:assert/strict"
 import { spawnSync } from "node:child_process"
 import {
   chmodSync,
@@ -149,6 +149,85 @@ test("background timeline accepts activity-to-pause and pause-to-activity orderi
   )
   equal(activityThenPause.frameAtPause, 40)
   equal(pauseThenActivity.postPauseFrames, 2)
+})
+
+test("native Android background focus override sends the exact CDP command and fails closed", async () => {
+  const disableSyntheticPageFocus = Reflect.get(
+    timelineHelpers,
+    "disableSyntheticPageFocus"
+  )
+  equal(typeof disableSyntheticPageFocus, "function")
+  if (typeof disableSyntheticPageFocus !== "function") return
+
+  const calls: Array<{ method: string; parameters: unknown }> = []
+  const receipt = await disableSyntheticPageFocus({
+    send: async (method: string, parameters: unknown) => {
+      calls.push({ method, parameters })
+    }
+  })
+
+  deepEqual(calls, [
+    {
+      method: "Emulation.setFocusEmulationEnabled",
+      parameters: { enabled: false }
+    }
+  ])
+  deepEqual(receipt, {
+    method: "Emulation.setFocusEmulationEnabled",
+    parameters: { enabled: false }
+  })
+
+  await rejects(
+    () =>
+      disableSyntheticPageFocus({
+        send: async () => {
+          throw new Error("focus override failed")
+        }
+      }),
+    /focus override failed/u
+  )
+})
+
+test("native Android background binds the exact browser foreground receipt", () => {
+  const requireAndroidBrowserForegroundReceipt = Reflect.get(
+    timelineHelpers,
+    "requireAndroidBrowserForegroundReceipt"
+  )
+  equal(typeof requireAndroidBrowserForegroundReceipt, "function")
+  if (typeof requireAndroidBrowserForegroundReceipt !== "function") return
+
+  const expectedUrl =
+    "http://127.0.0.1:4173/articles/opening-night?issue=issue-2026-01"
+  const foreground = {
+    url: expectedUrl,
+    visibilityState: "visible",
+    hidden: false,
+    hasFocus: true
+  }
+  deepEqual(requireAndroidBrowserForegroundReceipt(foreground, expectedUrl), foreground)
+
+  for (const receipt of [
+    { ...foreground, url: "http://127.0.0.1:4173/issues/issue-2026-01" },
+    { ...foreground, visibilityState: "hidden", hidden: true },
+    { ...foreground, hasFocus: false }
+  ]) {
+    throws(
+      () => requireAndroidBrowserForegroundReceipt(receipt, expectedUrl),
+      /Android browser foreground receipt/u
+    )
+  }
+})
+
+test("native Android background disables Playwright focus emulation before arming HOME", () => {
+  const performanceHarness = readFileSync(
+    new URL("../../scripts/android-chrome-performance-smoke.mjs", import.meta.url),
+    "utf8"
+  )
+
+  match(
+    performanceHarness,
+    /function verifyAndroidOperatingSystemBackground\(page, targetIndex\) \{[\s\S]*newCDPSession\(page\)[\s\S]*page\.bringToFront\(\)[\s\S]*disableSyntheticPageFocus\(lifecycleSession\)[\s\S]*requireAndroidBrowserForegroundReceipt\([\s\S]*requireChromeForegroundActivityAtBoundary\([\s\S]*armOperatingSystemPauseObservation\(page, targetIndex\)[\s\S]*KEYCODE_HOME/u
+  )
 })
 
 test("browser runtime epochs are normalized into the bracketed host clock", () => {
