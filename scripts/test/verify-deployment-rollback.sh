@@ -31,6 +31,8 @@ done
 
 command -v python3 >/dev/null 2>&1 || fail "python3 is required"
 
+python3 "$REPO_ROOT/scripts/test/test-t082-runtime-remediation.py"
+
 mkdir -p "$ARTIFACT_DIR"
 WORK_DIR="$(mktemp -d)"
 trap 'rm -rf "$WORK_DIR"' EXIT
@@ -392,4 +394,3 @@ if grep -R --fixed-strings "$SENTINEL" "$ARTIFACT_DIR" "$WORK_DIR" --include='*.
 fi
 
 echo "verify-deployment-rollback: PASS (isolated state machine; forward schema preserved)"
-
