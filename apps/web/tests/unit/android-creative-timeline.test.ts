@@ -295,7 +295,8 @@ test("foreground frames use one exact browser timeline after the first attributa
         active(550, 15),
         active(640, 16),
         active(710, 17)
-      ]
+      ],
+      boundarySnapshot: active(710, 17)
     },
     FOREGROUND_BUDGETS
   )
@@ -333,7 +334,8 @@ test("foreground timeline ignores frames outside the fixed budget and fails clos
             active(710, 14),
             active(890, 15),
             active(1_080, 16)
-          ]
+          ],
+          boundarySnapshot: active(710, 14)
         },
         FOREGROUND_BUDGETS
       ),
@@ -356,12 +358,89 @@ test("foreground timeline rejects a non-active sample inside the observation win
           samples: [
             { at: 200, frame: 11, runningCount: 1, targetStatus: "running" },
             { at: 300, frame: 12, runningCount: 0, targetStatus: "paused" }
-          ]
+          ],
+          boundarySnapshot: {
+            at: 710,
+            frame: 12,
+            runningCount: 1,
+            targetStatus: "running"
+          }
         },
         FOREGROUND_BUDGETS
       ),
     /foreground frame sample must contain exactly one running canvas/
   )
+})
+
+test("foreground timeline reproduces exact attempt 2 undercount attribution", () => {
+  const active = (at: number, frame: number) => ({
+    at,
+    frame,
+    runningCount: 1,
+    targetStatus: "running"
+  })
+
+  throws(
+    () =>
+      evaluateAndroidForegroundFrameTimeline(
+        {
+          armedSnapshot: active(100, 10),
+          readinessTimeoutMilliseconds: 5_000,
+          samples: [
+            active(200, 11),
+            active(330, 12),
+            active(500, 13),
+            active(680, 14)
+          ],
+          boundarySnapshot: active(710, 14)
+        },
+        FOREGROUND_BUDGETS
+      ),
+    /foreground creative frames: expected >= 5, received 3/
+  )
+})
+
+test("foreground observation boundary must reach the deadline and remain exactly active", () => {
+  const active = (at: number, frame: number) => ({
+    at,
+    frame,
+    runningCount: 1,
+    targetStatus: "running"
+  })
+  const timeline = {
+    armedSnapshot: active(100, 10),
+    readinessTimeoutMilliseconds: 5_000,
+    samples: [
+      active(200, 11),
+      active(280, 12),
+      active(370, 13),
+      active(460, 14),
+      active(550, 15),
+      active(640, 16)
+    ]
+  }
+
+  throws(
+    () =>
+      evaluateAndroidForegroundFrameTimeline(
+        { ...timeline, boundarySnapshot: active(699, 16) },
+        FOREGROUND_BUDGETS
+      ),
+    /foreground observation boundary must reach the 500 ms deadline/
+  )
+  for (const boundarySnapshot of [
+    { at: 710, frame: 16, runningCount: 0, targetStatus: "paused" },
+    { at: 710, frame: 16, runningCount: 2, targetStatus: "running" }
+  ]) {
+    throws(
+      () =>
+        evaluateAndroidForegroundFrameTimeline(
+          { ...timeline, boundarySnapshot },
+          FOREGROUND_BUDGETS
+        ),
+      /foreground observation boundary must contain exactly one running canvas/
+    )
+  }
 })
 
 test("clock uncertainty is charged against the runtime background deadline", () => {
