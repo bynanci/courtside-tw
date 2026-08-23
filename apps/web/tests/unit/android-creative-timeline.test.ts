@@ -6,6 +6,7 @@ import {
   boundedAndroidPollDelay,
   calibrateBrowserClockToHost,
   classifyAndroidActivityLine,
+  classifyChromeAutomationSurface,
   evaluateAndroidBackgroundTimeline,
   evaluateAndroidForegroundFrameTimeline,
   normalizeBrowserRuntimeSnapshot,
@@ -23,6 +24,14 @@ const FOREGROUND_BUDGETS = Object.freeze({
   minimumForegroundFrames: 5,
   maximumRunningCanvases: 1
 })
+
+const ATTEMPT_2_CHROME_MODAL_XML = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
+<hierarchy rotation="0">
+  <node text="" resource-id="com.android.chrome:id/modal_dialog_view" package="com.android.chrome" bounds="[28,615][1052,1858]">
+    <node text="Chrome notifications make things easier" resource-id="" class="android.widget.TextView" package="com.android.chrome" bounds="[70,1364][1010,1522]" />
+    <node text="No thanks" resource-id="com.android.chrome:id/negative_button" class="android.widget.Button" package="com.android.chrome" clickable="true" enabled="true" bounds="[477,1690][708,1816]" />
+  </node>
+</hierarchy>`
 
 type ActivityTransition = {
   at: number
@@ -161,6 +170,44 @@ test("activity classification ignores unresolved dumpsys output instead of treat
       chromeForeground: false
     }
   )
+})
+
+test("the exact attempt 2 Chrome notification modal resolves only its safe negative target", () => {
+  deepEqual(classifyChromeAutomationSurface(ATTEMPT_2_CHROME_MODAL_XML), {
+    status: "known-notification-prompt",
+    dismissTap: { x: 592, y: 1753 }
+  })
+})
+
+test("Chrome automation surface is clear only when no native modal markers exist", () => {
+  deepEqual(
+    classifyChromeAutomationSurface(
+      '<hierarchy><node package="com.android.chrome" text="Courtside TW" /></hierarchy>'
+    ),
+    { status: "clear" }
+  )
+})
+
+test("unknown or malformed Chrome native modals fail closed without a tap target", () => {
+  const fixtures = [
+    ATTEMPT_2_CHROME_MODAL_XML.replace('bounds="[477,1690][708,1816]"', 'bounds="bad"'),
+    ATTEMPT_2_CHROME_MODAL_XML.replace(
+      "Chrome notifications make things easier",
+      "Unknown Chrome prompt"
+    ),
+    ATTEMPT_2_CHROME_MODAL_XML.replace(
+      'resource-id="com.android.chrome:id/negative_button"',
+      'resource-id="com.android.chrome:id/positive_button"'
+    ),
+    '<hierarchy><node text="No thanks" resource-id="com.android.chrome:id/negative_button" bounds="[477,1690][708,1816]" /></hierarchy>'
+  ]
+
+  for (const fixture of fixtures) {
+    deepEqual(classifyChromeAutomationSurface(fixture), {
+      status: "blocked",
+      reason: "unrecognized-or-malformed-chrome-modal"
+    })
+  }
 })
 
 test("the observation boundary requires a fresh resolved Android activity identity", () => {
