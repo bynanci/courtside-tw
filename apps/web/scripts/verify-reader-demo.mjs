@@ -106,6 +106,13 @@ async function verifyReaderJourney() {
   const articleHtml = await article.text()
   assert.match(articleHtml, /data-testid="article-document"/u)
   assert.match(articleHtml, /aria-current="step"[^>]*>.*?03/su)
+  assert.match(articleHtml, /\/articles\/season-opening-notes/u)
+
+  const relatedArticle = await fetch(`${webOrigin}/articles/season-opening-notes`)
+  assert.equal(relatedArticle.status, 200)
+  const relatedArticleHtml = await relatedArticle.text()
+  assert.match(relatedArticleHtml, /賽季開幕觀察/u)
+  assert.match(relatedArticleHtml, /data-testid="article-document"/u)
 
   const api = await fetch(`${apiOrigin}/api/v1/public/issues`, {
     headers: { origin: webOrigin }

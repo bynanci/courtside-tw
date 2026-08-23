@@ -31,6 +31,34 @@ const notesDocument = JSON.parse(
     "utf8"
   )
 )
+const seasonOpeningNotesDocument = {
+  schemaVersion: 1,
+  documentId: "0190f7b0-7c4b-7e3a-8f12-123456789ab4",
+  blocks: [
+    {
+      id: "00000000-0000-4000-8000-000000000102",
+      type: "heading",
+      version: 1,
+      payload: {
+        level: 2,
+        text: "開幕不是起點，而是第一個可被驗證的節點"
+      }
+    },
+    {
+      id: "00000000-0000-4000-8000-000000000103",
+      type: "paragraph",
+      version: 1,
+      payload: {
+        content: [
+          {
+            kind: "text",
+            text: "從第一場球的動線、聲音與觀眾回應開始，記錄一個賽季如何逐步形成共同記憶。"
+          }
+        ]
+      }
+    }
+  ]
+}
 
 const issue = {
   ...manifest.issue,
@@ -179,6 +207,37 @@ const articles = new Map([
           title: "主場燈光亮起之前",
           position: 1
         },
+        next: null
+      }
+    }
+  ],
+  [
+    "season-opening-notes",
+    {
+      articleId: "0190f7b0-7c4b-7e3a-8f12-123456789abf",
+      revisionId: "0190f7b0-7c4b-7e3a-8f12-123456789ab5",
+      revisionNumber: 1,
+      slug: "season-opening-notes",
+      title: "賽季開幕觀察",
+      dek: "從開幕夜的現場線索，整理一個賽季值得持續追蹤的問題。",
+      content: seasonOpeningNotesDocument,
+      plainText: "開幕不是起點，而是第一個可被驗證的節點。",
+      readingTimeMinutes: 2,
+      publishedAt: "2026-08-01T00:10:00Z",
+      updatedAt: "2026-08-01T00:10:00Z",
+      canonicalPath: "/articles/season-opening-notes",
+      media: [],
+      contributors: [
+        {
+          contributorId: "00000000-0000-4000-8000-000000000022",
+          slug: "courtside-tw-editorial",
+          displayName: "Courtside TW 編輯部",
+          role: "EDITOR"
+        }
+      ],
+      issueNavigation: {
+        issueSlug: issue.slug,
+        previous: null,
         next: null
       }
     }
