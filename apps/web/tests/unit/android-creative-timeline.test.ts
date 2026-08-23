@@ -1,4 +1,5 @@
-import { deepEqual, equal, throws } from "node:assert/strict"
+import { deepEqual, equal, match, throws } from "node:assert/strict"
+import { readFileSync } from "node:fs"
 import { test } from "node:test"
 
 import {
@@ -258,4 +259,20 @@ test("clock uncertainty is charged against the runtime background deadline", () 
       ),
     /runtime background pause upper bound: expected <= 5000, received 5005/
   )
+})
+
+test("Android smoke diagnostics preserve the failing producer and bound probes", () => {
+  const shellHarness = readFileSync(
+    new URL("../../../../scripts/test/run-android-chrome-offline-smoke.sh", import.meta.url),
+    "utf8"
+  )
+  const performanceHarness = readFileSync(
+    new URL("../../scripts/android-chrome-performance-smoke.mjs", import.meta.url),
+    "utf8"
+  )
+
+  match(shellHarness, /PIPESTATUS\[0\]/u)
+  match(shellHarness, /logcat -d -v threadtime -t 2000/u)
+  match(performanceHarness, /ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS/u)
+  match(performanceHarness, /timeout: ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS/u)
 })
