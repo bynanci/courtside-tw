@@ -67,11 +67,14 @@ export function classifyChromeAutomationSurface(value) {
     status: "blocked",
     reason: "unrecognized-or-malformed-chrome-modal"
   }
-  if (!hierarchy || !/<hierarchy(?:\s|>)/u.test(hierarchy)) {
+  const hierarchyStart = hierarchy.search(/<hierarchy(?:\s|>)/u)
+  const hierarchyEnd = hierarchy.indexOf("</hierarchy>", hierarchyStart)
+  if (!hierarchy || hierarchyStart < 0 || hierarchyEnd < 0) {
     return blocked
   }
 
-  const nodes = hierarchy.match(/<node\b[^>]*>/gu) ?? []
+  const hierarchyDocument = hierarchy.slice(hierarchyStart, hierarchyEnd + "</hierarchy>".length)
+  const nodes = hierarchyDocument.match(/<node\b[^>]*>/gu) ?? []
   const modalId = "com.android.chrome:id/modal_dialog_view"
   const negativeButtonId = "com.android.chrome:id/negative_button"
   const knownTitle = "Chrome notifications make things easier"
@@ -85,6 +88,11 @@ export function classifyChromeAutomationSurface(value) {
       xmlAttribute(node, "text") === knownTitle
     )
   })
+  const hasNativeDialogMarker = nodes.some((node) => {
+    const resourceId = xmlAttribute(node, "resource-id") ?? ""
+    const className = xmlAttribute(node, "class") ?? ""
+    return /(?:dialog|modal)/iu.test(resourceId) || /(?:^|[.$])Dialog$/u.test(className)
+  })
   if (!hasChromeNode) {
     return hasKnownMarker
       ? blocked
@@ -94,7 +102,7 @@ export function classifyChromeAutomationSurface(value) {
         }
   }
   if (!hasModal) {
-    return hasKnownMarker ? blocked : { status: "clear" }
+    return hasKnownMarker || hasNativeDialogMarker ? blocked : { status: "clear" }
   }
 
   const hasKnownTitle = nodes.some(
