@@ -203,10 +203,10 @@ test("activity probe receipts reject timed-out partial output and resolve only o
     }),
     { status: "timed-out", activity: "" }
   )
-  deepEqual(
-    classifyProbe({ errorCode: null, status: 0, stdout: ATTEMPT_1_ACTIVITY_DUMP_PREFIX }),
-    { status: "resolved", activity: ATTEMPT_1_RESUMED_ACTIVITY }
-  )
+  deepEqual(classifyProbe({ errorCode: null, status: 0, stdout: ATTEMPT_1_ACTIVITY_DUMP_PREFIX }), {
+    status: "resolved",
+    activity: ATTEMPT_1_RESUMED_ACTIVITY
+  })
   for (const stdout of [
     "",
     "topResumedActivity=null",
@@ -230,10 +230,7 @@ test("activity probe receipts reject timed-out partial output and resolve only o
 })
 
 test("native surface readiness retries whole attempts without probing or tapping from timeout receipts", () => {
-  const captureAttempt = Reflect.get(
-    timelineHelpers,
-    "captureChromeSurfaceProbeBoundaryAttempt"
-  )
+  const captureAttempt = Reflect.get(timelineHelpers, "captureChromeSurfaceProbeBoundaryAttempt")
   equal(typeof captureAttempt, "function")
   if (typeof captureAttempt !== "function") return
 
@@ -276,10 +273,7 @@ test("native surface readiness retries whole attempts without probing or tapping
 })
 
 test("native surface readiness still fails closed on a resolved foreign foreground", () => {
-  const captureAttempt = Reflect.get(
-    timelineHelpers,
-    "captureChromeSurfaceProbeBoundaryAttempt"
-  )
+  const captureAttempt = Reflect.get(timelineHelpers, "captureChromeSurfaceProbeBoundaryAttempt")
   equal(typeof captureAttempt, "function")
   if (typeof captureAttempt !== "function") return
 
@@ -303,10 +297,7 @@ test("native surface readiness still fails closed on a resolved foreign foregrou
 })
 
 test("a ready native surface attempt preserves exact activity bracket identity", () => {
-  const captureAttempt = Reflect.get(
-    timelineHelpers,
-    "captureChromeSurfaceProbeBoundaryAttempt"
-  )
+  const captureAttempt = Reflect.get(timelineHelpers, "captureChromeSurfaceProbeBoundaryAttempt")
   equal(typeof captureAttempt, "function")
   if (typeof captureAttempt !== "function") return
 
@@ -341,8 +332,7 @@ test("a ready native surface attempt preserves exact activity bracket identity",
   throws(
     () =>
       captureAttempt({
-        readActivityReceipt: () =>
-          changed.shift() ?? { status: "unresolved", activity: "" },
+        readActivityReceipt: () => changed.shift() ?? { status: "unresolved", activity: "" },
         probeSurface: () => ({ status: "clear" })
       }),
     /Chrome activity identity changed during the native surface probe/
@@ -846,10 +836,7 @@ test("Android smoke diagnostics preserve the failing producer and bound probes",
     performanceHarness,
     /surface\.status === "activity-unresolved"[\s\S]*boundedAndroidPollDelay/u
   )
-  doesNotMatch(
-    performanceHarness,
-    /result\.error\?\.code === "ETIMEDOUT"\) \{\s*return ""/u
-  )
+  doesNotMatch(performanceHarness, /result\.error\?\.code === "ETIMEDOUT"\) \{\s*return ""/u)
   match(
     performanceHarness,
     /normalizeChromeContentSurface\(\)[\s\S]*observeForegroundFrameTimeline\([\s\S]*requireClearChromeContentSurface\(\)[\s\S]*evaluateAndroidForegroundFrameTimeline/u

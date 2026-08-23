@@ -591,10 +591,7 @@ async function normalizeChromeContentSurface() {
       await new Promise((resolve) =>
         setTimeout(
           resolve,
-          boundedAndroidPollDelay(
-            pollRemainingMilliseconds,
-            CHROME_AUTOMATION_POLL_MILLISECONDS
-          )
+          boundedAndroidPollDelay(pollRemainingMilliseconds, CHROME_AUTOMATION_POLL_MILLISECONDS)
         )
       )
       continue
@@ -657,10 +654,7 @@ async function requireClearChromeContentSurface() {
       await new Promise((resolve) =>
         setTimeout(
           resolve,
-          boundedAndroidPollDelay(
-            pollRemainingMilliseconds,
-            CHROME_AUTOMATION_POLL_MILLISECONDS
-          )
+          boundedAndroidPollDelay(pollRemainingMilliseconds, CHROME_AUTOMATION_POLL_MILLISECONDS)
         )
       )
       continue

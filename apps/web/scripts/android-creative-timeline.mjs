@@ -261,9 +261,7 @@ export function classifyAndroidActivityProbeResult(value) {
     throw new Error("Android activity probe stdout must be a string")
   }
   const activity = selectResumedAndroidActivityLine(value.stdout)
-  return activity
-    ? { status: "resolved", activity }
-    : { status: "unresolved", activity: "" }
+  return activity ? { status: "resolved", activity } : { status: "unresolved", activity: "" }
 }
 
 export function requireAndroidActivityAtBoundary(value) {
@@ -321,10 +319,7 @@ export function captureChromeSurfaceProbeBoundary({ readActivity, probeSurface }
   }
 }
 
-export function captureChromeSurfaceProbeBoundaryAttempt({
-  readActivityReceipt,
-  probeSurface
-}) {
+export function captureChromeSurfaceProbeBoundaryAttempt({ readActivityReceipt, probeSurface }) {
   if (typeof readActivityReceipt !== "function" || typeof probeSurface !== "function") {
     throw new Error("Chrome surface readiness dependencies must be functions")
   }
