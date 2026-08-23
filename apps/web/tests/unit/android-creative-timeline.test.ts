@@ -644,6 +644,33 @@ test("one shared deadline charges every blocking Android automation command", ()
   equal(commandTimeout(5_000, 4_999.2, 5_000), 0)
 })
 
+test("cold UIAutomator can use the remaining normalization envelope without widening final proof", () => {
+  const commandTimeout = Reflect.get(timelineHelpers, "androidCommandTimeoutMilliseconds")
+  equal(typeof commandTimeout, "function")
+  if (typeof commandTimeout !== "function") return
+
+  equal(commandTimeout(10_000, 3_360, 5_000), 5_000)
+  equal(commandTimeout(10_000, 3_360, 10_000), 6_640)
+
+  const performanceHarness = readFileSync(
+    new URL("../../scripts/android-chrome-performance-smoke.mjs", import.meta.url),
+    "utf8"
+  )
+  match(
+    performanceHarness,
+    /function probeChromeContentSurface\(deadline\) \{[\s\S]*requireRemainingAutomationMilliseconds\(\s*deadline,\s*CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS,\s*"UIAutomator probe"/u
+  )
+  match(
+    performanceHarness,
+    /function requireClearChromeContentSurface\(\) \{\s*const deadline =\s*performance\.now\(\) \+ CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS/u
+  )
+  match(
+    performanceHarness,
+    /if \(result\.error\?\.code === "ETIMEDOUT"\) \{[\s\S]*throw new Error[\s\S]*const hierarchy =[\s\S]*classifyChromeAutomationSurface/u
+  )
+  doesNotMatch(performanceHarness, /surface-unresolved/u)
+})
+
 test("foreground frames use one exact browser timeline after the first attributable frame", () => {
   const active = (at: number, frame: number) => ({
     at,
