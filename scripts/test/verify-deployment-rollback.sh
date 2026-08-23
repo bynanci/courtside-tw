@@ -351,6 +351,105 @@ run_controller "$WORK_DIR/register-d.json" register --manifest "$WORK_DIR/releas
 write_readiness "$WORK_DIR/readiness-d.json" release-d "$SOURCE_D" "$DIGEST_A" "$DIGEST_B" healthy 12
 expect_failure "incompatible previous release" run_controller "$WORK_DIR/activate-d.json" activate --release release-d --readiness "$WORK_DIR/readiness-d.json"
 
+# A v1 ledger has no authoritative environment or activation history. It must
+# remain blocked until an operator supplies bounded, environment-bound upgrade
+# evidence and the exact confirmation; migration must preserve the archive and
+# the prior receipt before exposing the v2 state to normal commands.
+LEGACY_STATE="$WORK_DIR/legacy-state.json"
+LEGACY_BACKUP="$WORK_DIR/legacy-state.v1.json"
+UPGRADE_EVIDENCE="$WORK_DIR/upgrade-evidence.json"
+python3 - "$LEGACY_STATE" "$UPGRADE_EVIDENCE" "$SOURCE_A" "$SOURCE_B" "$DIGEST_A" "$DIGEST_B" "$DIGEST_C" "$DIGEST_D" <<'PY'
+import json
+import sys
+
+state_path, evidence_path, source_a, source_b, digest_a, digest_b, digest_c, digest_d = sys.argv[1:]
+
+def manifest(release_id, source_sha, api, web, target, minimum, maximum):
+    return {
+        "schema_version": 1,
+        "release_id": release_id,
+        "source_sha": source_sha,
+        "images": {"api": api, "web": web},
+        "database": {
+            "target_schema": target,
+            "compatible_schema": {"min": minimum, "max": maximum},
+            "migration_phase": "expand",
+        },
+    }
+
+legacy = {
+    "schema_version": 1,
+    "revision": 4,
+    "database_schema_version": 10,
+    "active_release": "release-b",
+    "previous_release": "release-a",
+    "last_action_receipt": {
+        "schema_version": 1,
+        "task": "T082",
+        "action": "activate",
+        "environment": "test",
+        "observed_at": "2026-08-23T00:00:00Z",
+        "active_before": "release-a",
+        "active_after": "release-b",
+        "database_schema_before": 9,
+        "database_schema_after": 10,
+        "schema_rollback_performed": False,
+        "destructive_schema_action": False,
+        "state_revision": 4,
+    },
+    "releases": {
+        "release-a": manifest("release-a", source_a, digest_a, digest_b, 9, 9, 10),
+        "release-b": manifest("release-b", source_b, digest_c, digest_d, 10, 9, 11),
+    },
+}
+evidence = {
+    "schema_version": 1,
+    "environment": "test",
+    "activated_releases": ["release-a", "release-b"],
+    "active_release": "release-b",
+    "previous_release": "release-a",
+}
+for path, payload in ((state_path, legacy), (evidence_path, evidence)):
+    with open(path, "w", encoding="utf-8") as handle:
+        json.dump(payload, handle, indent=2, sort_keys=True)
+        handle.write("\n")
+PY
+
+expect_failure "unconfirmed v1 state migration" env DATABASE_URL="postgresql://$SENTINEL.invalid/courtside" \
+  python3 "$CONTROLLER" \
+    --state "$LEGACY_STATE" \
+    --environment test \
+    --receipt "$WORK_DIR/legacy-upgrade-denied.json" \
+    migrate-state \
+    --legacy-backup "$LEGACY_BACKUP" \
+    --activation-history "$UPGRADE_EVIDENCE" \
+    --confirmation WRONG
+env DATABASE_URL="postgresql://$SENTINEL.invalid/courtside" \
+  python3 "$CONTROLLER" \
+    --state "$LEGACY_STATE" \
+    --environment test \
+    --receipt "$WORK_DIR/legacy-upgrade.json" \
+    migrate-state \
+    --legacy-backup "$LEGACY_BACKUP" \
+    --activation-history "$UPGRADE_EVIDENCE" \
+    --confirmation I_UNDERSTAND_STATE_SCHEMA_UPGRADE
+python3 - "$LEGACY_STATE" "$WORK_DIR/legacy-upgrade.json" <<'PY'
+import json
+import sys
+
+state = json.load(open(sys.argv[1], encoding="utf-8"))
+receipt = json.load(open(sys.argv[2], encoding="utf-8"))
+assert state["schema_version"] == 2, state
+assert state["environment"] == "test", state
+assert state["activated_releases"] == ["release-a", "release-b"], state
+assert state["last_action_receipt"]["action"] == "migrate-state", state
+assert [item["action"] for item in state["receipt_history"]] == ["activate", "migrate-state"], state
+assert receipt["state_schema_before"] == 1, receipt
+assert receipt["state_schema_after"] == 2, receipt
+assert state["legacy_archive"]["release_count"] == 2, state
+print("verify-deployment-rollback: pass - v1 ledger migrated with explicit evidence")
+PY
+
 # A production mutation is a protected action and must not run without the
 # exact confirmation capability, even when all other inputs are valid.
 expect_failure "unconfirmed production action" env -u COURTSIDE_PRODUCTION_DEPLOY_CONFIRM \
@@ -360,7 +459,8 @@ expect_failure "unconfirmed production action" env -u COURTSIDE_PRODUCTION_DEPLO
     --receipt "$WORK_DIR/production-denied.json" \
     register --manifest "$WORK_DIR/release-a.json"
 
-python3 - "$REPO_ROOT" "$STATE" "$WORK_DIR/rollback-a.json" "$ARTIFACT_DIR/t082-deployment-rollback-receipt.json" <<'PY'
+python3 - "$REPO_ROOT" "$STATE" "$WORK_DIR/rollback-a.json" \
+  "$WORK_DIR/legacy-upgrade.json" "$ARTIFACT_DIR/t082-deployment-rollback-receipt.json" <<'PY'
 import json
 import pathlib
 import sys
@@ -368,7 +468,8 @@ import sys
 root = pathlib.Path(sys.argv[1])
 state = json.load(open(sys.argv[2], encoding="utf-8"))
 rollback = json.load(open(sys.argv[3], encoding="utf-8"))
-output = pathlib.Path(sys.argv[4])
+upgrade = json.load(open(sys.argv[4], encoding="utf-8"))
+output = pathlib.Path(sys.argv[5])
 
 deployment = (root / "docs/operations/deployment.md").read_text(encoding="utf-8").lower()
 rollback_doc = (root / "docs/operations/rollback.md").read_text(encoding="utf-8").lower()
@@ -424,6 +525,13 @@ receipt = {
         "schema_rollback_performed": rollback["schema_rollback_performed"],
         "destructive_schema_action": rollback["destructive_schema_action"],
     },
+    "state_upgrade": {
+        "from_schema_version": upgrade["state_schema_before"],
+        "to_schema_version": upgrade["state_schema_after"],
+        "environment": upgrade["environment"],
+        "preserved_receipt_actions": ["activate", "migrate-state"],
+        "receipt_history_limit": 16,
+    },
     "negative_paths": [
         "failed candidate rejected",
         "degraded candidate rejected",
@@ -440,6 +548,8 @@ receipt = {
         "interrupted receipt sink reconciled",
         "unknown rollback target rejected",
         "incompatible forward schema rejected",
+        "v1 state migration requires explicit environment and activation history",
+        "v1 state migration preserves bounded receipt history",
         "unconfirmed production mutation rejected",
     ],
     "limitations": [

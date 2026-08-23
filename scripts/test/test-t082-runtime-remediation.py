@@ -107,6 +107,77 @@ def activated_state() -> tuple[dict[str, object], dict[str, object]]:
     return state, release_a
 
 
+def legacy_state() -> dict[str, object]:
+    release_a = manifest("release-a", "a", 9, 9, 10)
+    release_b = manifest("release-b", "b", 10, 9, 11)
+    return {
+        "schema_version": 1,
+        "revision": 4,
+        "database_schema_version": 10,
+        "active_release": "release-b",
+        "previous_release": "release-a",
+        "last_action_receipt": {
+            "schema_version": 1,
+            "task": "T082",
+            "action": "activate",
+            "environment": "test",
+            "observed_at": "2026-08-23T00:00:00Z",
+            "active_before": "release-a",
+            "active_after": "release-b",
+            "database_schema_before": 9,
+            "database_schema_after": 10,
+            "schema_rollback_performed": False,
+            "destructive_schema_action": False,
+            "state_revision": 4,
+        },
+        "releases": {"release-a": release_a, "release-b": release_b},
+    }
+
+
+def upgrade_evidence(
+    *,
+    environment: str = "test",
+    activated_releases: list[str] | None = None,
+    active_release: str | None = "release-b",
+    previous_release: str | None = "release-a",
+) -> dict[str, object]:
+    return {
+        "schema_version": 1,
+        "environment": environment,
+        "activated_releases": (
+            ["release-a", "release-b"]
+            if activated_releases is None
+            else activated_releases
+        ),
+        "active_release": active_release,
+        "previous_release": previous_release,
+    }
+
+
+def write_upgrade_evidence(
+    path: Path,
+    *,
+    environment: str = "staging",
+    activated_releases: list[str] | None = None,
+    active_release: str | None = "release-b",
+    previous_release: str | None = "release-a",
+) -> None:
+    path.write_text(
+        json.dumps(
+            upgrade_evidence(
+                environment=environment,
+                activated_releases=activated_releases,
+                active_release=active_release,
+                previous_release=previous_release,
+            ),
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
 class T082RuntimeRemediationTests(unittest.TestCase):
     def test_datasource_is_bound_to_spring_for_api_and_worker(self) -> None:
         compose = COMPOSE_PATH.read_text(encoding="utf-8")
@@ -178,6 +249,7 @@ class T082RuntimeRemediationTests(unittest.TestCase):
             root = Path(directory)
             state_path = root / "release-state.json"
             backup_path = root / "release-state.v1.json"
+            evidence_path = root / "upgrade-evidence.json"
             migrate_receipt_path = root / "migration-receipt.json"
             status_receipt_path = root / "status-receipt.json"
             rollback_receipt_path = root / "rollback-receipt.json"
@@ -195,7 +267,11 @@ class T082RuntimeRemediationTests(unittest.TestCase):
                 "database_schema_version": 10,
                 "active_release": "release-b",
                 "previous_release": "release-a",
-                "last_action_receipt": {"action": "activate", "result": "pass"},
+                "last_action_receipt": {
+                    "action": "activate",
+                    "result": "pass",
+                    "environment": "staging",
+                },
                 "releases": releases,
             }
             index = 0
@@ -209,6 +285,7 @@ class T082RuntimeRemediationTests(unittest.TestCase):
             serialized = json.dumps(legacy_state, indent=2, sort_keys=True) + "\n"
             self.assertLessEqual(len(serialized.encode("utf-8")), release.MAX_JSON_BYTES)
             state_path.write_text(serialized, encoding="utf-8")
+            write_upgrade_evidence(evidence_path)
 
             migration = subprocess.run(
                 [
@@ -223,6 +300,10 @@ class T082RuntimeRemediationTests(unittest.TestCase):
                     "migrate-state",
                     "--legacy-backup",
                     str(backup_path),
+                    "--activation-history",
+                    str(evidence_path),
+                    "--confirmation",
+                    release.STATE_UPGRADE_CONFIRMATION,
                 ],
                 check=False,
                 capture_output=True,
@@ -308,6 +389,7 @@ class T082RuntimeRemediationTests(unittest.TestCase):
             root = Path(directory)
             state_path = root / "release-state.json"
             backup_path = root / "release-state.v1.json"
+            evidence_path = root / "upgrade-evidence.json"
             receipt_path = root / "migration-receipt.json"
             releases: dict[str, object] = {
                 "release-a": manifest("release-a", "a", 9, 9, 10),
@@ -319,7 +401,11 @@ class T082RuntimeRemediationTests(unittest.TestCase):
                 "database_schema_version": 10,
                 "active_release": "release-b",
                 "previous_release": "release-a",
-                "last_action_receipt": {"action": "activate", "result": "pass"},
+                "last_action_receipt": {
+                    "action": "activate",
+                    "result": "pass",
+                    "environment": "staging",
+                },
                 "releases": releases,
             }
             index = 0
@@ -332,6 +418,7 @@ class T082RuntimeRemediationTests(unittest.TestCase):
             serialized = json.dumps(legacy_state, indent=2, sort_keys=True) + "\n"
             self.assertGreater(len(serialized.encode("utf-8")), release.MAX_JSON_BYTES)
             state_path.write_text(serialized, encoding="utf-8")
+            write_upgrade_evidence(evidence_path)
 
             migration = subprocess.run(
                 [
@@ -346,6 +433,10 @@ class T082RuntimeRemediationTests(unittest.TestCase):
                     "migrate-state",
                     "--legacy-backup",
                     str(backup_path),
+                    "--activation-history",
+                    str(evidence_path),
+                    "--confirmation",
+                    release.STATE_UPGRADE_CONFIRMATION,
                 ],
                 check=False,
                 capture_output=True,
@@ -364,6 +455,7 @@ class T082RuntimeRemediationTests(unittest.TestCase):
             root = Path(directory)
             state_path = root / "release-state.json"
             backup_path = root / "release-state.v1.json"
+            evidence_path = root / "upgrade-evidence.json"
             migrate_receipt_path = root / "migration-receipt.json"
             register_receipt_path = root / "register-receipt.json"
             manifest_path = root / "candidate.json"
@@ -377,7 +469,11 @@ class T082RuntimeRemediationTests(unittest.TestCase):
                 "database_schema_version": 10,
                 "active_release": "release-b",
                 "previous_release": "release-a",
-                "last_action_receipt": {"action": "activate", "result": "pass"},
+                "last_action_receipt": {
+                    "action": "activate",
+                    "result": "pass",
+                    "environment": "staging",
+                },
                 "releases": releases,
             }
             index = 0
@@ -391,6 +487,7 @@ class T082RuntimeRemediationTests(unittest.TestCase):
                 json.dumps(legacy_state, indent=2, sort_keys=True) + "\n",
                 encoding="utf-8",
             )
+            write_upgrade_evidence(evidence_path)
             migration = subprocess.run(
                 [
                     sys.executable,
@@ -404,6 +501,10 @@ class T082RuntimeRemediationTests(unittest.TestCase):
                     "migrate-state",
                     "--legacy-backup",
                     str(backup_path),
+                    "--activation-history",
+                    str(evidence_path),
+                    "--confirmation",
+                    release.STATE_UPGRADE_CONFIRMATION,
                 ],
                 check=False,
                 capture_output=True,
@@ -445,6 +546,7 @@ class T082RuntimeRemediationTests(unittest.TestCase):
             root = Path(directory)
             state_path = root / "release-state.json"
             backup_path = root / "release-state.v1.json"
+            evidence_path = root / "upgrade-evidence.json"
             receipt_path = root / "migration-receipt.json"
             release_a = manifest("release-a", "a", 9, 9, 10)
             legacy_state: dict[str, object] = {
@@ -453,13 +555,23 @@ class T082RuntimeRemediationTests(unittest.TestCase):
                 "database_schema_version": 9,
                 "active_release": "release-a",
                 "previous_release": None,
-                "last_action_receipt": {"action": "activate", "result": "pass"},
+                "last_action_receipt": {
+                    "action": "activate",
+                    "result": "pass",
+                    "environment": "staging",
+                },
                 "releases": {"release-a": release_a},
             }
             serialized = json.dumps(legacy_state, indent=2, sort_keys=True) + "\n"
             state_path.write_text(serialized, encoding="utf-8")
             backup_path.write_text(serialized, encoding="utf-8")
             os.chmod(backup_path, 0o644)
+            write_upgrade_evidence(
+                evidence_path,
+                active_release="release-a",
+                previous_release=None,
+                activated_releases=["release-a"],
+            )
 
             migration = subprocess.run(
                 [
@@ -474,6 +586,10 @@ class T082RuntimeRemediationTests(unittest.TestCase):
                     "migrate-state",
                     "--legacy-backup",
                     str(backup_path),
+                    "--activation-history",
+                    str(evidence_path),
+                    "--confirmation",
+                    release.STATE_UPGRADE_CONFIRMATION,
                 ],
                 check=False,
                 capture_output=True,
@@ -494,6 +610,7 @@ class T082RuntimeRemediationTests(unittest.TestCase):
                 root = Path(directory)
                 state_path = root / "release-state.json"
                 backup_path = root / "release-state.v1.json"
+                evidence_path = root / "upgrade-evidence.json"
                 receipt_path = root / "migration-receipt.json"
                 release_a = manifest("release-a", "a", 9, 9, 10)
                 legacy_state: dict[str, object] = {
@@ -502,7 +619,11 @@ class T082RuntimeRemediationTests(unittest.TestCase):
                     "database_schema_version": 9,
                     "active_release": "release-a",
                     "previous_release": None,
-                    "last_action_receipt": {"action": "activate", "result": "pass"},
+                    "last_action_receipt": {
+                        "action": "activate",
+                        "result": "pass",
+                        "environment": "staging",
+                    },
                     "releases": {"release-a": release_a},
                 }
                 mismatched_backup = copy.deepcopy(legacy_state)
@@ -516,6 +637,12 @@ class T082RuntimeRemediationTests(unittest.TestCase):
                     encoding="utf-8",
                 )
                 os.chmod(backup_path, 0o600)
+                write_upgrade_evidence(
+                    evidence_path,
+                    active_release="release-a",
+                    previous_release=None,
+                    activated_releases=["release-a"],
+                )
 
                 migration = subprocess.run(
                     [
@@ -530,6 +657,10 @@ class T082RuntimeRemediationTests(unittest.TestCase):
                         "migrate-state",
                         "--legacy-backup",
                         str(backup_path),
+                        "--activation-history",
+                        str(evidence_path),
+                        "--confirmation",
+                        release.STATE_UPGRADE_CONFIRMATION,
                     ],
                     check=False,
                     capture_output=True,
@@ -546,6 +677,7 @@ class T082RuntimeRemediationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             state_path = root / "release-state.json"
+            evidence_path = root / "upgrade-evidence.json"
             receipt_path = root / "migration-receipt.json"
             blocked_parent = root / "not-a-directory"
             backup_path = blocked_parent / "release-state.v1.json"
@@ -556,7 +688,11 @@ class T082RuntimeRemediationTests(unittest.TestCase):
                 "database_schema_version": 9,
                 "active_release": "release-a",
                 "previous_release": None,
-                "last_action_receipt": {"action": "activate", "result": "pass"},
+                "last_action_receipt": {
+                    "action": "activate",
+                    "result": "pass",
+                    "environment": "staging",
+                },
                 "releases": {"release-a": release_a},
             }
             state_path.write_text(
@@ -564,6 +700,12 @@ class T082RuntimeRemediationTests(unittest.TestCase):
                 encoding="utf-8",
             )
             blocked_parent.write_text("not a directory", encoding="utf-8")
+            write_upgrade_evidence(
+                evidence_path,
+                active_release="release-a",
+                previous_release=None,
+                activated_releases=["release-a"],
+            )
 
             migration = subprocess.run(
                 [
@@ -578,6 +720,10 @@ class T082RuntimeRemediationTests(unittest.TestCase):
                     "migrate-state",
                     "--legacy-backup",
                     str(backup_path),
+                    "--activation-history",
+                    str(evidence_path),
+                    "--confirmation",
+                    release.STATE_UPGRADE_CONFIRMATION,
                 ],
                 check=False,
                 capture_output=True,
@@ -598,6 +744,7 @@ class T082RuntimeRemediationTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             state_path = root / "release-state.json"
+            evidence_path = root / "upgrade-evidence.json"
             receipt_path = root / "migration-receipt.json"
             lock_path = state_path.with_suffix(f"{state_path.suffix}.lock")
             release_a = manifest("release-a", "a", 9, 9, 10)
@@ -607,12 +754,22 @@ class T082RuntimeRemediationTests(unittest.TestCase):
                 "database_schema_version": 9,
                 "active_release": "release-a",
                 "previous_release": None,
-                "last_action_receipt": {"action": "activate", "result": "pass"},
+                "last_action_receipt": {
+                    "action": "activate",
+                    "result": "pass",
+                    "environment": "staging",
+                },
                 "releases": {"release-a": release_a},
             }
             state_path.write_text(
                 json.dumps(legacy_state, indent=2, sort_keys=True) + "\n",
                 encoding="utf-8",
+            )
+            write_upgrade_evidence(
+                evidence_path,
+                active_release="release-a",
+                previous_release=None,
+                activated_releases=["release-a"],
             )
 
             try:
@@ -629,6 +786,10 @@ class T082RuntimeRemediationTests(unittest.TestCase):
                         "migrate-state",
                         "--legacy-backup",
                         str(lock_path),
+                        "--activation-history",
+                        str(evidence_path),
+                        "--confirmation",
+                        release.STATE_UPGRADE_CONFIRMATION,
                     ],
                     check=False,
                     capture_output=True,
@@ -688,6 +849,90 @@ class T082RuntimeRemediationTests(unittest.TestCase):
             self.assertEqual([kind for kind, _ in outcomes].count("error"), 1)
             self.assertIn(json.loads(backup_path.read_text(encoding="utf-8")), payloads)
             self.assertEqual(backup_path.stat().st_mode & 0o777, 0o600)
+
+    def test_v1_state_requires_an_explicit_environment_bound_upgrade(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            state_path = Path(directory) / "state.json"
+            state_path.write_text(json.dumps(legacy_state()), encoding="utf-8")
+            with self.assertRaisesRegex(release.ReleaseError, "explicit.*migrate"):
+                release.load_state(state_path, "test")
+
+    def test_v1_upgrade_preserves_explicit_history_and_receipt(self) -> None:
+        migrated = release.migrate_v1_state(
+            legacy_state(),
+            "test",
+            upgrade_evidence(),
+            release.STATE_UPGRADE_CONFIRMATION,
+        )
+
+        self.assertEqual(migrated["schema_version"], release.STATE_SCHEMA_VERSION)
+        self.assertEqual(migrated["environment"], "test")
+        self.assertEqual(migrated["activated_releases"], ["release-a", "release-b"])
+        self.assertEqual(migrated["active_release"], "release-b")
+        self.assertEqual(migrated["previous_release"], "release-a")
+        self.assertEqual(
+            migrated["receipt_history"], [legacy_state()["last_action_receipt"]]
+        )
+
+    def test_v1_upgrade_rejects_environment_history_and_confirmation_mismatch(self) -> None:
+        with self.assertRaisesRegex(release.ReleaseError, "environment"):
+            release.migrate_v1_state(
+                legacy_state(),
+                "production",
+                upgrade_evidence(environment="staging"),
+                release.STATE_UPGRADE_CONFIRMATION,
+            )
+
+        with self.assertRaisesRegex(release.ReleaseError, "activation history"):
+            release.migrate_v1_state(
+                legacy_state(),
+                "test",
+                upgrade_evidence(activated_releases=["release-b"]),
+                release.STATE_UPGRADE_CONFIRMATION,
+            )
+
+        with self.assertRaisesRegex(release.ReleaseError, "confirmation"):
+            release.migrate_v1_state(
+                legacy_state(), "test", upgrade_evidence(), "WRONG"
+            )
+
+    def test_v1_upgrade_rejects_unknown_and_non_string_history_targets(self) -> None:
+        with self.assertRaisesRegex(release.ReleaseError, "unknown release"):
+            release.migrate_v1_state(
+                legacy_state(),
+                "test",
+                upgrade_evidence(activated_releases=["release-a", "missing"]),
+                release.STATE_UPGRADE_CONFIRMATION,
+            )
+        with self.assertRaisesRegex(release.ReleaseError, "release IDs"):
+            release.migrate_v1_state(
+                legacy_state(),
+                "test",
+                upgrade_evidence(activated_releases=["release-a", {"release": "b"}]),
+                release.STATE_UPGRADE_CONFIRMATION,
+            )
+
+    def test_receipt_history_is_bounded_and_keeps_latest_recovery_window(self) -> None:
+        state = release.new_state("test")
+        state["receipt_history"] = [
+            {"action": "register", "state_revision": index}
+            for index in range(release.MAX_RECEIPT_HISTORY_ITEMS + 3)
+        ]
+        release.record_action_receipt(
+            state, {"action": "activate", "state_revision": 99}
+        )
+
+        self.assertEqual(len(state["receipt_history"]), release.MAX_RECEIPT_HISTORY_ITEMS)
+        self.assertEqual(state["receipt_history"][-1]["state_revision"], 99)
+        release.validate_state(state, "test")
+
+    def test_existing_v2_state_without_history_is_readable_and_normalized(self) -> None:
+        state = release.new_state("test")
+        state.pop("receipt_history")
+
+        normalized = release.validate_state(state, "test")
+
+        self.assertEqual(normalized["receipt_history"], [])
 
 
 if __name__ == "__main__":
