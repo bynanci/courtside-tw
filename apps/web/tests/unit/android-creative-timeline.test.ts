@@ -2,6 +2,8 @@ import { deepEqual, doesNotMatch, equal, match, throws } from "node:assert/stric
 import { readFileSync } from "node:fs"
 import { test } from "node:test"
 
+import * as timelineHelpers from "../../scripts/android-creative-timeline.mjs"
+
 import {
   boundedAndroidPollDelay,
   calibrateBrowserClockToHost,
@@ -29,6 +31,17 @@ const FOREGROUND_BUDGETS = Object.freeze({
 })
 
 const PIXEL_7_DISPLAY = Object.freeze({ width: 1080, height: 2400 })
+
+const ATTEMPT_1_ACTIVITY_DUMP_PREFIX = `ACTIVITY MANAGER ACTIVITIES (dumpsys activity activities)
+Display #0 (activities from top to bottom):
+  * Task{23c61e9 #9 type=standard A=10146:com.android.chrome U=0 visible=true visibleRequested=true mode=fullscreen translucent=false sz=1}
+    mLastNonFullscreenBounds=Rect(276, 696 - 805, 1776)
+    isSleeping=false
+    topResumedActivity=ActivityRecord{6cf73ed u0 com.android.chrome/com.google.android.apps.chrome.Main t9}
+    * Hist  #0: ActivityRecord{6cf73ed u0 com.android.chrome/com.google.android.apps.chrome.Main t9}`
+
+const ATTEMPT_1_RESUMED_ACTIVITY =
+  "topResumedActivity=ActivityRecord{6cf73ed u0 com.android.chrome/com.google.android.apps.chrome.Main t9}"
 
 const ATTEMPT_2_CHROME_MODAL_XML = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
 <hierarchy rotation="0">
@@ -175,6 +188,109 @@ test("activity classification ignores unresolved dumpsys output instead of treat
       chromeForeground: false
     }
   )
+})
+
+test("activity probe receipts reject timed-out partial output and resolve only one complete authority", () => {
+  const classifyProbe = Reflect.get(timelineHelpers, "classifyAndroidActivityProbeResult")
+  equal(typeof classifyProbe, "function")
+  if (typeof classifyProbe !== "function") return
+
+  deepEqual(
+    classifyProbe({
+      errorCode: "ETIMEDOUT",
+      status: null,
+      stdout: ATTEMPT_1_ACTIVITY_DUMP_PREFIX
+    }),
+    { status: "timed-out", activity: "" }
+  )
+  deepEqual(
+    classifyProbe({ errorCode: null, status: 0, stdout: ATTEMPT_1_ACTIVITY_DUMP_PREFIX }),
+    { status: "resolved", activity: ATTEMPT_1_RESUMED_ACTIVITY }
+  )
+  for (const stdout of [
+    "",
+    "topResumedActivity=null",
+    "topResumedActivity=ActivityRecord{6cf73ed u0 com.android.chrome/",
+    `${ATTEMPT_1_ACTIVITY_DUMP_PREFIX}\n    topResumedActivity=ActivityRecord{different u0 com.android.chrome/com.google.android.apps.chrome.Main t10}`
+  ]) {
+    deepEqual(classifyProbe({ errorCode: null, status: 0, stdout }), {
+      status: "unresolved",
+      activity: ""
+    })
+  }
+})
+
+test("native surface readiness retries whole attempts without probing or tapping from timeout receipts", () => {
+  const captureAttempt = Reflect.get(
+    timelineHelpers,
+    "captureChromeSurfaceProbeBoundaryAttempt"
+  )
+  equal(typeof captureAttempt, "function")
+  if (typeof captureAttempt !== "function") return
+
+  let probeCalls = 0
+  deepEqual(
+    captureAttempt({
+      readActivityReceipt: () => ({ status: "timed-out", activity: "" }),
+      probeSurface: () => {
+        probeCalls += 1
+        return { status: "known-notification-prompt", dismissTap: { x: 592, y: 1753 } }
+      }
+    }),
+    {
+      status: "activity-unresolved",
+      stage: "before",
+      activityProbe: { status: "timed-out", activity: "" }
+    }
+  )
+  equal(probeCalls, 0)
+
+  const receipts = [
+    { status: "resolved", activity: ATTEMPT_1_RESUMED_ACTIVITY },
+    { status: "timed-out", activity: "" }
+  ]
+  const discarded = captureAttempt({
+    readActivityReceipt: () => receipts.shift() ?? { status: "unresolved", activity: "" },
+    probeSurface: () => {
+      probeCalls += 1
+      return { status: "known-notification-prompt", dismissTap: { x: 592, y: 1753 } }
+    }
+  })
+  deepEqual(discarded, {
+    status: "activity-unresolved",
+    stage: "after",
+    activityBefore: ATTEMPT_1_RESUMED_ACTIVITY,
+    activityProbe: { status: "timed-out", activity: "" }
+  })
+  equal("dismissTap" in discarded, false)
+  equal(probeCalls, 1)
+})
+
+test("native surface readiness still fails closed on a resolved foreign foreground", () => {
+  const captureAttempt = Reflect.get(
+    timelineHelpers,
+    "captureChromeSurfaceProbeBoundaryAttempt"
+  )
+  equal(typeof captureAttempt, "function")
+  if (typeof captureAttempt !== "function") return
+
+  let probeCalls = 0
+  throws(
+    () =>
+      captureAttempt({
+        readActivityReceipt: () => ({
+          status: "resolved",
+          activity:
+            "topResumedActivity=ActivityRecord{def u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+        }),
+        probeSurface: () => {
+          probeCalls += 1
+          return { status: "clear" }
+        }
+      }),
+    /Chrome is not the resumed Android activity/
+  )
+  equal(probeCalls, 0)
 })
 
 test("the exact attempt 2 Chrome notification modal resolves only its safe negative target", () => {
@@ -662,6 +778,22 @@ test("Android smoke diagnostics preserve the failing producer and bound probes",
   match(performanceHarness, /observerSnapshot: liveSnapshot\?\.observerSnapshot \?\? null/u)
   match(performanceHarness, /observeForegroundFrameTimeline/u)
   match(performanceHarness, /CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS/u)
+  match(
+    performanceHarness,
+    /function resumedActivityReceipt\(\) \{[\s\S]*classifyAndroidActivityProbeResult\(\{[\s\S]*errorCode: result\.error\?\.code/u
+  )
+  match(
+    performanceHarness,
+    /captureChromeSurfaceProbeBoundaryAttempt\(\{[\s\S]*readActivityReceipt: resumedActivityReceipt/u
+  )
+  match(
+    performanceHarness,
+    /surface\.status === "activity-unresolved"[\s\S]*boundedAndroidPollDelay/u
+  )
+  doesNotMatch(
+    performanceHarness,
+    /result\.error\?\.code === "ETIMEDOUT"\) \{\s*return ""/u
+  )
   match(
     performanceHarness,
     /normalizeChromeContentSurface\(\)[\s\S]*observeForegroundFrameTimeline\([\s\S]*requireClearChromeContentSurface\(\)[\s\S]*evaluateAndroidForegroundFrameTimeline/u
