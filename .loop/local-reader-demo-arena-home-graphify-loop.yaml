@@ -1,0 +1,267 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-local-reader-demo-and-arena-home
+objective: Make a fresh local checkout render a complete public Home to Issue to Article journey with the approved Arena Editorial visual language.
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - Bounded loopback-only public reader fixture and one-command launcher.
+    - Home and Issue Arena heroes, semantic public-reader theme, readable article measure and adaptive accessibility states.
+    - Tests-first contracts, production-build SSR smoke and independent read-only review.
+  out:
+    - Studio, OIDC, publisher mutation, production data, database migrations, deployment and protected merge.
+    - PR 123 mutation, T083+, Web3 and participant research claims.
+
+policy:
+  human_gates:
+    - Protected merge, production activation and external publication require explicit owner approval.
+    - Browser screenshots and native assistive-technology evidence cannot be inferred from SSR or static tests.
+  no_progress: { max_same_failure: 2, max_no_evidence_delta: 2 }
+  mutation: { append_only_evidence: true, require_graph_delta: true }
+
+graph:
+  entry_nodes: [t-user-report]
+  terminal_nodes: [s-terminal]
+  loops:
+    - id: l1-local-reader-remediation
+      layer: L1
+      owner: codex-agent
+      trigger_nodes: [t-user-report]
+      action_nodes: [a-diagnose-and-red, a-demo-runtime, a-arena-ui]
+      proof_nodes: [p-red-baseline, p-runtime-smoke, p-local-acceptance]
+      memory_nodes: [m-execution-ledger]
+      stop_nodes: [s-terminal]
+      budgets:
+        {
+          max_iterations: 5,
+          max_minutes: 120,
+          max_same_failure: 2,
+          max_graph_changes: 16,
+          max_tokens: 50000
+        }
+  nodes:
+    - id: t-user-report
+      kind: trigger
+      layer: L1
+      label: Local reader is empty and visually underdeveloped
+      owner: user
+      status: done
+      risk: medium
+      confidence:
+        {
+          score: 1.0,
+          basis: "Explicit user report plus supplied approved-direction montage",
+          evidence_refs: [.loop/evidence/local-reader-demo-baseline.json]
+        }
+      budget: { effort_hours: 0.0, tokens: 0 }
+      config:
+        {
+          condition: "A fresh local start exposes no usable content and the public UI drifts from DESIGN.md",
+          inputs_required: [user report, repository state, DESIGN.md],
+          dedupe: baseline-main-plus-user-report
+        }
+    - id: a-diagnose-and-red
+      kind: action
+      layer: L1
+      label: Diagnose startup and visual gaps and establish attributable RED
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        {
+          score: 0.99,
+          basis: "Repository startup, compose, fixture and CSS paths inspected; four new contracts failed on missing seams",
+          evidence_refs: [.loop/evidence/local-reader-demo-baseline.json]
+        }
+      budget: { effort_hours: 0.8, tokens: 9000 }
+      config:
+        workflow: [inspect startup topology, inspect approved design contract, add bounded failing contracts]
+        allowed: [read repository state, add public-reader tests, record evidence]
+        requires_approval: [protected merge, production action]
+        forbidden: [weaken acceptance, mutate PR 123, claim browser evidence]
+    - id: p-red-baseline
+      kind: proof
+      layer: L1
+      label: Attributable local-reader RED baseline
+      owner: verifier
+      status: done
+      risk: medium
+      confidence:
+        {
+          score: 0.99,
+          basis: "Four focused tests failed only on absent demo and Arena contracts",
+          evidence_refs: [.loop/evidence/local-reader-demo-baseline.json]
+        }
+      budget: { effort_hours: 0.2, tokens: 1600 }
+      config:
+        {
+          level: P2,
+          claim: "The missing local content path and Arena presentation are reproducible",
+          method: "Focused Node tests before implementation",
+          evidence_path: .loop/evidence/local-reader-demo-baseline.json,
+          required: true,
+          baseline_required: true
+        }
+    - id: a-demo-runtime
+      kind: action
+      layer: L1
+      label: Implement bounded public reader demo and lifecycle controls
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence:
+        {
+          score: 0.99,
+          basis: "Loopback fixture, CSP opt-in, exact CORS, production build server and shutdown controls implemented",
+          evidence_refs: [.loop/evidence/local-reader-demo-runtime.json]
+        }
+      budget: { effort_hours: 1.5, tokens: 14000 }
+      config:
+        workflow: [serve rights-safe fixture, build Nuxt, wait for readiness, prove safe shutdown]
+        allowed: [public GET fixture, loopback ports, repository test content, generated SVG media]
+        requires_approval: [production data, external bind, auth or publisher mutation]
+        forbidden: [Studio fixture, OIDC shortcut, credential use, non-loopback bind]
+    - id: p-runtime-smoke
+      kind: proof
+      layer: L1
+      label: Complete loopback reader runtime proof
+      owner: verifier
+      status: done
+      risk: high
+      confidence:
+        {
+          score: 0.99,
+          basis: "Production build smoke passed Home, Issue, Article, CSP, media, read-only and port-reuse checks",
+          evidence_refs: [.loop/evidence/local-reader-demo-runtime.json]
+        }
+      budget: { effort_hours: 0.4, tokens: 3000 }
+      config:
+        {
+          level: P2,
+          claim: "One command provides a bounded and visible anonymous reader journey",
+          method: "pnpm --dir apps/web run test:demo",
+          evidence_path: .loop/evidence/local-reader-demo-runtime.json,
+          required: true,
+          baseline_required: true
+        }
+    - id: a-arena-ui
+      kind: action
+      layer: L1
+      label: Apply Arena Editorial public-reader presentation
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        {
+          score: 0.96,
+          basis: "Home and Issue heroes, semantic tokens, adaptive surfaces and accessibility states implemented and reviewed",
+          evidence_refs: [.loop/evidence/local-reader-demo-acceptance.json]
+        }
+      budget: { effort_hours: 1.8, tokens: 15000 }
+      config:
+        workflow: [apply fixed-dark hero, preserve paper reader, repair adaptive contrast, retain SSR journey]
+        allowed: [public templates, public CSS tokens, theme metadata, accessibility contracts]
+        requires_approval: [brand asset adoption, navigation scope change]
+        forbidden: [crypto neon, inaccessible raw surfaces, login or wallet gate]
+    - id: p-local-acceptance
+      kind: proof
+      layer: L1
+      label: Local quality and independent review acceptance
+      owner: verifier
+      status: done
+      risk: medium
+      confidence:
+        {
+          score: 0.96,
+          basis: "122 tests, lint, typecheck, build smoke and two independent re-reviews passed",
+          evidence_refs: [.loop/evidence/local-reader-demo-acceptance.json]
+        }
+      budget: { effort_hours: 0.5, tokens: 3500 }
+      config:
+        {
+          level: P2,
+          claim: "The local reader remediation is regression-safe at the available evidence level",
+          method: "Unit/integration suite, lint, typecheck, runtime smoke and independent code review",
+          evidence_path: .loop/evidence/local-reader-demo-acceptance.json,
+          required: true,
+          baseline_required: true
+        }
+    - id: m-execution-ledger
+      kind: memory
+      layer: L1
+      label: Local reader remediation ledger
+      owner: codex-agent
+      status: done
+      risk: low
+      confidence:
+        {
+          score: 0.95,
+          basis: "Append-only task-specific events and proof references",
+          evidence_refs: [.loop/local-reader-demo-arena-home-ledger.json]
+        }
+      budget: { effort_hours: 0.1, tokens: 900 }
+      config:
+        {
+          path: .loop/local-reader-demo-arena-home-ledger.json,
+          read_before_action: true,
+          write_after_iteration: true,
+          append_only: true
+        }
+    - id: s-terminal
+      kind: stop
+      layer: GLOBAL
+      label: Local reader remediation terminal policy
+      owner: policy
+      status: done
+      risk: medium
+      confidence:
+        {
+          score: 0.99,
+          basis: "Local acceptance passed while protected merge remains outside scope",
+          evidence_refs: [.loop/evidence/local-reader-demo-acceptance.json]
+        }
+      budget: { effort_hours: 0.0, tokens: 0 }
+      config:
+        states:
+          success: Local demo, SSR reader journey, safety boundaries and local quality gates pass.
+          blocked: Required fixture, build, CSP, reader route or quality proof is unavailable.
+          needs_human: Protected merge, production action or brand-asset adoption awaits owner approval.
+          stalled: Same failure or no-evidence-delta limit is reached.
+          no_op: Current repository already satisfies the user report with attributable evidence.
+          exhausted: Iteration, time, graph-change or token budget is reached.
+  edges:
+    - { id: e-report-diagnose, from: t-user-report, to: a-diagnose-and-red, type: enables, required: true, confidence: 1.0, token_capacity: 7000 }
+    - { id: e-diagnose-red, from: a-diagnose-and-red, to: p-red-baseline, type: verifies, required: true, confidence: 0.99, token_capacity: 5000 }
+    - { id: e-red-demo, from: p-red-baseline, to: a-demo-runtime, type: enables, required: true, confidence: 0.99, token_capacity: 10000 }
+    - { id: e-demo-runtime, from: a-demo-runtime, to: p-runtime-smoke, type: verifies, required: true, confidence: 0.99, token_capacity: 8000 }
+    - { id: e-runtime-ui, from: p-runtime-smoke, to: a-arena-ui, type: enables, required: true, confidence: 0.96, token_capacity: 9000 }
+    - { id: e-ui-acceptance, from: a-arena-ui, to: p-local-acceptance, type: verifies, required: true, confidence: 0.96, token_capacity: 8000 }
+    - { id: e-acceptance-stop, from: p-local-acceptance, to: s-terminal, type: enables, required: true, confidence: 0.99, token_capacity: 4000 }
+    - { id: e-diagnose-memory, from: a-diagnose-and-red, to: m-execution-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2500 }
+    - { id: e-red-memory, from: p-red-baseline, to: m-execution-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2000 }
+    - { id: e-demo-memory, from: a-demo-runtime, to: m-execution-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2500 }
+    - { id: e-runtime-memory, from: p-runtime-smoke, to: m-execution-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2000 }
+    - { id: e-ui-memory, from: a-arena-ui, to: m-execution-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2500 }
+    - { id: e-acceptance-memory, from: p-local-acceptance, to: m-execution-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2000 }
+    - { id: e-memory-read, from: m-execution-ledger, to: a-diagnose-and-red, type: reads, required: true, confidence: 0.9, token_capacity: 3000 }
+    - { id: e-memory-feedback, from: m-execution-ledger, to: a-diagnose-and-red, type: feedback, required: true, confidence: 0.9, token_capacity: 3000 }
+
+flow:
+  source: t-user-report
+  sink: s-terminal
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - memory_receipt
+  - next_action
