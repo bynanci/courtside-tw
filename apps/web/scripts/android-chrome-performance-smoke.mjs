@@ -6,6 +6,7 @@ import {
   boundedAndroidPollDelay,
   calibrateBrowserClockToHost,
   classifyAndroidActivityLine,
+  classifyChromeAutomationSurface,
   evaluateAndroidBackgroundTimeline,
   evaluateAndroidForegroundFrameTimeline,
   normalizeBrowserRuntimeSnapshot,
@@ -16,6 +17,9 @@ import {
 const ARTICLE_URL = "http://127.0.0.1:4173/articles/opening-night?issue=issue-2026-01"
 const ANDROID_ACTIVITY_POLL_MILLISECONDS = 25
 const ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS = 250
+const CHROME_AUTOMATION_POLL_MILLISECONDS = 100
+const CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS = 5_000
+const CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS = 10_000
 const BUDGETS = Object.freeze({
   domContentLoadedMilliseconds: 5_000,
   creativeFirstRunningMilliseconds: 3_500,
@@ -151,11 +155,20 @@ try {
   await page.evaluate(() => window.dispatchEvent(new Event("focus")))
   await waitForActiveRuntimeSnapshot(page, 0, 10_000)
 
+  await markPhase(page, "foreground-native-surface")
+  const foregroundNativeSurface = await normalizeChromeContentSurface()
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")))
+  await waitForActiveRuntimeSnapshot(page, 0, 10_000)
+
   await markPhase(page, "foreground-frame-observation")
-  const foregroundFrames = evaluateAndroidForegroundFrameTimeline(
-    await observeForegroundFrameTimeline(page, 0, 5_000, BUDGETS.foregroundObservationMilliseconds),
-    BUDGETS
+  const foregroundFrameTimeline = await observeForegroundFrameTimeline(
+    page,
+    0,
+    5_000,
+    BUDGETS.foregroundObservationMilliseconds
   )
+  const foregroundNativeSurfaceBoundary = requireClearChromeContentSurface()
+  const foregroundFrames = evaluateAndroidForegroundFrameTimeline(foregroundFrameTimeline, BUDGETS)
 
   await markPhase(page, "creative-long-task-budget")
   const creativeMeasurement = await page.evaluate(() => ({
@@ -233,6 +246,8 @@ try {
       backgroundPauseMilliseconds: backgroundEvent.reactionMilliseconds,
       backgroundSignal: backgroundEvent.signal,
       backgroundEvent,
+      foregroundNativeSurface,
+      foregroundNativeSurfaceBoundary,
       foregroundFrames,
       operatingSystemBackground,
       longTasks: {
@@ -480,6 +495,98 @@ async function waitForActiveRuntimeSnapshot(page, targetIndex, timeoutMillisecon
   }
   assertActiveRuntimeSnapshot(snapshot, "Android active runtime")
   return snapshot
+}
+
+function probeChromeContentSurface(probeTimeoutMilliseconds) {
+  const startedAt = performance.now()
+  const result = spawnSync("adb", ["exec-out", "uiautomator", "dump", "/dev/tty"], {
+    encoding: "utf8",
+    maxBuffer: 2 * 1024 * 1024,
+    timeout: probeTimeoutMilliseconds
+  })
+  if (result.error?.code === "ETIMEDOUT") {
+    throw new Error(
+      `Android Chrome UIAutomator probe timed out after ${probeTimeoutMilliseconds} ms`
+    )
+  }
+  if (result.status !== 0) {
+    throw new Error(
+      `Android Chrome UIAutomator probe failed: ` +
+        `${result.stderr || result.stdout || result.error?.message || result.status}`
+    )
+  }
+  const hierarchy = `${result.stdout ?? ""}\n${result.stderr ?? ""}`
+  return {
+    ...classifyChromeAutomationSurface(hierarchy),
+    probeMilliseconds: performance.now() - startedAt,
+    hierarchyBytes: Buffer.byteLength(hierarchy)
+  }
+}
+
+function surfaceReceipt(surface) {
+  return {
+    status: surface.status,
+    reason: surface.reason ?? null,
+    probeMilliseconds: surface.probeMilliseconds,
+    hierarchyBytes: surface.hierarchyBytes
+  }
+}
+
+async function normalizeChromeContentSurface() {
+  const deadline = performance.now() + CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS
+  const attempts = []
+  let dismissedKnownPrompt = false
+  let dismissTap = null
+
+  while (performance.now() < deadline) {
+    const remainingMilliseconds = deadline - performance.now()
+    const surface = probeChromeContentSurface(
+      Math.max(
+        1,
+        Math.ceil(Math.min(CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS, remainingMilliseconds))
+      )
+    )
+    attempts.push(surfaceReceipt(surface))
+    if (surface.status === "clear") {
+      return {
+        status: surface.status,
+        dismissedKnownPrompt,
+        dismissTap,
+        attempts
+      }
+    }
+    if (surface.status !== "known-notification-prompt") {
+      throw new Error(`Android Chrome content surface is blocked by an unrecognized native modal`)
+    }
+    if (!dismissedKnownPrompt) {
+      dismissTap = surface.dismissTap
+      adb("shell", "input", "tap", String(dismissTap.x), String(dismissTap.y))
+      dismissedKnownPrompt = true
+    }
+    const pollRemainingMilliseconds = deadline - performance.now()
+    await new Promise((resolve) =>
+      setTimeout(
+        resolve,
+        boundedAndroidPollDelay(pollRemainingMilliseconds, CHROME_AUTOMATION_POLL_MILLISECONDS)
+      )
+    )
+  }
+
+  throw new Error(
+    `Android Chrome notification modal did not clear within ` +
+      `${CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS} ms`
+  )
+}
+
+function requireClearChromeContentSurface() {
+  const surface = probeChromeContentSurface(CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS)
+  if (surface.status !== "clear") {
+    throw new Error(
+      `Android Chrome content surface was not clear at the foreground observation boundary; ` +
+        `status=${surface.status}`
+    )
+  }
+  return surfaceReceipt(surface)
 }
 
 function observeForegroundFrameTimeline(
@@ -787,10 +894,20 @@ async function verifyAndroidOperatingSystemBackground(page, targetIndex) {
 }
 
 function adb(...arguments_) {
-  const result = spawnSync("adb", arguments_, { encoding: "utf8" })
+  const result = spawnSync("adb", arguments_, {
+    encoding: "utf8",
+    timeout: CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS
+  })
+  if (result.error?.code === "ETIMEDOUT") {
+    throw new Error(
+      `adb ${arguments_.join(" ")} timed out after ` +
+        `${CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS} ms`
+    )
+  }
   if (result.status !== 0) {
     throw new Error(
-      `adb ${arguments_.join(" ")} failed: ${result.stderr || result.stdout || result.status}`
+      `adb ${arguments_.join(" ")} failed: ` +
+        `${result.stderr || result.stdout || result.error?.message || result.status}`
     )
   }
   return result.stdout
