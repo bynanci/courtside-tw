@@ -625,7 +625,12 @@ async function waitForBackgroundConvergence(page, homeSignal, targetIndex) {
       (transition) => transition.at >= homeSignal.at && !transition.chromeForeground
     )
     if (backgroundActivity && pauseSnapshot) {
-      return { activityTransitions, backgroundActivity, pauseSnapshot }
+      return {
+        activityTransitions,
+        backgroundActivity,
+        pauseSnapshot,
+        observerSnapshot: liveSnapshot?.observerSnapshot ?? null
+      }
     }
     const remainingMilliseconds = deadline - performance.now()
     await new Promise((resolve) =>
@@ -698,7 +703,8 @@ async function verifyAndroidOperatingSystemBackground(page, targetIndex) {
     activeSnapshot,
     activityTransitions: convergence.activityTransitions,
     pauseSnapshot,
-    observationSnapshot
+    observationSnapshot,
+    observerSnapshot: convergence.observerSnapshot
   }
   const evaluation = evaluateAndroidBackgroundTimeline(timeline, BUDGETS)
   assertPausedRuntimeSnapshot(pauseSnapshot, "Android runtime pause")
@@ -726,6 +732,7 @@ async function verifyAndroidOperatingSystemBackground(page, targetIndex) {
     transitionFrameDelta: Math.max(0, evaluation.frameAtPause - activeSnapshot.frame),
     statusAtPause: evaluation.statusAtPause,
     pauseObservationSource: evaluation.pauseObservationSource,
+    pauseObserverDiagnostic: convergence.observerSnapshot,
     frameBefore: evaluation.frameAtPause,
     frameAfter: evaluation.frameAfterObservation,
     frameDelta: evaluation.postPauseFrames,

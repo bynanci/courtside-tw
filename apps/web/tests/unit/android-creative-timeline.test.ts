@@ -301,10 +301,7 @@ test("Android smoke diagnostics preserve the failing producer and bound probes",
   match(shellHarness, /curl --max-time 5/u)
   match(performanceHarness, /ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS/u)
   match(performanceHarness, /timeout: ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS/u)
-  match(
-    performanceHarness,
-    /observerSnapshot: liveSnapshot\?\.observerSnapshot \?\? null/u
-  )
+  match(performanceHarness, /observerSnapshot: liveSnapshot\?\.observerSnapshot \?\? null/u)
   doesNotMatch(
     performanceHarness,
     /observed\.runningCount === 0 && observed\.targetStatus !== "running"/u
