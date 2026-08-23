@@ -9,6 +9,7 @@ import {
   classifyAndroidActivityLine,
   classifyAndroidActivityProbeResult,
   classifyChromeAutomationSurface,
+  acquireChromeForegroundActivityAtBoundary,
   connectNativeAndroidBrowser,
   establishNativeAndroidBackgroundBoundary,
   evaluateAndroidBackgroundTimeline,
@@ -22,6 +23,7 @@ import {
 const ARTICLE_URL = "http://127.0.0.1:4173/articles/opening-night?issue=issue-2026-01"
 const ANDROID_ACTIVITY_POLL_MILLISECONDS = 25
 const ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS = 250
+const ANDROID_ACTIVITY_RECEIPT_HISTORY_LIMIT = 64
 const CHROME_AUTOMATION_POLL_MILLISECONDS = 100
 const CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS = 5_000
 const CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS = 10_000
@@ -955,7 +957,16 @@ async function verifyAndroidOperatingSystemBackground(page, targetIndex) {
         hasFocus: document.hasFocus()
       })),
     expectedUrl: ARTICLE_URL,
-    readChromeForegroundActivity: () => resumedActivityLine(),
+    readChromeForegroundActivity: () =>
+      acquireChromeForegroundActivityAtBoundary({
+        readActivityReceipt: (timeoutMilliseconds) => resumedActivityReceipt(timeoutMilliseconds),
+        deadlineAt: performance.now() + CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS,
+        now: () => performance.now(),
+        maximumReadMilliseconds: ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS,
+        maximumPollMilliseconds: CHROME_AUTOMATION_POLL_MILLISECONDS,
+        maximumAttempts: ANDROID_ACTIVITY_RECEIPT_HISTORY_LIMIT,
+        delay: (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds))
+      }),
     armRuntimeObservation: () => armOperatingSystemPauseObservation(page, targetIndex),
     epochNow: () => Date.now(),
     monotonicNow: () => performance.now(),
@@ -967,6 +978,7 @@ async function verifyAndroidOperatingSystemBackground(page, targetIndex) {
     clockCalibration,
     commandMilliseconds,
     foregroundActivity,
+    foregroundActivityAttempts,
     homeSignal
   } = boundary
   const convergence = await waitForBackgroundConvergence(page, homeSignal, targetIndex)
@@ -999,7 +1011,8 @@ async function verifyAndroidOperatingSystemBackground(page, targetIndex) {
     foregroundActivityBeforeHome: {
       activity: foregroundActivity.activity,
       recordId: foregroundActivity.recordId,
-      taskId: foregroundActivity.taskId
+      taskId: foregroundActivity.taskId,
+      attempts: foregroundActivityAttempts
     },
     commandMilliseconds,
     clockCalibration: {

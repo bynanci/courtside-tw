@@ -627,6 +627,23 @@ export function classifyAndroidActivityProbeResult(value) {
   return activity ? { status: "resolved", activity } : { status: "unresolved", activity: "" }
 }
 
+export function requireAndroidActivityProbeReceipt(value) {
+  const receipt = requireRecord(value, "Android activity probe receipt")
+  if (!new Set(["resolved", "unresolved", "timed-out"]).has(receipt.status)) {
+    throw new Error(`Android activity probe receipt status is invalid: ${String(receipt.status)}`)
+  }
+  if (typeof receipt.activity !== "string") {
+    throw new Error("Android activity probe receipt activity must be a string")
+  }
+  if (receipt.status === "resolved" && !receipt.activity) {
+    throw new Error("Resolved Android activity probe receipt must include an activity")
+  }
+  if (receipt.status !== "resolved" && receipt.activity) {
+    throw new Error("Unresolved Android activity probe receipt cannot include an activity")
+  }
+  return Object.freeze({ status: receipt.status, activity: receipt.activity })
+}
+
 export function requireAndroidActivityAtBoundary(value) {
   const classified = classifyAndroidActivityLine(value)
   if (!classified) {
@@ -653,6 +670,71 @@ export function requireChromeForegroundActivityAtBoundary(value) {
     recordId: identity[1],
     taskId: identity[2]
   }
+}
+
+export async function acquireChromeForegroundActivityAtBoundary(rawDependencies) {
+  const dependencies = requireRecord(
+    rawDependencies,
+    "Chrome foreground activity acquisition dependencies"
+  )
+  const readActivityReceipt = requireCallable(
+    dependencies.readActivityReceipt,
+    "readActivityReceipt"
+  )
+  const now = requireCallable(dependencies.now, "activity acquisition clock")
+  const delay = requireCallable(dependencies.delay, "activity acquisition delay")
+  const deadlineAt = requireTimestamp(dependencies.deadlineAt, "activity acquisition deadline")
+  const maximumReadMilliseconds = requireCount(
+    dependencies.maximumReadMilliseconds,
+    "maximum activity receipt read"
+  )
+  const maximumPollMilliseconds = requireCount(
+    dependencies.maximumPollMilliseconds,
+    "maximum activity receipt poll delay"
+  )
+  const maximumAttempts = requireCount(
+    dependencies.maximumAttempts,
+    "maximum activity receipt attempts"
+  )
+  if (maximumReadMilliseconds === 0 || maximumAttempts === 0) {
+    throw new Error("activity receipt read and attempt bounds must be positive")
+  }
+
+  const attempts = []
+  for (let attemptIndex = 0; attemptIndex < maximumAttempts; attemptIndex += 1) {
+    const timeoutMilliseconds = androidCommandTimeoutMilliseconds(
+      deadlineAt,
+      requireTimestamp(now(), "activity acquisition current time"),
+      maximumReadMilliseconds
+    )
+    if (timeoutMilliseconds === 0) break
+
+    const receipt = requireAndroidActivityProbeReceipt(
+      await readActivityReceipt(timeoutMilliseconds)
+    )
+    attempts.push(receipt)
+    if (receipt.status === "resolved") {
+      return {
+        ...requireChromeForegroundActivityAtBoundary(receipt.activity),
+        attempts: Object.freeze([...attempts])
+      }
+    }
+    if (attemptIndex + 1 >= maximumAttempts) break
+
+    const remainingMilliseconds =
+      deadlineAt - requireTimestamp(now(), "activity acquisition post-read time")
+    if (remainingMilliseconds <= 0) break
+    const delayMilliseconds = boundedAndroidPollDelay(
+      remainingMilliseconds,
+      maximumPollMilliseconds
+    )
+    if (delayMilliseconds > 0) await delay(delayMilliseconds)
+  }
+
+  throw new Error(
+    `Android Chrome activity identity did not resolve within its bounded receipt acquisition; ` +
+      `attempts=${JSON.stringify(attempts)}`
+  )
 }
 
 export function captureChromeSurfaceProbeBoundary({ readActivity, probeSurface }) {
@@ -686,25 +768,7 @@ export function captureChromeSurfaceProbeBoundaryAttempt({ readActivityReceipt, 
   if (typeof readActivityReceipt !== "function" || typeof probeSurface !== "function") {
     throw new Error("Chrome surface readiness dependencies must be functions")
   }
-  const readReceipt = () => {
-    const receipt = readActivityReceipt()
-    if (typeof receipt !== "object" || receipt === null || Array.isArray(receipt)) {
-      throw new Error("Android activity probe receipt must be an object")
-    }
-    if (!new Set(["resolved", "unresolved", "timed-out"]).has(receipt.status)) {
-      throw new Error(`Android activity probe receipt status is invalid: ${String(receipt.status)}`)
-    }
-    if (typeof receipt.activity !== "string") {
-      throw new Error("Android activity probe receipt activity must be a string")
-    }
-    if (receipt.status === "resolved" && !receipt.activity) {
-      throw new Error("Resolved Android activity probe receipt must include an activity")
-    }
-    if (receipt.status !== "resolved" && receipt.activity) {
-      throw new Error("Unresolved Android activity probe receipt cannot include an activity")
-    }
-    return { status: receipt.status, activity: receipt.activity }
-  }
+  const readReceipt = () => requireAndroidActivityProbeReceipt(readActivityReceipt())
 
   const activityProbeBefore = readReceipt()
   if (activityProbeBefore.status !== "resolved") {
@@ -871,9 +935,29 @@ export async function establishNativeAndroidBackgroundBoundary(rawDependencies) 
     await readBrowserForeground(),
     dependencies.expectedUrl
   )
-  const foregroundActivity = requireChromeForegroundActivityAtBoundary(
-    await readChromeForegroundActivity()
+  const foregroundActivityReceipt = requireRecord(
+    await readChromeForegroundActivity(),
+    "Chrome foreground activity acquisition"
   )
+  const foregroundActivity = requireChromeForegroundActivityAtBoundary(
+    foregroundActivityReceipt.activity
+  )
+  if (
+    !Array.isArray(foregroundActivityReceipt.attempts) ||
+    foregroundActivityReceipt.attempts.length === 0
+  ) {
+    throw new Error("Chrome foreground activity acquisition attempts must be non-empty")
+  }
+  const foregroundActivityAttempts = foregroundActivityReceipt.attempts.map((receipt) =>
+    requireAndroidActivityProbeReceipt(receipt)
+  )
+  const finalActivityAttempt = foregroundActivityAttempts.at(-1)
+  if (
+    finalActivityAttempt?.status !== "resolved" ||
+    finalActivityAttempt.activity !== foregroundActivity.activity
+  ) {
+    throw new Error("Chrome foreground activity acquisition final receipt is not authoritative")
+  }
   const hostEpochBeforeArm = requireTimestamp(epochNow(), "host epoch before arm")
   const rawActiveSnapshot = await armRuntimeObservation()
   const hostEpochAfterArm = requireTimestamp(epochNow(), "host epoch after arm")
@@ -897,6 +981,7 @@ export async function establishNativeAndroidBackgroundBoundary(rawDependencies) 
   return {
     browserForeground,
     foregroundActivity,
+    foregroundActivityAttempts: Object.freeze(foregroundActivityAttempts),
     clockCalibration,
     activeSnapshot,
     homeSignal,
