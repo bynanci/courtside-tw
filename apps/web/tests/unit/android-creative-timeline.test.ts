@@ -571,7 +571,7 @@ test("native Android performance harness invokes the behavioral boundaries", () 
   match(performanceHarness, /maximumAttempts:\s*ANDROID_ACTIVITY_RECEIPT_HISTORY_LIMIT/u)
   match(
     performanceHarness,
-    /planChromeAutomationSurfaceNormalization\(surface, dismissedPromptStatuses\)/u
+    /executeChromeSurfaceNormalizationAction\(\{\s*surface,\s*dismissedPrompts:\s*\[\.\.\.dismissedPromptStatuses\],\s*expectedActivity:\s*normalizationActivity,/u
   )
   match(
     performanceHarness,
@@ -579,6 +579,10 @@ test("native Android performance harness invokes the behavioral boundaries", () 
   )
   match(performanceHarness, /dismissedPromptStatuses\.add\(normalization\.prompt\)/u)
   match(performanceHarness, /"Pixel Launcher ANR wait tap"/u)
+  match(
+    performanceHarness,
+    /readActivityReceipt:\s*\(label\)\s*=>\s*readBoundNormalizationActivity\(\s*deadline,\s*normalizationActivity,\s*label\s*\)/u
+  )
   const finalSurfaceProof = performanceHarness.match(
     /async function requireClearChromeContentSurface\(\) \{[\s\S]*?\n\}/u
   )?.[0]
@@ -848,6 +852,30 @@ test("Pixel Launcher ANR normalization fails closed on any identity or geometry 
       '<node text="Report" resource-id="android:id/aerr_report" class="android.widget.Button" package="android" clickable="true" enabled="true" bounds="[70,1300][1010,1360]" /><node text="Wait"'
     ),
     ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace(
+      "</hierarchy>",
+      '<node text="Close app" resource-id="android:id/aerr_wait" class="android.widget.Button" package="android" clickable="true" enabled="true" bounds="[70,1174][1010,1300]" /></hierarchy>'
+    ),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace(
+      "</hierarchy>",
+      '<node text="Wait" resource-id="android:id/aerr_wait" class="android.widget.Button" package="android" clickable="false" enabled="true" bounds="[70,1300][1010,1426]" /></hierarchy>'
+    ),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace(
+      "</hierarchy>",
+      '<node text="System UI isn&apos;t responding" resource-id="android:id/alertTitle" class="android.widget.TextView" package="android" bounds="[133,1072][947,1135]" /></hierarchy>'
+    ),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace(
+      'bounds="[70,1025][1010,1447]"',
+      'bounds="[70,1024][1010,1447]"'
+    ),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace(
+      'bounds="[133,1072][947,1135]"',
+      'bounds="[133,1071][947,1135]"'
+    ),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace(
+      'bounds="[70,1174][1010,1300]"',
+      'bounds="[70,1173][1010,1300]"'
+    ),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace(
       'bounds="[70,1300][1010,1426]"',
       'bounds="[0,0][999999,999999]"'
     ),
@@ -863,6 +891,16 @@ test("Pixel Launcher ANR normalization fails closed on any identity or geometry 
 
   for (const fixture of fixtures) {
     deepEqual(classifyChromeAutomationSurface(fixture, PIXEL_7_DISPLAY), {
+      status: "blocked",
+      reason: "unrecognized-or-malformed-chrome-modal"
+    })
+  }
+  for (const displaySize of [
+    { width: 1080, height: 2399 },
+    { width: 1079, height: 2400 },
+    { width: 1440, height: 2960 }
+  ]) {
+    deepEqual(classifyChromeAutomationSurface(ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML, displaySize), {
       status: "blocked",
       reason: "unrecognized-or-malformed-chrome-modal"
     })
@@ -934,6 +972,82 @@ test("native surface normalization taps each exact safe prompt at most once", ()
   )
 })
 
+test("native surface normalization brackets one safe tap with fresh bound activity receipts", () => {
+  const executeChromeSurfaceNormalizationAction = Reflect.get(
+    timelineHelpers,
+    "executeChromeSurfaceNormalizationAction"
+  )
+  equal(typeof executeChromeSurfaceNormalizationAction, "function")
+  if (typeof executeChromeSurfaceNormalizationAction !== "function") return
+
+  const events: unknown[] = []
+  const result = executeChromeSurfaceNormalizationAction({
+    surface: { status: "known-pixel-launcher-anr", dismissTap: { x: 540, y: 1363 } },
+    dismissedPrompts: [],
+    expectedActivity: ATTEMPT_1_RESUMED_ACTIVITY,
+    readActivityReceipt: (label: string) => {
+      events.push(label)
+      return { status: "resolved", activity: ATTEMPT_1_RESUMED_ACTIVITY }
+    },
+    tap: (dismissTap: unknown, label: string) => {
+      events.push(label, dismissTap)
+    },
+    recordDismissedPrompt: (prompt: string) => events.push(`record:${prompt}`)
+  })
+  deepEqual(events, [
+    "pre-tap activity",
+    "Pixel Launcher ANR wait tap",
+    { x: 540, y: 1363 },
+    "post-tap activity",
+    "record:known-pixel-launcher-anr"
+  ])
+  deepEqual(result, {
+    action: "tap",
+    prompt: "known-pixel-launcher-anr",
+    dismissTap: { x: 540, y: 1363 },
+    activityBeforeTap: {
+      activity: ATTEMPT_1_RESUMED_ACTIVITY,
+      chromeForeground: true,
+      recordId: "6cf73ed",
+      taskId: "t9"
+    },
+    activityAfterTap: {
+      activity: ATTEMPT_1_RESUMED_ACTIVITY,
+      chromeForeground: true,
+      recordId: "6cf73ed",
+      taskId: "t9"
+    }
+  })
+
+  let tapCalls = 0
+  let recordCalls = 0
+  let activityReads = 0
+  throws(
+    () =>
+      executeChromeSurfaceNormalizationAction({
+        surface: { status: "known-pixel-launcher-anr", dismissTap: { x: 540, y: 1363 } },
+        dismissedPrompts: [],
+        expectedActivity: ATTEMPT_1_RESUMED_ACTIVITY,
+        readActivityReceipt: () => {
+          activityReads += 1
+          return activityReads === 1
+            ? { status: "resolved", activity: ATTEMPT_1_RESUMED_ACTIVITY }
+            : { status: "timed-out", activity: "" }
+        },
+        tap: () => {
+          tapCalls += 1
+        },
+        recordDismissedPrompt: () => {
+          recordCalls += 1
+        }
+      }),
+    /normalization activity receipt did not resolve/u
+  )
+  equal(activityReads, 2)
+  equal(tapCalls, 1)
+  equal(recordCalls, 0)
+})
+
 test("native surface normalization retains one Chrome authority across prompt and clear attempts", () => {
   const retainChromeSurfaceNormalizationActivity = Reflect.get(
     timelineHelpers,
@@ -941,6 +1055,12 @@ test("native surface normalization retains one Chrome authority across prompt an
   )
   equal(typeof retainChromeSurfaceNormalizationActivity, "function")
   if (typeof retainChromeSurfaceNormalizationActivity !== "function") return
+  const requireChromeSurfaceNormalizationActivity = Reflect.get(
+    timelineHelpers,
+    "requireChromeSurfaceNormalizationActivity"
+  )
+  equal(typeof requireChromeSurfaceNormalizationActivity, "function")
+  if (typeof requireChromeSurfaceNormalizationActivity !== "function") return
 
   const first = {
     activityBefore: ATTEMPT_1_RESUMED_ACTIVITY,
@@ -963,6 +1083,32 @@ test("native surface normalization retains one Chrome authority across prompt an
           activityAfter: changedActivity
         }),
       /normalization activity identity changed|Chrome is not the resumed Android activity/u
+    )
+  }
+  deepEqual(
+    requireChromeSurfaceNormalizationActivity(ATTEMPT_1_RESUMED_ACTIVITY, {
+      status: "resolved",
+      activity: ATTEMPT_1_RESUMED_ACTIVITY
+    }),
+    {
+      activity: ATTEMPT_1_RESUMED_ACTIVITY,
+      chromeForeground: true,
+      recordId: "6cf73ed",
+      taskId: "t9"
+    }
+  )
+  for (const receipt of [
+    { status: "unresolved", activity: "" },
+    { status: "timed-out", activity: "" },
+    {
+      status: "resolved",
+      activity:
+        "topResumedActivity=ActivityRecord{different u0 com.android.chrome/com.google.android.apps.chrome.Main t10}"
+    }
+  ]) {
+    throws(
+      () => requireChromeSurfaceNormalizationActivity(ATTEMPT_1_RESUMED_ACTIVITY, receipt),
+      /normalization activity receipt did not resolve|normalization activity identity changed/u
     )
   }
 })
