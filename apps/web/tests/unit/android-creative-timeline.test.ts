@@ -680,6 +680,180 @@ test("bounded UIAutomator read-back pins the Pixel 7 guest to four cores", () =>
   match(ciWorkflow, /profile: pixel_7\s+cores: 4\s+ram-size: 4096M/u)
 })
 
+test("AVD preparation removes ambiguous hardware keys before writing one canonical binding", () => {
+  const canonicalize = Reflect.get(timelineHelpers, "canonicalizeAndroidAvdConfig")
+  equal(typeof canonicalize, "function")
+  if (typeof canonicalize !== "function") return
+
+  equal(
+    canonicalize(
+      [
+        "AvdId=test",
+        "hw.cpu.ncore=2",
+        "hw.ramSize=2560",
+        "vm.heapSize=512",
+        "hw.cpu.ncore=4",
+        "hw.ramSize=4096M",
+        "hw.heapSize=576M",
+        "image.sysdir.1=system-images/android-35/google_apis_playstore/x86_64/"
+      ].join("\n")
+    ),
+    [
+      "AvdId=test",
+      "image.sysdir.1=system-images/android-35/google_apis_playstore/x86_64/",
+      "hw.cpu.ncore=4",
+      "hw.ramSize=4096",
+      "vm.heapSize=576",
+      ""
+    ].join("\n")
+  )
+})
+
+test("emulator environment proof binds requested, resolved and live hardware", () => {
+  const evaluate = Reflect.get(timelineHelpers, "evaluateAndroidEmulatorEnvironment")
+  equal(typeof evaluate, "function")
+  if (typeof evaluate !== "function") return
+
+  deepEqual(
+    evaluate({
+      requested: {
+        profile: "pixel_7",
+        cpuCores: 4,
+        ramInput: "4096M",
+        heapMegabytes: 576
+      },
+      canonicalConfig:
+        "AvdId=courtside-api35-pixel7\nhw.cpu.ncore=4\nhw.ramSize=4096\nvm.heapSize=576\n",
+      resolvedHardware: "hw.cpu.ncore = 4\nhw.ramSize = 4096\nvm.heapSize = 576\n",
+      guestCpuOnline: "0-3\n",
+      guestMeminfo: "MemTotal:        3973120 kB\nMemFree:          512000 kB\n",
+      guestHeapSize: "576m\n"
+    }),
+    {
+      schemaVersion: "courtside.android-emulator-environment/v1",
+      result: "PASS",
+      requested: {
+        profile: "pixel_7",
+        cpuCores: 4,
+        ramInput: "4096M",
+        ramMegabytes: 4096,
+        heapMegabytes: 576
+      },
+      canonicalConfig: { cpuCores: 4, ramMegabytes: 4096, heapMegabytes: 576 },
+      resolvedHardware: { cpuCores: 4, ramMegabytes: 4096, heapMegabytes: 576 },
+      liveGuest: {
+        cpuOnline: "0-3",
+        cpuCores: 4,
+        memTotalKilobytes: 3_973_120,
+        heapMegabytes: 576
+      }
+    }
+  )
+})
+
+test("emulator environment proof rejects ambiguous, missing or drifted bindings", () => {
+  const evaluate = Reflect.get(timelineHelpers, "evaluateAndroidEmulatorEnvironment")
+  equal(typeof evaluate, "function")
+  if (typeof evaluate !== "function") return
+
+  const valid = {
+    requested: {
+      profile: "pixel_7",
+      cpuCores: 4,
+      ramInput: "4096M",
+      heapMegabytes: 576
+    },
+    canonicalConfig: "hw.cpu.ncore=4\nhw.ramSize=4096\nvm.heapSize=576\n",
+    resolvedHardware: "hw.cpu.ncore=4\nhw.ramSize=4096\nvm.heapSize=576\n",
+    guestCpuOnline: "0-3\n",
+    guestMeminfo: "MemTotal: 3973120 kB\n",
+    guestHeapSize: "576m\n"
+  }
+  const invalid = [
+    {
+      label: "duplicate canonical CPU",
+      value: { ...valid, canonicalConfig: `${valid.canonicalConfig}hw.cpu.ncore=4\n` }
+    },
+    {
+      label: "missing resolved RAM",
+      value: { ...valid, resolvedHardware: "hw.cpu.ncore=4\nvm.heapSize=576\n" }
+    },
+    {
+      label: "resolved CPU drift",
+      value: { ...valid, resolvedHardware: valid.resolvedHardware.replace("ncore=4", "ncore=2") }
+    },
+    {
+      label: "resolved RAM drift",
+      value: {
+        ...valid,
+        resolvedHardware: valid.resolvedHardware.replace("ramSize=4096", "ramSize=2560")
+      }
+    },
+    {
+      label: "resolved heap drift",
+      value: {
+        ...valid,
+        resolvedHardware: valid.resolvedHardware.replace("heapSize=576", "heapSize=512")
+      }
+    },
+    { label: "offline CPU", value: { ...valid, guestCpuOnline: "0-2\n" } },
+    { label: "extra CPU", value: { ...valid, guestCpuOnline: "0-4\n" } },
+    {
+      label: "guest memory below the 4 GB class",
+      value: { ...valid, guestMeminfo: "MemTotal: 3145727 kB\n" }
+    },
+    {
+      label: "guest memory above the bound",
+      value: { ...valid, guestMeminfo: "MemTotal: 4194305 kB\n" }
+    },
+    { label: "guest heap drift", value: { ...valid, guestHeapSize: "512m\n" } }
+  ]
+
+  for (const fixture of invalid) {
+    throws(() => evaluate(fixture.value), new RegExp(fixture.label, "u"))
+  }
+})
+
+test("timed-out or nonzero emulator probes never accept partial stdout", () => {
+  const classify = Reflect.get(timelineHelpers, "classifyAndroidEnvironmentProbeResult")
+  equal(typeof classify, "function")
+  if (typeof classify !== "function") return
+
+  throws(
+    () => classify({ status: null, errorCode: "ETIMEDOUT", stdout: "0-3\n", stderr: "" }),
+    /timed out/u
+  )
+  throws(
+    () => classify({ status: 1, errorCode: null, stdout: "0-3\n", stderr: "denied" }),
+    /status 1/u
+  )
+  throws(() => classify({ status: 0, errorCode: null, stdout: "", stderr: "" }), /empty stdout/u)
+  equal(classify({ status: 0, errorCode: null, stdout: "0-3\n", stderr: "" }), "0-3")
+})
+
+test("Android smoke verifies one fixed emulator receipt before Chrome starts", () => {
+  const shellHarness = readFileSync(
+    new URL("../../../../scripts/test/run-android-chrome-offline-smoke.sh", import.meta.url),
+    "utf8"
+  )
+  const ciWorkflow = readFileSync(
+    new URL("../../../../.github/workflows/ci.yml", import.meta.url),
+    "utf8"
+  )
+  const verifierCommand =
+    'node apps/web/scripts/android-emulator-environment.mjs verify "$artifact_dir/emulator-environment.json"'
+
+  match(ciWorkflow, /avd-name: \$\{\{ env\.COURTSIDE_ANDROID_AVD_NAME \}\}/u)
+  match(ciWorkflow, /pre-emulator-launch-script:[^\n]*android-emulator-environment\.mjs prepare/u)
+  match(shellHarness, /diagnostic_phase="emulator-environment"/u)
+  match(shellHarness, /emulator-environment\.json/u)
+  equal(shellHarness.indexOf(verifierCommand) >= 0, true)
+  equal(
+    shellHarness.indexOf(verifierCommand) < shellHarness.indexOf('launch_chrome "offline"'),
+    true
+  )
+})
+
 test("foreground frames use one exact browser timeline after the first attributable frame", () => {
   const active = (at: number, frame: number) => ({
     at,
