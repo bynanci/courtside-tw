@@ -1422,6 +1422,137 @@ else { process.stderr.write("unexpected fake adb command"); process.exitCode = 1
   }
 })
 
+test("physical Android host reads require one stable descriptor snapshot", () => {
+  const environmentHarness = readFileSync(
+    new URL("../../scripts/android-emulator-environment.mjs", import.meta.url),
+    "utf8"
+  )
+
+  match(
+    environmentHarness,
+    /const beforeReadMetadata = fstatSync\(descriptor, \{ bigint: true \}\)/u
+  )
+  match(
+    environmentHarness,
+    /const afterReadMetadata = fstatSync\(descriptor, \{ bigint: true \}\)/u
+  )
+  match(environmentHarness, /firstRead\.equals\(secondRead\)/u)
+  match(environmentHarness, /physical file changed while being read/u)
+})
+
+test("emulator environment CLI rereads host evidence after live probes", () => {
+  const fixtureRoot = mkdtempSync(join(tmpdir(), "courtside-emulator-host-readback-"))
+  const avdHome = join(fixtureRoot, "avd-home")
+  const avdDirectory = join(avdHome, `${ANDROID_AVD_NAME}.avd`)
+  const artifactDirectory = join(fixtureRoot, "artifacts", "android-chrome")
+  const fakeBin = join(fixtureRoot, "bin")
+  const scriptPath = fileURLToPath(
+    new URL("../../scripts/android-emulator-environment.mjs", import.meta.url)
+  )
+  const registryPath = join(avdHome, `${ANDROID_AVD_NAME}.ini`)
+  const configPath = join(avdDirectory, "config.ini")
+  const resolvedPath = join(avdDirectory, "hardware-qemu.ini")
+  const registry =
+    `avd.ini.encoding=UTF-8\npath=${avdDirectory}\n` +
+    `path.rel=avd/${ANDROID_AVD_NAME}.avd\ntarget=android-35\n`
+  const config =
+    `hw.device.name=${ANDROID_PROFILE}\n` + "hw.cpu.ncore=4\nhw.ramSize=4096\nvm.heapSize=576\n"
+  const resolvedHardware =
+    `hw.device.name=${ANDROID_PROFILE}\n` +
+    `avd.name=${ANDROID_AVD_NAME}\navd.id=${ANDROID_AVD_NAME}\n` +
+    "hw.cpu.ncore=4\nhw.ramSize=4096\nvm.heapSize=576\n"
+
+  mkdirSync(avdDirectory, { recursive: true })
+  mkdirSync(artifactDirectory, { recursive: true })
+  mkdirSync(fakeBin, { recursive: true })
+  writeFileSync(
+    join(fixtureRoot, "artifacts", "exact-head.json"),
+    `${JSON.stringify({ source_head_sha: EXACT_HEAD_SHA })}\n`,
+    "utf8"
+  )
+  const fakeAdb = join(fakeBin, "adb")
+  writeFileSync(
+    fakeAdb,
+    `#!/usr/bin/env node
+const { writeFileSync } = require("node:fs")
+const command = process.argv.slice(2).join(" ")
+if (command === "emu avd name") {
+  if (process.env.FAKE_HOST_MUTATION_PATH && process.env.FAKE_HOST_MUTATION_BASE64) {
+    writeFileSync(
+      process.env.FAKE_HOST_MUTATION_PATH,
+      Buffer.from(process.env.FAKE_HOST_MUTATION_BASE64, "base64")
+    )
+  }
+  process.stdout.write("${ANDROID_AVD_NAME}\\nOK\\n")
+} else if (command === "exec-out cat /sys/devices/system/cpu/online") process.stdout.write("0-3\\n")
+else if (command === "exec-out cat /proc/meminfo") process.stdout.write("MemTotal: 3973120 kB\\n")
+else if (command === "exec-out getprop dalvik.vm.heapsize") process.stdout.write("576m\\n")
+else { process.stderr.write("unexpected fake adb command"); process.exitCode = 1 }
+`,
+    "utf8"
+  )
+  chmodSync(fakeAdb, 0o755)
+  const environment = {
+    ...process.env,
+    ANDROID_AVD_HOME: avdHome,
+    ANDROID_SERIAL: "emulator-5554",
+    COURTSIDE_ANDROID_AVD_NAME: ANDROID_AVD_NAME,
+    PATH: `${fakeBin}${delimiter}${process.env.PATH ?? ""}`
+  }
+  const mutations = [
+    {
+      label: "registry",
+      path: registryPath,
+      value: `${registry}tag.display=Google Play\n`
+    },
+    {
+      label: "canonical",
+      path: configPath,
+      value: `${config}disk.dataPartition.size=6G\n`
+    },
+    {
+      label: "resolved",
+      path: resolvedPath,
+      value: `${resolvedHardware}hw.gpu.enabled=yes\n`
+    }
+  ]
+
+  try {
+    for (const mutation of mutations) {
+      writeFileSync(registryPath, registry, "utf8")
+      writeFileSync(configPath, config, "utf8")
+      writeFileSync(resolvedPath, resolvedHardware, "utf8")
+      const receiptName = `${mutation.label}-readback-drift.json`
+      const result = spawnSync(
+        process.execPath,
+        [scriptPath, "verify", `artifacts/android-chrome/${receiptName}`],
+        {
+          cwd: fixtureRoot,
+          encoding: "utf8",
+          env: {
+            ...environment,
+            FAKE_HOST_MUTATION_PATH: mutation.path,
+            FAKE_HOST_MUTATION_BASE64: Buffer.from(mutation.value).toString("base64")
+          }
+        }
+      )
+      equal(result.status, 1)
+      equal(readFileSync(mutation.path, "utf8"), mutation.value)
+      const receipt = JSON.parse(readFileSync(join(artifactDirectory, receiptName), "utf8"))
+      equal(receipt.result, "FAIL")
+      equal(receipt.phase, "verify")
+      equal("liveGuest" in receipt, false)
+      deepEqual(
+        receipt.commands.map((command: { name: string }) => command.name),
+        ["live-avd-name", "guest-cpu-online", "guest-meminfo", "guest-heap-size"]
+      )
+      match(receipt.reason, /host evidence changed during live probes/u)
+    }
+  } finally {
+    rmSync(fixtureRoot, { force: true, recursive: true })
+  }
+})
+
 test("emulator environment CLI refuses a symlinked fixed artifact directory", () => {
   const fixtureRoot = mkdtempSync(join(tmpdir(), "courtside-emulator-symlink-"))
   const avdHome = join(fixtureRoot, "avd-home")
