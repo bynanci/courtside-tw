@@ -571,27 +571,19 @@ test("native Android performance harness invokes the behavioral boundaries", () 
   match(performanceHarness, /maximumAttempts:\s*ANDROID_ACTIVITY_RECEIPT_HISTORY_LIMIT/u)
   match(
     performanceHarness,
-    /executeChromeSurfaceNormalizationAction\(\{\s*surface,\s*dismissedPrompts:\s*\[\.\.\.dismissedPromptStatuses\],\s*expectedActivity:\s*normalizationActivity,/u
-  )
-  match(
-    performanceHarness,
-    /normalizationActivity = retainChromeSurfaceNormalizationActivity\(\s*normalizationActivity,\s*surface\s*\)/u
-  )
-  match(
-    performanceHarness,
-    /recordDismissedPrompt:\s*\(prompt\)\s*=>\s*dismissedPromptStatuses\.add\(prompt\)/u
+    /normalizeChromeAutomationSurfaceWithinDeadline\(\{\s*deadlineAt:\s*deadline,\s*now:\s*\(\)\s*=>\s*performance\.now\(\),/u
   )
   match(performanceHarness, /"Pixel Launcher ANR wait tap"/u)
   match(
     performanceHarness,
-    /readActivityReceipt:\s*\(label\)\s*=>\s*readBoundNormalizationActivity\(\s*deadline,\s*normalizationActivity,\s*label\s*\)/u
+    /readActivityReceipt:\s*\(expectedActivity,\s*label\)\s*=>\s*readBoundNormalizationActivity\(\s*deadline,\s*expectedActivity,\s*label\s*\)/u
   )
   const finalSurfaceProof = performanceHarness.match(
     /async function requireClearChromeContentSurface\(\) \{[\s\S]*?\n\}/u
   )?.[0]
   equal(typeof finalSurfaceProof, "string")
   if (typeof finalSurfaceProof === "string") {
-    match(finalSurfaceProof, /surface\.status === "clear"/u)
+    match(finalSurfaceProof, /surface\.status\s*(?:===|!==)\s*"clear"/u)
     doesNotMatch(finalSurfaceProof, /planChromeAutomationSurfaceNormalization/u)
   }
   match(performanceHarness, /bringToFront:\s*\(\) => page\.bringToFront\(\)/u)
@@ -1119,6 +1111,110 @@ test("native surface normalization brackets one safe tap with fresh bound activi
   equal(activityReads, 0)
   equal(tapCalls, 0)
   equal(recordCalls, 0)
+})
+
+test("native surface normalization requires fresh probes after each bounded prompt action", async () => {
+  const normalizeChromeAutomationSurfaceWithinDeadline = Reflect.get(
+    timelineHelpers,
+    "normalizeChromeAutomationSurfaceWithinDeadline"
+  )
+  equal(typeof normalizeChromeAutomationSurfaceWithinDeadline, "function")
+  if (typeof normalizeChromeAutomationSurfaceWithinDeadline !== "function") return
+
+  let nowAt = 0
+  let probeCalls = 0
+  let activityReads = 0
+  const taps: unknown[] = []
+  const surfaces = [
+    {
+      status: "known-pixel-launcher-anr",
+      dismissTap: { x: 540, y: 1363 },
+      activityBefore: ATTEMPT_1_RESUMED_ACTIVITY,
+      activityAfter: ATTEMPT_1_RESUMED_ACTIVITY
+    },
+    {
+      status: "known-notification-prompt",
+      dismissTap: { x: 592, y: 1753 },
+      activityBefore: ATTEMPT_1_RESUMED_ACTIVITY,
+      activityAfter: ATTEMPT_1_RESUMED_ACTIVITY
+    },
+    {
+      status: "clear",
+      activityBefore: ATTEMPT_1_RESUMED_ACTIVITY,
+      activityAfter: ATTEMPT_1_RESUMED_ACTIVITY
+    }
+  ]
+  const result = await normalizeChromeAutomationSurfaceWithinDeadline({
+    deadlineAt: 1_000,
+    now: () => nowAt,
+    maximumPollMilliseconds: 100,
+    probeSurface: () => {
+      probeCalls += 1
+      const surface = surfaces.shift()
+      if (!surface) throw new Error("unexpected surface probe")
+      return surface
+    },
+    readActivityReceipt: () => {
+      activityReads += 1
+      return { status: "resolved", activity: ATTEMPT_1_RESUMED_ACTIVITY }
+    },
+    tap: (dismissTap: unknown, label: string) => taps.push(label, dismissTap),
+    delay: async (milliseconds: number) => {
+      await Promise.resolve()
+      nowAt += milliseconds
+    }
+  })
+  equal(probeCalls, 3)
+  equal(activityReads, 4)
+  deepEqual(taps, [
+    "Pixel Launcher ANR wait tap",
+    { x: 540, y: 1363 },
+    "notification tap",
+    { x: 592, y: 1753 }
+  ])
+  deepEqual(result.dismissedPrompts, ["known-pixel-launcher-anr", "known-notification-prompt"])
+  deepEqual(result.dismissedTaps, {
+    "known-pixel-launcher-anr": { x: 540, y: 1363 },
+    "known-notification-prompt": { x: 592, y: 1753 }
+  })
+  equal(result.surface.status, "clear")
+  equal(result.attempts.length, 3)
+  equal(result.normalizationActivity, ATTEMPT_1_RESUMED_ACTIVITY)
+
+  nowAt = 0
+  probeCalls = 0
+  activityReads = 0
+  taps.length = 0
+  await rejects(
+    () =>
+      normalizeChromeAutomationSurfaceWithinDeadline({
+        deadlineAt: 250,
+        now: () => nowAt,
+        maximumPollMilliseconds: 100,
+        probeSurface: () => {
+          probeCalls += 1
+          return {
+            status: "known-pixel-launcher-anr",
+            dismissTap: { x: 540, y: 1363 },
+            activityBefore: ATTEMPT_1_RESUMED_ACTIVITY,
+            activityAfter: ATTEMPT_1_RESUMED_ACTIVITY
+          }
+        },
+        readActivityReceipt: () => {
+          activityReads += 1
+          return { status: "resolved", activity: ATTEMPT_1_RESUMED_ACTIVITY }
+        },
+        tap: (dismissTap: unknown, label: string) => taps.push(label, dismissTap),
+        delay: async (milliseconds: number) => {
+          await Promise.resolve()
+          nowAt += milliseconds
+        }
+      }),
+    /known native modal did not clear within the shared automation deadline/u
+  )
+  equal(probeCalls, 3)
+  equal(activityReads, 2)
+  deepEqual(taps, ["Pixel Launcher ANR wait tap", { x: 540, y: 1363 }])
 })
 
 test("native surface normalization retains one Chrome authority across prompt and clear attempts", () => {
