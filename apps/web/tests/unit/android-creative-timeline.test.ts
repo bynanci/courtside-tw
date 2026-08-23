@@ -854,7 +854,7 @@ test("Android smoke diagnostics preserve the failing producer and bound probes",
   )
   match(
     performanceHarness,
-    /captureChromeSurfaceProbeBoundaryAttempt\(\{[\s\S]*readActivityReceipt: resumedActivityReceipt/u
+    /captureChromeSurfaceProbeBoundaryAttempt\(\{[\s\S]*readActivityReceipt: \(\) =>[\s\S]*resumedActivityReceipt/u
   )
   match(
     performanceHarness,
