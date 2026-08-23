@@ -5,11 +5,16 @@
       "status": "healthy"
     },
     {
+      "name": "worker-readiness",
+      "status": "healthy"
+    },
+    {
       "name": "public-web-readiness",
       "status": "healthy"
     }
   ],
   "database_schema": 10,
+  "environment": "staging",
   "images": {
     "api": "registry.example.invalid/courtside-api@sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
     "web": "registry.example.invalid/courtside-web@sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
@@ -19,4 +24,3 @@
   "source_sha": "0470b5ab87663a7c363c84782ccdda3e677370a4",
   "status": "healthy"
 }
-

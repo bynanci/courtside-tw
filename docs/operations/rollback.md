@@ -50,6 +50,12 @@ Before changing traffic, capture:
 - failed signal, start time and accountable operator;
 - exact traffic-switch target and rollback command preview.
 
+Read the current schema from the target environment immediately before the
+controller command. Store only the bounded schema receipt described in the
+deployment runbook; it must name the same environment and be no more than
+10 minutes old. Do not derive this value from the release manifest or cached
+release state.
+
 The repository state gate is:
 
 ```bash
@@ -58,12 +64,14 @@ python3 infra/deployment/release.py \
   --state /var/lib/courtside/releases/state.json \
   --environment production \
   --receipt /var/lib/courtside/releases/rollback-receipt.json \
-  rollback --release <previous-release-id>
+  rollback --release <previous-release-id> \
+  --schema-readback /change/live-schema-readback.json
 ```
 
-This command verifies that the target is registered and accepts the current
-forward schema. It atomically records the application pointer and explicitly
-reports:
+This command verifies that the target was previously activated healthy in the
+same environment-bound state and accepts the freshly read current forward
+schema. A merely registered candidate is never rollback-eligible. It atomically
+records the application pointer and explicitly reports:
 
 - `active_before` and `active_after`;
 - `database_schema_before` and `database_schema_after`;
@@ -103,9 +111,10 @@ approval.
 Set rollback to `HOLD` when the target manifest or image digest is missing, the
 target does not accept the current forward schema, traffic cannot switch
 atomically, a receipt contains credentials or participant data, the current
-schema/migration history is unknown, database integrity is disputed, review or
-Security evidence is stale, or the same rollback attempt fails twice without a
-new evidence delta.
+schema/migration history is unknown or stale, receipt/state environments do not
+match, the target lacks a prior healthy activation, database integrity is
+disputed, review or Security evidence is stale, or the same rollback attempt
+fails twice without a new evidence delta.
 
 On `HOLD`, freeze new deployment actions, preserve logs and release manifests,
 keep secrets out of the evidence bundle, and route the decision to the release
