@@ -850,7 +850,7 @@ test("Android smoke diagnostics preserve the failing producer and bound probes",
   match(performanceHarness, /CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS/u)
   match(
     performanceHarness,
-    /function resumedActivityReceipt\(\) \{[\s\S]*classifyAndroidActivityProbeResult\(\{[\s\S]*errorCode: result\.error\?\.code/u
+    /function resumedActivityReceipt\([\s\S]*timeoutMilliseconds = ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS[\s\S]*classifyAndroidActivityProbeResult\(\{[\s\S]*errorCode: result\.error\?\.code/u
   )
   match(
     performanceHarness,
