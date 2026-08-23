@@ -577,9 +577,9 @@ test("native Android performance harness invokes the behavioral boundaries", () 
     performanceHarness,
     /probeSurface:\s*\(\)\s*=>\s*probeChromeContentSurfaceAtActivityBoundary\(deadline\)/u
   )
-  match(
+  doesNotMatch(
     performanceHarness,
-    /readActivityReceipt:\s*\(_expectedActivity,\s*label\)\s*=>\s*readBoundChromeSurfaceActivityReceipt\(\{\s*deadlineAt:\s*deadline,\s*maximumMilliseconds:\s*ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS,\s*label,\s*remainingMilliseconds:\s*requireRemainingAutomationMilliseconds,\s*readActivityReceipt:\s*resumedActivityReceipt\s*\}\)/u
+    /normalizeChromeAutomationSurfaceWithinDeadline\(\{[\s\S]*readActivityReceipt:\s*\(_expectedActivity/u
   )
   match(
     performanceHarness,
@@ -1013,7 +1013,7 @@ test("native surface normalization taps each exact safe prompt at most once", ()
   )
 })
 
-test("native surface normalization brackets one safe tap with fresh bound activity receipts", () => {
+test("native surface normalization uses exact bracketed authority for one safe tap", () => {
   const executeChromeSurfaceNormalizationAction = Reflect.get(
     timelineHelpers,
     "executeChromeSurfaceNormalizationAction"
@@ -1023,12 +1023,16 @@ test("native surface normalization brackets one safe tap with fresh bound activi
 
   const events: unknown[] = []
   const result = executeChromeSurfaceNormalizationAction({
-    surface: { status: "known-pixel-launcher-anr", dismissTap: { x: 540, y: 1363 } },
+    surface: {
+      status: "known-pixel-launcher-anr",
+      dismissTap: { x: 540, y: 1363 },
+      activityBefore: ATTEMPT_1_RESUMED_ACTIVITY,
+      activityAfter: ATTEMPT_1_RESUMED_ACTIVITY
+    },
     dismissedPrompts: [],
     expectedActivity: ATTEMPT_1_RESUMED_ACTIVITY,
-    readActivityReceipt: (label: string) => {
-      events.push(label)
-      return { status: "resolved", activity: ATTEMPT_1_RESUMED_ACTIVITY }
+    readActivityReceipt: () => {
+      throw new Error("prompt action must not perform an auxiliary activity read")
     },
     tap: (dismissTap: unknown, label: string) => {
       events.push(label, dismissTap)
@@ -1036,10 +1040,8 @@ test("native surface normalization brackets one safe tap with fresh bound activi
     recordDismissedPrompt: (prompt: string) => events.push(`record:${prompt}`)
   })
   deepEqual(events, [
-    "pre-tap activity",
     "Pixel Launcher ANR wait tap",
     { x: 540, y: 1363 },
-    "post-tap activity",
     "record:known-pixel-launcher-anr"
   ])
   deepEqual(result, {
@@ -1047,12 +1049,6 @@ test("native surface normalization brackets one safe tap with fresh bound activi
     prompt: "known-pixel-launcher-anr",
     dismissTap: { x: 540, y: 1363 },
     activityBeforeTap: {
-      activity: ATTEMPT_1_RESUMED_ACTIVITY,
-      chromeForeground: true,
-      recordId: "6cf73ed",
-      taskId: "t9"
-    },
-    activityAfterTap: {
       activity: ATTEMPT_1_RESUMED_ACTIVITY,
       chromeForeground: true,
       recordId: "6cf73ed",
@@ -1066,14 +1062,18 @@ test("native surface normalization brackets one safe tap with fresh bound activi
   throws(
     () =>
       executeChromeSurfaceNormalizationAction({
-        surface: { status: "known-pixel-launcher-anr", dismissTap: { x: 540, y: 1363 } },
+        surface: {
+          status: "known-pixel-launcher-anr",
+          dismissTap: { x: 540, y: 1363 },
+          activityBefore: ATTEMPT_1_RESUMED_ACTIVITY,
+          activityAfter:
+            "topResumedActivity=ActivityRecord{different u0 com.android.chrome/com.google.android.apps.chrome.Main t10}"
+        },
         dismissedPrompts: [],
         expectedActivity: ATTEMPT_1_RESUMED_ACTIVITY,
         readActivityReceipt: () => {
           activityReads += 1
-          return activityReads === 1
-            ? { status: "resolved", activity: ATTEMPT_1_RESUMED_ACTIVITY }
-            : { status: "timed-out", activity: "" }
+          return { status: "resolved", activity: ATTEMPT_1_RESUMED_ACTIVITY }
         },
         tap: () => {
           tapCalls += 1
@@ -1082,35 +1082,9 @@ test("native surface normalization brackets one safe tap with fresh bound activi
           recordCalls += 1
         }
       }),
-    /normalization activity receipt did not resolve/u
+    /Chrome normalization activity identity changed/u
   )
-  equal(activityReads, 2)
-  equal(tapCalls, 1)
-  equal(recordCalls, 0)
-
-  tapCalls = 0
-  recordCalls = 0
-  activityReads = 0
-  throws(
-    () =>
-      executeChromeSurfaceNormalizationAction({
-        surface: { status: "known-pixel-launcher-anr", dismissTap: { x: 540, y: 1363 } },
-        dismissedPrompts: [],
-        expectedActivity: ATTEMPT_1_RESUMED_ACTIVITY,
-        readActivityReceipt: () => {
-          activityReads += 1
-          return { status: "unresolved", activity: "" }
-        },
-        tap: () => {
-          tapCalls += 1
-        },
-        recordDismissedPrompt: () => {
-          recordCalls += 1
-        }
-      }),
-    /normalization activity receipt did not resolve/u
-  )
-  equal(activityReads, 1)
+  equal(activityReads, 0)
   equal(tapCalls, 0)
   equal(recordCalls, 0)
 
@@ -1165,6 +1139,40 @@ test("native Android normalization adapters preserve raw receipts and exact boun
   let rawReceiptReads = 0
   const remainingCalls: unknown[] = []
   const adbCalls: unknown[] = []
+  deepEqual(
+    readBoundChromeSurfaceActivityReceipt({
+      deadlineAt,
+      maximumMilliseconds: 250,
+      label: "surface activity",
+      remainingMilliseconds: (
+        receivedDeadline: number,
+        maximumMilliseconds: number,
+        receivedLabel: string
+      ) => {
+        remainingCalls.push(receivedDeadline, maximumMilliseconds, receivedLabel)
+        return Math.min(receivedDeadline - nowAt, maximumMilliseconds)
+      },
+      readActivityReceipt: (timeoutMilliseconds: number) => {
+        rawReceiptReads += 1
+        remainingCalls.push("read", timeoutMilliseconds)
+        return { status: "resolved", activity: ATTEMPT_1_RESUMED_ACTIVITY }
+      }
+    }),
+    { status: "resolved", activity: ATTEMPT_1_RESUMED_ACTIVITY }
+  )
+  equal(rawReceiptReads, 1)
+  deepEqual(remainingCalls, [
+    1_000,
+    250,
+    "surface activity",
+    "read",
+    250,
+    1_000,
+    1,
+    "surface activity acceptance"
+  ])
+  rawReceiptReads = 0
+  remainingCalls.length = 0
   const result = await normalizeChromeAutomationSurfaceWithinDeadline({
     deadlineAt,
     now: () => nowAt,
@@ -1178,25 +1186,10 @@ test("native Android normalization adapters preserve raw receipts and exact boun
         activityAfter: ATTEMPT_1_RESUMED_ACTIVITY
       }
     },
-    readActivityReceipt: (_expectedActivity: string, label: string) =>
-      readBoundChromeSurfaceActivityReceipt({
-        deadlineAt,
-        maximumMilliseconds: 250,
-        label,
-        remainingMilliseconds: (
-          receivedDeadline: number,
-          maximumMilliseconds: number,
-          receivedLabel: string
-        ) => {
-          remainingCalls.push(receivedDeadline, maximumMilliseconds, receivedLabel)
-          return Math.min(receivedDeadline - nowAt, maximumMilliseconds)
-        },
-        readActivityReceipt: (timeoutMilliseconds: number) => {
-          rawReceiptReads += 1
-          remainingCalls.push("read", timeoutMilliseconds)
-          return { status: "resolved", activity: ATTEMPT_1_RESUMED_ACTIVITY }
-        }
-      }),
+    readActivityReceipt: () => {
+      rawReceiptReads += 1
+      throw new Error("prompt action must not perform an auxiliary activity read")
+    },
     tap: (dismissTap: unknown, label: string) =>
       executeBoundChromeSurfaceTap({
         deadlineAt,
@@ -1220,29 +1213,9 @@ test("native Android normalization adapters preserve raw receipts and exact boun
   })
 
   equal(probeCalls, 2)
-  equal(rawReceiptReads, 2)
+  equal(rawReceiptReads, 0)
   deepEqual(adbCalls, [[1_000, "shell", "input", "tap", "540", "1363"]])
-  deepEqual(remainingCalls, [
-    1_000,
-    250,
-    "pre-tap activity",
-    "read",
-    250,
-    1_000,
-    1,
-    "pre-tap activity acceptance",
-    1_000,
-    5_000,
-    "Pixel Launcher ANR wait tap",
-    1_000,
-    250,
-    "post-tap activity",
-    "read",
-    250,
-    1_000,
-    1,
-    "post-tap activity acceptance"
-  ])
+  deepEqual(remainingCalls, [1_000, 5_000, "Pixel Launcher ANR wait tap"])
   equal(result.surface.status, "clear")
 
   const rejectedAdbCalls: unknown[] = []
@@ -1259,6 +1232,197 @@ test("native Android normalization adapters preserve raw receipts and exact boun
     /tap does not match the exact known prompt target/u
   )
   equal(rejectedAdbCalls.length, 0)
+})
+
+test("c8bb cold surface probe retains one hierarchy while activity receipts retry", async () => {
+  const captureWithActivityAcquisition = Reflect.get(
+    timelineHelpers,
+    "captureChromeSurfaceProbeBoundaryWithActivityAcquisition"
+  )
+  const acquireChromeForegroundActivityAtBoundary = Reflect.get(
+    timelineHelpers,
+    "acquireChromeForegroundActivityAtBoundary"
+  )
+  equal(typeof captureWithActivityAcquisition, "function")
+  equal(typeof acquireChromeForegroundActivityAtBoundary, "function")
+  if (
+    typeof captureWithActivityAcquisition !== "function" ||
+    typeof acquireChromeForegroundActivityAtBoundary !== "function"
+  ) {
+    return
+  }
+
+  let nowAt = 0
+  let probeCalls = 0
+  const events: string[] = []
+  const receipts = {
+    "pre-surface activity": [
+      { status: "timed-out", activity: "" },
+      { status: "resolved", activity: ATTEMPT_1_RESUMED_ACTIVITY }
+    ],
+    "post-surface activity": [
+      { status: "timed-out", activity: "" },
+      { status: "unresolved", activity: "" },
+      { status: "resolved", activity: ATTEMPT_1_RESUMED_ACTIVITY }
+    ]
+  }
+  const result = await captureWithActivityAcquisition({
+    acquireActivity: (label: keyof typeof receipts) =>
+      acquireChromeForegroundActivityAtBoundary({
+        readActivityReceipt: async () => {
+          events.push(`read:${label}`)
+          const receipt = receipts[label].shift()
+          if (!receipt) throw new Error(`unexpected ${label} receipt`)
+          nowAt += receipt.status === "timed-out" ? 250 : 25
+          return receipt
+        },
+        deadlineAt: 10_000,
+        now: () => nowAt,
+        maximumReadMilliseconds: 250,
+        maximumPollMilliseconds: 100,
+        maximumAttempts: 64,
+        delay: async (milliseconds: number) => {
+          events.push(`delay:${label}:${String(milliseconds)}`)
+          nowAt += milliseconds
+        }
+      }),
+    probeSurface: async () => {
+      events.push("probe")
+      probeCalls += 1
+      nowAt += 5_400.404_643
+      return {
+        status: "known-pixel-launcher-anr",
+        dismissTap: { x: 540, y: 1363 },
+        probeMilliseconds: 5_400.404_643
+      }
+    }
+  })
+
+  equal(probeCalls, 1)
+  deepEqual(events, [
+    "read:pre-surface activity",
+    "delay:pre-surface activity:100",
+    "read:pre-surface activity",
+    "probe",
+    "read:post-surface activity",
+    "delay:post-surface activity:100",
+    "read:post-surface activity",
+    "delay:post-surface activity:100",
+    "read:post-surface activity"
+  ])
+  equal(result.status, "known-pixel-launcher-anr")
+  equal(result.activityBefore, ATTEMPT_1_RESUMED_ACTIVITY)
+  equal(result.activityAfter, ATTEMPT_1_RESUMED_ACTIVITY)
+  equal(result.activityBeforeAttempts.length, 2)
+  equal(result.activityAfterAttempts.length, 3)
+  equal(nowAt, 6_275.404_643)
+
+  let driftProbeCalls = 0
+  await rejects(
+    () =>
+      captureWithActivityAcquisition({
+        acquireActivity: async (label: string) => ({
+          activity:
+            label === "pre-surface activity"
+              ? ATTEMPT_1_RESUMED_ACTIVITY
+              : "topResumedActivity=ActivityRecord{different u0 com.android.chrome/com.google.android.apps.chrome.Main t10}",
+          attempts: []
+        }),
+        probeSurface: async () => {
+          driftProbeCalls += 1
+          return { status: "known-pixel-launcher-anr", dismissTap: { x: 540, y: 1363 } }
+        }
+      }),
+    /Chrome activity identity changed during the native surface probe/u
+  )
+  equal(driftProbeCalls, 1)
+})
+
+test("c8bb normalization reuses exact surface authority with no auxiliary activity read", () => {
+  const executeChromeSurfaceNormalizationAction = Reflect.get(
+    timelineHelpers,
+    "executeChromeSurfaceNormalizationAction"
+  )
+  equal(typeof executeChromeSurfaceNormalizationAction, "function")
+  if (typeof executeChromeSurfaceNormalizationAction !== "function") return
+
+  let tapCalls = 0
+  let recordCalls = 0
+  let auxiliaryReads = 0
+  const result = executeChromeSurfaceNormalizationAction({
+    surface: {
+      status: "known-pixel-launcher-anr",
+      dismissTap: { x: 540, y: 1363 },
+      activityBefore: ATTEMPT_1_RESUMED_ACTIVITY,
+      activityAfter: ATTEMPT_1_RESUMED_ACTIVITY
+    },
+    dismissedPrompts: [],
+    expectedActivity: ATTEMPT_1_RESUMED_ACTIVITY,
+    readActivityReceipt: () => {
+      auxiliaryReads += 1
+      throw new Error("prompt action must reuse the exact bracketed surface authority")
+    },
+    tap: () => {
+      tapCalls += 1
+    },
+    recordDismissedPrompt: () => {
+      recordCalls += 1
+    }
+  })
+
+  equal(auxiliaryReads, 0)
+  equal(tapCalls, 1)
+  equal(recordCalls, 1)
+  equal(result.activityBeforeTap.activity, ATTEMPT_1_RESUMED_ACTIVITY)
+
+  let rejectedTapCalls = 0
+  throws(
+    () =>
+      executeChromeSurfaceNormalizationAction({
+        surface: {
+          status: "known-pixel-launcher-anr",
+          dismissTap: { x: 540, y: 1363 },
+          activityBefore: ATTEMPT_1_RESUMED_ACTIVITY,
+          activityAfter:
+            "topResumedActivity=ActivityRecord{different u0 com.android.chrome/com.google.android.apps.chrome.Main t10}"
+        },
+        dismissedPrompts: [],
+        expectedActivity: ATTEMPT_1_RESUMED_ACTIVITY,
+        readActivityReceipt: () => {
+          auxiliaryReads += 1
+          return { status: "resolved", activity: ATTEMPT_1_RESUMED_ACTIVITY }
+        },
+        tap: () => {
+          rejectedTapCalls += 1
+        },
+        recordDismissedPrompt: () => {}
+      }),
+    /Chrome normalization activity identity changed/u
+  )
+  equal(rejectedTapCalls, 0)
+})
+
+test("production binds c8bb activity acquisition to existing normalization limits", () => {
+  const performanceHarness = readFileSync(
+    new URL("../../scripts/android-chrome-performance-smoke.mjs", import.meta.url),
+    "utf8"
+  )
+  match(
+    performanceHarness,
+    /function acquireChromeSurfaceActivityWithinDeadline\(deadline, label\)[\s\S]*acquireChromeForegroundActivityAtBoundary\(\{[\s\S]*deadlineAt: deadline[\s\S]*maximumReadMilliseconds: ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS[\s\S]*maximumPollMilliseconds: CHROME_AUTOMATION_POLL_MILLISECONDS[\s\S]*maximumAttempts: ANDROID_ACTIVITY_RECEIPT_HISTORY_LIMIT/u
+  )
+  match(
+    performanceHarness,
+    /captureChromeSurfaceProbeBoundaryWithActivityAcquisition\(\{[\s\S]*acquireActivity: \(label\) => acquireChromeSurfaceActivityWithinDeadline\(deadline, label\)[\s\S]*probeSurface: \(\) => probeChromeContentSurface\(deadline\)/u
+  )
+  doesNotMatch(
+    performanceHarness,
+    /function probeChromeContentSurfaceAtActivityBoundary\(deadline\) \{[\s\S]*captureChromeSurfaceProbeBoundaryAttempt/u
+  )
+  match(
+    performanceHarness,
+    /requireClearChromeContentSurface\(\)[\s\S]*CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS/u
+  )
 })
 
 test("native surface normalization requires fresh probes after each bounded prompt action", async () => {
@@ -1313,7 +1477,7 @@ test("native surface normalization requires fresh probes after each bounded prom
     }
   })
   equal(probeCalls, 3)
-  equal(activityReads, 4)
+  equal(activityReads, 0)
   deepEqual(taps, [
     "Pixel Launcher ANR wait tap",
     { x: 540, y: 1363 },
@@ -1361,7 +1525,7 @@ test("native surface normalization requires fresh probes after each bounded prom
     /known native modal did not clear within the shared automation deadline/u
   )
   equal(probeCalls, 3)
-  equal(activityReads, 2)
+  equal(activityReads, 0)
   deepEqual(taps, ["Pixel Launcher ANR wait tap", { x: 540, y: 1363 }])
 
   nowAt = 0
@@ -1371,33 +1535,37 @@ test("native surface normalization requires fresh probes after each bounded prom
   await rejects(
     () =>
       normalizeChromeAutomationSurfaceWithinDeadline({
-        deadlineAt: 1_000,
+        deadlineAt: 250,
         now: () => nowAt,
         maximumPollMilliseconds: 100,
         probeSurface: () => {
           probeCalls += 1
-          return {
-            status: "known-pixel-launcher-anr",
-            dismissTap: { x: 540, y: 1363 },
-            activityBefore: ATTEMPT_1_RESUMED_ACTIVITY,
-            activityAfter: ATTEMPT_1_RESUMED_ACTIVITY
-          }
+          return probeCalls === 1
+            ? {
+                status: "known-pixel-launcher-anr",
+                dismissTap: { x: 540, y: 1363 },
+                activityBefore: ATTEMPT_1_RESUMED_ACTIVITY,
+                activityAfter: ATTEMPT_1_RESUMED_ACTIVITY
+              }
+            : {
+                status: "activity-unresolved",
+                stage: "before",
+                activityProbe: { status: "timed-out", activity: "" }
+              }
         },
         readActivityReceipt: () => {
           activityReads += 1
-          return activityReads === 1
-            ? { status: "resolved", activity: ATTEMPT_1_RESUMED_ACTIVITY }
-            : { status: "timed-out", activity: "" }
+          throw new Error("prompt action must not perform an auxiliary activity read")
         },
         tap: (dismissTap: unknown, label: string) => taps.push(label, dismissTap),
-        delay: async () => {
-          throw new Error("post-tap activity failure must be terminal before polling")
+        delay: async (milliseconds: number) => {
+          nowAt += milliseconds
         }
       }),
-    /normalization activity receipt did not resolve/u
+    /activity identity did not resolve within the shared automation deadline/u
   )
-  equal(probeCalls, 1)
-  equal(activityReads, 2)
+  equal(probeCalls, 3)
+  equal(activityReads, 0)
   deepEqual(taps, ["Pixel Launcher ANR wait tap", { x: 540, y: 1363 }])
 })
 
@@ -3063,10 +3231,7 @@ test("Android smoke diagnostics preserve the failing producer and bound probes",
     performanceHarness,
     /function resumedActivityReceipt\([\s\S]*timeoutMilliseconds = ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS[\s\S]*classifyAndroidActivityProbeResult\(\{[\s\S]*errorCode: result\.error\?\.code/u
   )
-  match(
-    performanceHarness,
-    /captureChromeSurfaceProbeBoundaryAttempt\(\{[\s\S]*readActivityReceipt: \(\) =>[\s\S]*resumedActivityReceipt/u
-  )
+  match(performanceHarness, /captureChromeSurfaceProbeBoundaryWithActivityAcquisition\(\{/u)
   match(
     performanceHarness,
     /surface\.status === "activity-unresolved"[\s\S]*boundedAndroidPollDelay/u
@@ -3079,7 +3244,7 @@ test("Android smoke diagnostics preserve the failing producer and bound probes",
   match(performanceHarness, /timeout: probeTimeoutMilliseconds/u)
   match(
     performanceHarness,
-    /function probeChromeContentSurfaceAtActivityBoundary\(deadline\) \{[\s\S]*captureChromeSurfaceProbeBoundaryAttempt\(\{[\s\S]*resumedActivityReceipt\([\s\S]*probeChromeContentSurface\(deadline\)/u
+    /function probeChromeContentSurfaceAtActivityBoundary\(deadline\) \{[\s\S]*captureChromeSurfaceProbeBoundaryWithActivityAcquisition\(\{[\s\S]*acquireChromeSurfaceActivityWithinDeadline\(deadline, label\)[\s\S]*probeChromeContentSurface\(deadline\)/u
   )
   match(
     performanceHarness,
