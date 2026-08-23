@@ -577,7 +577,10 @@ test("native Android performance harness invokes the behavioral boundaries", () 
     performanceHarness,
     /normalizationActivity = retainChromeSurfaceNormalizationActivity\(\s*normalizationActivity,\s*surface\s*\)/u
   )
-  match(performanceHarness, /dismissedPromptStatuses\.add\(normalization\.prompt\)/u)
+  match(
+    performanceHarness,
+    /recordDismissedPrompt:\s*\(prompt\)\s*=>\s*dismissedPromptStatuses\.add\(prompt\)/u
+  )
   match(performanceHarness, /"Pixel Launcher ANR wait tap"/u)
   match(
     performanceHarness,
