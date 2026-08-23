@@ -15,6 +15,7 @@ import hashlib
 import json
 import os
 import re
+import stat
 import sys
 import tempfile
 from datetime import UTC, datetime
@@ -26,6 +27,7 @@ STATE_SCHEMA_VERSION = 2
 LEGACY_STATE_SCHEMA_VERSION = 1
 MAX_JSON_BYTES = 64 * 1024
 MAX_STATE_BYTES = 48 * 1024
+MAX_LEGACY_STATE_BYTES = 16 * 1024 * 1024
 SCHEMA_READBACK_MAX_AGE_SECONDS = 10 * 60
 PRODUCTION_CONFIRMATION = "I_UNDERSTAND_PROTECTED_PRODUCTION_ACTION"
 REQUIRED_READINESS_CHECKS = frozenset(
@@ -33,6 +35,7 @@ REQUIRED_READINESS_CHECKS = frozenset(
 )
 RELEASE_ID_PATTERN = re.compile(r"^[a-z0-9][a-z0-9._-]{0,62}$")
 SOURCE_SHA_PATTERN = re.compile(r"^(?:[0-9a-f]{40}|[0-9a-f]{64})$")
+SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
 IMAGE_DIGEST_PATTERN = re.compile(
     r"^[a-z0-9](?:[a-z0-9._:/-]*[a-z0-9])?@sha256:[0-9a-f]{64}$"
 )
@@ -63,12 +66,14 @@ def require_integer(value: Any, label: str) -> int:
     return value
 
 
-def read_json(path: Path, label: str) -> dict[str, Any]:
+def read_json(
+    path: Path, label: str, max_bytes: int = MAX_JSON_BYTES
+) -> dict[str, Any]:
     if path.is_symlink():
         raise ReleaseError(f"{label} must not be a symbolic link")
     try:
-        if path.stat().st_size > MAX_JSON_BYTES:
-            raise ReleaseError(f"{label} exceeds {MAX_JSON_BYTES} bytes")
+        if path.stat().st_size > max_bytes:
+            raise ReleaseError(f"{label} exceeds {max_bytes} bytes")
         parsed = json.loads(path.read_text(encoding="utf-8"))
     except FileNotFoundError as error:
         raise ReleaseError(f"{label} is missing") from error
@@ -81,10 +86,6 @@ def read_json(path: Path, label: str) -> dict[str, Any]:
 
 def serialize_json(payload: dict[str, Any]) -> str:
     return json.dumps(payload, indent=2, sort_keys=True) + "\n"
-
-
-def file_sha256(path: Path) -> str:
-    return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
 def validate_image_map(value: Any, label: str) -> dict[str, str]:
@@ -130,19 +131,89 @@ def atomic_write_json(
             temporary.unlink()
 
 
+def read_legacy_backup(path: Path) -> tuple[dict[str, Any], str]:
+    flags = os.O_RDONLY
+    if hasattr(os, "O_NOFOLLOW"):
+        flags |= os.O_NOFOLLOW
+    try:
+        descriptor = os.open(path, flags)
+    except FileNotFoundError as error:
+        raise ReleaseError("legacy release-state backup is missing") from error
+    except OSError as error:
+        raise ReleaseError(
+            "legacy release-state backup is not a trusted file"
+        ) from error
+    try:
+        with os.fdopen(descriptor, "rb") as source:
+            metadata = os.fstat(source.fileno())
+            if not stat.S_ISREG(metadata.st_mode):
+                raise ReleaseError("legacy release-state backup must be a regular file")
+            if metadata.st_uid != os.geteuid():
+                raise ReleaseError(
+                    "legacy release-state backup ownership is not trusted"
+                )
+            if stat.S_IMODE(metadata.st_mode) != 0o600:
+                raise ReleaseError("legacy release-state backup permissions must be 0600")
+            if metadata.st_size > MAX_LEGACY_STATE_BYTES:
+                raise ReleaseError(
+                    "legacy release-state backup exceeds "
+                    f"{MAX_LEGACY_STATE_BYTES} bytes"
+                )
+            fcntl.flock(source.fileno(), fcntl.LOCK_SH)
+            serialized = source.read(MAX_LEGACY_STATE_BYTES + 1)
+    except OSError as error:
+        raise ReleaseError("legacy release-state backup is not readable") from error
+    if len(serialized) > MAX_LEGACY_STATE_BYTES:
+        raise ReleaseError(
+            f"legacy release-state backup exceeds {MAX_LEGACY_STATE_BYTES} bytes"
+        )
+    try:
+        parsed = json.loads(serialized.decode("utf-8"))
+    except (UnicodeError, json.JSONDecodeError) as error:
+        raise ReleaseError(
+            "legacy release-state backup is not readable canonical JSON"
+        ) from error
+    if not isinstance(parsed, dict):
+        raise ReleaseError("legacy release-state backup must be a JSON object")
+    return parsed, hashlib.sha256(serialized).hexdigest()
+
+
 def ensure_legacy_backup(path: Path, payload: dict[str, Any]) -> bool:
-    if path.exists():
-        existing = read_json(path, "legacy release-state backup")
-        if existing != payload:
-            raise ReleaseError("legacy release-state backup already contains different data")
-        return False
-    atomic_write_json(
-        path,
-        payload,
-        label="legacy release-state backup",
-        max_bytes=MAX_JSON_BYTES,
-    )
-    return True
+    serialized = serialize_json(payload).encode("utf-8")
+    if len(serialized) > MAX_LEGACY_STATE_BYTES:
+        raise ReleaseError(
+            f"legacy release-state backup exceeds {MAX_LEGACY_STATE_BYTES} bytes"
+        )
+    path.parent.mkdir(parents=True, exist_ok=True)
+    handle, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+    temporary = Path(temporary_name)
+    created = False
+    try:
+        with os.fdopen(handle, "wb") as output:
+            os.fchmod(output.fileno(), 0o600)
+            output.write(serialized)
+            output.flush()
+            os.fsync(output.fileno())
+        try:
+            # A hard link publishes the complete file atomically but never replaces
+            # an archive selected by another state migration.
+            os.link(temporary, path, follow_symlinks=False)
+            created = True
+            directory = os.open(path.parent, os.O_RDONLY)
+            try:
+                os.fsync(directory)
+            finally:
+                os.close(directory)
+        except FileExistsError:
+            created = False
+    finally:
+        if temporary.exists():
+            temporary.unlink()
+
+    existing, _ = read_legacy_backup(path)
+    if existing != payload:
+        raise ReleaseError("legacy release-state backup already contains different data")
+    return created
 
 
 def validate_manifest(raw: dict[str, Any]) -> dict[str, Any]:
@@ -302,6 +373,7 @@ def new_state(environment: str) -> dict[str, Any]:
         "active_release": None,
         "previous_release": None,
         "last_action_receipt": None,
+        "legacy_archive": None,
         "activated_releases": [],
         "releases": {},
     }
@@ -332,6 +404,7 @@ def migrate_v1_state(
     migrated["revision"] = require_integer(
         raw["revision"], "legacy release state revision"
     ) + 1
+    migrated["legacy_archive"] = None
     activated_releases: list[str] = []
     for pointer in ("previous_release", "active_release"):
         release_id = raw[pointer]
@@ -344,21 +417,24 @@ def migrate_v1_state(
 def validate_state(
     raw: dict[str, Any], expected_environment: str
 ) -> dict[str, Any]:
-    require_exact_keys(
-        raw,
-        {
-            "schema_version",
-            "environment",
-            "revision",
-            "database_schema_version",
-            "active_release",
-            "previous_release",
-            "last_action_receipt",
-            "activated_releases",
-            "releases",
-        },
-        "release state",
-    )
+    expected_keys = {
+        "schema_version",
+        "environment",
+        "revision",
+        "database_schema_version",
+        "active_release",
+        "previous_release",
+        "last_action_receipt",
+        "legacy_archive",
+        "activated_releases",
+        "releases",
+    }
+    # Schema-v2 state written before archive attribution existed is upgraded
+    # in-memory and receives the explicit null field on its next safe mutation.
+    if set(raw) == expected_keys - {"legacy_archive"}:
+        raw["legacy_archive"] = None
+    else:
+        require_exact_keys(raw, expected_keys, "release state")
     if raw["schema_version"] != STATE_SCHEMA_VERSION:
         raise ReleaseError("unsupported release state schema_version")
     if raw["environment"] != expected_environment:
@@ -370,6 +446,33 @@ def validate_state(
     last_action_receipt = raw["last_action_receipt"]
     if last_action_receipt is not None and not isinstance(last_action_receipt, dict):
         raise ReleaseError("release state last_action_receipt must be an object or null")
+    legacy_archive = raw["legacy_archive"]
+    if legacy_archive is not None:
+        if not isinstance(legacy_archive, dict):
+            raise ReleaseError("release state legacy_archive must be an object or null")
+        require_exact_keys(
+            legacy_archive,
+            {"path", "sha256", "release_count"},
+            "release state legacy_archive",
+        )
+        archive_path = legacy_archive["path"]
+        if (
+            not isinstance(archive_path, str)
+            or not archive_path
+            or not Path(archive_path).is_absolute()
+        ):
+            raise ReleaseError("release state legacy_archive.path must be absolute")
+        if (
+            not isinstance(legacy_archive["sha256"], str)
+            or not SHA256_PATTERN.fullmatch(legacy_archive["sha256"])
+        ):
+            raise ReleaseError(
+                "release state legacy_archive.sha256 must be a lowercase SHA-256"
+            )
+        require_integer(
+            legacy_archive["release_count"],
+            "release state legacy_archive.release_count",
+        )
     releases = raw["releases"]
     if not isinstance(releases, dict):
         raise ReleaseError("release state releases must be an object")
@@ -447,6 +550,22 @@ def load_state(path: Path, expected_environment: str) -> dict[str, Any]:
     return validate_state(raw, expected_environment)
 
 
+def archived_manifest_for_release(
+    state: dict[str, Any], release_id: str, environment: str
+) -> dict[str, Any] | None:
+    archive = state["legacy_archive"]
+    if archive is None:
+        return None
+    archive_path = Path(archive["path"])
+    legacy, observed_digest = read_legacy_backup(archive_path)
+    if observed_digest != archive["sha256"]:
+        raise ReleaseError("legacy release-state backup digest does not match state")
+    validated = migrate_v1_state(legacy, environment)
+    if len(validated["releases"]) != archive["release_count"]:
+        raise ReleaseError("legacy release-state backup release count does not match state")
+    return validated["releases"].get(release_id)
+
+
 def supports_schema(manifest: dict[str, Any], schema_version: int) -> bool:
     compatible = manifest["database"]["compatible_schema"]
     return compatible["min"] <= schema_version <= compatible["max"]
@@ -475,6 +594,10 @@ def register_release(
     receipt = receipt_base("register", environment, state)
     release_id = manifest["release_id"]
     existing = state["releases"].get(release_id)
+    if existing is None:
+        archived = archived_manifest_for_release(state, release_id, environment)
+        if archived is not None and archived != manifest:
+            raise ReleaseError("release_id is already bound to different immutable inputs")
     if existing is not None:
         if existing != manifest:
             raise ReleaseError("release_id is already bound to different immutable inputs")
@@ -672,7 +795,11 @@ def main() -> int:
             fcntl.flock(lock.fileno(), fcntl.LOCK_EX)
             changed = False
             if args.action == "migrate-state":
-                legacy = read_json(args.state, "release state")
+                legacy = read_json(
+                    args.state,
+                    "release state",
+                    max_bytes=MAX_LEGACY_STATE_BYTES,
+                )
                 if legacy.get("schema_version") == STATE_SCHEMA_VERSION:
                     state = validate_state(legacy, args.environment)
                     receipt = receipt_base("migrate-state", args.environment, state)
@@ -686,6 +813,12 @@ def main() -> int:
                 else:
                     state = migrate_v1_state(legacy, args.environment)
                     backup_created = ensure_legacy_backup(args.legacy_backup, legacy)
+                    _, backup_sha256 = read_legacy_backup(args.legacy_backup)
+                    state["legacy_archive"] = {
+                        "path": str(args.legacy_backup.resolve()),
+                        "sha256": backup_sha256,
+                        "release_count": len(legacy["releases"]),
+                    }
                     receipt = receipt_base("migrate-state", args.environment, legacy)
                     receipt.update(
                         {
@@ -696,7 +829,7 @@ def main() -> int:
                             "state_revision": state["revision"],
                             "legacy_backup": str(args.legacy_backup),
                             "legacy_backup_created": backup_created,
-                            "legacy_backup_sha256": file_sha256(args.legacy_backup),
+                            "legacy_backup_sha256": backup_sha256,
                             "legacy_release_count": len(legacy["releases"]),
                         }
                     )

@@ -73,7 +73,11 @@ If the environment still has a schema-v1 release ledger, first run the explicit
 runbook. Do not manually add environment or activation-history fields. The
 migration preserves a full legacy backup, binds the operational state to the
 operator-selected environment, and retains active/previous rollback eligibility
-without changing traffic or schema.
+without changing traffic or schema. The backup is exclusively created, must
+remain operator-owned with mode `0600`, and is pinned in v2 state by absolute
+path, SHA-256 digest, and release count. Preserve it after compaction: future
+registration reads it to prevent any archived release ID from being rebound to
+different source or image digests.
 
 This command verifies that the target was previously activated healthy in the
 same environment-bound state and accepts the freshly read current forward

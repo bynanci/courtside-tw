@@ -148,13 +148,21 @@ python3 infra/deployment/release.py \
   --legacy-backup /var/lib/courtside/releases/state.v1.json
 ```
 
-The migration never guesses an environment. It validates the complete v1
-ledger, writes or verifies an access-controlled backup before replacing state,
-binds v2 to the named environment, and preserves the active and previous
-releases as rollback-eligible. If the old ledger exceeds the 48 KiB operational
-budget, all other registered manifests remain in the verified v1 backup while
-the v2 state retains only the active and previous manifests; the migration
-receipt records the backup digest and archived count. Re-running against v2 is
+The migration never guesses an environment. It uses a separate bounded legacy
+reader (16 MiB, rather than the 64 KiB operational JSON limit), validates the
+complete v1 ledger, and exclusively creates or verifies an access-controlled
+backup before replacing state. The backup must be a regular file owned by the
+current operator with mode `0600`; an insecure or different existing file is a
+hard failure. Concurrent migrations cannot replace a shared backup path.
+The controller binds v2 to the named environment and preserves the active and
+previous releases as rollback-eligible. If the old ledger exceeds the 48 KiB
+operational budget, all other registered manifests remain in the verified v1
+backup while the v2 state retains only the active and previous manifests; the migration
+receipt records the backup digest and archived count. The v2 ledger also keeps
+the archive's absolute path, digest, and release count so later registration
+must consult the verified archive and cannot bind an archived release ID to new
+immutable inputs. Keep that backup available for the life of the migrated
+state. Re-running against v2 is
 `no_op`. Production migration requires the same exact short-lived production
 confirmation as every other state mutation, but does not switch traffic or run
 SQL. Until this command succeeds, v2 `status`, activation and rollback fail
