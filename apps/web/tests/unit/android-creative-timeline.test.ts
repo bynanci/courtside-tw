@@ -742,8 +742,7 @@ test("emulator environment proof binds requested, resolved and live hardware", (
         ramMegabytes: 4096,
         heapMegabytes: 576
       },
-      canonicalConfig:
-        "AvdId=courtside-api35-pixel7\nhw.device.name=pixel_7\nhw.cpu.ncore=4\nhw.ramSize=4096\nvm.heapSize=576\n",
+      canonicalConfig: "hw.device.name=pixel_7\nhw.cpu.ncore=4\nhw.ramSize=4096\nvm.heapSize=576\n",
       resolvedHardware:
         "hw.device.name = pixel_7\navd.name = courtside-api35-pixel7\navd.id = courtside-api35-pixel7\nhw.cpu.ncore = 4\nhw.ramSize = 4096\nvm.heapSize = 576\n",
       liveAvdName: `${ANDROID_AVD_NAME}\nOK\n`,
@@ -763,7 +762,7 @@ test("emulator environment proof binds requested, resolved and live hardware", (
         heapMegabytes: 576
       },
       canonicalConfig: {
-        avdName: ANDROID_AVD_NAME,
+        avdId: null,
         profile: ANDROID_PROFILE,
         cpuCores: 4,
         ramMegabytes: 4096,
@@ -877,6 +876,13 @@ test("emulator environment proof rejects ambiguous, missing or drifted bindings"
       }
     },
     {
+      label: "duplicate canonical AVD identity",
+      value: {
+        ...valid,
+        canonicalConfig: `${valid.canonicalConfig}AvdId=${ANDROID_AVD_NAME}\n`
+      }
+    },
+    {
       label: "missing canonical profile",
       value: {
         ...valid,
@@ -969,6 +975,7 @@ test("emulator environment CLI canonicalizes and joins host, resolved and live i
   const scriptPath = fileURLToPath(
     new URL("../../scripts/android-emulator-environment.mjs", import.meta.url)
   )
+  const registryPath = join(avdHome, `${ANDROID_AVD_NAME}.ini`)
   const configPath = join(avdDirectory, "config.ini")
   const resolvedPath = join(avdDirectory, "hardware-qemu.ini")
   const prepareReceiptPath = join(artifactDirectory, "emulator-environment-prepare.json")
@@ -983,9 +990,13 @@ test("emulator environment CLI canonicalizes and joins host, resolved and live i
     "utf8"
   )
   writeFileSync(
+    registryPath,
+    `avd.ini.encoding=UTF-8\npath=${avdDirectory}\npath.rel=avd/${ANDROID_AVD_NAME}.avd\ntarget=android-35\n`,
+    "utf8"
+  )
+  writeFileSync(
     configPath,
     [
-      `AvdId=${ANDROID_AVD_NAME}`,
       `hw.device.name=${ANDROID_PROFILE}`,
       "hw.cpu.ncore=2",
       "hw.cpu.ncore=4",
@@ -1030,7 +1041,9 @@ else { process.stderr.write("unexpected fake adb command"); process.exitCode = 1
     equal(canonicalConfig.match(/^hw\.cpu\.ncore=/gmu)?.length, 1)
     equal(canonicalConfig.match(/^hw\.ramSize=/gmu)?.length, 1)
     equal(canonicalConfig.match(/^vm\.heapSize=/gmu)?.length, 1)
+    equal(canonicalConfig.match(/^AvdId=/gmu)?.length ?? 0, 0)
     doesNotMatch(canonicalConfig, /^hw\.heapSize=/mu)
+    doesNotMatch(canonicalConfig, /^AvdId=/mu)
     match(canonicalConfig, /^hw\.cpu\.ncore=4$/mu)
     match(canonicalConfig, /^hw\.ramSize=4096$/mu)
     match(canonicalConfig, /^vm\.heapSize=576$/mu)
@@ -1049,11 +1062,16 @@ else { process.stderr.write("unexpected fake adb command"); process.exitCode = 1
         heapMegabytes: 576
       },
       canonicalConfig: {
-        avdName: ANDROID_AVD_NAME,
+        avdId: null,
         profile: ANDROID_PROFILE,
         cpuCores: 4,
         ramMegabytes: 4096,
         heapMegabytes: 576
+      },
+      avdRegistry: {
+        avdName: ANDROID_AVD_NAME,
+        registryFile: `${ANDROID_AVD_NAME}.ini`,
+        avdDirectory: `${ANDROID_AVD_NAME}.avd`
       },
       capturedAt: prepareReceipt.capturedAt
     })
@@ -1083,7 +1101,7 @@ else { process.stderr.write("unexpected fake adb command"); process.exitCode = 1
     equal(receipt.sourceHeadSha, EXACT_HEAD_SHA)
     equal(receipt.liveGuest.avdName, ANDROID_AVD_NAME)
     deepEqual(receipt.canonicalConfig, {
-      avdName: ANDROID_AVD_NAME,
+      avdId: null,
       profile: ANDROID_PROFILE,
       cpuCores: 4,
       ramMegabytes: 4096,
@@ -1096,6 +1114,11 @@ else { process.stderr.write("unexpected fake adb command"); process.exitCode = 1
       cpuCores: 4,
       ramMegabytes: 4096,
       heapMegabytes: 576
+    })
+    deepEqual(receipt.avdRegistry, {
+      avdName: ANDROID_AVD_NAME,
+      registryFile: `${ANDROID_AVD_NAME}.ini`,
+      avdDirectory: `${ANDROID_AVD_NAME}.avd`
     })
     deepEqual(
       receipt.commands.map((command: { name: string }) => command.name),
@@ -1110,12 +1133,38 @@ else { process.stderr.write("unexpected fake adb command"); process.exitCode = 1
       equal(command.stderrTruncated, false)
     }
 
-    const verifiedCanonicalConfig = readFileSync(configPath, "utf8")
+    const actionCreatedConfig = readFileSync(configPath, "utf8")
+    const otherAvdDirectory = join(avdHome, "other-avd.avd")
+    const otherActionCreatedConfig =
+      `hw.device.name=${ANDROID_PROFILE}\n` + "hw.cpu.ncore=4\nhw.ramSize=4096M\nvm.heapSize=576\n"
+    mkdirSync(otherAvdDirectory)
     writeFileSync(
-      configPath,
-      verifiedCanonicalConfig.replace(`AvdId=${ANDROID_AVD_NAME}`, "AvdId=other-avd"),
+      join(avdHome, "other-avd.ini"),
+      `avd.ini.encoding=UTF-8\npath=${otherAvdDirectory}\npath.rel=avd/other-avd.avd\ntarget=android-35\n`,
       "utf8"
     )
+    writeFileSync(join(otherAvdDirectory, "config.ini"), otherActionCreatedConfig, "utf8")
+    const requestedIdentityDrift = spawnSync(
+      process.execPath,
+      [scriptPath, "prepare", "artifacts/android-chrome/requested-identity-drift.json"],
+      {
+        cwd: fixtureRoot,
+        encoding: "utf8",
+        env: { ...environment, COURTSIDE_ANDROID_AVD_NAME: "other-avd" }
+      }
+    )
+    equal(requestedIdentityDrift.status, 1)
+    equal(readFileSync(configPath, "utf8"), actionCreatedConfig)
+    equal(readFileSync(join(otherAvdDirectory, "config.ini"), "utf8"), otherActionCreatedConfig)
+    const requestedIdentityDriftReceipt = JSON.parse(
+      readFileSync(join(artifactDirectory, "requested-identity-drift.json"), "utf8")
+    )
+    equal(requestedIdentityDriftReceipt.result, "FAIL")
+    equal(requestedIdentityDriftReceipt.phase, "prepare")
+    match(requestedIdentityDriftReceipt.reason, /requested AVD identity drift/u)
+
+    const verifiedCanonicalConfig = readFileSync(configPath, "utf8")
+    writeFileSync(configPath, `AvdId=other-avd\n${verifiedCanonicalConfig}`, "utf8")
     const canonicalDrift = spawnSync(
       process.execPath,
       [scriptPath, "verify", "artifacts/android-chrome/canonical-drift.json"],
@@ -1169,6 +1218,74 @@ else { process.stderr.write("unexpected fake adb command"); process.exitCode = 1
     equal(liveDriftReceipt.result, "FAIL")
     equal("liveGuest" in liveDriftReceipt, false)
     match(liveDriftReceipt.reason, /live AVD identity drift/u)
+
+    const verifiedRegistry = readFileSync(registryPath, "utf8")
+    writeFileSync(
+      registryPath,
+      verifiedRegistry.replace(`path=${avdDirectory}`, `path=${join(avdHome, "other-avd.avd")}`),
+      "utf8"
+    )
+    const configBeforeRegistryDrift = readFileSync(configPath, "utf8")
+    const registryDrift = spawnSync(
+      process.execPath,
+      [scriptPath, "prepare", "artifacts/android-chrome/registry-drift.json"],
+      { cwd: fixtureRoot, encoding: "utf8", env: environment }
+    )
+    equal(registryDrift.status, 1)
+    equal(readFileSync(configPath, "utf8"), configBeforeRegistryDrift)
+    const registryDriftReceipt = JSON.parse(
+      readFileSync(join(artifactDirectory, "registry-drift.json"), "utf8")
+    )
+    equal(registryDriftReceipt.result, "FAIL")
+    match(registryDriftReceipt.reason, /AVD registry path drift/u)
+    writeFileSync(registryPath, verifiedRegistry, "utf8")
+
+    writeFileSync(
+      registryPath,
+      verifiedRegistry.replace(
+        `path.rel=avd/${ANDROID_AVD_NAME}.avd`,
+        "path.rel=avd/other-avd.avd"
+      ),
+      "utf8"
+    )
+    const configBeforeRelativeDrift = readFileSync(configPath, "utf8")
+    const relativeRegistryDrift = spawnSync(
+      process.execPath,
+      [scriptPath, "verify", "artifacts/android-chrome/registry-relative-drift.json"],
+      { cwd: fixtureRoot, encoding: "utf8", env: environment }
+    )
+    equal(relativeRegistryDrift.status, 1)
+    equal(readFileSync(configPath, "utf8"), configBeforeRelativeDrift)
+    const relativeRegistryDriftReceipt = JSON.parse(
+      readFileSync(join(artifactDirectory, "registry-relative-drift.json"), "utf8")
+    )
+    equal(relativeRegistryDriftReceipt.result, "FAIL")
+    equal(relativeRegistryDriftReceipt.phase, "verify")
+    deepEqual(relativeRegistryDriftReceipt.commands, [])
+    match(relativeRegistryDriftReceipt.reason, /AVD registry relative path drift/u)
+    writeFileSync(registryPath, verifiedRegistry, "utf8")
+
+    const registryCopyPath = join(fixtureRoot, "registry-copy.ini")
+    writeFileSync(registryCopyPath, verifiedRegistry, "utf8")
+    rmSync(registryPath)
+    symlinkSync(registryCopyPath, registryPath)
+    const configBeforeRegistrySymlink = readFileSync(configPath, "utf8")
+    const registrySymlink = spawnSync(
+      process.execPath,
+      [scriptPath, "verify", "artifacts/android-chrome/registry-symlink.json"],
+      { cwd: fixtureRoot, encoding: "utf8", env: environment }
+    )
+    equal(registrySymlink.status, 1)
+    equal(readFileSync(configPath, "utf8"), configBeforeRegistrySymlink)
+    const registrySymlinkReceipt = JSON.parse(
+      readFileSync(join(artifactDirectory, "registry-symlink.json"), "utf8")
+    )
+    equal(registrySymlinkReceipt.result, "FAIL")
+    equal(registrySymlinkReceipt.phase, "verify")
+    deepEqual(registrySymlinkReceipt.commands, [])
+    match(registrySymlinkReceipt.reason, /AVD registry must be one physical file/u)
+    rmSync(registryPath)
+    writeFileSync(registryPath, verifiedRegistry, "utf8")
 
     const malformedConfig = verifiedCanonicalConfig.replace(
       `hw.device.name=${ANDROID_PROFILE}\n`,
@@ -1256,6 +1373,11 @@ test("emulator environment CLI rejects partial timeout output with one bounded F
   writeFileSync(
     join(fixtureRoot, "artifacts", "exact-head.json"),
     `${JSON.stringify({ source_head_sha: EXACT_HEAD_SHA })}\n`,
+    "utf8"
+  )
+  writeFileSync(
+    join(avdHome, `${ANDROID_AVD_NAME}.ini`),
+    `avd.ini.encoding=UTF-8\npath=${avdDirectory}\npath.rel=avd/${ANDROID_AVD_NAME}.avd\ntarget=android-35\n`,
     "utf8"
   )
   writeFileSync(
