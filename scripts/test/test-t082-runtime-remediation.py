@@ -485,6 +485,63 @@ class T082RuntimeRemediationTests(unittest.TestCase):
                 json.loads(state_path.read_text(encoding="utf-8"))["schema_version"], 1
             )
 
+    def test_migration_rejects_type_mismatched_existing_legacy_backup(self) -> None:
+        for field, mismatched_value in (
+            ("revision", True),
+            ("schema_version", 1.0),
+        ):
+            with self.subTest(field=field), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                state_path = root / "release-state.json"
+                backup_path = root / "release-state.v1.json"
+                receipt_path = root / "migration-receipt.json"
+                release_a = manifest("release-a", "a", 9, 9, 10)
+                legacy_state: dict[str, object] = {
+                    "schema_version": 1,
+                    "revision": 1,
+                    "database_schema_version": 9,
+                    "active_release": "release-a",
+                    "previous_release": None,
+                    "last_action_receipt": {"action": "activate", "result": "pass"},
+                    "releases": {"release-a": release_a},
+                }
+                mismatched_backup = copy.deepcopy(legacy_state)
+                mismatched_backup[field] = mismatched_value
+                state_path.write_text(
+                    json.dumps(legacy_state, indent=2, sort_keys=True) + "\n",
+                    encoding="utf-8",
+                )
+                backup_path.write_text(
+                    json.dumps(mismatched_backup, indent=2, sort_keys=True) + "\n",
+                    encoding="utf-8",
+                )
+                os.chmod(backup_path, 0o600)
+
+                migration = subprocess.run(
+                    [
+                        sys.executable,
+                        str(CONTROLLER_PATH),
+                        "--state",
+                        str(state_path),
+                        "--receipt",
+                        str(receipt_path),
+                        "--environment",
+                        "staging",
+                        "migrate-state",
+                        "--legacy-backup",
+                        str(backup_path),
+                    ],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+                self.assertNotEqual(migration.returncode, 0)
+                self.assertIn("different data", migration.stderr)
+                self.assertEqual(
+                    json.loads(state_path.read_text(encoding="utf-8"))["schema_version"],
+                    1,
+                )
+
     def test_legacy_backup_creation_is_exclusive_across_state_files(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             backup_path = Path(directory) / "shared-v1-backup.json"
