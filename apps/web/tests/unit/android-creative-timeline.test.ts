@@ -7,6 +7,7 @@ import {
   calibrateBrowserClockToHost,
   classifyAndroidActivityLine,
   evaluateAndroidBackgroundTimeline,
+  evaluateAndroidForegroundFrameTimeline,
   normalizeBrowserRuntimeSnapshot,
   requireAndroidActivityAtBoundary,
   retainFirstPausedSnapshot
@@ -15,6 +16,12 @@ import {
 const BUDGETS = Object.freeze({
   maximumBackgroundFrames: 2,
   operatingSystemBackgroundMilliseconds: 5_000
+})
+
+const FOREGROUND_BUDGETS = Object.freeze({
+  foregroundObservationMilliseconds: 500,
+  minimumForegroundFrames: 5,
+  maximumRunningCanvases: 1
 })
 
 type ActivityTransition = {
@@ -269,6 +276,94 @@ test("blocking ADB polls clamp an expired timer instead of scheduling a negative
   equal(boundedAndroidPollDelay(140, 100), 100)
 })
 
+test("foreground frames use one exact browser timeline after the first attributable frame", () => {
+  const active = (at: number, frame: number) => ({
+    at,
+    frame,
+    runningCount: 1,
+    targetStatus: "running"
+  })
+  const evaluation = evaluateAndroidForegroundFrameTimeline(
+    {
+      armedSnapshot: active(100, 10),
+      readinessTimeoutMilliseconds: 5_000,
+      samples: [
+        active(200, 11),
+        active(280, 12),
+        active(370, 13),
+        active(460, 14),
+        active(550, 15),
+        active(640, 16),
+        active(710, 17)
+      ]
+    },
+    FOREGROUND_BUDGETS
+  )
+
+  deepEqual(evaluation.readiness, {
+    timeoutMilliseconds: 5_000,
+    startupMilliseconds: 100,
+    frameBefore: 10,
+    frameAfter: 11
+  })
+  equal(evaluation.observationMilliseconds, 500)
+  equal(evaluation.frameBefore, 11)
+  equal(evaluation.frameAfter, 16)
+  equal(evaluation.frameDelta, 5)
+})
+
+test("foreground timeline ignores frames outside the fixed budget and fails closed", () => {
+  const active = (at: number, frame: number) => ({
+    at,
+    frame,
+    runningCount: 1,
+    targetStatus: "running"
+  })
+
+  throws(
+    () =>
+      evaluateAndroidForegroundFrameTimeline(
+        {
+          armedSnapshot: active(100, 10),
+          readinessTimeoutMilliseconds: 5_000,
+          samples: [
+            active(200, 11),
+            active(390, 12),
+            active(580, 13),
+            active(710, 14),
+            active(890, 15),
+            active(1_080, 16)
+          ]
+        },
+        FOREGROUND_BUDGETS
+      ),
+    /foreground creative frames: expected >= 5, received 2/
+  )
+})
+
+test("foreground timeline rejects a non-active sample inside the observation window", () => {
+  throws(
+    () =>
+      evaluateAndroidForegroundFrameTimeline(
+        {
+          armedSnapshot: {
+            at: 100,
+            frame: 10,
+            runningCount: 1,
+            targetStatus: "running"
+          },
+          readinessTimeoutMilliseconds: 5_000,
+          samples: [
+            { at: 200, frame: 11, runningCount: 1, targetStatus: "running" },
+            { at: 300, frame: 12, runningCount: 0, targetStatus: "paused" }
+          ]
+        },
+        FOREGROUND_BUDGETS
+      ),
+    /foreground frame sample must contain exactly one running canvas/
+  )
+})
+
 test("clock uncertainty is charged against the runtime background deadline", () => {
   throws(
     () =>
@@ -294,6 +389,10 @@ test("Android smoke diagnostics preserve the failing producer and bound probes",
     new URL("../../scripts/android-chrome-performance-smoke.mjs", import.meta.url),
     "utf8"
   )
+  const ciWorkflow = readFileSync(
+    new URL("../../../../.github/workflows/ci.yml", import.meta.url),
+    "utf8"
+  )
 
   match(shellHarness, /PIPESTATUS\[0\]/u)
   match(shellHarness, /logcat -d -v threadtime -t 2000/u)
@@ -302,6 +401,8 @@ test("Android smoke diagnostics preserve the failing producer and bound probes",
   match(performanceHarness, /ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS/u)
   match(performanceHarness, /timeout: ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS/u)
   match(performanceHarness, /observerSnapshot: liveSnapshot\?\.observerSnapshot \?\? null/u)
+  match(performanceHarness, /observeForegroundFrameTimeline/u)
+  match(ciWorkflow, /profile: pixel_7\s+ram-size: 4096M/u)
   doesNotMatch(
     performanceHarness,
     /observed\.runningCount === 0 && observed\.targetStatus !== "running"/u
