@@ -3,6 +3,7 @@ import { test } from "node:test"
 
 import {
   calibrateBrowserClockToHost,
+  classifyAndroidActivityLine,
   evaluateAndroidBackgroundTimeline,
   normalizeBrowserRuntimeSnapshot
 } from "../../scripts/android-creative-timeline.mjs"
@@ -106,6 +107,33 @@ test("browser runtime epochs are normalized into the bracketed host clock", () =
       calibration
     ),
     { at: 100_130, frame: 40, runningCount: 0, targetStatus: "paused" }
+  )
+})
+
+test("activity classification ignores unresolved dumpsys output instead of treating it as background", () => {
+  for (const activity of ["", "   ", "mResumedActivity: null", "topResumedActivity=null"]) {
+    equal(classifyAndroidActivityLine(activity), null)
+  }
+
+  deepEqual(
+    classifyAndroidActivityLine(
+      "mResumedActivity: ActivityRecord{abc com.android.chrome/com.google.android.apps.chrome.Main}"
+    ),
+    {
+      activity:
+        "mResumedActivity: ActivityRecord{abc com.android.chrome/com.google.android.apps.chrome.Main}",
+      chromeForeground: true
+    }
+  )
+  deepEqual(
+    classifyAndroidActivityLine(
+      "mResumedActivity: ActivityRecord{def com.google.android.apps.nexuslauncher/.NexusLauncherActivity}"
+    ),
+    {
+      activity:
+        "mResumedActivity: ActivityRecord{def com.google.android.apps.nexuslauncher/.NexusLauncherActivity}",
+      chromeForeground: false
+    }
   )
 })
 
