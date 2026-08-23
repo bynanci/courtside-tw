@@ -222,6 +222,50 @@ export function classifyAndroidActivityLine(value) {
   }
 }
 
+export function selectResumedAndroidActivityLine(value) {
+  if (typeof value !== "string") {
+    throw new Error("Android activity dump must be a string")
+  }
+  const lines = value
+    .split(/\r?\n/u)
+    .map((line) => line.trim())
+    .filter(Boolean)
+  const topResumed = lines.filter((line) => /^topResumedActivity\s*[:=]/u.test(line))
+  const legacyResumed = lines.filter((line) => /^mResumedActivity\s*[:=]/u.test(line))
+  const candidates = topResumed.length > 0 ? topResumed : legacyResumed
+  if (candidates.length !== 1) return ""
+
+  const activity = candidates[0]
+  if (!/ActivityRecord\{[^}\r\n]+\}\s*$/u.test(activity)) return ""
+  return classifyAndroidActivityLine(activity) ? activity : ""
+}
+
+export function classifyAndroidActivityProbeResult(value) {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) {
+    throw new Error("Android activity probe result must be an object")
+  }
+  const errorCode = value.errorCode
+  if (errorCode !== null && errorCode !== undefined && typeof errorCode !== "string") {
+    throw new Error("Android activity probe error code must be a string or null")
+  }
+  if (errorCode === "ETIMEDOUT") {
+    return { status: "timed-out", activity: "" }
+  }
+  if (errorCode) {
+    throw new Error(`Android activity probe failed with error ${errorCode}`)
+  }
+  if (value.status !== 0) {
+    throw new Error(`Android activity probe failed with status ${String(value.status)}`)
+  }
+  if (typeof value.stdout !== "string") {
+    throw new Error("Android activity probe stdout must be a string")
+  }
+  const activity = selectResumedAndroidActivityLine(value.stdout)
+  return activity
+    ? { status: "resolved", activity }
+    : { status: "unresolved", activity: "" }
+}
+
 export function requireAndroidActivityAtBoundary(value) {
   const classified = classifyAndroidActivityLine(value)
   if (!classified) {
@@ -260,6 +304,73 @@ export function captureChromeSurfaceProbeBoundary({ readActivity, probeSurface }
     throw new Error("Chrome surface probe must return an object")
   }
   const activityAfter = requireChromeForegroundActivityAtBoundary(readActivity())
+  if (
+    activityBefore.recordId !== activityAfter.recordId ||
+    activityBefore.taskId !== activityAfter.taskId ||
+    activityBefore.activity !== activityAfter.activity
+  ) {
+    throw new Error(
+      `Chrome activity identity changed during the native surface probe: ` +
+        `before=${activityBefore.activity}, after=${activityAfter.activity}`
+    )
+  }
+  return {
+    ...surface,
+    activityBefore: activityBefore.activity,
+    activityAfter: activityAfter.activity
+  }
+}
+
+export function captureChromeSurfaceProbeBoundaryAttempt({
+  readActivityReceipt,
+  probeSurface
+}) {
+  if (typeof readActivityReceipt !== "function" || typeof probeSurface !== "function") {
+    throw new Error("Chrome surface readiness dependencies must be functions")
+  }
+  const readReceipt = () => {
+    const receipt = readActivityReceipt()
+    if (typeof receipt !== "object" || receipt === null || Array.isArray(receipt)) {
+      throw new Error("Android activity probe receipt must be an object")
+    }
+    if (!new Set(["resolved", "unresolved", "timed-out"]).has(receipt.status)) {
+      throw new Error(`Android activity probe receipt status is invalid: ${String(receipt.status)}`)
+    }
+    if (typeof receipt.activity !== "string") {
+      throw new Error("Android activity probe receipt activity must be a string")
+    }
+    if (receipt.status === "resolved" && !receipt.activity) {
+      throw new Error("Resolved Android activity probe receipt must include an activity")
+    }
+    if (receipt.status !== "resolved" && receipt.activity) {
+      throw new Error("Unresolved Android activity probe receipt cannot include an activity")
+    }
+    return { status: receipt.status, activity: receipt.activity }
+  }
+
+  const activityProbeBefore = readReceipt()
+  if (activityProbeBefore.status !== "resolved") {
+    return {
+      status: "activity-unresolved",
+      stage: "before",
+      activityProbe: activityProbeBefore
+    }
+  }
+  const activityBefore = requireChromeForegroundActivityAtBoundary(activityProbeBefore.activity)
+  const surface = probeSurface()
+  if (typeof surface !== "object" || surface === null || Array.isArray(surface)) {
+    throw new Error("Chrome surface probe must return an object")
+  }
+  const activityProbeAfter = readReceipt()
+  if (activityProbeAfter.status !== "resolved") {
+    return {
+      status: "activity-unresolved",
+      stage: "after",
+      activityBefore: activityBefore.activity,
+      activityProbe: activityProbeAfter
+    }
+  }
+  const activityAfter = requireChromeForegroundActivityAtBoundary(activityProbeAfter.activity)
   if (
     activityBefore.recordId !== activityAfter.recordId ||
     activityBefore.taskId !== activityAfter.taskId ||

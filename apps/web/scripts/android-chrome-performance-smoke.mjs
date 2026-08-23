@@ -5,8 +5,9 @@ import { chromium, expect } from "@playwright/test"
 import {
   boundedAndroidPollDelay,
   calibrateBrowserClockToHost,
-  captureChromeSurfaceProbeBoundary,
+  captureChromeSurfaceProbeBoundaryAttempt,
   classifyAndroidActivityLine,
+  classifyAndroidActivityProbeResult,
   classifyChromeAutomationSurface,
   evaluateAndroidBackgroundTimeline,
   evaluateAndroidForegroundFrameTimeline,
@@ -170,7 +171,7 @@ try {
     5_000,
     BUDGETS.foregroundObservationMilliseconds
   )
-  const foregroundNativeSurfaceBoundary = requireClearChromeContentSurface()
+  const foregroundNativeSurfaceBoundary = await requireClearChromeContentSurface()
   const foregroundFrames = evaluateAndroidForegroundFrameTimeline(foregroundFrameTimeline, BUDGETS)
 
   await markPhase(page, "creative-long-task-budget")
@@ -543,13 +544,22 @@ function requireExpectedAndroidDisplaySize() {
 }
 
 function probeChromeContentSurfaceAtActivityBoundary(probeTimeoutMilliseconds) {
-  return captureChromeSurfaceProbeBoundary({
-    readActivity: resumedActivityLine,
+  return captureChromeSurfaceProbeBoundaryAttempt({
+    readActivityReceipt: resumedActivityReceipt,
     probeSurface: () => probeChromeContentSurface(probeTimeoutMilliseconds)
   })
 }
 
 function surfaceReceipt(surface) {
+  if (surface.status === "activity-unresolved") {
+    return {
+      status: surface.status,
+      stage: surface.stage,
+      activityBefore: surface.activityBefore ?? null,
+      activityAfter: null,
+      activityProbe: surface.activityProbe
+    }
+  }
   return {
     status: surface.status,
     reason: surface.reason ?? null,
@@ -576,6 +586,19 @@ async function normalizeChromeContentSurface() {
       )
     )
     attempts.push(surfaceReceipt(surface))
+    if (surface.status === "activity-unresolved") {
+      const pollRemainingMilliseconds = deadline - performance.now()
+      await new Promise((resolve) =>
+        setTimeout(
+          resolve,
+          boundedAndroidPollDelay(
+            pollRemainingMilliseconds,
+            CHROME_AUTOMATION_POLL_MILLISECONDS
+          )
+        )
+      )
+      continue
+    }
     if (surface.status === "clear") {
       return {
         status: surface.status,
@@ -603,23 +626,58 @@ async function normalizeChromeContentSurface() {
     )
   }
 
+  const lastAttempt = attempts.at(-1)
+  if (lastAttempt?.status === "activity-unresolved") {
+    throw new Error(
+      `Android Chrome activity identity did not resolve within ` +
+        `${CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS} ms; ` +
+        `attempts=${JSON.stringify(attempts)}`
+    )
+  }
   throw new Error(
     `Android Chrome notification modal did not clear within ` +
       `${CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS} ms`
   )
 }
 
-function requireClearChromeContentSurface() {
-  const surface = probeChromeContentSurfaceAtActivityBoundary(
-    CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS
-  )
-  if (surface.status !== "clear") {
-    throw new Error(
-      `Android Chrome content surface was not clear at the foreground observation boundary; ` +
-        `status=${surface.status}`
+async function requireClearChromeContentSurface() {
+  const deadline = performance.now() + CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS
+  const attempts = []
+  while (performance.now() < deadline) {
+    const remainingMilliseconds = deadline - performance.now()
+    const surface = probeChromeContentSurfaceAtActivityBoundary(
+      Math.max(
+        1,
+        Math.ceil(Math.min(CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS, remainingMilliseconds))
+      )
     )
+    attempts.push(surfaceReceipt(surface))
+    if (surface.status === "activity-unresolved") {
+      const pollRemainingMilliseconds = deadline - performance.now()
+      await new Promise((resolve) =>
+        setTimeout(
+          resolve,
+          boundedAndroidPollDelay(
+            pollRemainingMilliseconds,
+            CHROME_AUTOMATION_POLL_MILLISECONDS
+          )
+        )
+      )
+      continue
+    }
+    if (surface.status !== "clear") {
+      throw new Error(
+        `Android Chrome content surface was not clear at the foreground observation boundary; ` +
+          `status=${surface.status}`
+      )
+    }
+    return { ...surfaceReceipt(surface), attempts }
   }
-  return surfaceReceipt(surface)
+  throw new Error(
+    `Android Chrome activity identity did not resolve at the foreground observation boundary ` +
+      `within ${CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS} ms; ` +
+      `attempts=${JSON.stringify(attempts)}`
+  )
 }
 
 function observeForegroundFrameTimeline(
@@ -946,27 +1004,29 @@ function adb(...arguments_) {
   return result.stdout
 }
 
-function resumedActivityLine() {
+function resumedActivityReceipt() {
   const result = spawnSync("adb", ["shell", "dumpsys", "activity", "activities"], {
     encoding: "utf8",
     timeout: ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS
   })
-  if (result.error?.code === "ETIMEDOUT") {
-    return ""
-  }
-  if (result.status !== 0) {
+  try {
+    return classifyAndroidActivityProbeResult({
+      errorCode: result.error?.code ?? null,
+      status: result.status,
+      stdout: result.stdout ?? ""
+    })
+  } catch (error) {
     throw new Error(
       `adb shell dumpsys activity activities failed: ` +
-        `${result.stderr || result.stdout || result.error?.message || result.status}`
+        `${result.stderr || result.stdout || result.error?.message || result.status}; ` +
+        `${error instanceof Error ? error.message : String(error)}`
     )
   }
-  const output = result.stdout
-  return (
-    output
-      .split("\n")
-      .find((line) => /mResumedActivity|topResumedActivity/u.test(line))
-      ?.trim() ?? ""
-  )
+}
+
+function resumedActivityLine() {
+  const receipt = resumedActivityReceipt()
+  return receipt.status === "resolved" ? receipt.activity : ""
 }
 
 async function markPhase(page, nextPhase) {
