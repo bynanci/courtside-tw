@@ -1019,7 +1019,8 @@ function resumedActivityReceipt() {
     throw new Error(
       `adb shell dumpsys activity activities failed: ` +
         `${result.stderr || result.stdout || result.error?.message || result.status}; ` +
-        `${error instanceof Error ? error.message : String(error)}`
+        `${error instanceof Error ? error.message : String(error)}`,
+      { cause: error }
     )
   }
 }
