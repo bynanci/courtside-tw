@@ -386,12 +386,7 @@ test("foreground timeline reproduces exact attempt 2 undercount attribution", ()
         {
           armedSnapshot: active(100, 10),
           readinessTimeoutMilliseconds: 5_000,
-          samples: [
-            active(200, 11),
-            active(330, 12),
-            active(500, 13),
-            active(680, 14)
-          ],
+          samples: [active(200, 11), active(330, 12), active(500, 13), active(680, 14)],
           boundarySnapshot: active(710, 14)
         },
         FOREGROUND_BUDGETS

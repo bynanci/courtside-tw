@@ -518,12 +518,14 @@ function observeForegroundFrameTimeline(
         const finish = (captureBoundary) => {
           if (settled) return
           settled = true
-          if (captureBoundary) inspect()
+          const boundarySnapshot = snapshot()
+          if (captureBoundary) retainChangedSnapshot(boundarySnapshot)
           cleanup()
           resolve({
             armedSnapshot,
             readinessTimeoutMilliseconds: readinessTimeout,
-            samples
+            samples,
+            boundarySnapshot
           })
         }
         const retainChangedSnapshot = (observed) => {

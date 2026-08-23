@@ -212,6 +212,19 @@ export function evaluateAndroidForegroundFrameTimeline(rawTimeline, rawBudgets) 
     requireActive(sample, "foreground frame sample")
   }
   const finalFrame = samplesInsideBudget.at(-1)
+  const boundarySnapshot = requireActive(
+    timeline.boundarySnapshot,
+    "foreground observation boundary"
+  )
+  if (boundarySnapshot.at < observationDeadlineAt) {
+    throw new Error(
+      `Android foreground observation boundary must reach the ` +
+        `${observationMilliseconds} ms deadline`
+    )
+  }
+  if (boundarySnapshot.frame < finalFrame.frame) {
+    throw new Error("Android foreground frame counter regressed at the observation boundary")
+  }
   const frameDelta = finalFrame.frame - firstFrame.frame
   if (frameDelta < minimumForegroundFrames) {
     throw new Error(
@@ -231,6 +244,7 @@ export function evaluateAndroidForegroundFrameTimeline(rawTimeline, rawBudgets) 
     runningCountAfter: finalFrame.runningCount,
     status: finalFrame.targetStatus,
     samples: samplesInsideBudget,
+    boundarySnapshot,
     readiness: {
       timeoutMilliseconds: readinessTimeoutMilliseconds,
       startupMilliseconds,
