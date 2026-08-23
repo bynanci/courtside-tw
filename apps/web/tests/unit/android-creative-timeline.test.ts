@@ -297,7 +297,7 @@ test("Android smoke diagnostics preserve the failing producer and bound probes",
 
   match(shellHarness, /PIPESTATUS\[0\]/u)
   match(shellHarness, /logcat -d -v threadtime -t 2000/u)
-  match(shellHarness, /timeout 15s adb shell uiautomator/u)
+  match(shellHarness, /timeout --kill-after=2s 15s adb shell uiautomator/u)
   match(shellHarness, /curl --max-time 5/u)
   match(performanceHarness, /ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS/u)
   match(performanceHarness, /timeout: ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS/u)
