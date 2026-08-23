@@ -1,4 +1,4 @@
-import { deepEqual, doesNotMatch, equal, match, rejects, throws } from "node:assert/strict"
+import { deepEqual, doesNotMatch, equal, match, throws } from "node:assert/strict"
 import { spawnSync } from "node:child_process"
 import {
   chmodSync,
@@ -151,38 +151,17 @@ test("background timeline accepts activity-to-pause and pause-to-activity orderi
   equal(pauseThenActivity.postPauseFrames, 2)
 })
 
-test("native Android background focus override sends the exact CDP command and fails closed", async () => {
-  const disableSyntheticPageFocus = Reflect.get(timelineHelpers, "disableSyntheticPageFocus")
-  equal(typeof disableSyntheticPageFocus, "function")
-  if (typeof disableSyntheticPageFocus !== "function") return
-
-  const calls: Array<{ method: string; parameters: unknown }> = []
-  const receipt = await disableSyntheticPageFocus({
-    send: async (method: string, parameters: unknown) => {
-      calls.push({ method, parameters })
-    }
-  })
-
-  deepEqual(calls, [
-    {
-      method: "Emulation.setFocusEmulationEnabled",
-      parameters: { enabled: false }
-    }
-  ])
-  deepEqual(receipt, {
-    method: "Emulation.setFocusEmulationEnabled",
-    parameters: { enabled: false }
-  })
-
-  await rejects(
-    () =>
-      disableSyntheticPageFocus({
-        send: async () => {
-          throw new Error("focus override failed")
-        }
-      }),
-    /focus override failed/u
+test("native Android CDP connection suppresses Playwright lifecycle defaults", () => {
+  const nativeAndroidCdpConnectionOptions = Reflect.get(
+    timelineHelpers,
+    "nativeAndroidCdpConnectionOptions"
   )
+  equal(typeof nativeAndroidCdpConnectionOptions, "function")
+  if (typeof nativeAndroidCdpConnectionOptions !== "function") return
+
+  const options = nativeAndroidCdpConnectionOptions()
+  deepEqual(options, { noDefaults: true })
+  equal(Object.isFrozen(options), true)
 })
 
 test("native Android background binds the exact browser foreground receipt", () => {
@@ -222,7 +201,11 @@ test("native Android background disables Playwright focus emulation before armin
 
   match(
     performanceHarness,
-    /function verifyAndroidOperatingSystemBackground\(page, targetIndex\) \{[\s\S]*newCDPSession\(page\)[\s\S]*page\.bringToFront\(\)[\s\S]*disableSyntheticPageFocus\(lifecycleSession\)[\s\S]*requireAndroidBrowserForegroundReceipt\([\s\S]*requireChromeForegroundActivityAtBoundary\([\s\S]*armOperatingSystemPauseObservation\(page, targetIndex\)[\s\S]*KEYCODE_HOME/u
+    /chromium\.connectOverCDP\([\s\S]*nativeAndroidCdpConnectionOptions\(\)[\s\S]*const page = context\.pages\(\)\[0\]/u
+  )
+  match(
+    performanceHarness,
+    /function verifyAndroidOperatingSystemBackground\(page, targetIndex\) \{[\s\S]*page\.bringToFront\(\)[\s\S]*requireAndroidBrowserForegroundReceipt\([\s\S]*requireChromeForegroundActivityAtBoundary\([\s\S]*armOperatingSystemPauseObservation\(page, targetIndex\)[\s\S]*KEYCODE_HOME/u
   )
 })
 
