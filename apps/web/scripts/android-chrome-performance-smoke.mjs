@@ -519,7 +519,7 @@ function probeChromeContentSurface(deadline) {
   const displaySize = requireExpectedAndroidDisplaySize(deadline)
   const probeTimeoutMilliseconds = requireRemainingAutomationMilliseconds(
     deadline,
-    CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS,
+    CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS,
     "UIAutomator probe"
   )
   const result = spawnSync("adb", ["exec-out", "uiautomator", "dump", "/dev/tty"], {
