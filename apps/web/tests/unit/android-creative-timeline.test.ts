@@ -1,4 +1,4 @@
-import { deepEqual, doesNotMatch, equal, match, throws } from "node:assert/strict"
+import { deepEqual, doesNotMatch, equal, match, rejects, throws } from "node:assert/strict"
 import { spawnSync } from "node:child_process"
 import {
   chmodSync,
@@ -215,6 +215,87 @@ test("native Android connector behaviorally suppresses Playwright lifecycle defa
   equal(Object.isFrozen(calls[1]), true)
 })
 
+test("native Android foreground activity retries incomplete receipts within one bounded deadline", async () => {
+  const acquireChromeForegroundActivityAtBoundary = Reflect.get(
+    timelineHelpers,
+    "acquireChromeForegroundActivityAtBoundary"
+  )
+  equal(typeof acquireChromeForegroundActivityAtBoundary, "function")
+  if (typeof acquireChromeForegroundActivityAtBoundary !== "function") return
+
+  const activity =
+    "topResumedActivity=ActivityRecord{abc123 u0 com.android.chrome/com.google.android.apps.chrome.Main t8}"
+  const receipts = [
+    { status: "unresolved", activity: "" },
+    { status: "timed-out", activity: "" },
+    { status: "resolved", activity }
+  ]
+  const events: Array<string | number> = []
+  let nowAt = 1_000
+  const result = await acquireChromeForegroundActivityAtBoundary({
+    readActivityReceipt: async (timeoutMilliseconds: number) => {
+      events.push("read", timeoutMilliseconds)
+      await Promise.resolve()
+      nowAt += 25
+      const receipt = receipts.shift()
+      if (!receipt) throw new Error("unexpected activity receipt read")
+      return receipt
+    },
+    deadlineAt: 2_000,
+    now: () => nowAt,
+    maximumReadMilliseconds: 250,
+    maximumPollMilliseconds: 100,
+    maximumAttempts: 4,
+    delay: async (milliseconds: number) => {
+      events.push("delay", milliseconds)
+      await Promise.resolve()
+      nowAt += milliseconds
+    }
+  })
+
+  deepEqual(events, ["read", 250, "delay", 100, "read", 250, "delay", 100, "read", 250])
+  deepEqual(result, {
+    activity,
+    chromeForeground: true,
+    recordId: "abc123",
+    taskId: "t8",
+    attempts: [
+      { status: "unresolved", activity: "" },
+      { status: "timed-out", activity: "" },
+      { status: "resolved", activity }
+    ]
+  })
+  equal(Object.isFrozen(result.attempts), true)
+})
+
+test("native Android foreground activity caps unresolved receipt history", async () => {
+  const acquireChromeForegroundActivityAtBoundary = Reflect.get(
+    timelineHelpers,
+    "acquireChromeForegroundActivityAtBoundary"
+  )
+  equal(typeof acquireChromeForegroundActivityAtBoundary, "function")
+  if (typeof acquireChromeForegroundActivityAtBoundary !== "function") return
+
+  let reads = 0
+  await rejects(
+    () =>
+      acquireChromeForegroundActivityAtBoundary({
+        readActivityReceipt: () => {
+          reads += 1
+          return { status: "unresolved", activity: "" }
+        },
+        deadlineAt: 5_000,
+        now: () => 1_000,
+        maximumReadMilliseconds: 250,
+        maximumPollMilliseconds: 100,
+        maximumAttempts: 2,
+        delay: () => Promise.resolve()
+      }),
+    /did not resolve.*attempts=\[\{"status":"unresolved","activity":""\},\{"status":"unresolved","activity":""\}\]/u
+  )
+  equal(reads, 2)
+})
+
 test("native Android background behaviorally binds and orders the exact HOME boundary", async () => {
   const establishNativeAndroidBackgroundBoundary = Reflect.get(
     timelineHelpers,
@@ -247,7 +328,15 @@ test("native Android background behaviorally binds and orders the exact HOME bou
     expectedUrl,
     readChromeForegroundActivity: () => {
       events.push("activity")
-      return "topResumedActivity=ActivityRecord{abc123 u0 com.android.chrome/com.google.android.apps.chrome.Main t8}"
+      const activity =
+        "topResumedActivity=ActivityRecord{abc123 u0 com.android.chrome/com.google.android.apps.chrome.Main t8}"
+      return {
+        activity,
+        chromeForeground: true,
+        recordId: "abc123",
+        taskId: "t8",
+        attempts: [{ status: "resolved", activity }]
+      }
     },
     armRuntimeObservation: async () => {
       events.push("arm:start")
@@ -304,6 +393,13 @@ test("native Android background behaviorally binds and orders the exact HOME bou
       recordId: "abc123",
       taskId: "t8"
     },
+    foregroundActivityAttempts: [
+      {
+        status: "resolved",
+        activity:
+          "topResumedActivity=ActivityRecord{abc123 u0 com.android.chrome/com.google.android.apps.chrome.Main t8}"
+      }
+    ],
     clockCalibration: {
       browserToHostOffsetMilliseconds: 90_110,
       hostRoundTripMilliseconds: 20,
@@ -326,6 +422,7 @@ test("native Android performance harness invokes the behavioral boundaries", () 
     /const browser = await connectNativeAndroidBrowser\(\s*chromium\.connectOverCDP\.bind\(chromium\),\s*"http:\/\/127\.0\.0\.1:9222"\s*\)/u
   )
   match(performanceHarness, /const boundary = await establishNativeAndroidBackgroundBoundary\(\{/u)
+  match(performanceHarness, /acquireChromeForegroundActivityAtBoundary\(\{/u)
   match(performanceHarness, /bringToFront:\s*\(\) => page\.bringToFront\(\)/u)
   equal(performanceHarness.match(/page\.bringToFront\(\)/gu)?.length, 1)
   equal(performanceHarness.match(/"KEYCODE_HOME"/gu)?.length, 1)
