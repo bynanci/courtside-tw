@@ -58,6 +58,9 @@ on_error() {
 }
 trap 'on_error "$?" "$LINENO" "$BASH_COMMAND"' ERR
 
+diagnostic_phase="emulator-environment"
+node apps/web/scripts/android-emulator-environment.mjs verify "$artifact_dir/emulator-environment.json"
+
 run_logged_smoke() {
   local smoke_phase="$1"
   local script_path="$2"

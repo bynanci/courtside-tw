@@ -107,6 +107,340 @@ export function parseAndroidDisplaySize(value) {
   return displaySize
 }
 
+const ANDROID_EMULATOR_ENVIRONMENT_SCHEMA = "courtside.android-emulator-environment/v1"
+const EXPECTED_ANDROID_EMULATOR_ENVIRONMENT = Object.freeze({
+  avdName: "courtside-api35-pixel7",
+  profile: "pixel_7",
+  cpuCores: 4,
+  ramInput: "4096M",
+  ramMegabytes: 4096,
+  heapMegabytes: 576,
+  minimumGuestMemoryKilobytes: 3_145_728,
+  maximumGuestMemoryKilobytes: 4_194_304
+})
+
+const ANDROID_AVD_HARDWARE_KEYS = Object.freeze([
+  "hw.cpu.ncore",
+  "hw.ramSize",
+  "vm.heapSize",
+  "hw.heapSize"
+])
+
+function requireBoundedReceiptText(value, label) {
+  if (
+    typeof value !== "string" ||
+    value.length === 0 ||
+    value.length > 1024 * 1024 ||
+    value.includes("\0")
+  ) {
+    throw new Error(`${label} must be bounded non-empty text`)
+  }
+  return value.replace(/\r\n?/gu, "\n")
+}
+
+function iniMetricLines(value, key) {
+  const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")
+  const prefix = new RegExp(`^\\s*${escapedKey}(?:\\s*=|\\s*$)`, "u")
+  const exact = new RegExp(`^\\s*${escapedKey}\\s*=\\s*([^\\s#]+)\\s*$`, "u")
+  return requireBoundedReceiptText(value, "Android emulator INI receipt")
+    .split("\n")
+    .filter((line) => prefix.test(line))
+    .map((line) => ({ line, value: line.match(exact)?.[1] ?? null }))
+}
+
+function parseBoundHardwareMetric(value, key, label, metric, expectedValue) {
+  const lines = iniMetricLines(value, key)
+  if (lines.length === 0) {
+    throw new Error(`missing ${label} ${metric}`)
+  }
+  if (lines.length > 1) {
+    throw new Error(`duplicate ${label} ${metric}`)
+  }
+  const rawValue = lines[0].value
+  const match = rawValue?.match(/^(\d+)$/u)
+  const parsed = match ? Number(match[1]) : Number.NaN
+  if (!Number.isSafeInteger(parsed) || parsed <= 0) {
+    throw new Error(`malformed ${label} ${metric}`)
+  }
+  if (parsed !== expectedValue) {
+    throw new Error(`${label} ${metric} drift: expected ${expectedValue}, received ${parsed}`)
+  }
+  return parsed
+}
+
+function parseBoundTextMetric(value, key, label, metric, expectedValue) {
+  const lines = iniMetricLines(value, key)
+  if (lines.length === 0) {
+    throw new Error(`missing ${label} ${metric}`)
+  }
+  if (lines.length > 1) {
+    throw new Error(`duplicate ${label} ${metric}`)
+  }
+  const rawValue = lines[0].value
+  if (rawValue === null || !/^[A-Za-z0-9_-]+$/u.test(rawValue)) {
+    throw new Error(`malformed ${label} ${metric}`)
+  }
+  if (rawValue !== expectedValue) {
+    throw new Error(`${label} ${metric} drift`)
+  }
+  return rawValue
+}
+
+function parseCanonicalAndroidAvdConfig(value) {
+  const unsupportedHeap = iniMetricLines(value, "hw.heapSize")
+  if (unsupportedHeap.length > 0) {
+    throw new Error("canonical contains unsupported hw.heapSize")
+  }
+  return {
+    avdName: parseBoundTextMetric(
+      value,
+      "AvdId",
+      "canonical",
+      "AVD identity",
+      EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.avdName
+    ),
+    profile: parseBoundTextMetric(
+      value,
+      "hw.device.name",
+      "canonical",
+      "profile",
+      EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.profile
+    ),
+    cpuCores: parseBoundHardwareMetric(
+      value,
+      "hw.cpu.ncore",
+      "canonical",
+      "CPU",
+      EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.cpuCores
+    ),
+    ramMegabytes: parseBoundHardwareMetric(
+      value,
+      "hw.ramSize",
+      "canonical",
+      "RAM",
+      EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.ramMegabytes
+    ),
+    heapMegabytes: parseBoundHardwareMetric(
+      value,
+      "vm.heapSize",
+      "canonical",
+      "heap",
+      EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.heapMegabytes
+    )
+  }
+}
+
+function parseResolvedAndroidHardware(value) {
+  const unsupportedHeap = iniMetricLines(value, "hw.heapSize")
+  if (unsupportedHeap.length > 0) {
+    throw new Error("resolved contains unsupported hw.heapSize")
+  }
+  return {
+    avdName: parseBoundTextMetric(
+      value,
+      "avd.name",
+      "resolved",
+      "AVD name",
+      EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.avdName
+    ),
+    avdId: parseBoundTextMetric(
+      value,
+      "avd.id",
+      "resolved",
+      "AVD id",
+      EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.avdName
+    ),
+    profile: parseBoundTextMetric(
+      value,
+      "hw.device.name",
+      "resolved",
+      "profile",
+      EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.profile
+    ),
+    cpuCores: parseBoundHardwareMetric(
+      value,
+      "hw.cpu.ncore",
+      "resolved",
+      "CPU",
+      EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.cpuCores
+    ),
+    ramMegabytes: parseBoundHardwareMetric(
+      value,
+      "hw.ramSize",
+      "resolved",
+      "RAM",
+      EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.ramMegabytes
+    ),
+    heapMegabytes: parseBoundHardwareMetric(
+      value,
+      "vm.heapSize",
+      "resolved",
+      "heap",
+      EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.heapMegabytes
+    )
+  }
+}
+
+function parseLiveAvdName(value) {
+  const lines = requireBoundedReceiptText(value, "live Android AVD identity")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+  if (lines.length === 2 && lines[1] === "OK") lines.pop()
+  if (lines.length !== 1 || !/^[a-z0-9][a-z0-9_-]{0,63}$/u.test(lines[0])) {
+    throw new Error("malformed live AVD identity")
+  }
+  if (lines[0] !== EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.avdName) {
+    throw new Error("live AVD identity drift")
+  }
+  return lines[0]
+}
+
+export function evaluateCanonicalAndroidAvdConfig(value) {
+  return parseCanonicalAndroidAvdConfig(value)
+}
+
+export function canonicalizeAndroidAvdConfig(value) {
+  parseBoundTextMetric(
+    value,
+    "AvdId",
+    "canonical",
+    "AVD identity",
+    EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.avdName
+  )
+  parseBoundTextMetric(
+    value,
+    "hw.device.name",
+    "canonical",
+    "profile",
+    EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.profile
+  )
+  const lines = requireBoundedReceiptText(value, "Android AVD config").split("\n")
+  const targetedLine = new RegExp(
+    `^\\s*(?:${ANDROID_AVD_HARDWARE_KEYS.map((key) =>
+      key.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&")
+    ).join("|")})(?:\\s*=|\\s*$)`,
+    "u"
+  )
+  const preserved = lines.filter((line) => !targetedLine.test(line))
+  while (preserved.at(-1) === "") preserved.pop()
+  return [
+    ...preserved,
+    `hw.cpu.ncore=${EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.cpuCores}`,
+    `hw.ramSize=${EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.ramMegabytes}`,
+    `vm.heapSize=${EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.heapMegabytes}`,
+    ""
+  ].join("\n")
+}
+
+export function classifyAndroidEnvironmentProbeResult(value) {
+  const probe = requireRecord(value, "Android emulator probe result")
+  const errorCode = probe.errorCode
+  if (errorCode !== null && errorCode !== undefined && typeof errorCode !== "string") {
+    throw new Error("Android emulator probe error code must be a string or null")
+  }
+  if (errorCode === "ETIMEDOUT") {
+    throw new Error("Android emulator probe timed out")
+  }
+  if (errorCode) {
+    throw new Error(`Android emulator probe failed with error ${errorCode}`)
+  }
+  if (probe.status !== 0) {
+    throw new Error(`Android emulator probe failed with status ${String(probe.status)}`)
+  }
+  if (typeof probe.stdout !== "string") {
+    throw new Error("Android emulator probe stdout must be a string")
+  }
+  const stdout = probe.stdout.trim()
+  if (!stdout) {
+    throw new Error("Android emulator probe returned empty stdout")
+  }
+  return stdout
+}
+
+export function evaluateAndroidEmulatorEnvironment(value) {
+  const evidence = requireRecord(value, "Android emulator environment evidence")
+  const requested = requireRecord(evidence.requested, "requested Android emulator environment")
+  if (requested.avdName !== EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.avdName) {
+    throw new Error("requested AVD identity drift")
+  }
+  if (requested.profile !== EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.profile) {
+    throw new Error("requested profile drift")
+  }
+  if (requested.cpuCores !== EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.cpuCores) {
+    throw new Error("requested CPU drift")
+  }
+  if (requested.ramInput !== EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.ramInput) {
+    throw new Error("requested RAM drift")
+  }
+  if (requested.ramMegabytes !== EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.ramMegabytes) {
+    throw new Error("requested RAM megabytes drift")
+  }
+  if (requested.heapMegabytes !== EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.heapMegabytes) {
+    throw new Error("requested heap drift")
+  }
+
+  const canonicalConfig = parseCanonicalAndroidAvdConfig(evidence.canonicalConfig)
+  const resolvedHardware = parseResolvedAndroidHardware(evidence.resolvedHardware)
+  const liveAvdName = parseLiveAvdName(evidence.liveAvdName)
+  const guestCpuOnline = requireBoundedReceiptText(
+    evidence.guestCpuOnline,
+    "Android guest online CPU receipt"
+  ).trim()
+  if (guestCpuOnline !== "0-3") {
+    const range = guestCpuOnline.match(/^0-(\d+)$/u)
+    if (range && Number(range[1]) < 3) throw new Error("offline CPU")
+    if (range && Number(range[1]) > 3) throw new Error("extra CPU")
+    throw new Error("malformed guest online CPU receipt")
+  }
+
+  const meminfo = requireBoundedReceiptText(evidence.guestMeminfo, "Android guest meminfo")
+  const memoryLines = meminfo
+    .split("\n")
+    .map((line) => line.match(/^MemTotal:\s*(\d+)\s+kB\s*$/u)?.[1] ?? null)
+    .filter((item) => item !== null)
+  if (memoryLines.length !== 1) {
+    throw new Error("guest memory receipt is missing or ambiguous")
+  }
+  const memTotalKilobytes = Number(memoryLines[0])
+  if (memTotalKilobytes < EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.minimumGuestMemoryKilobytes) {
+    throw new Error("guest memory below the 4 GB class")
+  }
+  if (memTotalKilobytes > EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.maximumGuestMemoryKilobytes) {
+    throw new Error("guest memory above the bound")
+  }
+
+  const guestHeap = requireBoundedReceiptText(evidence.guestHeapSize, "Android guest heap receipt")
+    .trim()
+    .match(/^(\d+)[mM]$/u)
+  const guestHeapMegabytes = guestHeap ? Number(guestHeap[1]) : Number.NaN
+  if (guestHeapMegabytes !== EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.heapMegabytes) {
+    throw new Error("guest heap drift")
+  }
+
+  return {
+    schemaVersion: ANDROID_EMULATOR_ENVIRONMENT_SCHEMA,
+    result: "PASS",
+    requested: {
+      avdName: EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.avdName,
+      profile: EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.profile,
+      cpuCores: EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.cpuCores,
+      ramInput: EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.ramInput,
+      ramMegabytes: EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.ramMegabytes,
+      heapMegabytes: EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.heapMegabytes
+    },
+    canonicalConfig,
+    resolvedHardware,
+    liveGuest: {
+      avdName: liveAvdName,
+      cpuOnline: guestCpuOnline,
+      cpuCores: EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.cpuCores,
+      memTotalKilobytes,
+      heapMegabytes: guestHeapMegabytes
+    }
+  }
+}
+
 export function classifyChromeAutomationSurface(value, rawDisplaySize) {
   if (typeof value !== "string") {
     throw new Error("Chrome automation hierarchy must be a string")
