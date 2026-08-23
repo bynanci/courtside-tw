@@ -61,6 +61,26 @@ export function classifyAndroidActivityLine(value) {
   }
 }
 
+export function retainFirstPausedSnapshot(currentSnapshot, candidateSnapshot) {
+  if (currentSnapshot !== null && currentSnapshot !== undefined) {
+    return validateSnapshot(currentSnapshot, "retained runtime pause snapshot")
+  }
+  if (candidateSnapshot === null || candidateSnapshot === undefined) {
+    return null
+  }
+  const candidate = validateSnapshot(candidateSnapshot, "runtime pause candidate")
+  if (candidate.runningCount !== 0 || candidate.targetStatus === "running") {
+    return null
+  }
+  return candidate
+}
+
+export function boundedAndroidPollDelay(remainingMilliseconds, maximumPollMilliseconds) {
+  const remaining = requireFiniteNumber(remainingMilliseconds, "remaining Android poll time")
+  const maximum = requireCount(maximumPollMilliseconds, "maximum Android poll delay")
+  return Math.max(0, Math.min(maximum, remaining))
+}
+
 export function calibrateBrowserClockToHost(rawCalibration) {
   const calibration = requireRecord(rawCalibration, "browser clock calibration")
   const browserEpochAtArm = requireTimestamp(calibration.browserEpochAtArm, "browser epoch at arm")

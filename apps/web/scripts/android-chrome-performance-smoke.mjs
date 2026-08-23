@@ -3,10 +3,12 @@ import { spawnSync } from "node:child_process"
 import { chromium, expect } from "@playwright/test"
 
 import {
+  boundedAndroidPollDelay,
   calibrateBrowserClockToHost,
   classifyAndroidActivityLine,
   evaluateAndroidBackgroundTimeline,
-  normalizeBrowserRuntimeSnapshot
+  normalizeBrowserRuntimeSnapshot,
+  retainFirstPausedSnapshot
 } from "./android-creative-timeline.mjs"
 
 const ARTICLE_URL = "http://127.0.0.1:4173/articles/opening-night?issue=issue-2026-01"
@@ -564,8 +566,23 @@ async function armOperatingSystemPauseObservation(page, targetIndex) {
   }, targetIndex)
 }
 
-function readOperatingSystemPauseSnapshot(page) {
-  return page.evaluate(() => window.__courtsideT079AndroidBackgroundState?.pauseSnapshot ?? null)
+function readOperatingSystemPauseSnapshot(page, targetIndex) {
+  return page.evaluate((index) => {
+    const observed = window.__courtsideT079AndroidBackgroundState?.pauseSnapshot
+    if (observed) return observed
+
+    const runtimes = Array.from(document.querySelectorAll('[data-testid="creative-runtime"]'))
+    const target = runtimes[index]
+    if (!target) throw new Error(`Creative runtime ${index} is missing`)
+    return {
+      at: Date.now(),
+      frame: Number(target.getAttribute("data-runtime-frame")),
+      runningCount: runtimes.filter(
+        (runtime) => runtime.getAttribute("data-runtime-status") === "running"
+      ).length,
+      targetStatus: target.getAttribute("data-runtime-status") ?? "missing"
+    }
+  }, targetIndex)
 }
 
 function recordActivityTransition(transitions, activity, at) {
@@ -585,14 +602,17 @@ function recordActivityTransition(transitions, activity, at) {
   }
 }
 
-async function waitForBackgroundConvergence(page, homeSignal) {
+async function waitForBackgroundConvergence(page, homeSignal, targetIndex) {
   const deadline = performance.now() + BUDGETS.operatingSystemBackgroundMilliseconds
   const activityTransitions = []
   let pauseSnapshot = null
 
   while (performance.now() < deadline) {
     recordActivityTransition(activityTransitions, resumedActivityLine(), Date.now())
-    pauseSnapshot ??= await readOperatingSystemPauseSnapshot(page)
+    pauseSnapshot = retainFirstPausedSnapshot(
+      pauseSnapshot,
+      await readOperatingSystemPauseSnapshot(page, targetIndex)
+    )
     const backgroundActivity = activityTransitions.find(
       (transition) => transition.at >= homeSignal.at && !transition.chromeForeground
     )
@@ -601,7 +621,10 @@ async function waitForBackgroundConvergence(page, homeSignal) {
     }
     const remainingMilliseconds = deadline - performance.now()
     await new Promise((resolve) =>
-      setTimeout(resolve, Math.min(ANDROID_ACTIVITY_POLL_MILLISECONDS, remainingMilliseconds))
+      setTimeout(
+        resolve,
+        boundedAndroidPollDelay(remainingMilliseconds, ANDROID_ACTIVITY_POLL_MILLISECONDS)
+      )
     )
   }
 
@@ -621,7 +644,10 @@ async function observeBackgroundActivity(activityTransitions) {
   while (performance.now() < deadline) {
     const remainingMilliseconds = deadline - performance.now()
     await new Promise((resolve) =>
-      setTimeout(resolve, Math.min(ANDROID_ACTIVITY_POLL_MILLISECONDS, remainingMilliseconds))
+      setTimeout(
+        resolve,
+        boundedAndroidPollDelay(remainingMilliseconds, ANDROID_ACTIVITY_POLL_MILLISECONDS)
+      )
     )
     activity = resumedActivityLine()
     recordActivityTransition(activityTransitions, activity, Date.now())
@@ -643,7 +669,7 @@ async function verifyAndroidOperatingSystemBackground(page, targetIndex) {
   const commandStartedAt = performance.now()
   adb("shell", "input", "keyevent", "KEYCODE_HOME")
   const commandMilliseconds = performance.now() - commandStartedAt
-  const convergence = await waitForBackgroundConvergence(page, homeSignal)
+  const convergence = await waitForBackgroundConvergence(page, homeSignal, targetIndex)
   const activityAfterObservation = await observeBackgroundActivity(convergence.activityTransitions)
   const pauseSnapshot = normalizeBrowserRuntimeSnapshot(convergence.pauseSnapshot, clockCalibration)
   const observationSnapshot = normalizeBrowserRuntimeSnapshot(
