@@ -5,7 +5,7 @@ import { chromium, expect } from "@playwright/test"
 import {
   androidCommandTimeoutMilliseconds,
   boundedAndroidPollDelay,
-  captureChromeSurfaceProbeBoundaryAttempt,
+  captureChromeSurfaceProbeBoundaryWithActivityAcquisition,
   classifyAndroidActivityLine,
   classifyAndroidActivityProbeResult,
   classifyChromeAutomationSurface,
@@ -581,16 +581,28 @@ function requireExpectedAndroidDisplaySize(deadline) {
   return displaySize
 }
 
+function acquireChromeSurfaceActivityWithinDeadline(deadline, label) {
+  return acquireChromeForegroundActivityAtBoundary({
+    readActivityReceipt: (timeoutMilliseconds) =>
+      readBoundChromeSurfaceActivityReceipt({
+        deadlineAt: deadline,
+        maximumMilliseconds: timeoutMilliseconds,
+        label,
+        remainingMilliseconds: requireRemainingAutomationMilliseconds,
+        readActivityReceipt: resumedActivityReceipt
+      }),
+    deadlineAt: deadline,
+    now: () => performance.now(),
+    maximumReadMilliseconds: ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS,
+    maximumPollMilliseconds: CHROME_AUTOMATION_POLL_MILLISECONDS,
+    maximumAttempts: ANDROID_ACTIVITY_RECEIPT_HISTORY_LIMIT,
+    delay: (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds))
+  })
+}
+
 function probeChromeContentSurfaceAtActivityBoundary(deadline) {
-  return captureChromeSurfaceProbeBoundaryAttempt({
-    readActivityReceipt: () =>
-      resumedActivityReceipt(
-        requireRemainingAutomationMilliseconds(
-          deadline,
-          ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS,
-          "activity probe"
-        )
-      ),
+  return captureChromeSurfaceProbeBoundaryWithActivityAcquisition({
+    acquireActivity: (label) => acquireChromeSurfaceActivityWithinDeadline(deadline, label),
     probeSurface: () => probeChromeContentSurface(deadline)
   })
 }
@@ -612,7 +624,9 @@ function surfaceReceipt(surface) {
     hierarchyBytes: surface.hierarchyBytes,
     displaySize: surface.displaySize,
     activityBefore: surface.activityBefore,
-    activityAfter: surface.activityAfter
+    activityAfter: surface.activityAfter,
+    activityBeforeAttempts: surface.activityBeforeAttempts ?? null,
+    activityAfterAttempts: surface.activityAfterAttempts ?? null
   }
 }
 
@@ -623,14 +637,6 @@ async function normalizeChromeContentSurface() {
     now: () => performance.now(),
     maximumPollMilliseconds: CHROME_AUTOMATION_POLL_MILLISECONDS,
     probeSurface: () => probeChromeContentSurfaceAtActivityBoundary(deadline),
-    readActivityReceipt: (_expectedActivity, label) =>
-      readBoundChromeSurfaceActivityReceipt({
-        deadlineAt: deadline,
-        maximumMilliseconds: ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS,
-        label,
-        remainingMilliseconds: requireRemainingAutomationMilliseconds,
-        readActivityReceipt: resumedActivityReceipt
-      }),
     tap: (dismissTap, label) =>
       executeBoundChromeSurfaceTap({
         deadlineAt: deadline,
@@ -661,7 +667,7 @@ async function requireClearChromeContentSurface() {
   const deadline = performance.now() + CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS
   const attempts = []
   while (performance.now() < deadline) {
-    const surface = probeChromeContentSurfaceAtActivityBoundary(deadline)
+    const surface = await probeChromeContentSurfaceAtActivityBoundary(deadline)
     attempts.push(surfaceReceipt(surface))
     if (surface.status === "activity-unresolved") {
       const pollRemainingMilliseconds = deadline - performance.now()

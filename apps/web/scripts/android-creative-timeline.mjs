@@ -760,40 +760,32 @@ export function executeChromeSurfaceNormalizationAction(rawDependencies) {
     rawDependencies,
     "Chrome surface normalization action dependencies"
   )
+  const surface = requireRecord(dependencies.surface, "Chrome automation surface")
   const normalization = planChromeAutomationSurfaceNormalization(
-    dependencies.surface,
+    surface,
     dependencies.dismissedPrompts
   )
   if (normalization.action !== "tap") return normalization
 
   const expectedActivity = requireChromeForegroundActivityAtBoundary(dependencies.expectedActivity)
-  const readActivityReceipt = requireCallable(
-    dependencies.readActivityReceipt,
-    "normalization activity receipt reader"
-  )
   const tap = requireCallable(dependencies.tap, "normalization tap")
   const recordDismissedPrompt = requireCallable(
     dependencies.recordDismissedPrompt,
     "normalization dismissed prompt recorder"
   )
-  const activityBeforeTap = requireChromeSurfaceNormalizationActivity(
-    expectedActivity.activity,
-    readActivityReceipt("pre-tap activity")
-  )
+  const activityBeforeTap = requireChromeSurfaceNormalizationActivity(expectedActivity.activity, {
+    status: "resolved",
+    activity: surface.activityAfter
+  })
   const tapLabel =
     normalization.prompt === "known-pixel-launcher-anr"
       ? "Pixel Launcher ANR wait tap"
       : "notification tap"
   tap(normalization.dismissTap, tapLabel)
-  const activityAfterTap = requireChromeSurfaceNormalizationActivity(
-    expectedActivity.activity,
-    readActivityReceipt("post-tap activity")
-  )
   recordDismissedPrompt(normalization.prompt)
   return Object.freeze({
     ...normalization,
-    activityBeforeTap,
-    activityAfterTap
+    activityBeforeTap
   })
 }
 
@@ -905,10 +897,6 @@ export async function normalizeChromeAutomationSurfaceWithinDeadline(rawDependen
     dependencies.probeSurface,
     "Chrome surface normalization probe"
   )
-  const readActivityReceipt = requireCallable(
-    dependencies.readActivityReceipt,
-    "Chrome surface normalization activity reader"
-  )
   const tap = requireCallable(dependencies.tap, "Chrome surface normalization tap")
   const delay = requireCallable(dependencies.delay, "Chrome surface normalization delay")
   const maximumPollMilliseconds = requireCount(
@@ -939,7 +927,6 @@ export async function normalizeChromeAutomationSurfaceWithinDeadline(rawDependen
         surface,
         dismissedPrompts: [...dismissedPromptStatuses],
         expectedActivity: normalizationActivity,
-        readActivityReceipt: (label) => readActivityReceipt(normalizationActivity, label),
         tap,
         recordDismissedPrompt: (prompt) => dismissedPromptStatuses.add(prompt)
       })
@@ -1196,6 +1183,55 @@ export async function acquireChromeForegroundActivityAtBoundary(rawDependencies)
     `Android Chrome activity identity did not resolve within its bounded receipt acquisition; ` +
       `attempts=${JSON.stringify(attempts)}`
   )
+}
+
+function requireChromeSurfaceActivityAcquisition(rawAcquisition, label) {
+  const acquisition = requireRecord(rawAcquisition, label)
+  const activity = requireChromeForegroundActivityAtBoundary(acquisition.activity)
+  if (!Array.isArray(acquisition.attempts)) {
+    throw new Error(`${label} attempts must be an array`)
+  }
+  const attempts = acquisition.attempts.map((attempt) =>
+    requireAndroidActivityProbeReceipt(attempt)
+  )
+  return Object.freeze({
+    ...activity,
+    attempts: Object.freeze(attempts)
+  })
+}
+
+export async function captureChromeSurfaceProbeBoundaryWithActivityAcquisition(rawDependencies) {
+  const dependencies = requireRecord(
+    rawDependencies,
+    "Chrome surface activity-acquisition boundary dependencies"
+  )
+  const acquireActivity = requireCallable(
+    dependencies.acquireActivity,
+    "Chrome surface boundary activity acquisition"
+  )
+  const probeSurface = requireCallable(dependencies.probeSurface, "Chrome surface boundary probe")
+  const activityBefore = requireChromeSurfaceActivityAcquisition(
+    await acquireActivity("pre-surface activity"),
+    "pre-surface Chrome activity acquisition"
+  )
+  const surface = requireRecord(await probeSurface(), "Chrome surface probe")
+  const activityAfter = requireChromeSurfaceActivityAcquisition(
+    await acquireActivity("post-surface activity"),
+    "post-surface Chrome activity acquisition"
+  )
+  if (!sameChromeActivityIdentity(activityBefore, activityAfter)) {
+    throw new Error(
+      `Chrome activity identity changed during the native surface probe: ` +
+        `before=${activityBefore.activity}, after=${activityAfter.activity}`
+    )
+  }
+  return Object.freeze({
+    ...surface,
+    activityBefore: activityBefore.activity,
+    activityAfter: activityAfter.activity,
+    activityBeforeAttempts: activityBefore.attempts,
+    activityAfterAttempts: activityAfter.attempts
+  })
 }
 
 export function captureChromeSurfaceProbeBoundary({ readActivity, probeSurface }) {
