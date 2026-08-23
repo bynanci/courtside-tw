@@ -10,9 +10,9 @@ import {
   classifyAndroidActivityLine,
   classifyAndroidActivityProbeResult,
   classifyChromeAutomationSurface,
-  disableSyntheticPageFocus,
   evaluateAndroidBackgroundTimeline,
   evaluateAndroidForegroundFrameTimeline,
+  nativeAndroidCdpConnectionOptions,
   normalizeBrowserRuntimeSnapshot,
   parseAndroidDisplaySize,
   requireAndroidActivityAtBoundary,
@@ -43,7 +43,10 @@ const BUDGETS = Object.freeze({
   maximumTotalLongTaskMilliseconds: 1_800
 })
 
-const browser = await chromium.connectOverCDP("http://127.0.0.1:9222")
+const browser = await chromium.connectOverCDP(
+  "http://127.0.0.1:9222",
+  nativeAndroidCdpConnectionOptions()
+)
 let phase = "connect"
 
 try {
@@ -944,9 +947,7 @@ async function observeBackgroundActivity(activityTransitions) {
 }
 
 async function verifyAndroidOperatingSystemBackground(page, targetIndex) {
-  const lifecycleSession = await page.context().newCDPSession(page)
   await page.bringToFront()
-  const focusEmulation = await disableSyntheticPageFocus(lifecycleSession)
   const browserForeground = requireAndroidBrowserForegroundReceipt(
     await page.evaluate(() => ({
       url: window.location.href,
@@ -996,7 +997,6 @@ async function verifyAndroidOperatingSystemBackground(page, targetIndex) {
 
   return {
     signal: homeSignal.signal,
-    focusEmulation,
     browserForeground,
     foregroundActivityBeforeHome: {
       activity: foregroundActivity.activity,
