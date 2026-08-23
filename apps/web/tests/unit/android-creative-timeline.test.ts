@@ -16,6 +16,7 @@ import { test } from "node:test"
 import { fileURLToPath } from "node:url"
 
 import * as timelineHelpers from "../../scripts/android-creative-timeline.mjs"
+import * as environmentHelpers from "../../scripts/android-emulator-environment.mjs"
 
 import {
   boundedAndroidPollDelay,
@@ -1423,21 +1424,41 @@ else { process.stderr.write("unexpected fake adb command"); process.exitCode = 1
 })
 
 test("physical Android host reads require one stable descriptor snapshot", () => {
-  const environmentHarness = readFileSync(
-    new URL("../../scripts/android-emulator-environment.mjs", import.meta.url),
-    "utf8"
-  )
+  const requireStableRead = Reflect.get(environmentHelpers, "requireStablePhysicalFileRead")
+  equal(typeof requireStableRead, "function")
+  if (typeof requireStableRead !== "function") return
 
-  match(
-    environmentHarness,
-    /const beforeReadMetadata = fstatSync\(descriptor, \{ bigint: true \}\)/u
+  const metadata = {
+    dev: 1n,
+    ino: 2n,
+    mode: 33_188n,
+    size: 4n,
+    mtimeNs: 3n,
+    ctimeNs: 4n
+  }
+  const stableRead = {
+    label: "Host fixture",
+    beforeReadMetadata: metadata,
+    betweenReadMetadata: metadata,
+    afterReadMetadata: metadata,
+    firstRead: Buffer.from("same"),
+    secondRead: Buffer.from("same"),
+    firstBytesRead: 4,
+    secondBytesRead: 4
+  }
+  deepEqual(requireStableRead(stableRead), Buffer.from("same"))
+  throws(
+    () => requireStableRead({ ...stableRead, secondRead: Buffer.from("sAme") }),
+    /physical file changed while being read/u
   )
-  match(
-    environmentHarness,
-    /const afterReadMetadata = fstatSync\(descriptor, \{ bigint: true \}\)/u
+  throws(
+    () =>
+      requireStableRead({
+        ...stableRead,
+        afterReadMetadata: { ...metadata, mtimeNs: metadata.mtimeNs + 1n }
+      }),
+    /physical file changed while being read/u
   )
-  match(environmentHarness, /firstRead\.equals\(secondRead\)/u)
-  match(environmentHarness, /physical file changed while being read/u)
 })
 
 test("emulator environment CLI rereads host evidence after live probes", () => {
@@ -1474,14 +1495,23 @@ test("emulator environment CLI rereads host evidence after live probes", () => {
   writeFileSync(
     fakeAdb,
     `#!/usr/bin/env node
-const { writeFileSync } = require("node:fs")
+const { renameSync, writeFileSync } = require("node:fs")
 const command = process.argv.slice(2).join(" ")
 if (command === "emu avd name") {
-  if (process.env.FAKE_HOST_MUTATION_PATH && process.env.FAKE_HOST_MUTATION_BASE64) {
+  const mutationPath = process.env.FAKE_HOST_MUTATION_PATH
+  if (mutationPath && process.env.FAKE_HOST_MUTATION_BASE64) {
     writeFileSync(
-      process.env.FAKE_HOST_MUTATION_PATH,
+      mutationPath,
       Buffer.from(process.env.FAKE_HOST_MUTATION_BASE64, "base64")
     )
+  }
+  if (mutationPath && process.env.FAKE_HOST_RESTORE_BASE64) {
+    writeFileSync(mutationPath, Buffer.from(process.env.FAKE_HOST_RESTORE_BASE64, "base64"))
+  }
+  if (mutationPath && process.env.FAKE_HOST_REPLACEMENT_BASE64) {
+    const replacementPath = mutationPath + "." + process.pid + ".replacement"
+    writeFileSync(replacementPath, Buffer.from(process.env.FAKE_HOST_REPLACEMENT_BASE64, "base64"))
+    renameSync(replacementPath, mutationPath)
   }
   process.stdout.write("${ANDROID_AVD_NAME}\\nOK\\n")
 } else if (command === "exec-out cat /sys/devices/system/cpu/online") process.stdout.write("0-3\\n")
@@ -1514,6 +1544,17 @@ else { process.stderr.write("unexpected fake adb command"); process.exitCode = 1
       label: "resolved",
       path: resolvedPath,
       value: `${resolvedHardware}hw.gpu.enabled=yes\n`
+    },
+    {
+      label: "canonical-aba",
+      path: configPath,
+      value: `${config}disk.dataPartition.size=6G\n`,
+      restoreValue: config
+    },
+    {
+      label: "canonical-replacement",
+      path: configPath,
+      replacementValue: config
     }
   ]
 
@@ -1532,12 +1573,27 @@ else { process.stderr.write("unexpected fake adb command"); process.exitCode = 1
           env: {
             ...environment,
             FAKE_HOST_MUTATION_PATH: mutation.path,
-            FAKE_HOST_MUTATION_BASE64: Buffer.from(mutation.value).toString("base64")
+            ...(mutation.value
+              ? { FAKE_HOST_MUTATION_BASE64: Buffer.from(mutation.value).toString("base64") }
+              : {}),
+            ...(mutation.restoreValue
+              ? { FAKE_HOST_RESTORE_BASE64: Buffer.from(mutation.restoreValue).toString("base64") }
+              : {}),
+            ...(mutation.replacementValue
+              ? {
+                  FAKE_HOST_REPLACEMENT_BASE64: Buffer.from(mutation.replacementValue).toString(
+                    "base64"
+                  )
+                }
+              : {})
           }
         }
       )
       equal(result.status, 1)
-      equal(readFileSync(mutation.path, "utf8"), mutation.value)
+      equal(
+        readFileSync(mutation.path, "utf8"),
+        mutation.restoreValue ?? mutation.replacementValue ?? mutation.value
+      )
       const receipt = JSON.parse(readFileSync(join(artifactDirectory, receiptName), "utf8"))
       equal(receipt.result, "FAIL")
       equal(receipt.phase, "verify")
