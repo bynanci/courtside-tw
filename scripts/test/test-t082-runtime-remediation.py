@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-"""Regression contract for the seven post-merge T082 runtime findings."""
+"""Regression contract for the T082 runtime remediation findings."""
 
 from __future__ import annotations
 
 import copy
+import hashlib
 import importlib.util
 import json
+import subprocess
+import sys
 import tempfile
 import unittest
 from datetime import UTC, datetime
@@ -166,6 +169,136 @@ class T082RuntimeRemediationTests(unittest.TestCase):
                 release.atomic_write_json(state_path, oversized)
             self.assertEqual(json.loads(state_path.read_text(encoding="utf-8")), original)
             self.assertLessEqual(state_path.stat().st_size, release.MAX_JSON_BYTES)
+
+    def test_v1_state_migrates_without_losing_history_or_emergency_rollback(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            state_path = root / "release-state.json"
+            backup_path = root / "release-state.v1.json"
+            migrate_receipt_path = root / "migration-receipt.json"
+            status_receipt_path = root / "status-receipt.json"
+            rollback_receipt_path = root / "rollback-receipt.json"
+            schema_path = root / "schema-readback.json"
+
+            release_a = manifest("release-a", "a", 9, 9, 10)
+            release_b = manifest("release-b", "b", 10, 9, 11)
+            releases: dict[str, object] = {
+                "release-a": release_a,
+                "release-b": release_b,
+            }
+            legacy_state: dict[str, object] = {
+                "schema_version": 1,
+                "revision": 4,
+                "database_schema_version": 10,
+                "active_release": "release-b",
+                "previous_release": "release-a",
+                "last_action_receipt": {"action": "activate", "result": "pass"},
+                "releases": releases,
+            }
+            index = 0
+            while len(
+                (json.dumps(legacy_state, indent=2, sort_keys=True) + "\n").encode("utf-8")
+            ) <= release.MAX_STATE_BYTES:
+                release_id = f"registered-candidate-{index:03d}"
+                digit = "cdef"[index % 4]
+                releases[release_id] = manifest(release_id, digit, 10, 9, 11)
+                index += 1
+            serialized = json.dumps(legacy_state, indent=2, sort_keys=True) + "\n"
+            self.assertLessEqual(len(serialized.encode("utf-8")), release.MAX_JSON_BYTES)
+            state_path.write_text(serialized, encoding="utf-8")
+
+            migration = subprocess.run(
+                [
+                    sys.executable,
+                    str(CONTROLLER_PATH),
+                    "--state",
+                    str(state_path),
+                    "--receipt",
+                    str(migrate_receipt_path),
+                    "--environment",
+                    "staging",
+                    "migrate-state",
+                    "--legacy-backup",
+                    str(backup_path),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(migration.returncode, 0, migration.stderr)
+
+            migrated = json.loads(state_path.read_text(encoding="utf-8"))
+            backup = json.loads(backup_path.read_text(encoding="utf-8"))
+            migration_receipt = json.loads(
+                migrate_receipt_path.read_text(encoding="utf-8")
+            )
+            self.assertEqual(backup, legacy_state)
+            self.assertEqual(migrated["schema_version"], 2)
+            self.assertEqual(migrated["environment"], "staging")
+            self.assertEqual(migrated["active_release"], "release-b")
+            self.assertEqual(migrated["previous_release"], "release-a")
+            self.assertEqual(migrated["activated_releases"], ["release-a", "release-b"])
+            self.assertIn("release-a", migrated["releases"])
+            self.assertIn("release-b", migrated["releases"])
+            self.assertLess(len(migrated["releases"]), len(releases))
+            self.assertLessEqual(state_path.stat().st_size, release.MAX_STATE_BYTES)
+            self.assertEqual(migration_receipt["legacy_release_count"], len(releases))
+            self.assertGreater(migration_receipt["archived_only_release_count"], 0)
+            self.assertEqual(
+                migration_receipt["legacy_backup_sha256"],
+                hashlib.sha256(backup_path.read_bytes()).hexdigest(),
+            )
+            self.assertEqual(migration_receipt["schema_rollback_performed"], False)
+            self.assertEqual(migration_receipt["destructive_schema_action"], False)
+
+            status = subprocess.run(
+                [
+                    sys.executable,
+                    str(CONTROLLER_PATH),
+                    "--state",
+                    str(state_path),
+                    "--receipt",
+                    str(status_receipt_path),
+                    "--environment",
+                    "staging",
+                    "status",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(status.returncode, 0, status.stderr)
+
+            schema_path.write_text(
+                json.dumps(schema_readback("staging", 10)), encoding="utf-8"
+            )
+            rollback = subprocess.run(
+                [
+                    sys.executable,
+                    str(CONTROLLER_PATH),
+                    "--state",
+                    str(state_path),
+                    "--receipt",
+                    str(rollback_receipt_path),
+                    "--environment",
+                    "staging",
+                    "rollback",
+                    "--release",
+                    "release-a",
+                    "--schema-readback",
+                    str(schema_path),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(rollback.returncode, 0, rollback.stderr)
+            rollback_receipt = json.loads(
+                rollback_receipt_path.read_text(encoding="utf-8")
+            )
+            self.assertEqual(rollback_receipt["active_after"], "release-a")
+            self.assertEqual(rollback_receipt["schema_rollback_performed"], False)
+            self.assertEqual(rollback_receipt["destructive_schema_action"], False)
 
 
 if __name__ == "__main__":
