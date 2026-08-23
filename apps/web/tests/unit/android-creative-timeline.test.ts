@@ -2,10 +2,12 @@ import { deepEqual, equal, throws } from "node:assert/strict"
 import { test } from "node:test"
 
 import {
+  boundedAndroidPollDelay,
   calibrateBrowserClockToHost,
   classifyAndroidActivityLine,
   evaluateAndroidBackgroundTimeline,
-  normalizeBrowserRuntimeSnapshot
+  normalizeBrowserRuntimeSnapshot,
+  retainFirstPausedSnapshot
 } from "../../scripts/android-creative-timeline.mjs"
 
 const BUDGETS = Object.freeze({
@@ -200,4 +202,20 @@ test("post-pause frames use the runtime pause frame and preserve the existing bu
       ),
     /post-pause frames: expected <= 2, received 3/
   )
+})
+
+test("a live atomic snapshot recovers a pause when the lifecycle observer is frozen", () => {
+  const active = { at: 120, frame: 39, runningCount: 1, targetStatus: "running" }
+  const paused = { at: 140, frame: 40, runningCount: 0, targetStatus: "paused" }
+  const later = { at: 200, frame: 40, runningCount: 0, targetStatus: "paused" }
+
+  equal(retainFirstPausedSnapshot(null, active), null)
+  deepEqual(retainFirstPausedSnapshot(null, paused), paused)
+  deepEqual(retainFirstPausedSnapshot(paused, later), paused)
+})
+
+test("blocking ADB polls clamp an expired timer instead of scheduling a negative timeout", () => {
+  equal(boundedAndroidPollDelay(-57.6, 100), 0)
+  equal(boundedAndroidPollDelay(40, 100), 40)
+  equal(boundedAndroidPollDelay(140, 100), 100)
 })
