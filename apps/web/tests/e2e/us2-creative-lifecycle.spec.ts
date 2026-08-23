@@ -9,7 +9,11 @@ type LifecycleSnapshot = {
   intervals: number
   animationFrames: number
   intersectionTargets: number
+  creativeIntersectionTargets: number
+  detachedIntersectionTargets: number
   resizeTargets: number
+  creativeResizeTargets: number
+  detachedResizeTargets: number
 }
 
 const ordinaryArticlePath = "/articles/courtside-notes?issue=issue-2026-01"
@@ -82,13 +86,37 @@ test("twenty client-side article switches leave zero per-instance creative lifec
   // one-time module state from listeners owned by each canvas instance.
   await page.getByTestId("article-previous").click()
   await expect(page).toHaveURL(/\/articles\/opening-night/)
+  await expect(page.getByTestId("creative-runtime")).toHaveCount(2)
+  await expect.poll(async () => (await lifecycleSnapshot(page)).creativeIntersectionTargets).toBe(4)
   await page.getByTestId("generative-canvas").first().scrollIntoViewIfNeeded()
   await expect.poll(() => page.locator("canvas").count()).toBeGreaterThan(0)
+  await expect
+    .poll(async () => (await lifecycleSnapshot(page)).creativeResizeTargets)
+    .toBeGreaterThan(0)
   await page.getByTestId("article-next").click()
   await expect(page).toHaveURL(/\/articles\/courtside-notes/)
   await expect(page.getByTestId("creative-runtime")).toHaveCount(0)
   await expect(page.locator("canvas")).toHaveCount(0)
-  await expect.poll(async () => (await lifecycleSnapshot(page)).intersectionTargets).toBe(0)
+  // NuxtLink may legitimately keep one visibility-prefetch observer on a connected,
+  // below-fold footer link. The creative leak gate must reject observer ownership by
+  // an unmounted runtime and every detached target without treating that framework
+  // observer as a per-canvas leak.
+  await expect
+    .poll(async () => {
+      const snapshot = await lifecycleSnapshot(page)
+      return {
+        creativeIntersectionTargets: snapshot.creativeIntersectionTargets,
+        detachedIntersectionTargets: snapshot.detachedIntersectionTargets,
+        creativeResizeTargets: snapshot.creativeResizeTargets,
+        detachedResizeTargets: snapshot.detachedResizeTargets
+      }
+    })
+    .toEqual({
+      creativeIntersectionTargets: 0,
+      detachedIntersectionTargets: 0,
+      creativeResizeTargets: 0,
+      detachedResizeTargets: 0
+    })
   const baseline = await lifecycleSnapshot(page)
 
   for (let switchIndex = 1; switchIndex <= 20; switchIndex += 1) {
@@ -184,8 +212,32 @@ async function installLifecycleCounters(page: Page): Promise<void> {
     const globalListenerRecords: GlobalListenerRecord[] = []
     const intervalIds = new Set<number>()
     const animationFrameIds = new Set<number>()
+    const intersectionTargetCounts = new Map<Element, number>()
+    const resizeTargetCounts = new Map<Element, number>()
     let intersectionTargets = 0
     let resizeTargets = 0
+
+    const updateTargetCount = (
+      counts: Map<Element, number>,
+      target: Element,
+      delta: 1 | -1
+    ): void => {
+      const nextCount = (counts.get(target) ?? 0) + delta
+      if (nextCount > 0) {
+        counts.set(target, nextCount)
+      } else {
+        counts.delete(target)
+      }
+    }
+
+    const matchingTargetCount = (
+      counts: Map<Element, number>,
+      predicate: (target: Element) => boolean
+    ): number =>
+      Array.from(counts.entries()).reduce(
+        (total, [target, count]) => total + (predicate(target) ? count : 0),
+        0
+      )
 
     const originalAddEventListener = EventTarget.prototype.addEventListener
     const originalRemoveEventListener = EventTarget.prototype.removeEventListener
@@ -326,6 +378,7 @@ async function installLifecycleCounters(page: Page): Promise<void> {
         if (!observed.has(target)) {
           observed.add(target)
           intersectionTargets += 1
+          updateTargetCount(intersectionTargetCounts, target, 1)
         }
         targets.set(this, observed)
         originalObserve.call(this, target)
@@ -334,6 +387,7 @@ async function installLifecycleCounters(page: Page): Promise<void> {
         const observed = targets.get(this)
         if (observed?.delete(target)) {
           intersectionTargets -= 1
+          updateTargetCount(intersectionTargetCounts, target, -1)
         }
         originalUnobserve.call(this, target)
       }
@@ -341,6 +395,9 @@ async function installLifecycleCounters(page: Page): Promise<void> {
         const observed = targets.get(this)
         if (observed) {
           intersectionTargets -= observed.size
+          for (const target of observed) {
+            updateTargetCount(intersectionTargetCounts, target, -1)
+          }
           observed.clear()
         }
         originalDisconnect.call(this)
@@ -360,6 +417,7 @@ async function installLifecycleCounters(page: Page): Promise<void> {
         if (!observed.has(target)) {
           observed.add(target)
           resizeTargets += 1
+          updateTargetCount(resizeTargetCounts, target, 1)
         }
         targets.set(this, observed)
         originalObserve.call(this, target, options)
@@ -368,6 +426,7 @@ async function installLifecycleCounters(page: Page): Promise<void> {
         const observed = targets.get(this)
         if (observed?.delete(target)) {
           resizeTargets -= 1
+          updateTargetCount(resizeTargetCounts, target, -1)
         }
         originalUnobserve.call(this, target)
       }
@@ -375,6 +434,9 @@ async function installLifecycleCounters(page: Page): Promise<void> {
         const observed = targets.get(this)
         if (observed) {
           resizeTargets -= observed.size
+          for (const target of observed) {
+            updateTargetCount(resizeTargetCounts, target, -1)
+          }
           observed.clear()
         }
         originalDisconnect.call(this)
@@ -394,7 +456,23 @@ async function installLifecycleCounters(page: Page): Promise<void> {
         intervals: intervalIds.size,
         animationFrames: animationFrameIds.size,
         intersectionTargets,
-        resizeTargets
+        creativeIntersectionTargets: matchingTargetCount(
+          intersectionTargetCounts,
+          (target) => target.getAttribute("data-testid") === "creative-runtime"
+        ),
+        detachedIntersectionTargets: matchingTargetCount(
+          intersectionTargetCounts,
+          (target) => !target.isConnected
+        ),
+        resizeTargets,
+        creativeResizeTargets: matchingTargetCount(
+          resizeTargetCounts,
+          (target) => target.getAttribute("data-testid") === "creative-runtime"
+        ),
+        detachedResizeTargets: matchingTargetCount(
+          resizeTargetCounts,
+          (target) => !target.isConnected
+        )
       })
     }
   })
