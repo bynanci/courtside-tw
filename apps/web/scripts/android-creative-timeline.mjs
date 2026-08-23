@@ -47,6 +47,20 @@ function validateSnapshot(value, label) {
   }
 }
 
+export function classifyAndroidActivityLine(value) {
+  if (typeof value !== "string") {
+    throw new Error("Android activity line must be a string")
+  }
+  const activity = value.trim()
+  if (!activity || /(?:^|[:=]\s*)(?:null|none)\s*$/iu.test(activity)) {
+    return null
+  }
+  return {
+    activity,
+    chromeForeground: /com\.android\.chrome/u.test(activity)
+  }
+}
+
 export function calibrateBrowserClockToHost(rawCalibration) {
   const calibration = requireRecord(rawCalibration, "browser clock calibration")
   const browserEpochAtArm = requireTimestamp(calibration.browserEpochAtArm, "browser epoch at arm")

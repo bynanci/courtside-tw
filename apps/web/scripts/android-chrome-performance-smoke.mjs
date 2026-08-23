@@ -4,6 +4,7 @@ import { chromium, expect } from "@playwright/test"
 
 import {
   calibrateBrowserClockToHost,
+  classifyAndroidActivityLine,
   evaluateAndroidBackgroundTimeline,
   normalizeBrowserRuntimeSnapshot
 } from "./android-creative-timeline.mjs"
@@ -568,10 +569,11 @@ function readOperatingSystemPauseSnapshot(page) {
 }
 
 function recordActivityTransition(transitions, activity, at) {
+  const classified = classifyAndroidActivityLine(activity)
+  if (!classified) return
   const transition = {
     at,
-    chromeForeground: /com\.android\.chrome/u.test(activity),
-    activity: activity || "unknown"
+    ...classified
   }
   const previous = transitions.at(-1)
   if (
