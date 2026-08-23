@@ -184,11 +184,16 @@ def ensure_legacy_backup(path: Path, payload: dict[str, Any]) -> bool:
         raise ReleaseError(
             f"legacy release-state backup exceeds {MAX_LEGACY_STATE_BYTES} bytes"
         )
-    path.parent.mkdir(parents=True, exist_ok=True)
-    handle, temporary_name = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
-    temporary = Path(temporary_name)
+    temporary: Path | None = None
     created = False
+    operation_error: OSError | None = None
+    cleanup_error: OSError | None = None
     try:
+        path.parent.mkdir(parents=True, exist_ok=True)
+        handle, temporary_name = tempfile.mkstemp(
+            prefix=f".{path.name}.", dir=path.parent
+        )
+        temporary = Path(temporary_name)
         with os.fdopen(handle, "wb") as output:
             os.fchmod(output.fileno(), 0o600)
             output.write(serialized)
@@ -206,9 +211,22 @@ def ensure_legacy_backup(path: Path, payload: dict[str, Any]) -> bool:
                 os.close(directory)
         except FileExistsError:
             created = False
+    except OSError as error:
+        operation_error = error
     finally:
-        if temporary.exists():
-            temporary.unlink()
+        if temporary is not None:
+            try:
+                temporary.unlink(missing_ok=True)
+            except OSError as error:
+                cleanup_error = error
+    if operation_error is not None:
+        raise ReleaseError(
+            "legacy release-state backup could not be created or published"
+        ) from operation_error
+    if cleanup_error is not None:
+        raise ReleaseError(
+            "legacy release-state backup temporary file could not be removed"
+        ) from cleanup_error
 
     existing, _ = read_legacy_backup(path)
     if serialize_json(existing).encode("utf-8") != serialized:
@@ -787,6 +805,23 @@ def main() -> int:
 
     lock_path = args.state.with_suffix(f"{args.state.suffix}.lock")
     try:
+        if args.action == "migrate-state":
+            try:
+                same_lock_path = args.legacy_backup.resolve() == lock_path.resolve()
+                if (
+                    not same_lock_path
+                    and args.legacy_backup.exists()
+                    and lock_path.exists()
+                ):
+                    same_lock_path = os.path.samefile(args.legacy_backup, lock_path)
+            except OSError as error:
+                raise ReleaseError(
+                    "unable to verify legacy backup and release-state lock separation"
+                ) from error
+            if same_lock_path:
+                raise ReleaseError(
+                    "legacy backup must differ from the release-state lock path"
+                )
         require_production_confirmation(args.environment, args.action)
         lock_path.parent.mkdir(parents=True, exist_ok=True)
         if lock_path.is_symlink():
