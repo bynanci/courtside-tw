@@ -1,8 +1,17 @@
 <script setup lang="ts">
+import { definePageMeta } from "#imports"
+import { ref } from "vue"
+
 import ReadingState from "../components/issues/ReadingState.vue"
+import SharedIssueCover from "../components/issues/SharedIssueCover.vue"
+import ReaderJourneyRail from "../components/reader/ReaderJourneyRail.vue"
 import { canonicalUrl, jsonLd } from "../composables/public-seo"
 import { fetchPublicIssuePage, publicMediaUrl } from "../features/issues/public-issue-api"
 import { issueRoute } from "../features/issues/public-issue-contract"
+
+definePageMeta({ pageTransition: { name: "reader-route" } })
+
+type SharedIssueCoverHandle = { capture: (event?: MouseEvent) => void }
 
 const config = useRuntimeConfig()
 const {
@@ -24,6 +33,11 @@ const featuredIssueNumber = computed(() =>
   String(featuredIssue.value?.issueNumber ?? 0).padStart(2, "0")
 )
 const canonical = canonicalUrl(config.public.siteUrl, "/")
+const featuredCoverMotion = ref<SharedIssueCoverHandle | null>(null)
+
+function captureFeaturedCover(event: MouseEvent): void {
+  featuredCoverMotion.value?.capture(event)
+}
 
 useHead(() => ({
   title: "Courtside TW — 台灣籃球雜誌",
@@ -76,6 +90,7 @@ useHead(() => ({
             <p class="arena-masthead__lede">
               Courtside TW 把每一期做成可直接閱讀的台灣籃球雜誌；不需要登入、錢包或外部服務。
             </p>
+            <ReaderJourneyRail :active-step="1" tone="hero" />
             <div class="arena-masthead__actions">
               <NuxtLink
                 v-if="featuredIssue"
@@ -83,6 +98,7 @@ useHead(() => ({
                 class="button-link button-link--primary"
                 data-testid="home-issue-link"
                 :aria-label="`閱讀第 ${featuredIssue.issueNumber} 期：${featuredIssue.title}`"
+                @click="captureFeaturedCover"
               >
                 查看本期 <span aria-hidden="true">↗</span>
               </NuxtLink>
@@ -91,13 +107,17 @@ useHead(() => ({
           </div>
 
           <figure v-if="featuredIssue && featuredCover" class="arena-masthead__issue">
-            <div class="arena-masthead__cover">
-              <img
+            <div class="arena-masthead__cover-wrap">
+              <SharedIssueCover
+                ref="featuredCoverMotion"
+                class="arena-masthead__cover"
                 :src="featuredCover"
                 :alt="featuredIssue.cover.alt"
                 :width="featuredIssue.cover.width"
                 :height="featuredIssue.cover.height"
-                fetchpriority="high"
+                :issue-slug="featuredIssue.slug"
+                transition-role="source"
+                priority
               />
               <span class="arena-masthead__issue-number" aria-hidden="true">
                 {{ featuredIssueNumber }}
@@ -136,7 +156,11 @@ useHead(() => ({
               <dd>Public</dd>
             </div>
           </dl>
-          <NuxtLink :to="issueRoute(featuredIssue.slug)" class="text-link">
+          <NuxtLink
+            :to="issueRoute(featuredIssue.slug)"
+            class="text-link"
+            @click="captureFeaturedCover"
+          >
             查看編輯目錄 <span aria-hidden="true">→</span>
           </NuxtLink>
         </article>

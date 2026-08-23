@@ -79,6 +79,11 @@ async function verifyReaderJourney() {
   assert.match(homeHtml, /先閱讀，/u)
   assert.match(homeHtml, /本期命題/u)
   assert.match(homeHtml, /data-testid="home-issue-link"/u)
+  assert.match(homeHtml, /aria-label="閱讀旅程"/u)
+  assert.match(homeHtml, /aria-current="step"[^>]*>.*?01/su)
+  assert.match(homeHtml, /data-motion-role="source"/u)
+  assert.doesNotMatch(homeHtml, /style="[^"]*--motion-/u)
+  assert.doesNotMatch(homeHtml, /<html[^>]*data-reader-motion="full"/u)
 
   const csp = home.headers.get("content-security-policy") ?? ""
   assert.match(csp, new RegExp(`img-src[^;]*${escapeRegex(apiOrigin)}`, "u"))
@@ -89,10 +94,14 @@ async function verifyReaderJourney() {
   const issueHtml = await issue.text()
   assert.match(issueHtml, /主場燈光亮起之前/u)
   assert.match(issueHtml, /data-testid="issue-toc-link"/u)
+  assert.match(issueHtml, /data-motion-role="target"/u)
+  assert.match(issueHtml, /aria-current="step"[^>]*>.*?02/su)
 
   const article = await fetch(`${webOrigin}/articles/opening-night`)
   assert.equal(article.status, 200)
-  assert.match(await article.text(), /data-testid="article-document"/u)
+  const articleHtml = await article.text()
+  assert.match(articleHtml, /data-testid="article-document"/u)
+  assert.match(articleHtml, /aria-current="step"[^>]*>.*?03/su)
 
   const api = await fetch(`${apiOrigin}/api/v1/public/issues`, {
     headers: { origin: webOrigin }

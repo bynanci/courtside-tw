@@ -1,8 +1,12 @@
 <script setup lang="ts">
+import { definePageMeta } from "#imports"
+
 import IssueCoverCard from "../../components/issues/IssueCoverCard.vue"
 import ReadingState from "../../components/issues/ReadingState.vue"
 import { canonicalUrl, jsonLd } from "../../composables/public-seo"
 import { fetchPublicIssuePage } from "../../features/issues/public-issue-api"
+
+definePageMeta({ pageTransition: { name: "reader-route" } })
 
 const config = useRuntimeConfig()
 const {

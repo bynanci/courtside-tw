@@ -35,11 +35,23 @@
   --color-text-muted-on-hero: var(--palette-stone-400);
   --color-border-on-hero: rgb(242 238 229 / 20%);
   --color-line-on-hero: rgb(242 238 229 / 18%);
-  --color-glow-on-hero: rgb(231 108 60 / 18%);
-  --color-sheen-on-hero: rgb(255 255 255 / 3%);
   --color-issue-number-on-hero: rgb(242 238 229 / 10%);
   --font-display: "Arial Narrow", "Noto Sans TC", "PingFang TC", sans-serif;
   --font-body: "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+  /* CSP-safe mirror of reader-motion.ts, enforced by arena-motion-system.test.ts. */
+  --motion-duration-none: 0ms;
+  --motion-duration-press-in: 80ms;
+  --motion-duration-progress: 90ms;
+  --motion-duration-exit: 140ms;
+  --motion-duration-press-out: 140ms;
+  --motion-duration-fallback: 180ms;
+  --motion-duration-enter: 220ms;
+  --motion-duration-shared: 360ms;
+  --motion-distance-unfold: 4px;
+  --motion-distance-orient: 8px;
+  --motion-scale-press: 0.98;
+  --motion-easing-enter: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-easing-exit: cubic-bezier(0.4, 0, 1, 1);
   --accent: var(--color-action);
   --muted: var(--color-text-muted);
   font-family: var(--font-body);
@@ -81,6 +93,26 @@ body {
   overflow-x: clip;
   background: var(--color-bg-page);
   color: var(--color-text-primary);
+}
+
+.app-motion-root {
+  min-height: 100svh;
+}
+
+html[data-reader-motion="full"][data-reader-motion-route="enabled"] .reader-route-enter-active {
+  transition:
+    opacity var(--motion-duration-enter) var(--motion-easing-enter),
+    transform var(--motion-duration-enter) var(--motion-easing-enter);
+}
+
+html[data-reader-motion="full"][data-reader-motion-route="enabled"] .reader-route-enter-from {
+  opacity: 0;
+  transform: translateY(var(--motion-distance-orient));
+}
+
+html[data-reader-motion="full"][data-reader-motion-route="enabled"]
+  .reader-route-enter-from.issue-detail-page {
+  transform: none;
 }
 
 a {
@@ -201,9 +233,6 @@ a:focus-visible {
   position: absolute;
   inset: 0;
   overflow: hidden;
-  background:
-    radial-gradient(circle at 78% 42%, var(--color-glow-on-hero), transparent 24rem),
-    linear-gradient(115deg, transparent 0 56%, var(--color-sheen-on-hero) 56% 57%, transparent 57%);
   pointer-events: none;
 }
 
@@ -288,9 +317,15 @@ a:focus-visible {
   align-self: end;
 }
 
-.arena-masthead__cover {
+.arena-masthead__cover-wrap {
   position: relative;
   width: min(100%, 22rem);
+  justify-self: end;
+}
+
+.arena-masthead__cover {
+  position: relative;
+  width: 100%;
   aspect-ratio: 4 / 5;
   justify-self: end;
   overflow: hidden;
@@ -395,6 +430,19 @@ a.text-link {
   min-height: 48px;
   margin-top: 2rem;
   padding: 0.8rem 1rem;
+}
+
+html[data-reader-motion-feedback="enabled"] .button-link {
+  transition:
+    transform var(--motion-duration-press-out) var(--motion-easing-enter),
+    border-color var(--motion-duration-press-out) linear,
+    background-color var(--motion-duration-press-out) linear,
+    color var(--motion-duration-press-out) linear;
+}
+
+html[data-reader-motion-feedback="enabled"] .button-link:not(:disabled):active {
+  transform: scale(var(--motion-scale-press));
+  transition-duration: var(--motion-duration-press-in);
 }
 
 .button-link--primary {
@@ -509,6 +557,85 @@ a.text-link {
   aspect-ratio: 4 / 5;
   overflow: hidden;
   background: var(--color-bg-surface);
+}
+
+[data-motion-pattern="issue-cover-carry"] {
+  transform-origin: top left;
+}
+
+.reader-journey {
+  --reader-journey-line: var(--color-border-subtle);
+  --reader-journey-muted: var(--color-text-muted);
+  --reader-journey-node-bg: var(--color-bg-page);
+  display: grid;
+  width: min(100%, 31rem);
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin: 1.5rem 0;
+  padding: 0;
+  color: var(--reader-journey-muted);
+  font-family: var(--font-body);
+  list-style: none;
+}
+
+.reader-journey[data-tone="hero"] {
+  --reader-journey-line: var(--color-line-on-hero);
+  --reader-journey-muted: var(--color-text-muted-on-hero);
+  --reader-journey-node-bg: var(--color-bg-hero);
+}
+
+.reader-journey__step {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  min-height: 44px;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
+  gap: 0.5rem;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.reader-journey__step:not(:last-child)::after {
+  position: absolute;
+  z-index: 0;
+  height: 1px;
+  background: var(--reader-journey-line);
+  content: "";
+  inset: 50% 0 auto 1.75rem;
+}
+
+.reader-journey__node {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 1px solid var(--reader-journey-line);
+  border-radius: 50%;
+  place-items: center;
+  background: var(--reader-journey-node-bg);
+  font-size: 0.625rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.reader-journey__label {
+  position: relative;
+  z-index: 1;
+  width: max-content;
+  max-width: 100%;
+  padding-inline: 0.15rem 0.5rem;
+  background: var(--reader-journey-node-bg);
+}
+
+.reader-journey__step--active {
+  color: var(--color-action);
+}
+
+.reader-journey__step--active .reader-journey__node {
+  border-color: var(--color-action);
+  background: var(--color-action);
+  color: var(--color-on-action);
 }
 
 .issue-cover-card__image-frame img,
@@ -694,14 +821,22 @@ a.text-link {
 
 .issue-header {
   display: grid;
-  grid-template-columns: minmax(12rem, 0.65fr) minmax(0, 1fr);
+  grid-template-areas: "copy cover";
+  grid-template-columns: minmax(0, 1.2fr) minmax(15rem, 0.62fr);
   gap: clamp(1.5rem, 6vw, 5rem);
   align-items: end;
   margin-bottom: clamp(3rem, 8vw, 7rem);
 }
 
 .issue-header__cover {
-  max-width: 27rem;
+  width: min(100%, 22rem);
+  max-width: 22rem;
+  grid-area: cover;
+  justify-self: end;
+}
+
+.issue-header__copy {
+  grid-area: copy;
 }
 
 .issue-header__copy time {
@@ -723,11 +858,34 @@ a.text-link {
 }
 
 .issue-hero {
+  position: relative;
   overflow: hidden;
   border-bottom: 1px solid var(--color-line-on-hero);
 }
 
+.issue-hero::before {
+  position: absolute;
+  width: min(58vw, 44rem);
+  aspect-ratio: 1;
+  border: 1px solid var(--color-border-on-hero);
+  border-radius: 50%;
+  content: "";
+  inset: 50% auto auto 68%;
+  transform: translate(-50%, -50%);
+}
+
+.issue-hero::after {
+  position: absolute;
+  width: 1px;
+  height: 100%;
+  background: var(--color-line-on-hero);
+  content: "";
+  inset: 0 auto 0 68%;
+}
+
 .issue-hero__inner {
+  position: relative;
+  z-index: 1;
   padding-block: clamp(2rem, 6vw, 5rem);
 }
 
@@ -820,6 +978,7 @@ a.text-link {
 
 .issue-toc__article-link {
   display: grid;
+  min-height: 44px;
   grid-template-columns: 2rem minmax(0, 1fr) auto;
   gap: 0.75rem;
   align-items: baseline;
@@ -841,34 +1000,6 @@ a.text-link {
 }
 
 @media (max-width: 52rem) {
-  .arena-masthead__inner {
-    grid-template-columns: 1fr;
-    align-content: center;
-  }
-
-  .arena-masthead__issue {
-    width: 100%;
-    align-self: auto;
-  }
-
-  .arena-masthead__cover,
-  .arena-masthead__issue figcaption {
-    width: min(68vw, 19rem);
-    justify-self: start;
-  }
-
-  .arena-masthead__issue-number {
-    inset: auto auto -0.18em 45%;
-  }
-
-  .arena-masthead__court::before {
-    inset-inline-start: 84%;
-  }
-
-  .arena-masthead__court::after {
-    inset-inline-start: 84%;
-  }
-
   .home-editorial-note {
     grid-template-columns: 1fr;
   }
@@ -898,7 +1029,9 @@ a.text-link {
   }
 
   .arena-masthead__inner {
+    grid-template-columns: 1fr;
     gap: 1.5rem;
+    align-content: center;
     padding: 1.5rem 0 2rem;
   }
 
@@ -906,10 +1039,12 @@ a.text-link {
     grid-template-columns: minmax(7.5rem, 10rem) minmax(0, 1fr);
     gap: 1rem;
     align-items: end;
+    width: 100%;
     order: -1;
+    align-self: auto;
   }
 
-  .arena-masthead__cover,
+  .arena-masthead__cover-wrap,
   .arena-masthead__issue figcaption {
     width: 100%;
     justify-self: stretch;
@@ -917,6 +1052,15 @@ a.text-link {
 
   .arena-masthead__issue figcaption {
     padding-bottom: 0.25rem;
+  }
+
+  .arena-masthead__issue-number {
+    inset: auto auto -0.18em 45%;
+  }
+
+  .arena-masthead__court::before,
+  .arena-masthead__court::after {
+    inset-inline-start: 84%;
   }
 
   .arena-masthead h1 {
@@ -939,6 +1083,12 @@ a.text-link {
     grid-template-columns: 1fr;
   }
 
+  .issue-header {
+    grid-template-areas:
+      "cover"
+      "copy";
+  }
+
   .issue-cover-card__image-frame,
   .issue-header__cover {
     width: min(100%, 21rem);
@@ -950,6 +1100,7 @@ a.text-link {
 
   .issue-hero .issue-header__cover {
     width: min(44vw, 10rem);
+    justify-self: start;
   }
 
   .issue-header__number {
@@ -964,6 +1115,24 @@ a.text-link {
 
   .issue-toc__position {
     margin: 0;
+  }
+
+  .reader-journey {
+    width: 100%;
+  }
+
+  .reader-journey__step {
+    grid-template-columns: 1.5rem minmax(0, 1fr);
+    gap: 0.35rem;
+  }
+
+  .reader-journey__node {
+    width: 1.5rem;
+    height: 1.5rem;
+  }
+
+  .reader-journey__step:not(:last-child)::after {
+    inset-inline-start: 1.5rem;
   }
 }
 
@@ -1005,10 +1174,19 @@ a.text-link {
   .issue-header__number {
     display: none;
   }
+
+  .issue-hero::before,
+  .issue-hero::after {
+    content: none;
+  }
 }
 
 .article-reader {
   max-width: 64rem;
+}
+
+.article-reader > article > .reader-journey {
+  margin: 1.5rem 0 2rem;
 }
 
 .article-header {

@@ -1,6 +1,10 @@
 <script setup lang="ts">
+import { definePageMeta } from "#imports"
+
 import IssueToc from "../../components/issues/IssueToc.vue"
 import ReadingState from "../../components/issues/ReadingState.vue"
+import SharedIssueCover from "../../components/issues/SharedIssueCover.vue"
+import ReaderJourneyRail from "../../components/reader/ReaderJourneyRail.vue"
 import OfflineDownloadPanel from "../../features/offline/components/OfflineDownloadPanel.vue"
 import { canonicalUrl, jsonLd } from "../../composables/public-seo"
 import {
@@ -10,6 +14,8 @@ import {
   type PublicIssueDetail
 } from "../../features/issues/public-issue-api"
 import { issueRoute, parsePublicIssueSlug } from "../../features/issues/public-issue-contract"
+
+definePageMeta({ pageTransition: { name: "reader-route" } })
 
 const route = useRoute()
 const config = useRuntimeConfig()
@@ -93,7 +99,7 @@ useHead(() => {
 </script>
 
 <template>
-  <div class="site-page">
+  <div class="site-page issue-detail-page">
     <a class="skip-link" href="#main-content">跳到主要內容</a>
     <div class="issue-page-header-wrap">
       <header class="site-header site-header--hero">
@@ -111,20 +117,22 @@ useHead(() => {
           <NuxtLink to="/issues" class="back-link">← 返回所有期數</NuxtLink>
 
           <div class="issue-header">
-            <div class="issue-header__cover">
-              <img
-                :src="coverSrc"
-                :alt="issue.cover.alt"
-                :width="issue.cover.width"
-                :height="issue.cover.height"
-                fetchpriority="high"
-              />
-            </div>
+            <SharedIssueCover
+              class="issue-header__cover"
+              :src="coverSrc"
+              :alt="issue.cover.alt"
+              :width="issue.cover.width"
+              :height="issue.cover.height"
+              :issue-slug="issue.slug"
+              transition-role="target"
+              priority
+            />
             <div class="issue-header__copy">
               <span class="issue-header__number" aria-hidden="true">
                 {{ displayIssueNumber }}
               </span>
               <p class="eyebrow">第 {{ issue.issueNumber }} 期</p>
+              <ReaderJourneyRail :active-step="2" tone="hero" />
               <h1 id="issue-heading">{{ issue.title }}</h1>
               <p>{{ issue.summary }}</p>
               <time :datetime="issue.publishedAt">公開閱讀</time>

@@ -1,6 +1,5 @@
 :root {
   --reader-measure: 42rem;
-  --reader-progress-duration: 90ms;
   --reader-focus: var(--color-action);
 }
 
@@ -36,16 +35,21 @@ html[lang^="zh-Hant"] :is(pre, code) {
   width: 100%;
   height: 3px;
   overflow: hidden;
-  background: var(--color-border-subtle);
 }
 
-.reading-progress__bar {
+.reading-progress__graphic {
   display: block;
   width: 100%;
   height: 100%;
-  background: var(--reader-focus);
-  transform-origin: left;
-  transition: transform var(--reader-progress-duration) linear;
+}
+
+.reading-progress__track {
+  fill: var(--color-border-subtle);
+}
+
+.reading-progress__bar {
+  fill: var(--reader-focus);
+  transition: width var(--motion-duration-progress) linear;
 }
 
 .reading-progress[data-motion="reduced"] .reading-progress__bar {
@@ -93,10 +97,4 @@ html[lang^="zh-Hant"] :is(pre, code) {
   border-block: 1px solid var(--color-border-subtle);
   padding: 1.25rem 0;
   color: var(--color-text-muted);
-}
-
-@media (prefers-reduced-motion: reduce) {
-  :root {
-    --reader-progress-duration: 0ms;
-  }
 }

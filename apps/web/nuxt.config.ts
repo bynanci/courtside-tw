@@ -13,6 +13,18 @@ export default defineNuxtConfig({
         enabled: process.env.NUXT_PUBLIC_OFFLINE_APP_SHELL_ENABLED !== "false",
         scriptPath: "/offline-sw.js",
         scope: "/"
+      },
+      creative: {
+        motion: {
+          enabled: process.env.NUXT_PUBLIC_CREATIVE_MOTION_ENABLED !== "false",
+          patterns: {
+            route: process.env.NUXT_PUBLIC_CREATIVE_MOTION_ROUTE !== "false",
+            issueCover: process.env.NUXT_PUBLIC_CREATIVE_MOTION_ISSUE_COVER !== "false",
+            tocReveal: false,
+            readingProgress: process.env.NUXT_PUBLIC_CREATIVE_MOTION_READING_PROGRESS !== "false",
+            feedback: process.env.NUXT_PUBLIC_CREATIVE_MOTION_FEEDBACK !== "false"
+          }
+        }
       }
     },
     oidc: {
