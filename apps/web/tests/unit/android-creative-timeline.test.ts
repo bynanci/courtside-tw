@@ -11,6 +11,7 @@ import {
   evaluateAndroidForegroundFrameTimeline,
   normalizeBrowserRuntimeSnapshot,
   requireAndroidActivityAtBoundary,
+  requireChromeForegroundActivityAtBoundary,
   retainFirstPausedSnapshot
 } from "../../scripts/android-creative-timeline.mjs"
 
@@ -239,6 +240,26 @@ test("the observation boundary requires a fresh resolved Android activity identi
       activity:
         "topResumedActivity=ActivityRecord{def u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}",
       chromeForeground: false
+    }
+  )
+})
+
+test("Chrome surface identity requires a fresh resumed Chrome activity", () => {
+  throws(
+    () =>
+      requireChromeForegroundActivityAtBoundary(
+        "topResumedActivity=ActivityRecord{def u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+      ),
+    /Chrome is not the resumed Android activity/
+  )
+  deepEqual(
+    requireChromeForegroundActivityAtBoundary(
+      "topResumedActivity=ActivityRecord{abc u0 com.android.chrome/com.google.android.apps.chrome.Main t8}"
+    ),
+    {
+      activity:
+        "topResumedActivity=ActivityRecord{abc u0 com.android.chrome/com.google.android.apps.chrome.Main t8}",
+      chromeForeground: true
     }
   )
 })
