@@ -188,6 +188,23 @@ test("Chrome automation surface is clear only when no native modal markers exist
   )
 })
 
+test("foreign Android surfaces never certify the Chrome content surface as clear", () => {
+  for (const packageName of [
+    "com.google.android.apps.nexuslauncher",
+    "com.android.permissioncontroller"
+  ]) {
+    deepEqual(
+      classifyChromeAutomationSurface(
+        `<hierarchy><node package="${packageName}" text="Foreign foreground surface" /></hierarchy>`
+      ),
+      {
+        status: "blocked",
+        reason: "chrome-package-not-visible"
+      }
+    )
+  }
+})
+
 test("unknown or malformed Chrome native modals fail closed without a tap target", () => {
   const fixtures = [
     ATTEMPT_2_CHROME_MODAL_XML.replace('bounds="[477,1690][708,1816]"', 'bounds="bad"'),
