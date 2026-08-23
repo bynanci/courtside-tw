@@ -26,6 +26,13 @@ function requireCount(value, label) {
   return value
 }
 
+function requireCallable(value, label) {
+  if (typeof value !== "function") {
+    throw new Error(`${label} must be a function`)
+  }
+  return value
+}
+
 function requireFrame(value, label) {
   if (!Number.isFinite(value) || value < 0) {
     throw new Error(`${label} must be a finite non-negative frame`)
@@ -765,6 +772,14 @@ export function nativeAndroidCdpConnectionOptions() {
   return NATIVE_ANDROID_CDP_CONNECTION_OPTIONS
 }
 
+export async function connectNativeAndroidBrowser(connectOverCdp, endpoint) {
+  const connect = requireCallable(connectOverCdp, "native Android CDP connector")
+  if (typeof endpoint !== "string" || endpoint.length === 0) {
+    throw new Error("native Android CDP endpoint must be non-empty")
+  }
+  return await connect(endpoint, nativeAndroidCdpConnectionOptions())
+}
+
 export function requireAndroidBrowserForegroundReceipt(value, expectedUrl) {
   const receipt = requireRecord(value, "Android browser foreground receipt")
   if (typeof expectedUrl !== "string" || expectedUrl.length === 0 || receipt.url !== expectedUrl) {
@@ -829,6 +844,63 @@ export function normalizeBrowserRuntimeSnapshot(rawSnapshot, rawCalibration) {
       snapshot.at + browserToHostOffsetMilliseconds,
       "normalized runtime snapshot at"
     )
+  }
+}
+
+export async function establishNativeAndroidBackgroundBoundary(rawDependencies) {
+  const dependencies = requireRecord(rawDependencies, "native Android background dependencies")
+  const bringToFront = requireCallable(dependencies.bringToFront, "bringToFront")
+  const readBrowserForeground = requireCallable(
+    dependencies.readBrowserForeground,
+    "readBrowserForeground"
+  )
+  const readChromeForegroundActivity = requireCallable(
+    dependencies.readChromeForegroundActivity,
+    "readChromeForegroundActivity"
+  )
+  const armRuntimeObservation = requireCallable(
+    dependencies.armRuntimeObservation,
+    "armRuntimeObservation"
+  )
+  const epochNow = requireCallable(dependencies.epochNow, "epochNow")
+  const monotonicNow = requireCallable(dependencies.monotonicNow, "monotonicNow")
+  const sendHome = requireCallable(dependencies.sendHome, "sendHome")
+
+  await bringToFront()
+  const browserForeground = requireAndroidBrowserForegroundReceipt(
+    await readBrowserForeground(),
+    dependencies.expectedUrl
+  )
+  const foregroundActivity = requireChromeForegroundActivityAtBoundary(
+    await readChromeForegroundActivity()
+  )
+  const hostEpochBeforeArm = requireTimestamp(epochNow(), "host epoch before arm")
+  const rawActiveSnapshot = await armRuntimeObservation()
+  const hostEpochAfterArm = requireTimestamp(epochNow(), "host epoch after arm")
+  const clockCalibration = calibrateBrowserClockToHost({
+    browserEpochAtArm: rawActiveSnapshot.at,
+    hostEpochBeforeArm,
+    hostEpochAfterArm
+  })
+  const activeSnapshot = normalizeBrowserRuntimeSnapshot(rawActiveSnapshot, clockCalibration)
+  const homeSignal = {
+    at: requireTimestamp(epochNow(), "Android HOME signal epoch"),
+    signal: "Android KEYCODE_HOME"
+  }
+  const commandStartedAt = requireTimestamp(monotonicNow(), "Android HOME command start")
+  await sendHome()
+  const commandCompletedAt = requireTimestamp(monotonicNow(), "Android HOME command completion")
+  if (commandCompletedAt < commandStartedAt) {
+    throw new Error("Android HOME command completion precedes its start")
+  }
+
+  return {
+    browserForeground,
+    foregroundActivity,
+    clockCalibration,
+    activeSnapshot,
+    homeSignal,
+    commandMilliseconds: commandCompletedAt - commandStartedAt
   }
 }
 

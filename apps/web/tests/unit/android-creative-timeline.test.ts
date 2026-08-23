@@ -194,10 +194,7 @@ test("native Android background binds the exact browser foreground receipt", () 
 })
 
 test("native Android connector behaviorally suppresses Playwright lifecycle defaults", async () => {
-  const connectNativeAndroidBrowser = Reflect.get(
-    timelineHelpers,
-    "connectNativeAndroidBrowser"
-  )
+  const connectNativeAndroidBrowser = Reflect.get(timelineHelpers, "connectNativeAndroidBrowser")
   equal(typeof connectNativeAndroidBrowser, "function")
   if (typeof connectNativeAndroidBrowser !== "function") return
 
@@ -326,12 +323,12 @@ test("native Android performance harness invokes the behavioral boundaries", () 
 
   match(
     performanceHarness,
-    /const browser = await connectNativeAndroidBrowser\(chromium\.connectOverCDP\.bind\(chromium\),\s*"http:\/\/127\.0\.0\.1:9222"\)/u
+    /const browser = await connectNativeAndroidBrowser\(\s*chromium\.connectOverCDP\.bind\(chromium\),\s*"http:\/\/127\.0\.0\.1:9222"\s*\)/u
   )
-  match(
-    performanceHarness,
-    /const boundary = await establishNativeAndroidBackgroundBoundary\(\{/u
-  )
+  match(performanceHarness, /const boundary = await establishNativeAndroidBackgroundBoundary\(\{/u)
+  match(performanceHarness, /bringToFront:\s*\(\) => page\.bringToFront\(\)/u)
+  equal(performanceHarness.match(/page\.bringToFront\(\)/gu)?.length, 1)
+  equal(performanceHarness.match(/"KEYCODE_HOME"/gu)?.length, 1)
   doesNotMatch(performanceHarness, /chromium\.connectOverCDP\(/u)
   doesNotMatch(performanceHarness, /await page\.bringToFront\(\)/u)
 })

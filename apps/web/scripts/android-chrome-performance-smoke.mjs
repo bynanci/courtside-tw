@@ -5,19 +5,17 @@ import { chromium, expect } from "@playwright/test"
 import {
   androidCommandTimeoutMilliseconds,
   boundedAndroidPollDelay,
-  calibrateBrowserClockToHost,
   captureChromeSurfaceProbeBoundaryAttempt,
   classifyAndroidActivityLine,
   classifyAndroidActivityProbeResult,
   classifyChromeAutomationSurface,
+  connectNativeAndroidBrowser,
+  establishNativeAndroidBackgroundBoundary,
   evaluateAndroidBackgroundTimeline,
   evaluateAndroidForegroundFrameTimeline,
-  nativeAndroidCdpConnectionOptions,
   normalizeBrowserRuntimeSnapshot,
   parseAndroidDisplaySize,
   requireAndroidActivityAtBoundary,
-  requireAndroidBrowserForegroundReceipt,
-  requireChromeForegroundActivityAtBoundary,
   retainFirstPausedSnapshot
 } from "./android-creative-timeline.mjs"
 
@@ -43,9 +41,9 @@ const BUDGETS = Object.freeze({
   maximumTotalLongTaskMilliseconds: 1_800
 })
 
-const browser = await chromium.connectOverCDP(
-  "http://127.0.0.1:9222",
-  nativeAndroidCdpConnectionOptions()
+const browser = await connectNativeAndroidBrowser(
+  chromium.connectOverCDP.bind(chromium),
+  "http://127.0.0.1:9222"
 )
 let phase = "connect"
 
@@ -947,30 +945,30 @@ async function observeBackgroundActivity(activityTransitions) {
 }
 
 async function verifyAndroidOperatingSystemBackground(page, targetIndex) {
-  await page.bringToFront()
-  const browserForeground = requireAndroidBrowserForegroundReceipt(
-    await page.evaluate(() => ({
-      url: window.location.href,
-      visibilityState: document.visibilityState,
-      hidden: document.hidden,
-      hasFocus: document.hasFocus()
-    })),
-    ARTICLE_URL
-  )
-  const foregroundActivity = requireChromeForegroundActivityAtBoundary(resumedActivityLine())
-  const hostEpochBeforeArm = Date.now()
-  const rawActiveSnapshot = await armOperatingSystemPauseObservation(page, targetIndex)
-  const hostEpochAfterArm = Date.now()
-  const clockCalibration = calibrateBrowserClockToHost({
-    browserEpochAtArm: rawActiveSnapshot.at,
-    hostEpochBeforeArm,
-    hostEpochAfterArm
+  const boundary = await establishNativeAndroidBackgroundBoundary({
+    bringToFront: () => page.bringToFront(),
+    readBrowserForeground: () =>
+      page.evaluate(() => ({
+        url: window.location.href,
+        visibilityState: document.visibilityState,
+        hidden: document.hidden,
+        hasFocus: document.hasFocus()
+      })),
+    expectedUrl: ARTICLE_URL,
+    readChromeForegroundActivity: () => resumedActivityLine(),
+    armRuntimeObservation: () => armOperatingSystemPauseObservation(page, targetIndex),
+    epochNow: () => Date.now(),
+    monotonicNow: () => performance.now(),
+    sendHome: () => adb("shell", "input", "keyevent", "KEYCODE_HOME")
   })
-  const activeSnapshot = normalizeBrowserRuntimeSnapshot(rawActiveSnapshot, clockCalibration)
-  const homeSignal = { at: Date.now(), signal: "Android KEYCODE_HOME" }
-  const commandStartedAt = performance.now()
-  adb("shell", "input", "keyevent", "KEYCODE_HOME")
-  const commandMilliseconds = performance.now() - commandStartedAt
+  const {
+    activeSnapshot,
+    browserForeground,
+    clockCalibration,
+    commandMilliseconds,
+    foregroundActivity,
+    homeSignal
+  } = boundary
   const convergence = await waitForBackgroundConvergence(page, homeSignal, targetIndex)
   const activityBoundary = await observeBackgroundActivity(convergence.activityTransitions)
   const pauseSnapshot = normalizeBrowserRuntimeSnapshot(convergence.pauseSnapshot, clockCalibration)
