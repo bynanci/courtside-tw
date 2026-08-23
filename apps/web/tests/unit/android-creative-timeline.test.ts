@@ -193,7 +193,132 @@ test("native Android background binds the exact browser foreground receipt", () 
   }
 })
 
-test("native Android background disables Playwright focus emulation before arming HOME", () => {
+test("native Android connector behaviorally suppresses Playwright lifecycle defaults", async () => {
+  const connectNativeAndroidBrowser = Reflect.get(
+    timelineHelpers,
+    "connectNativeAndroidBrowser"
+  )
+  equal(typeof connectNativeAndroidBrowser, "function")
+  if (typeof connectNativeAndroidBrowser !== "function") return
+
+  const endpoint = "http://127.0.0.1:9222"
+  const browser = Object.freeze({ identity: "native-android-browser" })
+  const calls: unknown[] = []
+  const result = await connectNativeAndroidBrowser(
+    async (receivedEndpoint: unknown, receivedOptions: unknown) => {
+      calls.push(receivedEndpoint, receivedOptions)
+      await Promise.resolve()
+      return browser
+    },
+    endpoint
+  )
+
+  equal(result, browser)
+  deepEqual(calls, [endpoint, { noDefaults: true }])
+  equal(Object.isFrozen(calls[1]), true)
+})
+
+test("native Android background behaviorally binds and orders the exact HOME boundary", async () => {
+  const establishNativeAndroidBackgroundBoundary = Reflect.get(
+    timelineHelpers,
+    "establishNativeAndroidBackgroundBoundary"
+  )
+  equal(typeof establishNativeAndroidBackgroundBoundary, "function")
+  if (typeof establishNativeAndroidBackgroundBoundary !== "function") return
+
+  const expectedUrl = "http://127.0.0.1:4173/articles/opening-night?issue=issue-2026-01"
+  const events: string[] = []
+  const epochTimes = [100_100, 100_120, 100_130]
+  const monotonicTimes = [500, 507]
+  const result = await establishNativeAndroidBackgroundBoundary({
+    bringToFront: async () => {
+      events.push("bring:start")
+      await Promise.resolve()
+      events.push("bring:end")
+    },
+    readBrowserForeground: async () => {
+      events.push("browser:start")
+      await Promise.resolve()
+      events.push("browser:end")
+      return {
+        url: expectedUrl,
+        visibilityState: "visible",
+        hidden: false,
+        hasFocus: true
+      }
+    },
+    expectedUrl,
+    readChromeForegroundActivity: () => {
+      events.push("activity")
+      return "topResumedActivity=ActivityRecord{abc123 u0 com.android.chrome/com.google.android.apps.chrome.Main t8}"
+    },
+    armRuntimeObservation: async () => {
+      events.push("arm:start")
+      await Promise.resolve()
+      events.push("arm:end")
+      return { at: 10_000, frame: 35, runningCount: 1, targetStatus: "running" }
+    },
+    epochNow: () => {
+      events.push("epoch")
+      const value = epochTimes.shift()
+      if (value === undefined) throw new Error("unexpected epoch clock read")
+      return value
+    },
+    monotonicNow: () => {
+      events.push("monotonic")
+      const value = monotonicTimes.shift()
+      if (value === undefined) throw new Error("unexpected monotonic clock read")
+      return value
+    },
+    sendHome: async () => {
+      events.push("home:start")
+      await Promise.resolve()
+      events.push("home:end")
+    }
+  })
+
+  deepEqual(events, [
+    "bring:start",
+    "bring:end",
+    "browser:start",
+    "browser:end",
+    "activity",
+    "epoch",
+    "arm:start",
+    "arm:end",
+    "epoch",
+    "epoch",
+    "monotonic",
+    "home:start",
+    "home:end",
+    "monotonic"
+  ])
+  deepEqual(result, {
+    browserForeground: {
+      url: expectedUrl,
+      visibilityState: "visible",
+      hidden: false,
+      hasFocus: true
+    },
+    foregroundActivity: {
+      activity:
+        "topResumedActivity=ActivityRecord{abc123 u0 com.android.chrome/com.google.android.apps.chrome.Main t8}",
+      chromeForeground: true,
+      recordId: "abc123",
+      taskId: "t8"
+    },
+    clockCalibration: {
+      browserToHostOffsetMilliseconds: 90_110,
+      hostRoundTripMilliseconds: 20,
+      maximumUncertaintyMilliseconds: 10
+    },
+    activeSnapshot: { at: 100_110, frame: 35, runningCount: 1, targetStatus: "running" },
+    homeSignal: { at: 100_130, signal: "Android KEYCODE_HOME" },
+    commandMilliseconds: 7
+  })
+})
+
+test("native Android performance harness invokes the behavioral boundaries", () => {
   const performanceHarness = readFileSync(
     new URL("../../scripts/android-chrome-performance-smoke.mjs", import.meta.url),
     "utf8"
@@ -201,12 +326,14 @@ test("native Android background disables Playwright focus emulation before armin
 
   match(
     performanceHarness,
-    /chromium\.connectOverCDP\([\s\S]*nativeAndroidCdpConnectionOptions\(\)[\s\S]*const page = context\.pages\(\)\[0\]/u
+    /const browser = await connectNativeAndroidBrowser\(chromium\.connectOverCDP\.bind\(chromium\),\s*"http:\/\/127\.0\.0\.1:9222"\)/u
   )
   match(
     performanceHarness,
-    /function verifyAndroidOperatingSystemBackground\(page, targetIndex\) \{[\s\S]*page\.bringToFront\(\)[\s\S]*requireAndroidBrowserForegroundReceipt\([\s\S]*requireChromeForegroundActivityAtBoundary\([\s\S]*armOperatingSystemPauseObservation\(page, targetIndex\)[\s\S]*KEYCODE_HOME/u
+    /const boundary = await establishNativeAndroidBackgroundBoundary\(\{/u
   )
+  doesNotMatch(performanceHarness, /chromium\.connectOverCDP\(/u)
+  doesNotMatch(performanceHarness, /await page\.bringToFront\(\)/u)
 })
 
 test("browser runtime epochs are normalized into the bracketed host clock", () => {
