@@ -11,6 +11,7 @@ import {
   evaluateAndroidForegroundFrameTimeline,
   normalizeBrowserRuntimeSnapshot,
   requireAndroidActivityAtBoundary,
+  requireChromeForegroundActivityAtBoundary,
   retainFirstPausedSnapshot
 } from "./android-creative-timeline.mjs"
 
@@ -539,6 +540,7 @@ async function normalizeChromeContentSurface() {
   let dismissTap = null
 
   while (performance.now() < deadline) {
+    const activity = requireChromeForegroundActivityAtBoundary(resumedActivityLine())
     const remainingMilliseconds = deadline - performance.now()
     const surface = probeChromeContentSurface(
       Math.max(
@@ -546,12 +548,16 @@ async function normalizeChromeContentSurface() {
         Math.ceil(Math.min(CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS, remainingMilliseconds))
       )
     )
-    attempts.push(surfaceReceipt(surface))
+    attempts.push({
+      ...surfaceReceipt(surface),
+      activity: activity.activity
+    })
     if (surface.status === "clear") {
       return {
         status: surface.status,
         dismissedKnownPrompt,
         dismissTap,
+        activity: activity.activity,
         attempts
       }
     }
@@ -579,6 +585,7 @@ async function normalizeChromeContentSurface() {
 }
 
 function requireClearChromeContentSurface() {
+  const activity = requireChromeForegroundActivityAtBoundary(resumedActivityLine())
   const surface = probeChromeContentSurface(CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS)
   if (surface.status !== "clear") {
     throw new Error(
@@ -586,7 +593,10 @@ function requireClearChromeContentSurface() {
         `status=${surface.status}`
     )
   }
-  return surfaceReceipt(surface)
+  return {
+    ...surfaceReceipt(surface),
+    activity: activity.activity
+  }
 }
 
 function observeForegroundFrameTimeline(

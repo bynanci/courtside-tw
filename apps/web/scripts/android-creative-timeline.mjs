@@ -75,6 +75,7 @@ export function classifyChromeAutomationSurface(value) {
   const modalId = "com.android.chrome:id/modal_dialog_view"
   const negativeButtonId = "com.android.chrome:id/negative_button"
   const knownTitle = "Chrome notifications make things easier"
+  const hasChromeNode = nodes.some((node) => xmlAttribute(node, "package") === "com.android.chrome")
   const hasModal = nodes.some((node) => xmlAttribute(node, "resource-id") === modalId)
   const hasKnownMarker = nodes.some((node) => {
     const resourceId = xmlAttribute(node, "resource-id")
@@ -84,6 +85,14 @@ export function classifyChromeAutomationSurface(value) {
       xmlAttribute(node, "text") === knownTitle
     )
   })
+  if (!hasChromeNode) {
+    return hasKnownMarker
+      ? blocked
+      : {
+          status: "blocked",
+          reason: "chrome-package-not-visible"
+        }
+  }
   if (!hasModal) {
     return hasKnownMarker ? blocked : { status: "clear" }
   }
@@ -153,6 +162,14 @@ export function requireAndroidActivityAtBoundary(value) {
     throw new Error("Android activity identity is unresolved at the observation boundary")
   }
   return classified
+}
+
+export function requireChromeForegroundActivityAtBoundary(value) {
+  const activity = requireAndroidActivityAtBoundary(value)
+  if (!activity.chromeForeground) {
+    throw new Error(`Chrome is not the resumed Android activity: ${activity.activity}`)
+  }
+  return activity
 }
 
 export function retainFirstPausedSnapshot(currentSnapshot, candidateSnapshot) {

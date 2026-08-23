@@ -567,6 +567,10 @@ test("Android smoke diagnostics preserve the failing producer and bound probes",
     /normalizeChromeContentSurface\(\)[\s\S]*observeForegroundFrameTimeline\([\s\S]*requireClearChromeContentSurface\(\)[\s\S]*evaluateAndroidForegroundFrameTimeline/u
   )
   match(performanceHarness, /timeout: probeTimeoutMilliseconds/u)
+  match(
+    performanceHarness,
+    /requireChromeForegroundActivityAtBoundary\(resumedActivityLine\(\)\)[\s\S]*probeChromeContentSurface/u
+  )
   match(ciWorkflow, /profile: pixel_7\s+ram-size: 4096M/u)
   doesNotMatch(performanceHarness, /pm["',\s]+grant/u)
   doesNotMatch(
