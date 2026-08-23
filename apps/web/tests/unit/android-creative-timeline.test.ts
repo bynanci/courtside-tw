@@ -5,6 +5,7 @@ import { test } from "node:test"
 import {
   boundedAndroidPollDelay,
   calibrateBrowserClockToHost,
+  captureChromeSurfaceProbeBoundary,
   classifyAndroidActivityLine,
   classifyChromeAutomationSurface,
   evaluateAndroidBackgroundTimeline,
@@ -272,6 +273,46 @@ test("Chrome surface identity requires a fresh resumed Chrome activity", () => {
         "topResumedActivity=ActivityRecord{abc u0 com.android.chrome/com.google.android.apps.chrome.Main t8}",
       chromeForeground: true
     }
+  )
+})
+
+test("native surface probes are behaviorally bracketed by fresh Chrome activity reads", () => {
+  const chromeActivity =
+    "topResumedActivity=ActivityRecord{abc u0 com.android.chrome/com.google.android.apps.chrome.Main t8}"
+  const events: string[] = []
+  const receipt = captureChromeSurfaceProbeBoundary({
+    readActivity: () => {
+      events.push("activity")
+      return chromeActivity
+    },
+    probeSurface: () => {
+      events.push("probe")
+      return { status: "clear", probeMilliseconds: 7, hierarchyBytes: 99 }
+    }
+  })
+
+  deepEqual(events, ["activity", "probe", "activity"])
+  deepEqual(receipt, {
+    status: "clear",
+    probeMilliseconds: 7,
+    hierarchyBytes: 99,
+    activityBefore: chromeActivity,
+    activityAfter: chromeActivity
+  })
+})
+
+test("native surface probe rejects a post-probe foreground identity change", () => {
+  const activities = [
+    "topResumedActivity=ActivityRecord{abc u0 com.android.chrome/com.google.android.apps.chrome.Main t8}",
+    "topResumedActivity=ActivityRecord{def u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+  ]
+  throws(
+    () =>
+      captureChromeSurfaceProbeBoundary({
+        readActivity: () => activities.shift() ?? "",
+        probeSurface: () => ({ status: "clear" })
+      }),
+    /Chrome is not the resumed Android activity/
   )
 })
 
@@ -580,7 +621,7 @@ test("Android smoke diagnostics preserve the failing producer and bound probes",
   match(performanceHarness, /timeout: probeTimeoutMilliseconds/u)
   match(
     performanceHarness,
-    /function probeChromeContentSurfaceAtActivityBoundary\(probeTimeoutMilliseconds\) \{[\s\S]*activityBefore = requireChromeForegroundActivityAtBoundary\(resumedActivityLine\(\)\)[\s\S]*surface = probeChromeContentSurface\(probeTimeoutMilliseconds\)[\s\S]*activityAfter = requireChromeForegroundActivityAtBoundary\(resumedActivityLine\(\)\)/u
+    /function probeChromeContentSurfaceAtActivityBoundary\(probeTimeoutMilliseconds\) \{[\s\S]*captureChromeSurfaceProbeBoundary\(\{[\s\S]*readActivity: resumedActivityLine,[\s\S]*probeSurface:/u
   )
   equal(performanceHarness.match(/probeChromeContentSurfaceAtActivityBoundary\(/gu)?.length, 3)
   match(ciWorkflow, /profile: pixel_7\s+ram-size: 4096M/u)
