@@ -371,9 +371,8 @@ export function classifyAndroidEnvironmentProbeResult(value) {
   return stdout
 }
 
-export function evaluateAndroidEmulatorEnvironment(value) {
-  const evidence = requireRecord(value, "Android emulator environment evidence")
-  const requested = requireRecord(evidence.requested, "requested Android emulator environment")
+function evaluateRequestedAndroidEmulatorEnvironment(value) {
+  const requested = requireRecord(value, "requested Android emulator environment")
   if (requested.avdName !== EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.avdName) {
     throw new Error("requested AVD identity drift")
   }
@@ -392,9 +391,28 @@ export function evaluateAndroidEmulatorEnvironment(value) {
   if (requested.heapMegabytes !== EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.heapMegabytes) {
     throw new Error("requested heap drift")
   }
+  return {
+    avdName: EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.avdName,
+    profile: EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.profile,
+    cpuCores: EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.cpuCores,
+    ramInput: EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.ramInput,
+    ramMegabytes: EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.ramMegabytes,
+    heapMegabytes: EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.heapMegabytes
+  }
+}
 
-  const canonicalConfig = parseCanonicalAndroidAvdConfig(evidence.canonicalConfig)
-  const resolvedHardware = parseResolvedAndroidHardware(evidence.resolvedHardware)
+export function evaluateAndroidEmulatorHostEnvironment(value) {
+  const evidence = requireRecord(value, "Android emulator host environment evidence")
+  return {
+    requested: evaluateRequestedAndroidEmulatorEnvironment(evidence.requested),
+    canonicalConfig: parseCanonicalAndroidAvdConfig(evidence.canonicalConfig),
+    resolvedHardware: parseResolvedAndroidHardware(evidence.resolvedHardware)
+  }
+}
+
+export function evaluateAndroidEmulatorEnvironment(value) {
+  const evidence = requireRecord(value, "Android emulator environment evidence")
+  const hostEvidence = evaluateAndroidEmulatorHostEnvironment(evidence)
   const liveAvdName = parseLiveAvdName(evidence.liveAvdName)
   const guestCpuOnline = requireBoundedReceiptText(
     evidence.guestCpuOnline,
@@ -434,16 +452,7 @@ export function evaluateAndroidEmulatorEnvironment(value) {
   return {
     schemaVersion: ANDROID_EMULATOR_ENVIRONMENT_SCHEMA,
     result: "PASS",
-    requested: {
-      avdName: EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.avdName,
-      profile: EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.profile,
-      cpuCores: EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.cpuCores,
-      ramInput: EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.ramInput,
-      ramMegabytes: EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.ramMegabytes,
-      heapMegabytes: EXPECTED_ANDROID_EMULATOR_ENVIRONMENT.heapMegabytes
-    },
-    canonicalConfig,
-    resolvedHardware,
+    ...hostEvidence,
     liveGuest: {
       avdName: liveAvdName,
       cpuOnline: guestCpuOnline,

@@ -6,11 +6,12 @@ import {
   closeSync,
   constants as fsConstants,
   existsSync,
+  fstatSync,
   fsyncSync,
   lstatSync,
   mkdirSync,
   openSync,
-  readFileSync,
+  readSync,
   realpathSync,
   renameSync,
   unlinkSync,
@@ -24,12 +25,14 @@ import {
   canonicalizeAndroidAvdConfig,
   classifyAndroidEnvironmentProbeResult,
   evaluateCanonicalAndroidAvdConfig,
-  evaluateAndroidEmulatorEnvironment
+  evaluateAndroidEmulatorEnvironment,
+  evaluateAndroidEmulatorHostEnvironment
 } from "./android-creative-timeline.mjs"
 
 const SCHEMA_VERSION = "courtside.android-emulator-environment/v1"
 const PROBE_TIMEOUT_MILLISECONDS = 5_000
 const STDERR_RECEIPT_MAXIMUM_BYTES = 4_096
+const PHYSICAL_TEXT_MAXIMUM_BYTES = 1024 * 1024
 const WORKSPACE_ROOT = realpathSync(".")
 const ARTIFACTS_DIRECTORY = join(WORKSPACE_ROOT, "artifacts")
 const ARTIFACT_ROOT = join(ARTIFACTS_DIRECTORY, "android-chrome")
@@ -61,7 +64,32 @@ function readPhysicalFile(path, label) {
   if (metadata.isSymbolicLink() || !metadata.isFile() || realpathSync(path) !== path) {
     throw new Error(`${label} must be one physical file`)
   }
-  return readFileSync(path, "utf8")
+  if (metadata.size === 0 || metadata.size > PHYSICAL_TEXT_MAXIMUM_BYTES) {
+    throw new Error(`${label} must be a bounded physical file`)
+  }
+  let descriptor = null
+  try {
+    descriptor = openSync(path, fsConstants.O_RDONLY | (fsConstants.O_NOFOLLOW ?? 0))
+    const openedMetadata = fstatSync(descriptor)
+    if (!openedMetadata.isFile()) {
+      throw new Error(`${label} must be one physical file`)
+    }
+    if (openedMetadata.size === 0 || openedMetadata.size > PHYSICAL_TEXT_MAXIMUM_BYTES) {
+      throw new Error(`${label} must be a bounded physical file`)
+    }
+    const buffer = Buffer.alloc(openedMetadata.size + 1)
+    const bytesRead = readSync(descriptor, buffer, 0, buffer.length, 0)
+    if (bytesRead !== openedMetadata.size) {
+      throw new Error(`${label} changed while being read`)
+    }
+    const value = buffer.subarray(0, bytesRead).toString("utf8")
+    if (Buffer.byteLength(value, "utf8") !== bytesRead || value.includes("\0")) {
+      throw new Error(`${label} must be bounded non-empty text`)
+    }
+    return value.replace(/\r\n?/gu, "\n")
+  } finally {
+    if (descriptor !== null) closeSync(descriptor)
+  }
 }
 
 function requirePhysicalArtifactRoot() {
@@ -289,10 +317,17 @@ function prepareEnvironment() {
 function verifyEnvironment(commandReceipts) {
   const paths = avdPaths()
   const avdRegistry = readAvdRegistry(paths)
+  const canonicalConfig = readPhysicalFile(paths.config, "Canonical Android AVD config")
+  const resolvedHardware = readPhysicalFile(paths.resolvedHardware, "Resolved Android hardware")
+  evaluateAndroidEmulatorHostEnvironment({
+    requested: REQUESTED_ENVIRONMENT,
+    canonicalConfig,
+    resolvedHardware
+  })
   const evidence = evaluateAndroidEmulatorEnvironment({
     requested: REQUESTED_ENVIRONMENT,
-    canonicalConfig: readPhysicalFile(paths.config, "Canonical Android AVD config"),
-    resolvedHardware: readPhysicalFile(paths.resolvedHardware, "Resolved Android hardware"),
+    canonicalConfig,
+    resolvedHardware,
     liveAvdName: probeAdb("live-avd-name", ["emu", "avd", "name"], commandReceipts),
     guestCpuOnline: probeAdb(
       "guest-cpu-online",
