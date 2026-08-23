@@ -68,6 +68,13 @@ python3 infra/deployment/release.py \
   --schema-readback /change/live-schema-readback.json
 ```
 
+If the environment still has a schema-v1 release ledger, first run the explicit
+`migrate-state --legacy-backup <protected-path>` procedure in the deployment
+runbook. Do not manually add environment or activation-history fields. The
+migration preserves a full legacy backup, binds the operational state to the
+operator-selected environment, and retains active/previous rollback eligibility
+without changing traffic or schema.
+
 This command verifies that the target was previously activated healthy in the
 same environment-bound state and accepts the freshly read current forward
 schema. A merely registered candidate is never rollback-eligible. It atomically
@@ -113,8 +120,9 @@ target does not accept the current forward schema, traffic cannot switch
 atomically, a receipt contains credentials or participant data, the current
 schema/migration history is unknown or stale, receipt/state environments do not
 match, the target lacks a prior healthy activation, database integrity is
-disputed, review or Security evidence is stale, or the same rollback attempt
-fails twice without a new evidence delta.
+disputed, a schema-v1 state has not completed its explicit backed-up migration,
+review or Security evidence is stale, or the same rollback attempt fails twice
+without a new evidence delta.
 
 On `HOLD`, freeze new deployment actions, preserve logs and release manifests,
 keep secrets out of the evidence bundle, and route the decision to the release
