@@ -69,20 +69,23 @@ python3 infra/deployment/release.py \
 ```
 
 If the environment still has a schema-v1 release ledger, first run the explicit
-`migrate-state --legacy-backup <protected-path>` procedure in the deployment
-runbook. Do not manually add environment or activation-history fields. The
-migration preserves a full legacy backup, binds the operational state to the
-operator-selected environment, and retains active/previous rollback eligibility
-without changing traffic or schema. The backup is exclusively created, must
-remain operator-owned with mode `0600`, and is pinned in v2 state by absolute
-path, SHA-256 digest, and release count. Preserve it after compaction: future
-registration reads it to prevent any archived release ID from being rebound to
-different source or image digests.
+`migrate-state` procedure in the deployment runbook with an exact
+environment-bound activation-history evidence file and
+`I_UNDERSTAND_STATE_SCHEMA_UPGRADE`. Do not manually add environment or
+activation-history fields. The migration preserves a full legacy backup, binds
+the operational state to the selected environment, and retains the evidenced
+active/previous rollback eligibility without changing traffic or schema. The
+backup is exclusively created, must remain operator-owned with mode `0600`,
+and is pinned in v2 state by absolute path, SHA-256 digest, and release count.
+Preserve it after compaction: future registration reads it to prevent any
+archived release ID from being rebound to different source or image digests.
 
 This command verifies that the target was previously activated healthy in the
 same environment-bound state and accepts the freshly read current forward
-schema. A merely registered candidate is never rollback-eligible. It atomically
-records the application pointer and explicitly reports:
+schema. A merely registered candidate is never rollback-eligible. The v2 ledger
+keeps only the latest 16 receipts and remains under the 48 KiB atomic state
+budget; if that budget cannot be met, keep the rollback window in `HOLD`. It
+atomically records the application pointer and explicitly reports:
 
 - `active_before` and `active_after`;
 - `database_schema_before` and `database_schema_after`;
