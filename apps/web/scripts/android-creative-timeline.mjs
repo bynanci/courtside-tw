@@ -89,9 +89,15 @@ export function parseAndroidDisplaySize(value) {
   if (typeof value !== "string") {
     throw new Error("Android display size receipt is invalid")
   }
-  const override = value.match(/Override size:\s*(\d+)x(\d+)/u)
-  const physical = value.match(/Physical size:\s*(\d+)x(\d+)/u)
-  const match = override ?? physical
+  const lines = value.split(/\r?\n/u).map((line) => line.trim())
+  const overrideLines = lines.filter((line) => line.startsWith("Override size:"))
+  const physicalLines = lines.filter((line) => line.startsWith("Physical size:"))
+  const selectedLines = overrideLines.length > 0 ? overrideLines : physicalLines
+  const selectedLabel = overrideLines.length > 0 ? "Override" : "Physical"
+  const match =
+    selectedLines.length === 1
+      ? selectedLines[0].match(new RegExp(`^${selectedLabel} size:\\s*(\\d+)x(\\d+)$`, "u"))
+      : null
   const displaySize = match
     ? normalizeAndroidDisplaySize({ width: Number(match[1]), height: Number(match[2]) })
     : null
@@ -229,7 +235,19 @@ export function requireChromeForegroundActivityAtBoundary(value) {
   if (!activity.chromeForeground) {
     throw new Error(`Chrome is not the resumed Android activity: ${activity.activity}`)
   }
-  return activity
+  const identity = activity.activity.match(
+    /ActivityRecord\{([A-Za-z0-9]+)\s+[^}\r\n]*?\s(t\d+)(?:\s|\})/u
+  )
+  if (!identity) {
+    throw new Error(
+      `Chrome activity identity lacks an ActivityRecord token and task id: ${activity.activity}`
+    )
+  }
+  return {
+    ...activity,
+    recordId: identity[1],
+    taskId: identity[2]
+  }
 }
 
 export function captureChromeSurfaceProbeBoundary({ readActivity, probeSurface }) {
@@ -242,7 +260,11 @@ export function captureChromeSurfaceProbeBoundary({ readActivity, probeSurface }
     throw new Error("Chrome surface probe must return an object")
   }
   const activityAfter = requireChromeForegroundActivityAtBoundary(readActivity())
-  if (activityBefore.activity !== activityAfter.activity) {
+  if (
+    activityBefore.recordId !== activityAfter.recordId ||
+    activityBefore.taskId !== activityAfter.taskId ||
+    activityBefore.activity !== activityAfter.activity
+  ) {
     throw new Error(
       `Chrome activity identity changed during the native surface probe: ` +
         `before=${activityBefore.activity}, after=${activityAfter.activity}`
