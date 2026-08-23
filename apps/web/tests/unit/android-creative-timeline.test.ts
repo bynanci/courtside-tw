@@ -671,6 +671,15 @@ test("cold UIAutomator can use the remaining normalization envelope without wide
   doesNotMatch(performanceHarness, /surface-unresolved/u)
 })
 
+test("bounded UIAutomator read-back pins the Pixel 7 guest to four cores", () => {
+  const ciWorkflow = readFileSync(
+    new URL("../../../../.github/workflows/ci.yml", import.meta.url),
+    "utf8"
+  )
+
+  match(ciWorkflow, /profile: pixel_7\s+cores: 4\s+ram-size: 4096M/u)
+})
+
 test("foreground frames use one exact browser timeline after the first attributable frame", () => {
   const active = (at: number, frame: number) => ({
     at,
@@ -903,7 +912,7 @@ test("Android smoke diagnostics preserve the failing producer and bound probes",
     /dismissTap[\s\S]*adbWithTimeout\([\s\S]*requireRemainingAutomationMilliseconds\(deadline/u
   )
   equal(performanceHarness.match(/probeChromeContentSurfaceAtActivityBoundary\(/gu)?.length, 3)
-  match(ciWorkflow, /profile: pixel_7\s+ram-size: 4096M/u)
+  match(ciWorkflow, /profile: pixel_7\s+cores: 4\s+ram-size: 4096M/u)
   doesNotMatch(performanceHarness, /pm["',\s]+grant/u)
   doesNotMatch(
     performanceHarness,
