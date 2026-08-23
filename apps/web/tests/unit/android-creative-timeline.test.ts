@@ -11,6 +11,7 @@ import {
   evaluateAndroidBackgroundTimeline,
   evaluateAndroidForegroundFrameTimeline,
   normalizeBrowserRuntimeSnapshot,
+  parseAndroidDisplaySize,
   requireAndroidActivityAtBoundary,
   requireChromeForegroundActivityAtBoundary,
   retainFirstPausedSnapshot
@@ -26,6 +27,8 @@ const FOREGROUND_BUDGETS = Object.freeze({
   minimumForegroundFrames: 5,
   maximumRunningCanvases: 1
 })
+
+const PIXEL_7_DISPLAY = Object.freeze({ width: 1080, height: 2400 })
 
 const ATTEMPT_2_CHROME_MODAL_XML = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
 <hierarchy rotation="0">
@@ -175,7 +178,7 @@ test("activity classification ignores unresolved dumpsys output instead of treat
 })
 
 test("the exact attempt 2 Chrome notification modal resolves only its safe negative target", () => {
-  deepEqual(classifyChromeAutomationSurface(ATTEMPT_2_CHROME_MODAL_XML), {
+  deepEqual(classifyChromeAutomationSurface(ATTEMPT_2_CHROME_MODAL_XML, PIXEL_7_DISPLAY), {
     status: "known-notification-prompt",
     dismissTap: { x: 592, y: 1753 }
   })
@@ -226,6 +229,10 @@ test("unknown or malformed Chrome native modals fail closed without a tap target
       'bounds="[477,1690][708,1816]"',
       `bounds="[477,1690][${"9".repeat(400)},1816]"`
     ),
+    ATTEMPT_2_CHROME_MODAL_XML.replace(
+      'bounds="[28,615][1052,1858]"',
+      'bounds="[0,0][999999,999999]"'
+    ).replace('bounds="[477,1690][708,1816]"', 'bounds="[900000,900000][999999,999999]"'),
     '<hierarchy><node text="No thanks" resource-id="com.android.chrome:id/negative_button" bounds="[477,1690][708,1816]" /></hierarchy>',
     '<hierarchy rotation="0"><node package="com.android.chrome" text="Courtside TW" />',
     '<hierarchy rotation="0"><node package="com.android.chrome" resource-id="com.android.chrome:id/update_dialog" class="android.app.Dialog" text="Update Chrome" clickable="true" enabled="true" bounds="[28,615][1052,1858]" /></hierarchy>',
@@ -233,7 +240,7 @@ test("unknown or malformed Chrome native modals fail closed without a tap target
   ]
 
   for (const fixture of fixtures) {
-    deepEqual(classifyChromeAutomationSurface(fixture), {
+    deepEqual(classifyChromeAutomationSurface(fixture, PIXEL_7_DISPLAY), {
       status: "blocked",
       reason: "unrecognized-or-malformed-chrome-modal"
     })
@@ -314,6 +321,32 @@ test("native surface probe rejects a post-probe foreground identity change", () 
       }),
     /Chrome is not the resumed Android activity/
   )
+})
+
+test("native surface probe rejects a different Chrome activity or task identity", () => {
+  const activities = [
+    "topResumedActivity=ActivityRecord{aaa u0 com.android.chrome/com.google.android.apps.chrome.Main t8}",
+    "topResumedActivity=ActivityRecord{bbb u0 com.android.chrome/com.google.android.apps.chrome.Main t9}"
+  ]
+  throws(
+    () =>
+      captureChromeSurfaceProbeBoundary({
+        readActivity: () => activities.shift() ?? "",
+        probeSurface: () => ({ status: "clear" })
+      }),
+    /Chrome activity identity changed during the native surface probe/
+  )
+})
+
+test("Android display receipts prefer the active override and reject malformed sizes", () => {
+  deepEqual(parseAndroidDisplaySize("Physical size: 1080x2400"), PIXEL_7_DISPLAY)
+  deepEqual(
+    parseAndroidDisplaySize("Physical size: 1440x3120\nOverride size: 1080x2400"),
+    PIXEL_7_DISPLAY
+  )
+  for (const value of ["", "Physical size: 0x2400", "Physical size: 999999x999999"]) {
+    throws(() => parseAndroidDisplaySize(value), /Android display size receipt is invalid/)
+  }
 })
 
 test("active snapshot requires exactly one running runtime", () => {
