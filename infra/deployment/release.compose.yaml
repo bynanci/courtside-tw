@@ -13,7 +13,7 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: api
       SERVER_PORT: "8080"
-      DATABASE_URL: ${DATABASE_URL:?runtime-injected database URL is required}
+      SPRING_DATASOURCE_URL: ${DATABASE_URL:?runtime-injected database URL is required}
       COURTSIDE_RELEASE_ID: ${COURTSIDE_RELEASE_ID}
     expose: ["8080"]
     networks: [backend]
@@ -31,7 +31,7 @@ services:
       - /tmp:rw,noexec,nosuid,nodev,size=64m
     command: ["--spring.profiles.active=worker"]
     environment:
-      DATABASE_URL: ${DATABASE_URL:?runtime-injected database URL is required}
+      SPRING_DATASOURCE_URL: ${DATABASE_URL:?runtime-injected database URL is required}
       COURTSIDE_RELEASE_ID: ${COURTSIDE_RELEASE_ID}
     networks: [backend]
     restart: unless-stopped

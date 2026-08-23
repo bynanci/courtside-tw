@@ -100,16 +100,18 @@ write_readiness() {
   local web_digest="$5"
   local status="$6"
   local database_schema="$7"
+  local environment="${8:-test}"
 
-  python3 - "$path" "$release_id" "$source_sha" "$api_digest" "$web_digest" "$status" "$database_schema" <<'PY'
+  python3 - "$path" "$release_id" "$source_sha" "$api_digest" "$web_digest" "$status" "$database_schema" "$environment" <<'PY'
 import json
 import sys
 
-path, release_id, source_sha, api_digest, web_digest, status, database_schema = sys.argv[1:]
+path, release_id, source_sha, api_digest, web_digest, status, database_schema, environment = sys.argv[1:]
 with open(path, "w", encoding="utf-8") as handle:
     json.dump(
         {
             "schema_version": 1,
+            "environment": environment,
             "release_id": release_id,
             "source_sha": source_sha,
             "images": {"api": api_digest, "web": web_digest},
@@ -117,8 +119,36 @@ with open(path, "w", encoding="utf-8") as handle:
             "database_schema": int(database_schema),
             "checks": [
                 {"name": "api-readiness", "status": status},
-                {"name": "web-readiness", "status": status},
+                {"name": "worker-readiness", "status": status},
+                {"name": "public-web-readiness", "status": status},
             ],
+        },
+        handle,
+        indent=2,
+        sort_keys=True,
+    )
+    handle.write("\n")
+PY
+}
+
+write_schema_readback() {
+  local path="$1"
+  local environment="$2"
+  local database_schema="$3"
+
+  python3 - "$path" "$environment" "$database_schema" <<'PY'
+import json
+import sys
+from datetime import UTC, datetime
+
+path, environment, database_schema = sys.argv[1:]
+with open(path, "w", encoding="utf-8") as handle:
+    json.dump(
+        {
+            "schema_version": 1,
+            "environment": environment,
+            "database_schema": int(database_schema),
+            "observed_at": datetime.now(UTC).isoformat(timespec="seconds").replace("+00:00", "Z"),
         },
         handle,
         indent=2,
@@ -192,7 +222,15 @@ write_readiness "$WORK_DIR/readiness-a.json" release-a "$SOURCE_A" "$DIGEST_A" "
 run_controller "$WORK_DIR/register-a.json" register --manifest "$WORK_DIR/release-a.json"
 write_unbound_readiness "$WORK_DIR/unbound-readiness-a.json" release-a healthy 9
 expect_failure "unbound readiness identity" run_controller "$WORK_DIR/unbound-readiness-a-receipt.json" activate --release release-a --readiness "$WORK_DIR/unbound-readiness-a.json"
+write_readiness "$WORK_DIR/readiness-a-staging.json" release-a "$SOURCE_A" "$DIGEST_A" "$DIGEST_B" healthy 9 staging
+expect_failure "mismatched readiness environment" run_controller "$WORK_DIR/readiness-a-staging-receipt.json" activate --release release-a --readiness "$WORK_DIR/readiness-a-staging.json"
 run_controller "$WORK_DIR/activate-a.json" activate --release release-a --readiness "$WORK_DIR/readiness-a.json"
+expect_failure "mismatched release-state environment" \
+  python3 "$CONTROLLER" \
+    --state "$STATE" \
+    --environment staging \
+    --receipt "$WORK_DIR/state-environment-mismatch.json" \
+    status
 
 write_manifest "$WORK_DIR/release-b.json" release-b "$SOURCE_B" "$DIGEST_C" "$DIGEST_D" 10 9 11 migrate
 write_readiness "$WORK_DIR/readiness-b.json" release-b "$SOURCE_B" "$DIGEST_C" "$DIGEST_D" healthy 10
@@ -201,7 +239,13 @@ run_controller "$WORK_DIR/activate-b.json" activate --release release-b --readin
 
 # Application rollback must move only the active release. The forward schema
 # remains at version 10 so there is no down migration or destructive reset.
-run_controller "$WORK_DIR/rollback-a.json" rollback --release release-a
+write_schema_readback "$WORK_DIR/schema-readback-11.json" test 11
+expect_failure "incompatible live schema read-back" run_controller \
+  "$WORK_DIR/rollback-a-schema-11.json" rollback --release release-a \
+  --schema-readback "$WORK_DIR/schema-readback-11.json"
+write_schema_readback "$WORK_DIR/schema-readback-10.json" test 10
+run_controller "$WORK_DIR/rollback-a.json" rollback --release release-a \
+  --schema-readback "$WORK_DIR/schema-readback-10.json"
 
 python3 - "$STATE" "$WORK_DIR/rollback-a.json" <<'PY'
 import json
@@ -211,6 +255,8 @@ state = json.load(open(sys.argv[1], encoding="utf-8"))
 receipt = json.load(open(sys.argv[2], encoding="utf-8"))
 assert state["active_release"] == "release-a", state
 assert state["database_schema_version"] == 10, state
+assert state["environment"] == "test", state
+assert state["activated_releases"] == ["release-a", "release-b"], state
 assert state["last_action_receipt"]["action"] == "rollback", state
 assert state["last_action_receipt"]["active_after"] == "release-a", state
 assert receipt["active_before"] == "release-b", receipt
@@ -237,6 +283,9 @@ PY
 # A failed or degraded candidate may never replace the last healthy release.
 write_manifest "$WORK_DIR/release-c.json" release-c "$SOURCE_C" "$DIGEST_A" "$DIGEST_D" 10 10 11 expand
 run_controller "$WORK_DIR/register-c.json" register --manifest "$WORK_DIR/release-c.json"
+expect_failure "never-activated rollback target" run_controller \
+  "$WORK_DIR/rollback-c.json" rollback --release release-c \
+  --schema-readback "$WORK_DIR/schema-readback-10.json"
 write_readiness "$WORK_DIR/readiness-c-failed.json" release-c "$SOURCE_C" "$DIGEST_A" "$DIGEST_D" failed 10
 write_readiness "$WORK_DIR/readiness-c-degraded.json" release-c "$SOURCE_C" "$DIGEST_A" "$DIGEST_D" degraded 10
 write_readiness "$WORK_DIR/readiness-c-wrong-schema.json" release-c "$SOURCE_C" "$DIGEST_A" "$DIGEST_D" healthy 11
@@ -293,7 +342,9 @@ assert receipt["result"] == "no_op", receipt
 assert receipt["release_id"] == "release-e", receipt
 PY
 
-expect_failure "unknown rollback target" run_controller "$WORK_DIR/rollback-unknown.json" rollback --release missing-release
+expect_failure "unknown rollback target" run_controller \
+  "$WORK_DIR/rollback-unknown.json" rollback --release missing-release \
+  --schema-readback "$WORK_DIR/schema-readback-10.json"
 
 write_manifest "$WORK_DIR/release-d.json" release-d "$SOURCE_D" "$DIGEST_A" "$DIGEST_B" 12 10 12 migrate
 run_controller "$WORK_DIR/register-d.json" register --manifest "$WORK_DIR/release-d.json"
@@ -350,6 +401,12 @@ assert readiness_example["release_id"] == manifest_example["release_id"]
 assert readiness_example["database_schema"] == manifest_example["database"]["target_schema"]
 assert readiness_example["source_sha"] == manifest_example["source_sha"]
 assert readiness_example["images"] == manifest_example["images"]
+assert readiness_example["environment"] == "staging"
+assert {check["name"] for check in readiness_example["checks"]} >= {
+    "api-readiness",
+    "worker-readiness",
+    "public-web-readiness",
+}
 
 receipt = {
     "schema_version": 1,
@@ -371,8 +428,13 @@ receipt = {
         "failed candidate rejected",
         "degraded candidate rejected",
         "mismatched schema read-back rejected",
+        "mismatched readiness environment rejected",
+        "mismatched release-state environment rejected",
         "unbound readiness identity rejected",
         "mismatched readiness identity rejected",
+        "never-activated rollback target rejected",
+        "incompatible live schema read-back rejected",
+        "state writes bounded below the controller read limit",
         "mutable image rejected",
         "contract phase rejected during rollback window",
         "interrupted receipt sink reconciled",
