@@ -68,6 +68,17 @@ const ATTEMPT_2_CHROME_MODAL_XML = `<?xml version='1.0' encoding='UTF-8' standal
   </node>
 </hierarchy>`
 
+const ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML = `<?xml version='1.0' encoding='UTF-8' standalone='yes' ?>
+<hierarchy rotation="0">
+  <node text="" resource-id="" class="android.widget.FrameLayout" package="android" bounds="[28,983][1052,1489]">
+    <node text="" resource-id="android:id/parentPanel" class="android.widget.LinearLayout" package="android" bounds="[70,1025][1010,1447]">
+      <node text="Pixel Launcher isn't responding" resource-id="android:id/alertTitle" class="android.widget.TextView" package="android" bounds="[133,1072][947,1135]" />
+      <node text="Close app" resource-id="android:id/aerr_close" class="android.widget.Button" package="android" clickable="true" enabled="true" bounds="[70,1174][1010,1300]" />
+      <node text="Wait" resource-id="android:id/aerr_wait" class="android.widget.Button" package="android" clickable="true" enabled="true" bounds="[70,1300][1010,1426]" />
+    </node>
+  </node>
+</hierarchy>`
+
 type ActivityTransition = {
   at: number
   chromeForeground: boolean
@@ -558,6 +569,12 @@ test("native Android performance harness invokes the behavioral boundaries", () 
   )
   match(performanceHarness, /maximumPollMilliseconds:\s*CHROME_AUTOMATION_POLL_MILLISECONDS/u)
   match(performanceHarness, /maximumAttempts:\s*ANDROID_ACTIVITY_RECEIPT_HISTORY_LIMIT/u)
+  match(
+    performanceHarness,
+    /planChromeAutomationSurfaceNormalization\(surface, dismissedPromptStatuses\)/u
+  )
+  match(performanceHarness, /dismissedPromptStatuses\.add\(normalization\.prompt\)/u)
+  match(performanceHarness, /"Pixel Launcher ANR wait tap"/u)
   match(performanceHarness, /bringToFront:\s*\(\) => page\.bringToFront\(\)/u)
   equal(performanceHarness.match(/page\.bringToFront\(\)/gu)?.length, 1)
   equal(performanceHarness.match(/"KEYCODE_HOME"/gu)?.length, 1)
@@ -775,6 +792,94 @@ test("the exact attempt 2 Chrome notification modal resolves only its safe negat
     status: "known-notification-prompt",
     dismissTap: { x: 592, y: 1753 }
   })
+})
+
+test("the exact attempt 3 Pixel Launcher ANR resolves only its safe Wait target", () => {
+  deepEqual(classifyChromeAutomationSurface(ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML, PIXEL_7_DISPLAY), {
+    status: "known-pixel-launcher-anr",
+    dismissTap: { x: 540, y: 1363 }
+  })
+})
+
+test("Pixel Launcher ANR normalization fails closed on any identity or geometry drift", () => {
+  const fixtures = [
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace(
+      "Pixel Launcher isn't responding",
+      "System UI isn't responding"
+    ),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace("android:id/aerr_wait", "android:id/aerr_close"),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace('text="Wait"', 'text="Close app"'),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace('clickable="true"', 'clickable="false"'),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace(
+      'bounds="[70,1300][1010,1426]"',
+      'bounds="[0,0][999999,999999]"'
+    ),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace(
+      "</hierarchy>",
+      '<node text="Wait" resource-id="android:id/aerr_wait" class="android.widget.Button" package="android" clickable="true" enabled="true" bounds="[70,1300][1010,1426]" /></hierarchy>'
+    ),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace(
+      '<node text="Close app" resource-id="android:id/aerr_close" class="android.widget.Button" package="android" clickable="true" enabled="true" bounds="[70,1174][1010,1300]" />',
+      ""
+    )
+  ]
+
+  for (const fixture of fixtures) {
+    deepEqual(classifyChromeAutomationSurface(fixture, PIXEL_7_DISPLAY), {
+      status: "blocked",
+      reason: "unrecognized-or-malformed-chrome-modal"
+    })
+  }
+})
+
+test("native surface normalization taps each exact safe prompt at most once", () => {
+  const planChromeAutomationSurfaceNormalization = Reflect.get(
+    timelineHelpers,
+    "planChromeAutomationSurfaceNormalization"
+  )
+  equal(typeof planChromeAutomationSurfaceNormalization, "function")
+  if (typeof planChromeAutomationSurfaceNormalization !== "function") return
+
+  deepEqual(
+    planChromeAutomationSurfaceNormalization(
+      { status: "known-pixel-launcher-anr", dismissTap: { x: 540, y: 1363 } },
+      []
+    ),
+    {
+      action: "tap",
+      prompt: "known-pixel-launcher-anr",
+      dismissTap: { x: 540, y: 1363 }
+    }
+  )
+  deepEqual(
+    planChromeAutomationSurfaceNormalization(
+      { status: "known-notification-prompt", dismissTap: { x: 592, y: 1753 } },
+      ["known-pixel-launcher-anr"]
+    ),
+    {
+      action: "tap",
+      prompt: "known-notification-prompt",
+      dismissTap: { x: 592, y: 1753 }
+    }
+  )
+  deepEqual(
+    planChromeAutomationSurfaceNormalization(
+      { status: "known-pixel-launcher-anr", dismissTap: { x: 540, y: 1363 } },
+      ["known-pixel-launcher-anr", "known-notification-prompt"]
+    ),
+    { action: "poll", prompt: "known-pixel-launcher-anr" }
+  )
+  deepEqual(planChromeAutomationSurfaceNormalization({ status: "clear" }, []), {
+    action: "accept"
+  })
+  throws(
+    () =>
+      planChromeAutomationSurfaceNormalization(
+        { status: "blocked", reason: "unrecognized-or-malformed-chrome-modal" },
+        []
+      ),
+    /blocked by an unrecognized native modal/u
+  )
 })
 
 test("Chrome automation surface is clear only when no native modal markers exist", () => {
