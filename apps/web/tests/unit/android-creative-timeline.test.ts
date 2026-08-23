@@ -847,6 +847,15 @@ test("Pixel Launcher ANR normalization fails closed on any identity or geometry 
       'resource-id="android:id/aerr_close" class="android.widget.Button"',
       'resource-id="android:id/aerr_close" class="android.widget.TextView"'
     ),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace('text="Close app"', 'text="Force stop"'),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace(
+      'text="Close app" resource-id="android:id/aerr_close" class="android.widget.Button" package="android" clickable="true"',
+      'text="Close app" resource-id="android:id/aerr_close" class="android.widget.Button" package="android" clickable="false"'
+    ),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace(
+      'text="Wait" resource-id="android:id/aerr_wait" class="android.widget.Button" package="android"',
+      'text="Wait" resource-id="android:id/aerr_wait" class="android.widget.Button" package="com.android.systemui"'
+    ),
     ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace(
       '<node text="Wait"',
       '<node text="Report" resource-id="android:id/aerr_report" class="android.widget.Button" package="android" clickable="true" enabled="true" bounds="[70,1300][1010,1360]" /><node text="Wait"'
@@ -864,6 +873,14 @@ test("Pixel Launcher ANR normalization fails closed on any identity or geometry 
       '<node text="System UI isn&apos;t responding" resource-id="android:id/alertTitle" class="android.widget.TextView" package="android" bounds="[133,1072][947,1135]" /></hierarchy>'
     ),
     ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace(
+      "</hierarchy>",
+      '<node text="" resource-id="android:id/parentPanel" class="android.widget.FrameLayout" package="android" bounds="[70,1025][1010,1447]" /></hierarchy>'
+    ),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace(
+      "</hierarchy>",
+      '<node text="Force stop" resource-id="android:id/aerr_close" class="android.widget.Button" package="android" clickable="false" enabled="true" bounds="[70,1174][1010,1300]" /></hierarchy>'
+    ),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace(
       'bounds="[70,1025][1010,1447]"',
       'bounds="[70,1024][1010,1447]"'
     ),
@@ -874,6 +891,10 @@ test("Pixel Launcher ANR normalization fails closed on any identity or geometry 
     ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace(
       'bounds="[70,1174][1010,1300]"',
       'bounds="[70,1173][1010,1300]"'
+    ),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace(
+      'bounds="[70,1300][1010,1426]"',
+      'bounds="[70,1301][1010,1426]"'
     ),
     ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML.replace(
       'bounds="[70,1300][1010,1426]"',
@@ -1045,6 +1066,55 @@ test("native surface normalization brackets one safe tap with fresh bound activi
   )
   equal(activityReads, 2)
   equal(tapCalls, 1)
+  equal(recordCalls, 0)
+
+  tapCalls = 0
+  recordCalls = 0
+  activityReads = 0
+  throws(
+    () =>
+      executeChromeSurfaceNormalizationAction({
+        surface: { status: "known-pixel-launcher-anr", dismissTap: { x: 540, y: 1363 } },
+        dismissedPrompts: [],
+        expectedActivity: ATTEMPT_1_RESUMED_ACTIVITY,
+        readActivityReceipt: () => {
+          activityReads += 1
+          return { status: "unresolved", activity: "" }
+        },
+        tap: () => {
+          tapCalls += 1
+        },
+        recordDismissedPrompt: () => {
+          recordCalls += 1
+        }
+      }),
+    /normalization activity receipt did not resolve/u
+  )
+  equal(activityReads, 1)
+  equal(tapCalls, 0)
+  equal(recordCalls, 0)
+
+  activityReads = 0
+  deepEqual(
+    executeChromeSurfaceNormalizationAction({
+      surface: { status: "known-pixel-launcher-anr", dismissTap: { x: 540, y: 1363 } },
+      dismissedPrompts: ["known-pixel-launcher-anr"],
+      expectedActivity: ATTEMPT_1_RESUMED_ACTIVITY,
+      readActivityReceipt: () => {
+        activityReads += 1
+        return { status: "resolved", activity: ATTEMPT_1_RESUMED_ACTIVITY }
+      },
+      tap: () => {
+        tapCalls += 1
+      },
+      recordDismissedPrompt: () => {
+        recordCalls += 1
+      }
+    }),
+    { action: "poll", prompt: "known-pixel-launcher-anr" }
+  )
+  equal(activityReads, 0)
+  equal(tapCalls, 0)
   equal(recordCalls, 0)
 })
 
