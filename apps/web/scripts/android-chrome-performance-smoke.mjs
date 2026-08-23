@@ -661,8 +661,8 @@ async function observeBackgroundActivity(activityTransitions) {
     activity = resumedActivityLine()
     recordActivityTransition(activityTransitions, activity, Date.now())
   }
-  const boundaryObservedAt = Date.now()
   const boundary = requireAndroidActivityAtBoundary(resumedActivityLine())
+  const boundaryObservedAt = Date.now()
   recordActivityTransition(activityTransitions, boundary.activity, boundaryObservedAt)
   return { ...boundary, observedAt: boundaryObservedAt }
 }
