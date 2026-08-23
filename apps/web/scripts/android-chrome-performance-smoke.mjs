@@ -13,6 +13,7 @@ import {
 
 const ARTICLE_URL = "http://127.0.0.1:4173/articles/opening-night?issue=issue-2026-01"
 const ANDROID_ACTIVITY_POLL_MILLISECONDS = 25
+const ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS = 250
 const BUDGETS = Object.freeze({
   domContentLoadedMilliseconds: 5_000,
   creativeFirstRunningMilliseconds: 3_500,
@@ -460,7 +461,7 @@ function assertActiveRuntimeSnapshot(snapshot, label) {
 }
 
 function assertPausedRuntimeSnapshot(snapshot, label) {
-  if (snapshot.runningCount !== 0 || snapshot.targetStatus === "running") {
+  if (snapshot.runningCount !== 0 || snapshot.targetStatus !== "paused") {
     throw new Error(`${label} must contain zero running canvases: ${JSON.stringify(snapshot)}`)
   }
 }
@@ -474,7 +475,10 @@ async function waitForActiveRuntimeSnapshot(page, targetIndex, timeoutMillisecon
   ) {
     const remainingMilliseconds = deadline - performance.now()
     await new Promise((resolve) =>
-      setTimeout(resolve, Math.min(ANDROID_ACTIVITY_POLL_MILLISECONDS, remainingMilliseconds))
+      setTimeout(
+        resolve,
+        boundedAndroidPollDelay(remainingMilliseconds, ANDROID_ACTIVITY_POLL_MILLISECONDS)
+      )
     )
     snapshot = await captureRuntimeSnapshot(page, targetIndex)
   }
@@ -569,7 +573,7 @@ async function armOperatingSystemPauseObservation(page, targetIndex) {
 function readOperatingSystemPauseSnapshot(page, targetIndex) {
   return page.evaluate((index) => {
     const observed = window.__courtsideT079AndroidBackgroundState?.pauseSnapshot
-    if (observed) return observed
+    if (observed) return { ...observed, source: "lifecycle-observer" }
 
     const runtimes = Array.from(document.querySelectorAll('[data-testid="creative-runtime"]'))
     const target = runtimes[index]
@@ -580,7 +584,8 @@ function readOperatingSystemPauseSnapshot(page, targetIndex) {
       runningCount: runtimes.filter(
         (runtime) => runtime.getAttribute("data-runtime-status") === "running"
       ).length,
-      targetStatus: target.getAttribute("data-runtime-status") ?? "missing"
+      targetStatus: target.getAttribute("data-runtime-status") ?? "missing",
+      source: "live-atomic-fallback"
     }
   }, targetIndex)
 }
@@ -606,13 +611,12 @@ async function waitForBackgroundConvergence(page, homeSignal, targetIndex) {
   const deadline = performance.now() + BUDGETS.operatingSystemBackgroundMilliseconds
   const activityTransitions = []
   let pauseSnapshot = null
+  let liveSnapshot = null
 
   while (performance.now() < deadline) {
     recordActivityTransition(activityTransitions, resumedActivityLine(), Date.now())
-    pauseSnapshot = retainFirstPausedSnapshot(
-      pauseSnapshot,
-      await readOperatingSystemPauseSnapshot(page, targetIndex)
-    )
+    liveSnapshot = await readOperatingSystemPauseSnapshot(page, targetIndex)
+    pauseSnapshot = retainFirstPausedSnapshot(pauseSnapshot, liveSnapshot)
     const backgroundActivity = activityTransitions.find(
       (transition) => transition.at >= homeSignal.at && !transition.chromeForeground
     )
@@ -632,7 +636,8 @@ async function waitForBackgroundConvergence(page, homeSignal, targetIndex) {
     `Android background convergence was not observed within ` +
       `${BUDGETS.operatingSystemBackgroundMilliseconds} ms; ` +
       `activityTransitions=${JSON.stringify(activityTransitions)}, ` +
-      `pauseSnapshot=${JSON.stringify(pauseSnapshot)}`
+      `pauseSnapshot=${JSON.stringify(pauseSnapshot)}, ` +
+      `liveSnapshot=${JSON.stringify(liveSnapshot)}`
   )
 }
 
@@ -681,6 +686,7 @@ async function verifyAndroidOperatingSystemBackground(page, targetIndex) {
     hasFocus: document.hasFocus()
   }))
   const timeline = {
+    clockMaximumUncertaintyMilliseconds: clockCalibration.maximumUncertaintyMilliseconds,
     homeSignal,
     activeSnapshot,
     activityTransitions: convergence.activityTransitions,
@@ -700,6 +706,7 @@ async function verifyAndroidOperatingSystemBackground(page, targetIndex) {
     },
     activityTransitionMilliseconds: evaluation.activityTransitionMilliseconds,
     runtimePauseMilliseconds: evaluation.runtimePauseMilliseconds,
+    runtimePauseUpperBoundMilliseconds: evaluation.runtimePauseUpperBoundMilliseconds,
     transitionOrder: evaluation.transitionOrder,
     backgroundActivity: evaluation.backgroundActivity,
     activityAfterObservation,
@@ -710,6 +717,7 @@ async function verifyAndroidOperatingSystemBackground(page, targetIndex) {
     frameAtPause: evaluation.frameAtPause,
     transitionFrameDelta: Math.max(0, evaluation.frameAtPause - activeSnapshot.frame),
     statusAtPause: evaluation.statusAtPause,
+    pauseObservationSource: evaluation.pauseObservationSource,
     frameBefore: evaluation.frameAtPause,
     frameAfter: evaluation.frameAfterObservation,
     frameDelta: evaluation.postPauseFrames,
@@ -735,7 +743,20 @@ function adb(...arguments_) {
 }
 
 function resumedActivityLine() {
-  const output = adb("shell", "dumpsys", "activity", "activities")
+  const result = spawnSync("adb", ["shell", "dumpsys", "activity", "activities"], {
+    encoding: "utf8",
+    timeout: ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS
+  })
+  if (result.error?.code === "ETIMEDOUT") {
+    return ""
+  }
+  if (result.status !== 0) {
+    throw new Error(
+      `adb shell dumpsys activity activities failed: ` +
+        `${result.stderr || result.stdout || result.error?.message || result.status}`
+    )
+  }
+  const output = result.stdout
   return (
     output
       .split("\n")

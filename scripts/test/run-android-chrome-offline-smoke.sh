@@ -38,7 +38,7 @@ capture_diagnostics() {
     >"$artifact_dir/window-pull.txt" 2>&1 || true
   adb shell dumpsys activity activities >"$artifact_dir/activities.txt" 2>&1 || true
   adb shell dumpsys window windows >"$artifact_dir/windows.txt" 2>&1 || true
-  adb logcat -d -v threadtime >"$artifact_dir/logcat.txt" 2>&1 || true
+  adb logcat -d -v threadtime -t 2000 >"$artifact_dir/logcat.txt" 2>&1 || true
   adb exec-out screencap -p >"$artifact_dir/screenshot.png" 2>/dev/null || true
   curl --fail --silent --show-error http://127.0.0.1:9222/json/version \
     >"$artifact_dir/cdp-version-failure.json" 2>"$artifact_dir/cdp-version-failure.txt" || true
@@ -53,6 +53,29 @@ on_error() {
   exit "$exit_code"
 }
 trap 'on_error "$?" "$LINENO" "$BASH_COMMAND"' ERR
+
+run_logged_smoke() {
+  local smoke_phase="$1"
+  local script_path="$2"
+  local output_path="$3"
+  local call_line="$4"
+  diagnostic_phase="$smoke_phase"
+
+  if pnpm --filter @courtside/web exec node "$script_path" | tee "$output_path"; then
+    return 0
+  else
+    local producer_status="${PIPESTATUS[0]}" sink_status="${PIPESTATUS[1]}"
+    local exit_code="$producer_status"
+    local failed_command="pnpm --filter @courtside/web exec node $script_path"
+    if [[ "$producer_status" -eq 0 ]]; then
+      exit_code="$sink_status"
+      failed_command="tee $output_path"
+    fi
+    trap - ERR
+    capture_diagnostics "$exit_code" "$call_line" "$failed_command"
+    exit "$exit_code"
+  fi
+}
 
 launch_chrome() {
   local launch_phase="$1"
@@ -114,9 +137,11 @@ adb shell dumpsys package com.android.chrome | sed -n '/versionName=/p' \
   >"$artifact_dir/chrome-version.txt"
 
 launch_chrome "offline" "http://127.0.0.1:4173/issues/issue-2026-01"
-diagnostic_phase="offline-smoke"
-pnpm --filter @courtside/web exec node scripts/android-chrome-offline-smoke.mjs \
-  | tee "$smoke_log"
+run_logged_smoke \
+  "offline-smoke" \
+  "scripts/android-chrome-offline-smoke.mjs" \
+  "$smoke_log" \
+  "$LINENO"
 
 # CDP routing belongs to the Chrome process. A fresh process/context prevents
 # in-memory routes, renderer state and page lifecycle from contaminating the
@@ -124,6 +149,8 @@ pnpm --filter @courtside/web exec node scripts/android-chrome-offline-smoke.mjs 
 launch_chrome \
   "performance" \
   "http://127.0.0.1:4173/articles/opening-night?issue=issue-2026-01"
-diagnostic_phase="performance-smoke"
-pnpm --filter @courtside/web exec node scripts/android-chrome-performance-smoke.mjs \
-  | tee "$performance_log"
+run_logged_smoke \
+  "performance-smoke" \
+  "scripts/android-chrome-performance-smoke.mjs" \
+  "$performance_log" \
+  "$LINENO"

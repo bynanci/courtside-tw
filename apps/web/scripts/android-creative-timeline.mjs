@@ -39,12 +39,19 @@ function validateSnapshot(value, label) {
   if (typeof targetStatus !== "string" || targetStatus.length === 0) {
     throw new Error(`${label} targetStatus must be non-empty`)
   }
-  return {
+  const normalized = {
     at: requireTimestamp(snapshot.at, `${label} at`),
     frame: requireFrame(snapshot.frame, `${label} frame`),
     runningCount: requireCount(snapshot.runningCount, `${label} runningCount`),
     targetStatus
   }
+  if (snapshot.source !== undefined) {
+    if (typeof snapshot.source !== "string" || snapshot.source.length === 0) {
+      throw new Error(`${label} source must be non-empty`)
+    }
+    normalized.source = snapshot.source
+  }
+  return normalized
 }
 
 export function classifyAndroidActivityLine(value) {
@@ -55,9 +62,15 @@ export function classifyAndroidActivityLine(value) {
   if (!activity || /(?:^|[:=]\s*)(?:null|none)\s*$/iu.test(activity)) {
     return null
   }
+  const component = activity.match(
+    /(?:mResumedActivity|topResumedActivity)\s*[:=]\s*ActivityRecord\{[^}\r\n]*?\s([A-Za-z0-9_.$]+\/[A-Za-z0-9_.$]+)(?:\s|\})/u
+  )?.[1]
+  if (!component) {
+    return null
+  }
   return {
     activity,
-    chromeForeground: /com\.android\.chrome/u.test(activity)
+    chromeForeground: component.startsWith("com.android.chrome/")
   }
 }
 
@@ -69,7 +82,7 @@ export function retainFirstPausedSnapshot(currentSnapshot, candidateSnapshot) {
     return null
   }
   const candidate = validateSnapshot(candidateSnapshot, "runtime pause candidate")
-  if (candidate.runningCount !== 0 || candidate.targetStatus === "running") {
+  if (candidate.runningCount !== 0 || candidate.targetStatus !== "paused") {
     return null
   }
   return candidate
@@ -129,11 +142,15 @@ export function evaluateAndroidBackgroundTimeline(rawTimeline, rawBudgets) {
     budgets.operatingSystemBackgroundMilliseconds,
     "operatingSystemBackgroundMilliseconds"
   )
+  const clockMaximumUncertaintyMilliseconds = requireTimestamp(
+    timeline.clockMaximumUncertaintyMilliseconds,
+    "clock maximum uncertainty"
+  )
 
   const homeSignal = requireRecord(timeline.homeSignal, "HOME signal")
   const homeSignalAt = requireTimestamp(homeSignal.at, "HOME signal at")
   const activeSnapshot = validateSnapshot(timeline.activeSnapshot, "active runtime snapshot")
-  if (activeSnapshot.at > homeSignalAt) {
+  if (activeSnapshot.at + clockMaximumUncertaintyMilliseconds > homeSignalAt) {
     throw new Error("active runtime snapshot must be captured before the HOME signal")
   }
   if (activeSnapshot.runningCount !== 1 || activeSnapshot.targetStatus !== "running") {
@@ -172,10 +189,16 @@ export function evaluateAndroidBackgroundTimeline(rawTimeline, rawBudgets) {
     throw new Error("Android runtime pause was never observed")
   }
   const pauseSnapshot = validateSnapshot(timeline.pauseSnapshot, "runtime pause snapshot")
-  if (pauseSnapshot.at < homeSignalAt) {
+  if (pauseSnapshot.at - clockMaximumUncertaintyMilliseconds < homeSignalAt) {
     throw new Error("runtime pause snapshot must follow the HOME signal")
   }
-  if (pauseSnapshot.runningCount !== 0 || pauseSnapshot.targetStatus === "running") {
+  if (pauseSnapshot.targetStatus !== "paused") {
+    throw new Error(
+      `runtime pause snapshot must have paused status; ` +
+        `received ${pauseSnapshot.targetStatus}`
+    )
+  }
+  if (pauseSnapshot.runningCount !== 0) {
     throw new Error(
       `runtime pause snapshot must contain zero running canvases; ` +
         `runningCount=${pauseSnapshot.runningCount}, targetStatus=${pauseSnapshot.targetStatus}`
@@ -186,10 +209,19 @@ export function evaluateAndroidBackgroundTimeline(rawTimeline, rawBudgets) {
     timeline.observationSnapshot,
     "background observation snapshot"
   )
-  if (observationSnapshot.at < pauseSnapshot.at || observationSnapshot.at < backgroundActivity.at) {
+  if (
+    observationSnapshot.at < pauseSnapshot.at ||
+    observationSnapshot.at - clockMaximumUncertaintyMilliseconds < backgroundActivity.at
+  ) {
     throw new Error("background observation snapshot must follow activity and runtime pause")
   }
-  if (observationSnapshot.runningCount !== 0 || observationSnapshot.targetStatus === "running") {
+  if (observationSnapshot.targetStatus !== "paused") {
+    throw new Error(
+      `background observation snapshot must have paused status; ` +
+        `received ${observationSnapshot.targetStatus}`
+    )
+  }
+  if (observationSnapshot.runningCount !== 0) {
     throw new Error(
       `background observation snapshot must contain zero running canvases; ` +
         `runningCount=${observationSnapshot.runningCount}, ` +
@@ -200,7 +232,7 @@ export function evaluateAndroidBackgroundTimeline(rawTimeline, rawBudgets) {
   const foregroundReturn = normalizedActivityTransitions.find(
     (transition) =>
       transition.at > backgroundActivity.at &&
-      transition.at <= observationSnapshot.at &&
+      transition.at <= observationSnapshot.at + clockMaximumUncertaintyMilliseconds &&
       transition.chromeForeground
   )
   if (foregroundReturn) {
@@ -212,16 +244,18 @@ export function evaluateAndroidBackgroundTimeline(rawTimeline, rawBudgets) {
 
   const activityTransitionMilliseconds = backgroundActivity.at - homeSignalAt
   const runtimePauseMilliseconds = pauseSnapshot.at - homeSignalAt
+  const runtimePauseUpperBoundMilliseconds =
+    runtimePauseMilliseconds + clockMaximumUncertaintyMilliseconds
   if (activityTransitionMilliseconds > maximumTransitionMilliseconds) {
     throw new Error(
       `Android operating-system background transition: expected <= ` +
         `${maximumTransitionMilliseconds}, received ${activityTransitionMilliseconds}`
     )
   }
-  if (runtimePauseMilliseconds > maximumTransitionMilliseconds) {
+  if (runtimePauseUpperBoundMilliseconds > maximumTransitionMilliseconds) {
     throw new Error(
-      `Android runtime background pause: expected <= ${maximumTransitionMilliseconds}, ` +
-        `received ${runtimePauseMilliseconds}`
+      `Android runtime background pause upper bound: expected <= ` +
+        `${maximumTransitionMilliseconds}, received ${runtimePauseUpperBoundMilliseconds}`
     )
   }
 
@@ -240,6 +274,8 @@ export function evaluateAndroidBackgroundTimeline(rawTimeline, rawBudgets) {
     activeRunningCount: activeSnapshot.runningCount,
     activityTransitionMilliseconds,
     runtimePauseMilliseconds,
+    runtimePauseUpperBoundMilliseconds,
+    clockMaximumUncertaintyMilliseconds,
     transitionOrder:
       backgroundActivity.at <= pauseSnapshot.at ? "activity-then-pause" : "pause-then-activity",
     backgroundActivity: backgroundActivity.activity,
@@ -247,6 +283,7 @@ export function evaluateAndroidBackgroundTimeline(rawTimeline, rawBudgets) {
     frameAtPause: pauseSnapshot.frame,
     frameAfterObservation: observationSnapshot.frame,
     postPauseFrames,
+    pauseObservationSource: pauseSnapshot.source ?? "unspecified",
     statusAtPause: pauseSnapshot.targetStatus,
     statusAfterObservation: observationSnapshot.targetStatus
   }
