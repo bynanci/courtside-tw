@@ -932,7 +932,7 @@ export async function establishNativeAndroidBackgroundBoundary(rawDependencies) 
   const sendHome = requireCallable(dependencies.sendHome, "sendHome")
 
   await bringToFront()
-  const browserForeground = requireAndroidBrowserForegroundReceipt(
+  const browserForegroundBeforeActivity = requireAndroidBrowserForegroundReceipt(
     await readBrowserForeground(),
     dependencies.expectedUrl
   )
@@ -958,6 +958,18 @@ export async function establishNativeAndroidBackgroundBoundary(rawDependencies) 
     finalActivityAttempt.activity !== foregroundActivity.activity
   ) {
     throw new Error("Chrome foreground activity acquisition final receipt is not authoritative")
+  }
+  const browserForeground = requireAndroidBrowserForegroundReceipt(
+    await readBrowserForeground(),
+    dependencies.expectedUrl
+  )
+  if (
+    browserForeground.url !== browserForegroundBeforeActivity.url ||
+    browserForeground.visibilityState !== browserForegroundBeforeActivity.visibilityState ||
+    browserForeground.hidden !== browserForegroundBeforeActivity.hidden ||
+    browserForeground.hasFocus !== browserForegroundBeforeActivity.hasFocus
+  ) {
+    throw new Error("Android browser foreground identity changed during activity acquisition")
   }
   const hostEpochBeforeArm = requireTimestamp(epochNow(), "host epoch before arm")
   const rawActiveSnapshot = await armRuntimeObservation()
