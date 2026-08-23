@@ -1,4 +1,4 @@
-import { deepEqual, equal, match, throws } from "node:assert/strict"
+import { deepEqual, doesNotMatch, equal, match, throws } from "node:assert/strict"
 import { readFileSync } from "node:fs"
 import { test } from "node:test"
 
@@ -8,6 +8,7 @@ import {
   classifyAndroidActivityLine,
   evaluateAndroidBackgroundTimeline,
   normalizeBrowserRuntimeSnapshot,
+  requireAndroidActivityAtBoundary,
   retainFirstPausedSnapshot
 } from "../../scripts/android-creative-timeline.mjs"
 
@@ -155,6 +156,22 @@ test("activity classification ignores unresolved dumpsys output instead of treat
   )
 })
 
+test("the observation boundary requires a fresh resolved Android activity identity", () => {
+  for (const activity of ["", "topResumedActivity=null", "mResumedActivity: garbage"]) {
+    throws(() => requireAndroidActivityAtBoundary(activity), /activity identity is unresolved/)
+  }
+  deepEqual(
+    requireAndroidActivityAtBoundary(
+      "topResumedActivity=ActivityRecord{def u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}"
+    ),
+    {
+      activity:
+        "topResumedActivity=ActivityRecord{def u0 com.google.android.apps.nexuslauncher/.NexusLauncherActivity t7}",
+      chromeForeground: false
+    }
+  )
+})
+
 test("active snapshot requires exactly one running runtime", () => {
   equal(
     evaluateAndroidBackgroundTimeline(timeline({ activeRunningCount: 1 }), BUDGETS)
@@ -284,6 +301,16 @@ test("Android smoke diagnostics preserve the failing producer and bound probes",
 
   match(shellHarness, /PIPESTATUS\[0\]/u)
   match(shellHarness, /logcat -d -v threadtime -t 2000/u)
+  match(shellHarness, /timeout 15s adb shell uiautomator/u)
+  match(shellHarness, /curl --max-time 5/u)
   match(performanceHarness, /ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS/u)
   match(performanceHarness, /timeout: ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS/u)
+  doesNotMatch(
+    performanceHarness,
+    /observed\.runningCount === 0 && observed\.targetStatus !== "running"/u
+  )
+  doesNotMatch(
+    performanceHarness,
+    /pauseSnapshot\.runningCount !== 0 \|\| pauseSnapshot\.targetStatus === "running"/u
+  )
 })
