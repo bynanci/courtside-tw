@@ -15,7 +15,7 @@ import {
 } from "../../features/issues/public-issue-api"
 import { issueRoute, parsePublicIssueSlug } from "../../features/issues/public-issue-contract"
 
-definePageMeta({ pageTransition: { name: "reader-route" } })
+definePageMeta({ pageTransition: { name: "reader-route", mode: "out-in" } })
 
 const route = useRoute()
 const config = useRuntimeConfig()

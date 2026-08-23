@@ -45,7 +45,7 @@ import {
   ReaderLibraryApiError
 } from "../../features/library/reader-library-api"
 
-definePageMeta({ pageTransition: { name: "reader-route" } })
+definePageMeta({ pageTransition: { name: "reader-route", mode: "out-in" } })
 
 type ContentRun = {
   kind: "text" | "link"

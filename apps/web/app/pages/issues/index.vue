@@ -6,7 +6,7 @@ import ReadingState from "../../components/issues/ReadingState.vue"
 import { canonicalUrl, jsonLd } from "../../composables/public-seo"
 import { fetchPublicIssuePage } from "../../features/issues/public-issue-api"
 
-definePageMeta({ pageTransition: { name: "reader-route" } })
+definePageMeta({ pageTransition: { name: "reader-route", mode: "out-in" } })
 
 const config = useRuntimeConfig()
 const {

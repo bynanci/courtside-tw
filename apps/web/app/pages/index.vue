@@ -9,7 +9,7 @@ import { canonicalUrl, jsonLd } from "../composables/public-seo"
 import { fetchPublicIssuePage, publicMediaUrl } from "../features/issues/public-issue-api"
 import { issueRoute } from "../features/issues/public-issue-contract"
 
-definePageMeta({ pageTransition: { name: "reader-route" } })
+definePageMeta({ pageTransition: { name: "reader-route", mode: "out-in" } })
 
 type SharedIssueCoverHandle = { capture: (event?: MouseEvent) => void }
 

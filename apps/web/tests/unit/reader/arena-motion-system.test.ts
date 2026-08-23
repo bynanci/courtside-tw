@@ -181,7 +181,7 @@ test("public reader pages integrate route, journey, and cover continuity without
   ])
 
   for (const page of [home, issueIndex, issue, article]) {
-    assert.match(page, /pageTransition:\s*\{\s*name:\s*"reader-route"\s*\}/)
+    assert.match(page, /pageTransition:\s*\{\s*name:\s*"reader-route",\s*mode:\s*"out-in"\s*\}/)
   }
   assert.match(home, /<ReaderJourneyRail\s+:active-step="1"/)
   assert.match(issue, /<ReaderJourneyRail\s+:active-step="2"/)
