@@ -609,8 +609,7 @@ test("fresh Chrome native surface is normalized before lifecycle timing budgets"
     new URL("../../scripts/android-chrome-performance-smoke.mjs", import.meta.url),
     "utf8"
   )
-  const initialSurfaceReceipt =
-    "const initialNativeSurface = await normalizeChromeContentSurface()"
+  const initialSurfaceReceipt = "const initialNativeSurface = await normalizeChromeContentSurface()"
   const initialSurfaceIndex = performanceHarness.indexOf(initialSurfaceReceipt)
   const offscreenBudgetIndex = performanceHarness.indexOf(
     "const offscreen = await measureOffscreenPause(page, 0)"
