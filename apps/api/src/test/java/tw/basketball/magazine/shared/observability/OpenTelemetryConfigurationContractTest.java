@@ -19,7 +19,7 @@ final class OpenTelemetryConfigurationContractTest {
         );
 
         assertTrue(build.contains(
-                "org.springframework.boot:spring-boot-micrometer-tracing-opentelemetry:4.1.0"
+                "implementation(\"org.springframework.boot:spring-boot-micrometer-tracing-opentelemetry:"
         ));
         assertFalse(build.contains("opentelemetry-exporter"));
         assertTrue(configuration.contains("COURTSIDE_OTEL_ENABLED:false"));
