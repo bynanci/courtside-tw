@@ -613,7 +613,7 @@ test("fresh Chrome native surface is normalized before lifecycle timing budgets"
   const initialSurfaceReceipt = "const initialNativeSurface = await normalizeChromeContentSurface()"
   const initialSurfaceIndex = performanceHarness.indexOf(initialSurfaceReceipt)
   const offscreenBudgetIndex = performanceHarness.indexOf(
-    "const offscreen = await measureOffscreenPause(page, 0)"
+    "const offscreen = evaluateAndroidOffscreenTimeline(await measureOffscreenPause(page, 0), BUDGETS)"
   )
 
   equal(initialSurfaceIndex >= 0, true)
