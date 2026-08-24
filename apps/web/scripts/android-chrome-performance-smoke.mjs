@@ -345,8 +345,7 @@ function waitForBrowserMainThreadQuiescence(page) {
             const frameGap = frameAt - previousFrameAt
             frameGaps.push(frameGap)
             if (frameGaps.length > 64) frameGaps.shift()
-            consecutiveFrames =
-              frameGap <= maximumFrameGapMilliseconds ? consecutiveFrames + 1 : 0
+            consecutiveFrames = frameGap <= maximumFrameGapMilliseconds ? consecutiveFrames + 1 : 0
             if (consecutiveFrames >= requiredConsecutiveFrames) {
               settled = true
               cleanup()
