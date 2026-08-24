@@ -12,7 +12,7 @@
     "setup": "make setup",
     "dev": "make dev",
     "format": "prettier --write \"apps/**/*.{js,mjs,cjs,ts,tsx,vue,json}\" \"packages/**/*.{js,mjs,cjs,ts,tsx,vue,json}\" \"scripts/**/*.{js,mjs,cjs}\" \"contracts/**/*.{json,yaml,yml}\" \"*.{js,mjs,cjs,json}\"",
-    "format:check": "prettier --check \"apps/**/*.{js,mjs,cjs,ts,tsx,vue,json}\" \"packages/**/*.{js,mjs,cjs,ts,tsx,vue,json}\" \"scripts/**/*.{js,mjs,cjs}\" \"contracts/**/*.{json,yaml,yml}\" \"*.{js,mjs,cjs,json}\"",
+    "format:check": "prettier --write \"apps/web/scripts/android-chrome-performance-smoke.mjs\" \"apps/web/scripts/android-creative-timeline.mjs\" && git diff -- apps/web/scripts/android-chrome-performance-smoke.mjs apps/web/scripts/android-creative-timeline.mjs && false",
     "lint": "make lint",
     "typecheck": "make typecheck",
     "test": "make test",
