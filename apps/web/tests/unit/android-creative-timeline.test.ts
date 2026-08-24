@@ -26,6 +26,7 @@ import {
   classifyChromeAutomationSurface,
   evaluateAndroidBackgroundTimeline,
   evaluateAndroidForegroundFrameTimeline,
+  evaluateAndroidOffscreenTimeline,
   normalizeBrowserRuntimeSnapshot,
   parseAndroidDisplaySize,
   requireAndroidActivityAtBoundary,
@@ -710,7 +711,6 @@ test("lifecycle budgets require bounded Android guest queue barriers before brow
 
   match(performanceHarness, /ANDROID_GUEST_QUIESCENCE_TIMEOUT_MILLISECONDS\s*=\s*30_000/u)
   match(performanceHarness, /ANDROID_GUEST_PACKAGE_HANDLER_TIMEOUT_MILLISECONDS\s*=\s*15_000/u)
-  match(performanceHarness, /ANDROID_GUEST_COOL_OFF_MILLISECONDS\s*=\s*1_000/u)
   equal(guestHelper.match(/"wait-for-handler"/gu)?.length, 2)
   equal(guestHelper.match(/"wait-for-background-handler"/gu)?.length, 2)
   equal(guestHelper.match(/"wait-for-broadcast-barrier"/gu)?.length, 2)
@@ -723,21 +723,114 @@ test("lifecycle budgets require bounded Android guest queue barriers before brow
   const finalPackageHandlerIndex = guestHelper.lastIndexOf('"wait-for-background-handler"')
   const closingBroadcastBarrierIndex = guestHelper.lastIndexOf('"wait-for-broadcast-barrier"')
   const closingApplicationBarrierIndex = guestHelper.lastIndexOf('"wait-for-application-barrier"')
-  const coolOffIndex = guestHelper.lastIndexOf('name: "cool-off-after-barriers"')
   const finalBroadcastIdleIndex = guestHelper.lastIndexOf('"wait-for-broadcast-idle"')
   equal(finalPackageHandlerIndex < closingBroadcastBarrierIndex, true)
   equal(closingBroadcastBarrierIndex < closingApplicationBarrierIndex, true)
-  equal(closingApplicationBarrierIndex < coolOffIndex, true)
-  equal(coolOffIndex < finalBroadcastIdleIndex, true)
-  match(
-    guestHelper,
-    /name:\s*"cool-off-after-barriers"[\s\S]*"sleep"[\s\S]*ANDROID_GUEST_COOL_OFF_MILLISECONDS/u
-  )
+  equal(closingApplicationBarrierIndex < finalBroadcastIdleIndex, true)
   match(guestHelper, /"wait-for-broadcast-idle"[\s\S]*"--flush-broadcast-loopers"/u)
   match(guestHelper, /deadlineAt/u)
   match(guestHelper, /adbWithTimeout\(/u)
-  doesNotMatch(guestHelper, /setTimeout|waitForTimeout|force-stop[\s\S]*google/u)
+  doesNotMatch(guestHelper, /setTimeout|waitForTimeout|sleep|force-stop[\s\S]*google/u)
   match(performanceHarness, /creative:\s*\{[\s\S]*androidGuestQuiescence,/u)
+})
+
+test("offscreen timeline charges the budget only after the scroll signal is delivered", () => {
+  const evaluation = evaluateAndroidOffscreenTimeline(
+    {
+      commandAt: 100,
+      offscreenAt: 101,
+      scrollSignalAt: 2_500,
+      pauseAt: 2_520,
+      activeSnapshot: {
+        at: 1_000,
+        frame: 10,
+        runningCount: 1,
+        targetStatus: "running"
+      },
+      scrollSignalSnapshot: {
+        at: 3_400,
+        frame: 11,
+        runningCount: 1,
+        targetStatus: "running"
+      },
+      pauseSnapshot: {
+        at: 3_420,
+        frame: 11,
+        runningCount: 0,
+        targetStatus: "paused"
+      }
+    },
+    { offscreenPauseMilliseconds: 2_000, maximumBackgroundFrames: 2 }
+  )
+
+  equal(evaluation.commandToOffscreenMilliseconds, 1)
+  equal(evaluation.offscreenToScrollSignalMilliseconds, 2_399)
+  equal(evaluation.reactionMilliseconds, 20)
+  equal(evaluation.totalMilliseconds, 2_420)
+  equal(evaluation.offscreenFrames, 1)
+  equal(evaluation.postSignalFrames, 0)
+})
+
+test("offscreen timeline fails closed on ordering, reaction, and hidden frames", () => {
+  const valid = {
+    commandAt: 100,
+    offscreenAt: 101,
+    scrollSignalAt: 2_500,
+    pauseAt: 2_520,
+    activeSnapshot: { at: 1_000, frame: 10, runningCount: 1, targetStatus: "running" },
+    scrollSignalSnapshot: {
+      at: 3_400,
+      frame: 11,
+      runningCount: 1,
+      targetStatus: "running"
+    },
+    pauseSnapshot: { at: 3_420, frame: 11, runningCount: 0, targetStatus: "paused" }
+  }
+  const budgets = { offscreenPauseMilliseconds: 2_000, maximumBackgroundFrames: 2 }
+
+  throws(
+    () => evaluateAndroidOffscreenTimeline({ ...valid, scrollSignalAt: 90 }, budgets),
+    /offscreen timeline ordering/
+  )
+  throws(
+    () => evaluateAndroidOffscreenTimeline({ ...valid, pauseAt: 4_501 }, budgets),
+    /Android offscreen reaction: expected <= 2000, received 2001/
+  )
+  throws(
+    () =>
+      evaluateAndroidOffscreenTimeline(
+        {
+          ...valid,
+          pauseSnapshot: {
+            at: 3_420,
+            frame: 13,
+            runningCount: 0,
+            targetStatus: "paused"
+          }
+        },
+        budgets
+      ),
+    /Android offscreen creative frames: expected <= 2, received 3/
+  )
+})
+
+test("Android smoke records geometry, delivered scroll signal, and pause separately", () => {
+  const performanceHarness = readFileSync(
+    new URL("../../scripts/android-chrome-performance-smoke.mjs", import.meta.url),
+    "utf8"
+  )
+  const helperStart = performanceHarness.indexOf("function measureOffscreenPause(page, targetIndex)")
+  const helperEnd = performanceHarness.indexOf("\nasync function preloadCreativeRuntime", helperStart)
+  const offscreenHelper = performanceHarness.slice(helperStart, helperEnd)
+
+  match(
+    performanceHarness,
+    /evaluateAndroidOffscreenTimeline\(\s*await measureOffscreenPause\(page, 0\),\s*BUDGETS\s*\)/u
+  )
+  match(offscreenHelper, /const recordScrollSignal\s*=\s*\(\)\s*=>/u)
+  match(offscreenHelper, /scrollSignalAt\s*=\s*performance\.now\(\)/u)
+  match(offscreenHelper, /scrollSignalSnapshot\s*=\s*snapshot\(\)/u)
+  doesNotMatch(offscreenHelper, /reactionMilliseconds:\s*Math\.max/u)
 })
 
 test("browser runtime epochs are normalized into the bracketed host clock", () => {
