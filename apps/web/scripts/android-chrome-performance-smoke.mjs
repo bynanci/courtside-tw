@@ -14,6 +14,7 @@ import {
   establishNativeAndroidBackgroundBoundary,
   evaluateAndroidBackgroundTimeline,
   evaluateAndroidForegroundFrameTimeline,
+  evaluateAndroidOffscreenTimeline,
   executeBoundChromeSurfaceTap,
   normalizeChromeAutomationSurfaceWithinDeadline,
   normalizeBrowserRuntimeSnapshot,
@@ -27,7 +28,6 @@ const ARTICLE_URL = "http://127.0.0.1:4173/articles/opening-night?issue=issue-20
 const ANDROID_ACTIVITY_POLL_MILLISECONDS = 25
 const ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS = 250
 const ANDROID_ACTIVITY_RECEIPT_HISTORY_LIMIT = 64
-const ANDROID_GUEST_COOL_OFF_MILLISECONDS = 1_000
 const ANDROID_GUEST_QUIESCENCE_TIMEOUT_MILLISECONDS = 30_000
 const ANDROID_GUEST_PACKAGE_HANDLER_TIMEOUT_MILLISECONDS = 15_000
 const BROWSER_QUIESCENCE_TIMEOUT_MILLISECONDS = 10_000
@@ -181,7 +181,10 @@ try {
   const initialRunningCanvases = initialRuntimeSnapshot.runningCount
 
   await markPhase(page, "offscreen-reaction")
-  const offscreen = await measureOffscreenPause(page, 0)
+  const offscreen = evaluateAndroidOffscreenTimeline(
+    await measureOffscreenPause(page, 0),
+    BUDGETS
+  )
   assertAtMost(
     offscreen.reactionMilliseconds,
     BUDGETS.offscreenPauseMilliseconds,
@@ -286,7 +289,10 @@ try {
       initialRunningCanvases,
       offscreenPauseMilliseconds: offscreen.reactionMilliseconds,
       offscreenTransitionMilliseconds: offscreen.commandToOffscreenMilliseconds,
+      offscreenScrollSignalDelayMilliseconds: offscreen.offscreenToScrollSignalMilliseconds,
       offscreenTotalMilliseconds: offscreen.totalMilliseconds,
+      offscreenFrames: offscreen.offscreenFrames,
+      offscreenPostSignalFrames: offscreen.postSignalFrames,
       offscreenScrollBehavior: "auto",
       offscreenMeasurementClock: "window.performance",
       backgroundPauseMilliseconds: backgroundEvent.reactionMilliseconds,
@@ -382,12 +388,6 @@ function waitForAndroidGuestQuiescence() {
       packageHandler: false
     },
     {
-      name: "cool-off-after-barriers",
-      arguments: ["shell", "sleep", String(ANDROID_GUEST_COOL_OFF_MILLISECONDS / 1_000)],
-      coolOff: true,
-      packageHandler: false
-    },
-    {
       name: "final-broadcast-idle",
       arguments: ["shell", "am", "wait-for-broadcast-idle", "--flush-broadcast-loopers"],
       packageHandler: false
@@ -398,9 +398,7 @@ function waitForAndroidGuestQuiescence() {
   for (const step of steps) {
     const maximumMilliseconds = step.packageHandler
       ? ANDROID_GUEST_PACKAGE_HANDLER_TIMEOUT_MILLISECONDS
-      : step.coolOff
-        ? ANDROID_GUEST_COOL_OFF_MILLISECONDS + 4_000
-        : ANDROID_GUEST_QUIESCENCE_TIMEOUT_MILLISECONDS
+      : ANDROID_GUEST_QUIESCENCE_TIMEOUT_MILLISECONDS
     const timeoutMilliseconds = androidCommandTimeoutMilliseconds(
       deadlineAt,
       performance.now(),
@@ -557,40 +555,70 @@ function measureOffscreenPause(page, targetIndex) {
         document.documentElement.style.scrollBehavior = "auto"
         const commandAt = performance.now()
         let offscreenAt = null
+        let scrollSignalAt = null
+        let scrollSignalSnapshot = null
+        let pauseAt = null
         let pauseSnapshot = null
+        let animationFrame = null
         let settled = false
 
         const cleanup = () => {
           observer.disconnect()
-          window.removeEventListener("scroll", inspect)
+          window.removeEventListener("scroll", recordScrollSignal)
+          if (animationFrame !== null) cancelAnimationFrame(animationFrame)
           clearTimeout(timeout)
         }
         const finish = () => {
-          if (settled || offscreenAt === null || pauseSnapshot === null) return
+          if (
+            settled ||
+            offscreenAt === null ||
+            scrollSignalAt === null ||
+            scrollSignalSnapshot === null ||
+            pauseAt === null ||
+            pauseSnapshot === null
+          ) {
+            return
+          }
           settled = true
           cleanup()
           resolve({
+            commandAt,
+            offscreenAt,
+            scrollSignalAt,
+            pauseAt,
             activeSnapshot,
-            pauseSnapshot,
-            commandToOffscreenMilliseconds: Math.max(0, offscreenAt - commandAt),
-            reactionMilliseconds: Math.max(0, pauseSnapshot.performanceAt - offscreenAt),
-            totalMilliseconds: Math.max(0, pauseSnapshot.performanceAt - commandAt),
-            finalStatus: pauseSnapshot.targetStatus
+            scrollSignalSnapshot,
+            pauseSnapshot
           })
         }
-        const inspect = () => {
+        const observeGeometry = () => {
           const rectangle = target.getBoundingClientRect()
           const outside = rectangle.bottom <= 0 || rectangle.top >= window.innerHeight
           if (outside && offscreenAt === null) {
             offscreenAt = performance.now()
           }
-          if (outside && pauseSnapshot === null) {
+          return outside
+        }
+        const inspect = () => {
+          const outside = observeGeometry()
+          if (outside && scrollSignalAt !== null && pauseSnapshot === null) {
             const observed = snapshot()
             if (observed.runningCount === 0 && observed.targetStatus === "paused") {
-              pauseSnapshot = { ...observed, performanceAt: performance.now() }
+              pauseAt = performance.now()
+              pauseSnapshot = observed
             }
           }
           finish()
+        }
+        const recordScrollSignal = () => {
+          const outside = observeGeometry()
+          if (!outside || scrollSignalAt !== null) {
+            inspect()
+            return
+          }
+          scrollSignalAt = performance.now()
+          scrollSignalSnapshot = snapshot()
+          inspect()
         }
         const observer = new MutationObserver(inspect)
         const timeout = setTimeout(() => {
@@ -599,8 +627,14 @@ function measureOffscreenPause(page, targetIndex) {
           cleanup()
           reject(
             new Error(
-              `Creative runtimes did not fully pause after the target became offscreen; ` +
-                `snapshot=${JSON.stringify(snapshot())}`
+              `Creative runtimes did not fully pause after the delivered offscreen scroll signal; ` +
+                `timeline=${JSON.stringify({
+                  commandAt,
+                  offscreenAt,
+                  scrollSignalAt,
+                  scrollSignalSnapshot,
+                  snapshot: snapshot()
+                })}`
             )
           )
         }, 10_000)
@@ -610,15 +644,14 @@ function measureOffscreenPause(page, targetIndex) {
           attributeFilter: ["data-runtime-status"],
           subtree: true
         })
-        window.addEventListener("scroll", inspect, { passive: true })
+        window.addEventListener("scroll", recordScrollSignal, { passive: true })
         window.scrollTo({ top: 0, left: 0, behavior: "auto" })
         inspect()
-        requestAnimationFrame(inspect)
+        animationFrame = requestAnimationFrame(inspect)
       }),
     { index: targetIndex }
   )
 }
-
 async function preloadCreativeRuntime(page, runtime) {
   const placement = await runtime.evaluate((element) => {
     const viewportHeight = window.innerHeight || document.documentElement.clientHeight

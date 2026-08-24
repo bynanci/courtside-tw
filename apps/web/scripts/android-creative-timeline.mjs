@@ -1498,6 +1498,109 @@ export async function establishNativeAndroidBackgroundBoundary(rawDependencies) 
   }
 }
 
+export function evaluateAndroidOffscreenTimeline(rawTimeline, rawBudgets) {
+  const timeline = requireRecord(rawTimeline, "Android offscreen timeline")
+  const budgets = requireRecord(rawBudgets, "Android offscreen budgets")
+  const maximumReactionMilliseconds = requireCount(
+    budgets.offscreenPauseMilliseconds,
+    "offscreenPauseMilliseconds"
+  )
+  const maximumBackgroundFrames = requireCount(
+    budgets.maximumBackgroundFrames,
+    "maximumBackgroundFrames"
+  )
+
+  const commandAt = requireTimestamp(timeline.commandAt, "offscreen command at")
+  const offscreenAt = requireTimestamp(timeline.offscreenAt, "offscreen geometry at")
+  const scrollSignalAt = requireTimestamp(timeline.scrollSignalAt, "offscreen scroll signal at")
+  const pauseAt = requireTimestamp(timeline.pauseAt, "offscreen pause at")
+  if (!(commandAt <= offscreenAt && offscreenAt <= scrollSignalAt && scrollSignalAt <= pauseAt)) {
+    throw new Error(
+      `Android offscreen timeline ordering is invalid; ` +
+        `commandAt=${commandAt}, offscreenAt=${offscreenAt}, ` +
+        `scrollSignalAt=${scrollSignalAt}, pauseAt=${pauseAt}`
+    )
+  }
+
+  const activeSnapshot = validateSnapshot(timeline.activeSnapshot, "offscreen active snapshot")
+  const scrollSignalSnapshot = validateSnapshot(
+    timeline.scrollSignalSnapshot,
+    "offscreen scroll signal snapshot"
+  )
+  const pauseSnapshot = validateSnapshot(timeline.pauseSnapshot, "offscreen pause snapshot")
+
+  if (activeSnapshot.runningCount !== 1 || activeSnapshot.targetStatus !== "running") {
+    throw new Error(
+      `offscreen active snapshot must contain exactly one running canvas; ` +
+        `runningCount=${activeSnapshot.runningCount}, targetStatus=${activeSnapshot.targetStatus}`
+    )
+  }
+  const signalIsActive =
+    scrollSignalSnapshot.runningCount === 1 && scrollSignalSnapshot.targetStatus === "running"
+  const signalIsPaused =
+    scrollSignalSnapshot.runningCount === 0 && scrollSignalSnapshot.targetStatus === "paused"
+  if (!signalIsActive && !signalIsPaused) {
+    throw new Error(
+      `offscreen scroll signal snapshot must be exactly active or fully paused; ` +
+        `runningCount=${scrollSignalSnapshot.runningCount}, ` +
+        `targetStatus=${scrollSignalSnapshot.targetStatus}`
+    )
+  }
+  if (pauseSnapshot.runningCount !== 0 || pauseSnapshot.targetStatus !== "paused") {
+    throw new Error(
+      `offscreen pause snapshot must contain zero running canvases with paused status; ` +
+        `runningCount=${pauseSnapshot.runningCount}, targetStatus=${pauseSnapshot.targetStatus}`
+    )
+  }
+  if (
+    activeSnapshot.at > scrollSignalSnapshot.at ||
+    scrollSignalSnapshot.at > pauseSnapshot.at
+  ) {
+    throw new Error("Android offscreen snapshot epochs are not monotonic")
+  }
+  if (
+    activeSnapshot.frame > scrollSignalSnapshot.frame ||
+    scrollSignalSnapshot.frame > pauseSnapshot.frame
+  ) {
+    throw new Error("Android offscreen runtime frame counter regressed")
+  }
+
+  const commandToOffscreenMilliseconds = offscreenAt - commandAt
+  const offscreenToScrollSignalMilliseconds = scrollSignalAt - offscreenAt
+  const reactionMilliseconds = pauseAt - scrollSignalAt
+  const totalMilliseconds = pauseAt - commandAt
+  const preSignalFrames = scrollSignalSnapshot.frame - activeSnapshot.frame
+  const postSignalFrames = pauseSnapshot.frame - scrollSignalSnapshot.frame
+  const offscreenFrames = pauseSnapshot.frame - activeSnapshot.frame
+
+  if (reactionMilliseconds > maximumReactionMilliseconds) {
+    throw new Error(
+      `Android offscreen reaction: expected <= ${maximumReactionMilliseconds}, ` +
+        `received ${reactionMilliseconds}`
+    )
+  }
+  if (offscreenFrames > maximumBackgroundFrames) {
+    throw new Error(
+      `Android offscreen creative frames: expected <= ${maximumBackgroundFrames}, ` +
+        `received ${offscreenFrames}`
+    )
+  }
+
+  return {
+    commandToOffscreenMilliseconds,
+    offscreenToScrollSignalMilliseconds,
+    reactionMilliseconds,
+    totalMilliseconds,
+    preSignalFrames,
+    postSignalFrames,
+    offscreenFrames,
+    finalStatus: pauseSnapshot.targetStatus,
+    activeSnapshot,
+    scrollSignalSnapshot,
+    pauseSnapshot
+  }
+}
+
 export function evaluateAndroidForegroundFrameTimeline(rawTimeline, rawBudgets) {
   const timeline = requireRecord(rawTimeline, "Android foreground frame timeline")
   const budgets = requireRecord(rawBudgets, "Android foreground frame budgets")
