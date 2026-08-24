@@ -819,8 +819,13 @@ test("Android smoke records geometry, delivered scroll signal, and pause separat
     new URL("../../scripts/android-chrome-performance-smoke.mjs", import.meta.url),
     "utf8"
   )
-  const helperStart = performanceHarness.indexOf("function measureOffscreenPause(page, targetIndex)")
-  const helperEnd = performanceHarness.indexOf("\nasync function preloadCreativeRuntime", helperStart)
+  const helperStart = performanceHarness.indexOf(
+    "function measureOffscreenPause(page, targetIndex)"
+  )
+  const helperEnd = performanceHarness.indexOf(
+    "\nasync function preloadCreativeRuntime",
+    helperStart
+  )
   const offscreenHelper = performanceHarness.slice(helperStart, helperEnd)
 
   match(
