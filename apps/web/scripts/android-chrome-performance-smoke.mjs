@@ -27,6 +27,9 @@ const ARTICLE_URL = "http://127.0.0.1:4173/articles/opening-night?issue=issue-20
 const ANDROID_ACTIVITY_POLL_MILLISECONDS = 25
 const ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS = 250
 const ANDROID_ACTIVITY_RECEIPT_HISTORY_LIMIT = 64
+const BROWSER_QUIESCENCE_TIMEOUT_MILLISECONDS = 10_000
+const BROWSER_QUIESCENCE_MAX_FRAME_GAP_MILLISECONDS = 200
+const BROWSER_QUIESCENCE_CONSECUTIVE_FRAMES = 5
 const CHROME_AUTOMATION_POLL_MILLISECONDS = 100
 const CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS = 5_000
 const CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS = 10_000
@@ -129,6 +132,12 @@ try {
   const creativePreload = await preloadCreativeRuntime(page, firstRuntime)
   process.stdout.write(
     `${JSON.stringify({ phase: "T079 Android creative preload", creativePreload }, null, 2)}\n`
+  )
+
+  await markPhase(page, "browser-quiescence")
+  const browserQuiescence = await waitForBrowserMainThreadQuiescence(page)
+  process.stdout.write(
+    `${JSON.stringify({ phase: "T079 Android browser quiescence", browserQuiescence }, null, 2)}\n`
   )
 
   const preCreativeLongTasks = await page.evaluate(
@@ -270,6 +279,7 @@ try {
       backgroundPauseMilliseconds: backgroundEvent.reactionMilliseconds,
       backgroundSignal: backgroundEvent.signal,
       backgroundEvent,
+      browserQuiescence,
       creativePreload,
       initialNativeSurface,
       foregroundNativeSurface,
@@ -299,6 +309,76 @@ try {
   throw error
 } finally {
   await browser.close()
+}
+
+function waitForBrowserMainThreadQuiescence(page) {
+  return page.evaluate(
+    ({ timeoutMilliseconds, maximumFrameGapMilliseconds, requiredConsecutiveFrames }) =>
+      new Promise((resolve, reject) => {
+        const startedAt = performance.now()
+        const deadlineAt = startedAt + timeoutMilliseconds
+        const frameGaps = []
+        let previousFrameAt = null
+        let consecutiveFrames = 0
+        let animationFrame = null
+        let settled = false
+
+        const cleanup = () => {
+          clearTimeout(timeout)
+          if (animationFrame !== null) cancelAnimationFrame(animationFrame)
+        }
+        const fail = () => {
+          if (settled) return
+          settled = true
+          cleanup()
+          reject(
+            new Error(
+              `Android browser main thread did not become quiescent: ` +
+                `${JSON.stringify({ deadlineAt, frameGaps, consecutiveFrames })}`
+            )
+          )
+        }
+        const timeout = setTimeout(fail, timeoutMilliseconds)
+        const sample = (frameAt) => {
+          if (settled) return
+          if (previousFrameAt !== null) {
+            const frameGap = frameAt - previousFrameAt
+            frameGaps.push(frameGap)
+            if (frameGaps.length > 64) frameGaps.shift()
+            consecutiveFrames =
+              frameGap <= maximumFrameGapMilliseconds ? consecutiveFrames + 1 : 0
+            if (consecutiveFrames >= requiredConsecutiveFrames) {
+              settled = true
+              cleanup()
+              resolve({
+                startedAt,
+                completedAt: frameAt,
+                deadlineAt,
+                durationMilliseconds: frameAt - startedAt,
+                maximumFrameGapMilliseconds,
+                requiredConsecutiveFrames,
+                consecutiveFrames,
+                frameGaps
+              })
+              return
+            }
+          }
+          previousFrameAt = frameAt
+          if (frameAt >= deadlineAt) {
+            fail()
+            return
+          }
+          animationFrame = requestAnimationFrame(sample)
+        }
+
+        animationFrame = requestAnimationFrame(sample)
+      }),
+    {
+      timeoutMilliseconds: BROWSER_QUIESCENCE_TIMEOUT_MILLISECONDS,
+      maximumFrameGapMilliseconds: BROWSER_QUIESCENCE_MAX_FRAME_GAP_MILLISECONDS,
+      requiredConsecutiveFrames: BROWSER_QUIESCENCE_CONSECUTIVE_FRAMES
+    }
+  )
 }
 
 function measureOffscreenPause(page, targetIndex) {
