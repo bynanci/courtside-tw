@@ -1,0 +1,20 @@
+{
+  "schema_version": "courtside-evidence/v1",
+  "recorded_at": "2026-08-23T02:43:43Z",
+  "baseline_main": "9fad116fb46817c4cf742c705e4113a9dc92d252",
+  "branch": "agent/local-demo-arena-home",
+  "observations": [
+    "make dev starts the pnpm workspaces but does not start a content-backed Spring API, database migration or seed path",
+    "the default public API URL is 127.0.0.1:8080 while the local compose file assigns that port to the OIDC fixture",
+    "the public UI used a light-only scaffold and did not implement the approved fixed-dark Arena Home or Issue hero"
+  ],
+  "tests_first": {
+    "command": "node --experimental-strip-types --test tests/unit/local-demo-contract.test.ts tests/unit/reader/arena-home-contract.test.ts",
+    "result": "expected_red",
+    "tests": 4,
+    "passed": 0,
+    "failed": 4,
+    "failure_signature": "missing root demo command, demo runner, Arena hero classes and semantic theme contracts"
+  },
+  "scope_decision": "Implement a read-only public reader demo and the smallest coherent Arena Editorial reader slice; do not mutate Studio, production data or PR 123."
+}

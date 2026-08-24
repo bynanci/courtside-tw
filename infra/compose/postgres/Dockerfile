@@ -3,9 +3,9 @@
 # CVE-2025-68121 affects the gosu binary shipped by the upstream PostgreSQL image
 # because it embeds an older Go standard library. Rebuild the same small helper
 # from its pinned upstream source with a patched Go toolchain and x/sys version.
-# Go 1.26.6 also removes the Go stdlib versions flagged by CVE-2026-39821 and
-# CVE-2026-46600 in the previous build stage.
-FROM golang:1.26.6@sha256:0d1d3a794be25f809dd2cb3160d8c73276c4056a9f8242a138e908ddeee7b6b6 AS gosu-build
+# The pinned builder also excludes the Go standard library versions flagged by
+# CVE-2026-39821 and CVE-2026-46600 in the previous build stage.
+FROM golang:1.27.0@sha256:65b6f280bf050ec5af12716857e8ea8439d694dbba8f31ceeb7630670071f2bb AS gosu-build
 
 ARG GOSU_COMMIT=40506998e34a7a679e6dae41374c1b7aa37eb73f
 ARG GOSU_X_SYS_VERSION=0.44.0

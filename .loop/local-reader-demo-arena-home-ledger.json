@@ -1,0 +1,87 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-local-reader-demo-and-arena-home",
+  "graph_version": 3,
+  "run_id": "courtside-local-reader-demo-20260823",
+  "status": "completed",
+  "iteration": 3,
+  "started_at": "2026-08-23T02:00:00Z",
+  "updated_at": "2026-08-23T02:43:43Z",
+  "current_frontier": [],
+  "blocked_nodes": [],
+  "terminal_state": "success_local_verified",
+  "next_action": "User can run pnpm demo or make demo; any PR should remain separate from PR 123 and obtain fresh browser and exact-head gate evidence.",
+  "events": [
+    {
+      "event_id": "evt-local-reader-001-red",
+      "at": "2026-08-23T02:10:00Z",
+      "actor": "codex-agent",
+      "type": "diagnosis_and_tests_first_red",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          { "op": "add", "path": "contracts.local-demo", "after": "bounded one-command reader demo" },
+          { "op": "add", "path": "contracts.arena-ui", "after": "fixed-dark hero and semantic reader theme" }
+        ]
+      },
+      "evidence_refs": [".loop/evidence/local-reader-demo-baseline.json"],
+      "proof_receipts": [
+        { "proof": "focused RED", "result": "pass", "details": "4 of 4 focused tests failed on the intended missing seams" }
+      ],
+      "memory_receipt": { "memory_status": "NO_OP", "memory_id": null, "version": null, "retrieval_ids": [], "evidence_refs": [], "next_review_at": null, "blocker": null },
+      "failure_signature": "missing-local-demo-and-arena-contracts",
+      "decision": "Proceed with bounded public-reader remediation only.",
+      "token_usage": { "estimated": 9000, "input": 0, "output": 0, "total": 9000 },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-local-reader-002-runtime",
+      "at": "2026-08-23T02:30:00Z",
+      "actor": "codex-agent",
+      "type": "bounded_runtime_verified",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          { "op": "add", "path": "runtime.fixture", "after": "loopback GET-only issue/article/media fixture" },
+          { "op": "add", "path": "runtime.smoke", "after": "build, CSP, journey, mutation rejection and port reuse proof" }
+        ]
+      },
+      "evidence_refs": [".loop/evidence/local-reader-demo-runtime.json"],
+      "proof_receipts": [
+        { "proof": "reader demo smoke", "result": "pass", "details": "Home, Issue, Article, exact CSP origin, SVG media, 405/404 boundaries and reusable ports passed" }
+      ],
+      "memory_receipt": { "memory_status": "NO_OP", "memory_id": null, "version": null, "retrieval_ids": [], "evidence_refs": [], "next_review_at": null, "blocker": null },
+      "failure_signature": null,
+      "decision": "Runtime is locally usable without widening auth or production scope.",
+      "token_usage": { "estimated": 14000, "input": 0, "output": 0, "total": 14000 },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "evt-local-reader-003-acceptance",
+      "at": "2026-08-23T02:43:43Z",
+      "actor": "codex-agent",
+      "type": "arena_ui_local_acceptance",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          { "op": "add", "path": "ui.home", "after": "Arena masthead, editorial note and visible cover" },
+          { "op": "add", "path": "ui.issue", "after": "Arena Issue hero, issue number and TOC CTA" },
+          { "op": "replace", "path": "ui.public-theme", "before": "light-only raw surfaces", "after": "system-adaptive semantic surfaces with forced-colors fallback" }
+        ]
+      },
+      "evidence_refs": [".loop/evidence/local-reader-demo-acceptance.json"],
+      "proof_receipts": [
+        { "proof": "local quality suite", "result": "pass", "details": "122 tests, lint, typecheck, runtime smoke and diff hygiene passed" },
+        { "proof": "independent review", "result": "pass_after_remediation", "details": "demo and UI blockers were identified, repaired and rechecked" }
+      ],
+      "memory_receipt": { "memory_status": "NO_OP", "memory_id": null, "version": null, "retrieval_ids": [], "evidence_refs": [], "next_review_at": null, "blocker": null },
+      "failure_signature": null,
+      "decision": "Stop at local verified handoff; do not infer browser screenshots or protected-merge approval.",
+      "token_usage": { "estimated": 17000, "input": 0, "output": 0, "total": 17000 },
+      "terminal_reason": "success_local_verified"
+    }
+  ]
+}
