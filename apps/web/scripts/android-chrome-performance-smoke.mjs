@@ -27,6 +27,7 @@ const ARTICLE_URL = "http://127.0.0.1:4173/articles/opening-night?issue=issue-20
 const ANDROID_ACTIVITY_POLL_MILLISECONDS = 25
 const ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS = 250
 const ANDROID_ACTIVITY_RECEIPT_HISTORY_LIMIT = 64
+const ANDROID_GUEST_COOL_OFF_MILLISECONDS = 1_000
 const ANDROID_GUEST_QUIESCENCE_TIMEOUT_MILLISECONDS = 30_000
 const ANDROID_GUEST_PACKAGE_HANDLER_TIMEOUT_MILLISECONDS = 15_000
 const BROWSER_QUIESCENCE_TIMEOUT_MILLISECONDS = 10_000
@@ -379,6 +380,17 @@ function waitForAndroidGuestQuiescence() {
       name: "closing-application-barrier",
       arguments: ["shell", "am", "wait-for-application-barrier"],
       packageHandler: false
+    },
+    {
+      name: "cool-off-after-barriers",
+      arguments: ["shell", "sleep", String(ANDROID_GUEST_COOL_OFF_MILLISECONDS / 1_000)],
+      coolOff: true,
+      packageHandler: false
+    },
+    {
+      name: "final-broadcast-idle",
+      arguments: ["shell", "am", "wait-for-broadcast-idle", "--flush-broadcast-loopers"],
+      packageHandler: false
     }
   ]
   const receipts = []
@@ -386,7 +398,9 @@ function waitForAndroidGuestQuiescence() {
   for (const step of steps) {
     const maximumMilliseconds = step.packageHandler
       ? ANDROID_GUEST_PACKAGE_HANDLER_TIMEOUT_MILLISECONDS
-      : ANDROID_GUEST_QUIESCENCE_TIMEOUT_MILLISECONDS
+      : step.coolOff
+        ? ANDROID_GUEST_COOL_OFF_MILLISECONDS + 4_000
+        : ANDROID_GUEST_QUIESCENCE_TIMEOUT_MILLISECONDS
     const timeoutMilliseconds = androidCommandTimeoutMilliseconds(
       deadlineAt,
       performance.now(),
