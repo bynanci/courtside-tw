@@ -8,6 +8,9 @@ import { expect, test, type Locator, type Page } from "@playwright/test"
 const accessibilityArtifactDirectory = fileURLToPath(
   new URL("../../../../artifacts/web-e2e/accessibility/", import.meta.url)
 )
+const arenaVisualArtifactDirectory = fileURLToPath(
+  new URL("../../../../artifacts/web-e2e/arena-visual/", import.meta.url)
+)
 const focusableSelector = [
   "a[href]",
   "button:not([disabled])",
@@ -27,6 +30,11 @@ const coreRoutes = [
 function writeAccessibilityArtifact(fileName: string, content: string): void {
   mkdirSync(accessibilityArtifactDirectory, { recursive: true })
   writeFileSync(join(accessibilityArtifactDirectory, fileName), content, "utf8")
+}
+
+function visualArtifactPath(fileName: string): string {
+  mkdirSync(arenaVisualArtifactDirectory, { recursive: true })
+  return join(arenaVisualArtifactDirectory, fileName)
 }
 
 async function seriousAxeViolations(page: Page) {
@@ -189,7 +197,7 @@ test("offline control is reachable in sequential keyboard order", async ({ page 
   )
 })
 
-for (const viewportWidth of [640, 320] as const) {
+for (const viewportWidth of [320, 375, 412, 640, 768, 1024, 1440] as const) {
   test(`reader surfaces reflow at ${viewportWidth} CSS px`, async ({ page }) => {
     await page.setViewportSize({ width: viewportWidth, height: 900 })
     await page.emulateMedia({ reducedMotion: "reduce" })
@@ -199,6 +207,7 @@ for (const viewportWidth of [640, 320] as const) {
       clientWidth: number
       scrollWidth: number
       clippedControls: string[]
+      screenshot: string | null
     }> = []
 
     for (const route of coreRoutes) {
@@ -234,7 +243,19 @@ for (const viewportWidth of [640, 320] as const) {
 
       expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth + 1)
       expect(layout.clippedControls).toEqual([])
-      routeEvidence.push({ route: route.id, ...layout })
+
+      const screenshot =
+        route.id === "home" || route.id === "issue" || route.id === "article"
+          ? `${route.id}-${viewportWidth}.png`
+          : null
+      if (screenshot) {
+        await page.screenshot({
+          path: visualArtifactPath(screenshot),
+          fullPage: true,
+          animations: "disabled"
+        })
+      }
+      routeEvidence.push({ route: route.id, ...layout, screenshot })
     }
 
     writeAccessibilityArtifact(
@@ -347,6 +368,137 @@ test("reduced motion removes sustained movement", async ({ page }) => {
 
   const evidence = { motionViolations, creativeRuntimes: "paused" }
   writeAccessibilityArtifact("reduced-motion.json", JSON.stringify(evidence, null, 2))
+})
+
+test("Save-Data disables editorial motion and creative autoload in Chromium", async ({ page }) => {
+  await page.addInitScript(() => {
+    const connection = new EventTarget()
+    Object.defineProperty(connection, "saveData", { configurable: true, value: true })
+    Object.defineProperty(navigator, "connection", { configurable: true, value: connection })
+  })
+  await page.emulateMedia({ reducedMotion: "no-preference" })
+  await page.goto("/articles/opening-night?issue=issue-2026-01", {
+    waitUntil: "networkidle"
+  })
+
+  await expect(page.locator("html")).toHaveAttribute("data-reader-motion", "reduced")
+  await expect(page.getByTestId("article-document")).toHaveAttribute("data-motion", "reduced")
+  await expect(page.getByTestId("creative-runtime")).toHaveCount(0)
+  await expect(page.getByTestId("creative-enable")).toHaveCount(2)
+
+  const evidence = await page.evaluate(() => ({
+    saveData: (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
+      ?.saveData,
+    readerMotion: document.documentElement.dataset.readerMotion,
+    readerMotionCover: document.documentElement.dataset.readerMotionCover,
+    readerMotionProgress: document.documentElement.dataset.readerMotionProgress
+  }))
+  expect(evidence).toEqual({
+    saveData: true,
+    readerMotion: "reduced",
+    readerMotionCover: "disabled",
+    readerMotionProgress: "disabled"
+  })
+
+  const screenshot = "article-save-data.png"
+  await page.screenshot({
+    path: visualArtifactPath(screenshot),
+    fullPage: true,
+    animations: "disabled"
+  })
+  writeAccessibilityArtifact(
+    "save-data.json",
+    JSON.stringify({ ...evidence, creativeRuntimeCount: 0, screenshot }, null, 2)
+  )
+})
+
+test("shared issue cover emits one bounded real-browser handoff", async ({ page }) => {
+  await page.addInitScript(() => {
+    const originalAnimate = Element.prototype.animate
+    const evidence: Array<{
+      duration: number | null
+      keyframeCount: number
+      firstTransform: string | null
+      lastTransform: string | null
+    }> = []
+    Object.defineProperty(window, "__courtsideCoverAnimationEvidence", {
+      configurable: true,
+      value: evidence
+    })
+    Element.prototype.animate = function (
+      keyframes: Keyframe[] | PropertyIndexedKeyframes | null,
+      options?: number | KeyframeAnimationOptions
+    ): Animation {
+      if (this instanceof HTMLElement && this.dataset.motionPattern === "issue-cover-carry") {
+        const frames = Array.isArray(keyframes) ? keyframes : []
+        const duration =
+          typeof options === "number"
+            ? options
+            : typeof options?.duration === "number"
+              ? options.duration
+              : null
+        evidence.push({
+          duration,
+          keyframeCount: frames.length,
+          firstTransform:
+            frames.length > 0 && typeof frames[0]?.transform === "string"
+              ? frames[0].transform
+              : null,
+          lastTransform:
+            frames.length > 0 && typeof frames.at(-1)?.transform === "string"
+              ? (frames.at(-1)?.transform ?? null)
+              : null
+        })
+      }
+      return originalAnimate.call(this, keyframes, options)
+    }
+  })
+  await page.emulateMedia({ reducedMotion: "no-preference" })
+  await page.goto("/", { waitUntil: "networkidle" })
+  await expect(page.locator("html")).toHaveAttribute("data-reader-motion-cover", "enabled")
+
+  await page.getByTestId("home-issue-link").click()
+  await expect(page).toHaveURL(/\/issues\/issue-2026-01$/)
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (
+            window as typeof window & {
+              __courtsideCoverAnimationEvidence?: unknown[]
+            }
+          ).__courtsideCoverAnimationEvidence?.length ?? 0
+      )
+    )
+    .toBe(1)
+
+  const evidence = await page.evaluate(
+    () =>
+      (
+        window as typeof window & {
+          __courtsideCoverAnimationEvidence: Array<{
+            duration: number | null
+            keyframeCount: number
+            firstTransform: string | null
+            lastTransform: string | null
+          }>
+        }
+      ).__courtsideCoverAnimationEvidence[0]
+  )
+  expect(evidence?.duration).not.toBeNull()
+  expect(evidence?.duration ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(360)
+  expect(evidence?.keyframeCount ?? 0).toBeGreaterThanOrEqual(2)
+
+  const screenshot = "issue-shared-cover-settled.png"
+  await page.screenshot({
+    path: visualArtifactPath(screenshot),
+    fullPage: true,
+    animations: "disabled"
+  })
+  writeAccessibilityArtifact(
+    "shared-cover-browser.json",
+    JSON.stringify({ ...evidence, screenshot, result: "pass" }, null, 2)
+  )
 })
 
 test("poster and summary are the single accessible creative fallback", async ({ page }) => {
