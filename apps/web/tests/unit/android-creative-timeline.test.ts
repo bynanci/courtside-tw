@@ -638,10 +638,7 @@ test("creative long-task window starts after bounded offscreen runtime preload",
   equal(longTaskWindowIndex >= 0, true)
   equal(preloadIndex < longTaskWindowIndex, true)
   const helperStart = performanceHarness.indexOf("async function preloadCreativeRuntime")
-  const helperEnd = performanceHarness.indexOf(
-    "function measureBackgroundEventPause",
-    helperStart
-  )
+  const helperEnd = performanceHarness.indexOf("function measureBackgroundEventPause", helperStart)
   const preloadHelper = performanceHarness.slice(helperStart, helperEnd)
 
   match(
@@ -650,10 +647,7 @@ test("creative long-task window starts after bounded offscreen runtime preload",
   )
   doesNotMatch(preloadHelper, /window\.scrollTo/u)
   match(preloadHelper, /element\.style\.transform\s*=\s*`translateY\(/u)
-  match(
-    preloadHelper,
-    /element\.style\.transform\s*=\s*placement\.originalInlineTransform/u
-  )
+  match(preloadHelper, /element\.style\.transform\s*=\s*placement\.originalInlineTransform/u)
   doesNotMatch(
     performanceHarness.slice(preloadIndex, longTaskWindowIndex),
     /setTimeout|waitForTimeout/u
