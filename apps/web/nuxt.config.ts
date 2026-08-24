@@ -9,10 +9,23 @@ export default defineNuxtConfig({
     public: {
       apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8080",
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL ?? "https://courtside.tw",
+      localReaderDemo: false,
       offlineAppShell: {
         enabled: process.env.NUXT_PUBLIC_OFFLINE_APP_SHELL_ENABLED !== "false",
         scriptPath: "/offline-sw.js",
         scope: "/"
+      },
+      creative: {
+        motion: {
+          enabled: process.env.NUXT_PUBLIC_CREATIVE_MOTION_ENABLED !== "false",
+          patterns: {
+            route: process.env.NUXT_PUBLIC_CREATIVE_MOTION_ROUTE !== "false",
+            issueCover: process.env.NUXT_PUBLIC_CREATIVE_MOTION_ISSUE_COVER !== "false",
+            tocReveal: false,
+            readingProgress: process.env.NUXT_PUBLIC_CREATIVE_MOTION_READING_PROGRESS !== "false",
+            feedback: process.env.NUXT_PUBLIC_CREATIVE_MOTION_FEEDBACK !== "false"
+          }
+        }
       }
     },
     oidc: {
@@ -43,6 +56,16 @@ export default defineNuxtConfig({
       htmlAttrs: { lang: "zh-Hant-TW" },
       meta: [
         { name: "viewport", content: "width=device-width, initial-scale=1" },
+        {
+          name: "theme-color",
+          content: "#f2eee5",
+          media: "(prefers-color-scheme: light)"
+        },
+        {
+          name: "theme-color",
+          content: "#080808",
+          media: "(prefers-color-scheme: dark)"
+        },
         {
           name: "description",
           content: "Courtside TW 台灣籃球數位雜誌的 SSR 起始頁。"

@@ -1,0 +1,20 @@
+{
+  "schema_version": "courtside-evidence/v1",
+  "recorded_at": "2026-08-23T02:43:43Z",
+  "proof": "bounded-reader-runtime",
+  "command": "pnpm --dir apps/web run test:demo",
+  "result": "pass",
+  "verified": [
+    "production Nuxt build and Nitro server started on an ephemeral 127.0.0.1 port",
+    "Home, Issue and Article SSR routes returned 200 and exposed the expected reader links",
+    "CSP img-src and connect-src contained only the exact loopback fixture origin",
+    "the rights-safe SVG cover returned 200 with image/svg+xml",
+    "public fixture mutation returned 405 and Studio access returned 404",
+    "hostile inherited NITRO_HOST and NITRO_PORT did not override the bounded bind",
+    "SIGTERM released both API and web ports for immediate reuse"
+  ],
+  "limitations": [
+    "The fixture is not a PostgreSQL/Spring production-like stack.",
+    "No browser executable was available in this environment; this proof is HTTP/SSR rather than a screenshot or bounding-box run."
+  ]
+}

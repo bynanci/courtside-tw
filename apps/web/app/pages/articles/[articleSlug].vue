@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useState } from "#app"
+import { definePageMeta } from "#imports"
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 
 import { canonicalUrl } from "../../composables/public-seo"
@@ -16,6 +17,10 @@ import {
   parsePublicIssueSlug
 } from "../../features/issues/public-issue-contract"
 import {
+  staticReaderMotionPolicy,
+  type ReaderMotionPolicy
+} from "../../features/motion/reader-motion-policy"
+import {
   legacyProgressKey,
   progressIndexKey,
   selectViewportProgress,
@@ -25,6 +30,7 @@ import {
   type ReadingBlockAnchor
 } from "../../features/reader/composables/useLocalReadingProgress"
 import ContentDocumentRenderer from "../../components/content-blocks/ContentDocumentRenderer.vue"
+import ReaderJourneyRail from "../../components/reader/ReaderJourneyRail.vue"
 import type { ContentBlockTelemetry } from "../../components/content-blocks/registry"
 import { formatMediaAttribution } from "../../components/content-blocks/rendering"
 import ArticleNavigation from "../../features/reader/components/ArticleNavigation.vue"
@@ -38,6 +44,8 @@ import {
   readReaderSession,
   ReaderLibraryApiError
 } from "../../features/library/reader-library-api"
+
+definePageMeta({ pageTransition: { name: "reader-route", mode: "out-in" } })
 
 type ContentRun = {
   kind: "text" | "link"
@@ -185,12 +193,17 @@ const { resumePrompt } = readingProgress
 const visibleReadingProgress = ref(0)
 const failedAssets = ref(new Set<string>())
 const contentBlockTelemetry = ref<ContentBlockTelemetry[]>([])
-const motionMode = ref<"reduced" | "full">("reduced")
+const readingProgressMotionMode = ref<"reduced" | "full">("reduced")
+const creativeMotionMode = ref<"reduced" | "full">("reduced")
 const clientReady = ref(false)
 const interactiveEnabled = ref(false)
 const readerCanSync = ref(false)
 const progressSyncState = ref<"idle" | "syncing" | "synced" | "local-only">("idle")
 const readerHasMounted = useState("public-article-reader-has-mounted", () => false)
+const readerMotionPolicyState = useState<ReaderMotionPolicy>("reader-motion-policy", () => ({
+  ...staticReaderMotionPolicy,
+  patterns: { ...staticReaderMotionPolicy.patterns }
+}))
 let reloadGuardActive = false
 let reloadProgressLoaded = false
 let reloadResumeChoicePending = false
@@ -915,10 +928,17 @@ function blockAnchorLabel(index: number): string {
 
 let stopResumeWatch: (() => void) | null = null
 let stopArticleFocusWatch: (() => void) | null = null
+let stopReaderMotionPolicyWatch: (() => void) | null = null
 let activeRevisionId: string | null = null
 
 function focusArticleHeading(): void {
   document.getElementById("article-heading")?.focus({ preventScroll: true })
+}
+
+function applyReaderMotionPolicy(policy: ReaderMotionPolicy): void {
+  readingProgressMotionMode.value = policy.patterns.readingProgress ? "full" : "reduced"
+  creativeMotionMode.value = policy.creativeMotionMode
+  interactiveEnabled.value = policy.interactiveEnhancementsAllowed
 }
 
 onMounted(() => {
@@ -936,11 +956,8 @@ onMounted(() => {
   if (typeof window !== "undefined") {
     beginInitialReloadScrollGuard()
     restoreUnavailableStorageScrollPosition()
-    motionMode.value = window.matchMedia("(prefers-reduced-motion: reduce)").matches
-      ? "reduced"
-      : "full"
-    const connection = (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
-    interactiveEnabled.value = motionMode.value === "full" && connection?.saveData !== true
+    applyReaderMotionPolicy(readerMotionPolicyState.value)
+    stopReaderMotionPolicyWatch = watch(readerMotionPolicyState, applyReaderMotionPolicy)
     updateVisibleReadingProgress()
     window.addEventListener("scroll", handleReaderScroll, { passive: true })
     window.addEventListener("beforeunload", flushReadingProgressSave)
@@ -975,6 +992,7 @@ onMounted(() => {
 onBeforeUnmount(() => {
   stopResumeWatch?.()
   stopArticleFocusWatch?.()
+  stopReaderMotionPolicyWatch?.()
   document.removeEventListener("scroll", handleReaderScroll, true)
   window.removeEventListener("scroll", handleReaderScroll)
   window.removeEventListener("beforeunload", flushReadingProgressSave)
@@ -1006,14 +1024,15 @@ onBeforeUnmount(() => {
       <article
         v-if="article"
         data-testid="article-document"
-        :data-motion="motionMode"
+        :data-motion="readingProgressMotionMode"
         :data-client-ready="String(clientReady)"
         aria-labelledby="article-heading"
       >
         <ReadingProgress
           :percent="clientReady ? visibleReadingProgress : 0"
-          :motion-mode="motionMode"
+          :motion-mode="readingProgressMotionMode"
         />
+        <ReaderJourneyRail :active-step="3" tone="paper" />
         <header class="article-header" data-testid="article-header">
           <p class="eyebrow">Public Reading</p>
           <h1 id="article-heading" tabindex="-1">{{ article.title }}</h1>
@@ -1114,7 +1133,7 @@ onBeforeUnmount(() => {
             :blocks="articleBlocks"
             :article-revision-id="article.revisionId"
             :client-ready="clientReady"
-            :motion-mode="motionMode"
+            :motion-mode="creativeMotionMode"
             :interactive-enabled="interactiveEnabled"
             :get-asset-url="assetMediaUrl"
             :get-asset-width="assetMediaWidth"

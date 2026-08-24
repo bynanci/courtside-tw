@@ -7,7 +7,7 @@ NODE_VERSION := 24.14.0
 PNPM_VERSION := 11.7.0
 PNPM_STORE_DIR ?= /tmp/courtside-tw-pnpm-store
 
-.PHONY: setup dev format format-check lint typecheck test contract contract-schema contract-openapi verify check-toolchain check-root-contract _run-workspace
+.PHONY: setup dev demo format format-check lint typecheck test contract contract-schema contract-openapi verify check-toolchain check-root-contract _run-workspace
 
 setup: check-toolchain
 	@if test -f pnpm-lock.yaml; then \
@@ -20,6 +20,9 @@ setup: check-toolchain
 
 dev: check-toolchain
 	@$(MAKE) --no-print-directory _run-workspace SCRIPT=dev
+
+demo: check-toolchain
+	@$(PNPM) run demo
 
 format:
 	@$(PNPM) run format

@@ -136,8 +136,51 @@ schema version from the manifest alone.
 The state file belongs in an access-controlled, environment-specific operations
 store, not the Git repository. State schema v2 persists the environment and
 rejects any invocation whose `--environment` differs, including `status`.
-Never share one state path across test, staging and production. A staging
-example is:
+Never share one state path across test, staging and production. A state
+produced by the schema-v1 controller must first be migrated explicitly with a
+separate environment-bound activation-history evidence file:
+
+```bash
+python3 infra/deployment/release.py \
+  --state /var/lib/courtside/releases/state.json \
+  --environment staging \
+  --receipt /var/lib/courtside/releases/state-migration-receipt.json \
+  migrate-state \
+  --legacy-backup /var/lib/courtside/releases/state.v1.json \
+  --activation-history /change/v1-activation-evidence.json \
+  --confirmation I_UNDERSTAND_STATE_SCHEMA_UPGRADE
+```
+
+The evidence is an exact JSON object containing `schema_version: 1`, the target
+`environment`, unique known `activated_releases`, and the legacy
+`active_release`/`previous_release` pointers. The controller never infers
+activation from registration or a cached pointer, and fails closed on an
+environment, history, pointer or confirmation mismatch. A legacy receipt that
+names an environment must also match the target.
+
+The migration uses a separate bounded legacy reader (16 MiB, rather than the
+64 KiB operational JSON limit), validates the complete v1 ledger, and
+exclusively creates or verifies an access-controlled backup before replacing
+state. The backup must be a regular file owned by the current operator with
+mode `0600`; an insecure or different existing file is a hard failure.
+Concurrent migrations cannot replace a shared backup path. The controller binds
+v2 to the named environment and preserves the evidenced active and previous
+releases as rollback-eligible. If the old ledger exceeds the 48 KiB operational
+budget, all other registered manifests remain in the verified v1 backup while
+the v2 state retains only the active and previous manifests; the migration
+receipt records the backup digest and archived count. The v2 ledger also keeps
+the archive's absolute path, digest, and release count so later registration
+must consult the verified archive and cannot bind an archived release ID to new
+immutable inputs. Keep that backup available for the life of the migrated
+state. Re-running against v2 is `no_op`. Production migration requires the
+same exact short-lived production confirmation as every other state mutation,
+but does not switch traffic, run SQL, promote images or change secrets.
+Until this command succeeds, v2 `status`, activation and rollback fail closed
+rather than silently binding a legacy file to a guessed environment. The v2
+ledger retains only the latest 16 receipts and prunes older entries before the
+48 KiB atomic state-write limit.
+
+After migration, a staging registration example is:
 
 ```bash
 python3 infra/deployment/release.py \
@@ -214,8 +257,8 @@ survive the forward target schema, backup/restore proof is stale, required
 checks or review threads are unresolved, state/readiness/schema evidence names
 another environment, the live schema read-back is missing or stale, the target
 was never healthy-active, state history cannot remain within its write budget,
-or an atomic platform traffic switch and tested application rollback are
-unavailable.
+a schema-v1 ledger lacks its verified migration backup, or an atomic platform
+traffic switch and tested application rollback are unavailable.
 
 ## Repository verification
 

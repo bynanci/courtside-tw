@@ -12,6 +12,12 @@ export type TrustedApiOriginOptions = {
   allowPrivateNetwork?: boolean
 }
 
+export function allowsLoopbackApiOrigin(
+  environment: Record<string, string | undefined> = process.env
+): boolean {
+  return environment.COURTSIDE_E2E === "1" || environment.COURTSIDE_LOCAL_DEMO === "1"
+}
+
 /**
  * Validates the server-side API origin before it is copied into CSP or used by
  * a BFF fetch. Private destinations are reserved for an explicit local E2E
@@ -32,9 +38,11 @@ export function validateTrustedApiOrigin(
     return undefined
   }
 
+  const allowLoopbackHttp =
+    options.allowPrivateNetwork === true && url.protocol === "http:" && isLoopbackHost(url.hostname)
+
   if (
-    (url.protocol !== "https:" &&
-      !(options.allowPrivateNetwork === true && url.protocol === "http:")) ||
+    (url.protocol !== "https:" && !allowLoopbackHttp) ||
     url.username !== "" ||
     url.password !== "" ||
     url.hash !== "" ||
@@ -52,7 +60,7 @@ export function applySecurityHeaders(
 ): void {
   const trustedApiOrigin = apiOrigin
     ? validateTrustedApiOrigin(apiOrigin, {
-        allowPrivateNetwork: process.env.COURTSIDE_E2E === "1"
+        allowPrivateNetwork: allowsLoopbackApiOrigin()
       })
     : undefined
   for (const [name, value] of Object.entries(SECURITY_HEADERS)) {
@@ -119,6 +127,17 @@ function hasUnsafeNetworkHost(hostname: string, allowPrivateNetwork: boolean): b
     (first === 172 && second >= 16 && second <= 31) ||
     (first === 192 && second === 168) ||
     first >= 224
+  )
+}
+
+function isLoopbackHost(hostname: string): boolean {
+  const host = hostname.toLowerCase().replace(/^\[|\]$/gu, "")
+  return (
+    host === "localhost" ||
+    host.endsWith(".localhost") ||
+    host === "::1" ||
+    host.startsWith("::ffff:127.") ||
+    /^127(?:\.\d{1,3}){3}$/u.test(host)
   )
 }
 
