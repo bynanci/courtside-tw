@@ -681,6 +681,48 @@ test("lifecycle budgets start only after bounded browser quiescence", () => {
   match(performanceHarness, /creative:\s*\{[\s\S]*browserQuiescence,/u)
 })
 
+test("lifecycle budgets require bounded Android guest queue barriers before browser frames", () => {
+  const performanceHarness = readFileSync(
+    new URL("../../scripts/android-chrome-performance-smoke.mjs", import.meta.url),
+    "utf8"
+  )
+  const preloadIndex = performanceHarness.indexOf(
+    "const creativePreload = await preloadCreativeRuntime(page, firstRuntime)"
+  )
+  const guestReceipt = "const androidGuestQuiescence = waitForAndroidGuestQuiescence()"
+  const guestIndex = performanceHarness.indexOf(guestReceipt)
+  const browserIndex = performanceHarness.indexOf(
+    "const browserQuiescence = await waitForBrowserMainThreadQuiescence(page)"
+  )
+
+  equal(preloadIndex >= 0, true)
+  equal(guestIndex >= 0, true)
+  equal(browserIndex >= 0, true)
+  equal(preloadIndex < guestIndex, true)
+  equal(guestIndex < browserIndex, true)
+
+  const helperStart = performanceHarness.indexOf("function waitForAndroidGuestQuiescence()")
+  const helperEnd = performanceHarness.indexOf(
+    "function waitForBrowserMainThreadQuiescence(page)",
+    helperStart
+  )
+  const guestHelper = performanceHarness.slice(helperStart, helperEnd)
+
+  match(performanceHarness, /ANDROID_GUEST_QUIESCENCE_TIMEOUT_MILLISECONDS\s*=\s*30_000/u)
+  match(performanceHarness, /ANDROID_GUEST_PACKAGE_HANDLER_TIMEOUT_MILLISECONDS\s*=\s*15_000/u)
+  equal(guestHelper.match(/"wait-for-handler"/gu)?.length, 2)
+  equal(guestHelper.match(/"wait-for-background-handler"/gu)?.length, 2)
+  match(
+    guestHelper,
+    /"wait-for-broadcast-barrier"[\s\S]*"--flush-broadcast-loopers"[\s\S]*"--flush-application-threads"/u
+  )
+  match(guestHelper, /"wait-for-application-barrier"/u)
+  match(guestHelper, /deadlineAt/u)
+  match(guestHelper, /adbWithTimeout\(/u)
+  doesNotMatch(guestHelper, /setTimeout|waitForTimeout|sleep|force-stop[\s\S]*google/u)
+  match(performanceHarness, /creative:\s*\{[\s\S]*androidGuestQuiescence,/u)
+})
+
 test("browser runtime epochs are normalized into the bracketed host clock", () => {
   const calibration = calibrateBrowserClockToHost({
     browserEpochAtArm: 10_000,
