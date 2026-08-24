@@ -97,6 +97,10 @@ try {
     throw new Error(`T079 must run in Android Chrome, received: ${device.userAgent}`)
   }
 
+  await markPhase(page, "initial-native-surface")
+  const initialNativeSurface = await normalizeChromeContentSurface()
+  await page.evaluate(() => window.dispatchEvent(new Event("focus")))
+
   const navigation = await page.evaluate(() => {
     const entry = performance.getEntriesByType("navigation")[0]
     if (!entry) throw new Error("Android NavigationTiming entry is missing")
@@ -260,6 +264,7 @@ try {
       backgroundPauseMilliseconds: backgroundEvent.reactionMilliseconds,
       backgroundSignal: backgroundEvent.signal,
       backgroundEvent,
+      initialNativeSurface,
       foregroundNativeSurface,
       foregroundNativeSurfaceBoundary,
       foregroundFrames,
