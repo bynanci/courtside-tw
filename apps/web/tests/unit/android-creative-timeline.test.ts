@@ -710,10 +710,12 @@ test("lifecycle budgets require bounded Android guest queue barriers before brow
 
   match(performanceHarness, /ANDROID_GUEST_QUIESCENCE_TIMEOUT_MILLISECONDS\s*=\s*30_000/u)
   match(performanceHarness, /ANDROID_GUEST_PACKAGE_HANDLER_TIMEOUT_MILLISECONDS\s*=\s*15_000/u)
+  match(performanceHarness, /ANDROID_GUEST_COOL_OFF_MILLISECONDS\s*=\s*1_000/u)
   equal(guestHelper.match(/"wait-for-handler"/gu)?.length, 2)
   equal(guestHelper.match(/"wait-for-background-handler"/gu)?.length, 2)
   equal(guestHelper.match(/"wait-for-broadcast-barrier"/gu)?.length, 2)
   equal(guestHelper.match(/"wait-for-application-barrier"/gu)?.length, 2)
+  equal(guestHelper.match(/"wait-for-broadcast-idle"/gu)?.length, 1)
   match(
     guestHelper,
     /"wait-for-broadcast-barrier"[\s\S]*"--flush-broadcast-loopers"[\s\S]*"--flush-application-threads"/u
@@ -721,11 +723,20 @@ test("lifecycle budgets require bounded Android guest queue barriers before brow
   const finalPackageHandlerIndex = guestHelper.lastIndexOf('"wait-for-background-handler"')
   const closingBroadcastBarrierIndex = guestHelper.lastIndexOf('"wait-for-broadcast-barrier"')
   const closingApplicationBarrierIndex = guestHelper.lastIndexOf('"wait-for-application-barrier"')
+  const coolOffIndex = guestHelper.lastIndexOf('name: "cool-off-after-barriers"')
+  const finalBroadcastIdleIndex = guestHelper.lastIndexOf('"wait-for-broadcast-idle"')
   equal(finalPackageHandlerIndex < closingBroadcastBarrierIndex, true)
   equal(closingBroadcastBarrierIndex < closingApplicationBarrierIndex, true)
+  equal(closingApplicationBarrierIndex < coolOffIndex, true)
+  equal(coolOffIndex < finalBroadcastIdleIndex, true)
+  match(
+    guestHelper,
+    /name:\s*"cool-off-after-barriers"[\s\S]*"sleep"[\s\S]*ANDROID_GUEST_COOL_OFF_MILLISECONDS/u
+  )
+  match(guestHelper, /"wait-for-broadcast-idle"[\s\S]*"--flush-broadcast-loopers"/u)
   match(guestHelper, /deadlineAt/u)
   match(guestHelper, /adbWithTimeout\(/u)
-  doesNotMatch(guestHelper, /setTimeout|waitForTimeout|sleep|force-stop[\s\S]*google/u)
+  doesNotMatch(guestHelper, /setTimeout|waitForTimeout|force-stop[\s\S]*google/u)
   match(performanceHarness, /creative:\s*\{[\s\S]*androidGuestQuiescence,/u)
 })
 
