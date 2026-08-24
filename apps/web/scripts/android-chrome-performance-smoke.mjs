@@ -9,6 +9,7 @@ import {
   classifyAndroidActivityLine,
   classifyAndroidActivityProbeResult,
   classifyChromeAutomationSurface,
+  classifyPixelLauncherAnrWindow,
   acquireChromeForegroundActivityAtBoundary,
   connectNativeAndroidBrowser,
   establishNativeAndroidBackgroundBoundary,
@@ -887,6 +888,28 @@ function requireRemainingAutomationMilliseconds(deadline, maximumMilliseconds, l
 function probeChromeContentSurface(deadline) {
   const startedAt = performance.now()
   const displaySize = requireExpectedAndroidDisplaySize(deadline)
+  const windowReceipt = adbWithTimeout(
+    requireRemainingAutomationMilliseconds(
+      deadline,
+      CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS,
+      "system-window probe"
+    ),
+    "shell",
+    "dumpsys",
+    "window",
+    "windows"
+  )
+  const systemWindow = classifyPixelLauncherAnrWindow(windowReceipt, displaySize)
+  if (systemWindow.status !== "absent") {
+    return {
+      ...systemWindow,
+      probeSource: "window-manager",
+      probeMilliseconds: performance.now() - startedAt,
+      hierarchyBytes: Buffer.byteLength(windowReceipt),
+      displaySize
+    }
+  }
+
   const probeTimeoutMilliseconds = requireRemainingAutomationMilliseconds(
     deadline,
     CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS,
@@ -911,6 +934,7 @@ function probeChromeContentSurface(deadline) {
   const hierarchy = `${result.stdout ?? ""}\n${result.stderr ?? ""}`
   return {
     ...classifyChromeAutomationSurface(hierarchy, displaySize),
+    probeSource: "uiautomator",
     probeMilliseconds: performance.now() - startedAt,
     hierarchyBytes: Buffer.byteLength(hierarchy),
     displaySize
@@ -981,6 +1005,7 @@ function surfaceReceipt(surface) {
   return {
     status: surface.status,
     reason: surface.reason ?? null,
+    probeSource: surface.probeSource ?? null,
     probeMilliseconds: surface.probeMilliseconds,
     hierarchyBytes: surface.hierarchyBytes,
     displaySize: surface.displaySize,

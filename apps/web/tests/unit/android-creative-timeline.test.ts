@@ -24,6 +24,7 @@ import {
   captureChromeSurfaceProbeBoundary,
   classifyAndroidActivityLine,
   classifyChromeAutomationSurface,
+  classifyPixelLauncherAnrWindow,
   evaluateAndroidBackgroundTimeline,
   evaluateAndroidForegroundFrameTimeline,
   evaluateAndroidOffscreenTimeline,
@@ -79,6 +80,19 @@ const ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML = `<?xml version='1.0' encoding='UTF-8' s
     </node>
   </node>
 </hierarchy>`
+
+const ATTEMPT_3_PIXEL_LAUNCHER_ANR_WINDOWS = `WINDOW MANAGER WINDOWS
+  Window #6 Window{fe82d37 u0 Application Not Responding: com.google.android.apps.nexuslauncher}:
+    mOwnerUid=1000 showForAllUsers=true package=android appop=SYSTEM_ALERT_WINDOW
+    mAttrs={(0,0)(wrapxwrap) gr=CENTER ty=SYSTEM_ALERT fmt=TRANSLUCENT}
+    Requested w=1024 h=506 mLayoutSeq=145
+    mViewVisibility=0x0 mHaveFrame=true mObscured=false
+    mHasSurface=true isReadyForDisplay()=true
+    Frames: parent=[0,136][1080,2337] display=[0,136][1080,2337] frame=[28,983][1052,1489] last=[28,983][1052,1489] insetsChanged=false
+    isOnScreen=true
+    isVisible=true
+  Window #7 Window{fbbd2ae u0 ShellDropTarget}:
+    mOwnerUid=10181 showForAllUsers=true package=com.android.systemui appop=SYSTEM_ALERT_WINDOW`
 
 type ActivityTransition = {
   at: number
@@ -555,6 +569,15 @@ test("native Android performance harness invokes the behavioral boundaries", () 
   match(performanceHarness, /const ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS = 250\b/u)
   match(performanceHarness, /const ANDROID_ACTIVITY_RECEIPT_HISTORY_LIMIT = 64\b/u)
   match(performanceHarness, /const CHROME_AUTOMATION_POLL_MILLISECONDS = 100\b/u)
+  const systemWindowProbeIndex = performanceHarness.indexOf(
+    "classifyPixelLauncherAnrWindow(windowReceipt, displaySize)"
+  )
+  const uiAutomatorProbeIndex = performanceHarness.indexOf(
+    'spawnSync("adb", ["exec-out", "uiautomator", "dump", "/dev/tty"]'
+  )
+  equal(systemWindowProbeIndex >= 0, true)
+  equal(uiAutomatorProbeIndex >= 0, true)
+  equal(systemWindowProbeIndex < uiAutomatorProbeIndex, true)
   match(performanceHarness, /const CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS = 5_000\b/u)
   match(
     performanceHarness,
@@ -1055,6 +1078,72 @@ test("the exact attempt 3 Pixel Launcher ANR resolves only its safe Wait target"
     status: "known-pixel-launcher-anr",
     dismissTap: { x: 540, y: 1363 }
   })
+})
+
+test("the exact Pixel Launcher ANR window bypasses UI-idle waiting with the same safe target", () => {
+  deepEqual(classifyPixelLauncherAnrWindow(ATTEMPT_3_PIXEL_LAUNCHER_ANR_WINDOWS, PIXEL_7_DISPLAY), {
+    status: "known-pixel-launcher-anr",
+    dismissTap: { x: 540, y: 1363 }
+  })
+  deepEqual(classifyPixelLauncherAnrWindow("WINDOW MANAGER WINDOWS", PIXEL_7_DISPLAY), {
+    status: "absent"
+  })
+})
+
+test("Pixel Launcher ANR window preflight fails closed on identity or geometry drift", () => {
+  const fixtures = [
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_WINDOWS.replace(
+      "com.google.android.apps.nexuslauncher",
+      "com.android.systemui"
+    ),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_WINDOWS.replace("mOwnerUid=1000", "mOwnerUid=10176"),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_WINDOWS.replace("package=android", "package=com.android.systemui"),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_WINDOWS.replace("ty=SYSTEM_ALERT", "ty=APPLICATION"),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_WINDOWS.replace(
+      "Requested w=1024 h=506",
+      "Requested w=1023 h=506"
+    ),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_WINDOWS.replace("mObscured=false", "mObscured=true"),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_WINDOWS.replace(
+      "isReadyForDisplay()=true",
+      "isReadyForDisplay()=false"
+    ),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_WINDOWS.replace(
+      "frame=[28,983][1052,1489]",
+      "frame=[28,982][1052,1489]"
+    ),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_WINDOWS.replace("isOnScreen=true", "isOnScreen=false"),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_WINDOWS.replace("isVisible=true", "isVisible=false"),
+    `${ATTEMPT_3_PIXEL_LAUNCHER_ANR_WINDOWS}
+  Window #8 Window{abc123 u0 Application Not Responding: com.google.android.apps.nexuslauncher}:`
+  ]
+
+  for (const fixture of fixtures) {
+    deepEqual(classifyPixelLauncherAnrWindow(fixture, PIXEL_7_DISPLAY), {
+      status: "blocked",
+      reason: "unrecognized-or-malformed-system-error-window"
+    })
+  }
+  deepEqual(
+    classifyPixelLauncherAnrWindow(
+      "Window #1 Window{abc123 u0 Application Not Responding: com.android.systemui}:",
+      PIXEL_7_DISPLAY
+    ),
+    {
+      status: "blocked",
+      reason: "unrecognized-or-malformed-system-error-window"
+    }
+  )
+  deepEqual(
+    classifyPixelLauncherAnrWindow(ATTEMPT_3_PIXEL_LAUNCHER_ANR_WINDOWS, {
+      width: 1080,
+      height: 2399
+    }),
+    {
+      status: "blocked",
+      reason: "unrecognized-or-malformed-system-error-window"
+    }
+  )
 })
 
 test("Pixel Launcher ANR normalization fails closed on any identity or geometry drift", () => {
