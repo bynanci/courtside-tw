@@ -2343,7 +2343,7 @@ test("cold UIAutomator can use the remaining normalization envelope without wide
   )
   match(
     performanceHarness,
-    /function probeChromeContentSurface\(deadline\) \{[\s\S]*requireRemainingAutomationMilliseconds\(\s*deadline,\s*CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS,\s*"UIAutomator probe"/u
+    /const probeTimeoutMilliseconds = requireRemainingAutomationMilliseconds\(\s*deadline,\s*CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS,\s*"UIAutomator probe"/u
   )
   match(
     performanceHarness,
