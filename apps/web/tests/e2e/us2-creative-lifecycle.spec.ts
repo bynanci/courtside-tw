@@ -73,7 +73,7 @@ test("Save-Data keeps the creative reader poster-only and transfers zero p5 byte
   expect(requests.some((pathname) => pathname.endsWith("/" + p5Chunk))).toBe(false)
 })
 
-test("twenty client-side article switches leave zero per-instance creative lifecycle delta", async ({
+test("twenty client-side article switches leave no positive per-instance creative lifecycle delta", async ({
   page
 }) => {
   await page.emulateMedia({ reducedMotion: "no-preference" })
@@ -142,7 +142,54 @@ test("twenty client-side article switches leave zero per-instance creative lifec
   }
 
   await expect(page).toHaveURL(/\/articles\/courtside-notes/)
-  await expect.poll(() => lifecycleSnapshot(page)).toEqual(baseline)
+  const baselineListenerCounts = baseline.globalListenerTypes.reduce(
+    (counts, type) => counts.set(type, (counts.get(type) ?? 0) + 1),
+    new Map<string, number>()
+  )
+  // A completed cleanup may legitimately release framework observers and queued
+  // animation frames that were present in the baseline. A leak is an increase,
+  // or any retained creative/detached target, so compare positive deltas rather
+  // than requiring transient global scheduler state to remain byte-for-byte equal.
+  await expect
+    .poll(async () => {
+      const snapshot = await lifecycleSnapshot(page)
+      const finalListenerCounts = snapshot.globalListenerTypes.reduce(
+        (counts, type) => counts.set(type, (counts.get(type) ?? 0) + 1),
+        new Map<string, number>()
+      )
+      const unexpectedListenerTypeDelta = Array.from(finalListenerCounts).reduce(
+        (total, [type, count]) =>
+          total + Math.max(0, count - (baselineListenerCounts.get(type) ?? 0)),
+        0
+      )
+      return {
+        globalListenerDelta: Math.max(0, snapshot.globalListeners - baseline.globalListeners),
+        unexpectedListenerTypeDelta,
+        intervalDelta: Math.max(0, snapshot.intervals - baseline.intervals),
+        animationFrameDelta: Math.max(0, snapshot.animationFrames - baseline.animationFrames),
+        intersectionTargetDelta: Math.max(
+          0,
+          snapshot.intersectionTargets - baseline.intersectionTargets
+        ),
+        creativeIntersectionTargets: snapshot.creativeIntersectionTargets,
+        detachedIntersectionTargets: snapshot.detachedIntersectionTargets,
+        resizeTargetDelta: Math.max(0, snapshot.resizeTargets - baseline.resizeTargets),
+        creativeResizeTargets: snapshot.creativeResizeTargets,
+        detachedResizeTargets: snapshot.detachedResizeTargets
+      }
+    })
+    .toEqual({
+      globalListenerDelta: 0,
+      unexpectedListenerTypeDelta: 0,
+      intervalDelta: 0,
+      animationFrameDelta: 0,
+      intersectionTargetDelta: 0,
+      creativeIntersectionTargets: 0,
+      detachedIntersectionTargets: 0,
+      resizeTargetDelta: 0,
+      creativeResizeTargets: 0,
+      detachedResizeTargets: 0
+    })
 })
 
 test("an interrupted reduced-motion route change never hides the completed article DOM", async ({
