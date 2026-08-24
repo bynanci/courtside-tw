@@ -712,11 +712,17 @@ test("lifecycle budgets require bounded Android guest queue barriers before brow
   match(performanceHarness, /ANDROID_GUEST_PACKAGE_HANDLER_TIMEOUT_MILLISECONDS\s*=\s*15_000/u)
   equal(guestHelper.match(/"wait-for-handler"/gu)?.length, 2)
   equal(guestHelper.match(/"wait-for-background-handler"/gu)?.length, 2)
+  equal(guestHelper.match(/"wait-for-broadcast-barrier"/gu)?.length, 2)
+  equal(guestHelper.match(/"wait-for-application-barrier"/gu)?.length, 2)
   match(
     guestHelper,
     /"wait-for-broadcast-barrier"[\s\S]*"--flush-broadcast-loopers"[\s\S]*"--flush-application-threads"/u
   )
-  match(guestHelper, /"wait-for-application-barrier"/u)
+  const finalPackageHandlerIndex = guestHelper.lastIndexOf('"wait-for-background-handler"')
+  const closingBroadcastBarrierIndex = guestHelper.lastIndexOf('"wait-for-broadcast-barrier"')
+  const closingApplicationBarrierIndex = guestHelper.lastIndexOf('"wait-for-application-barrier"')
+  equal(finalPackageHandlerIndex < closingBroadcastBarrierIndex, true)
+  equal(closingBroadcastBarrierIndex < closingApplicationBarrierIndex, true)
   match(guestHelper, /deadlineAt/u)
   match(guestHelper, /adbWithTimeout\(/u)
   doesNotMatch(guestHelper, /setTimeout|waitForTimeout|sleep|force-stop[\s\S]*google/u)
