@@ -181,10 +181,7 @@ try {
   const initialRunningCanvases = initialRuntimeSnapshot.runningCount
 
   await markPhase(page, "offscreen-reaction")
-  const offscreen = evaluateAndroidOffscreenTimeline(
-    await measureOffscreenPause(page, 0),
-    BUDGETS
-  )
+  const offscreen = evaluateAndroidOffscreenTimeline(await measureOffscreenPause(page, 0), BUDGETS)
   assertAtMost(
     offscreen.reactionMilliseconds,
     BUDGETS.offscreenPauseMilliseconds,

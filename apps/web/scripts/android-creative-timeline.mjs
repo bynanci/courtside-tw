@@ -1552,10 +1552,7 @@ export function evaluateAndroidOffscreenTimeline(rawTimeline, rawBudgets) {
         `runningCount=${pauseSnapshot.runningCount}, targetStatus=${pauseSnapshot.targetStatus}`
     )
   }
-  if (
-    activeSnapshot.at > scrollSignalSnapshot.at ||
-    scrollSignalSnapshot.at > pauseSnapshot.at
-  ) {
+  if (activeSnapshot.at > scrollSignalSnapshot.at || scrollSignalSnapshot.at > pauseSnapshot.at) {
     throw new Error("Android offscreen snapshot epochs are not monotonic")
   }
   if (
