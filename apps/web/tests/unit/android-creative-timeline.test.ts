@@ -604,7 +604,6 @@ test("native Android performance harness invokes the behavioral boundaries", () 
   doesNotMatch(performanceHarness, /await page\.bringToFront\(\)/u)
 })
 
-
 test("fresh Chrome native surface is normalized before lifecycle timing budgets", () => {
   const performanceHarness = readFileSync(
     new URL("../../scripts/android-chrome-performance-smoke.mjs", import.meta.url),
