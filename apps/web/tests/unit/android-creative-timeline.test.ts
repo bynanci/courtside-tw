@@ -1744,11 +1744,11 @@ test("production binds c8bb activity acquisition to existing normalization limit
   )
   match(
     performanceHarness,
-    /captureChromeSurfaceProbeBoundaryWithActivityAcquisition\(\{[\s\S]*acquireActivity: \(label\) => acquireChromeSurfaceActivityWithinDeadline\(deadline, label\)[\s\S]*probeSurface: \(\) => probeChromeContentSurface\(deadline\)/u
+    /captureChromeSurfaceProbeBoundaryWithActivityAcquisition\(\{[\s\S]*acquireActivity: \(label\) => acquireChromeSurfaceActivityWithinDeadline\(deadline, label\)[\s\S]*probeSurface: \(\) => probeChromeContentSurface\(deadline, displaySize\)/u
   )
   doesNotMatch(
     performanceHarness,
-    /function probeChromeContentSurfaceAtActivityBoundary\(deadline\) \{[\s\S]*captureChromeSurfaceProbeBoundaryAttempt/u
+    /function probeChromeContentSurfaceAtActivityBoundary\(deadline, displaySize\) \{[\s\S]*captureChromeSurfaceProbeBoundaryAttempt/u
   )
   match(
     performanceHarness,
@@ -3641,11 +3641,11 @@ test("Android smoke diagnostics preserve the failing producer and bound probes",
   match(performanceHarness, /timeout: probeTimeoutMilliseconds/u)
   match(
     performanceHarness,
-    /function probeChromeContentSurfaceAtActivityBoundary\(deadline\) \{[\s\S]*captureChromeSurfaceProbeBoundaryWithActivityAcquisition\(\{[\s\S]*acquireChromeSurfaceActivityWithinDeadline\(deadline, label\)[\s\S]*probeChromeContentSurface\(deadline\)/u
+    /function probeChromeContentSurfaceAtActivityBoundary\(deadline, displaySize\) \{[\s\S]*captureChromeSurfaceProbeBoundaryWithActivityAcquisition\(\{[\s\S]*acquireChromeSurfaceActivityWithinDeadline\(deadline, label\)[\s\S]*probeChromeContentSurface\(deadline, displaySize\)/u
   )
   match(
     performanceHarness,
-    /function probeChromeContentSurface\(deadline\) \{[\s\S]*requireExpectedAndroidDisplaySize\(deadline\)[\s\S]*requireRemainingAutomationMilliseconds\([\s\S]*uiautomator/u
+    /function probeChromeContentSurface\(\s*deadline,\s*displaySize = requireExpectedAndroidDisplaySize\(deadline\)\s*\) \{[\s\S]*requireRemainingAutomationMilliseconds\([\s\S]*uiautomator/u
   )
   equal(performanceHarness.match(/probeChromeContentSurfaceAtActivityBoundary\(/gu)?.length, 3)
   match(ciWorkflow, /profile: pixel_7\s+cores: 4\s+ram-size: 4096M/u)
