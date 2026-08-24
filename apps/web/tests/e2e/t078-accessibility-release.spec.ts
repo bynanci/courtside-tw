@@ -252,6 +252,7 @@ for (const viewportWidth of [320, 375, 412, 640, 768, 1024, 1440] as const) {
         await page.screenshot({
           path: visualArtifactPath(screenshot),
           fullPage: true,
+          scale: "css",
           animations: "disabled"
         })
       }
@@ -404,6 +405,7 @@ test("Save-Data disables editorial motion and creative autoload in Chromium", as
   await page.screenshot({
     path: visualArtifactPath(screenshot),
     fullPage: true,
+    scale: "css",
     animations: "disabled"
   })
   writeAccessibilityArtifact(
@@ -493,6 +495,7 @@ test("shared issue cover emits one bounded real-browser handoff", async ({ page 
   await page.screenshot({
     path: visualArtifactPath(screenshot),
     fullPage: true,
+    scale: "css",
     animations: "disabled"
   })
   writeAccessibilityArtifact(
