@@ -172,6 +172,8 @@ jobs:
     needs: frontend-contract
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      COURTSIDE_ANDROID_AVD_NAME: courtside-api35-pixel7
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -209,11 +211,15 @@ jobs:
           api-level: 35
           target: google_apis_playstore
           arch: x86_64
+          avd-name: ${{ env.COURTSIDE_ANDROID_AVD_NAME }}
           profile: pixel_7
+          cores: 4
+          ram-size: 4096M
           emulator-options: >-
             -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
             -camera-back none -camera-front none
           disable-animations: true
+          pre-emulator-launch-script: node apps/web/scripts/android-emulator-environment.mjs prepare artifacts/android-chrome/emulator-environment-prepare.json
           script: bash scripts/test/run-android-chrome-offline-smoke.sh
 
       - name: Upload Android Chrome smoke reports
