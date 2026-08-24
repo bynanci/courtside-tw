@@ -655,6 +655,32 @@ test("creative long-task window starts after bounded offscreen runtime preload",
   match(performanceHarness, /creative:\s*\{[\s\S]*creativePreload,/u)
 })
 
+test("lifecycle budgets start only after bounded browser quiescence", () => {
+  const performanceHarness = readFileSync(
+    new URL("../../scripts/android-chrome-performance-smoke.mjs", import.meta.url),
+    "utf8"
+  )
+  const quiescenceReceipt =
+    "const browserQuiescence = await waitForBrowserMainThreadQuiescence(page)"
+  const quiescenceIndex = performanceHarness.indexOf(quiescenceReceipt)
+  const longTaskWindowIndex = performanceHarness.indexOf("const preCreativeLongTasks =")
+  const helperStart = performanceHarness.indexOf(
+    "function waitForBrowserMainThreadQuiescence(page)"
+  )
+  const helperEnd = performanceHarness.indexOf("function measureOffscreenPause", helperStart)
+  const quiescenceHelper = performanceHarness.slice(helperStart, helperEnd)
+
+  equal(quiescenceIndex >= 0, true)
+  equal(quiescenceIndex < longTaskWindowIndex, true)
+  match(performanceHarness, /BROWSER_QUIESCENCE_TIMEOUT_MILLISECONDS\s*=\s*10_000/u)
+  match(performanceHarness, /BROWSER_QUIESCENCE_MAX_FRAME_GAP_MILLISECONDS\s*=\s*200/u)
+  match(performanceHarness, /BROWSER_QUIESCENCE_CONSECUTIVE_FRAMES\s*=\s*5/u)
+  match(quiescenceHelper, /requestAnimationFrame\(sample\)/u)
+  match(quiescenceHelper, /deadlineAt/u)
+  doesNotMatch(quiescenceHelper, /waitForTimeout/u)
+  match(performanceHarness, /creative:\s*\{[\s\S]*browserQuiescence,/u)
+})
+
 test("browser runtime epochs are normalized into the bracketed host clock", () => {
   const calibration = calibrateBrowserClockToHost({
     browserEpochAtArm: 10_000,
