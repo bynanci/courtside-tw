@@ -604,6 +604,29 @@ test("native Android performance harness invokes the behavioral boundaries", () 
   doesNotMatch(performanceHarness, /await page\.bringToFront\(\)/u)
 })
 
+
+test("fresh Chrome native surface is normalized before lifecycle timing budgets", () => {
+  const performanceHarness = readFileSync(
+    new URL("../../scripts/android-chrome-performance-smoke.mjs", import.meta.url),
+    "utf8"
+  )
+  const initialSurfaceReceipt =
+    "const initialNativeSurface = await normalizeChromeContentSurface()"
+  const initialSurfaceIndex = performanceHarness.indexOf(initialSurfaceReceipt)
+  const offscreenBudgetIndex = performanceHarness.indexOf(
+    "const offscreen = await measureOffscreenPause(page, 0)"
+  )
+
+  equal(initialSurfaceIndex >= 0, true)
+  equal(offscreenBudgetIndex >= 0, true)
+  equal(initialSurfaceIndex < offscreenBudgetIndex, true)
+  match(
+    performanceHarness.slice(initialSurfaceIndex, offscreenBudgetIndex),
+    /await page\.evaluate\(\(\) => window\.dispatchEvent\(new Event\("focus"\)\)\)/u
+  )
+  match(performanceHarness, /creative:\s*\{[\s\S]*initialNativeSurface,/u)
+})
+
 test("browser runtime epochs are normalized into the bracketed host clock", () => {
   const calibration = calibrateBrowserClockToHost({
     browserEpochAtArm: 10_000,
