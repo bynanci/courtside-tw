@@ -625,6 +625,29 @@ test("fresh Chrome native surface is normalized before lifecycle timing budgets"
   match(performanceHarness, /creative:\s*\{[\s\S]*initialNativeSurface,/u)
 })
 
+test("creative long-task window starts after bounded offscreen runtime preload", () => {
+  const performanceHarness = readFileSync(
+    new URL("../../scripts/android-chrome-performance-smoke.mjs", import.meta.url),
+    "utf8"
+  )
+  const preloadReceipt = "const creativePreload = await preloadCreativeRuntime(page, firstRuntime)"
+  const preloadIndex = performanceHarness.indexOf(preloadReceipt)
+  const longTaskWindowIndex = performanceHarness.indexOf("const preCreativeLongTasks =")
+
+  equal(preloadIndex >= 0, true)
+  equal(longTaskWindowIndex >= 0, true)
+  equal(preloadIndex < longTaskWindowIndex, true)
+  match(
+    performanceHarness,
+    /async function preloadCreativeRuntime\(page, runtime\) \{[\s\S]*data-runtime-near-viewport[\s\S]*data-runtime-status[\s\S]*\.toBe\("paused"\)/u
+  )
+  doesNotMatch(
+    performanceHarness.slice(preloadIndex, longTaskWindowIndex),
+    /setTimeout|waitForTimeout/u
+  )
+  match(performanceHarness, /creative:\s*\{[\s\S]*creativePreload,/u)
+})
+
 test("browser runtime epochs are normalized into the bracketed host clock", () => {
   const calibration = calibrateBrowserClockToHost({
     browserEpochAtArm: 10_000,
