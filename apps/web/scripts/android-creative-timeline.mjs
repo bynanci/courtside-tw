@@ -490,6 +490,55 @@ export function evaluateAndroidEmulatorEnvironment(value) {
   }
 }
 
+export function classifyPixelLauncherAnrWindow(value, rawDisplaySize) {
+  if (typeof value !== "string") {
+    throw new Error("Android window-manager receipt must be a string")
+  }
+  const displaySize = normalizeAndroidDisplaySize(rawDisplaySize)
+  const blocked = Object.freeze({
+    status: "blocked",
+    reason: "unrecognized-or-malformed-system-error-window"
+  })
+  const headers = [
+    ...value.matchAll(
+      /^[ \t]*Window #\d+ Window\{[0-9a-f]+ u0 Application Not Responding: ([^}\r\n]+)\}:[ \t]*$/gimu
+    )
+  ]
+  if (headers.length === 0) {
+    return value.includes("Application Not Responding:")
+      ? blocked
+      : Object.freeze({ status: "absent" })
+  }
+  if (
+    headers.length !== 1 ||
+    headers[0][1] !== "com.google.android.apps.nexuslauncher" ||
+    displaySize?.width !== 1080 ||
+    displaySize.height !== 2400
+  ) {
+    return blocked
+  }
+
+  const blockStart = headers[0].index
+  const nextWindowStart = value.indexOf("\n  Window #", blockStart + headers[0][0].length)
+  const block = value.slice(blockStart, nextWindowStart < 0 ? value.length : nextWindowStart)
+  const exactEvidence = [
+    /mOwnerUid=1000 showForAllUsers=true package=android appop=SYSTEM_ALERT_WINDOW/u,
+    /mAttrs=\{[\s\S]*?\bty=SYSTEM_ALERT\b/u,
+    /Requested w=1024 h=506\b/u,
+    /mViewVisibility=0x0 mHaveFrame=true mObscured=false/u,
+    /mHasSurface=true isReadyForDisplay\(\)=true/u,
+    /Frames: parent=\[0,136\]\[1080,2337\] display=\[0,136\]\[1080,2337\] frame=\[28,983\]\[1052,1489\] last=\[28,983\]\[1052,1489\]/u,
+    /isOnScreen=true/u,
+    /isVisible=true/u
+  ]
+  if (!exactEvidence.every((pattern) => pattern.test(block))) return blocked
+
+  return Object.freeze({
+    status: "known-pixel-launcher-anr",
+    dismissTap: KNOWN_CHROME_AUTOMATION_PROMPT_TAPS["known-pixel-launcher-anr"]
+  })
+}
+
 export function classifyChromeAutomationSurface(value, rawDisplaySize) {
   if (typeof value !== "string") {
     throw new Error("Chrome automation hierarchy must be a string")
@@ -908,7 +957,17 @@ export async function normalizeChromeAutomationSurfaceWithinDeadline(rawDependen
   }
 
   const attempts = []
+  const initialDismissedPrompts = dependencies.dismissedPrompts ?? []
+  if (!Array.isArray(initialDismissedPrompts)) {
+    throw new Error("initial dismissed Chrome automation prompts must be an array")
+  }
   const dismissedPromptStatuses = new Set()
+  for (const prompt of initialDismissedPrompts) {
+    if (!KNOWN_CHROME_AUTOMATION_PROMPTS.includes(prompt) || dismissedPromptStatuses.has(prompt)) {
+      throw new Error("initial dismissed Chrome automation prompt identity is invalid")
+    }
+    dismissedPromptStatuses.add(prompt)
+  }
   const dismissedTaps = {}
   let normalizationActivity = null
 

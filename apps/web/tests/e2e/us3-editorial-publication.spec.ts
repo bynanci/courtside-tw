@@ -63,6 +63,7 @@ test.describe("US3 Studio editor/publisher workflow", () => {
   test("publisher retry is idempotent and schedules Asia/Taipei without losing revision", async ({
     page
   }) => {
+    await page.emulateMedia({ colorScheme: "dark" })
     await resetFixture(page, "APPROVED")
     await loginStudio(page, `/studio/review/${seededArticleId}?role=PUBLISHER`)
     await page.goto(`/studio/review/${seededArticleId}?role=PUBLISHER`, {
@@ -73,8 +74,13 @@ test.describe("US3 Studio editor/publisher workflow", () => {
       /已核准 · revision \d+/i
     )
     await page.getByRole("button", { name: /排程|schedule/i }).click()
-    await page.getByLabel(/時區|timezone/i).selectOption("Asia/Taipei")
-    await page.getByLabel(/發布時間|publish at/i).fill("2026-08-11T09:00")
+    const timezone = page.getByLabel(/時區|timezone/i)
+    const publishAt = page.getByLabel(/發布時間|publish at/i)
+    await expect(page.locator(".studio-app")).toHaveCSS("color-scheme", "light")
+    await expect(timezone).toHaveCSS("color-scheme", "light")
+    await expect(publishAt).toHaveCSS("color-scheme", "light")
+    await timezone.selectOption("Asia/Taipei")
+    await publishAt.fill("2026-08-11T09:00")
     await page.getByRole("button", { name: /確認排程|confirm schedule/i }).click()
 
     await expect(page.locator(".studio-action-result")).toContainText(/UTC/)

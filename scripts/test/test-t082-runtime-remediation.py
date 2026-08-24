@@ -1,15 +1,21 @@
 #!/usr/bin/env python3
-"""Regression contract for the seven post-merge T082 runtime findings."""
+"""Regression contract for the T082 runtime remediation findings."""
 
 from __future__ import annotations
 
 import copy
+import hashlib
 import importlib.util
 import json
+import os
+import subprocess
+import sys
 import tempfile
+import threading
 import unittest
 from datetime import UTC, datetime
 from pathlib import Path
+from unittest import mock
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -101,6 +107,77 @@ def activated_state() -> tuple[dict[str, object], dict[str, object]]:
     return state, release_a
 
 
+def legacy_state() -> dict[str, object]:
+    release_a = manifest("release-a", "a", 9, 9, 10)
+    release_b = manifest("release-b", "b", 10, 9, 11)
+    return {
+        "schema_version": 1,
+        "revision": 4,
+        "database_schema_version": 10,
+        "active_release": "release-b",
+        "previous_release": "release-a",
+        "last_action_receipt": {
+            "schema_version": 1,
+            "task": "T082",
+            "action": "activate",
+            "environment": "test",
+            "observed_at": "2026-08-23T00:00:00Z",
+            "active_before": "release-a",
+            "active_after": "release-b",
+            "database_schema_before": 9,
+            "database_schema_after": 10,
+            "schema_rollback_performed": False,
+            "destructive_schema_action": False,
+            "state_revision": 4,
+        },
+        "releases": {"release-a": release_a, "release-b": release_b},
+    }
+
+
+def upgrade_evidence(
+    *,
+    environment: str = "test",
+    activated_releases: list[str] | None = None,
+    active_release: str | None = "release-b",
+    previous_release: str | None = "release-a",
+) -> dict[str, object]:
+    return {
+        "schema_version": 1,
+        "environment": environment,
+        "activated_releases": (
+            ["release-a", "release-b"]
+            if activated_releases is None
+            else activated_releases
+        ),
+        "active_release": active_release,
+        "previous_release": previous_release,
+    }
+
+
+def write_upgrade_evidence(
+    path: Path,
+    *,
+    environment: str = "staging",
+    activated_releases: list[str] | None = None,
+    active_release: str | None = "release-b",
+    previous_release: str | None = "release-a",
+) -> None:
+    path.write_text(
+        json.dumps(
+            upgrade_evidence(
+                environment=environment,
+                activated_releases=activated_releases,
+                active_release=active_release,
+                previous_release=previous_release,
+            ),
+            indent=2,
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+
+
 class T082RuntimeRemediationTests(unittest.TestCase):
     def test_datasource_is_bound_to_spring_for_api_and_worker(self) -> None:
         compose = COMPOSE_PATH.read_text(encoding="utf-8")
@@ -166,6 +243,696 @@ class T082RuntimeRemediationTests(unittest.TestCase):
                 release.atomic_write_json(state_path, oversized)
             self.assertEqual(json.loads(state_path.read_text(encoding="utf-8")), original)
             self.assertLessEqual(state_path.stat().st_size, release.MAX_JSON_BYTES)
+
+    def test_v1_state_migrates_without_losing_history_or_emergency_rollback(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            state_path = root / "release-state.json"
+            backup_path = root / "release-state.v1.json"
+            evidence_path = root / "upgrade-evidence.json"
+            migrate_receipt_path = root / "migration-receipt.json"
+            status_receipt_path = root / "status-receipt.json"
+            rollback_receipt_path = root / "rollback-receipt.json"
+            schema_path = root / "schema-readback.json"
+
+            release_a = manifest("release-a", "a", 9, 9, 10)
+            release_b = manifest("release-b", "b", 10, 9, 11)
+            releases: dict[str, object] = {
+                "release-a": release_a,
+                "release-b": release_b,
+            }
+            legacy_state: dict[str, object] = {
+                "schema_version": 1,
+                "revision": 4,
+                "database_schema_version": 10,
+                "active_release": "release-b",
+                "previous_release": "release-a",
+                "last_action_receipt": {
+                    "action": "activate",
+                    "result": "pass",
+                    "environment": "staging",
+                },
+                "releases": releases,
+            }
+            index = 0
+            while len(
+                (json.dumps(legacy_state, indent=2, sort_keys=True) + "\n").encode("utf-8")
+            ) <= release.MAX_STATE_BYTES:
+                release_id = f"registered-candidate-{index:03d}"
+                digit = "cdef"[index % 4]
+                releases[release_id] = manifest(release_id, digit, 10, 9, 11)
+                index += 1
+            serialized = json.dumps(legacy_state, indent=2, sort_keys=True) + "\n"
+            self.assertLessEqual(len(serialized.encode("utf-8")), release.MAX_JSON_BYTES)
+            state_path.write_text(serialized, encoding="utf-8")
+            write_upgrade_evidence(evidence_path)
+
+            migration = subprocess.run(
+                [
+                    sys.executable,
+                    str(CONTROLLER_PATH),
+                    "--state",
+                    str(state_path),
+                    "--receipt",
+                    str(migrate_receipt_path),
+                    "--environment",
+                    "staging",
+                    "migrate-state",
+                    "--legacy-backup",
+                    str(backup_path),
+                    "--activation-history",
+                    str(evidence_path),
+                    "--confirmation",
+                    release.STATE_UPGRADE_CONFIRMATION,
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(migration.returncode, 0, migration.stderr)
+
+            migrated = json.loads(state_path.read_text(encoding="utf-8"))
+            backup = json.loads(backup_path.read_text(encoding="utf-8"))
+            migration_receipt = json.loads(
+                migrate_receipt_path.read_text(encoding="utf-8")
+            )
+            self.assertEqual(backup, legacy_state)
+            self.assertEqual(migrated["schema_version"], 2)
+            self.assertEqual(migrated["environment"], "staging")
+            self.assertEqual(migrated["active_release"], "release-b")
+            self.assertEqual(migrated["previous_release"], "release-a")
+            self.assertEqual(migrated["activated_releases"], ["release-a", "release-b"])
+            self.assertIn("release-a", migrated["releases"])
+            self.assertIn("release-b", migrated["releases"])
+            self.assertLess(len(migrated["releases"]), len(releases))
+            self.assertLessEqual(state_path.stat().st_size, release.MAX_STATE_BYTES)
+            self.assertEqual(migration_receipt["legacy_release_count"], len(releases))
+            self.assertGreater(migration_receipt["archived_only_release_count"], 0)
+            self.assertEqual(
+                migration_receipt["legacy_backup_sha256"],
+                hashlib.sha256(backup_path.read_bytes()).hexdigest(),
+            )
+            self.assertEqual(migration_receipt["schema_rollback_performed"], False)
+            self.assertEqual(migration_receipt["destructive_schema_action"], False)
+
+            status = subprocess.run(
+                [
+                    sys.executable,
+                    str(CONTROLLER_PATH),
+                    "--state",
+                    str(state_path),
+                    "--receipt",
+                    str(status_receipt_path),
+                    "--environment",
+                    "staging",
+                    "status",
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(status.returncode, 0, status.stderr)
+
+            schema_path.write_text(
+                json.dumps(schema_readback("staging", 10)), encoding="utf-8"
+            )
+            rollback = subprocess.run(
+                [
+                    sys.executable,
+                    str(CONTROLLER_PATH),
+                    "--state",
+                    str(state_path),
+                    "--receipt",
+                    str(rollback_receipt_path),
+                    "--environment",
+                    "staging",
+                    "rollback",
+                    "--release",
+                    "release-a",
+                    "--schema-readback",
+                    str(schema_path),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(rollback.returncode, 0, rollback.stderr)
+            rollback_receipt = json.loads(
+                rollback_receipt_path.read_text(encoding="utf-8")
+            )
+            self.assertEqual(rollback_receipt["active_after"], "release-a")
+            self.assertEqual(rollback_receipt["schema_rollback_performed"], False)
+            self.assertEqual(rollback_receipt["destructive_schema_action"], False)
+
+    def test_v1_state_larger_than_64_kib_uses_a_separately_bounded_migration_read(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            state_path = root / "release-state.json"
+            backup_path = root / "release-state.v1.json"
+            evidence_path = root / "upgrade-evidence.json"
+            receipt_path = root / "migration-receipt.json"
+            releases: dict[str, object] = {
+                "release-a": manifest("release-a", "a", 9, 9, 10),
+                "release-b": manifest("release-b", "b", 10, 9, 11),
+            }
+            legacy_state: dict[str, object] = {
+                "schema_version": 1,
+                "revision": 4,
+                "database_schema_version": 10,
+                "active_release": "release-b",
+                "previous_release": "release-a",
+                "last_action_receipt": {
+                    "action": "activate",
+                    "result": "pass",
+                    "environment": "staging",
+                },
+                "releases": releases,
+            }
+            index = 0
+            while len(
+                (json.dumps(legacy_state, indent=2, sort_keys=True) + "\n").encode("utf-8")
+            ) <= release.MAX_JSON_BYTES + 1024:
+                release_id = f"legacy-registered-{index:04d}"
+                releases[release_id] = manifest(release_id, "cdef"[index % 4], 10, 9, 11)
+                index += 1
+            serialized = json.dumps(legacy_state, indent=2, sort_keys=True) + "\n"
+            self.assertGreater(len(serialized.encode("utf-8")), release.MAX_JSON_BYTES)
+            state_path.write_text(serialized, encoding="utf-8")
+            write_upgrade_evidence(evidence_path)
+
+            migration = subprocess.run(
+                [
+                    sys.executable,
+                    str(CONTROLLER_PATH),
+                    "--state",
+                    str(state_path),
+                    "--receipt",
+                    str(receipt_path),
+                    "--environment",
+                    "staging",
+                    "migrate-state",
+                    "--legacy-backup",
+                    str(backup_path),
+                    "--activation-history",
+                    str(evidence_path),
+                    "--confirmation",
+                    release.STATE_UPGRADE_CONFIRMATION,
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(migration.returncode, 0, migration.stderr)
+            self.assertEqual(
+                json.loads(backup_path.read_text(encoding="utf-8")), legacy_state
+            )
+            self.assertEqual(
+                json.loads(state_path.read_text(encoding="utf-8"))["schema_version"], 2
+            )
+
+    def test_archived_release_id_cannot_be_rebound_after_migration(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            state_path = root / "release-state.json"
+            backup_path = root / "release-state.v1.json"
+            evidence_path = root / "upgrade-evidence.json"
+            migrate_receipt_path = root / "migration-receipt.json"
+            register_receipt_path = root / "register-receipt.json"
+            manifest_path = root / "candidate.json"
+            releases: dict[str, object] = {
+                "release-a": manifest("release-a", "a", 9, 9, 10),
+                "release-b": manifest("release-b", "b", 10, 9, 11),
+            }
+            legacy_state: dict[str, object] = {
+                "schema_version": 1,
+                "revision": 4,
+                "database_schema_version": 10,
+                "active_release": "release-b",
+                "previous_release": "release-a",
+                "last_action_receipt": {
+                    "action": "activate",
+                    "result": "pass",
+                    "environment": "staging",
+                },
+                "releases": releases,
+            }
+            index = 0
+            while len(
+                (json.dumps(legacy_state, indent=2, sort_keys=True) + "\n").encode("utf-8")
+            ) <= release.MAX_STATE_BYTES:
+                release_id = f"archived-candidate-{index:04d}"
+                releases[release_id] = manifest(release_id, "c", 10, 9, 11)
+                index += 1
+            state_path.write_text(
+                json.dumps(legacy_state, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            write_upgrade_evidence(evidence_path)
+            migration = subprocess.run(
+                [
+                    sys.executable,
+                    str(CONTROLLER_PATH),
+                    "--state",
+                    str(state_path),
+                    "--receipt",
+                    str(migrate_receipt_path),
+                    "--environment",
+                    "staging",
+                    "migrate-state",
+                    "--legacy-backup",
+                    str(backup_path),
+                    "--activation-history",
+                    str(evidence_path),
+                    "--confirmation",
+                    release.STATE_UPGRADE_CONFIRMATION,
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertEqual(migration.returncode, 0, migration.stderr)
+            migrated = json.loads(state_path.read_text(encoding="utf-8"))
+            archived_id = next(
+                release_id
+                for release_id in releases
+                if release_id not in migrated["releases"]
+            )
+            rebound = manifest(archived_id, "d", 10, 9, 11)
+            manifest_path.write_text(json.dumps(rebound), encoding="utf-8")
+
+            registration = subprocess.run(
+                [
+                    sys.executable,
+                    str(CONTROLLER_PATH),
+                    "--state",
+                    str(state_path),
+                    "--receipt",
+                    str(register_receipt_path),
+                    "--environment",
+                    "staging",
+                    "register",
+                    "--manifest",
+                    str(manifest_path),
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(registration.returncode, 0)
+            self.assertIn("different immutable inputs", registration.stderr)
+
+    def test_migration_rejects_an_insecure_existing_legacy_backup(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            state_path = root / "release-state.json"
+            backup_path = root / "release-state.v1.json"
+            evidence_path = root / "upgrade-evidence.json"
+            receipt_path = root / "migration-receipt.json"
+            release_a = manifest("release-a", "a", 9, 9, 10)
+            legacy_state: dict[str, object] = {
+                "schema_version": 1,
+                "revision": 1,
+                "database_schema_version": 9,
+                "active_release": "release-a",
+                "previous_release": None,
+                "last_action_receipt": {
+                    "action": "activate",
+                    "result": "pass",
+                    "environment": "staging",
+                },
+                "releases": {"release-a": release_a},
+            }
+            serialized = json.dumps(legacy_state, indent=2, sort_keys=True) + "\n"
+            state_path.write_text(serialized, encoding="utf-8")
+            backup_path.write_text(serialized, encoding="utf-8")
+            os.chmod(backup_path, 0o644)
+            write_upgrade_evidence(
+                evidence_path,
+                active_release="release-a",
+                previous_release=None,
+                activated_releases=["release-a"],
+            )
+
+            migration = subprocess.run(
+                [
+                    sys.executable,
+                    str(CONTROLLER_PATH),
+                    "--state",
+                    str(state_path),
+                    "--receipt",
+                    str(receipt_path),
+                    "--environment",
+                    "staging",
+                    "migrate-state",
+                    "--legacy-backup",
+                    str(backup_path),
+                    "--activation-history",
+                    str(evidence_path),
+                    "--confirmation",
+                    release.STATE_UPGRADE_CONFIRMATION,
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+            self.assertNotEqual(migration.returncode, 0)
+            self.assertIn("permissions", migration.stderr)
+            self.assertEqual(
+                json.loads(state_path.read_text(encoding="utf-8"))["schema_version"], 1
+            )
+
+    def test_migration_rejects_type_mismatched_existing_legacy_backup(self) -> None:
+        for field, mismatched_value in (
+            ("revision", True),
+            ("schema_version", 1.0),
+        ):
+            with self.subTest(field=field), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                state_path = root / "release-state.json"
+                backup_path = root / "release-state.v1.json"
+                evidence_path = root / "upgrade-evidence.json"
+                receipt_path = root / "migration-receipt.json"
+                release_a = manifest("release-a", "a", 9, 9, 10)
+                legacy_state: dict[str, object] = {
+                    "schema_version": 1,
+                    "revision": 1,
+                    "database_schema_version": 9,
+                    "active_release": "release-a",
+                    "previous_release": None,
+                    "last_action_receipt": {
+                        "action": "activate",
+                        "result": "pass",
+                        "environment": "staging",
+                    },
+                    "releases": {"release-a": release_a},
+                }
+                mismatched_backup = copy.deepcopy(legacy_state)
+                mismatched_backup[field] = mismatched_value
+                state_path.write_text(
+                    json.dumps(legacy_state, indent=2, sort_keys=True) + "\n",
+                    encoding="utf-8",
+                )
+                backup_path.write_text(
+                    json.dumps(mismatched_backup, indent=2, sort_keys=True) + "\n",
+                    encoding="utf-8",
+                )
+                os.chmod(backup_path, 0o600)
+                write_upgrade_evidence(
+                    evidence_path,
+                    active_release="release-a",
+                    previous_release=None,
+                    activated_releases=["release-a"],
+                )
+
+                migration = subprocess.run(
+                    [
+                        sys.executable,
+                        str(CONTROLLER_PATH),
+                        "--state",
+                        str(state_path),
+                        "--receipt",
+                        str(receipt_path),
+                        "--environment",
+                        "staging",
+                        "migrate-state",
+                        "--legacy-backup",
+                        str(backup_path),
+                        "--activation-history",
+                        str(evidence_path),
+                        "--confirmation",
+                        release.STATE_UPGRADE_CONFIRMATION,
+                    ],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                )
+                self.assertNotEqual(migration.returncode, 0)
+                self.assertIn("different data", migration.stderr)
+                self.assertEqual(
+                    json.loads(state_path.read_text(encoding="utf-8"))["schema_version"],
+                    1,
+                )
+
+    def test_migration_reports_legacy_backup_io_failure_as_blocked(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            state_path = root / "release-state.json"
+            evidence_path = root / "upgrade-evidence.json"
+            receipt_path = root / "migration-receipt.json"
+            blocked_parent = root / "not-a-directory"
+            backup_path = blocked_parent / "release-state.v1.json"
+            release_a = manifest("release-a", "a", 9, 9, 10)
+            legacy_state: dict[str, object] = {
+                "schema_version": 1,
+                "revision": 1,
+                "database_schema_version": 9,
+                "active_release": "release-a",
+                "previous_release": None,
+                "last_action_receipt": {
+                    "action": "activate",
+                    "result": "pass",
+                    "environment": "staging",
+                },
+                "releases": {"release-a": release_a},
+            }
+            state_path.write_text(
+                json.dumps(legacy_state, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            blocked_parent.write_text("not a directory", encoding="utf-8")
+            write_upgrade_evidence(
+                evidence_path,
+                active_release="release-a",
+                previous_release=None,
+                activated_releases=["release-a"],
+            )
+
+            migration = subprocess.run(
+                [
+                    sys.executable,
+                    str(CONTROLLER_PATH),
+                    "--state",
+                    str(state_path),
+                    "--receipt",
+                    str(receipt_path),
+                    "--environment",
+                    "staging",
+                    "migrate-state",
+                    "--legacy-backup",
+                    str(backup_path),
+                    "--activation-history",
+                    str(evidence_path),
+                    "--confirmation",
+                    release.STATE_UPGRADE_CONFIRMATION,
+                ],
+                check=False,
+                capture_output=True,
+                text=True,
+            )
+
+            self.assertNotEqual(migration.returncode, 0)
+            self.assertNotIn("Traceback", migration.stderr)
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            self.assertEqual(receipt["result"], "blocked")
+            self.assertIn("legacy release-state backup", receipt["reason"])
+            self.assertEqual(
+                json.loads(state_path.read_text(encoding="utf-8"))["schema_version"],
+                1,
+            )
+
+    def test_migration_rejects_release_state_lock_as_legacy_backup(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            state_path = root / "release-state.json"
+            evidence_path = root / "upgrade-evidence.json"
+            receipt_path = root / "migration-receipt.json"
+            lock_path = state_path.with_suffix(f"{state_path.suffix}.lock")
+            release_a = manifest("release-a", "a", 9, 9, 10)
+            legacy_state: dict[str, object] = {
+                "schema_version": 1,
+                "revision": 1,
+                "database_schema_version": 9,
+                "active_release": "release-a",
+                "previous_release": None,
+                "last_action_receipt": {
+                    "action": "activate",
+                    "result": "pass",
+                    "environment": "staging",
+                },
+                "releases": {"release-a": release_a},
+            }
+            state_path.write_text(
+                json.dumps(legacy_state, indent=2, sort_keys=True) + "\n",
+                encoding="utf-8",
+            )
+            write_upgrade_evidence(
+                evidence_path,
+                active_release="release-a",
+                previous_release=None,
+                activated_releases=["release-a"],
+            )
+
+            try:
+                migration = subprocess.run(
+                    [
+                        sys.executable,
+                        str(CONTROLLER_PATH),
+                        "--state",
+                        str(state_path),
+                        "--receipt",
+                        str(receipt_path),
+                        "--environment",
+                        "staging",
+                        "migrate-state",
+                        "--legacy-backup",
+                        str(lock_path),
+                        "--activation-history",
+                        str(evidence_path),
+                        "--confirmation",
+                        release.STATE_UPGRADE_CONFIRMATION,
+                    ],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=2,
+                )
+            except subprocess.TimeoutExpired as error:
+                self.fail(f"migration deadlocked on the release-state lock: {error}")
+
+            self.assertNotEqual(migration.returncode, 0)
+            self.assertNotIn("Traceback", migration.stderr)
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            self.assertEqual(receipt["result"], "blocked")
+            self.assertIn("release-state lock", receipt["reason"])
+            self.assertEqual(
+                json.loads(state_path.read_text(encoding="utf-8"))["schema_version"],
+                1,
+            )
+
+    def test_legacy_backup_creation_is_exclusive_across_state_files(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            backup_path = Path(directory) / "shared-v1-backup.json"
+            payloads = [
+                {"schema_version": 1, "source": "first", "payload": "a" * 8192},
+                {"schema_version": 1, "source": "second", "payload": "b" * 8192},
+            ]
+            barrier = threading.Barrier(2)
+            original_atomic_write = release.atomic_write_json
+            outcomes: list[tuple[str, object]] = []
+
+            def delayed_atomic_write(*args: object, **kwargs: object) -> None:
+                barrier.wait(timeout=5)
+                original_atomic_write(*args, **kwargs)
+
+            def writer(payload: dict[str, object]) -> None:
+                try:
+                    outcomes.append(
+                        ("success", release.ensure_legacy_backup(backup_path, payload))
+                    )
+                except release.ReleaseError as error:
+                    outcomes.append(("error", str(error)))
+
+            with mock.patch.object(
+                release, "atomic_write_json", side_effect=delayed_atomic_write
+            ):
+                threads = [
+                    threading.Thread(target=writer, args=(payload,))
+                    for payload in payloads
+                ]
+                for thread in threads:
+                    thread.start()
+                for thread in threads:
+                    thread.join(timeout=10)
+
+            self.assertTrue(all(not thread.is_alive() for thread in threads))
+            self.assertEqual([kind for kind, _ in outcomes].count("success"), 1)
+            self.assertEqual([kind for kind, _ in outcomes].count("error"), 1)
+            self.assertIn(json.loads(backup_path.read_text(encoding="utf-8")), payloads)
+            self.assertEqual(backup_path.stat().st_mode & 0o777, 0o600)
+
+    def test_v1_state_requires_an_explicit_environment_bound_upgrade(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            state_path = Path(directory) / "state.json"
+            state_path.write_text(json.dumps(legacy_state()), encoding="utf-8")
+            with self.assertRaisesRegex(release.ReleaseError, "explicit.*migrate"):
+                release.load_state(state_path, "test")
+
+    def test_v1_upgrade_preserves_explicit_history_and_receipt(self) -> None:
+        migrated = release.migrate_v1_state(
+            legacy_state(),
+            "test",
+            upgrade_evidence(),
+            release.STATE_UPGRADE_CONFIRMATION,
+        )
+
+        self.assertEqual(migrated["schema_version"], release.STATE_SCHEMA_VERSION)
+        self.assertEqual(migrated["environment"], "test")
+        self.assertEqual(migrated["activated_releases"], ["release-a", "release-b"])
+        self.assertEqual(migrated["active_release"], "release-b")
+        self.assertEqual(migrated["previous_release"], "release-a")
+        self.assertEqual(
+            migrated["receipt_history"], [legacy_state()["last_action_receipt"]]
+        )
+
+    def test_v1_upgrade_rejects_environment_history_and_confirmation_mismatch(self) -> None:
+        with self.assertRaisesRegex(release.ReleaseError, "environment"):
+            release.migrate_v1_state(
+                legacy_state(),
+                "production",
+                upgrade_evidence(environment="staging"),
+                release.STATE_UPGRADE_CONFIRMATION,
+            )
+
+        with self.assertRaisesRegex(release.ReleaseError, "activation history"):
+            release.migrate_v1_state(
+                legacy_state(),
+                "test",
+                upgrade_evidence(activated_releases=["release-b"]),
+                release.STATE_UPGRADE_CONFIRMATION,
+            )
+
+        with self.assertRaisesRegex(release.ReleaseError, "confirmation"):
+            release.migrate_v1_state(
+                legacy_state(), "test", upgrade_evidence(), "WRONG"
+            )
+
+    def test_v1_upgrade_rejects_unknown_and_non_string_history_targets(self) -> None:
+        with self.assertRaisesRegex(release.ReleaseError, "unknown release"):
+            release.migrate_v1_state(
+                legacy_state(),
+                "test",
+                upgrade_evidence(activated_releases=["release-a", "missing"]),
+                release.STATE_UPGRADE_CONFIRMATION,
+            )
+        with self.assertRaisesRegex(release.ReleaseError, "release IDs"):
+            release.migrate_v1_state(
+                legacy_state(),
+                "test",
+                upgrade_evidence(activated_releases=["release-a", {"release": "b"}]),
+                release.STATE_UPGRADE_CONFIRMATION,
+            )
+
+    def test_receipt_history_is_bounded_and_keeps_latest_recovery_window(self) -> None:
+        state = release.new_state("test")
+        state["receipt_history"] = [
+            {"action": "register", "state_revision": index}
+            for index in range(release.MAX_RECEIPT_HISTORY_ITEMS + 3)
+        ]
+        release.record_action_receipt(
+            state, {"action": "activate", "state_revision": 99}
+        )
+
+        self.assertEqual(len(state["receipt_history"]), release.MAX_RECEIPT_HISTORY_ITEMS)
+        self.assertEqual(state["receipt_history"][-1]["state_revision"], 99)
+        release.validate_state(state, "test")
+
+    def test_existing_v2_state_without_history_is_readable_and_normalized(self) -> None:
+        state = release.new_state("test")
+        state.pop("receipt_history")
+
+        normalized = release.validate_state(state, "test")
+
+        self.assertEqual(normalized["receipt_history"], [])
 
 
 if __name__ == "__main__":

@@ -8,6 +8,9 @@ import { expect, test, type Locator, type Page } from "@playwright/test"
 const accessibilityArtifactDirectory = fileURLToPath(
   new URL("../../../../artifacts/web-e2e/accessibility/", import.meta.url)
 )
+const arenaVisualArtifactDirectory = fileURLToPath(
+  new URL("../../../../artifacts/web-e2e/arena-visual/", import.meta.url)
+)
 const focusableSelector = [
   "a[href]",
   "button:not([disabled])",
@@ -23,10 +26,29 @@ const coreRoutes = [
   { id: "article", path: "/articles/opening-night?issue=issue-2026-01" },
   { id: "library", path: "/library" }
 ] as const
+const expectedScreenshotPublicMedia = new Map<string, readonly string[]>([
+  ["home", ["/media/issues/issue-2026-01/cover.webp"]],
+  ["issue", ["/media/issues/issue-2026-01/cover.webp"]],
+  [
+    "article",
+    [
+      "/media/published/opening-wide.webp",
+      "/media/published/opening-gallery-1.webp",
+      "/media/published/opening-gallery-2.webp",
+      "/media/published/opening-generative-wide.webp",
+      "/media/published/opening-generative-wide.webp"
+    ]
+  ]
+])
 
 function writeAccessibilityArtifact(fileName: string, content: string): void {
   mkdirSync(accessibilityArtifactDirectory, { recursive: true })
   writeFileSync(join(accessibilityArtifactDirectory, fileName), content, "utf8")
+}
+
+function visualArtifactPath(fileName: string): string {
+  mkdirSync(arenaVisualArtifactDirectory, { recursive: true })
+  return join(arenaVisualArtifactDirectory, fileName)
 }
 
 async function seriousAxeViolations(page: Page) {
@@ -36,6 +58,44 @@ async function seriousAxeViolations(page: Page) {
   return report.violations.filter(
     (violation) => violation.impact === "serious" || violation.impact === "critical"
   )
+}
+
+type PublicMediaEvidence = {
+  src: string
+  naturalWidth: number
+  naturalHeight: number
+}
+
+async function requireLoadedPublicMedia(page: Page): Promise<PublicMediaEvidence[]> {
+  const images = page.locator('#main-content img[src*="/media/"]')
+  const imageCount = await images.count()
+
+  for (let index = 0; index < imageCount; index += 1) {
+    const image = images.nth(index)
+    await image.scrollIntoViewIfNeeded()
+    await expect
+      .poll(() =>
+        image.evaluate((element) => {
+          const target = element as HTMLImageElement
+          return target.complete ? target.naturalWidth : 0
+        })
+      )
+      .toBeGreaterThan(0)
+    await image.evaluate((element) => (element as HTMLImageElement).decode())
+  }
+
+  const evidence = await images.evaluateAll((elements) =>
+    elements.map((element) => {
+      const image = element as HTMLImageElement
+      return {
+        src: new URL(image.currentSrc || image.src, document.baseURI).pathname,
+        naturalWidth: image.naturalWidth,
+        naturalHeight: image.naturalHeight
+      }
+    })
+  )
+  await page.evaluate(() => window.scrollTo(0, 0))
+  return evidence
 }
 
 async function tabUntilFocused(page: Page, target: Locator, maximumTabs = 40): Promise<number> {
@@ -79,6 +139,63 @@ for (const route of coreRoutes) {
     writeAccessibilityArtifact(`${route.id}.aria.yml`, ariaSnapshot)
   })
 }
+
+test("issue hero summary and time retain AA contrast", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "light", reducedMotion: "reduce" })
+  await page.goto("/issues/issue-2026-01", { waitUntil: "networkidle" })
+
+  const samples = await page.locator(".issue-hero").evaluate((hero) => {
+    function rgbChannels(value: string): [number, number, number] {
+      const channels = value
+        .match(/[\d.]+/g)
+        ?.slice(0, 3)
+        .map(Number)
+      if (!channels || channels.length !== 3) {
+        throw new Error(`Expected an RGB color, received ${value}`)
+      }
+      return channels as [number, number, number]
+    }
+
+    function relativeLuminance(value: string): number {
+      const channels = rgbChannels(value).map((channel) => {
+        const normalized = channel / 255
+        return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4
+      })
+      return 0.2126 * channels[0] + 0.7152 * channels[1] + 0.0722 * channels[2]
+    }
+
+    const background = getComputedStyle(hero).backgroundColor
+    return [
+      ["summary", ".issue-header__copy > p:not(.eyebrow)"],
+      ["time", ".issue-header__copy time"]
+    ].map(([name, selector]) => {
+      const element = hero.querySelector(selector)
+      if (!element) {
+        throw new Error(`Missing ${name} contrast target`)
+      }
+      const foreground = getComputedStyle(element).color
+      const lighter = Math.max(relativeLuminance(foreground), relativeLuminance(background))
+      const darker = Math.min(relativeLuminance(foreground), relativeLuminance(background))
+      return { name, foreground, background, ratio: (lighter + 0.05) / (darker + 0.05) }
+    })
+  })
+
+  expect(samples).toEqual([
+    expect.objectContaining({
+      name: "summary",
+      foreground: "rgb(184, 177, 167)",
+      background: "rgb(8, 8, 8)"
+    }),
+    expect.objectContaining({
+      name: "time",
+      foreground: "rgb(184, 177, 167)",
+      background: "rgb(8, 8, 8)"
+    })
+  ])
+  for (const sample of samples) {
+    expect(sample.ratio).toBeGreaterThanOrEqual(4.5)
+  }
+})
 
 test("sequential keyboard path follows Home → Issue → TOC → Article", async ({ page }) => {
   await page.emulateMedia({ reducedMotion: "reduce" })
@@ -132,7 +249,7 @@ test("offline control is reachable in sequential keyboard order", async ({ page 
   )
 })
 
-for (const viewportWidth of [640, 320] as const) {
+for (const viewportWidth of [320, 375, 412, 640, 768, 1024, 1440] as const) {
   test(`reader surfaces reflow at ${viewportWidth} CSS px`, async ({ page }) => {
     await page.setViewportSize({ width: viewportWidth, height: 900 })
     await page.emulateMedia({ reducedMotion: "reduce" })
@@ -142,10 +259,19 @@ for (const viewportWidth of [640, 320] as const) {
       clientWidth: number
       scrollWidth: number
       clippedControls: string[]
+      publicMedia: PublicMediaEvidence[]
+      screenshot: string | null
     }> = []
 
     for (const route of coreRoutes) {
       await page.goto(route.path, { waitUntil: "networkidle" })
+      const publicMedia = await requireLoadedPublicMedia(page)
+      const expectedPublicMedia = expectedScreenshotPublicMedia.get(route.id)
+      if (expectedPublicMedia) {
+        expect(publicMedia.map((media) => media.src).sort()).toEqual(
+          [...expectedPublicMedia].sort()
+        )
+      }
       const layout = await page.evaluate((selector) => {
         const clippedControls = Array.from(
           document.querySelectorAll<HTMLElement>(selector)
@@ -177,7 +303,20 @@ for (const viewportWidth of [640, 320] as const) {
 
       expect(layout.scrollWidth).toBeLessThanOrEqual(layout.clientWidth + 1)
       expect(layout.clippedControls).toEqual([])
-      routeEvidence.push({ route: route.id, ...layout })
+
+      const screenshot =
+        route.id === "home" || route.id === "issue" || route.id === "article"
+          ? `${route.id}-${viewportWidth}.png`
+          : null
+      if (screenshot) {
+        await page.screenshot({
+          path: visualArtifactPath(screenshot),
+          fullPage: true,
+          scale: "css",
+          animations: "disabled"
+        })
+      }
+      routeEvidence.push({ route: route.id, ...layout, publicMedia, screenshot })
     }
 
     writeAccessibilityArtifact(
@@ -290,6 +429,139 @@ test("reduced motion removes sustained movement", async ({ page }) => {
 
   const evidence = { motionViolations, creativeRuntimes: "paused" }
   writeAccessibilityArtifact("reduced-motion.json", JSON.stringify(evidence, null, 2))
+})
+
+test("Save-Data disables editorial motion and creative autoload in Chromium", async ({ page }) => {
+  await page.addInitScript(() => {
+    const connection = new EventTarget()
+    Object.defineProperty(connection, "saveData", { configurable: true, value: true })
+    Object.defineProperty(navigator, "connection", { configurable: true, value: connection })
+  })
+  await page.emulateMedia({ reducedMotion: "no-preference" })
+  await page.goto("/articles/opening-night?issue=issue-2026-01", {
+    waitUntil: "networkidle"
+  })
+
+  await expect(page.locator("html")).toHaveAttribute("data-reader-motion", "reduced")
+  await expect(page.getByTestId("article-document")).toHaveAttribute("data-motion", "reduced")
+  await expect(page.getByTestId("creative-runtime")).toHaveCount(0)
+  await expect(page.getByTestId("creative-enable")).toHaveCount(2)
+
+  const evidence = await page.evaluate(() => ({
+    saveData: (navigator as Navigator & { connection?: { saveData?: boolean } }).connection
+      ?.saveData,
+    readerMotion: document.documentElement.dataset.readerMotion,
+    readerMotionCover: document.documentElement.dataset.readerMotionCover,
+    readerMotionProgress: document.documentElement.dataset.readerMotionProgress
+  }))
+  expect(evidence).toEqual({
+    saveData: true,
+    readerMotion: "reduced",
+    readerMotionCover: "disabled",
+    readerMotionProgress: "disabled"
+  })
+
+  const screenshot = "article-save-data.png"
+  await page.screenshot({
+    path: visualArtifactPath(screenshot),
+    fullPage: true,
+    scale: "css",
+    animations: "disabled"
+  })
+  writeAccessibilityArtifact(
+    "save-data.json",
+    JSON.stringify({ ...evidence, creativeRuntimeCount: 0, screenshot }, null, 2)
+  )
+})
+
+test("shared issue cover emits one bounded real-browser handoff", async ({ page }) => {
+  await page.addInitScript(() => {
+    const originalAnimate = Element.prototype.animate
+    const evidence: Array<{
+      duration: number | null
+      keyframeCount: number
+      firstTransform: string | null
+      lastTransform: string | null
+    }> = []
+    Object.defineProperty(window, "__courtsideCoverAnimationEvidence", {
+      configurable: true,
+      value: evidence
+    })
+    Element.prototype.animate = function (
+      keyframes: Keyframe[] | PropertyIndexedKeyframes | null,
+      options?: number | KeyframeAnimationOptions
+    ): Animation {
+      if (this instanceof HTMLElement && this.dataset.motionPattern === "issue-cover-carry") {
+        const frames = Array.isArray(keyframes) ? keyframes : []
+        const duration =
+          typeof options === "number"
+            ? options
+            : typeof options?.duration === "number"
+              ? options.duration
+              : null
+        evidence.push({
+          duration,
+          keyframeCount: frames.length,
+          firstTransform:
+            frames.length > 0 && typeof frames[0]?.transform === "string"
+              ? frames[0].transform
+              : null,
+          lastTransform:
+            frames.length > 0 && typeof frames.at(-1)?.transform === "string"
+              ? (frames.at(-1)?.transform ?? null)
+              : null
+        })
+      }
+      return originalAnimate.call(this, keyframes, options)
+    }
+  })
+  await page.emulateMedia({ reducedMotion: "no-preference" })
+  await page.goto("/", { waitUntil: "networkidle" })
+  await expect(page.locator("html")).toHaveAttribute("data-reader-motion-cover", "enabled")
+
+  await page.getByTestId("home-issue-link").click()
+  await expect(page).toHaveURL(/\/issues\/issue-2026-01$/)
+  await expect
+    .poll(() =>
+      page.evaluate(
+        () =>
+          (
+            window as typeof window & {
+              __courtsideCoverAnimationEvidence?: unknown[]
+            }
+          ).__courtsideCoverAnimationEvidence?.length ?? 0
+      )
+    )
+    .toBe(1)
+
+  const evidence = await page.evaluate(
+    () =>
+      (
+        window as typeof window & {
+          __courtsideCoverAnimationEvidence: Array<{
+            duration: number | null
+            keyframeCount: number
+            firstTransform: string | null
+            lastTransform: string | null
+          }>
+        }
+      ).__courtsideCoverAnimationEvidence[0]
+  )
+  expect(evidence?.duration).not.toBeNull()
+  expect(evidence?.duration ?? Number.POSITIVE_INFINITY).toBeLessThanOrEqual(360)
+  expect(evidence?.keyframeCount ?? 0).toBeGreaterThanOrEqual(2)
+
+  const screenshot = "issue-shared-cover-settled.png"
+  await page.screenshot({
+    path: visualArtifactPath(screenshot),
+    fullPage: true,
+    scale: "css",
+    animations: "disabled"
+  })
+  writeAccessibilityArtifact(
+    "shared-cover-browser.json",
+    JSON.stringify({ ...evidence, screenshot, result: "pass" }, null, 2)
+  )
 })
 
 test("poster and summary are the single accessible creative fallback", async ({ page }) => {

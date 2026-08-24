@@ -1,7 +1,6 @@
 :root {
-  --reader-measure: 48rem;
-  --reader-progress-duration: 90ms;
-  --reader-focus: #ae3828;
+  --reader-measure: 42rem;
+  --reader-focus: var(--color-action);
 }
 
 html[lang^="zh-Hant"] body {
@@ -20,8 +19,8 @@ html[lang^="zh-Hant"] :is(pre, code) {
   z-index: 100;
   inset: 0 auto auto 0;
   padding: 0.75rem 1rem;
-  background: #191916;
-  color: #f5f1e9;
+  background: var(--color-bg-hero);
+  color: var(--color-text-on-hero);
   transform: translateY(-120%);
 }
 
@@ -36,16 +35,21 @@ html[lang^="zh-Hant"] :is(pre, code) {
   width: 100%;
   height: 3px;
   overflow: hidden;
-  background: #d8d0c3;
 }
 
-.reading-progress__bar {
+.reading-progress__graphic {
   display: block;
   width: 100%;
   height: 100%;
-  background: var(--reader-focus);
-  transform-origin: left;
-  transition: transform var(--reader-progress-duration) linear;
+}
+
+.reading-progress__track {
+  fill: var(--color-border-subtle);
+}
+
+.reading-progress__bar {
+  fill: var(--reader-focus);
+  transition: width var(--motion-duration-progress) linear;
 }
 
 .reading-progress[data-motion="reduced"] .reading-progress__bar {
@@ -79,7 +83,7 @@ html[lang^="zh-Hant"] :is(pre, code) {
   width: 100%;
   aspect-ratio: 16 / 9;
   object-fit: cover;
-  background: #191916;
+  background: var(--color-bg-hero);
 }
 
 .article-return-toc {
@@ -90,13 +94,7 @@ html[lang^="zh-Hant"] :is(pre, code) {
 
 .article-empty-content {
   max-width: var(--reader-measure);
-  border-block: 1px solid #d8d0c3;
+  border-block: 1px solid var(--color-border-subtle);
   padding: 1.25rem 0;
-  color: #5b554d;
-}
-
-@media (prefers-reduced-motion: reduce) {
-  :root {
-    --reader-progress-duration: 0ms;
-  }
+  color: var(--color-text-muted);
 }

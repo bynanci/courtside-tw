@@ -10,9 +10,11 @@
   },
   "scripts": {
     "dev": "nuxt dev",
+    "dev:demo": "node scripts/start-reader-demo.mjs",
     "lint": "eslint --max-warnings=0 .",
     "build": "nuxt build",
     "test": "node --experimental-strip-types --test tests/integration/*.test.ts tests/unit/*.test.ts tests/unit/reader/*.test.ts tests/component/content-blocks/*.test.ts tests/component/reader/*.test.ts tests/component/studio/issues/*.test.ts tests/component/studio/media/*.test.ts",
+    "test:demo": "node scripts/verify-reader-demo.mjs",
     "test:e2e": "playwright test",
     "test:us1": "playwright test tests/e2e/us1-browse-issue.spec.ts",
     "test:us2": "playwright test tests/e2e/us2-no-js.spec.ts tests/e2e/us2-read-article.spec.ts tests/e2e/us2-reduced-motion.spec.ts tests/e2e/us2-read-article.a11y.spec.ts tests/e2e/us2-creative-lifecycle.spec.ts tests/e2e/t079-creative-background.spec.ts",

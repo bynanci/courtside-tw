@@ -9,7 +9,11 @@ type LifecycleSnapshot = {
   intervals: number
   animationFrames: number
   intersectionTargets: number
+  creativeIntersectionTargets: number
+  detachedIntersectionTargets: number
   resizeTargets: number
+  creativeResizeTargets: number
+  detachedResizeTargets: number
 }
 
 const ordinaryArticlePath = "/articles/courtside-notes?issue=issue-2026-01"
@@ -69,7 +73,7 @@ test("Save-Data keeps the creative reader poster-only and transfers zero p5 byte
   expect(requests.some((pathname) => pathname.endsWith("/" + p5Chunk))).toBe(false)
 })
 
-test("twenty client-side article switches leave zero per-instance creative lifecycle delta", async ({
+test("twenty client-side article switches leave no positive per-instance creative lifecycle delta", async ({
   page
 }) => {
   await page.emulateMedia({ reducedMotion: "no-preference" })
@@ -82,13 +86,37 @@ test("twenty client-side article switches leave zero per-instance creative lifec
   // one-time module state from listeners owned by each canvas instance.
   await page.getByTestId("article-previous").click()
   await expect(page).toHaveURL(/\/articles\/opening-night/)
+  await expect(page.getByTestId("creative-runtime")).toHaveCount(2)
+  await expect.poll(async () => (await lifecycleSnapshot(page)).creativeIntersectionTargets).toBe(4)
   await page.getByTestId("generative-canvas").first().scrollIntoViewIfNeeded()
   await expect.poll(() => page.locator("canvas").count()).toBeGreaterThan(0)
+  await expect
+    .poll(async () => (await lifecycleSnapshot(page)).creativeResizeTargets)
+    .toBeGreaterThan(0)
   await page.getByTestId("article-next").click()
   await expect(page).toHaveURL(/\/articles\/courtside-notes/)
   await expect(page.getByTestId("creative-runtime")).toHaveCount(0)
   await expect(page.locator("canvas")).toHaveCount(0)
-  await expect.poll(async () => (await lifecycleSnapshot(page)).intersectionTargets).toBe(0)
+  // NuxtLink may legitimately keep one visibility-prefetch observer on a connected,
+  // below-fold footer link. The creative leak gate must reject observer ownership by
+  // an unmounted runtime and every detached target without treating that framework
+  // observer as a per-canvas leak.
+  await expect
+    .poll(async () => {
+      const snapshot = await lifecycleSnapshot(page)
+      return {
+        creativeIntersectionTargets: snapshot.creativeIntersectionTargets,
+        detachedIntersectionTargets: snapshot.detachedIntersectionTargets,
+        creativeResizeTargets: snapshot.creativeResizeTargets,
+        detachedResizeTargets: snapshot.detachedResizeTargets
+      }
+    })
+    .toEqual({
+      creativeIntersectionTargets: 0,
+      detachedIntersectionTargets: 0,
+      creativeResizeTargets: 0,
+      detachedResizeTargets: 0
+    })
   const baseline = await lifecycleSnapshot(page)
 
   for (let switchIndex = 1; switchIndex <= 20; switchIndex += 1) {
@@ -114,7 +142,54 @@ test("twenty client-side article switches leave zero per-instance creative lifec
   }
 
   await expect(page).toHaveURL(/\/articles\/courtside-notes/)
-  await expect.poll(() => lifecycleSnapshot(page)).toEqual(baseline)
+  const baselineListenerCounts = baseline.globalListenerTypes.reduce(
+    (counts, type) => counts.set(type, (counts.get(type) ?? 0) + 1),
+    new Map<string, number>()
+  )
+  // A completed cleanup may legitimately release framework observers and queued
+  // animation frames that were present in the baseline. A leak is an increase,
+  // or any retained creative/detached target, so compare positive deltas rather
+  // than requiring transient global scheduler state to remain byte-for-byte equal.
+  await expect
+    .poll(async () => {
+      const snapshot = await lifecycleSnapshot(page)
+      const finalListenerCounts = snapshot.globalListenerTypes.reduce(
+        (counts, type) => counts.set(type, (counts.get(type) ?? 0) + 1),
+        new Map<string, number>()
+      )
+      const unexpectedListenerTypeDelta = Array.from(finalListenerCounts).reduce(
+        (total, [type, count]) =>
+          total + Math.max(0, count - (baselineListenerCounts.get(type) ?? 0)),
+        0
+      )
+      return {
+        globalListenerDelta: Math.max(0, snapshot.globalListeners - baseline.globalListeners),
+        unexpectedListenerTypeDelta,
+        intervalDelta: Math.max(0, snapshot.intervals - baseline.intervals),
+        animationFrameDelta: Math.max(0, snapshot.animationFrames - baseline.animationFrames),
+        intersectionTargetDelta: Math.max(
+          0,
+          snapshot.intersectionTargets - baseline.intersectionTargets
+        ),
+        creativeIntersectionTargets: snapshot.creativeIntersectionTargets,
+        detachedIntersectionTargets: snapshot.detachedIntersectionTargets,
+        resizeTargetDelta: Math.max(0, snapshot.resizeTargets - baseline.resizeTargets),
+        creativeResizeTargets: snapshot.creativeResizeTargets,
+        detachedResizeTargets: snapshot.detachedResizeTargets
+      }
+    })
+    .toEqual({
+      globalListenerDelta: 0,
+      unexpectedListenerTypeDelta: 0,
+      intervalDelta: 0,
+      animationFrameDelta: 0,
+      intersectionTargetDelta: 0,
+      creativeIntersectionTargets: 0,
+      detachedIntersectionTargets: 0,
+      resizeTargetDelta: 0,
+      creativeResizeTargets: 0,
+      detachedResizeTargets: 0
+    })
 })
 
 test("an interrupted reduced-motion route change never hides the completed article DOM", async ({
@@ -184,8 +259,32 @@ async function installLifecycleCounters(page: Page): Promise<void> {
     const globalListenerRecords: GlobalListenerRecord[] = []
     const intervalIds = new Set<number>()
     const animationFrameIds = new Set<number>()
+    const intersectionTargetCounts = new Map<Element, number>()
+    const resizeTargetCounts = new Map<Element, number>()
     let intersectionTargets = 0
     let resizeTargets = 0
+
+    const updateTargetCount = (
+      counts: Map<Element, number>,
+      target: Element,
+      delta: 1 | -1
+    ): void => {
+      const nextCount = (counts.get(target) ?? 0) + delta
+      if (nextCount > 0) {
+        counts.set(target, nextCount)
+      } else {
+        counts.delete(target)
+      }
+    }
+
+    const matchingTargetCount = (
+      counts: Map<Element, number>,
+      predicate: (target: Element) => boolean
+    ): number =>
+      Array.from(counts.entries()).reduce(
+        (total, [target, count]) => total + (predicate(target) ? count : 0),
+        0
+      )
 
     const originalAddEventListener = EventTarget.prototype.addEventListener
     const originalRemoveEventListener = EventTarget.prototype.removeEventListener
@@ -326,6 +425,7 @@ async function installLifecycleCounters(page: Page): Promise<void> {
         if (!observed.has(target)) {
           observed.add(target)
           intersectionTargets += 1
+          updateTargetCount(intersectionTargetCounts, target, 1)
         }
         targets.set(this, observed)
         originalObserve.call(this, target)
@@ -334,6 +434,7 @@ async function installLifecycleCounters(page: Page): Promise<void> {
         const observed = targets.get(this)
         if (observed?.delete(target)) {
           intersectionTargets -= 1
+          updateTargetCount(intersectionTargetCounts, target, -1)
         }
         originalUnobserve.call(this, target)
       }
@@ -341,6 +442,9 @@ async function installLifecycleCounters(page: Page): Promise<void> {
         const observed = targets.get(this)
         if (observed) {
           intersectionTargets -= observed.size
+          for (const target of observed) {
+            updateTargetCount(intersectionTargetCounts, target, -1)
+          }
           observed.clear()
         }
         originalDisconnect.call(this)
@@ -360,6 +464,7 @@ async function installLifecycleCounters(page: Page): Promise<void> {
         if (!observed.has(target)) {
           observed.add(target)
           resizeTargets += 1
+          updateTargetCount(resizeTargetCounts, target, 1)
         }
         targets.set(this, observed)
         originalObserve.call(this, target, options)
@@ -368,6 +473,7 @@ async function installLifecycleCounters(page: Page): Promise<void> {
         const observed = targets.get(this)
         if (observed?.delete(target)) {
           resizeTargets -= 1
+          updateTargetCount(resizeTargetCounts, target, -1)
         }
         originalUnobserve.call(this, target)
       }
@@ -375,6 +481,9 @@ async function installLifecycleCounters(page: Page): Promise<void> {
         const observed = targets.get(this)
         if (observed) {
           resizeTargets -= observed.size
+          for (const target of observed) {
+            updateTargetCount(resizeTargetCounts, target, -1)
+          }
           observed.clear()
         }
         originalDisconnect.call(this)
@@ -394,7 +503,23 @@ async function installLifecycleCounters(page: Page): Promise<void> {
         intervals: intervalIds.size,
         animationFrames: animationFrameIds.size,
         intersectionTargets,
-        resizeTargets
+        creativeIntersectionTargets: matchingTargetCount(
+          intersectionTargetCounts,
+          (target) => target.getAttribute("data-testid") === "creative-runtime"
+        ),
+        detachedIntersectionTargets: matchingTargetCount(
+          intersectionTargetCounts,
+          (target) => !target.isConnected
+        ),
+        resizeTargets,
+        creativeResizeTargets: matchingTargetCount(
+          resizeTargetCounts,
+          (target) => target.getAttribute("data-testid") === "creative-runtime"
+        ),
+        detachedResizeTargets: matchingTargetCount(
+          resizeTargetCounts,
+          (target) => !target.isConnected
+        )
       })
     }
   })

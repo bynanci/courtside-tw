@@ -1,0 +1,29 @@
+flowchart TD
+  subgraph G_L1["L1 · Execution"]
+    N0(["[L1] trigger · Local reader is empty and visually underdeveloped"])
+    N1["[L1] action · Diagnose startup and visual gaps and establish attributable RED"]
+    N2{{"[L1] proof · Attributable local-reader RED baseline"}}
+    N3["[L1] action · Implement bounded public reader demo and lifecycle controls"]
+    N4{{"[L1] proof · Complete loopback reader runtime proof"}}
+    N5["[L1] action · Apply Arena Editorial public-reader presentation"]
+    N6{{"[L1] proof · Local quality and independent review acceptance"}}
+    N7[("[L1] memory · Local reader remediation ledger")]
+  end
+  subgraph G_GLOBAL["Global Policy"]
+    N8(["[GLOBAL] stop · Local reader remediation terminal policy"])
+  end
+  N0 -->|"enables · 7000t"| N1
+  N1 -->|"verifies · 5000t"| N2
+  N2 -->|"enables · 10000t"| N3
+  N3 -->|"verifies · 8000t"| N4
+  N4 -->|"enables · 9000t"| N5
+  N5 -->|"verifies · 8000t"| N6
+  N6 -->|"enables · 4000t"| N8
+  N1 -.->|"records · 2500t"| N7
+  N2 -.->|"records · 2000t"| N7
+  N3 -.->|"records · 2500t"| N7
+  N4 -.->|"records · 2000t"| N7
+  N5 -.->|"records · 2500t"| N7
+  N6 -.->|"records · 2000t"| N7
+  N7 -.->|"reads · 3000t"| N1
+  N7 -.->|"feedback · 3000t"| N1

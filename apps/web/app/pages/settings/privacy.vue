@@ -147,7 +147,7 @@ function login(): void {
 
 .privacy-panel {
   margin-bottom: 2rem;
-  border-top: 1px solid #191916;
+  border-top: 1px solid var(--color-text-primary);
   padding-top: 1.5rem;
 }
 
@@ -164,7 +164,7 @@ function login(): void {
   align-items: flex-start;
   gap: 0.75rem;
   margin-top: 1rem;
-  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-body);
 }
 
 .privacy-confirm input {
@@ -174,17 +174,18 @@ function login(): void {
 
 .privacy-panel .button-link {
   min-height: 44px;
-  border: 1px solid #191916;
+  border: 1px solid var(--color-text-primary);
   background: transparent;
   cursor: pointer;
 }
 
 .privacy-panel--danger .button-link {
-  background: var(--accent);
-  color: #fff;
+  border-color: var(--color-danger);
+  background: var(--color-danger);
+  color: var(--color-on-danger);
 }
 
 .privacy-error {
-  color: var(--accent);
+  color: var(--color-danger);
 }
 </style>
