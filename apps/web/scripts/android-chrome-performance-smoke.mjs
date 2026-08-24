@@ -397,24 +397,75 @@ function measureOffscreenPause(page, targetIndex) {
 
 async function preloadCreativeRuntime(page, runtime) {
   const placement = await runtime.evaluate((element) => {
-    document.documentElement.style.scrollBehavior = "auto"
     const viewportHeight = window.innerHeight || document.documentElement.clientHeight
     const rectangle = element.getBoundingClientRect()
+    const originalInlineTransform = element.style.transform
+    const originalComputedTransform = getComputedStyle(element).transform
+    if (originalComputedTransform !== "none") {
+      throw new Error(
+        `Android creative preload requires an untransformed host, received: ${originalComputedTransform}`
+      )
+    }
     const preloadGap = Math.max(32, Math.min(96, Math.floor(viewportHeight / 8)))
-    const documentTop = window.scrollY + rectangle.top
-    const requestedScrollTop = Math.max(0, documentTop - viewportHeight - preloadGap)
-    window.scrollTo({ top: requestedScrollTop, behavior: "auto" })
-    return { preloadGap, requestedScrollTop }
+    const translateY = viewportHeight + preloadGap - rectangle.top
+    element.style.transform = `translateY(${translateY}px)`
+    return {
+      originalInlineTransform,
+      originalComputedTransform,
+      originalTop: rectangle.top,
+      preloadGap,
+      translateY
+    }
   })
 
-  await expect
-    .poll(() => runtime.getAttribute("data-runtime-near-viewport"), { timeout: 10_000 })
-    .toBe("true")
-  await expect
-    .poll(() => runtime.getAttribute("data-runtime-status"), { timeout: 10_000 })
-    .toBe("paused")
+  let receipt
+  try {
+    await expect
+      .poll(() => runtime.getAttribute("data-runtime-near-viewport"), { timeout: 10_000 })
+      .toBe("true")
+    await expect
+      .poll(() => runtime.getAttribute("data-runtime-status"), { timeout: 10_000 })
+      .toBe("paused")
 
-  const receipt = await runtime.evaluate((element, requestedPlacement) => {
+    receipt = await captureCreativePreloadReceipt(runtime, placement)
+    if (
+      receipt.nearViewport !== "true" ||
+      receipt.status !== "paused" ||
+      receipt.visibleHeight !== 0 ||
+      receipt.top < receipt.viewportHeight ||
+      receipt.top >= receipt.viewportHeight * 2 ||
+      receipt.canvasCount !== 0 ||
+      receipt.runningCount !== 0
+    ) {
+      throw new Error(`Android creative preload boundary is invalid: ${JSON.stringify(receipt)}`)
+    }
+  } finally {
+    await runtime.evaluate((element, placement) => {
+      element.style.transform = placement.originalInlineTransform
+    }, placement)
+  }
+
+  await page.evaluate(
+    () =>
+      new Promise((resolve) => {
+        requestAnimationFrame(() => requestAnimationFrame(resolve))
+      })
+  )
+  const restored = await captureCreativePreloadReceipt(runtime, placement)
+  if (
+    restored.inlineTransform !== placement.originalInlineTransform ||
+    restored.visibleHeight !== 0 ||
+    restored.canvasCount !== 0 ||
+    restored.runningCount !== 0
+  ) {
+    throw new Error(`Android creative preload restoration is invalid: ${JSON.stringify(restored)}`)
+  }
+
+  return { ...receipt, restored }
+}
+
+function captureCreativePreloadReceipt(runtime, placement) {
+  return runtime.evaluate((element, requestedPlacement) => {
     const rectangle = element.getBoundingClientRect()
     const viewportHeight = window.innerHeight || document.documentElement.clientHeight
     const visibleHeight = Math.max(
@@ -429,26 +480,13 @@ async function preloadCreativeRuntime(page, runtime) {
       visibleHeight,
       nearViewport: element.getAttribute("data-runtime-near-viewport"),
       status: element.getAttribute("data-runtime-status"),
+      inlineTransform: element.style.transform,
       canvasCount: element.querySelectorAll("canvas").length,
       runningCount: document.querySelectorAll(
         '[data-testid="creative-runtime"][data-runtime-status="running"]'
       ).length
     }
   }, placement)
-
-  if (
-    receipt.nearViewport !== "true" ||
-    receipt.status !== "paused" ||
-    receipt.visibleHeight !== 0 ||
-    receipt.top < receipt.viewportHeight ||
-    receipt.top >= receipt.viewportHeight * 2 ||
-    receipt.canvasCount !== 0 ||
-    receipt.runningCount !== 0
-  ) {
-    throw new Error(`Android creative preload boundary is invalid: ${JSON.stringify(receipt)}`)
-  }
-
-  return receipt
 }
 
 function measureBackgroundEventPause(page, targetIndex) {
