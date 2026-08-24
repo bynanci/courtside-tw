@@ -26,6 +26,20 @@ const coreRoutes = [
   { id: "article", path: "/articles/opening-night?issue=issue-2026-01" },
   { id: "library", path: "/library" }
 ] as const
+const expectedScreenshotPublicMedia = new Map<string, readonly string[]>([
+  ["home", ["/media/issues/issue-2026-01/cover.webp"]],
+  ["issue", ["/media/issues/issue-2026-01/cover.webp"]],
+  [
+    "article",
+    [
+      "/media/published/opening-wide.webp",
+      "/media/published/opening-gallery-1.webp",
+      "/media/published/opening-gallery-2.webp",
+      "/media/published/opening-generative-wide.webp",
+      "/media/published/opening-generative-wide.webp"
+    ]
+  ]
+])
 
 function writeAccessibilityArtifact(fileName: string, content: string): void {
   mkdirSync(accessibilityArtifactDirectory, { recursive: true })
@@ -44,6 +58,44 @@ async function seriousAxeViolations(page: Page) {
   return report.violations.filter(
     (violation) => violation.impact === "serious" || violation.impact === "critical"
   )
+}
+
+type PublicMediaEvidence = {
+  src: string
+  naturalWidth: number
+  naturalHeight: number
+}
+
+async function requireLoadedPublicMedia(page: Page): Promise<PublicMediaEvidence[]> {
+  const images = page.locator('#main-content img[src*="/media/"]')
+  const imageCount = await images.count()
+
+  for (let index = 0; index < imageCount; index += 1) {
+    const image = images.nth(index)
+    await image.scrollIntoViewIfNeeded()
+    await expect
+      .poll(() =>
+        image.evaluate((element) => {
+          const target = element as HTMLImageElement
+          return target.complete ? target.naturalWidth : 0
+        })
+      )
+      .toBeGreaterThan(0)
+    await image.evaluate((element) => (element as HTMLImageElement).decode())
+  }
+
+  const evidence = await images.evaluateAll((elements) =>
+    elements.map((element) => {
+      const image = element as HTMLImageElement
+      return {
+        src: new URL(image.currentSrc || image.src, document.baseURI).pathname,
+        naturalWidth: image.naturalWidth,
+        naturalHeight: image.naturalHeight
+      }
+    })
+  )
+  await page.evaluate(() => window.scrollTo(0, 0))
+  return evidence
 }
 
 async function tabUntilFocused(page: Page, target: Locator, maximumTabs = 40): Promise<number> {
@@ -207,11 +259,19 @@ for (const viewportWidth of [320, 375, 412, 640, 768, 1024, 1440] as const) {
       clientWidth: number
       scrollWidth: number
       clippedControls: string[]
+      publicMedia: PublicMediaEvidence[]
       screenshot: string | null
     }> = []
 
     for (const route of coreRoutes) {
       await page.goto(route.path, { waitUntil: "networkidle" })
+      const publicMedia = await requireLoadedPublicMedia(page)
+      const expectedPublicMedia = expectedScreenshotPublicMedia.get(route.id)
+      if (expectedPublicMedia) {
+        expect(publicMedia.map((media) => media.src).sort()).toEqual(
+          [...expectedPublicMedia].sort()
+        )
+      }
       const layout = await page.evaluate((selector) => {
         const clippedControls = Array.from(
           document.querySelectorAll<HTMLElement>(selector)
@@ -256,7 +316,7 @@ for (const viewportWidth of [320, 375, 412, 640, 768, 1024, 1440] as const) {
           animations: "disabled"
         })
       }
-      routeEvidence.push({ route: route.id, ...layout, screenshot })
+      routeEvidence.push({ route: route.id, ...layout, publicMedia, screenshot })
     }
 
     writeAccessibilityArtifact(

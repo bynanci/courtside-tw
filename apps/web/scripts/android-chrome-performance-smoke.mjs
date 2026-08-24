@@ -885,7 +885,7 @@ function requireRemainingAutomationMilliseconds(deadline, maximumMilliseconds, l
   return timeoutMilliseconds
 }
 
-function probeChromeContentSurface(deadline) {
+function probePixelLauncherAnrWindow(deadline) {
   const startedAt = performance.now()
   const displaySize = requireExpectedAndroidDisplaySize(deadline)
   const windowReceipt = adbWithTimeout(
@@ -899,17 +899,20 @@ function probeChromeContentSurface(deadline) {
     "window",
     "windows"
   )
-  const systemWindow = classifyPixelLauncherAnrWindow(windowReceipt, displaySize)
-  if (systemWindow.status !== "absent") {
-    return {
-      ...systemWindow,
-      probeSource: "window-manager",
-      probeMilliseconds: performance.now() - startedAt,
-      hierarchyBytes: Buffer.byteLength(windowReceipt),
-      displaySize
-    }
+  return {
+    ...classifyPixelLauncherAnrWindow(windowReceipt, displaySize),
+    probeSource: "window-manager",
+    probeMilliseconds: performance.now() - startedAt,
+    hierarchyBytes: Buffer.byteLength(windowReceipt),
+    displaySize
   }
+}
 
+function probeChromeContentSurface(
+  deadline,
+  displaySize = requireExpectedAndroidDisplaySize(deadline)
+) {
+  const startedAt = performance.now()
   const probeTimeoutMilliseconds = requireRemainingAutomationMilliseconds(
     deadline,
     CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS,
@@ -985,10 +988,10 @@ function acquireChromeSurfaceActivityWithinDeadline(deadline, label) {
   })
 }
 
-function probeChromeContentSurfaceAtActivityBoundary(deadline) {
+function probeChromeContentSurfaceAtActivityBoundary(deadline, displaySize) {
   return captureChromeSurfaceProbeBoundaryWithActivityAcquisition({
     acquireActivity: (label) => acquireChromeSurfaceActivityWithinDeadline(deadline, label),
-    probeSurface: () => probeChromeContentSurface(deadline)
+    probeSurface: () => probeChromeContentSurface(deadline, displaySize)
   })
 }
 
@@ -1018,11 +1021,32 @@ function surfaceReceipt(surface) {
 
 async function normalizeChromeContentSurface() {
   const deadline = performance.now() + CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS
+  const systemWindowPreflight = probePixelLauncherAnrWindow(deadline)
+  const preflightDismissedPrompts = []
+  let preflightPixelLauncherAnrWaitTap = null
+
+  if (systemWindowPreflight.status === "known-pixel-launcher-anr") {
+    executeBoundChromeSurfaceTap({
+      deadlineAt: deadline,
+      maximumMilliseconds: CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS,
+      dismissTap: systemWindowPreflight.dismissTap,
+      label: "Pixel Launcher ANR wait tap",
+      remainingMilliseconds: requireRemainingAutomationMilliseconds,
+      runAdb: adbWithTimeout
+    })
+    preflightDismissedPrompts.push(systemWindowPreflight.status)
+    preflightPixelLauncherAnrWaitTap = systemWindowPreflight.dismissTap
+  } else if (systemWindowPreflight.status !== "absent") {
+    throw new Error("Android Chrome content surface is blocked by an unrecognized native modal")
+  }
+
   const normalization = await normalizeChromeAutomationSurfaceWithinDeadline({
     deadlineAt: deadline,
     now: () => performance.now(),
     maximumPollMilliseconds: CHROME_AUTOMATION_POLL_MILLISECONDS,
-    probeSurface: () => probeChromeContentSurfaceAtActivityBoundary(deadline),
+    dismissedPrompts: preflightDismissedPrompts,
+    probeSurface: () =>
+      probeChromeContentSurfaceAtActivityBoundary(deadline, systemWindowPreflight.displaySize),
     tap: (dismissTap, label) =>
       executeBoundChromeSurfaceTap({
         deadlineAt: deadline,
@@ -1035,17 +1059,23 @@ async function normalizeChromeContentSurface() {
     delay: (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds))
   })
   requireRemainingAutomationMilliseconds(deadline, 1, "surface acceptance")
-  const dismissedPromptStatuses = new Set(normalization.dismissedPrompts)
+  const dismissedPromptStatuses = new Set([
+    ...preflightDismissedPrompts,
+    ...normalization.dismissedPrompts
+  ])
   return {
     status: normalization.surface.status,
     dismissedKnownPrompt: dismissedPromptStatuses.has("known-notification-prompt"),
     dismissTap: normalization.dismissedTaps["known-notification-prompt"] ?? null,
     dismissedPixelLauncherAnr: dismissedPromptStatuses.has("known-pixel-launcher-anr"),
-    pixelLauncherAnrWaitTap: normalization.dismissedTaps["known-pixel-launcher-anr"] ?? null,
+    pixelLauncherAnrWaitTap:
+      preflightPixelLauncherAnrWaitTap ??
+      normalization.dismissedTaps["known-pixel-launcher-anr"] ??
+      null,
     normalizationActivity: normalization.normalizationActivity,
     activityBefore: normalization.surface.activityBefore,
     activityAfter: normalization.surface.activityAfter,
-    attempts: normalization.attempts.map(surfaceReceipt)
+    attempts: [surfaceReceipt(systemWindowPreflight), ...normalization.attempts.map(surfaceReceipt)]
   }
 }
 

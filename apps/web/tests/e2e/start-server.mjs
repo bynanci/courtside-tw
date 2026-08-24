@@ -278,6 +278,35 @@ const articleProjections = new Map([
   ]
 ])
 
+const publicMediaFixtures = new Map([
+  [
+    issue.cover.url,
+    {
+      width: issue.cover.width,
+      height: issue.cover.height,
+      label: "ISSUE 01 / HOME COURT"
+    }
+  ],
+  ...Array.from(articleProjections.values()).flatMap((article) =>
+    article.media.map((media) => [
+      media.url,
+      {
+        width: media.width,
+        height: media.height,
+        label: media.url.includes("gallery-1")
+          ? "PASS THE BALL"
+          : media.url.includes("gallery-2")
+            ? "HOME STANDS"
+            : media.url.includes("generative")
+              ? "COURT PULSE"
+              : media.url.includes("future")
+                ? "SAFE POSTER"
+                : "HOME COURT"
+      }
+    ])
+  )
+])
+
 let studioState = createStudioState("DRAFT")
 let studioIssueState = createStudioIssueState()
 let studioIssueSections = createStudioIssueSections()
@@ -457,6 +486,34 @@ function writeProblem(response, status, detail, code) {
     code,
     errors: []
   })
+}
+
+function writePublicMediaFixture(response, fixture) {
+  const { width, height, label } = fixture
+  const inset = Math.round(width * 0.07)
+  const courtTop = Math.round(height * 0.38)
+  const courtBottom = Math.round(height * 0.9)
+  const centerX = Math.round(width / 2)
+  const centerY = Math.round((courtTop + courtBottom) / 2)
+  const titleY = Math.round(height * 0.2)
+  const labelY = Math.round(height * 0.27)
+  const titleSize = Math.round(Math.min(width, height) * 0.11)
+  const labelSize = Math.round(Math.min(width, height) * 0.025)
+  const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}" viewBox="0 0 ${width} ${height}">
+  <rect width="${width}" height="${height}" fill="#080808"/>
+  <rect x="${inset}" y="${courtTop}" width="${width - inset * 2}" height="${courtBottom - courtTop}" rx="${Math.round(width * 0.018)}" fill="#151515" stroke="#f2eee5" stroke-width="${Math.max(4, Math.round(width * 0.006))}"/>
+  <path d="M ${centerX} ${courtTop} V ${courtBottom}" stroke="#f2eee5" stroke-width="${Math.max(3, Math.round(width * 0.004))}" opacity=".72"/>
+  <circle cx="${centerX}" cy="${centerY}" r="${Math.round(width * 0.105)}" fill="none" stroke="#e64d32" stroke-width="${Math.max(5, Math.round(width * 0.008))}"/>
+  <path d="M ${inset} ${centerY} H ${centerX - Math.round(width * 0.105)} M ${centerX + Math.round(width * 0.105)} ${centerY} H ${width - inset}" stroke="#b8b1a7" stroke-width="${Math.max(3, Math.round(width * 0.004))}" opacity=".62"/>
+  <circle cx="${Math.round(width * 0.84)}" cy="${Math.round(height * 0.18)}" r="${Math.round(width * 0.065)}" fill="#e64d32"/>
+  <text x="${inset}" y="${titleY}" fill="#f2eee5" font-family="Arial Narrow, Arial, sans-serif" font-size="${titleSize}" font-weight="800" letter-spacing="-2">COURTSIDE TW</text>
+  <text x="${inset}" y="${labelY}" fill="#e64d32" font-family="Arial, sans-serif" font-size="${labelSize}" font-weight="700" letter-spacing="4">${label}</text>
+</svg>`
+  response.writeHead(200, {
+    "content-type": "image/svg+xml; charset=utf-8",
+    "cache-control": "public, max-age=3600"
+  })
+  response.end(svg)
 }
 
 function scheduledUtc(publishAt, timezone) {
@@ -1089,8 +1146,13 @@ const apiServer = createServer(async (request, response) => {
     return
   }
   if (requestUrl.pathname.startsWith("/media/")) {
-    response.writeHead(204)
-    response.end()
+    const fixture = publicMediaFixtures.get(requestUrl.pathname)
+    if (fixture) {
+      writePublicMediaFixture(response, fixture)
+    } else {
+      response.writeHead(204)
+      response.end()
+    }
     return
   }
   writeJson(response, 404, {

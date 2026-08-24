@@ -957,7 +957,17 @@ export async function normalizeChromeAutomationSurfaceWithinDeadline(rawDependen
   }
 
   const attempts = []
+  const initialDismissedPrompts = dependencies.dismissedPrompts ?? []
+  if (!Array.isArray(initialDismissedPrompts)) {
+    throw new Error("initial dismissed Chrome automation prompts must be an array")
+  }
   const dismissedPromptStatuses = new Set()
+  for (const prompt of initialDismissedPrompts) {
+    if (!KNOWN_CHROME_AUTOMATION_PROMPTS.includes(prompt) || dismissedPromptStatuses.has(prompt)) {
+      throw new Error("initial dismissed Chrome automation prompt identity is invalid")
+    }
+    dismissedPromptStatuses.add(prompt)
+  }
   const dismissedTaps = {}
   let normalizationActivity = null
 
