@@ -11,11 +11,13 @@
   "scripts": {
     "setup": "make setup",
     "dev": "make dev",
+    "demo": "node apps/web/scripts/start-reader-demo.mjs",
     "format": "prettier --write \"apps/**/*.{js,mjs,cjs,ts,tsx,vue,json}\" \"packages/**/*.{js,mjs,cjs,ts,tsx,vue,json}\" \"scripts/**/*.{js,mjs,cjs}\" \"contracts/**/*.{json,yaml,yml}\" \"*.{js,mjs,cjs,json}\"",
     "format:check": "prettier --check \"apps/**/*.{js,mjs,cjs,ts,tsx,vue,json}\" \"packages/**/*.{js,mjs,cjs,ts,tsx,vue,json}\" \"scripts/**/*.{js,mjs,cjs}\" \"contracts/**/*.{json,yaml,yml}\" \"*.{js,mjs,cjs,json}\"",
     "lint": "make lint",
     "typecheck": "make typecheck",
     "test": "make test",
+    "test:demo": "node apps/web/scripts/verify-reader-demo.mjs",
     "contract": "make contract",
     "verify": "make verify",
     "contract:schema": "node scripts/validate-content-schema.mjs",

@@ -146,10 +146,10 @@ async function removeIssue(issue: InstalledOfflineIssue): Promise<void> {
   display: grid;
   gap: 1.25rem;
   margin-bottom: 3rem;
-  border: 1px solid #d8d0c3;
+  border: 1px solid var(--color-border-subtle);
   border-left: 0.3rem solid var(--accent);
   padding: clamp(1.25rem, 3vw, 2rem);
-  background: #eee9df;
+  background: var(--color-bg-surface);
 }
 
 .offline-library-panel h2 {
@@ -163,7 +163,7 @@ async function removeIssue(issue: InstalledOfflineIssue): Promise<void> {
 
 .offline-library-panel__storage {
   color: var(--muted);
-  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 0.8125rem;
 }
 
@@ -181,7 +181,7 @@ async function removeIssue(issue: InstalledOfflineIssue): Promise<void> {
   align-items: center;
   justify-content: space-between;
   gap: 1rem;
-  border-top: 1px solid #d8d0c3;
+  border-top: 1px solid var(--color-border-subtle);
   padding: 1rem 0;
 }
 
@@ -195,16 +195,16 @@ async function removeIssue(issue: InstalledOfflineIssue): Promise<void> {
 .offline-library-panel__list span,
 .offline-library-panel__list time {
   color: var(--muted);
-  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+  font-family: var(--font-body);
   font-size: 0.8125rem;
 }
 
 .offline-library-panel button {
   min-height: 2.75rem;
-  border: 1px solid #191916;
+  border: 1px solid var(--color-text-primary);
   padding: 0.65rem 0.9rem;
   background: transparent;
-  color: #191916;
+  color: var(--color-text-primary);
   cursor: pointer;
   font: inherit;
   font-weight: 700;
@@ -221,6 +221,6 @@ async function removeIssue(issue: InstalledOfflineIssue): Promise<void> {
 }
 
 .offline-library-panel__error {
-  color: #8c2d20;
+  color: var(--color-danger);
 }
 </style>

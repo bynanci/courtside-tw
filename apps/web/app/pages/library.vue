@@ -178,7 +178,7 @@ function login(): void {
 
 .library-section {
   margin-bottom: 3rem;
-  border-top: 1px solid #191916;
+  border-top: 1px solid var(--color-text-primary);
   padding-top: 1.5rem;
 }
 
@@ -189,7 +189,7 @@ function login(): void {
 }
 
 .library-list li {
-  border-bottom: 1px solid #d8d0c3;
+  border-bottom: 1px solid var(--color-border-subtle);
   padding: 1rem 0;
 }
 

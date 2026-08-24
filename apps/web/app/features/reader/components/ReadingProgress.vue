@@ -1,11 +1,5 @@
 <script setup lang="ts">
-import { readerMotion } from "../../motion/reader-motion"
-
-const props = defineProps<{ percent: number; motionMode: "full" | "reduced" }>()
-const barStyle = computed(() => ({
-  transform: `scaleX(${props.percent / 100})`,
-  transitionDuration: `${readerMotion.readingProgress[props.motionMode].durationMs}ms`
-}))
+defineProps<{ percent: number; motionMode: "full" | "reduced" }>()
 </script>
 
 <template>
@@ -20,7 +14,16 @@ const barStyle = computed(() => ({
     :aria-valuenow="percent"
     :data-motion="motionMode"
   >
-    <span class="reading-progress__bar" :style="barStyle" />
+    <svg
+      class="reading-progress__graphic"
+      viewBox="0 0 100 1"
+      preserveAspectRatio="none"
+      aria-hidden="true"
+      focusable="false"
+    >
+      <rect class="reading-progress__track" width="100" height="1" />
+      <rect class="reading-progress__bar" :width="percent" height="1" />
+    </svg>
     <span class="sr-only">已閱讀 {{ percent }}%</span>
   </div>
 </template>

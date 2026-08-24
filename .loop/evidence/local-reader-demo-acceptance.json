@@ -1,0 +1,21 @@
+{
+  "schema_version": "courtside-evidence/v1",
+  "recorded_at": "2026-08-23T02:43:43Z",
+  "baseline_main": "9fad116fb46817c4cf742c705e4113a9dc92d252",
+  "result": "local_acceptance_pass",
+  "checks": [
+    { "name": "web unit and integration suite", "result": "pass", "detail": "122 of 122 tests passed" },
+    { "name": "web lint", "result": "pass", "detail": "eslint --max-warnings=0" },
+    { "name": "web typecheck", "result": "pass", "detail": "nuxt typecheck" },
+    { "name": "reader demo runtime", "result": "pass", "detail": "build, SSR journey, CSP, media, read-only boundary and port reuse" },
+    { "name": "diff hygiene", "result": "pass", "detail": "git diff --check" },
+    { "name": "independent demo re-review", "result": "pass", "detail": "initial CSP, Nitro bind, readiness, lifecycle and cross-platform blockers closed" },
+    { "name": "independent UI review", "result": "pass_after_remediation", "detail": "adaptive surfaces, selector cascade, hero contrast and target sizing repaired" }
+  ],
+  "browser_evidence": {
+    "status": "NOT_RUN",
+    "reason": "No installed browser executable; Playwright browser download was blocked by the restricted runtime network.",
+    "must_not_be_inferred": ["pixel-perfect screenshots", "real browser bounding boxes", "native assistive-technology results"]
+  },
+  "release_boundary": "Local acceptance does not authorize a protected merge, production deployment or mutation of draft PR 123."
+}

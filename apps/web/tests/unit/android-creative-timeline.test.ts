@@ -24,6 +24,7 @@ import {
   captureChromeSurfaceProbeBoundary,
   classifyAndroidActivityLine,
   classifyChromeAutomationSurface,
+  classifyPixelLauncherAnrWindow,
   evaluateAndroidBackgroundTimeline,
   evaluateAndroidForegroundFrameTimeline,
   evaluateAndroidOffscreenTimeline,
@@ -79,6 +80,19 @@ const ATTEMPT_3_PIXEL_LAUNCHER_ANR_XML = `<?xml version='1.0' encoding='UTF-8' s
     </node>
   </node>
 </hierarchy>`
+
+const ATTEMPT_3_PIXEL_LAUNCHER_ANR_WINDOWS = `WINDOW MANAGER WINDOWS
+  Window #6 Window{fe82d37 u0 Application Not Responding: com.google.android.apps.nexuslauncher}:
+    mOwnerUid=1000 showForAllUsers=true package=android appop=SYSTEM_ALERT_WINDOW
+    mAttrs={(0,0)(wrapxwrap) gr=CENTER ty=SYSTEM_ALERT fmt=TRANSLUCENT}
+    Requested w=1024 h=506 mLayoutSeq=145
+    mViewVisibility=0x0 mHaveFrame=true mObscured=false
+    mHasSurface=true isReadyForDisplay()=true
+    Frames: parent=[0,136][1080,2337] display=[0,136][1080,2337] frame=[28,983][1052,1489] last=[28,983][1052,1489] insetsChanged=false
+    isOnScreen=true
+    isVisible=true
+  Window #7 Window{fbbd2ae u0 ShellDropTarget}:
+    mOwnerUid=10181 showForAllUsers=true package=com.android.systemui appop=SYSTEM_ALERT_WINDOW`
 
 type ActivityTransition = {
   at: number
@@ -555,6 +569,23 @@ test("native Android performance harness invokes the behavioral boundaries", () 
   match(performanceHarness, /const ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS = 250\b/u)
   match(performanceHarness, /const ANDROID_ACTIVITY_RECEIPT_HISTORY_LIMIT = 64\b/u)
   match(performanceHarness, /const CHROME_AUTOMATION_POLL_MILLISECONDS = 100\b/u)
+  const systemWindowProbeIndex = performanceHarness.indexOf(
+    "classifyPixelLauncherAnrWindow(windowReceipt, displaySize)"
+  )
+  const uiAutomatorProbeIndex = performanceHarness.indexOf(
+    'spawnSync("adb", ["exec-out", "uiautomator", "dump", "/dev/tty"]'
+  )
+  equal(systemWindowProbeIndex >= 0, true)
+  equal(uiAutomatorProbeIndex >= 0, true)
+  equal(systemWindowProbeIndex < uiAutomatorProbeIndex, true)
+  match(
+    performanceHarness,
+    /const systemWindowPreflight = probePixelLauncherAnrWindow\(deadline\)[\s\S]*executeBoundChromeSurfaceTap\(\{[\s\S]*dismissedPrompts: preflightDismissedPrompts[\s\S]*probeChromeContentSurfaceAtActivityBoundary\(deadline, systemWindowPreflight\.displaySize\)/u
+  )
+  match(
+    performanceHarness,
+    /attempts:\s*\[\s*surfaceReceipt\(systemWindowPreflight\),\s*\.\.\.normalization\.attempts\.map\(surfaceReceipt\)\s*\]/u
+  )
   match(performanceHarness, /const CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS = 5_000\b/u)
   match(
     performanceHarness,
@@ -576,7 +607,7 @@ test("native Android performance harness invokes the behavioral boundaries", () 
   )
   match(
     performanceHarness,
-    /probeSurface:\s*\(\)\s*=>\s*probeChromeContentSurfaceAtActivityBoundary\(deadline\)/u
+    /probeSurface:\s*\(\)\s*=>\s*\n?\s*probeChromeContentSurfaceAtActivityBoundary\(deadline, systemWindowPreflight\.displaySize\)/u
   )
   doesNotMatch(
     performanceHarness,
@@ -1055,6 +1086,72 @@ test("the exact attempt 3 Pixel Launcher ANR resolves only its safe Wait target"
     status: "known-pixel-launcher-anr",
     dismissTap: { x: 540, y: 1363 }
   })
+})
+
+test("the exact Pixel Launcher ANR window bypasses UI-idle waiting with the same safe target", () => {
+  deepEqual(classifyPixelLauncherAnrWindow(ATTEMPT_3_PIXEL_LAUNCHER_ANR_WINDOWS, PIXEL_7_DISPLAY), {
+    status: "known-pixel-launcher-anr",
+    dismissTap: { x: 540, y: 1363 }
+  })
+  deepEqual(classifyPixelLauncherAnrWindow("WINDOW MANAGER WINDOWS", PIXEL_7_DISPLAY), {
+    status: "absent"
+  })
+})
+
+test("Pixel Launcher ANR window preflight fails closed on identity or geometry drift", () => {
+  const fixtures = [
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_WINDOWS.replace(
+      "com.google.android.apps.nexuslauncher",
+      "com.android.systemui"
+    ),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_WINDOWS.replace("mOwnerUid=1000", "mOwnerUid=10176"),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_WINDOWS.replace("package=android", "package=com.android.systemui"),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_WINDOWS.replace("ty=SYSTEM_ALERT", "ty=APPLICATION"),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_WINDOWS.replace(
+      "Requested w=1024 h=506",
+      "Requested w=1023 h=506"
+    ),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_WINDOWS.replace("mObscured=false", "mObscured=true"),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_WINDOWS.replace(
+      "isReadyForDisplay()=true",
+      "isReadyForDisplay()=false"
+    ),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_WINDOWS.replace(
+      "frame=[28,983][1052,1489]",
+      "frame=[28,982][1052,1489]"
+    ),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_WINDOWS.replace("isOnScreen=true", "isOnScreen=false"),
+    ATTEMPT_3_PIXEL_LAUNCHER_ANR_WINDOWS.replace("isVisible=true", "isVisible=false"),
+    `${ATTEMPT_3_PIXEL_LAUNCHER_ANR_WINDOWS}
+  Window #8 Window{abc123 u0 Application Not Responding: com.google.android.apps.nexuslauncher}:`
+  ]
+
+  for (const fixture of fixtures) {
+    deepEqual(classifyPixelLauncherAnrWindow(fixture, PIXEL_7_DISPLAY), {
+      status: "blocked",
+      reason: "unrecognized-or-malformed-system-error-window"
+    })
+  }
+  deepEqual(
+    classifyPixelLauncherAnrWindow(
+      "Window #1 Window{abc123 u0 Application Not Responding: com.android.systemui}:",
+      PIXEL_7_DISPLAY
+    ),
+    {
+      status: "blocked",
+      reason: "unrecognized-or-malformed-system-error-window"
+    }
+  )
+  deepEqual(
+    classifyPixelLauncherAnrWindow(ATTEMPT_3_PIXEL_LAUNCHER_ANR_WINDOWS, {
+      width: 1080,
+      height: 2399
+    }),
+    {
+      status: "blocked",
+      reason: "unrecognized-or-malformed-system-error-window"
+    }
+  )
 })
 
 test("Pixel Launcher ANR normalization fails closed on any identity or geometry drift", () => {
@@ -1647,11 +1744,11 @@ test("production binds c8bb activity acquisition to existing normalization limit
   )
   match(
     performanceHarness,
-    /captureChromeSurfaceProbeBoundaryWithActivityAcquisition\(\{[\s\S]*acquireActivity: \(label\) => acquireChromeSurfaceActivityWithinDeadline\(deadline, label\)[\s\S]*probeSurface: \(\) => probeChromeContentSurface\(deadline\)/u
+    /captureChromeSurfaceProbeBoundaryWithActivityAcquisition\(\{[\s\S]*acquireActivity: \(label\) => acquireChromeSurfaceActivityWithinDeadline\(deadline, label\)[\s\S]*probeSurface: \(\) => probeChromeContentSurface\(deadline, displaySize\)/u
   )
   doesNotMatch(
     performanceHarness,
-    /function probeChromeContentSurfaceAtActivityBoundary\(deadline\) \{[\s\S]*captureChromeSurfaceProbeBoundaryAttempt/u
+    /function probeChromeContentSurfaceAtActivityBoundary\(deadline, displaySize\) \{[\s\S]*captureChromeSurfaceProbeBoundaryAttempt/u
   )
   match(
     performanceHarness,
@@ -1801,6 +1898,72 @@ test("native surface normalization requires fresh probes after each bounded prom
   equal(probeCalls, 3)
   equal(activityReads, 0)
   deepEqual(taps, ["Pixel Launcher ANR wait tap", { x: 540, y: 1363 }])
+})
+
+test("window-manager preflight seeds one dismissed ANR without a second tap", async () => {
+  const normalizeChromeAutomationSurfaceWithinDeadline = Reflect.get(
+    timelineHelpers,
+    "normalizeChromeAutomationSurfaceWithinDeadline"
+  )
+  equal(typeof normalizeChromeAutomationSurfaceWithinDeadline, "function")
+  if (typeof normalizeChromeAutomationSurfaceWithinDeadline !== "function") return
+
+  let nowAt = 0
+  let probeCalls = 0
+  let tapCalls = 0
+  const surfaces = [
+    {
+      status: "known-pixel-launcher-anr",
+      dismissTap: { x: 540, y: 1363 },
+      activityBefore: ATTEMPT_1_RESUMED_ACTIVITY,
+      activityAfter: ATTEMPT_1_RESUMED_ACTIVITY
+    },
+    {
+      status: "clear",
+      activityBefore: ATTEMPT_1_RESUMED_ACTIVITY,
+      activityAfter: ATTEMPT_1_RESUMED_ACTIVITY
+    }
+  ]
+  const result = await normalizeChromeAutomationSurfaceWithinDeadline({
+    deadlineAt: 1_000,
+    now: () => nowAt,
+    maximumPollMilliseconds: 100,
+    dismissedPrompts: ["known-pixel-launcher-anr"],
+    probeSurface: () => {
+      probeCalls += 1
+      const surface = surfaces.shift()
+      if (!surface) throw new Error("unexpected surface probe")
+      return surface
+    },
+    tap: () => {
+      tapCalls += 1
+    },
+    delay: async (milliseconds: number) => {
+      await Promise.resolve()
+      nowAt += milliseconds
+    }
+  })
+
+  equal(probeCalls, 2)
+  equal(tapCalls, 0)
+  deepEqual(result.dismissedPrompts, ["known-pixel-launcher-anr"])
+  deepEqual(result.dismissedTaps, {})
+  equal(result.surface.status, "clear")
+  equal(result.normalizationActivity, ATTEMPT_1_RESUMED_ACTIVITY)
+
+  await rejects(
+    () =>
+      normalizeChromeAutomationSurfaceWithinDeadline({
+        deadlineAt: 1_000,
+        now: () => 0,
+        maximumPollMilliseconds: 100,
+        dismissedPrompts: ["known-pixel-launcher-anr", "known-pixel-launcher-anr"],
+        probeSurface: () => surfaces[0],
+        tap: () => {},
+        delay: async () => {}
+      }),
+    /initial dismissed Chrome automation prompt identity is invalid/u
+  )
 })
 
 test("native surface normalization retains one Chrome authority across prompt and clear attempts", () => {
@@ -2180,7 +2343,7 @@ test("cold UIAutomator can use the remaining normalization envelope without wide
   )
   match(
     performanceHarness,
-    /function probeChromeContentSurface\(deadline\) \{[\s\S]*requireRemainingAutomationMilliseconds\(\s*deadline,\s*CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS,\s*"UIAutomator probe"/u
+    /const probeTimeoutMilliseconds = requireRemainingAutomationMilliseconds\(\s*deadline,\s*CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS,\s*"UIAutomator probe"/u
   )
   match(
     performanceHarness,
@@ -3478,11 +3641,11 @@ test("Android smoke diagnostics preserve the failing producer and bound probes",
   match(performanceHarness, /timeout: probeTimeoutMilliseconds/u)
   match(
     performanceHarness,
-    /function probeChromeContentSurfaceAtActivityBoundary\(deadline\) \{[\s\S]*captureChromeSurfaceProbeBoundaryWithActivityAcquisition\(\{[\s\S]*acquireChromeSurfaceActivityWithinDeadline\(deadline, label\)[\s\S]*probeChromeContentSurface\(deadline\)/u
+    /function probeChromeContentSurfaceAtActivityBoundary\(deadline, displaySize\) \{[\s\S]*captureChromeSurfaceProbeBoundaryWithActivityAcquisition\(\{[\s\S]*acquireChromeSurfaceActivityWithinDeadline\(deadline, label\)[\s\S]*probeChromeContentSurface\(deadline, displaySize\)/u
   )
   match(
     performanceHarness,
-    /function probeChromeContentSurface\(deadline\) \{[\s\S]*requireExpectedAndroidDisplaySize\(deadline\)[\s\S]*requireRemainingAutomationMilliseconds\([\s\S]*uiautomator/u
+    /function probeChromeContentSurface\(\s*deadline,\s*displaySize = requireExpectedAndroidDisplaySize\(deadline\)\s*\) \{[\s\S]*requireRemainingAutomationMilliseconds\([\s\S]*uiautomator/u
   )
   equal(performanceHarness.match(/probeChromeContentSurfaceAtActivityBoundary\(/gu)?.length, 3)
   match(ciWorkflow, /profile: pixel_7\s+cores: 4\s+ram-size: 4096M/u)

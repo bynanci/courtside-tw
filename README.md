@@ -134,6 +134,20 @@ Courtside TW 不只是文章集合，也不是把雜誌換成另一種內容管�
 
 ### 本地驗證
 
+要先看到可操作的公開閱讀流程，可執行：
+
+```sh
+make setup
+make demo
+```
+
+在沒有 `make` 的環境，可改用 `pnpm install --frozen-lockfile --ignore-scripts` 後執行
+`pnpm demo`。
+
+`make demo` 只啟動綁定在 `127.0.0.1` 的 read-only reader fixture 與 Nuxt，提供可見的
+Home → Issue → Article 範例；它不啟動 Studio、OIDC、publisher 權限或正式資料，也不等於
+完整的 PostgreSQL／Spring production-like stack。
+
 一般協作者只需要：
 
 ```sh
