@@ -652,6 +652,7 @@ function measureOffscreenPause(page, targetIndex) {
     { index: targetIndex }
   )
 }
+
 async function preloadCreativeRuntime(page, runtime) {
   const placement = await runtime.evaluate((element) => {
     const viewportHeight = window.innerHeight || document.documentElement.clientHeight
