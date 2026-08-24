@@ -363,6 +363,22 @@ function waitForAndroidGuestQuiescence() {
       name: "package-background-after-barriers",
       arguments: ["shell", "pm", "wait-for-background-handler"],
       packageHandler: true
+    },
+    {
+      name: "closing-broadcast-barrier",
+      arguments: [
+        "shell",
+        "am",
+        "wait-for-broadcast-barrier",
+        "--flush-broadcast-loopers",
+        "--flush-application-threads"
+      ],
+      packageHandler: false
+    },
+    {
+      name: "closing-application-barrier",
+      arguments: ["shell", "am", "wait-for-application-barrier"],
+      packageHandler: false
     }
   ]
   const receipts = []
