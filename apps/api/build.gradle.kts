@@ -3,8 +3,8 @@ import org.gradle.language.jvm.tasks.ProcessResources
 plugins {
     java
     checkstyle
-    id("org.springframework.boot") version "4.1.0"
-    id("com.github.spotbugs") version "6.5.10"
+    id("org.springframework.boot") version "4.1.1"
+    id("com.github.spotbugs") version "6.5.11"
 }
 
 group = "tw.basketball"
@@ -17,14 +17,14 @@ java {
 }
 
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-web:4.1.0")
-    implementation("org.springframework.boot:spring-boot-starter-jdbc:4.1.0")
-    implementation("org.springframework.boot:spring-boot-starter-actuator:4.1.0")
-    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server:4.1.0")
-    implementation("org.springframework.boot:spring-boot-micrometer-tracing-opentelemetry:4.1.0")
-    implementation("com.networknt:json-schema-validator:3.0.6")
+    implementation("org.springframework.boot:spring-boot-starter-web:4.1.1")
+    implementation("org.springframework.boot:spring-boot-starter-jdbc:4.1.1")
+    implementation("org.springframework.boot:spring-boot-starter-actuator:4.1.1")
+    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server:4.1.1")
+    implementation("org.springframework.boot:spring-boot-micrometer-tracing-opentelemetry:4.1.1")
+    implementation("com.networknt:json-schema-validator:3.0.7")
     runtimeOnly("org.postgresql:postgresql:42.7.13")
-    testImplementation("org.springframework.boot:spring-boot-starter-test:4.1.0")
+    testImplementation("org.springframework.boot:spring-boot-starter-test:4.1.1")
     testImplementation("com.tngtech.archunit:archunit-junit5:1.5.0")
     testImplementation("org.testcontainers:testcontainers-junit-jupiter:2.0.5")
     testImplementation("org.testcontainers:testcontainers-postgresql:2.0.5")
