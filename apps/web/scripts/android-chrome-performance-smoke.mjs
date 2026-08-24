@@ -27,6 +27,8 @@ const ARTICLE_URL = "http://127.0.0.1:4173/articles/opening-night?issue=issue-20
 const ANDROID_ACTIVITY_POLL_MILLISECONDS = 25
 const ANDROID_ACTIVITY_PROBE_TIMEOUT_MILLISECONDS = 250
 const ANDROID_ACTIVITY_RECEIPT_HISTORY_LIMIT = 64
+const ANDROID_GUEST_QUIESCENCE_TIMEOUT_MILLISECONDS = 30_000
+const ANDROID_GUEST_PACKAGE_HANDLER_TIMEOUT_MILLISECONDS = 15_000
 const BROWSER_QUIESCENCE_TIMEOUT_MILLISECONDS = 10_000
 const BROWSER_QUIESCENCE_MAX_FRAME_GAP_MILLISECONDS = 200
 const BROWSER_QUIESCENCE_CONSECUTIVE_FRAMES = 5
@@ -132,6 +134,16 @@ try {
   const creativePreload = await preloadCreativeRuntime(page, firstRuntime)
   process.stdout.write(
     `${JSON.stringify({ phase: "T079 Android creative preload", creativePreload }, null, 2)}\n`
+  )
+
+  await markPhase(page, "android-guest-quiescence")
+  const androidGuestQuiescence = waitForAndroidGuestQuiescence()
+  process.stdout.write(
+    `${JSON.stringify(
+      { phase: "T079 Android guest quiescence", androidGuestQuiescence },
+      null,
+      2
+    )}\n`
   )
 
   await markPhase(page, "browser-quiescence")
@@ -279,6 +291,7 @@ try {
       backgroundPauseMilliseconds: backgroundEvent.reactionMilliseconds,
       backgroundSignal: backgroundEvent.signal,
       backgroundEvent,
+      androidGuestQuiescence,
       browserQuiescence,
       creativePreload,
       initialNativeSurface,
@@ -309,6 +322,108 @@ try {
   throw error
 } finally {
   await browser.close()
+}
+
+function waitForAndroidGuestQuiescence() {
+  const startedAt = performance.now()
+  const deadlineAt = startedAt + ANDROID_GUEST_QUIESCENCE_TIMEOUT_MILLISECONDS
+  const steps = [
+    {
+      name: "package-main-before-barriers",
+      arguments: ["shell", "pm", "wait-for-handler"],
+      packageHandler: true
+    },
+    {
+      name: "package-background-before-barriers",
+      arguments: ["shell", "pm", "wait-for-background-handler"],
+      packageHandler: true
+    },
+    {
+      name: "broadcast-barrier",
+      arguments: [
+        "shell",
+        "am",
+        "wait-for-broadcast-barrier",
+        "--flush-broadcast-loopers",
+        "--flush-application-threads"
+      ],
+      packageHandler: false
+    },
+    {
+      name: "application-barrier",
+      arguments: ["shell", "am", "wait-for-application-barrier"],
+      packageHandler: false
+    },
+    {
+      name: "package-main-after-barriers",
+      arguments: ["shell", "pm", "wait-for-handler"],
+      packageHandler: true
+    },
+    {
+      name: "package-background-after-barriers",
+      arguments: ["shell", "pm", "wait-for-background-handler"],
+      packageHandler: true
+    }
+  ]
+  const receipts = []
+
+  for (const step of steps) {
+    const maximumMilliseconds = step.packageHandler
+      ? ANDROID_GUEST_PACKAGE_HANDLER_TIMEOUT_MILLISECONDS
+      : ANDROID_GUEST_QUIESCENCE_TIMEOUT_MILLISECONDS
+    const timeoutMilliseconds = androidCommandTimeoutMilliseconds(
+      deadlineAt,
+      performance.now(),
+      maximumMilliseconds
+    )
+    if (timeoutMilliseconds <= 1_000) {
+      throw new Error(
+        `Android guest quiescence exhausted its shared deadline before ${step.name}: ` +
+          `${JSON.stringify({ startedAt, deadlineAt, receipts })}`
+      )
+    }
+
+    const arguments_ = step.packageHandler
+      ? [
+          ...step.arguments,
+          "--timeout",
+          String(
+            Math.min(
+              ANDROID_GUEST_PACKAGE_HANDLER_TIMEOUT_MILLISECONDS,
+              timeoutMilliseconds - 1_000
+            )
+          )
+        ]
+      : step.arguments
+    const commandStartedAt = performance.now()
+    const output = adbWithTimeout(timeoutMilliseconds, ...arguments_).trim()
+    const completedAt = performance.now()
+    if (completedAt >= deadlineAt) {
+      throw new Error(
+        `Android guest quiescence completed ${step.name} after its shared deadline: ` +
+          `${JSON.stringify({ startedAt, deadlineAt, completedAt, receipts })}`
+      )
+    }
+    receipts.push({
+      name: step.name,
+      arguments: arguments_,
+      startedAt: commandStartedAt,
+      completedAt,
+      durationMilliseconds: completedAt - commandStartedAt,
+      timeoutMilliseconds,
+      output
+    })
+  }
+
+  const completedAt = performance.now()
+  return {
+    startedAt,
+    completedAt,
+    deadlineAt,
+    durationMilliseconds: completedAt - startedAt,
+    timeoutMilliseconds: ANDROID_GUEST_QUIESCENCE_TIMEOUT_MILLISECONDS,
+    steps: receipts
+  }
 }
 
 function waitForBrowserMainThreadQuiescence(page) {
