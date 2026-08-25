@@ -13,6 +13,7 @@ evaluation:
   interval: 30s
   environment_scope: single_environment_rule_evaluator
   availability_window: 30d
+  zero_denominator_policy: hold_without_page
   burn_rate_windows:
     fast: [5m, 1h]
     slow: [30m, 6h]
@@ -23,6 +24,20 @@ missing_signal:
   max_sample_age_seconds: 300
   rationale: Missing, stale, disabled or failed telemetry cannot be interpreted as a healthy SLO.
 
+cardinality_limits:
+  scope: per_environment
+  environments_per_evaluator: 1
+  hard_series_limit: 72
+  series_per_environment:
+    heartbeat: 7
+    observations: 42
+    latency_buckets: 9
+    latency_sum: 1
+    latency_count: 1
+    dead_letter_events: 12
+  breach_policy: page_and_hold
+  growth_policy: Any new surface, objective, budget, outcome, histogram bucket or event type requires an explicit contract review before activation.
+
 privacy:
   allowed_labels:
     - budget
@@ -31,7 +46,6 @@ privacy:
     - le
     - objective
     - outcome
-    - service
     - surface
   forbidden_labels:
     - article_id
@@ -67,12 +81,16 @@ canonical_inputs:
     type: histogram
     preinitialize_bounded_series: true
     required_labels: [surface, objective, le, environment]
+    bounded_values:
+      le: ["0.05", "0.1", "0.2", "0.3", "0.5", "1", "2.5", "5", "+Inf"]
   existing_dead_letters:
     metric: courtside_outbox_handler_events_total
     type: counter
     preinitialize_bounded_series: true
     required_labels: [event_type, outcome, environment]
     bounded_values:
+      event_type:
+        [media.asset.process, publication.article.command, publication.issue.command, unknown]
       outcome: [completed, retry_scheduled, dead_lettered]
 
 surfaces:
@@ -88,6 +106,10 @@ surfaces:
           courtside_slo_observations_total,
           courtside_slo_latency_seconds_bucket
         ]
+      required_series_counts:
+        courtside_observability_source_up: 1
+        courtside_slo_observations_total: 6
+        courtside_slo_latency_seconds_bucket: 9
       producer_contract: Aggregate anonymous public issue/article origin responses; success excludes 5xx and never labels a dynamic route or content identifier.
       activation: separately_gated
     objectives:
@@ -111,6 +133,9 @@ surfaces:
       heartbeat_metric: courtside_observability_source_up
       observations_metric: courtside_slo_observations_total
       required_series: [courtside_observability_source_up, courtside_slo_observations_total]
+      required_series_counts:
+        courtside_observability_source_up: 1
+        courtside_slo_observations_total: 6
       producer_contract: Measure durable publication commands from accepted enqueue time until completed or explicitly blocked; retry attempts alone are not successes.
       activation: separately_gated
     objectives:
@@ -130,6 +155,9 @@ surfaces:
       heartbeat_metric: courtside_observability_source_up
       observations_metric: courtside_slo_observations_total
       required_series: [courtside_observability_source_up, courtside_slo_observations_total]
+      required_series_counts:
+        courtside_observability_source_up: 1
+        courtside_slo_observations_total: 12
       producer_contract: Verify from a non-privileged origin probe that a committed withdrawal denies content; cached denial is evaluated separately by cache-purge.
       activation: separately_gated
     objectives:
@@ -158,6 +186,9 @@ surfaces:
       heartbeat_metric: courtside_observability_source_up
       observations_metric: courtside_slo_observations_total
       required_series: [courtside_observability_source_up, courtside_slo_observations_total]
+      required_series_counts:
+        courtside_observability_source_up: 1
+        courtside_slo_observations_total: 6
       producer_contract: Measure public publish or withdrawal commit time to the matching anonymous search projection result without retaining raw queries.
       activation: separately_gated
     objectives:
@@ -177,6 +208,9 @@ surfaces:
       heartbeat_metric: courtside_observability_source_up
       observations_metric: courtside_slo_observations_total
       required_series: [courtside_observability_source_up, courtside_slo_observations_total]
+      required_series_counts:
+        courtside_observability_source_up: 1
+        courtside_slo_observations_total: 6
       producer_contract: Measure rights-valid image acceptance to READY; rejected invalid inputs are excluded from the valid-image denominator and remain separately auditable.
       activation: separately_gated
     objectives:
@@ -196,6 +230,9 @@ surfaces:
       heartbeat_metric: courtside_observability_source_up
       observations_metric: courtside_slo_observations_total
       required_series: [courtside_observability_source_up, courtside_slo_observations_total]
+      required_series_counts:
+        courtside_observability_source_up: 1
+        courtside_slo_observations_total: 6
       producer_contract: Verify withdrawal surrogate-key purge at the public edge. Normal publish purge has no new release SLO in this contract.
       activation: separately_gated
     objectives:
@@ -215,6 +252,9 @@ surfaces:
       heartbeat_metric: courtside_observability_source_up
       observations_metric: courtside_outbox_handler_events_total
       required_series: [courtside_observability_source_up, courtside_outbox_handler_events_total]
+      required_series_counts:
+        courtside_observability_source_up: 1
+        courtside_outbox_handler_events_total: 12
       producer_contract: Count bounded outbox event_type values with outcome=dead_lettered; payload, error text and aggregate identifiers are never metric labels.
       activation: separately_gated
     objectives:
@@ -230,7 +270,8 @@ surfaces:
 activation_gate:
   required_before_interpreting_slo:
     - Bind each canonical input to a reviewed producer or synthetic probe.
-    - Preinitialize every bounded observation and histogram series so absence remains distinguishable from a valid zero.
+    - Preinitialize exactly 72 canonical exported series per environment: 7 heartbeats, 42 observations, 9 latency buckets plus one sum and one count, and 12 dead-letter event series.
+    - Treat a zero observation denominator as NO DATA: do not page for burn, do not render it as an achieved SLO, and keep release interpretation on HOLD until attributable samples exist.
     - Prove source heartbeat and observation timestamps at the same immutable release candidate.
     - Evaluate alert rules in a single-environment rule evaluator; never aggregate environments before missing-signal checks.
     - Configure provider and receivers outside this repository without embedding credentials.

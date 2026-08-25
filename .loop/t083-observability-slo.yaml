@@ -1,6 +1,6 @@
 schema_version: mark-graphify-loop/v2
 name: courtside-tw-t083-observability-slo
-objective: Configure a fail-closed seven-surface SLO dashboard, alert and incident-response contract on a draft PR without activating providers or merging.
+objective: Configure a fail-closed seven-surface SLO dashboard, alert and incident-response contract with zero-traffic safety and an exact 72-series per-environment ceiling on a draft PR without activating providers or merging.
 feedback_updates_next_action: true
 
 scope:
@@ -206,8 +206,8 @@ graph:
       risk: high
       confidence:
         score: 0.92
-        basis: Review remediated environment aggregation, missing-series false green and mixed-unit dashboard risks.
-        evidence_refs: [.loop/evidence/t083-review.json]
+        basis: Review plus its feedback iteration remediated seven environment, missing-series, zero-traffic, cardinality and dashboard risks.
+        evidence_refs: [.loop/evidence/t083-review.json, .loop/evidence/t083-optimize-red.json]
       budget: { effort_hours: 0.75, tokens: 8000 }
       config:
         workflow:
@@ -225,13 +225,13 @@ graph:
       risk: high
       confidence:
         score: 0.94
-        basis: All three bounded findings are resolved and the scoped validator passes; unresolved finding count is zero.
-        evidence_refs: [.loop/evidence/t083-review.json]
+        basis: All seven bounded findings are resolved through attributable RED and GREEN evidence; unresolved finding count is zero.
+        evidence_refs: [.loop/evidence/t083-review.json, .loop/evidence/t083-optimize-red.json]
       budget: { effort_hours: 0.5, tokens: 5000 }
       config:
         level: P2
         claim: No unresolved false-green, privacy/cardinality, failure-semantics or scope finding remains.
-        method: Diff review plus validator re-run.
+        method: Attributable optimization RED, diff review, zero-traffic/cardinality checks and validator re-run.
         evidence_path: .loop/evidence/t083-review.json
         required: true
         baseline_required: false

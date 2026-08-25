@@ -1,6 +1,8 @@
 {
-  "annotations": { "list": [] },
-  "description": "T083 provider-neutral SLO dashboard. Missing source heartbeat is a release HOLD, never a green zero.",
+  "annotations": {
+    "list": []
+  },
+  "description": "T083 provider-neutral SLO dashboard. Missing, stale, incomplete or over-cardinality inputs are a release HOLD; zero denominators are NO DATA, never green or paging.",
   "editable": false,
   "fiscalYearStartMonth": 0,
   "graphTooltip": 1,
@@ -14,62 +16,126 @@
   ],
   "panels": [
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
-      "description": "Must equal seven. Any absent, stale or non-one heartbeat pages and keeps release HOLD.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
+      "description": "All five values must equal 1 for the selected environment. The canonical hard limit is exactly 72 series: 7 heartbeat, 42 observation, 11 latency-histogram and 12 dead-letter series.",
       "fieldConfig": {
         "defaults": {
           "mappings": [],
           "thresholds": {
             "mode": "absolute",
             "steps": [
-              { "color": "red", "value": null },
-              { "color": "green", "value": 7 }
+              {
+                "color": "red",
+                "value": null
+              },
+              {
+                "color": "green",
+                "value": 1
+              }
             ]
           }
         },
         "overrides": []
       },
-      "gridPos": { "h": 4, "w": 24, "x": 0, "y": 0 },
+      "gridPos": {
+        "h": 4,
+        "w": 24,
+        "x": 0,
+        "y": 0
+      },
       "id": 1,
       "kind": "telemetry-coverage",
       "options": {
         "colorMode": "background",
         "graphMode": "none",
         "justifyMode": "center",
-        "reduceOptions": { "calcs": ["lastNotNull"], "fields": "", "values": false },
+        "reduceOptions": {
+          "calcs": ["lastNotNull"],
+          "fields": "",
+          "values": false
+        },
         "textMode": "auto"
       },
       "targets": [
         {
           "editorMode": "code",
-          "expr": "count(max by (surface) (courtside_observability_source_up{environment=\"$environment\"} == 1))",
-          "legendFormat": "healthy sources",
+          "expr": "((count(courtside_observability_source_up{environment=\"$environment\"}) or vector(0)) == bool 7) * ((count(courtside_observability_source_up{environment=\"$environment\",surface=~\"public-read|publication-jobs|withdrawal|search-freshness|media-processing|cache-purge|dead-letters\"} == 1) or vector(0)) == bool 7) * ((count(count by (surface) (courtside_observability_source_up{environment=\"$environment\",surface=~\"public-read|publication-jobs|withdrawal|search-freshness|media-processing|cache-purge|dead-letters\"}) == 1) or vector(0)) == bool 7)",
+          "legendFormat": "7 healthy heartbeats",
           "range": true,
           "refId": "A"
+        },
+        {
+          "editorMode": "code",
+          "expr": "((count(courtside_slo_observations_total{environment=\"$environment\"}) or vector(0)) == bool 42) * ((count(courtside_slo_observations_total{environment=\"$environment\",surface=\"public-read\",objective=~\"availability\",budget=~\"met|missed\",outcome=~\"completed|explicitly_blocked|failed\"}) or vector(0)) == bool 6) * ((count(courtside_slo_observations_total{environment=\"$environment\",surface=\"publication-jobs\",objective=~\"completion\",budget=~\"met|missed\",outcome=~\"completed|explicitly_blocked|failed\"}) or vector(0)) == bool 6) * ((count(courtside_slo_observations_total{environment=\"$environment\",surface=\"withdrawal\",objective=~\"origin-denial-30s|origin-denial-60s\",budget=~\"met|missed\",outcome=~\"completed|explicitly_blocked|failed\"}) or vector(0)) == bool 12) * ((count(courtside_slo_observations_total{environment=\"$environment\",surface=\"search-freshness\",objective=~\"visible-in-search\",budget=~\"met|missed\",outcome=~\"completed|explicitly_blocked|failed\"}) or vector(0)) == bool 6) * ((count(courtside_slo_observations_total{environment=\"$environment\",surface=\"media-processing\",objective=~\"ready\",budget=~\"met|missed\",outcome=~\"completed|explicitly_blocked|failed\"}) or vector(0)) == bool 6) * ((count(courtside_slo_observations_total{environment=\"$environment\",surface=\"cache-purge\",objective=~\"withdrawal-purge\",budget=~\"met|missed\",outcome=~\"completed|explicitly_blocked|failed\"}) or vector(0)) == bool 6)",
+          "legendFormat": "42 bounded observations",
+          "range": true,
+          "refId": "B"
+        },
+        {
+          "editorMode": "code",
+          "expr": "((count(courtside_slo_latency_seconds_bucket{environment=\"$environment\"}) or vector(0)) == bool 9) * ((count(courtside_slo_latency_seconds_bucket{environment=\"$environment\",surface=\"public-read\",objective=\"origin-latency\",le=~\"0[.]05|0[.]1|0[.]2|0[.]3|0[.]5|1|2[.]5|5|[+]Inf\"}) or vector(0)) == bool 9)",
+          "legendFormat": "9 fixed latency buckets",
+          "range": true,
+          "refId": "C"
+        },
+        {
+          "editorMode": "code",
+          "expr": "((count(courtside_slo_latency_seconds_sum{environment=\"$environment\"}) or vector(0)) == bool 1) * ((count(courtside_slo_latency_seconds_sum{environment=\"$environment\",surface=\"public-read\",objective=\"origin-latency\"}) or vector(0)) == bool 1) * ((count(courtside_slo_latency_seconds_count{environment=\"$environment\"}) or vector(0)) == bool 1) * ((count(courtside_slo_latency_seconds_count{environment=\"$environment\",surface=\"public-read\",objective=\"origin-latency\"}) or vector(0)) == bool 1)",
+          "legendFormat": "2 histogram companions",
+          "range": true,
+          "refId": "D"
+        },
+        {
+          "editorMode": "code",
+          "expr": "((count(courtside_outbox_handler_events_total{environment=\"$environment\"}) or vector(0)) == bool 12) * ((count(courtside_outbox_handler_events_total{environment=\"$environment\",event_type=~\"media[.]asset[.]process|publication[.]article[.]command|publication[.]issue[.]command|unknown\",outcome=~\"completed|retry_scheduled|dead_lettered\"}) or vector(0)) == bool 12)",
+          "legendFormat": "12 bounded dead-letter events",
+          "range": true,
+          "refId": "E"
         }
       ],
-      "title": "Telemetry coverage: 7/7 required",
+      "title": "Telemetry contracts: 5/5 exact",
       "type": "stat"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "description": "99.9% monthly successful public issue/article origin responses and p95 <=300 ms.",
       "fieldConfig": {
-        "defaults": { "unit": "percentunit" },
+        "defaults": {
+          "unit": "percentunit"
+        },
         "overrides": [
           {
-            "matcher": { "id": "byFrameRefID", "options": "B" },
-            "properties": [{ "id": "unit", "value": "s" }]
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "s"
+              }
+            ]
           }
         ]
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 4
+      },
       "id": 2,
       "surface": "public-read",
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum(increase(courtside_slo_observations_total{environment=\"$environment\",surface=\"public-read\",objective=\"availability\",budget=\"met\"}[30d])) / clamp_min(sum(increase(courtside_slo_observations_total{environment=\"$environment\",surface=\"public-read\",objective=\"availability\"}[30d])), 0.000000001)",
+          "expr": "sum(increase(courtside_slo_observations_total{environment=\"$environment\",surface=\"public-read\",objective=\"availability\",budget=\"met\"}[30d])) / sum(increase(courtside_slo_observations_total{environment=\"$environment\",surface=\"public-read\",objective=\"availability\"}[30d]))",
           "legendFormat": "availability",
           "range": true,
           "refId": "A"
@@ -86,16 +152,29 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "description": "99% of accepted publication commands complete or explicitly block within 60 seconds.",
-      "fieldConfig": { "defaults": { "unit": "percentunit" }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 4
+      },
       "id": 3,
       "surface": "publication-jobs",
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum(increase(courtside_slo_observations_total{environment=\"$environment\",surface=\"publication-jobs\",objective=\"completion\",budget=\"met\"}[30d])) / clamp_min(sum(increase(courtside_slo_observations_total{environment=\"$environment\",surface=\"publication-jobs\",objective=\"completion\"}[30d])), 0.000000001)",
+          "expr": "sum(increase(courtside_slo_observations_total{environment=\"$environment\",surface=\"publication-jobs\",objective=\"completion\",budget=\"met\"}[30d])) / sum(increase(courtside_slo_observations_total{environment=\"$environment\",surface=\"publication-jobs\",objective=\"completion\"}[30d]))",
           "legendFormat": "within 60s",
           "range": true,
           "refId": "A"
@@ -105,24 +184,42 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "description": "Origin denial: 99% within 30 seconds and 100% within 60 seconds.",
       "fieldConfig": {
-        "defaults": { "unit": "percentunit" },
+        "defaults": {
+          "unit": "percentunit"
+        },
         "overrides": [
           {
-            "matcher": { "id": "byFrameRefID", "options": "B" },
-            "properties": [{ "id": "unit", "value": "short" }]
+            "matcher": {
+              "id": "byFrameRefID",
+              "options": "B"
+            },
+            "properties": [
+              {
+                "id": "unit",
+                "value": "short"
+              }
+            ]
           }
         ]
       },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 12 },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 12
+      },
       "id": 4,
       "surface": "withdrawal",
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum(increase(courtside_slo_observations_total{environment=\"$environment\",surface=\"withdrawal\",objective=\"origin-denial-30s\",budget=\"met\"}[30d])) / clamp_min(sum(increase(courtside_slo_observations_total{environment=\"$environment\",surface=\"withdrawal\",objective=\"origin-denial-30s\"}[30d])), 0.000000001)",
+          "expr": "sum(increase(courtside_slo_observations_total{environment=\"$environment\",surface=\"withdrawal\",objective=\"origin-denial-30s\",budget=\"met\"}[30d])) / sum(increase(courtside_slo_observations_total{environment=\"$environment\",surface=\"withdrawal\",objective=\"origin-denial-30s\"}[30d]))",
           "legendFormat": "within 30s",
           "range": true,
           "refId": "A"
@@ -139,16 +236,29 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "description": "99% of public changes become visible in anonymous search within 60 seconds.",
-      "fieldConfig": { "defaults": { "unit": "percentunit" }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 12 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 12
+      },
       "id": 5,
       "surface": "search-freshness",
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum(increase(courtside_slo_observations_total{environment=\"$environment\",surface=\"search-freshness\",objective=\"visible-in-search\",budget=\"met\"}[30d])) / clamp_min(sum(increase(courtside_slo_observations_total{environment=\"$environment\",surface=\"search-freshness\",objective=\"visible-in-search\"}[30d])), 0.000000001)",
+          "expr": "sum(increase(courtside_slo_observations_total{environment=\"$environment\",surface=\"search-freshness\",objective=\"visible-in-search\",budget=\"met\"}[30d])) / sum(increase(courtside_slo_observations_total{environment=\"$environment\",surface=\"search-freshness\",objective=\"visible-in-search\"}[30d]))",
           "legendFormat": "within 60s",
           "range": true,
           "refId": "A"
@@ -158,16 +268,29 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "description": "99% of accepted rights-valid images reach READY within five minutes.",
-      "fieldConfig": { "defaults": { "unit": "percentunit" }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 20 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "percentunit"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 20
+      },
       "id": 6,
       "surface": "media-processing",
       "targets": [
         {
           "editorMode": "code",
-          "expr": "sum(increase(courtside_slo_observations_total{environment=\"$environment\",surface=\"media-processing\",objective=\"ready\",budget=\"met\"}[30d])) / clamp_min(sum(increase(courtside_slo_observations_total{environment=\"$environment\",surface=\"media-processing\",objective=\"ready\"}[30d])), 0.000000001)",
+          "expr": "sum(increase(courtside_slo_observations_total{environment=\"$environment\",surface=\"media-processing\",objective=\"ready\",budget=\"met\"}[30d])) / sum(increase(courtside_slo_observations_total{environment=\"$environment\",surface=\"media-processing\",objective=\"ready\"}[30d]))",
           "legendFormat": "within 300s",
           "range": true,
           "refId": "A"
@@ -177,10 +300,23 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "description": "Safety invariant: no withdrawal purge may exceed 60 seconds. Normal publish purge has no new release SLO here.",
-      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 6, "x": 12, "y": 20 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 12,
+        "y": 20
+      },
       "id": 7,
       "surface": "cache-purge",
       "targets": [
@@ -196,10 +332,23 @@
       "type": "timeseries"
     },
     {
-      "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+      "datasource": {
+        "type": "prometheus",
+        "uid": "${DS_PROMETHEUS}"
+      },
       "description": "Safety invariant: zero new dead-lettered outbox events.",
-      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
-      "gridPos": { "h": 8, "w": 6, "x": 18, "y": 20 },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short"
+        },
+        "overrides": []
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 6,
+        "x": 18,
+        "y": 20
+      },
       "id": 8,
       "surface": "dead-letters",
       "targets": [
@@ -229,7 +378,10 @@
       },
       {
         "current": {},
-        "datasource": { "type": "prometheus", "uid": "${DS_PROMETHEUS}" },
+        "datasource": {
+          "type": "prometheus",
+          "uid": "${DS_PROMETHEUS}"
+        },
         "includeAll": false,
         "label": "Environment",
         "multi": false,
@@ -240,7 +392,10 @@
       }
     ]
   },
-  "time": { "from": "now-6h", "to": "now" },
+  "time": {
+    "from": "now-6h",
+    "to": "now"
+  },
   "timepicker": {},
   "timezone": "utc",
   "title": "Courtside TW — T083 SLO gates",

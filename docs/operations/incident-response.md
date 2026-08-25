@@ -23,6 +23,31 @@ requires one explicit environment selection.
 | `page`     | Acknowledge within the configured operational response window; identify the exact environment and first bad sample. | HOLD while the alert is active or its evidence is unattributable.                                    |
 | `warning`  | Triage during the staffed operational window and watch the long burn window.                                        | Do not promote a release until disposition is recorded.                                              |
 
+## Telemetry failure and cardinality limits
+
+The canonical inputs have a hard limit of exactly **72 time series per
+environment**. This is an activation precondition, not a suggestion:
+
+| Canonical family              | Fixed labels                          | Series/environment |
+| ----------------------------- | ------------------------------------- | -----------------: |
+| Source heartbeat              | 7 surfaces                            |                  7 |
+| SLO observations              | 7 objectives × 2 budgets × 3 outcomes |                 42 |
+| Public-read latency histogram | 9 fixed buckets + `_sum` + `_count`   |                 11 |
+| Dead-letter events            | 4 event types × 3 outcomes            |                 12 |
+| **Hard total**                | New values require contract review    |             **72** |
+
+Each telemetry-missing alert compares both the total and the fixed allowed
+lattice for its surface. A missing series, duplicate series, unexpected label
+value, stale heartbeat, unhealthy heartbeat, or any count above the limit is a
+`page_and_hold` condition. Do not add `instance`, route, content, payload,
+identifier, free-text, or provider labels to these canonical families.
+
+A healthy source can also have zero valid observations in a burn window. That
+window is **NO DATA**: it must not page as a 100% failure and must not render 0%
+or 100% as an achieved SLO. Keep release interpretation on HOLD until the
+candidate has attributable observations. Missing/incomplete telemetry still
+pages through the separate telemetry-contract alerts.
+
 For every alert:
 
 1. Confirm the alert rule, dashboard and source heartbeat use the same

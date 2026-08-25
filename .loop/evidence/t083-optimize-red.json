@@ -1,0 +1,43 @@
+{
+  "schema_version": "mark-proof-receipt/v1",
+  "task": "T083",
+  "proof": "optimization-tests-first-red",
+  "recorded_at": "2026-08-25T02:56:56Z",
+  "repository": "bynanci/courtside-tw",
+  "issue": "https://github.com/bynanci/courtside-tw/issues/137",
+  "pull_request": "https://github.com/bynanci/courtside-tw/pull/138",
+  "base_sha": "c2ed57cfe88814958e597bd6dfce5b8050af8255",
+  "prior_implementation_head": "6dc63a571663b5ccb45765dc4208a147adfa8522",
+  "head_sha": "8f661ba2a153ca179b7c5f75ae55337f76e07ee8",
+  "commit_message": "test(T083): expose bounded alert and cardinality regressions",
+  "command": "pnpm run verify",
+  "result": "EXPECTED_FAILURE",
+  "attribution": {
+    "workflow": "CI",
+    "run_number": 929,
+    "run_id": 32802948721,
+    "job": "Frontend and contract verification",
+    "job_id": 97667326929,
+    "formatting": "PASS",
+    "existing_web_tests_before_contract": "203 passed, 0 failed",
+    "passing_prerequisites": [
+      "root contract",
+      "Prettier",
+      "ESLint",
+      "typecheck",
+      "203 web tests",
+      "ContentDocument contract",
+      "OpenAPI contract"
+    ],
+    "failure_classes": [
+      "zero-denominator burn rules use clamp_min and would page idle healthy counters as 100% failure",
+      "surface missing rules prove only metric presence, not the complete bounded series lattice",
+      "latency buckets and current-main dead-letter event types have no exact cardinality ceiling",
+      "dashboard telemetry coverage has one heartbeat-only target and can display green while required inputs are absent"
+    ],
+    "artifact_id": 9547153844,
+    "artifact_digest": "sha256:84f2552c9b5b475ce5d395fcdeb9c0e61befdf76a231f9e08c57f163614c305f"
+  },
+  "scope_readback": "Only the deterministic T083 validator changed; provider, producer, receiver, synthetic probe, production state, tasks.md and T084+ were untouched.",
+  "decision": "RED is attributable to four bounded observability-contract regressions; the review feedback edge may proceed to the smallest configuration-only remediation."
+}

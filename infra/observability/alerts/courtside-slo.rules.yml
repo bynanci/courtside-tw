@@ -5,93 +5,116 @@ groups:
       - alert: CourtsidePublicReadTelemetryMissing
         expr: >-
           absent(courtside_observability_source_up{surface="public-read"})
+          or (count(courtside_observability_source_up{surface="public-read"}) or vector(0)) != 1
           or absent(courtside_slo_observations_total{surface="public-read"})
+          or (count(courtside_slo_observations_total{surface="public-read"}) or vector(0)) != 6
+          or (count(courtside_slo_observations_total{surface="public-read",objective=~"availability",budget=~"met|missed",outcome=~"completed|explicitly_blocked|failed"}) or vector(0)) != 6
           or absent(courtside_slo_latency_seconds_bucket{surface="public-read"})
+          or (count(courtside_slo_latency_seconds_bucket{surface="public-read"}) or vector(0)) != 9
+          or (count(courtside_slo_latency_seconds_bucket{surface="public-read",objective="origin-latency",le=~"0[.]05|0[.]1|0[.]2|0[.]3|0[.]5|1|2[.]5|5|[+]Inf"}) or vector(0)) != 9
           or (time() - max(timestamp(courtside_observability_source_up{surface="public-read"}))) > 300
           or max(courtside_observability_source_up{surface="public-read"}) != 1
         for: 5m
         labels: { surface: public-read, owner: reader-operations, severity: page }
         annotations:
-          summary: Public-read SLO telemetry is missing or stale
-          description: The public-read source heartbeat is absent, older than five minutes, or unhealthy. Hold release interpretation; do not treat an empty denominator as green.
+          summary: Public-read SLO telemetry is incomplete or stale
+          description: The public-read heartbeat or exact 16-series input lattice is absent, stale, unhealthy, or over cardinality. Hold release interpretation; do not treat an empty denominator as green.
           runbook_url: https://github.com/bynanci/courtside-tw/blob/main/docs/operations/incident-response.md#public-read
 
       - alert: CourtsidePublicationTelemetryMissing
         expr: >-
           absent(courtside_observability_source_up{surface="publication-jobs"})
+          or (count(courtside_observability_source_up{surface="publication-jobs"}) or vector(0)) != 1
           or absent(courtside_slo_observations_total{surface="publication-jobs"})
+          or (count(courtside_slo_observations_total{surface="publication-jobs"}) or vector(0)) != 6
+          or (count(courtside_slo_observations_total{surface="publication-jobs",objective=~"completion",budget=~"met|missed",outcome=~"completed|explicitly_blocked|failed"}) or vector(0)) != 6
           or (time() - max(timestamp(courtside_observability_source_up{surface="publication-jobs"}))) > 300
           or max(courtside_observability_source_up{surface="publication-jobs"}) != 1
         for: 5m
         labels: { surface: publication-jobs, owner: editorial-operations, severity: page }
         annotations:
-          summary: Publication-job SLO telemetry is missing or stale
-          description: The publication-job source heartbeat is absent, older than five minutes, or unhealthy. Keep publication release gates on HOLD.
+          summary: Publication-job SLO telemetry is incomplete or stale
+          description: The publication heartbeat or exact six-series observation lattice is absent, stale, unhealthy, or over cardinality. Keep publication release gates on HOLD.
           runbook_url: https://github.com/bynanci/courtside-tw/blob/main/docs/operations/incident-response.md#publication-jobs
 
       - alert: CourtsideWithdrawalTelemetryMissing
         expr: >-
           absent(courtside_observability_source_up{surface="withdrawal"})
+          or (count(courtside_observability_source_up{surface="withdrawal"}) or vector(0)) != 1
           or absent(courtside_slo_observations_total{surface="withdrawal"})
+          or (count(courtside_slo_observations_total{surface="withdrawal"}) or vector(0)) != 12
+          or (count(courtside_slo_observations_total{surface="withdrawal",objective=~"origin-denial-30s|origin-denial-60s",budget=~"met|missed",outcome=~"completed|explicitly_blocked|failed"}) or vector(0)) != 12
           or (time() - max(timestamp(courtside_observability_source_up{surface="withdrawal"}))) > 300
           or max(courtside_observability_source_up{surface="withdrawal"}) != 1
         for: 5m
         labels: { surface: withdrawal, owner: rights-operations, severity: page }
         annotations:
-          summary: Withdrawal SLO telemetry is missing or stale
-          description: The non-privileged origin-withdrawal verifier is absent, stale, or unhealthy. Treat withdrawal assurance as unknown and HOLD.
+          summary: Withdrawal SLO telemetry is incomplete or stale
+          description: The non-privileged withdrawal heartbeat or exact 12-series observation lattice is absent, stale, unhealthy, or over cardinality. Treat withdrawal assurance as unknown and HOLD.
           runbook_url: https://github.com/bynanci/courtside-tw/blob/main/docs/operations/incident-response.md#withdrawal
 
       - alert: CourtsideSearchFreshnessTelemetryMissing
         expr: >-
           absent(courtside_observability_source_up{surface="search-freshness"})
+          or (count(courtside_observability_source_up{surface="search-freshness"}) or vector(0)) != 1
           or absent(courtside_slo_observations_total{surface="search-freshness"})
+          or (count(courtside_slo_observations_total{surface="search-freshness"}) or vector(0)) != 6
+          or (count(courtside_slo_observations_total{surface="search-freshness",objective=~"visible-in-search",budget=~"met|missed",outcome=~"completed|explicitly_blocked|failed"}) or vector(0)) != 6
           or (time() - max(timestamp(courtside_observability_source_up{surface="search-freshness"}))) > 300
           or max(courtside_observability_source_up{surface="search-freshness"}) != 1
         for: 5m
         labels: { surface: search-freshness, owner: discovery-operations, severity: page }
         annotations:
-          summary: Search-freshness SLO telemetry is missing or stale
-          description: Search projection freshness cannot be attributed to current samples. Hold the affected release decision.
+          summary: Search-freshness SLO telemetry is incomplete or stale
+          description: The search heartbeat or exact six-series observation lattice is absent, stale, unhealthy, or over cardinality. Hold the affected release decision.
           runbook_url: https://github.com/bynanci/courtside-tw/blob/main/docs/operations/incident-response.md#search-freshness
 
       - alert: CourtsideMediaProcessingTelemetryMissing
         expr: >-
           absent(courtside_observability_source_up{surface="media-processing"})
+          or (count(courtside_observability_source_up{surface="media-processing"}) or vector(0)) != 1
           or absent(courtside_slo_observations_total{surface="media-processing"})
+          or (count(courtside_slo_observations_total{surface="media-processing"}) or vector(0)) != 6
+          or (count(courtside_slo_observations_total{surface="media-processing",objective=~"ready",budget=~"met|missed",outcome=~"completed|explicitly_blocked|failed"}) or vector(0)) != 6
           or (time() - max(timestamp(courtside_observability_source_up{surface="media-processing"}))) > 300
           or max(courtside_observability_source_up{surface="media-processing"}) != 1
         for: 5m
         labels: { surface: media-processing, owner: media-operations, severity: page }
         annotations:
-          summary: Media-processing SLO telemetry is missing or stale
-          description: The accepted-image-to-READY source is absent, stale, or unhealthy. Keep media release interpretation on HOLD.
+          summary: Media-processing SLO telemetry is incomplete or stale
+          description: The media heartbeat or exact six-series observation lattice is absent, stale, unhealthy, or over cardinality. Keep media release interpretation on HOLD.
           runbook_url: https://github.com/bynanci/courtside-tw/blob/main/docs/operations/incident-response.md#media-processing
 
       - alert: CourtsideCachePurgeTelemetryMissing
         expr: >-
           absent(courtside_observability_source_up{surface="cache-purge"})
+          or (count(courtside_observability_source_up{surface="cache-purge"}) or vector(0)) != 1
           or absent(courtside_slo_observations_total{surface="cache-purge"})
+          or (count(courtside_slo_observations_total{surface="cache-purge"}) or vector(0)) != 6
+          or (count(courtside_slo_observations_total{surface="cache-purge",objective=~"withdrawal-purge",budget=~"met|missed",outcome=~"completed|explicitly_blocked|failed"}) or vector(0)) != 6
           or (time() - max(timestamp(courtside_observability_source_up{surface="cache-purge"}))) > 300
           or max(courtside_observability_source_up{surface="cache-purge"}) != 1
         for: 5m
         labels: { surface: cache-purge, owner: edge-operations, severity: page }
         annotations:
-          summary: Withdrawal cache-purge telemetry is missing or stale
-          description: Edge verification for withdrawal purge is absent, stale, or unhealthy. Do not infer cache safety from the origin alone.
+          summary: Withdrawal cache-purge telemetry is incomplete or stale
+          description: The edge-verification heartbeat or exact six-series observation lattice is absent, stale, unhealthy, or over cardinality. Do not infer cache safety from the origin alone.
           runbook_url: https://github.com/bynanci/courtside-tw/blob/main/docs/operations/incident-response.md#cache-purge
 
       - alert: CourtsideDeadLetterTelemetryMissing
         expr: >-
           absent(courtside_observability_source_up{surface="dead-letters"})
-          or absent(courtside_outbox_handler_events_total{outcome="dead_lettered"})
+          or (count(courtside_observability_source_up{surface="dead-letters"}) or vector(0)) != 1
+          or absent(courtside_outbox_handler_events_total)
+          or (count(courtside_outbox_handler_events_total) or vector(0)) != 12
+          or (count(courtside_outbox_handler_events_total{event_type=~"media[.]asset[.]process|publication[.]article[.]command|publication[.]issue[.]command|unknown",outcome=~"completed|retry_scheduled|dead_lettered"}) or vector(0)) != 12
           or (time() - max(timestamp(courtside_observability_source_up{surface="dead-letters"}))) > 300
           or max(courtside_observability_source_up{surface="dead-letters"}) != 1
         for: 5m
         labels: { surface: dead-letters, owner: platform-operations, severity: page }
         annotations:
-          summary: Dead-letter telemetry is missing or stale
-          description: Outbox dead-letter coverage is absent, stale, or unhealthy. Hold release and do not assume zero dead letters.
+          summary: Dead-letter telemetry is incomplete or stale
+          description: The dead-letter heartbeat or exact 12-series event lattice is absent, stale, unhealthy, or over cardinality. Hold release and do not assume zero dead letters.
           runbook_url: https://github.com/bynanci/courtside-tw/blob/main/docs/operations/incident-response.md#dead-letters
 
   - name: courtside-t083-error-budget
@@ -99,14 +122,18 @@ groups:
     rules:
       - alert: CourtsidePublicReadFastBurn
         expr: >-
+          sum(rate(courtside_slo_observations_total{surface="public-read",objective="availability"}[5m])) > 0
+          and
           (1 -
             sum(rate(courtside_slo_observations_total{surface="public-read",objective="availability",budget="met"}[5m]))
-            / clamp_min(sum(rate(courtside_slo_observations_total{surface="public-read",objective="availability"}[5m])), 0.000000001)
+            / sum(rate(courtside_slo_observations_total{surface="public-read",objective="availability"}[5m]))
           ) > (14.4 * 0.001)
+          and
+          sum(rate(courtside_slo_observations_total{surface="public-read",objective="availability"}[1h])) > 0
           and
           (1 -
             sum(rate(courtside_slo_observations_total{surface="public-read",objective="availability",budget="met"}[1h]))
-            / clamp_min(sum(rate(courtside_slo_observations_total{surface="public-read",objective="availability"}[1h])), 0.000000001)
+            / sum(rate(courtside_slo_observations_total{surface="public-read",objective="availability"}[1h]))
           ) > (14.4 * 0.001)
         for: 2m
         labels: { surface: public-read, owner: reader-operations, severity: page }
@@ -117,14 +144,18 @@ groups:
 
       - alert: CourtsidePublicReadSlowBurn
         expr: >-
+          sum(rate(courtside_slo_observations_total{surface="public-read",objective="availability"}[30m])) > 0
+          and
           (1 -
             sum(rate(courtside_slo_observations_total{surface="public-read",objective="availability",budget="met"}[30m]))
-            / clamp_min(sum(rate(courtside_slo_observations_total{surface="public-read",objective="availability"}[30m])), 0.000000001)
+            / sum(rate(courtside_slo_observations_total{surface="public-read",objective="availability"}[30m]))
           ) > (6 * 0.001)
+          and
+          sum(rate(courtside_slo_observations_total{surface="public-read",objective="availability"}[6h])) > 0
           and
           (1 -
             sum(rate(courtside_slo_observations_total{surface="public-read",objective="availability",budget="met"}[6h]))
-            / clamp_min(sum(rate(courtside_slo_observations_total{surface="public-read",objective="availability"}[6h])), 0.000000001)
+            / sum(rate(courtside_slo_observations_total{surface="public-read",objective="availability"}[6h]))
           ) > (6 * 0.001)
         for: 15m
         labels: { surface: public-read, owner: reader-operations, severity: page }
@@ -147,14 +178,18 @@ groups:
 
       - alert: CourtsidePublicationFastBurn
         expr: >-
+          sum(rate(courtside_slo_observations_total{surface="publication-jobs",objective="completion"}[5m])) > 0
+          and
           (1 -
             sum(rate(courtside_slo_observations_total{surface="publication-jobs",objective="completion",budget="met"}[5m]))
-            / clamp_min(sum(rate(courtside_slo_observations_total{surface="publication-jobs",objective="completion"}[5m])), 0.000000001)
+            / sum(rate(courtside_slo_observations_total{surface="publication-jobs",objective="completion"}[5m]))
           ) > (14.4 * 0.01)
+          and
+          sum(rate(courtside_slo_observations_total{surface="publication-jobs",objective="completion"}[1h])) > 0
           and
           (1 -
             sum(rate(courtside_slo_observations_total{surface="publication-jobs",objective="completion",budget="met"}[1h]))
-            / clamp_min(sum(rate(courtside_slo_observations_total{surface="publication-jobs",objective="completion"}[1h])), 0.000000001)
+            / sum(rate(courtside_slo_observations_total{surface="publication-jobs",objective="completion"}[1h]))
           ) > (14.4 * 0.01)
         for: 2m
         labels: { surface: publication-jobs, owner: editorial-operations, severity: page }
@@ -165,14 +200,18 @@ groups:
 
       - alert: CourtsidePublicationSlowBurn
         expr: >-
+          sum(rate(courtside_slo_observations_total{surface="publication-jobs",objective="completion"}[30m])) > 0
+          and
           (1 -
             sum(rate(courtside_slo_observations_total{surface="publication-jobs",objective="completion",budget="met"}[30m]))
-            / clamp_min(sum(rate(courtside_slo_observations_total{surface="publication-jobs",objective="completion"}[30m])), 0.000000001)
+            / sum(rate(courtside_slo_observations_total{surface="publication-jobs",objective="completion"}[30m]))
           ) > (6 * 0.01)
+          and
+          sum(rate(courtside_slo_observations_total{surface="publication-jobs",objective="completion"}[6h])) > 0
           and
           (1 -
             sum(rate(courtside_slo_observations_total{surface="publication-jobs",objective="completion",budget="met"}[6h]))
-            / clamp_min(sum(rate(courtside_slo_observations_total{surface="publication-jobs",objective="completion"}[6h])), 0.000000001)
+            / sum(rate(courtside_slo_observations_total{surface="publication-jobs",objective="completion"}[6h]))
           ) > (6 * 0.01)
         for: 15m
         labels: { surface: publication-jobs, owner: editorial-operations, severity: page }
@@ -183,14 +222,18 @@ groups:
 
       - alert: CourtsideWithdrawalFastBurn
         expr: >-
+          sum(rate(courtside_slo_observations_total{surface="withdrawal",objective="origin-denial-30s"}[5m])) > 0
+          and
           (1 -
             sum(rate(courtside_slo_observations_total{surface="withdrawal",objective="origin-denial-30s",budget="met"}[5m]))
-            / clamp_min(sum(rate(courtside_slo_observations_total{surface="withdrawal",objective="origin-denial-30s"}[5m])), 0.000000001)
+            / sum(rate(courtside_slo_observations_total{surface="withdrawal",objective="origin-denial-30s"}[5m]))
           ) > (14.4 * 0.01)
+          and
+          sum(rate(courtside_slo_observations_total{surface="withdrawal",objective="origin-denial-30s"}[1h])) > 0
           and
           (1 -
             sum(rate(courtside_slo_observations_total{surface="withdrawal",objective="origin-denial-30s",budget="met"}[1h]))
-            / clamp_min(sum(rate(courtside_slo_observations_total{surface="withdrawal",objective="origin-denial-30s"}[1h])), 0.000000001)
+            / sum(rate(courtside_slo_observations_total{surface="withdrawal",objective="origin-denial-30s"}[1h]))
           ) > (14.4 * 0.01)
         for: 1m
         labels: { surface: withdrawal, owner: rights-operations, severity: page }
@@ -201,14 +244,18 @@ groups:
 
       - alert: CourtsideWithdrawalSlowBurn
         expr: >-
+          sum(rate(courtside_slo_observations_total{surface="withdrawal",objective="origin-denial-30s"}[30m])) > 0
+          and
           (1 -
             sum(rate(courtside_slo_observations_total{surface="withdrawal",objective="origin-denial-30s",budget="met"}[30m]))
-            / clamp_min(sum(rate(courtside_slo_observations_total{surface="withdrawal",objective="origin-denial-30s"}[30m])), 0.000000001)
+            / sum(rate(courtside_slo_observations_total{surface="withdrawal",objective="origin-denial-30s"}[30m]))
           ) > (6 * 0.01)
+          and
+          sum(rate(courtside_slo_observations_total{surface="withdrawal",objective="origin-denial-30s"}[6h])) > 0
           and
           (1 -
             sum(rate(courtside_slo_observations_total{surface="withdrawal",objective="origin-denial-30s",budget="met"}[6h]))
-            / clamp_min(sum(rate(courtside_slo_observations_total{surface="withdrawal",objective="origin-denial-30s"}[6h])), 0.000000001)
+            / sum(rate(courtside_slo_observations_total{surface="withdrawal",objective="origin-denial-30s"}[6h]))
           ) > (6 * 0.01)
         for: 10m
         labels: { surface: withdrawal, owner: rights-operations, severity: page }
@@ -229,14 +276,18 @@ groups:
 
       - alert: CourtsideSearchFreshnessFastBurn
         expr: >-
+          sum(rate(courtside_slo_observations_total{surface="search-freshness",objective="visible-in-search"}[5m])) > 0
+          and
           (1 -
             sum(rate(courtside_slo_observations_total{surface="search-freshness",objective="visible-in-search",budget="met"}[5m]))
-            / clamp_min(sum(rate(courtside_slo_observations_total{surface="search-freshness",objective="visible-in-search"}[5m])), 0.000000001)
+            / sum(rate(courtside_slo_observations_total{surface="search-freshness",objective="visible-in-search"}[5m]))
           ) > (14.4 * 0.01)
+          and
+          sum(rate(courtside_slo_observations_total{surface="search-freshness",objective="visible-in-search"}[1h])) > 0
           and
           (1 -
             sum(rate(courtside_slo_observations_total{surface="search-freshness",objective="visible-in-search",budget="met"}[1h]))
-            / clamp_min(sum(rate(courtside_slo_observations_total{surface="search-freshness",objective="visible-in-search"}[1h])), 0.000000001)
+            / sum(rate(courtside_slo_observations_total{surface="search-freshness",objective="visible-in-search"}[1h]))
           ) > (14.4 * 0.01)
         for: 2m
         labels: { surface: search-freshness, owner: discovery-operations, severity: page }
@@ -247,14 +298,18 @@ groups:
 
       - alert: CourtsideSearchFreshnessSlowBurn
         expr: >-
+          sum(rate(courtside_slo_observations_total{surface="search-freshness",objective="visible-in-search"}[30m])) > 0
+          and
           (1 -
             sum(rate(courtside_slo_observations_total{surface="search-freshness",objective="visible-in-search",budget="met"}[30m]))
-            / clamp_min(sum(rate(courtside_slo_observations_total{surface="search-freshness",objective="visible-in-search"}[30m])), 0.000000001)
+            / sum(rate(courtside_slo_observations_total{surface="search-freshness",objective="visible-in-search"}[30m]))
           ) > (6 * 0.01)
+          and
+          sum(rate(courtside_slo_observations_total{surface="search-freshness",objective="visible-in-search"}[6h])) > 0
           and
           (1 -
             sum(rate(courtside_slo_observations_total{surface="search-freshness",objective="visible-in-search",budget="met"}[6h]))
-            / clamp_min(sum(rate(courtside_slo_observations_total{surface="search-freshness",objective="visible-in-search"}[6h])), 0.000000001)
+            / sum(rate(courtside_slo_observations_total{surface="search-freshness",objective="visible-in-search"}[6h]))
           ) > (6 * 0.01)
         for: 15m
         labels: { surface: search-freshness, owner: discovery-operations, severity: page }
@@ -265,14 +320,18 @@ groups:
 
       - alert: CourtsideMediaProcessingFastBurn
         expr: >-
+          sum(rate(courtside_slo_observations_total{surface="media-processing",objective="ready"}[5m])) > 0
+          and
           (1 -
             sum(rate(courtside_slo_observations_total{surface="media-processing",objective="ready",budget="met"}[5m]))
-            / clamp_min(sum(rate(courtside_slo_observations_total{surface="media-processing",objective="ready"}[5m])), 0.000000001)
+            / sum(rate(courtside_slo_observations_total{surface="media-processing",objective="ready"}[5m]))
           ) > (14.4 * 0.01)
+          and
+          sum(rate(courtside_slo_observations_total{surface="media-processing",objective="ready"}[1h])) > 0
           and
           (1 -
             sum(rate(courtside_slo_observations_total{surface="media-processing",objective="ready",budget="met"}[1h]))
-            / clamp_min(sum(rate(courtside_slo_observations_total{surface="media-processing",objective="ready"}[1h])), 0.000000001)
+            / sum(rate(courtside_slo_observations_total{surface="media-processing",objective="ready"}[1h]))
           ) > (14.4 * 0.01)
         for: 2m
         labels: { surface: media-processing, owner: media-operations, severity: page }
@@ -283,14 +342,18 @@ groups:
 
       - alert: CourtsideMediaProcessingSlowBurn
         expr: >-
+          sum(rate(courtside_slo_observations_total{surface="media-processing",objective="ready"}[30m])) > 0
+          and
           (1 -
             sum(rate(courtside_slo_observations_total{surface="media-processing",objective="ready",budget="met"}[30m]))
-            / clamp_min(sum(rate(courtside_slo_observations_total{surface="media-processing",objective="ready"}[30m])), 0.000000001)
+            / sum(rate(courtside_slo_observations_total{surface="media-processing",objective="ready"}[30m]))
           ) > (6 * 0.01)
+          and
+          sum(rate(courtside_slo_observations_total{surface="media-processing",objective="ready"}[6h])) > 0
           and
           (1 -
             sum(rate(courtside_slo_observations_total{surface="media-processing",objective="ready",budget="met"}[6h]))
-            / clamp_min(sum(rate(courtside_slo_observations_total{surface="media-processing",objective="ready"}[6h])), 0.000000001)
+            / sum(rate(courtside_slo_observations_total{surface="media-processing",objective="ready"}[6h]))
           ) > (6 * 0.01)
         for: 15m
         labels: { surface: media-processing, owner: media-operations, severity: page }
