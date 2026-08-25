@@ -1,12 +1,20 @@
 # T084 minimal product analytics data inventory
 
-Status: bounded contract only. This document does not activate a provider, SDK, endpoint, receiver, credential, or production configuration.
+Status: bounded contract with inert frontend producers. This document does not activate a provider, SDK, endpoint, receiver, credential, or production configuration.
 
 ## Purpose
 
 T084 defines a minimal, consent-aware product analytics contract for public magazine interactions. Reading, searching, and sharing remain available without analytics consent.
 
-The contract is intentionally provider-neutral. Events are eligible for a sink only after the user has explicitly granted consent. The current implementation has no configured external sink.
+The contract is intentionally provider-neutral. The four existing public client surfaces now construct only the allowlisted, bounded events described below. Events are eligible for a sink only after the user has explicitly granted consent. The current runtime starts with `unknown` consent and has no configured external sink, so the wired producers emit nothing externally.
+
+## Inert runtime producer boundary
+
+- Successful public issue and article views call the runtime only after client mount.
+- A search event is constructed only for an explicit form submission paired with its successful first-page response. Raw query text is used transiently by the search page to correlate that response; only its Unicode code-point count crosses into the analytics runtime and is immediately bucketed.
+- A share event records only the bounded browser adapter that was started (`native_share` or `copy_link`). The share or clipboard action starts before the fire-and-forget analytics call, preserving browser user activation.
+- All four calls are fire-and-forget. Reading, searching, and sharing never await analytics and remain available when consent is absent or the sink is unconfigured or fails.
+- The universal Nuxt plugin creates an isolated in-memory runtime for each app/request. It receives no provider, sink, persistent consent store, endpoint, configuration, or secret.
 
 ## Consent and failure behavior
 

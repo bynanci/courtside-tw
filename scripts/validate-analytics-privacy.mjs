@@ -11,6 +11,18 @@ import {
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const analyticsPath = path.join(root, "apps/web/app/features/analytics/analytics.ts")
+const runtimePath = path.join(root, "apps/web/app/features/analytics/runtime.ts")
+const searchCorrelationPath = path.join(
+  root,
+  "apps/web/app/features/analytics/search-correlation.ts"
+)
+const pluginPath = path.join(root, "apps/web/app/plugins/analytics.ts")
+const producerPaths = {
+  issue: path.join(root, "apps/web/app/pages/issues/[issueSlug].vue"),
+  article: path.join(root, "apps/web/app/pages/articles/[articleSlug].vue"),
+  search: path.join(root, "apps/web/app/pages/search.vue"),
+  share: path.join(root, "apps/web/app/features/reader/components/ShareArticleButton.vue")
+}
 const policyPath = path.join(
   root,
   "apps/api/src/main/java/tw/basketball/magazine/analytics/AnalyticsEventPolicy.java"
@@ -130,11 +142,26 @@ function normalizeEventSpecs(eventSpecs) {
 }
 
 assert.ok(fs.existsSync(analyticsPath), "frontend analytics contract is missing")
+assert.ok(fs.existsSync(runtimePath), "frontend analytics runtime is missing")
+assert.ok(fs.existsSync(searchCorrelationPath), "search analytics correlation is missing")
+assert.ok(fs.existsSync(pluginPath), "frontend analytics plugin is missing")
+for (const [surface, producerPath] of Object.entries(producerPaths)) {
+  assert.ok(fs.existsSync(producerPath), `${surface} analytics producer is missing`)
+}
 assert.ok(fs.existsSync(policyPath), "API analytics policy is missing")
 assert.ok(fs.existsSync(eventSpecPath), "canonical analytics event spec is missing")
 assert.ok(fs.existsSync(inventoryPath), "analytics privacy inventory is missing")
 
 const analyticsSource = fs.readFileSync(analyticsPath, "utf8")
+const runtimeSource = fs.readFileSync(runtimePath, "utf8")
+const searchCorrelationSource = fs.readFileSync(searchCorrelationPath, "utf8")
+const pluginSource = fs.readFileSync(pluginPath, "utf8")
+const producerSources = Object.fromEntries(
+  Object.entries(producerPaths).map(([surface, producerPath]) => [
+    surface,
+    fs.readFileSync(producerPath, "utf8")
+  ])
+)
 const policySource = fs.readFileSync(policyPath, "utf8")
 const frontendTestSource = fs.readFileSync(frontendTestPath, "utf8")
 const apiTestSource = fs.readFileSync(apiTestPath, "utf8")
@@ -247,16 +274,44 @@ assert.ok(
   analyticsSource.includes('if (getConsent() !== "granted")'),
   "only explicit granted consent may reach the sink"
 )
-assert.ok(!analyticsSource.includes("fetch("), "T084 must not configure an HTTP endpoint")
-assert.ok(!analyticsSource.includes("sendBeacon"), "T084 must not configure a receiver")
-assert.ok(!analyticsSource.includes("localStorage"), "T084 must not create provider persistence")
+assert.ok(pluginSource.includes("createProductAnalyticsRuntime()"))
+assert.ok(pluginSource.includes("provide: {"))
+assert.ok(runtimeSource.includes("queryLength: number"), "raw query must not enter the runtime")
+
+const requiredProducerCalls = {
+  issue: "void $analytics.trackIssueView()",
+  article: "void $analytics.trackArticleView()",
+  search: "void $analytics.trackSearchSubmitted(",
+  share: "void $analytics.trackShareStarted("
+}
+for (const [surface, call] of Object.entries(requiredProducerCalls)) {
+  const source = producerSources[surface]
+  assert.ok(source.includes(call), `${surface} analytics producer call is missing`)
+  assert.ok(!source.includes(`await $analytics.`), `${surface} must not await analytics`)
+}
+const shareAdapterIndex = producerSources.share.indexOf("performArticleShare(")
+const shareAnalyticsIndex = producerSources.share.indexOf("void $analytics.trackShareStarted(")
+assert.ok(shareAdapterIndex >= 0, "the browser share adapter call is missing")
+assert.ok(shareAnalyticsIndex >= 0, "the share analytics call is missing")
+assert.ok(
+  shareAdapterIndex < shareAnalyticsIndex,
+  "the browser share adapter must start before analytics"
+)
+
+const inertRuntimeSources = analyticsSource + runtimeSource + searchCorrelationSource + pluginSource
+assert.ok(!inertRuntimeSources.includes("fetch("), "T084 must not configure an HTTP endpoint")
+assert.ok(!inertRuntimeSources.includes("sendBeacon"), "T084 must not configure a receiver")
+assert.ok(!inertRuntimeSources.includes("localStorage"), "T084 must not create persistence")
+assert.ok(!inertRuntimeSources.includes("sessionStorage"), "T084 must not create persistence")
+assert.ok(!pluginSource.includes("useRuntimeConfig"), "T084 must not configure a provider")
 assert.ok(inventory.includes("30 days"), "future retention ceiling must be 30 days")
 assert.ok(inventory.includes("no configured external sink"))
+assert.ok(inventory.includes("inert frontend producers"))
 assert.ok(inventory.includes("does not create retention jobs"))
 assert.ok(inventory.includes("sink_unconfigured"))
 assert.ok(inventory.includes("storage read failure"))
 assert.ok(inventory.includes("secrets"))
 
 console.log(
-  "analytics privacy contract: pass (frontend/API canonical parity, explicit consent, bounded failures)"
+  "analytics privacy contract: pass (canonical parity, inert producers, explicit consent, bounded failures)"
 )

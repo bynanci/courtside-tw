@@ -1,21 +1,31 @@
 <script setup lang="ts">
+import { useNuxtApp } from "#app"
 import { ref } from "vue"
 
 import { performArticleShare } from "../share"
 
 const props = defineProps<{ title: string; canonicalUrl: string; clientReady: boolean }>()
+const { $analytics } = useNuxtApp()
 const status = ref("")
 
 async function shareArticle(): Promise<void> {
-  const result = await performArticleShare(
+  const hasNativeShare = typeof navigator.share === "function"
+  const hasClipboard = typeof navigator.clipboard?.writeText === "function"
+  const sharePromise = performArticleShare(
     { title: props.title, url: props.canonicalUrl },
     {
-      ...(typeof navigator.share === "function" ? { share: navigator.share.bind(navigator) } : {}),
-      ...(navigator.clipboard?.writeText
+      ...(hasNativeShare ? { share: navigator.share.bind(navigator) } : {}),
+      ...(hasClipboard
         ? { writeText: navigator.clipboard.writeText.bind(navigator.clipboard) }
         : {})
     }
   )
+  if (hasNativeShare) {
+    void $analytics.trackShareStarted("article", "native_share")
+  } else if (hasClipboard) {
+    void $analytics.trackShareStarted("article", "copy_link")
+  }
+  const result = await sharePromise
   status.value = result.message
 }
 </script>

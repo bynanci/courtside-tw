@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { navigateTo } from "#app"
+import { navigateTo, useNuxtApp } from "#app"
 import { onBeforeUnmount, ref, watch } from "vue"
 
 import ReadingState from "../components/issues/ReadingState.vue"
 import { canonicalUrl } from "../composables/public-seo"
+import { createSearchAnalyticsCorrelation } from "../features/analytics/search-correlation"
 import { fetchPublicSearch, type PublicSearchPage } from "../features/search/public-search-api"
 
 const route = useRoute()
 const config = useRuntimeConfig()
+const { $analytics } = useNuxtApp()
 
 const routeQuery = computed(() => boundedQuery(route.query.q))
 const routeTaxonomy = computed(() => boundedTaxonomy(route.query.taxonomy))
@@ -15,6 +17,21 @@ const routeCursor = computed(() => boundedCursor(route.query.cursor))
 const inputQuery = ref(routeQuery.value)
 const inputTaxonomy = ref(routeTaxonomy.value.join(", "))
 let activeRequest: AbortController | null = null
+const searchAnalytics = createSearchAnalyticsCorrelation(
+  searchRequestKey(routeQuery.value, routeTaxonomy.value, routeCursor.value),
+  ({ queryLength, resultCount, hasNextPage }) => {
+    void $analytics.trackSearchSubmitted(queryLength, resultCount, hasNextPage)
+  }
+)
+
+watch(
+  [routeQuery, routeTaxonomy, routeCursor],
+  () =>
+    searchAnalytics.routeChanged(
+      searchRequestKey(routeQuery.value, routeTaxonomy.value, routeCursor.value)
+    ),
+  { flush: "sync" }
+)
 
 const emptyPage = (raw: string): PublicSearchPage => ({
   query: { raw, normalized: "", taxonomy: [] },
@@ -30,17 +47,30 @@ const {
   "public-search",
   async () => {
     const query = routeQuery.value
-    if (!query && routeTaxonomy.value.length === 0) return emptyPage(query)
+    const taxonomy = [...routeTaxonomy.value]
+    const cursor = routeCursor.value
+    const key = searchRequestKey(query, taxonomy, cursor)
+    const requestToken = searchAnalytics.beginRequest(key)
+    if (!query && taxonomy.length === 0) {
+      const page = emptyPage(query)
+      recordResolvedSearch(requestToken, query, taxonomy, page)
+      return page
+    }
     activeRequest?.abort()
     const request = new AbortController()
     activeRequest = request
     try {
-      return await fetchPublicSearch(config.public.apiBaseUrl, query, {
-        cursor: routeCursor.value || undefined,
+      const page = await fetchPublicSearch(config.public.apiBaseUrl, query, {
+        cursor: cursor || undefined,
         limit: 20,
-        taxonomy: routeTaxonomy.value,
+        taxonomy,
         signal: request.signal
       })
+      recordResolvedSearch(requestToken, query, taxonomy, page)
+      return page
+    } catch (cause) {
+      searchAnalytics.rejectRequest(requestToken)
+      throw cause
     } finally {
       if (activeRequest === request) activeRequest = null
     }
@@ -51,11 +81,25 @@ const {
   }
 )
 
+if (results.value && !error.value) {
+  const query = routeQuery.value
+  const taxonomy = [...routeTaxonomy.value]
+  if (searchResponseMatches(results.value, query, taxonomy)) {
+    searchAnalytics.seedResolved(searchRequestKey(query, taxonomy, routeCursor.value), {
+      resultCount: results.value.items.length,
+      hasNextPage: results.value.page.nextCursor !== null
+    })
+  }
+}
+
 watch([routeQuery, routeTaxonomy], ([query, taxonomy]) => {
   inputQuery.value = query
   inputTaxonomy.value = taxonomy.join(", ")
 })
-onBeforeUnmount(() => activeRequest?.abort())
+onBeforeUnmount(() => {
+  searchAnalytics.reset()
+  activeRequest?.abort()
+})
 
 const hasSearch = computed(() => routeQuery.value.length > 0 || routeTaxonomy.value.length > 0)
 const normalizedQuery = computed(() => results.value?.query.normalized ?? "")
@@ -93,12 +137,56 @@ useHead(() => ({
 async function submitSearch() {
   const query = inputQuery.value.trim().slice(0, 200)
   const taxonomy = boundedTaxonomy(inputTaxonomy.value)
-  await navigateTo({
-    path: "/search",
-    query: {
-      ...(query ? { q: query } : {}),
-      ...(taxonomy.length ? { taxonomy } : {})
-    }
+  const submissionKey = searchRequestKey(query, taxonomy, "")
+  const submissionId = searchAnalytics.beginSubmission(submissionKey, Array.from(query).length)
+
+  try {
+    await navigateTo({
+      path: "/search",
+      query: {
+        ...(query ? { q: query } : {}),
+        ...(taxonomy.length ? { taxonomy } : {})
+      }
+    })
+    searchAnalytics.confirmSubmission(
+      submissionId,
+      searchRequestKey(routeQuery.value, routeTaxonomy.value, routeCursor.value)
+    )
+  } catch (cause) {
+    searchAnalytics.cancelSubmission(submissionId)
+    throw cause
+  }
+}
+
+function searchRequestKey(query: string, taxonomy: readonly string[], cursor: string): string {
+  return JSON.stringify([query, taxonomy, cursor])
+}
+
+function sameTaxonomy(left: readonly string[], right: readonly string[]): boolean {
+  return left.length === right.length && left.every((value, index) => value === right[index])
+}
+
+function searchResponseMatches(
+  page: PublicSearchPage,
+  query: string,
+  taxonomy: readonly string[]
+): boolean {
+  return page.query.raw === query && sameTaxonomy(page.query.taxonomy, taxonomy)
+}
+
+function recordResolvedSearch(
+  requestToken: ReturnType<typeof searchAnalytics.beginRequest>,
+  query: string,
+  taxonomy: readonly string[],
+  page: PublicSearchPage
+): void {
+  if (!searchResponseMatches(page, query, taxonomy)) {
+    searchAnalytics.rejectRequest(requestToken)
+    return
+  }
+  searchAnalytics.resolveRequest(requestToken, {
+    resultCount: page.items.length,
+    hasNextPage: page.page.nextCursor !== null
   })
 }
 
