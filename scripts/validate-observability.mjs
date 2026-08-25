@@ -33,6 +33,61 @@ const requiredForbiddenLabels = [
   "user_id",
   "wallet_address"
 ]
+const expectedAllowedLabels = [
+  "budget",
+  "environment",
+  "event_type",
+  "le",
+  "objective",
+  "outcome",
+  "surface"
+]
+const expectedLatencyBuckets = ["0.05", "0.1", "0.2", "0.3", "0.5", "1", "2.5", "5", "+Inf"]
+const expectedDeadLetterEventTypes = [
+  "media.asset.process",
+  "publication.article.command",
+  "publication.issue.command",
+  "unknown"
+]
+const expectedSeriesPerEnvironment = {
+  heartbeat: 7,
+  observations: 42,
+  latency_buckets: 9,
+  latency_sum: 1,
+  latency_count: 1,
+  dead_letter_events: 12
+}
+const expectedRequiredSeriesCounts = {
+  "public-read": {
+    courtside_observability_source_up: 1,
+    courtside_slo_observations_total: 6,
+    courtside_slo_latency_seconds_bucket: 9
+  },
+  "publication-jobs": {
+    courtside_observability_source_up: 1,
+    courtside_slo_observations_total: 6
+  },
+  withdrawal: {
+    courtside_observability_source_up: 1,
+    courtside_slo_observations_total: 12
+  },
+  "search-freshness": {
+    courtside_observability_source_up: 1,
+    courtside_slo_observations_total: 6
+  },
+  "media-processing": {
+    courtside_observability_source_up: 1,
+    courtside_slo_observations_total: 6
+  },
+  "cache-purge": {
+    courtside_observability_source_up: 1,
+    courtside_slo_observations_total: 6
+  },
+  "dead-letters": {
+    courtside_observability_source_up: 1,
+    courtside_outbox_handler_events_total: 12
+  }
+}
 const errors = []
 
 function fail(message) {
@@ -141,6 +196,41 @@ if (contract) {
   if (contract?.evaluation?.environment_scope !== "single_environment_rule_evaluator") {
     fail("alerts must be evaluated in exactly one environment per rule evaluator")
   }
+  if (contract?.evaluation?.zero_denominator_policy !== "hold_without_page") {
+    fail("zero-denominator windows must HOLD without paging or reporting an achieved SLO")
+  }
+  sameMembers(contract?.privacy?.allowed_labels, expectedAllowedLabels, "privacy.allowed_labels")
+  sameMembers(
+    contract?.canonical_inputs?.latency?.bounded_values?.le,
+    expectedLatencyBuckets,
+    "latency bucket boundaries"
+  )
+  sameMembers(
+    contract?.canonical_inputs?.existing_dead_letters?.bounded_values?.event_type,
+    expectedDeadLetterEventTypes,
+    "dead-letter event_type values"
+  )
+  if (contract?.cardinality_limits?.scope !== "per_environment") {
+    fail("cardinality limits must be scoped per environment")
+  }
+  if (contract?.cardinality_limits?.environments_per_evaluator !== 1) {
+    fail("each alert evaluator must contain exactly one environment")
+  }
+  for (const [family, expected] of Object.entries(expectedSeriesPerEnvironment)) {
+    if (contract?.cardinality_limits?.series_per_environment?.[family] !== expected) {
+      fail(`cardinality ${family} must be exactly ${expected} series per environment`)
+    }
+  }
+  const expectedHardLimit = Object.values(expectedSeriesPerEnvironment).reduce(
+    (total, value) => total + value,
+    0
+  )
+  if (contract?.cardinality_limits?.hard_series_limit !== expectedHardLimit) {
+    fail(`cardinality hard_series_limit must be exactly ${expectedHardLimit}`)
+  }
+  if (contract?.cardinality_limits?.breach_policy !== "page_and_hold") {
+    fail("cardinality breaches must page and HOLD")
+  }
   sameMembers(
     contract?.canonical_inputs?.heartbeat?.required_labels,
     ["surface", "environment"],
@@ -228,6 +318,17 @@ if (contract) {
     if (!(surface?.source?.required_series?.length > 0)) {
       fail(`${surface.id} must enumerate every fail-closed required series`)
     }
+    const expectedCounts = expectedRequiredSeriesCounts[surface.id]
+    sameMembers(
+      Object.keys(surface?.source?.required_series_counts ?? {}),
+      surface?.source?.required_series ?? [],
+      `${surface.id} required_series_counts keys`
+    )
+    for (const [metric, expected] of Object.entries(expectedCounts ?? {})) {
+      if (surface?.source?.required_series_counts?.[metric] !== expected) {
+        fail(`${surface.id} must require exactly ${expected} ${metric} series`)
+      }
+    }
     if (!surface?.alerts?.missing || !(surface?.alerts?.paging?.length > 0)) {
       fail(`${surface.id} must declare one missing-signal alert and at least one paging alert`)
     }
@@ -263,6 +364,18 @@ if (alerts) {
       !(expression.includes("[30m]") && expression.includes("[6h]"))
     ) {
       fail(`${rule.alert} must use both 30-minute and 6-hour burn windows`)
+    }
+    if (rule.alert?.endsWith("FastBurn") || rule.alert?.endsWith("SlowBurn")) {
+      const guards =
+        expression.match(
+          /sum\(rate\(courtside_slo_observations_total\{[^}]+\}\[(?:5m|1h|30m|6h)\]\)\) > 0/g
+        ) ?? []
+      if (guards.length !== 2 || guards.some((guard) => guard.includes('budget="met"'))) {
+        fail(`${rule.alert} must have one total-denominator > 0 guard for each burn window`)
+      }
+      if (expression.includes("clamp_min")) {
+        fail(`${rule.alert} must not convert a zero denominator into a 100% failure ratio`)
+      }
     }
   }
 
@@ -302,6 +415,35 @@ if (alerts) {
       if (missingRule && !String(missingRule.expr).includes(`absent(${metric}`)) {
         fail(`${surface.alerts.missing} must detect absent ${metric}`)
       }
+      const expected = surface?.source?.required_series_counts?.[metric]
+      if (
+        missingRule &&
+        (!String(missingRule.expr).includes(`count(${metric}`) ||
+          !String(missingRule.expr).includes(`!= ${expected}`))
+      ) {
+        fail(`${surface.alerts.missing} must enforce exactly ${expected} ${metric} series`)
+      }
+    }
+    if (
+      missingRule &&
+      surface.id !== "dead-letters" &&
+      !String(missingRule.expr).includes('budget=~"met|missed"')
+    ) {
+      fail(`${surface.alerts.missing} must cover both bounded budget values`)
+    }
+    if (
+      missingRule &&
+      surface.id !== "dead-letters" &&
+      !String(missingRule.expr).includes('outcome=~"completed|explicitly_blocked|failed"')
+    ) {
+      fail(`${surface.alerts.missing} must cover all bounded observation outcomes`)
+    }
+    if (
+      missingRule &&
+      surface.id === "dead-letters" &&
+      !String(missingRule.expr).includes("publication[.]article[.]command")
+    ) {
+      fail("dead-letter telemetry must enforce the fixed current-main event_type set")
     }
   }
 }
@@ -320,6 +462,26 @@ if (dashboard) {
   if (environmentVariable?.includeAll !== false || environmentVariable?.multi !== false) {
     fail("dashboard environment selection must be single-value with no all-environments option")
   }
+  const coveragePanel = (dashboard.panels ?? []).find(
+    (panel) => panel.kind === "telemetry-coverage"
+  )
+  sameMembers(
+    coveragePanel?.targets?.map((target) => target.refId),
+    ["A", "B", "C", "D", "E"],
+    "telemetry-coverage target refs"
+  )
+  for (const target of coveragePanel?.targets ?? []) {
+    if (!String(target.expr).includes('environment="$environment"')) {
+      fail(`telemetry-coverage target ${target.refId} must filter one environment`)
+    }
+    if (!String(target.expr).includes("== bool")) {
+      fail(`telemetry-coverage target ${target.refId} must expose an exact 1/0 contract result`)
+    }
+  }
+  if (!String(coveragePanel?.description ?? "").includes("72")) {
+    fail("telemetry-coverage panel must state the 72-series hard limit")
+  }
+
   const surfacePanels = (dashboard.panels ?? []).filter((panel) => panel.surface)
   sameMembers(
     surfacePanels.map((panel) => panel.surface),
@@ -334,6 +496,9 @@ if (dashboard) {
       panel.targets.some((target) => !String(target.expr).includes('environment="$environment"'))
     ) {
       fail(`dashboard panel ${panel.surface} must filter one explicit environment`)
+    }
+    if (panel.targets.some((target) => String(target.expr).includes("clamp_min"))) {
+      fail(`dashboard panel ${panel.surface} must render a zero denominator as no data`)
     }
   }
   const panelIds = (dashboard.panels ?? []).map((panel) => panel.id)
