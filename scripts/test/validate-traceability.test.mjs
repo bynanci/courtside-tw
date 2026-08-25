@@ -15,7 +15,10 @@ const baseSha = "3fc14dd29b216ce46e4d364ceaec79a971dcef44"
 const featurePath = "specs/001-taiwan-basketball-magazine-ebook"
 
 function ids(prefix, count) {
-  return Array.from({ length: count }, (_, index) => `${prefix}-${String(index + 1).padStart(3, "0")}`)
+  return Array.from(
+    { length: count },
+    (_, index) => `${prefix}-${String(index + 1).padStart(3, "0")}`
+  )
 }
 
 function taskIds() {
@@ -23,18 +26,29 @@ function taskIds() {
 }
 
 function canonicalContract() {
-  const requirements = [...ids("FR", 74), ...ids("SC", 23)].map((id) => ({
-    id,
-    story: "CROSS_CUT",
-    priority: "P1",
-    slice: "fixture",
-    task_ids: ["T001"],
-    implementation_state: "COMPLETE",
-    evidence_state: "VERIFIED",
-    proofs: [{ kind: "BEHAVIORAL", path: "proof.txt", selector: "fixture-proof" }],
-    deviation_ids: [],
-    release_impact: "NONE"
-  }))
+  const human = new Set(["SC-001", "SC-004", "SC-007"])
+  const external = new Set(["SC-002", "SC-011"])
+  const requirements = [...ids("FR", 74), ...ids("SC", 23)].map((id) => {
+    const kind = human.has(id)
+      ? "HUMAN_RECEIPT"
+      : external.has(id)
+        ? "EXTERNAL_METRIC_RECEIPT"
+        : id === "SC-012"
+          ? "CI_STABILITY_RECEIPT"
+          : "REPOSITORY_PROOF"
+    return {
+      id,
+      story: "CROSS_CUT",
+      priority: "P1",
+      slice: "fixture",
+      task_ids: ["T001"],
+      implementation_state: "COMPLETE",
+      evidence_state: "VERIFIED",
+      proofs: [{ kind, path: "proof.txt", selector: "fixture-proof" }],
+      deviation_ids: [],
+      release_impact: "NONE"
+    }
+  })
   return {
     schema_version: TRACEABILITY_SCHEMA,
     authorized_base_sha: baseSha,
@@ -50,12 +64,16 @@ function canonicalContract() {
       secrets_changed: false
     },
     requirements,
-    task_ledger: taskIds().map((id) => ({
-      id,
-      status: id === "T085" ? "OPEN" : "COMPLETE",
-      classification: id === "T085" ? "TRACEABILITY" : "FOUNDATION",
-      requirement_ids: id === "T001" ? requirements.map((row) => row.id) : []
-    })),
+    task_ledger: taskIds().map((id) => {
+      const requirementIds = id === "T001" ? requirements.map((row) => row.id) : []
+      return {
+        id,
+        status: id === "T085" ? "OPEN" : "COMPLETE",
+        classification: id === "T085" ? "TRACEABILITY" : "FOUNDATION",
+        requirement_ids: requirementIds,
+        ...(requirementIds.length === 0 ? { orphan_reason: "fixture enabling task" } : {})
+      }
+    }),
     deviations: []
   }
 }
@@ -142,9 +160,9 @@ test("unknown tasks and reverse mapping drift both fail", () => {
 
 test("missing proof paths, path escape and missing selectors fail closed", () => {
   for (const proof of [
-    { kind: "BEHAVIORAL", path: "missing.txt", selector: "fixture-proof" },
-    { kind: "BEHAVIORAL", path: "../outside.txt", selector: "fixture-proof" },
-    { kind: "BEHAVIORAL", path: "proof.txt", selector: "not-present" }
+    { kind: "REPOSITORY_PROOF", path: "missing.txt", selector: "fixture-proof" },
+    { kind: "REPOSITORY_PROOF", path: "../outside.txt", selector: "fixture-proof" },
+    { kind: "REPOSITORY_PROOF", path: "proof.txt", selector: "not-present" }
   ]) {
     const report = run(
       makeFixture(({ contract }) => {
@@ -184,3 +202,56 @@ test("scope authority declarations remain false", () => {
   assert.match(report.errors.join("\n"), /lifecycle.provider_configured must remain false/)
 })
 
+test("automated repository proof cannot upgrade a human success criterion", () => {
+  const root = makeFixture(({ contract }) => {
+    const row = contract.requirements.find(({ id }) => id === "SC-001")
+    row.proofs[0].kind = "REPOSITORY_PROOF"
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /SC-001.*requires a HUMAN_RECEIPT/)
+})
+
+test("delivery tasks cannot be silently orphaned from the reverse ledger", () => {
+  const root = makeFixture(({ contract }) => {
+    contract.task_ledger[1].classification = "IMPLEMENTATION"
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /delivery tasks cannot be orphaned/)
+})
+
+test("exact-head artifact must bind the evaluated Git head", () => {
+  const root = makeFixture(({ files }) => {
+    files["artifacts/exact-head.json"] = JSON.stringify({
+      expected_source_head: "2222222222222222222222222222222222222222",
+      source_head_sha: "2222222222222222222222222222222222222222"
+    })
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /source_head_sha must equal the evaluated Git head/)
+})
+
+test("truthful open evidence remains analysis-valid but not receipt-eligible", () => {
+  const root = makeFixture(({ contract }) => {
+    contract.requirements[0].evidence_state = "PARTIAL"
+    contract.requirements[0].deviation_ids = ["DEV-FIXTURE-001"]
+    contract.deviations.push({
+      id: "DEV-FIXTURE-001",
+      type: "PARTIAL_ACCEPTANCE",
+      severity: "HIGH",
+      affected_ids: ["FR-001"],
+      expected: "complete acceptance",
+      observed: "bounded proof only",
+      disposition: "hold the later release gate",
+      owner: "fixture owner",
+      target: "fixture follow-up",
+      release_impact: "BLOCKS_LATER_GATE",
+      state: "OPEN"
+    })
+  })
+  const report = run(root)
+  assert.equal(report.analysis_valid, true, report.errors.join("\n"))
+  assert.equal(report.receipt_eligible, false)
+})
