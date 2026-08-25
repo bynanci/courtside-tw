@@ -18,7 +18,7 @@
         "receipt proof kinds were previously labels without structured validation",
         "all requirements could previously be vacuously mapped to one foundation task"
       ],
-      "resolution": "The validator now fixes the base, enforces the T085 checkbox frontier and task taxonomy, requires clean-head binding, validates structured receipt types, restricts proof paths, fixes approved orphans and reports mapped tasks separately. Twenty mutation tests cover these boundaries."
+      "resolution": "The validator now fixes the base, enforces the T085 checkbox frontier and task taxonomy, requires clean-head binding, validates structured receipt types, restricts proof paths, fixes approved orphans and reports mapped tasks separately. Twenty-two mutation tests cover these boundaries."
     },
     {
       "review": "matrix-semantics",
@@ -58,7 +58,7 @@
       "PROXY_ONLY": 2,
       "EXTERNAL_OPEN": 1
     },
-    "implementation_distribution": {"COMPLETE": 53, "PLANNED": 44}
+    "implementation_distribution": { "COMPLETE": 53, "PLANNED": 44 }
   },
   "historical_acceptance_readback": {
     "requirement_id": "SC-010",
