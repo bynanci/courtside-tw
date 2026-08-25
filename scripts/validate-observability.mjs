@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 import fs from "node:fs"
 import path from "node:path"
 
@@ -75,7 +76,9 @@ function sameMembers(actual, expected, label) {
   const normalizedActual = sorted(new Set(actual ?? []))
   const normalizedExpected = sorted(new Set(expected))
   if (JSON.stringify(normalizedActual) !== JSON.stringify(normalizedExpected)) {
-    fail(`${label} must be exactly ${normalizedExpected.join(", ")}; found ${normalizedActual.join(", ")}`)
+    fail(
+      `${label} must be exactly ${normalizedExpected.join(", ")}; found ${normalizedActual.join(", ")}`
+    )
   }
 }
 
@@ -91,7 +94,9 @@ function requireObjective(surface, name, expected) {
   }
   for (const [key, value] of Object.entries(expected)) {
     if (item[key] !== value) {
-      fail(`${surface.id}.${name}.${key} must be ${JSON.stringify(value)}; found ${JSON.stringify(item[key])}`)
+      fail(
+        `${surface.id}.${name}.${key} must be ${JSON.stringify(value)}; found ${JSON.stringify(item[key])}`
+      )
     }
   }
 }
@@ -127,8 +132,16 @@ if (contract) {
   if (contract?.missing_signal?.max_sample_age_seconds !== 300) {
     fail("missing telemetry must become stale after 300 seconds")
   }
-  sameMembers(contract?.privacy?.forbidden_labels, requiredForbiddenLabels, "privacy.forbidden_labels")
-  sameMembers(contract?.surfaces?.map((surface) => surface.id), expectedSurfaces, "contract surfaces")
+  sameMembers(
+    contract?.privacy?.forbidden_labels,
+    requiredForbiddenLabels,
+    "privacy.forbidden_labels"
+  )
+  sameMembers(
+    contract?.surfaces?.map((surface) => surface.id),
+    expectedSurfaces,
+    "contract surfaces"
+  )
 
   const byId = new Map((contract.surfaces ?? []).map((surface) => [surface.id, surface]))
   requireObjective(byId.get("public-read"), "availability", {
@@ -181,7 +194,7 @@ if (contract) {
       fail(`${surface.id} must declare owner_role, runbook_anchor and dashboard_panel`)
     }
     if (surface?.source?.heartbeat_metric !== "courtside_observability_source_up") {
-      fail(`${surface.id} must use the canonical source heartbeat`) 
+      fail(`${surface.id} must use the canonical source heartbeat`)
     }
     if (surface?.source?.activation !== "separately_gated") {
       fail(`${surface.id} source activation must remain separately_gated`)
@@ -193,13 +206,13 @@ if (contract) {
 }
 
 const alertRules = (alerts?.groups ?? []).flatMap((group) => group.rules ?? [])
-const alertByName = new Map(alertRules.filter((rule) => rule.alert).map((rule) => [rule.alert, rule]))
+const alertByName = new Map(
+  alertRules.filter((rule) => rule.alert).map((rule) => [rule.alert, rule])
+)
 if (alerts) {
-  if (alerts.schema_version !== "courtside-observability-alerts/v1") {
-    fail("alerts schema_version must be courtside-observability-alerts/v1")
-  }
-  if (alerts?.activation?.provider !== false || alerts?.activation?.receivers_configured !== false) {
-    fail("alert provider and receiver activation must remain false")
+  sameMembers(Object.keys(alerts), ["groups"], "Prometheus alert-rule root keys")
+  if (!(alerts.groups?.length > 0)) {
+    fail("Prometheus alert rules must contain at least one group")
   }
 
   for (const surface of contract?.surfaces ?? []) {
@@ -210,9 +223,11 @@ if (alerts) {
         fail(`${surface.id} references missing alert rule ${alertName}`)
         continue
       }
-      if (rule?.labels?.surface !== surface.id) fail(`${alertName} must label surface=${surface.id}`)
-      if (rule?.labels?.owner !== surface.owner_role) fail(`${alertName} must label owner=${surface.owner_role}`)
-      if (!['warning', 'page', 'critical'].includes(rule?.labels?.severity)) {
+      if (rule?.labels?.surface !== surface.id)
+        fail(`${alertName} must label surface=${surface.id}`)
+      if (rule?.labels?.owner !== surface.owner_role)
+        fail(`${alertName} must label owner=${surface.owner_role}`)
+      if (!["warning", "page", "critical"].includes(rule?.labels?.severity)) {
         fail(`${alertName} must declare a bounded severity`)
       }
       for (const field of ["summary", "description", "runbook_url"]) {
@@ -235,7 +250,11 @@ if (dashboard) {
     fail("dashboard must use a replaceable DS_PROMETHEUS data source")
   }
   const surfacePanels = (dashboard.panels ?? []).filter((panel) => panel.surface)
-  sameMembers(surfacePanels.map((panel) => panel.surface), expectedSurfaces, "dashboard surface panels")
+  sameMembers(
+    surfacePanels.map((panel) => panel.surface),
+    expectedSurfaces,
+    "dashboard surface panels"
+  )
   for (const panel of surfacePanels) {
     if (!(panel.targets?.length > 0) || panel.targets.some((target) => !target.expr)) {
       fail(`dashboard panel ${panel.surface} must have non-empty PromQL targets`)
@@ -265,8 +284,12 @@ if (runbookText !== null) {
 
 const expressionText = [
   ...alertRules.map((rule) => String(rule.expr ?? "")),
-  ...(dashboard?.panels ?? []).flatMap((panel) => (panel.targets ?? []).map((target) => String(target.expr ?? "")))
-].join("\n").toLowerCase()
+  ...(dashboard?.panels ?? []).flatMap((panel) =>
+    (panel.targets ?? []).map((target) => String(target.expr ?? ""))
+  )
+]
+  .join("\n")
+  .toLowerCase()
 for (const forbidden of requiredForbiddenLabels) {
   if (expressionText.includes(forbidden)) fail(`PromQL must not use forbidden label ${forbidden}`)
 }
