@@ -1,0 +1,54 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-t085-cross-artifact-traceability",
+  "graph_version": 1,
+  "run_id": "t085-issue-145-20260825",
+  "status": "running",
+  "iteration": 1,
+  "started_at": "2026-08-25T12:42:58Z",
+  "updated_at": "2026-08-25T12:42:58Z",
+  "current_frontier": ["p-red"],
+  "blocked_nodes": ["a-matrix", "p-local", "a-review", "a-draft", "p-exact", "g-release-owner"],
+  "terminal_state": null,
+  "next_action": "Capture an attributable missing-traceability RED before adding the matrix.",
+  "events": [
+    {
+      "event_id": "t085-graph-initialized",
+      "at": "2026-08-25T12:42:58Z",
+      "actor": "codex-agent",
+      "type": "graph_initialized",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          "bound issue 145 and exact protected-main base",
+          "recorded 74 FR 23 SC 112 tasks and the missing traceability artifact",
+          "wired a tests-first RED frontier",
+          "preserved T086 later-task research Web3 production provider secret ready merge and receipt gates"
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t085-dispatch.json"],
+      "proof_receipts": [
+        {
+          "proof": "p-baseline",
+          "status": "PASS",
+          "claim": "Exact protected main has complete source inventories but no T085 traceability artifact."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": null,
+        "version": null,
+        "retrieval_ids": ["github-issue-121", "github-issue-145", "main-3fc14dd"],
+        "evidence_refs": [".loop/evidence/t085-dispatch.json"],
+        "next_review_at": null,
+        "blocker": null,
+        "reason": "The GitHub issue branch and versioned repository receipts are sufficient durable state."
+      },
+      "failure_signature": null,
+      "decision": "proceed_with_bounded_tests_first_red",
+      "token_usage": {"estimated": 18000, "input": 0, "output": 0, "total": 18000},
+      "terminal_reason": null
+    }
+  ]
+}

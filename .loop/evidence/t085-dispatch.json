@@ -1,0 +1,44 @@
+{
+  "schema_version": "courtside-t085-dispatch/v1",
+  "recorded_at": "2026-08-25T12:42:58Z",
+  "repository": "bynanci/courtside-tw",
+  "issue": "https://github.com/bynanci/courtside-tw/issues/145",
+  "branch": "task/t085-cross-artifact-traceability",
+  "base": {
+    "branch": "main",
+    "sha": "3fc14dd29b216ce46e4d364ceaec79a971dcef44",
+    "protected": true,
+    "t084_complete": true,
+    "t085_complete": false,
+    "t086_complete": false,
+    "open_pull_requests_at_dispatch": 0
+  },
+  "inventory": {
+    "functional_requirements": 74,
+    "success_criteria": 23,
+    "tasks": 112,
+    "checked_tasks": 85,
+    "unchecked_tasks": 27,
+    "existing_traceability_artifact": false
+  },
+  "authorized": [
+    "T085 traceability contract and human-readable matrix",
+    "deterministic validator and mutation tests",
+    "plan documentation-tree and traceability-status correction",
+    "T085-only Graphify evidence",
+    "draft pull request and exact-head CI/Security/artifact/read-back"
+  ],
+  "forbidden": [
+    "ready-for-review transition, protected merge or T085 completion receipt",
+    "T086 or later task dispatch or modification",
+    "participant research execution",
+    "Web3, wallet, chain, IPFS or credential implementation",
+    "production activation, provider configuration, credentials, secrets or external writes",
+    "runtime remediation for documentation-only locator drift"
+  ],
+  "tests_first": {
+    "red_claim": "The validator and its mutation suite pass, then the repository contract fails only because traceability.md is absent.",
+    "green_claim": "The same validator passes after an exact 97-requirement matrix, 112-task reverse ledger and explicit deviation register are added."
+  },
+  "terminal_policy": "Stop at needs_human after draft-head CI/Security, artifact digest, review-thread and protected-merge boundary read-back."
+}
