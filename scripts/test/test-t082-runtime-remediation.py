@@ -541,6 +541,38 @@ class T082RuntimeRemediationTests(unittest.TestCase):
             self.assertNotEqual(registration.returncode, 0)
             self.assertIn("different immutable inputs", registration.stderr)
 
+    def test_matching_archived_release_registration_is_a_no_op(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            backup_path = Path(directory) / "release-state.v1.json"
+            archived = manifest("release-archived", "c", 10, 9, 11)
+            legacy = legacy_state()
+            releases = legacy["releases"]
+            assert isinstance(releases, dict)
+            releases["release-archived"] = archived
+            serialized = release.serialize_json(legacy).encode("utf-8")
+            backup_path.write_bytes(serialized)
+            os.chmod(backup_path, 0o600)
+
+            state = release.new_state("test")
+            state["revision"] = 5
+            state["legacy_archive"] = {
+                "path": str(backup_path.resolve()),
+                "sha256": hashlib.sha256(serialized).hexdigest(),
+                "release_count": len(releases),
+            }
+            before = copy.deepcopy(state)
+
+            receipt, changed = release.register_release(
+                state, copy.deepcopy(archived), "test"
+            )
+
+            self.assertFalse(changed)
+            self.assertEqual(receipt["result"], "no_op")
+            self.assertEqual(receipt["release_id"], "release-archived")
+            self.assertEqual(receipt["state_revision"], 5)
+            self.assertEqual(state, before)
+            self.assertNotIn("release-archived", state["releases"])
+
     def test_migration_rejects_an_insecure_existing_legacy_backup(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -597,6 +629,55 @@ class T082RuntimeRemediationTests(unittest.TestCase):
             )
             self.assertNotEqual(migration.returncode, 0)
             self.assertIn("permissions", migration.stderr)
+            self.assertEqual(
+                json.loads(state_path.read_text(encoding="utf-8"))["schema_version"], 1
+            )
+
+    def test_migration_rejects_a_fifo_legacy_backup_without_blocking(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            state_path = root / "release-state.json"
+            backup_path = root / "release-state.v1.fifo"
+            evidence_path = root / "upgrade-evidence.json"
+            receipt_path = root / "migration-receipt.json"
+            state_path.write_text(
+                release.serialize_json(legacy_state()), encoding="utf-8"
+            )
+            write_upgrade_evidence(evidence_path, environment="test")
+            os.mkfifo(backup_path, 0o600)
+
+            try:
+                migration = subprocess.run(
+                    [
+                        sys.executable,
+                        str(CONTROLLER_PATH),
+                        "--state",
+                        str(state_path),
+                        "--receipt",
+                        str(receipt_path),
+                        "--environment",
+                        "test",
+                        "migrate-state",
+                        "--legacy-backup",
+                        str(backup_path),
+                        "--activation-history",
+                        str(evidence_path),
+                        "--confirmation",
+                        release.STATE_UPGRADE_CONFIRMATION,
+                    ],
+                    check=False,
+                    capture_output=True,
+                    text=True,
+                    timeout=2,
+                )
+            except subprocess.TimeoutExpired as error:
+                self.fail(f"migration blocked while opening a FIFO backup: {error}")
+
+            self.assertNotEqual(migration.returncode, 0)
+            self.assertNotIn("Traceback", migration.stderr)
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            self.assertEqual(receipt["result"], "blocked")
+            self.assertIn("regular file", receipt["reason"])
             self.assertEqual(
                 json.loads(state_path.read_text(encoding="utf-8"))["schema_version"], 1
             )
@@ -740,6 +821,49 @@ class T082RuntimeRemediationTests(unittest.TestCase):
                 1,
             )
 
+    def test_migration_blocked_receipt_uses_the_persisted_legacy_revision(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            state_path = root / "release-state.json"
+            backup_path = root / "release-state.v1.json"
+            evidence_path = root / "upgrade-evidence.json"
+            receipt_path = root / "migration-receipt.json"
+            persisted = legacy_state()
+            state_path.write_text(
+                release.serialize_json(persisted), encoding="utf-8"
+            )
+            write_upgrade_evidence(evidence_path, environment="test")
+            arguments = mock.Mock(
+                state=state_path,
+                receipt=receipt_path,
+                environment="test",
+                action="migrate-state",
+                legacy_backup=backup_path,
+                activation_history=evidence_path,
+                confirmation=release.STATE_UPGRADE_CONFIRMATION,
+            )
+
+            with (
+                mock.patch.object(release, "parse_args", return_value=arguments),
+                mock.patch.object(
+                    release,
+                    "ensure_legacy_backup",
+                    side_effect=release.ReleaseError(
+                        "forced post-conversion backup failure"
+                    ),
+                ),
+            ):
+                result = release.main()
+
+            self.assertEqual(result, 2)
+            self.assertEqual(
+                json.loads(state_path.read_text(encoding="utf-8")), persisted
+            )
+            receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            self.assertEqual(receipt["result"], "blocked")
+            self.assertEqual(receipt["state_revision"], persisted["revision"])
+            self.assertEqual(receipt["active_before"], persisted["active_release"])
+
     def test_migration_rejects_release_state_lock_as_legacy_backup(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
@@ -856,6 +980,16 @@ class T082RuntimeRemediationTests(unittest.TestCase):
             state_path.write_text(json.dumps(legacy_state()), encoding="utf-8")
             with self.assertRaisesRegex(release.ReleaseError, "explicit.*migrate"):
                 release.load_state(state_path, "test")
+
+    def test_v1_upgrade_rejects_non_integer_schema_versions(self) -> None:
+        for malformed_version in (True, 1.0):
+            with self.subTest(schema_version=malformed_version):
+                malformed = legacy_state()
+                malformed["schema_version"] = malformed_version
+                with self.assertRaisesRegex(
+                    release.ReleaseError, "schema_version.*integer"
+                ):
+                    release.validate_legacy_state(malformed)
 
     def test_v1_upgrade_preserves_explicit_history_and_receipt(self) -> None:
         migrated = release.migrate_v1_state(
