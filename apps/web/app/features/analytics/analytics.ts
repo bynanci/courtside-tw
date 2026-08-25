@@ -69,7 +69,7 @@ function isConsentState(value: unknown): value is ConsentState {
 }
 
 function isAnalyticsEventType(value: unknown): value is AnalyticsEventType {
-  return typeof value === "string" && value in EVENT_SPECS
+  return typeof value === "string" && Object.prototype.hasOwnProperty.call(EVENT_SPECS, value)
 }
 
 function defaultConsentStore(): ConsentStore {
