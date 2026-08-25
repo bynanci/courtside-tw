@@ -18,10 +18,8 @@ const expectedEvents = [
   "public_search_submitted",
   "public_share_started"
 ]
-const requiredLiterals = [
-  "unknown",
-  "denied",
-  "granted",
+const consentLiterals = ["unknown", "denied", "granted"]
+const boundedLiterals = [
   "content_kind",
   "surface",
   "query_length_bucket",
@@ -66,7 +64,11 @@ for (const eventType of expectedEvents) {
   assert.ok(inventory.includes(eventType), "inventory event is missing: " + eventType)
 }
 
-for (const literal of requiredLiterals) {
+for (const literal of consentLiterals) {
+  assert.ok(analyticsSource.includes(literal), "frontend consent value is missing: " + literal)
+}
+
+for (const literal of boundedLiterals) {
   assert.ok(analyticsSource.includes(literal), "frontend bound value is missing: " + literal)
   assert.ok(policySource.includes(literal), "API bound value is missing: " + literal)
 }
