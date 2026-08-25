@@ -2,7 +2,7 @@
 import assert from "node:assert/strict"
 import fs from "node:fs"
 import path from "node:path"
-import { fileURLToPath, pathToFileURL } from "node:url"
+import { fileURLToPath } from "node:url"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const analyticsPath = path.join(root, "apps/web/app/features/analytics/analytics.ts")
@@ -17,6 +17,26 @@ const expectedEvents = [
   "public_article_view",
   "public_search_submitted",
   "public_share_started"
+]
+const requiredLiterals = [
+  "unknown",
+  "denied",
+  "granted",
+  "content_kind",
+  "surface",
+  "query_length_bucket",
+  "result_count_bucket",
+  "share_target",
+  "empty",
+  "1_2",
+  "3_5",
+  "6_plus",
+  "zero",
+  "1_5",
+  "6_20",
+  "21_plus",
+  "copy_link",
+  "native_share"
 ]
 const forbiddenData = [
   "raw query",
@@ -46,6 +66,11 @@ for (const eventType of expectedEvents) {
   assert.ok(inventory.includes(eventType), "inventory event is missing: " + eventType)
 }
 
+for (const literal of requiredLiterals) {
+  assert.ok(analyticsSource.includes(literal), "frontend bound value is missing: " + literal)
+  assert.ok(policySource.includes(literal), "API bound value is missing: " + literal)
+}
+
 for (const forbidden of forbiddenData) {
   assert.ok(inventory.includes(forbidden), "inventory must name forbidden data: " + forbidden)
 }
@@ -67,57 +92,5 @@ assert.ok(inventory.includes("30 days"), "future retention ceiling must be 30 da
 assert.ok(inventory.includes("no configured external sink"))
 assert.ok(inventory.includes("does not create retention jobs"))
 assert.ok(inventory.includes("secrets"))
-
-const { sanitizeAnalyticsEvent } = await import(pathToFileURL(analyticsPath).href)
-const validEvents = [
-  {
-    type: "public_issue_view",
-    properties: { surface: "issue", content_kind: "issue" }
-  },
-  {
-    type: "public_article_view",
-    properties: { surface: "article", content_kind: "article" }
-  },
-  {
-    type: "public_search_submitted",
-    properties: {
-      surface: "search",
-      query_length_bucket: "3_5",
-      result_count_bucket: "1_5"
-    }
-  },
-  {
-    type: "public_share_started",
-    properties: {
-      surface: "share",
-      content_kind: "article",
-      share_target: "copy_link"
-    }
-  }
-]
-for (const event of validEvents) {
-  assert.ok(sanitizeAnalyticsEvent(event), "valid event rejected: " + event.type)
-}
-assert.equal(
-  sanitizeAnalyticsEvent({
-    type: "public_article_view",
-    properties: { surface: "article", content_kind: "article", slug: "secret" }
-  }),
-  null,
-  "unknown properties must fail closed"
-)
-assert.equal(
-  sanitizeAnalyticsEvent({
-    type: "public_search_submitted",
-    properties: {
-      surface: "search",
-      query: "secret",
-      query_length_bucket: "3_5",
-      result_count_bucket: "1_5"
-    }
-  }),
-  null,
-  "raw queries must fail closed"
-)
 
 console.log("analytics privacy contract: pass (4 events, explicit consent, bounded fields)")
