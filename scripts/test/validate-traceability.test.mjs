@@ -5,13 +5,14 @@ import path from "node:path"
 import test from "node:test"
 
 import {
+  AUTHORIZED_BASE_SHA,
   CONTRACT_END,
   CONTRACT_START,
   TRACEABILITY_SCHEMA,
   validateTraceability
 } from "../validate-traceability.mjs"
 
-const baseSha = "3fc14dd29b216ce46e4d364ceaec79a971dcef44"
+const baseSha = AUTHORIZED_BASE_SHA
 const featurePath = "specs/001-taiwan-basketball-magazine-ebook"
 
 function ids(prefix, count) {
@@ -25,33 +26,68 @@ function taskIds() {
   return Array.from({ length: 112 }, (_, index) => `T${String(index + 1).padStart(3, "0")}`)
 }
 
+function isCheckedTask(id) {
+  const number = Number(id.slice(1))
+  return number <= 84 || number === 97
+}
+
+function classification(id) {
+  const number = Number(id.slice(1))
+  if (number <= 23) return "FOUNDATION"
+  if ([24, 25, 32, 33, 42, 43, 44, 57, 64, 71].includes(number)) return "TEST"
+  if (number <= 76) return "IMPLEMENTATION"
+  if (number <= 84) return "QUALITY_GATE"
+  if (number === 85) return "TRACEABILITY"
+  if (number === 86) return "RELEASE_GATE"
+  if (number <= 96 || number >= 98) return "FUTURE"
+  return "ALIGNMENT"
+}
+
 function canonicalContract() {
-  const human = new Set(["SC-001", "SC-004", "SC-007"])
-  const external = new Set(["SC-002", "SC-011"])
-  const requirements = [...ids("FR", 74), ...ids("SC", 23)].map((id) => {
-    const kind = human.has(id)
-      ? "HUMAN_RECEIPT"
-      : external.has(id)
-        ? "EXTERNAL_METRIC_RECEIPT"
-        : id === "SC-012"
-          ? "CI_STABILITY_RECEIPT"
-          : "REPOSITORY_PROOF"
+  const requirementIds = [...ids("FR", 74), ...ids("SC", 23)]
+  const assignedTasks = new Map(requirementIds.map((id) => [id, []]))
+  const approvedOrphans = new Set(["T001", "T005", "T007", "T082"])
+  const checked = taskIds().filter((id) => isCheckedTask(id) && !approvedOrphans.has(id))
+  const open = taskIds().filter((id) => !isCheckedTask(id))
+  checked.forEach((taskId, index) => assignedTasks.get(requirementIds[index % 70]).push(taskId))
+  open.forEach((taskId, index) => assignedTasks.get(requirementIds[70 + (index % 27)]).push(taskId))
+
+  const plannedIds = new Set(requirementIds.slice(70))
+  const requirements = requirementIds.map((id) => {
+    const planned = plannedIds.has(id)
     return {
       id,
       story: "CROSS_CUT",
       priority: "P1",
       slice: "fixture",
-      task_ids: ["T001"],
-      implementation_state: "COMPLETE",
-      evidence_state: "VERIFIED",
-      proofs: [{ kind, path: "proof.txt", selector: "fixture-proof" }],
-      deviation_ids: [],
-      release_impact: "NONE"
+      task_ids: assignedTasks.get(id),
+      implementation_state: planned ? "PLANNED" : "COMPLETE",
+      evidence_state: planned ? "PARTIAL" : "VERIFIED",
+      proofs: [
+        {
+          id: "P_FIXTURE",
+          kind: "REPOSITORY_PROOF",
+          path: "tests/fixture-proof.test.js",
+          selector: "fixture-proof"
+        }
+      ],
+      deviation_ids: planned ? ["DEV-T085-999"] : [],
+      release_impact: planned ? "BLOCKED_FIXTURE" : "NONE"
     }
   })
   return {
     schema_version: TRACEABILITY_SCHEMA,
     authorized_base_sha: baseSha,
+    source_inventory: {
+      spec: `${featurePath}/spec.md`,
+      plan: `${featurePath}/plan.md`,
+      tasks: `${featurePath}/tasks.md`,
+      functional_requirements: 74,
+      success_criteria: 23,
+      tasks_total: 112,
+      tasks_checked: 85,
+      tasks_unchecked: 27
+    },
     lifecycle: {
       phase: "T085_IMPLEMENTATION",
       task: "T085",
@@ -65,21 +101,42 @@ function canonicalContract() {
     },
     requirements,
     task_ledger: taskIds().map((id) => {
-      const requirementIds = id === "T001" ? requirements.map((row) => row.id) : []
+      const reverse = requirements.filter((row) => row.task_ids.includes(id)).map((row) => row.id)
       return {
         id,
-        status: id === "T085" ? "OPEN" : "COMPLETE",
-        classification: id === "T085" ? "TRACEABILITY" : "FOUNDATION",
-        requirement_ids: requirementIds,
-        ...(requirementIds.length === 0 ? { orphan_reason: "fixture enabling task" } : {})
+        status: isCheckedTask(id) ? "COMPLETE" : "OPEN",
+        classification: classification(id),
+        requirement_ids: reverse,
+        ...(reverse.length === 0 ? { orphan_reason: "fixture enabling task" } : {})
       }
     }),
-    deviations: []
+    deviations: [
+      {
+        id: "DEV-T085-999",
+        type: "PLANNED_FIXTURE",
+        severity: "LOW",
+        affected_ids: [...plannedIds],
+        expected: "fixture completion",
+        observed: "fixture remains planned",
+        disposition: "keep the fixture bounded",
+        owner: "fixture owner",
+        target: "fixture follow-up",
+        release_impact: "BLOCKED_FIXTURE",
+        state: "OPEN"
+      }
+    ]
   }
 }
 
 function markdown(contract) {
-  return `# Traceability\n\n${CONTRACT_START}\n\`\`\`json\n${JSON.stringify(contract, null, 2)}\n\`\`\`\n${CONTRACT_END}\n`
+  const table = contract.requirements
+    .map((row) => {
+      const proofIds = row.proofs.map((proof) => `\`${proof.id}\``).join(", ")
+      const deviationIds = row.deviation_ids.map((id) => `\`${id}\``).join(", ") || "—"
+      return `| ${row.id} | fixture | ${row.task_ids.join(", ")} | ${row.implementation_state} | ${row.evidence_state} | ${proofIds} | ${deviationIds} | ${row.release_impact} |`
+    })
+    .join("\n")
+  return `# Traceability\n\n${table}\n\n${CONTRACT_START}\n\`\`\`json\n${JSON.stringify(contract, null, 2)}\n\`\`\`\n${CONTRACT_END}\n`
 }
 
 function makeFixture(mutate = () => {}) {
@@ -89,7 +146,7 @@ function makeFixture(mutate = () => {}) {
     ...ids("SC", 23).map((id) => `- **${id}**: fixture`)
   ].join("\n")
   const tasks = taskIds()
-    .map((id) => `- [${id === "T085" ? " " : "x"}] ${id} fixture`)
+    .map((id) => `- [${isCheckedTask(id) ? "x" : " "}] ${id} fixture`)
     .join("\n")
   const contract = canonicalContract()
   const files = {
@@ -97,8 +154,14 @@ function makeFixture(mutate = () => {}) {
     [`${featurePath}/plan.md`]: "# Plan\n",
     [`${featurePath}/tasks.md`]: tasks,
     [`${featurePath}/traceability.md`]: markdown(contract),
-    ".loop/evidence/t085-dispatch.json": JSON.stringify({ base: { sha: baseSha } }),
-    "proof.txt": "fixture-proof\n"
+    ".loop/evidence/t085-dispatch.json": JSON.stringify({
+      schema_version: "courtside-t085-dispatch/v1",
+      repository: "bynanci/courtside-tw",
+      issue: "https://github.com/bynanci/courtside-tw/issues/145",
+      branch: "task/t085-cross-artifact-traceability",
+      base: { branch: "main", sha: baseSha }
+    }),
+    "tests/fixture-proof.test.js": "fixture-proof\n"
   }
   mutate({ contract, files })
   if (files[`${featurePath}/traceability.md`] !== undefined) {
@@ -115,7 +178,9 @@ function makeFixture(mutate = () => {}) {
 function run(root) {
   return validateTraceability({
     root,
-    currentHead: "1111111111111111111111111111111111111111"
+    currentHead: "1111111111111111111111111111111111111111",
+    gitBinding: { status: "CLEAN", head: "1111111111111111111111111111111111111111" },
+    changedPaths: []
   })
 }
 
@@ -205,7 +270,15 @@ test("scope authority declarations remain false", () => {
 test("automated repository proof cannot upgrade a human success criterion", () => {
   const root = makeFixture(({ contract }) => {
     const row = contract.requirements.find(({ id }) => id === "SC-001")
-    row.proofs[0].kind = "REPOSITORY_PROOF"
+    const oldTaskId = row.task_ids[0]
+    row.task_ids = ["T002"]
+    row.implementation_state = "COMPLETE"
+    row.evidence_state = "VERIFIED"
+    row.deviation_ids = []
+    contract.task_ledger.find(({ id }) => id === oldTaskId).requirement_ids = contract.task_ledger
+      .find(({ id }) => id === oldTaskId)
+      .requirement_ids.filter((id) => id !== "SC-001")
+    contract.task_ledger.find(({ id }) => id === "T002").requirement_ids.push("SC-001")
   })
   const report = run(root)
   assert.equal(report.status, "FAIL")
@@ -214,11 +287,14 @@ test("automated repository proof cannot upgrade a human success criterion", () =
 
 test("delivery tasks cannot be silently orphaned from the reverse ledger", () => {
   const root = makeFixture(({ contract }) => {
-    contract.task_ledger[1].classification = "IMPLEMENTATION"
+    for (const row of contract.requirements) {
+      row.task_ids = row.task_ids.filter((id) => id !== "T026")
+    }
+    contract.task_ledger.find(({ id }) => id === "T026").requirement_ids = []
   })
   const report = run(root)
   assert.equal(report.status, "FAIL")
-  assert.match(report.errors.join("\n"), /delivery tasks cannot be orphaned/)
+  assert.match(report.errors.join("\n"), /T026.*not an approved orphan/)
 })
 
 test("exact-head artifact must bind the evaluated Git head", () => {
@@ -236,9 +312,9 @@ test("exact-head artifact must bind the evaluated Git head", () => {
 test("truthful open evidence remains analysis-valid but not receipt-eligible", () => {
   const root = makeFixture(({ contract }) => {
     contract.requirements[0].evidence_state = "PARTIAL"
-    contract.requirements[0].deviation_ids = ["DEV-FIXTURE-001"]
+    contract.requirements[0].deviation_ids = ["DEV-T085-998"]
     contract.deviations.push({
-      id: "DEV-FIXTURE-001",
+      id: "DEV-T085-998",
       type: "PARTIAL_ACCEPTANCE",
       severity: "HIGH",
       affected_ids: ["FR-001"],
@@ -254,4 +330,123 @@ test("truthful open evidence remains analysis-valid but not receipt-eligible", (
   const report = run(root)
   assert.equal(report.analysis_valid, true, report.errors.join("\n"))
   assert.equal(report.receipt_eligible, false)
+})
+
+test("contract and dispatch cannot rewrite the fixed authorized base together", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const forged = "2222222222222222222222222222222222222222"
+    contract.authorized_base_sha = forged
+    const dispatch = JSON.parse(files[".loop/evidence/t085-dispatch.json"])
+    dispatch.base.sha = forged
+    files[".loop/evidence/t085-dispatch.json"] = JSON.stringify(dispatch)
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /contract and dispatch base must equal/)
+})
+
+for (const taskId of ["T086", "T098", "T097"]) {
+  test(`${taskId} checkbox cannot move outside the authorized T085 frontier`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      const shouldCheck = taskId !== "T097"
+      files[`${featurePath}/tasks.md`] = files[`${featurePath}/tasks.md`].replace(
+        new RegExp(`^- \\[[ x]\\] ${taskId} fixture$`, "m"),
+        `- [${shouldCheck ? "x" : " "}] ${taskId} fixture`
+      )
+      contract.task_ledger.find(({ id }) => id === taskId).status = shouldCheck
+        ? "COMPLETE"
+        : "OPEN"
+      contract.source_inventory.tasks_checked += shouldCheck ? 1 : -1
+      contract.source_inventory.tasks_unchecked += shouldCheck ? -1 : 1
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), new RegExp(`${taskId} checkbox is outside`))
+  })
+}
+
+test("receipt labels cannot turn repository prose into human acceptance", () => {
+  const root = makeFixture(({ contract }) => {
+    const row = contract.requirements.find(({ id }) => id === "SC-001")
+    row.proofs[0] = {
+      id: "P_FAKE_HUMAN",
+      kind: "HUMAN_RECEIPT",
+      path: `${featurePath}/spec.md`,
+      selector: "SC-001",
+      source_head: "1111111111111111111111111111111111111111"
+    }
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /tracked JSON receipt under \.loop\/evidence/)
+})
+
+test("all requirements cannot be vacuously mapped only to T001", () => {
+  const root = makeFixture(({ contract }) => {
+    for (const row of contract.requirements) row.task_ids = ["T001"]
+    for (const row of contract.task_ledger) {
+      row.requirement_ids = row.id === "T001" ? contract.requirements.map(({ id }) => id) : []
+      if (row.requirement_ids.length === 0) row.orphan_reason = "forged orphan"
+    }
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /T002.*not an approved orphan/)
+})
+
+test("dirty head binding cannot produce an attributable PASS", () => {
+  const root = makeFixture()
+  const report = validateTraceability({
+    root,
+    currentHead: "1111111111111111111111111111111111111111",
+    gitBinding: { status: "UNTRACKED_OR_DIRTY", head: "1111111111111111111111111111111111111111" },
+    changedPaths: []
+  })
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /working tree is not bound/)
+})
+
+test("missing head and missing CI exact-head evidence fail closed", () => {
+  const root = makeFixture()
+  const missingHead = validateTraceability({
+    root,
+    currentHead: null,
+    gitBinding: { status: "CLEAN", head: null },
+    changedPaths: []
+  })
+  assert.equal(missingHead.status, "FAIL")
+  assert.match(missingHead.errors.join("\n"), /currentHead must be a full lowercase commit SHA/)
+
+  const missingArtifact = validateTraceability({
+    root,
+    currentHead: "1111111111111111111111111111111111111111",
+    gitBinding: { status: "CLEAN", head: "1111111111111111111111111111111111111111" },
+    changedPaths: [],
+    requireExactHeadEvidence: true
+  })
+  assert.equal(missingArtifact.status, "FAIL")
+  assert.match(missingArtifact.errors.join("\n"), /requires artifacts\/exact-head\.json/)
+})
+
+test("exact-base changed paths reject files outside bounded T085 scope", () => {
+  const root = makeFixture()
+  const report = validateTraceability({
+    root,
+    currentHead: "1111111111111111111111111111111111111111",
+    gitBinding: { status: "CLEAN", head: "1111111111111111111111111111111111111111" },
+    changedPaths: [".github/workflows/release.yml"]
+  })
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /outside the authorized T085 scope/)
+})
+
+test("completion phase is rejected until a separately authorized receipt verifier exists", () => {
+  const root = makeFixture(({ contract }) => {
+    contract.lifecycle.phase = "T085_ACCEPTED"
+    contract.lifecycle.t085_complete = true
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.equal(report.receipt_eligible, false)
+  assert.match(report.errors.join("\n"), /only accepts lifecycle\.phase T085_IMPLEMENTATION/)
 })

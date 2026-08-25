@@ -1,0 +1,103 @@
+{
+  "schema_version": "courtside-t085-review/v1",
+  "task": "T085",
+  "recorded_at": "2026-08-25T13:29:24Z",
+  "repository": "bynanci/courtside-tw",
+  "issue": "https://github.com/bynanci/courtside-tw/issues/145",
+  "pull_request": "https://github.com/bynanci/courtside-tw/pull/146",
+  "authorized_base_sha": "3fc14dd29b216ce46e4d364ceaec79a971dcef44",
+  "review_result": "PASS_WITH_OPEN_DEVIATIONS",
+  "independent_reviews": [
+    {
+      "review": "validator-adversarial",
+      "initial_decision": "BLOCK",
+      "resolved_findings": [
+        "dirty or untracked inputs could previously be attributed to HEAD",
+        "contract and dispatch could previously rewrite the authorized base together",
+        "T086+ checkbox movement was previously independent of declared scope flags",
+        "receipt proof kinds were previously labels without structured validation",
+        "all requirements could previously be vacuously mapped to one foundation task"
+      ],
+      "resolution": "The validator now fixes the base, enforces the T085 checkbox frontier and task taxonomy, requires clean-head binding, validates structured receipt types, restricts proof paths, fixes approved orphans and reports mapped tasks separately. Twenty mutation tests cover these boundaries."
+    },
+    {
+      "review": "matrix-semantics",
+      "initial_decision": "BLOCK",
+      "resolved_findings": [
+        "eleven requirement rows overstated partial capabilities as VERIFIED",
+        "FR-042 used shared primitives without endpoint-complete write-API coverage",
+        "several retained VERIFIED rows used incomplete proof locators",
+        "T032 and T042 source range claims diverged from the evidence-backed matrix"
+      ],
+      "resolution": "Twelve rows are now PARTIAL, eight incomplete capabilities are PLANNED, nine new deviations are explicit, compound retained proofs use clause-relevant locators, and TASK_SOURCE_DRIFT records the two broad historical task claims."
+    },
+    {
+      "review": "scope-and-release-boundary",
+      "initial_decision": "BLOCK",
+      "resolved_findings": [
+        "implementation and completion receipt phases were conflated",
+        "human tables and machine contract could drift",
+        "generated reports omitted resolved proof locators and file digests"
+      ],
+      "resolution": "The bounded validator accepts only T085_IMPLEMENTATION, always emits receipt_eligible=false, cross-checks human rows, and emits proof paths, selectors and file SHA-256 values. Completion remains a separately authorized verifier and release-owner action."
+    }
+  ],
+  "matrix_readback": {
+    "requirements": 97,
+    "tasks": 112,
+    "mapped_tasks": 107,
+    "approved_orphans": ["T001", "T005", "T007", "T082", "T085"],
+    "deviations": 38,
+    "deviations_open": 34,
+    "deviations_resolved": 4,
+    "evidence_distribution": {
+      "VERIFIED": 39,
+      "PARTIAL": 22,
+      "PLANNED_BLOCKED": 30,
+      "HUMAN_OPEN": 3,
+      "PROXY_ONLY": 2,
+      "EXTERNAL_OPEN": 1
+    },
+    "implementation_distribution": {"COMPLETE": 53, "PLANNED": 44}
+  },
+  "historical_acceptance_readback": {
+    "requirement_id": "SC-010",
+    "task": "T081",
+    "artifact_id": 9414805375,
+    "artifact_name": "ci-dependency-reports",
+    "artifact_digest": "sha256:2572e7202c4f8b5429654c7f052ebea5e88e20650c845863925ea54e1264a5b7",
+    "artifact_downloaded": true,
+    "source_head_sha": "3fcc7f2f29e5c3d41370fffcebd34d925c4c9911",
+    "workflow": "CI",
+    "workflow_run_id": 32390737392,
+    "workflow_run_number": 816,
+    "exact_head_manifest_sha256": "01eff14b71a4a9592dc82c16460ca05be834566b9b5517df15acaf654b3d119a",
+    "restore_receipt_sha256": "e43cdc024bb9317ffbbf4620de237c9578470a5bb38633c798309da8be930210",
+    "restore_receipt": {
+      "result": "PASS",
+      "release_ready": true,
+      "rpo_hours": 0.001,
+      "rpo_limit_hours": 24.0,
+      "rto_minutes": 0.037,
+      "rto_limit_minutes": 240.0,
+      "media_assets": 2,
+      "media_variants": 2,
+      "checksum_sample_requested": 2,
+      "checksum_sample_verified": 2
+    },
+    "limitation": "This historical isolated-drill receipt does not activate a daily production schedule or prove recurring quarterly execution; FR-045 remains PARTIAL under DEV-T085-028."
+  },
+  "scope_review": {
+    "authorized_paths_only": true,
+    "runtime_files_changed": false,
+    "t085_checked": false,
+    "t086_or_later_modified": false,
+    "participant_research_executed": false,
+    "web3_activated": false,
+    "production_activated": false,
+    "provider_configured": false,
+    "secrets_changed": false,
+    "ready_merge_or_receipt_performed": false
+  },
+  "decision": "T085 implementation may proceed to an immutable draft head and exact-head CI/Security read-back. It is analysis-valid only; it is not completion-receipt eligible."
+}

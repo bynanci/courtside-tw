@@ -25,7 +25,7 @@
     "contract:observability": "node scripts/validate-observability.mjs",
     "contract:analytics": "node scripts/validate-analytics-privacy.mjs",
     "test:traceability": "node --test scripts/test/validate-traceability.test.mjs",
-    "contract:traceability": "pnpm run test:traceability && node scripts/validate-traceability.mjs"
+    "contract:traceability": "node --test scripts/test/validate-traceability.test.mjs && node scripts/validate-traceability.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

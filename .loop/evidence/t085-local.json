@@ -1,0 +1,75 @@
+{
+  "schema_version": "mark-proof-receipt/v1",
+  "task": "T085",
+  "proof": "local-green-and-adversarial-review",
+  "recorded_at": "2026-08-25T13:32:08Z",
+  "repository": "bynanci/courtside-tw",
+  "authorized_base_sha": "3fc14dd29b216ce46e4d364ceaec79a971dcef44",
+  "result": "PASS_WITH_EXACT_TOOLCHAIN_DEFERRED_TO_CI",
+  "toolchain": {
+    "required_node": "24.14.0",
+    "local_node": "24.19.0",
+    "required_pnpm": "11.7.0",
+    "local_pnpm": "11.7.0",
+    "exact_node_match": false,
+    "decision": "Do not waive the mismatch; exact Node and pnpm verification remains an exact-head CI gate."
+  },
+  "checks": [
+    {"command": "pnpm run format:check", "result": "PASS"},
+    {
+      "command": "eslint scripts/validate-traceability.mjs scripts/test/validate-traceability.test.mjs",
+      "result": "PASS"
+    },
+    {"command": "pnpm -r --if-present run lint", "result": "PASS"},
+    {"command": "pnpm -r --if-present run typecheck", "result": "PASS"},
+    {
+      "command": "pnpm -r --if-present run test",
+      "result": "PASS",
+      "details": "api-client 2/2, creative-runtime 9/9, content-schema 5/5 and web 221/221"
+    },
+    {"command": "pnpm -r --if-present run contract", "result": "PASS"},
+    {"command": "pnpm run contract:schema", "result": "PASS"},
+    {"command": "pnpm run contract:openapi", "result": "PASS"},
+    {"command": "pnpm run contract:observability", "result": "PASS"},
+    {"command": "pnpm run contract:analytics", "result": "PASS"},
+    {
+      "command": "node --test scripts/test/validate-traceability.test.mjs",
+      "result": "PASS",
+      "details": "22/22 mutation and boundary tests"
+    },
+    {
+      "command": "validateTraceability with an injected clean binding for pre-commit structural verification",
+      "result": "PASS",
+      "details": "97 requirements, 112 tasks, 107 mapped tasks, 5 approved orphans, 38 deviations and zero errors"
+    }
+  ],
+  "matrix": {
+    "analysis_valid": true,
+    "receipt_eligible": false,
+    "requirements": 97,
+    "tasks": 112,
+    "mapped_tasks": 107,
+    "approved_orphans": 5,
+    "deviations": 38,
+    "open_deviations": 34,
+    "evidence_distribution": {
+      "VERIFIED": 39,
+      "PARTIAL": 22,
+      "PLANNED_BLOCKED": 30,
+      "HUMAN_OPEN": 3,
+      "PROXY_ONLY": 2,
+      "EXTERNAL_OPEN": 1
+    }
+  },
+  "scope_guard": {
+    "t085_checked": false,
+    "t086_dispatched": false,
+    "participant_research_executed": false,
+    "web3_activated": false,
+    "production_activated": false,
+    "provider_configured": false,
+    "secrets_changed": false,
+    "ready_or_merge_performed": false
+  },
+  "head_binding_boundary": "The tracked receipt does not invent a pre-commit SHA. A clean committed head plus artifacts/exact-head.json is required in CI, and GitHub PR changed-file read-back is required for the final draft decision packet."
+}

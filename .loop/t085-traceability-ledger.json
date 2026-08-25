@@ -1,16 +1,16 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t085-cross-artifact-traceability",
-  "graph_version": 1,
+  "graph_version": 3,
   "run_id": "t085-issue-145-20260825",
   "status": "running",
-  "iteration": 1,
+  "iteration": 3,
   "started_at": "2026-08-25T12:42:58Z",
-  "updated_at": "2026-08-25T12:42:58Z",
-  "current_frontier": ["p-red"],
-  "blocked_nodes": ["a-matrix", "p-local", "a-review", "a-draft", "p-exact", "g-release-owner"],
+  "updated_at": "2026-08-25T13:32:08Z",
+  "current_frontier": ["p-exact"],
+  "blocked_nodes": ["g-release-owner"],
   "terminal_state": null,
-  "next_action": "Capture an attributable missing-traceability RED before adding the matrix.",
+  "next_action": "Publish one immutable reviewed GREEN head, then read back exact-head CI, Security, artifacts, review threads and protected-main boundaries without readying or merging the draft.",
   "events": [
     {
       "event_id": "t085-graph-initialized",
@@ -48,6 +48,92 @@
       "failure_signature": null,
       "decision": "proceed_with_bounded_tests_first_red",
       "token_usage": {"estimated": 18000, "input": 0, "output": 0, "total": 18000},
+      "terminal_reason": null
+    },
+    {
+      "event_id": "t085-attributable-red-captured",
+      "at": "2026-08-25T13:05:46Z",
+      "actor": "codex-agent",
+      "type": "proof_captured",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          "superseded formatting-blocked head 5f71cf25172821725a1533b3de6fa4bdefde74ca",
+          "bound RED proof to corrected head bc2950490a93028095e453ae30d94dcd8b02cc08",
+          "confirmed 12 mutation tests and earlier frontend contracts pass before the sole missing-artifact failure",
+          "advanced the frontier from p-red to a-matrix"
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t085-red.json"],
+      "proof_receipts": [
+        {
+          "proof": "p-red",
+          "status": "PASS",
+          "claim": "Corrected RED fails only because traceability.md is absent after all prerequisite gates pass."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": null,
+        "version": null,
+        "retrieval_ids": ["github-ci-964", "github-security-967", "artifact-9564251650"],
+        "evidence_refs": [".loop/evidence/t085-red.json"],
+        "next_review_at": null,
+        "blocker": null,
+        "reason": "The versioned RED receipt and GitHub draft are sufficient durable state."
+      },
+      "failure_signature": null,
+      "decision": "advance_to_matrix",
+      "token_usage": {"estimated": 16000, "input": 0, "output": 0, "total": 16000},
+      "terminal_reason": null
+    },
+    {
+      "event_id": "t085-green-review-ready",
+      "at": "2026-08-25T13:32:08Z",
+      "actor": "codex-agent",
+      "type": "review_completed",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          "added the exact 97-requirement matrix 112-task inverse and 38-deviation register",
+          "downgraded 12 semantic overclaims and preserved all human external future and activation boundaries",
+          "expanded the validator from 12 to 22 adversarial tests and fixed five false-green classes",
+          "bound human tables task taxonomy approved orphans proof digests and changed-path scope",
+          "advanced the frontier to p-exact while release-owner gate remains needs_human"
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t085-local.json",
+        ".loop/evidence/t085-review.json",
+        "specs/001-taiwan-basketball-magazine-ebook/traceability.md"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "p-local",
+          "status": "PASS",
+          "claim": "Local format lint typecheck workspace tests contracts and 22 traceability mutations pass, with the exact Node version explicitly deferred to CI."
+        },
+        {
+          "proof": "a-review",
+          "status": "PASS_WITH_OPEN_DEVIATIONS",
+          "claim": "Independent reviews resolved implementation false-greens while retaining 34 truthful open deviations."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": null,
+        "version": null,
+        "retrieval_ids": ["t085-validator-review", "t085-matrix-review", "t085-scope-review"],
+        "evidence_refs": [".loop/evidence/t085-local.json", ".loop/evidence/t085-review.json"],
+        "next_review_at": null,
+        "blocker": null,
+        "reason": "Repository receipts and the draft PR remain the authoritative durable memory."
+      },
+      "failure_signature": null,
+      "decision": "publish_green_then_verify_exact_head",
+      "token_usage": {"estimated": 42000, "input": 0, "output": 0, "total": 42000},
       "terminal_reason": null
     }
   ]
