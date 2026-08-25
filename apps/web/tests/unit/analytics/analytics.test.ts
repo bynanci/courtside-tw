@@ -58,6 +58,48 @@ test("explicit granted consent emits only an allowlisted event", async () => {
   assert.deepEqual(received, [articleView()])
 })
 
+test("all four event types accept only bounded values", () => {
+  const events: AnalyticsEvent[] = [
+    {
+      type: "public_issue_view",
+      properties: { surface: "issue", content_kind: "issue" }
+    },
+    articleView(),
+    {
+      type: "public_search_submitted",
+      properties: {
+        surface: "search",
+        query_length_bucket: "3_5",
+        result_count_bucket: "1_5"
+      }
+    },
+    {
+      type: "public_share_started",
+      properties: {
+        surface: "share",
+        content_kind: "article",
+        share_target: "copy_link"
+      }
+    }
+  ]
+
+  for (const event of events) {
+    assert.deepEqual(sanitizeAnalyticsEvent(event), event)
+  }
+
+  assert.equal(
+    sanitizeAnalyticsEvent({
+      type: "public_share_started",
+      properties: {
+        surface: "share",
+        content_kind: "article",
+        share_target: "unknown_target"
+      }
+    }),
+    null
+  )
+})
+
 test("raw query and unknown properties fail closed before the sink", () => {
   assert.equal(
     sanitizeAnalyticsEvent({
@@ -71,6 +113,24 @@ test("raw query and unknown properties fail closed before the sink", () => {
     }),
     null
   )
+})
+
+test("consent withdrawal blocks subsequent events", async () => {
+  const received: AnalyticsEvent[] = []
+  const client = createConsentAwareAnalytics({
+    storage: storage(),
+    sink: { emit: (event: AnalyticsEvent) => received.push(event) }
+  })
+
+  client.setConsent("granted")
+  assert.deepEqual(await client.track(articleView()), { sent: true })
+
+  client.setConsent("denied")
+  assert.deepEqual(await client.track(articleView()), {
+    sent: false,
+    reason: "consent_required"
+  })
+  assert.deepEqual(received, [articleView()])
 })
 
 test("sink failure is non-blocking and observable as a bounded drop", async () => {
