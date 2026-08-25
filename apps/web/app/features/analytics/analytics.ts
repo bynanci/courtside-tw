@@ -103,7 +103,10 @@ export function sanitizeAnalyticsEvent(input: unknown): AnalyticsEvent | null {
   const keys = Object.keys(properties).sort()
   const expectedKeys = [...spec.properties].sort()
 
-  if (keys.length !== expectedKeys.length || keys.some((key, index) => key !== expectedKeys[index])) {
+  if (
+    keys.length !== expectedKeys.length ||
+    keys.some((key, index) => key !== expectedKeys[index])
+  ) {
     return null
   }
 
@@ -130,10 +133,12 @@ export function sanitizeAnalyticsEvent(input: unknown): AnalyticsEvent | null {
   }
 }
 
-export function createConsentAwareAnalytics(options: {
-  storage?: ConsentStore
-  sink?: AnalyticsSink
-} = {}) {
+export function createConsentAwareAnalytics(
+  options: {
+    storage?: ConsentStore
+    sink?: AnalyticsSink
+  } = {}
+) {
   const storage = options.storage ?? defaultConsentStore()
   const sink = options.sink ?? defaultSink()
 
