@@ -21,7 +21,8 @@
     "contract": "make contract",
     "verify": "make verify",
     "contract:schema": "node scripts/validate-content-schema.mjs",
-    "contract:openapi": "node scripts/validate-openapi.mjs"
+    "contract:openapi": "node scripts/validate-openapi.mjs",
+    "contract:observability": "node scripts/validate-observability.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",

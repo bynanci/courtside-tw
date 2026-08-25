@@ -1,0 +1,42 @@
+{
+  "schema_version": "mark-proof-receipt/v1",
+  "task": "T083",
+  "proof": "tests-first-red",
+  "recorded_at": "2026-08-25T02:31:04Z",
+  "repository": "bynanci/courtside-tw",
+  "issue": "https://github.com/bynanci/courtside-tw/issues/137",
+  "pull_request": "https://github.com/bynanci/courtside-tw/pull/138",
+  "base_sha": "c2ed57cfe88814958e597bd6dfce5b8050af8255",
+  "head_sha": "ea3dc21dc02c877df3a03b00c268f02537f75525",
+  "commit_message": "test(T083): expose the intended missing-artifact RED",
+  "command": "pnpm run contract:observability",
+  "result": "EXPECTED_FAILURE",
+  "attribution": {
+    "workflow": "CI",
+    "run_number": 927,
+    "run_id": 32801280913,
+    "job": "Frontend",
+    "job_id": 97662428314,
+    "existing_web_tests_before_contract": "203 passed",
+    "failure_messages": [
+      "missing required T083 artifact: infra/observability/slo-contract.yml",
+      "missing required T083 artifact: infra/observability/dashboards/courtside-slo.json",
+      "missing required T083 artifact: infra/observability/alerts/courtside-slo.rules.yml",
+      "missing required T083 artifact: docs/operations/incident-response.md"
+    ],
+    "artifact_id": 9546568284,
+    "artifact_digest": "sha256:1c062d065a0b1f5f37f446933f77ac05d401a5ad38ce0422c5712945aaa8c685"
+  },
+  "superseded_attempt": {
+    "head_sha": "a71d95e9ad92cba7b1d0e856a3ec3566dbebb826",
+    "ci_run_number": 926,
+    "reason": "Formatting failed before the observability contract; this run is not used as attributable RED proof."
+  },
+  "security_readback": {
+    "run_number": 930,
+    "run_id": 32801280932,
+    "status_at_recording": "in_progress",
+    "note": "Security is not used to establish the tests-first RED claim."
+  },
+  "decision": "RED is attributable only to the four authorized absent artifacts; implementation may proceed."
+}

@@ -1,0 +1,211 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-t083-observability-slo",
+  "graph_version": 4,
+  "run_id": "t083-issue-137-20260825",
+  "status": "running",
+  "iteration": 4,
+  "started_at": "2026-08-25T02:10:11Z",
+  "updated_at": "2026-08-25T02:56:56Z",
+  "current_frontier": ["p-exact-head"],
+  "blocked_nodes": ["g-release-owner"],
+  "terminal_state": null,
+  "next_action": "Publish the optimization GREEN commit, then read fresh exact-head CI 5/5, Security 8/8, artifacts, zero unresolved review threads and current-base mergeability without marking ready or merging.",
+  "events": [
+    {
+      "event_id": "t083-graph-initialized",
+      "at": "2026-08-25T02:10:11Z",
+      "actor": "codex-agent",
+      "type": "graph_initialized",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          "bound issue 137 and exact protected-main base",
+          "recorded four current-main configuration gaps",
+          "set a tests-first RED frontier",
+          "preserved merge, activation, completion and T084 human gates"
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t083-dispatch.json"],
+      "proof_receipts": [
+        {
+          "proof": "p-baseline",
+          "status": "PASS",
+          "claim": "T083 configuration and runbook artifacts are absent on exact main; provider activation is separately gated."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": null,
+        "version": null,
+        "retrieval_ids": ["github-issue-121", "github-issue-137", "main-c2ed57c"],
+        "evidence_refs": [".loop/evidence/t083-dispatch.json"],
+        "next_review_at": null,
+        "blocker": null,
+        "reason": "GitHub and repository artifacts are the authoritative durable state; no separate semantic record changes the next action."
+      },
+      "failure_signature": null,
+      "decision": "proceed_with_bounded_red_contract",
+      "token_usage": {
+        "estimated": 12000,
+        "input": 0,
+        "output": 0,
+        "total": 12000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "t083-tests-first-red",
+      "at": "2026-08-25T02:20:00Z",
+      "actor": "codex-agent",
+      "type": "proof_captured",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          "superseded the formatting-only CI 926 attempt",
+          "bound attributable RED to ea3dc21 and CI 927",
+          "proved exactly four authorized artifacts absent after 203 web tests passed"
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t083-red.json"],
+      "proof_receipts": [
+        {
+          "proof": "p-red",
+          "status": "PASS",
+          "claim": "The contract gate failed for exactly the four absent T083 artifacts."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": null,
+        "version": null,
+        "retrieval_ids": ["github-ci-927", "commit-ea3dc21"],
+        "evidence_refs": [".loop/evidence/t083-red.json"],
+        "next_review_at": null,
+        "blocker": null,
+        "reason": "The repository proof receipt and GitHub run are authoritative; no separate semantic-memory write changes implementation."
+      },
+      "failure_signature": "T083_EXPECTED_MISSING_ARTIFACTS",
+      "decision": "proceed_to_bounded_implementation",
+      "token_usage": {
+        "estimated": 18000,
+        "input": 0,
+        "output": 0,
+        "total": 18000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "t083-local-review-complete",
+      "at": "2026-08-25T02:31:04Z",
+      "actor": "codex-agent",
+      "type": "implementation_reviewed",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          "implemented seven provider-neutral observability surfaces",
+          "made missing and stale source series page-and-hold",
+          "kept provider, receiver and synthetic activation false",
+          "resolved three false-green and dashboard-unit findings",
+          "advanced only to exact-head verification"
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t083-local.json", ".loop/evidence/t083-review.json"],
+      "proof_receipts": [
+        {
+          "proof": "p-local",
+          "status": "PASS",
+          "claim": "Scoped contract, formatting, lint, parse and strict graph checks pass."
+        },
+        {
+          "proof": "p-review",
+          "status": "PASS",
+          "claim": "No unresolved false-green, cardinality, activation or scope finding remains."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": null,
+        "version": null,
+        "retrieval_ids": ["github-issue-137", "github-pr-138"],
+        "evidence_refs": [".loop/evidence/t083-local.json", ".loop/evidence/t083-review.json"],
+        "next_review_at": null,
+        "blocker": null,
+        "reason": "Issue, PR and versioned receipts are sufficient durable state; no extra memory write affects the exact-head action."
+      },
+      "failure_signature": null,
+      "decision": "publish_implementation_and_verify_exact_head",
+      "token_usage": {
+        "estimated": 30000,
+        "input": 0,
+        "output": 0,
+        "total": 30000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "t083-optimization-feedback",
+      "at": "2026-08-25T02:56:56Z",
+      "actor": "codex-agent",
+      "type": "feedback_remediated",
+      "base_graph_version": 3,
+      "new_graph_version": 4,
+      "graph_delta": {
+        "operations": [
+          "attributed the review feedback RED to CI 929 on 8f661ba after formatting, lint, contracts and 203 web tests passed",
+          "made zero observation denominators NO DATA and added two explicit positive-denominator guards to every burn alert",
+          "fixed exact per-surface label lattices and a 72-series per-environment hard cardinality limit",
+          "replaced heartbeat-only dashboard coverage with five exact family checks",
+          "preserved provider, producer, receiver, synthetic, production, task, T084 and merge gates"
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t083-optimize-red.json",
+        ".loop/evidence/t083-local.json",
+        ".loop/evidence/t083-review.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "p-red",
+          "status": "PASS",
+          "claim": "Optimization RED failed only after all existing frontend prerequisites passed and exposed the four intended alert/cardinality regressions."
+        },
+        {
+          "proof": "p-local",
+          "status": "PASS",
+          "claim": "The same validator passes with seven surfaces, zero-denominator guards and exactly 72 canonical series per environment."
+        },
+        {
+          "proof": "p-review",
+          "status": "PASS",
+          "claim": "Seven total review findings are resolved and no provider, activation, product or later-task scope changed."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": null,
+        "version": null,
+        "retrieval_ids": ["github-ci-929", "commit-8f661ba", "github-pr-138", "github-issue-137"],
+        "evidence_refs": [
+          ".loop/evidence/t083-optimize-red.json",
+          ".loop/evidence/t083-review.json"
+        ],
+        "next_review_at": null,
+        "blocker": null,
+        "reason": "The issue, draft PR, versioned proof receipts and graph ledger remain the authoritative durable state; no separate semantic-memory write changes exact-head verification."
+      },
+      "failure_signature": "T083_ZERO_DENOM_PARTIAL_SERIES_CARDINALITY",
+      "decision": "publish_optimized_implementation_and_verify_exact_head",
+      "token_usage": {
+        "estimated": 8000,
+        "input": 0,
+        "output": 0,
+        "total": 8000
+      },
+      "terminal_reason": null
+    }
+  ]
+}

@@ -1,0 +1,283 @@
+schema_version: courtside-observability-slo/v1
+status: configuration_ready_activation_gated
+
+scope:
+  issue: https://github.com/bynanci/courtside-tw/issues/137
+  base_sha: c2ed57cfe88814958e597bd6dfce5b8050af8255
+  release_slice: p1-beta
+  provider_activation: false
+  receiver_activation: false
+  synthetic_probe_activation: false
+
+evaluation:
+  interval: 30s
+  environment_scope: single_environment_rule_evaluator
+  availability_window: 30d
+  zero_denominator_policy: hold_without_page
+  burn_rate_windows:
+    fast: [5m, 1h]
+    slow: [30m, 6h]
+
+missing_signal:
+  policy: page_and_hold
+  heartbeat_metric: courtside_observability_source_up
+  max_sample_age_seconds: 300
+  rationale: Missing, stale, disabled or failed telemetry cannot be interpreted as a healthy SLO.
+
+cardinality_limits:
+  scope: per_environment
+  environments_per_evaluator: 1
+  hard_series_limit: 72
+  series_per_environment:
+    heartbeat: 7
+    observations: 42
+    latency_buckets: 9
+    latency_sum: 1
+    latency_count: 1
+    dead_letter_events: 12
+  breach_policy: page_and_hold
+  growth_policy: Any new surface, objective, budget, outcome, histogram bucket or event type requires an explicit contract review before activation.
+
+privacy:
+  allowed_labels:
+    - budget
+    - environment
+    - event_type
+    - le
+    - objective
+    - outcome
+    - surface
+  forbidden_labels:
+    - article_id
+    - article_slug
+    - content
+    - email
+    - ip_address
+    - query
+    - request_id
+    - storage_key
+    - trace_id
+    - user_id
+    - wallet_address
+  cardinality_policy: Only fixed enumerations from this contract may be labels; dynamic paths, payloads, identifiers and free text remain logs or traces under their own retention policy.
+
+canonical_inputs:
+  heartbeat:
+    metric: courtside_observability_source_up
+    type: gauge
+    required_labels: [surface, environment]
+    cardinality: exactly_one_series_per_surface_environment
+    value: 1
+  observations:
+    metric: courtside_slo_observations_total
+    type: counter
+    preinitialize_bounded_series: true
+    required_labels: [surface, objective, budget, outcome, environment]
+    bounded_values:
+      budget: [met, missed]
+      outcome: [completed, explicitly_blocked, failed]
+  latency:
+    metric: courtside_slo_latency_seconds_bucket
+    type: histogram
+    preinitialize_bounded_series: true
+    required_labels: [surface, objective, le, environment]
+    bounded_values:
+      le: ["0.05", "0.1", "0.2", "0.3", "0.5", "1", "2.5", "5", "+Inf"]
+  existing_dead_letters:
+    metric: courtside_outbox_handler_events_total
+    type: counter
+    preinitialize_bounded_series: true
+    required_labels: [event_type, outcome, environment]
+    bounded_values:
+      event_type:
+        [media.asset.process, publication.article.command, publication.issue.command, unknown]
+      outcome: [completed, retry_scheduled, dead_lettered]
+
+surfaces:
+  - id: public-read
+    owner_role: reader-operations
+    source:
+      heartbeat_metric: courtside_observability_source_up
+      observations_metric: courtside_slo_observations_total
+      latency_metric: courtside_slo_latency_seconds_bucket
+      required_series:
+        [
+          courtside_observability_source_up,
+          courtside_slo_observations_total,
+          courtside_slo_latency_seconds_bucket
+        ]
+      required_series_counts:
+        courtside_observability_source_up: 1
+        courtside_slo_observations_total: 6
+        courtside_slo_latency_seconds_bucket: 9
+      producer_contract: Aggregate anonymous public issue/article origin responses; success excludes 5xx and never labels a dynamic route or content identifier.
+      activation: separately_gated
+    objectives:
+      - name: availability
+        kind: ratio
+        objective: 0.999
+        window: 30d
+      - name: origin-latency
+        kind: latency
+        quantile: 0.95
+        threshold_seconds: 0.3
+    dashboard_panel: public-read
+    runbook_anchor: public-read
+    alerts:
+      missing: CourtsidePublicReadTelemetryMissing
+      paging: [CourtsidePublicReadFastBurn, CourtsidePublicReadSlowBurn, CourtsidePublicReadLatency]
+
+  - id: publication-jobs
+    owner_role: editorial-operations
+    source:
+      heartbeat_metric: courtside_observability_source_up
+      observations_metric: courtside_slo_observations_total
+      required_series: [courtside_observability_source_up, courtside_slo_observations_total]
+      required_series_counts:
+        courtside_observability_source_up: 1
+        courtside_slo_observations_total: 6
+      producer_contract: Measure durable publication commands from accepted enqueue time until completed or explicitly blocked; retry attempts alone are not successes.
+      activation: separately_gated
+    objectives:
+      - name: completion
+        kind: threshold-ratio
+        objective: 0.99
+        threshold_seconds: 60
+    dashboard_panel: publication-jobs
+    runbook_anchor: publication-jobs
+    alerts:
+      missing: CourtsidePublicationTelemetryMissing
+      paging: [CourtsidePublicationFastBurn, CourtsidePublicationSlowBurn]
+
+  - id: withdrawal
+    owner_role: rights-operations
+    source:
+      heartbeat_metric: courtside_observability_source_up
+      observations_metric: courtside_slo_observations_total
+      required_series: [courtside_observability_source_up, courtside_slo_observations_total]
+      required_series_counts:
+        courtside_observability_source_up: 1
+        courtside_slo_observations_total: 12
+      producer_contract: Verify from a non-privileged origin probe that a committed withdrawal denies content; cached denial is evaluated separately by cache-purge.
+      activation: separately_gated
+    objectives:
+      - name: origin-denial-30s
+        kind: threshold-ratio
+        objective: 0.99
+        threshold_seconds: 30
+      - name: origin-denial-60s
+        kind: safety-invariant
+        objective: 1
+        threshold_seconds: 60
+    dashboard_panel: withdrawal
+    runbook_anchor: withdrawal
+    alerts:
+      missing: CourtsideWithdrawalTelemetryMissing
+      paging:
+        [
+          CourtsideWithdrawalFastBurn,
+          CourtsideWithdrawalSlowBurn,
+          CourtsideWithdrawalSixtySecondBreach
+        ]
+
+  - id: search-freshness
+    owner_role: discovery-operations
+    source:
+      heartbeat_metric: courtside_observability_source_up
+      observations_metric: courtside_slo_observations_total
+      required_series: [courtside_observability_source_up, courtside_slo_observations_total]
+      required_series_counts:
+        courtside_observability_source_up: 1
+        courtside_slo_observations_total: 6
+      producer_contract: Measure public publish or withdrawal commit time to the matching anonymous search projection result without retaining raw queries.
+      activation: separately_gated
+    objectives:
+      - name: visible-in-search
+        kind: threshold-ratio
+        objective: 0.99
+        threshold_seconds: 60
+    dashboard_panel: search-freshness
+    runbook_anchor: search-freshness
+    alerts:
+      missing: CourtsideSearchFreshnessTelemetryMissing
+      paging: [CourtsideSearchFreshnessFastBurn, CourtsideSearchFreshnessSlowBurn]
+
+  - id: media-processing
+    owner_role: media-operations
+    source:
+      heartbeat_metric: courtside_observability_source_up
+      observations_metric: courtside_slo_observations_total
+      required_series: [courtside_observability_source_up, courtside_slo_observations_total]
+      required_series_counts:
+        courtside_observability_source_up: 1
+        courtside_slo_observations_total: 6
+      producer_contract: Measure rights-valid image acceptance to READY; rejected invalid inputs are excluded from the valid-image denominator and remain separately auditable.
+      activation: separately_gated
+    objectives:
+      - name: ready
+        kind: threshold-ratio
+        objective: 0.99
+        threshold_seconds: 300
+    dashboard_panel: media-processing
+    runbook_anchor: media-processing
+    alerts:
+      missing: CourtsideMediaProcessingTelemetryMissing
+      paging: [CourtsideMediaProcessingFastBurn, CourtsideMediaProcessingSlowBurn]
+
+  - id: cache-purge
+    owner_role: edge-operations
+    source:
+      heartbeat_metric: courtside_observability_source_up
+      observations_metric: courtside_slo_observations_total
+      required_series: [courtside_observability_source_up, courtside_slo_observations_total]
+      required_series_counts:
+        courtside_observability_source_up: 1
+        courtside_slo_observations_total: 6
+      producer_contract: Verify withdrawal surrogate-key purge at the public edge. Normal publish purge has no new release SLO in this contract.
+      activation: separately_gated
+    objectives:
+      - name: withdrawal-purge
+        kind: safety-invariant
+        objective: 1
+        threshold_seconds: 60
+    dashboard_panel: cache-purge
+    runbook_anchor: cache-purge
+    alerts:
+      missing: CourtsideCachePurgeTelemetryMissing
+      paging: [CourtsideWithdrawalCachePurgeBreach]
+
+  - id: dead-letters
+    owner_role: platform-operations
+    source:
+      heartbeat_metric: courtside_observability_source_up
+      observations_metric: courtside_outbox_handler_events_total
+      required_series: [courtside_observability_source_up, courtside_outbox_handler_events_total]
+      required_series_counts:
+        courtside_observability_source_up: 1
+        courtside_outbox_handler_events_total: 12
+      producer_contract: Count bounded outbox event_type values with outcome=dead_lettered; payload, error text and aggregate identifiers are never metric labels.
+      activation: separately_gated
+    objectives:
+      - name: new-dead-letters
+        kind: safety-invariant
+        allowed_events: 0
+    dashboard_panel: dead-letters
+    runbook_anchor: dead-letters
+    alerts:
+      missing: CourtsideDeadLetterTelemetryMissing
+      paging: [CourtsideDeadLettersDetected]
+
+activation_gate:
+  required_before_interpreting_slo:
+    - Bind each canonical input to a reviewed producer or synthetic probe.
+    - Preinitialize exactly 72 canonical exported series per environment: 7 heartbeats, 42 observations, 9 latency buckets plus one sum and one count, and 12 dead-letter event series.
+    - Treat a zero observation denominator as NO DATA: do not page for burn, do not render it as an achieved SLO, and keep release interpretation on HOLD until attributable samples exist.
+    - Prove source heartbeat and observation timestamps at the same immutable release candidate.
+    - Evaluate alert rules in a single-environment rule evaluator; never aggregate environments before missing-signal checks.
+    - Configure provider and receivers outside this repository without embedding credentials.
+    - Fire and recover one missing-signal test plus one surface-specific alert in staging.
+  forbidden_in_this_change:
+    - Provider endpoints or credentials.
+    - Notification receiver identities or webhook URLs.
+    - Production activation or traffic mutation.
+    - Treating an absent time series or empty denominator as success.

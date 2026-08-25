@@ -1,0 +1,95 @@
+{
+  "schema_version": "mark-review-receipt/v1",
+  "task": "T083",
+  "recorded_at": "2026-08-25T02:56:56Z",
+  "review_scope": [
+    "false-green SLO semantics",
+    "missing and stale telemetry",
+    "privacy and metric cardinality",
+    "dashboard query units and environment isolation",
+    "scope and activation boundaries"
+  ],
+  "findings": [
+    {
+      "id": "T083-R1",
+      "severity": "high",
+      "finding": "Cross-environment aggregation could mask a failed environment.",
+      "resolution": "Contract requires one environment per rule evaluator; dashboard requires one explicit non-All environment and every surface query filters it.",
+      "status": "resolved"
+    },
+    {
+      "id": "T083-R2",
+      "severity": "high",
+      "finding": "A live heartbeat alone could falsely imply usable SLO evidence while an observation or histogram series is absent.",
+      "resolution": "Each surface enumerates required_series; missing rules use absent() for every required metric plus a >300-second heartbeat timestamp test, and activation requires bounded-series preinitialization.",
+      "status": "resolved"
+    },
+    {
+      "id": "T083-R3",
+      "severity": "medium",
+      "finding": "Mixed ratio and latency targets could render misleading dashboard units.",
+      "resolution": "Public latency and withdrawal short-window targets have explicit field unit overrides; stable refIds are validator-covered.",
+      "status": "resolved"
+    },
+    {
+      "id": "T083-R4",
+      "severity": "high",
+      "finding": "Preinitialized but idle observation counters produced a zero denominator; clamp_min converted that state into a 100% failure ratio and paged every burn rule.",
+      "resolution": "Every fast/slow window now requires an explicit total-denominator > 0 guard; clamp_min is removed, zero traffic is NO DATA, and release interpretation remains HOLD without a burn page.",
+      "status": "resolved"
+    },
+    {
+      "id": "T083-R5",
+      "severity": "high",
+      "finding": "A single present observation series could satisfy absent(metric) while the remaining bounded budget/outcome series were missing, allowing partial telemetry to appear usable.",
+      "resolution": "The contract fixes per-surface series counts and each telemetry alert compares total plus allowed label-lattice counts; missing, duplicate, unexpected or excess series page and HOLD.",
+      "status": "resolved"
+    },
+    {
+      "id": "T083-R6",
+      "severity": "high",
+      "finding": "The latency bucket set and dead-letter event_type values were described as bounded but not enumerated, so the configuration had no measurable cardinality ceiling.",
+      "resolution": "Nine latency buckets and four current-main dead-letter event types are fixed. The canonical ceiling is exactly 72 series per environment and any growth requires contract review.",
+      "status": "resolved"
+    },
+    {
+      "id": "T083-R7",
+      "severity": "medium",
+      "finding": "The dashboard coverage panel counted only seven healthy heartbeats and could render green while observation, histogram or dead-letter series were incomplete.",
+      "resolution": "Five exact 1/0 coverage targets now verify 7 heartbeats, 42 observation series, 9 buckets, 2 histogram companions and 12 dead-letter series for one environment.",
+      "status": "resolved"
+    }
+  ],
+  "unresolved_findings": 0,
+  "privacy_readback": {
+    "dynamic_identifiers_in_metric_labels": false,
+    "forbidden_labels": [
+      "article_id",
+      "article_slug",
+      "content",
+      "email",
+      "ip_address",
+      "query",
+      "request_id",
+      "storage_key",
+      "trace_id",
+      "user_id",
+      "wallet_address"
+    ]
+  },
+  "optimization_readback": "Seven findings resolved. Zero traffic is NO DATA without burn paging; incomplete or over-cardinality telemetry pages and HOLDs; one provider-neutral contract, dashboard, rule file and runbook remain. No SLO target, producer, provider or activation state changed.",
+  "decision": "PASS_WITH_TESTS_FIRST_REMEDIATIONS_COMPLETE",
+  "cardinality_readback": {
+    "scope": "per_environment",
+    "hard_series_limit": 72,
+    "series": {
+      "heartbeat": 7,
+      "observations": 42,
+      "latency_buckets": 9,
+      "latency_sum": 1,
+      "latency_count": 1,
+      "dead_letter_events": 12
+    },
+    "forbidden_dynamic_labels": true
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "schema_version": "mark-proof-receipt/v1",
+  "task": "T083",
+  "proof": "bounded-local-implementation",
+  "recorded_at": "2026-08-25T02:56:56Z",
+  "repository": "bynanci/courtside-tw",
+  "issue": "https://github.com/bynanci/courtside-tw/issues/137",
+  "pull_request": "https://github.com/bynanci/courtside-tw/pull/138",
+  "base_sha": "c2ed57cfe88814958e597bd6dfce5b8050af8255",
+  "checks": [
+    {
+      "command": "node scripts/validate-observability.mjs",
+      "result": "PASS",
+      "summary": "7 surfaces; zero-denominator guards; exact bounded lattices; 72-series hard limit"
+    },
+    {
+      "command": "prettier --write/check <T083 files>",
+      "result": "PASS"
+    },
+    {
+      "command": "node --check scripts/validate-observability.mjs",
+      "result": "PASS"
+    },
+    {
+      "command": "YAML/JSON parse via the observability validator",
+      "result": "PASS",
+      "summary": "7 surfaces, 3 rule groups, 21 alerts, 7 surface panels, 5 exact coverage targets"
+    },
+    {
+      "command": "python validate_graphify_loop.py .loop/t083-observability-slo.yaml --strict",
+      "result": "PASS",
+      "summary": "14 nodes, 26 edges, 5/5 action proof coverage, release-owner min-cut 6,000 tokens"
+    }
+  ],
+  "activation_readback": {
+    "provider": false,
+    "receiver": false,
+    "synthetic_probe": false,
+    "missing_signal_policy": "page_and_hold",
+    "zero_denominator_policy": "hold_without_page",
+    "environment_scope": "single_environment_rule_evaluator",
+    "hard_series_limit_per_environment": 72
+  },
+  "file_sha256": {
+    "scripts/validate-observability.mjs": "89f89c95d975ba460f13cf38532437ac429dbd2c5fa34353909c08388caffd88",
+    "infra/observability/slo-contract.yml": "13f5d34d7bda9ee364c980ca43065f9b1a19ec3dfcfabf035792573e5219d8b7",
+    "infra/observability/dashboards/courtside-slo.json": "a8bb81942d3460409d963cd7c22ea166438c5ae202043d7eab97db2e5bb67968",
+    "infra/observability/alerts/courtside-slo.rules.yml": "977bfb695ab267ea5b20c3eec06e3c2c676d5f8a245b4a41b1ef1217b0217180",
+    "docs/operations/incident-response.md": "32170309592e74a1b101ff982d02fc2cb81dbdc94514de66fb91c842641c3833"
+  },
+  "toolchain_boundary": {
+    "repository_required": "Node 24.14.0 / pnpm 11.7.0",
+    "local_available": "Node 24.19.0 / pnpm 11.19.0",
+    "decision": "Do not bypass the engine gate; use local scoped checks only and require fresh exact-head GitHub Actions for repository-level proof."
+  },
+  "scope_readback": "No tasks.md, application behavior, schema, auth, Web3, participant research, provider, endpoint, credential, receiver, production activation or T084+ change.",
+  "red_head_sha": "8f661ba2a153ca179b7c5f75ae55337f76e07ee8"
+}
