@@ -1,4 +1,5 @@
 import assert from "node:assert/strict"
+import { readFileSync } from "node:fs"
 import test from "node:test"
 
 import {
@@ -6,6 +7,18 @@ import {
   sanitizeAnalyticsEvent,
   type AnalyticsEvent
 } from "../../../app/features/analytics/analytics.ts"
+
+type AnalyticsEventSpec = {
+  version: number
+  events: Record<string, Record<string, string[]>>
+}
+
+const analyticsEventSpec = JSON.parse(
+  readFileSync(
+    new URL("../../../../../contracts/analytics-event-spec.json", import.meta.url),
+    "utf8"
+  )
+) as AnalyticsEventSpec
 
 function storage(initial: "unknown" | "denied" | "granted" = "unknown") {
   let value = initial
@@ -100,6 +113,71 @@ test("all four event types accept only bounded values", () => {
   )
 })
 
+test("frontend policy matches every canonical event property and value", () => {
+  assert.equal(analyticsEventSpec.version, 1)
+
+  const allValues = new Set(
+    Object.values(analyticsEventSpec.events).flatMap((properties) =>
+      Object.values(properties).flat()
+    )
+  )
+
+  for (const [type, propertySpec] of Object.entries(analyticsEventSpec.events)) {
+    const baselineProperties = Object.fromEntries(
+      Object.entries(propertySpec).map(([property, values]) => [property, values[0]])
+    )
+
+    assert.deepEqual(
+      sanitizeAnalyticsEvent({ type, properties: baselineProperties }),
+      { type, properties: baselineProperties },
+      type
+    )
+
+    for (const [property, allowedValues] of Object.entries(propertySpec)) {
+      for (const value of allowedValues) {
+        assert.notEqual(
+          sanitizeAnalyticsEvent({
+            type,
+            properties: { ...baselineProperties, [property]: value }
+          }),
+          null,
+          `${type}.${property} must accept ${value}`
+        )
+      }
+
+      for (const value of allValues) {
+        if (!allowedValues.includes(value)) {
+          assert.equal(
+            sanitizeAnalyticsEvent({
+              type,
+              properties: { ...baselineProperties, [property]: value }
+            }),
+            null,
+            `${type}.${property} must reject cross-contract value ${value}`
+          )
+        }
+      }
+
+      const missingProperty = { ...baselineProperties }
+      delete missingProperty[property]
+      assert.equal(
+        sanitizeAnalyticsEvent({ type, properties: missingProperty }),
+        null,
+        `${type}.${property} is required`
+      )
+    }
+
+    assert.equal(
+      sanitizeAnalyticsEvent({
+        type,
+        properties: { ...baselineProperties, unexpected: "value" }
+      }),
+      null,
+      `${type} must reject extra properties`
+    )
+  }
+})
+
 test("raw query and unknown properties fail closed before the sink", () => {
   assert.equal(
     sanitizeAnalyticsEvent({
@@ -152,5 +230,37 @@ test("sink failure is non-blocking and observable as a bounded drop", async () =
   assert.deepEqual(await client.track(articleView()), {
     sent: false,
     reason: "sink_failure"
+  })
+})
+
+test("consent storage failure is a bounded no-op before the sink", async () => {
+  let sinkCalls = 0
+  const client = createConsentAwareAnalytics({
+    storage: {
+      get: () => {
+        throw new Error("storage unavailable")
+      },
+      set: () => undefined
+    },
+    sink: {
+      emit: () => {
+        sinkCalls += 1
+      }
+    }
+  })
+
+  assert.deepEqual(await client.track(articleView()), {
+    sent: false,
+    reason: "consent_required"
+  })
+  assert.equal(sinkCalls, 0)
+})
+
+test("granted consent without a configured sink reports a bounded drop", async () => {
+  const client = createConsentAwareAnalytics({ storage: storage("granted") })
+
+  assert.deepEqual(await client.track(articleView()), {
+    sent: false,
+    reason: "sink_unconfigured"
   })
 })

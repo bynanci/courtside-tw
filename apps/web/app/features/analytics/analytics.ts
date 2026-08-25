@@ -18,7 +18,11 @@ export type ConsentStore = {
 }
 
 export type AnalyticsTrackResult =
-  { sent: true } | { sent: false; reason: "consent_required" | "invalid_event" | "sink_failure" }
+  | { sent: true }
+  | {
+      sent: false
+      reason: "consent_required" | "invalid_event" | "sink_failure" | "sink_unconfigured"
+    }
 
 type EventSpec = {
   properties: readonly string[]
@@ -83,12 +87,6 @@ function defaultConsentStore(): ConsentStore {
   }
 }
 
-function defaultSink(): AnalyticsSink {
-  return {
-    emit: () => undefined
-  }
-}
-
 export function sanitizeAnalyticsEvent(input: unknown): AnalyticsEvent | null {
   if (!isRecord(input) || !isAnalyticsEventType(input.type) || !isRecord(input.properties)) {
     return null
@@ -125,6 +123,23 @@ export function sanitizeAnalyticsEvent(input: unknown): AnalyticsEvent | null {
   }
 }
 
+export function analyticsEventSpecsForContract(): Record<string, Record<string, string[]>> {
+  return Object.fromEntries(
+    Object.entries(EVENT_SPECS).map(([eventType, spec]) => [
+      eventType,
+      Object.fromEntries(
+        spec.properties.map((property) => {
+          const values = spec.values[property]
+          if (!values) {
+            throw new Error(`analytics event spec is incomplete: ${eventType}.${property}`)
+          }
+          return [property, [...values]]
+        })
+      )
+    ])
+  )
+}
+
 export function createConsentAwareAnalytics(
   options: {
     storage?: ConsentStore
@@ -132,11 +147,15 @@ export function createConsentAwareAnalytics(
   } = {}
 ) {
   const storage = options.storage ?? defaultConsentStore()
-  const sink = options.sink ?? defaultSink()
+  const sink = options.sink
 
   const getConsent = (): ConsentState => {
-    const consent = storage.get()
-    return isConsentState(consent) ? consent : "unknown"
+    try {
+      const consent = storage.get()
+      return isConsentState(consent) ? consent : "unknown"
+    } catch {
+      return "unknown"
+    }
   }
 
   return {
@@ -152,6 +171,10 @@ export function createConsentAwareAnalytics(
       const event = sanitizeAnalyticsEvent(input)
       if (!event) {
         return { sent: false, reason: "invalid_event" }
+      }
+
+      if (!sink) {
+        return { sent: false, reason: "sink_unconfigured" }
       }
 
       try {
