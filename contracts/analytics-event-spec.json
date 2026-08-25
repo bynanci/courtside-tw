@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "events": {
+    "public_article_view": {
+      "content_kind": ["article"],
+      "surface": ["article"]
+    },
+    "public_issue_view": {
+      "content_kind": ["issue"],
+      "surface": ["issue"]
+    },
+    "public_search_submitted": {
+      "query_length_bucket": ["empty", "1_2", "3_5", "6_plus"],
+      "result_count_bucket": ["zero", "1_5", "6_20", "21_plus"],
+      "surface": ["search"]
+    },
+    "public_share_started": {
+      "content_kind": ["article", "issue", "none"],
+      "share_target": ["copy_link", "native_share"],
+      "surface": ["share"]
+    }
+  }
+}
