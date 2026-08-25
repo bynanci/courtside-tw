@@ -40,7 +40,7 @@ const forbiddenData = [
   "raw query",
   "slug",
   "title",
-  "body",
+  "bodies",
   "URL",
   "user/session/device identifier",
   "IP addresses",
