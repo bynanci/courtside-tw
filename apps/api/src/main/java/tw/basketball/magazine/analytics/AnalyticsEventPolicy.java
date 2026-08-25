@@ -24,6 +24,10 @@ public final class AnalyticsEventPolicy {
     private AnalyticsEventPolicy() {
     }
 
+    static Map<String, Map<String, Set<String>>> eventSpecs() {
+        return EVENT_SPECS;
+    }
+
     public static boolean accepts(String eventType, Map<String, String> properties) {
         if (eventType == null || properties == null) {
             return false;

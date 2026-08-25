@@ -73,6 +73,7 @@ class AnalyticsEventPolicyTest {
         Set<String> allValues = collectValues(events);
 
         assertEquals(1, contract.path("version").asInt());
+        assertEquals(canonicalEventSpecs(events), AnalyticsEventPolicy.eventSpecs());
 
         events.properties().forEach(eventEntry -> {
             String eventType = eventEntry.getKey();
@@ -124,6 +125,19 @@ class AnalyticsEventPolicyTest {
                 eventEntry.getValue().properties().forEach(propertyEntry ->
                         values.addAll(values(propertyEntry.getValue()))));
         return Set.copyOf(values);
+    }
+
+    private static Map<String, Map<String, Set<String>>> canonicalEventSpecs(JsonNode events) {
+        Map<String, Map<String, Set<String>>> eventSpecs = new HashMap<>();
+        events.properties().forEach(eventEntry -> {
+            Map<String, Set<String>> propertySpecs = new HashMap<>();
+            eventEntry.getValue().properties().forEach(propertyEntry ->
+                    propertySpecs.put(
+                            propertyEntry.getKey(),
+                            Set.copyOf(values(propertyEntry.getValue()))));
+            eventSpecs.put(eventEntry.getKey(), Map.copyOf(propertySpecs));
+        });
+        return Map.copyOf(eventSpecs);
     }
 
     private static Map<String, String> baselineProperties(JsonNode propertySpec) {

@@ -4,7 +4,10 @@ import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 
-import { sanitizeAnalyticsEvent } from "../apps/web/app/features/analytics/analytics.ts"
+import {
+  analyticsEventSpecsForContract,
+  sanitizeAnalyticsEvent
+} from "../apps/web/app/features/analytics/analytics.ts"
 
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 const analyticsPath = path.join(root, "apps/web/app/features/analytics/analytics.ts")
@@ -61,6 +64,12 @@ assert.deepEqual(
 )
 const allValues = new Set(
   Object.values(eventSpec.events).flatMap((properties) => Object.values(properties).flat())
+)
+const frontendEventSpecs = analyticsEventSpecsForContract()
+assert.deepEqual(
+  frontendEventSpecs,
+  eventSpec.events,
+  "frontend event schema must match canonical spec"
 )
 
 for (const [eventType, properties] of Object.entries(eventSpec.events)) {
@@ -140,6 +149,7 @@ for (const forbidden of forbiddenData) {
 
 assert.ok(analyticsSource.includes("consent_required"), "consent rejection result is required")
 assert.ok(analyticsSource.includes("sink_failure"), "bounded sink failure result is required")
+assert.ok(analyticsSource.includes("sink_unconfigured"), "missing sink result is required")
 assert.ok(
   analyticsSource.includes('return { sent: false, reason: "consent_required" }'),
   "consent rejection must be bounded"
@@ -154,6 +164,10 @@ assert.ok(!analyticsSource.includes("localStorage"), "T084 must not create provi
 assert.ok(inventory.includes("30 days"), "future retention ceiling must be 30 days")
 assert.ok(inventory.includes("no configured external sink"))
 assert.ok(inventory.includes("does not create retention jobs"))
+assert.ok(inventory.includes("sink_unconfigured"))
+assert.ok(inventory.includes("storage read failure"))
 assert.ok(inventory.includes("secrets"))
 
-console.log("analytics privacy contract: pass (4 events, explicit consent, bounded fields)")
+console.log(
+  "analytics privacy contract: pass (canonical parity, explicit consent, bounded failures)"
+)
