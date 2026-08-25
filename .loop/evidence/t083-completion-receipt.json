@@ -1,0 +1,78 @@
+{
+  "schema_version": "t083-completion-receipt/v1",
+  "task": "T083",
+  "proof": "protected-completion",
+  "recorded_at": "2026-08-25T03:23:42.737Z",
+  "repository": "bynanci/courtside-tw",
+  "issue": "https://github.com/bynanci/courtside-tw/issues/137",
+  "implementation_pull_request": "https://github.com/bynanci/courtside-tw/pull/138",
+  "implementation_head": "9dfedfd295cdb6b76f023b68a392ec458de926d5",
+  "protected_base_before_merge": "c2ed57cfe88814958e597bd6dfce5b8050af8255",
+  "ready_transition": {
+    "result": "PASS",
+    "pr_state": "ready_for_review",
+    "authorized_by": "release-owner follow-up directive"
+  },
+  "protected_merge": {
+    "result": "PASS",
+    "method": "squash",
+    "merge_commit": "c780abdeac1ee7aaf0f5e1403a36ec262acb4344",
+    "post_merge_main": "c780abdeac1ee7aaf0f5e1403a36ec262acb4344",
+    "expected_head_sha": "9dfedfd295cdb6b76f023b68a392ec458de926d5"
+  },
+  "gates": {
+    "ci": {
+      "run_number": 930,
+      "result": "PASS",
+      "jobs": "5/5"
+    },
+    "security": {
+      "run_number": 933,
+      "result": "PASS",
+      "jobs": "8/8"
+    },
+    "exact_head_artifacts": {
+      "result": "PASS",
+      "enumerated": 15,
+      "downloaded_digests_verified": [
+        "frontend",
+        "android-rerun"
+      ]
+    },
+    "review_threads": {
+      "unresolved": 0
+    },
+    "mergeability": "PASS"
+  },
+  "tests_first": {
+    "initial_red_head": "ea3dc21dc02c877df3a03b00c268f02537f75525",
+    "optimization_red_head": "8f661ba2a153ca179b7c5f75ae55337f76e07ee8",
+    "green_head": "9dfedfd295cdb6b76f023b68a392ec458de926d5",
+    "evidence": [
+      ".loop/evidence/t083-red.json",
+      ".loop/evidence/t083-optimize-red.json",
+      ".loop/evidence/t083-local.json",
+      ".loop/evidence/t083-review.json"
+    ]
+  },
+  "completion_readback": {
+    "tasks_md_t083_checked": true,
+    "t084_dispatch": false,
+    "provider_activation": false,
+    "receiver_activation": false,
+    "synthetic_probe_activation": false,
+    "production_activation": false,
+    "secrets_changed": false
+  },
+  "unchanged_boundaries": [
+    "T084 and later tasks",
+    "participant research",
+    "Web3",
+    "production activation",
+    "provider/exporter/receiver configuration",
+    "secrets",
+    "application behavior",
+    "schema",
+    "auth"
+  ]
+}
