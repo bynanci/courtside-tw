@@ -137,7 +137,12 @@ def read_legacy_backup(path: Path) -> tuple[dict[str, Any], str]:
     flags = os.O_RDONLY
     if hasattr(os, "O_NOFOLLOW"):
         flags |= os.O_NOFOLLOW
+    if hasattr(os, "O_NONBLOCK"):
+        flags |= os.O_NONBLOCK
     try:
+        candidate_metadata = path.lstat()
+        if not stat.S_ISREG(candidate_metadata.st_mode):
+            raise ReleaseError("legacy release-state backup must be a regular file")
         descriptor = os.open(path, flags)
     except FileNotFoundError as error:
         raise ReleaseError("legacy release-state backup is missing") from error
@@ -415,6 +420,9 @@ def validate_legacy_state(raw: dict[str, Any]) -> dict[str, Any]:
             "releases",
         },
         "legacy release state",
+    )
+    require_integer(
+        raw["schema_version"], "legacy release state schema_version"
     )
     if raw["schema_version"] != LEGACY_STATE_SCHEMA_VERSION:
         raise ReleaseError("legacy release state schema_version must be 1")
@@ -761,8 +769,13 @@ def register_release(
     existing = state["releases"].get(release_id)
     if existing is None:
         archived = archived_manifest_for_release(state, release_id, environment)
-        if archived is not None and archived != manifest:
-            raise ReleaseError("release_id is already bound to different immutable inputs")
+        if archived is not None:
+            if archived != manifest:
+                raise ReleaseError(
+                    "release_id is already bound to different immutable inputs"
+                )
+            receipt.update({"result": "no_op", "release_id": release_id})
+            return receipt, False
     if existing is not None:
         if existing != manifest:
             raise ReleaseError("release_id is already bound to different immutable inputs")
@@ -939,6 +952,7 @@ def require_production_confirmation(environment: str, action: str) -> None:
 def main() -> int:
     args = parse_args()
     state = new_state(args.environment)
+    persisted_state = json.loads(json.dumps(state))
     if args.state.resolve() == args.receipt.resolve():
         print("release.py: state and receipt paths must differ", file=sys.stderr)
         return 2
@@ -998,6 +1012,7 @@ def main() -> int:
                     "release state",
                     max_bytes=MAX_LEGACY_STATE_BYTES,
                 )
+                persisted_state = json.loads(json.dumps(legacy))
                 if legacy.get("schema_version") == STATE_SCHEMA_VERSION:
                     state = validate_state(legacy, args.environment)
                     receipt = receipt_base("migrate-state", args.environment, state)
@@ -1044,6 +1059,7 @@ def main() -> int:
                     changed = True
             else:
                 state = load_state(args.state, args.environment)
+                persisted_state = json.loads(json.dumps(state))
             if args.action == "register":
                 manifest = validate_manifest(read_json(args.manifest, "release manifest"))
                 receipt, changed = register_release(state, manifest, args.environment)
@@ -1074,11 +1090,12 @@ def main() -> int:
                     label="release state",
                     max_bytes=MAX_STATE_BYTES,
                 )
+                persisted_state = json.loads(json.dumps(state))
             atomic_write_json(args.receipt, receipt, label="release receipt")
             print(json.dumps(receipt, sort_keys=True))
             return 0
     except ReleaseError as error:
-        receipt = receipt_base(args.action, args.environment, state)
+        receipt = receipt_base(args.action, args.environment, persisted_state)
         receipt.update({"result": "blocked", "reason": str(error)})
         try:
             atomic_write_json(args.receipt, receipt, label="release receipt")
