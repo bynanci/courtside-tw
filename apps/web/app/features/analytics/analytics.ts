@@ -1,10 +1,7 @@
 export type ConsentState = "unknown" | "denied" | "granted"
 
 export type AnalyticsEventType =
-  | "public_issue_view"
-  | "public_article_view"
-  | "public_search_submitted"
-  | "public_share_started"
+  "public_issue_view" | "public_article_view" | "public_search_submitted" | "public_share_started"
 
 export type AnalyticsEvent = {
   type: AnalyticsEventType
@@ -21,8 +18,7 @@ export type ConsentStore = {
 }
 
 export type AnalyticsTrackResult =
-  | { sent: true }
-  | { sent: false; reason: "consent_required" | "invalid_event" | "sink_failure" }
+  { sent: true } | { sent: false; reason: "consent_required" | "invalid_event" | "sink_failure" }
 
 type EventSpec = {
   properties: readonly string[]
@@ -116,11 +112,7 @@ export function sanitizeAnalyticsEvent(input: unknown): AnalyticsEvent | null {
     const value = properties[key]
     const allowedValues = spec.values[key]
 
-    if (
-      typeof value !== "string" ||
-      !allowedValues ||
-      !allowedValues.includes(value)
-    ) {
+    if (typeof value !== "string" || !allowedValues || !allowedValues.includes(value)) {
       return null
     }
 
