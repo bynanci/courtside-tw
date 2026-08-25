@@ -1,0 +1,54 @@
+{
+  "schema_version": "mark-review-receipt/v1",
+  "task": "T083",
+  "recorded_at": "2026-08-25T02:31:04Z",
+  "review_scope": [
+    "false-green SLO semantics",
+    "missing and stale telemetry",
+    "privacy and metric cardinality",
+    "dashboard query units and environment isolation",
+    "scope and activation boundaries"
+  ],
+  "findings": [
+    {
+      "id": "T083-R1",
+      "severity": "high",
+      "finding": "Cross-environment aggregation could mask a failed environment.",
+      "resolution": "Contract requires one environment per rule evaluator; dashboard requires one explicit non-All environment and every surface query filters it.",
+      "status": "resolved"
+    },
+    {
+      "id": "T083-R2",
+      "severity": "high",
+      "finding": "A live heartbeat alone could falsely imply usable SLO evidence while an observation or histogram series is absent.",
+      "resolution": "Each surface enumerates required_series; missing rules use absent() for every required metric plus a >300-second heartbeat timestamp test, and activation requires bounded-series preinitialization.",
+      "status": "resolved"
+    },
+    {
+      "id": "T083-R3",
+      "severity": "medium",
+      "finding": "Mixed ratio and latency targets could render misleading dashboard units.",
+      "resolution": "Public latency and withdrawal short-window targets have explicit field unit overrides; stable refIds are validator-covered.",
+      "status": "resolved"
+    }
+  ],
+  "unresolved_findings": 0,
+  "privacy_readback": {
+    "dynamic_identifiers_in_metric_labels": false,
+    "forbidden_labels": [
+      "article_id",
+      "article_slug",
+      "content",
+      "email",
+      "ip_address",
+      "query",
+      "request_id",
+      "storage_key",
+      "trace_id",
+      "user_id",
+      "wallet_address"
+    ]
+  },
+  "optimization_readback": "Kept one provider-neutral contract, one dashboard, one rule file and one runbook; cache-purge remains only a withdrawal safety invariant and no unapproved normal-publish SLO was invented.",
+  "decision": "PASS_WITH_REMEDIATIONS_COMPLETE"
+}

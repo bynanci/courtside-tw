@@ -1,16 +1,16 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t083-observability-slo",
-  "graph_version": 1,
+  "graph_version": 3,
   "run_id": "t083-issue-137-20260825",
   "status": "running",
-  "iteration": 1,
+  "iteration": 3,
   "started_at": "2026-08-25T02:10:11Z",
-  "updated_at": "2026-08-25T02:10:11Z",
-  "current_frontier": ["a-red-contract"],
+  "updated_at": "2026-08-25T02:31:04Z",
+  "current_frontier": ["p-exact-head"],
   "blocked_nodes": ["g-release-owner"],
   "terminal_state": null,
-  "next_action": "Commit and execute the absent-artifact RED contract validator.",
+  "next_action": "Publish the reviewed implementation commit, then read back fresh exact-head CI 5/5, Security 8/8, artifacts and review threads without marking ready or merging.",
   "events": [
     {
       "event_id": "t083-graph-initialized",
@@ -52,6 +52,97 @@
         "input": 0,
         "output": 0,
         "total": 12000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "t083-tests-first-red",
+      "at": "2026-08-25T02:20:00Z",
+      "actor": "codex-agent",
+      "type": "proof_captured",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          "superseded the formatting-only CI 926 attempt",
+          "bound attributable RED to ea3dc21 and CI 927",
+          "proved exactly four authorized artifacts absent after 203 web tests passed"
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t083-red.json"],
+      "proof_receipts": [
+        {
+          "proof": "p-red",
+          "status": "PASS",
+          "claim": "The contract gate failed for exactly the four absent T083 artifacts."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": null,
+        "version": null,
+        "retrieval_ids": ["github-ci-927", "commit-ea3dc21"],
+        "evidence_refs": [".loop/evidence/t083-red.json"],
+        "next_review_at": null,
+        "blocker": null,
+        "reason": "The repository proof receipt and GitHub run are authoritative; no separate semantic-memory write changes implementation."
+      },
+      "failure_signature": "T083_EXPECTED_MISSING_ARTIFACTS",
+      "decision": "proceed_to_bounded_implementation",
+      "token_usage": {
+        "estimated": 18000,
+        "input": 0,
+        "output": 0,
+        "total": 18000
+      },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "t083-local-review-complete",
+      "at": "2026-08-25T02:31:04Z",
+      "actor": "codex-agent",
+      "type": "implementation_reviewed",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          "implemented seven provider-neutral observability surfaces",
+          "made missing and stale source series page-and-hold",
+          "kept provider, receiver and synthetic activation false",
+          "resolved three false-green and dashboard-unit findings",
+          "advanced only to exact-head verification"
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t083-local.json", ".loop/evidence/t083-review.json"],
+      "proof_receipts": [
+        {
+          "proof": "p-local",
+          "status": "PASS",
+          "claim": "Scoped contract, formatting, lint, parse and strict graph checks pass."
+        },
+        {
+          "proof": "p-review",
+          "status": "PASS",
+          "claim": "No unresolved false-green, cardinality, activation or scope finding remains."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": null,
+        "version": null,
+        "retrieval_ids": ["github-issue-137", "github-pr-138"],
+        "evidence_refs": [".loop/evidence/t083-local.json", ".loop/evidence/t083-review.json"],
+        "next_review_at": null,
+        "blocker": null,
+        "reason": "Issue, PR and versioned receipts are sufficient durable state; no extra memory write affects the exact-head action."
+      },
+      "failure_signature": null,
+      "decision": "publish_implementation_and_verify_exact_head",
+      "token_usage": {
+        "estimated": 30000,
+        "input": 0,
+        "output": 0,
+        "total": 30000
       },
       "terminal_reason": null
     }

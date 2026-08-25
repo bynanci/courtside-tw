@@ -1,0 +1,55 @@
+{
+  "schema_version": "mark-proof-receipt/v1",
+  "task": "T083",
+  "proof": "bounded-local-implementation",
+  "recorded_at": "2026-08-25T02:31:04Z",
+  "repository": "bynanci/courtside-tw",
+  "issue": "https://github.com/bynanci/courtside-tw/issues/137",
+  "pull_request": "https://github.com/bynanci/courtside-tw/pull/138",
+  "base_sha": "c2ed57cfe88814958e597bd6dfce5b8050af8255",
+  "checks": [
+    {
+      "command": "node scripts/validate-observability.mjs",
+      "result": "PASS",
+      "summary": "7 surfaces, fail-closed telemetry and bounded labels"
+    },
+    {
+      "command": "prettier --check <T083 files>",
+      "result": "PASS"
+    },
+    {
+      "command": "eslint scripts/validate-observability.mjs",
+      "result": "PASS"
+    },
+    {
+      "command": "python validate_graphify_loop.py .loop/t083-observability-slo.yaml --strict",
+      "result": "PASS",
+      "summary": "14 nodes, 26 edges, 5/5 action proof coverage, 6,000-token release-owner min-cut"
+    },
+    {
+      "command": "python YAML/JSON parse and cardinality read-back",
+      "result": "PASS",
+      "summary": "7 surfaces, 3 rule groups, 21 alerts, 7 surface panels"
+    }
+  ],
+  "activation_readback": {
+    "provider": false,
+    "receiver": false,
+    "synthetic_probe": false,
+    "missing_signal_policy": "page_and_hold",
+    "environment_scope": "single_environment_rule_evaluator"
+  },
+  "file_sha256": {
+    "scripts/validate-observability.mjs": "df1a5c53fbd0d73231bb60344e242114949cd1a5d0f7b3ff154724f34d8073e3",
+    "infra/observability/slo-contract.yml": "67b59c04727faa1d1e1f1974fbee6c16251089e6dd8766a75b2dfc8b71d1f87d",
+    "infra/observability/dashboards/courtside-slo.json": "9f771cc100cf2c3503600feea469486a0548eab8e333b789c784df111593422e",
+    "infra/observability/alerts/courtside-slo.rules.yml": "13f3f60b6bf2d563fb19c796a82a6ea98da6316087292226b265cd13444874eb",
+    "docs/operations/incident-response.md": "18b4f871c93e12954448c1cb6add3fe62a2f8894ec77e19fc914bbef670df277"
+  },
+  "toolchain_boundary": {
+    "repository_required": "Node 24.14.0 / pnpm 11.7.0",
+    "local_available": "Node 24.19.0 / pnpm 11.19.0",
+    "decision": "Do not bypass the engine gate; use local scoped checks only and require fresh exact-head GitHub Actions for repository-level proof."
+  },
+  "scope_readback": "No tasks.md, application behavior, schema, auth, provider, endpoint, credential, receiver or T084 change."
+}

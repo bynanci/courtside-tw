@@ -126,17 +126,43 @@ if (contract) {
   if (contract?.scope?.provider_activation !== false) {
     fail("provider activation must remain false")
   }
+  if (contract?.scope?.receiver_activation !== false) {
+    fail("receiver activation must remain false")
+  }
+  if (contract?.scope?.synthetic_probe_activation !== false) {
+    fail("synthetic probe activation must remain false")
+  }
   if (contract?.missing_signal?.policy !== "page_and_hold") {
     fail("missing_signal.policy must be page_and_hold")
   }
   if (contract?.missing_signal?.max_sample_age_seconds !== 300) {
     fail("missing telemetry must become stale after 300 seconds")
   }
+  if (contract?.evaluation?.environment_scope !== "single_environment_rule_evaluator") {
+    fail("alerts must be evaluated in exactly one environment per rule evaluator")
+  }
+  sameMembers(
+    contract?.canonical_inputs?.heartbeat?.required_labels,
+    ["surface", "environment"],
+    "heartbeat required_labels"
+  )
+  if (
+    contract?.canonical_inputs?.heartbeat?.cardinality !==
+    "exactly_one_series_per_surface_environment"
+  ) {
+    fail("heartbeat must have exactly one series per surface and environment")
+  }
   sameMembers(
     contract?.privacy?.forbidden_labels,
     requiredForbiddenLabels,
     "privacy.forbidden_labels"
   )
+  const labelOverlap = (contract?.privacy?.allowed_labels ?? []).filter((label) =>
+    requiredForbiddenLabels.includes(label)
+  )
+  if (labelOverlap.length > 0) {
+    fail(`privacy label allowlist overlaps forbidden labels: ${labelOverlap.join(", ")}`)
+  }
   sameMembers(
     contract?.surfaces?.map((surface) => surface.id),
     expectedSurfaces,
@@ -199,6 +225,9 @@ if (contract) {
     if (surface?.source?.activation !== "separately_gated") {
       fail(`${surface.id} source activation must remain separately_gated`)
     }
+    if (!(surface?.source?.required_series?.length > 0)) {
+      fail(`${surface.id} must enumerate every fail-closed required series`)
+    }
     if (!surface?.alerts?.missing || !(surface?.alerts?.paging?.length > 0)) {
       fail(`${surface.id} must declare one missing-signal alert and at least one paging alert`)
     }
@@ -213,6 +242,28 @@ if (alerts) {
   sameMembers(Object.keys(alerts), ["groups"], "Prometheus alert-rule root keys")
   if (!(alerts.groups?.length > 0)) {
     fail("Prometheus alert rules must contain at least one group")
+  }
+  if (alerts.groups.some((group) => group.interval !== "30s")) {
+    fail("every Prometheus alert group must evaluate every 30 seconds")
+  }
+  const alertNames = alertRules.map((rule) => rule.alert).filter(Boolean)
+  if (new Set(alertNames).size !== alertNames.length) {
+    fail("Prometheus alert names must be unique")
+  }
+  for (const rule of alertRules) {
+    const expression = String(rule.expr ?? "")
+    if (
+      rule.alert?.endsWith("FastBurn") &&
+      !(expression.includes("[5m]") && expression.includes("[1h]"))
+    ) {
+      fail(`${rule.alert} must use both 5-minute and 1-hour burn windows`)
+    }
+    if (
+      rule.alert?.endsWith("SlowBurn") &&
+      !(expression.includes("[30m]") && expression.includes("[6h]"))
+    ) {
+      fail(`${rule.alert} must use both 30-minute and 6-hour burn windows`)
+    }
   }
 
   for (const surface of contract?.surfaces ?? []) {
@@ -241,6 +292,17 @@ if (alerts) {
     if (missingRule && !String(missingRule.expr).includes("absent(")) {
       fail(`${surface.alerts.missing} must fail closed with absent()`)
     }
+    if (
+      missingRule &&
+      !(String(missingRule.expr).includes("time()") && String(missingRule.expr).includes("> 300"))
+    ) {
+      fail(`${surface.alerts.missing} must detect samples stale beyond 300 seconds`)
+    }
+    for (const metric of surface?.source?.required_series ?? []) {
+      if (missingRule && !String(missingRule.expr).includes(`absent(${metric}`)) {
+        fail(`${surface.alerts.missing} must detect absent ${metric}`)
+      }
+    }
   }
 }
 
@@ -248,6 +310,15 @@ if (dashboard) {
   if (dashboard.uid !== "courtside-slo-v1") fail("dashboard uid must be courtside-slo-v1")
   if (dashboard?.templating?.list?.[0]?.name !== "DS_PROMETHEUS") {
     fail("dashboard must use a replaceable DS_PROMETHEUS data source")
+  }
+  if (!(dashboard?.templating?.list ?? []).some((item) => item.name === "environment")) {
+    fail("dashboard must require one explicit environment selection")
+  }
+  const environmentVariable = (dashboard?.templating?.list ?? []).find(
+    (item) => item.name === "environment"
+  )
+  if (environmentVariable?.includeAll !== false || environmentVariable?.multi !== false) {
+    fail("dashboard environment selection must be single-value with no all-environments option")
   }
   const surfacePanels = (dashboard.panels ?? []).filter((panel) => panel.surface)
   sameMembers(
@@ -259,7 +330,14 @@ if (dashboard) {
     if (!(panel.targets?.length > 0) || panel.targets.some((target) => !target.expr)) {
       fail(`dashboard panel ${panel.surface} must have non-empty PromQL targets`)
     }
+    if (
+      panel.targets.some((target) => !String(target.expr).includes('environment="$environment"'))
+    ) {
+      fail(`dashboard panel ${panel.surface} must filter one explicit environment`)
+    }
   }
+  const panelIds = (dashboard.panels ?? []).map((panel) => panel.id)
+  if (new Set(panelIds).size !== panelIds.length) fail("dashboard panel IDs must be unique")
   if (!(dashboard.panels ?? []).some((panel) => panel.kind === "telemetry-coverage")) {
     fail("dashboard must include a telemetry-coverage panel")
   }
