@@ -115,6 +115,16 @@ test("raw query and unknown properties fail closed before the sink", () => {
   )
 })
 
+test("prototype property names are not event types", () => {
+  for (const type of ["toString", "constructor", "__proto__"]) {
+    assert.equal(
+      sanitizeAnalyticsEvent({ type, properties: {} }),
+      null,
+      type
+    )
+  }
+})
+
 test("consent withdrawal blocks subsequent events", async () => {
   const received: AnalyticsEvent[] = []
   const client = createConsentAwareAnalytics({
