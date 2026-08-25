@@ -1,5 +1,7 @@
 <script setup lang="ts">
+import { useNuxtApp } from "#app"
 import { definePageMeta } from "#imports"
+import { onBeforeUnmount, onMounted, watch } from "vue"
 
 import IssueToc from "../../components/issues/IssueToc.vue"
 import ReadingState from "../../components/issues/ReadingState.vue"
@@ -19,6 +21,7 @@ definePageMeta({ pageTransition: { name: "reader-route", mode: "out-in" } })
 
 const route = useRoute()
 const config = useRuntimeConfig()
+const { $analytics } = useNuxtApp()
 const rawSlug = Array.isArray(route.params.issueSlug)
   ? route.params.issueSlug[0]
   : route.params.issueSlug
@@ -96,6 +99,21 @@ useHead(() => {
       : []
   }
 })
+
+let stopIssueAnalyticsWatch: (() => void) | null = null
+
+onMounted(() => {
+  stopIssueAnalyticsWatch = watch(
+    () => issue.value?.slug ?? null,
+    (slug, previousSlug) => {
+      if (!slug || slug === previousSlug) return
+      void $analytics.trackIssueView()
+    },
+    { immediate: true }
+  )
+})
+
+onBeforeUnmount(() => stopIssueAnalyticsWatch?.())
 </script>
 
 <template>

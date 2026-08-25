@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { useState } from "#app"
+import { useNuxtApp, useState } from "#app"
 import { definePageMeta } from "#imports"
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
 
@@ -85,6 +85,7 @@ const RELOAD_SCROLL_SNAPSHOT_KEY = "courtside.reader.reload-scroll:v1"
 
 const route = useRoute()
 const config = useRuntimeConfig()
+const { $analytics } = useNuxtApp()
 const rawArticleSlug = Array.isArray(route.params.articleSlug)
   ? route.params.articleSlug[0]
   : route.params.articleSlug
@@ -970,6 +971,9 @@ onMounted(() => {
     { immediate: true }
   )
   activeRevisionId = article.value?.revisionId ?? null
+  if (activeRevisionId) {
+    void $analytics.trackArticleView()
+  }
   stopArticleFocusWatch = watch(
     () => article.value?.revisionId ?? null,
     async (revisionId) => {
@@ -977,6 +981,7 @@ onMounted(() => {
       activeRevisionId = revisionId
       failedAssets.value = new Set()
       if (!revisionId) return
+      void $analytics.trackArticleView()
       await nextTick()
       focusArticleHeading()
     }
