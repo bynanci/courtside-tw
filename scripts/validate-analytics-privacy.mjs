@@ -44,6 +44,91 @@ const forbiddenData = [
   "trace IDs"
 ]
 
+function parseJavaEventSpecs(source) {
+  const assignment = source.indexOf("EVENT_SPECS =")
+  assert.notEqual(assignment, -1, "API EVENT_SPECS assignment is missing")
+
+  const expressionStart = source.indexOf("Map.of", assignment)
+  const expressionEnd = source.indexOf(";", expressionStart)
+  assert.notEqual(expressionStart, -1, "API EVENT_SPECS initializer is missing")
+  assert.notEqual(expressionEnd, -1, "API EVENT_SPECS initializer is unterminated")
+
+  const expression = source.slice(expressionStart, expressionEnd)
+  const tokenPattern = /\s*(Map\.of|Set\.of|"(?:\\.|[^"\\])*"|[(),])\s*/gy
+  const tokens = []
+  let offset = 0
+
+  while (offset < expression.length) {
+    tokenPattern.lastIndex = offset
+    const match = tokenPattern.exec(expression)
+    assert.ok(match && match.index === offset, "API EVENT_SPECS contains unsupported syntax")
+    tokens.push(match[1])
+    offset = tokenPattern.lastIndex
+  }
+
+  let cursor = 0
+  const take = (expected) => {
+    const token = tokens[cursor]
+    assert.equal(token, expected, `API EVENT_SPECS expected ${expected}, found ${token}`)
+    cursor += 1
+  }
+  const parseString = () => {
+    const token = tokens[cursor]
+    assert.ok(token?.startsWith('"'), "API EVENT_SPECS expected a string literal")
+    cursor += 1
+    return JSON.parse(token)
+  }
+  const parseCall = () => {
+    const call = tokens[cursor]
+    assert.ok(call === "Map.of" || call === "Set.of", "API EVENT_SPECS expected Map.of or Set.of")
+    cursor += 1
+    take("(")
+
+    const values = []
+    if (tokens[cursor] !== ")") {
+      while (true) {
+        values.push(tokens[cursor]?.startsWith('"') ? parseString() : parseCall())
+        if (tokens[cursor] !== ",") break
+        take(",")
+      }
+    }
+    take(")")
+
+    if (call === "Set.of") {
+      assert.ok(values.every((value) => typeof value === "string"))
+      return values
+    }
+
+    assert.equal(values.length % 2, 0, "API EVENT_SPECS Map.of must contain key/value pairs")
+    return Object.fromEntries(
+      Array.from({ length: values.length / 2 }, (_, index) => {
+        const key = values[index * 2]
+        assert.equal(typeof key, "string", "API EVENT_SPECS map keys must be strings")
+        return [key, values[index * 2 + 1]]
+      })
+    )
+  }
+
+  const eventSpecs = parseCall()
+  assert.equal(cursor, tokens.length, "API EVENT_SPECS contains trailing syntax")
+  return eventSpecs
+}
+
+function normalizeEventSpecs(eventSpecs) {
+  return Object.fromEntries(
+    Object.entries(eventSpecs)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([eventType, properties]) => [
+        eventType,
+        Object.fromEntries(
+          Object.entries(properties)
+            .sort(([left], [right]) => left.localeCompare(right))
+            .map(([property, values]) => [property, [...values].sort()])
+        )
+      ])
+  )
+}
+
 assert.ok(fs.existsSync(analyticsPath), "frontend analytics contract is missing")
 assert.ok(fs.existsSync(policyPath), "API analytics policy is missing")
 assert.ok(fs.existsSync(eventSpecPath), "canonical analytics event spec is missing")
@@ -67,14 +152,18 @@ const allValues = new Set(
 )
 const frontendEventSpecs = analyticsEventSpecsForContract()
 assert.deepEqual(
-  frontendEventSpecs,
-  eventSpec.events,
+  normalizeEventSpecs(frontendEventSpecs),
+  normalizeEventSpecs(eventSpec.events),
   "frontend event schema must match canonical spec"
+)
+assert.deepEqual(
+  normalizeEventSpecs(parseJavaEventSpecs(policySource)),
+  normalizeEventSpecs(eventSpec.events),
+  "API event schema must match canonical spec"
 )
 
 for (const [eventType, properties] of Object.entries(eventSpec.events)) {
   assert.ok(analyticsSource.includes(eventType), "frontend event is missing: " + eventType)
-  assert.ok(policySource.includes(eventType), "API event is missing: " + eventType)
   assert.ok(inventory.includes(eventType), "inventory event is missing: " + eventType)
 
   assert.ok(Object.keys(properties).length > 0, eventType + " must define bounded properties")
@@ -169,5 +258,5 @@ assert.ok(inventory.includes("storage read failure"))
 assert.ok(inventory.includes("secrets"))
 
 console.log(
-  "analytics privacy contract: pass (canonical parity, explicit consent, bounded failures)"
+  "analytics privacy contract: pass (frontend/API canonical parity, explicit consent, bounded failures)"
 )
