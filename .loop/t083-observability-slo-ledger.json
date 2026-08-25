@@ -3,14 +3,16 @@
   "graph_name": "courtside-tw-t083-observability-slo",
   "graph_version": 4,
   "run_id": "t083-issue-137-20260825",
-  "status": "running",
-  "iteration": 4,
+  "status": "completed",
+  "iteration": 5,
   "started_at": "2026-08-25T02:10:11Z",
-  "updated_at": "2026-08-25T02:56:56Z",
-  "current_frontier": ["p-exact-head"],
-  "blocked_nodes": ["g-release-owner"],
-  "terminal_state": null,
-  "next_action": "Publish the optimization GREEN commit, then read fresh exact-head CI 5/5, Security 8/8, artifacts, zero unresolved review threads and current-base mergeability without marking ready or merging.",
+  "updated_at": "2026-08-25T03:23:42.737Z",
+  "current_frontier": [
+    "s-terminal"
+  ],
+  "blocked_nodes": [],
+  "terminal_state": "success",
+  "next_action": "No further T083 action; T084 remains separately gated.",
   "events": [
     {
       "event_id": "t083-graph-initialized",
@@ -27,7 +29,9 @@
           "preserved merge, activation, completion and T084 human gates"
         ]
       },
-      "evidence_refs": [".loop/evidence/t083-dispatch.json"],
+      "evidence_refs": [
+        ".loop/evidence/t083-dispatch.json"
+      ],
       "proof_receipts": [
         {
           "proof": "p-baseline",
@@ -39,8 +43,14 @@
         "memory_status": "NO_OP",
         "memory_id": null,
         "version": null,
-        "retrieval_ids": ["github-issue-121", "github-issue-137", "main-c2ed57c"],
-        "evidence_refs": [".loop/evidence/t083-dispatch.json"],
+        "retrieval_ids": [
+          "github-issue-121",
+          "github-issue-137",
+          "main-c2ed57c"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t083-dispatch.json"
+        ],
         "next_review_at": null,
         "blocker": null,
         "reason": "GitHub and repository artifacts are the authoritative durable state; no separate semantic record changes the next action."
@@ -69,7 +79,9 @@
           "proved exactly four authorized artifacts absent after 203 web tests passed"
         ]
       },
-      "evidence_refs": [".loop/evidence/t083-red.json"],
+      "evidence_refs": [
+        ".loop/evidence/t083-red.json"
+      ],
       "proof_receipts": [
         {
           "proof": "p-red",
@@ -81,8 +93,13 @@
         "memory_status": "NO_OP",
         "memory_id": null,
         "version": null,
-        "retrieval_ids": ["github-ci-927", "commit-ea3dc21"],
-        "evidence_refs": [".loop/evidence/t083-red.json"],
+        "retrieval_ids": [
+          "github-ci-927",
+          "commit-ea3dc21"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t083-red.json"
+        ],
         "next_review_at": null,
         "blocker": null,
         "reason": "The repository proof receipt and GitHub run are authoritative; no separate semantic-memory write changes implementation."
@@ -113,7 +130,10 @@
           "advanced only to exact-head verification"
         ]
       },
-      "evidence_refs": [".loop/evidence/t083-local.json", ".loop/evidence/t083-review.json"],
+      "evidence_refs": [
+        ".loop/evidence/t083-local.json",
+        ".loop/evidence/t083-review.json"
+      ],
       "proof_receipts": [
         {
           "proof": "p-local",
@@ -130,8 +150,14 @@
         "memory_status": "NO_OP",
         "memory_id": null,
         "version": null,
-        "retrieval_ids": ["github-issue-137", "github-pr-138"],
-        "evidence_refs": [".loop/evidence/t083-local.json", ".loop/evidence/t083-review.json"],
+        "retrieval_ids": [
+          "github-issue-137",
+          "github-pr-138"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t083-local.json",
+          ".loop/evidence/t083-review.json"
+        ],
         "next_review_at": null,
         "blocker": null,
         "reason": "Issue, PR and versioned receipts are sufficient durable state; no extra memory write affects the exact-head action."
@@ -188,7 +214,12 @@
         "memory_status": "NO_OP",
         "memory_id": null,
         "version": null,
-        "retrieval_ids": ["github-ci-929", "commit-8f661ba", "github-pr-138", "github-issue-137"],
+        "retrieval_ids": [
+          "github-ci-929",
+          "commit-8f661ba",
+          "github-pr-138",
+          "github-issue-137"
+        ],
         "evidence_refs": [
           ".loop/evidence/t083-optimize-red.json",
           ".loop/evidence/t083-review.json"
@@ -206,6 +237,56 @@
         "total": 8000
       },
       "terminal_reason": null
+    },
+    {
+      "event_id": "t083-protected-completion",
+      "at": "2026-08-25T03:23:42.737Z",
+      "actor": "codex-agent",
+      "type": "protected_completion",
+      "base_graph_version": 4,
+      "new_graph_version": 5,
+      "graph_delta": {
+        "operations": [
+          "recorded explicit release-owner authorization for ready, protected merge and T083 completion",
+          "read back PR #138 squash merge c780abdeac1ee7aaf0f5e1403a36ec262acb4344 on protected main",
+          "checked only the T083 task receipt and preserved all later-task and activation gates"
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t083-completion-receipt.json"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "p-completion",
+          "status": "PASS",
+          "claim": "T083 implementation head 9dfedfd295cdb6b76f023b68a392ec458de926d5 passed exact-head gates and is present on protected main c780abdeac1ee7aaf0f5e1403a36ec262acb4344."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": null,
+        "version": null,
+        "retrieval_ids": [
+          "github-pr-138",
+          "github-issue-137",
+          "main-c780abde"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t083-completion-receipt.json"
+        ],
+        "next_review_at": null,
+        "blocker": null,
+        "reason": "Protected GitHub merge and the completion receipt are authoritative durable state."
+      },
+      "failure_signature": null,
+      "decision": "complete_t083_and_hold_t084",
+      "token_usage": {
+        "estimated": 4000,
+        "input": 0,
+        "output": 0,
+        "total": 4000
+      },
+      "terminal_reason": "success"
     }
   ]
 }
