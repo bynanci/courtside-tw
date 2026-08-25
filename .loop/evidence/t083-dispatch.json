@@ -1,0 +1,39 @@
+{
+  "schema_version": "courtside-t083-dispatch/v1",
+  "recorded_at": "2026-08-25T02:10:11Z",
+  "issue": "https://github.com/bynanci/courtside-tw/issues/137",
+  "base": {
+    "branch": "main",
+    "sha": "c2ed57cfe88814958e597bd6dfce5b8050af8255",
+    "t082_complete": true,
+    "t083_complete": false,
+    "t084_complete": false,
+    "open_pull_requests": 0
+  },
+  "current_main_findings": [
+    "infra/observability is absent",
+    "docs/operations/incident-response.md is absent",
+    "exporter, alert receiver and synthetic-probe activation are not configured",
+    "missing journey telemetry must not be interpreted as green"
+  ],
+  "authorized": [
+    "provider-neutral seven-surface SLO contract",
+    "dashboards and alerts",
+    "deterministic contract validator",
+    "incident-response runbook",
+    "T083-only Graphify evidence",
+    "draft pull request"
+  ],
+  "forbidden": [
+    "protected merge or ready-for-review transition",
+    "tasks.md completion receipt",
+    "T084 or later task dispatch",
+    "production activation, providers, endpoints, receivers, credentials or external writes",
+    "application business behavior, schema, auth, Web3, analytics or participant research"
+  ],
+  "tests_first": {
+    "red_claim": "The contract validator fails while all four required T083 artifacts are absent.",
+    "green_claim": "A later implementation commit supplies the smallest seven-surface configuration that passes the same validator."
+  },
+  "terminal_policy": "Stop at needs_human after exact-head evidence; merge remains unauthorized."
+}

@@ -1,0 +1,59 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-t083-observability-slo",
+  "graph_version": 1,
+  "run_id": "t083-issue-137-20260825",
+  "status": "running",
+  "iteration": 1,
+  "started_at": "2026-08-25T02:10:11Z",
+  "updated_at": "2026-08-25T02:10:11Z",
+  "current_frontier": ["a-red-contract"],
+  "blocked_nodes": ["g-release-owner"],
+  "terminal_state": null,
+  "next_action": "Commit and execute the absent-artifact RED contract validator.",
+  "events": [
+    {
+      "event_id": "t083-graph-initialized",
+      "at": "2026-08-25T02:10:11Z",
+      "actor": "codex-agent",
+      "type": "graph_initialized",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          "bound issue 137 and exact protected-main base",
+          "recorded four current-main configuration gaps",
+          "set a tests-first RED frontier",
+          "preserved merge, activation, completion and T084 human gates"
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t083-dispatch.json"],
+      "proof_receipts": [
+        {
+          "proof": "p-baseline",
+          "status": "PASS",
+          "claim": "T083 configuration and runbook artifacts are absent on exact main; provider activation is separately gated."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": null,
+        "version": null,
+        "retrieval_ids": ["github-issue-121", "github-issue-137", "main-c2ed57c"],
+        "evidence_refs": [".loop/evidence/t083-dispatch.json"],
+        "next_review_at": null,
+        "blocker": null,
+        "reason": "GitHub and repository artifacts are the authoritative durable state; no separate semantic record changes the next action."
+      },
+      "failure_signature": null,
+      "decision": "proceed_with_bounded_red_contract",
+      "token_usage": {
+        "estimated": 12000,
+        "input": 0,
+        "output": 0,
+        "total": 12000
+      },
+      "terminal_reason": null
+    }
+  ]
+}

@@ -1,0 +1,381 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-t083-observability-slo
+objective: Configure a fail-closed seven-surface SLO dashboard, alert and incident-response contract on a draft PR without activating providers or merging.
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - GitHub issue 137 and protected main c2ed57cfe88814958e597bd6dfce5b8050af8255.
+    - infra/observability provider-neutral contract, dashboards and alerts.
+    - docs/operations/incident-response.md and a deterministic contract validator.
+    - T083-only Graphify ledger and exact-head proof read-back.
+  out:
+    - Protected merge, ready-for-review transition or tasks.md completion receipt.
+    - T084 or any later task.
+    - Provider/exporter/receiver activation, credentials, production endpoints or external writes.
+    - Application behavior, database, auth, Web3, analytics or participant research changes.
+
+policy:
+  human_gates:
+    - Protected merge and T083 completion receipt require explicit release-owner approval.
+    - Provider, exporter, receiver, credential or production activation requires separate approval.
+    - Scope, target, privacy/cardinality or failure-semantics changes require explicit approval.
+  no_progress:
+    max_same_failure: 2
+    max_no_evidence_delta: 2
+  mutation:
+    append_only_evidence: true
+    require_graph_delta: true
+
+memory_workflow:
+  contract: work-memory/v1
+  control_ledger: Append T083 graph deltas, proof receipts and estimated token usage to the repository ledger.
+  semantic_memory: Use the GitHub issue, PR and repository artifacts as authoritative durable state; emit NO_OP when no separate semantic-memory write changes a later action.
+  modes: [recall, capture, update, forget, no_op]
+  retrieval:
+    levels: [index, timeline_relations, details]
+    max_index_results: 10
+    stop_on_sufficient_evidence: true
+  capture:
+    allowed_kinds: [decision, constraint, preference, fact, attempt, task_state, pattern, evidence]
+    requires_downstream_proof: true
+    requires_write_receipt: true
+  lifecycle: [seed, verified, stable, needs_update, disputed, archived]
+  failure_policy:
+    write_pending: blocked
+    stale_or_disputed: needs_human
+    redact_secrets: true
+
+graph:
+  entry_nodes: [t-dispatch]
+  terminal_nodes: [s-terminal]
+  loops:
+    - id: l1-t083
+      layer: L1
+      owner: codex-agent
+      trigger_nodes: [t-dispatch]
+      action_nodes: [a-reconcile, a-red-contract, a-implement, a-review, a-draft]
+      proof_nodes: [p-baseline, p-red, p-local, p-review, p-exact-head]
+      memory_nodes: [m-ledger]
+      stop_nodes: [s-terminal]
+      budgets:
+        max_iterations: 5
+        max_minutes: 180
+        max_same_failure: 2
+        max_graph_changes: 20
+        max_tokens: 70000
+  nodes:
+    - id: t-dispatch
+      kind: trigger
+      layer: L1
+      label: Release owner authorizes bounded T083 dispatch
+      owner: release-owner
+      status: done
+      risk: medium
+      confidence:
+        score: 1.0
+        basis: Explicit user authorization and dedicated GitHub issue 137.
+        evidence_refs: [.loop/evidence/t083-dispatch.json]
+      budget: {effort_hours: 0.0, tokens: 0}
+      config:
+        condition: T082 is complete and the release owner authorizes T083 only.
+        inputs_required: [protected-main SHA, T083 task text, explicit bounded authorization]
+        dedupe: T083 plus issue-137 plus base-c2ed57c
+
+    - id: a-reconcile
+      kind: action
+      layer: L1
+      label: Reconcile current-main observability inputs and gaps
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence:
+        score: 0.95
+        basis: Current main, task row, source metrics and absent target directories were read directly.
+        evidence_refs: [.loop/evidence/t083-dispatch.json]
+      budget: {effort_hours: 0.5, tokens: 7000}
+      config:
+        workflow: [read exact main, inspect existing metric producers, isolate configuration-only gap]
+        allowed: [read repository and GitHub state, record bounded baseline]
+        requires_approval: [scope or SLO target change]
+        forbidden: [infer exporter activation, treat missing telemetry as healthy]
+
+    - id: p-baseline
+      kind: proof
+      layer: L1
+      label: Current-main gap baseline
+      owner: verifier
+      status: done
+      risk: medium
+      confidence:
+        score: 0.95
+        basis: Exact main contains no infra/observability or incident-response runbook.
+        evidence_refs: [.loop/evidence/t083-dispatch.json]
+      budget: {effort_hours: 0.25, tokens: 2500}
+      config:
+        level: P2
+        claim: T083 target artifacts are absent and activation is separately gated.
+        method: Exact-main contents and source inspection.
+        evidence_path: .loop/evidence/t083-dispatch.json
+        required: true
+        baseline_required: true
+
+    - id: a-red-contract
+      kind: action
+      layer: L1
+      label: Commit the failing observability contract validator
+      owner: codex-agent
+      status: ready
+      risk: medium
+      confidence:
+        score: 0.9
+        basis: The validator is bounded to four missing T083 artifacts and approved target values.
+        evidence_refs: [.loop/evidence/t083-dispatch.json]
+      budget: {effort_hours: 0.5, tokens: 8000}
+      config:
+        workflow: [add deterministic validator, wire contract gate, execute absent-artifact failure]
+        allowed: [scripts/validate-observability.mjs, package.json, Makefile, T083 graph artifacts]
+        requires_approval: [weaken acceptance or remove an existing gate]
+        forbidden: [add implementation before RED proof, alter unrelated checks]
+
+    - id: p-red
+      kind: proof
+      layer: L1
+      label: Attributable RED contract proof
+      owner: verifier
+      status: planned
+      risk: medium
+      confidence:
+        score: 0.85
+        basis: Must be bound to the first branch commit and captured command output.
+        evidence_refs: []
+      budget: {effort_hours: 0.25, tokens: 2500}
+      config:
+        level: P2
+        claim: The new validator fails because the four authorized artifacts are absent.
+        method: pnpm run contract:observability on the tests-first commit.
+        evidence_path: .loop/evidence/t083-red.json
+        required: true
+        baseline_required: true
+
+    - id: a-implement
+      kind: action
+      layer: L1
+      label: Add the smallest fail-closed seven-surface configuration
+      owner: codex-agent
+      status: planned
+      risk: high
+      confidence:
+        score: 0.8
+        basis: Implementation follows approved targets and holds on missing source telemetry.
+        evidence_refs: []
+      budget: {effort_hours: 2.0, tokens: 18000}
+      config:
+        workflow: [add source contract, add dashboard, add alerts, add runbook, inspect diff]
+        allowed: [infra/observability, docs/operations/incident-response.md, T083 graph evidence]
+        requires_approval: [provider activation, new SLO target, production receiver]
+        forbidden: [application behavior change, credentials, T084, task receipt, merge]
+
+    - id: p-local
+      kind: proof
+      layer: L1
+      label: Local contract and regression proof
+      owner: verifier
+      status: planned
+      risk: high
+      confidence:
+        score: 0.8
+        basis: Requires strict graph validation, the T083 validator and relevant repository checks.
+        evidence_refs: []
+      budget: {effort_hours: 0.75, tokens: 6000}
+      config:
+        level: P2
+        claim: Seven surfaces, exact targets, fail-closed alerts, bounded labels and runbook mappings pass deterministically.
+        method: Strict Graphify validation, contract validator, formatting and scoped review.
+        evidence_path: .loop/evidence/t083-local.json
+        required: true
+        baseline_required: true
+
+    - id: a-review
+      kind: action
+      layer: L1
+      label: Review and optimize the bounded configuration
+      owner: codex-agent
+      status: planned
+      risk: high
+      confidence:
+        score: 0.78
+        basis: Review must search for false-green queries, cardinality leaks and invented commitments.
+        evidence_refs: []
+      budget: {effort_hours: 0.75, tokens: 8000}
+      config:
+        workflow: [review expressions, test missing-signal behavior, remove redundancy, verify scope]
+        allowed: [read diff, patch attributable T083 findings, rerun proof]
+        requires_approval: [acceptance, target or scope change]
+        forbidden: [silence missing telemetry, optimize by weakening a gate]
+
+    - id: p-review
+      kind: proof
+      layer: L1
+      label: Independent bounded review proof
+      owner: verifier
+      status: planned
+      risk: high
+      confidence:
+        score: 0.75
+        basis: Requires a no-findings or fully remediated review receipt.
+        evidence_refs: []
+      budget: {effort_hours: 0.5, tokens: 5000}
+      config:
+        level: P2
+        claim: No unresolved false-green, privacy/cardinality, failure-semantics or scope finding remains.
+        method: Diff review plus validator re-run.
+        evidence_path: .loop/evidence/t083-review.json
+        required: true
+        baseline_required: false
+
+    - id: a-draft
+      kind: action
+      layer: L1
+      label: Publish the bounded branch and open a draft PR
+      owner: codex-agent
+      status: planned
+      risk: high
+      confidence:
+        score: 0.8
+        basis: GitHub issue 137 authorizes only a draft PR from exact base.
+        evidence_refs: []
+      budget: {effort_hours: 0.75, tokens: 7000}
+      config:
+        workflow: [create exact-base branch, preserve RED commit, add implementation commit, open draft PR]
+        allowed: [GitHub branch and draft PR for issue 137]
+        requires_approval: [ready-for-review, protected merge, task receipt]
+        forbidden: [force update, merge, T084 dispatch]
+
+    - id: p-exact-head
+      kind: proof
+      layer: L1
+      label: Fresh exact-head CI, Security, artifact and thread read-back
+      owner: verifier
+      status: planned
+      risk: high
+      confidence:
+        score: 0.75
+        basis: Becomes attributable only after final immutable draft head completes all protected checks.
+        evidence_refs: []
+      budget: {effort_hours: 1.0, tokens: 9000}
+      config:
+        level: P3
+        claim: Draft head has CI 5/5, Security 8/8, required artifacts, zero unresolved threads and current-base mergeability.
+        method: GitHub exact-head workflow, artifact, review-thread and PR read-back.
+        evidence_path: .loop/evidence/t083-exact-head.json
+        required: true
+        baseline_required: false
+
+    - id: m-ledger
+      kind: memory
+      layer: L1
+      label: T083 append-only execution ledger
+      owner: codex-agent
+      status: ready
+      risk: medium
+      confidence:
+        score: 0.95
+        basis: Repository ledger binds issue, graph deltas and proof receipts without secrets.
+        evidence_refs: [.loop/t083-observability-slo-ledger.json]
+      budget: {effort_hours: 0.2, tokens: 2000}
+      config:
+        path: .loop/t083-observability-slo-ledger.json
+        read_before_action: true
+        write_after_iteration: true
+        append_only: true
+        contract: work-memory/v1
+        memory_role: graph_ledger
+        receipt_required: true
+        write_failure_state: blocked
+
+    - id: g-release-owner
+      kind: gate
+      layer: L1
+      label: Release-owner merge and completion decision
+      owner: release-owner
+      status: needs_human
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: Merge and completion were explicitly withheld from this dispatch.
+        evidence_refs: [.loop/evidence/t083-dispatch.json]
+      budget: {effort_hours: 0.25, tokens: 1000}
+      config:
+        condition: Exact-head evidence is complete and the release owner explicitly authorizes the next protected action.
+        approver: release-owner
+        required: true
+
+    - id: s-terminal
+      kind: stop
+      layer: GLOBAL
+      label: T083 bounded terminal policy
+      owner: policy
+      status: planned
+      risk: critical
+      confidence:
+        score: 1.0
+        basis: Deterministic issue-137 HOLD and authorization policy.
+        evidence_refs: [.loop/evidence/t083-dispatch.json]
+      budget: {effort_hours: 0.0, tokens: 0}
+      config:
+        states:
+          success: Protected merge and a dedicated T083 completion receipt are explicitly approved and read back.
+          no_op: Authoritative state already satisfies the bounded configuration with no safe change required.
+          blocked: A required source, permission, exact-head check or artifact is unavailable.
+          stalled: The same failure or no-evidence delta reaches the configured limit.
+          exhausted: An iteration, time, graph-change or token budget is reached.
+          needs_human: Draft evidence is ready but merge, activation or completion awaits release-owner approval.
+
+  edges:
+    - {id: e-trigger-reconcile, from: t-dispatch, to: a-reconcile, type: enables, required: true, confidence: 1.0, token_capacity: 20000}
+    - {id: e-reconcile-baseline, from: a-reconcile, to: p-baseline, type: verifies, required: true, confidence: 0.95, token_capacity: 18000}
+    - {id: e-baseline-red, from: p-baseline, to: a-red-contract, type: enables, required: true, confidence: 0.95, token_capacity: 16000}
+    - {id: e-red-proof, from: a-red-contract, to: p-red, type: verifies, required: true, confidence: 0.9, token_capacity: 14000}
+    - {id: e-red-implement, from: p-red, to: a-implement, type: enables, required: true, confidence: 0.9, token_capacity: 14000}
+    - {id: e-implement-local, from: a-implement, to: p-local, type: verifies, required: true, confidence: 0.9, token_capacity: 14000}
+    - {id: e-local-review, from: p-local, to: a-review, type: enables, required: true, confidence: 0.9, token_capacity: 12000}
+    - {id: e-review-proof, from: a-review, to: p-review, type: verifies, required: true, confidence: 0.9, token_capacity: 12000}
+    - {id: e-review-draft, from: p-review, to: a-draft, type: enables, required: true, confidence: 0.9, token_capacity: 10000}
+    - {id: e-draft-exact, from: a-draft, to: p-exact-head, type: verifies, required: true, confidence: 0.9, token_capacity: 10000}
+    - {id: e-exact-gate, from: p-exact-head, to: g-release-owner, type: requires_approval, required: true, confidence: 1.0, token_capacity: 8000}
+    - {id: e-gate-stop, from: g-release-owner, to: s-terminal, type: approves, required: true, confidence: 1.0, token_capacity: 6000}
+    - {id: e-reconcile-memory, from: a-reconcile, to: m-ledger, type: records, required: true, confidence: 0.95, token_capacity: 3000}
+    - {id: e-red-memory, from: p-red, to: m-ledger, type: records, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-local-memory, from: p-local, to: m-ledger, type: records, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-review-memory, from: p-review, to: m-ledger, type: records, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-exact-memory, from: p-exact-head, to: m-ledger, type: records, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-memory-reconcile, from: m-ledger, to: a-reconcile, type: reads, required: true, confidence: 0.95, token_capacity: 5000}
+    - {id: e-memory-red, from: m-ledger, to: a-red-contract, type: reads, required: true, confidence: 0.9, token_capacity: 5000}
+    - {id: e-memory-implement, from: m-ledger, to: a-implement, type: reads, required: true, confidence: 0.9, token_capacity: 5000}
+    - {id: e-memory-review, from: m-ledger, to: a-review, type: reads, required: true, confidence: 0.9, token_capacity: 5000}
+    - {id: e-memory-draft, from: m-ledger, to: a-draft, type: reads, required: true, confidence: 0.9, token_capacity: 5000}
+    - {id: e-memory-feedback, from: m-ledger, to: a-reconcile, type: feedback, required: true, confidence: 0.95, token_capacity: 5000}
+    - {id: e-red-feedback, from: p-red, to: a-red-contract, type: feedback, required: false, confidence: 0.85, token_capacity: 4000}
+    - {id: e-local-feedback, from: p-local, to: a-implement, type: feedback, required: false, confidence: 0.85, token_capacity: 4000}
+    - {id: e-review-feedback, from: p-review, to: a-review, type: feedback, required: false, confidence: 0.85, token_capacity: 4000}
+
+flow:
+  source: t-dispatch
+  sink: s-terminal
+  capacity_unit: tokens
+  interpretation: planning-proxy
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - memory_receipt
+  - next_action
