@@ -35,10 +35,19 @@ USER nobody
 
 FROM postgres:18.6-alpine3.24@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2
 
+# CVE-2026-14456 requires both Alpine OpenSSL libraries at 3.5.8-r0 or newer.
+ARG OPENSSL_MINIMUM_VERSION=3.5.8-r0
+
 COPY --from=gosu-build /out/gosu /usr/local/bin/gosu
 
 RUN set -eux; \
     chmod 0755 /usr/local/bin/gosu; \
-    apk add --no-cache --upgrade c-ares; \
+    apk add --no-cache --upgrade c-ares libcrypto3 libssl3; \
+    for package in libcrypto3 libssl3; do \
+      installed="$(apk list --installed "$package" 2>/dev/null | awk 'NR == 1 { print $1 }')"; \
+      installed="${installed#${package}-}"; \
+      test -n "$installed"; \
+      test "$(apk version -t "$installed" "$OPENSSL_MINIMUM_VERSION")" != "<"; \
+    done; \
     gosu --version; \
     gosu nobody true
