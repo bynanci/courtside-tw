@@ -42,7 +42,7 @@ COPY --from=gosu-build /out/gosu /usr/local/bin/gosu
 
 RUN set -eux; \
     chmod 0755 /usr/local/bin/gosu; \
-    apk add --no-cache --upgrade c-ares; \
+    apk add --no-cache --upgrade c-ares libcrypto3 libssl3; \
     for package in libcrypto3 libssl3; do \
       installed="$(apk list --installed "$package" 2>/dev/null | awk 'NR == 1 { print $1 }')"; \
       installed="${installed#${package}-}"; \
