@@ -59,6 +59,17 @@ RUN set -eux; \
 
 FROM alpine:3.24.1@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b
 
+# CVE-2026-14456 requires both Alpine OpenSSL libraries at 3.5.8-r0 or newer.
+ARG OPENSSL_MINIMUM_VERSION=3.5.8-r0
+
+RUN set -eux; \
+    for package in libcrypto3 libssl3; do \
+      installed="$(apk list --installed "$package" 2>/dev/null | awk 'NR == 1 { print $1 }')"; \
+      installed="${installed#${package}-}"; \
+      test -n "$installed"; \
+      test "$(apk version -t "$installed" "$OPENSSL_MINIMUM_VERSION")" != "<"; \
+    done
+
 ENV JAVA_HOME=/opt/java-minimal
 ENV PATH="$PATH:$JAVA_HOME/bin"
 
