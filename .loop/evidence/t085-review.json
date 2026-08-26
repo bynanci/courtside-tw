@@ -151,6 +151,20 @@
       "red": "The 27th mutation failed because the pre-fix validator returned PASS after a human-only deviation ID drift.",
       "green": "The human register now contains DEV-T085-039 and DEV-T085-040 and the validator rejects human/machine deviation drift; 27/27 mutations pass locally."
     },
+    "publication_attempts": [
+      {
+        "head": "a996cd49e5f11ffbbae556ee29d069a05eb00dfa",
+        "commit": "fix(T085): enforce semantic proof traceability",
+        "result": "SUPERSEDED_FORMATTING_GATE",
+        "ci_run_id": 32946207397,
+        "ci_run_number": 969,
+        "ci_readback": "Java and dependency jobs passed; frontend stopped at Prettier before semantic validation, so this head has no GREEN decision value.",
+        "security_run_id": 32946207392,
+        "security_run_number": 972,
+        "security_readback": "Six of eight jobs passed; postgres and s3 image scans remained blocked by CVE-2026-14456.",
+        "remediation": "Mechanically format only the two CI-identified JavaScript files with Prettier 3.9.6 and the repository config, then publish a new immutable head and rerun every gate."
+      }
+    ],
     "current_matrix_readback": {
       "requirements": 97,
       "tasks": 112,

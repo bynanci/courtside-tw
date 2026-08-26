@@ -1,12 +1,12 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t085-cross-artifact-traceability",
-  "graph_version": 4,
+  "graph_version": 5,
   "run_id": "t085-issue-145-20260825",
   "status": "running",
-  "iteration": 4,
+  "iteration": 5,
   "started_at": "2026-08-25T12:42:58Z",
-  "updated_at": "2026-08-26T08:06:41Z",
+  "updated_at": "2026-08-26T08:21:00Z",
   "current_frontier": ["a-publish-remediation-v2"],
   "blocked_nodes": [
     "p-exact-remediation-v2",
@@ -206,6 +206,63 @@
       "failure_signature": "T085_SEMANTIC_PROOF_FALSE_GREEN",
       "decision": "reopen_bounded_tests_first_remediation",
       "token_usage": {"estimated": 50000, "input": 0, "output": 0, "total": 50000},
+      "terminal_reason": null
+    },
+    {
+      "event_id": "t085-green-formatting-attempt-superseded",
+      "at": "2026-08-26T08:21:00Z",
+      "actor": "codex-agent",
+      "type": "feedback_remediation",
+      "base_graph_version": 4,
+      "new_graph_version": 5,
+      "graph_delta": {
+        "operations": [
+          "published immutable semantic candidate a996cd49e5f11ffbbae556ee29d069a05eb00dfa",
+          "classified CI 969 as a formatting-gate failure before semantic validation and withheld GREEN attribution",
+          "read back Security 972 as six passing jobs plus the same postgres and s3 CVE-2026-14456 blockers",
+          "added exact-proof-to-publish feedback instead of weakening CI Security or changed-path scope",
+          "mechanically reformatted only scripts/validate-traceability.mjs and its mutation test with Prettier 3.9.6 repository settings",
+          "retained a-publish-remediation-v2 as the current frontier for one new immutable candidate"
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t085-local.json",
+        ".loop/evidence/t085-review.json",
+        "scripts/validate-traceability.mjs",
+        "scripts/test/validate-traceability.test.mjs"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "p-exact-remediation-v2",
+          "status": "FAIL",
+          "claim": "Head a996cd4 is not decision-valid because CI 969 failed the required formatting gate; Security 972 also remained 6/8."
+        },
+        {
+          "proof": "p-semantic-local-v2",
+          "status": "PASS",
+          "claim": "After mechanical formatting, node syntax and all 27 targeted semantic mutations still pass locally."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": null,
+        "version": null,
+        "retrieval_ids": [
+          "github-ci-969-head-a996cd4",
+          "github-security-972-head-a996cd4",
+          "prettier-3.9.6-repository-config"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t085-local.json",
+          ".loop/evidence/t085-review.json"
+        ],
+        "next_review_at": null,
+        "blocker": null,
+        "reason": "The immutable failed head, GitHub runs and repository ledger already provide durable feedback state."
+      },
+      "failure_signature": "T085_GREEN_FORMATTING_GATE",
+      "decision": "retry_same_bounded_publish_action_after_mechanical_formatting",
+      "token_usage": {"estimated": 18000, "input": 0, "output": 0, "total": 18000},
       "terminal_reason": null
     }
   ]

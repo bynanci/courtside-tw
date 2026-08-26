@@ -135,7 +135,8 @@ function markdown(contract) {
   const table = contract.requirements
     .map((row) => {
       const proofIds = row.proofs.map((proof) => `\`${proof.id}\``).join(", ")
-      const deviationIds = row.deviation_ids.map((id) => `\`${id}\``).join(", ") || "—"
+      const deviationIds =
+        row.deviation_ids.map((id) => `\`${id}\``).join(", ") || "—"
       return `| ${row.id} | fixture | ${row.task_ids.join(", ")} | ${row.implementation_state} | ${row.evidence_state} | ${proofIds} | ${deviationIds} | ${row.release_impact} |`
     })
     .join("\n")

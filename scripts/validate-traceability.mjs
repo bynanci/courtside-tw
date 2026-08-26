@@ -136,9 +136,9 @@ function humanDeviationRows(markdown) {
         type: cells[1],
         severity: cells[2],
         state: cells[3],
-        affected_ids: [
-          ...cells[4].matchAll(/(?:(?:FR|SC)-\d{3}|T\d{3})/g)
-        ].map((match) => match[0]),
+        affected_ids: [...cells[4].matchAll(/(?:(?:FR|SC)-\d{3}|T\d{3})/g)].map(
+          (match) => match[0]
+        ),
         release_impact: cells[6]
       }
     })
@@ -283,13 +283,17 @@ function hasExecutableProofAnchor(root, proof) {
   const line = lines[lineIndex].trim()
 
   if (/(?:IT|Test)\.java$/.test(proof.path)) {
-    const escapedSelector = proof.selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    const escapedSelector = proof.selector.replace(
+      /[.*+?^${}()|[\]\\]/g,
+      "\\$&"
+    )
     const annotationContext = lines
       .slice(Math.max(0, lineIndex - 5), lineIndex + 1)
       .join("\n")
     return (
-      /@(Test|ParameterizedTest|RepeatedTest|TestFactory)\b/.test(annotationContext) &&
-      new RegExp(`\\bvoid\\s+${escapedSelector}\\s*\\(`).test(line)
+      /@(Test|ParameterizedTest|RepeatedTest|TestFactory)\b/.test(
+        annotationContext
+      ) && new RegExp(`\\bvoid\\s+${escapedSelector}\\s*\\(`).test(line)
     )
   }
   if (/\.(?:test|spec)\.[cm]?[jt]sx?$/.test(proof.path)) {
@@ -301,7 +305,10 @@ function hasExecutableProofAnchor(root, proof) {
   if (proof.path.startsWith(".github/workflows/")) {
     return line === proof.selector
   }
-  if (proof.path.startsWith(".loop/evidence/") && proof.path.endsWith(".json")) {
+  if (
+    proof.path.startsWith(".loop/evidence/") &&
+    proof.path.endsWith(".json")
+  ) {
     return line.replace(/,$/, "") === proof.selector
   }
   return false
@@ -399,23 +406,37 @@ function validateProof(root, proof, requirementId, label, errors) {
     return
   }
   if (forbiddenProofPaths.has(proof.path)) {
-    errors.push(`${label}.path cannot use the traceability artifact as its own proof`)
+    errors.push(
+      `${label}.path cannot use the traceability artifact as its own proof`
+    )
     return
   }
   const absolutePath = safeProofPath(root, proof.path, errors, label)
-  if (!requireString(proof.selector, `${label}.selector`, errors) || !absolutePath) return
-  if (proof.selector.length < 6) errors.push(`${label}.selector must contain at least 6 characters`)
+  if (
+    !requireString(proof.selector, `${label}.selector`, errors) ||
+    !absolutePath
+  )
+    return
+  if (proof.selector.length < 6)
+    errors.push(`${label}.selector must contain at least 6 characters`)
   const text = fs.readFileSync(absolutePath, "utf8")
   const occurrenceCount = literalOccurrenceCount(text, proof.selector)
   if (occurrenceCount === 0) {
-    errors.push(`${label}.selector was not found literally in ${proof.path}: ${proof.selector}`)
+    errors.push(
+      `${label}.selector was not found literally in ${proof.path}: ${proof.selector}`
+    )
   } else if (occurrenceCount !== 1) {
     errors.push(
       `${label}.selector must occur exactly once in ${proof.path}; found ${occurrenceCount}: ${proof.selector}`
     )
   }
-  if (proof.source_head !== undefined && !/^[0-9a-f]{40}$/.test(proof.source_head)) {
-    errors.push(`${label}.source_head must be a full lowercase commit SHA when present`)
+  if (
+    proof.source_head !== undefined &&
+    !/^[0-9a-f]{40}$/.test(proof.source_head)
+  ) {
+    errors.push(
+      `${label}.source_head must be a full lowercase commit SHA when present`
+    )
   }
   if (receiptProofSchemas.has(proof.kind) && absolutePath) {
     validateReceiptProof(root, proof, requirementId, label, errors)
@@ -645,7 +666,9 @@ export function validateTraceability({
         !sameValues(human.affected_ids, deviation.affected_ids ?? []) ||
         human.release_impact !== deviation.release_impact
       ) {
-        errors.push(`human-readable deviation ${deviation.id} must match the machine contract`)
+        errors.push(
+          `human-readable deviation ${deviation.id} must match the machine contract`
+        )
       }
     }
     const deviationById = new Map(deviations.map((deviation) => [deviation?.id, deviation]))

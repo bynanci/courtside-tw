@@ -204,7 +204,7 @@ graph:
       owner: codex-agent
       status: ready
       risk: high
-      confidence: {score: 0.96, basis: Local proof is green and the intended payload remains inside the fixed T085 changed-path allowlist, evidence_refs: [.loop/evidence/t085-local.json, .loop/evidence/t085-review.json]}
+      confidence: {score: 0.94, basis: Attempt a996cd4 was immutably rejected at formatting; the two flagged files now have a mechanical Prettier 3.9.6 remediation and the payload remains inside the fixed T085 allowlist, evidence_refs: [.loop/evidence/t085-local.json, .loop/evidence/t085-review.json]}
       budget: {effort_hours: 0.5, tokens: 5000}
       config: {workflow: [verify branch still equals the second RED head, create one atomic commit, fast-forward without force], allowed: [task/t085-cross-artifact-traceability], requires_approval: [force push, path expansion], forbidden: [protected merge, completion receipt, later-task writes]}
     - id: p-exact-remediation-v2
@@ -214,7 +214,7 @@ graph:
       owner: verifier
       status: blocked
       risk: critical
-      confidence: {score: 0.55, basis: Publication has not occurred and Security 971 separately exposed upstream CVE-2026-14456 drift in two pinned Alpine images, evidence_refs: [.loop/evidence/t085-review.json]}
+      confidence: {score: 0.35, basis: Exact head a996cd4 failed CI 969 formatting and Security 972 retained the two pinned-image CVE-2026-14456 failures; a new immutable formatted head is required, evidence_refs: [.loop/evidence/t085-review.json]}
       budget: {effort_hours: 1.0, tokens: 12000}
       config: {level: P3, claim: The immutable remediation head passes CI 5 of 5 Security 8 of 8 all checks artifact digest and read-back zero unresolved threads and clean current-base mergeability, method: GitHub workflow artifact PR ruleset and protected-main read-back, evidence_path: .loop/evidence/t085-review.json, required: true, baseline_required: false}
     - id: a-ready-transition-v2
@@ -320,6 +320,7 @@ graph:
     - {id: e-local-v2-memory, from: p-semantic-local-v2, to: m-ledger, type: records, required: true, confidence: 0.98, token_capacity: 2500}
     - {id: e-exact-v2-memory, from: p-exact-remediation-v2, to: m-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2500}
     - {id: e-ready-v2-memory, from: p-ready-readback-v2, to: m-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-exact-v2-publish-feedback, from: p-exact-remediation-v2, to: a-publish-remediation-v2, type: feedback, required: true, confidence: 1.0, token_capacity: 4500}
 
 flow: {source: t-dispatch, sink: s-terminal, capacity_unit: tokens, interpretation: planning-proxy}
 
