@@ -9,6 +9,7 @@ export const TRACEABILITY_SCHEMA = "courtside-traceability/v1"
 export const CONTRACT_START = "<!-- t085:contract:start -->"
 export const CONTRACT_END = "<!-- t085:contract:end -->"
 export const AUTHORIZED_BASE_SHA = "3fc14dd29b216ce46e4d364ceaec79a971dcef44"
+export const REVIEW_BASE_SHA = "84db3db95aa596eb317b71c4eea0926fc1fc15ce"
 
 const requirementPattern = /^- \*\*((?:FR|SC)-\d{3})\*\*:/gm
 const taskPattern = /^- \[([ xX])\] (T\d{3})\b/gm
@@ -456,6 +457,7 @@ export function validateTraceability({
   currentHead = null,
   gitBinding = null,
   changedPaths = null,
+  reviewBaseSha = REVIEW_BASE_SHA,
   requireExactHeadEvidence = false
 }) {
   const errors = []
@@ -481,11 +483,20 @@ export function validateTraceability({
   if (!/^[0-9a-f]{40}$/.test(currentHead ?? "")) {
     errors.push("currentHead must be a full lowercase commit SHA")
   }
+  if (reviewBaseSha !== REVIEW_BASE_SHA) {
+    errors.push(`reviewBaseSha must equal the current protected review base ${REVIEW_BASE_SHA}`)
+  }
   if (gitBinding && gitBinding.status !== "CLEAN") {
     errors.push(`working tree is not bound to the evaluated head (${gitBinding.status})`)
   }
   if (gitBinding?.head && gitBinding.head !== currentHead) {
     errors.push("git binding head must equal currentHead")
+  }
+  if (gitBinding?.authorized_base_ancestor === false) {
+    errors.push("immutable dispatch base is not an ancestor of the evaluated head")
+  }
+  if (gitBinding?.review_base_ancestor === false) {
+    errors.push("current protected review base is not an ancestor of the evaluated head")
   }
   if (Array.isArray(changedPaths)) {
     for (const changedPath of changedPaths) {
@@ -494,7 +505,9 @@ export function validateTraceability({
       }
     }
   } else {
-    warnings.push("exact-base path diff was not available; GitHub PR read-back remains required")
+    warnings.push(
+      "review-base path diff was not available; authoritative GitHub PR scope read-back remains required"
+    )
   }
 
   let contract = null
@@ -867,6 +880,7 @@ export function validateTraceability({
     source: {
       repository: contract?.repository ?? "bynanci/courtside-tw",
       authorized_base_sha: contract?.authorized_base_sha ?? dispatch?.base?.sha ?? null,
+      review_base_sha: reviewBaseSha,
       evaluated_head_sha: currentHead,
       exact_head_evidence: exactHeadEvidence,
       inputs: {
@@ -909,6 +923,8 @@ export function validateTraceability({
     },
     scope_validation: {
       authorized_base_sha: AUTHORIZED_BASE_SHA,
+      review_base_sha: reviewBaseSha,
+      status: Array.isArray(changedPaths) ? "AUDITED" : "EXTERNAL_READBACK_REQUIRED",
       git_diff_audited: Array.isArray(changedPaths),
       changed_paths: changedPaths,
       unauthorized_paths: Array.isArray(changedPaths)
@@ -947,6 +963,18 @@ export function validateTraceability({
   }
 }
 
+function inspectAncestor(root, baseSha, head) {
+  try {
+    execFileSync("git", ["merge-base", "--is-ancestor", baseSha, head], {
+      cwd: root,
+      stdio: "ignore"
+    })
+    return true
+  } catch (error) {
+    return error?.status === 1 ? false : null
+  }
+}
+
 function inspectGit(root) {
   try {
     const head = execFileSync("git", ["rev-parse", "HEAD"], {
@@ -964,15 +992,11 @@ function inspectGit(root) {
         ? "UNTRACKED_OR_DIRTY"
         : "DIRTY"
       : "CLEAN"
-    let authorizedBaseAncestor = null
+    const authorizedBaseAncestor = inspectAncestor(root, AUTHORIZED_BASE_SHA, head)
+    const reviewBaseAncestor = inspectAncestor(root, REVIEW_BASE_SHA, head)
     let changedPaths = null
-    try {
-      execFileSync("git", ["merge-base", "--is-ancestor", AUTHORIZED_BASE_SHA, head], {
-        cwd: root,
-        stdio: "ignore"
-      })
-      authorizedBaseAncestor = true
-      changedPaths = execFileSync("git", ["diff", "--name-only", AUTHORIZED_BASE_SHA, head], {
+    if (reviewBaseAncestor === true) {
+      changedPaths = execFileSync("git", ["diff", "--name-only", REVIEW_BASE_SHA, head], {
         cwd: root,
         encoding: "utf8",
         stdio: ["ignore", "pipe", "ignore"]
@@ -981,13 +1005,12 @@ function inspectGit(root) {
         .split("\n")
         .filter(Boolean)
         .sort()
-    } catch {
-      authorizedBaseAncestor = null
     }
     return {
       head,
       status,
       authorized_base_ancestor: authorizedBaseAncestor,
+      review_base_ancestor: reviewBaseAncestor,
       changedPaths
     }
   } catch {
@@ -995,6 +1018,7 @@ function inspectGit(root) {
       head: null,
       status: "UNAVAILABLE",
       authorized_base_ancestor: null,
+      review_base_ancestor: null,
       changedPaths: null
     }
   }
@@ -1010,9 +1034,11 @@ export function runCli(root = repositoryRoot) {
     gitBinding: {
       status: inspection.status,
       head: inspection.head,
-      authorized_base_ancestor: inspection.authorized_base_ancestor
+      authorized_base_ancestor: inspection.authorized_base_ancestor,
+      review_base_ancestor: inspection.review_base_ancestor
     },
     changedPaths: inspection.changedPaths,
+    reviewBaseSha: REVIEW_BASE_SHA,
     requireExactHeadEvidence: process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true"
   })
   const outputPath = path.join(root, "artifacts/frontend/t085-traceability-report.json")
