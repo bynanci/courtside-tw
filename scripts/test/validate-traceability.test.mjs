@@ -3,17 +3,20 @@ import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import test from "node:test"
+import { fileURLToPath } from "node:url"
 
 import {
   AUTHORIZED_BASE_SHA,
   CONTRACT_END,
   CONTRACT_START,
   TRACEABILITY_SCHEMA,
+  extractContract,
   validateTraceability
 } from "../validate-traceability.mjs"
 
 const baseSha = AUTHORIZED_BASE_SHA
 const featurePath = "specs/001-taiwan-basketball-magazine-ebook"
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 
 function ids(prefix, count) {
   return Array.from(
@@ -449,4 +452,37 @@ test("completion phase is rejected until a separately authorized receipt verifie
   assert.equal(report.status, "FAIL")
   assert.equal(report.receipt_eligible, false)
   assert.match(report.errors.join("\n"), /only accepts lifecycle\.phase T085_IMPLEMENTATION/)
+})
+
+test("repository proof selectors must resolve to one unambiguous literal location", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/generic-proof.test.js"
+    contract.requirements[0].proofs[0].selector = "import "
+    files["tests/generic-proof.test.js"] = "import first\nimport second\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must occur exactly once/)
+})
+
+test("composite VERIFIED rows retain clause-complete semantic proof", () => {
+  const contract = extractContract(
+    fs.readFileSync(path.join(repositoryRoot, featurePath, "traceability.md"), "utf8")
+  )
+  const byId = new Map(contract.requirements.map((row) => [row.id, row]))
+  const selectors = (id) => byId.get(id).proofs.map((proof) => proof.selector)
+
+  assert.deepEqual(selectors("FR-003"), [
+    "returnsSafeProblemDetailsForUnknownWithdrawnAndInvalidPublicRequests",
+    "listsOnlyPublishedRightsValidIssuesWithBoundedOpaqueKeysetPaginationAndEtags",
+    "rejectsAFuturePublishedIssueInsteadOfLeakingScheduledMetadata",
+    "deniesDraftWithdrawnHistoricalAndPrivateRightsContent"
+  ])
+  assert.equal(byId.get("FR-009").evidence_state, "PARTIAL")
+  assert.deepEqual(byId.get("FR-009").deviation_ids, ["DEV-T085-039"])
+  assert.deepEqual(selectors("FR-013"), [
+    "editorSubmitsAndPublisherApprovesOnlyAfterRightsAreReady",
+    "publisherCanScheduleThenPublishOnlyWhenDue",
+    "publishedCanArchiveDirectly"
+  ])
 })
