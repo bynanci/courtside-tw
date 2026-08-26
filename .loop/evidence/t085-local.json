@@ -15,23 +15,23 @@
     "decision": "Do not waive the mismatch; exact Node and pnpm verification remains an exact-head CI gate."
   },
   "checks": [
-    {"command": "pnpm run format:check", "result": "PASS"},
+    { "command": "pnpm run format:check", "result": "PASS" },
     {
       "command": "eslint scripts/validate-traceability.mjs scripts/test/validate-traceability.test.mjs",
       "result": "PASS"
     },
-    {"command": "pnpm -r --if-present run lint", "result": "PASS"},
-    {"command": "pnpm -r --if-present run typecheck", "result": "PASS"},
+    { "command": "pnpm -r --if-present run lint", "result": "PASS" },
+    { "command": "pnpm -r --if-present run typecheck", "result": "PASS" },
     {
       "command": "pnpm -r --if-present run test",
       "result": "PASS",
       "details": "api-client 2/2, creative-runtime 9/9, content-schema 5/5 and web 221/221"
     },
-    {"command": "pnpm -r --if-present run contract", "result": "PASS"},
-    {"command": "pnpm run contract:schema", "result": "PASS"},
-    {"command": "pnpm run contract:openapi", "result": "PASS"},
-    {"command": "pnpm run contract:observability", "result": "PASS"},
-    {"command": "pnpm run contract:analytics", "result": "PASS"},
+    { "command": "pnpm -r --if-present run contract", "result": "PASS" },
+    { "command": "pnpm run contract:schema", "result": "PASS" },
+    { "command": "pnpm run contract:openapi", "result": "PASS" },
+    { "command": "pnpm run contract:observability", "result": "PASS" },
+    { "command": "pnpm run contract:analytics", "result": "PASS" },
     {
       "command": "node --test scripts/test/validate-traceability.test.mjs",
       "result": "PASS",
@@ -121,10 +121,88 @@
         "PROXY_ONLY": 2,
         "EXTERNAL_OPEN": 1
       },
-      "implementation_distribution": {"COMPLETE": 52, "PLANNED": 45}
+      "implementation_distribution": { "COMPLETE": 52, "PLANNED": 45 }
     },
     "toolchain_boundary": "Local Node remains 24.19.0 rather than pinned 24.14.0; the mismatch is not waived and fresh exact-head CI remains authoritative.",
     "scope_guard": {
+      "protected_merge_performed": false,
+      "completion_receipt_created": false,
+      "t086_or_later_modified": false,
+      "participant_research_executed": false,
+      "web3_activated": false,
+      "production_activated": false,
+      "provider_configured": false,
+      "external_writes_or_secrets_changed": false
+    }
+  },
+  "review_remediation_iteration": {
+    "schema_version": "courtside-t085-local-review-remediation/v1",
+    "recorded_at": "2026-08-26T09:32:20Z",
+    "finding_source_head": "8a3a414c5d105b1171f1bbff49e3b0b49ffc23d1",
+    "result": "PASS_WITH_EXACT_TOOLCHAIN_DEFERRED_TO_CI",
+    "failure_signature_closed_locally": "T085_REVIEWED_CLAUSE_AND_AUTHORITY_FALSE_GREEN",
+    "tests_first": {
+      "red": "27 passed and 2 failed before remediation; FR-001 remained VERIFIED and ready-for-review was executable without explicit authority.",
+      "green": "29/29 tests pass after seven reviewed multi-clause rows were made truthful with DEV-T085-041 through DEV-T085-047, attributable proof locators were completed where the repository already contains the proof, and the unauthorized ready transition path was removed."
+    },
+    "checks": [
+      {
+        "command": "node --test scripts/test/validate-traceability.test.mjs",
+        "result": "PASS",
+        "details": "29/29 mutation, selector-attribution, human-deviation parity, composite semantic and release-authority tests"
+      },
+      {
+        "command": "validateTraceability with an injected clean binding for pre-commit structural verification",
+        "result": "PASS",
+        "details": "97 requirements, 112 tasks, 107 mapped tasks, 5 approved orphans, 47 deviations and zero errors"
+      },
+      {
+        "command": "Graphify strict schema and ledger validation",
+        "result": "PASS",
+        "details": "Strict graph validation reports 20 nodes, 41 edges, full action proof coverage and zero errors or warnings; ledger v8 has a continuous eight-event version chain."
+      },
+      {
+        "command": "Repository-pinned Prettier 3.9.6 full check",
+        "result": "PASS",
+        "details": "The exact package.json format:check glob reports every matched repository file formatted."
+      }
+    ],
+    "matrix": {
+      "analysis_valid": true,
+      "receipt_eligible": false,
+      "requirements": 97,
+      "tasks": 112,
+      "mapped_tasks": 107,
+      "approved_orphans": 5,
+      "deviations": 47,
+      "open_deviations": 43,
+      "evidence_distribution": {
+        "VERIFIED": 30,
+        "PARTIAL": 31,
+        "PLANNED_BLOCKED": 30,
+        "HUMAN_OPEN": 3,
+        "PROXY_ONLY": 2,
+        "EXTERNAL_OPEN": 1
+      },
+      "implementation_distribution": { "COMPLETE": 52, "PLANNED": 45 }
+    },
+    "exact_predecessor_readback": {
+      "head": "8a3a414c5d105b1171f1bbff49e3b0b49ffc23d1",
+      "ci_run_number": 972,
+      "ci_result": "5_OF_5_SUCCESS",
+      "security_run_number": 975,
+      "security_result": "6_OF_8_FAILURE",
+      "security_boundary": "Only postgres and s3 image scans fail on non-attributable CVE-2026-14456; no runtime or workflow remediation is authorized in T085."
+    },
+    "bounded_control_budget_extension": {
+      "authority": "The current release-owner instruction explicitly requests restoration of one bounded T085 candidate.",
+      "previous": { "max_iterations": 8, "max_minutes": 360, "max_graph_changes": 48, "max_tokens": 180000 },
+      "current": { "max_iterations": 9, "max_minutes": 1440, "max_graph_changes": 56, "max_tokens": 220000 },
+      "purpose": "Permit exactly one optimistic-concurrency-guarded atomic publish and exact-head read-back cycle; no additional semantic, runtime or later-task iteration is authorized."
+    },
+    "toolchain_boundary": "Local Node remains 24.19.0 rather than pinned 24.14.0; the mismatch is not waived and fresh exact-head CI remains authoritative.",
+    "scope_guard": {
+      "ready_for_review_performed": false,
       "protected_merge_performed": false,
       "completion_receipt_created": false,
       "t086_or_later_modified": false,

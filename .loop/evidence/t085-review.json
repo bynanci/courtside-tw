@@ -6,7 +6,7 @@
   "issue": "https://github.com/bynanci/courtside-tw/issues/145",
   "pull_request": "https://github.com/bynanci/courtside-tw/pull/146",
   "authorized_base_sha": "3fc14dd29b216ce46e4d364ceaec79a971dcef44",
-  "review_result": "PASS_WITH_OPEN_DEVIATIONS",
+  "review_result": "BLOCK_PENDING_EXACT_HEAD_AND_SECURITY",
   "independent_reviews": [
     {
       "review": "validator-adversarial",
@@ -119,7 +119,7 @@
         "ci_run_id": 32943931032,
         "ci_run_number": 967,
         "result": "ATTRIBUTABLE_RED",
-        "traceability_tests": {"passed": 22, "failed": 2, "total": 24}
+        "traceability_tests": { "passed": 22, "failed": 2, "total": 24 }
       },
       {
         "head": "5ba6367f2571084b98c4a73e26df89610c30e21f",
@@ -127,7 +127,7 @@
         "ci_run_id": 32944531661,
         "ci_run_number": 968,
         "result": "ATTRIBUTABLE_RED",
-        "traceability_tests": {"passed": 22, "failed": 4, "total": 26},
+        "traceability_tests": { "passed": 22, "failed": 4, "total": 26 },
         "unrelated_security_readback": {
           "security_run_id": 32944531658,
           "security_run_number": 971,
@@ -196,18 +196,18 @@
       "tasks": 112,
       "mapped_tasks": 107,
       "approved_orphans": ["T001", "T005", "T007", "T082", "T085"],
-      "deviations": 40,
-      "deviations_open": 36,
+      "deviations": 44,
+      "deviations_open": 40,
       "deviations_resolved": 4,
       "evidence_distribution": {
-        "VERIFIED": 37,
-        "PARTIAL": 24,
+        "VERIFIED": 33,
+        "PARTIAL": 28,
         "PLANNED_BLOCKED": 30,
         "HUMAN_OPEN": 3,
         "PROXY_ONLY": 2,
         "EXTERNAL_OPEN": 1
       },
-      "implementation_distribution": {"COMPLETE": 52, "PLANNED": 45}
+      "implementation_distribution": { "COMPLETE": 52, "PLANNED": 45 }
     },
     "scope_boundary": {
       "protected_merge_performed": false,
@@ -219,6 +219,69 @@
       "provider_configured": false,
       "external_writes_or_secrets_changed": false
     },
-    "current_decision": "Heads a996cd4, b1855e7 and f6239f7 are superseded formatting-gate attempts. The lockfile-SRI-matched prettier@3.9.6 CLI now reproduces the prior failure, has rewritten only the two allowlisted JavaScript files, reports both unchanged on a second --write, passes --check, and preserves 27/27 mutations. The renewed bounded restoration instruction plus this material CLI-parity evidence supports at most one new immutable candidate; another identical formatting failure must stall. Fresh exact-head CI/Security, artifact read-back, zero-thread read-back and current-base mergeability remain required before any ready-for-review transition."
+    "current_decision": "Heads a996cd4, b1855e7 and f6239f7 are superseded formatting-gate attempts. Head 8a3a414c proved the exact repository-CLI formatting correction with CI 972 at 5/5, while Security 975 remained 6/8 on the non-attributable pinned-image vulnerability baseline. Independent review then found seven partial-clause proof overclaims and an unauthorized ready-transition path, so 8a3a414c is also superseded as a T085 decision candidate."
+  },
+  "restoration_review": {
+    "schema_version": "courtside-t085-restoration-review/v1",
+    "recorded_at": "2026-08-26T09:32:20Z",
+    "finding_source_head": "8a3a414c5d105b1171f1bbff49e3b0b49ffc23d1",
+    "exact_head_readback": {
+      "ci_run_number": 972,
+      "ci_run_id": 32950066181,
+      "result": "5_OF_5_SUCCESS",
+      "frontend_repository_verification": "SUCCESS",
+      "security_run_number": 975,
+      "security_run_id": 32950066076,
+      "security_result": "6_OF_8_FAILURE",
+      "security_attribution": "postgres and s3 Trivy jobs report the same CVE-2026-14456 in pinned libcrypto3/libssl3 3.5.7-r0; no Docker, Compose or workflow blob changed in the T085 delta"
+    },
+    "blocking_findings": [
+      "FR-001 was VERIFIED although its mapped public-list test does not assert theme or publication date",
+      "FR-014 was VERIFIED although its mapped role test does not cover every publisher-only publish, unpublish and emergency-withdraw boundary",
+      "FR-016 was VERIFIED although its mapped retry test exercises submission rather than publication and does not prove the approved-revision-only issue snapshot clause",
+      "FR-023 was VERIFIED although its mapped proof covers only a missing rights record rather than every named rights state, channel and workflow gate",
+      "FR-031 was VERIFIED although its OIDC flows do not prove the negative plaintext-password storage clause",
+      "FR-032 was VERIFIED although its role proofs do not positively cover ADMIN or the complete four-role endpoint matrix",
+      "FR-048 was VERIFIED although its lifecycle proofs do not induce a p5 module or preset-load failure and verify the static-only fallback path",
+      "the Graphify control path and tracked traceability text incorrectly treated the current instruction as ready-for-review authority"
+    ],
+    "tests_first_red": {
+      "result": "ATTRIBUTABLE_LOCAL_RED",
+      "tests_passed": 27,
+      "tests_failed": 2,
+      "tests_total": 29,
+      "failure_signature": "T085_REVIEWED_CLAUSE_AND_AUTHORITY_FALSE_GREEN"
+    },
+    "bounded_remediation": {
+      "requirements_downgraded_to_partial": ["FR-001", "FR-014", "FR-016", "FR-023", "FR-031", "FR-032", "FR-048"],
+      "deviations_added": ["DEV-T085-041", "DEV-T085-042", "DEV-T085-043", "DEV-T085-044", "DEV-T085-045", "DEV-T085-046", "DEV-T085-047"],
+      "proof_locators_completed_from_existing_repository_evidence": ["FR-014", "FR-015", "FR-016", "FR-023", "FR-037", "FR-040", "FR-043", "FR-047"],
+      "control_budget_extended_once_for_publish_and_readback": {
+        "max_iterations": 9,
+        "max_minutes": 1440,
+        "max_graph_changes": 56,
+        "max_tokens": 220000
+      },
+      "ready_transition_removed_from_graph": true,
+      "runtime_implementation_performed": false,
+      "workflow_or_image_change_performed": false
+    },
+    "matrix_after_local_remediation": {
+      "requirements": 97,
+      "tasks": 112,
+      "mapped_tasks": 107,
+      "approved_orphans": 5,
+      "deviations": 47,
+      "open_deviations": 43,
+      "evidence_distribution": {
+        "VERIFIED": 30,
+        "PARTIAL": 31,
+        "PLANNED_BLOCKED": 30,
+        "HUMAN_OPEN": 3,
+        "PROXY_ONLY": 2,
+        "EXTERNAL_OPEN": 1
+      }
+    },
+    "decision": "Publish at most one atomic T085-only review-remediation head after local GREEN and optimistic head equality. Keep PR 146 draft and HOLD: fresh exact-head evidence is required, Security 8/8 cannot be restored inside the current scope, and ready-for-review is not authorized."
   }
 }

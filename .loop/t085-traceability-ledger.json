@@ -1,21 +1,16 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t085-cross-artifact-traceability",
-  "graph_version": 7,
+  "graph_version": 8,
   "run_id": "t085-issue-145-20260825",
   "status": "running",
-  "iteration": 7,
+  "iteration": 8,
   "started_at": "2026-08-25T12:42:58Z",
-  "updated_at": "2026-08-26T08:48:33Z",
+  "updated_at": "2026-08-26T09:32:20Z",
   "current_frontier": ["a-publish-remediation-v2"],
-  "blocked_nodes": [
-    "p-exact-remediation-v2",
-    "a-ready-transition-v2",
-    "p-ready-readback-v2",
-    "g-release-owner"
-  ],
+  "blocked_nodes": ["p-exact-remediation-v2", "g-release-owner"],
   "terminal_state": null,
-  "next_action": "Publish at most one immutable SRI-matched exact-CLI-formatting feedback head, then require fresh exact-head CI, Security, artifact, thread and current-base read-back. Another identical formatter failure stalls. Mark only that same head ready if every gate passes; never protected-merge or create the completion receipt in this loop.",
+  "next_action": "Publish one atomic T085-only review-remediation head only if the live branch still equals 8a3a414c5d105b1171f1bbff49e3b0b49ffc23d1, then require fresh exact-head CI, Security, artifact, thread and current-base read-back. Keep PR 146 draft and HOLD; ready-for-review, protected merge and completion receipt require separate explicit release-owner authorization.",
   "events": [
     {
       "event_id": "t085-graph-initialized",
@@ -52,7 +47,7 @@
       },
       "failure_signature": null,
       "decision": "proceed_with_bounded_tests_first_red",
-      "token_usage": {"estimated": 18000, "input": 0, "output": 0, "total": 18000},
+      "token_usage": { "estimated": 18000, "input": 0, "output": 0, "total": 18000 },
       "terminal_reason": null
     },
     {
@@ -90,7 +85,7 @@
       },
       "failure_signature": null,
       "decision": "advance_to_matrix",
-      "token_usage": {"estimated": 16000, "input": 0, "output": 0, "total": 16000},
+      "token_usage": { "estimated": 16000, "input": 0, "output": 0, "total": 16000 },
       "terminal_reason": null
     },
     {
@@ -138,7 +133,7 @@
       },
       "failure_signature": null,
       "decision": "publish_green_then_verify_exact_head",
-      "token_usage": {"estimated": 42000, "input": 0, "output": 0, "total": 42000},
+      "token_usage": { "estimated": 42000, "input": 0, "output": 0, "total": 42000 },
       "terminal_reason": null
     },
     {
@@ -195,17 +190,14 @@
           "github-security-971-cve-2026-14456",
           "t085-semantic-source-audit"
         ],
-        "evidence_refs": [
-          ".loop/evidence/t085-local.json",
-          ".loop/evidence/t085-review.json"
-        ],
+        "evidence_refs": [".loop/evidence/t085-local.json", ".loop/evidence/t085-review.json"],
         "next_review_at": null,
         "blocker": null,
         "reason": "The PR, exact-head GitHub runs and append-only repository receipts are sufficient durable state; a duplicate semantic-memory write would not change the next action."
       },
       "failure_signature": "T085_SEMANTIC_PROOF_FALSE_GREEN",
       "decision": "reopen_bounded_tests_first_remediation",
-      "token_usage": {"estimated": 50000, "input": 0, "output": 0, "total": 50000},
+      "token_usage": { "estimated": 50000, "input": 0, "output": 0, "total": 50000 },
       "terminal_reason": null
     },
     {
@@ -252,17 +244,14 @@
           "github-security-972-head-a996cd4",
           "prettier-3.9.6-repository-config"
         ],
-        "evidence_refs": [
-          ".loop/evidence/t085-local.json",
-          ".loop/evidence/t085-review.json"
-        ],
+        "evidence_refs": [".loop/evidence/t085-local.json", ".loop/evidence/t085-review.json"],
         "next_review_at": null,
         "blocker": null,
         "reason": "The immutable failed head, GitHub runs and repository ledger already provide durable feedback state."
       },
       "failure_signature": "T085_GREEN_FORMATTING_GATE",
       "decision": "retry_same_bounded_publish_action_after_mechanical_formatting",
-      "token_usage": {"estimated": 18000, "input": 0, "output": 0, "total": 18000},
+      "token_usage": { "estimated": 18000, "input": 0, "output": 0, "total": 18000 },
       "terminal_reason": null
     },
     {
@@ -309,17 +298,14 @@
           "github-security-973-head-b1855e7",
           "prettier-3.9.6-complete-file-fixed-point"
         ],
-        "evidence_refs": [
-          ".loop/evidence/t085-local.json",
-          ".loop/evidence/t085-review.json"
-        ],
+        "evidence_refs": [".loop/evidence/t085-local.json", ".loop/evidence/t085-review.json"],
         "next_review_at": null,
         "blocker": null,
         "reason": "The immutable failed head, GitHub runs, canonical formatter fixed-point evidence and repository ledger already provide durable feedback state."
       },
       "failure_signature": "T085_GREEN_FORMATTING_GATE",
       "decision": "retry_with_complete_file_canonical_output",
-      "token_usage": {"estimated": 16000, "input": 0, "output": 0, "total": 16000},
+      "token_usage": { "estimated": 16000, "input": 0, "output": 0, "total": 16000 },
       "terminal_reason": null
     },
     {
@@ -368,17 +354,72 @@
           "github-security-974-head-f6239f7",
           "prettier-3.9.6-lockfile-sri-exact-cli"
         ],
-        "evidence_refs": [
-          ".loop/evidence/t085-local.json",
-          ".loop/evidence/t085-review.json"
-        ],
+        "evidence_refs": [".loop/evidence/t085-local.json", ".loop/evidence/t085-review.json"],
         "next_review_at": null,
         "blocker": null,
         "reason": "The immutable failed head, GitHub runs, exact package-integrity evidence and repository ledger already provide durable feedback state."
       },
       "failure_signature": "T085_GREEN_FORMATTING_GATE",
       "decision": "reopen_once_after_exact_cli_parity_evidence",
-      "token_usage": {"estimated": 14000, "input": 0, "output": 0, "total": 14000},
+      "token_usage": { "estimated": 14000, "input": 0, "output": 0, "total": 14000 },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "t085-reviewed-clause-and-authority-remediation",
+      "at": "2026-08-26T09:32:20Z",
+      "actor": "codex-agent",
+      "type": "feedback_remediation",
+      "base_graph_version": 7,
+      "new_graph_version": 8,
+      "graph_delta": {
+        "operations": [
+          "read back head 8a3a414c5d105b1171f1bbff49e3b0b49ffc23d1 with CI 972 at 5 of 5, proving the exact repository-CLI formatter correction closed the attributable frontend failure",
+          "read back Security 975 at 6 of 8 with only the same postgres and s3 CVE-2026-14456 pinned-image blockers, outside the T085 path delta",
+          "added two focused tests that reproduced the reviewed multi-clause overclaim class and unauthorized ready-transition path as an attributable 27-pass 2-fail RED, while the source-to-proof audit enumerated seven affected rows",
+          "downgraded FR-001 FR-014 FR-016 FR-023 FR-031 FR-032 and FR-048 to PARTIAL under DEV-T085-041 through DEV-T085-047 without changing runtime code",
+          "completed attributable proof locators for FR-014 FR-015 FR-016 FR-023 FR-037 FR-040 FR-043 and FR-047 only where matching repository proof already existed",
+          "removed a-ready-transition-v2 and p-ready-readback-v2 and restored ready-for-review to the explicit release-owner human gate",
+          "used the renewed bounded T085 restoration instruction to extend the L1 control budget exactly once from 8 to 9 iterations, 360 to 1440 minutes, 48 to 56 graph changes and 180000 to 220000 tokens so one atomic publish-and-readback cycle remains auditable",
+          "reached 29 of 29 targeted tests and a real-contract structural PASS with 97 requirements 112 tasks 47 deviations and zero errors",
+          "retained a-publish-remediation-v2 for one optimistic-concurrency-guarded atomic T085-only candidate while PR 146 remains draft and HOLD"
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t085-local.json",
+        ".loop/evidence/t085-review.json",
+        ".loop/t085-traceability.yaml",
+        "scripts/test/validate-traceability.test.mjs",
+        "specs/001-taiwan-basketball-magazine-ebook/traceability.md"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "p-exact-remediation-v2",
+          "status": "FAIL",
+          "claim": "Head 8a3a414c is superseded by the reviewed semantic and authority findings, and Security 975 remains 6/8 on the external pinned-image baseline."
+        },
+        {
+          "proof": "p-semantic-local-v2",
+          "status": "PASS",
+          "claim": "The bounded review remediation passes 29/29 targeted tests and the real 97-requirement 112-task contract with 47 deviations and zero errors."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": null,
+        "version": null,
+        "retrieval_ids": [
+          "github-ci-972-head-8a3a414c",
+          "github-security-975-head-8a3a414c",
+          "t085-reviewed-clause-and-authority-false-green"
+        ],
+        "evidence_refs": [".loop/evidence/t085-local.json", ".loop/evidence/t085-review.json"],
+        "next_review_at": null,
+        "blocker": null,
+        "reason": "The repository graph ledger and exact GitHub run identifiers already provide the durable bounded feedback state."
+      },
+      "failure_signature": "T085_REVIEWED_CLAUSE_AND_AUTHORITY_FALSE_GREEN",
+      "decision": "publish_one_bounded_candidate_keep_draft_hold",
+      "token_usage": { "estimated": 16000, "input": 0, "output": 0, "total": 16000 },
       "terminal_reason": null
     }
   ]

@@ -553,3 +553,118 @@ test("composite VERIFIED rows retain clause-complete semantic proof", () => {
   assert.equal(byId.get("FR-013").evidence_state, "PARTIAL")
   assert.deepEqual(byId.get("FR-013").deviation_ids, ["DEV-T085-040"])
 })
+
+test("reviewed multi-clause rows remain partial until every MUST clause has attributable proof", () => {
+  const contract = extractContract(
+    fs.readFileSync(path.join(repositoryRoot, featurePath, "traceability.md"), "utf8")
+  )
+  const byId = new Map(contract.requirements.map((row) => [row.id, row]))
+
+  for (const [id, deviationId] of [
+    ["FR-001", "DEV-T085-041"],
+    ["FR-014", "DEV-T085-042"],
+    ["FR-016", "DEV-T085-043"],
+    ["FR-023", "DEV-T085-044"],
+    ["FR-031", "DEV-T085-045"],
+    ["FR-032", "DEV-T085-046"],
+    ["FR-048", "DEV-T085-047"]
+  ]) {
+    assert.equal(byId.get(id).evidence_state, "PARTIAL", `${id} must not remain VERIFIED`)
+    assert.deepEqual(byId.get(id).deviation_ids, [deviationId])
+    assert.equal(
+      byId.get(id).release_impact,
+      "BLOCKS_T086_UNLESS_ADJUDICATED",
+      `${id} must preserve the later-gate impact`
+    )
+  }
+
+  assert.deepEqual(
+    byId.get("FR-015").proofs.map((proof) => proof.selector),
+    [
+      "publisherSchedulePersistsAsiaTaipeiLocalTimeAsUtc",
+      "publisherCanWithdrawThenArchiveWithoutDeletingThePublishedEvidence"
+    ]
+  )
+  assert.deepEqual(
+    byId.get("FR-014").proofs.map((proof) => proof.selector),
+    [
+      "roleBoundariesRejectEditorApprovalAndPublisherSubmission",
+      "publisherCanWithdrawThenArchiveWithoutDeletingThePublishedEvidence"
+    ]
+  )
+  assert.deepEqual(
+    byId.get("FR-016").proofs.map((proof) => proof.selector),
+    [
+      "scheduledCommandIsAcknowledgedIdempotentlyByTheWorker",
+      "publisherCanScheduleAndPublishAnApprovedIssue"
+    ]
+  )
+  assert.deepEqual(
+    byId.get("FR-023").proofs.map((proof) => proof.selector),
+    [
+      "missingRecordBlocksWithStableCode",
+      "expiredRecordBlocksBeforeItCanBeUsed",
+      "revokedRecordWinsOverOtherRecords",
+      "activeRecordForAnotherChannelBlocksWithWrongChannel",
+      "missingRightsBlocksSubmitWithoutAdvancingVersionAndKeepsAssetId",
+      "dueWorkerRechecksRightsAndBlocksWithoutPublishingOrCreatingSnapshot",
+      "expiredRightsAtExecutionBlocksWithoutPublishing"
+    ]
+  )
+  assert.deepEqual(
+    byId.get("FR-037").proofs.map((proof) => proof.selector),
+    [
+      "does not install a partially downloaded issue after interruption",
+      "returnsABoundedVersionedManifestForAPublishedIssue",
+      "shows storage, progress and expiry before removing an issue locally"
+    ]
+  )
+  assert.deepEqual(
+    byId.get("FR-040").proofs.map((proof) => proof.selector),
+    [
+      "rejectsEveryCanonicalInvalidFixture",
+      "text rendering keeps Vue escaping and admits only bounded HTTPS or mailto links",
+      "article SEO serializes hostile projection text without terminating JSON-LD"
+    ]
+  )
+  assert.deepEqual(
+    byId.get("FR-043").proofs.map((proof) => proof.selector),
+    [
+      "make verify 2>&1 | tee artifacts/frontend/make-verify.log",
+      "pnpm --filter @courtside/web run test:e2e 2>&1 | tee artifacts/web-e2e/playwright-combined.log",
+      "pnpm --filter @courtside/web run test:performance 2>&1 | tee artifacts/web-e2e/performance.log",
+      "pnpm --filter @courtside/web run test:lighthouse 2>&1 | tee artifacts/web-e2e/lighthouse.log",
+      "gradle --no-daemon --console=plain -p apps/api checkstyleMain spotbugsMain test 2>&1 | tee artifacts/api/gradle-quality.log"
+    ]
+  )
+  assert.deepEqual(
+    byId.get("FR-047").proofs.map((proof) => proof.selector),
+    [
+      "rejectsForbiddenGenerativeCanvasCapabilitiesAtRuntime",
+      "acceptsAValidGenerativeCanvasPayload",
+      "rejectsEveryCanonicalInvalidFixture",
+      "unknown creative presets render only a dimensioned attributed fallback"
+    ]
+  )
+})
+
+test("ready-for-review remains an explicit release-owner gate", () => {
+  const graph = fs.readFileSync(path.join(repositoryRoot, ".loop/t085-traceability.yaml"), "utf8")
+  const traceability = fs.readFileSync(
+    path.join(repositoryRoot, featurePath, "traceability.md"),
+    "utf8"
+  )
+
+  assert.match(
+    graph,
+    /out:\n(?:.*\n)*?\s+- Ready-for-review, protected merge or T085 completion receipt\./
+  )
+  assert.doesNotMatch(graph, /a-ready-transition-v2|p-ready-readback-v2/)
+  assert.doesNotMatch(graph, /current release-owner instruction authorizes ready-for-review/)
+  assert.match(
+    graph,
+    /budgets: \{max_iterations: 9, max_minutes: 1440, max_same_failure: 2, max_graph_changes: 56, max_tokens: 220000\}/
+  )
+  assert.match(traceability, /does not authorize ready-for-review/)
+  assert.doesNotMatch(traceability, /conditionally authorizes ready-for-review/)
+})

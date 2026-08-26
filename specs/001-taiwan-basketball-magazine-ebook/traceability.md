@@ -19,7 +19,7 @@ Evidence states are deliberately asymmetric: `VERIFIED` requires checked tasks p
 
 | Requirement | Story / slice                            | Tasks                                                                                                      | Implementation | Evidence        | Proof                  | Deviation      | Release impact                      |
 | ----------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------- | --------------- | ---------------------- | -------------- | ----------------------------------- |
-| FR-001      | US1/US2 / public-reading                 | T024, T027, T028, T029, T030, T031                                                                         | COMPLETE       | VERIFIED        | `P_US1_LIST`           | —              | NONE_FOR_CURRENT_SLICE              |
+| FR-001      | US1/US2 / public-reading                 | T024, T027, T028, T029, T030, T031                                                                         | COMPLETE       | PARTIAL         | `P_US1_LIST`           | `DEV-T085-041` | BLOCKS_T086_UNLESS_ADJUDICATED      |
 | FR-002      | US1/US2 / public-reading                 | T024, T026, T027, T028, T029, T030                                                                         | COMPLETE       | VERIFIED        | `P_US1_TOC`            | —              | NONE_FOR_CURRENT_SLICE              |
 | FR-003      | US1/US2 / public-reading                 | T024, T027, T028, T030                                                                                     | COMPLETE       | VERIFIED        | `P_US1_DENY`, `P_ISSUE_VISIBILITY`, `P_ISSUE_DETAIL_VISIBILITY`, `P_ISSUE_CURRENT`, `P_ARTICLE_MEDIA_VISIBILITY` | —              | NONE_FOR_CURRENT_SLICE              |
 | FR-004      | US1/US2 / public-reading                 | T032, T034, T035, T038, T041                                                                               | COMPLETE       | VERIFIED        | `P_ARTICLE_READER`, `P_ARTICLE_REFLOW` | —              | NONE_FOR_CURRENT_SLICE              |
@@ -32,16 +32,16 @@ Evidence states are deliberately asymmetric: `VERIFIED` requires checked tasks p
 | FR-011      | US3 / editorial-publication-rights       | T042, T043, T044, T045, T046, T047, T048, T049, T050, T051, T052, T053, T054, T055                         | PLANNED        | PARTIAL         | `P_WORKFLOW`           | `DEV-T085-030` | BLOCKS_T086_UNLESS_ADJUDICATED      |
 | FR-012      | US3 / editorial-publication-rights       | T042, T045, T046, T050, T054, T055, T056                                                                   | COMPLETE       | VERIFIED        | `P_REVISION`           | —              | NONE_FOR_CURRENT_SLICE              |
 | FR-013      | US3 / editorial-publication-rights       | T042, T045, T046, T054, T055                                                                               | PLANNED        | PARTIAL         | `P_WORKFLOW`, `P_WORKFLOW_SCHEDULE`, `P_WORKFLOW_ARCHIVE`, `P_ISSUE_SCHEDULE_PUBLISH` | `DEV-T085-040` | BLOCKS_T086_UNLESS_ADJUDICATED      |
-| FR-014      | US3 / editorial-publication-rights       | T042, T043, T044, T046, T053, T054, T055                                                                   | COMPLETE       | VERIFIED        | `P_ROLE`               | —              | NONE_FOR_CURRENT_SLICE              |
-| FR-015      | US3 / editorial-publication-rights       | T042, T043, T044, T046, T054                                                                               | COMPLETE       | VERIFIED        | `P_SCHEDULE`           | —              | NONE_FOR_CURRENT_SLICE              |
-| FR-016      | US3 / editorial-publication-rights       | T042, T043, T045, T054, T056                                                                               | COMPLETE       | VERIFIED        | `P_IDEMPOTENCY`        | —              | NONE_FOR_CURRENT_SLICE              |
+| FR-014      | US3 / editorial-publication-rights       | T042, T043, T044, T046, T053, T054, T055                                                                   | COMPLETE       | PARTIAL         | `P_ROLE`, `P_ROLE_TRANSITIONS` | `DEV-T085-042` | BLOCKS_T086_UNLESS_ADJUDICATED      |
+| FR-015      | US3 / editorial-publication-rights       | T042, T043, T044, T046, T054                                                                               | COMPLETE       | VERIFIED        | `P_SCHEDULE`, `P_IMMEDIATE_PUBLISH` | —              | NONE_FOR_CURRENT_SLICE              |
+| FR-016      | US3 / editorial-publication-rights       | T042, T043, T045, T054, T056                                                                               | COMPLETE       | PARTIAL         | `P_ARTICLE_PUBLISH_IDEMPOTENCY`, `P_ISSUE_SCHEDULE_PUBLISH` | `DEV-T085-043` | BLOCKS_T086_UNLESS_ADJUDICATED      |
 | FR-017      | US3 / editorial-publication-rights       | T044, T045, T052                                                                                           | COMPLETE       | VERIFIED        | `P_ORDER`              | —              | NONE_FOR_CURRENT_SLICE              |
 | FR-018      | US3 / editorial-publication-rights       | T043, T044, T046, T050, T051                                                                               | COMPLETE       | VERIFIED        | `P_CONFLICT`           | —              | NONE_FOR_CURRENT_SLICE              |
 | FR-019      | US3 / editorial-publication-rights       | T013, T017, T042, T043, T044, T045, T046, T054, T055                                                       | PLANNED        | PARTIAL         | `P_AUDIT`              | `DEV-T085-031` | BLOCKS_T086_UNLESS_ADJUDICATED      |
 | FR-020      | US3 / editorial-publication-rights       | T032, T042, T045, T050, T054, T055, T056                                                                   | COMPLETE       | VERIFIED        | `P_REVISION_IMMUTABLE`, `P_REVISION_CANONICAL`, `P_REVISION_VISIBLE` | —              | NONE_FOR_CURRENT_SLICE              |
 | FR-021      | US3 / editorial-publication-rights       | T019, T043, T048, T049                                                                                     | COMPLETE       | VERIFIED        | `P_UPLOAD`             | —              | NONE_FOR_CURRENT_SLICE              |
 | FR-022      | US3 / editorial-publication-rights       | T019, T020, T042, T043, T047, T048, T049                                                                   | COMPLETE       | VERIFIED        | `P_MEDIA_METADATA`     | —              | NONE_FOR_CURRENT_SLICE              |
-| FR-023      | US3 / editorial-publication-rights       | T042, T043, T047, T056                                                                                     | COMPLETE       | VERIFIED        | `P_RIGHTS`             | —              | NONE_FOR_CURRENT_SLICE              |
+| FR-023      | US3 / editorial-publication-rights       | T042, T043, T047, T056                                                                                     | COMPLETE       | PARTIAL         | `P_RIGHTS_MISSING`, `P_RIGHTS_EXPIRED`, `P_RIGHTS_REVOKED`, `P_RIGHTS_CHANNEL`, `P_RIGHTS_SUBMIT`, `P_RIGHTS_WORKER`, `P_RIGHTS_EXECUTION` | `DEV-T085-044` | BLOCKS_T086_UNLESS_ADJUDICATED      |
 | FR-024      | US3 / editorial-publication-rights       | T020                                                                                                       | COMPLETE       | VERIFIED        | `P_PROCESSING`         | —              | NONE_FOR_CURRENT_SLICE              |
 | FR-025      | US3 / editorial-publication-rights       | T055, T056, T071, T072, T073, T074, T075, T076                                                             | PLANNED        | PARTIAL         | `P_WITHDRAW`           | `DEV-T085-032` | BLOCKS_T086_UNLESS_ADJUDICATED      |
 | FR-026      | US4 / search-discovery                   | T057, T058, T059, T060, T061, T062                                                                         | PLANNED        | PARTIAL         | `P_SEARCH`             | `DEV-T085-033` | BLOCKS_P2_ACCEPTANCE_NOT_T085       |
@@ -49,24 +49,24 @@ Evidence states are deliberately asymmetric: `VERIFIED` requires checked tasks p
 | FR-028      | US4 / search-discovery                   | T057, T058, T060, T061, T062, T063                                                                         | PLANNED        | PARTIAL         | `P_SEARCH`             | `DEV-T085-034` | BLOCKS_P2_ACCEPTANCE_NOT_T085       |
 | FR-029      | US4 / search-discovery                   | T057, T058, T059, T060, T061, T062, T063                                                                   | PLANNED        | PARTIAL         | `P_SEARCH`             | `DEV-T085-034` | BLOCKS_P2_ACCEPTANCE_NOT_T085       |
 | FR-030      | US4 / search-discovery                   | T056, T057, T060, T063, T083                                                                               | COMPLETE       | PARTIAL         | `P_SEARCH_FRESH`       | `DEV-T085-016` | BLOCKS_P2_ACCEPTANCE_NOT_T085       |
-| FR-031      | FOUNDATION/US5 / identity-reader-library | T011, T015, T016, T023                                                                                     | COMPLETE       | VERIFIED        | `P_OIDC`               | —              | NONE_FOR_CURRENT_SLICE              |
-| FR-032      | FOUNDATION/US5 / identity-reader-library | T013, T015, T016, T023, T042, T043, T044, T053, T080                                                       | COMPLETE       | VERIFIED        | `P_ROLES`              | —              | NONE_FOR_CURRENT_SLICE              |
+| FR-031      | FOUNDATION/US5 / identity-reader-library | T011, T015, T016, T023                                                                                     | COMPLETE       | PARTIAL         | `P_OIDC`, `P_READER_OIDC`, `P_EDITORIAL_OIDC` | `DEV-T085-045` | BLOCKS_T086_UNLESS_ADJUDICATED      |
+| FR-032      | FOUNDATION/US5 / identity-reader-library | T013, T015, T016, T023, T042, T043, T044, T053, T080                                                       | COMPLETE       | PARTIAL         | `P_ROLES`, `P_READER_OIDC`, `P_STUDIO_ROLE_POLICY` | `DEV-T085-046` | BLOCKS_T086_UNLESS_ADJUDICATED      |
 | FR-033      | FOUNDATION/US5 / identity-reader-library | T064, T065, T066, T067, T068, T070                                                                         | COMPLETE       | VERIFIED        | `P_BOOKMARK`           | —              | NONE_FOR_CURRENT_SLICE              |
 | FR-034      | FOUNDATION/US5 / identity-reader-library | T064, T065, T066, T067, T068, T069, T070                                                                   | COMPLETE       | VERIFIED        | `P_SYNC_PROGRESS`      | —              | NONE_FOR_CURRENT_SLICE              |
 | FR-035      | FOUNDATION/US5 / identity-reader-library | T064, T065, T069, T070                                                                                     | COMPLETE       | VERIFIED        | `P_ERASURE`            | —              | NONE_FOR_CURRENT_SLICE              |
 | FR-036      | US6 / offline-lifecycle                  | T071, T072, T073, T074, T075, T076                                                                         | COMPLETE       | VERIFIED        | `P_OFFLINE_MANIFEST`   | —              | NONE_FOR_CURRENT_SLICE              |
-| FR-037      | US6 / offline-lifecycle                  | T071, T072, T074, T075                                                                                     | COMPLETE       | VERIFIED        | `P_OFFLINE_ATOMIC`     | —              | NONE_FOR_CURRENT_SLICE              |
+| FR-037      | US6 / offline-lifecycle                  | T071, T072, T074, T075                                                                                     | COMPLETE       | VERIFIED        | `P_OFFLINE_ATOMIC`, `P_OFFLINE_MANIFEST`, `P_OFFLINE_COMPLETION` | —              | NONE_FOR_CURRENT_SLICE              |
 | FR-038      | US6 / offline-lifecycle                  | T071, T072, T074, T076                                                                                     | COMPLETE       | VERIFIED        | `P_OFFLINE_RECONCILE`  | —              | NONE_FOR_CURRENT_SLICE              |
 | FR-039      | US6 / offline-lifecycle                  | T071, T074, T075                                                                                           | COMPLETE       | VERIFIED        | `P_OFFLINE_LOCAL_MANAGE` | —              | NONE_FOR_CURRENT_SLICE              |
-| FR-040      | CROSS_CUT / quality-security-operations  | T009, T010, T023, T032, T036, T037, T080                                                                   | COMPLETE       | VERIFIED        | `P_CONTENT_VALIDATION` | —              | NONE_FOR_CURRENT_SLICE              |
+| FR-040      | CROSS_CUT / quality-security-operations  | T009, T010, T023, T032, T036, T037, T080                                                                   | COMPLETE       | VERIFIED        | `P_CONTENT_VALIDATION`, `P_CONTENT_ESCAPING`, `P_JSONLD_ESCAPING` | —              | NONE_FOR_CURRENT_SLICE              |
 | FR-041      | CROSS_CUT / quality-security-operations  | T011, T019, T023, T080                                                                                     | PLANNED        | PARTIAL         | `P_RATE_LIMIT`         | `DEV-T085-035` | BLOCKS_T086_UNLESS_ADJUDICATED      |
 | FR-042      | CROSS_CUT / quality-security-operations  | T011, T012, T014, T016, T023, T043                                                                         | COMPLETE       | PARTIAL         | `P_PROBLEM`            | `DEV-T085-037` | BLOCKS_T086_UNLESS_ADJUDICATED      |
-| FR-043      | CROSS_CUT / quality-security-operations  | T003, T006, T008, T010, T012, T022, T024, T025, T032, T033, T042, T043, T044, T057, T064, T071, T078, T079 | COMPLETE       | VERIFIED        | `P_CI`                 | —              | NONE_FOR_CURRENT_SLICE              |
+| FR-043      | CROSS_CUT / quality-security-operations  | T003, T006, T008, T010, T012, T022, T024, T025, T032, T033, T042, T043, T044, T057, T064, T071, T078, T079 | COMPLETE       | VERIFIED        | `P_CI`, `P_CI_E2E`, `P_CI_PERFORMANCE`, `P_CI_LIGHTHOUSE`, `P_CI_JAVA` | —              | NONE_FOR_CURRENT_SLICE              |
 | FR-044      | CROSS_CUT / quality-security-operations  | T018, T021, T056, T060, T083                                                                               | COMPLETE       | PARTIAL         | `P_OBSERVABILITY`      | `DEV-T085-029` | PRODUCTION_ACTIVATION_EVIDENCE_OPEN |
 | FR-045      | CROSS_CUT / quality-security-operations  | T081                                                                                                       | COMPLETE       | PARTIAL         | `P_BACKUP`             | `DEV-T085-028` | PRODUCTION_ACTIVATION_EVIDENCE_OPEN |
 | FR-046      | US2 / progressive-creative-runtime       | T002, T025, T029, T033, T038, T041, T078, T079                                                             | COMPLETE       | VERIFIED        | `P_REDUCED`            | —              | NONE_FOR_CURRENT_SLICE              |
-| FR-047      | US2 / progressive-creative-runtime       | T009, T010, T022, T023, T033, T036, T037, T041, T080                                                       | COMPLETE       | VERIFIED        | `P_CREATIVE_SECURITY`  | —              | NONE_FOR_CURRENT_SLICE              |
-| FR-048      | US2 / progressive-creative-runtime       | T033, T037, T041, T079                                                                                     | COMPLETE       | VERIFIED        | `P_LIFECYCLE`          | —              | NONE_FOR_CURRENT_SLICE              |
+| FR-047      | US2 / progressive-creative-runtime       | T009, T010, T022, T023, T033, T036, T037, T041, T080                                                       | COMPLETE       | VERIFIED        | `P_CREATIVE_SECURITY`, `P_CREATIVE_VALID`, `P_CREATIVE_FIXTURE_VALIDATION`, `P_CREATIVE_FALLBACK` | —              | NONE_FOR_CURRENT_SLICE              |
+| FR-048      | US2 / progressive-creative-runtime       | T033, T037, T041, T079                                                                                     | COMPLETE       | PARTIAL         | `P_LIFECYCLE`, `P_CLIENT_ONLY`, `P_MULTI_VISIBILITY`, `P_STATIC_FALLBACK` | `DEV-T085-047` | BLOCKS_T086_UNLESS_ADJUDICATED      |
 | FR-049      | US7 / optional-provenance-wallet         | T087, T089, T090, T094, T096                                                                               | PLANNED        | PLANNED_BLOCKED | planned target only    | `DEV-T085-020` | BLOCKS_FUTURE_SLICE_NOT_T085        |
 | FR-050      | US7 / optional-provenance-wallet         | T087, T089, T091, T096                                                                                     | PLANNED        | PLANNED_BLOCKED | planned target only    | `DEV-T085-020` | BLOCKS_FUTURE_SLICE_NOT_T085        |
 | FR-051      | US7 / optional-provenance-wallet         | T088, T090, T093, T095, T096                                                                               | PLANNED        | PLANNED_BLOCKED | planned target only    | `DEV-T085-020` | BLOCKS_FUTURE_SLICE_NOT_T085        |
@@ -181,12 +181,19 @@ The machine contract below deterministically inverts every forward mapping and c
 | DEV-T085-038 | TASK_SOURCE_DRIFT       | MEDIUM   | OPEN     | T032, T042                                                                     | Task prose claims broader FR ranges than the evidence-backed matrix. Target: documentation reconciliation without runtime changes.               | NONE                           |
 | DEV-T085-039 | SEO_PROOF_COVERAGE_GAP  | MEDIUM   | OPEN     | FR-009                                                                         | Article SEO and sitemap proof are complete, but issue-page Open Graph and structured-data proof remains incomplete. Target: T086 reader and issue SEO acceptance. | BLOCKS_T086_UNLESS_ADJUDICATED |
 | DEV-T085-040 | ISSUE_WORKFLOW_COMPLETENESS_GAP | HIGH | OPEN | FR-013                                                                         | Article lifecycle proof is complete, but issue integration proves only schedule and publish and has no archive operation. Target: P1 editorial workflow remediation. | BLOCKS_T086_UNLESS_ADJUDICATED |
+| DEV-T085-041 | PUBLIC_ISSUE_LIST_FIELD_PROOF_GAP | MEDIUM | OPEN | FR-001 | The public-list proof asserts visibility, cover, issue number and summary, but not `items[].title` (the issue theme) or `items[].publishedAt`. Target: T086 public issue contract acceptance. | BLOCKS_T086_UNLESS_ADJUDICATED |
+| DEV-T085-042 | PUBLICATION_ROLE_BOUNDARY_PROOF_GAP | HIGH | OPEN | FR-014 | Backend proof denies EDITOR approve and PUBLISHER submit, and positive API proof covers publisher publish, withdraw and archive, but no backend test denies EDITOR publish, withdraw, archive or emergency withdrawal. Target: P1 editorial role acceptance. | BLOCKS_T086_UNLESS_ADJUDICATED |
+| DEV-T085-043 | PUBLICATION_IDEMPOTENCY_AND_REVISION_GATE_PROOF_GAP | HIGH | OPEN | FR-016 | Article scheduled-worker redelivery proves one publication result, but issue publish is not retried and the only production issue-publish test has no article entries; no test proves that a non-empty issue rejects an unapproved revision before snapshot creation. Target: P1 publication acceptance. | BLOCKS_T086_UNLESS_ADJUDICATED |
+| DEV-T085-044 | PUBLICATION_RIGHTS_CLAUSE_PROOF_GAP | HIGH | OPEN | FR-023 | Domain tests cover missing, expired, revoked and wrong-channel decisions, with submission/execution integration for representative cases, but no backend test exercises a Status.UNKNOWN rights record and no wrong-channel submission/publication boundary test exists. Target: P1 rights acceptance. | BLOCKS_T086_UNLESS_ADJUDICATED |
+| DEV-T085-045 | OIDC_PASSWORD_STORAGE_PROOF_GAP | HIGH | OPEN | FR-031 | OIDC reader and editorial flows are executable, but no repository test inventories persisted identity fields and proves that no plaintext password is stored. Target: P1 identity storage acceptance. | BLOCKS_T086_UNLESS_ADJUDICATED |
+| DEV-T085-046 | CANONICAL_ROLE_MATRIX_PROOF_GAP | HIGH | OPEN | FR-032 | Reader, editor and publisher paths have partial executable coverage, but no test positively maps canonical ADMIN or exercises the four-role endpoint least-privilege matrix. Target: P1 authorization acceptance. | BLOCKS_T086_UNLESS_ADJUDICATED |
+| DEV-T085-047 | CREATIVE_RUNTIME_FAILURE_FALLBACK_PROOF_GAP | HIGH | OPEN | FR-048 | Client-only loading, viewport/hidden pause and route disposal are executable, and a static poster is present, but no test induces a p5 module or preset-load failure and proves the runtime error path leaves only static content. Target: T086 creative runtime acceptance. | BLOCKS_T086_UNLESS_ADJUDICATED |
 
 ## Exact-head acceptance and protected-merge boundary
 
-The current release-owner instruction authorizes moving only the freshly proven remediation head out of HOLD after that one immutable PR head has: (1) CI 5/5 and Security 8/8; (2) the generated `artifacts/frontend/t085-traceability-report.json` read back from the `ci-frontend-reports` artifact with matching head SHA and artifact digest; (3) 97/97 mapped requirements, 112/112 classified tasks, zero validator errors, and the open deviations above unchanged or explicitly adjudicated; (4) zero unresolved review threads; and (5) current protected-main mergeability under ruleset #20822671. A head mismatch or waived gate requires a new release-owner decision.
+A future release-owner decision may move a freshly proven remediation head out of HOLD only after that one immutable PR head has: (1) CI 5/5 and Security 8/8; (2) the generated `artifacts/frontend/t085-traceability-report.json` read back from the `ci-frontend-reports` artifact with matching head SHA and artifact digest; (3) 97/97 mapped requirements, 112/112 classified tasks, zero validator errors, and the open deviations above unchanged or explicitly adjudicated; (4) zero unresolved review threads; and (5) current protected-main mergeability under ruleset #20822671. A head mismatch, waived gate or ready-for-review transition requires a new explicit release-owner decision.
 
-The tracked document does not self-reference a final commit SHA. Exact-head attribution belongs in the generated report and GitHub artifact/read-back. The current instruction conditionally authorizes ready-for-review for that same proven head only; protected merge, checking T085, closing issue #145, or starting T086 requires separate release-owner authorization.
+The tracked document does not self-reference a final commit SHA. Exact-head attribution belongs in the generated report and GitHub artifact/read-back. This packet does not authorize ready-for-review, protected merge, checking T085, closing issue #145, or starting T086; each remains subject to separate explicit release-owner authorization.
 
 ## Machine-readable contract
 
@@ -226,7 +233,7 @@ The tracked document does not self-reference a final commit SHA. Exact-head attr
       "slice": "public-reading",
       "task_ids": ["T024", "T027", "T028", "T029", "T030", "T031"],
       "implementation_state": "COMPLETE",
-      "evidence_state": "VERIFIED",
+      "evidence_state": "PARTIAL",
       "proofs": [
         {
           "id": "P_US1_LIST",
@@ -235,8 +242,8 @@ The tracked document does not self-reference a final commit SHA. Exact-head attr
           "selector": "listsOnlyPublishedRightsValidIssuesWithBoundedOpaqueKeysetPaginationAndEtags"
         }
       ],
-      "deviation_ids": [],
-      "release_impact": "NONE_FOR_CURRENT_SLICE"
+      "deviation_ids": ["DEV-T085-041"],
+      "release_impact": "BLOCKS_T086_UNLESS_ADJUDICATED"
     },
     {
       "id": "FR-002",
@@ -554,17 +561,23 @@ The tracked document does not self-reference a final commit SHA. Exact-head attr
       "slice": "editorial-publication-rights",
       "task_ids": ["T042", "T043", "T044", "T046", "T053", "T054", "T055"],
       "implementation_state": "COMPLETE",
-      "evidence_state": "VERIFIED",
+      "evidence_state": "PARTIAL",
       "proofs": [
         {
           "id": "P_ROLE",
           "kind": "REPOSITORY_PROOF",
           "path": "apps/api/src/test/java/tw/basketball/magazine/publication/api/EditorialPublicationApiIT.java",
           "selector": "roleBoundariesRejectEditorApprovalAndPublisherSubmission"
+        },
+        {
+          "id": "P_ROLE_TRANSITIONS",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/api/src/test/java/tw/basketball/magazine/publication/api/EditorialPublicationApiIT.java",
+          "selector": "publisherCanWithdrawThenArchiveWithoutDeletingThePublishedEvidence"
         }
       ],
-      "deviation_ids": [],
-      "release_impact": "NONE_FOR_CURRENT_SLICE"
+      "deviation_ids": ["DEV-T085-042"],
+      "release_impact": "BLOCKS_T086_UNLESS_ADJUDICATED"
     },
     {
       "id": "FR-015",
@@ -580,6 +593,12 @@ The tracked document does not self-reference a final commit SHA. Exact-head attr
           "kind": "REPOSITORY_PROOF",
           "path": "apps/api/src/test/java/tw/basketball/magazine/publication/api/EditorialPublicationApiIT.java",
           "selector": "publisherSchedulePersistsAsiaTaipeiLocalTimeAsUtc"
+        },
+        {
+          "id": "P_IMMEDIATE_PUBLISH",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/api/src/test/java/tw/basketball/magazine/publication/api/EditorialPublicationApiIT.java",
+          "selector": "publisherCanWithdrawThenArchiveWithoutDeletingThePublishedEvidence"
         }
       ],
       "deviation_ids": [],
@@ -592,17 +611,23 @@ The tracked document does not self-reference a final commit SHA. Exact-head attr
       "slice": "editorial-publication-rights",
       "task_ids": ["T042", "T043", "T045", "T054", "T056"],
       "implementation_state": "COMPLETE",
-      "evidence_state": "VERIFIED",
+      "evidence_state": "PARTIAL",
       "proofs": [
         {
-          "id": "P_IDEMPOTENCY",
+          "id": "P_ARTICLE_PUBLISH_IDEMPOTENCY",
           "kind": "REPOSITORY_PROOF",
-          "path": "apps/api/src/test/java/tw/basketball/magazine/publication/api/EditorialPublicationApiIT.java",
-          "selector": "sameScopedRetryReplaysOneResultAndChangedPayloadConflicts"
+          "path": "apps/api/src/test/java/tw/basketball/magazine/publication/worker/PublicationJobHandlerIT.java",
+          "selector": "scheduledCommandIsAcknowledgedIdempotentlyByTheWorker"
+        },
+        {
+          "id": "P_ISSUE_SCHEDULE_PUBLISH",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/api/src/test/java/tw/basketball/magazine/publication/api/EditorialIssueApiIT.java",
+          "selector": "publisherCanScheduleAndPublishAnApprovedIssue"
         }
       ],
-      "deviation_ids": [],
-      "release_impact": "NONE_FOR_CURRENT_SLICE"
+      "deviation_ids": ["DEV-T085-043"],
+      "release_impact": "BLOCKS_T086_UNLESS_ADJUDICATED"
     },
     {
       "id": "FR-017",
@@ -737,17 +762,53 @@ The tracked document does not self-reference a final commit SHA. Exact-head attr
       "slice": "editorial-publication-rights",
       "task_ids": ["T042", "T043", "T047", "T056"],
       "implementation_state": "COMPLETE",
-      "evidence_state": "VERIFIED",
+      "evidence_state": "PARTIAL",
       "proofs": [
         {
-          "id": "P_RIGHTS",
+          "id": "P_RIGHTS_MISSING",
           "kind": "REPOSITORY_PROOF",
           "path": "apps/api/src/test/java/tw/basketball/magazine/media/domain/RightsPolicyTest.java",
           "selector": "missingRecordBlocksWithStableCode"
+        },
+        {
+          "id": "P_RIGHTS_EXPIRED",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/api/src/test/java/tw/basketball/magazine/media/domain/RightsPolicyTest.java",
+          "selector": "expiredRecordBlocksBeforeItCanBeUsed"
+        },
+        {
+          "id": "P_RIGHTS_REVOKED",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/api/src/test/java/tw/basketball/magazine/media/domain/RightsPolicyTest.java",
+          "selector": "revokedRecordWinsOverOtherRecords"
+        },
+        {
+          "id": "P_RIGHTS_CHANNEL",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/api/src/test/java/tw/basketball/magazine/media/domain/RightsPolicyTest.java",
+          "selector": "activeRecordForAnotherChannelBlocksWithWrongChannel"
+        },
+        {
+          "id": "P_RIGHTS_SUBMIT",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/api/src/test/java/tw/basketball/magazine/publication/domain/PublicationWorkflowTest.java",
+          "selector": "missingRightsBlocksSubmitWithoutAdvancingVersionAndKeepsAssetId"
+        },
+        {
+          "id": "P_RIGHTS_WORKER",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/api/src/test/java/tw/basketball/magazine/publication/worker/PublicationJobHandlerIT.java",
+          "selector": "dueWorkerRechecksRightsAndBlocksWithoutPublishingOrCreatingSnapshot"
+        },
+        {
+          "id": "P_RIGHTS_EXECUTION",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/api/src/test/java/tw/basketball/magazine/publication/PublicationReliabilityIT.java",
+          "selector": "expiredRightsAtExecutionBlocksWithoutPublishing"
         }
       ],
-      "deviation_ids": [],
-      "release_impact": "NONE_FOR_CURRENT_SLICE"
+      "deviation_ids": ["DEV-T085-044"],
+      "release_impact": "BLOCKS_T086_UNLESS_ADJUDICATED"
     },
     {
       "id": "FR-024",
@@ -889,17 +950,29 @@ The tracked document does not self-reference a final commit SHA. Exact-head attr
       "slice": "identity-reader-library",
       "task_ids": ["T011", "T015", "T016", "T023"],
       "implementation_state": "COMPLETE",
-      "evidence_state": "VERIFIED",
+      "evidence_state": "PARTIAL",
       "proofs": [
         {
           "id": "P_OIDC",
           "kind": "REPOSITORY_PROOF",
           "path": "apps/api/src/test/java/tw/basketball/magazine/identity/OidcSecurityFoundationTest.java",
           "selector": "rejectsTokenFromUnexpectedIssuer"
+        },
+        {
+          "id": "P_READER_OIDC",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/web/tests/integration/auth-session.test.ts",
+          "selector": "local OIDC stub verifies JWT/JWKS and exchanges code without browser bearer storage"
+        },
+        {
+          "id": "P_EDITORIAL_OIDC",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/web/tests/e2e/us3-editorial-publication.spec.ts",
+          "selector": "editor conflict preserves a revision while publisher sees the rights gate"
         }
       ],
-      "deviation_ids": [],
-      "release_impact": "NONE_FOR_CURRENT_SLICE"
+      "deviation_ids": ["DEV-T085-045"],
+      "release_impact": "BLOCKS_T086_UNLESS_ADJUDICATED"
     },
     {
       "id": "FR-032",
@@ -908,17 +981,29 @@ The tracked document does not self-reference a final commit SHA. Exact-head attr
       "slice": "identity-reader-library",
       "task_ids": ["T013", "T015", "T016", "T023", "T042", "T043", "T044", "T053", "T080"],
       "implementation_state": "COMPLETE",
-      "evidence_state": "VERIFIED",
+      "evidence_state": "PARTIAL",
       "proofs": [
         {
           "id": "P_ROLES",
           "kind": "REPOSITORY_PROOF",
           "path": "apps/api/src/test/java/tw/basketball/magazine/identity/OidcSecurityFoundationTest.java",
           "selector": "mapsOnlyCanonicalRolesAndDoesNotImplyHigherPrivilege"
+        },
+        {
+          "id": "P_READER_OIDC",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/web/tests/integration/auth-session.test.ts",
+          "selector": "local OIDC stub verifies JWT/JWKS and exchanges code without browser bearer storage"
+        },
+        {
+          "id": "P_STUDIO_ROLE_POLICY",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/web/tests/unit/studio-contract.test.ts",
+          "selector": "Studio role policy keeps editor and publisher actions separate"
         }
       ],
-      "deviation_ids": [],
-      "release_impact": "NONE_FOR_CURRENT_SLICE"
+      "deviation_ids": ["DEV-T085-046"],
+      "release_impact": "BLOCKS_T086_UNLESS_ADJUDICATED"
     },
     {
       "id": "FR-033",
@@ -1010,6 +1095,18 @@ The tracked document does not self-reference a final commit SHA. Exact-head attr
           "kind": "REPOSITORY_PROOF",
           "path": "apps/web/tests/e2e/us6-offline-issue.spec.ts",
           "selector": "does not install a partially downloaded issue after interruption"
+        },
+        {
+          "id": "P_OFFLINE_MANIFEST",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/api/src/test/java/tw/basketball/magazine/publication/api/OfflineManifestApiIT.java",
+          "selector": "returnsABoundedVersionedManifestForAPublishedIssue"
+        },
+        {
+          "id": "P_OFFLINE_COMPLETION",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/web/tests/e2e/us6-offline-issue.spec.ts",
+          "selector": "shows storage, progress and expiry before removing an issue locally"
         }
       ],
       "deviation_ids": [],
@@ -1067,6 +1164,18 @@ The tracked document does not self-reference a final commit SHA. Exact-head attr
           "kind": "REPOSITORY_PROOF",
           "path": "apps/api/src/test/java/tw/basketball/magazine/content/validation/ContentDocumentValidatorTest.java",
           "selector": "rejectsEveryCanonicalInvalidFixture"
+        },
+        {
+          "id": "P_CONTENT_ESCAPING",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/web/tests/component/content-blocks/blocks.test.ts",
+          "selector": "text rendering keeps Vue escaping and admits only bounded HTTPS or mailto links"
+        },
+        {
+          "id": "P_JSONLD_ESCAPING",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/web/tests/unit/reader/article-seo.test.ts",
+          "selector": "article SEO serializes hostile projection text without terminating JSON-LD"
         }
       ],
       "deviation_ids": [],
@@ -1143,6 +1252,30 @@ The tracked document does not self-reference a final commit SHA. Exact-head attr
           "kind": "REPOSITORY_PROOF",
           "path": ".github/workflows/ci.yml",
           "selector": "make verify 2>&1 | tee artifacts/frontend/make-verify.log"
+        },
+        {
+          "id": "P_CI_E2E",
+          "kind": "REPOSITORY_PROOF",
+          "path": ".github/workflows/ci.yml",
+          "selector": "pnpm --filter @courtside/web run test:e2e 2>&1 | tee artifacts/web-e2e/playwright-combined.log"
+        },
+        {
+          "id": "P_CI_PERFORMANCE",
+          "kind": "REPOSITORY_PROOF",
+          "path": ".github/workflows/ci.yml",
+          "selector": "pnpm --filter @courtside/web run test:performance 2>&1 | tee artifacts/web-e2e/performance.log"
+        },
+        {
+          "id": "P_CI_LIGHTHOUSE",
+          "kind": "REPOSITORY_PROOF",
+          "path": ".github/workflows/ci.yml",
+          "selector": "pnpm --filter @courtside/web run test:lighthouse 2>&1 | tee artifacts/web-e2e/lighthouse.log"
+        },
+        {
+          "id": "P_CI_JAVA",
+          "kind": "REPOSITORY_PROOF",
+          "path": ".github/workflows/ci.yml",
+          "selector": "gradle --no-daemon --console=plain -p apps/api checkstyleMain spotbugsMain test 2>&1 | tee artifacts/api/gradle-quality.log"
         }
       ],
       "deviation_ids": [],
@@ -1219,6 +1352,24 @@ The tracked document does not self-reference a final commit SHA. Exact-head attr
           "kind": "REPOSITORY_PROOF",
           "path": "apps/api/src/test/java/tw/basketball/magazine/security/ContentPayloadBoundaryTest.java",
           "selector": "rejectsForbiddenGenerativeCanvasCapabilitiesAtRuntime"
+        },
+        {
+          "id": "P_CREATIVE_VALID",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/api/src/test/java/tw/basketball/magazine/security/ContentPayloadBoundaryTest.java",
+          "selector": "acceptsAValidGenerativeCanvasPayload"
+        },
+        {
+          "id": "P_CREATIVE_FIXTURE_VALIDATION",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/api/src/test/java/tw/basketball/magazine/content/validation/ContentDocumentValidatorTest.java",
+          "selector": "rejectsEveryCanonicalInvalidFixture"
+        },
+        {
+          "id": "P_CREATIVE_FALLBACK",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/web/tests/e2e/us2-read-article.spec.ts",
+          "selector": "unknown creative presets render only a dimensioned attributed fallback"
         }
       ],
       "deviation_ids": [],
@@ -1231,17 +1382,35 @@ The tracked document does not self-reference a final commit SHA. Exact-head attr
       "slice": "progressive-creative-runtime",
       "task_ids": ["T033", "T037", "T041", "T079"],
       "implementation_state": "COMPLETE",
-      "evidence_state": "VERIFIED",
+      "evidence_state": "PARTIAL",
       "proofs": [
         {
           "id": "P_LIFECYCLE",
           "kind": "REPOSITORY_PROOF",
           "path": "apps/web/tests/e2e/us2-creative-lifecycle.spec.ts",
           "selector": "twenty client-side article switches leave no positive per-instance creative lifecycle delta"
+        },
+        {
+          "id": "P_CLIENT_ONLY",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/web/tests/e2e/us2-creative-lifecycle.spec.ts",
+          "selector": "ordinary and reduced-motion reads transfer zero p5 bytes until explicit enable"
+        },
+        {
+          "id": "P_MULTI_VISIBILITY",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/web/tests/e2e/us2-reduced-motion.spec.ts",
+          "selector": "tracks visibility independently for multiple generative blocks"
+        },
+        {
+          "id": "P_STATIC_FALLBACK",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/web/tests/e2e/t078-accessibility-release.spec.ts",
+          "selector": "poster and summary are the single accessible creative fallback"
         }
       ],
-      "deviation_ids": [],
-      "release_impact": "NONE_FOR_CURRENT_SLICE"
+      "deviation_ids": ["DEV-T085-047"],
+      "release_impact": "BLOCKS_T086_UNLESS_ADJUDICATED"
     },
     {
       "id": "FR-049",
@@ -3478,6 +3647,97 @@ The tracked document does not self-reference a final commit SHA. Exact-head attr
       "disposition": "Keep FR-013 PARTIAL until a separately scoped issue lifecycle and archive remediation has end-to-end proof.",
       "owner": "T085 release owner",
       "target": "P1 editorial workflow remediation",
+      "release_impact": "BLOCKS_T086_UNLESS_ADJUDICATED",
+      "state": "OPEN"
+    },
+    {
+      "id": "DEV-T085-041",
+      "type": "PUBLIC_ISSUE_LIST_FIELD_PROOF_GAP",
+      "severity": "MEDIUM",
+      "affected_ids": ["FR-001"],
+      "expected": "The public issue list proves cover, issue number, theme, publication date and summary.",
+      "observed": "The mapped list selector proves visibility, cover, issue number and summary, but does not assert items[].title or items[].publishedAt.",
+      "disposition": "Keep FR-001 PARTIAL until one public-list contract test exercises both missing fields.",
+      "owner": "T085 release owner",
+      "target": "T086 public issue contract acceptance",
+      "release_impact": "BLOCKS_T086_UNLESS_ADJUDICATED",
+      "state": "OPEN"
+    },
+    {
+      "id": "DEV-T085-042",
+      "type": "PUBLICATION_ROLE_BOUNDARY_PROOF_GAP",
+      "severity": "HIGH",
+      "affected_ids": ["FR-014"],
+      "expected": "EDITOR cannot publish and PUBLISHER alone can approve, publish, unpublish and emergency-withdraw.",
+      "observed": "Backend proof denies EDITOR approve and PUBLISHER submit, and positive API proof covers publisher publish, withdraw and archive, but no backend test denies EDITOR publish, withdraw, archive or emergency withdrawal.",
+      "disposition": "Keep FR-014 PARTIAL until the complete role-transition matrix has attributable acceptance proof.",
+      "owner": "T085 release owner",
+      "target": "P1 editorial role acceptance",
+      "release_impact": "BLOCKS_T086_UNLESS_ADJUDICATED",
+      "state": "OPEN"
+    },
+    {
+      "id": "DEV-T085-043",
+      "type": "PUBLICATION_IDEMPOTENCY_AND_REVISION_GATE_PROOF_GAP",
+      "severity": "HIGH",
+      "affected_ids": ["FR-016"],
+      "expected": "Publish retries are idempotent and a public issue snapshot references only approved article revisions.",
+      "observed": "Article scheduled-worker redelivery proves one publication result, but issue publish is not retried and the only production issue-publish test has no article entries; no test proves that a non-empty issue rejects an unapproved revision before snapshot creation.",
+      "disposition": "Keep FR-016 PARTIAL until production issue-publish idempotency and the non-vacuous approved-revision snapshot boundary are executable.",
+      "owner": "T085 release owner",
+      "target": "P1 publication acceptance",
+      "release_impact": "BLOCKS_T086_UNLESS_ADJUDICATED",
+      "state": "OPEN"
+    },
+    {
+      "id": "DEV-T085-044",
+      "type": "PUBLICATION_RIGHTS_CLAUSE_PROOF_GAP",
+      "severity": "HIGH",
+      "affected_ids": ["FR-023"],
+      "expected": "UNKNOWN, EXPIRED, REVOKED and wrong-channel media are blocked at article submission and publication.",
+      "observed": "Domain tests cover missing, expired, revoked and wrong-channel decisions, with submission and execution integration for representative cases, but no backend test exercises a Status.UNKNOWN rights record and no wrong-channel submission or publication boundary test exists.",
+      "disposition": "Keep FR-023 PARTIAL until UNKNOWN and wrong-channel workflow boundaries have attributable proof.",
+      "owner": "T085 release owner",
+      "target": "P1 rights acceptance",
+      "release_impact": "BLOCKS_T086_UNLESS_ADJUDICATED",
+      "state": "OPEN"
+    },
+    {
+      "id": "DEV-T085-045",
+      "type": "OIDC_PASSWORD_STORAGE_PROOF_GAP",
+      "severity": "HIGH",
+      "affected_ids": ["FR-031"],
+      "expected": "Reader and editorial identities use OIDC and the system never persists plaintext passwords.",
+      "observed": "OIDC reader and editorial flows are executable, but no repository test inventories persisted identity fields and proves that no plaintext password is stored.",
+      "disposition": "Keep FR-031 PARTIAL until the negative identity-storage contract is executable.",
+      "owner": "T085 release owner",
+      "target": "P1 identity storage acceptance",
+      "release_impact": "BLOCKS_T086_UNLESS_ADJUDICATED",
+      "state": "OPEN"
+    },
+    {
+      "id": "DEV-T085-046",
+      "type": "CANONICAL_ROLE_MATRIX_PROOF_GAP",
+      "severity": "HIGH",
+      "affected_ids": ["FR-032"],
+      "expected": "READER, EDITOR, PUBLISHER and ADMIN are positively mapped and enforced under an endpoint-level least-privilege matrix.",
+      "observed": "Reader, editor and publisher paths have partial executable coverage, but no test positively maps canonical ADMIN or exercises the four-role endpoint least-privilege matrix.",
+      "disposition": "Keep FR-032 PARTIAL until the complete canonical role matrix has executable proof.",
+      "owner": "T085 release owner",
+      "target": "P1 authorization acceptance",
+      "release_impact": "BLOCKS_T086_UNLESS_ADJUDICATED",
+      "state": "OPEN"
+    },
+    {
+      "id": "DEV-T085-047",
+      "type": "CREATIVE_RUNTIME_FAILURE_FALLBACK_PROOF_GAP",
+      "severity": "HIGH",
+      "affected_ids": ["FR-048"],
+      "expected": "The creative runtime loads client-only near the viewport, pauses or disposes on every lifecycle boundary and falls back to static content after module or preset-load failure.",
+      "observed": "Client-only loading, viewport or hidden pause and route disposal are executable, and a static poster is present, but no test induces a p5 module or preset-load failure and proves the runtime error path leaves only static content.",
+      "disposition": "Keep FR-048 PARTIAL until the runtime failure path has executable static-fallback proof.",
+      "owner": "T085 release owner",
+      "target": "T086 creative runtime acceptance",
       "release_impact": "BLOCKS_T086_UNLESS_ADJUDICATED",
       "state": "OPEN"
     }
