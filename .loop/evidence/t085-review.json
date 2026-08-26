@@ -175,6 +175,20 @@
         "security_run_number": 973,
         "security_readback": "Six of eight jobs passed; postgres and s3 image scans remained blocked by CVE-2026-14456.",
         "remediation": "Replace the snippet-derived formatting attempt with complete-file canonical output from the official Prettier 3.9.6 playground using the repository config. Require both complete files to be formatter fixed points, rerun 27 mutations, publish one new immutable head and rerun every gate."
+      },
+      {
+        "head": "f6239f70d5ad36e0c0acd4eb635c6ea6813ee2b9",
+        "commit": "style(T085): canonicalize full traceability files",
+        "result": "SUPERSEDED_FORMATTING_GATE",
+        "ci_run_id": 32948938018,
+        "ci_run_number": 971,
+        "ci_artifact_id": 9599353780,
+        "ci_artifact_digest": "sha256:197def93edc889934ffb0d69e74ee83f3a700dac00f4a5d92e559dda28feea4b",
+        "ci_readback": "Java and dependency jobs passed; frontend again stopped at Prettier on scripts/validate-traceability.mjs and scripts/test/validate-traceability.test.mjs before semantic validation, and both browser jobs were skipped. This head has no GREEN decision value.",
+        "security_run_id": 32948937800,
+        "security_run_number": 974,
+        "security_readback": "Six of eight jobs passed; postgres and s3 image scans remained blocked by the same pinned-image vulnerability boundary.",
+        "remediation": "The playground fixed point is not CLI-equivalent because the print-width control did not produce repository-config resolution. Download prettier-3.9.6.tgz, require its SHA-512 to equal the pnpm-lock.yaml SRI, run that exact CLI with repository config, require a second --write to be unchanged, rerun 27 mutations, then publish at most one new immutable bounded candidate."
       }
     ],
     "current_matrix_readback": {
@@ -205,6 +219,6 @@
       "provider_configured": false,
       "external_writes_or_secrets_changed": false
     },
-    "current_decision": "Heads a996cd4 and b1855e7 are superseded formatting-gate attempts. Complete-file Prettier 3.9.6 fixed-point output and 27/27 local mutations are now ready for one new bounded publication. Fresh exact-head CI/Security, artifact read-back, zero-thread read-back and current-base mergeability remain required before any ready-for-review transition."
+    "current_decision": "Heads a996cd4, b1855e7 and f6239f7 are superseded formatting-gate attempts. The lockfile-SRI-matched prettier@3.9.6 CLI now reproduces the prior failure, has rewritten only the two allowlisted JavaScript files, reports both unchanged on a second --write, passes --check, and preserves 27/27 mutations. The renewed bounded restoration instruction plus this material CLI-parity evidence supports at most one new immutable candidate; another identical formatting failure must stall. Fresh exact-head CI/Security, artifact read-back, zero-thread read-back and current-base mergeability remain required before any ready-for-review transition."
   }
 }

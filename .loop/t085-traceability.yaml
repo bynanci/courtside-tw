@@ -204,9 +204,9 @@ graph:
       owner: codex-agent
       status: ready
       risk: high
-      confidence: {score: 0.97, basis: Attempts a996cd4 and b1855e7 were immutably rejected at formatting; both complete files are now byte-for-byte fixed points under official Prettier 3.9.6 with repository settings and 27 mutations still pass, evidence_refs: [.loop/evidence/t085-local.json, .loop/evidence/t085-review.json]}
+      confidence: {score: 0.99, basis: Attempts a996cd4 b1855e7 and f6239f7 were immutably rejected at formatting; the SRI-matched prettier@3.9.6 package now reproduces the failure locally, rewrites only the two flagged files, passes exact CLI --check, is unchanged on a second --write and preserves 27 passing mutations, evidence_refs: [.loop/evidence/t085-local.json, .loop/evidence/t085-review.json]}
       budget: {effort_hours: 0.5, tokens: 5000}
-      config: {workflow: [verify branch still equals b1855e790910401fa23dea7447152adc45f07f05, create one atomic formatting-feedback commit, fast-forward without force], allowed: [task/t085-cross-artifact-traceability], requires_approval: [force push, path expansion], forbidden: [protected merge, completion receipt, later-task writes]}
+      config: {workflow: [verify branch still equals f6239f70d5ad36e0c0acd4eb635c6ea6813ee2b9, create one atomic exact-CLI-formatting feedback commit, fast-forward without force], allowed: [task/t085-cross-artifact-traceability], requires_approval: [force push, path expansion], forbidden: [protected merge, completion receipt, later-task writes]}
     - id: p-exact-remediation-v2
       kind: proof
       layer: L1
@@ -214,7 +214,7 @@ graph:
       owner: verifier
       status: blocked
       risk: critical
-      confidence: {score: 0.35, basis: Exact heads a996cd4 and b1855e7 failed CI 969 and CI 970 formatting; Security 972 and 973 retained the two pinned-image CVE-2026-14456 failures. Complete-file canonical formatting now requires one new immutable head, evidence_refs: [.loop/evidence/t085-review.json]}
+      confidence: {score: 0.4, basis: Exact heads a996cd4 b1855e7 and f6239f7 failed CI 969 through 971 formatting; Security 972 through 974 retained the two pinned-image blockers. The SRI-matched exact CLI now passes locally, so one final immutable bounded head is required; another identical formatter failure must stall, evidence_refs: [.loop/evidence/t085-review.json]}
       budget: {effort_hours: 1.0, tokens: 12000}
       config: {level: P3, claim: The immutable remediation head passes CI 5 of 5 Security 8 of 8 all checks artifact digest and read-back zero unresolved threads and clean current-base mergeability, method: GitHub workflow artifact PR ruleset and protected-main read-back, evidence_path: .loop/evidence/t085-review.json, required: true, baseline_required: false}
     - id: a-ready-transition-v2

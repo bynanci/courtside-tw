@@ -1,12 +1,12 @@
 {
   "schema_version": "mark-graphify-loop-ledger/v2",
   "graph_name": "courtside-tw-t085-cross-artifact-traceability",
-  "graph_version": 6,
+  "graph_version": 7,
   "run_id": "t085-issue-145-20260825",
   "status": "running",
-  "iteration": 6,
+  "iteration": 7,
   "started_at": "2026-08-25T12:42:58Z",
-  "updated_at": "2026-08-26T08:33:36Z",
+  "updated_at": "2026-08-26T08:48:33Z",
   "current_frontier": ["a-publish-remediation-v2"],
   "blocked_nodes": [
     "p-exact-remediation-v2",
@@ -15,7 +15,7 @@
     "g-release-owner"
   ],
   "terminal_state": null,
-  "next_action": "Publish one immutable complete-file canonical-formatting feedback head, then require fresh exact-head CI, Security, artifact, thread and current-base read-back. Mark only that same head ready if every gate passes; never protected-merge or create the completion receipt in this loop.",
+  "next_action": "Publish at most one immutable SRI-matched exact-CLI-formatting feedback head, then require fresh exact-head CI, Security, artifact, thread and current-base read-back. Another identical formatter failure stalls. Mark only that same head ready if every gate passes; never protected-merge or create the completion receipt in this loop.",
   "events": [
     {
       "event_id": "t085-graph-initialized",
@@ -320,6 +320,65 @@
       "failure_signature": "T085_GREEN_FORMATTING_GATE",
       "decision": "retry_with_complete_file_canonical_output",
       "token_usage": {"estimated": 16000, "input": 0, "output": 0, "total": 16000},
+      "terminal_reason": null
+    },
+    {
+      "event_id": "t085-exact-cli-formatting-feedback",
+      "at": "2026-08-26T08:48:33Z",
+      "actor": "codex-agent",
+      "type": "feedback_remediation",
+      "base_graph_version": 6,
+      "new_graph_version": 7,
+      "graph_delta": {
+        "operations": [
+          "published immutable candidate f6239f70d5ad36e0c0acd4eb635c6ea6813ee2b9 only after confirming the branch still equaled b1855e790910401fa23dea7447152adc45f07f05",
+          "classified CI 971 as a third identical formatting-gate failure on the same two files and withheld GREEN attribution",
+          "read back Security 974 as six passing jobs plus the same postgres and s3 pinned-image blockers",
+          "reached the configured same-failure stop boundary and prohibited another playground-derived publication",
+          "used the renewed bounded restoration instruction plus a material evidence delta: prettier-3.9.6.tgz SHA-512 exactly matches pnpm-lock.yaml and its CLI locally reproduces CI",
+          "rewrote only scripts/validate-traceability.mjs and its mutation test with the SRI-matched CLI; a second --write is unchanged, --check passes and all 27 mutations remain green",
+          "retained a-publish-remediation-v2 for at most one final exact-CLI candidate; another identical formatter failure must terminate as stalled"
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t085-local.json",
+        ".loop/evidence/t085-review.json",
+        "pnpm-lock.yaml",
+        "scripts/validate-traceability.mjs",
+        "scripts/test/validate-traceability.test.mjs"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "p-exact-remediation-v2",
+          "status": "FAIL",
+          "claim": "Head f6239f7 is not decision-valid because CI 971 failed the required formatting gate; Security 974 also remained 6/8."
+        },
+        {
+          "proof": "p-semantic-local-v2",
+          "status": "PASS",
+          "claim": "The lockfile-SRI-matched prettier@3.9.6 CLI passes --check and a fixed-point rewrite; node syntax and all 27 targeted semantic mutations pass locally."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": null,
+        "version": null,
+        "retrieval_ids": [
+          "github-ci-971-head-f6239f7",
+          "github-security-974-head-f6239f7",
+          "prettier-3.9.6-lockfile-sri-exact-cli"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t085-local.json",
+          ".loop/evidence/t085-review.json"
+        ],
+        "next_review_at": null,
+        "blocker": null,
+        "reason": "The immutable failed head, GitHub runs, exact package-integrity evidence and repository ledger already provide durable feedback state."
+      },
+      "failure_signature": "T085_GREEN_FORMATTING_GATE",
+      "decision": "reopen_once_after_exact_cli_parity_evidence",
+      "token_usage": {"estimated": 14000, "input": 0, "output": 0, "total": 14000},
       "terminal_reason": null
     }
   ]

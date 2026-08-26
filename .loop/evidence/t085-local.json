@@ -74,7 +74,7 @@
   "head_binding_boundary": "The tracked receipt does not invent a pre-commit SHA. A clean committed head plus artifacts/exact-head.json is required in CI, and GitHub PR changed-file read-back is required for the final draft decision packet.",
   "semantic_remediation_iteration": {
     "schema_version": "courtside-t085-local-semantic-remediation/v1",
-    "recorded_at": "2026-08-26T08:33:36Z",
+    "recorded_at": "2026-08-26T08:48:33Z",
     "result": "PASS_WITH_EXACT_TOOLCHAIN_DEFERRED_TO_CI",
     "failure_signature_closed_locally": "T085_SEMANTIC_PROOF_FALSE_GREEN",
     "checks": [
@@ -89,14 +89,19 @@
         "details": "97 requirements, 112 tasks, 107 mapped tasks, 5 approved orphans, 40 deviations and zero errors"
       },
       {
-        "command": "Official Prettier 3.9.6 complete-file canonical formatting after CI 969 and CI 970 identified the same two JavaScript files",
-        "result": "PASS_FIXED_POINT_PENDING_EXACT_CI",
-        "details": "scripts/validate-traceability.mjs and scripts/test/validate-traceability.test.mjs were formatted as complete files with printWidth 100, no semicolons, double quotes, trailing commas none and LF endings; a second complete-file format produced byte-for-byte identical output for both files."
+        "command": "Prettier 3.9.6 playground complete-file attempt after CI 969 and CI 970 identified the same two JavaScript files",
+        "result": "SUPERSEDED_NOT_CLI_EQUIVALENT",
+        "details": "CI 971 proved the playground result was not repository-CLI equivalent; both files remained red at the exact formatter gate."
       },
       {
         "command": "node --check scripts/validate-traceability.mjs && node --test scripts/test/validate-traceability.test.mjs",
         "result": "PASS",
         "details": "Canonical formatted validator parses and all 27 targeted mutations pass."
+      },
+      {
+        "command": "Verify prettier-3.9.6.tgz SHA-512 against pnpm-lock.yaml, then run exact prettier@3.9.6 CLI --write and --check on the two allowlisted JavaScript files",
+        "result": "PASS_FIXED_POINT_PENDING_EXACT_CI",
+        "details": "Package SHA-512 OpN0zzVdiaiAhxpuuj5efpIS4sY9j7bY6uR5mnj5yPzGkdkjNKSJeUThPb60Jw29QuAZgA4o+/iB49kFiaBX6g== exactly matches the lockfile SRI. A second --write reported both files unchanged; --check passed."
       }
     ],
     "matrix": {
