@@ -164,7 +164,7 @@ function makeFixture(mutate = () => {}) {
       branch: "task/t085-cross-artifact-traceability",
       base: { branch: "main", sha: baseSha }
     }),
-    "tests/fixture-proof.test.js": "fixture-proof\n"
+    "tests/fixture-proof.test.js": 'test("fixture-proof", () => {})\n'
   }
   mutate({ contract, files })
   if (files[`${featurePath}/traceability.md`] !== undefined) {
@@ -465,6 +465,28 @@ test("repository proof selectors must resolve to one unambiguous literal locatio
   assert.match(report.errors.join("\n"), /selector must occur exactly once/)
 })
 
+test("repository proof selectors must identify an executable test anchor", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/generic-proof.test.js"
+    contract.requirements[0].proofs[0].selector = "node:test"
+    files["tests/generic-proof.test.js"] = 'import test from "node:test"\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+})
+
+test("overlapping selector locations are rejected as ambiguous", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/overlapping-proof.test.js"
+    contract.requirements[0].proofs[0].selector = "aaaaaa"
+    files["tests/overlapping-proof.test.js"] = 'test("aaaaaaa", () => {})\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must occur exactly once/)
+})
+
 test("composite VERIFIED rows retain clause-complete semantic proof", () => {
   const contract = extractContract(
     fs.readFileSync(path.join(repositoryRoot, featurePath, "traceability.md"), "utf8")
@@ -475,6 +497,7 @@ test("composite VERIFIED rows retain clause-complete semantic proof", () => {
   assert.deepEqual(selectors("FR-003"), [
     "returnsSafeProblemDetailsForUnknownWithdrawnAndInvalidPublicRequests",
     "listsOnlyPublishedRightsValidIssuesWithBoundedOpaqueKeysetPaginationAndEtags",
+    "returnsVisibleSectionsAndArticlesInEditorOrderWithoutDraftMetadata",
     "rejectsAFuturePublishedIssueInsteadOfLeakingScheduledMetadata",
     "deniesDraftWithdrawnHistoricalAndPrivateRightsContent"
   ])
@@ -483,6 +506,10 @@ test("composite VERIFIED rows retain clause-complete semantic proof", () => {
   assert.deepEqual(selectors("FR-013"), [
     "editorSubmitsAndPublisherApprovesOnlyAfterRightsAreReady",
     "publisherCanScheduleThenPublishOnlyWhenDue",
-    "publishedCanArchiveDirectly"
+    "publishedCanArchiveDirectly",
+    "publisherCanScheduleAndPublishAnApprovedIssue"
   ])
+  assert.equal(byId.get("FR-013").implementation_state, "PLANNED")
+  assert.equal(byId.get("FR-013").evidence_state, "PARTIAL")
+  assert.deepEqual(byId.get("FR-013").deviation_ids, ["DEV-T085-040"])
 })
