@@ -365,6 +365,29 @@ test("contract and dispatch cannot rewrite the fixed authorized base together", 
   assert.match(report.errors.join("\n"), /contract and dispatch base must equal/)
 })
 
+test("current review base advances without rewriting the fixed dispatch authorization", () => {
+  const currentHead = "1111111111111111111111111111111111111111"
+  const reviewBaseSha = "84db3db95aa596eb317b71c4eea0926fc1fc15ce"
+  const report = validateTraceability({
+    root: makeFixture(),
+    currentHead,
+    gitBinding: {
+      status: "CLEAN",
+      head: currentHead,
+      authorized_base_ancestor: true,
+      review_base_ancestor: true
+    },
+    changedPaths: ["scripts/validate-traceability.mjs"],
+    reviewBaseSha
+  })
+
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+  assert.equal(report.source.authorized_base_sha, baseSha)
+  assert.equal(report.source.review_base_sha, reviewBaseSha)
+  assert.equal(report.scope_validation.authorized_base_sha, baseSha)
+  assert.equal(report.scope_validation.review_base_sha, reviewBaseSha)
+})
+
 for (const taskId of ["T086", "T098", "T097"]) {
   test(`${taskId} checkbox cannot move outside the authorized T085 frontier`, () => {
     const root = makeFixture(({ contract, files }) => {
