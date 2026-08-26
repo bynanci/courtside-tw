@@ -99,5 +99,86 @@
     "secrets_changed": false,
     "ready_merge_or_receipt_performed": false
   },
-  "decision": "T085 implementation may proceed to an immutable draft head and exact-head CI/Security read-back. It is analysis-valid only; it is not completion-receipt eligible."
+  "decision": "T085 implementation may proceed to an immutable draft head and exact-head CI/Security read-back. It is analysis-valid only; it is not completion-receipt eligible.",
+  "semantic_remediation": {
+    "schema_version": "courtside-t085-semantic-remediation/v1",
+    "recorded_at": "2026-08-26T08:06:41Z",
+    "finding_source_head": "072eb10ea4f49605b24658bd7f7b518f1e923dab",
+    "finding_signature": "T085_SEMANTIC_PROOF_FALSE_GREEN",
+    "finding_classes": [
+      "repository proof selectors could be duplicated, overlap or identify a unique non-test import while still passing",
+      "FR-003 visibility and currentness clauses were not all attributable to the listed proof locators",
+      "FR-009 overstated issue-page Open Graph and structured-data proof as VERIFIED",
+      "FR-013 overstated a complete article-and-issue editorial lifecycle despite issue proof covering only schedule and publish",
+      "the human deviation register could omit machine deviations without validator failure"
+    ],
+    "tests_first_receipts": [
+      {
+        "head": "907f25a385b40851839c66624d770eff06e4db3b",
+        "commit": "test(T085): expose semantic proof false-greens",
+        "ci_run_id": 32943931032,
+        "ci_run_number": 967,
+        "result": "ATTRIBUTABLE_RED",
+        "traceability_tests": {"passed": 22, "failed": 2, "total": 24}
+      },
+      {
+        "head": "5ba6367f2571084b98c4a73e26df89610c30e21f",
+        "commit": "test(T085): close generic proof selector bypasses",
+        "ci_run_id": 32944531661,
+        "ci_run_number": 968,
+        "result": "ATTRIBUTABLE_RED",
+        "traceability_tests": {"passed": 22, "failed": 4, "total": 26},
+        "unrelated_security_readback": {
+          "security_run_id": 32944531658,
+          "security_run_number": 971,
+          "passed_jobs": 6,
+          "failed_jobs": 2,
+          "failure": "CVE-2026-14456 in pinned Alpine libcrypto3/libssl3 3.5.7-r0 for the postgres and s3 images; fixed package 3.5.8-r0",
+          "boundary": "This external image drift is not attributable to the T085 RED tests and is not remediated by widening the traceability change set."
+        }
+      }
+    ],
+    "remediation": {
+      "selector_policy": "Executable repository proofs must resolve to exactly one literal location and identify a supported test or durable receipt anchor.",
+      "human_deviation_policy": "The human deviation register must contain every machine deviation in canonical order with matching type, severity, state, affected IDs and release impact.",
+      "fr_003": "COMPLETE / VERIFIED with five clause-relevant public issue and article proof locators",
+      "fr_009": "COMPLETE / PARTIAL under DEV-T085-039 with BLOCKS_T086_UNLESS_ADJUDICATED",
+      "fr_013": "PLANNED / PARTIAL under DEV-T085-040 with BLOCKS_T086_UNLESS_ADJUDICATED",
+      "runtime_implementation_performed": false
+    },
+    "review_mutation_receipt": {
+      "finding": "Human deviation register omitted DEV-T085-039 and DEV-T085-040 while the machine contract contained them.",
+      "red": "The 27th mutation failed because the pre-fix validator returned PASS after a human-only deviation ID drift.",
+      "green": "The human register now contains DEV-T085-039 and DEV-T085-040 and the validator rejects human/machine deviation drift; 27/27 mutations pass locally."
+    },
+    "current_matrix_readback": {
+      "requirements": 97,
+      "tasks": 112,
+      "mapped_tasks": 107,
+      "approved_orphans": ["T001", "T005", "T007", "T082", "T085"],
+      "deviations": 40,
+      "deviations_open": 36,
+      "deviations_resolved": 4,
+      "evidence_distribution": {
+        "VERIFIED": 37,
+        "PARTIAL": 24,
+        "PLANNED_BLOCKED": 30,
+        "HUMAN_OPEN": 3,
+        "PROXY_ONLY": 2,
+        "EXTERNAL_OPEN": 1
+      },
+      "implementation_distribution": {"COMPLETE": 52, "PLANNED": 45}
+    },
+    "scope_boundary": {
+      "protected_merge_performed": false,
+      "completion_receipt_created": false,
+      "t086_or_later_modified": false,
+      "participant_research_executed": false,
+      "web3_activated": false,
+      "production_activated": false,
+      "provider_configured": false,
+      "external_writes_or_secrets_changed": false
+    },
+    "current_decision": "The bounded semantic remediation is locally analysis-valid. Publication, fresh exact-head CI/Security, artifact read-back, zero-thread read-back and current-base mergeability remain required before any ready-for-review transition."
+  }
 }

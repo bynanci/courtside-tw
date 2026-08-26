@@ -139,7 +139,13 @@ function markdown(contract) {
       return `| ${row.id} | fixture | ${row.task_ids.join(", ")} | ${row.implementation_state} | ${row.evidence_state} | ${proofIds} | ${deviationIds} | ${row.release_impact} |`
     })
     .join("\n")
-  return `# Traceability\n\n${table}\n\n${CONTRACT_START}\n\`\`\`json\n${JSON.stringify(contract, null, 2)}\n\`\`\`\n${CONTRACT_END}\n`
+  const deviationTable = contract.deviations
+    .map(
+      (deviation) =>
+        `| ${deviation.id} | ${deviation.type} | ${deviation.severity} | ${deviation.state} | ${deviation.affected_ids.join(", ")} | ${deviation.disposition} | ${deviation.release_impact} |`
+    )
+    .join("\n")
+  return `# Traceability\n\n${table}\n\n## Deviation register\n\n| ID | Type | Severity | State | Affected | Disposition / target | Release impact |\n| --- | --- | --- | --- | --- | --- | --- |\n${deviationTable}\n\n${CONTRACT_START}\n\`\`\`json\n${JSON.stringify(contract, null, 2)}\n\`\`\`\n${CONTRACT_END}\n`
 }
 
 function makeFixture(mutate = () => {}) {
@@ -485,6 +491,23 @@ test("overlapping selector locations are rejected as ambiguous", () => {
   const report = run(root)
   assert.equal(report.status, "FAIL")
   assert.match(report.errors.join("\n"), /selector must occur exactly once/)
+})
+
+test("human deviation register cannot drift from the machine contract", () => {
+  const root = makeFixture()
+  const traceabilityPath = path.join(root, featurePath, "traceability.md")
+  const traceability = fs.readFileSync(traceabilityPath, "utf8")
+  fs.writeFileSync(
+    traceabilityPath,
+    traceability.replace(
+      "| DEV-T085-999 | PLANNED_FIXTURE",
+      "| DEV-T085-998 | PLANNED_FIXTURE"
+    )
+  )
+
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /human-readable deviation register/)
 })
 
 test("composite VERIFIED rows retain clause-complete semantic proof", () => {

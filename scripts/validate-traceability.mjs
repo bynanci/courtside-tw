@@ -121,6 +121,29 @@ function humanRequirementRows(markdown) {
     })
 }
 
+function humanDeviationRows(markdown) {
+  if (markdown === null) return []
+  return markdown
+    .split("\n")
+    .filter((line) => /^\| DEV-T085-\d{3}\s+\|/.test(line))
+    .map((line) => {
+      const cells = line
+        .split("|")
+        .slice(1, -1)
+        .map((cell) => cell.trim())
+      return {
+        id: cells[0],
+        type: cells[1],
+        severity: cells[2],
+        state: cells[3],
+        affected_ids: [
+          ...cells[4].matchAll(/(?:(?:FR|SC)-\d{3}|T\d{3})/g)
+        ].map((match) => match[0]),
+        release_impact: cells[6]
+      }
+    })
+}
+
 function taskRangeClaims(tasksText) {
   if (tasksText === null) return []
   const claims = []
@@ -229,6 +252,61 @@ function proofFileSha256(root, relativePath) {
   return fs.statSync(realCandidate).isFile() ? sha256(fs.readFileSync(realCandidate, "utf8")) : null
 }
 
+function literalOccurrenceCount(text, selector) {
+  let count = 0
+  let offset = 0
+  while (offset <= text.length - selector.length) {
+    const index = text.indexOf(selector, offset)
+    if (index === -1) break
+    count += 1
+    offset = index + 1
+  }
+  return count
+}
+
+function isExecutableProofPath(relativePath) {
+  return (
+    relativePath?.startsWith(".github/workflows/") ||
+    relativePath?.startsWith(".loop/evidence/") ||
+    relativePath?.startsWith("scripts/test/") ||
+    /(?:^|\/)(?:test|tests)\//.test(relativePath ?? "") ||
+    /(?:IT|Test)\.java$/.test(relativePath ?? "") ||
+    /\.(?:test|spec)\.[cm]?[jt]sx?$/.test(relativePath ?? "")
+  )
+}
+
+function hasExecutableProofAnchor(root, proof) {
+  const text = fs.readFileSync(path.resolve(root, proof.path), "utf8")
+  const lines = text.split(/\r?\n/)
+  const lineIndex = lines.findIndex((line) => line.includes(proof.selector))
+  if (lineIndex === -1) return false
+  const line = lines[lineIndex].trim()
+
+  if (/(?:IT|Test)\.java$/.test(proof.path)) {
+    const escapedSelector = proof.selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    const annotationContext = lines
+      .slice(Math.max(0, lineIndex - 5), lineIndex + 1)
+      .join("\n")
+    return (
+      /@(Test|ParameterizedTest|RepeatedTest|TestFactory)\b/.test(annotationContext) &&
+      new RegExp(`\\bvoid\\s+${escapedSelector}\\s*\\(`).test(line)
+    )
+  }
+  if (/\.(?:test|spec)\.[cm]?[jt]sx?$/.test(proof.path)) {
+    return /\b(?:test|it)(?:\.\w+)*\s*\(/.test(line)
+  }
+  if (proof.path.startsWith("scripts/test/") && proof.path.endsWith(".sh")) {
+    return /\b(?:raise|assert|fail|exit|SystemExit)\b/.test(line)
+  }
+  if (proof.path.startsWith(".github/workflows/")) {
+    return line === proof.selector
+  }
+  if (proof.path.startsWith(".loop/evidence/") && proof.path.endsWith(".json")) {
+    return line.replace(/,$/, "") === proof.selector
+  }
+  return false
+}
+
 export function extractContract(markdown) {
   const start = markdown.indexOf(CONTRACT_START)
   const end = markdown.indexOf(CONTRACT_END)
@@ -328,8 +406,13 @@ function validateProof(root, proof, requirementId, label, errors) {
   if (!requireString(proof.selector, `${label}.selector`, errors) || !absolutePath) return
   if (proof.selector.length < 6) errors.push(`${label}.selector must contain at least 6 characters`)
   const text = fs.readFileSync(absolutePath, "utf8")
-  if (!text.includes(proof.selector)) {
+  const occurrenceCount = literalOccurrenceCount(text, proof.selector)
+  if (occurrenceCount === 0) {
     errors.push(`${label}.selector was not found literally in ${proof.path}: ${proof.selector}`)
+  } else if (occurrenceCount !== 1) {
+    errors.push(
+      `${label}.selector must occur exactly once in ${proof.path}; found ${occurrenceCount}: ${proof.selector}`
+    )
   }
   if (proof.source_head !== undefined && !/^[0-9a-f]{40}$/.test(proof.source_head)) {
     errors.push(`${label}.source_head must be a full lowercase commit SHA when present`)
@@ -540,6 +623,31 @@ export function validateTraceability({
     if (duplicates(deviationIds).length > 0) {
       errors.push(`deviations contains duplicate IDs: ${duplicates(deviationIds).join(", ")}`)
     }
+    const humanDeviations = humanDeviationRows(traceabilityText)
+    if (
+      JSON.stringify(humanDeviations.map((deviation) => deviation.id)) !==
+      JSON.stringify(deviationIds)
+    ) {
+      errors.push(
+        "human-readable deviation register must contain every machine deviation exactly once and in canonical order"
+      )
+    }
+    const humanDeviationById = new Map(
+      humanDeviations.map((deviation) => [deviation.id, deviation])
+    )
+    for (const deviation of deviations) {
+      const human = humanDeviationById.get(deviation.id)
+      if (!human) continue
+      if (
+        human.type !== deviation.type ||
+        human.severity !== deviation.severity ||
+        human.state !== deviation.state ||
+        !sameValues(human.affected_ids, deviation.affected_ids ?? []) ||
+        human.release_impact !== deviation.release_impact
+      ) {
+        errors.push(`human-readable deviation ${deviation.id} must match the machine contract`)
+      }
+    }
     const deviationById = new Map(deviations.map((deviation) => [deviation?.id, deviation]))
     for (const [index, deviation] of deviations.entries()) {
       const label = `deviations[${index}]`
@@ -611,16 +719,13 @@ export function validateTraceability({
           errors.push(`${label} VERIFIED rows require an allowed proof kind`)
         }
         for (const proof of proofs.filter((proof) => proof?.kind === "REPOSITORY_PROOF")) {
-          if (!(
-            proof.path?.startsWith(".github/workflows/") ||
-            proof.path?.startsWith(".loop/evidence/") ||
-            proof.path?.startsWith("scripts/test/") ||
-            /(?:^|\/)(?:test|tests)\//.test(proof.path ?? "") ||
-            /(?:IT|Test)\.java$/.test(proof.path ?? "") ||
-            /\.(?:test|spec)\.[cm]?[jt]sx?$/.test(proof.path ?? "")
-          )) {
+          if (!isExecutableProofPath(proof.path)) {
             errors.push(
               `${label} VERIFIED repository proof must be an executable check or durable receipt`
+            )
+          } else if (!hasExecutableProofAnchor(root, proof)) {
+            errors.push(
+              `${label}.selector must identify an executable test anchor in ${proof.path}`
             )
           }
         }

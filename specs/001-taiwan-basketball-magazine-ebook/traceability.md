@@ -21,17 +21,17 @@ Evidence states are deliberately asymmetric: `VERIFIED` requires checked tasks p
 | ----------- | ---------------------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------- | --------------- | ---------------------- | -------------- | ----------------------------------- |
 | FR-001      | US1/US2 / public-reading                 | T024, T027, T028, T029, T030, T031                                                                         | COMPLETE       | VERIFIED        | `P_US1_LIST`           | —              | NONE_FOR_CURRENT_SLICE              |
 | FR-002      | US1/US2 / public-reading                 | T024, T026, T027, T028, T029, T030                                                                         | COMPLETE       | VERIFIED        | `P_US1_TOC`            | —              | NONE_FOR_CURRENT_SLICE              |
-| FR-003      | US1/US2 / public-reading                 | T024, T027, T028, T030                                                                                     | COMPLETE       | VERIFIED        | `P_US1_DENY`           | —              | NONE_FOR_CURRENT_SLICE              |
+| FR-003      | US1/US2 / public-reading                 | T024, T027, T028, T030                                                                                     | COMPLETE       | VERIFIED        | `P_US1_DENY`, `P_ISSUE_VISIBILITY`, `P_ISSUE_DETAIL_VISIBILITY`, `P_ISSUE_CURRENT`, `P_ARTICLE_MEDIA_VISIBILITY` | —              | NONE_FOR_CURRENT_SLICE              |
 | FR-004      | US1/US2 / public-reading                 | T032, T034, T035, T038, T041                                                                               | COMPLETE       | VERIFIED        | `P_ARTICLE_READER`, `P_ARTICLE_REFLOW` | —              | NONE_FOR_CURRENT_SLICE              |
 | FR-005      | US1/US2 / public-reading                 | T009, T010, T032, T033, T036, T037, T038                                                                   | COMPLETE       | VERIFIED        | `P_CONTENT_BLOCKS`     | —              | NONE_FOR_CURRENT_SLICE              |
 | FR-006      | US1/US2 / public-reading                 | T032, T034, T035, T038                                                                                     | COMPLETE       | VERIFIED        | `P_ARTICLE_METADATA`   | —              | NONE_FOR_CURRENT_SLICE              |
 | FR-007      | US1/US2 / public-reading                 | T032, T033, T035, T040                                                                                     | COMPLETE       | VERIFIED        | `P_ARTICLE`            | —              | NONE_FOR_CURRENT_SLICE              |
 | FR-008      | US1/US2 / public-reading                 | T033, T039, T064, T065, T066, T067, T068, T069, T070                                                       | COMPLETE       | VERIFIED        | `P_LOCAL_PROGRESS`, `P_SYNC_PROGRESS` | —              | NONE_FOR_CURRENT_SLICE              |
-| FR-009      | US1/US2 / public-reading                 | T031, T041                                                                                                 | COMPLETE       | VERIFIED        | `P_ISSUE_SEO`, `P_ARTICLE_SEO`, `P_SITEMAP` | —              | NONE_FOR_CURRENT_SLICE              |
+| FR-009      | US1/US2 / public-reading                 | T031, T041                                                                                                 | COMPLETE       | PARTIAL         | `P_ISSUE_SEO`, `P_ARTICLE_SEO`, `P_SITEMAP` | `DEV-T085-039` | BLOCKS_T086_UNLESS_ADJUDICATED      |
 | FR-010      | US1/US2 / public-reading                 | T040, T041                                                                                                 | COMPLETE       | VERIFIED        | `P_SHARE`              | —              | NONE_FOR_CURRENT_SLICE              |
 | FR-011      | US3 / editorial-publication-rights       | T042, T043, T044, T045, T046, T047, T048, T049, T050, T051, T052, T053, T054, T055                         | PLANNED        | PARTIAL         | `P_WORKFLOW`           | `DEV-T085-030` | BLOCKS_T086_UNLESS_ADJUDICATED      |
 | FR-012      | US3 / editorial-publication-rights       | T042, T045, T046, T050, T054, T055, T056                                                                   | COMPLETE       | VERIFIED        | `P_REVISION`           | —              | NONE_FOR_CURRENT_SLICE              |
-| FR-013      | US3 / editorial-publication-rights       | T042, T045, T046, T054, T055                                                                               | COMPLETE       | VERIFIED        | `P_WORKFLOW`           | —              | NONE_FOR_CURRENT_SLICE              |
+| FR-013      | US3 / editorial-publication-rights       | T042, T045, T046, T054, T055                                                                               | PLANNED        | PARTIAL         | `P_WORKFLOW`, `P_WORKFLOW_SCHEDULE`, `P_WORKFLOW_ARCHIVE`, `P_ISSUE_SCHEDULE_PUBLISH` | `DEV-T085-040` | BLOCKS_T086_UNLESS_ADJUDICATED      |
 | FR-014      | US3 / editorial-publication-rights       | T042, T043, T044, T046, T053, T054, T055                                                                   | COMPLETE       | VERIFIED        | `P_ROLE`               | —              | NONE_FOR_CURRENT_SLICE              |
 | FR-015      | US3 / editorial-publication-rights       | T042, T043, T044, T046, T054                                                                               | COMPLETE       | VERIFIED        | `P_SCHEDULE`           | —              | NONE_FOR_CURRENT_SLICE              |
 | FR-016      | US3 / editorial-publication-rights       | T042, T043, T045, T054, T056                                                                               | COMPLETE       | VERIFIED        | `P_IDEMPOTENCY`        | —              | NONE_FOR_CURRENT_SLICE              |
@@ -179,12 +179,14 @@ The machine contract below deterministically inverts every forward mapping and c
 | DEV-T085-036 | NO_JS_ACCEPTANCE_GAP    | HIGH     | OPEN     | SC-003, SC-013                                                                 | Current no-JS proof does not assert every required content and navigation clause. Target: T086 reader acceptance.                                | BLOCKS_T086_UNLESS_ADJUDICATED |
 | DEV-T085-037 | WRITE_API_CONTRACT_COVERAGE_GAP | HIGH | OPEN | FR-042                                                                         | Shared primitives are tested, but every write API is not enumerated under the same error/request-ID/locking proof.                               | BLOCKS_T086_UNLESS_ADJUDICATED |
 | DEV-T085-038 | TASK_SOURCE_DRIFT       | MEDIUM   | OPEN     | T032, T042                                                                     | Task prose claims broader FR ranges than the evidence-backed matrix. Target: documentation reconciliation without runtime changes.               | NONE                           |
+| DEV-T085-039 | SEO_PROOF_COVERAGE_GAP  | MEDIUM   | OPEN     | FR-009                                                                         | Article SEO and sitemap proof are complete, but issue-page Open Graph and structured-data proof remains incomplete. Target: T086 reader and issue SEO acceptance. | BLOCKS_T086_UNLESS_ADJUDICATED |
+| DEV-T085-040 | ISSUE_WORKFLOW_COMPLETENESS_GAP | HIGH | OPEN | FR-013                                                                         | Article lifecycle proof is complete, but issue integration proves only schedule and publish and has no archive operation. Target: P1 editorial workflow remediation. | BLOCKS_T086_UNLESS_ADJUDICATED |
 
 ## Exact-head acceptance and protected-merge boundary
 
-A release-owner decision may move this draft out of HOLD only after one immutable PR head has: (1) CI 5/5 and Security 8/8; (2) the generated `artifacts/frontend/t085-traceability-report.json` read back from the `ci-frontend-reports` artifact with matching head SHA and artifact digest; (3) 97/97 mapped requirements, 112/112 classified tasks, zero validator errors, and the open deviations above unchanged or explicitly adjudicated; (4) zero unresolved review threads; and (5) current protected-main mergeability under ruleset #20822671.
+The current release-owner instruction authorizes moving only the freshly proven remediation head out of HOLD after that one immutable PR head has: (1) CI 5/5 and Security 8/8; (2) the generated `artifacts/frontend/t085-traceability-report.json` read back from the `ci-frontend-reports` artifact with matching head SHA and artifact digest; (3) 97/97 mapped requirements, 112/112 classified tasks, zero validator errors, and the open deviations above unchanged or explicitly adjudicated; (4) zero unresolved review threads; and (5) current protected-main mergeability under ruleset #20822671. A head mismatch or waived gate requires a new release-owner decision.
 
-The tracked document does not self-reference a final commit SHA. Exact-head attribution belongs in the generated report and GitHub artifact/read-back. Ready-for-review, protected merge, checking T085, closing issue #145, or starting T086 requires separate release-owner authorization.
+The tracked document does not self-reference a final commit SHA. Exact-head attribution belongs in the generated report and GitHub artifact/read-back. The current instruction conditionally authorizes ready-for-review for that same proven head only; protected merge, checking T085, closing issue #145, or starting T086 requires separate release-owner authorization.
 
 ## Machine-readable contract
 
@@ -269,6 +271,30 @@ The tracked document does not self-reference a final commit SHA. Exact-head attr
           "kind": "REPOSITORY_PROOF",
           "path": "apps/api/src/test/java/tw/basketball/magazine/publication/PublicIssueApiIT.java",
           "selector": "returnsSafeProblemDetailsForUnknownWithdrawnAndInvalidPublicRequests"
+        },
+        {
+          "id": "P_ISSUE_VISIBILITY",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/api/src/test/java/tw/basketball/magazine/publication/PublicIssueApiIT.java",
+          "selector": "listsOnlyPublishedRightsValidIssuesWithBoundedOpaqueKeysetPaginationAndEtags"
+        },
+        {
+          "id": "P_ISSUE_DETAIL_VISIBILITY",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/api/src/test/java/tw/basketball/magazine/publication/PublicIssueApiIT.java",
+          "selector": "returnsVisibleSectionsAndArticlesInEditorOrderWithoutDraftMetadata"
+        },
+        {
+          "id": "P_ISSUE_CURRENT",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/api/src/test/java/tw/basketball/magazine/publication/PublicIssueApiIT.java",
+          "selector": "rejectsAFuturePublishedIssueInsteadOfLeakingScheduledMetadata"
+        },
+        {
+          "id": "P_ARTICLE_MEDIA_VISIBILITY",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/api/src/test/java/tw/basketball/magazine/content/api/PublicArticleApiIT.java",
+          "selector": "deniesDraftWithdrawnHistoricalAndPrivateRightsContent"
         }
       ],
       "deviation_ids": [],
@@ -388,7 +414,7 @@ The tracked document does not self-reference a final commit SHA. Exact-head attr
       "slice": "public-reading",
       "task_ids": ["T031", "T041"],
       "implementation_state": "COMPLETE",
-      "evidence_state": "VERIFIED",
+      "evidence_state": "PARTIAL",
       "proofs": [
         {
           "id": "P_ISSUE_SEO",
@@ -409,8 +435,8 @@ The tracked document does not self-reference a final commit SHA. Exact-head attr
           "selector": "robots and sitemap expose only the public reading surface"
         }
       ],
-      "deviation_ids": [],
-      "release_impact": "NONE_FOR_CURRENT_SLICE"
+      "deviation_ids": ["DEV-T085-039"],
+      "release_impact": "BLOCKS_T086_UNLESS_ADJUDICATED"
     },
     {
       "id": "FR-010",
@@ -490,18 +516,36 @@ The tracked document does not self-reference a final commit SHA. Exact-head attr
       "priority": "P1",
       "slice": "editorial-publication-rights",
       "task_ids": ["T042", "T045", "T046", "T054", "T055"],
-      "implementation_state": "COMPLETE",
-      "evidence_state": "VERIFIED",
+      "implementation_state": "PLANNED",
+      "evidence_state": "PARTIAL",
       "proofs": [
         {
           "id": "P_WORKFLOW",
           "kind": "REPOSITORY_PROOF",
           "path": "apps/api/src/test/java/tw/basketball/magazine/publication/domain/PublicationWorkflowTest.java",
           "selector": "editorSubmitsAndPublisherApprovesOnlyAfterRightsAreReady"
+        },
+        {
+          "id": "P_WORKFLOW_SCHEDULE",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/api/src/test/java/tw/basketball/magazine/publication/domain/PublicationWorkflowTest.java",
+          "selector": "publisherCanScheduleThenPublishOnlyWhenDue"
+        },
+        {
+          "id": "P_WORKFLOW_ARCHIVE",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/api/src/test/java/tw/basketball/magazine/publication/domain/PublicationWorkflowTest.java",
+          "selector": "publishedCanArchiveDirectly"
+        },
+        {
+          "id": "P_ISSUE_SCHEDULE_PUBLISH",
+          "kind": "REPOSITORY_PROOF",
+          "path": "apps/api/src/test/java/tw/basketball/magazine/publication/api/EditorialIssueApiIT.java",
+          "selector": "publisherCanScheduleAndPublishAnApprovedIssue"
         }
       ],
-      "deviation_ids": [],
-      "release_impact": "NONE_FOR_CURRENT_SLICE"
+      "deviation_ids": ["DEV-T085-040"],
+      "release_impact": "BLOCKS_T086_UNLESS_ADJUDICATED"
     },
     {
       "id": "FR-014",
@@ -3409,6 +3453,32 @@ The tracked document does not self-reference a final commit SHA. Exact-head attr
       "owner": "T085 release owner",
       "target": "Documentation reconciliation",
       "release_impact": "NONE",
+      "state": "OPEN"
+    },
+    {
+      "id": "DEV-T085-039",
+      "type": "SEO_PROOF_COVERAGE_GAP",
+      "severity": "MEDIUM",
+      "affected_ids": ["FR-009"],
+      "expected": "Public issue and article pages each have canonical Open Graph structured-data and sitemap acceptance proof.",
+      "observed": "Article SEO and sitemap proof are complete, while the issue-page selector proves canonical output but its Open Graph and JSON-LD assertions apply only to Home.",
+      "disposition": "Keep FR-009 PARTIAL until a separately scoped issue-page output test proves Open Graph and structured data.",
+      "owner": "T085 release owner",
+      "target": "T086 reader and issue SEO acceptance",
+      "release_impact": "BLOCKS_T086_UNLESS_ADJUDICATED",
+      "state": "OPEN"
+    },
+    {
+      "id": "DEV-T085-040",
+      "type": "ISSUE_WORKFLOW_COMPLETENESS_GAP",
+      "severity": "HIGH",
+      "affected_ids": ["FR-013"],
+      "expected": "Article and issue editorial APIs both enforce DRAFT to IN_REVIEW to APPROVED to SCHEDULED or PUBLISHED to ARCHIVED.",
+      "observed": "Article tests cover the full chain, while issue integration directly seeds APPROVED and proves only schedule and publish; no issue archive API or service operation exists.",
+      "disposition": "Keep FR-013 PARTIAL until a separately scoped issue lifecycle and archive remediation has end-to-end proof.",
+      "owner": "T085 release owner",
+      "target": "P1 editorial workflow remediation",
+      "release_impact": "BLOCKS_T086_UNLESS_ADJUDICATED",
       "state": "OPEN"
     }
   ]

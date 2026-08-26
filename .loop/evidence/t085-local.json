@@ -71,5 +71,53 @@
     "secrets_changed": false,
     "ready_or_merge_performed": false
   },
-  "head_binding_boundary": "The tracked receipt does not invent a pre-commit SHA. A clean committed head plus artifacts/exact-head.json is required in CI, and GitHub PR changed-file read-back is required for the final draft decision packet."
+  "head_binding_boundary": "The tracked receipt does not invent a pre-commit SHA. A clean committed head plus artifacts/exact-head.json is required in CI, and GitHub PR changed-file read-back is required for the final draft decision packet.",
+  "semantic_remediation_iteration": {
+    "schema_version": "courtside-t085-local-semantic-remediation/v1",
+    "recorded_at": "2026-08-26T08:06:41Z",
+    "result": "PASS_WITH_EXACT_TOOLCHAIN_DEFERRED_TO_CI",
+    "failure_signature_closed_locally": "T085_SEMANTIC_PROOF_FALSE_GREEN",
+    "checks": [
+      {
+        "command": "node --test scripts/test/validate-traceability.test.mjs",
+        "result": "PASS",
+        "details": "27/27 mutation, selector-attribution, human-deviation parity and composite semantic tests"
+      },
+      {
+        "command": "validateTraceability with an injected clean binding for pre-commit structural verification",
+        "result": "PASS",
+        "details": "97 requirements, 112 tasks, 107 mapped tasks, 5 approved orphans, 40 deviations and zero errors"
+      }
+    ],
+    "matrix": {
+      "analysis_valid": true,
+      "receipt_eligible": false,
+      "requirements": 97,
+      "tasks": 112,
+      "mapped_tasks": 107,
+      "approved_orphans": 5,
+      "deviations": 40,
+      "open_deviations": 36,
+      "evidence_distribution": {
+        "VERIFIED": 37,
+        "PARTIAL": 24,
+        "PLANNED_BLOCKED": 30,
+        "HUMAN_OPEN": 3,
+        "PROXY_ONLY": 2,
+        "EXTERNAL_OPEN": 1
+      },
+      "implementation_distribution": {"COMPLETE": 52, "PLANNED": 45}
+    },
+    "toolchain_boundary": "Local Node remains 24.19.0 rather than pinned 24.14.0; the mismatch is not waived and fresh exact-head CI remains authoritative.",
+    "scope_guard": {
+      "protected_merge_performed": false,
+      "completion_receipt_created": false,
+      "t086_or_later_modified": false,
+      "participant_research_executed": false,
+      "web3_activated": false,
+      "production_activated": false,
+      "provider_configured": false,
+      "external_writes_or_secrets_changed": false
+    }
+  }
 }
