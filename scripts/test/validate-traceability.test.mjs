@@ -16,7 +16,10 @@ import {
 
 const baseSha = AUTHORIZED_BASE_SHA
 const featurePath = "specs/001-taiwan-basketball-magazine-ebook"
-const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
+const repositoryRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  "../.."
+)
 
 function ids(prefix, count) {
   return Array.from(
@@ -26,7 +29,10 @@ function ids(prefix, count) {
 }
 
 function taskIds() {
-  return Array.from({ length: 112 }, (_, index) => `T${String(index + 1).padStart(3, "0")}`)
+  return Array.from(
+    { length: 112 },
+    (_, index) => `T${String(index + 1).padStart(3, "0")}`
+  )
 }
 
 function isCheckedTask(id) {
@@ -50,10 +56,16 @@ function canonicalContract() {
   const requirementIds = [...ids("FR", 74), ...ids("SC", 23)]
   const assignedTasks = new Map(requirementIds.map((id) => [id, []]))
   const approvedOrphans = new Set(["T001", "T005", "T007", "T082"])
-  const checked = taskIds().filter((id) => isCheckedTask(id) && !approvedOrphans.has(id))
+  const checked = taskIds().filter(
+    (id) => isCheckedTask(id) && !approvedOrphans.has(id)
+  )
   const open = taskIds().filter((id) => !isCheckedTask(id))
-  checked.forEach((taskId, index) => assignedTasks.get(requirementIds[index % 70]).push(taskId))
-  open.forEach((taskId, index) => assignedTasks.get(requirementIds[70 + (index % 27)]).push(taskId))
+  checked.forEach((taskId, index) =>
+    assignedTasks.get(requirementIds[index % 70]).push(taskId)
+  )
+  open.forEach((taskId, index) =>
+    assignedTasks.get(requirementIds[70 + (index % 27)]).push(taskId)
+  )
 
   const plannedIds = new Set(requirementIds.slice(70))
   const requirements = requirementIds.map((id) => {
@@ -104,13 +116,17 @@ function canonicalContract() {
     },
     requirements,
     task_ledger: taskIds().map((id) => {
-      const reverse = requirements.filter((row) => row.task_ids.includes(id)).map((row) => row.id)
+      const reverse = requirements
+        .filter((row) => row.task_ids.includes(id))
+        .map((row) => row.id)
       return {
         id,
         status: isCheckedTask(id) ? "COMPLETE" : "OPEN",
         classification: classification(id),
         requirement_ids: reverse,
-        ...(reverse.length === 0 ? { orphan_reason: "fixture enabling task" } : {})
+        ...(reverse.length === 0
+          ? { orphan_reason: "fixture enabling task" }
+          : {})
       }
     }),
     deviations: [
@@ -189,7 +205,10 @@ function run(root) {
   return validateTraceability({
     root,
     currentHead: "1111111111111111111111111111111111111111",
-    gitBinding: { status: "CLEAN", head: "1111111111111111111111111111111111111111" },
+    gitBinding: {
+      status: "CLEAN",
+      head: "1111111111111111111111111111111111111111"
+    },
     changedPaths: []
   })
 }
@@ -214,7 +233,10 @@ test("missing or duplicate requirement IDs fail the canonical inventory", () => 
   const root = makeFixture(({ files }) => {
     files[`${featurePath}/spec.md`] = files[`${featurePath}/spec.md`]
       .replace("- **FR-074**: fixture\n", "")
-      .replace("- **FR-073**: fixture", "- **FR-073**: fixture\n- **FR-073**: duplicate")
+      .replace(
+        "- **FR-073**: fixture",
+        "- **FR-073**: fixture\n- **FR-073**: duplicate"
+      )
   })
   const report = run(root)
   assert.equal(report.status, "FAIL")
@@ -230,13 +252,24 @@ test("unknown tasks and reverse mapping drift both fail", () => {
   const report = run(root)
   assert.equal(report.status, "FAIL")
   assert.match(report.errors.join("\n"), /references unknown task T113/)
-  assert.match(report.errors.join("\n"), /must exactly match the forward requirement mapping/)
+  assert.match(
+    report.errors.join("\n"),
+    /must exactly match the forward requirement mapping/
+  )
 })
 
 test("missing proof paths, path escape and missing selectors fail closed", () => {
   for (const proof of [
-    { kind: "REPOSITORY_PROOF", path: "missing.txt", selector: "fixture-proof" },
-    { kind: "REPOSITORY_PROOF", path: "../outside.txt", selector: "fixture-proof" },
+    {
+      kind: "REPOSITORY_PROOF",
+      path: "missing.txt",
+      selector: "fixture-proof"
+    },
+    {
+      kind: "REPOSITORY_PROOF",
+      path: "../outside.txt",
+      selector: "fixture-proof"
+    },
     { kind: "REPOSITORY_PROOF", path: "proof.txt", selector: "not-present" }
   ]) {
     const report = run(
@@ -256,7 +289,10 @@ test("unchecked future tasks cannot be claimed as VERIFIED", () => {
   })
   const report = run(root)
   assert.equal(report.status, "FAIL")
-  assert.match(report.errors.join("\n"), /cannot be VERIFIED with unchecked tasks: T085/)
+  assert.match(
+    report.errors.join("\n"),
+    /cannot be VERIFIED with unchecked tasks: T085/
+  )
 })
 
 test("non-VERIFIED evidence requires a dispositioned deviation", () => {
@@ -265,7 +301,10 @@ test("non-VERIFIED evidence requires a dispositioned deviation", () => {
   })
   const report = run(root)
   assert.equal(report.status, "FAIL")
-  assert.match(report.errors.join("\n"), /non-VERIFIED rows require an explicit deviation/)
+  assert.match(
+    report.errors.join("\n"),
+    /non-VERIFIED rows require an explicit deviation/
+  )
 })
 
 test("scope authority declarations remain false", () => {
@@ -274,7 +313,10 @@ test("scope authority declarations remain false", () => {
   })
   const report = run(root)
   assert.equal(report.status, "FAIL")
-  assert.match(report.errors.join("\n"), /lifecycle.provider_configured must remain false/)
+  assert.match(
+    report.errors.join("\n"),
+    /lifecycle.provider_configured must remain false/
+  )
 })
 
 test("automated repository proof cannot upgrade a human success criterion", () => {
@@ -285,10 +327,13 @@ test("automated repository proof cannot upgrade a human success criterion", () =
     row.implementation_state = "COMPLETE"
     row.evidence_state = "VERIFIED"
     row.deviation_ids = []
-    contract.task_ledger.find(({ id }) => id === oldTaskId).requirement_ids = contract.task_ledger
-      .find(({ id }) => id === oldTaskId)
-      .requirement_ids.filter((id) => id !== "SC-001")
-    contract.task_ledger.find(({ id }) => id === "T002").requirement_ids.push("SC-001")
+    contract.task_ledger.find(({ id }) => id === oldTaskId).requirement_ids =
+      contract.task_ledger
+        .find(({ id }) => id === oldTaskId)
+        .requirement_ids.filter((id) => id !== "SC-001")
+    contract.task_ledger
+      .find(({ id }) => id === "T002")
+      .requirement_ids.push("SC-001")
   })
   const report = run(root)
   assert.equal(report.status, "FAIL")
@@ -316,7 +361,10 @@ test("exact-head artifact must bind the evaluated Git head", () => {
   })
   const report = run(root)
   assert.equal(report.status, "FAIL")
-  assert.match(report.errors.join("\n"), /source_head_sha must equal the evaluated Git head/)
+  assert.match(
+    report.errors.join("\n"),
+    /source_head_sha must equal the evaluated Git head/
+  )
 })
 
 test("truthful open evidence remains analysis-valid but not receipt-eligible", () => {
@@ -352,14 +400,19 @@ test("contract and dispatch cannot rewrite the fixed authorized base together", 
   })
   const report = run(root)
   assert.equal(report.status, "FAIL")
-  assert.match(report.errors.join("\n"), /contract and dispatch base must equal/)
+  assert.match(
+    report.errors.join("\n"),
+    /contract and dispatch base must equal/
+  )
 })
 
 for (const taskId of ["T086", "T098", "T097"]) {
   test(`${taskId} checkbox cannot move outside the authorized T085 frontier`, () => {
     const root = makeFixture(({ contract, files }) => {
       const shouldCheck = taskId !== "T097"
-      files[`${featurePath}/tasks.md`] = files[`${featurePath}/tasks.md`].replace(
+      files[`${featurePath}/tasks.md`] = files[
+        `${featurePath}/tasks.md`
+      ].replace(
         new RegExp(`^- \\[[ x]\\] ${taskId} fixture$`, "m"),
         `- [${shouldCheck ? "x" : " "}] ${taskId} fixture`
       )
@@ -371,7 +424,10 @@ for (const taskId of ["T086", "T098", "T097"]) {
     })
     const report = run(root)
     assert.equal(report.status, "FAIL")
-    assert.match(report.errors.join("\n"), new RegExp(`${taskId} checkbox is outside`))
+    assert.match(
+      report.errors.join("\n"),
+      new RegExp(`${taskId} checkbox is outside`)
+    )
   })
 }
 
@@ -388,14 +444,18 @@ test("receipt labels cannot turn repository prose into human acceptance", () => 
   })
   const report = run(root)
   assert.equal(report.status, "FAIL")
-  assert.match(report.errors.join("\n"), /tracked JSON receipt under \.loop\/evidence/)
+  assert.match(
+    report.errors.join("\n"),
+    /tracked JSON receipt under \.loop\/evidence/
+  )
 })
 
 test("all requirements cannot be vacuously mapped only to T001", () => {
   const root = makeFixture(({ contract }) => {
     for (const row of contract.requirements) row.task_ids = ["T001"]
     for (const row of contract.task_ledger) {
-      row.requirement_ids = row.id === "T001" ? contract.requirements.map(({ id }) => id) : []
+      row.requirement_ids =
+        row.id === "T001" ? contract.requirements.map(({ id }) => id) : []
       if (row.requirement_ids.length === 0) row.orphan_reason = "forged orphan"
     }
   })
@@ -409,7 +469,10 @@ test("dirty head binding cannot produce an attributable PASS", () => {
   const report = validateTraceability({
     root,
     currentHead: "1111111111111111111111111111111111111111",
-    gitBinding: { status: "UNTRACKED_OR_DIRTY", head: "1111111111111111111111111111111111111111" },
+    gitBinding: {
+      status: "UNTRACKED_OR_DIRTY",
+      head: "1111111111111111111111111111111111111111"
+    },
     changedPaths: []
   })
   assert.equal(report.status, "FAIL")
@@ -425,17 +488,26 @@ test("missing head and missing CI exact-head evidence fail closed", () => {
     changedPaths: []
   })
   assert.equal(missingHead.status, "FAIL")
-  assert.match(missingHead.errors.join("\n"), /currentHead must be a full lowercase commit SHA/)
+  assert.match(
+    missingHead.errors.join("\n"),
+    /currentHead must be a full lowercase commit SHA/
+  )
 
   const missingArtifact = validateTraceability({
     root,
     currentHead: "1111111111111111111111111111111111111111",
-    gitBinding: { status: "CLEAN", head: "1111111111111111111111111111111111111111" },
+    gitBinding: {
+      status: "CLEAN",
+      head: "1111111111111111111111111111111111111111"
+    },
     changedPaths: [],
     requireExactHeadEvidence: true
   })
   assert.equal(missingArtifact.status, "FAIL")
-  assert.match(missingArtifact.errors.join("\n"), /requires artifacts\/exact-head\.json/)
+  assert.match(
+    missingArtifact.errors.join("\n"),
+    /requires artifacts\/exact-head\.json/
+  )
 })
 
 test("exact-base changed paths reject files outside bounded T085 scope", () => {
@@ -443,7 +515,10 @@ test("exact-base changed paths reject files outside bounded T085 scope", () => {
   const report = validateTraceability({
     root,
     currentHead: "1111111111111111111111111111111111111111",
-    gitBinding: { status: "CLEAN", head: "1111111111111111111111111111111111111111" },
+    gitBinding: {
+      status: "CLEAN",
+      head: "1111111111111111111111111111111111111111"
+    },
     changedPaths: [".github/workflows/release.yml"]
   })
   assert.equal(report.status, "FAIL")
@@ -458,7 +533,10 @@ test("completion phase is rejected until a separately authorized receipt verifie
   const report = run(root)
   assert.equal(report.status, "FAIL")
   assert.equal(report.receipt_eligible, false)
-  assert.match(report.errors.join("\n"), /only accepts lifecycle\.phase T085_IMPLEMENTATION/)
+  assert.match(
+    report.errors.join("\n"),
+    /only accepts lifecycle\.phase T085_IMPLEMENTATION/
+  )
 })
 
 test("repository proof selectors must resolve to one unambiguous literal location", () => {
@@ -480,7 +558,10 @@ test("repository proof selectors must identify an executable test anchor", () =>
   })
   const report = run(root)
   assert.equal(report.status, "FAIL")
-  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+  assert.match(
+    report.errors.join("\n"),
+    /selector must identify an executable test anchor/
+  )
 })
 
 test("overlapping selector locations are rejected as ambiguous", () => {
@@ -513,7 +594,10 @@ test("human deviation register cannot drift from the machine contract", () => {
 
 test("composite VERIFIED rows retain clause-complete semantic proof", () => {
   const contract = extractContract(
-    fs.readFileSync(path.join(repositoryRoot, featurePath, "traceability.md"), "utf8")
+    fs.readFileSync(
+      path.join(repositoryRoot, featurePath, "traceability.md"),
+      "utf8"
+    )
   )
   const byId = new Map(contract.requirements.map((row) => [row.id, row]))
   const selectors = (id) => byId.get(id).proofs.map((proof) => proof.selector)

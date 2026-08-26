@@ -49,7 +49,10 @@ const receiptProofSchemas = new Map([
   ["CI_STABILITY_RECEIPT", "courtside-ci-stability/v1"]
 ])
 const implementationCheckedTasks = new Set([
-  ...Array.from({ length: 84 }, (_, index) => `T${String(index + 1).padStart(3, "0")}`),
+  ...Array.from(
+    { length: 84 },
+    (_, index) => `T${String(index + 1).padStart(3, "0")}`
+  ),
   "T097"
 ])
 const authorizedChangedPaths = new Set([
@@ -73,7 +76,11 @@ function idsFrom(text, pattern) {
 
 function duplicates(values) {
   const seen = new Set()
-  return [...new Set(values.filter((value) => (seen.has(value) ? true : !seen.add(value))))]
+  return [
+    ...new Set(
+      values.filter((value) => (seen.has(value) ? true : !seen.add(value)))
+    )
+  ]
 }
 
 function expectedIds(prefix, count) {
@@ -95,7 +102,10 @@ function distribution(rows, key) {
   return Object.fromEntries(
     [...new Set(rows.map((row) => row?.[key]).filter(Boolean))]
       .sort()
-      .map((value) => [value, rows.filter((row) => row?.[key] === value).length])
+      .map((value) => [
+        value,
+        rows.filter((row) => row?.[key] === value).length
+      ])
   )
 }
 
@@ -114,8 +124,12 @@ function humanRequirementRows(markdown) {
         task_ids: [...cells[2].matchAll(/T\d{3}/g)].map((match) => match[0]),
         implementation_state: cells[3],
         evidence_state: cells[4],
-        proof_ids: [...cells[5].matchAll(/P_[A-Z0-9_]+/g)].map((match) => match[0]),
-        deviation_ids: [...cells[6].matchAll(/DEV-T085-\d{3}/g)].map((match) => match[0]),
+        proof_ids: [...cells[5].matchAll(/P_[A-Z0-9_]+/g)].map(
+          (match) => match[0]
+        ),
+        deviation_ids: [...cells[6].matchAll(/DEV-T085-\d{3}/g)].map(
+          (match) => match[0]
+        ),
         release_impact: cells[7]
       }
     })
@@ -147,7 +161,8 @@ function humanDeviationRows(markdown) {
 function taskRangeClaims(tasksText) {
   if (tasksText === null) return []
   const claims = []
-  const pattern = /^- \[[ xX]\] (T\d{3}).*?\bfor ((?:FR|SC)-\d{3})[–-]((?:FR|SC)-\d{3})/gm
+  const pattern =
+    /^- \[[ xX]\] (T\d{3}).*?\bfor ((?:FR|SC)-\d{3})[–-]((?:FR|SC)-\d{3})/gm
   for (const match of tasksText.matchAll(pattern)) {
     const [startPrefix, startNumber] = match[2].split("-")
     const [endPrefix, endNumber] = match[3].split("-")
@@ -156,7 +171,8 @@ function taskRangeClaims(tasksText) {
       task_id: match[1],
       requirement_ids: Array.from(
         { length: Number(endNumber) - Number(startNumber) + 1 },
-        (_, index) => `${startPrefix}-${String(Number(startNumber) + index).padStart(3, "0")}`
+        (_, index) =>
+          `${startPrefix}-${String(Number(startNumber) + index).padStart(3, "0")}`
       )
     })
   }
@@ -212,7 +228,9 @@ function safeProofPath(root, relativePath, errors, label) {
     relativePath.includes("\\") ||
     relativePath.split("/").includes("..")
   ) {
-    errors.push(`${label}.path must be a safe repository-relative path: ${relativePath}`)
+    errors.push(
+      `${label}.path must be a safe repository-relative path: ${relativePath}`
+    )
     return null
   }
 
@@ -223,13 +241,17 @@ function safeProofPath(root, relativePath, errors, label) {
     return null
   }
   if (!fs.existsSync(candidate) || !fs.statSync(candidate).isFile()) {
-    errors.push(`${label}.path does not identify an existing file: ${relativePath}`)
+    errors.push(
+      `${label}.path does not identify an existing file: ${relativePath}`
+    )
     return null
   }
 
   const realCandidate = fs.realpathSync(candidate)
   if (!realCandidate.startsWith(`${absoluteRoot}${path.sep}`)) {
-    errors.push(`${label}.path resolves outside the repository root: ${relativePath}`)
+    errors.push(
+      `${label}.path resolves outside the repository root: ${relativePath}`
+    )
     return null
   }
   return realCandidate
@@ -246,10 +268,16 @@ function proofFileSha256(root, relativePath) {
   }
   const absoluteRoot = fs.realpathSync(root)
   const candidate = path.resolve(absoluteRoot, relativePath)
-  if (!candidate.startsWith(`${absoluteRoot}${path.sep}`) || !fs.existsSync(candidate)) return null
+  if (
+    !candidate.startsWith(`${absoluteRoot}${path.sep}`) ||
+    !fs.existsSync(candidate)
+  )
+    return null
   const realCandidate = fs.realpathSync(candidate)
   if (!realCandidate.startsWith(`${absoluteRoot}${path.sep}`)) return null
-  return fs.statSync(realCandidate).isFile() ? sha256(fs.readFileSync(realCandidate, "utf8")) : null
+  return fs.statSync(realCandidate).isFile()
+    ? sha256(fs.readFileSync(realCandidate, "utf8"))
+    : null
 }
 
 function literalOccurrenceCount(text, selector) {
@@ -321,7 +349,9 @@ export function extractContract(markdown) {
     throw new Error("traceability contract markers are missing or out of order")
   }
   if (markdown.indexOf(CONTRACT_START, start + CONTRACT_START.length) !== -1) {
-    throw new Error("traceability contract start marker must appear exactly once")
+    throw new Error(
+      "traceability contract start marker must appear exactly once"
+    )
   }
   if (markdown.indexOf(CONTRACT_END, end + CONTRACT_END.length) !== -1) {
     throw new Error("traceability contract end marker must appear exactly once")
@@ -331,19 +361,27 @@ export function extractContract(markdown) {
     .slice(start + CONTRACT_START.length, end)
     .trim()
     .match(/^```json\s*\n([\s\S]*?)\n```$/)
-  if (!fenced) throw new Error("traceability contract must be one fenced JSON document")
+  if (!fenced)
+    throw new Error("traceability contract must be one fenced JSON document")
   return JSON.parse(fenced[1])
 }
 
 function validateReceiptProof(root, proof, requirementId, label, errors) {
-  if (!proof.path.startsWith(".loop/evidence/") || !proof.path.endsWith(".json")) {
-    errors.push(`${label}.path must identify a tracked JSON receipt under .loop/evidence`)
+  if (
+    !proof.path.startsWith(".loop/evidence/") ||
+    !proof.path.endsWith(".json")
+  ) {
+    errors.push(
+      `${label}.path must identify a tracked JSON receipt under .loop/evidence`
+    )
     return
   }
 
   let receipt
   try {
-    receipt = JSON.parse(fs.readFileSync(path.resolve(root, proof.path), "utf8"))
+    receipt = JSON.parse(
+      fs.readFileSync(path.resolve(root, proof.path), "utf8")
+    )
   } catch (error) {
     errors.push(`${label} is not a valid JSON receipt: ${error.message}`)
     return
@@ -355,12 +393,17 @@ function validateReceiptProof(root, proof, requirementId, label, errors) {
   if (receipt.requirement_id !== requirementId) {
     errors.push(`${label} receipt requirement_id must equal ${requirementId}`)
   }
-  if (receipt.decision !== "PASS") errors.push(`${label} receipt decision must be PASS`)
+  if (receipt.decision !== "PASS")
+    errors.push(`${label} receipt decision must be PASS`)
   if (!isIsoTimestamp(receipt.recorded_at)) {
-    errors.push(`${label} receipt recorded_at must be an ISO-8601 UTC timestamp`)
+    errors.push(
+      `${label} receipt recorded_at must be an ISO-8601 UTC timestamp`
+    )
   }
   if (!/^[0-9a-f]{40}$/.test(receipt.source_head_sha ?? "")) {
-    errors.push(`${label} receipt source_head_sha must be a full lowercase commit SHA`)
+    errors.push(
+      `${label} receipt source_head_sha must be a full lowercase commit SHA`
+    )
   }
   if (proof.source_head !== receipt.source_head_sha) {
     errors.push(`${label}.source_head must equal the receipt source_head_sha`)
@@ -370,27 +413,46 @@ function validateReceiptProof(root, proof, requirementId, label, errors) {
     if (receipt.actor_type !== "HUMAN")
       errors.push(`${label} HUMAN_RECEIPT actor_type must be HUMAN`)
     requireString(receipt.accepted_by, `${label} receipt accepted_by`, errors)
-    if (!Array.isArray(receipt.human_evidence_ids) || receipt.human_evidence_ids.length === 0) {
+    if (
+      !Array.isArray(receipt.human_evidence_ids) ||
+      receipt.human_evidence_ids.length === 0
+    ) {
       errors.push(`${label} HUMAN_RECEIPT requires human_evidence_ids`)
     }
   }
   if (proof.kind === "EXTERNAL_METRIC_RECEIPT") {
-    requireString(receipt.source_system, `${label} receipt source_system`, errors)
+    requireString(
+      receipt.source_system,
+      `${label} receipt source_system`,
+      errors
+    )
     requireString(receipt.metric_name, `${label} receipt metric_name`, errors)
-    if (!isIsoTimestamp(receipt.window_start) || !isIsoTimestamp(receipt.window_end)) {
-      errors.push(`${label} EXTERNAL_METRIC_RECEIPT requires an ISO-8601 measurement window`)
+    if (
+      !isIsoTimestamp(receipt.window_start) ||
+      !isIsoTimestamp(receipt.window_end)
+    ) {
+      errors.push(
+        `${label} EXTERNAL_METRIC_RECEIPT requires an ISO-8601 measurement window`
+      )
     }
   }
   if (proof.kind === "CI_STABILITY_RECEIPT") {
-    if (!Number.isInteger(receipt.consecutive_green_runs) || receipt.consecutive_green_runs < 20) {
-      errors.push(`${label} CI_STABILITY_RECEIPT requires at least 20 consecutive green runs`)
+    if (
+      !Number.isInteger(receipt.consecutive_green_runs) ||
+      receipt.consecutive_green_runs < 20
+    ) {
+      errors.push(
+        `${label} CI_STABILITY_RECEIPT requires at least 20 consecutive green runs`
+      )
     }
     if (
       !Array.isArray(receipt.workflow_run_ids) ||
       receipt.workflow_run_ids.length < 20 ||
       new Set(receipt.workflow_run_ids).size !== receipt.workflow_run_ids.length
     ) {
-      errors.push(`${label} CI_STABILITY_RECEIPT requires 20 unique workflow_run_ids`)
+      errors.push(
+        `${label} CI_STABILITY_RECEIPT requires 20 unique workflow_run_ids`
+      )
     }
   }
 }
@@ -446,7 +508,9 @@ function validateProof(root, proof, requirementId, label, errors) {
 function validateScope(contract, taskStatus, errors) {
   const lifecycle = contract.lifecycle
   if (!lifecycle || lifecycle.phase !== "T085_IMPLEMENTATION") {
-    errors.push("this bounded validator only accepts lifecycle.phase T085_IMPLEMENTATION")
+    errors.push(
+      "this bounded validator only accepts lifecycle.phase T085_IMPLEMENTATION"
+    )
   }
   if (lifecycle?.task !== "T085") errors.push("lifecycle.task must be T085")
   if (lifecycle?.t085_complete !== false || taskStatus.get("T085") !== false) {
@@ -463,7 +527,8 @@ function validateScope(contract, taskStatus, errors) {
     "provider_configured",
     "secrets_changed"
   ]) {
-    if (lifecycle?.[flag] !== false) errors.push(`lifecycle.${flag} must remain false`)
+    if (lifecycle?.[flag] !== false)
+      errors.push(`lifecycle.${flag} must remain false`)
   }
 
   for (const [taskId, checked] of taskStatus) {
@@ -498,14 +563,26 @@ export function validateTraceability({
   const specText = readText(root, paths.spec, errors, "spec source")
   const planText = readText(root, paths.plan, errors, "plan source")
   const tasksText = readText(root, paths.tasks, errors, "tasks source")
-  const traceabilityText = readText(root, paths.traceability, errors, "T085 traceability artifact")
-  const dispatchText = readText(root, paths.dispatch, errors, "T085 dispatch receipt")
+  const traceabilityText = readText(
+    root,
+    paths.traceability,
+    errors,
+    "T085 traceability artifact"
+  )
+  const dispatchText = readText(
+    root,
+    paths.dispatch,
+    errors,
+    "T085 dispatch receipt"
+  )
 
   if (!/^[0-9a-f]{40}$/.test(currentHead ?? "")) {
     errors.push("currentHead must be a full lowercase commit SHA")
   }
   if (gitBinding && gitBinding.status !== "CLEAN") {
-    errors.push(`working tree is not bound to the evaluated head (${gitBinding.status})`)
+    errors.push(
+      `working tree is not bound to the evaluated head (${gitBinding.status})`
+    )
   }
   if (gitBinding?.head && gitBinding.head !== currentHead) {
     errors.push("git binding head must equal currentHead")
@@ -513,11 +590,15 @@ export function validateTraceability({
   if (Array.isArray(changedPaths)) {
     for (const changedPath of changedPaths) {
       if (!authorizedChangedPaths.has(changedPath)) {
-        errors.push(`changed path is outside the authorized T085 scope: ${changedPath}`)
+        errors.push(
+          `changed path is outside the authorized T085 scope: ${changedPath}`
+        )
       }
     }
   } else {
-    warnings.push("exact-base path diff was not available; GitHub PR read-back remains required")
+    warnings.push(
+      "exact-base path diff was not available; GitHub PR read-back remains required"
+    )
   }
 
   let contract = null
@@ -540,11 +621,17 @@ export function validateTraceability({
   const specIds = specText === null ? [] : idsFrom(specText, requirementPattern)
   const frIds = specIds.filter((id) => id.startsWith("FR-"))
   const scIds = specIds.filter((id) => id.startsWith("SC-"))
-  const taskMatches = tasksText === null ? [] : [...tasksText.matchAll(taskPattern)]
+  const taskMatches =
+    tasksText === null ? [] : [...tasksText.matchAll(taskPattern)]
   const taskIds = taskMatches.map((match) => match[2])
-  const taskStatus = new Map(taskMatches.map((match) => [match[2], match[1].toLowerCase() === "x"]))
+  const taskStatus = new Map(
+    taskMatches.map((match) => [match[2], match[1].toLowerCase() === "x"])
+  )
 
-  const expectedRequirements = [...expectedIds("FR", 74), ...expectedIds("SC", 23)]
+  const expectedRequirements = [
+    ...expectedIds("FR", 74),
+    ...expectedIds("SC", 23)
+  ]
   const expectedTasks = Array.from(
     { length: 112 },
     (_, index) => `T${String(index + 1).padStart(3, "0")}`
@@ -554,16 +641,22 @@ export function validateTraceability({
     JSON.stringify(scIds) !== JSON.stringify(expectedIds("SC", 23)) ||
     specIds.length !== 97
   ) {
-    errors.push("spec must define exactly contiguous FR-001..FR-074 and SC-001..SC-023")
+    errors.push(
+      "spec must define exactly contiguous FR-001..FR-074 and SC-001..SC-023"
+    )
   }
   if (duplicates(specIds).length > 0) {
-    errors.push(`spec contains duplicate requirement IDs: ${duplicates(specIds).join(", ")}`)
+    errors.push(
+      `spec contains duplicate requirement IDs: ${duplicates(specIds).join(", ")}`
+    )
   }
   if (JSON.stringify(taskIds) !== JSON.stringify(expectedTasks)) {
     errors.push("tasks must define exactly contiguous T001..T112")
   }
   if (duplicates(taskIds).length > 0) {
-    errors.push(`tasks contains duplicate IDs: ${duplicates(taskIds).join(", ")}`)
+    errors.push(
+      `tasks contains duplicate IDs: ${duplicates(taskIds).join(", ")}`
+    )
   }
 
   if (contract) {
@@ -574,16 +667,21 @@ export function validateTraceability({
       contract.authorized_base_sha !== AUTHORIZED_BASE_SHA ||
       dispatch?.base?.sha !== AUTHORIZED_BASE_SHA
     ) {
-      errors.push(`contract and dispatch base must equal ${AUTHORIZED_BASE_SHA}`)
+      errors.push(
+        `contract and dispatch base must equal ${AUTHORIZED_BASE_SHA}`
+      )
     }
     if (
       dispatch?.schema_version !== "courtside-t085-dispatch/v1" ||
       dispatch?.repository !== "bynanci/courtside-tw" ||
-      dispatch?.issue !== "https://github.com/bynanci/courtside-tw/issues/145" ||
+      dispatch?.issue !==
+        "https://github.com/bynanci/courtside-tw/issues/145" ||
       dispatch?.branch !== "task/t085-cross-artifact-traceability" ||
       dispatch?.base?.branch !== "main"
     ) {
-      errors.push("dispatch identity must remain bound to issue 145, the T085 branch and main")
+      errors.push(
+        "dispatch identity must remain bound to issue 145, the T085 branch and main"
+      )
     }
     if (
       contract.source_inventory?.spec !== paths.spec ||
@@ -597,26 +695,40 @@ export function validateTraceability({
       contract.source_inventory?.tasks_unchecked !==
         [...taskStatus.values()].filter((value) => !value).length
     ) {
-      errors.push("source_inventory must match the canonical source paths and live counts")
+      errors.push(
+        "source_inventory must match the canonical source paths and live counts"
+      )
     }
     validateScope(contract, taskStatus, errors)
 
-    if (!Array.isArray(contract.requirements)) errors.push("requirements must be an array")
-    if (!Array.isArray(contract.task_ledger)) errors.push("task_ledger must be an array")
-    if (!Array.isArray(contract.deviations)) errors.push("deviations must be an array")
+    if (!Array.isArray(contract.requirements))
+      errors.push("requirements must be an array")
+    if (!Array.isArray(contract.task_ledger))
+      errors.push("task_ledger must be an array")
+    if (!Array.isArray(contract.deviations))
+      errors.push("deviations must be an array")
 
-    const requirements = Array.isArray(contract.requirements) ? contract.requirements : []
+    const requirements = Array.isArray(contract.requirements)
+      ? contract.requirements
+      : []
     requirementRows = requirements
     const requirementIds = requirements.map((row) => row?.id)
-    if (JSON.stringify(requirementIds) !== JSON.stringify(expectedRequirements)) {
+    if (
+      JSON.stringify(requirementIds) !== JSON.stringify(expectedRequirements)
+    ) {
       errors.push("requirements must contain every FR/SC exactly once")
     }
     if (duplicates(requirementIds).length > 0) {
-      errors.push(`requirements contains duplicate IDs: ${duplicates(requirementIds).join(", ")}`)
+      errors.push(
+        `requirements contains duplicate IDs: ${duplicates(requirementIds).join(", ")}`
+      )
     }
 
     const humanRows = humanRequirementRows(traceabilityText)
-    if (JSON.stringify(humanRows.map((row) => row.id)) !== JSON.stringify(expectedRequirements)) {
+    if (
+      JSON.stringify(humanRows.map((row) => row.id)) !==
+      JSON.stringify(expectedRequirements)
+    ) {
       errors.push(
         "human-readable tables must contain every FR/SC exactly once and in canonical order"
       )
@@ -625,7 +737,9 @@ export function validateTraceability({
     for (const row of requirements) {
       const human = humanById.get(row.id)
       if (!human) continue
-      const expectedProofIds = (row.proofs ?? []).map((proof) => proof.id).filter(Boolean)
+      const expectedProofIds = (row.proofs ?? [])
+        .map((proof) => proof.id)
+        .filter(Boolean)
       if (
         !sameValues(human.task_ids, row.task_ids ?? []) ||
         human.implementation_state !== row.implementation_state ||
@@ -634,15 +748,21 @@ export function validateTraceability({
         !sameValues(human.deviation_ids, row.deviation_ids ?? []) ||
         human.release_impact !== row.release_impact
       ) {
-        errors.push(`human-readable row ${row.id} must match the machine contract`)
+        errors.push(
+          `human-readable row ${row.id} must match the machine contract`
+        )
       }
     }
 
-    const deviations = Array.isArray(contract.deviations) ? contract.deviations : []
+    const deviations = Array.isArray(contract.deviations)
+      ? contract.deviations
+      : []
     deviationRows = deviations
     const deviationIds = deviations.map((deviation) => deviation?.id)
     if (duplicates(deviationIds).length > 0) {
-      errors.push(`deviations contains duplicate IDs: ${duplicates(deviationIds).join(", ")}`)
+      errors.push(
+        `deviations contains duplicate IDs: ${duplicates(deviationIds).join(", ")}`
+      )
     }
     const humanDeviations = humanDeviationRows(traceabilityText)
     if (
@@ -671,7 +791,9 @@ export function validateTraceability({
         )
       }
     }
-    const deviationById = new Map(deviations.map((deviation) => [deviation?.id, deviation]))
+    const deviationById = new Map(
+      deviations.map((deviation) => [deviation?.id, deviation])
+    )
     for (const [index, deviation] of deviations.entries()) {
       const label = `deviations[${index}]`
       requireString(deviation?.id, `${label}.id`, errors)
@@ -682,13 +804,25 @@ export function validateTraceability({
       requireString(deviation?.disposition, `${label}.disposition`, errors)
       requireString(deviation?.owner, `${label}.owner`, errors)
       requireString(deviation?.target, `${label}.target`, errors)
-      requireString(deviation?.release_impact, `${label}.release_impact`, errors)
-      if (!Array.isArray(deviation?.affected_ids) || deviation.affected_ids.length === 0) {
+      requireString(
+        deviation?.release_impact,
+        `${label}.release_impact`,
+        errors
+      )
+      if (
+        !Array.isArray(deviation?.affected_ids) ||
+        deviation.affected_ids.length === 0
+      ) {
         errors.push(`${label}.affected_ids must be a non-empty array`)
       }
       for (const affectedId of deviation?.affected_ids ?? []) {
-        if (!expectedRequirements.includes(affectedId) && !expectedTasks.includes(affectedId)) {
-          errors.push(`${label}.affected_ids references unknown ID ${affectedId}`)
+        if (
+          !expectedRequirements.includes(affectedId) &&
+          !expectedTasks.includes(affectedId)
+        ) {
+          errors.push(
+            `${label}.affected_ids references unknown ID ${affectedId}`
+          )
         }
       }
       if (!deviationStates.has(deviation?.state)) {
@@ -717,18 +851,28 @@ export function validateTraceability({
         errors.push(`${label}.task_ids contains duplicates`)
       }
       for (const taskId of row?.task_ids ?? []) {
-        if (!taskStatus.has(taskId)) errors.push(`${label} references unknown task ${taskId}`)
+        if (!taskStatus.has(taskId))
+          errors.push(`${label} references unknown task ${taskId}`)
         else forward.get(taskId)?.add(row.id)
       }
 
       const proofs = Array.isArray(row?.proofs) ? row.proofs : []
       for (const [proofIndex, proof] of proofs.entries()) {
-        validateProof(root, proof, row.id, `${label}.proofs[${proofIndex}]`, errors)
+        validateProof(
+          root,
+          proof,
+          row.id,
+          `${label}.proofs[${proofIndex}]`,
+          errors
+        )
       }
-      const rowDeviationIds = Array.isArray(row?.deviation_ids) ? row.deviation_ids : []
+      const rowDeviationIds = Array.isArray(row?.deviation_ids)
+        ? row.deviation_ids
+        : []
       for (const deviationId of rowDeviationIds) {
         const deviation = deviationById.get(deviationId)
-        if (!deviation) errors.push(`${label} references unknown deviation ${deviationId}`)
+        if (!deviation)
+          errors.push(`${label} references unknown deviation ${deviationId}`)
         else if (!deviation.affected_ids?.includes(row.id)) {
           errors.push(
             `${label} references ${deviationId}, but the deviation does not affect ${row.id}`
@@ -737,11 +881,14 @@ export function validateTraceability({
       }
 
       if (row?.evidence_state === "VERIFIED") {
-        if (proofs.length === 0) errors.push(`${label} VERIFIED rows require at least one proof`)
+        if (proofs.length === 0)
+          errors.push(`${label} VERIFIED rows require at least one proof`)
         if (!proofs.some((proof) => proofKinds.has(proof?.kind))) {
           errors.push(`${label} VERIFIED rows require an allowed proof kind`)
         }
-        for (const proof of proofs.filter((proof) => proof?.kind === "REPOSITORY_PROOF")) {
+        for (const proof of proofs.filter(
+          (proof) => proof?.kind === "REPOSITORY_PROOF"
+        )) {
           if (!isExecutableProofPath(proof.path)) {
             errors.push(
               `${label} VERIFIED repository proof must be an executable check or durable receipt`
@@ -752,31 +899,51 @@ export function validateTraceability({
             )
           }
         }
-        const unchecked = (row?.task_ids ?? []).filter((taskId) => taskStatus.get(taskId) === false)
+        const unchecked = (row?.task_ids ?? []).filter(
+          (taskId) => taskStatus.get(taskId) === false
+        )
         if (unchecked.length > 0) {
-          errors.push(`${label} cannot be VERIFIED with unchecked tasks: ${unchecked.join(", ")}`)
+          errors.push(
+            `${label} cannot be VERIFIED with unchecked tasks: ${unchecked.join(", ")}`
+          )
         }
         if (row?.implementation_state !== "COMPLETE") {
-          errors.push(`${label} VERIFIED rows must have implementation_state COMPLETE`)
+          errors.push(
+            `${label} VERIFIED rows must have implementation_state COMPLETE`
+          )
         }
       } else if (rowDeviationIds.length === 0) {
         errors.push(`${label} non-VERIFIED rows require an explicit deviation`)
       }
 
-      if (["SC-001", "SC-004", "SC-007"].includes(row?.id) && row?.evidence_state === "VERIFIED") {
+      if (
+        ["SC-001", "SC-004", "SC-007"].includes(row?.id) &&
+        row?.evidence_state === "VERIFIED"
+      ) {
         if (contract.lifecycle?.participant_research_executed !== true) {
-          errors.push(`${label} cannot be VERIFIED while participant research remains unexecuted`)
+          errors.push(
+            `${label} cannot be VERIFIED while participant research remains unexecuted`
+          )
         }
         if (!proofs.some((proof) => proof?.kind === "HUMAN_RECEIPT")) {
           errors.push(`${label} requires a HUMAN_RECEIPT before VERIFIED`)
         }
       }
-      if (["SC-002", "SC-011"].includes(row?.id) && row?.evidence_state === "VERIFIED") {
+      if (
+        ["SC-002", "SC-011"].includes(row?.id) &&
+        row?.evidence_state === "VERIFIED"
+      ) {
         if (contract.lifecycle?.production_activated !== true) {
-          errors.push(`${label} cannot be VERIFIED while production activation remains false`)
+          errors.push(
+            `${label} cannot be VERIFIED while production activation remains false`
+          )
         }
-        if (!proofs.some((proof) => proof?.kind === "EXTERNAL_METRIC_RECEIPT")) {
-          errors.push(`${label} requires an EXTERNAL_METRIC_RECEIPT before VERIFIED`)
+        if (
+          !proofs.some((proof) => proof?.kind === "EXTERNAL_METRIC_RECEIPT")
+        ) {
+          errors.push(
+            `${label} requires an EXTERNAL_METRIC_RECEIPT before VERIFIED`
+          )
         }
       }
       if (row?.id === "SC-012" && row?.evidence_state === "VERIFIED") {
@@ -784,45 +951,66 @@ export function validateTraceability({
           errors.push(`${label} cannot be VERIFIED before T086 is dispatched`)
         }
         if (!proofs.some((proof) => proof?.kind === "CI_STABILITY_RECEIPT")) {
-          errors.push(`${label} requires a CI_STABILITY_RECEIPT before VERIFIED`)
+          errors.push(
+            `${label} requires a CI_STABILITY_RECEIPT before VERIFIED`
+          )
         }
       }
     }
 
-    const ledger = Array.isArray(contract.task_ledger) ? contract.task_ledger : []
+    const ledger = Array.isArray(contract.task_ledger)
+      ? contract.task_ledger
+      : []
     taskLedgerRows = ledger
     const ledgerIds = ledger.map((row) => row?.id)
     if (JSON.stringify(ledgerIds) !== JSON.stringify(expectedTasks)) {
       errors.push("task_ledger must classify every T001..T112 exactly once")
     }
     if (duplicates(ledgerIds).length > 0) {
-      errors.push(`task_ledger contains duplicate IDs: ${duplicates(ledgerIds).join(", ")}`)
+      errors.push(
+        `task_ledger contains duplicate IDs: ${duplicates(ledgerIds).join(", ")}`
+      )
     }
     for (const [index, row] of ledger.entries()) {
       const label = `task_ledger[${index}]${row?.id ? ` (${row.id})` : ""}`
-      if (!taskStatus.has(row?.id)) errors.push(`${label} references unknown task`)
+      if (!taskStatus.has(row?.id))
+        errors.push(`${label} references unknown task`)
       if (!taskClassifications.has(row?.classification)) {
         errors.push(`${label}.classification is invalid`)
       }
       if (row?.classification !== expectedTaskClassification(row?.id ?? "")) {
-        errors.push(`${label}.classification does not match the authorized task taxonomy`)
+        errors.push(
+          `${label}.classification does not match the authorized task taxonomy`
+        )
       }
       const expectedStatus = taskStatus.get(row?.id) ? "COMPLETE" : "OPEN"
       if (row?.status !== expectedStatus) {
         errors.push(`${label}.status must match tasks.md (${expectedStatus})`)
       }
-      const reverse = Array.isArray(row?.requirement_ids) ? row.requirement_ids : []
+      const reverse = Array.isArray(row?.requirement_ids)
+        ? row.requirement_ids
+        : []
       const expectedReverse = [...(forward.get(row?.id) ?? [])]
-      if (!sameValues(reverse, expectedReverse) || reverse.length !== expectedReverse.length) {
-        errors.push(`${label}.requirement_ids must exactly match the forward requirement mapping`)
+      if (
+        !sameValues(reverse, expectedReverse) ||
+        reverse.length !== expectedReverse.length
+      ) {
+        errors.push(
+          `${label}.requirement_ids must exactly match the forward requirement mapping`
+        )
       }
       const approvedOrphans = new Set(["T001", "T005", "T007", "T082", "T085"])
       if (reverse.length === 0 && !approvedOrphans.has(row?.id)) {
-        errors.push(`${label} is not an approved orphan and must map to a requirement`)
+        errors.push(
+          `${label} is not an approved orphan and must map to a requirement`
+        )
       }
-      if (reverse.length === 0) requireString(row?.orphan_reason, `${label}.orphan_reason`, errors)
+      if (reverse.length === 0)
+        requireString(row?.orphan_reason, `${label}.orphan_reason`, errors)
       if (reverse.length > 0 && row?.orphan_reason !== undefined) {
-        errors.push(`${label}.orphan_reason is only allowed for an approved orphan`)
+        errors.push(
+          `${label}.orphan_reason is only allowed for an approved orphan`
+        )
       }
     }
     approvedOrphanIds = ledger
@@ -831,7 +1019,9 @@ export function validateTraceability({
 
     for (const claim of taskRangeClaims(tasksText)) {
       const mapped = forward.get(claim.task_id) ?? new Set()
-      const missing = claim.requirement_ids.filter((requirementId) => !mapped.has(requirementId))
+      const missing = claim.requirement_ids.filter(
+        (requirementId) => !mapped.has(requirementId)
+      )
       const hasDriftDeviation = deviations.some(
         (deviation) =>
           deviation?.type === "TASK_SOURCE_DRIFT" &&
@@ -846,10 +1036,15 @@ export function validateTraceability({
     }
 
     const referencedDeviations = new Set(
-      requirements.flatMap((row) => (Array.isArray(row?.deviation_ids) ? row.deviation_ids : []))
+      requirements.flatMap((row) =>
+        Array.isArray(row?.deviation_ids) ? row.deviation_ids : []
+      )
     )
     for (const deviation of deviations) {
-      if (deviation?.state === "OPEN" && !referencedDeviations.has(deviation.id)) {
+      if (
+        deviation?.state === "OPEN" &&
+        !referencedDeviations.has(deviation.id)
+      ) {
         warnings.push(
           `open deviation ${deviation.id} is task/structure-only, not requirement-linked`
         )
@@ -863,7 +1058,9 @@ export function validateTraceability({
     try {
       exactHeadEvidence = JSON.parse(fs.readFileSync(exactHeadPath, "utf8"))
       if (exactHeadEvidence.source_head_sha !== currentHead) {
-        errors.push("artifacts/exact-head.json source_head_sha must equal the evaluated Git head")
+        errors.push(
+          "artifacts/exact-head.json source_head_sha must equal the evaluated Git head"
+        )
       }
       if (exactHeadEvidence.expected_source_head !== currentHead) {
         errors.push(
@@ -881,7 +1078,9 @@ export function validateTraceability({
   const analysisValid = errors.length === 0
   const receiptEligible = false
   const checkedTasks = [...taskStatus.values()].filter(Boolean).length
-  const openDeviations = deviationRows.filter((deviation) => deviation?.state === "OPEN")
+  const openDeviations = deviationRows.filter(
+    (deviation) => deviation?.state === "OPEN"
+  )
 
   return {
     schema_version: "courtside-traceability-report/v1",
@@ -891,14 +1090,18 @@ export function validateTraceability({
     receipt_eligible: receiptEligible,
     source: {
       repository: contract?.repository ?? "bynanci/courtside-tw",
-      authorized_base_sha: contract?.authorized_base_sha ?? dispatch?.base?.sha ?? null,
+      authorized_base_sha:
+        contract?.authorized_base_sha ?? dispatch?.base?.sha ?? null,
       evaluated_head_sha: currentHead,
       exact_head_evidence: exactHeadEvidence,
       inputs: {
         spec: { path: paths.spec, sha256: sha256(specText) },
         plan: { path: paths.plan, sha256: sha256(planText) },
         tasks: { path: paths.tasks, sha256: sha256(tasksText) },
-        traceability: { path: paths.traceability, sha256: sha256(traceabilityText) }
+        traceability: {
+          path: paths.traceability,
+          sha256: sha256(traceabilityText)
+        }
       }
     },
     counts: {
@@ -908,22 +1111,32 @@ export function validateTraceability({
       unchecked_tasks: taskIds.length - checkedTasks,
       mapped_requirements: contract?.requirements?.length ?? 0,
       classified_tasks: contract?.task_ledger?.length ?? 0,
-      mapped_tasks: taskLedgerRows.filter((row) => (row?.requirement_ids ?? []).length > 0).length,
+      mapped_tasks: taskLedgerRows.filter(
+        (row) => (row?.requirement_ids ?? []).length > 0
+      ).length,
       approved_orphans: approvedOrphanIds.length,
       deviations: contract?.deviations?.length ?? 0
     },
     evidence_distribution: distribution(requirementRows, "evidence_state"),
-    implementation_distribution: distribution(requirementRows, "implementation_state"),
+    implementation_distribution: distribution(
+      requirementRows,
+      "implementation_state"
+    ),
     deviation_summary: {
       total: deviationRows.length,
       open: openDeviations.length,
-      resolved: deviationRows.filter((deviation) => deviation?.state === "RESOLVED").length,
-      accepted: deviationRows.filter((deviation) => deviation?.state === "ACCEPTED").length,
+      resolved: deviationRows.filter(
+        (deviation) => deviation?.state === "RESOLVED"
+      ).length,
+      accepted: deviationRows.filter(
+        (deviation) => deviation?.state === "ACCEPTED"
+      ).length,
       open_ids: openDeviations.map((deviation) => deviation.id)
     },
     scope_boundaries: {
       t086_dispatched: contract?.lifecycle?.t086_dispatched ?? false,
-      participant_research_executed: contract?.lifecycle?.participant_research_executed ?? false,
+      participant_research_executed:
+        contract?.lifecycle?.participant_research_executed ?? false,
       web3_activated: contract?.lifecycle?.web3_activated ?? false,
       production_activated: contract?.lifecycle?.production_activated ?? false,
       provider_configured: contract?.lifecycle?.provider_configured ?? false,
@@ -934,10 +1147,15 @@ export function validateTraceability({
       git_diff_audited: Array.isArray(changedPaths),
       changed_paths: changedPaths,
       unauthorized_paths: Array.isArray(changedPaths)
-        ? changedPaths.filter((changedPath) => !authorizedChangedPaths.has(changedPath))
+        ? changedPaths.filter(
+            (changedPath) => !authorizedChangedPaths.has(changedPath)
+          )
         : null
     },
-    head_binding: gitBinding ?? { status: "UNVERIFIED_FIXTURE", head: currentHead },
+    head_binding: gitBinding ?? {
+      status: "UNVERIFIED_FIXTURE",
+      head: currentHead
+    },
     requirement_results: requirementRows.map((row) => ({
       id: row.id,
       implementation_state: row.implementation_state,
@@ -973,11 +1191,15 @@ function inspectGit(root) {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"]
     }).trim()
-    const porcelain = execFileSync("git", ["status", "--porcelain=v1", "--untracked-files=all"], {
-      cwd: root,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"]
-    }).trim()
+    const porcelain = execFileSync(
+      "git",
+      ["status", "--porcelain=v1", "--untracked-files=all"],
+      {
+        cwd: root,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"]
+      }
+    ).trim()
     const status = porcelain
       ? porcelain.split("\n").some((line) => line.startsWith("??"))
         ? "UNTRACKED_OR_DIRTY"
@@ -986,16 +1208,24 @@ function inspectGit(root) {
     let authorizedBaseAncestor = null
     let changedPaths = null
     try {
-      execFileSync("git", ["merge-base", "--is-ancestor", AUTHORIZED_BASE_SHA, head], {
-        cwd: root,
-        stdio: "ignore"
-      })
+      execFileSync(
+        "git",
+        ["merge-base", "--is-ancestor", AUTHORIZED_BASE_SHA, head],
+        {
+          cwd: root,
+          stdio: "ignore"
+        }
+      )
       authorizedBaseAncestor = true
-      changedPaths = execFileSync("git", ["diff", "--name-only", AUTHORIZED_BASE_SHA, head], {
-        cwd: root,
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "ignore"]
-      })
+      changedPaths = execFileSync(
+        "git",
+        ["diff", "--name-only", AUTHORIZED_BASE_SHA, head],
+        {
+          cwd: root,
+          encoding: "utf8",
+          stdio: ["ignore", "pipe", "ignore"]
+        }
+      )
         .trim()
         .split("\n")
         .filter(Boolean)
@@ -1003,13 +1233,26 @@ function inspectGit(root) {
     } catch {
       authorizedBaseAncestor = null
     }
-    return { head, status, authorized_base_ancestor: authorizedBaseAncestor, changedPaths }
+    return {
+      head,
+      status,
+      authorized_base_ancestor: authorizedBaseAncestor,
+      changedPaths
+    }
   } catch {
-    return { head: null, status: "UNAVAILABLE", authorized_base_ancestor: null, changedPaths: null }
+    return {
+      head: null,
+      status: "UNAVAILABLE",
+      authorized_base_ancestor: null,
+      changedPaths: null
+    }
   }
 }
 
-const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
+const repositoryRoot = path.resolve(
+  path.dirname(fileURLToPath(import.meta.url)),
+  ".."
+)
 
 export function runCli(root = repositoryRoot) {
   const inspection = inspectGit(root)
@@ -1022,9 +1265,13 @@ export function runCli(root = repositoryRoot) {
       authorized_base_ancestor: inspection.authorized_base_ancestor
     },
     changedPaths: inspection.changedPaths,
-    requireExactHeadEvidence: process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true"
+    requireExactHeadEvidence:
+      process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true"
   })
-  const outputPath = path.join(root, "artifacts/frontend/t085-traceability-report.json")
+  const outputPath = path.join(
+    root,
+    "artifacts/frontend/t085-traceability-report.json"
+  )
   fs.mkdirSync(path.dirname(outputPath), { recursive: true })
   const temporaryPath = `${outputPath}.tmp`
   fs.writeFileSync(temporaryPath, `${JSON.stringify(report, null, 2)}\n`)
@@ -1040,5 +1287,7 @@ export function runCli(root = repositoryRoot) {
   return 1
 }
 
-const invokedPath = process.argv[1] ? pathToFileURL(path.resolve(process.argv[1])).href : null
+const invokedPath = process.argv[1]
+  ? pathToFileURL(path.resolve(process.argv[1])).href
+  : null
 if (invokedPath === import.meta.url) process.exitCode = runCli()

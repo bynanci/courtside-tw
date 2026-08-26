@@ -163,6 +163,18 @@
         "security_run_number": 972,
         "security_readback": "Six of eight jobs passed; postgres and s3 image scans remained blocked by CVE-2026-14456.",
         "remediation": "Mechanically format only the two CI-identified JavaScript files with Prettier 3.9.6 and the repository config, then publish a new immutable head and rerun every gate."
+      },
+      {
+        "head": "b1855e790910401fa23dea7447152adc45f07f05",
+        "commit": "style(T085): satisfy exact formatter gate",
+        "result": "SUPERSEDED_FORMATTING_GATE",
+        "ci_run_id": 32947570827,
+        "ci_run_number": 970,
+        "ci_readback": "Java and dependency jobs passed; frontend again stopped at Prettier before semantic validation, and both browser jobs were skipped. This head has no GREEN decision value.",
+        "security_run_id": 32947570807,
+        "security_run_number": 973,
+        "security_readback": "Six of eight jobs passed; postgres and s3 image scans remained blocked by CVE-2026-14456.",
+        "remediation": "Replace the snippet-derived formatting attempt with complete-file canonical output from the official Prettier 3.9.6 playground using the repository config. Require both complete files to be formatter fixed points, rerun 27 mutations, publish one new immutable head and rerun every gate."
       }
     ],
     "current_matrix_readback": {
@@ -193,6 +205,6 @@
       "provider_configured": false,
       "external_writes_or_secrets_changed": false
     },
-    "current_decision": "The bounded semantic remediation is locally analysis-valid. Publication, fresh exact-head CI/Security, artifact read-back, zero-thread read-back and current-base mergeability remain required before any ready-for-review transition."
+    "current_decision": "Heads a996cd4 and b1855e7 are superseded formatting-gate attempts. Complete-file Prettier 3.9.6 fixed-point output and 27/27 local mutations are now ready for one new bounded publication. Fresh exact-head CI/Security, artifact read-back, zero-thread read-back and current-base mergeability remain required before any ready-for-review transition."
   }
 }
