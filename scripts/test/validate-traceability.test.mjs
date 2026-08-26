@@ -712,4 +712,10 @@ test("ready-for-review remains an explicit release-owner gate", () => {
   )
   assert.match(traceability, /does not authorize ready-for-review/)
   assert.doesNotMatch(traceability, /conditionally authorizes ready-for-review/)
+  assert.match(
+    traceability,
+    /Dispatch authority remains fixed at `3fc14dd29b216ce46e4d364ceaec79a971dcef44`/
+  )
+  assert.match(traceability, /protected `main@84db3db95aa596eb317b71c4eea0926fc1fc15ce`/)
+  assert.match(traceability, /`EXTERNAL_READBACK_REQUIRED`/)
 })

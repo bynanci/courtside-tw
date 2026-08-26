@@ -212,5 +212,52 @@
       "provider_configured": false,
       "external_writes_or_secrets_changed": false
     }
+  },
+  "current_base_integration_iteration": {
+    "schema_version": "courtside-t085-current-base-integration/v1",
+    "recorded_at": "2026-08-26T14:12:01Z",
+    "predecessor_head": "01ec5f90f2f8f72731a60bc2349a58583a1ee9c4",
+    "immutable_dispatch_base_sha": "3fc14dd29b216ce46e4d364ceaec79a971dcef44",
+    "current_review_base_sha": "84db3db95aa596eb317b71c4eea0926fc1fc15ce",
+    "implementation_head_before_evidence_refresh": "cf29b8c2b91ce49e51b96aab954ac97f7c37406c",
+    "result": "PASS_WITH_EXACT_TOOLCHAIN_AND_REMOTE_GATES_DEFERRED_TO_CI",
+    "tests_first": {
+      "red": "After integrating current protected main, the real validator rejected the two inherited Dockerfiles and two new review-base tests produced an attributable 29-pass/2-fail RED.",
+      "green": "The validator now keeps the immutable dispatch base separate from the current protected review base, audits the candidate diff against the latter, and reports EXTERNAL_READBACK_REQUIRED instead of claiming an audited scope when a shallow checkout cannot produce the diff. All 31/31 tests pass."
+    },
+    "checks": [
+      {
+        "command": "git merge-tree --write-tree --messages 01ec5f90f2f8f72731a60bc2349a58583a1ee9c4 84db3db95aa596eb317b71c4eea0926fc1fc15ce",
+        "result": "PASS",
+        "details": "Conflict-free integration; the protected-main change touches only the PostgreSQL and S3Mock Dockerfiles and does not overlap the 12 T085 paths."
+      },
+      {
+        "command": "node --test scripts/test/validate-traceability.test.mjs",
+        "result": "PASS",
+        "details": "31/31 mutation, semantic, release-authority, review-base and external-scope-fallback tests pass."
+      },
+      {
+        "command": "node scripts/validate-traceability.mjs",
+        "result": "PASS",
+        "details": "97 requirements, 112 tasks and 47 deviations; scope diff is audited against current protected review base 84db3db."
+      },
+      {
+        "command": "prettier@3.9.6 --check scripts/validate-traceability.mjs scripts/test/validate-traceability.test.mjs package.json",
+        "result": "PASS"
+      }
+    ],
+    "toolchain_boundary": "Local Node 24.19.0 and pnpm 11.19.0 do not match pinned Node 24.14.0 and pnpm 11.7.0; exact toolchain proof remains a fresh CI gate and is not waived.",
+    "scope_guard": {
+      "ready_for_review_performed": false,
+      "protected_merge_performed": false,
+      "completion_receipt_created": false,
+      "t085_checked": false,
+      "t086_or_later_modified": false,
+      "participant_research_executed": false,
+      "web3_activated": false,
+      "production_activated": false,
+      "provider_configured": false,
+      "external_writes_or_secrets_changed": false
+    }
   }
 }

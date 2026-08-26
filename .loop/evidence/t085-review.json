@@ -283,5 +283,50 @@
       }
     },
     "decision": "Publish at most one atomic T085-only review-remediation head after local GREEN and optimistic head equality. Keep PR 146 draft and HOLD: fresh exact-head evidence is required, Security 8/8 cannot be restored inside the current scope, and ready-for-review is not authorized."
+  },
+  "current_base_reconciliation_review": {
+    "schema_version": "courtside-t085-current-base-review/v1",
+    "recorded_at": "2026-08-26T14:12:01Z",
+    "finding_source_head": "01ec5f90f2f8f72731a60bc2349a58583a1ee9c4",
+    "immutable_dispatch_base_sha": "3fc14dd29b216ce46e4d364ceaec79a971dcef44",
+    "current_protected_review_base_sha": "84db3db95aa596eb317b71c4eea0926fc1fc15ce",
+    "findings": [
+      {
+        "id": "T085-CURRENT-BASE-SECURITY-DRIFT",
+        "severity": "P1",
+        "disposition": "RESOLVED_LOCALLY_PENDING_EXACT_HEAD_CI",
+        "evidence": "Security #978 failed only postgres and s3 CVE-2026-14456 scans while protected main Security #979 passed 8/8 after PR #147.",
+        "remediation": "Merge current protected main into the PR branch without rewriting the existing 11 T085 commits."
+      },
+      {
+        "id": "T085-DISPATCH-REVIEW-BASE-CONFLATION",
+        "severity": "P1",
+        "disposition": "RESOLVED_LOCALLY_PENDING_EXACT_HEAD_CI",
+        "evidence": "The post-integration CLI diffed from immutable dispatch base 3fc14dd and rejected the two inherited security Dockerfiles.",
+        "remediation": "Preserve 3fc14dd as immutable authorization provenance while binding scope inspection to current review base 84db3db; add tests for both identities and for the shallow-checkout external read-back state."
+      },
+      {
+        "id": "T085-SHALLOW-SCOPE-PROOF",
+        "severity": "P2",
+        "disposition": "BOUNDED_TWO_PART_PROOF",
+        "evidence": "A shallow CI checkout may not contain the review base object.",
+        "remediation": "The structured report must emit EXTERNAL_READBACK_REQUIRED and receipt_eligible=false; final acceptance additionally requires authoritative GitHub changed-file read-back."
+      }
+    ],
+    "local_proof": {
+      "tests": "31/31 PASS",
+      "structural_validator": "PASS: 97 requirements, 112 tasks, 47 deviations",
+      "formatter": "Prettier 3.9.6 PASS",
+      "merge_conflicts": 0
+    },
+    "scope_review": {
+      "pr_diff_paths_expected": 12,
+      "runtime_files_added_to_pr_diff": false,
+      "workflow_changed": false,
+      "t085_checked": false,
+      "ready_or_merge_performed": false,
+      "forbidden_scope_changed": false
+    },
+    "decision": "Local remediation is GREEN but remains BLOCK pending optimistic branch-head equality, publication and fresh exact-head CI, Security, artifact, thread, scope and mergeability read-back."
   }
 }
