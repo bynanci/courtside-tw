@@ -388,6 +388,28 @@ test("current review base advances without rewriting the fixed dispatch authoriz
   assert.equal(report.scope_validation.review_base_sha, reviewBaseSha)
 })
 
+test("unavailable review-base diff requires authoritative PR scope readback", () => {
+  const currentHead = "1111111111111111111111111111111111111111"
+  const report = validateTraceability({
+    root: makeFixture(),
+    currentHead,
+    gitBinding: {
+      status: "CLEAN",
+      head: currentHead,
+      authorized_base_ancestor: null,
+      review_base_ancestor: null
+    },
+    changedPaths: null,
+    reviewBaseSha: "84db3db95aa596eb317b71c4eea0926fc1fc15ce"
+  })
+
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+  assert.equal(report.receipt_eligible, false)
+  assert.equal(report.scope_validation.git_diff_audited, false)
+  assert.equal(report.scope_validation.status, "EXTERNAL_READBACK_REQUIRED")
+  assert.match(report.warnings.join("\n"), /review-base path diff was not available/)
+})
+
 for (const taskId of ["T086", "T098", "T097"]) {
   test(`${taskId} checkbox cannot move outside the authorized T085 frontier`, () => {
     const root = makeFixture(({ contract, files }) => {
