@@ -1922,6 +1922,16 @@ for (const [provenance, pathName, source] of [
     'import test from "node:test"\ntest = () => {}\ntest("fixture-proof", () => {})\n'
   ],
   [
+    "for-of reassigned imported test",
+    "for-of-reassigned-test-proof.test.js",
+    'import test from "node:test"\nfor (test of [() => {}]) test("fixture-proof", () => {})\n'
+  ],
+  [
+    "for-in reassigned imported test",
+    "for-in-reassigned-test-proof.test.js",
+    'import test from "node:test"\nfor (test in {}) test("fixture-proof", () => {})\n'
+  ],
+  [
     "local fake test.describe",
     "fake-suite-proof.test.js",
     "const test = { describe: (_title, callback) => callback() }\n" +
