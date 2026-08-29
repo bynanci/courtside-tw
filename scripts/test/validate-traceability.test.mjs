@@ -972,7 +972,8 @@ test("a frozen contract accepts only a receipt-bound one-line T085 checkbox tran
 
   assert.equal(report.status, "PASS", report.errors.join("\n"))
   assert.equal(report.mode, "T085_RECEIPT_CANDIDATE")
-  assert.equal(report.receipt_eligible, true)
+  assert.equal(report.receipt_eligible, false)
+  assert.equal(report.external_readback_required, true)
   assert.equal(report.scope_boundaries.t086_dispatched, false)
   assert.equal(report.completion_receipt.implementation_head_sha, fixtureImplementationHead)
   assert.equal(report.completion_receipt.implementation_merge_sha, fixtureImplementationMerge)
@@ -1276,8 +1277,26 @@ test("authenticated protected-main push validates the merged receipt transition"
 
   assert.equal(report.status, "PASS", report.errors.join("\n"))
   assert.equal(report.mode, "T085_RECEIPT_CANDIDATE")
-  assert.equal(report.receipt_eligible, true)
+  assert.equal(report.receipt_eligible, false)
+  assert.equal(report.external_readback_required, true)
   assert.equal(report.source.github_actions_context.authority, "PROTECTED_MAIN_PUSH")
+})
+
+test("receipt mode rejects duplicate object keys before JSON parsing", () => {
+  const fixture = makeReceiptFixture()
+  const receiptPath = path.join(fixture.root, completionReceiptPath)
+  const receiptText = fs.readFileSync(receiptPath, "utf8")
+  const ambiguousReceipt = receiptText.replace(
+    '"decision":"ACCEPTED"',
+    '"decision":"REJECTED","decision":"ACCEPTED"'
+  )
+  assert.notEqual(ambiguousReceipt, receiptText)
+  fs.writeFileSync(receiptPath, ambiguousReceipt)
+  const report = runReceiptFixture(fixture)
+
+  assert.equal(report.status, "FAIL")
+  assert.equal(report.receipt_eligible, false)
+  assert.match(report.errors.join("\n"), /duplicate JSON object key: decision/)
 })
 
 test("receipt candidate rejects a receipt that was already present at its audited base", () => {
@@ -1751,6 +1770,26 @@ test("pending T085 permits a support change from the frozen implementation allow
 
   assert.equal(report.status, "PASS", report.errors.join("\n"))
   assert.deepEqual(inspection.changedPaths, ["scripts/validate-traceability.mjs"])
+})
+
+test("Git inspection exposes both sides of a rename into the completion receipt path", () => {
+  const root = makeFixture()
+  const currentMain = initializeGitFixture(root)
+  git(root, "update-ref", "refs/remotes/origin/main", currentMain)
+  git(root, "switch", "-c", "rename-evidence-into-receipt")
+  git(
+    root,
+    "mv",
+    ".loop/evidence/t085-dispatch.json",
+    ".loop/evidence/t085-completion-receipt.json"
+  )
+  git(root, "commit", "-m", "rename evidence into receipt")
+
+  const inspection = traceabilityValidator.inspectGit(root, { environment: {} })
+  assert.deepEqual(inspection.changedPaths, [
+    ".loop/evidence/t085-completion-receipt.json",
+    ".loop/evidence/t085-dispatch.json"
+  ])
 })
 
 for (const changedPath of [
