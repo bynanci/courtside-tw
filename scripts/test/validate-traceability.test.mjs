@@ -42,6 +42,9 @@ const fixtureImplementationMerge = "a2491b81066ac225a0b5d2dab93be79fb6dfbe65"
 const fixtureCompletedBase = "5555555555555555555555555555555555555555"
 const fixtureCiRunId = 33226451857
 const fixtureSecurityRunId = 33226451860
+const fixtureReceiptOwner = "bynanci"
+const fixtureReceiptAuthorizationRef =
+  "https://github.com/bynanci/courtside-tw/issues/145#issuecomment-5459765126"
 const fixtureFrontendArtifactId = 9707044002
 const fixtureFrontendArchiveSha256 =
   "88baa1d7bd1e3ef08193b7d65799484d16363677c7c446001fa531efb6a8706f"
@@ -290,8 +293,8 @@ function makeReceiptFixture(mutate = () => {}) {
       task: "T085",
       decision: "ACCEPTED",
       actor_type: "HUMAN",
-      accepted_by: "fixture-release-owner",
-      authorization_ref: "fixture-only-authorization",
+      accepted_by: fixtureReceiptOwner,
+      authorization_ref: fixtureReceiptAuthorizationRef,
       recorded_at: "2026-08-29T00:00:00Z",
       repository: "bynanci/courtside-tw",
       issue: "https://github.com/bynanci/courtside-tw/issues/145",
@@ -431,12 +434,12 @@ function makeCompletedFixture(mutate = () => {}) {
   const receiptPath = path.join(fixture.root, completionReceiptPath)
   const completed = {
     ...fixture,
-    changedPaths: ["docs/post-receipt.md"],
+    changedPaths: ["docs/research/post-receipt.md"],
     changeBaseTasksText: fs.readFileSync(tasksPath, "utf8"),
     changeBaseTraceabilityText: fs.readFileSync(traceabilityPath, "utf8"),
     changeBaseCompletionReceiptText: fs.readFileSync(receiptPath, "utf8")
   }
-  const docsPath = path.join(fixture.root, "docs/post-receipt.md")
+  const docsPath = path.join(fixture.root, "docs/research/post-receipt.md")
   fs.mkdirSync(path.dirname(docsPath), { recursive: true })
   fs.writeFileSync(docsPath, "post-receipt work\n")
   mutate({ ...completed, tasksPath, traceabilityPath, receiptPath })
@@ -866,14 +869,35 @@ test("a frozen contract accepts only a receipt-bound one-line T085 checkbox tran
 
 test("completed T085 permits unrelated post-receipt work without replaying the transition", () => {
   const fixture = makeCompletedFixture()
+  fixture.changedPaths = ["docs/research/post-receipt.md"]
   const report = runCompletedFixture(fixture)
 
   assert.equal(report.status, "PASS", report.errors.join("\n"))
   assert.equal(report.mode, "T085_COMPLETE_STEADY")
   assert.equal(report.receipt_eligible, false)
-  assert.deepEqual(report.scope_validation.changed_paths, ["docs/post-receipt.md"])
+  assert.deepEqual(report.scope_validation.changed_paths, ["docs/research/post-receipt.md"])
   assert.equal(report.scope_boundaries.t086_dispatched, false)
 })
+
+for (const changedPath of [
+  "android/app/src/main/java/com/courtside/tw/Runtime.kt",
+  ".github/workflows/deploy.yml",
+  "backend/src/main/java/com/courtside/tw/ProviderConfig.java",
+  "web3/activate.ts"
+]) {
+  test(`completed T085 rejects non-research activation path ${changedPath}`, () => {
+    const fixture = makeCompletedFixture()
+    fixture.changedPaths = [changedPath]
+    const report = runCompletedFixture(fixture)
+
+    assert.equal(report.status, "FAIL")
+    assert.equal(report.receipt_eligible, false)
+    assert.match(
+      report.errors.join("\n"),
+      /changed path is outside the authorized post-T085 research-documentation scope/
+    )
+  })
+}
 
 test("completed T085 keeps T086 dispatch paths blocked until validator evolution", () => {
   const fixture = makeCompletedFixture()
@@ -1149,6 +1173,20 @@ for (const [name, mutate, expected] of [
       receipt.actor_type = "AGENT"
     },
     /completion receipt actor_type must be HUMAN/
+  ],
+  [
+    "an untrusted receipt owner",
+    ({ receipt }) => {
+      receipt.accepted_by = "branch-author"
+    },
+    /completion receipt accepted_by must equal the authorized repository owner/
+  ],
+  [
+    "an unpinned receipt authorization",
+    ({ receipt }) => {
+      receipt.authorization_ref = "self-declared-authorization"
+    },
+    /completion receipt authorization_ref must equal the pinned owner authorization/
   ],
   ...[
     ["implementation_head_sha", "missing", undefined],
