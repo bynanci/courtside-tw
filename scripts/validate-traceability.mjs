@@ -841,6 +841,32 @@ function hasBoundedJavaScriptRange(node, textLength) {
   )
 }
 
+function javaScriptTitleContainsSelector(title, targetOffset, selector, textLength) {
+  if (
+    !hasBoundedJavaScriptRange(title, textLength) ||
+    targetOffset < title.range[0] ||
+    targetOffset >= title.range[1]
+  ) {
+    return false
+  }
+  if (title.type === "Literal") {
+    return typeof title.value === "string" && title.value.includes(selector)
+  }
+  if (title.type !== "TemplateLiteral") return false
+
+  return (
+    title.quasis?.some(
+      (quasi) =>
+        hasBoundedJavaScriptRange(quasi, textLength) &&
+        quasi.range[0] <= targetOffset &&
+        targetOffset < quasi.range[1] &&
+        [quasi.value?.raw, quasi.value?.cooked].some(
+          (value) => typeof value === "string" && value.includes(selector)
+        )
+    ) === true
+  )
+}
+
 function walkJavaScriptAst(node, visitor, ancestors = [], seen = new WeakSet()) {
   if (node === null || typeof node !== "object" || seen.has(node)) return
   seen.add(node)
@@ -857,7 +883,7 @@ function walkJavaScriptAst(node, visitor, ancestors = [], seen = new WeakSet()) 
   }
 }
 
-function javaScriptProofCall(node, targetOffset, textLength) {
+function javaScriptProofCall(node, targetOffset, selector, textLength) {
   if (node?.type !== "CallExpression") return false
   const expression = node
 
@@ -873,11 +899,7 @@ function javaScriptProofCall(node, targetOffset, textLength) {
   }
 
   const title = expression.arguments?.[0]
-  return (
-    hasBoundedJavaScriptRange(title, textLength) &&
-    title.range[0] <= targetOffset &&
-    targetOffset < title.range[1]
-  )
+  return javaScriptTitleContainsSelector(title, targetOffset, selector, textLength)
 }
 
 function javaScriptFunctionRegistration(functionIndex, ancestors) {
@@ -925,7 +947,7 @@ function hasExecutableJavaScriptProofAnchor(text, selector, proofPath) {
   const matches = []
   try {
     walkJavaScriptAst(ast, (node, ancestors) => {
-      if (javaScriptProofCall(node, targetOffset, text.length)) {
+      if (javaScriptProofCall(node, targetOffset, selector, text.length)) {
         matches.push({ ancestors, node })
       }
     })
