@@ -1,0 +1,332 @@
+{
+  "schema_version": "courtside-t085-review/v1",
+  "task": "T085",
+  "recorded_at": "2026-08-25T13:29:24Z",
+  "repository": "bynanci/courtside-tw",
+  "issue": "https://github.com/bynanci/courtside-tw/issues/145",
+  "pull_request": "https://github.com/bynanci/courtside-tw/pull/146",
+  "authorized_base_sha": "3fc14dd29b216ce46e4d364ceaec79a971dcef44",
+  "review_result": "BLOCK_PENDING_EXACT_HEAD_AND_SECURITY",
+  "independent_reviews": [
+    {
+      "review": "validator-adversarial",
+      "initial_decision": "BLOCK",
+      "resolved_findings": [
+        "dirty or untracked inputs could previously be attributed to HEAD",
+        "contract and dispatch could previously rewrite the authorized base together",
+        "T086+ checkbox movement was previously independent of declared scope flags",
+        "receipt proof kinds were previously labels without structured validation",
+        "all requirements could previously be vacuously mapped to one foundation task"
+      ],
+      "resolution": "The validator now fixes the base, enforces the T085 checkbox frontier and task taxonomy, requires clean-head binding, validates structured receipt types, restricts proof paths, fixes approved orphans and reports mapped tasks separately. Twenty-two mutation tests cover these boundaries."
+    },
+    {
+      "review": "matrix-semantics",
+      "initial_decision": "BLOCK",
+      "resolved_findings": [
+        "eleven requirement rows overstated partial capabilities as VERIFIED",
+        "FR-042 used shared primitives without endpoint-complete write-API coverage",
+        "several retained VERIFIED rows used incomplete proof locators",
+        "T032 and T042 source range claims diverged from the evidence-backed matrix"
+      ],
+      "resolution": "Twelve rows are now PARTIAL, eight incomplete capabilities are PLANNED, nine new deviations are explicit, compound retained proofs use clause-relevant locators, and TASK_SOURCE_DRIFT records the two broad historical task claims."
+    },
+    {
+      "review": "scope-and-release-boundary",
+      "initial_decision": "BLOCK",
+      "resolved_findings": [
+        "implementation and completion receipt phases were conflated",
+        "human tables and machine contract could drift",
+        "generated reports omitted resolved proof locators and file digests"
+      ],
+      "resolution": "The bounded validator accepts only T085_IMPLEMENTATION, always emits receipt_eligible=false, cross-checks human rows, and emits proof paths, selectors and file SHA-256 values. Completion remains a separately authorized verifier and release-owner action."
+    }
+  ],
+  "matrix_readback": {
+    "requirements": 97,
+    "tasks": 112,
+    "mapped_tasks": 107,
+    "approved_orphans": ["T001", "T005", "T007", "T082", "T085"],
+    "deviations": 38,
+    "deviations_open": 34,
+    "deviations_resolved": 4,
+    "evidence_distribution": {
+      "VERIFIED": 39,
+      "PARTIAL": 22,
+      "PLANNED_BLOCKED": 30,
+      "HUMAN_OPEN": 3,
+      "PROXY_ONLY": 2,
+      "EXTERNAL_OPEN": 1
+    },
+    "implementation_distribution": { "COMPLETE": 53, "PLANNED": 44 }
+  },
+  "historical_acceptance_readback": {
+    "requirement_id": "SC-010",
+    "task": "T081",
+    "artifact_id": 9414805375,
+    "artifact_name": "ci-dependency-reports",
+    "artifact_digest": "sha256:2572e7202c4f8b5429654c7f052ebea5e88e20650c845863925ea54e1264a5b7",
+    "artifact_downloaded": true,
+    "source_head_sha": "3fcc7f2f29e5c3d41370fffcebd34d925c4c9911",
+    "workflow": "CI",
+    "workflow_run_id": 32390737392,
+    "workflow_run_number": 816,
+    "exact_head_manifest_sha256": "01eff14b71a4a9592dc82c16460ca05be834566b9b5517df15acaf654b3d119a",
+    "restore_receipt_sha256": "e43cdc024bb9317ffbbf4620de237c9578470a5bb38633c798309da8be930210",
+    "restore_receipt": {
+      "result": "PASS",
+      "release_ready": true,
+      "rpo_hours": 0.001,
+      "rpo_limit_hours": 24.0,
+      "rto_minutes": 0.037,
+      "rto_limit_minutes": 240.0,
+      "media_assets": 2,
+      "media_variants": 2,
+      "checksum_sample_requested": 2,
+      "checksum_sample_verified": 2
+    },
+    "limitation": "This historical isolated-drill receipt does not activate a daily production schedule or prove recurring quarterly execution; FR-045 remains PARTIAL under DEV-T085-028."
+  },
+  "scope_review": {
+    "authorized_paths_only": true,
+    "runtime_files_changed": false,
+    "t085_checked": false,
+    "t086_or_later_modified": false,
+    "participant_research_executed": false,
+    "web3_activated": false,
+    "production_activated": false,
+    "provider_configured": false,
+    "secrets_changed": false,
+    "ready_merge_or_receipt_performed": false
+  },
+  "decision": "T085 implementation may proceed to an immutable draft head and exact-head CI/Security read-back. It is analysis-valid only; it is not completion-receipt eligible.",
+  "semantic_remediation": {
+    "schema_version": "courtside-t085-semantic-remediation/v1",
+    "recorded_at": "2026-08-26T08:06:41Z",
+    "finding_source_head": "072eb10ea4f49605b24658bd7f7b518f1e923dab",
+    "finding_signature": "T085_SEMANTIC_PROOF_FALSE_GREEN",
+    "finding_classes": [
+      "repository proof selectors could be duplicated, overlap or identify a unique non-test import while still passing",
+      "FR-003 visibility and currentness clauses were not all attributable to the listed proof locators",
+      "FR-009 overstated issue-page Open Graph and structured-data proof as VERIFIED",
+      "FR-013 overstated a complete article-and-issue editorial lifecycle despite issue proof covering only schedule and publish",
+      "the human deviation register could omit machine deviations without validator failure"
+    ],
+    "tests_first_receipts": [
+      {
+        "head": "907f25a385b40851839c66624d770eff06e4db3b",
+        "commit": "test(T085): expose semantic proof false-greens",
+        "ci_run_id": 32943931032,
+        "ci_run_number": 967,
+        "result": "ATTRIBUTABLE_RED",
+        "traceability_tests": { "passed": 22, "failed": 2, "total": 24 }
+      },
+      {
+        "head": "5ba6367f2571084b98c4a73e26df89610c30e21f",
+        "commit": "test(T085): close generic proof selector bypasses",
+        "ci_run_id": 32944531661,
+        "ci_run_number": 968,
+        "result": "ATTRIBUTABLE_RED",
+        "traceability_tests": { "passed": 22, "failed": 4, "total": 26 },
+        "unrelated_security_readback": {
+          "security_run_id": 32944531658,
+          "security_run_number": 971,
+          "passed_jobs": 6,
+          "failed_jobs": 2,
+          "failure": "CVE-2026-14456 in pinned Alpine libcrypto3/libssl3 3.5.7-r0 for the postgres and s3 images; fixed package 3.5.8-r0",
+          "boundary": "This external image drift is not attributable to the T085 RED tests and is not remediated by widening the traceability change set."
+        }
+      }
+    ],
+    "remediation": {
+      "selector_policy": "Executable repository proofs must resolve to exactly one literal location and identify a supported test or durable receipt anchor.",
+      "human_deviation_policy": "The human deviation register must contain every machine deviation in canonical order with matching type, severity, state, affected IDs and release impact.",
+      "fr_003": "COMPLETE / VERIFIED with five clause-relevant public issue and article proof locators",
+      "fr_009": "COMPLETE / PARTIAL under DEV-T085-039 with BLOCKS_T086_UNLESS_ADJUDICATED",
+      "fr_013": "PLANNED / PARTIAL under DEV-T085-040 with BLOCKS_T086_UNLESS_ADJUDICATED",
+      "runtime_implementation_performed": false
+    },
+    "review_mutation_receipt": {
+      "finding": "Human deviation register omitted DEV-T085-039 and DEV-T085-040 while the machine contract contained them.",
+      "red": "The 27th mutation failed because the pre-fix validator returned PASS after a human-only deviation ID drift.",
+      "green": "The human register now contains DEV-T085-039 and DEV-T085-040 and the validator rejects human/machine deviation drift; 27/27 mutations pass locally."
+    },
+    "publication_attempts": [
+      {
+        "head": "a996cd49e5f11ffbbae556ee29d069a05eb00dfa",
+        "commit": "fix(T085): enforce semantic proof traceability",
+        "result": "SUPERSEDED_FORMATTING_GATE",
+        "ci_run_id": 32946207397,
+        "ci_run_number": 969,
+        "ci_readback": "Java and dependency jobs passed; frontend stopped at Prettier before semantic validation, so this head has no GREEN decision value.",
+        "security_run_id": 32946207392,
+        "security_run_number": 972,
+        "security_readback": "Six of eight jobs passed; postgres and s3 image scans remained blocked by CVE-2026-14456.",
+        "remediation": "Mechanically format only the two CI-identified JavaScript files with Prettier 3.9.6 and the repository config, then publish a new immutable head and rerun every gate."
+      },
+      {
+        "head": "b1855e790910401fa23dea7447152adc45f07f05",
+        "commit": "style(T085): satisfy exact formatter gate",
+        "result": "SUPERSEDED_FORMATTING_GATE",
+        "ci_run_id": 32947570827,
+        "ci_run_number": 970,
+        "ci_readback": "Java and dependency jobs passed; frontend again stopped at Prettier before semantic validation, and both browser jobs were skipped. This head has no GREEN decision value.",
+        "security_run_id": 32947570807,
+        "security_run_number": 973,
+        "security_readback": "Six of eight jobs passed; postgres and s3 image scans remained blocked by CVE-2026-14456.",
+        "remediation": "Replace the snippet-derived formatting attempt with complete-file canonical output from the official Prettier 3.9.6 playground using the repository config. Require both complete files to be formatter fixed points, rerun 27 mutations, publish one new immutable head and rerun every gate."
+      },
+      {
+        "head": "f6239f70d5ad36e0c0acd4eb635c6ea6813ee2b9",
+        "commit": "style(T085): canonicalize full traceability files",
+        "result": "SUPERSEDED_FORMATTING_GATE",
+        "ci_run_id": 32948938018,
+        "ci_run_number": 971,
+        "ci_artifact_id": 9599353780,
+        "ci_artifact_digest": "sha256:197def93edc889934ffb0d69e74ee83f3a700dac00f4a5d92e559dda28feea4b",
+        "ci_readback": "Java and dependency jobs passed; frontend again stopped at Prettier on scripts/validate-traceability.mjs and scripts/test/validate-traceability.test.mjs before semantic validation, and both browser jobs were skipped. This head has no GREEN decision value.",
+        "security_run_id": 32948937800,
+        "security_run_number": 974,
+        "security_readback": "Six of eight jobs passed; postgres and s3 image scans remained blocked by the same pinned-image vulnerability boundary.",
+        "remediation": "The playground fixed point is not CLI-equivalent because the print-width control did not produce repository-config resolution. Download prettier-3.9.6.tgz, require its SHA-512 to equal the pnpm-lock.yaml SRI, run that exact CLI with repository config, require a second --write to be unchanged, rerun 27 mutations, then publish at most one new immutable bounded candidate."
+      }
+    ],
+    "current_matrix_readback": {
+      "requirements": 97,
+      "tasks": 112,
+      "mapped_tasks": 107,
+      "approved_orphans": ["T001", "T005", "T007", "T082", "T085"],
+      "deviations": 44,
+      "deviations_open": 40,
+      "deviations_resolved": 4,
+      "evidence_distribution": {
+        "VERIFIED": 33,
+        "PARTIAL": 28,
+        "PLANNED_BLOCKED": 30,
+        "HUMAN_OPEN": 3,
+        "PROXY_ONLY": 2,
+        "EXTERNAL_OPEN": 1
+      },
+      "implementation_distribution": { "COMPLETE": 52, "PLANNED": 45 }
+    },
+    "scope_boundary": {
+      "protected_merge_performed": false,
+      "completion_receipt_created": false,
+      "t086_or_later_modified": false,
+      "participant_research_executed": false,
+      "web3_activated": false,
+      "production_activated": false,
+      "provider_configured": false,
+      "external_writes_or_secrets_changed": false
+    },
+    "current_decision": "Heads a996cd4, b1855e7 and f6239f7 are superseded formatting-gate attempts. Head 8a3a414c proved the exact repository-CLI formatting correction with CI 972 at 5/5, while Security 975 remained 6/8 on the non-attributable pinned-image vulnerability baseline. Independent review then found seven partial-clause proof overclaims and an unauthorized ready-transition path, so 8a3a414c is also superseded as a T085 decision candidate."
+  },
+  "restoration_review": {
+    "schema_version": "courtside-t085-restoration-review/v1",
+    "recorded_at": "2026-08-26T09:32:20Z",
+    "finding_source_head": "8a3a414c5d105b1171f1bbff49e3b0b49ffc23d1",
+    "exact_head_readback": {
+      "ci_run_number": 972,
+      "ci_run_id": 32950066181,
+      "result": "5_OF_5_SUCCESS",
+      "frontend_repository_verification": "SUCCESS",
+      "security_run_number": 975,
+      "security_run_id": 32950066076,
+      "security_result": "6_OF_8_FAILURE",
+      "security_attribution": "postgres and s3 Trivy jobs report the same CVE-2026-14456 in pinned libcrypto3/libssl3 3.5.7-r0; no Docker, Compose or workflow blob changed in the T085 delta"
+    },
+    "blocking_findings": [
+      "FR-001 was VERIFIED although its mapped public-list test does not assert theme or publication date",
+      "FR-014 was VERIFIED although its mapped role test does not cover every publisher-only publish, unpublish and emergency-withdraw boundary",
+      "FR-016 was VERIFIED although its mapped retry test exercises submission rather than publication and does not prove the approved-revision-only issue snapshot clause",
+      "FR-023 was VERIFIED although its mapped proof covers only a missing rights record rather than every named rights state, channel and workflow gate",
+      "FR-031 was VERIFIED although its OIDC flows do not prove the negative plaintext-password storage clause",
+      "FR-032 was VERIFIED although its role proofs do not positively cover ADMIN or the complete four-role endpoint matrix",
+      "FR-048 was VERIFIED although its lifecycle proofs do not induce a p5 module or preset-load failure and verify the static-only fallback path",
+      "the Graphify control path and tracked traceability text incorrectly treated the current instruction as ready-for-review authority"
+    ],
+    "tests_first_red": {
+      "result": "ATTRIBUTABLE_LOCAL_RED",
+      "tests_passed": 27,
+      "tests_failed": 2,
+      "tests_total": 29,
+      "failure_signature": "T085_REVIEWED_CLAUSE_AND_AUTHORITY_FALSE_GREEN"
+    },
+    "bounded_remediation": {
+      "requirements_downgraded_to_partial": ["FR-001", "FR-014", "FR-016", "FR-023", "FR-031", "FR-032", "FR-048"],
+      "deviations_added": ["DEV-T085-041", "DEV-T085-042", "DEV-T085-043", "DEV-T085-044", "DEV-T085-045", "DEV-T085-046", "DEV-T085-047"],
+      "proof_locators_completed_from_existing_repository_evidence": ["FR-014", "FR-015", "FR-016", "FR-023", "FR-037", "FR-040", "FR-043", "FR-047"],
+      "control_budget_extended_once_for_publish_and_readback": {
+        "max_iterations": 9,
+        "max_minutes": 1440,
+        "max_graph_changes": 56,
+        "max_tokens": 220000
+      },
+      "ready_transition_removed_from_graph": true,
+      "runtime_implementation_performed": false,
+      "workflow_or_image_change_performed": false
+    },
+    "matrix_after_local_remediation": {
+      "requirements": 97,
+      "tasks": 112,
+      "mapped_tasks": 107,
+      "approved_orphans": 5,
+      "deviations": 47,
+      "open_deviations": 43,
+      "evidence_distribution": {
+        "VERIFIED": 30,
+        "PARTIAL": 31,
+        "PLANNED_BLOCKED": 30,
+        "HUMAN_OPEN": 3,
+        "PROXY_ONLY": 2,
+        "EXTERNAL_OPEN": 1
+      }
+    },
+    "decision": "Publish at most one atomic T085-only review-remediation head after local GREEN and optimistic head equality. Keep PR 146 draft and HOLD: fresh exact-head evidence is required, Security 8/8 cannot be restored inside the current scope, and ready-for-review is not authorized."
+  },
+  "current_base_reconciliation_review": {
+    "schema_version": "courtside-t085-current-base-review/v1",
+    "recorded_at": "2026-08-26T14:12:01Z",
+    "finding_source_head": "01ec5f90f2f8f72731a60bc2349a58583a1ee9c4",
+    "immutable_dispatch_base_sha": "3fc14dd29b216ce46e4d364ceaec79a971dcef44",
+    "current_protected_review_base_sha": "84db3db95aa596eb317b71c4eea0926fc1fc15ce",
+    "findings": [
+      {
+        "id": "T085-CURRENT-BASE-SECURITY-DRIFT",
+        "severity": "P1",
+        "disposition": "RESOLVED_LOCALLY_PENDING_EXACT_HEAD_CI",
+        "evidence": "Security #978 failed only postgres and s3 CVE-2026-14456 scans while protected main Security #979 passed 8/8 after PR #147.",
+        "remediation": "Merge current protected main into the PR branch without rewriting the existing 11 T085 commits."
+      },
+      {
+        "id": "T085-DISPATCH-REVIEW-BASE-CONFLATION",
+        "severity": "P1",
+        "disposition": "RESOLVED_LOCALLY_PENDING_EXACT_HEAD_CI",
+        "evidence": "The post-integration CLI diffed from immutable dispatch base 3fc14dd and rejected the two inherited security Dockerfiles.",
+        "remediation": "Preserve 3fc14dd as immutable authorization provenance while binding scope inspection to current review base 84db3db; add tests for both identities and for the shallow-checkout external read-back state."
+      },
+      {
+        "id": "T085-SHALLOW-SCOPE-PROOF",
+        "severity": "P2",
+        "disposition": "BOUNDED_TWO_PART_PROOF",
+        "evidence": "A shallow CI checkout may not contain the review base object.",
+        "remediation": "The structured report must emit EXTERNAL_READBACK_REQUIRED and receipt_eligible=false; final acceptance additionally requires authoritative GitHub changed-file read-back."
+      }
+    ],
+    "local_proof": {
+      "tests": "31/31 PASS",
+      "structural_validator": "PASS: 97 requirements, 112 tasks, 47 deviations",
+      "formatter": "Prettier 3.9.6 PASS",
+      "merge_conflicts": 0
+    },
+    "scope_review": {
+      "pr_diff_paths_expected": 12,
+      "runtime_files_added_to_pr_diff": false,
+      "workflow_changed": false,
+      "t085_checked": false,
+      "ready_or_merge_performed": false,
+      "forbidden_scope_changed": false
+    },
+    "decision": "Local remediation is GREEN but remains BLOCK pending optimistic branch-head equality, publication and fresh exact-head CI, Security, artifact, thread, scope and mergeability read-back."
+  }
+}

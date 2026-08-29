@@ -1,0 +1,314 @@
+schema_version: mark-graphify-loop/v2
+name: courtside-tw-t085-cross-artifact-traceability
+objective: Produce a deterministic FR/SC-to-task-to-proof matrix and explicit deviation register from protected main without dispatching T086 or activating any separately gated surface.
+feedback_updates_next_action: true
+
+scope:
+  in:
+    - GitHub issue 145 and protected main 3fc14dd29b216ce46e4d364ceaec79a971dcef44.
+    - T085 traceability artifact, validator, plan correction and append-only evidence.
+    - Draft pull request plus exact-head CI, Security, artifact and review read-back.
+  out:
+    - Ready-for-review, protected merge or T085 completion receipt.
+    - T086 and all later tasks.
+    - Participant research, Web3, production activation, provider configuration or secrets.
+    - Runtime remediation for documentation-only locator drift.
+
+policy:
+  human_gates:
+    - Ready-for-review requires a future explicit release-owner authorization after fresh exact-head proof.
+    - Protected merge and the T085 completion receipt remain separately gated and outside this loop.
+    - Any acceptance, scope or evidence-state weakening requires explicit approval.
+  no_progress: {max_same_failure: 2, max_no_evidence_delta: 2}
+  mutation: {append_only_evidence: true, require_graph_delta: true}
+
+memory_workflow:
+  contract: work-memory/v1
+  control_ledger: Append T085 graph deltas, proof receipts and token estimates to the repository ledger.
+  semantic_memory: GitHub and versioned repository artifacts are authoritative; emit NO_OP when no separate semantic write changes the next action.
+  modes: [recall, capture, update, forget, no_op]
+  retrieval: {levels: [index, timeline_relations, details], max_index_results: 10, stop_on_sufficient_evidence: true}
+  capture: {allowed_kinds: [decision, constraint, fact, attempt, task_state, evidence], requires_downstream_proof: true, requires_write_receipt: true}
+  lifecycle: [seed, verified, stable, needs_update, disputed, archived]
+  failure_policy: {write_pending: blocked, stale_or_disputed: needs_human, redact_secrets: true}
+
+graph:
+  entry_nodes: [t-dispatch]
+  terminal_nodes: [s-terminal]
+  loops:
+    - id: l1-t085
+      layer: L1
+      owner: codex-agent
+      trigger_nodes: [t-dispatch]
+      action_nodes: [a-reconcile, a-red, a-matrix, a-review, a-draft, a-semantic-red, a-semantic-fix, a-publish-remediation-v2]
+      proof_nodes: [p-baseline, p-red, p-local, p-exact, p-semantic-gap, p-semantic-red, p-semantic-local-v2, p-exact-remediation-v2]
+      memory_nodes: [m-ledger]
+      stop_nodes: [s-terminal]
+      budgets: {max_iterations: 9, max_minutes: 1440, max_same_failure: 2, max_graph_changes: 56, max_tokens: 220000}
+  nodes:
+    - id: t-dispatch
+      kind: trigger
+      layer: L1
+      label: Release owner authorizes bounded T085 implementation
+      owner: release-owner
+      status: done
+      risk: medium
+      confidence: {score: 1.0, basis: Explicit user authorization and issue 145, evidence_refs: [.loop/evidence/t085-dispatch.json]}
+      budget: {effort_hours: 0.0, tokens: 0}
+      config: {condition: T084 receipt is accepted and T085 alone is authorized, inputs_required: [protected-main SHA, task text, bounded scope], dedupe: T085-issue145-main3fc14dd}
+    - id: a-reconcile
+      kind: action
+      layer: L1
+      label: Reconcile exact-main requirements tasks proofs and boundaries
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence: {score: 0.98, basis: Exact main inventory and protection state were read directly, evidence_refs: [.loop/evidence/t085-dispatch.json]}
+      budget: {effort_hours: 0.75, tokens: 10000}
+      config: {workflow: [read exact main, inventory 97 requirements, inventory 112 tasks, classify evidence gaps], allowed: [repository and GitHub read-back, T085 artifacts], requires_approval: [scope change], forbidden: [infer human or production PASS, modify later tasks]}
+    - id: p-baseline
+      kind: proof
+      layer: L1
+      label: Exact-main traceability gap baseline
+      owner: verifier
+      status: done
+      risk: medium
+      confidence: {score: 0.98, basis: traceability.md is absent while spec and task inventories are complete, evidence_refs: [.loop/evidence/t085-dispatch.json]}
+      budget: {effort_hours: 0.25, tokens: 2500}
+      config: {level: P2, claim: Exact main has 74 FR 23 SC and 112 tasks but no executable traceability artifact, method: repository inventory, evidence_path: .loop/evidence/t085-dispatch.json, required: true, baseline_required: true}
+    - id: a-red
+      kind: action
+      layer: L1
+      label: Commit validator and negative tests before the matrix
+      owner: codex-agent
+      status: done
+      risk: medium
+      confidence: {score: 0.95, basis: Validator is wired into root contract before traceability.md exists, evidence_refs: [.loop/evidence/t085-dispatch.json]}
+      budget: {effort_hours: 1.0, tokens: 14000}
+      config: {workflow: [add mutation tests, add deterministic validator, wire root contract, run intended missing-artifact failure], allowed: [scripts, package.json, Makefile, T085 graph artifacts], requires_approval: [weaken existing checks], forbidden: [add matrix before RED, alter CI semantics]}
+    - id: p-red
+      kind: proof
+      layer: L1
+      label: Attributable missing-traceability RED
+      owner: verifier
+      status: done
+      risk: medium
+      confidence: {score: 1.0, basis: Corrected RED head passed mutation and earlier contract gates then failed only on the missing traceability artifact; the first formatting-blocked attempt is explicitly superseded, evidence_refs: [.loop/evidence/t085-red.json]}
+      budget: {effort_hours: 0.5, tokens: 5000}
+      config: {level: P2, claim: Mutation tests pass and the repository fails only because traceability.md is absent, method: contract traceability command locally and on draft head, evidence_path: .loop/evidence/t085-red.json, required: true, baseline_required: true}
+    - id: a-matrix
+      kind: action
+      layer: L1
+      label: Add exact requirement matrix reverse task ledger and deviations
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence: {score: 0.96, basis: The matrix covers all 97 requirements and 112 tasks with 38 explicit deviations after independent semantic review, evidence_refs: [.loop/evidence/t085-review.json, specs/001-taiwan-basketball-magazine-ebook/traceability.md]}
+      budget: {effort_hours: 2.5, tokens: 30000}
+      config: {workflow: [map 97 requirements, invert to 112 tasks, verify current proof locators, record open and planned deviations, qualify plan status], allowed: [traceability.md, plan.md, T085 evidence], requires_approval: [runtime remediation, evidence-state upgrade], forbidden: [T086+, participant research, Web3, production/provider/secrets]}
+    - id: p-local
+      kind: proof
+      layer: L1
+      label: Deterministic local matrix and scope proof
+      owner: verifier
+      status: done
+      risk: high
+      confidence: {score: 0.2, basis: Historical 22-test proof passed mechanically but is superseded by the later semantic false-green finding, evidence_refs: [.loop/evidence/t085-local.json, .loop/evidence/t085-review.json]}
+      budget: {effort_hours: 0.75, tokens: 7000}
+      config: {level: P2, claim: All 97 requirements and 112 tasks reconcile with truthful proof and deviation states, method: mutation tests validator format lint and diff review, evidence_path: .loop/evidence/t085-local.json, required: true, baseline_required: true}
+    - id: a-review
+      kind: action
+      layer: L1
+      label: Review evidence truthfulness and bounded scope
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence: {score: 0.95, basis: Three independent reviews found and resolved false-green and semantic-overclaim classes while preserving truthful open deviations, evidence_refs: [.loop/evidence/t085-review.json]}
+      budget: {effort_hours: 0.75, tokens: 8000}
+      config: {workflow: [inspect false-green risk, verify human and external boundaries, verify future-task blockers, review reverse ledger], allowed: [T085 diff and proof], requires_approval: [accept unresolved release blocker], forbidden: [treat checkbox or proxy as acceptance]}
+    - id: a-draft
+      kind: action
+      layer: L1
+      label: Publish bounded commits and maintain a draft PR
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence: {score: 0.95, basis: Issue 145 branch draft PR 146 attributable RED and the reviewed GREEN commit payload are bounded and ready for immutable publication, evidence_refs: [.loop/evidence/t085-dispatch.json, .loop/evidence/t085-red.json, .loop/evidence/t085-local.json, .loop/evidence/t085-review.json]}
+      budget: {effort_hours: 0.75, tokens: 7000}
+      config: {workflow: [publish RED, verify failure, publish GREEN, open or update draft PR], allowed: [issue 145 branch and draft PR], requires_approval: [ready merge receipt], forbidden: [force update, protected merge, T086 dispatch]}
+    - id: p-exact
+      kind: proof
+      layer: L1
+      label: Fresh exact-head CI Security artifact and thread read-back
+      owner: verifier
+      status: done
+      risk: critical
+      confidence: {score: 0.2, basis: Exact head 072eb10 was mechanically green but the semantic proof finding invalidates it as release-decision evidence, evidence_refs: [.loop/evidence/t085-review.json]}
+      budget: {effort_hours: 1.0, tokens: 10000}
+      config: {level: P3, claim: Final draft head passes CI 5 of 5 Security 8 of 8 with a SHA-bound report zero unresolved threads and current-base mergeability, method: GitHub workflow artifact PR and ruleset read-back, evidence_path: .loop/evidence/t085-exact-head.json, required: true, baseline_required: false}
+    - id: p-semantic-gap
+      kind: proof
+      layer: L1
+      label: Semantic proof false-green finding
+      owner: verifier
+      status: done
+      risk: critical
+      confidence: {score: 1.0, basis: Adversarial review reproduced selector-attribution bypasses and clause-incomplete FR-003 FR-009 and FR-013 claims on exact head 072eb10, evidence_refs: [.loop/evidence/t085-review.json]}
+      budget: {effort_hours: 0.5, tokens: 7000}
+      config: {level: P2, claim: Mechanical exact-head green did not prove semantic attribution or clause completeness, method: mutation design and source-to-proof audit, evidence_path: .loop/evidence/t085-review.json, required: true, baseline_required: true}
+    - id: a-semantic-red
+      kind: action
+      layer: L1
+      label: Publish attributable semantic mutation RED heads
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence: {score: 1.0, basis: Two tests-only commits failed exactly the new selector-attribution and composite semantic mutations, evidence_refs: [.loop/evidence/t085-review.json]}
+      budget: {effort_hours: 0.75, tokens: 9000}
+      config: {workflow: [publish tests only, bind CI to each exact head, distinguish attributable RED from unrelated Security drift], allowed: [T085 validator tests and evidence read-back], requires_approval: [widen changed-path scope], forbidden: [runtime image remediation, weaken Security, modify T086+]}
+    - id: p-semantic-red
+      kind: proof
+      layer: L1
+      label: Exact-head selector and composite semantic RED
+      owner: verifier
+      status: done
+      risk: high
+      confidence: {score: 1.0, basis: CI 968 on head 5ba6367 passed existing workspace checks and failed four of 26 traceability tests exactly as designed, evidence_refs: [.loop/evidence/t085-review.json]}
+      budget: {effort_hours: 0.25, tokens: 3500}
+      config: {level: P3, claim: Duplicate unique-generic overlapping and clause-incomplete proofs fail on the pre-fix validator, method: GitHub CI job log read-back, evidence_path: .loop/evidence/t085-review.json, required: true, baseline_required: true}
+    - id: a-semantic-fix
+      kind: action
+      layer: L1
+      label: Harden proof attribution and correct semantic matrix states
+      owner: codex-agent
+      status: done
+      risk: high
+      confidence: {score: 0.98, basis: Minimal validator matrix and deviation changes close only the reproduced T085 false-green classes, evidence_refs: [.loop/evidence/t085-local.json, .loop/evidence/t085-review.json]}
+      budget: {effort_hours: 1.25, tokens: 16000}
+      config: {workflow: [enforce exact-once selector resolution, require executable anchors, expand FR-003 locators, downgrade FR-009 and FR-013, add deviations 039 and 040], allowed: [T085 validator matrix graph ledger and evidence], requires_approval: [runtime implementation, scope expansion], forbidden: [T086+, production provider secrets external activation]}
+    - id: p-semantic-local-v2
+      kind: proof
+      layer: L1
+      label: Corrected local semantic proof
+      owner: verifier
+      status: done
+      risk: high
+      confidence: {score: 0.98, basis: All 27 mutations pass and the injected clean structural validator reconciles 97 requirements 112 tasks and 40 deviations with zero errors, evidence_refs: [.loop/evidence/t085-local.json]}
+      budget: {effort_hours: 0.5, tokens: 5000}
+      config: {level: P2, claim: The corrected matrix is analysis-valid and reproduced selector semantic and human-register false-green classes are closed locally, method: mutation tests and injected clean validator, evidence_path: .loop/evidence/t085-local.json, required: true, baseline_required: true}
+    - id: a-publish-remediation-v2
+      kind: action
+      layer: L1
+      label: Publish one immutable bounded review-remediation head
+      owner: codex-agent
+      status: ready
+      risk: high
+      confidence: {score: 0.99, basis: Head 8a3a414c contains the exact repository-CLI formatter output; independent review then found seven partial-clause proof overclaims and an unauthorized ready-transition path, all bounded to T085 evidence and control files, evidence_refs: [.loop/evidence/t085-local.json, .loop/evidence/t085-review.json]}
+      budget: {effort_hours: 0.5, tokens: 5000}
+      config: {workflow: [verify branch still equals 8a3a414c5d105b1171f1bbff49e3b0b49ffc23d1, create one atomic semantic-and-governance feedback commit, fast-forward without force], allowed: [task/t085-cross-artifact-traceability], requires_approval: [force push, path expansion], forbidden: [ready transition, protected merge, completion receipt, later-task writes]}
+    - id: p-exact-remediation-v2
+      kind: proof
+      layer: L1
+      label: Fresh remediation-head CI Security artifact and review read-back
+      owner: verifier
+      status: blocked
+      risk: critical
+      confidence: {score: 0.4, basis: Exact heads a996cd4 b1855e7 and f6239f7 failed CI 969 through 971 formatting; Security 972 through 974 retained the two pinned-image blockers. The SRI-matched exact CLI now passes locally, so one final immutable bounded head is required; another identical formatter failure must stall, evidence_refs: [.loop/evidence/t085-review.json]}
+      budget: {effort_hours: 1.0, tokens: 12000}
+      config: {level: P3, claim: The immutable remediation head passes CI 5 of 5 Security 8 of 8 all checks artifact digest and read-back zero unresolved threads and clean current-base mergeability, method: GitHub workflow artifact PR ruleset and protected-main read-back, evidence_path: .loop/evidence/t085-review.json, required: true, baseline_required: false}
+    - id: m-ledger
+      kind: memory
+      layer: L1
+      label: T085 append-only control ledger
+      owner: codex-agent
+      status: ready
+      risk: medium
+      confidence: {score: 0.95, basis: Initial authority and frontier are recorded, evidence_refs: [.loop/t085-traceability-ledger.json]}
+      budget: {effort_hours: 0.1, tokens: 1000}
+      config: {path: .loop/t085-traceability-ledger.json, read_before_action: true, write_after_iteration: true, append_only: true, contract: work-memory/v1, memory_role: hybrid, receipt_required: true, write_failure_state: blocked}
+    - id: g-release-owner
+      kind: gate
+      layer: L1
+      label: Release-owner ready merge and completion authorization gate
+      owner: release-owner
+      status: blocked
+      risk: critical
+      confidence: {score: 1.0, basis: Issue 145 and the current instruction keep ready-for-review protected merge and completion receipt outside this graph, evidence_refs: [.loop/evidence/t085-dispatch.json, .loop/evidence/t085-review.json]}
+      budget: {effort_hours: 0.1, tokens: 500}
+      config: {condition: Fresh same-head proof passes and the release owner explicitly authorizes the requested transition; ready-for-review protected merge and completion receipt remain separate decisions, approver: release-owner, required: true}
+    - id: s-terminal
+      kind: stop
+      layer: GLOBAL
+      label: T085 terminal policy
+      owner: policy
+      status: needs_human
+      risk: critical
+      confidence: {score: 1.0, basis: Protected completion is deliberately unauthorized, evidence_refs: [.loop/evidence/t085-dispatch.json]}
+      budget: {effort_hours: 0.0, tokens: 0}
+      config:
+        states:
+          success: Release owner accepts exact-head proof and protected completion is read back.
+          blocked: Required proof or permission is unavailable.
+          needs_human: The draft candidate is bounded but ready-for-review protected merge and completion receipt remain unauthorized.
+          stalled: Same-failure or no-evidence-delta budget is reached.
+          no_op: Authoritative state already satisfies the bounded request.
+          exhausted: Iteration time graph-change or token budget is reached.
+          cancelled: User cancels T085 or changes scope.
+  edges:
+    - {id: e-dispatch-reconcile, from: t-dispatch, to: a-reconcile, type: enables, required: true, confidence: 1.0, token_capacity: 7000}
+    - {id: e-reconcile-baseline, from: a-reconcile, to: p-baseline, type: verifies, required: true, confidence: 0.98, token_capacity: 5000}
+    - {id: e-baseline-red, from: p-baseline, to: a-red, type: enables, required: true, confidence: 0.98, token_capacity: 9000}
+    - {id: e-red-proof, from: a-red, to: p-red, type: verifies, required: true, confidence: 0.95, token_capacity: 6000}
+    - {id: e-red-matrix, from: p-red, to: a-matrix, type: enables, required: true, confidence: 0.95, token_capacity: 18000}
+    - {id: e-matrix-local, from: a-matrix, to: p-local, type: verifies, required: true, confidence: 0.95, token_capacity: 9000}
+    - {id: e-local-review, from: p-local, to: a-review, type: enables, required: true, confidence: 0.9, token_capacity: 8000}
+    - {id: e-review-draft, from: a-review, to: a-draft, type: enables, required: true, confidence: 0.9, token_capacity: 7000}
+    - {id: e-draft-exact, from: a-draft, to: p-exact, type: verifies, required: true, confidence: 0.9, token_capacity: 10000}
+    - {id: e-exact-gate, from: p-exact, to: g-release-owner, type: requires_approval, required: false, confidence: 0.2, token_capacity: 6000}
+    - {id: e-gate-stop, from: g-release-owner, to: s-terminal, type: approves, required: true, confidence: 1.0, token_capacity: 4000}
+    - {id: e-reconcile-memory, from: a-reconcile, to: m-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-red-memory, from: p-red, to: m-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-local-memory, from: p-local, to: m-ledger, type: records, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-exact-memory, from: p-exact, to: m-ledger, type: records, required: true, confidence: 0.9, token_capacity: 2500}
+    - {id: e-memory-red, from: m-ledger, to: a-red, type: reads, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-memory-matrix, from: m-ledger, to: a-matrix, type: reads, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-memory-review, from: m-ledger, to: a-review, type: reads, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-memory-feedback, from: m-ledger, to: a-reconcile, type: feedback, required: true, confidence: 0.9, token_capacity: 3000}
+    - {id: e-red-feedback, from: p-red, to: a-red, type: feedback, required: false, confidence: 0.85, token_capacity: 3000}
+    - {id: e-local-feedback, from: p-local, to: a-matrix, type: feedback, required: false, confidence: 0.85, token_capacity: 4000}
+    - {id: e-exact-semantic-gap, from: p-exact, to: p-semantic-gap, type: enables, required: true, confidence: 1.0, token_capacity: 7000}
+    - {id: e-gap-invalidates-local, from: p-semantic-gap, to: p-local, type: invalidates, required: true, confidence: 1.0, token_capacity: 3500}
+    - {id: e-gap-invalidates-exact, from: p-semantic-gap, to: p-exact, type: invalidates, required: true, confidence: 1.0, token_capacity: 3500}
+    - {id: e-gap-semantic-red, from: p-semantic-gap, to: a-semantic-red, type: enables, required: true, confidence: 1.0, token_capacity: 8000}
+    - {id: e-semantic-red-proof, from: a-semantic-red, to: p-semantic-red, type: verifies, required: true, confidence: 1.0, token_capacity: 5000}
+    - {id: e-semantic-red-fix, from: p-semantic-red, to: a-semantic-fix, type: enables, required: true, confidence: 1.0, token_capacity: 11000}
+    - {id: e-semantic-fix-local, from: a-semantic-fix, to: p-semantic-local-v2, type: verifies, required: true, confidence: 0.98, token_capacity: 6500}
+    - {id: e-local-v2-supersedes-local, from: p-semantic-local-v2, to: p-local, type: supersedes, required: true, confidence: 0.98, token_capacity: 3500}
+    - {id: e-local-v2-publish, from: p-semantic-local-v2, to: a-publish-remediation-v2, type: enables, required: true, confidence: 0.96, token_capacity: 6000}
+    - {id: e-publish-v2-exact-v2, from: a-publish-remediation-v2, to: p-exact-remediation-v2, type: verifies, required: true, confidence: 0.9, token_capacity: 12000}
+    - {id: e-exact-v2-supersedes-exact, from: p-exact-remediation-v2, to: p-exact, type: supersedes, required: true, confidence: 0.95, token_capacity: 3500}
+    - {id: e-exact-v2-release-gate, from: p-exact-remediation-v2, to: g-release-owner, type: requires_approval, required: true, confidence: 1.0, token_capacity: 4000}
+    - {id: e-memory-semantic-red, from: m-ledger, to: a-semantic-red, type: reads, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-memory-semantic-fix, from: m-ledger, to: a-semantic-fix, type: reads, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-memory-publish-v2, from: m-ledger, to: a-publish-remediation-v2, type: reads, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-gap-memory, from: p-semantic-gap, to: m-ledger, type: records, required: true, confidence: 1.0, token_capacity: 2500}
+    - {id: e-semantic-red-memory, from: p-semantic-red, to: m-ledger, type: records, required: true, confidence: 1.0, token_capacity: 2500}
+    - {id: e-local-v2-memory, from: p-semantic-local-v2, to: m-ledger, type: records, required: true, confidence: 0.98, token_capacity: 2500}
+    - {id: e-exact-v2-memory, from: p-exact-remediation-v2, to: m-ledger, type: records, required: true, confidence: 0.95, token_capacity: 2500}
+    - {id: e-exact-v2-publish-feedback, from: p-exact-remediation-v2, to: a-publish-remediation-v2, type: feedback, required: true, confidence: 1.0, token_capacity: 4500}
+
+flow: {source: t-dispatch, sink: s-terminal, capacity_unit: tokens, interpretation: planning-proxy}
+
+output_required:
+  - decision
+  - terminal_state
+  - graph_summary
+  - ready_frontier
+  - critical_path
+  - token_flow
+  - min_cut
+  - proof_coverage
+  - blockers_or_gates
+  - graph_delta
+  - memory_receipt
+  - next_action

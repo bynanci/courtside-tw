@@ -1,0 +1,485 @@
+{
+  "schema_version": "mark-graphify-loop-ledger/v2",
+  "graph_name": "courtside-tw-t085-cross-artifact-traceability",
+  "graph_version": 9,
+  "run_id": "t085-issue-145-20260825",
+  "status": "running",
+  "iteration": 9,
+  "started_at": "2026-08-25T12:42:58Z",
+  "updated_at": "2026-08-26T14:12:01Z",
+  "current_frontier": ["a-publish-remediation-v2"],
+  "blocked_nodes": ["p-exact-remediation-v2", "g-release-owner"],
+  "terminal_state": null,
+  "next_action": "Publish the current-base-integrated T085 candidate only if the live branch still equals 01ec5f90f2f8f72731a60bc2349a58583a1ee9c4, then require fresh exact-head CI, Security, artifact, thread, 12-path scope and mergeability read-back. Keep PR 146 draft and HOLD; ready-for-review, protected merge and completion receipt require separate explicit release-owner authorization.",
+  "events": [
+    {
+      "event_id": "t085-graph-initialized",
+      "at": "2026-08-25T12:42:58Z",
+      "actor": "codex-agent",
+      "type": "graph_initialized",
+      "base_graph_version": 0,
+      "new_graph_version": 1,
+      "graph_delta": {
+        "operations": [
+          "bound issue 145 and exact protected-main base",
+          "recorded 74 FR 23 SC 112 tasks and the missing traceability artifact",
+          "wired a tests-first RED frontier",
+          "preserved T086 later-task research Web3 production provider secret ready merge and receipt gates"
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t085-dispatch.json"],
+      "proof_receipts": [
+        {
+          "proof": "p-baseline",
+          "status": "PASS",
+          "claim": "Exact protected main has complete source inventories but no T085 traceability artifact."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": null,
+        "version": null,
+        "retrieval_ids": ["github-issue-121", "github-issue-145", "main-3fc14dd"],
+        "evidence_refs": [".loop/evidence/t085-dispatch.json"],
+        "next_review_at": null,
+        "blocker": null,
+        "reason": "The GitHub issue branch and versioned repository receipts are sufficient durable state."
+      },
+      "failure_signature": null,
+      "decision": "proceed_with_bounded_tests_first_red",
+      "token_usage": { "estimated": 18000, "input": 0, "output": 0, "total": 18000 },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "t085-attributable-red-captured",
+      "at": "2026-08-25T13:05:46Z",
+      "actor": "codex-agent",
+      "type": "proof_captured",
+      "base_graph_version": 1,
+      "new_graph_version": 2,
+      "graph_delta": {
+        "operations": [
+          "superseded formatting-blocked head 5f71cf25172821725a1533b3de6fa4bdefde74ca",
+          "bound RED proof to corrected head bc2950490a93028095e453ae30d94dcd8b02cc08",
+          "confirmed 12 mutation tests and earlier frontend contracts pass before the sole missing-artifact failure",
+          "advanced the frontier from p-red to a-matrix"
+        ]
+      },
+      "evidence_refs": [".loop/evidence/t085-red.json"],
+      "proof_receipts": [
+        {
+          "proof": "p-red",
+          "status": "PASS",
+          "claim": "Corrected RED fails only because traceability.md is absent after all prerequisite gates pass."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": null,
+        "version": null,
+        "retrieval_ids": ["github-ci-964", "github-security-967", "artifact-9564251650"],
+        "evidence_refs": [".loop/evidence/t085-red.json"],
+        "next_review_at": null,
+        "blocker": null,
+        "reason": "The versioned RED receipt and GitHub draft are sufficient durable state."
+      },
+      "failure_signature": null,
+      "decision": "advance_to_matrix",
+      "token_usage": { "estimated": 16000, "input": 0, "output": 0, "total": 16000 },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "t085-green-review-ready",
+      "at": "2026-08-25T13:32:08Z",
+      "actor": "codex-agent",
+      "type": "review_completed",
+      "base_graph_version": 2,
+      "new_graph_version": 3,
+      "graph_delta": {
+        "operations": [
+          "added the exact 97-requirement matrix 112-task inverse and 38-deviation register",
+          "downgraded 12 semantic overclaims and preserved all human external future and activation boundaries",
+          "expanded the validator from 12 to 22 adversarial tests and fixed five false-green classes",
+          "bound human tables task taxonomy approved orphans proof digests and changed-path scope",
+          "advanced the frontier to p-exact while release-owner gate remains needs_human"
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t085-local.json",
+        ".loop/evidence/t085-review.json",
+        "specs/001-taiwan-basketball-magazine-ebook/traceability.md"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "p-local",
+          "status": "PASS",
+          "claim": "Local format lint typecheck workspace tests contracts and 22 traceability mutations pass, with the exact Node version explicitly deferred to CI."
+        },
+        {
+          "proof": "a-review",
+          "status": "PASS_WITH_OPEN_DEVIATIONS",
+          "claim": "Independent reviews resolved implementation false-greens while retaining 34 truthful open deviations."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": null,
+        "version": null,
+        "retrieval_ids": ["t085-validator-review", "t085-matrix-review", "t085-scope-review"],
+        "evidence_refs": [".loop/evidence/t085-local.json", ".loop/evidence/t085-review.json"],
+        "next_review_at": null,
+        "blocker": null,
+        "reason": "Repository receipts and the draft PR remain the authoritative durable memory."
+      },
+      "failure_signature": null,
+      "decision": "publish_green_then_verify_exact_head",
+      "token_usage": { "estimated": 42000, "input": 0, "output": 0, "total": 42000 },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "t085-semantic-false-green-remediated-locally",
+      "at": "2026-08-26T08:06:41Z",
+      "actor": "codex-agent",
+      "type": "feedback_remediation",
+      "base_graph_version": 3,
+      "new_graph_version": 4,
+      "graph_delta": {
+        "operations": [
+          "invalidated the decision value of historical p-local and p-exact without erasing their mechanical results",
+          "captured tests-only RED heads 907f25a385b40851839c66624d770eff06e4db3b and 5ba6367f2571084b98c4a73e26df89610c30e21f",
+          "confirmed CI 968 passes 22 existing traceability mutations and fails exactly four new selector-attribution and composite semantic mutations",
+          "hardened repository proof selectors to one executable or durable anchor and counted overlapping literal locations",
+          "added a RED-to-GREEN human deviation register parity mutation and restored DEV-T085-039 and DEV-T085-040 to the release-owner table",
+          "expanded FR-003 proof locators and downgraded FR-009 and FR-013 under new deviations DEV-T085-039 and DEV-T085-040",
+          "advanced the local matrix to 37 VERIFIED 24 PARTIAL 30 PLANNED_BLOCKED and 40 total deviations",
+          "split the conditionally authorized ready transition from protected merge and the separately excluded completion receipt",
+          "recorded Security 971 image drift CVE-2026-14456 as a non-attributable exact-head gate without widening T085 paths"
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t085-local.json",
+        ".loop/evidence/t085-review.json",
+        "scripts/test/validate-traceability.test.mjs",
+        "scripts/validate-traceability.mjs",
+        "specs/001-taiwan-basketball-magazine-ebook/traceability.md"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "p-semantic-gap",
+          "status": "PASS",
+          "claim": "Exact head 072eb10 was mechanically green but semantically false-green for proof attribution and composite clauses."
+        },
+        {
+          "proof": "p-semantic-red",
+          "status": "PASS",
+          "claim": "Exact head 5ba6367 produced 22/26 pass and four attributable semantic mutation failures in CI 968."
+        },
+        {
+          "proof": "p-semantic-local-v2",
+          "status": "PASS",
+          "claim": "The minimal remediation passes 27/27 mutations and structurally reconciles 97 requirements 112 tasks 107 mapped tasks 5 approved orphans and 40 deviations."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": null,
+        "version": null,
+        "retrieval_ids": [
+          "github-ci-967-head-907f25a",
+          "github-ci-968-head-5ba6367",
+          "github-security-971-cve-2026-14456",
+          "t085-semantic-source-audit"
+        ],
+        "evidence_refs": [".loop/evidence/t085-local.json", ".loop/evidence/t085-review.json"],
+        "next_review_at": null,
+        "blocker": null,
+        "reason": "The PR, exact-head GitHub runs and append-only repository receipts are sufficient durable state; a duplicate semantic-memory write would not change the next action."
+      },
+      "failure_signature": "T085_SEMANTIC_PROOF_FALSE_GREEN",
+      "decision": "reopen_bounded_tests_first_remediation",
+      "token_usage": { "estimated": 50000, "input": 0, "output": 0, "total": 50000 },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "t085-green-formatting-attempt-superseded",
+      "at": "2026-08-26T08:21:00Z",
+      "actor": "codex-agent",
+      "type": "feedback_remediation",
+      "base_graph_version": 4,
+      "new_graph_version": 5,
+      "graph_delta": {
+        "operations": [
+          "published immutable semantic candidate a996cd49e5f11ffbbae556ee29d069a05eb00dfa",
+          "classified CI 969 as a formatting-gate failure before semantic validation and withheld GREEN attribution",
+          "read back Security 972 as six passing jobs plus the same postgres and s3 CVE-2026-14456 blockers",
+          "added exact-proof-to-publish feedback instead of weakening CI Security or changed-path scope",
+          "mechanically reformatted only scripts/validate-traceability.mjs and its mutation test with Prettier 3.9.6 repository settings",
+          "retained a-publish-remediation-v2 as the current frontier for one new immutable candidate"
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t085-local.json",
+        ".loop/evidence/t085-review.json",
+        "scripts/validate-traceability.mjs",
+        "scripts/test/validate-traceability.test.mjs"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "p-exact-remediation-v2",
+          "status": "FAIL",
+          "claim": "Head a996cd4 is not decision-valid because CI 969 failed the required formatting gate; Security 972 also remained 6/8."
+        },
+        {
+          "proof": "p-semantic-local-v2",
+          "status": "PASS",
+          "claim": "After mechanical formatting, node syntax and all 27 targeted semantic mutations still pass locally."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": null,
+        "version": null,
+        "retrieval_ids": [
+          "github-ci-969-head-a996cd4",
+          "github-security-972-head-a996cd4",
+          "prettier-3.9.6-repository-config"
+        ],
+        "evidence_refs": [".loop/evidence/t085-local.json", ".loop/evidence/t085-review.json"],
+        "next_review_at": null,
+        "blocker": null,
+        "reason": "The immutable failed head, GitHub runs and repository ledger already provide durable feedback state."
+      },
+      "failure_signature": "T085_GREEN_FORMATTING_GATE",
+      "decision": "retry_same_bounded_publish_action_after_mechanical_formatting",
+      "token_usage": { "estimated": 18000, "input": 0, "output": 0, "total": 18000 },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "t085-complete-file-formatting-feedback",
+      "at": "2026-08-26T08:33:36Z",
+      "actor": "codex-agent",
+      "type": "feedback_remediation",
+      "base_graph_version": 5,
+      "new_graph_version": 6,
+      "graph_delta": {
+        "operations": [
+          "published immutable formatting candidate b1855e790910401fa23dea7447152adc45f07f05 only after confirming the branch still equaled a996cd49e5f11ffbbae556ee29d069a05eb00dfa",
+          "classified CI 970 as a second formatting-gate failure on the same two files and withheld GREEN attribution",
+          "read back Security 973 as six passing jobs plus the same postgres and s3 CVE-2026-14456 blockers",
+          "replaced snippet-derived formatting with complete-file output from official Prettier 3.9.6 using the repository config",
+          "proved both complete files are byte-for-byte formatter fixed points and reran node syntax plus all 27 targeted mutations",
+          "retained a-publish-remediation-v2 as the current frontier; another identical formatting failure would hit the configured same-failure stop boundary"
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t085-local.json",
+        ".loop/evidence/t085-review.json",
+        "scripts/validate-traceability.mjs",
+        "scripts/test/validate-traceability.test.mjs"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "p-exact-remediation-v2",
+          "status": "FAIL",
+          "claim": "Head b1855e7 is not decision-valid because CI 970 failed the required formatting gate; Security 973 also remained 6/8."
+        },
+        {
+          "proof": "p-semantic-local-v2",
+          "status": "PASS",
+          "claim": "Both full files are official Prettier 3.9.6 fixed points; node syntax and all 27 targeted semantic mutations pass locally."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": null,
+        "version": null,
+        "retrieval_ids": [
+          "github-ci-970-head-b1855e7",
+          "github-security-973-head-b1855e7",
+          "prettier-3.9.6-complete-file-fixed-point"
+        ],
+        "evidence_refs": [".loop/evidence/t085-local.json", ".loop/evidence/t085-review.json"],
+        "next_review_at": null,
+        "blocker": null,
+        "reason": "The immutable failed head, GitHub runs, canonical formatter fixed-point evidence and repository ledger already provide durable feedback state."
+      },
+      "failure_signature": "T085_GREEN_FORMATTING_GATE",
+      "decision": "retry_with_complete_file_canonical_output",
+      "token_usage": { "estimated": 16000, "input": 0, "output": 0, "total": 16000 },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "t085-exact-cli-formatting-feedback",
+      "at": "2026-08-26T08:48:33Z",
+      "actor": "codex-agent",
+      "type": "feedback_remediation",
+      "base_graph_version": 6,
+      "new_graph_version": 7,
+      "graph_delta": {
+        "operations": [
+          "published immutable candidate f6239f70d5ad36e0c0acd4eb635c6ea6813ee2b9 only after confirming the branch still equaled b1855e790910401fa23dea7447152adc45f07f05",
+          "classified CI 971 as a third identical formatting-gate failure on the same two files and withheld GREEN attribution",
+          "read back Security 974 as six passing jobs plus the same postgres and s3 pinned-image blockers",
+          "reached the configured same-failure stop boundary and prohibited another playground-derived publication",
+          "used the renewed bounded restoration instruction plus a material evidence delta: prettier-3.9.6.tgz SHA-512 exactly matches pnpm-lock.yaml and its CLI locally reproduces CI",
+          "rewrote only scripts/validate-traceability.mjs and its mutation test with the SRI-matched CLI; a second --write is unchanged, --check passes and all 27 mutations remain green",
+          "retained a-publish-remediation-v2 for at most one final exact-CLI candidate; another identical formatter failure must terminate as stalled"
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t085-local.json",
+        ".loop/evidence/t085-review.json",
+        "pnpm-lock.yaml",
+        "scripts/validate-traceability.mjs",
+        "scripts/test/validate-traceability.test.mjs"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "p-exact-remediation-v2",
+          "status": "FAIL",
+          "claim": "Head f6239f7 is not decision-valid because CI 971 failed the required formatting gate; Security 974 also remained 6/8."
+        },
+        {
+          "proof": "p-semantic-local-v2",
+          "status": "PASS",
+          "claim": "The lockfile-SRI-matched prettier@3.9.6 CLI passes --check and a fixed-point rewrite; node syntax and all 27 targeted semantic mutations pass locally."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": null,
+        "version": null,
+        "retrieval_ids": [
+          "github-ci-971-head-f6239f7",
+          "github-security-974-head-f6239f7",
+          "prettier-3.9.6-lockfile-sri-exact-cli"
+        ],
+        "evidence_refs": [".loop/evidence/t085-local.json", ".loop/evidence/t085-review.json"],
+        "next_review_at": null,
+        "blocker": null,
+        "reason": "The immutable failed head, GitHub runs, exact package-integrity evidence and repository ledger already provide durable feedback state."
+      },
+      "failure_signature": "T085_GREEN_FORMATTING_GATE",
+      "decision": "reopen_once_after_exact_cli_parity_evidence",
+      "token_usage": { "estimated": 14000, "input": 0, "output": 0, "total": 14000 },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "t085-reviewed-clause-and-authority-remediation",
+      "at": "2026-08-26T09:32:20Z",
+      "actor": "codex-agent",
+      "type": "feedback_remediation",
+      "base_graph_version": 7,
+      "new_graph_version": 8,
+      "graph_delta": {
+        "operations": [
+          "read back head 8a3a414c5d105b1171f1bbff49e3b0b49ffc23d1 with CI 972 at 5 of 5, proving the exact repository-CLI formatter correction closed the attributable frontend failure",
+          "read back Security 975 at 6 of 8 with only the same postgres and s3 CVE-2026-14456 pinned-image blockers, outside the T085 path delta",
+          "added two focused tests that reproduced the reviewed multi-clause overclaim class and unauthorized ready-transition path as an attributable 27-pass 2-fail RED, while the source-to-proof audit enumerated seven affected rows",
+          "downgraded FR-001 FR-014 FR-016 FR-023 FR-031 FR-032 and FR-048 to PARTIAL under DEV-T085-041 through DEV-T085-047 without changing runtime code",
+          "completed attributable proof locators for FR-014 FR-015 FR-016 FR-023 FR-037 FR-040 FR-043 and FR-047 only where matching repository proof already existed",
+          "removed a-ready-transition-v2 and p-ready-readback-v2 and restored ready-for-review to the explicit release-owner human gate",
+          "used the renewed bounded T085 restoration instruction to extend the L1 control budget exactly once from 8 to 9 iterations, 360 to 1440 minutes, 48 to 56 graph changes and 180000 to 220000 tokens so one atomic publish-and-readback cycle remains auditable",
+          "reached 29 of 29 targeted tests and a real-contract structural PASS with 97 requirements 112 tasks 47 deviations and zero errors",
+          "retained a-publish-remediation-v2 for one optimistic-concurrency-guarded atomic T085-only candidate while PR 146 remains draft and HOLD"
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t085-local.json",
+        ".loop/evidence/t085-review.json",
+        ".loop/t085-traceability.yaml",
+        "scripts/test/validate-traceability.test.mjs",
+        "specs/001-taiwan-basketball-magazine-ebook/traceability.md"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "p-exact-remediation-v2",
+          "status": "FAIL",
+          "claim": "Head 8a3a414c is superseded by the reviewed semantic and authority findings, and Security 975 remains 6/8 on the external pinned-image baseline."
+        },
+        {
+          "proof": "p-semantic-local-v2",
+          "status": "PASS",
+          "claim": "The bounded review remediation passes 29/29 targeted tests and the real 97-requirement 112-task contract with 47 deviations and zero errors."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": null,
+        "version": null,
+        "retrieval_ids": [
+          "github-ci-972-head-8a3a414c",
+          "github-security-975-head-8a3a414c",
+          "t085-reviewed-clause-and-authority-false-green"
+        ],
+        "evidence_refs": [".loop/evidence/t085-local.json", ".loop/evidence/t085-review.json"],
+        "next_review_at": null,
+        "blocker": null,
+        "reason": "The repository graph ledger and exact GitHub run identifiers already provide the durable bounded feedback state."
+      },
+      "failure_signature": "T085_REVIEWED_CLAUSE_AND_AUTHORITY_FALSE_GREEN",
+      "decision": "publish_one_bounded_candidate_keep_draft_hold",
+      "token_usage": { "estimated": 16000, "input": 0, "output": 0, "total": 16000 },
+      "terminal_reason": null
+    },
+    {
+      "event_id": "t085-current-base-integration-remediation",
+      "at": "2026-08-26T14:12:01Z",
+      "actor": "codex-agent",
+      "type": "feedback_remediation",
+      "base_graph_version": 8,
+      "new_graph_version": 9,
+      "graph_delta": {
+        "operations": [
+          "read back PR 146 head 01ec5f90 as ahead 11 behind 1 from protected main 84db3db after PR 147 merged",
+          "attributed Security 978 failures only to the superseded 3.5.7-r0 postgres and s3 base while protected-main Security 979 passed 8 of 8",
+          "merged protected main without rewriting the eleven existing T085 commits or adding a PR-diff path",
+          "captured an attributable validator RED because the immutable dispatch base and current review base were conflated",
+          "added two tests that preserve the fixed dispatch authorization while binding candidate scope to the current review base and making shallow-checkout fallback explicit",
+          "reached 31 of 31 targeted tests plus a real-contract structural PASS with 97 requirements 112 tasks 47 deviations and zero errors",
+          "retained one optimistic-concurrency-guarded publication frontier while PR 146 remains draft and HOLD"
+        ]
+      },
+      "evidence_refs": [
+        ".loop/evidence/t085-local.json",
+        ".loop/evidence/t085-review.json",
+        "scripts/validate-traceability.mjs",
+        "scripts/test/validate-traceability.test.mjs"
+      ],
+      "proof_receipts": [
+        {
+          "proof": "p-current-base-red-v3",
+          "status": "PASS",
+          "claim": "The integrated candidate initially failed only because two inherited protected-main Dockerfiles were incorrectly measured from the immutable dispatch base; two focused tests failed for the same missing review-base contract."
+        },
+        {
+          "proof": "p-current-base-local-v3",
+          "status": "PASS",
+          "claim": "The current-base-aware validator passes 31/31 tests and audits only the 12 T085 paths from protected review base 84db3db while preserving dispatch base 3fc14dd."
+        }
+      ],
+      "memory_receipt": {
+        "memory_status": "NO_OP",
+        "memory_id": null,
+        "version": null,
+        "retrieval_ids": [
+          "github-pr146-head-01ec5f90",
+          "github-main-84db3db",
+          "github-security-978",
+          "github-security-979"
+        ],
+        "evidence_refs": [
+          ".loop/evidence/t085-local.json",
+          ".loop/evidence/t085-review.json"
+        ],
+        "next_review_at": null,
+        "blocker": null,
+        "reason": "The protected-main commit, immutable workflow runs and append-only repository evidence already provide durable feedback state."
+      },
+      "failure_signature": "T085_CURRENT_BASE_SCOPE_DRIFT",
+      "decision": "publish_one_current_base_integrated_candidate_keep_draft_hold",
+      "token_usage": { "estimated": 14000, "input": 0, "output": 0, "total": 14000 },
+      "terminal_reason": null
+    }
+  ]
+}

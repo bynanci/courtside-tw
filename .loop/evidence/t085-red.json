@@ -1,0 +1,67 @@
+{
+  "schema_version": "mark-proof-receipt/v1",
+  "task": "T085",
+  "proof": "tests-first-red",
+  "recorded_at": "2026-08-25T13:05:46Z",
+  "repository": "bynanci/courtside-tw",
+  "issue": "https://github.com/bynanci/courtside-tw/issues/145",
+  "pull_request": "https://github.com/bynanci/courtside-tw/pull/146",
+  "base_sha": "3fc14dd29b216ce46e4d364ceaec79a971dcef44",
+  "head_sha": "bc2950490a93028095e453ae30d94dcd8b02cc08",
+  "commit_message": "test(T085): reach attributable missing-artifact RED",
+  "command": "pnpm run contract:traceability via make verify",
+  "result": "EXPECTED_FAILURE",
+  "attribution": {
+    "workflow": "CI",
+    "run_number": 964,
+    "run_id": 32850923012,
+    "job": "Frontend and contract verification",
+    "job_id": 97811415133,
+    "exact_source_head": "bc2950490a93028095e453ae30d94dcd8b02cc08",
+    "preconditions": [
+      "Prettier format check passed",
+      "workspace lint and typecheck passed",
+      "existing package and web tests passed",
+      "ContentDocument OpenAPI observability and analytics contracts passed",
+      "12 of 12 traceability mutation tests passed"
+    ],
+    "failure_messages": [
+      "T085 traceability: FAIL",
+      "missing T085 traceability artifact: specs/001-taiwan-basketball-magazine-ebook/traceability.md"
+    ],
+    "security": {
+      "workflow": "Security",
+      "run_number": 967,
+      "run_id": 32850922928,
+      "status": "completed",
+      "conclusion": "success",
+      "exact_source_head": "bc2950490a93028095e453ae30d94dcd8b02cc08"
+    },
+    "artifact": {
+      "id": 9564251650,
+      "name": "ci-frontend-reports",
+      "digest": "sha256:8bed67400b224cf5f639ffe2e56daa277326c4dde883cda0bf2ab318f76e9408",
+      "expired": false,
+      "head_sha": "bc2950490a93028095e453ae30d94dcd8b02cc08"
+    }
+  },
+  "superseded_attempt": {
+    "head_sha": "5f71cf25172821725a1533b3de6fa4bdefde74ca",
+    "ci_run_number": 963,
+    "ci_run_id": 32849525320,
+    "job_id": 97806915237,
+    "reason": "Prettier rejected the two new JavaScript files before the traceability contract ran; this head is not used as tests-first RED proof."
+  },
+  "scope_guard": {
+    "traceability_artifact_present": false,
+    "t085_checked": false,
+    "t086_dispatched": false,
+    "participant_research_executed": false,
+    "web3_activated": false,
+    "production_activated": false,
+    "provider_configured": false,
+    "secrets_changed": false,
+    "ready_or_merge_performed": false
+  },
+  "decision": "RED is attributable only to the absent T085 traceability artifact after the mutation suite and all earlier frontend gates passed; the bounded matrix implementation may proceed."
+}

@@ -52,7 +52,7 @@ MVP 採三個可獨立驗收的 P1 slice：
 
 | Gate | Rule | Status |
 | --- | --- | --- |
-| Spec traceability | 每個 API、資料表、畫面與測試可追溯到 FR／User Story；不得由 task 私自擴大 MVP | PASS |
+| Spec traceability | 每個 API、資料表、畫面與測試可追溯到 FR／User Story；不得由 task 私自擴大 MVP | T085 CONTROLLED — `traceability.md` 為可執行來源；open／proxy／human／future deviations 不得被 design-time PASS 隱藏 |
 | Contract first | OpenAPI 與 Content JSON Schema 先於前後端功能；generated client 不手改 | PASS |
 | Immutable publication | 已發布內容不可原地覆寫；發布／撤回原子化且具 audit trail | PASS |
 | Rights before reach | 缺少有效授權與署名的媒體不得送審或發布；撤回高於快取可用性 | PASS |
@@ -519,7 +519,8 @@ MVP 圖片上限與影片策略需在 implementation ADR 定稿；預設圖片�
 specs/001-taiwan-basketball-magazine-ebook/
 ├── spec.md
 ├── plan.md
-└── tasks.md
+├── tasks.md
+└── traceability.md
 ```
 
 ### Source Code (repository root)

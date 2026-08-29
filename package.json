@@ -23,7 +23,9 @@
     "contract:schema": "node scripts/validate-content-schema.mjs",
     "contract:openapi": "node scripts/validate-openapi.mjs",
     "contract:observability": "node scripts/validate-observability.mjs",
-    "contract:analytics": "node scripts/validate-analytics-privacy.mjs"
+    "contract:analytics": "node scripts/validate-analytics-privacy.mjs",
+    "test:traceability": "node --test scripts/test/validate-traceability.test.mjs",
+    "contract:traceability": "node --test scripts/test/validate-traceability.test.mjs && node scripts/validate-traceability.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
