@@ -1,18 +1,21 @@
 import assert from "node:assert/strict"
+import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import test from "node:test"
 import { fileURLToPath } from "node:url"
 
-import {
+import * as traceabilityValidator from "../validate-traceability.mjs"
+
+const {
   AUTHORIZED_BASE_SHA,
   CONTRACT_END,
   CONTRACT_START,
   TRACEABILITY_SCHEMA,
   extractContract,
   validateTraceability
-} from "../validate-traceability.mjs"
+} = traceabilityValidator
 
 const baseSha = AUTHORIZED_BASE_SHA
 const featurePath = "specs/001-taiwan-basketball-magazine-ebook"
@@ -131,6 +134,56 @@ function canonicalContract() {
   }
 }
 
+function canonicalDispatch() {
+  return {
+    schema_version: "courtside-t085-dispatch/v1",
+    recorded_at: "2026-08-25T12:42:58Z",
+    repository: "bynanci/courtside-tw",
+    issue: "https://github.com/bynanci/courtside-tw/issues/145",
+    branch: "task/t085-cross-artifact-traceability",
+    base: {
+      branch: "main",
+      sha: baseSha,
+      protected: true,
+      t084_complete: true,
+      t085_complete: false,
+      t086_complete: false,
+      open_pull_requests_at_dispatch: 0
+    },
+    inventory: {
+      functional_requirements: 74,
+      success_criteria: 23,
+      tasks: 112,
+      checked_tasks: 85,
+      unchecked_tasks: 27,
+      existing_traceability_artifact: false
+    },
+    authorized: [
+      "T085 traceability contract and human-readable matrix",
+      "deterministic validator and mutation tests",
+      "plan documentation-tree and traceability-status correction",
+      "T085-only Graphify evidence",
+      "draft pull request and exact-head CI/Security/artifact/read-back"
+    ],
+    forbidden: [
+      "ready-for-review transition, protected merge or T085 completion receipt",
+      "T086 or later task dispatch or modification",
+      "participant research execution",
+      "Web3, wallet, chain, IPFS or credential implementation",
+      "production activation, provider configuration, credentials, secrets or external writes",
+      "runtime remediation for documentation-only locator drift"
+    ],
+    tests_first: {
+      red_claim:
+        "The validator and its mutation suite pass, then the repository contract fails only because traceability.md is absent.",
+      green_claim:
+        "The same validator passes after an exact 97-requirement matrix, 112-task reverse ledger and explicit deviation register are added."
+    },
+    terminal_policy:
+      "Stop at needs_human after draft-head CI/Security, artifact digest, review-thread and protected-merge boundary read-back."
+  }
+}
+
 function markdown(contract) {
   const table = contract.requirements
     .map((row) => {
@@ -142,7 +195,7 @@ function markdown(contract) {
   const deviationTable = contract.deviations
     .map(
       (deviation) =>
-        `| ${deviation.id} | ${deviation.type} | ${deviation.severity} | ${deviation.state} | ${deviation.affected_ids.join(", ")} | ${deviation.disposition} | ${deviation.release_impact} |`
+        `| ${deviation.id} | ${deviation.type} | ${deviation.severity} | ${deviation.state} | ${deviation.affected_ids.join(", ")} | ${deviation.disposition} Target: ${deviation.target}. | ${deviation.release_impact} |`
     )
     .join("\n")
   return `# Traceability\n\n${table}\n\n## Deviation register\n\n| ID | Type | Severity | State | Affected | Disposition / target | Release impact |\n| --- | --- | --- | --- | --- | --- | --- |\n${deviationTable}\n\n${CONTRACT_START}\n\`\`\`json\n${JSON.stringify(contract, null, 2)}\n\`\`\`\n${CONTRACT_END}\n`
@@ -163,13 +216,7 @@ function makeFixture(mutate = () => {}) {
     [`${featurePath}/plan.md`]: "# Plan\n",
     [`${featurePath}/tasks.md`]: tasks,
     [`${featurePath}/traceability.md`]: markdown(contract),
-    ".loop/evidence/t085-dispatch.json": JSON.stringify({
-      schema_version: "courtside-t085-dispatch/v1",
-      repository: "bynanci/courtside-tw",
-      issue: "https://github.com/bynanci/courtside-tw/issues/145",
-      branch: "task/t085-cross-artifact-traceability",
-      base: { branch: "main", sha: baseSha }
-    }),
+    ".loop/evidence/t085-dispatch.json": JSON.stringify(canonicalDispatch()),
     "tests/fixture-proof.test.js": 'test("fixture-proof", () => {})\n'
   }
   mutate({ contract, files })
@@ -547,6 +594,32 @@ test("repository proof selectors must identify an executable test anchor", () =>
   assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
 })
 
+for (const [modifier, source] of [
+  ["skip", 'test.skip("fixture-proof", () => {})\n'],
+  ["todo", 'it.todo("fixture-proof")\n'],
+  ["failing", 'test.failing("fixture-proof", () => {})\n']
+]) {
+  test(`${modifier} JavaScript tests cannot serve as executable proof anchors`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "tests/disabled-proof.test.js"
+      files["tests/disabled-proof.test.js"] = source
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+  })
+}
+
+test("parameterized JavaScript tests remain executable proof anchors", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/parameterized-proof.test.js"
+    files["tests/parameterized-proof.test.js"] =
+      'test.each([[1]])("fixture-proof %s", () => {})\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
 test("overlapping selector locations are rejected as ambiguous", () => {
   const root = makeFixture(({ contract, files }) => {
     contract.requirements[0].proofs[0].path = "tests/overlapping-proof.test.js"
@@ -570,6 +643,90 @@ test("human deviation register cannot drift from the machine contract", () => {
   const report = run(root)
   assert.equal(report.status, "FAIL")
   assert.match(report.errors.join("\n"), /human-readable deviation register/)
+})
+
+test("human deviation disposition and target must match the machine contract", () => {
+  const root = makeFixture()
+  const traceabilityPath = path.join(root, featurePath, "traceability.md")
+  const traceability = fs.readFileSync(traceabilityPath, "utf8")
+  fs.writeFileSync(
+    traceabilityPath,
+    traceability.replace(
+      "keep the fixture bounded Target: fixture follow-up.",
+      "silently broaden fixture scope. Target: immediate release."
+    )
+  )
+
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /human-readable deviation DEV-T085-999/)
+})
+
+test("deviation affected FR and SC IDs require reciprocal requirement links", () => {
+  const root = makeFixture(({ contract }) => {
+    contract.deviations[0].affected_ids.push("FR-001", "SC-001")
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /DEV-T085-999 affects FR-001/)
+  assert.match(report.errors.join("\n"), /DEV-T085-999 affects SC-001/)
+})
+
+for (const [boundary, mutate] of [
+  ["authorized scope", (dispatch) => dispatch.authorized.push("unbounded runtime work")],
+  ["forbidden scope", (dispatch) => dispatch.forbidden.pop()],
+  ["task frontier", (dispatch) => (dispatch.base.t086_complete = true)],
+  ["source inventory", (dispatch) => (dispatch.inventory.checked_tasks = 86)],
+  ["tests-first claim", (dispatch) => (dispatch.tests_first.red_claim = "forged")],
+  ["terminal policy", (dispatch) => (dispatch.terminal_policy = "auto-merge")]
+]) {
+  test(`dispatch ${boundary} remains immutable`, () => {
+    const root = makeFixture(({ files }) => {
+      const dispatch = JSON.parse(files[".loop/evidence/t085-dispatch.json"])
+      mutate(dispatch)
+      files[".loop/evidence/t085-dispatch.json"] = JSON.stringify(dispatch)
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /dispatch authority must match the immutable T085 receipt/)
+  })
+}
+
+test("post-merge branches use current main as their change base and retire T085 scope", () => {
+  const root = makeFixture()
+  const git = (...args) =>
+    execFileSync("git", args, {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"]
+    }).trim()
+
+  git("init", "-b", "main")
+  git("config", "user.name", "Traceability Test")
+  git("config", "user.email", "traceability@example.invalid")
+  git("add", ".")
+  git("commit", "-m", "merge T085 implementation")
+  const currentMain = git("rev-parse", "HEAD")
+  git("update-ref", "refs/remotes/origin/main", currentMain)
+  git("switch", "-c", "future-change")
+  fs.writeFileSync(path.join(root, "future.txt"), "future work\n")
+  git("add", "future.txt")
+  git("commit", "-m", "future work")
+
+  assert.equal(typeof traceabilityValidator.inspectGit, "function")
+  const inspection = traceabilityValidator.inspectGit(root)
+  assert.equal(inspection.change_base_sha, currentMain)
+  assert.deepEqual(inspection.changedPaths, ["future.txt"])
+
+  const report = validateTraceability({
+    root,
+    currentHead: inspection.head,
+    gitBinding: inspection,
+    changedPaths: inspection.changedPaths,
+    changeBaseSha: inspection.change_base_sha
+  })
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+  assert.equal(report.scope_validation.bounded_scope_active, false)
 })
 
 test("composite VERIFIED rows retain clause-complete semantic proof", () => {
