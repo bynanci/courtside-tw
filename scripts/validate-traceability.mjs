@@ -106,6 +106,7 @@ const t085RepositoryReviewReceipt = Object.freeze({
   repository: "bynanci/courtside-tw",
   issue: "https://github.com/bynanci/courtside-tw/issues/145",
   requirement_id: "SC-010",
+  historical_task: "T081",
   artifact_id: 9414805375,
   artifact_name: "ci-dependency-reports",
   artifact_digest: "sha256:2572e7202c4f8b5429654c7f052ebea5e88e20650c845863925ea54e1264a5b7",
@@ -114,7 +115,19 @@ const t085RepositoryReviewReceipt = Object.freeze({
   workflow_run_id: 32390737392,
   workflow_run_number: 816,
   exact_head_manifest_sha256: "01eff14b71a4a9592dc82c16460ca05be834566b9b5517df15acaf654b3d119a",
-  restore_receipt_sha256: "e43cdc024bb9317ffbbf4620de237c9578470a5bb38633c798309da8be930210"
+  restore_receipt_sha256: "e43cdc024bb9317ffbbf4620de237c9578470a5bb38633c798309da8be930210",
+  restore_receipt: Object.freeze({
+    result: "PASS",
+    release_ready: true,
+    rpo_hours: 0.001,
+    rpo_limit_hours: 24,
+    rto_minutes: 0.037,
+    rto_limit_minutes: 240,
+    media_assets: 2,
+    media_variants: 2,
+    checksum_sample_requested: 2,
+    checksum_sample_verified: 2
+  })
 })
 const implementationCheckedTasks = new Set([
   ...Array.from({ length: 84 }, (_, index) => `T${String(index + 1).padStart(3, "0")}`),
@@ -759,25 +772,59 @@ function withoutJavaScriptComments(text) {
   return output
 }
 
-function withoutJavaScriptCommentsAndStrings(text) {
+function isJavaScriptRegexLiteralStart(text, slashIndex) {
+  let cursor = slashIndex - 1
+  while (cursor >= 0 && /\s/u.test(text[cursor])) cursor -= 1
+  if (cursor < 0) return true
+  if ("([{,:;=!?&|+-*%^~<>".includes(text[cursor])) return true
+  return /(?:^|[^\w$])(?:await|case|delete|do|else|in|instanceof|new|of|return|throw|typeof|void|yield)\s*$/u.test(
+    text.slice(0, slashIndex)
+  )
+}
+
+function withoutJavaScriptCommentsStringsAndRegex(text) {
   const commentFree = withoutJavaScriptComments(text)
   let output = ""
+  let state = "code"
   let quote = null
   for (let index = 0; index < commentFree.length; index += 1) {
     const character = commentFree[index]
     const next = commentFree[index + 1]
-    if (quote !== null) {
+    if (state === "string") {
       output += character === "\n" ? "\n" : " "
       if (character === "\\" && next !== undefined) {
         output += next === "\n" ? "\n" : " "
         index += 1
       } else if (character === quote) {
+        state = "code"
         quote = null
       }
       continue
     }
+    if (state === "regex" || state === "regex-class") {
+      output += character === "\n" ? "\n" : " "
+      if (character === "\\" && next !== undefined) {
+        output += next === "\n" ? "\n" : " "
+        index += 1
+      } else if (state === "regex" && character === "[") {
+        state = "regex-class"
+      } else if (state === "regex-class" && character === "]") {
+        state = "regex"
+      } else if (state === "regex" && character === "/") {
+        state = "code"
+      }
+      continue
+    }
     if (['"', "'", "`"].includes(character)) {
+      state = "string"
       quote = character
+      output += " "
+    } else if (
+      character === "/" &&
+      next !== "=" &&
+      isJavaScriptRegexLiteralStart(commentFree, index)
+    ) {
+      state = "regex"
       output += " "
     } else {
       output += character
@@ -786,11 +833,11 @@ function withoutJavaScriptCommentsAndStrings(text) {
   return output
 }
 
-function matchingJavaScriptBrace(text, openBraceIndex) {
+function matchingJavaScriptParenthesis(text, openParenthesisIndex) {
   let depth = 0
-  for (let index = openBraceIndex; index < text.length; index += 1) {
-    if (text[index] === "{") depth += 1
-    if (text[index] === "}") {
+  for (let index = openParenthesisIndex; index < text.length; index += 1) {
+    if (text[index] === "(") depth += 1
+    if (text[index] === ")") {
       depth -= 1
       if (depth === 0) return index
     }
@@ -799,7 +846,7 @@ function matchingJavaScriptBrace(text, openBraceIndex) {
 }
 
 function isInsideDisabledJavaScriptSuite(text, lineIndex, selector) {
-  const structure = withoutJavaScriptCommentsAndStrings(text)
+  const structure = withoutJavaScriptCommentsStringsAndRegex(text)
   const originalLines = text.split(/\r?\n/)
   const targetLine = originalLines[lineIndex] ?? ""
   const selectorColumn = targetLine.indexOf(selector)
@@ -812,17 +859,10 @@ function isInsideDisabledJavaScriptSuite(text, lineIndex, selector) {
 
   for (const suite of structure.matchAll(disabledSuitePattern)) {
     if (suite.index >= targetOffset) break
-    const candidate = structure.slice(suite.index, targetOffset)
-    const arrowIndex = candidate.search(/=>\s*\{/u)
-    const functionIndex = candidate.search(/\bfunction\b[^{}]*\{/u)
-    const callbackIndex = [arrowIndex, functionIndex]
-      .filter((index) => index >= 0)
-      .sort((left, right) => left - right)[0]
-    if (callbackIndex === undefined) continue
-    const openBraceIndex = structure.indexOf("{", suite.index + callbackIndex)
-    if (openBraceIndex === -1 || openBraceIndex >= targetOffset) continue
-    const closeBraceIndex = matchingJavaScriptBrace(structure, openBraceIndex)
-    if (targetOffset < closeBraceIndex) return true
+    const openParenthesisIndex = structure.indexOf("(", suite.index)
+    if (openParenthesisIndex === -1 || openParenthesisIndex >= targetOffset) continue
+    const closeParenthesisIndex = matchingJavaScriptParenthesis(structure, openParenthesisIndex)
+    if (targetOffset < closeParenthesisIndex) return true
   }
   return false
 }
@@ -914,7 +954,8 @@ function validateRepositoryEvidenceReceipt(root, proof, requirementId, label, er
     receipt.repository !== expected.repository ||
     receipt.issue !== expected.issue ||
     historical?.requirement_id !== requirementId ||
-    historical?.requirement_id !== expected.requirement_id
+    historical?.requirement_id !== expected.requirement_id ||
+    historical?.task !== expected.historical_task
   ) {
     errors.push(`${label} repository proof receipt identity must bind SC-010 in this repository`)
   }
@@ -933,14 +974,7 @@ function validateRepositoryEvidenceReceipt(root, proof, requirementId, label, er
   }
   if (
     historical?.restore_receipt_sha256 !== expected.restore_receipt_sha256 ||
-    historical?.restore_receipt?.result !== "PASS" ||
-    historical?.restore_receipt?.release_ready !== true ||
-    !Number.isFinite(historical?.restore_receipt?.rpo_hours) ||
-    !Number.isFinite(historical?.restore_receipt?.rpo_limit_hours) ||
-    historical.restore_receipt.rpo_hours > historical.restore_receipt.rpo_limit_hours ||
-    !Number.isFinite(historical?.restore_receipt?.rto_minutes) ||
-    !Number.isFinite(historical?.restore_receipt?.rto_limit_minutes) ||
-    historical.restore_receipt.rto_minutes > historical.restore_receipt.rto_limit_minutes
+    !isDeepStrictEqual(historical?.restore_receipt, expected.restore_receipt)
   ) {
     errors.push(`${label} repository proof receipt must contain a passing bounded restore receipt`)
   }
