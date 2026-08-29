@@ -1791,6 +1791,37 @@ test("parameterized JavaScript tests remain executable proof anchors", () => {
   assert.equal(report.status, "PASS", report.errors.join("\n"))
 })
 
+for (const [titleKind, source] of [
+  [
+    "binary title comment",
+    'const suffix = ""\ntest("different" + /* fixture-proof */ suffix, () => {})\n'
+  ],
+  [
+    "template expression comment",
+    'const suffix = ""\ntest(`different ${/* fixture-proof */ suffix}`, () => {})\n'
+  ]
+]) {
+  test(`a selector in a ${titleKind} cannot bind an executable proof title`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "tests/comment-title-proof.test.js"
+      files["tests/comment-title-proof.test.js"] = source
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+  })
+}
+
+test("a selector in a dynamic template title quasi remains executable proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/template-title-proof.test.js"
+    files["tests/template-title-proof.test.js"] =
+      'const suffix = "viewport"\ntest(`fixture-proof ${suffix}`, () => {})\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
 for (const [commentStyle, source] of [
   ["line-commented", '// test("fixture-proof", () => {})\n'],
   ["block-commented", '/* test("fixture-proof", () => {}) */\n'],
