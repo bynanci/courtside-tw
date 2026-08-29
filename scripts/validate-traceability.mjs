@@ -717,7 +717,6 @@ function isExecutableProofPath(relativePath) {
   )
 }
 
-const disabledJavaScriptSuiteBases = new Set(["context", "describe", "suite"])
 const disabledJavaScriptSuiteModifiers = new Set([
   "disabled",
   "failing",
@@ -726,8 +725,22 @@ const disabledJavaScriptSuiteModifiers = new Set([
   "skip",
   "todo"
 ])
-const activeJavaScriptSuiteModifiers = new Set(["concurrent", "each", "only", "parallel", "serial"])
-const activeJavaScriptTestModifiers = new Set(["concurrent", "each", "only", "serial"])
+const javaScriptModifierChainKey = (segments) => JSON.stringify(segments)
+const activeJavaScriptSuiteModifierChains = new Map([
+  ["node-suite", new Set([javaScriptModifierChainKey([])])],
+  [
+    "playwright-test",
+    new Set([
+      javaScriptModifierChainKey([]),
+      javaScriptModifierChainKey(["parallel"]),
+      javaScriptModifierChainKey(["serial"])
+    ])
+  ]
+])
+const activeJavaScriptTestModifierChains = new Map([
+  ["node-test", new Set([javaScriptModifierChainKey([])])],
+  ["playwright-test", new Set([javaScriptModifierChainKey([])])]
+])
 const transparentJavaScriptExpressionTypes = new Set([
   "ChainExpression",
   "ParenthesizedExpression",
@@ -792,11 +805,11 @@ function javaScriptMemberPath(node) {
   }
   if (expression?.type === "CallExpression") {
     const calleePath = javaScriptMemberPath(expression.callee)
-    return { ambiguous: ambiguous || calleePath.ambiguous, segments: calleePath.segments }
+    return { ambiguous: true, segments: calleePath.segments }
   }
   if (expression?.type === "TaggedTemplateExpression") {
     const tagPath = javaScriptMemberPath(expression.tag)
-    return { ambiguous: ambiguous || tagPath.ambiguous, segments: tagPath.segments }
+    return { ambiguous: true, segments: tagPath.segments }
   }
   if (expression?.type !== "MemberExpression") {
     return { ambiguous, segments: [] }
@@ -808,6 +821,253 @@ function javaScriptMemberPath(node) {
     ambiguous: ambiguous || objectPath.ambiguous || !property.known,
     segments: property.known ? [...objectPath.segments, property.value] : objectPath.segments
   }
+}
+
+function staticJavaScriptObjectPropertyKey(node) {
+  if (!node?.computed && node?.key?.type === "Identifier") {
+    return { known: true, value: node.key.name }
+  }
+  if (
+    node?.key?.type === "Literal" &&
+    typeof node.key.value === "string" &&
+    (node.computed === true || node.computed === false)
+  ) {
+    return { known: true, value: node.key.value }
+  }
+  if (
+    node?.computed === true &&
+    node?.key?.type === "TemplateLiteral" &&
+    node.key.expressions?.length === 0 &&
+    node.key.quasis?.length === 1
+  ) {
+    const value = node.key.quasis[0]?.value?.cooked
+    if (typeof value === "string") return { known: true, value }
+  }
+  return { known: false, value: null }
+}
+
+function classifyNodeTestOptions(node, { rejectCallbackOverride = false } = {}) {
+  if (node === null) return "active"
+  const normalized = normalizeJavaScriptExpression(node)
+  const expression = normalized.expression
+  if (normalized.ambiguous || expression?.type !== "ObjectExpression") return "unknown"
+
+  const seen = new Set()
+  for (const property of expression.properties ?? []) {
+    if (
+      property?.type !== "Property" ||
+      property.kind !== "init" ||
+      property.method === true ||
+      property.shorthand === true
+    ) {
+      return "unknown"
+    }
+    const key = staticJavaScriptObjectPropertyKey(property)
+    if (
+      !key.known ||
+      ![
+        "concurrency",
+        "expectFailure",
+        "fn",
+        "only",
+        "plan",
+        "signal",
+        "skip",
+        "timeout",
+        "todo"
+      ].includes(key.value) ||
+      seen.has(key.value)
+    ) {
+      return "unknown"
+    }
+    seen.add(key.value)
+    if (rejectCallbackOverride && key.value === "fn") return "unknown"
+    if (key.value === "signal") return "unknown"
+    if (key.value === "fn") {
+      const value = normalizeJavaScriptExpression(property.value)
+      if (
+        value.ambiguous ||
+        !javaScriptFunctionTypes.has(value.expression?.type) ||
+        value.expression.generator === true
+      ) {
+        return "unknown"
+      }
+      continue
+    }
+
+    const value = normalizeJavaScriptExpression(property.value)
+    if (value.ambiguous || value.expression?.type !== "Literal") return "unknown"
+    const literal = value.expression.value
+    if (["skip", "todo"].includes(key.value)) {
+      if (literal === false) continue
+      if (literal === true || (typeof literal === "string" && literal.length > 0)) {
+        return "disabled"
+      }
+      return "unknown"
+    }
+    if (["only", "expectFailure"].includes(key.value)) {
+      if (literal === false) continue
+      return literal === true ? "disabled" : "unknown"
+    }
+    if (key.value === "concurrency") {
+      if (
+        typeof literal === "boolean" ||
+        (typeof literal === "number" && Number.isInteger(literal) && literal > 0)
+      ) {
+        continue
+      }
+      return "unknown"
+    }
+    if (key.value === "timeout") {
+      if (typeof literal === "number" && Number.isFinite(literal) && literal >= 0) continue
+      return "unknown"
+    }
+    if (key.value === "plan") {
+      if (typeof literal === "number" && Number.isInteger(literal) && literal >= 0) continue
+      return "unknown"
+    }
+  }
+  return "active"
+}
+
+function isStaticJavaScriptSuiteTitle(node) {
+  const normalized = normalizeJavaScriptExpression(node)
+  const expression = normalized.expression
+  return (
+    normalized.ambiguous === false &&
+    ((expression?.type === "Literal" && typeof expression.value === "string") ||
+      expression?.type === "TemplateLiteral")
+  )
+}
+
+function isInlineJavaScriptFunction(node) {
+  const normalized = normalizeJavaScriptExpression(node)
+  return normalized.ambiguous === false && javaScriptFunctionTypes.has(normalized.expression?.type)
+}
+
+function isStaticJavaScriptOptionsObject(node) {
+  const normalized = normalizeJavaScriptExpression(node)
+  return normalized.ambiguous === false && normalized.expression?.type === "ObjectExpression"
+}
+
+function isExecutableJavaScriptSuiteCallback(node, binding) {
+  const normalized = normalizeJavaScriptExpression(node)
+  const callback = normalized.expression
+  return (
+    normalized.ambiguous === false &&
+    javaScriptFunctionTypes.has(callback?.type) &&
+    callback.generator !== true &&
+    !(binding?.role === "playwright-test" && callback.async === true)
+  )
+}
+
+function isStaticPlaywrightAnnotation(node) {
+  const normalized = normalizeJavaScriptExpression(node)
+  const expression = normalized.expression
+  if (normalized.ambiguous || expression?.type !== "ObjectExpression") return false
+
+  const values = new Map()
+  for (const property of expression.properties ?? []) {
+    if (
+      property?.type !== "Property" ||
+      property.kind !== "init" ||
+      property.method === true ||
+      property.shorthand === true
+    ) {
+      return false
+    }
+    const key = staticJavaScriptObjectPropertyKey(property)
+    if (!key.known || !["type", "description"].includes(key.value) || values.has(key.value)) {
+      return false
+    }
+    const value = normalizeJavaScriptExpression(property.value)
+    if (
+      value.ambiguous ||
+      value.expression?.type !== "Literal" ||
+      typeof value.expression.value !== "string"
+    ) {
+      return false
+    }
+    values.set(key.value, value.expression.value)
+  }
+  return values.has("type")
+}
+
+function isStaticPlaywrightDetailsValue(node, key) {
+  const normalized = normalizeJavaScriptExpression(node)
+  const expression = normalized.expression
+  if (normalized.ambiguous) return false
+  if (key === "tag") {
+    if (expression?.type === "Literal") {
+      return typeof expression.value === "string" && expression.value.startsWith("@")
+    }
+    return (
+      expression?.type === "ArrayExpression" &&
+      (expression.elements ?? []).every(
+        (element) =>
+          element?.type === "Literal" &&
+          typeof element.value === "string" &&
+          element.value.startsWith("@")
+      )
+    )
+  }
+  if (isStaticPlaywrightAnnotation(expression)) return true
+  return (
+    expression?.type === "ArrayExpression" &&
+    (expression.elements ?? []).every((element) => isStaticPlaywrightAnnotation(element))
+  )
+}
+
+function classifyPlaywrightSuiteDetails(node) {
+  if (node === null) return "active"
+  const normalized = normalizeJavaScriptExpression(node)
+  const expression = normalized.expression
+  if (normalized.ambiguous || expression?.type !== "ObjectExpression") return "unknown"
+
+  const seen = new Set()
+  for (const property of expression.properties ?? []) {
+    if (
+      property?.type !== "Property" ||
+      property.kind !== "init" ||
+      property.method === true ||
+      property.shorthand === true
+    ) {
+      return "unknown"
+    }
+    const key = staticJavaScriptObjectPropertyKey(property)
+    if (!key.known || !["tag", "annotation"].includes(key.value) || seen.has(key.value)) {
+      return "unknown"
+    }
+    if (!isStaticPlaywrightDetailsValue(property.value, key.value)) return "unknown"
+    seen.add(key.value)
+  }
+  return "active"
+}
+
+function javaScriptSuiteCallOverload(expression, binding) {
+  const args = expression.arguments ?? []
+  if (args.some((argument) => argument?.type === "SpreadElement")) return null
+  if (args.length === 1 && isExecutableJavaScriptSuiteCallback(args[0], binding)) {
+    return { callback: args[0], options: null }
+  }
+  if (args.length === 2 && isExecutableJavaScriptSuiteCallback(args[1], binding)) {
+    if (isStaticJavaScriptSuiteTitle(args[0])) {
+      return { callback: args[1], options: null }
+    }
+    if (binding?.role === "node-suite" && isStaticJavaScriptOptionsObject(args[0])) {
+      return { callback: args[1], options: args[0] }
+    }
+    return null
+  }
+  if (
+    args.length === 3 &&
+    isStaticJavaScriptSuiteTitle(args[0]) &&
+    isStaticJavaScriptOptionsObject(args[1]) &&
+    isExecutableJavaScriptSuiteCallback(args[2], binding)
+  ) {
+    return { callback: args[2], options: args[1] }
+  }
+  return null
 }
 
 function classifyJavaScriptSuiteCall(node, bindings) {
@@ -835,9 +1095,21 @@ function classifyJavaScriptSuiteCall(node, bindings) {
   if (modifiers.some((modifier) => disabledJavaScriptSuiteModifiers.has(modifier))) {
     return "disabled"
   }
-  return modifiers.every((modifier) => activeJavaScriptSuiteModifiers.has(modifier))
-    ? "active"
-    : "unknown"
+  const activeModifierChains = activeJavaScriptSuiteModifierChains.get(binding.role)
+  if (!activeModifierChains?.has(javaScriptModifierChainKey(modifiers))) return "unknown"
+
+  const overload = javaScriptSuiteCallOverload(expression, binding)
+  if (overload === null) return "unknown"
+  if (binding.role === "node-suite") {
+    const options = classifyNodeTestOptions(overload.options, {
+      rejectCallbackOverride: true
+    })
+    if (options !== "active") return options
+  } else if (binding.role === "playwright-test") {
+    const details = classifyPlaywrightSuiteDetails(overload.options)
+    if (details !== "active") return details
+  }
+  return "active"
 }
 
 function hasBoundedJavaScriptRange(node, textLength) {
@@ -937,7 +1209,7 @@ function authorizedJavaScriptImportRole(declaration, specifier) {
     if (specifier.type !== "ImportSpecifier") return null
     const importedName = javaScriptImportedName(specifier)
     if (["it", "test"].includes(importedName)) return "node-test"
-    if (disabledJavaScriptSuiteBases.has(importedName)) return "node-suite"
+    if (["describe", "suite"].includes(importedName)) return "node-suite"
   }
   if (
     source === "@playwright/test" &&
@@ -1024,11 +1296,20 @@ function javaScriptProofCall(node, targetOffset, selector, textLength, bindings)
   if (memberPath.ambiguous || !javaScriptProofBindingRoles.has(binding?.role)) return false
   if (binding.role === "playwright-test" && memberPath.segments[1] === "describe") return false
   const modifiers = memberPath.segments.slice(1)
+  const activeModifierChains = activeJavaScriptTestModifierChains.get(binding.role)
   if (
     modifiers.some((modifier) => nonExecutableTestModifiers.has(modifier)) ||
-    !modifiers.every((modifier) => activeJavaScriptTestModifiers.has(modifier))
+    !activeModifierChains?.has(javaScriptModifierChainKey(modifiers))
   ) {
     return false
+  }
+  if (binding.role === "node-test") {
+    const args = expression.arguments ?? []
+    if (args.length > 3 || args.some((argument) => argument?.type === "SpreadElement")) {
+      return false
+    }
+    const options = args.length >= 2 && !isInlineJavaScriptFunction(args[1]) ? args[1] : null
+    if (classifyNodeTestOptions(options) !== "active") return false
   }
 
   const title = expression.arguments?.[0]
@@ -1047,11 +1328,100 @@ function javaScriptFunctionRegistration(functionIndex, ancestors, bindings) {
     parentIndex -= 1
   }
   const parent = ancestors[parentIndex]
-  if (parent?.type !== "CallExpression" || !parent.arguments?.includes(child)) return "unknown"
+  if (parent?.type !== "CallExpression") return "unknown"
+  const memberPath = javaScriptMemberPath(parent.callee)
+  const binding = bindings.get(memberPath.segments[0])
+  const overload = javaScriptSuiteCallOverload(parent, binding)
+  if (overload?.callback !== child) return "unknown"
   return classifyJavaScriptSuiteCall(parent, bindings)
 }
 
-function hasAttributableJavaScriptRegistration(ancestors, bindings) {
+function isProvablyNonemptyJavaScriptForOf(statement) {
+  const normalized = normalizeJavaScriptExpression(statement?.right)
+  const expression = normalized.expression
+  const declaration = statement?.left?.declarations?.[0]
+  return (
+    normalized.ambiguous === false &&
+    statement?.left?.type === "VariableDeclaration" &&
+    statement.left.declarations?.length === 1 &&
+    declaration?.id?.type === "Identifier" &&
+    declaration.init === null &&
+    expression?.type === "ArrayExpression" &&
+    expression.elements?.length > 0 &&
+    expression.elements.every((element) => element === null || element?.type === "Literal")
+  )
+}
+
+function isAlwaysAbruptJavaScriptStatement(statement) {
+  if (
+    ["BreakStatement", "ContinueStatement", "ReturnStatement", "ThrowStatement"].includes(
+      statement?.type
+    )
+  ) {
+    return true
+  }
+  if (statement?.type === "LabeledStatement") {
+    return isAlwaysAbruptJavaScriptStatement(statement.body)
+  }
+  if (statement?.type === "BlockStatement") {
+    return (statement.body ?? []).some((child) => isAlwaysAbruptJavaScriptStatement(child))
+  }
+  return false
+}
+
+function hasPriorAbruptJavaScriptCompletion(parent, child) {
+  const statements = ["BlockStatement", "Program", "StaticBlock"].includes(parent?.type)
+    ? parent.body
+    : null
+  const childIndex = statements?.indexOf(child) ?? -1
+  return (
+    childIndex > 0 &&
+    statements
+      .slice(0, childIndex)
+      .some((statement) => isAlwaysAbruptJavaScriptStatement(statement))
+  )
+}
+
+function hasConditionalJavaScriptRegistration(node, ancestors) {
+  let child = node
+  for (let index = ancestors.length - 1; index >= 0; index -= 1) {
+    const parent = ancestors[index]
+    if (
+      (parent.type === "IfStatement" &&
+        (parent.consequent === child || parent.alternate === child)) ||
+      (parent.type === "ConditionalExpression" &&
+        (parent.consequent === child || parent.alternate === child)) ||
+      (parent.type === "LogicalExpression" && parent.right === child) ||
+      (parent.type === "AssignmentExpression" &&
+        ["&&=", "||=", "??="].includes(parent.operator) &&
+        parent.right === child) ||
+      (parent.type === "CallExpression" &&
+        parent.arguments?.includes(child) &&
+        (parent.optional === true || javaScriptMemberPath(parent.callee).ambiguous)) ||
+      (parent.type === "MemberExpression" &&
+        parent.computed === true &&
+        parent.property === child &&
+        (parent.optional === true || javaScriptMemberPath(parent.object).ambiguous)) ||
+      (parent.type === "SwitchCase" &&
+        (parent.test === child || parent.consequent?.includes(child))) ||
+      (parent.type === "ForStatement" && (parent.body === child || parent.update === child)) ||
+      (parent.type === "WhileStatement" && parent.body === child) ||
+      (parent.type === "ForInStatement" && parent.body === child) ||
+      (parent.type === "ForOfStatement" &&
+        parent.body === child &&
+        !isProvablyNonemptyJavaScriptForOf(parent)) ||
+      (parent.type === "CatchClause" && parent.body === child) ||
+      hasPriorAbruptJavaScriptCompletion(parent, child)
+    ) {
+      return true
+    }
+    child = parent
+  }
+  return false
+}
+
+function hasAttributableJavaScriptRegistration(node, ancestors, bindings) {
+  if (hasConditionalJavaScriptRegistration(node, ancestors)) return false
   for (let index = 0; index < ancestors.length; index += 1) {
     if (!javaScriptFunctionTypes.has(ancestors[index]?.type)) continue
     if (javaScriptFunctionRegistration(index, ancestors, bindings) !== "active") return false
@@ -1090,7 +1460,8 @@ function hasExecutableJavaScriptProofAnchor(text, selector, proofPath) {
     return false
   }
   return (
-    matches.length === 1 && hasAttributableJavaScriptRegistration(matches[0].ancestors, bindings)
+    matches.length === 1 &&
+    hasAttributableJavaScriptRegistration(matches[0].node, matches[0].ancestors, bindings)
   )
 }
 

@@ -1758,6 +1758,29 @@ test("a named suite callback cannot serve as attributable executable proof", () 
   assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
 })
 
+for (const [runner, source] of [
+  [
+    "node:test",
+    'import test, { describe } from "node:test"\n' +
+      'describe("active suite", () => {}, () => test("fixture-proof", () => {}))\n'
+  ],
+  [
+    "Playwright",
+    'import { test } from "@playwright/test"\n' +
+      'test.describe("active suite", () => {}, () => test("fixture-proof", () => {}))\n'
+  ]
+]) {
+  test(`an ignored extra ${runner} suite callback cannot register executable proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "tests/extra-suite-callback-proof.test.js"
+      files["tests/extra-suite-callback-proof.test.js"] = source
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+  })
+}
+
 test("an inline active suite callback remains attributable executable proof", () => {
   const root = makeFixture(({ contract, files }) => {
     contract.requirements[0].proofs[0].path = "tests/active-suite-proof.test.ts"
@@ -1767,6 +1790,162 @@ test("an inline active suite callback remains attributable executable proof", ()
       "  const marker: number = 1\n" +
       '  test("fixture-proof", () => marker)\n' +
       "})\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+for (const [runner, source] of [
+  [
+    "node:test",
+    'import test, { describe } from "node:test"\n' +
+      'describe("active suite", { concurrency: true }, () => test("fixture-proof", () => {}))\n'
+  ],
+  [
+    "Playwright",
+    'import { test } from "@playwright/test"\n' +
+      'test.describe("active suite", { tag: "@trace" }, () => test("fixture-proof", () => {}))\n'
+  ]
+]) {
+  test(`an inline ${runner} three-argument suite callback remains executable proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "tests/active-suite-options-proof.test.js"
+      files["tests/active-suite-options-proof.test.js"] = source
+    })
+    const report = run(root)
+    assert.equal(report.status, "PASS", report.errors.join("\n"))
+  })
+}
+
+test("a node:test suite disabled through options cannot register executable proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/disabled-suite-options-proof.test.js"
+    files["tests/disabled-suite-options-proof.test.js"] =
+      'import test, { describe } from "node:test"\n' +
+      'describe("disabled suite", { skip: true }, () => test("fixture-proof", () => {}))\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+})
+
+test("a node:test suite callback overridden through options cannot register proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/overridden-suite-callback-proof.test.js"
+    files["tests/overridden-suite-callback-proof.test.js"] =
+      'import test, { describe } from "node:test"\n' +
+      'describe("active suite", { fn: () => {} }, () => test("fixture-proof", () => {}))\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+})
+
+for (const [runner, source] of [
+  [
+    "node:test",
+    'import test, { describe } from "node:test"\n' +
+      'describe("suite", function* () { test("fixture-proof", () => {}) })\n'
+  ],
+  [
+    "Playwright",
+    'import { test } from "@playwright/test"\n' +
+      'test.describe("suite", function* () { test("fixture-proof", () => {}) })\n'
+  ]
+]) {
+  test(`a ${runner} generator suite callback cannot register executable proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "tests/generator-suite-proof.test.js"
+      files["tests/generator-suite-proof.test.js"] = source
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+  })
+}
+
+test("an async Playwright suite callback cannot register executable proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/async-suite-proof.test.js"
+    files["tests/async-suite-proof.test.js"] =
+      'import { test } from "@playwright/test"\n' +
+      'test.describe("suite", async () => { await 0; test("fixture-proof", () => {}) })\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+})
+
+test("invalid Playwright suite details cannot register executable proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/invalid-suite-details-proof.test.js"
+    files["tests/invalid-suite-details-proof.test.js"] =
+      'import { test } from "@playwright/test"\n' +
+      'test.describe("suite", { tag: "trace" }, () => test("fixture-proof", () => {}))\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+})
+
+for (const [controlFlow, statement] of [
+  ["if branch", 'if (process.platform === "win32") test("fixture-proof", () => {})'],
+  [
+    "switch case",
+    'switch (process.platform) { case "win32": test("fixture-proof", () => {}); break }'
+  ],
+  ["empty for-of loop", 'for (const value of []) test("fixture-proof", () => value)'],
+  ["false while loop", 'while (false) test("fixture-proof", () => {})'],
+  ["short-circuit expression", 'process.platform === "win32" && test("fixture-proof", () => {})'],
+  [
+    "conditional expression",
+    'process.platform === "win32" ? test("fixture-proof", () => {}) : undefined'
+  ],
+  ["logical assignment", 'let gate = false; gate &&= test("fixture-proof", () => {})'],
+  ["optional call argument", 'null?.method(test("fixture-proof", () => {}))'],
+  [
+    "throwing array initializer",
+    'for (const value of [missing]) test("fixture-proof", () => value)'
+  ]
+]) {
+  test(`a registration inside a conditional ${controlFlow} cannot serve as proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "tests/conditional-proof.test.js"
+      files["tests/conditional-proof.test.js"] =
+        'import test, { describe } from "node:test"\n' +
+        `describe("active suite", () => { ${statement} })\n`
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+  })
+}
+
+for (const [completion, body] of [
+  ["return", 'return; test("fixture-proof", () => {})'],
+  ["throw", 'throw new Error("stop"); test("fixture-proof", () => {})'],
+  ["break", 'for (const value of [1]) { break; test("fixture-proof", () => value) }'],
+  ["continue", 'for (const value of [1]) { continue; test("fixture-proof", () => value) }']
+]) {
+  test(`a registration after an unconditional ${completion} cannot serve as proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "tests/unreachable-proof.test.js"
+      files["tests/unreachable-proof.test.js"] =
+        'import test, { describe } from "node:test"\n' +
+        `describe("active suite", () => { ${body} })\n`
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+  })
+}
+
+test("a statically nonempty for-of registration remains executable proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/nonempty-loop-proof.test.ts"
+    files["tests/nonempty-loop-proof.test.ts"] =
+      'import test from "node:test"\n' +
+      "for (const value of [1, 2] as const) test(`fixture-proof ${value}`, () => {})\n"
   })
   const report = run(root)
   assert.equal(report.status, "PASS", report.errors.join("\n"))
@@ -1799,11 +1978,275 @@ for (const [modifier, source] of [
   })
 }
 
-test("parameterized JavaScript tests remain executable proof anchors", () => {
+for (const [runner, modifier, source] of [
+  [
+    "node:test",
+    "each",
+    'import test from "node:test"\ntest.each([[1]])("fixture-proof %s", () => {})\n'
+  ],
+  [
+    "node:test",
+    "concurrent",
+    'import test from "node:test"\ntest.concurrent("fixture-proof", () => {})\n'
+  ],
+  ["node:test", "serial", 'import test from "node:test"\ntest.serial("fixture-proof", () => {})\n'],
+  [
+    "Playwright",
+    "each",
+    'import { test } from "@playwright/test"\ntest.each([[1]])("fixture-proof %s", () => {})\n'
+  ],
+  [
+    "Playwright",
+    "concurrent",
+    'import { test } from "@playwright/test"\ntest.concurrent("fixture-proof", () => {})\n'
+  ],
+  [
+    "Playwright",
+    "serial",
+    'import { test } from "@playwright/test"\ntest.serial("fixture-proof", () => {})\n'
+  ]
+]) {
+  test(`unsupported ${runner} test.${modifier} cannot serve as executable proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "tests/unsupported-modifier-proof.test.js"
+      files["tests/unsupported-modifier-proof.test.js"] = source
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+  })
+}
+
+for (const [runner, modifier, source] of [
+  [
+    "node:test",
+    "each",
+    'import test, { describe } from "node:test"\n' +
+      'describe.each([[1]])("suite", () => test("fixture-proof", () => {}))\n'
+  ],
+  [
+    "node:test",
+    "parallel",
+    'import test, { describe } from "node:test"\n' +
+      'describe.parallel("suite", () => test("fixture-proof", () => {}))\n'
+  ],
+  [
+    "Playwright",
+    "each",
+    'import { test } from "@playwright/test"\n' +
+      'test.describe.each([[1]])("suite", () => test("fixture-proof", () => {}))\n'
+  ],
+  [
+    "Playwright",
+    "concurrent",
+    'import { test } from "@playwright/test"\n' +
+      'test.describe.concurrent("suite", () => test("fixture-proof", () => {}))\n'
+  ]
+]) {
+  test(`unsupported ${runner} suite.${modifier} cannot register executable proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "tests/unsupported-suite-proof.test.js"
+      files["tests/unsupported-suite-proof.test.js"] = source
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+  })
+}
+
+for (const [registration, source] of [
+  ["curried node:test test", 'import test from "node:test"\ntest()("fixture-proof", () => {})\n'],
+  [
+    "curried node:test suite",
+    'import test, { describe } from "node:test"\n' +
+      'describe()("suite", () => test("fixture-proof", () => {}))\n'
+  ],
+  [
+    "curried Playwright suite",
+    'import { test } from "@playwright/test"\n' +
+      'test.describe()("suite", () => test("fixture-proof", () => {}))\n'
+  ],
+  [
+    "tagged node:test test",
+    'import test from "node:test"\ntest`data`("fixture-proof", () => {})\n'
+  ],
+  [
+    "tagged node:test suite",
+    'import test, { describe } from "node:test"\n' +
+      'describe`data`("suite", () => test("fixture-proof", () => {}))\n'
+  ],
+  [
+    "empty node:test modifier",
+    'import test from "node:test"\ntest[""]("fixture-proof", () => {})\n'
+  ],
+  [
+    "empty node:test suite modifier",
+    'import test, { describe } from "node:test"\n' +
+      'describe[""]("suite", () => test("fixture-proof", () => {}))\n'
+  ],
+  [
+    "empty Playwright suite modifier",
+    'import { test } from "@playwright/test"\n' +
+      'test.describe[""]("suite", () => test("fixture-proof", () => {}))\n'
+  ],
+  [
+    "collapsed Playwright suite modifier",
+    'import { test } from "@playwright/test"\n' +
+      'test.describe["parallel.only"]("suite", () => test("fixture-proof", () => {}))\n'
+  ],
+  [
+    "unsupported node:test context import",
+    'import test, { context } from "node:test"\n' +
+      'context("suite", () => test("fixture-proof", () => {}))\n'
+  ]
+]) {
+  test(`${registration} cannot register executable proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "tests/invalid-registration-proof.test.js"
+      files["tests/invalid-registration-proof.test.js"] = source
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+  })
+}
+
+for (const [runner, registration, source] of [
+  [
+    "node:test",
+    "test.only",
+    'import test from "node:test"\ntest.only("fixture-proof", () => {})\n'
+  ],
+  [
+    "Playwright",
+    "test.only",
+    'import { test } from "@playwright/test"\ntest.only("fixture-proof", () => {})\n'
+  ],
+  [
+    "node:test",
+    "describe.only",
+    'import test, { describe } from "node:test"\n' +
+      'describe.only("suite", () => test("fixture-proof", () => {}))\n'
+  ],
+  [
+    "Playwright",
+    "test.describe.only",
+    'import { test } from "@playwright/test"\n' +
+      'test.describe.only("suite", () => test("fixture-proof", () => {}))\n'
+  ],
+  [
+    "Playwright",
+    "test.describe.parallel.only",
+    'import { test } from "@playwright/test"\n' +
+      'test.describe.parallel.only("suite", () => test("fixture-proof", () => {}))\n'
+  ],
+  [
+    "Playwright",
+    "test.describe.serial.only",
+    'import { test } from "@playwright/test"\n' +
+      'test.describe.serial.only("suite", () => test("fixture-proof", () => {}))\n'
+  ]
+]) {
+  test(`focused ${runner} ${registration} cannot register executable proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "tests/focused-proof.test.js"
+      files["tests/focused-proof.test.js"] = source
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+  })
+}
+
+for (const [option, value] of [
+  ["skip", "true"],
+  ["skip", '"not on this platform"'],
+  ["todo", "true"],
+  ["todo", '"pending implementation"']
+]) {
+  test(`node:test ${option} option ${value} cannot serve as executable proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "tests/disabled-options-proof.test.js"
+      files["tests/disabled-options-proof.test.js"] =
+        'import test from "node:test"\n' +
+        `test("fixture-proof", { ${option}: ${value} }, () => {})\n`
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+  })
+}
+
+for (const [optionsKind, source] of [
+  [
+    "focused test",
+    'import test from "node:test"\ntest("fixture-proof", { only: true }, () => {})\n'
+  ],
+  [
+    "focused suite",
+    'import test, { describe } from "node:test"\n' +
+      'describe("suite", { only: true }, () => test("fixture-proof", () => {}))\n'
+  ],
+  [
+    "invalid timeout",
+    'import test from "node:test"\ntest("fixture-proof", { timeout: "bad" }, () => {})\n'
+  ],
+  [
+    "invalid concurrency",
+    'import test from "node:test"\ntest("fixture-proof", { concurrency: "bad" }, () => {})\n'
+  ],
+  [
+    "expected failure",
+    'import test from "node:test"\ntest("fixture-proof", { expectFailure: true }, () => {})\n'
+  ]
+]) {
+  test(`node:test ${optionsKind} options cannot serve as executable proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "tests/ineligible-options-proof.test.js"
+      files["tests/ineligible-options-proof.test.js"] = source
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+  })
+}
+
+for (const [optionsKind, declaration, options] of [
+  ["dynamic", "const options = { skip: true }\n", "options"],
+  ["spread", "", "{ ...{ todo: true } }"]
+]) {
+  test(`${optionsKind} node:test options cannot serve as executable proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "tests/ambiguous-options-proof.test.js"
+      files["tests/ambiguous-options-proof.test.js"] =
+        'import test from "node:test"\n' +
+        declaration +
+        `test("fixture-proof", ${options}, () => {})\n`
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+  })
+}
+
+test("statically valid node:test options remain executable proof", () => {
   const root = makeFixture(({ contract, files }) => {
-    contract.requirements[0].proofs[0].path = "tests/parameterized-proof.test.js"
-    files["tests/parameterized-proof.test.js"] =
-      'import test from "node:test"\ntest.each([[1]])("fixture-proof %s", () => {})\n'
+    contract.requirements[0].proofs[0].path = "tests/active-options-proof.test.js"
+    files["tests/active-options-proof.test.js"] =
+      'import test from "node:test"\n' +
+      'test("fixture-proof", { concurrency: true, only: false, skip: false, todo: false, timeout: 100, plan: 0, expectFailure: false }, () => {})\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+test("Playwright details remain executable proof options", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/playwright-details-proof.test.js"
+    files["tests/playwright-details-proof.test.js"] =
+      'import { test } from "@playwright/test"\n' +
+      'const details = { tag: "@trace" }\n' +
+      'test("fixture-proof", details, () => {})\n'
   })
   const report = run(root)
   assert.equal(report.status, "PASS", report.errors.join("\n"))
