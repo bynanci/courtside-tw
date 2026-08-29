@@ -1673,6 +1673,26 @@ for (const [suite, source] of [
   [
     "comment-separated describe.skip",
     'describe /* suite */ . /* modifier */ skip("disabled suite", () => {\n  test("fixture-proof", () => {})\n})\n'
+  ],
+  [
+    "computed-template describe.skip",
+    'describe[`skip`]("disabled suite", () => {\n  test("fixture-proof", () => {})\n})\n'
+  ],
+  [
+    "dynamic computed describe modifier",
+    'const modifier = "skip"\ndescribe[modifier]("disabled suite", () => {\n  test("fixture-proof", () => {})\n})\n'
+  ],
+  [
+    "tagged describe.skip.each",
+    'describe.skip.each`value\\n${1}`("disabled suite", () => {\n  test("fixture-proof", () => {})\n})\n'
+  ],
+  [
+    "aliased describe.skip",
+    'const skippedSuite = describe.skip\nskippedSuite("disabled suite", () => {\n  test("fixture-proof", () => {})\n})\n'
+  ],
+  [
+    "named describe.skip callback",
+    'const register = () => {\n  test("fixture-proof", () => {})\n}\ndescribe.skip("disabled suite", register)\n'
   ]
 ]) {
   test(`a test inside ${suite} cannot serve as executable proof`, () => {
@@ -1709,6 +1729,18 @@ test("a CRLF test after a closed skipped suite remains executable", () => {
   })
   const report = run(root)
   assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+test("a named suite callback cannot serve as attributable executable proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/named-suite-callback-proof.test.js"
+    files["tests/named-suite-callback-proof.test.js"] =
+      'const register = () => {\n  test("fixture-proof", () => {})\n}\n' +
+      'describe("active suite", register)\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
 })
 
 for (const [modifier, source] of [
