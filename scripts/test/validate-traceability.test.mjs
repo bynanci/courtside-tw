@@ -1665,6 +1665,10 @@ for (const [suite, source] of [
   [
     "comment-like regex before describe.skip",
     'const marker = /[/*]/u\ndescribe.skip("disabled */ suite", () => {\n  test("fixture-proof", () => {})\n})\n'
+  ],
+  [
+    "control-head regex inside describe.skip",
+    'describe.skip("disabled suite", () => {\n  if (true) /[)]/u.test("x")\n  test("fixture-proof", () => {})\n})\n'
   ]
 ]) {
   test(`a test inside ${suite} cannot serve as executable proof`, () => {
