@@ -169,6 +169,7 @@ const nonExecutableTestModifiers = new Set([
   "skip",
   "todo"
 ])
+const githubActionsAuthorityToken = Symbol("courtside-github-actions-authority")
 
 function idsFrom(text, pattern) {
   return [...text.matchAll(pattern)].map((match) => match[1])
@@ -303,10 +304,134 @@ function requireString(value, label, errors) {
 }
 
 function isIsoTimestamp(value) {
+  if (typeof value !== "string") return false
+  const match = value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2}):(\d{2})(?:\.(\d+))?Z$/)
+  if (!match) return false
+  const parsed = new Date(value)
+  if (Number.isNaN(parsed.getTime())) return false
+  const [, year, month, day, hour, minute, second] = match
   return (
-    typeof value === "string" &&
-    /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z$/.test(value) &&
-    !Number.isNaN(Date.parse(value))
+    parsed.getUTCFullYear() === Number(year) &&
+    parsed.getUTCMonth() + 1 === Number(month) &&
+    parsed.getUTCDate() === Number(day) &&
+    parsed.getUTCHours() === Number(hour) &&
+    parsed.getUTCMinutes() === Number(minute) &&
+    parsed.getUTCSeconds() === Number(second)
+  )
+}
+
+function isPositiveIntegerText(value) {
+  return typeof value === "string" && /^[1-9]\d*$/.test(value)
+}
+
+export function inspectGitHubActionsContext({ environment = process.env, gitBinding = null } = {}) {
+  const errors = []
+  const context = {
+    status: "UNTRUSTED",
+    event_name: environment.GITHUB_EVENT_NAME ?? null,
+    repository: environment.GITHUB_REPOSITORY ?? null,
+    workflow: environment.GITHUB_WORKFLOW ?? null,
+    job: environment.GITHUB_JOB ?? null,
+    run_id: environment.GITHUB_RUN_ID ?? null,
+    run_number: environment.GITHUB_RUN_NUMBER ?? null,
+    run_attempt: environment.GITHUB_RUN_ATTEMPT ?? null,
+    github_sha: environment.GITHUB_SHA ?? null,
+    github_ref: environment.GITHUB_REF ?? null,
+    base_ref: environment.GITHUB_BASE_REF ?? null,
+    head_ref: environment.GITHUB_HEAD_REF ?? null,
+    source_head_sha: gitBinding?.head ?? null,
+    source_base_sha: gitBinding?.change_base_sha ?? null,
+    errors
+  }
+
+  if (environment.GITHUB_ACTIONS !== "true") errors.push("GITHUB_ACTIONS must be true")
+  if (context.repository !== "bynanci/courtside-tw") {
+    errors.push("GITHUB_REPOSITORY must be bynanci/courtside-tw")
+  }
+  if (context.event_name !== "pull_request") {
+    errors.push("GITHUB_EVENT_NAME must be pull_request for receipt authority")
+  }
+  if (context.workflow !== "CI" || context.job !== "frontend-contract") {
+    errors.push("receipt authority must come from the CI frontend-contract job")
+  }
+  for (const [label, value] of [
+    ["GITHUB_RUN_ID", context.run_id],
+    ["GITHUB_RUN_NUMBER", context.run_number],
+    ["GITHUB_RUN_ATTEMPT", context.run_attempt]
+  ]) {
+    if (!isPositiveIntegerText(value)) errors.push(`${label} must be a positive integer`)
+  }
+  if (!/^[0-9a-f]{40}$/.test(context.github_sha ?? "")) {
+    errors.push("GITHUB_SHA must be a full lowercase commit SHA")
+  }
+  if (context.base_ref !== "main") errors.push("GITHUB_BASE_REF must be main")
+  if (!/^refs\/pull\/\d+\/(?:merge|head)$/.test(context.github_ref ?? "")) {
+    errors.push("GITHUB_REF must identify a pull-request ref")
+  }
+  if (
+    !/^[0-9a-f]{40}$/.test(context.source_head_sha ?? "") ||
+    !/^[0-9a-f]{40}$/.test(context.source_base_sha ?? "") ||
+    gitBinding?.change_base_ancestor !== true
+  ) {
+    errors.push("Git binding must provide an exact source head and ancestor base")
+  }
+
+  let event = null
+  if (typeof environment.GITHUB_EVENT_PATH !== "string" || environment.GITHUB_EVENT_PATH === "") {
+    errors.push("GITHUB_EVENT_PATH must identify the authenticated event payload")
+  } else {
+    try {
+      event = JSON.parse(fs.readFileSync(environment.GITHUB_EVENT_PATH, "utf8"))
+    } catch {
+      errors.push("GITHUB_EVENT_PATH must contain readable JSON")
+    }
+  }
+  if (event !== null) {
+    if (event?.repository?.full_name !== context.repository) {
+      errors.push("event repository must match GITHUB_REPOSITORY")
+    }
+    if (event?.pull_request?.head?.sha !== context.source_head_sha) {
+      errors.push("event pull-request head must match the evaluated Git head")
+    }
+    if (event?.pull_request?.base?.sha !== context.source_base_sha) {
+      errors.push("event pull-request base must match the audited change base")
+    }
+    if (event?.pull_request?.head?.ref !== context.head_ref) {
+      errors.push("event pull-request head ref must match GITHUB_HEAD_REF")
+    }
+    if (event?.pull_request?.base?.ref !== context.base_ref) {
+      errors.push("event pull-request base ref must match GITHUB_BASE_REF")
+    }
+  }
+
+  if (errors.length === 0) {
+    context.status = "VERIFIED_GITHUB_ACTIONS"
+    Object.defineProperty(context, githubActionsAuthorityToken, { value: true })
+  }
+  return context
+}
+
+function isAuthenticatedGitHubActionsContext(context) {
+  return (
+    context?.status === "VERIFIED_GITHUB_ACTIONS" && context?.[githubActionsAuthorityToken] === true
+  )
+}
+
+function exactHeadMatchesGitHubActionsContext(evidence, context) {
+  return (
+    evidence?.source_head_sha === context.source_head_sha &&
+    evidence?.expected_source_head === context.source_head_sha &&
+    evidence?.source_event === context.event_name &&
+    evidence?.source_ref === context.head_ref &&
+    evidence?.github_sha === context.github_sha &&
+    evidence?.github_repository === context.repository &&
+    evidence?.github_workflow === context.workflow &&
+    evidence?.github_job === context.job &&
+    evidence?.github_run_id === context.run_id &&
+    evidence?.github_run_number === context.run_number &&
+    evidence?.github_run_attempt === context.run_attempt &&
+    evidence?.github_ref === context.github_ref &&
+    evidence?.github_base_ref === context.base_ref
   )
 }
 
@@ -954,7 +1079,8 @@ export function validateTraceability({
   boundedScopeActive = changeBaseSha === REVIEW_BASE_SHA,
   reviewBaseSha = REVIEW_BASE_SHA,
   requireExactHeadEvidence = false,
-  requireAuditedScope = false
+  requireAuditedScope = false,
+  githubActionsContext = null
 }) {
   const errors = []
   const warnings = []
@@ -1522,6 +1648,23 @@ export function validateTraceability({
   if (requireExactHeadEvidence && exactHeadEvidence === null) {
     errors.push("CI validation requires artifacts/exact-head.json")
   }
+  const authenticatedGitHubActions = isAuthenticatedGitHubActionsContext(githubActionsContext)
+  if (
+    state === t085States.RECEIPT_CANDIDATE &&
+    requireExactHeadEvidence &&
+    !authenticatedGitHubActions
+  ) {
+    errors.push("authoritative receipt validation requires authenticated GitHub Actions context")
+  }
+  if (
+    exactHeadEvidence !== null &&
+    authenticatedGitHubActions &&
+    !exactHeadMatchesGitHubActionsContext(exactHeadEvidence, githubActionsContext)
+  ) {
+    errors.push(
+      "artifacts/exact-head.json metadata must match the authenticated GitHub Actions context"
+    )
+  }
   if (state === t085States.RECEIPT_CANDIDATE && exactHeadEvidence === null) {
     warnings.push(
       "receipt candidate requires current-head exact-head evidence before it is eligible"
@@ -1542,7 +1685,8 @@ export function validateTraceability({
     state === t085States.RECEIPT_CANDIDATE &&
     analysisValid &&
     exactHeadEvidence !== null &&
-    requireExactHeadEvidence
+    requireExactHeadEvidence &&
+    authenticatedGitHubActions
   const checkedTasks = [...taskStatus.values()].filter(Boolean).length
   const openDeviations = deviationRows.filter((deviation) => deviation?.state === "OPEN")
 
@@ -1559,6 +1703,19 @@ export function validateTraceability({
       review_base_sha: reviewBaseSha,
       evaluated_head_sha: currentHead,
       exact_head_evidence: exactHeadEvidence,
+      github_actions_context: githubActionsContext
+        ? {
+            status: githubActionsContext.status ?? "UNTRUSTED",
+            event_name: githubActionsContext.event_name ?? null,
+            repository: githubActionsContext.repository ?? null,
+            workflow: githubActionsContext.workflow ?? null,
+            job: githubActionsContext.job ?? null,
+            run_id: githubActionsContext.run_id ?? null,
+            run_number: githubActionsContext.run_number ?? null,
+            run_attempt: githubActionsContext.run_attempt ?? null,
+            errors: githubActionsContext.errors ?? []
+          }
+        : null,
       inputs: {
         spec: { path: paths.spec, sha256: sha256(specText) },
         plan: { path: paths.plan, sha256: sha256(planText) },
@@ -1909,9 +2066,10 @@ export function inspectGit(root, { environment = process.env } = {}) {
 
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..")
 
-export function runCli(root = repositoryRoot) {
-  const inspection = inspectGit(root)
-  const isCi = process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true"
+export function runCli(root = repositoryRoot, { environment = process.env } = {}) {
+  const inspection = inspectGit(root, { environment })
+  const githubActionsContext = inspectGitHubActionsContext({ environment, gitBinding: inspection })
+  const isGitHubActions = environment.GITHUB_ACTIONS === "true"
   const report = validateTraceability({
     root,
     currentHead: inspection.head,
@@ -1938,8 +2096,9 @@ export function runCli(root = repositoryRoot) {
       inspection.implementation_merge_ancestor_of_change_base,
     boundedScopeActive: inspection.bounded_scope_active,
     reviewBaseSha: REVIEW_BASE_SHA,
-    requireExactHeadEvidence: isCi,
-    requireAuditedScope: isCi
+    requireExactHeadEvidence: isGitHubActions,
+    requireAuditedScope: isGitHubActions,
+    githubActionsContext
   })
   const outputPath = path.join(root, "artifacts/frontend/t085-traceability-report.json")
   fs.mkdirSync(path.dirname(outputPath), { recursive: true })
