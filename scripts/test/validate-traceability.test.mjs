@@ -613,10 +613,11 @@ test("receipt authority is pinned to the protected PR149 implementation snapshot
     path.join(repositoryRoot, featurePath, "traceability.md"),
     "utf8"
   )
-  const pendingTasksText = fs.readFileSync(
+  const currentTasksText = fs.readFileSync(
     path.join(repositoryRoot, featurePath, "tasks.md"),
     "utf8"
   )
+  const pendingTasksText = currentTasksText.replace(/^- \[[ xX]\] T085\b/m, "- [ ] T085")
   const completedTasksText = pendingTasksText.replace(/^- \[ \] T085\b/m, "- [x] T085")
 
   assert.equal(ACCEPTED_IMPLEMENTATION_HEAD_SHA, fixtureImplementationHead)
