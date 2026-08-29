@@ -456,6 +456,63 @@ function makeFixtureActionsContext(root, environmentOverrides = {}) {
   })
 }
 
+function makeFixturePushActionsContext(root, environmentOverrides = {}) {
+  if (typeof traceabilityValidator.inspectGitHubActionsContext !== "function") return null
+  const eventPath = path.join(root, "github-main-push-event.json")
+  fs.writeFileSync(
+    eventPath,
+    JSON.stringify({
+      repository: { full_name: "bynanci/courtside-tw" },
+      before: fixtureReceiptBase,
+      after: fixtureReceiptHead,
+      ref: "refs/heads/main"
+    })
+  )
+  return traceabilityValidator.inspectGitHubActionsContext({
+    environment: {
+      GITHUB_ACTIONS: "true",
+      GITHUB_REPOSITORY: "bynanci/courtside-tw",
+      GITHUB_EVENT_NAME: "push",
+      GITHUB_EVENT_PATH: eventPath,
+      GITHUB_SHA: fixtureReceiptHead,
+      GITHUB_WORKFLOW: "CI",
+      GITHUB_JOB: "frontend-contract",
+      GITHUB_RUN_ID: fixtureActionsRunId,
+      GITHUB_RUN_NUMBER: fixtureActionsRunNumber,
+      GITHUB_RUN_ATTEMPT: fixtureActionsRunAttempt,
+      GITHUB_REF: "refs/heads/main",
+      GITHUB_REF_NAME: "main",
+      ...environmentOverrides
+    },
+    gitBinding: {
+      head: fixtureReceiptHead,
+      change_base_sha: fixtureReceiptBase,
+      change_base_ancestor: true
+    }
+  })
+}
+
+function writeFixturePushExactHead(root) {
+  fs.writeFileSync(
+    path.join(root, "artifacts/exact-head.json"),
+    JSON.stringify({
+      source_head_sha: fixtureReceiptHead,
+      expected_source_head: fixtureReceiptHead,
+      source_event: "push",
+      source_ref: "main",
+      github_sha: fixtureReceiptHead,
+      github_repository: "bynanci/courtside-tw",
+      github_workflow: "CI",
+      github_job: "frontend-contract",
+      github_run_id: fixtureActionsRunId,
+      github_run_number: fixtureActionsRunNumber,
+      github_run_attempt: fixtureActionsRunAttempt,
+      github_ref: "refs/heads/main",
+      github_base_ref: ""
+    })
+  )
+}
+
 function runReceiptFixture(fixture, overrides = {}) {
   return run(fixture.root, {
     changedPaths: fixture.changedPaths,
@@ -1209,6 +1266,18 @@ test("receipt candidate rejects self-supplied Actions artifact metadata", () => 
     report.errors.join("\n"),
     /artifacts\/exact-head\.json metadata must match the authenticated GitHub Actions context/
   )
+})
+
+test("authenticated protected-main push validates the merged receipt transition", () => {
+  const fixture = makeReceiptFixture()
+  writeFixturePushExactHead(fixture.root)
+  const githubActionsContext = makeFixturePushActionsContext(fixture.root)
+  const report = runReceiptFixture(fixture, { githubActionsContext })
+
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+  assert.equal(report.mode, "T085_RECEIPT_CANDIDATE")
+  assert.equal(report.receipt_eligible, true)
+  assert.equal(report.source.github_actions_context.authority, "PROTECTED_MAIN_PUSH")
 })
 
 test("receipt candidate rejects a receipt that was already present at its audited base", () => {
