@@ -1020,14 +1020,14 @@ function surfaceReceipt(surface) {
 }
 
 async function normalizeChromeContentSurface() {
-  const deadline = performance.now() + CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS
-  const systemWindowPreflight = probePixelLauncherAnrWindow(deadline)
+  const preflightDeadline = performance.now() + CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS
+  const systemWindowPreflight = probePixelLauncherAnrWindow(preflightDeadline)
   const preflightDismissedPrompts = []
   let preflightPixelLauncherAnrWaitTap = null
 
   if (systemWindowPreflight.status === "known-pixel-launcher-anr") {
     executeBoundChromeSurfaceTap({
-      deadlineAt: deadline,
+      deadlineAt: preflightDeadline,
       maximumMilliseconds: CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS,
       dismissTap: systemWindowPreflight.dismissTap,
       label: "Pixel Launcher ANR wait tap",
@@ -1040,16 +1040,21 @@ async function normalizeChromeContentSurface() {
     throw new Error("Android Chrome content surface is blocked by an unrecognized native modal")
   }
 
+  requireRemainingAutomationMilliseconds(preflightDeadline, 1, "system-window preflight acceptance")
+  const normalizationDeadline = performance.now() + CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS
   const normalization = await normalizeChromeAutomationSurfaceWithinDeadline({
-    deadlineAt: deadline,
+    deadlineAt: normalizationDeadline,
     now: () => performance.now(),
     maximumPollMilliseconds: CHROME_AUTOMATION_POLL_MILLISECONDS,
     dismissedPrompts: preflightDismissedPrompts,
     probeSurface: () =>
-      probeChromeContentSurfaceAtActivityBoundary(deadline, systemWindowPreflight.displaySize),
+      probeChromeContentSurfaceAtActivityBoundary(
+        normalizationDeadline,
+        systemWindowPreflight.displaySize
+      ),
     tap: (dismissTap, label) =>
       executeBoundChromeSurfaceTap({
-        deadlineAt: deadline,
+        deadlineAt: normalizationDeadline,
         maximumMilliseconds: CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS,
         dismissTap,
         label,
@@ -1058,7 +1063,7 @@ async function normalizeChromeContentSurface() {
       }),
     delay: (milliseconds) => new Promise((resolve) => setTimeout(resolve, milliseconds))
   })
-  requireRemainingAutomationMilliseconds(deadline, 1, "surface acceptance")
+  requireRemainingAutomationMilliseconds(normalizationDeadline, 1, "surface acceptance")
   const dismissedPromptStatuses = new Set([
     ...preflightDismissedPrompts,
     ...normalization.dismissedPrompts

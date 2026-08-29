@@ -320,13 +320,28 @@
       "merge_conflicts": 0
     },
     "scope_review": {
-      "pr_diff_paths_expected": 12,
+      "pr_diff_paths_expected": 13,
       "runtime_files_added_to_pr_diff": false,
-      "workflow_changed": false,
+      "workflow_changed": true,
       "t085_checked": false,
       "ready_or_merge_performed": false,
       "forbidden_scope_changed": false
     },
     "decision": "Local remediation is GREEN but remains BLOCK pending optimistic branch-head equality, publication and fresh exact-head CI, Security, artifact, thread, scope and mergeability read-back."
+  },
+  "post_merge_scope_correction": {
+    "schema_version": "courtside-t085-review-correction/v1",
+    "recorded_at": "2026-08-29T05:34:16Z",
+    "source": "https://github.com/bynanci/courtside-tw/pull/149#discussion_r3885070244",
+    "target": "current_base_reconciliation_review.scope_review",
+    "supersedes": {
+      "pr_diff_paths_expected": 12,
+      "workflow_changed": false
+    },
+    "corrected": {
+      "pr_diff_paths_expected": 13,
+      "workflow_changed": true
+    },
+    "reason": "The accepted PR149 implementation scope contains 13 paths, including .github/workflows/ci.yml."
   }
 }

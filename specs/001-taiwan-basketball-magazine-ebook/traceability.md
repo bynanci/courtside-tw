@@ -2,7 +2,7 @@
 
 Authorized source: protected `main@3fc14dd29b216ce46e4d364ceaec79a971dcef44`. This artifact maps exactly 74 FR + 23 SC to the current 112-task ledger and repository proof locators. It is an implementation artifact, not a T085 completion receipt.
 
-The immutable authorization source and the live review base are separate identities. Dispatch authority remains fixed at `3fc14dd29b216ce46e4d364ceaec79a971dcef44`; after the bounded Alpine OpenSSL remediation merged, candidate scope is reviewed against protected `main@84db3db95aa596eb317b71c4eea0926fc1fc15ce`. This base advance does not authorize the inherited Dockerfile change as T085 work or widen the 12-path T085 allowlist. When a shallow CI checkout cannot compute that review-base diff, the structured report must state `EXTERNAL_READBACK_REQUIRED`, remain `receipt_eligible=false`, and rely on a separate authoritative GitHub changed-file read-back before any release-owner decision.
+The immutable authorization source and the live review base are separate identities. Dispatch authority remains fixed at `3fc14dd29b216ce46e4d364ceaec79a971dcef44`; after the bounded Alpine OpenSSL remediation merged, candidate scope is reviewed against protected `main@84db3db95aa596eb317b71c4eea0926fc1fc15ce`. This base advance does not authorize the inherited Dockerfile change as T085 work or widen the 13-path T085 allowlist. When a shallow CI checkout cannot compute that review-base diff, the structured report must state `EXTERNAL_READBACK_REQUIRED`, remain `receipt_eligible=false`, and rely on a separate authoritative GitHub changed-file read-back before any release-owner decision.
 
 ## Decision packet
 

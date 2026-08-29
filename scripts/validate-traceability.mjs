@@ -20,8 +20,10 @@ export const ACCEPTED_EXACT_HEAD_ARTIFACT_SHA256 =
   "8126aebe79e1cacbbdcac5136373cc2cfa889b9c09264e1ce75cbf06d506e803"
 export const ACCEPTED_TRACEABILITY_REPORT_SHA256 =
   "5e6201ee0b646e0d9c619b440cccf0dd6928bede6869032fa81d06d05bd9a440"
-export const ACCEPTED_TRACEABILITY_SHA256 =
+export const PRE_REMEDIATION_TRACEABILITY_SHA256 =
   "026581386d6e99e9bf1a2f124a9360e9cfd65088b8734177759801caa0723bed"
+export const ACCEPTED_TRACEABILITY_SHA256 =
+  "204662214eada892332d1ddbeab8d0b8037cfc5477d9152d6fb3a61e56832b79"
 export const ACCEPTED_PENDING_TASKS_SHA256 =
   "23190fbeab15b181800ddb275478f058cc0a0514e581b8f3c2aaeb82c184b1f3"
 export const ACCEPTED_COMPLETED_TASKS_SHA256 =
@@ -43,6 +45,15 @@ export const ACCEPTED_IMPLEMENTATION_CHANGED_PATHS = Object.freeze([
   "scripts/test/validate-traceability.test.mjs",
   "scripts/validate-traceability.mjs",
   "specs/001-taiwan-basketball-magazine-ebook/plan.md",
+  "specs/001-taiwan-basketball-magazine-ebook/traceability.md"
+])
+export const POST_T085_REMEDIATION_BASE_SHA = "d99df471a08608bb8b6da609e17095d285c11489"
+export const POST_T085_REMEDIATION_CHANGED_PATHS = Object.freeze([
+  ".loop/evidence/t085-review.json",
+  "apps/web/scripts/android-chrome-performance-smoke.mjs",
+  "apps/web/tests/unit/android-creative-timeline.test.ts",
+  "scripts/test/validate-traceability.test.mjs",
+  "scripts/validate-traceability.mjs",
   "specs/001-taiwan-basketball-magazine-ebook/traceability.md"
 ])
 export const CONTRACT_START = "<!-- t085:contract:start -->"
@@ -88,6 +99,23 @@ const receiptProofSchemas = new Map([
   ["EXTERNAL_METRIC_RECEIPT", "courtside-external-metric/v1"],
   ["CI_STABILITY_RECEIPT", "courtside-ci-stability/v1"]
 ])
+const t085RepositoryReviewReceipt = Object.freeze({
+  path: ".loop/evidence/t085-review.json",
+  schema_version: "courtside-t085-review/v1",
+  task: "T085",
+  repository: "bynanci/courtside-tw",
+  issue: "https://github.com/bynanci/courtside-tw/issues/145",
+  requirement_id: "SC-010",
+  artifact_id: 9414805375,
+  artifact_name: "ci-dependency-reports",
+  artifact_digest: "sha256:2572e7202c4f8b5429654c7f052ebea5e88e20650c845863925ea54e1264a5b7",
+  source_head_sha: "3fcc7f2f29e5c3d41370fffcebd34d925c4c9911",
+  workflow: "CI",
+  workflow_run_id: 32390737392,
+  workflow_run_number: 816,
+  exact_head_manifest_sha256: "01eff14b71a4a9592dc82c16460ca05be834566b9b5517df15acaf654b3d119a",
+  restore_receipt_sha256: "e43cdc024bb9317ffbbf4620de237c9578470a5bb38633c798309da8be930210"
+})
 const implementationCheckedTasks = new Set([
   ...Array.from({ length: 84 }, (_, index) => `T${String(index + 1).padStart(3, "0")}`),
   "T097"
@@ -114,6 +142,7 @@ const receiptSupportChangedPaths = new Set([
   "scripts/test/validate-traceability.test.mjs",
   "scripts/validate-traceability.mjs"
 ])
+const postT085RemediationChangedPaths = new Set(POST_T085_REMEDIATION_CHANGED_PATHS)
 const expectedDispatch = {
   schema_version: "courtside-t085-dispatch/v1",
   recorded_at: "2026-08-25T12:42:58Z",
@@ -223,6 +252,22 @@ function classifyT085State(changeBaseTasksText, tasksText) {
   return t085States.UNKNOWN
 }
 
+function isExactPostT085RemediationScope({
+  state,
+  changeBaseSha,
+  boundedScopeActive,
+  changedPaths
+}) {
+  return (
+    state === t085States.PENDING &&
+    boundedScopeActive === false &&
+    changeBaseSha === POST_T085_REMEDIATION_BASE_SHA &&
+    Array.isArray(changedPaths) &&
+    changedPaths.length === POST_T085_REMEDIATION_CHANGED_PATHS.length &&
+    sameValues(changedPaths, POST_T085_REMEDIATION_CHANGED_PATHS)
+  )
+}
+
 function distribution(rows, key) {
   return Object.fromEntries(
     [...new Set(rows.map((row) => row?.[key]).filter(Boolean))]
@@ -243,6 +288,7 @@ function humanRequirementRows(markdown) {
         .map((cell) => cell.trim())
       return {
         id: cells[0],
+        story_slice: cells[1],
         task_ids: [...cells[2].matchAll(/T\d{3}/g)].map((match) => match[0]),
         implementation_state: cells[3],
         evidence_state: cells[4],
@@ -713,6 +759,74 @@ function withoutJavaScriptComments(text) {
   return output
 }
 
+function withoutJavaScriptCommentsAndStrings(text) {
+  const commentFree = withoutJavaScriptComments(text)
+  let output = ""
+  let quote = null
+  for (let index = 0; index < commentFree.length; index += 1) {
+    const character = commentFree[index]
+    const next = commentFree[index + 1]
+    if (quote !== null) {
+      output += character === "\n" ? "\n" : " "
+      if (character === "\\" && next !== undefined) {
+        output += next === "\n" ? "\n" : " "
+        index += 1
+      } else if (character === quote) {
+        quote = null
+      }
+      continue
+    }
+    if (['"', "'", "`"].includes(character)) {
+      quote = character
+      output += " "
+    } else {
+      output += character
+    }
+  }
+  return output
+}
+
+function matchingJavaScriptBrace(text, openBraceIndex) {
+  let depth = 0
+  for (let index = openBraceIndex; index < text.length; index += 1) {
+    if (text[index] === "{") depth += 1
+    if (text[index] === "}") {
+      depth -= 1
+      if (depth === 0) return index
+    }
+  }
+  return text.length
+}
+
+function isInsideDisabledJavaScriptSuite(text, lineIndex, selector) {
+  const structure = withoutJavaScriptCommentsAndStrings(text)
+  const originalLines = text.split(/\r?\n/)
+  const targetLine = originalLines[lineIndex] ?? ""
+  const selectorColumn = targetLine.indexOf(selector)
+  if (selectorColumn === -1) return false
+  const targetOffset =
+    originalLines.slice(0, lineIndex).reduce((total, line) => total + line.length + 1, 0) +
+    selectorColumn
+  const disabledSuitePattern =
+    /\b(?:(?:describe|suite|context)\s*\.\s*(?:disabled|failing|fixme|pending|skip|todo)|test\s*\.\s*describe\s*\.\s*(?:disabled|failing|fixme|pending|skip|todo))\s*\(/gu
+
+  for (const suite of structure.matchAll(disabledSuitePattern)) {
+    if (suite.index >= targetOffset) break
+    const candidate = structure.slice(suite.index, targetOffset)
+    const arrowIndex = candidate.search(/=>\s*\{/u)
+    const functionIndex = candidate.search(/\bfunction\b[^{}]*\{/u)
+    const callbackIndex = [arrowIndex, functionIndex]
+      .filter((index) => index >= 0)
+      .sort((left, right) => left - right)[0]
+    if (callbackIndex === undefined) continue
+    const openBraceIndex = structure.indexOf("{", suite.index + callbackIndex)
+    if (openBraceIndex === -1 || openBraceIndex >= targetOffset) continue
+    const closeBraceIndex = matchingJavaScriptBrace(structure, openBraceIndex)
+    if (targetOffset < closeBraceIndex) return true
+  }
+  return false
+}
+
 function hasExecutableProofAnchor(root, proof) {
   const text = fs.readFileSync(path.resolve(root, proof.path), "utf8")
   const lines = text.split(/\r?\n/)
@@ -734,7 +848,10 @@ function hasExecutableProofAnchor(root, proof) {
     const anchor = codeLine.match(/^(?:test|it)((?:\.\w+)*)\s*\(/)
     if (!anchor) return false
     const modifiers = anchor[1].split(".").filter(Boolean)
-    return !modifiers.some((modifier) => nonExecutableTestModifiers.has(modifier))
+    return (
+      !modifiers.some((modifier) => nonExecutableTestModifiers.has(modifier)) &&
+      !isInsideDisabledJavaScriptSuite(text, lineIndex, proof.selector)
+    )
   }
   if (proof.path.startsWith("scripts/test/") && proof.path.endsWith(".sh")) {
     return /\b(?:raise|assert|fail|exit|SystemExit)\b/.test(line)
@@ -767,6 +884,70 @@ export function extractContract(markdown) {
     .match(/^```json\s*\n([\s\S]*?)\n```$/)
   if (!fenced) throw new Error("traceability contract must be one fenced JSON document")
   return JSON.parse(fenced[1])
+}
+
+function validateRepositoryEvidenceReceipt(root, proof, requirementId, label, errors) {
+  if (!proof.path.startsWith(".loop/evidence/") || !proof.path.endsWith(".json")) return
+
+  let receipt
+  try {
+    const receiptText = fs.readFileSync(path.resolve(root, proof.path), "utf8")
+    assertUniqueJsonObjectKeys(receiptText)
+    receipt = JSON.parse(receiptText)
+  } catch (error) {
+    errors.push(`${label} is not a valid repository proof receipt: ${error.message}`)
+    return
+  }
+
+  if (
+    proof.path !== t085RepositoryReviewReceipt.path ||
+    receipt?.schema_version !== t085RepositoryReviewReceipt.schema_version
+  ) {
+    errors.push(`${label} must use a recognized repository proof receipt schema`)
+    return
+  }
+
+  const historical = receipt.historical_acceptance_readback
+  const expected = t085RepositoryReviewReceipt
+  if (
+    receipt.task !== expected.task ||
+    receipt.repository !== expected.repository ||
+    receipt.issue !== expected.issue ||
+    historical?.requirement_id !== requirementId ||
+    historical?.requirement_id !== expected.requirement_id
+  ) {
+    errors.push(`${label} repository proof receipt identity must bind SC-010 in this repository`)
+  }
+  if (
+    historical?.artifact_id !== expected.artifact_id ||
+    historical?.artifact_name !== expected.artifact_name ||
+    historical?.artifact_digest !== expected.artifact_digest ||
+    historical?.artifact_downloaded !== true ||
+    historical?.source_head_sha !== expected.source_head_sha ||
+    historical?.workflow !== expected.workflow ||
+    historical?.workflow_run_id !== expected.workflow_run_id ||
+    historical?.workflow_run_number !== expected.workflow_run_number ||
+    historical?.exact_head_manifest_sha256 !== expected.exact_head_manifest_sha256
+  ) {
+    errors.push(`${label} repository proof receipt must bind the accepted exact-head artifact`)
+  }
+  if (
+    historical?.restore_receipt_sha256 !== expected.restore_receipt_sha256 ||
+    historical?.restore_receipt?.result !== "PASS" ||
+    historical?.restore_receipt?.release_ready !== true ||
+    !Number.isFinite(historical?.restore_receipt?.rpo_hours) ||
+    !Number.isFinite(historical?.restore_receipt?.rpo_limit_hours) ||
+    historical.restore_receipt.rpo_hours > historical.restore_receipt.rpo_limit_hours ||
+    !Number.isFinite(historical?.restore_receipt?.rto_minutes) ||
+    !Number.isFinite(historical?.restore_receipt?.rto_limit_minutes) ||
+    historical.restore_receipt.rto_minutes > historical.restore_receipt.rto_limit_minutes
+  ) {
+    errors.push(`${label} repository proof receipt must contain a passing bounded restore receipt`)
+  }
+  const expectedSelector = `"restore_receipt_sha256": "${expected.restore_receipt_sha256}"`
+  if (proof.selector !== expectedSelector) {
+    errors.push(`${label}.selector must bind the accepted restore receipt digest`)
+  }
 }
 
 function validateReceiptProof(root, proof, requirementId, label, errors) {
@@ -860,6 +1041,9 @@ function validateProof(root, proof, requirementId, label, errors) {
   }
   if (receiptProofSchemas.has(proof.kind) && absolutePath) {
     validateReceiptProof(root, proof, requirementId, label, errors)
+  }
+  if (proof.kind === "REPOSITORY_PROOF" && absolutePath) {
+    validateRepositoryEvidenceReceipt(root, proof, requirementId, label, errors)
   }
 }
 
@@ -1114,8 +1298,10 @@ function validateAcceptedSnapshots({
   changeBaseTasksText,
   changeBaseTraceabilityText,
   acceptedTraceabilitySha256,
+  preRemediationTraceabilitySha256,
   acceptedPendingTasksSha256,
   acceptedCompletedTasksSha256,
+  postT085RemediationScopeActive,
   requireAuditedScope,
   errors
 }) {
@@ -1127,10 +1313,13 @@ function validateAcceptedSnapshots({
   ) {
     return
   }
+  const expectedBaseTraceabilitySha256 = postT085RemediationScopeActive
+    ? preRemediationTraceabilitySha256
+    : acceptedTraceabilitySha256
   if (
     sha256(traceabilityText) !== acceptedTraceabilitySha256 ||
     (typeof changeBaseTraceabilityText === "string" &&
-      sha256(changeBaseTraceabilityText) !== acceptedTraceabilitySha256)
+      sha256(changeBaseTraceabilityText) !== expectedBaseTraceabilitySha256)
   ) {
     errors.push("traceability must match the accepted implementation snapshot")
   }
@@ -1218,6 +1407,7 @@ export function validateTraceability({
   changeBaseCompletionReceiptText = null,
   implementationMergeAncestorOfChangeBase = null,
   acceptedTraceabilitySha256 = ACCEPTED_TRACEABILITY_SHA256,
+  preRemediationTraceabilitySha256 = PRE_REMEDIATION_TRACEABILITY_SHA256,
   acceptedPendingTasksSha256 = ACCEPTED_PENDING_TASKS_SHA256,
   acceptedCompletedTasksSha256 = ACCEPTED_COMPLETED_TASKS_SHA256,
   boundedScopeActive = changeBaseSha === REVIEW_BASE_SHA,
@@ -1251,6 +1441,12 @@ export function validateTraceability({
     ? readText(root, paths.completionReceipt, errors, "T085 completion receipt")
     : null
   const state = classifyT085State(changeBaseTasksText, tasksText)
+  const postT085RemediationScopeActive = isExactPostT085RemediationScope({
+    state,
+    changeBaseSha,
+    boundedScopeActive,
+    changedPaths
+  })
 
   if (!/^[0-9a-f]{40}$/.test(currentHead ?? "")) {
     errors.push("currentHead must be a full lowercase commit SHA")
@@ -1324,7 +1520,11 @@ export function validateTraceability({
     }
   } else if (state === t085States.PENDING && Array.isArray(changedPaths)) {
     const pendingAllowedPaths =
-      boundedScopeActive === false ? receiptSupportChangedPaths : authorizedChangedPaths
+      boundedScopeActive === false
+        ? postT085RemediationScopeActive
+          ? postT085RemediationChangedPaths
+          : receiptSupportChangedPaths
+        : authorizedChangedPaths
     for (const changedPath of changedPaths) {
       if (!pendingAllowedPaths.has(changedPath)) {
         const scopeLabel =
@@ -1430,8 +1630,10 @@ export function validateTraceability({
     changeBaseTasksText,
     changeBaseTraceabilityText,
     acceptedTraceabilitySha256,
+    preRemediationTraceabilitySha256,
     acceptedPendingTasksSha256,
     acceptedCompletedTasksSha256,
+    postT085RemediationScopeActive,
     requireAuditedScope,
     errors
   })
@@ -1461,6 +1663,12 @@ export function validateTraceability({
   if (contract) {
     if (contract.schema_version !== TRACEABILITY_SCHEMA) {
       errors.push(`schema_version must be ${TRACEABILITY_SCHEMA}`)
+    }
+    if (
+      contract.repository !== "bynanci/courtside-tw" ||
+      contract.repository !== dispatch?.repository
+    ) {
+      errors.push("contract repository must equal bynanci/courtside-tw and the immutable dispatch")
     }
     if (
       contract.authorized_base_sha !== AUTHORIZED_BASE_SHA ||
@@ -1522,6 +1730,7 @@ export function validateTraceability({
       if (!human) continue
       const expectedProofIds = (row.proofs ?? []).map((proof) => proof.id).filter(Boolean)
       if (
+        human.story_slice !== `${row.story} / ${row.slice}` ||
         !sameValues(human.task_ids, row.task_ids ?? []) ||
         human.implementation_state !== row.implementation_state ||
         human.evidence_state !== row.evidence_state ||
@@ -1660,6 +1869,14 @@ export function validateTraceability({
         }
         if (row?.implementation_state !== "COMPLETE") {
           errors.push(`${label} VERIFIED rows must have implementation_state COMPLETE`)
+        }
+        const openDeviationIds = rowDeviationIds.filter(
+          (deviationId) => deviationById.get(deviationId)?.state === "OPEN"
+        )
+        if (openDeviationIds.length > 0) {
+          errors.push(
+            `${label} VERIFIED rows cannot retain OPEN deviation ${openDeviationIds.join(", ")}`
+          )
         }
       } else if (rowDeviationIds.length === 0) {
         errors.push(`${label} non-VERIFIED rows require an explicit deviation`)
@@ -1948,7 +2165,9 @@ export function validateTraceability({
                   (changedPath) =>
                     !(
                       boundedScopeActive === false
-                        ? receiptSupportChangedPaths
+                        ? postT085RemediationScopeActive
+                          ? postT085RemediationChangedPaths
+                          : receiptSupportChangedPaths
                         : authorizedChangedPaths
                     ).has(changedPath)
                 )
