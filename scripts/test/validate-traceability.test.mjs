@@ -1,5 +1,6 @@
 import assert from "node:assert/strict"
 import { execFileSync } from "node:child_process"
+import { createHash } from "node:crypto"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
@@ -9,6 +10,18 @@ import { fileURLToPath } from "node:url"
 import * as traceabilityValidator from "../validate-traceability.mjs"
 
 const {
+  ACCEPTED_CI_RUN_ID,
+  ACCEPTED_COMPLETED_TASKS_SHA256,
+  ACCEPTED_EXACT_HEAD_ARTIFACT_SHA256,
+  ACCEPTED_FRONTEND_ARCHIVE_SHA256,
+  ACCEPTED_FRONTEND_ARTIFACT_ID,
+  ACCEPTED_IMPLEMENTATION_CHANGED_PATHS,
+  ACCEPTED_IMPLEMENTATION_HEAD_SHA,
+  ACCEPTED_IMPLEMENTATION_MERGE_SHA,
+  ACCEPTED_PENDING_TASKS_SHA256,
+  ACCEPTED_SECURITY_RUN_ID,
+  ACCEPTED_TRACEABILITY_REPORT_SHA256,
+  ACCEPTED_TRACEABILITY_SHA256,
   AUTHORIZED_BASE_SHA,
   CONTRACT_END,
   CONTRACT_START,
@@ -20,6 +33,49 @@ const {
 const baseSha = AUTHORIZED_BASE_SHA
 const featurePath = "specs/001-taiwan-basketball-magazine-ebook"
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
+const completionReceiptPath = ".loop/evidence/t085-completion-receipt.json"
+const completionReceiptSchema = "courtside-t085-completion-receipt/v1"
+const fixtureReceiptHead = "1111111111111111111111111111111111111111"
+const fixtureReceiptBase = "2222222222222222222222222222222222222222"
+const fixtureActionsMergeSha = "3333333333333333333333333333333333333333"
+const fixtureActionsRunId = "33229999999"
+const fixtureActionsRunNumber = "999"
+const fixtureActionsRunAttempt = "1"
+const fixtureActionsHeadRef = "codex/t085-completion-receipt"
+const fixtureImplementationHead = "27b955581a909e292ae4fe6c1fb05de0e94753da"
+const fixtureImplementationMerge = "a2491b81066ac225a0b5d2dab93be79fb6dfbe65"
+const fixtureCompletedBase = "5555555555555555555555555555555555555555"
+const fixtureCiRunId = 33226451857
+const fixtureSecurityRunId = 33226451860
+const fixtureReceiptOwner = "bynanci"
+const fixtureReceiptAuthorizationRef =
+  "https://github.com/bynanci/courtside-tw/issues/145#issuecomment-5459765126"
+const fixtureFrontendArtifactId = 9707044002
+const fixtureFrontendArchiveSha256 =
+  "88baa1d7bd1e3ef08193b7d65799484d16363677c7c446001fa531efb6a8706f"
+const fixtureExactHeadArtifactSha256 =
+  "8126aebe79e1cacbbdcac5136373cc2cfa889b9c09264e1ce75cbf06d506e803"
+const fixtureTraceabilityReportSha256 =
+  "5e6201ee0b646e0d9c619b440cccf0dd6928bede6869032fa81d06d05bd9a440"
+const fixtureImplementationChangedPaths = [
+  ".github/workflows/ci.yml",
+  ".loop/evidence/t085-dispatch.json",
+  ".loop/evidence/t085-local.json",
+  ".loop/evidence/t085-red.json",
+  ".loop/evidence/t085-review.json",
+  ".loop/t085-traceability-ledger.json",
+  ".loop/t085-traceability.yaml",
+  "Makefile",
+  "package.json",
+  "scripts/test/validate-traceability.test.mjs",
+  "scripts/validate-traceability.mjs",
+  "specs/001-taiwan-basketball-magazine-ebook/plan.md",
+  "specs/001-taiwan-basketball-magazine-ebook/traceability.md"
+]
+
+function sha256(text) {
+  return createHash("sha256").update(text).digest("hex")
+}
 
 function ids(prefix, count) {
   return Array.from(
@@ -231,15 +287,300 @@ function makeFixture(mutate = () => {}) {
   return root
 }
 
-function run(root) {
+function makeReceiptFixture(mutate = () => {}) {
+  let receiptContext
+  const root = makeFixture(({ contract, files }) => {
+    const baseTasksText = files[`${featurePath}/tasks.md`]
+    const baseTraceabilityText = markdown(contract)
+    const openDeviations = contract.deviations.filter(({ state }) => state === "OPEN")
+    const receipt = {
+      schema_version: completionReceiptSchema,
+      task: "T085",
+      decision: "ACCEPTED",
+      actor_type: "HUMAN",
+      accepted_by: fixtureReceiptOwner,
+      authorization_ref: fixtureReceiptAuthorizationRef,
+      recorded_at: "2026-08-29T03:00:00Z",
+      repository: "bynanci/courtside-tw",
+      issue: "https://github.com/bynanci/courtside-tw/issues/145",
+      implementation_head_sha: fixtureImplementationHead,
+      implementation_merge_sha: fixtureImplementationMerge,
+      receipt_base_sha: fixtureReceiptBase,
+      implementation_scope: {
+        changed_files: fixtureImplementationChangedPaths.length,
+        changed_paths: [...fixtureImplementationChangedPaths],
+        required_checks: "14/14"
+      },
+      traceability_sha256: sha256(baseTraceabilityText),
+      tasks_before_sha256: sha256(baseTasksText),
+      gates: {
+        ci: {
+          result: "PASS",
+          jobs: "5/5",
+          run_id: fixtureCiRunId,
+          source_head_sha: fixtureImplementationHead
+        },
+        security: {
+          result: "PASS",
+          jobs: "8/8",
+          run_id: fixtureSecurityRunId,
+          source_head_sha: fixtureImplementationHead
+        },
+        exact_head_artifacts: {
+          result: "PASS",
+          source_head_sha: fixtureImplementationHead,
+          expected_source_head: fixtureImplementationHead,
+          artifact_id: fixtureFrontendArtifactId,
+          github_archive_sha256: fixtureFrontendArchiveSha256,
+          exact_head_sha256: fixtureExactHeadArtifactSha256,
+          traceability_report_sha256: fixtureTraceabilityReportSha256,
+          run_id: fixtureCiRunId,
+          run_number: 982,
+          run_attempt: 1
+        },
+        review_threads: { unresolved: 0 },
+        mergeability: "PASS",
+        protected_merge: {
+          result: "PASS",
+          expected_head_sha: fixtureImplementationHead,
+          merge_commit_sha: fixtureImplementationMerge
+        }
+      },
+      deviation_snapshot: {
+        total: contract.deviations.length,
+        open: openDeviations.length,
+        accepted: contract.deviations.filter(({ state }) => state === "ACCEPTED").length,
+        resolved: contract.deviations.filter(({ state }) => state === "RESOLVED").length,
+        open_ids: openDeviations.map(({ id }) => id)
+      },
+      scope_boundaries: {
+        t086_dispatched: false,
+        participant_research_executed: false,
+        web3_activated: false,
+        production_activated: false,
+        provider_configured: false,
+        secrets_changed: false
+      }
+    }
+    files[`${featurePath}/tasks.md`] = baseTasksText.replace(/^- \[ \] T085\b/m, "- [x] T085")
+    files["artifacts/exact-head.json"] = JSON.stringify({
+      source_head_sha: fixtureReceiptHead,
+      expected_source_head: fixtureReceiptHead,
+      source_event: "pull_request",
+      source_ref: fixtureActionsHeadRef,
+      github_sha: fixtureActionsMergeSha,
+      github_repository: "bynanci/courtside-tw",
+      github_workflow: "CI",
+      github_job: "frontend-contract",
+      github_run_id: fixtureActionsRunId,
+      github_run_number: fixtureActionsRunNumber,
+      github_run_attempt: fixtureActionsRunAttempt,
+      github_ref: "refs/pull/151/merge",
+      github_base_ref: "main"
+    })
+    receiptContext = {
+      receipt,
+      changedPaths: [completionReceiptPath, `${featurePath}/tasks.md`],
+      changeBaseTasksText: baseTasksText,
+      changeBaseTraceabilityText: baseTraceabilityText,
+      acceptedTraceabilitySha256: sha256(baseTraceabilityText),
+      acceptedPendingTasksSha256: sha256(baseTasksText),
+      acceptedCompletedTasksSha256: sha256(baseTasksText.replace(/^- \[ \] T085\b/m, "- [x] T085"))
+    }
+    mutate({ contract, files, ...receiptContext })
+    files[completionReceiptPath] = JSON.stringify(receipt)
+  })
+  return { root, ...receiptContext }
+}
+
+function run(root, overrides = {}) {
+  const traceabilityPath = path.join(root, featurePath, "traceability.md")
+  const tasksPath = path.join(root, featurePath, "tasks.md")
+  const traceabilityText = fs.existsSync(traceabilityPath)
+    ? fs.readFileSync(traceabilityPath, "utf8")
+    : ""
+  const tasksText = fs.existsSync(tasksPath) ? fs.readFileSync(tasksPath, "utf8") : ""
+  const pendingTasksText = tasksText.replace(/^- \[[xX]\] T085\b/m, "- [ ] T085")
   return validateTraceability({
     root,
-    currentHead: "1111111111111111111111111111111111111111",
+    currentHead: fixtureReceiptHead,
     gitBinding: {
       status: "CLEAN",
-      head: "1111111111111111111111111111111111111111"
+      head: fixtureReceiptHead
     },
-    changedPaths: []
+    changedPaths: [],
+    acceptedTraceabilitySha256: sha256(traceabilityText),
+    acceptedPendingTasksSha256: sha256(pendingTasksText),
+    acceptedCompletedTasksSha256: sha256(
+      pendingTasksText.replace(/^- \[ \] T085\b/m, "- [x] T085")
+    ),
+    ...overrides
+  })
+}
+
+function makeFixtureActionsContext(root, environmentOverrides = {}) {
+  if (typeof traceabilityValidator.inspectGitHubActionsContext !== "function") return null
+  const eventPath = path.join(root, "github-pull-request-event.json")
+  fs.writeFileSync(
+    eventPath,
+    JSON.stringify({
+      repository: { full_name: "bynanci/courtside-tw" },
+      pull_request: {
+        head: { sha: fixtureReceiptHead, ref: fixtureActionsHeadRef },
+        base: { sha: fixtureReceiptBase, ref: "main" }
+      }
+    })
+  )
+  return traceabilityValidator.inspectGitHubActionsContext({
+    environment: {
+      GITHUB_ACTIONS: "true",
+      GITHUB_REPOSITORY: "bynanci/courtside-tw",
+      GITHUB_EVENT_NAME: "pull_request",
+      GITHUB_EVENT_PATH: eventPath,
+      GITHUB_SHA: fixtureActionsMergeSha,
+      GITHUB_WORKFLOW: "CI",
+      GITHUB_JOB: "frontend-contract",
+      GITHUB_RUN_ID: fixtureActionsRunId,
+      GITHUB_RUN_NUMBER: fixtureActionsRunNumber,
+      GITHUB_RUN_ATTEMPT: fixtureActionsRunAttempt,
+      GITHUB_REF: "refs/pull/151/merge",
+      GITHUB_BASE_REF: "main",
+      GITHUB_HEAD_REF: fixtureActionsHeadRef,
+      ...environmentOverrides
+    },
+    gitBinding: {
+      head: fixtureReceiptHead,
+      change_base_sha: fixtureReceiptBase,
+      change_base_ancestor: true
+    }
+  })
+}
+
+function makeFixturePushActionsContext(root, environmentOverrides = {}) {
+  if (typeof traceabilityValidator.inspectGitHubActionsContext !== "function") return null
+  const eventPath = path.join(root, "github-main-push-event.json")
+  fs.writeFileSync(
+    eventPath,
+    JSON.stringify({
+      repository: { full_name: "bynanci/courtside-tw" },
+      before: fixtureReceiptBase,
+      after: fixtureReceiptHead,
+      ref: "refs/heads/main"
+    })
+  )
+  return traceabilityValidator.inspectGitHubActionsContext({
+    environment: {
+      GITHUB_ACTIONS: "true",
+      GITHUB_REPOSITORY: "bynanci/courtside-tw",
+      GITHUB_EVENT_NAME: "push",
+      GITHUB_EVENT_PATH: eventPath,
+      GITHUB_SHA: fixtureReceiptHead,
+      GITHUB_WORKFLOW: "CI",
+      GITHUB_JOB: "frontend-contract",
+      GITHUB_RUN_ID: fixtureActionsRunId,
+      GITHUB_RUN_NUMBER: fixtureActionsRunNumber,
+      GITHUB_RUN_ATTEMPT: fixtureActionsRunAttempt,
+      GITHUB_REF: "refs/heads/main",
+      GITHUB_REF_NAME: "main",
+      ...environmentOverrides
+    },
+    gitBinding: {
+      head: fixtureReceiptHead,
+      change_base_sha: fixtureReceiptBase,
+      change_base_ancestor: true
+    }
+  })
+}
+
+function writeFixturePushExactHead(root) {
+  fs.writeFileSync(
+    path.join(root, "artifacts/exact-head.json"),
+    JSON.stringify({
+      source_head_sha: fixtureReceiptHead,
+      expected_source_head: fixtureReceiptHead,
+      source_event: "push",
+      source_ref: "main",
+      github_sha: fixtureReceiptHead,
+      github_repository: "bynanci/courtside-tw",
+      github_workflow: "CI",
+      github_job: "frontend-contract",
+      github_run_id: fixtureActionsRunId,
+      github_run_number: fixtureActionsRunNumber,
+      github_run_attempt: fixtureActionsRunAttempt,
+      github_ref: "refs/heads/main",
+      github_base_ref: ""
+    })
+  )
+}
+
+function runReceiptFixture(fixture, overrides = {}) {
+  return run(fixture.root, {
+    changedPaths: fixture.changedPaths,
+    changeBaseSha: fixtureReceiptBase,
+    implementationMergeAncestorOfChangeBase: true,
+    boundedScopeActive: false,
+    changeBaseTasksText: fixture.changeBaseTasksText,
+    changeBaseTraceabilityText: fixture.changeBaseTraceabilityText,
+    evaluatedHeadCommittedAt: "2026-08-29T04:00:00Z",
+    requireExactHeadEvidence: true,
+    githubActionsContext: makeFixtureActionsContext(fixture.root),
+    acceptedTraceabilitySha256: fixture.acceptedTraceabilitySha256,
+    acceptedPendingTasksSha256: fixture.acceptedPendingTasksSha256,
+    acceptedCompletedTasksSha256: fixture.acceptedCompletedTasksSha256,
+    gitBinding: {
+      status: "CLEAN",
+      head: fixtureReceiptHead,
+      change_base_ref: "fixture:trusted-base",
+      change_base_sha: fixtureReceiptBase,
+      change_base_ancestor: true,
+      head_parent_sha: fixtureReceiptBase,
+      head_parent_count: 1
+    },
+    ...overrides
+  })
+}
+
+function makeCompletedFixture(mutate = () => {}) {
+  const fixture = makeReceiptFixture()
+  const tasksPath = path.join(fixture.root, featurePath, "tasks.md")
+  const traceabilityPath = path.join(fixture.root, featurePath, "traceability.md")
+  const receiptPath = path.join(fixture.root, completionReceiptPath)
+  const completed = {
+    ...fixture,
+    changedPaths: ["docs/research/post-receipt.md"],
+    changeBaseTasksText: fs.readFileSync(tasksPath, "utf8"),
+    changeBaseTraceabilityText: fs.readFileSync(traceabilityPath, "utf8"),
+    changeBaseCompletionReceiptText: fs.readFileSync(receiptPath, "utf8")
+  }
+  const docsPath = path.join(fixture.root, "docs/research/post-receipt.md")
+  fs.mkdirSync(path.dirname(docsPath), { recursive: true })
+  fs.writeFileSync(docsPath, "post-receipt work\n")
+  mutate({ ...completed, tasksPath, traceabilityPath, receiptPath })
+  return completed
+}
+
+function runCompletedFixture(fixture, overrides = {}) {
+  return run(fixture.root, {
+    changedPaths: fixture.changedPaths,
+    changeBaseSha: fixtureCompletedBase,
+    evaluatedHeadCommittedAt: "2026-08-29T04:00:00Z",
+    boundedScopeActive: false,
+    changeBaseTasksText: fixture.changeBaseTasksText,
+    changeBaseTraceabilityText: fixture.changeBaseTraceabilityText,
+    changeBaseCompletionReceiptText: fixture.changeBaseCompletionReceiptText,
+    acceptedTraceabilitySha256: fixture.acceptedTraceabilitySha256,
+    acceptedPendingTasksSha256: fixture.acceptedPendingTasksSha256,
+    acceptedCompletedTasksSha256: fixture.acceptedCompletedTasksSha256,
+    gitBinding: {
+      status: "CLEAN",
+      head: fixtureReceiptHead,
+      change_base_ref: "fixture:trusted-base",
+      change_base_sha: fixtureCompletedBase,
+      change_base_ancestor: true,
+      head_parent_sha: fixtureCompletedBase,
+      head_parent_count: 1
+    },
+    ...overrides
   })
 }
 
@@ -265,6 +606,44 @@ test("canonical inventory, forward mapping, reverse ledger and proof pass", () =
   assert.equal(report.status, "PASS", report.errors.join("\n"))
   assert.equal(report.counts.requirements_in_spec, 97)
   assert.equal(report.counts.tasks_in_plan, 112)
+})
+
+test("receipt authority is pinned to the protected PR149 implementation snapshot", () => {
+  const traceabilityText = fs.readFileSync(
+    path.join(repositoryRoot, featurePath, "traceability.md"),
+    "utf8"
+  )
+  const pendingTasksText = fs.readFileSync(
+    path.join(repositoryRoot, featurePath, "tasks.md"),
+    "utf8"
+  )
+  const completedTasksText = pendingTasksText.replace(/^- \[ \] T085\b/m, "- [x] T085")
+
+  assert.equal(ACCEPTED_IMPLEMENTATION_HEAD_SHA, fixtureImplementationHead)
+  assert.equal(ACCEPTED_IMPLEMENTATION_MERGE_SHA, fixtureImplementationMerge)
+  assert.equal(ACCEPTED_CI_RUN_ID, fixtureCiRunId)
+  assert.equal(ACCEPTED_SECURITY_RUN_ID, fixtureSecurityRunId)
+  assert.equal(ACCEPTED_FRONTEND_ARTIFACT_ID, fixtureFrontendArtifactId)
+  assert.equal(ACCEPTED_FRONTEND_ARCHIVE_SHA256, fixtureFrontendArchiveSha256)
+  assert.equal(ACCEPTED_EXACT_HEAD_ARTIFACT_SHA256, fixtureExactHeadArtifactSha256)
+  assert.equal(ACCEPTED_TRACEABILITY_REPORT_SHA256, fixtureTraceabilityReportSha256)
+  assert.equal(ACCEPTED_TRACEABILITY_SHA256, sha256(traceabilityText))
+  assert.equal(ACCEPTED_PENDING_TASKS_SHA256, sha256(pendingTasksText))
+  assert.equal(ACCEPTED_COMPLETED_TASKS_SHA256, sha256(completedTasksText))
+  assert.deepEqual(ACCEPTED_IMPLEMENTATION_CHANGED_PATHS, fixtureImplementationChangedPaths)
+
+  const contract = extractContract(traceabilityText)
+  const openDeviations = contract.deviations.filter(({ state }) => state === "OPEN")
+  const resolvedDeviations = contract.deviations.filter(({ state }) => state === "RESOLVED")
+  assert.equal(contract.deviations.length, 47)
+  assert.equal(openDeviations.length, 43)
+  assert.equal(resolvedDeviations.length, 4)
+  for (const number of [41, 42, 43, 44, 45, 46, 47]) {
+    const id = `DEV-T085-${String(number).padStart(3, "0")}`
+    const deviation = contract.deviations.find((row) => row.id === id)
+    assert.equal(deviation?.state, "OPEN", id)
+    assert.equal(deviation?.release_impact, "BLOCKS_T086_UNLESS_ADJUDICATED", id)
+  }
 })
 
 test("missing traceability artifact is an attributable failure", () => {
@@ -589,6 +968,650 @@ test("completion phase is rejected until a separately authorized receipt verifie
   assert.match(report.errors.join("\n"), /only accepts lifecycle\.phase T085_IMPLEMENTATION/)
 })
 
+test("a frozen contract accepts only a receipt-bound one-line T085 checkbox transition", () => {
+  const fixture = makeReceiptFixture()
+  const report = runReceiptFixture(fixture)
+
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+  assert.equal(report.mode, "T085_RECEIPT_CANDIDATE")
+  assert.equal(report.receipt_eligible, false)
+  assert.equal(report.external_readback_required, true)
+  assert.equal(report.scope_boundaries.t086_dispatched, false)
+  assert.equal(report.completion_receipt.implementation_head_sha, fixtureImplementationHead)
+  assert.equal(report.completion_receipt.implementation_merge_sha, fixtureImplementationMerge)
+  assert.equal(report.completion_receipt.receipt_base_sha, fixtureReceiptBase)
+})
+
+test("completed T085 permits unrelated post-receipt work without replaying the transition", () => {
+  const fixture = makeCompletedFixture()
+  fixture.changedPaths = ["docs/research/post-receipt.md"]
+  const report = runCompletedFixture(fixture)
+
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+  assert.equal(report.mode, "T085_COMPLETE_STEADY")
+  assert.equal(report.receipt_eligible, false)
+  assert.deepEqual(report.scope_validation.changed_paths, ["docs/research/post-receipt.md"])
+  assert.equal(report.scope_boundaries.t086_dispatched, false)
+})
+
+for (const changedPath of [
+  "android/app/src/main/java/com/courtside/tw/Runtime.kt",
+  ".github/workflows/deploy.yml",
+  "backend/src/main/java/com/courtside/tw/ProviderConfig.java",
+  "web3/activate.ts"
+]) {
+  test(`completed T085 rejects non-research activation path ${changedPath}`, () => {
+    const fixture = makeCompletedFixture()
+    fixture.changedPaths = [changedPath]
+    const report = runCompletedFixture(fixture)
+
+    assert.equal(report.status, "FAIL")
+    assert.equal(report.receipt_eligible, false)
+    assert.match(
+      report.errors.join("\n"),
+      /changed path is outside the authorized post-T085 research-documentation scope/
+    )
+  })
+}
+
+test("completed T085 keeps T086 dispatch paths blocked until validator evolution", () => {
+  const fixture = makeCompletedFixture()
+  fixture.changedPaths = [".loop/evidence/t086-dispatch.json"]
+  const report = runCompletedFixture(fixture)
+
+  assert.equal(report.status, "FAIL")
+  assert.equal(report.receipt_eligible, false)
+  assert.match(
+    report.errors.join("\n"),
+    /changed path requires separately authorized T086 validator evolution/
+  )
+})
+
+for (const [name, mutate, expected] of [
+  [
+    "completion receipt drift",
+    ({ receiptPath }) => {
+      const receipt = JSON.parse(fs.readFileSync(receiptPath, "utf8"))
+      receipt.accepted_by = "different-fixture-release-owner"
+      fs.writeFileSync(receiptPath, JSON.stringify(receipt))
+    },
+    /completed T085 must preserve the base completion receipt byte-for-byte/
+  ],
+  [
+    "completion receipt removal",
+    ({ receiptPath }) => {
+      fs.unlinkSync(receiptPath)
+    },
+    /completed T085 must preserve the base completion receipt byte-for-byte/
+  ],
+  [
+    "tasks drift",
+    ({ tasksPath }) => {
+      fs.appendFileSync(tasksPath, "\nunauthorized completed-state prose\n")
+    },
+    /completed T085 must preserve base tasks\.md byte-for-byte/
+  ],
+  [
+    "traceability drift",
+    ({ traceabilityPath }) => {
+      fs.appendFileSync(traceabilityPath, "\nunauthorized completed-state prose\n")
+    },
+    /completed T085 must preserve the frozen traceability contract byte-for-byte/
+  ]
+]) {
+  test(`completed T085 rejects ${name}`, () => {
+    const fixture = makeCompletedFixture(mutate)
+    const report = runCompletedFixture(fixture)
+
+    assert.equal(report.status, "FAIL")
+    assert.equal(report.receipt_eligible, false)
+    assert.match(report.errors.join("\n"), expected)
+  })
+}
+
+test("completed T085 rejects a checked-to-unchecked checkbox rollback", () => {
+  const fixture = makeCompletedFixture(({ tasksPath }) => {
+    const tasks = fs.readFileSync(tasksPath, "utf8")
+    fs.writeFileSync(tasksPath, tasks.replace(/^- \[x\] T085\b/m, "- [ ] T085"))
+  })
+  const report = runCompletedFixture(fixture)
+
+  assert.equal(report.status, "FAIL")
+  assert.equal(report.receipt_eligible, false)
+  assert.match(report.errors.join("\n"), /T085 checkbox cannot roll back after completion/)
+})
+
+test("completed T085 fails closed when its base receipt cannot be read", () => {
+  const fixture = makeCompletedFixture()
+  const report = runCompletedFixture(fixture, { changeBaseCompletionReceiptText: null })
+
+  assert.equal(report.status, "FAIL")
+  assert.equal(report.receipt_eligible, false)
+  assert.match(
+    report.errors.join("\n"),
+    /completed T085 requires a readable completion receipt at the audited base/
+  )
+})
+
+test("receipt mode rejects a deviation-resolution drift blessed by a self-declared digest", () => {
+  const fixture = makeReceiptFixture()
+  const traceabilityPath = path.join(fixture.root, featurePath, "traceability.md")
+  const receiptPath = path.join(fixture.root, completionReceiptPath)
+  const contract = extractContract(fs.readFileSync(traceabilityPath, "utf8"))
+  contract.deviations[0].state = "RESOLVED"
+  const driftedTraceability = markdown(contract)
+  fixture.changeBaseTraceabilityText = driftedTraceability
+  fs.writeFileSync(traceabilityPath, driftedTraceability)
+  const receipt = JSON.parse(fs.readFileSync(receiptPath, "utf8"))
+  receipt.traceability_sha256 = sha256(driftedTraceability)
+  receipt.deviation_snapshot = {
+    total: 1,
+    open: 0,
+    accepted: 0,
+    resolved: 1,
+    open_ids: []
+  }
+  fs.writeFileSync(receiptPath, JSON.stringify(receipt))
+
+  const report = runReceiptFixture(fixture)
+  assert.equal(report.status, "FAIL")
+  assert.equal(report.receipt_eligible, false)
+  assert.match(
+    report.errors.join("\n"),
+    /traceability must match the accepted implementation snapshot/
+  )
+})
+
+test("receipt mode rejects pre-receipt tasks drift blessed by a self-declared digest", () => {
+  const fixture = makeReceiptFixture()
+  const tasksPath = path.join(fixture.root, featurePath, "tasks.md")
+  const receiptPath = path.join(fixture.root, completionReceiptPath)
+  const driftedPendingTasks = `${fixture.changeBaseTasksText}\nunauthorized base prose\n`
+  const driftedCompletedTasks = driftedPendingTasks.replace(/^- \[ \] T085\b/m, "- [x] T085")
+  fixture.changeBaseTasksText = driftedPendingTasks
+  fs.writeFileSync(tasksPath, driftedCompletedTasks)
+  const receipt = JSON.parse(fs.readFileSync(receiptPath, "utf8"))
+  receipt.tasks_before_sha256 = sha256(driftedPendingTasks)
+  fs.writeFileSync(receiptPath, JSON.stringify(receipt))
+
+  const report = runReceiptFixture(fixture)
+  assert.equal(report.status, "FAIL")
+  assert.equal(report.receipt_eligible, false)
+  assert.match(report.errors.join("\n"), /tasks must match the accepted implementation snapshot/)
+})
+
+for (const ancestry of [false, null]) {
+  test(`receipt mode fails closed when implementation-merge ancestry is ${ancestry}`, () => {
+    const fixture = makeReceiptFixture()
+    const report = runReceiptFixture(fixture, {
+      implementationMergeAncestorOfChangeBase: ancestry
+    })
+
+    assert.equal(report.status, "FAIL")
+    assert.equal(report.receipt_eligible, false)
+    assert.match(
+      report.errors.join("\n"),
+      /completion receipt implementation_merge_sha must be an ancestor of receipt_base_sha/
+    )
+  })
+}
+
+test("receipt mode rejects a multi-commit candidate even when its net diff is exact", () => {
+  const fixture = makeReceiptFixture()
+  const report = runReceiptFixture(fixture, {
+    gitBinding: {
+      status: "CLEAN",
+      head: fixtureReceiptHead,
+      change_base_ref: "fixture:trusted-base",
+      change_base_sha: fixtureReceiptBase,
+      change_base_ancestor: true,
+      head_parent_sha: "6".repeat(40),
+      head_parent_count: 1
+    }
+  })
+
+  assert.equal(report.status, "FAIL")
+  assert.equal(report.receipt_eligible, false)
+  assert.match(
+    report.errors.join("\n"),
+    /receipt candidate head parent must equal receipt_base_sha/
+  )
+})
+
+test("receipt mode rejects a merge-commit candidate even when first parent and net diff are exact", () => {
+  const fixture = makeReceiptFixture()
+  const report = runReceiptFixture(fixture, {
+    gitBinding: {
+      status: "CLEAN",
+      head: fixtureReceiptHead,
+      change_base_ref: "fixture:trusted-base",
+      change_base_sha: fixtureReceiptBase,
+      change_base_ancestor: true,
+      head_parent_sha: fixtureReceiptBase,
+      head_parent_count: 2
+    }
+  })
+
+  assert.equal(report.status, "FAIL")
+  assert.equal(report.receipt_eligible, false)
+  assert.match(report.errors.join("\n"), /receipt candidate head must have exactly one parent/)
+})
+
+test("receipt mode cannot become eligible without trusted Git binding", () => {
+  const fixture = makeReceiptFixture()
+  const report = runReceiptFixture(fixture, { gitBinding: null })
+
+  assert.equal(report.status, "FAIL")
+  assert.equal(report.receipt_eligible, false)
+  assert.match(report.errors.join("\n"), /receipt candidate requires trusted audited Git binding/)
+})
+
+test("receipt candidate is not eligible without current-head exact-head evidence", () => {
+  const fixture = makeReceiptFixture()
+  fs.unlinkSync(path.join(fixture.root, "artifacts/exact-head.json"))
+  const report = runReceiptFixture(fixture, { requireExactHeadEvidence: false })
+
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+  assert.equal(report.mode, "T085_RECEIPT_CANDIDATE")
+  assert.equal(report.receipt_eligible, false)
+  assert.match(
+    report.warnings.join("\n"),
+    /receipt candidate requires current-head exact-head evidence before it is eligible/
+  )
+})
+
+test("local structural exact-head evidence cannot make a receipt candidate authoritative", () => {
+  const fixture = makeReceiptFixture()
+  const report = runReceiptFixture(fixture, { requireExactHeadEvidence: false })
+
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+  assert.equal(report.receipt_eligible, false)
+  assert.match(
+    report.warnings.join("\n"),
+    /receipt candidate exact-head evidence is not authoritative outside the required CI mode/
+  )
+})
+
+test("generic CI context cannot make a receipt candidate authoritative", () => {
+  const fixture = makeReceiptFixture()
+  const githubActionsContext =
+    typeof traceabilityValidator.inspectGitHubActionsContext === "function"
+      ? traceabilityValidator.inspectGitHubActionsContext({
+          environment: { CI: "true" },
+          gitBinding: {
+            head: fixtureReceiptHead,
+            change_base_sha: fixtureReceiptBase,
+            change_base_ancestor: true
+          }
+        })
+      : null
+  const report = runReceiptFixture(fixture, { githubActionsContext })
+
+  assert.equal(report.status, "FAIL")
+  assert.equal(report.receipt_eligible, false)
+  assert.match(
+    report.errors.join("\n"),
+    /authoritative receipt validation requires authenticated GitHub Actions context/
+  )
+})
+
+test("receipt candidate rejects self-supplied Actions artifact metadata", () => {
+  const fixture = makeReceiptFixture()
+  const exactHeadPath = path.join(fixture.root, "artifacts/exact-head.json")
+  const exactHead = JSON.parse(fs.readFileSync(exactHeadPath, "utf8"))
+  exactHead.github_run_id = "99999999999"
+  fs.writeFileSync(exactHeadPath, JSON.stringify(exactHead))
+  const report = runReceiptFixture(fixture)
+
+  assert.equal(report.status, "FAIL")
+  assert.equal(report.receipt_eligible, false)
+  assert.match(
+    report.errors.join("\n"),
+    /artifacts\/exact-head\.json metadata must match the authenticated GitHub Actions context/
+  )
+})
+
+test("authenticated protected-main push validates the merged receipt transition", () => {
+  const fixture = makeReceiptFixture()
+  writeFixturePushExactHead(fixture.root)
+  const githubActionsContext = makeFixturePushActionsContext(fixture.root)
+  const report = runReceiptFixture(fixture, { githubActionsContext })
+
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+  assert.equal(report.mode, "T085_RECEIPT_CANDIDATE")
+  assert.equal(report.receipt_eligible, false)
+  assert.equal(report.external_readback_required, true)
+  assert.equal(report.source.github_actions_context.authority, "PROTECTED_MAIN_PUSH")
+})
+
+test("receipt mode rejects duplicate object keys before JSON parsing", () => {
+  const fixture = makeReceiptFixture()
+  const receiptPath = path.join(fixture.root, completionReceiptPath)
+  const receiptText = fs.readFileSync(receiptPath, "utf8")
+  const ambiguousReceipt = receiptText.replace(
+    '"decision":"ACCEPTED"',
+    '"decision":"REJECTED","decision":"ACCEPTED"'
+  )
+  assert.notEqual(ambiguousReceipt, receiptText)
+  fs.writeFileSync(receiptPath, ambiguousReceipt)
+  const report = runReceiptFixture(fixture)
+
+  assert.equal(report.status, "FAIL")
+  assert.equal(report.receipt_eligible, false)
+  assert.match(report.errors.join("\n"), /duplicate JSON object key: decision/)
+})
+
+test("receipt mode rejects a JSON null completion receipt", () => {
+  const fixture = makeReceiptFixture()
+  fs.writeFileSync(path.join(fixture.root, completionReceiptPath), "null\n")
+  const report = runReceiptFixture(fixture)
+
+  assert.equal(report.status, "FAIL")
+  assert.equal(report.receipt_eligible, false)
+  assert.match(report.errors.join("\n"), /checked T085 requires a structured completion receipt/)
+})
+
+test("receipt mode requires an evaluated head commit timestamp", () => {
+  const fixture = makeReceiptFixture()
+  const report = runReceiptFixture(fixture, { evaluatedHeadCommittedAt: null })
+
+  assert.equal(report.status, "FAIL")
+  assert.equal(report.receipt_eligible, false)
+  assert.match(
+    report.errors.join("\n"),
+    /completion receipt requires a trusted evaluated head commit timestamp/
+  )
+})
+
+test("receipt candidate rejects a receipt that was already present at its audited base", () => {
+  const fixture = makeReceiptFixture()
+  const report = runReceiptFixture(fixture, {
+    changeBaseCompletionReceiptText: JSON.stringify({ staged: true })
+  })
+
+  assert.equal(report.status, "FAIL")
+  assert.equal(report.receipt_eligible, false)
+  assert.match(
+    report.errors.join("\n"),
+    /receipt candidate base must not already contain a completion receipt/
+  )
+})
+
+test("a checked T085 without its structured completion receipt fails closed", () => {
+  const root = makeFixture(({ files }) => {
+    files[`${featurePath}/tasks.md`] = files[`${featurePath}/tasks.md`].replace(
+      /^- \[ \] T085\b/m,
+      "- [x] T085"
+    )
+  })
+  const report = run(root)
+
+  assert.equal(report.status, "FAIL")
+  assert.equal(report.receipt_eligible, false)
+  assert.match(report.errors.join("\n"), /checked T085 requires a structured completion receipt/)
+})
+
+test("implementation mode rejects a staged completion receipt", () => {
+  const root = makeFixture(({ files }) => {
+    files[completionReceiptPath] = JSON.stringify({
+      schema_version: completionReceiptSchema,
+      task: "T085"
+    })
+  })
+  const report = run(root)
+
+  assert.equal(report.status, "FAIL")
+  assert.equal(report.receipt_eligible, false)
+  assert.match(report.errors.join("\n"), /unchecked T085 must not stage a completion receipt/)
+})
+
+for (const [name, mutate, expected] of [
+  [
+    "an unknown receipt schema",
+    ({ receipt }) => {
+      receipt.schema_version = "courtside-t085-completion-receipt/v0"
+    },
+    /completion receipt schema_version must be courtside-t085-completion-receipt\/v1/
+  ],
+  [
+    "an automated actor",
+    ({ receipt }) => {
+      receipt.actor_type = "AGENT"
+    },
+    /completion receipt actor_type must be HUMAN/
+  ],
+  [
+    "an impossible calendar timestamp",
+    ({ receipt }) => {
+      receipt.recorded_at = "2026-02-30T00:00:00Z"
+    },
+    /completion receipt recorded_at must be an ISO-8601 UTC timestamp/
+  ],
+  [
+    "a timestamp before the pinned owner authorization",
+    ({ receipt }) => {
+      receipt.recorded_at = "2026-08-29T02:24:08Z"
+    },
+    /completion receipt recorded_at must not predate the pinned owner authorization/
+  ],
+  [
+    "a timestamp after the evaluated head commit",
+    ({ receipt }) => {
+      receipt.recorded_at = "2026-08-29T04:00:01Z"
+    },
+    /completion receipt recorded_at must not postdate the evaluated head commit/
+  ],
+  [
+    "an untrusted receipt owner",
+    ({ receipt }) => {
+      receipt.accepted_by = "branch-author"
+    },
+    /completion receipt accepted_by must equal the authorized repository owner/
+  ],
+  [
+    "an unpinned receipt authorization",
+    ({ receipt }) => {
+      receipt.authorization_ref = "self-declared-authorization"
+    },
+    /completion receipt authorization_ref must equal the pinned owner authorization/
+  ],
+  ...[
+    ["implementation_head_sha", "missing", undefined],
+    ["implementation_head_sha", "invalid", "A".repeat(40)],
+    ["implementation_merge_sha", "missing", undefined],
+    ["implementation_merge_sha", "invalid", "A".repeat(40)],
+    ["receipt_base_sha", "missing", undefined],
+    ["receipt_base_sha", "invalid", "A".repeat(40)]
+  ].map(([field, condition, value]) => [
+    `a ${condition} ${field}`,
+    ({ receipt }) => {
+      if (condition === "missing") delete receipt[field]
+      else receipt[field] = value
+    },
+    new RegExp(`completion receipt ${field} must be a full lowercase commit SHA`)
+  ]),
+  [
+    "a self-consistent unaccepted implementation head",
+    ({ receipt }) => {
+      receipt.implementation_head_sha = "6".repeat(40)
+      receipt.gates.ci.source_head_sha = receipt.implementation_head_sha
+      receipt.gates.security.source_head_sha = receipt.implementation_head_sha
+      receipt.gates.exact_head_artifacts.source_head_sha = receipt.implementation_head_sha
+      receipt.gates.exact_head_artifacts.expected_source_head = receipt.implementation_head_sha
+      receipt.gates.protected_merge.expected_head_sha = receipt.implementation_head_sha
+    },
+    /completion receipt implementation_head_sha must equal the accepted PR149 head/
+  ],
+  [
+    "a self-consistent unaccepted implementation merge",
+    ({ receipt }) => {
+      receipt.implementation_merge_sha = "7".repeat(40)
+      receipt.gates.protected_merge.merge_commit_sha = receipt.implementation_merge_sha
+    },
+    /completion receipt implementation_merge_sha must equal the accepted PR149 merge/
+  ],
+  [
+    "a self-consistent fabricated CI run",
+    ({ receipt }) => {
+      receipt.gates.ci.run_id = 1
+    },
+    /completion receipt CI run must equal the accepted PR149 run 33226451857/
+  ],
+  [
+    "a self-consistent fabricated Security run",
+    ({ receipt }) => {
+      receipt.gates.security.run_id = 1
+    },
+    /completion receipt Security run must equal the accepted PR149 run 33226451860/
+  ],
+  [
+    "an implementation scope with a dropped path",
+    ({ receipt }) => {
+      receipt.implementation_scope.changed_paths.pop()
+      receipt.implementation_scope.changed_files -= 1
+    },
+    /completion receipt implementation_scope must bind the exact accepted PR149 paths/
+  ],
+  [
+    "an implementation scope with an extra path",
+    ({ receipt }) => {
+      receipt.implementation_scope.changed_paths.push("forged.txt")
+      receipt.implementation_scope.changed_files += 1
+    },
+    /completion receipt implementation_scope must bind the exact accepted PR149 paths/
+  ],
+  [
+    "an implementation scope with a false path count",
+    ({ receipt }) => {
+      receipt.implementation_scope.changed_files = 12
+    },
+    /completion receipt implementation_scope.changed_files must be 13/
+  ],
+  [
+    "an implementation scope with a false check topology",
+    ({ receipt }) => {
+      receipt.implementation_scope.required_checks = "13/14"
+    },
+    /completion receipt implementation_scope.required_checks must be 14\/14/
+  ],
+  [
+    "an unaccepted frontend artifact ID",
+    ({ receipt }) => {
+      receipt.gates.exact_head_artifacts.artifact_id = 1
+    },
+    /completion receipt exact-head artifacts must bind accepted PR149 artifact 9707044002/
+  ],
+  ...[
+    ["github_archive_sha256", fixtureFrontendArchiveSha256],
+    ["exact_head_sha256", fixtureExactHeadArtifactSha256],
+    ["traceability_report_sha256", fixtureTraceabilityReportSha256]
+  ].map(([field]) => [
+    `an unaccepted exact-head artifact ${field}`,
+    ({ receipt }) => {
+      receipt.gates.exact_head_artifacts[field] = "0".repeat(64)
+    },
+    /completion receipt exact-head artifact digests must match accepted PR149 evidence/
+  ]),
+  [
+    "an unaccepted exact-head artifact run topology",
+    ({ receipt }) => {
+      receipt.gates.exact_head_artifacts.run_number = 981
+      receipt.gates.exact_head_artifacts.run_attempt = 2
+    },
+    /completion receipt exact-head artifact run must be PR149 CI run 982 attempt 1/
+  ],
+  [
+    "a non-green Security gate",
+    ({ receipt }) => {
+      receipt.gates.security.result = "FAIL"
+    },
+    /completion receipt security gate must be exact-head PASS 8\/8/
+  ],
+  [
+    "CI evidence from another head",
+    ({ receipt }) => {
+      receipt.gates.ci.source_head_sha = "4".repeat(40)
+    },
+    /completion receipt CI gate must be exact-head PASS 5\/5/
+  ],
+  [
+    "an unresolved review thread",
+    ({ receipt }) => {
+      receipt.gates.review_threads.unresolved = 1
+    },
+    /completion receipt requires zero unresolved review threads/
+  ],
+  [
+    "a forged traceability digest",
+    ({ receipt }) => {
+      receipt.traceability_sha256 = "0".repeat(64)
+    },
+    /completion receipt must bind the frozen traceability contract/
+  ],
+  [
+    "a drifted deviation snapshot",
+    ({ receipt }) => {
+      receipt.deviation_snapshot.open_ids = []
+    },
+    /completion receipt deviation snapshot must exactly preserve the contract/
+  ],
+  [
+    "a T086 dispatch claim",
+    ({ receipt }) => {
+      receipt.scope_boundaries.t086_dispatched = true
+    },
+    /completion receipt scope_boundaries\.t086_dispatched must remain false/
+  ],
+  [
+    "a different receipt base",
+    ({ receipt }) => {
+      receipt.receipt_base_sha = "5".repeat(40)
+    },
+    /completion receipt receipt_base_sha must equal the audited change base/
+  ],
+  [
+    "a conflated implementation merge and receipt base",
+    ({ receipt }) => {
+      receipt.implementation_merge_sha = receipt.receipt_base_sha
+      receipt.gates.protected_merge.merge_commit_sha = receipt.implementation_merge_sha
+    },
+    /completion receipt must not conflate implementation_merge_sha with receipt_base_sha/
+  ],
+  [
+    "a protected-merge gate bound to the receipt base",
+    ({ receipt }) => {
+      receipt.gates.protected_merge.merge_commit_sha = receipt.receipt_base_sha
+    },
+    /completion receipt protected merge must bind the implementation head and merge SHAs/
+  ],
+  [
+    "an unrelated changed path",
+    ({ changedPaths }) => {
+      changedPaths.push(`${featurePath}/spec.md`)
+    },
+    /receipt candidate may change only tasks\.md and its completion receipt/
+  ],
+  [
+    "an extra tasks prose edit",
+    ({ files }) => {
+      files[`${featurePath}/tasks.md`] = files[`${featurePath}/tasks.md`].replace(
+        "T085 fixture",
+        "T085 forged prose"
+      )
+    },
+    /receipt candidate tasks\.md change must be exactly the T085 checkbox/
+  ]
+]) {
+  test(`receipt mode rejects ${name}`, () => {
+    const fixture = makeReceiptFixture(mutate)
+    const report = runReceiptFixture(fixture)
+
+    assert.equal(report.status, "FAIL")
+    assert.equal(report.receipt_eligible, false)
+    assert.match(report.errors.join("\n"), expected)
+  })
+}
+
 test("repository proof selectors must resolve to one unambiguous literal location", () => {
   const root = makeFixture(({ contract, files }) => {
     contract.requirements[0].proofs[0].path = "tests/generic-proof.test.js"
@@ -728,31 +1751,120 @@ for (const [boundary, mutate] of [
   })
 }
 
-test("post-merge branches use current main as their change base and retire T085 scope", () => {
+test("pending T085 rejects a T086 dispatch even after traceability reaches main", () => {
   const root = makeFixture()
   const currentMain = initializeGitFixture(root)
   git(root, "update-ref", "refs/remotes/origin/main", currentMain)
-  git(root, "switch", "-c", "future-change")
-  fs.writeFileSync(path.join(root, "future.txt"), "future work\n")
-  git(root, "add", "future.txt")
-  git(root, "commit", "-m", "future work")
+  git(root, "switch", "-c", "forbidden-t086-dispatch")
+  const t086DispatchPath = path.join(root, ".loop/evidence/t086-dispatch.json")
+  fs.writeFileSync(t086DispatchPath, "{}\n")
+  git(root, "add", ".loop/evidence/t086-dispatch.json")
+  git(root, "commit", "-m", "attempt T086 dispatch")
 
   assert.equal(typeof traceabilityValidator.inspectGit, "function")
   const inspection = traceabilityValidator.inspectGit(root, { environment: {} })
   assert.equal(inspection.change_base_sha, currentMain)
   assert.equal(inspection.bounded_scope_active, false)
-  assert.deepEqual(inspection.changedPaths, ["future.txt"])
+  assert.deepEqual(inspection.changedPaths, [".loop/evidence/t086-dispatch.json"])
 
-  const report = validateTraceability({
-    root,
+  const report = run(root, {
     currentHead: inspection.head,
     gitBinding: inspection,
     changedPaths: inspection.changedPaths,
     changeBaseSha: inspection.change_base_sha,
+    changeBaseTasksText: inspection.change_base_tasks_text,
+    changeBaseTraceabilityText: inspection.change_base_traceability_text,
     boundedScopeActive: inspection.bounded_scope_active
   })
-  assert.equal(report.status, "PASS", report.errors.join("\n"))
+  assert.equal(report.status, "FAIL")
+  assert.match(
+    report.errors.join("\n"),
+    /outside the authorized T085 receipt-support scope: \.loop\/evidence\/t086-dispatch\.json/
+  )
   assert.equal(report.scope_validation.bounded_scope_active, false)
+})
+
+test("pending T085 permits a support change from the frozen implementation allowlist", () => {
+  const root = makeFixture()
+  const currentMain = initializeGitFixture(root)
+  git(root, "update-ref", "refs/remotes/origin/main", currentMain)
+  git(root, "switch", "-c", "receipt-validator-support")
+  const validatorPath = path.join(root, "scripts/validate-traceability.mjs")
+  fs.mkdirSync(path.dirname(validatorPath), { recursive: true })
+  fs.writeFileSync(validatorPath, "// receipt support fixture\n")
+  git(root, "add", "scripts/validate-traceability.mjs")
+  git(root, "commit", "-m", "add receipt validator support")
+
+  const inspection = traceabilityValidator.inspectGit(root, { environment: {} })
+  const report = run(root, {
+    currentHead: inspection.head,
+    gitBinding: inspection,
+    changedPaths: inspection.changedPaths,
+    changeBaseSha: inspection.change_base_sha,
+    changeBaseTasksText: inspection.change_base_tasks_text,
+    changeBaseTraceabilityText: inspection.change_base_traceability_text,
+    boundedScopeActive: inspection.bounded_scope_active
+  })
+
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+  assert.deepEqual(inspection.changedPaths, ["scripts/validate-traceability.mjs"])
+})
+
+test("Git inspection exposes both sides of a rename into the completion receipt path", () => {
+  const root = makeFixture()
+  const currentMain = initializeGitFixture(root)
+  git(root, "update-ref", "refs/remotes/origin/main", currentMain)
+  git(root, "switch", "-c", "rename-evidence-into-receipt")
+  git(
+    root,
+    "mv",
+    ".loop/evidence/t085-dispatch.json",
+    ".loop/evidence/t085-completion-receipt.json"
+  )
+  git(root, "commit", "-m", "rename evidence into receipt")
+
+  const inspection = traceabilityValidator.inspectGit(root, { environment: {} })
+  assert.deepEqual(inspection.changedPaths, [
+    ".loop/evidence/t085-completion-receipt.json",
+    ".loop/evidence/t085-dispatch.json"
+  ])
+})
+
+for (const changedPath of [
+  ".github/workflows/ci.yml",
+  ".loop/evidence/t085-review.json",
+  "package.json",
+  `${featurePath}/plan.md`
+]) {
+  test(`post-implementation pending mode rejects non-support path ${changedPath}`, () => {
+    const root = makeFixture()
+    const report = run(root, {
+      changedPaths: [changedPath],
+      changeBaseSha: fixtureReceiptBase,
+      changeBaseTasksText: fs.readFileSync(path.join(root, featurePath, "tasks.md"), "utf8"),
+      changeBaseTraceabilityText: fs.readFileSync(
+        path.join(root, featurePath, "traceability.md"),
+        "utf8"
+      ),
+      boundedScopeActive: false
+    })
+
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /outside the authorized T085 receipt-support scope/)
+  })
+}
+
+test("legacy pre-implementation pending mode retains the original 13-path allowlist", () => {
+  const root = makeFixture()
+  const report = run(root, {
+    changedPaths: [".github/workflows/ci.yml"],
+    changeBaseSha: fixtureReceiptBase,
+    changeBaseTasksText: fs.readFileSync(path.join(root, featurePath, "tasks.md"), "utf8"),
+    changeBaseTraceabilityText: null,
+    boundedScopeActive: true
+  })
+
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
 })
 
 test("an advanced base without the T085 artifact keeps the bounded scope active", () => {
@@ -813,6 +1925,45 @@ test("shallow pull-request inspection fails closed when the event base object is
   assert.match(report.errors.join("\n"), /CI validation requires an audited current-change diff/)
 })
 
+test("pull-request inspection rejects a head that does not contain the exact event base", () => {
+  const root = makeFixture()
+  initializeGitFixture(root)
+  git(root, "switch", "-c", "stale-receipt-support")
+  const validatorPath = path.join(root, "scripts/validate-traceability.mjs")
+  fs.mkdirSync(path.dirname(validatorPath), { recursive: true })
+  fs.writeFileSync(validatorPath, "// stale receipt support\n")
+  git(root, "add", "scripts/validate-traceability.mjs")
+  git(root, "commit", "-m", "stale receipt support")
+  git(root, "switch", "main")
+  fs.writeFileSync(path.join(root, "protected-main-advance.txt"), "protected main advanced\n")
+  git(root, "add", "protected-main-advance.txt")
+  git(root, "commit", "-m", "advance protected main")
+  const liveEventBase = git(root, "rev-parse", "HEAD")
+  git(root, "switch", "stale-receipt-support")
+
+  const eventRoot = fs.mkdtempSync(path.join(os.tmpdir(), "courtside-event-"))
+  const eventPath = path.join(eventRoot, "event.json")
+  fs.writeFileSync(eventPath, JSON.stringify({ pull_request: { base: { sha: liveEventBase } } }))
+  const inspection = traceabilityValidator.inspectGit(root, {
+    environment: { GITHUB_ACTIONS: "true", GITHUB_EVENT_PATH: eventPath }
+  })
+
+  assert.equal(inspection.change_base_sha, liveEventBase)
+  assert.equal(inspection.change_base_ancestor, false)
+  const report = run(root, {
+    currentHead: inspection.head,
+    gitBinding: inspection,
+    changedPaths: inspection.changedPaths,
+    changeBaseSha: inspection.change_base_sha,
+    changeBaseTasksText: inspection.change_base_tasks_text,
+    changeBaseTraceabilityText: inspection.change_base_traceability_text,
+    boundedScopeActive: inspection.bounded_scope_active,
+    requireAuditedScope: true
+  })
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /audited change base is not an ancestor/)
+})
+
 test("push inspection uses event.before when origin main already points at HEAD", () => {
   const root = makeFixture()
   const before = initializeGitFixture(root)
@@ -829,6 +1980,7 @@ test("push inspection uses event.before when origin main already points at HEAD"
     environment: { GITHUB_ACTIONS: "true", GITHUB_EVENT_PATH: eventPath }
   })
   assert.equal(inspection.change_base_sha, before)
+  assert.equal(inspection.change_base_ancestor, true)
   assert.deepEqual(inspection.changedPaths, ["future.txt"])
 })
 
