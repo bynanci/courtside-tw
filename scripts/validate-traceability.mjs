@@ -783,13 +783,31 @@ function isJavaScriptRegexLiteralStart(text, slashIndex) {
 }
 
 function withoutJavaScriptCommentsStringsAndRegex(text) {
-  const commentFree = withoutJavaScriptComments(text)
   let output = ""
   let state = "code"
   let quote = null
-  for (let index = 0; index < commentFree.length; index += 1) {
-    const character = commentFree[index]
-    const next = commentFree[index + 1]
+  for (let index = 0; index < text.length; index += 1) {
+    const character = text[index]
+    const next = text[index + 1]
+    if (state === "line-comment") {
+      if (character === "\n") {
+        output += character
+        state = "code"
+      } else {
+        output += " "
+      }
+      continue
+    }
+    if (state === "block-comment") {
+      if (character === "*" && next === "/") {
+        output += "  "
+        index += 1
+        state = "code"
+      } else {
+        output += character === "\n" ? "\n" : " "
+      }
+      continue
+    }
     if (state === "string") {
       output += character === "\n" ? "\n" : " "
       if (character === "\\" && next !== undefined) {
@@ -815,15 +833,19 @@ function withoutJavaScriptCommentsStringsAndRegex(text) {
       }
       continue
     }
-    if (['"', "'", "`"].includes(character)) {
+    if (character === "/" && next === "/") {
+      output += "  "
+      index += 1
+      state = "line-comment"
+    } else if (character === "/" && next === "*") {
+      output += "  "
+      index += 1
+      state = "block-comment"
+    } else if (['"', "'", "`"].includes(character)) {
       state = "string"
       quote = character
       output += " "
-    } else if (
-      character === "/" &&
-      next !== "=" &&
-      isJavaScriptRegexLiteralStart(commentFree, index)
-    ) {
+    } else if (character === "/" && next !== "=" && isJavaScriptRegexLiteralStart(output, index)) {
       state = "regex"
       output += " "
     } else {
@@ -845,15 +867,10 @@ function matchingJavaScriptParenthesis(text, openParenthesisIndex) {
   return text.length
 }
 
-function isInsideDisabledJavaScriptSuite(text, lineIndex, selector) {
+function isInsideDisabledJavaScriptSuite(text, selector) {
   const structure = withoutJavaScriptCommentsStringsAndRegex(text)
-  const originalLines = text.split(/\r?\n/)
-  const targetLine = originalLines[lineIndex] ?? ""
-  const selectorColumn = targetLine.indexOf(selector)
-  if (selectorColumn === -1) return false
-  const targetOffset =
-    originalLines.slice(0, lineIndex).reduce((total, line) => total + line.length + 1, 0) +
-    selectorColumn
+  const targetOffset = text.indexOf(selector)
+  if (targetOffset === -1) return false
   const disabledSuitePattern =
     /\b(?:(?:describe|suite|context)\s*\.\s*(?:disabled|failing|fixme|pending|skip|todo)|test\s*\.\s*describe\s*\.\s*(?:disabled|failing|fixme|pending|skip|todo))\s*\(/gu
 
@@ -890,7 +907,7 @@ function hasExecutableProofAnchor(root, proof) {
     const modifiers = anchor[1].split(".").filter(Boolean)
     return (
       !modifiers.some((modifier) => nonExecutableTestModifiers.has(modifier)) &&
-      !isInsideDisabledJavaScriptSuite(text, lineIndex, proof.selector)
+      !isInsideDisabledJavaScriptSuite(text, proof.selector)
     )
   }
   if (proof.path.startsWith("scripts/test/") && proof.path.endsWith(".sh")) {
