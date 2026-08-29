@@ -1530,7 +1530,7 @@ test("pending T085 permits a support change from the frozen implementation allow
   git(root, "add", "scripts/validate-traceability.mjs")
   git(root, "commit", "-m", "add receipt validator support")
 
-  const inspection = traceabilityValidator.inspectGit(root)
+  const inspection = traceabilityValidator.inspectGit(root, { environment: {} })
   const report = run(root, {
     currentHead: inspection.head,
     gitBinding: inspection,
