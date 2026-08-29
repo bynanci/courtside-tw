@@ -1669,6 +1669,10 @@ for (const [suite, source] of [
   [
     "control-head regex inside describe.skip",
     'describe.skip("disabled suite", () => {\n  if (true) /[)]/u.test("x")\n  test("fixture-proof", () => {})\n})\n'
+  ],
+  [
+    "comment-separated describe.skip",
+    'describe /* suite */ . /* modifier */ skip("disabled suite", () => {\n  test("fixture-proof", () => {})\n})\n'
   ]
 ]) {
   test(`a test inside ${suite} cannot serve as executable proof`, () => {
