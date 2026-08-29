@@ -860,9 +860,8 @@ function javaScriptTitleContainsSelector(title, targetOffset, selector, textLeng
         hasBoundedJavaScriptRange(quasi, textLength) &&
         quasi.range[0] <= targetOffset &&
         targetOffset < quasi.range[1] &&
-        [quasi.value?.raw, quasi.value?.cooked].some(
-          (value) => typeof value === "string" && value.includes(selector)
-        )
+        typeof quasi.value?.cooked === "string" &&
+        quasi.value.cooked.includes(selector)
     ) === true
   )
 }

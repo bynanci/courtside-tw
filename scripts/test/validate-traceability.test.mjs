@@ -1825,8 +1825,7 @@ test("a selector in a dynamic template title quasi remains executable proof", ()
 test("a selector present only in raw escaped template text cannot bind runtime title", () => {
   const root = makeFixture(({ contract, files }) => {
     contract.requirements[0].proofs[0].path = "tests/escaped-template-title-proof.test.js"
-    files["tests/escaped-template-title-proof.test.js"] =
-      'test(`\\fixture-proof`, () => {})\n'
+    files["tests/escaped-template-title-proof.test.js"] = "test(`\\fixture-proof`, () => {})\n"
   })
   const report = run(root)
   assert.equal(report.status, "FAIL")
