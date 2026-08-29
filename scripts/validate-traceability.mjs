@@ -324,6 +324,106 @@ function isPositiveIntegerText(value) {
   return typeof value === "string" && /^[1-9]\d*$/.test(value)
 }
 
+function assertUniqueJsonObjectKeys(text) {
+  let index = 0
+  const fail = (message) => {
+    throw new Error(message)
+  }
+  const skipWhitespace = () => {
+    while (/\s/.test(text[index] ?? "")) index += 1
+  }
+  const readString = () => {
+    if (text[index] !== '"') fail(`expected JSON string at offset ${index}`)
+    const start = index
+    index += 1
+    while (index < text.length) {
+      const character = text[index]
+      if (character === '"') {
+        index += 1
+        try {
+          return JSON.parse(text.slice(start, index))
+        } catch (error) {
+          fail(`invalid JSON string at offset ${start}: ${error.message}`)
+        }
+      }
+      if (character === "\\") {
+        index += 2
+      } else {
+        if (character.charCodeAt(0) < 0x20) fail(`invalid JSON control character at ${index}`)
+        index += 1
+      }
+    }
+    fail(`unterminated JSON string at offset ${start}`)
+  }
+  const parseValue = () => {
+    skipWhitespace()
+    if (text[index] === "{") return parseObject()
+    if (text[index] === "[") return parseArray()
+    if (text[index] === '"') {
+      readString()
+      return
+    }
+    const start = index
+    while (index < text.length && !/[\s,\]}]/.test(text[index])) index += 1
+    if (start === index) fail(`expected JSON value at offset ${index}`)
+    try {
+      JSON.parse(text.slice(start, index))
+    } catch (error) {
+      fail(`invalid JSON value at offset ${start}: ${error.message}`)
+    }
+  }
+  const parseObject = () => {
+    const keys = new Set()
+    index += 1
+    skipWhitespace()
+    if (text[index] === "}") {
+      index += 1
+      return
+    }
+    while (index < text.length) {
+      skipWhitespace()
+      const key = readString()
+      if (keys.has(key)) fail(`duplicate JSON object key: ${key}`)
+      keys.add(key)
+      skipWhitespace()
+      if (text[index] !== ":") fail(`expected JSON colon at offset ${index}`)
+      index += 1
+      parseValue()
+      skipWhitespace()
+      if (text[index] === "}") {
+        index += 1
+        return
+      }
+      if (text[index] !== ",") fail(`expected JSON object separator at offset ${index}`)
+      index += 1
+    }
+    fail("unterminated JSON object")
+  }
+  const parseArray = () => {
+    index += 1
+    skipWhitespace()
+    if (text[index] === "]") {
+      index += 1
+      return
+    }
+    while (index < text.length) {
+      parseValue()
+      skipWhitespace()
+      if (text[index] === "]") {
+        index += 1
+        return
+      }
+      if (text[index] !== ",") fail(`expected JSON array separator at offset ${index}`)
+      index += 1
+    }
+    fail("unterminated JSON array")
+  }
+
+  parseValue()
+  skipWhitespace()
+  if (index !== text.length) fail(`unexpected JSON content at offset ${index}`)
+}
+
 export function inspectGitHubActionsContext({ environment = process.env, gitBinding = null } = {}) {
   const errors = []
   const context = {
@@ -429,7 +529,7 @@ export function inspectGitHubActionsContext({ environment = process.env, gitBind
   }
 
   if (errors.length === 0) {
-    context.status = "VERIFIED_GITHUB_ACTIONS"
+    context.status = "MATCHED_GITHUB_ACTIONS_METADATA"
     Object.defineProperty(context, githubActionsAuthorityToken, { value: true })
   }
   return context
@@ -437,7 +537,8 @@ export function inspectGitHubActionsContext({ environment = process.env, gitBind
 
 function isAuthenticatedGitHubActionsContext(context) {
   return (
-    context?.status === "VERIFIED_GITHUB_ACTIONS" && context?.[githubActionsAuthorityToken] === true
+    context?.status === "MATCHED_GITHUB_ACTIONS_METADATA" &&
+    context?.[githubActionsAuthorityToken] === true
   )
 }
 
@@ -1278,6 +1379,7 @@ export function validateTraceability({
   }
   if (completionReceiptText !== null) {
     try {
+      assertUniqueJsonObjectKeys(completionReceiptText)
       completionReceipt = JSON.parse(completionReceiptText)
     } catch (error) {
       errors.push(`invalid T085 completion receipt: ${error.message}`)
@@ -1705,12 +1807,8 @@ export function validateTraceability({
   }
 
   const analysisValid = errors.length === 0
-  const receiptEligible =
-    state === t085States.RECEIPT_CANDIDATE &&
-    analysisValid &&
-    exactHeadEvidence !== null &&
-    requireExactHeadEvidence &&
-    authenticatedGitHubActions
+  const receiptEligible = false
+  const externalReadbackRequired = state === t085States.RECEIPT_CANDIDATE && analysisValid
   const checkedTasks = [...taskStatus.values()].filter(Boolean).length
   const openDeviations = deviationRows.filter((deviation) => deviation?.state === "OPEN")
 
@@ -1721,6 +1819,7 @@ export function validateTraceability({
     mode: state,
     analysis_valid: analysisValid,
     receipt_eligible: receiptEligible,
+    external_readback_required: externalReadbackRequired,
     source: {
       repository: contract?.repository ?? "bynanci/courtside-tw",
       authorized_base_sha: contract?.authorized_base_sha ?? dispatch?.base?.sha ?? null,
@@ -2041,11 +2140,15 @@ export function inspectGit(root, { environment = process.env } = {}) {
     )
     let changedPaths = null
     if (changeBase.sha !== null) {
-      changedPaths = execFileSync("git", ["diff", "--name-only", changeBase.sha, head], {
-        cwd: root,
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "ignore"]
-      })
+      changedPaths = execFileSync(
+        "git",
+        ["diff", "--no-renames", "--name-only", changeBase.sha, head],
+        {
+          cwd: root,
+          encoding: "utf8",
+          stdio: ["ignore", "pipe", "ignore"]
+        }
+      )
         .trim()
         .split("\n")
         .filter(Boolean)
