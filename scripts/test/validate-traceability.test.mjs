@@ -630,8 +630,7 @@ for (const [modifier, source] of [
 test("parameterized JavaScript tests remain executable proof anchors", () => {
   const root = makeFixture(({ contract, files }) => {
     contract.requirements[0].proofs[0].path = "tests/parameterized-proof.test.js"
-    files["tests/parameterized-proof.test.js"] =
-      'test.each([[1]])("fixture-proof %s", () => {})\n'
+    files["tests/parameterized-proof.test.js"] = 'test.each([[1]])("fixture-proof %s", () => {})\n'
   })
   const report = run(root)
   assert.equal(report.status, "PASS", report.errors.join("\n"))
@@ -722,7 +721,10 @@ for (const [boundary, mutate] of [
     })
     const report = run(root)
     assert.equal(report.status, "FAIL")
-    assert.match(report.errors.join("\n"), /dispatch authority must match the immutable T085 receipt/)
+    assert.match(
+      report.errors.join("\n"),
+      /dispatch authority must match the immutable T085 receipt/
+    )
   })
 }
 

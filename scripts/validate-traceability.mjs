@@ -382,7 +382,7 @@ function withoutJavaScriptComments(text) {
       state = "block-comment"
     } else {
       output += character
-      if (["\"", "'", "`"].includes(character)) {
+      if (['"', "'", "`"].includes(character)) {
         state = "string"
         quote = character
       }
@@ -615,10 +615,7 @@ export function validateTraceability({
   if (gitBinding?.head && gitBinding.head !== currentHead) {
     errors.push("git binding head must equal currentHead")
   }
-  if (
-    gitBinding?.change_base_sha !== undefined &&
-    gitBinding.change_base_sha !== changeBaseSha
-  ) {
+  if (gitBinding?.change_base_sha !== undefined && gitBinding.change_base_sha !== changeBaseSha) {
     errors.push("git binding change base must equal changeBaseSha")
   }
   if (
@@ -650,9 +647,7 @@ export function validateTraceability({
   }
   if (
     requireAuditedScope &&
-    (changeBaseSha === null ||
-      boundedScopeActive === null ||
-      !Array.isArray(changedPaths))
+    (changeBaseSha === null || boundedScopeActive === null || !Array.isArray(changedPaths))
   ) {
     errors.push("CI validation requires an audited current-change diff")
   }
@@ -1095,13 +1090,14 @@ export function validateTraceability({
             : "T085_SCOPE_RETIRED",
       git_diff_audited: Array.isArray(changedPaths),
       changed_paths: changedPaths,
-      unauthorized_paths: boundedScopeActive === true && Array.isArray(changedPaths)
-        ? changedPaths.filter((changedPath) => !authorizedChangedPaths.has(changedPath))
-        : boundedScopeActive === true
-          ? null
-          : boundedScopeActive === false
-            ? []
-            : null
+      unauthorized_paths:
+        boundedScopeActive === true && Array.isArray(changedPaths)
+          ? changedPaths.filter((changedPath) => !authorizedChangedPaths.has(changedPath))
+          : boundedScopeActive === true
+            ? null
+            : boundedScopeActive === false
+              ? []
+              : null
     },
     head_binding: gitBinding ?? {
       status: "UNVERIFIED_FIXTURE",
@@ -1149,8 +1145,7 @@ function inspectAncestor(root, baseSha, head) {
 
 function eventChangeBaseCandidates(environment) {
   const candidates = []
-  let constrained =
-    environment.GITHUB_ACTIONS === "true" && Boolean(environment.GITHUB_EVENT_PATH)
+  let constrained = environment.GITHUB_ACTIONS === "true" && Boolean(environment.GITHUB_EVENT_PATH)
   if (environment.GITHUB_EVENT_PATH) {
     try {
       const event = JSON.parse(fs.readFileSync(environment.GITHUB_EVENT_PATH, "utf8"))
@@ -1187,11 +1182,15 @@ function resolveChangeBase(root, head, environment) {
       ]
   for (const candidate of candidates) {
     try {
-      const baseCommit = execFileSync("git", ["rev-parse", "--verify", `${candidate.ref}^{commit}`], {
-        cwd: root,
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "ignore"]
-      }).trim()
+      const baseCommit = execFileSync(
+        "git",
+        ["rev-parse", "--verify", `${candidate.ref}^{commit}`],
+        {
+          cwd: root,
+          encoding: "utf8",
+          stdio: ["ignore", "pipe", "ignore"]
+        }
+      ).trim()
       const mergeBase = execFileSync("git", ["merge-base", baseCommit, head], {
         cwd: root,
         encoding: "utf8",
@@ -1246,8 +1245,7 @@ export function inspectGit(root, { environment = process.env } = {}) {
       changeBase.sha,
       "specs/001-taiwan-basketball-magazine-ebook/traceability.md"
     )
-    const boundedScopeActive =
-      baseHasTraceability === null ? null : baseHasTraceability === false
+    const boundedScopeActive = baseHasTraceability === null ? null : baseHasTraceability === false
     let changedPaths = null
     if (changeBase.sha !== null) {
       changedPaths = execFileSync("git", ["diff", "--name-only", changeBase.sha, head], {
