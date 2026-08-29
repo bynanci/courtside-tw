@@ -1856,6 +1856,71 @@ for (const [optionalCall, source] of [
   })
 }
 
+for (const [provenance, pathName, source] of [
+  [
+    "local no-op test",
+    "local-test-proof.test.js",
+    'const test = (_title, _body) => {}\ntest("fixture-proof", () => {})\n'
+  ],
+  [
+    "shadowed imported test",
+    "shadowed-test-proof.test.js",
+    'import test from "node:test"\n{\n  const test = () => {}\n  test("fixture-proof", () => {})\n}\n'
+  ],
+  [
+    "lookalike package import",
+    "lookalike-test-proof.test.js",
+    'import { test } from "lookalike-test"\ntest("fixture-proof", () => {})\n'
+  ],
+  [
+    "type-only test import",
+    "type-only-test-proof.test.ts",
+    'import type { test } from "node:test"\ntest("fixture-proof", () => {})\n'
+  ],
+  [
+    "local fake test.describe",
+    "fake-suite-proof.test.js",
+    'const test = { describe: (_title, callback) => callback() }\n' +
+      'test.describe("active suite", () => {\n  test("fixture-proof", () => {})\n})\n'
+  ]
+]) {
+  test(`${provenance} cannot authorize executable proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      const proofPath = `tests/${pathName}`
+      contract.requirements[0].proofs[0].path = proofPath
+      files[proofPath] = source
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+  })
+}
+
+for (const [binding, source] of [
+  [
+    "aliased Playwright test",
+    'import { test as runner } from "@playwright/test"\nrunner("fixture-proof", () => {})\n'
+  ],
+  [
+    "aliased Playwright suite",
+    'import { test as runner } from "@playwright/test"\n' +
+      'runner.describe("active suite", () => {\n  runner("fixture-proof", () => {})\n})\n'
+  ],
+  [
+    "aliased node:test",
+    'import { test as runner } from "node:test"\nrunner("fixture-proof", () => {})\n'
+  ]
+]) {
+  test(`${binding} remains attributable executable proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "tests/aliased-proof.test.ts"
+      files["tests/aliased-proof.test.ts"] = source
+    })
+    const report = run(root)
+    assert.equal(report.status, "PASS", report.errors.join("\n"))
+  })
+}
+
 for (const [commentStyle, source] of [
   ["line-commented", '// test("fixture-proof", () => {})\n'],
   ["block-commented", '/* test("fixture-proof", () => {}) */\n'],
