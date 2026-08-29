@@ -4,6 +4,7 @@ import { createHash } from "node:crypto"
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
+import { isDeepStrictEqual } from "node:util"
 
 export const TRACEABILITY_SCHEMA = "courtside-traceability/v1"
 export const CONTRACT_START = "<!-- t085:contract:start -->"
@@ -54,6 +55,7 @@ const implementationCheckedTasks = new Set([
   "T097"
 ])
 const authorizedChangedPaths = new Set([
+  ".github/workflows/ci.yml",
   ".loop/evidence/t085-dispatch.json",
   ".loop/evidence/t085-local.json",
   ".loop/evidence/t085-red.json",
@@ -66,6 +68,62 @@ const authorizedChangedPaths = new Set([
   "scripts/validate-traceability.mjs",
   "specs/001-taiwan-basketball-magazine-ebook/plan.md",
   "specs/001-taiwan-basketball-magazine-ebook/traceability.md"
+])
+const expectedDispatch = {
+  schema_version: "courtside-t085-dispatch/v1",
+  recorded_at: "2026-08-25T12:42:58Z",
+  repository: "bynanci/courtside-tw",
+  issue: "https://github.com/bynanci/courtside-tw/issues/145",
+  branch: "task/t085-cross-artifact-traceability",
+  base: {
+    branch: "main",
+    sha: AUTHORIZED_BASE_SHA,
+    protected: true,
+    t084_complete: true,
+    t085_complete: false,
+    t086_complete: false,
+    open_pull_requests_at_dispatch: 0
+  },
+  inventory: {
+    functional_requirements: 74,
+    success_criteria: 23,
+    tasks: 112,
+    checked_tasks: 85,
+    unchecked_tasks: 27,
+    existing_traceability_artifact: false
+  },
+  authorized: [
+    "T085 traceability contract and human-readable matrix",
+    "deterministic validator and mutation tests",
+    "plan documentation-tree and traceability-status correction",
+    "T085-only Graphify evidence",
+    "draft pull request and exact-head CI/Security/artifact/read-back"
+  ],
+  forbidden: [
+    "ready-for-review transition, protected merge or T085 completion receipt",
+    "T086 or later task dispatch or modification",
+    "participant research execution",
+    "Web3, wallet, chain, IPFS or credential implementation",
+    "production activation, provider configuration, credentials, secrets or external writes",
+    "runtime remediation for documentation-only locator drift"
+  ],
+  tests_first: {
+    red_claim:
+      "The validator and its mutation suite pass, then the repository contract fails only because traceability.md is absent.",
+    green_claim:
+      "The same validator passes after an exact 97-requirement matrix, 112-task reverse ledger and explicit deviation register are added."
+  },
+  terminal_policy:
+    "Stop at needs_human after draft-head CI/Security, artifact digest, review-thread and protected-merge boundary read-back."
+}
+const nonExecutableTestModifiers = new Set([
+  "disabled",
+  "failing",
+  "fixme",
+  "only",
+  "pending",
+  "skip",
+  "todo"
 ])
 
 function idsFrom(text, pattern) {
@@ -140,6 +198,7 @@ function humanDeviationRows(markdown) {
         affected_ids: [...cells[4].matchAll(/(?:(?:FR|SC)-\d{3}|T\d{3})/g)].map(
           (match) => match[0]
         ),
+        disposition_target: cells[5],
         release_impact: cells[6]
       }
     })
@@ -276,6 +335,62 @@ function isExecutableProofPath(relativePath) {
   )
 }
 
+function withoutJavaScriptComments(text) {
+  let output = ""
+  let state = "code"
+  let quote = null
+  for (let index = 0; index < text.length; index += 1) {
+    const character = text[index]
+    const next = text[index + 1]
+    if (state === "line-comment") {
+      if (character === "\n") {
+        output += character
+        state = "code"
+      } else {
+        output += " "
+      }
+      continue
+    }
+    if (state === "block-comment") {
+      if (character === "*" && next === "/") {
+        output += "  "
+        index += 1
+        state = "code"
+      } else {
+        output += character === "\n" ? "\n" : " "
+      }
+      continue
+    }
+    if (state === "string") {
+      output += character
+      if (character === "\\" && next !== undefined) {
+        output += next
+        index += 1
+      } else if (character === quote) {
+        state = "code"
+        quote = null
+      }
+      continue
+    }
+    if (character === "/" && next === "/") {
+      output += "  "
+      index += 1
+      state = "line-comment"
+    } else if (character === "/" && next === "*") {
+      output += "  "
+      index += 1
+      state = "block-comment"
+    } else {
+      output += character
+      if (["\"", "'", "`"].includes(character)) {
+        state = "string"
+        quote = character
+      }
+    }
+  }
+  return output
+}
+
 function hasExecutableProofAnchor(root, proof) {
   const text = fs.readFileSync(path.resolve(root, proof.path), "utf8")
   const lines = text.split(/\r?\n/)
@@ -292,7 +407,12 @@ function hasExecutableProofAnchor(root, proof) {
     )
   }
   if (/\.(?:test|spec)\.[cm]?[jt]sx?$/.test(proof.path)) {
-    return /\b(?:test|it)(?:\.\w+)*\s*\(/.test(line)
+    const codeLine = withoutJavaScriptComments(text).split(/\r?\n/)[lineIndex].trim()
+    if (!codeLine.includes(proof.selector)) return false
+    const anchor = codeLine.match(/^(?:test|it)((?:\.\w+)*)\s*\(/)
+    if (!anchor) return false
+    const modifiers = anchor[1].split(".").filter(Boolean)
+    return !modifiers.some((modifier) => nonExecutableTestModifiers.has(modifier))
   }
   if (proof.path.startsWith("scripts/test/") && proof.path.endsWith(".sh")) {
     return /\b(?:raise|assert|fail|exit|SystemExit)\b/.test(line)
@@ -457,8 +577,11 @@ export function validateTraceability({
   currentHead = null,
   gitBinding = null,
   changedPaths = null,
+  changeBaseSha = REVIEW_BASE_SHA,
+  boundedScopeActive = changeBaseSha === REVIEW_BASE_SHA,
   reviewBaseSha = REVIEW_BASE_SHA,
-  requireExactHeadEvidence = false
+  requireExactHeadEvidence = false,
+  requireAuditedScope = false
 }) {
   const errors = []
   const warnings = []
@@ -492,22 +615,46 @@ export function validateTraceability({
   if (gitBinding?.head && gitBinding.head !== currentHead) {
     errors.push("git binding head must equal currentHead")
   }
+  if (
+    gitBinding?.change_base_sha !== undefined &&
+    gitBinding.change_base_sha !== changeBaseSha
+  ) {
+    errors.push("git binding change base must equal changeBaseSha")
+  }
+  if (
+    gitBinding?.bounded_scope_active !== undefined &&
+    gitBinding.bounded_scope_active !== boundedScopeActive
+  ) {
+    errors.push("git binding bounded scope state must equal boundedScopeActive")
+  }
   if (gitBinding?.authorized_base_ancestor === false) {
     errors.push("immutable dispatch base is not an ancestor of the evaluated head")
   }
   if (gitBinding?.review_base_ancestor === false) {
     errors.push("current protected review base is not an ancestor of the evaluated head")
   }
-  if (Array.isArray(changedPaths)) {
+  if (boundedScopeActive === true && Array.isArray(changedPaths)) {
     for (const changedPath of changedPaths) {
       if (!authorizedChangedPaths.has(changedPath)) {
         errors.push(`changed path is outside the authorized T085 scope: ${changedPath}`)
       }
     }
-  } else {
+  } else if (
+    changeBaseSha === null ||
+    boundedScopeActive === null ||
+    (boundedScopeActive === true && !Array.isArray(changedPaths))
+  ) {
     warnings.push(
       "review-base path diff was not available; authoritative GitHub PR scope read-back remains required"
     )
+  }
+  if (
+    requireAuditedScope &&
+    (changeBaseSha === null ||
+      boundedScopeActive === null ||
+      !Array.isArray(changedPaths))
+  ) {
+    errors.push("CI validation requires an audited current-change diff")
   }
 
   let contract = null
@@ -574,6 +721,9 @@ export function validateTraceability({
       dispatch?.base?.branch !== "main"
     ) {
       errors.push("dispatch identity must remain bound to issue 145, the T085 branch and main")
+    }
+    if (!isDeepStrictEqual(dispatch, expectedDispatch)) {
+      errors.push("dispatch authority must match the immutable T085 receipt")
     }
     if (
       contract.source_inventory?.spec !== paths.spec ||
@@ -654,6 +804,7 @@ export function validateTraceability({
         human.severity !== deviation.severity ||
         human.state !== deviation.state ||
         !sameValues(human.affected_ids, deviation.affected_ids ?? []) ||
+        human.disposition_target !== `${deviation.disposition} Target: ${deviation.target}.` ||
         human.release_impact !== deviation.release_impact
       ) {
         errors.push(`human-readable deviation ${deviation.id} must match the machine contract`)
@@ -677,6 +828,14 @@ export function validateTraceability({
       for (const affectedId of deviation?.affected_ids ?? []) {
         if (!expectedRequirements.includes(affectedId) && !expectedTasks.includes(affectedId)) {
           errors.push(`${label}.affected_ids references unknown ID ${affectedId}`)
+        }
+        if (expectedRequirements.includes(affectedId)) {
+          const requirement = requirements.find((row) => row?.id === affectedId)
+          if (!requirement?.deviation_ids?.includes(deviation.id)) {
+            errors.push(
+              `${deviation.id} affects ${affectedId}, but the requirement does not reference it`
+            )
+          }
         }
       }
       if (!deviationStates.has(deviation?.state)) {
@@ -833,11 +992,11 @@ export function validateTraceability({
       }
     }
 
-    const referencedDeviations = new Set(
-      requirements.flatMap((row) => (Array.isArray(row?.deviation_ids) ? row.deviation_ids : []))
-    )
     for (const deviation of deviations) {
-      if (deviation?.state === "OPEN" && !referencedDeviations.has(deviation.id)) {
+      const affectsRequirement = (deviation?.affected_ids ?? []).some((id) =>
+        expectedRequirements.includes(id)
+      )
+      if (deviation?.state === "OPEN" && !affectsRequirement) {
         warnings.push(
           `open deviation ${deviation.id} is task/structure-only, not requirement-linked`
         )
@@ -924,12 +1083,25 @@ export function validateTraceability({
     scope_validation: {
       authorized_base_sha: AUTHORIZED_BASE_SHA,
       review_base_sha: reviewBaseSha,
-      status: Array.isArray(changedPaths) ? "AUDITED" : "EXTERNAL_READBACK_REQUIRED",
+      change_base_sha: changeBaseSha,
+      bounded_scope_active: boundedScopeActive,
+      status:
+        changeBaseSha === null ||
+        boundedScopeActive === null ||
+        (boundedScopeActive === true && !Array.isArray(changedPaths))
+          ? "EXTERNAL_READBACK_REQUIRED"
+          : boundedScopeActive === true
+            ? "AUDITED"
+            : "T085_SCOPE_RETIRED",
       git_diff_audited: Array.isArray(changedPaths),
       changed_paths: changedPaths,
-      unauthorized_paths: Array.isArray(changedPaths)
+      unauthorized_paths: boundedScopeActive === true && Array.isArray(changedPaths)
         ? changedPaths.filter((changedPath) => !authorizedChangedPaths.has(changedPath))
-        : null
+        : boundedScopeActive === true
+          ? null
+          : boundedScopeActive === false
+            ? []
+            : null
     },
     head_binding: gitBinding ?? {
       status: "UNVERIFIED_FIXTURE",
@@ -975,7 +1147,81 @@ function inspectAncestor(root, baseSha, head) {
   }
 }
 
-function inspectGit(root) {
+function eventChangeBaseCandidates(environment) {
+  const candidates = []
+  let constrained =
+    environment.GITHUB_ACTIONS === "true" && Boolean(environment.GITHUB_EVENT_PATH)
+  if (environment.GITHUB_EVENT_PATH) {
+    try {
+      const event = JSON.parse(fs.readFileSync(environment.GITHUB_EVENT_PATH, "utf8"))
+      const pullRequestBase = event?.pull_request?.base?.sha
+      const pushBefore = event?.before
+      constrained = event?.pull_request !== undefined || event?.before !== undefined
+      if (/^[0-9a-f]{40}$/.test(pullRequestBase ?? "")) {
+        candidates.push({ ref: pullRequestBase, source: "github-event:pull_request.base.sha" })
+      } else if (/^[0-9a-f]{40}$/.test(pushBefore ?? "") && !/^0{40}$/.test(pushBefore)) {
+        candidates.push({ ref: pushBefore, source: "github-event:before" })
+      }
+    } catch {
+      // A GitHub event that cannot be read stays constrained and fails closed below.
+    }
+  }
+  if (environment.GITHUB_BASE_REF && candidates.length === 0) {
+    constrained = true
+    candidates.push({
+      ref: `refs/remotes/origin/${environment.GITHUB_BASE_REF}`,
+      source: "github-env:GITHUB_BASE_REF"
+    })
+  }
+  return { candidates, constrained }
+}
+
+function resolveChangeBase(root, head, environment) {
+  const eventCandidates = eventChangeBaseCandidates(environment)
+  const candidates = eventCandidates.constrained
+    ? eventCandidates.candidates
+    : [
+        { ref: "refs/remotes/origin/HEAD", source: "git:origin/HEAD" },
+        { ref: "refs/remotes/origin/main", source: "git:origin/main" },
+        { ref: "refs/heads/main", source: "git:main" }
+      ]
+  for (const candidate of candidates) {
+    try {
+      const baseCommit = execFileSync("git", ["rev-parse", "--verify", `${candidate.ref}^{commit}`], {
+        cwd: root,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"]
+      }).trim()
+      const mergeBase = execFileSync("git", ["merge-base", baseCommit, head], {
+        cwd: root,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"]
+      }).trim()
+      if (/^[0-9a-f]{40}$/.test(mergeBase)) {
+        return { ref: candidate.source, sha: mergeBase }
+      }
+    } catch {
+      // Try the next trusted base candidate.
+    }
+  }
+  return { ref: null, sha: null }
+}
+
+function inspectPathAtCommit(root, commit, relativePath) {
+  if (commit === null) return null
+  try {
+    const result = execFileSync("git", ["ls-tree", "--name-only", commit, "--", relativePath], {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"]
+    }).trim()
+    return result === relativePath
+  } catch {
+    return null
+  }
+}
+
+export function inspectGit(root, { environment = process.env } = {}) {
   try {
     const head = execFileSync("git", ["rev-parse", "HEAD"], {
       cwd: root,
@@ -994,9 +1240,17 @@ function inspectGit(root) {
       : "CLEAN"
     const authorizedBaseAncestor = inspectAncestor(root, AUTHORIZED_BASE_SHA, head)
     const reviewBaseAncestor = inspectAncestor(root, REVIEW_BASE_SHA, head)
+    const changeBase = resolveChangeBase(root, head, environment)
+    const baseHasTraceability = inspectPathAtCommit(
+      root,
+      changeBase.sha,
+      "specs/001-taiwan-basketball-magazine-ebook/traceability.md"
+    )
+    const boundedScopeActive =
+      baseHasTraceability === null ? null : baseHasTraceability === false
     let changedPaths = null
-    if (reviewBaseAncestor === true) {
-      changedPaths = execFileSync("git", ["diff", "--name-only", REVIEW_BASE_SHA, head], {
+    if (changeBase.sha !== null) {
+      changedPaths = execFileSync("git", ["diff", "--name-only", changeBase.sha, head], {
         cwd: root,
         encoding: "utf8",
         stdio: ["ignore", "pipe", "ignore"]
@@ -1011,6 +1265,9 @@ function inspectGit(root) {
       status,
       authorized_base_ancestor: authorizedBaseAncestor,
       review_base_ancestor: reviewBaseAncestor,
+      change_base_ref: changeBase.ref,
+      change_base_sha: changeBase.sha,
+      bounded_scope_active: boundedScopeActive,
       changedPaths
     }
   } catch {
@@ -1019,6 +1276,9 @@ function inspectGit(root) {
       status: "UNAVAILABLE",
       authorized_base_ancestor: null,
       review_base_ancestor: null,
+      change_base_ref: null,
+      change_base_sha: null,
+      bounded_scope_active: null,
       changedPaths: null
     }
   }
@@ -1028,6 +1288,7 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 
 export function runCli(root = repositoryRoot) {
   const inspection = inspectGit(root)
+  const isCi = process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true"
   const report = validateTraceability({
     root,
     currentHead: inspection.head,
@@ -1038,8 +1299,11 @@ export function runCli(root = repositoryRoot) {
       review_base_ancestor: inspection.review_base_ancestor
     },
     changedPaths: inspection.changedPaths,
+    changeBaseSha: inspection.change_base_sha,
+    boundedScopeActive: inspection.bounded_scope_active,
     reviewBaseSha: REVIEW_BASE_SHA,
-    requireExactHeadEvidence: process.env.CI === "true" || process.env.GITHUB_ACTIONS === "true"
+    requireExactHeadEvidence: isCi,
+    requireAuditedScope: isCi
   })
   const outputPath = path.join(root, "artifacts/frontend/t085-traceability-report.json")
   fs.mkdirSync(path.dirname(outputPath), { recursive: true })

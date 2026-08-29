@@ -243,6 +243,23 @@ function run(root) {
   })
 }
 
+function git(root, ...args) {
+  return execFileSync("git", args, {
+    cwd: root,
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"]
+  }).trim()
+}
+
+function initializeGitFixture(root) {
+  git(root, "init", "-b", "main")
+  git(root, "config", "user.name", "Traceability Test")
+  git(root, "config", "user.email", "traceability@example.invalid")
+  git(root, "add", ".")
+  git(root, "commit", "-m", "merge T085 implementation")
+  return git(root, "rev-parse", "HEAD")
+}
+
 test("canonical inventory, forward mapping, reverse ledger and proof pass", () => {
   const report = run(makeFixture())
   assert.equal(report.status, "PASS", report.errors.join("\n"))
@@ -620,6 +637,22 @@ test("parameterized JavaScript tests remain executable proof anchors", () => {
   assert.equal(report.status, "PASS", report.errors.join("\n"))
 })
 
+for (const [commentStyle, source] of [
+  ["line-commented", '// test("fixture-proof", () => {})\n'],
+  ["block-commented", '/* test("fixture-proof", () => {}) */\n'],
+  ["multiline-block-commented", '/*\ntest("fixture-proof", () => {})\n*/\n']
+]) {
+  test(`${commentStyle} JavaScript anchors cannot serve as executable proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "tests/commented-proof.test.js"
+      files["tests/commented-proof.test.js"] = source
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+  })
+}
+
 test("overlapping selector locations are rejected as ambiguous", () => {
   const root = makeFixture(({ contract, files }) => {
     contract.requirements[0].proofs[0].path = "tests/overlapping-proof.test.js"
@@ -664,7 +697,8 @@ test("human deviation disposition and target must match the machine contract", (
 
 test("deviation affected FR and SC IDs require reciprocal requirement links", () => {
   const root = makeFixture(({ contract }) => {
-    contract.deviations[0].affected_ids.push("FR-001", "SC-001")
+    contract.deviations[0].affected_ids.push("FR-001")
+    contract.requirements.find(({ id }) => id === "SC-001").deviation_ids = []
   })
   const report = run(root)
   assert.equal(report.status, "FAIL")
@@ -694,28 +728,17 @@ for (const [boundary, mutate] of [
 
 test("post-merge branches use current main as their change base and retire T085 scope", () => {
   const root = makeFixture()
-  const git = (...args) =>
-    execFileSync("git", args, {
-      cwd: root,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "pipe"]
-    }).trim()
-
-  git("init", "-b", "main")
-  git("config", "user.name", "Traceability Test")
-  git("config", "user.email", "traceability@example.invalid")
-  git("add", ".")
-  git("commit", "-m", "merge T085 implementation")
-  const currentMain = git("rev-parse", "HEAD")
-  git("update-ref", "refs/remotes/origin/main", currentMain)
-  git("switch", "-c", "future-change")
+  const currentMain = initializeGitFixture(root)
+  git(root, "update-ref", "refs/remotes/origin/main", currentMain)
+  git(root, "switch", "-c", "future-change")
   fs.writeFileSync(path.join(root, "future.txt"), "future work\n")
-  git("add", "future.txt")
-  git("commit", "-m", "future work")
+  git(root, "add", "future.txt")
+  git(root, "commit", "-m", "future work")
 
   assert.equal(typeof traceabilityValidator.inspectGit, "function")
   const inspection = traceabilityValidator.inspectGit(root)
   assert.equal(inspection.change_base_sha, currentMain)
+  assert.equal(inspection.bounded_scope_active, false)
   assert.deepEqual(inspection.changedPaths, ["future.txt"])
 
   const report = validateTraceability({
@@ -723,10 +746,88 @@ test("post-merge branches use current main as their change base and retire T085 
     currentHead: inspection.head,
     gitBinding: inspection,
     changedPaths: inspection.changedPaths,
-    changeBaseSha: inspection.change_base_sha
+    changeBaseSha: inspection.change_base_sha,
+    boundedScopeActive: inspection.bounded_scope_active
   })
   assert.equal(report.status, "PASS", report.errors.join("\n"))
   assert.equal(report.scope_validation.bounded_scope_active, false)
+})
+
+test("an advanced base without the T085 artifact keeps the bounded scope active", () => {
+  const root = makeFixture()
+  const traceabilityPath = path.join(root, featurePath, "traceability.md")
+  const traceability = fs.readFileSync(traceabilityPath, "utf8")
+  fs.unlinkSync(traceabilityPath)
+  const advancedBase = initializeGitFixture(root)
+  git(root, "update-ref", "refs/remotes/origin/main", advancedBase)
+  git(root, "switch", "-c", "t085-rebased")
+  fs.writeFileSync(traceabilityPath, traceability)
+  fs.writeFileSync(path.join(root, "future.txt"), "unbounded work\n")
+  git(root, "add", ".")
+  git(root, "commit", "-m", "implement T085 with scope drift")
+
+  const inspection = traceabilityValidator.inspectGit(root, { environment: {} })
+  assert.equal(inspection.change_base_sha, advancedBase)
+  assert.equal(inspection.bounded_scope_active, true)
+  const report = validateTraceability({
+    root,
+    currentHead: inspection.head,
+    gitBinding: inspection,
+    changedPaths: inspection.changedPaths,
+    changeBaseSha: inspection.change_base_sha,
+    boundedScopeActive: inspection.bounded_scope_active
+  })
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /outside the authorized T085 scope: future\.txt/)
+})
+
+test("shallow pull-request inspection fails closed when the event base object is absent", () => {
+  const root = makeFixture()
+  const currentMain = initializeGitFixture(root)
+  git(root, "update-ref", "refs/remotes/origin/main", currentMain)
+  git(root, "switch", "-c", "pull-request")
+  fs.writeFileSync(path.join(root, "future.txt"), "future work\n")
+  git(root, "add", "future.txt")
+  git(root, "commit", "-m", "future work")
+  const eventRoot = fs.mkdtempSync(path.join(os.tmpdir(), "courtside-event-"))
+  const eventPath = path.join(eventRoot, "event.json")
+  fs.writeFileSync(eventPath, JSON.stringify({ pull_request: { base: { sha: "f".repeat(40) } } }))
+
+  const inspection = traceabilityValidator.inspectGit(root, {
+    environment: { GITHUB_ACTIONS: "true", GITHUB_EVENT_PATH: eventPath }
+  })
+  assert.equal(inspection.change_base_sha, null)
+  assert.equal(inspection.changedPaths, null)
+  const report = validateTraceability({
+    root,
+    currentHead: inspection.head,
+    gitBinding: inspection,
+    changedPaths: inspection.changedPaths,
+    changeBaseSha: inspection.change_base_sha,
+    boundedScopeActive: inspection.bounded_scope_active,
+    requireAuditedScope: true
+  })
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /CI validation requires an audited current-change diff/)
+})
+
+test("push inspection uses event.before when origin main already points at HEAD", () => {
+  const root = makeFixture()
+  const before = initializeGitFixture(root)
+  fs.writeFileSync(path.join(root, "future.txt"), "future work\n")
+  git(root, "add", "future.txt")
+  git(root, "commit", "-m", "future work")
+  const head = git(root, "rev-parse", "HEAD")
+  git(root, "update-ref", "refs/remotes/origin/main", head)
+  const eventRoot = fs.mkdtempSync(path.join(os.tmpdir(), "courtside-event-"))
+  const eventPath = path.join(eventRoot, "event.json")
+  fs.writeFileSync(eventPath, JSON.stringify({ before }))
+
+  const inspection = traceabilityValidator.inspectGit(root, {
+    environment: { GITHUB_ACTIONS: "true", GITHUB_EVENT_PATH: eventPath }
+  })
+  assert.equal(inspection.change_base_sha, before)
+  assert.deepEqual(inspection.changedPaths, ["future.txt"])
 })
 
 test("composite VERIFIED rows retain clause-complete semantic proof", () => {
