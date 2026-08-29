@@ -744,17 +744,19 @@ const javaScriptFunctionTypes = new Set([
   "FunctionExpression"
 ])
 
-function unwrapJavaScriptExpression(node) {
+function normalizeJavaScriptExpression(node) {
   let current = node
+  let ambiguous = false
   while (
     current &&
     transparentJavaScriptExpressionTypes.has(current.type) &&
     current.expression &&
     current.expression !== current
   ) {
+    if (current.type === "ChainExpression") ambiguous = true
     current = current.expression
   }
-  return current
+  return { ambiguous, expression: current }
 }
 
 function staticJavaScriptMemberProperty(node) {
@@ -781,30 +783,35 @@ function staticJavaScriptMemberProperty(node) {
 }
 
 function javaScriptMemberPath(node) {
-  const expression = unwrapJavaScriptExpression(node)
+  const normalized = normalizeJavaScriptExpression(node)
+  const expression = normalized.expression
+  const ambiguous = normalized.ambiguous || expression?.optional === true
   if (expression?.type === "Identifier") {
-    return { ambiguous: false, segments: [expression.name] }
+    return { ambiguous, segments: [expression.name] }
   }
   if (expression?.type === "CallExpression") {
-    return javaScriptMemberPath(expression.callee)
+    const calleePath = javaScriptMemberPath(expression.callee)
+    return { ambiguous: ambiguous || calleePath.ambiguous, segments: calleePath.segments }
   }
   if (expression?.type === "TaggedTemplateExpression") {
-    return javaScriptMemberPath(expression.tag)
+    const tagPath = javaScriptMemberPath(expression.tag)
+    return { ambiguous: ambiguous || tagPath.ambiguous, segments: tagPath.segments }
   }
   if (expression?.type !== "MemberExpression") {
-    return { ambiguous: false, segments: [] }
+    return { ambiguous, segments: [] }
   }
 
   const objectPath = javaScriptMemberPath(expression.object)
   const property = staticJavaScriptMemberProperty(expression)
   return {
-    ambiguous: objectPath.ambiguous || !property.known,
+    ambiguous: ambiguous || objectPath.ambiguous || !property.known,
     segments: property.known ? [...objectPath.segments, property.value] : objectPath.segments
   }
 }
 
 function classifyJavaScriptSuiteCall(node) {
-  const expression = unwrapJavaScriptExpression(node)
+  const normalized = normalizeJavaScriptExpression(node)
+  const expression = normalized.expression
   if (expression?.type !== "CallExpression") return "unknown"
   const memberPath = javaScriptMemberPath(expression.callee)
   if (["xcontext", "xdescribe", "xsuite"].includes(memberPath.segments[0])) {
@@ -818,7 +825,9 @@ function classifyJavaScriptSuiteCall(node) {
         ? 1
         : null
   if (modifierStart === null) return "unknown"
-  if (memberPath.ambiguous) return "ambiguous"
+  if (normalized.ambiguous || expression.optional === true || memberPath.ambiguous) {
+    return "ambiguous"
+  }
 
   const modifiers = memberPath.segments.slice(modifierStart)
   if (modifiers.some((modifier) => disabledJavaScriptSuiteModifiers.has(modifier))) {
@@ -883,7 +892,7 @@ function walkJavaScriptAst(node, visitor, ancestors = [], seen = new WeakSet()) 
 }
 
 function javaScriptProofCall(node, targetOffset, selector, textLength) {
-  if (node?.type !== "CallExpression") return false
+  if (node?.type !== "CallExpression" || node.optional === true) return false
   const expression = node
 
   const memberPath = javaScriptMemberPath(expression.callee)
