@@ -26,6 +26,9 @@ export const ACCEPTED_PENDING_TASKS_SHA256 =
   "23190fbeab15b181800ddb275478f058cc0a0514e581b8f3c2aaeb82c184b1f3"
 export const ACCEPTED_COMPLETED_TASKS_SHA256 =
   "90b950e3522e9d6e119f57d92d4ab9f8d3fe013b456450415a8abbdd70f446c3"
+export const ACCEPTED_RECEIPT_OWNER = "bynanci"
+export const ACCEPTED_RECEIPT_AUTHORIZATION_REF =
+  "https://github.com/bynanci/courtside-tw/issues/145#issuecomment-5459765126"
 export const ACCEPTED_IMPLEMENTATION_CHANGED_PATHS = Object.freeze([
   ".github/workflows/ci.yml",
   ".loop/evidence/t085-dispatch.json",
@@ -100,6 +103,10 @@ function isT086LockedPath(changedPath) {
     changedPath.startsWith(".loop/evidence/t086") ||
     changedPath.startsWith(".loop/t086")
   )
+}
+
+function isPostT085ResearchDocumentationPath(changedPath) {
+  return changedPath.startsWith("docs/research/")
 }
 const authorizedChangedPaths = new Set(ACCEPTED_IMPLEMENTATION_CHANGED_PATHS)
 const receiptSupportChangedPaths = new Set([
@@ -656,6 +663,12 @@ function validateCompletionReceipt({
   }
   requireString(receipt.accepted_by, "completion receipt accepted_by", errors)
   requireString(receipt.authorization_ref, "completion receipt authorization_ref", errors)
+  if (receipt.accepted_by !== ACCEPTED_RECEIPT_OWNER) {
+    errors.push("completion receipt accepted_by must equal the authorized repository owner")
+  }
+  if (receipt.authorization_ref !== ACCEPTED_RECEIPT_AUTHORIZATION_REF) {
+    errors.push("completion receipt authorization_ref must equal the pinned owner authorization")
+  }
   if (!isIsoTimestamp(receipt.recorded_at)) {
     errors.push("completion receipt recorded_at must be an ISO-8601 UTC timestamp")
   }
@@ -1047,6 +1060,11 @@ export function validateTraceability({
   }
   if (state === t085States.COMPLETE_STEADY) {
     for (const changedPath of changedPaths ?? []) {
+      if (!isPostT085ResearchDocumentationPath(changedPath)) {
+        errors.push(
+          `changed path is outside the authorized post-T085 research-documentation scope: ${changedPath}`
+        )
+      }
       if (isT086LockedPath(changedPath)) {
         errors.push(
           `changed path requires separately authorized T086 validator evolution: ${changedPath}`
@@ -1628,7 +1646,9 @@ export function validateTraceability({
               : state === t085States.PENDING
                 ? null
                 : state === t085States.COMPLETE_STEADY && Array.isArray(changedPaths)
-                  ? changedPaths.filter(isT086LockedPath)
+                  ? changedPaths.filter(
+                      (changedPath) => !isPostT085ResearchDocumentationPath(changedPath)
+                    )
                   : state === t085States.COMPLETE_STEADY
                     ? null
                     : null
