@@ -29,6 +29,7 @@ export const ACCEPTED_COMPLETED_TASKS_SHA256 =
 export const ACCEPTED_RECEIPT_OWNER = "bynanci"
 export const ACCEPTED_RECEIPT_AUTHORIZATION_REF =
   "https://github.com/bynanci/courtside-tw/issues/145#issuecomment-5459765126"
+export const ACCEPTED_RECEIPT_AUTHORIZATION_RECORDED_AT = "2026-08-29T02:24:09Z"
 export const ACCEPTED_IMPLEMENTATION_CHANGED_PATHS = Object.freeze([
   ".github/workflows/ci.yml",
   ".loop/evidence/t085-dispatch.json",
@@ -885,6 +886,7 @@ function validateCompletionGate(receipt, name, jobs, acceptedRunId, errors) {
 function validateCompletionReceipt({
   receipt,
   state,
+  evaluatedHeadCommittedAt,
   changeBaseSha,
   changeBaseTasksText,
   changeBaseTraceabilityText,
@@ -921,6 +923,22 @@ function validateCompletionReceipt({
   }
   if (!isIsoTimestamp(receipt.recorded_at)) {
     errors.push("completion receipt recorded_at must be an ISO-8601 UTC timestamp")
+  }
+  if (!isIsoTimestamp(evaluatedHeadCommittedAt)) {
+    errors.push("completion receipt requires a trusted evaluated head commit timestamp")
+  }
+  if (
+    isIsoTimestamp(receipt.recorded_at) &&
+    Date.parse(receipt.recorded_at) < Date.parse(ACCEPTED_RECEIPT_AUTHORIZATION_RECORDED_AT)
+  ) {
+    errors.push("completion receipt recorded_at must not predate the pinned owner authorization")
+  }
+  if (
+    isIsoTimestamp(receipt.recorded_at) &&
+    isIsoTimestamp(evaluatedHeadCommittedAt) &&
+    Date.parse(receipt.recorded_at) > Date.parse(evaluatedHeadCommittedAt)
+  ) {
+    errors.push("completion receipt recorded_at must not postdate the evaluated head commit")
   }
   if (receipt.repository !== "bynanci/courtside-tw") {
     errors.push("completion receipt repository must be bynanci/courtside-tw")
@@ -1191,6 +1209,7 @@ function validateScope(contract, taskStatus, state, completionReceiptPresent, er
 export function validateTraceability({
   root,
   currentHead = null,
+  evaluatedHeadCommittedAt = null,
   gitBinding = null,
   changedPaths = null,
   changeBaseSha = REVIEW_BASE_SHA,
@@ -1244,6 +1263,13 @@ export function validateTraceability({
   }
   if (gitBinding?.head && gitBinding.head !== currentHead) {
     errors.push("git binding head must equal currentHead")
+  }
+  if (
+    gitBinding?.head_committed_at !== undefined &&
+    evaluatedHeadCommittedAt !== null &&
+    gitBinding.head_committed_at !== evaluatedHeadCommittedAt
+  ) {
+    errors.push("git binding head commit timestamp must equal evaluatedHeadCommittedAt")
   }
   if (gitBinding?.change_base_sha !== undefined && gitBinding.change_base_sha !== changeBaseSha) {
     errors.push("git binding change base must equal changeBaseSha")
@@ -1734,11 +1760,12 @@ export function validateTraceability({
 
     if (
       [t085States.RECEIPT_CANDIDATE, t085States.COMPLETE_STEADY].includes(state) &&
-      completionReceipt !== null
+      completionReceiptText !== null
     ) {
       validateCompletionReceipt({
         receipt: completionReceipt,
         state,
+        evaluatedHeadCommittedAt,
         changeBaseSha,
         changeBaseTasksText,
         changeBaseTraceabilityText,
@@ -1825,6 +1852,7 @@ export function validateTraceability({
       authorized_base_sha: contract?.authorized_base_sha ?? dispatch?.base?.sha ?? null,
       review_base_sha: reviewBaseSha,
       evaluated_head_sha: currentHead,
+      evaluated_head_committed_at: evaluatedHeadCommittedAt,
       exact_head_evidence: exactHeadEvidence,
       github_actions_context: githubActionsContext
         ? {
@@ -2099,6 +2127,13 @@ export function inspectGit(root, { environment = process.env } = {}) {
       encoding: "utf8",
       stdio: ["ignore", "pipe", "ignore"]
     }).trim()
+    const headCommittedAt = new Date(
+      execFileSync("git", ["show", "-s", "--format=%cI", head], {
+        cwd: root,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"]
+      }).trim()
+    ).toISOString()
     const porcelain = execFileSync("git", ["status", "--porcelain=v1", "--untracked-files=all"], {
       cwd: root,
       encoding: "utf8",
@@ -2156,6 +2191,7 @@ export function inspectGit(root, { environment = process.env } = {}) {
     }
     return {
       head,
+      head_committed_at: headCommittedAt,
       status,
       authorized_base_ancestor: authorizedBaseAncestor,
       review_base_ancestor: reviewBaseAncestor,
@@ -2174,6 +2210,7 @@ export function inspectGit(root, { environment = process.env } = {}) {
   } catch {
     return {
       head: null,
+      head_committed_at: null,
       status: "UNAVAILABLE",
       authorized_base_ancestor: null,
       review_base_ancestor: null,
@@ -2201,9 +2238,11 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
   const report = validateTraceability({
     root,
     currentHead: inspection.head,
+    evaluatedHeadCommittedAt: inspection.head_committed_at,
     gitBinding: {
       status: inspection.status,
       head: inspection.head,
+      head_committed_at: inspection.head_committed_at,
       authorized_base_ancestor: inspection.authorized_base_ancestor,
       review_base_ancestor: inspection.review_base_ancestor,
       change_base_ref: inspection.change_base_ref,
