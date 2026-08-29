@@ -1661,6 +1661,10 @@ for (const [suite, source] of [
   [
     "regex-bearing describe.skip",
     'describe.skip(/[)}]/u, () => {\n  test("fixture-proof", () => {})\n})\n'
+  ],
+  [
+    "comment-like regex before describe.skip",
+    'const marker = /[/*]/u\ndescribe.skip("disabled */ suite", () => {\n  test("fixture-proof", () => {})\n})\n'
   ]
 ]) {
   test(`a test inside ${suite} cannot serve as executable proof`, () => {
@@ -1680,6 +1684,20 @@ test("a test after a closed skipped suite remains an executable proof", () => {
     files["tests/closed-skipped-suite-proof.test.js"] =
       'describe.skip("disabled suite", () => {\n  test("different-proof", () => {})\n})\n' +
       'test("fixture-proof", () => {})\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+test("a CRLF test after a closed skipped suite remains executable", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/crlf-closed-skipped-suite-proof.test.js"
+    files["tests/crlf-closed-skipped-suite-proof.test.js"] =
+      'describe.skip("disabled suite", () => {\r\n' +
+      '  test("different-proof", () => {})\r\n' +
+      "\r\n".repeat(20) +
+      "})\r\n" +
+      'test("fixture-proof", () => {})\r\n'
   })
   const report = run(root)
   assert.equal(report.status, "PASS", report.errors.join("\n"))
