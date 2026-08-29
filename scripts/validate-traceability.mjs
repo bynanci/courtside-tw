@@ -1309,7 +1309,9 @@ function javaScriptProofCall(node, targetOffset, selector, textLength, bindings)
       return false
     }
     const options = args.length >= 2 && !isInlineJavaScriptFunction(args[1]) ? args[1] : null
-    if (classifyNodeTestOptions(options) !== "active") return false
+    if (classifyNodeTestOptions(options, { rejectCallbackOverride: true }) !== "active") {
+      return false
+    }
   }
 
   const title = expression.arguments?.[0]

@@ -2211,6 +2211,18 @@ for (const [optionsKind, source] of [
   })
 }
 
+test("a node:test callback overridden through options cannot serve as proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/overridden-test-callback-proof.test.js"
+    files["tests/overridden-test-callback-proof.test.js"] =
+      'import test from "node:test"\n' +
+      'test("fixture-proof", { fn: () => {} }, () => { throw new Error("proof") })\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+})
+
 for (const [optionsKind, declaration, options] of [
   ["dynamic", "const options = { skip: true }\n", "options"],
   ["spread", "", "{ ...{ todo: true } }"]
