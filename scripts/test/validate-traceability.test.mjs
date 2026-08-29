@@ -37,6 +37,11 @@ const completionReceiptPath = ".loop/evidence/t085-completion-receipt.json"
 const completionReceiptSchema = "courtside-t085-completion-receipt/v1"
 const fixtureReceiptHead = "1111111111111111111111111111111111111111"
 const fixtureReceiptBase = "2222222222222222222222222222222222222222"
+const fixtureActionsMergeSha = "3333333333333333333333333333333333333333"
+const fixtureActionsRunId = "33229999999"
+const fixtureActionsRunNumber = "999"
+const fixtureActionsRunAttempt = "1"
+const fixtureActionsHeadRef = "codex/t085-completion-receipt"
 const fixtureImplementationHead = "27b955581a909e292ae4fe6c1fb05de0e94753da"
 const fixtureImplementationMerge = "a2491b81066ac225a0b5d2dab93be79fb6dfbe65"
 const fixtureCompletedBase = "5555555555555555555555555555555555555555"
@@ -360,7 +365,18 @@ function makeReceiptFixture(mutate = () => {}) {
     files[`${featurePath}/tasks.md`] = baseTasksText.replace(/^- \[ \] T085\b/m, "- [x] T085")
     files["artifacts/exact-head.json"] = JSON.stringify({
       source_head_sha: fixtureReceiptHead,
-      expected_source_head: fixtureReceiptHead
+      expected_source_head: fixtureReceiptHead,
+      source_event: "pull_request",
+      source_ref: fixtureActionsHeadRef,
+      github_sha: fixtureActionsMergeSha,
+      github_repository: "bynanci/courtside-tw",
+      github_workflow: "CI",
+      github_job: "frontend-contract",
+      github_run_id: fixtureActionsRunId,
+      github_run_number: fixtureActionsRunNumber,
+      github_run_attempt: fixtureActionsRunAttempt,
+      github_ref: "refs/pull/151/merge",
+      github_base_ref: "main"
     })
     receiptContext = {
       receipt,
@@ -402,6 +418,44 @@ function run(root, overrides = {}) {
   })
 }
 
+function makeFixtureActionsContext(root, environmentOverrides = {}) {
+  if (typeof traceabilityValidator.inspectGitHubActionsContext !== "function") return null
+  const eventPath = path.join(root, "github-pull-request-event.json")
+  fs.writeFileSync(
+    eventPath,
+    JSON.stringify({
+      repository: { full_name: "bynanci/courtside-tw" },
+      pull_request: {
+        head: { sha: fixtureReceiptHead, ref: fixtureActionsHeadRef },
+        base: { sha: fixtureReceiptBase, ref: "main" }
+      }
+    })
+  )
+  return traceabilityValidator.inspectGitHubActionsContext({
+    environment: {
+      GITHUB_ACTIONS: "true",
+      GITHUB_REPOSITORY: "bynanci/courtside-tw",
+      GITHUB_EVENT_NAME: "pull_request",
+      GITHUB_EVENT_PATH: eventPath,
+      GITHUB_SHA: fixtureActionsMergeSha,
+      GITHUB_WORKFLOW: "CI",
+      GITHUB_JOB: "frontend-contract",
+      GITHUB_RUN_ID: fixtureActionsRunId,
+      GITHUB_RUN_NUMBER: fixtureActionsRunNumber,
+      GITHUB_RUN_ATTEMPT: fixtureActionsRunAttempt,
+      GITHUB_REF: "refs/pull/151/merge",
+      GITHUB_BASE_REF: "main",
+      GITHUB_HEAD_REF: fixtureActionsHeadRef,
+      ...environmentOverrides
+    },
+    gitBinding: {
+      head: fixtureReceiptHead,
+      change_base_sha: fixtureReceiptBase,
+      change_base_ancestor: true
+    }
+  })
+}
+
 function runReceiptFixture(fixture, overrides = {}) {
   return run(fixture.root, {
     changedPaths: fixture.changedPaths,
@@ -411,6 +465,7 @@ function runReceiptFixture(fixture, overrides = {}) {
     changeBaseTasksText: fixture.changeBaseTasksText,
     changeBaseTraceabilityText: fixture.changeBaseTraceabilityText,
     requireExactHeadEvidence: true,
+    githubActionsContext: makeFixtureActionsContext(fixture.root),
     acceptedTraceabilitySha256: fixture.acceptedTraceabilitySha256,
     acceptedPendingTasksSha256: fixture.acceptedPendingTasksSha256,
     acceptedCompletedTasksSha256: fixture.acceptedCompletedTasksSha256,
@@ -1117,6 +1172,45 @@ test("local structural exact-head evidence cannot make a receipt candidate autho
   )
 })
 
+test("generic CI context cannot make a receipt candidate authoritative", () => {
+  const fixture = makeReceiptFixture()
+  const githubActionsContext =
+    typeof traceabilityValidator.inspectGitHubActionsContext === "function"
+      ? traceabilityValidator.inspectGitHubActionsContext({
+          environment: { CI: "true" },
+          gitBinding: {
+            head: fixtureReceiptHead,
+            change_base_sha: fixtureReceiptBase,
+            change_base_ancestor: true
+          }
+        })
+      : null
+  const report = runReceiptFixture(fixture, { githubActionsContext })
+
+  assert.equal(report.status, "FAIL")
+  assert.equal(report.receipt_eligible, false)
+  assert.match(
+    report.errors.join("\n"),
+    /authoritative receipt validation requires authenticated GitHub Actions context/
+  )
+})
+
+test("receipt candidate rejects self-supplied Actions artifact metadata", () => {
+  const fixture = makeReceiptFixture()
+  const exactHeadPath = path.join(fixture.root, "artifacts/exact-head.json")
+  const exactHead = JSON.parse(fs.readFileSync(exactHeadPath, "utf8"))
+  exactHead.github_run_id = "99999999999"
+  fs.writeFileSync(exactHeadPath, JSON.stringify(exactHead))
+  const report = runReceiptFixture(fixture)
+
+  assert.equal(report.status, "FAIL")
+  assert.equal(report.receipt_eligible, false)
+  assert.match(
+    report.errors.join("\n"),
+    /artifacts\/exact-head\.json metadata must match the authenticated GitHub Actions context/
+  )
+})
+
 test("receipt candidate rejects a receipt that was already present at its audited base", () => {
   const fixture = makeReceiptFixture()
   const report = runReceiptFixture(fixture, {
@@ -1173,6 +1267,13 @@ for (const [name, mutate, expected] of [
       receipt.actor_type = "AGENT"
     },
     /completion receipt actor_type must be HUMAN/
+  ],
+  [
+    "an impossible calendar timestamp",
+    ({ receipt }) => {
+      receipt.recorded_at = "2026-02-30T00:00:00Z"
+    },
+    /completion receipt recorded_at must be an ISO-8601 UTC timestamp/
   ],
   [
     "an untrusted receipt owner",
