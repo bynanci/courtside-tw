@@ -300,7 +300,7 @@ function makeReceiptFixture(mutate = () => {}) {
       actor_type: "HUMAN",
       accepted_by: fixtureReceiptOwner,
       authorization_ref: fixtureReceiptAuthorizationRef,
-      recorded_at: "2026-08-29T00:00:00Z",
+      recorded_at: "2026-08-29T03:00:00Z",
       repository: "bynanci/courtside-tw",
       issue: "https://github.com/bynanci/courtside-tw/issues/145",
       implementation_head_sha: fixtureImplementationHead,
@@ -521,6 +521,7 @@ function runReceiptFixture(fixture, overrides = {}) {
     boundedScopeActive: false,
     changeBaseTasksText: fixture.changeBaseTasksText,
     changeBaseTraceabilityText: fixture.changeBaseTraceabilityText,
+    evaluatedHeadCommittedAt: "2026-08-29T04:00:00Z",
     requireExactHeadEvidence: true,
     githubActionsContext: makeFixtureActionsContext(fixture.root),
     acceptedTraceabilitySha256: fixture.acceptedTraceabilitySha256,
@@ -562,6 +563,7 @@ function runCompletedFixture(fixture, overrides = {}) {
   return run(fixture.root, {
     changedPaths: fixture.changedPaths,
     changeBaseSha: fixtureCompletedBase,
+    evaluatedHeadCommittedAt: "2026-08-29T04:00:00Z",
     boundedScopeActive: false,
     changeBaseTasksText: fixture.changeBaseTasksText,
     changeBaseTraceabilityText: fixture.changeBaseTraceabilityText,
@@ -1299,6 +1301,28 @@ test("receipt mode rejects duplicate object keys before JSON parsing", () => {
   assert.match(report.errors.join("\n"), /duplicate JSON object key: decision/)
 })
 
+test("receipt mode rejects a JSON null completion receipt", () => {
+  const fixture = makeReceiptFixture()
+  fs.writeFileSync(path.join(fixture.root, completionReceiptPath), "null\n")
+  const report = runReceiptFixture(fixture)
+
+  assert.equal(report.status, "FAIL")
+  assert.equal(report.receipt_eligible, false)
+  assert.match(report.errors.join("\n"), /checked T085 requires a structured completion receipt/)
+})
+
+test("receipt mode requires an evaluated head commit timestamp", () => {
+  const fixture = makeReceiptFixture()
+  const report = runReceiptFixture(fixture, { evaluatedHeadCommittedAt: null })
+
+  assert.equal(report.status, "FAIL")
+  assert.equal(report.receipt_eligible, false)
+  assert.match(
+    report.errors.join("\n"),
+    /completion receipt requires a trusted evaluated head commit timestamp/
+  )
+})
+
 test("receipt candidate rejects a receipt that was already present at its audited base", () => {
   const fixture = makeReceiptFixture()
   const report = runReceiptFixture(fixture, {
@@ -1362,6 +1386,20 @@ for (const [name, mutate, expected] of [
       receipt.recorded_at = "2026-02-30T00:00:00Z"
     },
     /completion receipt recorded_at must be an ISO-8601 UTC timestamp/
+  ],
+  [
+    "a timestamp before the pinned owner authorization",
+    ({ receipt }) => {
+      receipt.recorded_at = "2026-08-29T02:24:08Z"
+    },
+    /completion receipt recorded_at must not predate the pinned owner authorization/
+  ],
+  [
+    "a timestamp after the evaluated head commit",
+    ({ receipt }) => {
+      receipt.recorded_at = "2026-08-29T04:00:01Z"
+    },
+    /completion receipt recorded_at must not postdate the evaluated head commit/
   ],
   [
     "an untrusted receipt owner",
