@@ -7,6 +7,40 @@ import { fileURLToPath, pathToFileURL } from "node:url"
 import { isDeepStrictEqual } from "node:util"
 
 export const TRACEABILITY_SCHEMA = "courtside-traceability/v1"
+export const COMPLETION_RECEIPT_SCHEMA = "courtside-t085-completion-receipt/v1"
+export const COMPLETION_RECEIPT_PATH = ".loop/evidence/t085-completion-receipt.json"
+export const ACCEPTED_IMPLEMENTATION_HEAD_SHA = "27b955581a909e292ae4fe6c1fb05de0e94753da"
+export const ACCEPTED_IMPLEMENTATION_MERGE_SHA = "a2491b81066ac225a0b5d2dab93be79fb6dfbe65"
+export const ACCEPTED_CI_RUN_ID = 33226451857
+export const ACCEPTED_SECURITY_RUN_ID = 33226451860
+export const ACCEPTED_FRONTEND_ARTIFACT_ID = 9707044002
+export const ACCEPTED_FRONTEND_ARCHIVE_SHA256 =
+  "88baa1d7bd1e3ef08193b7d65799484d16363677c7c446001fa531efb6a8706f"
+export const ACCEPTED_EXACT_HEAD_ARTIFACT_SHA256 =
+  "8126aebe79e1cacbbdcac5136373cc2cfa889b9c09264e1ce75cbf06d506e803"
+export const ACCEPTED_TRACEABILITY_REPORT_SHA256 =
+  "5e6201ee0b646e0d9c619b440cccf0dd6928bede6869032fa81d06d05bd9a440"
+export const ACCEPTED_TRACEABILITY_SHA256 =
+  "026581386d6e99e9bf1a2f124a9360e9cfd65088b8734177759801caa0723bed"
+export const ACCEPTED_PENDING_TASKS_SHA256 =
+  "23190fbeab15b181800ddb275478f058cc0a0514e581b8f3c2aaeb82c184b1f3"
+export const ACCEPTED_COMPLETED_TASKS_SHA256 =
+  "90b950e3522e9d6e119f57d92d4ab9f8d3fe013b456450415a8abbdd70f446c3"
+export const ACCEPTED_IMPLEMENTATION_CHANGED_PATHS = Object.freeze([
+  ".github/workflows/ci.yml",
+  ".loop/evidence/t085-dispatch.json",
+  ".loop/evidence/t085-local.json",
+  ".loop/evidence/t085-red.json",
+  ".loop/evidence/t085-review.json",
+  ".loop/t085-traceability-ledger.json",
+  ".loop/t085-traceability.yaml",
+  "Makefile",
+  "package.json",
+  "scripts/test/validate-traceability.test.mjs",
+  "scripts/validate-traceability.mjs",
+  "specs/001-taiwan-basketball-magazine-ebook/plan.md",
+  "specs/001-taiwan-basketball-magazine-ebook/traceability.md"
+])
 export const CONTRACT_START = "<!-- t085:contract:start -->"
 export const CONTRACT_END = "<!-- t085:contract:end -->"
 export const AUTHORIZED_BASE_SHA = "3fc14dd29b216ce46e4d364ceaec79a971dcef44"
@@ -54,20 +88,23 @@ const implementationCheckedTasks = new Set([
   ...Array.from({ length: 84 }, (_, index) => `T${String(index + 1).padStart(3, "0")}`),
   "T097"
 ])
-const authorizedChangedPaths = new Set([
-  ".github/workflows/ci.yml",
-  ".loop/evidence/t085-dispatch.json",
-  ".loop/evidence/t085-local.json",
-  ".loop/evidence/t085-red.json",
-  ".loop/evidence/t085-review.json",
-  ".loop/t085-traceability-ledger.json",
-  ".loop/t085-traceability.yaml",
-  "Makefile",
-  "package.json",
+const receiptChangedPaths = [
+  COMPLETION_RECEIPT_PATH,
+  "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+]
+const t086LockedPaths = new Set([".github/workflows/release.yml", "docs/release/beta-checklist.md"])
+
+function isT086LockedPath(changedPath) {
+  return (
+    t086LockedPaths.has(changedPath) ||
+    changedPath.startsWith(".loop/evidence/t086") ||
+    changedPath.startsWith(".loop/t086")
+  )
+}
+const authorizedChangedPaths = new Set(ACCEPTED_IMPLEMENTATION_CHANGED_PATHS)
+const receiptSupportChangedPaths = new Set([
   "scripts/test/validate-traceability.test.mjs",
-  "scripts/validate-traceability.mjs",
-  "specs/001-taiwan-basketball-magazine-ebook/plan.md",
-  "specs/001-taiwan-basketball-magazine-ebook/traceability.md"
+  "scripts/validate-traceability.mjs"
 ])
 const expectedDispatch = {
   schema_version: "courtside-t085-dispatch/v1",
@@ -148,6 +185,33 @@ function sameValues(left, right) {
 
 function sha256(text) {
   return text === null ? null : createHash("sha256").update(text).digest("hex")
+}
+
+const t085States = Object.freeze({
+  PENDING: "T085_PENDING",
+  RECEIPT_CANDIDATE: "T085_RECEIPT_CANDIDATE",
+  COMPLETE_STEADY: "T085_COMPLETE_STEADY",
+  ROLLBACK: "T085_INVALID_ROLLBACK",
+  UNKNOWN: "T085_INVALID_UNKNOWN"
+})
+
+function t085Checkbox(text) {
+  if (typeof text !== "string") return null
+  const matches = [...text.matchAll(/^- \[([ xX])\] T085\b/gm)]
+  return matches.length === 1 ? matches[0][1].toLowerCase() === "x" : null
+}
+
+function classifyT085State(changeBaseTasksText, tasksText) {
+  const baseChecked = t085Checkbox(changeBaseTasksText)
+  const currentChecked = t085Checkbox(tasksText)
+  if (baseChecked === true && currentChecked === false) return t085States.ROLLBACK
+  if (baseChecked === true && currentChecked === true) return t085States.COMPLETE_STEADY
+  if (baseChecked === false && currentChecked === true) return t085States.RECEIPT_CANDIDATE
+  if (currentChecked === false && (baseChecked === false || baseChecked === null)) {
+    return t085States.PENDING
+  }
+  if (currentChecked === true && baseChecked === null) return t085States.RECEIPT_CANDIDATE
+  return t085States.UNKNOWN
 }
 
 function distribution(rows, key) {
@@ -541,14 +605,287 @@ function validateProof(root, proof, requirementId, label, errors) {
   }
 }
 
-function validateScope(contract, taskStatus, errors) {
+function validateCompletionGate(receipt, name, jobs, acceptedRunId, errors) {
+  const gate = receipt?.gates?.[name]
+  const gateLabel = name === "ci" ? "CI" : "security"
+  const runLabel = name === "ci" ? "CI" : "Security"
+  if (
+    gate?.result !== "PASS" ||
+    gate?.jobs !== jobs ||
+    gate?.source_head_sha !== receipt?.implementation_head_sha ||
+    !Number.isInteger(gate?.run_id) ||
+    gate.run_id <= 0
+  ) {
+    errors.push(`completion receipt ${gateLabel} gate must be exact-head PASS ${jobs}`)
+  }
+  if (gate?.run_id !== acceptedRunId) {
+    errors.push(
+      `completion receipt ${runLabel} run must equal the accepted PR149 run ${acceptedRunId}`
+    )
+  }
+}
+
+function validateCompletionReceipt({
+  receipt,
+  state,
+  changeBaseSha,
+  changeBaseTasksText,
+  changeBaseTraceabilityText,
+  tasksText,
+  traceabilityText,
+  implementationMergeAncestorOfChangeBase,
+  acceptedTraceabilitySha256,
+  acceptedPendingTasksSha256,
+  deviations,
+  lifecycle,
+  errors
+}) {
+  if (!receipt || typeof receipt !== "object" || Array.isArray(receipt)) {
+    errors.push("checked T085 requires a structured completion receipt")
+    return
+  }
+  if (receipt.schema_version !== COMPLETION_RECEIPT_SCHEMA) {
+    errors.push(`completion receipt schema_version must be ${COMPLETION_RECEIPT_SCHEMA}`)
+  }
+  if (receipt.task !== "T085") errors.push("completion receipt task must be T085")
+  if (receipt.decision !== "ACCEPTED") {
+    errors.push("completion receipt decision must be ACCEPTED")
+  }
+  if (receipt.actor_type !== "HUMAN") {
+    errors.push("completion receipt actor_type must be HUMAN")
+  }
+  requireString(receipt.accepted_by, "completion receipt accepted_by", errors)
+  requireString(receipt.authorization_ref, "completion receipt authorization_ref", errors)
+  if (!isIsoTimestamp(receipt.recorded_at)) {
+    errors.push("completion receipt recorded_at must be an ISO-8601 UTC timestamp")
+  }
+  if (receipt.repository !== "bynanci/courtside-tw") {
+    errors.push("completion receipt repository must be bynanci/courtside-tw")
+  }
+  if (receipt.issue !== "https://github.com/bynanci/courtside-tw/issues/145") {
+    errors.push("completion receipt issue must identify issue 145")
+  }
+  if (!/^[0-9a-f]{40}$/.test(receipt.implementation_head_sha ?? "")) {
+    errors.push("completion receipt implementation_head_sha must be a full lowercase commit SHA")
+  }
+  if (receipt.implementation_head_sha !== ACCEPTED_IMPLEMENTATION_HEAD_SHA) {
+    errors.push("completion receipt implementation_head_sha must equal the accepted PR149 head")
+  }
+  if (!/^[0-9a-f]{40}$/.test(receipt.implementation_merge_sha ?? "")) {
+    errors.push("completion receipt implementation_merge_sha must be a full lowercase commit SHA")
+  }
+  if (receipt.implementation_merge_sha !== ACCEPTED_IMPLEMENTATION_MERGE_SHA) {
+    errors.push("completion receipt implementation_merge_sha must equal the accepted PR149 merge")
+  }
+  if (!/^[0-9a-f]{40}$/.test(receipt.receipt_base_sha ?? "")) {
+    errors.push("completion receipt receipt_base_sha must be a full lowercase commit SHA")
+  }
+  if (receipt.protected_main_sha !== undefined) {
+    errors.push("completion receipt must not use the deprecated protected_main_sha field")
+  }
+  if (receipt.implementation_merge_sha === receipt.receipt_base_sha) {
+    errors.push(
+      "completion receipt must not conflate implementation_merge_sha with receipt_base_sha"
+    )
+  }
+  if (state === t085States.RECEIPT_CANDIDATE) {
+    if (receipt.receipt_base_sha !== changeBaseSha) {
+      errors.push("completion receipt receipt_base_sha must equal the audited change base")
+    }
+    if (implementationMergeAncestorOfChangeBase !== true) {
+      errors.push(
+        "completion receipt implementation_merge_sha must be an ancestor of receipt_base_sha"
+      )
+    }
+  }
+
+  if (
+    receipt.implementation_scope?.changed_files !== ACCEPTED_IMPLEMENTATION_CHANGED_PATHS.length
+  ) {
+    errors.push(
+      `completion receipt implementation_scope.changed_files must be ${ACCEPTED_IMPLEMENTATION_CHANGED_PATHS.length}`
+    )
+  }
+  if (
+    !Array.isArray(receipt.implementation_scope?.changed_paths) ||
+    !sameValues(receipt.implementation_scope.changed_paths, ACCEPTED_IMPLEMENTATION_CHANGED_PATHS)
+  ) {
+    errors.push("completion receipt implementation_scope must bind the exact accepted PR149 paths")
+  }
+  if (receipt.implementation_scope?.required_checks !== "14/14") {
+    errors.push("completion receipt implementation_scope.required_checks must be 14/14")
+  }
+
+  validateCompletionGate(receipt, "ci", "5/5", ACCEPTED_CI_RUN_ID, errors)
+  validateCompletionGate(receipt, "security", "8/8", ACCEPTED_SECURITY_RUN_ID, errors)
+  const artifacts = receipt.gates?.exact_head_artifacts
+  if (
+    artifacts?.result !== "PASS" ||
+    artifacts?.source_head_sha !== receipt.implementation_head_sha ||
+    artifacts?.expected_source_head !== receipt.implementation_head_sha
+  ) {
+    errors.push("completion receipt exact-head artifacts must bind the implementation head")
+  }
+  if (artifacts?.artifact_id !== ACCEPTED_FRONTEND_ARTIFACT_ID) {
+    errors.push(
+      `completion receipt exact-head artifacts must bind accepted PR149 artifact ${ACCEPTED_FRONTEND_ARTIFACT_ID}`
+    )
+  }
+  if (
+    artifacts?.github_archive_sha256 !== ACCEPTED_FRONTEND_ARCHIVE_SHA256 ||
+    artifacts?.exact_head_sha256 !== ACCEPTED_EXACT_HEAD_ARTIFACT_SHA256 ||
+    artifacts?.traceability_report_sha256 !== ACCEPTED_TRACEABILITY_REPORT_SHA256
+  ) {
+    errors.push("completion receipt exact-head artifact digests must match accepted PR149 evidence")
+  }
+  if (
+    artifacts?.run_id !== ACCEPTED_CI_RUN_ID ||
+    artifacts?.run_number !== 982 ||
+    artifacts?.run_attempt !== 1
+  ) {
+    errors.push("completion receipt exact-head artifact run must be PR149 CI run 982 attempt 1")
+  }
+  if (receipt.gates?.review_threads?.unresolved !== 0) {
+    errors.push("completion receipt requires zero unresolved review threads")
+  }
+  if (receipt.gates?.mergeability !== "PASS") {
+    errors.push("completion receipt mergeability must be PASS")
+  }
+  if (
+    receipt.gates?.protected_merge?.result !== "PASS" ||
+    receipt.gates?.protected_merge?.expected_head_sha !== receipt.implementation_head_sha ||
+    receipt.gates?.protected_merge?.merge_commit_sha !== receipt.implementation_merge_sha
+  ) {
+    errors.push(
+      "completion receipt protected merge must bind the implementation head and merge SHAs"
+    )
+  }
+
+  if (
+    receipt.traceability_sha256 !== acceptedTraceabilitySha256 ||
+    receipt.traceability_sha256 !== sha256(traceabilityText)
+  ) {
+    errors.push("completion receipt must bind the frozen traceability contract")
+  }
+  if (receipt.tasks_before_sha256 !== acceptedPendingTasksSha256) {
+    errors.push("completion receipt tasks_before_sha256 must bind the audited change base")
+  }
+  if (state === t085States.RECEIPT_CANDIDATE) {
+    if (
+      typeof changeBaseTraceabilityText !== "string" ||
+      changeBaseTraceabilityText !== traceabilityText
+    ) {
+      errors.push("completion receipt must bind the frozen traceability contract")
+    }
+    if (
+      typeof changeBaseTasksText !== "string" ||
+      receipt.tasks_before_sha256 !== sha256(changeBaseTasksText)
+    ) {
+      errors.push("completion receipt tasks_before_sha256 must bind the audited change base")
+    }
+  }
+  if (state === t085States.RECEIPT_CANDIDATE && typeof changeBaseTasksText === "string") {
+    const uncheckedT085Rows = [...changeBaseTasksText.matchAll(/^- \[ \] T085\b/gm)]
+    const expectedTasksText = changeBaseTasksText.replace(/^- \[ \] T085\b/m, "- [x] T085")
+    if (uncheckedT085Rows.length !== 1 || tasksText !== expectedTasksText) {
+      errors.push("receipt candidate tasks.md change must be exactly the T085 checkbox")
+    }
+  }
+
+  const open = deviations.filter((deviation) => deviation?.state === "OPEN")
+  const accepted = deviations.filter((deviation) => deviation?.state === "ACCEPTED")
+  const resolved = deviations.filter((deviation) => deviation?.state === "RESOLVED")
+  const snapshotOpenIds = Array.isArray(receipt.deviation_snapshot?.open_ids)
+    ? receipt.deviation_snapshot.open_ids
+    : []
+  if (
+    receipt.deviation_snapshot?.total !== deviations.length ||
+    receipt.deviation_snapshot?.open !== open.length ||
+    receipt.deviation_snapshot?.accepted !== accepted.length ||
+    receipt.deviation_snapshot?.resolved !== resolved.length ||
+    snapshotOpenIds.length !== open.length ||
+    !sameValues(
+      snapshotOpenIds,
+      open.map((deviation) => deviation.id)
+    )
+  ) {
+    errors.push("completion receipt deviation snapshot must exactly preserve the contract")
+  }
+
+  for (const flag of [
+    "t086_dispatched",
+    "participant_research_executed",
+    "web3_activated",
+    "production_activated",
+    "provider_configured",
+    "secrets_changed"
+  ]) {
+    if (receipt.scope_boundaries?.[flag] !== false || lifecycle?.[flag] !== false) {
+      errors.push(`completion receipt scope_boundaries.${flag} must remain false`)
+    }
+  }
+}
+
+function validateAcceptedSnapshots({
+  state,
+  tasksText,
+  traceabilityText,
+  changeBaseTasksText,
+  changeBaseTraceabilityText,
+  acceptedTraceabilitySha256,
+  acceptedPendingTasksSha256,
+  acceptedCompletedTasksSha256,
+  requireAuditedScope,
+  errors
+}) {
+  if (
+    state === t085States.PENDING &&
+    !requireAuditedScope &&
+    typeof changeBaseTasksText !== "string" &&
+    typeof changeBaseTraceabilityText !== "string"
+  ) {
+    return
+  }
+  if (
+    sha256(traceabilityText) !== acceptedTraceabilitySha256 ||
+    (typeof changeBaseTraceabilityText === "string" &&
+      sha256(changeBaseTraceabilityText) !== acceptedTraceabilitySha256)
+  ) {
+    errors.push("traceability must match the accepted implementation snapshot")
+  }
+
+  const expectedCurrentTasksSha =
+    state === t085States.PENDING ? acceptedPendingTasksSha256 : acceptedCompletedTasksSha256
+  const expectedBaseTasksSha =
+    state === t085States.PENDING || state === t085States.RECEIPT_CANDIDATE
+      ? acceptedPendingTasksSha256
+      : acceptedCompletedTasksSha256
+  if (
+    sha256(tasksText) !== expectedCurrentTasksSha ||
+    (typeof changeBaseTasksText === "string" &&
+      sha256(changeBaseTasksText) !== expectedBaseTasksSha)
+  ) {
+    errors.push("tasks must match the accepted implementation snapshot")
+  }
+  if (
+    (requireAuditedScope ||
+      state === t085States.RECEIPT_CANDIDATE ||
+      state === t085States.COMPLETE_STEADY ||
+      state === t085States.ROLLBACK) &&
+    (typeof changeBaseTasksText !== "string" || typeof changeBaseTraceabilityText !== "string")
+  ) {
+    errors.push("audited change base must provide the frozen tasks and traceability snapshots")
+  }
+}
+
+function validateScope(contract, taskStatus, state, completionReceiptPresent, errors) {
   const lifecycle = contract.lifecycle
   if (!lifecycle || lifecycle.phase !== "T085_IMPLEMENTATION") {
     errors.push("this bounded validator only accepts lifecycle.phase T085_IMPLEMENTATION")
   }
   if (lifecycle?.task !== "T085") errors.push("lifecycle.task must be T085")
-  if (lifecycle?.t085_complete !== false || taskStatus.get("T085") !== false) {
-    errors.push("T085_IMPLEMENTATION must keep T085 unchecked and incomplete")
+  if (lifecycle?.t085_complete !== false) {
+    errors.push("the frozen traceability contract must keep lifecycle.t085_complete false")
   }
   if (lifecycle?.receipt !== undefined) {
     errors.push("T085_IMPLEMENTATION must not carry a completion receipt")
@@ -564,8 +901,24 @@ function validateScope(contract, taskStatus, errors) {
     if (lifecycle?.[flag] !== false) errors.push(`lifecycle.${flag} must remain false`)
   }
 
+  if (state === t085States.RECEIPT_CANDIDATE && !completionReceiptPresent) {
+    errors.push("checked T085 requires a structured completion receipt")
+  }
+  if (state === t085States.PENDING && completionReceiptPresent) {
+    errors.push("unchecked T085 must not stage a completion receipt")
+  }
+  if (state === t085States.ROLLBACK) {
+    errors.push("T085 checkbox cannot roll back after completion")
+  }
+  if (state === t085States.UNKNOWN) {
+    errors.push("T085 base/current checkbox state could not be classified")
+  }
+
   for (const [taskId, checked] of taskStatus) {
-    const expectedChecked = implementationCheckedTasks.has(taskId)
+    const expectedChecked =
+      implementationCheckedTasks.has(taskId) ||
+      ([t085States.RECEIPT_CANDIDATE, t085States.COMPLETE_STEADY].includes(state) &&
+        taskId === "T085")
     if (checked !== expectedChecked) {
       errors.push(`${taskId} checkbox is outside the authorized T085 frontier`)
     }
@@ -578,6 +931,13 @@ export function validateTraceability({
   gitBinding = null,
   changedPaths = null,
   changeBaseSha = REVIEW_BASE_SHA,
+  changeBaseTasksText = null,
+  changeBaseTraceabilityText = null,
+  changeBaseCompletionReceiptText = null,
+  implementationMergeAncestorOfChangeBase = null,
+  acceptedTraceabilitySha256 = ACCEPTED_TRACEABILITY_SHA256,
+  acceptedPendingTasksSha256 = ACCEPTED_PENDING_TASKS_SHA256,
+  acceptedCompletedTasksSha256 = ACCEPTED_COMPLETED_TASKS_SHA256,
   boundedScopeActive = changeBaseSha === REVIEW_BASE_SHA,
   reviewBaseSha = REVIEW_BASE_SHA,
   requireExactHeadEvidence = false,
@@ -594,7 +954,8 @@ export function validateTraceability({
     plan: "specs/001-taiwan-basketball-magazine-ebook/plan.md",
     tasks: "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
     traceability: "specs/001-taiwan-basketball-magazine-ebook/traceability.md",
-    dispatch: ".loop/evidence/t085-dispatch.json"
+    dispatch: ".loop/evidence/t085-dispatch.json",
+    completionReceipt: COMPLETION_RECEIPT_PATH
   }
 
   const specText = readText(root, paths.spec, errors, "spec source")
@@ -602,6 +963,11 @@ export function validateTraceability({
   const tasksText = readText(root, paths.tasks, errors, "tasks source")
   const traceabilityText = readText(root, paths.traceability, errors, "T085 traceability artifact")
   const dispatchText = readText(root, paths.dispatch, errors, "T085 dispatch receipt")
+  const completionReceiptPresent = fs.existsSync(path.resolve(root, paths.completionReceipt))
+  const completionReceiptText = completionReceiptPresent
+    ? readText(root, paths.completionReceipt, errors, "T085 completion receipt")
+    : null
+  const state = classifyT085State(changeBaseTasksText, tasksText)
 
   if (!/^[0-9a-f]{40}$/.test(currentHead ?? "")) {
     errors.push("currentHead must be a full lowercase commit SHA")
@@ -624,36 +990,110 @@ export function validateTraceability({
   ) {
     errors.push("git binding bounded scope state must equal boundedScopeActive")
   }
+  if (
+    gitBinding?.implementation_merge_ancestor_of_change_base !== undefined &&
+    gitBinding.implementation_merge_ancestor_of_change_base !==
+      implementationMergeAncestorOfChangeBase
+  ) {
+    errors.push("git binding implementation-merge ancestry must match the audited value")
+  }
   if (gitBinding?.authorized_base_ancestor === false) {
     errors.push("immutable dispatch base is not an ancestor of the evaluated head")
   }
   if (gitBinding?.review_base_ancestor === false) {
     errors.push("current protected review base is not an ancestor of the evaluated head")
   }
-  if (boundedScopeActive === true && Array.isArray(changedPaths)) {
+  if (gitBinding?.change_base_ancestor === false) {
+    errors.push("audited change base is not an ancestor of the evaluated head")
+  }
+  if (state === t085States.RECEIPT_CANDIDATE) {
+    if (
+      gitBinding?.status !== "CLEAN" ||
+      gitBinding?.head !== currentHead ||
+      typeof gitBinding?.change_base_ref !== "string" ||
+      gitBinding.change_base_sha !== changeBaseSha ||
+      gitBinding.change_base_ancestor !== true
+    ) {
+      errors.push("receipt candidate requires trusted audited Git binding")
+    }
+    if (gitBinding?.head_parent_sha !== changeBaseSha) {
+      errors.push("receipt candidate head parent must equal receipt_base_sha")
+    }
+    if (gitBinding?.head_parent_count !== 1) {
+      errors.push("receipt candidate head must have exactly one parent")
+    }
+    if (changeBaseCompletionReceiptText !== null) {
+      errors.push("receipt candidate base must not already contain a completion receipt")
+    }
+    if (
+      !Array.isArray(changedPaths) ||
+      changedPaths.length !== receiptChangedPaths.length ||
+      !sameValues(changedPaths, receiptChangedPaths)
+    ) {
+      errors.push("receipt candidate may change only tasks.md and its completion receipt")
+    }
+  } else if (state === t085States.PENDING && Array.isArray(changedPaths)) {
+    const pendingAllowedPaths =
+      boundedScopeActive === false ? receiptSupportChangedPaths : authorizedChangedPaths
     for (const changedPath of changedPaths) {
-      if (!authorizedChangedPaths.has(changedPath)) {
-        errors.push(`changed path is outside the authorized T085 scope: ${changedPath}`)
+      if (!pendingAllowedPaths.has(changedPath)) {
+        const scopeLabel =
+          boundedScopeActive === false
+            ? "authorized T085 receipt-support scope"
+            : "authorized T085 scope"
+        errors.push(`changed path is outside the ${scopeLabel}: ${changedPath}`)
       }
     }
-  } else if (
-    changeBaseSha === null ||
-    boundedScopeActive === null ||
-    (boundedScopeActive === true && !Array.isArray(changedPaths))
+  }
+  if (state === t085States.COMPLETE_STEADY) {
+    for (const changedPath of changedPaths ?? []) {
+      if (isT086LockedPath(changedPath)) {
+        errors.push(
+          `changed path requires separately authorized T086 validator evolution: ${changedPath}`
+        )
+      }
+    }
+    if (typeof changeBaseCompletionReceiptText !== "string") {
+      errors.push("completed T085 requires a readable completion receipt at the audited base")
+    }
+    if (completionReceiptText !== changeBaseCompletionReceiptText) {
+      errors.push("completed T085 must preserve the base completion receipt byte-for-byte")
+    }
+    if (tasksText !== changeBaseTasksText) {
+      errors.push("completed T085 must preserve base tasks.md byte-for-byte")
+    }
+    if (traceabilityText !== changeBaseTraceabilityText) {
+      errors.push("completed T085 must preserve the frozen traceability contract byte-for-byte")
+    }
+  }
+  if (
+    (state === t085States.PENDING || state === t085States.RECEIPT_CANDIDATE) &&
+    (changeBaseSha === null || boundedScopeActive === null || !Array.isArray(changedPaths))
   ) {
     warnings.push(
       "review-base path diff was not available; authoritative GitHub PR scope read-back remains required"
     )
+  } else if (
+    state === t085States.COMPLETE_STEADY &&
+    (changeBaseSha === null || !Array.isArray(changedPaths))
+  ) {
+    warnings.push(
+      "completed-state diff was not available; authoritative GitHub PR scope read-back remains required"
+    )
   }
   if (
     requireAuditedScope &&
-    (changeBaseSha === null || boundedScopeActive === null || !Array.isArray(changedPaths))
+    (changeBaseSha === null ||
+      boundedScopeActive === null ||
+      !Array.isArray(changedPaths) ||
+      gitBinding?.change_base_ancestor !== true)
   ) {
     errors.push("CI validation requires an audited current-change diff")
   }
 
   let contract = null
   let dispatch = null
+  let completionReceipt = null
   if (traceabilityText !== null) {
     try {
       contract = extractContract(traceabilityText)
@@ -668,6 +1108,13 @@ export function validateTraceability({
       errors.push(`invalid T085 dispatch receipt: ${error.message}`)
     }
   }
+  if (completionReceiptText !== null) {
+    try {
+      completionReceipt = JSON.parse(completionReceiptText)
+    } catch (error) {
+      errors.push(`invalid T085 completion receipt: ${error.message}`)
+    }
+  }
 
   const specIds = specText === null ? [] : idsFrom(specText, requirementPattern)
   const frIds = specIds.filter((id) => id.startsWith("FR-"))
@@ -675,6 +1122,23 @@ export function validateTraceability({
   const taskMatches = tasksText === null ? [] : [...tasksText.matchAll(taskPattern)]
   const taskIds = taskMatches.map((match) => match[2])
   const taskStatus = new Map(taskMatches.map((match) => [match[2], match[1].toLowerCase() === "x"]))
+  const contractTaskStatus = new Map(taskStatus)
+  if ([t085States.RECEIPT_CANDIDATE, t085States.COMPLETE_STEADY].includes(state)) {
+    contractTaskStatus.set("T085", false)
+  }
+
+  validateAcceptedSnapshots({
+    state,
+    tasksText,
+    traceabilityText,
+    changeBaseTasksText,
+    changeBaseTraceabilityText,
+    acceptedTraceabilitySha256,
+    acceptedPendingTasksSha256,
+    acceptedCompletedTasksSha256,
+    requireAuditedScope,
+    errors
+  })
 
   const expectedRequirements = [...expectedIds("FR", 74), ...expectedIds("SC", 23)]
   const expectedTasks = Array.from(
@@ -728,13 +1192,13 @@ export function validateTraceability({
       contract.source_inventory?.success_criteria !== 23 ||
       contract.source_inventory?.tasks_total !== 112 ||
       contract.source_inventory?.tasks_checked !==
-        [...taskStatus.values()].filter(Boolean).length ||
+        [...contractTaskStatus.values()].filter(Boolean).length ||
       contract.source_inventory?.tasks_unchecked !==
-        [...taskStatus.values()].filter((value) => !value).length
+        [...contractTaskStatus.values()].filter((value) => !value).length
     ) {
-      errors.push("source_inventory must match the canonical source paths and live counts")
+      errors.push("source_inventory must match the frozen implementation snapshot")
     }
-    validateScope(contract, taskStatus, errors)
+    validateScope(contract, taskStatus, state, completionReceiptPresent, errors)
 
     if (!Array.isArray(contract.requirements)) errors.push("requirements must be an array")
     if (!Array.isArray(contract.task_ledger)) errors.push("task_ledger must be an array")
@@ -949,7 +1413,7 @@ export function validateTraceability({
       if (row?.classification !== expectedTaskClassification(row?.id ?? "")) {
         errors.push(`${label}.classification does not match the authorized task taxonomy`)
       }
-      const expectedStatus = taskStatus.get(row?.id) ? "COMPLETE" : "OPEN"
+      const expectedStatus = contractTaskStatus.get(row?.id) ? "COMPLETE" : "OPEN"
       if (row?.status !== expectedStatus) {
         errors.push(`${label}.status must match tasks.md (${expectedStatus})`)
       }
@@ -997,6 +1461,27 @@ export function validateTraceability({
         )
       }
     }
+
+    if (
+      [t085States.RECEIPT_CANDIDATE, t085States.COMPLETE_STEADY].includes(state) &&
+      completionReceipt !== null
+    ) {
+      validateCompletionReceipt({
+        receipt: completionReceipt,
+        state,
+        changeBaseSha,
+        changeBaseTasksText,
+        changeBaseTraceabilityText,
+        tasksText,
+        traceabilityText,
+        implementationMergeAncestorOfChangeBase,
+        acceptedTraceabilitySha256,
+        acceptedPendingTasksSha256,
+        deviations,
+        lifecycle: contract.lifecycle,
+        errors
+      })
+    }
   }
 
   let exactHeadEvidence = null
@@ -1019,9 +1504,27 @@ export function validateTraceability({
   if (requireExactHeadEvidence && exactHeadEvidence === null) {
     errors.push("CI validation requires artifacts/exact-head.json")
   }
+  if (state === t085States.RECEIPT_CANDIDATE && exactHeadEvidence === null) {
+    warnings.push(
+      "receipt candidate requires current-head exact-head evidence before it is eligible"
+    )
+  }
+  if (
+    state === t085States.RECEIPT_CANDIDATE &&
+    exactHeadEvidence !== null &&
+    !requireExactHeadEvidence
+  ) {
+    warnings.push(
+      "receipt candidate exact-head evidence is not authoritative outside the required CI mode"
+    )
+  }
 
   const analysisValid = errors.length === 0
-  const receiptEligible = false
+  const receiptEligible =
+    state === t085States.RECEIPT_CANDIDATE &&
+    analysisValid &&
+    exactHeadEvidence !== null &&
+    requireExactHeadEvidence
   const checkedTasks = [...taskStatus.values()].filter(Boolean).length
   const openDeviations = deviationRows.filter((deviation) => deviation?.state === "OPEN")
 
@@ -1029,6 +1532,7 @@ export function validateTraceability({
     schema_version: "courtside-traceability-report/v1",
     task: "T085",
     status: analysisValid ? "PASS" : "FAIL",
+    mode: state,
     analysis_valid: analysisValid,
     receipt_eligible: receiptEligible,
     source: {
@@ -1075,29 +1579,59 @@ export function validateTraceability({
       provider_configured: contract?.lifecycle?.provider_configured ?? false,
       secrets_changed: contract?.lifecycle?.secrets_changed ?? false
     },
+    completion_receipt: completionReceipt
+      ? {
+          path: paths.completionReceipt,
+          schema_version: completionReceipt.schema_version ?? null,
+          decision: completionReceipt.decision ?? null,
+          implementation_head_sha: completionReceipt.implementation_head_sha ?? null,
+          implementation_merge_sha: completionReceipt.implementation_merge_sha ?? null,
+          receipt_base_sha: completionReceipt.receipt_base_sha ?? null,
+          file_sha256: sha256(completionReceiptText)
+        }
+      : null,
     scope_validation: {
       authorized_base_sha: AUTHORIZED_BASE_SHA,
       review_base_sha: reviewBaseSha,
       change_base_sha: changeBaseSha,
       bounded_scope_active: boundedScopeActive,
       status:
-        changeBaseSha === null ||
-        boundedScopeActive === null ||
-        (boundedScopeActive === true && !Array.isArray(changedPaths))
-          ? "EXTERNAL_READBACK_REQUIRED"
-          : boundedScopeActive === true
-            ? "AUDITED"
-            : "T085_SCOPE_RETIRED",
+        state === t085States.RECEIPT_CANDIDATE
+          ? Array.isArray(changedPaths) &&
+            sameValues(changedPaths, receiptChangedPaths) &&
+            gitBinding?.change_base_ancestor === true &&
+            gitBinding?.head_parent_sha === changeBaseSha &&
+            gitBinding?.head_parent_count === 1
+            ? "T085_RECEIPT_AUDITED"
+            : "EXTERNAL_READBACK_REQUIRED"
+          : state === t085States.COMPLETE_STEADY && Array.isArray(changedPaths)
+            ? "T085_COMPLETE_STEADY_AUDITED"
+            : state === t085States.PENDING && Array.isArray(changedPaths)
+              ? "AUDITED"
+              : "EXTERNAL_READBACK_REQUIRED",
       git_diff_audited: Array.isArray(changedPaths),
       changed_paths: changedPaths,
       unauthorized_paths:
-        boundedScopeActive === true && Array.isArray(changedPaths)
-          ? changedPaths.filter((changedPath) => !authorizedChangedPaths.has(changedPath))
-          : boundedScopeActive === true
+        state === t085States.RECEIPT_CANDIDATE && Array.isArray(changedPaths)
+          ? changedPaths.filter((changedPath) => !receiptChangedPaths.includes(changedPath))
+          : state === t085States.RECEIPT_CANDIDATE
             ? null
-            : boundedScopeActive === false
-              ? []
-              : null
+            : state === t085States.PENDING && Array.isArray(changedPaths)
+              ? changedPaths.filter(
+                  (changedPath) =>
+                    !(
+                      boundedScopeActive === false
+                        ? receiptSupportChangedPaths
+                        : authorizedChangedPaths
+                    ).has(changedPath)
+                )
+              : state === t085States.PENDING
+                ? null
+                : state === t085States.COMPLETE_STEADY && Array.isArray(changedPaths)
+                  ? changedPaths.filter(isT086LockedPath)
+                  : state === t085States.COMPLETE_STEADY
+                    ? null
+                    : null
     },
     head_binding: gitBinding ?? {
       status: "UNVERIFIED_FIXTURE",
@@ -1191,19 +1725,18 @@ function resolveChangeBase(root, head, environment) {
           stdio: ["ignore", "pipe", "ignore"]
         }
       ).trim()
-      const mergeBase = execFileSync("git", ["merge-base", baseCommit, head], {
-        cwd: root,
-        encoding: "utf8",
-        stdio: ["ignore", "pipe", "ignore"]
-      }).trim()
-      if (/^[0-9a-f]{40}$/.test(mergeBase)) {
-        return { ref: candidate.source, sha: mergeBase }
+      if (/^[0-9a-f]{40}$/.test(baseCommit)) {
+        return {
+          ref: candidate.source,
+          sha: baseCommit,
+          ancestor: inspectAncestor(root, baseCommit, head)
+        }
       }
     } catch {
       // Try the next trusted base candidate.
     }
   }
-  return { ref: null, sha: null }
+  return { ref: null, sha: null, ancestor: null }
 }
 
 function inspectPathAtCommit(root, commit, relativePath) {
@@ -1215,6 +1748,44 @@ function inspectPathAtCommit(root, commit, relativePath) {
       stdio: ["ignore", "pipe", "ignore"]
     }).trim()
     return result === relativePath
+  } catch {
+    return null
+  }
+}
+
+function readTextAtCommit(root, commit, relativePath) {
+  if (commit === null) return null
+  try {
+    return execFileSync("git", ["show", `${commit}:${relativePath}`], {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"]
+    })
+  } catch {
+    return null
+  }
+}
+
+function inspectHeadTopology(root, head) {
+  try {
+    const parentLine = execFileSync("git", ["show", "-s", "--format=%P", head], {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"]
+    }).trim()
+    const parents = parentLine.split(/\s+/).filter((parent) => /^[0-9a-f]{40}$/.test(parent))
+    return { first: parents[0] ?? null, count: parents.length }
+  } catch {
+    return { first: null, count: null }
+  }
+}
+
+function inspectImplementationMergeAncestor(root, changeBaseSha) {
+  if (!/^[0-9a-f]{40}$/.test(changeBaseSha ?? "")) return null
+  try {
+    const receipt = JSON.parse(fs.readFileSync(path.join(root, COMPLETION_RECEIPT_PATH), "utf8"))
+    if (!/^[0-9a-f]{40}$/.test(receipt?.implementation_merge_sha ?? "")) return null
+    return inspectAncestor(root, receipt.implementation_merge_sha, changeBaseSha)
   } catch {
     return null
   }
@@ -1240,12 +1811,32 @@ export function inspectGit(root, { environment = process.env } = {}) {
     const authorizedBaseAncestor = inspectAncestor(root, AUTHORIZED_BASE_SHA, head)
     const reviewBaseAncestor = inspectAncestor(root, REVIEW_BASE_SHA, head)
     const changeBase = resolveChangeBase(root, head, environment)
+    const headTopology = inspectHeadTopology(root, head)
+    const implementationMergeAncestorOfChangeBase = inspectImplementationMergeAncestor(
+      root,
+      changeBase.sha
+    )
     const baseHasTraceability = inspectPathAtCommit(
       root,
       changeBase.sha,
       "specs/001-taiwan-basketball-magazine-ebook/traceability.md"
     )
     const boundedScopeActive = baseHasTraceability === null ? null : baseHasTraceability === false
+    const changeBaseTasksText = readTextAtCommit(
+      root,
+      changeBase.sha,
+      "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+    )
+    const changeBaseTraceabilityText = readTextAtCommit(
+      root,
+      changeBase.sha,
+      "specs/001-taiwan-basketball-magazine-ebook/traceability.md"
+    )
+    const changeBaseCompletionReceiptText = readTextAtCommit(
+      root,
+      changeBase.sha,
+      COMPLETION_RECEIPT_PATH
+    )
     let changedPaths = null
     if (changeBase.sha !== null) {
       changedPaths = execFileSync("git", ["diff", "--name-only", changeBase.sha, head], {
@@ -1265,6 +1856,13 @@ export function inspectGit(root, { environment = process.env } = {}) {
       review_base_ancestor: reviewBaseAncestor,
       change_base_ref: changeBase.ref,
       change_base_sha: changeBase.sha,
+      change_base_ancestor: changeBase.ancestor,
+      head_parent_sha: headTopology.first,
+      head_parent_count: headTopology.count,
+      implementation_merge_ancestor_of_change_base: implementationMergeAncestorOfChangeBase,
+      change_base_tasks_text: changeBaseTasksText,
+      change_base_traceability_text: changeBaseTraceabilityText,
+      change_base_completion_receipt_text: changeBaseCompletionReceiptText,
       bounded_scope_active: boundedScopeActive,
       changedPaths
     }
@@ -1276,6 +1874,13 @@ export function inspectGit(root, { environment = process.env } = {}) {
       review_base_ancestor: null,
       change_base_ref: null,
       change_base_sha: null,
+      change_base_ancestor: null,
+      head_parent_sha: null,
+      head_parent_count: null,
+      implementation_merge_ancestor_of_change_base: null,
+      change_base_tasks_text: null,
+      change_base_traceability_text: null,
+      change_base_completion_receipt_text: null,
       bounded_scope_active: null,
       changedPaths: null
     }
@@ -1294,10 +1899,23 @@ export function runCli(root = repositoryRoot) {
       status: inspection.status,
       head: inspection.head,
       authorized_base_ancestor: inspection.authorized_base_ancestor,
-      review_base_ancestor: inspection.review_base_ancestor
+      review_base_ancestor: inspection.review_base_ancestor,
+      change_base_ref: inspection.change_base_ref,
+      change_base_sha: inspection.change_base_sha,
+      change_base_ancestor: inspection.change_base_ancestor,
+      head_parent_sha: inspection.head_parent_sha,
+      head_parent_count: inspection.head_parent_count,
+      implementation_merge_ancestor_of_change_base:
+        inspection.implementation_merge_ancestor_of_change_base,
+      bounded_scope_active: inspection.bounded_scope_active
     },
     changedPaths: inspection.changedPaths,
     changeBaseSha: inspection.change_base_sha,
+    changeBaseTasksText: inspection.change_base_tasks_text,
+    changeBaseTraceabilityText: inspection.change_base_traceability_text,
+    changeBaseCompletionReceiptText: inspection.change_base_completion_receipt_text,
+    implementationMergeAncestorOfChangeBase:
+      inspection.implementation_merge_ancestor_of_change_base,
     boundedScopeActive: inspection.bounded_scope_active,
     reviewBaseSha: REVIEW_BASE_SHA,
     requireExactHeadEvidence: isCi,
