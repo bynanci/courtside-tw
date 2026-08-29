@@ -988,6 +988,11 @@ function attributableJavaScriptBindings(ast) {
       declarePattern(node.param)
     } else if (node.type === "TSImportEqualsDeclaration") {
       declarePattern(node.id)
+    } else if (
+      ["ForInStatement", "ForOfStatement"].includes(node.type) &&
+      node.left?.type !== "VariableDeclaration"
+    ) {
+      collectJavaScriptAssignedBindings(node.left, writtenBindings)
     } else if (node.type === "AssignmentExpression") {
       collectJavaScriptAssignedBindings(node.left, writtenBindings)
     } else if (node.type === "UpdateExpression") {
