@@ -1832,6 +1832,30 @@ test("a selector present only in raw escaped template text cannot bind runtime t
   assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
 })
 
+for (const [optionalCall, source] of [
+  ["direct test", 'const test = undefined\ntest?.("fixture-proof", () => {})\n'],
+  ["test member", 'const test = undefined\ntest?.only("fixture-proof", () => {})\n'],
+  ["test invocation", 'const test = undefined\ntest.only?.("fixture-proof", () => {})\n'],
+  [
+    "direct suite",
+    'const describe = undefined\ndescribe?.("active suite", () => {\n  test("fixture-proof", () => {})\n})\n'
+  ],
+  [
+    "suite member",
+    'const describe = undefined\ndescribe?.only("active suite", () => {\n  test("fixture-proof", () => {})\n})\n'
+  ]
+]) {
+  test(`an optional ${optionalCall} cannot serve as executable proof registration`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "tests/optional-proof.test.js"
+      files["tests/optional-proof.test.js"] = source
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+  })
+}
+
 for (const [commentStyle, source] of [
   ["line-commented", '// test("fixture-proof", () => {})\n'],
   ["block-commented", '/* test("fixture-proof", () => {}) */\n'],
