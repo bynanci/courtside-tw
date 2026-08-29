@@ -337,10 +337,12 @@ export function inspectGitHubActionsContext({ environment = process.env, gitBind
     run_attempt: environment.GITHUB_RUN_ATTEMPT ?? null,
     github_sha: environment.GITHUB_SHA ?? null,
     github_ref: environment.GITHUB_REF ?? null,
-    base_ref: environment.GITHUB_BASE_REF ?? null,
-    head_ref: environment.GITHUB_HEAD_REF ?? null,
+    base_ref: environment.GITHUB_BASE_REF ?? "",
+    head_ref: environment.GITHUB_HEAD_REF ?? "",
+    source_ref: environment.GITHUB_HEAD_REF || environment.GITHUB_REF_NAME || null,
     source_head_sha: gitBinding?.head ?? null,
     source_base_sha: gitBinding?.change_base_sha ?? null,
+    authority: null,
     errors
   }
 
@@ -348,8 +350,8 @@ export function inspectGitHubActionsContext({ environment = process.env, gitBind
   if (context.repository !== "bynanci/courtside-tw") {
     errors.push("GITHUB_REPOSITORY must be bynanci/courtside-tw")
   }
-  if (context.event_name !== "pull_request") {
-    errors.push("GITHUB_EVENT_NAME must be pull_request for receipt authority")
+  if (!new Set(["pull_request", "push"]).has(context.event_name)) {
+    errors.push("GITHUB_EVENT_NAME must be pull_request or push for receipt authority")
   }
   if (context.workflow !== "CI" || context.job !== "frontend-contract") {
     errors.push("receipt authority must come from the CI frontend-contract job")
@@ -363,10 +365,6 @@ export function inspectGitHubActionsContext({ environment = process.env, gitBind
   }
   if (!/^[0-9a-f]{40}$/.test(context.github_sha ?? "")) {
     errors.push("GITHUB_SHA must be a full lowercase commit SHA")
-  }
-  if (context.base_ref !== "main") errors.push("GITHUB_BASE_REF must be main")
-  if (!/^refs\/pull\/\d+\/(?:merge|head)$/.test(context.github_ref ?? "")) {
-    errors.push("GITHUB_REF must identify a pull-request ref")
   }
   if (
     !/^[0-9a-f]{40}$/.test(context.source_head_sha ?? "") ||
@@ -390,17 +388,43 @@ export function inspectGitHubActionsContext({ environment = process.env, gitBind
     if (event?.repository?.full_name !== context.repository) {
       errors.push("event repository must match GITHUB_REPOSITORY")
     }
-    if (event?.pull_request?.head?.sha !== context.source_head_sha) {
-      errors.push("event pull-request head must match the evaluated Git head")
+    if (context.event_name === "pull_request") {
+      context.authority = "PULL_REQUEST"
+      if (context.base_ref !== "main") errors.push("GITHUB_BASE_REF must be main")
+      if (!/^refs\/pull\/\d+\/(?:merge|head)$/.test(context.github_ref ?? "")) {
+        errors.push("GITHUB_REF must identify a pull-request ref")
+      }
+      if (event?.pull_request?.head?.sha !== context.source_head_sha) {
+        errors.push("event pull-request head must match the evaluated Git head")
+      }
+      if (event?.pull_request?.base?.sha !== context.source_base_sha) {
+        errors.push("event pull-request base must match the audited change base")
+      }
+      if (event?.pull_request?.head?.ref !== context.head_ref) {
+        errors.push("event pull-request head ref must match GITHUB_HEAD_REF")
+      }
+      if (event?.pull_request?.base?.ref !== context.base_ref) {
+        errors.push("event pull-request base ref must match GITHUB_BASE_REF")
+      }
     }
-    if (event?.pull_request?.base?.sha !== context.source_base_sha) {
-      errors.push("event pull-request base must match the audited change base")
-    }
-    if (event?.pull_request?.head?.ref !== context.head_ref) {
-      errors.push("event pull-request head ref must match GITHUB_HEAD_REF")
-    }
-    if (event?.pull_request?.base?.ref !== context.base_ref) {
-      errors.push("event pull-request base ref must match GITHUB_BASE_REF")
+    if (context.event_name === "push") {
+      context.authority = "PROTECTED_MAIN_PUSH"
+      if (
+        context.github_ref !== "refs/heads/main" ||
+        context.source_ref !== "main" ||
+        context.base_ref !== "" ||
+        context.head_ref !== ""
+      ) {
+        errors.push("push receipt authority must identify the protected main ref")
+      }
+      if (
+        event?.ref !== "refs/heads/main" ||
+        event?.before !== context.source_base_sha ||
+        event?.after !== context.source_head_sha ||
+        context.github_sha !== context.source_head_sha
+      ) {
+        errors.push("push event must bind the audited main before and exact source head")
+      }
     }
   }
 
@@ -422,7 +446,7 @@ function exactHeadMatchesGitHubActionsContext(evidence, context) {
     evidence?.source_head_sha === context.source_head_sha &&
     evidence?.expected_source_head === context.source_head_sha &&
     evidence?.source_event === context.event_name &&
-    evidence?.source_ref === context.head_ref &&
+    evidence?.source_ref === context.source_ref &&
     evidence?.github_sha === context.github_sha &&
     evidence?.github_repository === context.repository &&
     evidence?.github_workflow === context.workflow &&
@@ -1706,6 +1730,7 @@ export function validateTraceability({
       github_actions_context: githubActionsContext
         ? {
             status: githubActionsContext.status ?? "UNTRUSTED",
+            authority: githubActionsContext.authority ?? null,
             event_name: githubActionsContext.event_name ?? null,
             repository: githubActionsContext.repository ?? null,
             workflow: githubActionsContext.workflow ?? null,
