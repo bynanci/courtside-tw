@@ -5,6 +5,7 @@ import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { isDeepStrictEqual } from "node:util"
+import typescriptPlugin from "prettier/plugins/typescript"
 
 export const TRACEABILITY_SCHEMA = "courtside-traceability/v1"
 export const COMPLETION_RECEIPT_SCHEMA = "courtside-t085-completion-receipt/v1"
@@ -716,172 +717,222 @@ function isExecutableProofPath(relativePath) {
   )
 }
 
-function withoutJavaScriptComments(text) {
-  let output = ""
-  let state = "code"
-  let quote = null
-  for (let index = 0; index < text.length; index += 1) {
-    const character = text[index]
-    const next = text[index + 1]
-    if (state === "line-comment") {
-      if (character === "\n") {
-        output += character
-        state = "code"
-      } else {
-        output += " "
-      }
-      continue
-    }
-    if (state === "block-comment") {
-      if (character === "*" && next === "/") {
-        output += "  "
-        index += 1
-        state = "code"
-      } else {
-        output += character === "\n" ? "\n" : " "
-      }
-      continue
-    }
-    if (state === "string") {
-      output += character
-      if (character === "\\" && next !== undefined) {
-        output += next
-        index += 1
-      } else if (character === quote) {
-        state = "code"
-        quote = null
-      }
-      continue
-    }
-    if (character === "/" && next === "/") {
-      output += "  "
-      index += 1
-      state = "line-comment"
-    } else if (character === "/" && next === "*") {
-      output += "  "
-      index += 1
-      state = "block-comment"
-    } else {
-      output += character
-      if (['"', "'", "`"].includes(character)) {
-        state = "string"
-        quote = character
-      }
-    }
+const disabledJavaScriptSuiteBases = new Set(["context", "describe", "suite"])
+const disabledJavaScriptSuiteModifiers = new Set([
+  "disabled",
+  "failing",
+  "fixme",
+  "pending",
+  "skip",
+  "todo"
+])
+const activeJavaScriptSuiteModifiers = new Set(["concurrent", "each", "only", "parallel", "serial"])
+const activeJavaScriptTestModifiers = new Set(["concurrent", "each", "only", "serial"])
+const transparentJavaScriptExpressionTypes = new Set([
+  "ChainExpression",
+  "ParenthesizedExpression",
+  "TSAsExpression",
+  "TSInstantiationExpression",
+  "TSNonNullExpression",
+  "TSSatisfiesExpression",
+  "TSTypeAssertion",
+  "TypeCastExpression"
+])
+const javaScriptFunctionTypes = new Set([
+  "ArrowFunctionExpression",
+  "FunctionDeclaration",
+  "FunctionExpression"
+])
+
+function unwrapJavaScriptExpression(node) {
+  let current = node
+  while (
+    current &&
+    transparentJavaScriptExpressionTypes.has(current.type) &&
+    current.expression &&
+    current.expression !== current
+  ) {
+    current = current.expression
   }
-  return output
+  return current
 }
 
-function isJavaScriptRegexLiteralStart(text, slashIndex) {
-  let cursor = slashIndex - 1
-  while (cursor >= 0 && /\s/u.test(text[cursor])) cursor -= 1
-  if (cursor < 0) return true
-  if ("([{,:;=!?&|+-*%^~<>".includes(text[cursor])) return true
-  return /(?:^|[^\w$])(?:await|case|delete|do|else|in|instanceof|new|of|return|throw|typeof|void|yield)\s*$/u.test(
-    text.slice(0, slashIndex)
+function staticJavaScriptMemberProperty(node) {
+  if (!node?.computed && node?.property?.type === "Identifier") {
+    return { known: true, value: node.property.name }
+  }
+  if (
+    node?.computed &&
+    node?.property?.type === "Literal" &&
+    typeof node.property.value === "string"
+  ) {
+    return { known: true, value: node.property.value }
+  }
+  if (
+    node?.computed &&
+    node?.property?.type === "TemplateLiteral" &&
+    node.property.expressions?.length === 0 &&
+    node.property.quasis?.length === 1
+  ) {
+    const value = node.property.quasis[0]?.value?.cooked
+    if (typeof value === "string") return { known: true, value }
+  }
+  return { known: false, value: null }
+}
+
+function javaScriptMemberPath(node) {
+  const expression = unwrapJavaScriptExpression(node)
+  if (expression?.type === "Identifier") {
+    return { ambiguous: false, segments: [expression.name] }
+  }
+  if (expression?.type === "CallExpression") {
+    return javaScriptMemberPath(expression.callee)
+  }
+  if (expression?.type === "TaggedTemplateExpression") {
+    return javaScriptMemberPath(expression.tag)
+  }
+  if (expression?.type !== "MemberExpression") {
+    return { ambiguous: false, segments: [] }
+  }
+
+  const objectPath = javaScriptMemberPath(expression.object)
+  const property = staticJavaScriptMemberProperty(expression)
+  return {
+    ambiguous: objectPath.ambiguous || !property.known,
+    segments: property.known ? [...objectPath.segments, property.value] : objectPath.segments
+  }
+}
+
+function classifyJavaScriptSuiteCall(node) {
+  const expression = unwrapJavaScriptExpression(node)
+  if (expression?.type !== "CallExpression") return "unknown"
+  const memberPath = javaScriptMemberPath(expression.callee)
+  if (["xcontext", "xdescribe", "xsuite"].includes(memberPath.segments[0])) {
+    return "disabled"
+  }
+
+  const modifierStart =
+    memberPath.segments[0] === "test" && memberPath.segments[1] === "describe"
+      ? 2
+      : disabledJavaScriptSuiteBases.has(memberPath.segments[0])
+        ? 1
+        : null
+  if (modifierStart === null) return "unknown"
+  if (memberPath.ambiguous) return "ambiguous"
+
+  const modifiers = memberPath.segments.slice(modifierStart)
+  if (modifiers.some((modifier) => disabledJavaScriptSuiteModifiers.has(modifier))) {
+    return "disabled"
+  }
+  return modifiers.every((modifier) => activeJavaScriptSuiteModifiers.has(modifier))
+    ? "active"
+    : "unknown"
+}
+
+function hasBoundedJavaScriptRange(node, textLength) {
+  return (
+    Array.isArray(node?.range) &&
+    node.range.length === 2 &&
+    Number.isInteger(node.range[0]) &&
+    Number.isInteger(node.range[1]) &&
+    node.range[0] >= 0 &&
+    node.range[0] <= node.range[1] &&
+    node.range[1] <= textLength
   )
 }
 
-function withoutJavaScriptCommentsStringsAndRegex(text) {
-  let output = ""
-  let state = "code"
-  let quote = null
-  for (let index = 0; index < text.length; index += 1) {
-    const character = text[index]
-    const next = text[index + 1]
-    if (state === "line-comment") {
-      if (character === "\n") {
-        output += character
-        state = "code"
-      } else {
-        output += " "
-      }
-      continue
-    }
-    if (state === "block-comment") {
-      if (character === "*" && next === "/") {
-        output += "  "
-        index += 1
-        state = "code"
-      } else {
-        output += character === "\n" ? "\n" : " "
-      }
-      continue
-    }
-    if (state === "string") {
-      output += character === "\n" ? "\n" : " "
-      if (character === "\\" && next !== undefined) {
-        output += next === "\n" ? "\n" : " "
-        index += 1
-      } else if (character === quote) {
-        state = "code"
-        quote = null
-      }
-      continue
-    }
-    if (state === "regex" || state === "regex-class") {
-      output += character === "\n" ? "\n" : " "
-      if (character === "\\" && next !== undefined) {
-        output += next === "\n" ? "\n" : " "
-        index += 1
-      } else if (state === "regex" && character === "[") {
-        state = "regex-class"
-      } else if (state === "regex-class" && character === "]") {
-        state = "regex"
-      } else if (state === "regex" && character === "/") {
-        state = "code"
-      }
-      continue
-    }
-    if (character === "/" && next === "/") {
-      output += "  "
-      index += 1
-      state = "line-comment"
-    } else if (character === "/" && next === "*") {
-      output += "  "
-      index += 1
-      state = "block-comment"
-    } else if (['"', "'", "`"].includes(character)) {
-      state = "string"
-      quote = character
-      output += " "
-    } else if (character === "/" && next !== "=" && isJavaScriptRegexLiteralStart(output, index)) {
-      state = "regex"
-      output += " "
-    } else {
-      output += character
+function walkJavaScriptAst(node, visitor, ancestors = [], seen = new WeakSet()) {
+  if (node === null || typeof node !== "object" || seen.has(node)) return
+  seen.add(node)
+  if (Array.isArray(node)) {
+    for (const child of node) walkJavaScriptAst(child, visitor, ancestors, seen)
+    return
+  }
+  visitor(node, ancestors)
+  const childAncestors = [...ancestors, node]
+  for (const [key, child] of Object.entries(node)) {
+    if (!["comments", "loc", "range", "tokens"].includes(key)) {
+      walkJavaScriptAst(child, visitor, childAncestors, seen)
     }
   }
-  return output
 }
 
-function matchingJavaScriptParenthesis(text, openParenthesisIndex) {
-  let depth = 0
-  for (let index = openParenthesisIndex; index < text.length; index += 1) {
-    if (text[index] === "(") depth += 1
-    if (text[index] === ")") {
-      depth -= 1
-      if (depth === 0) return index
-    }
+function javaScriptProofCall(node, targetOffset, textLength) {
+  if (node?.type !== "CallExpression") return false
+  const expression = node
+
+  const memberPath = javaScriptMemberPath(expression.callee)
+  if (memberPath.ambiguous || !["it", "test"].includes(memberPath.segments[0])) return false
+  if (memberPath.segments[0] === "test" && memberPath.segments[1] === "describe") return false
+  const modifiers = memberPath.segments.slice(1)
+  if (
+    modifiers.some((modifier) => nonExecutableTestModifiers.has(modifier)) ||
+    !modifiers.every((modifier) => activeJavaScriptTestModifiers.has(modifier))
+  ) {
+    return false
   }
-  return text.length
+
+  const title = expression.arguments?.[0]
+  return (
+    hasBoundedJavaScriptRange(title, textLength) &&
+    title.range[0] <= targetOffset &&
+    targetOffset < title.range[1]
+  )
 }
 
-function isInsideDisabledJavaScriptSuite(text, selector) {
-  const structure = withoutJavaScriptCommentsStringsAndRegex(text)
+function javaScriptFunctionRegistration(functionIndex, ancestors) {
+  let child = ancestors[functionIndex]
+  let parentIndex = functionIndex - 1
+  while (
+    parentIndex >= 0 &&
+    transparentJavaScriptExpressionTypes.has(ancestors[parentIndex]?.type) &&
+    ancestors[parentIndex].expression === child
+  ) {
+    child = ancestors[parentIndex]
+    parentIndex -= 1
+  }
+  const parent = ancestors[parentIndex]
+  if (parent?.type !== "CallExpression" || !parent.arguments?.includes(child)) return "unknown"
+  return classifyJavaScriptSuiteCall(parent)
+}
+
+function hasAttributableJavaScriptRegistration(ancestors) {
+  for (let index = 0; index < ancestors.length; index += 1) {
+    if (!javaScriptFunctionTypes.has(ancestors[index]?.type)) continue
+    if (javaScriptFunctionRegistration(index, ancestors) !== "active") return false
+  }
+  return true
+}
+
+function hasExecutableJavaScriptProofAnchor(text, selector, proofPath) {
   const targetOffset = text.indexOf(selector)
   if (targetOffset === -1) return false
-  const disabledSuitePattern =
-    /\b(?:(?:describe|suite|context)\s*\.\s*(?:disabled|failing|fixme|pending|skip|todo)|test\s*\.\s*describe\s*\.\s*(?:disabled|failing|fixme|pending|skip|todo))\s*\(/gu
 
-  for (const suite of structure.matchAll(disabledSuitePattern)) {
-    if (suite.index >= targetOffset) break
-    const openParenthesisIndex = structure.indexOf("(", suite.index)
-    if (openParenthesisIndex === -1 || openParenthesisIndex >= targetOffset) continue
-    const closeParenthesisIndex = matchingJavaScriptParenthesis(structure, openParenthesisIndex)
-    if (targetOffset < closeParenthesisIndex) return true
+  let ast
+  try {
+    ast = typescriptPlugin.parsers.typescript.parse(text, { filepath: proofPath })
+  } catch {
+    return false
   }
-  return false
+  if (
+    ast?.type !== "Program" ||
+    typeof ast?.then === "function" ||
+    !hasBoundedJavaScriptRange(ast, text.length)
+  ) {
+    return false
+  }
+
+  const matches = []
+  try {
+    walkJavaScriptAst(ast, (node, ancestors) => {
+      if (javaScriptProofCall(node, targetOffset, text.length)) {
+        matches.push({ ancestors, node })
+      }
+    })
+  } catch {
+    return false
+  }
+  return matches.length === 1 && hasAttributableJavaScriptRegistration(matches[0].ancestors)
 }
 
 function hasExecutableProofAnchor(root, proof) {
@@ -900,15 +951,7 @@ function hasExecutableProofAnchor(root, proof) {
     )
   }
   if (/\.(?:test|spec)\.[cm]?[jt]sx?$/.test(proof.path)) {
-    const codeLine = withoutJavaScriptComments(text).split(/\r?\n/)[lineIndex].trim()
-    if (!codeLine.includes(proof.selector)) return false
-    const anchor = codeLine.match(/^(?:test|it)((?:\.\w+)*)\s*\(/)
-    if (!anchor) return false
-    const modifiers = anchor[1].split(".").filter(Boolean)
-    return (
-      !modifiers.some((modifier) => nonExecutableTestModifiers.has(modifier)) &&
-      !isInsideDisabledJavaScriptSuite(text, proof.selector)
-    )
+    return hasExecutableJavaScriptProofAnchor(text, proof.selector, proof.path)
   }
   if (proof.path.startsWith("scripts/test/") && proof.path.endsWith(".sh")) {
     return /\b(?:raise|assert|fail|exit|SystemExit)\b/.test(line)

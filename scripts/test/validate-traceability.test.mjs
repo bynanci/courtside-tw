@@ -1743,6 +1743,29 @@ test("a named suite callback cannot serve as attributable executable proof", () 
   assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
 })
 
+test("an inline active suite callback remains attributable executable proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/active-suite-proof.test.ts"
+    files["tests/active-suite-proof.test.ts"] =
+      'test.describe("active suite", () => {\n' +
+      "  const marker: number = 1\n" +
+      '  test("fixture-proof", () => marker)\n' +
+      "})\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+test("a malformed JavaScript proof file fails closed", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/malformed-proof.test.js"
+    files["tests/malformed-proof.test.js"] = 'test("fixture-proof", () => {\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+})
+
 for (const [modifier, source] of [
   ["skip", 'test.skip("fixture-proof", () => {})\n'],
   ["todo", 'it.todo("fixture-proof")\n'],
