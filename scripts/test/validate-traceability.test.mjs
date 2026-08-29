@@ -72,6 +72,15 @@ const fixtureImplementationChangedPaths = [
   "specs/001-taiwan-basketball-magazine-ebook/plan.md",
   "specs/001-taiwan-basketball-magazine-ebook/traceability.md"
 ]
+const postT085RemediationBaseSha = "d99df471a08608bb8b6da609e17095d285c11489"
+const postT085RemediationChangedPaths = [
+  ".loop/evidence/t085-review.json",
+  "apps/web/scripts/android-chrome-performance-smoke.mjs",
+  "apps/web/tests/unit/android-creative-timeline.test.ts",
+  "scripts/test/validate-traceability.test.mjs",
+  "scripts/validate-traceability.mjs",
+  "specs/001-taiwan-basketball-magazine-ebook/traceability.md"
+]
 
 function sha256(text) {
   return createHash("sha256").update(text).digest("hex")
@@ -139,6 +148,7 @@ function canonicalContract() {
   })
   return {
     schema_version: TRACEABILITY_SCHEMA,
+    repository: "bynanci/courtside-tw",
     authorized_base_sha: baseSha,
     source_inventory: {
       spec: `${featurePath}/spec.md`,
@@ -245,7 +255,7 @@ function markdown(contract) {
     .map((row) => {
       const proofIds = row.proofs.map((proof) => `\`${proof.id}\``).join(", ")
       const deviationIds = row.deviation_ids.map((id) => `\`${id}\``).join(", ") || "—"
-      return `| ${row.id} | fixture | ${row.task_ids.join(", ")} | ${row.implementation_state} | ${row.evidence_state} | ${proofIds} | ${deviationIds} | ${row.release_impact} |`
+      return `| ${row.id} | ${row.story} / ${row.slice} | ${row.task_ids.join(", ")} | ${row.implementation_state} | ${row.evidence_state} | ${proofIds} | ${deviationIds} | ${row.release_impact} |`
     })
     .join("\n")
   const deviationTable = contract.deviations
@@ -1635,6 +1645,38 @@ test("repository proof selectors must identify an executable test anchor", () =>
   assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
 })
 
+for (const [suite, source] of [
+  [
+    "describe.skip",
+    'describe.skip("disabled suite", () => {\n  test("fixture-proof", () => {})\n})\n'
+  ],
+  [
+    "test.describe.skip",
+    'test.describe.skip("disabled suite", () => {\n  test("fixture-proof", () => {})\n})\n'
+  ]
+]) {
+  test(`a test inside ${suite} cannot serve as executable proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "tests/skipped-suite-proof.test.js"
+      files["tests/skipped-suite-proof.test.js"] = source
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+  })
+}
+
+test("a test after a closed skipped suite remains an executable proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/closed-skipped-suite-proof.test.js"
+    files["tests/closed-skipped-suite-proof.test.js"] =
+      'describe.skip("disabled suite", () => {\n  test("different-proof", () => {})\n})\n' +
+      'test("fixture-proof", () => {})\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
 for (const [modifier, source] of [
   ["skip", 'test.skip("fixture-proof", () => {})\n'],
   ["todo", 'it.todo("fixture-proof")\n'],
@@ -1729,6 +1771,146 @@ test("deviation affected FR and SC IDs require reciprocal requirement links", ()
   assert.match(report.errors.join("\n"), /DEV-T085-999 affects SC-001/)
 })
 
+test("VERIFIED requirements cannot retain a reciprocal OPEN deviation", () => {
+  const root = makeFixture(({ contract }) => {
+    contract.requirements[0].deviation_ids = ["DEV-T085-999"]
+    contract.deviations[0].affected_ids.push("FR-001")
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /FR-001.*VERIFIED.*OPEN deviation DEV-T085-999/)
+})
+
+test("arbitrary evidence JSON cannot serve as a repository proof receipt", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0] = {
+      id: "P_FORGED_JSON",
+      kind: "REPOSITORY_PROOF",
+      path: ".loop/evidence/forged.json",
+      selector: '"decision": "PASS"'
+    }
+    files[".loop/evidence/forged.json"] = `${JSON.stringify(
+      {
+        schema_version: "unrecognized/v1",
+        decision: "PASS",
+        requirement_id: "FR-001",
+        source_head_sha: "1".repeat(40)
+      },
+      null,
+      2
+    )}\n`
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /recognized repository proof receipt/)
+})
+
+test("the pinned SC-010 historical acceptance receipt remains a valid repository proof", () => {
+  const selector =
+    '"restore_receipt_sha256": "e43cdc024bb9317ffbbf4620de237c9578470a5bb38633c798309da8be930210"'
+  const root = makeFixture(({ contract, files }) => {
+    const row = contract.requirements.find(({ id }) => id === "SC-010")
+    const previousTaskIds = [...row.task_ids]
+    row.task_ids = ["T002"]
+    row.implementation_state = "COMPLETE"
+    row.evidence_state = "VERIFIED"
+    row.deviation_ids = []
+    row.proofs = [
+      {
+        id: "P_BACKUP_RECEIPT_READBACK",
+        kind: "REPOSITORY_PROOF",
+        path: ".loop/evidence/t085-review.json",
+        selector
+      }
+    ]
+    const fallbackRow = contract.requirements.find(({ id }) => id === "SC-011")
+    for (const taskId of previousTaskIds) {
+      const task = contract.task_ledger.find(({ id }) => id === taskId)
+      task.requirement_ids = task.requirement_ids.filter((id) => id !== "SC-010")
+      if (!fallbackRow.task_ids.includes(taskId)) fallbackRow.task_ids.push(taskId)
+      if (!task.requirement_ids.includes("SC-011")) task.requirement_ids.push("SC-011")
+      delete task.orphan_reason
+    }
+    const replacementTask = contract.task_ledger.find(({ id }) => id === "T002")
+    replacementTask.requirement_ids.push("SC-010")
+    delete replacementTask.orphan_reason
+    contract.deviations[0].affected_ids = contract.deviations[0].affected_ids.filter(
+      (id) => id !== "SC-010"
+    )
+    files[".loop/evidence/t085-review.json"] = `${JSON.stringify(
+      {
+        schema_version: "courtside-t085-review/v1",
+        task: "T085",
+        repository: "bynanci/courtside-tw",
+        issue: "https://github.com/bynanci/courtside-tw/issues/145",
+        historical_acceptance_readback: {
+          requirement_id: "SC-010",
+          artifact_id: 9414805375,
+          artifact_name: "ci-dependency-reports",
+          artifact_digest:
+            "sha256:2572e7202c4f8b5429654c7f052ebea5e88e20650c845863925ea54e1264a5b7",
+          artifact_downloaded: true,
+          source_head_sha: "3fcc7f2f29e5c3d41370fffcebd34d925c4c9911",
+          workflow: "CI",
+          workflow_run_id: 32390737392,
+          workflow_run_number: 816,
+          exact_head_manifest_sha256:
+            "01eff14b71a4a9592dc82c16460ca05be834566b9b5517df15acaf654b3d119a",
+          restore_receipt_sha256:
+            "e43cdc024bb9317ffbbf4620de237c9578470a5bb38633c798309da8be930210",
+          restore_receipt: {
+            result: "PASS",
+            release_ready: true,
+            rpo_hours: 0.001,
+            rpo_limit_hours: 24,
+            rto_minutes: 0.037,
+            rto_limit_minutes: 240
+          }
+        }
+      },
+      null,
+      2
+    )}\n`
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+test("the human Story / slice column must match the machine contract", () => {
+  const root = makeFixture()
+  const traceabilityPath = path.join(root, featurePath, "traceability.md")
+  const traceability = fs.readFileSync(traceabilityPath, "utf8")
+  fs.writeFileSync(
+    traceabilityPath,
+    traceability.replace("| FR-001 | CROSS_CUT / fixture |", "| FR-001 | FORGED / slice |")
+  )
+
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /human-readable row FR-001/)
+})
+
+test("the machine contract repository must match the immutable dispatch", () => {
+  const root = makeFixture(({ contract }) => {
+    contract.repository = "attacker/other-repository"
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /contract repository must equal bynanci\/courtside-tw/)
+})
+
+test("the PR149 review receipt records the actual 13-path workflow scope", () => {
+  const review = JSON.parse(
+    fs.readFileSync(path.join(repositoryRoot, ".loop/evidence/t085-review.json"), "utf8")
+  )
+  assert.equal(review.current_base_reconciliation_review.scope_review.pr_diff_paths_expected, 13)
+  assert.equal(review.current_base_reconciliation_review.scope_review.workflow_changed, true)
+  assert.match(
+    fs.readFileSync(path.join(repositoryRoot, featurePath, "traceability.md"), "utf8"),
+    /13-path T085 allowlist/
+  )
+})
+
 for (const [boundary, mutate] of [
   ["authorized scope", (dispatch) => dispatch.authorized.push("unbounded runtime work")],
   ["forbidden scope", (dispatch) => dispatch.forbidden.pop()],
@@ -1810,6 +1992,55 @@ test("pending T085 permits a support change from the frozen implementation allow
   assert.equal(report.status, "PASS", report.errors.join("\n"))
   assert.deepEqual(inspection.changedPaths, ["scripts/validate-traceability.mjs"])
 })
+
+test("pending T085 permits the exact one-time post-review and Android harness remediation", () => {
+  const root = makeFixture()
+  const tasksText = fs.readFileSync(path.join(root, featurePath, "tasks.md"), "utf8")
+  const traceabilityPath = path.join(root, featurePath, "traceability.md")
+  const preRemediationTraceabilityText = fs.readFileSync(traceabilityPath, "utf8")
+  const correctedTraceabilityText = `${preRemediationTraceabilityText}\n<!-- post-T085 snapshot remediation fixture -->\n`
+  assert.notEqual(correctedTraceabilityText, preRemediationTraceabilityText)
+  fs.writeFileSync(traceabilityPath, correctedTraceabilityText)
+  const report = run(root, {
+    changedPaths: [...postT085RemediationChangedPaths],
+    changeBaseSha: postT085RemediationBaseSha,
+    changeBaseTasksText: tasksText,
+    changeBaseTraceabilityText: preRemediationTraceabilityText,
+    acceptedTraceabilitySha256: sha256(correctedTraceabilityText),
+    preRemediationTraceabilitySha256: sha256(preRemediationTraceabilityText),
+    boundedScopeActive: false
+  })
+
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+  assert.deepEqual(report.scope_validation.changed_paths, postT085RemediationChangedPaths)
+})
+
+for (const [label, changedPaths, changeBaseSha] of [
+  ["stale base", postT085RemediationChangedPaths, "e".repeat(40)],
+  ["extra path", [...postT085RemediationChangedPaths, "future.txt"], postT085RemediationBaseSha],
+  [
+    "partial runtime scope",
+    ["apps/web/scripts/android-chrome-performance-smoke.mjs"],
+    postT085RemediationBaseSha
+  ]
+]) {
+  test(`one-time post-review remediation rejects ${label}`, () => {
+    const root = makeFixture()
+    const report = run(root, {
+      changedPaths,
+      changeBaseSha,
+      changeBaseTasksText: fs.readFileSync(path.join(root, featurePath, "tasks.md"), "utf8"),
+      changeBaseTraceabilityText: fs.readFileSync(
+        path.join(root, featurePath, "traceability.md"),
+        "utf8"
+      ),
+      boundedScopeActive: false
+    })
+
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /outside the authorized T085 receipt-support scope/)
+  })
+}
 
 test("Git inspection exposes both sides of a rename into the completion receipt path", () => {
   const root = makeFixture()

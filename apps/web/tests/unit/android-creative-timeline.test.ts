@@ -580,7 +580,7 @@ test("native Android performance harness invokes the behavioral boundaries", () 
   equal(systemWindowProbeIndex < uiAutomatorProbeIndex, true)
   match(
     performanceHarness,
-    /const systemWindowPreflight = probePixelLauncherAnrWindow\(deadline\)[\s\S]*executeBoundChromeSurfaceTap\(\{[\s\S]*dismissedPrompts: preflightDismissedPrompts[\s\S]*probeChromeContentSurfaceAtActivityBoundary\(deadline, systemWindowPreflight\.displaySize\)/u
+    /const systemWindowPreflight = probePixelLauncherAnrWindow\(preflightDeadline\)[\s\S]*deadlineAt:\s*preflightDeadline[\s\S]*dismissedPrompts: preflightDismissedPrompts[\s\S]*probeChromeContentSurfaceAtActivityBoundary\(\s*normalizationDeadline,\s*systemWindowPreflight\.displaySize\s*\)/u
   )
   match(
     performanceHarness,
@@ -603,11 +603,11 @@ test("native Android performance harness invokes the behavioral boundaries", () 
   match(performanceHarness, /maximumAttempts:\s*ANDROID_ACTIVITY_RECEIPT_HISTORY_LIMIT/u)
   match(
     performanceHarness,
-    /normalizeChromeAutomationSurfaceWithinDeadline\(\{\s*deadlineAt:\s*deadline,\s*now:\s*\(\)\s*=>\s*performance\.now\(\),/u
+    /normalizeChromeAutomationSurfaceWithinDeadline\(\{\s*deadlineAt:\s*normalizationDeadline,\s*now:\s*\(\)\s*=>\s*performance\.now\(\),/u
   )
   match(
     performanceHarness,
-    /probeSurface:\s*\(\)\s*=>\s*\n?\s*probeChromeContentSurfaceAtActivityBoundary\(deadline, systemWindowPreflight\.displaySize\)/u
+    /probeSurface:\s*\(\)\s*=>\s*probeChromeContentSurfaceAtActivityBoundary\(\s*normalizationDeadline,\s*systemWindowPreflight\.displaySize\s*\)/u
   )
   doesNotMatch(
     performanceHarness,
@@ -615,7 +615,7 @@ test("native Android performance harness invokes the behavioral boundaries", () 
   )
   match(
     performanceHarness,
-    /tap:\s*\(dismissTap,\s*label\)\s*=>\s*executeBoundChromeSurfaceTap\(\{\s*deadlineAt:\s*deadline,\s*maximumMilliseconds:\s*CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS,\s*dismissTap,\s*label,\s*remainingMilliseconds:\s*requireRemainingAutomationMilliseconds,\s*runAdb:\s*adbWithTimeout\s*\}\)/u
+    /tap:\s*\(dismissTap,\s*label\)\s*=>\s*executeBoundChromeSurfaceTap\(\{\s*deadlineAt:\s*normalizationDeadline,\s*maximumMilliseconds:\s*CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS,\s*dismissTap,\s*label,\s*remainingMilliseconds:\s*requireRemainingAutomationMilliseconds,\s*runAdb:\s*adbWithTimeout\s*\}\)/u
   )
   match(
     performanceHarness,
@@ -2354,6 +2354,37 @@ test("cold UIAutomator can use the remaining normalization envelope without wide
     /if \(result\.error\?\.code === "ETIMEDOUT"\) \{[\s\S]*throw new Error[\s\S]*const hierarchy =[\s\S]*classifyChromeAutomationSurface/u
   )
   doesNotMatch(performanceHarness, /surface-unresolved/u)
+})
+
+test("cold native preflight and UIAutomator normalization have independent bounded deadlines", () => {
+  const performanceHarness = readFileSync(
+    new URL("../../scripts/android-chrome-performance-smoke.mjs", import.meta.url),
+    "utf8"
+  )
+  const preflightDeadline =
+    "const preflightDeadline = performance.now() + CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS"
+  const preflightProbe = "probePixelLauncherAnrWindow(preflightDeadline)"
+  const normalizationDeadline =
+    "const normalizationDeadline = performance.now() + CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS"
+  const normalizationCall = "normalizeChromeAutomationSurfaceWithinDeadline({"
+
+  const preflightDeadlineIndex = performanceHarness.indexOf(preflightDeadline)
+  const preflightProbeIndex = performanceHarness.indexOf(preflightProbe)
+  const normalizationDeadlineIndex = performanceHarness.indexOf(normalizationDeadline)
+  const normalizationCallIndex = performanceHarness.indexOf(normalizationCall)
+
+  equal(preflightDeadlineIndex >= 0, true)
+  equal(preflightDeadlineIndex < preflightProbeIndex, true)
+  equal(preflightProbeIndex < normalizationDeadlineIndex, true)
+  equal(normalizationDeadlineIndex < normalizationCallIndex, true)
+  match(
+    performanceHarness,
+    /normalizeChromeAutomationSurfaceWithinDeadline\(\{\s*deadlineAt:\s*normalizationDeadline/u
+  )
+  match(
+    performanceHarness,
+    /async function requireClearChromeContentSurface\(\) \{\s*const deadline =\s*performance\.now\(\) \+ CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS/u
+  )
 })
 
 test("bounded UIAutomator read-back pins the Pixel 7 guest to four cores", () => {
