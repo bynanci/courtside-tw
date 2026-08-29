@@ -738,7 +738,7 @@ test("post-merge branches use current main as their change base and retire T085 
   git(root, "commit", "-m", "future work")
 
   assert.equal(typeof traceabilityValidator.inspectGit, "function")
-  const inspection = traceabilityValidator.inspectGit(root)
+  const inspection = traceabilityValidator.inspectGit(root, { environment: {} })
   assert.equal(inspection.change_base_sha, currentMain)
   assert.equal(inspection.bounded_scope_active, false)
   assert.deepEqual(inspection.changedPaths, ["future.txt"])
