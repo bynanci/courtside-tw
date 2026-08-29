@@ -743,6 +743,7 @@ const javaScriptFunctionTypes = new Set([
   "FunctionDeclaration",
   "FunctionExpression"
 ])
+const javaScriptProofBindingRoles = new Set(["node-test", "playwright-test"])
 
 function normalizeJavaScriptExpression(node) {
   let current = node
@@ -809,7 +810,7 @@ function javaScriptMemberPath(node) {
   }
 }
 
-function classifyJavaScriptSuiteCall(node) {
+function classifyJavaScriptSuiteCall(node, bindings) {
   const normalized = normalizeJavaScriptExpression(node)
   const expression = normalized.expression
   if (expression?.type !== "CallExpression") return "unknown"
@@ -818,10 +819,11 @@ function classifyJavaScriptSuiteCall(node) {
     return "disabled"
   }
 
+  const binding = bindings.get(memberPath.segments[0])
   const modifierStart =
-    memberPath.segments[0] === "test" && memberPath.segments[1] === "describe"
+    binding?.role === "playwright-test" && memberPath.segments[1] === "describe"
       ? 2
-      : disabledJavaScriptSuiteBases.has(memberPath.segments[0])
+      : binding?.role === "node-suite"
         ? 1
         : null
   if (modifierStart === null) return "unknown"
@@ -891,13 +893,131 @@ function walkJavaScriptAst(node, visitor, ancestors = [], seen = new WeakSet()) 
   }
 }
 
-function javaScriptProofCall(node, targetOffset, selector, textLength) {
+function collectJavaScriptPatternBindings(pattern, names) {
+  if (!pattern || typeof pattern !== "object") return
+  if (pattern.type === "Identifier") {
+    names.add(pattern.name)
+  } else if (pattern.type === "RestElement") {
+    collectJavaScriptPatternBindings(pattern.argument, names)
+  } else if (pattern.type === "AssignmentPattern") {
+    collectJavaScriptPatternBindings(pattern.left, names)
+  } else if (pattern.type === "ArrayPattern") {
+    for (const element of pattern.elements ?? []) collectJavaScriptPatternBindings(element, names)
+  } else if (pattern.type === "ObjectPattern") {
+    for (const property of pattern.properties ?? []) {
+      collectJavaScriptPatternBindings(
+        property.type === "RestElement" ? property.argument : property.value,
+        names
+      )
+    }
+  } else if (pattern.type === "TSParameterProperty") {
+    collectJavaScriptPatternBindings(pattern.parameter, names)
+  }
+}
+
+function collectJavaScriptAssignedBindings(target, names) {
+  const expression = normalizeJavaScriptExpression(target).expression
+  if (expression?.type === "MemberExpression") {
+    collectJavaScriptAssignedBindings(expression.object, names)
+  } else {
+    collectJavaScriptPatternBindings(expression, names)
+  }
+}
+
+function javaScriptImportedName(specifier) {
+  if (specifier?.imported?.type === "Identifier") return specifier.imported.name
+  return typeof specifier?.imported?.value === "string" ? specifier.imported.value : null
+}
+
+function authorizedJavaScriptImportRole(declaration, specifier) {
+  if (declaration.importKind === "type" || specifier.importKind === "type") return null
+  const source = declaration.source?.value
+  if (source === "node:test") {
+    if (specifier.type === "ImportDefaultSpecifier") return "node-test"
+    if (specifier.type !== "ImportSpecifier") return null
+    const importedName = javaScriptImportedName(specifier)
+    if (["it", "test"].includes(importedName)) return "node-test"
+    if (disabledJavaScriptSuiteBases.has(importedName)) return "node-suite"
+  }
+  if (
+    source === "@playwright/test" &&
+    specifier.type === "ImportSpecifier" &&
+    javaScriptImportedName(specifier) === "test"
+  ) {
+    return "playwright-test"
+  }
+  return null
+}
+
+function attributableJavaScriptBindings(ast) {
+  const authorizedImports = new Map()
+  const declarationCounts = new Map()
+  const writtenBindings = new Set()
+  const declare = (name) => declarationCounts.set(name, (declarationCounts.get(name) ?? 0) + 1)
+  const declarePattern = (pattern) => {
+    const names = new Set()
+    collectJavaScriptPatternBindings(pattern, names)
+    for (const name of names) declare(name)
+  }
+
+  walkJavaScriptAst(ast, (node) => {
+    if (node.type === "ImportDeclaration") {
+      for (const specifier of node.specifiers ?? []) {
+        const localName = specifier.local?.name
+        if (typeof localName !== "string") continue
+        declare(localName)
+        const role = authorizedJavaScriptImportRole(node, specifier)
+        if (role !== null) {
+          const candidates = authorizedImports.get(localName) ?? []
+          candidates.push({ role })
+          authorizedImports.set(localName, candidates)
+        }
+      }
+    } else if (node.type === "VariableDeclarator") {
+      declarePattern(node.id)
+    } else if (
+      ["FunctionDeclaration", "FunctionExpression", "TSDeclareFunction"].includes(node.type)
+    ) {
+      declarePattern(node.id)
+      for (const parameter of node.params ?? []) declarePattern(parameter)
+    } else if (node.type === "ArrowFunctionExpression") {
+      for (const parameter of node.params ?? []) declarePattern(parameter)
+    } else if (["ClassDeclaration", "ClassExpression", "TSEnumDeclaration"].includes(node.type)) {
+      declarePattern(node.id)
+    } else if (node.type === "CatchClause") {
+      declarePattern(node.param)
+    } else if (node.type === "TSImportEqualsDeclaration") {
+      declarePattern(node.id)
+    } else if (node.type === "AssignmentExpression") {
+      collectJavaScriptAssignedBindings(node.left, writtenBindings)
+    } else if (node.type === "UpdateExpression") {
+      collectJavaScriptAssignedBindings(node.argument, writtenBindings)
+    } else if (node.type === "UnaryExpression" && node.operator === "delete") {
+      collectJavaScriptAssignedBindings(node.argument, writtenBindings)
+    }
+  })
+
+  const bindings = new Map()
+  for (const [localName, candidates] of authorizedImports) {
+    if (
+      candidates.length === 1 &&
+      declarationCounts.get(localName) === 1 &&
+      !writtenBindings.has(localName)
+    ) {
+      bindings.set(localName, candidates[0])
+    }
+  }
+  return bindings
+}
+
+function javaScriptProofCall(node, targetOffset, selector, textLength, bindings) {
   if (node?.type !== "CallExpression" || node.optional === true) return false
   const expression = node
 
   const memberPath = javaScriptMemberPath(expression.callee)
-  if (memberPath.ambiguous || !["it", "test"].includes(memberPath.segments[0])) return false
-  if (memberPath.segments[0] === "test" && memberPath.segments[1] === "describe") return false
+  const binding = bindings.get(memberPath.segments[0])
+  if (memberPath.ambiguous || !javaScriptProofBindingRoles.has(binding?.role)) return false
+  if (binding.role === "playwright-test" && memberPath.segments[1] === "describe") return false
   const modifiers = memberPath.segments.slice(1)
   if (
     modifiers.some((modifier) => nonExecutableTestModifiers.has(modifier)) ||
@@ -910,7 +1030,7 @@ function javaScriptProofCall(node, targetOffset, selector, textLength) {
   return javaScriptTitleContainsSelector(title, targetOffset, selector, textLength)
 }
 
-function javaScriptFunctionRegistration(functionIndex, ancestors) {
+function javaScriptFunctionRegistration(functionIndex, ancestors, bindings) {
   let child = ancestors[functionIndex]
   let parentIndex = functionIndex - 1
   while (
@@ -923,13 +1043,13 @@ function javaScriptFunctionRegistration(functionIndex, ancestors) {
   }
   const parent = ancestors[parentIndex]
   if (parent?.type !== "CallExpression" || !parent.arguments?.includes(child)) return "unknown"
-  return classifyJavaScriptSuiteCall(parent)
+  return classifyJavaScriptSuiteCall(parent, bindings)
 }
 
-function hasAttributableJavaScriptRegistration(ancestors) {
+function hasAttributableJavaScriptRegistration(ancestors, bindings) {
   for (let index = 0; index < ancestors.length; index += 1) {
     if (!javaScriptFunctionTypes.has(ancestors[index]?.type)) continue
-    if (javaScriptFunctionRegistration(index, ancestors) !== "active") return false
+    if (javaScriptFunctionRegistration(index, ancestors, bindings) !== "active") return false
   }
   return true
 }
@@ -953,16 +1073,20 @@ function hasExecutableJavaScriptProofAnchor(text, selector, proofPath) {
   }
 
   const matches = []
+  let bindings
   try {
+    bindings = attributableJavaScriptBindings(ast)
     walkJavaScriptAst(ast, (node, ancestors) => {
-      if (javaScriptProofCall(node, targetOffset, selector, text.length)) {
+      if (javaScriptProofCall(node, targetOffset, selector, text.length, bindings)) {
         matches.push({ ancestors, node })
       }
     })
   } catch {
     return false
   }
-  return matches.length === 1 && hasAttributableJavaScriptRegistration(matches[0].ancestors)
+  return (
+    matches.length === 1 && hasAttributableJavaScriptRegistration(matches[0].ancestors, bindings)
+  )
 }
 
 function hasExecutableProofAnchor(root, proof) {

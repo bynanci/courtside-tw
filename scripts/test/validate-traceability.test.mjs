@@ -283,7 +283,7 @@ function makeFixture(mutate = () => {}) {
     [`${featurePath}/tasks.md`]: tasks,
     [`${featurePath}/traceability.md`]: markdown(contract),
     ".loop/evidence/t085-dispatch.json": JSON.stringify(canonicalDispatch()),
-    "tests/fixture-proof.test.js": 'test("fixture-proof", () => {})\n'
+    "tests/fixture-proof.test.js": 'import test from "node:test"\ntest("fixture-proof", () => {})\n'
   }
   mutate({ contract, files })
   if (files[`${featurePath}/traceability.md`] !== undefined) {
@@ -1648,51 +1648,63 @@ test("repository proof selectors must identify an executable test anchor", () =>
 for (const [suite, source] of [
   [
     "describe.skip",
-    'describe.skip("disabled suite", () => {\n  test("fixture-proof", () => {})\n})\n'
+    'import test, { describe } from "node:test"\n' +
+      'describe.skip("disabled suite", () => {\n  test("fixture-proof", () => {})\n})\n'
   ],
   [
     "test.describe.skip",
-    'test.describe.skip("disabled suite", () => {\n  test("fixture-proof", () => {})\n})\n'
+    'import { test } from "@playwright/test"\n' +
+      'test.describe.skip("disabled suite", () => {\n  test("fixture-proof", () => {})\n})\n'
   ],
   [
     "concise-arrow describe.skip",
-    'describe.skip("disabled suite", () =>\n  test("fixture-proof", () => {}))\n'
+    'import test, { describe } from "node:test"\n' +
+      'describe.skip("disabled suite", () =>\n  test("fixture-proof", () => {}))\n'
   ],
   [
     "regex-bearing describe.skip",
-    'describe.skip(/[)}]/u, () => {\n  test("fixture-proof", () => {})\n})\n'
+    'import test, { describe } from "node:test"\n' +
+      'describe.skip(/[)}]/u, () => {\n  test("fixture-proof", () => {})\n})\n'
   ],
   [
     "comment-like regex before describe.skip",
-    'const marker = /[/*]/u\ndescribe.skip("disabled */ suite", () => {\n  test("fixture-proof", () => {})\n})\n'
+    'import test, { describe } from "node:test"\n' +
+      'const marker = /[/*]/u\ndescribe.skip("disabled */ suite", () => {\n  test("fixture-proof", () => {})\n})\n'
   ],
   [
     "control-head regex inside describe.skip",
-    'describe.skip("disabled suite", () => {\n  if (true) /[)]/u.test("x")\n  test("fixture-proof", () => {})\n})\n'
+    'import test, { describe } from "node:test"\n' +
+      'describe.skip("disabled suite", () => {\n  if (true) /[)]/u.test("x")\n  test("fixture-proof", () => {})\n})\n'
   ],
   [
     "comment-separated describe.skip",
-    'describe /* suite */ . /* modifier */ skip("disabled suite", () => {\n  test("fixture-proof", () => {})\n})\n'
+    'import test, { describe } from "node:test"\n' +
+      'describe /* suite */ . /* modifier */ skip("disabled suite", () => {\n  test("fixture-proof", () => {})\n})\n'
   ],
   [
     "computed-template describe.skip",
-    'describe[`skip`]("disabled suite", () => {\n  test("fixture-proof", () => {})\n})\n'
+    'import test, { describe } from "node:test"\n' +
+      'describe[`skip`]("disabled suite", () => {\n  test("fixture-proof", () => {})\n})\n'
   ],
   [
     "dynamic computed describe modifier",
-    'const modifier = "skip"\ndescribe[modifier]("disabled suite", () => {\n  test("fixture-proof", () => {})\n})\n'
+    'import test, { describe } from "node:test"\n' +
+      'const modifier = "skip"\ndescribe[modifier]("disabled suite", () => {\n  test("fixture-proof", () => {})\n})\n'
   ],
   [
     "tagged describe.skip.each",
-    'describe.skip.each`value\\n${1}`("disabled suite", () => {\n  test("fixture-proof", () => {})\n})\n'
+    'import test, { describe } from "node:test"\n' +
+      'describe.skip.each`value\\n${1}`("disabled suite", () => {\n  test("fixture-proof", () => {})\n})\n'
   ],
   [
     "aliased describe.skip",
-    'const skippedSuite = describe.skip\nskippedSuite("disabled suite", () => {\n  test("fixture-proof", () => {})\n})\n'
+    'import test, { describe } from "node:test"\n' +
+      'const skippedSuite = describe.skip\nskippedSuite("disabled suite", () => {\n  test("fixture-proof", () => {})\n})\n'
   ],
   [
     "named describe.skip callback",
-    'const register = () => {\n  test("fixture-proof", () => {})\n}\ndescribe.skip("disabled suite", register)\n'
+    'import test, { describe } from "node:test"\n' +
+      'const register = () => {\n  test("fixture-proof", () => {})\n}\ndescribe.skip("disabled suite", register)\n'
   ]
 ]) {
   test(`a test inside ${suite} cannot serve as executable proof`, () => {
@@ -1710,6 +1722,7 @@ test("a test after a closed skipped suite remains an executable proof", () => {
   const root = makeFixture(({ contract, files }) => {
     contract.requirements[0].proofs[0].path = "tests/closed-skipped-suite-proof.test.js"
     files["tests/closed-skipped-suite-proof.test.js"] =
+      'import test, { describe } from "node:test"\n' +
       'describe.skip("disabled suite", () => {\n  test("different-proof", () => {})\n})\n' +
       'test("fixture-proof", () => {})\n'
   })
@@ -1721,6 +1734,7 @@ test("a CRLF test after a closed skipped suite remains executable", () => {
   const root = makeFixture(({ contract, files }) => {
     contract.requirements[0].proofs[0].path = "tests/crlf-closed-skipped-suite-proof.test.js"
     files["tests/crlf-closed-skipped-suite-proof.test.js"] =
+      'import test, { describe } from "node:test"\r\n' +
       'describe.skip("disabled suite", () => {\r\n' +
       '  test("different-proof", () => {})\r\n' +
       "\r\n".repeat(20) +
@@ -1735,6 +1749,7 @@ test("a named suite callback cannot serve as attributable executable proof", () 
   const root = makeFixture(({ contract, files }) => {
     contract.requirements[0].proofs[0].path = "tests/named-suite-callback-proof.test.js"
     files["tests/named-suite-callback-proof.test.js"] =
+      'import test, { describe } from "node:test"\n' +
       'const register = () => {\n  test("fixture-proof", () => {})\n}\n' +
       'describe("active suite", register)\n'
   })
@@ -1747,6 +1762,7 @@ test("an inline active suite callback remains attributable executable proof", ()
   const root = makeFixture(({ contract, files }) => {
     contract.requirements[0].proofs[0].path = "tests/active-suite-proof.test.ts"
     files["tests/active-suite-proof.test.ts"] =
+      'import { test } from "@playwright/test"\n' +
       'test.describe("active suite", () => {\n' +
       "  const marker: number = 1\n" +
       '  test("fixture-proof", () => marker)\n' +
@@ -1759,7 +1775,8 @@ test("an inline active suite callback remains attributable executable proof", ()
 test("a malformed JavaScript proof file fails closed", () => {
   const root = makeFixture(({ contract, files }) => {
     contract.requirements[0].proofs[0].path = "tests/malformed-proof.test.js"
-    files["tests/malformed-proof.test.js"] = 'test("fixture-proof", () => {\n'
+    files["tests/malformed-proof.test.js"] =
+      'import test from "node:test"\ntest("fixture-proof", () => {\n'
   })
   const report = run(root)
   assert.equal(report.status, "FAIL")
@@ -1767,9 +1784,9 @@ test("a malformed JavaScript proof file fails closed", () => {
 })
 
 for (const [modifier, source] of [
-  ["skip", 'test.skip("fixture-proof", () => {})\n'],
-  ["todo", 'it.todo("fixture-proof")\n'],
-  ["failing", 'test.failing("fixture-proof", () => {})\n']
+  ["skip", 'import test from "node:test"\ntest.skip("fixture-proof", () => {})\n'],
+  ["todo", 'import { it } from "node:test"\nit.todo("fixture-proof")\n'],
+  ["failing", 'import test from "node:test"\ntest.failing("fixture-proof", () => {})\n']
 ]) {
   test(`${modifier} JavaScript tests cannot serve as executable proof anchors`, () => {
     const root = makeFixture(({ contract, files }) => {
@@ -1785,7 +1802,8 @@ for (const [modifier, source] of [
 test("parameterized JavaScript tests remain executable proof anchors", () => {
   const root = makeFixture(({ contract, files }) => {
     contract.requirements[0].proofs[0].path = "tests/parameterized-proof.test.js"
-    files["tests/parameterized-proof.test.js"] = 'test.each([[1]])("fixture-proof %s", () => {})\n'
+    files["tests/parameterized-proof.test.js"] =
+      'import test from "node:test"\ntest.each([[1]])("fixture-proof %s", () => {})\n'
   })
   const report = run(root)
   assert.equal(report.status, "PASS", report.errors.join("\n"))
@@ -1794,11 +1812,13 @@ test("parameterized JavaScript tests remain executable proof anchors", () => {
 for (const [titleKind, source] of [
   [
     "binary title comment",
-    'const suffix = ""\ntest("different" + /* fixture-proof */ suffix, () => {})\n'
+    'import test from "node:test"\n' +
+      'const suffix = ""\ntest("different" + /* fixture-proof */ suffix, () => {})\n'
   ],
   [
     "template expression comment",
-    'const suffix = ""\ntest(`different ${/* fixture-proof */ suffix}`, () => {})\n'
+    'import test from "node:test"\n' +
+      'const suffix = ""\ntest(`different ${/* fixture-proof */ suffix}`, () => {})\n'
   ]
 ]) {
   test(`a selector in a ${titleKind} cannot bind an executable proof title`, () => {
@@ -1816,6 +1836,7 @@ test("a selector in a dynamic template title quasi remains executable proof", ()
   const root = makeFixture(({ contract, files }) => {
     contract.requirements[0].proofs[0].path = "tests/template-title-proof.test.js"
     files["tests/template-title-proof.test.js"] =
+      'import test from "node:test"\n' +
       'const suffix = "viewport"\ntest(`fixture-proof ${suffix}`, () => {})\n'
   })
   const report = run(root)
@@ -1825,7 +1846,8 @@ test("a selector in a dynamic template title quasi remains executable proof", ()
 test("a selector present only in raw escaped template text cannot bind runtime title", () => {
   const root = makeFixture(({ contract, files }) => {
     contract.requirements[0].proofs[0].path = "tests/escaped-template-title-proof.test.js"
-    files["tests/escaped-template-title-proof.test.js"] = "test(`\\fixture-proof`, () => {})\n"
+    files["tests/escaped-template-title-proof.test.js"] =
+      'import test from "node:test"\n' + "test(`\\fixture-proof`, () => {})\n"
   })
   const report = run(root)
   assert.equal(report.status, "FAIL")
@@ -1833,16 +1855,18 @@ test("a selector present only in raw escaped template text cannot bind runtime t
 })
 
 for (const [optionalCall, source] of [
-  ["direct test", 'const test = undefined\ntest?.("fixture-proof", () => {})\n'],
-  ["test member", 'const test = undefined\ntest?.only("fixture-proof", () => {})\n'],
-  ["test invocation", 'const test = undefined\ntest.only?.("fixture-proof", () => {})\n'],
+  ["direct test", 'import test from "node:test"\ntest?.("fixture-proof", () => {})\n'],
+  ["test member", 'import test from "node:test"\ntest?.only("fixture-proof", () => {})\n'],
+  ["test invocation", 'import test from "node:test"\ntest.only?.("fixture-proof", () => {})\n'],
   [
     "direct suite",
-    'const describe = undefined\ndescribe?.("active suite", () => {\n  test("fixture-proof", () => {})\n})\n'
+    'import { test } from "@playwright/test"\n' +
+      'test.describe?.("active suite", () => {\n  test("fixture-proof", () => {})\n})\n'
   ],
   [
     "suite member",
-    'const describe = undefined\ndescribe?.only("active suite", () => {\n  test("fixture-proof", () => {})\n})\n'
+    'import { test } from "@playwright/test"\n' +
+      'test?.describe.only("active suite", () => {\n  test("fixture-proof", () => {})\n})\n'
   ]
 ]) {
   test(`an optional ${optionalCall} cannot serve as executable proof registration`, () => {
@@ -1878,9 +1902,29 @@ for (const [provenance, pathName, source] of [
     'import type { test } from "node:test"\ntest("fixture-proof", () => {})\n'
   ],
   [
+    "namespace test import",
+    "namespace-test-proof.test.js",
+    'import * as runner from "node:test"\nrunner.test("fixture-proof", () => {})\n'
+  ],
+  [
+    "CommonJS test import",
+    "commonjs-test-proof.test.js",
+    'const { test } = require("node:test")\ntest("fixture-proof", () => {})\n'
+  ],
+  [
+    "re-exported test name",
+    "re-exported-test-proof.test.js",
+    'export { test } from "node:test"\ntest("fixture-proof", () => {})\n'
+  ],
+  [
+    "reassigned imported test",
+    "reassigned-test-proof.test.js",
+    'import test from "node:test"\ntest = () => {}\ntest("fixture-proof", () => {})\n'
+  ],
+  [
     "local fake test.describe",
     "fake-suite-proof.test.js",
-    'const test = { describe: (_title, callback) => callback() }\n' +
+    "const test = { describe: (_title, callback) => callback() }\n" +
       'test.describe("active suite", () => {\n  test("fixture-proof", () => {})\n})\n'
   ]
 ]) {
@@ -1909,6 +1953,11 @@ for (const [binding, source] of [
   [
     "aliased node:test",
     'import { test as runner } from "node:test"\nrunner("fixture-proof", () => {})\n'
+  ],
+  [
+    "aliased node:test suite",
+    'import test, { describe as group } from "node:test"\n' +
+      'group("active suite", () => {\n  test("fixture-proof", () => {})\n})\n'
   ]
 ]) {
   test(`${binding} remains attributable executable proof`, () => {
@@ -1922,9 +1971,12 @@ for (const [binding, source] of [
 }
 
 for (const [commentStyle, source] of [
-  ["line-commented", '// test("fixture-proof", () => {})\n'],
-  ["block-commented", '/* test("fixture-proof", () => {}) */\n'],
-  ["multiline-block-commented", '/*\ntest("fixture-proof", () => {})\n*/\n']
+  ["line-commented", 'import test from "node:test"\n// test("fixture-proof", () => {})\n'],
+  ["block-commented", 'import test from "node:test"\n/* test("fixture-proof", () => {}) */\n'],
+  [
+    "multiline-block-commented",
+    'import test from "node:test"\n/*\ntest("fixture-proof", () => {})\n*/\n'
+  ]
 ]) {
   test(`${commentStyle} JavaScript anchors cannot serve as executable proof`, () => {
     const root = makeFixture(({ contract, files }) => {
@@ -1941,7 +1993,8 @@ test("overlapping selector locations are rejected as ambiguous", () => {
   const root = makeFixture(({ contract, files }) => {
     contract.requirements[0].proofs[0].path = "tests/overlapping-proof.test.js"
     contract.requirements[0].proofs[0].selector = "aaaaaa"
-    files["tests/overlapping-proof.test.js"] = 'test("aaaaaaa", () => {})\n'
+    files["tests/overlapping-proof.test.js"] =
+      'import test from "node:test"\ntest("aaaaaaa", () => {})\n'
   })
   const report = run(root)
   assert.equal(report.status, "FAIL")
