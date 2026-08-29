@@ -2364,18 +2364,22 @@ test("cold native preflight and UIAutomator normalization have independent bound
   const preflightDeadline =
     "const preflightDeadline = performance.now() + CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS"
   const preflightProbe = "probePixelLauncherAnrWindow(preflightDeadline)"
+  const preflightAcceptance =
+    'requireRemainingAutomationMilliseconds(preflightDeadline, 1, "system-window preflight acceptance")'
   const normalizationDeadline =
     "const normalizationDeadline = performance.now() + CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS"
   const normalizationCall = "normalizeChromeAutomationSurfaceWithinDeadline({"
 
   const preflightDeadlineIndex = performanceHarness.indexOf(preflightDeadline)
   const preflightProbeIndex = performanceHarness.indexOf(preflightProbe)
+  const preflightAcceptanceIndex = performanceHarness.indexOf(preflightAcceptance)
   const normalizationDeadlineIndex = performanceHarness.indexOf(normalizationDeadline)
   const normalizationCallIndex = performanceHarness.indexOf(normalizationCall)
 
   equal(preflightDeadlineIndex >= 0, true)
   equal(preflightDeadlineIndex < preflightProbeIndex, true)
-  equal(preflightProbeIndex < normalizationDeadlineIndex, true)
+  equal(preflightProbeIndex < preflightAcceptanceIndex, true)
+  equal(preflightAcceptanceIndex < normalizationDeadlineIndex, true)
   equal(normalizationDeadlineIndex < normalizationCallIndex, true)
   match(
     performanceHarness,

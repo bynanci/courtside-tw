@@ -1653,6 +1653,14 @@ for (const [suite, source] of [
   [
     "test.describe.skip",
     'test.describe.skip("disabled suite", () => {\n  test("fixture-proof", () => {})\n})\n'
+  ],
+  [
+    "concise-arrow describe.skip",
+    'describe.skip("disabled suite", () =>\n  test("fixture-proof", () => {}))\n'
+  ],
+  [
+    "regex-bearing describe.skip",
+    'describe.skip(/[)}]/u, () => {\n  test("fixture-proof", () => {})\n})\n'
   ]
 ]) {
   test(`a test inside ${suite} cannot serve as executable proof`, () => {
@@ -1805,24 +1813,22 @@ test("arbitrary evidence JSON cannot serve as a repository proof receipt", () =>
   assert.match(report.errors.join("\n"), /recognized repository proof receipt/)
 })
 
-test("the pinned SC-010 historical acceptance receipt remains a valid repository proof", () => {
-  const selector =
-    '"restore_receipt_sha256": "e43cdc024bb9317ffbbf4620de237c9578470a5bb38633c798309da8be930210"'
-  const root = makeFixture(({ contract, files }) => {
+function makePinnedRepositoryReceiptFixture(mutate = () => {}) {
+  return makeFixture(({ contract, files }) => {
     const row = contract.requirements.find(({ id }) => id === "SC-010")
     const previousTaskIds = [...row.task_ids]
     row.task_ids = ["T002"]
     row.implementation_state = "COMPLETE"
     row.evidence_state = "VERIFIED"
     row.deviation_ids = []
-    row.proofs = [
-      {
-        id: "P_BACKUP_RECEIPT_READBACK",
-        kind: "REPOSITORY_PROOF",
-        path: ".loop/evidence/t085-review.json",
-        selector
-      }
-    ]
+    const proof = {
+      id: "P_BACKUP_RECEIPT_READBACK",
+      kind: "REPOSITORY_PROOF",
+      path: ".loop/evidence/t085-review.json",
+      selector:
+        '"restore_receipt_sha256": "e43cdc024bb9317ffbbf4620de237c9578470a5bb38633c798309da8be930210"'
+    }
+    row.proofs = [proof]
     const fallbackRow = contract.requirements.find(({ id }) => id === "SC-011")
     for (const taskId of previousTaskIds) {
       const task = contract.task_ledger.find(({ id }) => id === taskId)
@@ -1837,44 +1843,103 @@ test("the pinned SC-010 historical acceptance receipt remains a valid repository
     contract.deviations[0].affected_ids = contract.deviations[0].affected_ids.filter(
       (id) => id !== "SC-010"
     )
-    files[".loop/evidence/t085-review.json"] = `${JSON.stringify(
-      {
-        schema_version: "courtside-t085-review/v1",
-        task: "T085",
-        repository: "bynanci/courtside-tw",
-        issue: "https://github.com/bynanci/courtside-tw/issues/145",
-        historical_acceptance_readback: {
-          requirement_id: "SC-010",
-          artifact_id: 9414805375,
-          artifact_name: "ci-dependency-reports",
-          artifact_digest:
-            "sha256:2572e7202c4f8b5429654c7f052ebea5e88e20650c845863925ea54e1264a5b7",
-          artifact_downloaded: true,
-          source_head_sha: "3fcc7f2f29e5c3d41370fffcebd34d925c4c9911",
-          workflow: "CI",
-          workflow_run_id: 32390737392,
-          workflow_run_number: 816,
-          exact_head_manifest_sha256:
-            "01eff14b71a4a9592dc82c16460ca05be834566b9b5517df15acaf654b3d119a",
-          restore_receipt_sha256:
-            "e43cdc024bb9317ffbbf4620de237c9578470a5bb38633c798309da8be930210",
-          restore_receipt: {
-            result: "PASS",
-            release_ready: true,
-            rpo_hours: 0.001,
-            rpo_limit_hours: 24,
-            rto_minutes: 0.037,
-            rto_limit_minutes: 240
-          }
+    const receipt = {
+      schema_version: "courtside-t085-review/v1",
+      task: "T085",
+      repository: "bynanci/courtside-tw",
+      issue: "https://github.com/bynanci/courtside-tw/issues/145",
+      historical_acceptance_readback: {
+        requirement_id: "SC-010",
+        task: "T081",
+        artifact_id: 9414805375,
+        artifact_name: "ci-dependency-reports",
+        artifact_digest: "sha256:2572e7202c4f8b5429654c7f052ebea5e88e20650c845863925ea54e1264a5b7",
+        artifact_downloaded: true,
+        source_head_sha: "3fcc7f2f29e5c3d41370fffcebd34d925c4c9911",
+        workflow: "CI",
+        workflow_run_id: 32390737392,
+        workflow_run_number: 816,
+        exact_head_manifest_sha256:
+          "01eff14b71a4a9592dc82c16460ca05be834566b9b5517df15acaf654b3d119a",
+        restore_receipt_sha256: "e43cdc024bb9317ffbbf4620de237c9578470a5bb38633c798309da8be930210",
+        restore_receipt: {
+          result: "PASS",
+          release_ready: true,
+          rpo_hours: 0.001,
+          rpo_limit_hours: 24,
+          rto_minutes: 0.037,
+          rto_limit_minutes: 240,
+          media_assets: 2,
+          media_variants: 2,
+          checksum_sample_requested: 2,
+          checksum_sample_verified: 2
         }
-      },
-      null,
-      2
-    )}\n`
+      }
+    }
+    mutate({ receipt, proof })
+    files[".loop/evidence/t085-review.json"] = `${JSON.stringify(receipt, null, 2)}\n`
   })
+}
+
+test("the pinned SC-010 historical acceptance receipt remains a valid repository proof", () => {
+  const root = makePinnedRepositoryReceiptFixture()
   const report = run(root)
   assert.equal(report.status, "PASS", report.errors.join("\n"))
 })
+
+for (const [name, mutate, expected] of [
+  [
+    "source head",
+    ({ receipt }) => {
+      receipt.historical_acceptance_readback.source_head_sha = "f".repeat(40)
+    },
+    /accepted exact-head artifact/
+  ],
+  [
+    "result",
+    ({ receipt }) => {
+      receipt.historical_acceptance_readback.restore_receipt.result = "FAIL"
+    },
+    /passing bounded restore receipt/
+  ],
+  [
+    "digest and matching selector",
+    ({ receipt, proof }) => {
+      const digest = "f".repeat(64)
+      receipt.historical_acceptance_readback.restore_receipt_sha256 = digest
+      proof.selector = `"restore_receipt_sha256": "${digest}"`
+    },
+    /accepted restore receipt digest|passing bounded restore receipt/
+  ],
+  [
+    "negative metric pair",
+    ({ receipt }) => {
+      receipt.historical_acceptance_readback.restore_receipt.rpo_hours = -2
+      receipt.historical_acceptance_readback.restore_receipt.rpo_limit_hours = -1
+    },
+    /passing bounded restore receipt/
+  ],
+  [
+    "positive metric drift",
+    ({ receipt }) => {
+      receipt.historical_acceptance_readback.restore_receipt.rto_minutes = 0.038
+    },
+    /passing bounded restore receipt/
+  ],
+  [
+    "unbound scalar",
+    ({ receipt }) => {
+      receipt.historical_acceptance_readback.restore_receipt.unbound = true
+    },
+    /passing bounded restore receipt/
+  ]
+]) {
+  test(`the pinned repository receipt rejects ${name} drift`, () => {
+    const report = run(makePinnedRepositoryReceiptFixture(mutate))
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), expected)
+  })
+}
 
 test("the human Story / slice column must match the machine contract", () => {
   const root = makeFixture()
