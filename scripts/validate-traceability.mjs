@@ -1178,7 +1178,9 @@ function gradleTestSelection(buildText) {
     ["tasks", ".", "withType", "<", "Test", ">", "(", ")", ".", "all", "{"],
     ["tasks", ".", "test", "{"],
     ["tasks", ".", "named", "<", "Test", ">", "(", "test", ")", "{"],
+    ["tasks", ".", "named", "<", "Test", ">", "(", "test", ")", ".", "configure", "{"],
     ["tasks", ".", "named", "(", "test", ")", "{"],
+    ["tasks", ".", "named", "(", "test", ")", ".", "configure", "{"],
     ["tasks", ".", "getByName", "<", "Test", ">", "(", "test", ")", "{"]
   ]
   for (let index = 0; index < tokens.length; index += 1) {
@@ -1755,6 +1757,12 @@ function githubActionsShellPropagatesFailure(shell) {
   if (
     shellOptions.some((word, index, arguments_) => {
       if (word === "--noexec" || /^-[A-Za-z]*n[A-Za-z]*$/.test(word)) return true
+      if (
+        ["--dump-po-strings", "--dump-strings"].includes(word) ||
+        /^-[A-Za-z]*D[A-Za-z]*$/.test(word)
+      ) {
+        return true
+      }
       if (word === "--option=noexec") return true
       return ["-o", "--option"].includes(word) && arguments_[index + 1] === "noexec"
     })
@@ -3227,7 +3235,13 @@ function hasScheduledJavaScriptProcessExit(ast, bindings, playwrightDisableNames
   const schedulers = javaScriptCallbackSchedulers(ast)
   let scheduledExit = false
   walkJavaScriptAst(ast, (node, ancestors) => {
-    if (scheduledExit || node.type !== "CallExpression" || node.optional === true) return
+    if (
+      scheduledExit ||
+      !["CallExpression", "NewExpression"].includes(node.type) ||
+      node.optional === true
+    ) {
+      return
+    }
     const callee = javaScriptMemberPath(node.callee)
     const schedulesCallback =
       schedulers.pathIsScheduler(callee) || schedulers.pathIsPromiseReaction(callee)
@@ -4624,8 +4638,10 @@ function shellPythonHereDocumentContainsLine(text, targetLineIndex) {
 
 function shellTrapActionOverridesStatus(action, sourceText = action, resolving = new Set()) {
   const commands = shellCommandSegments(action)
+  let errexitEnabled = true
   for (let commandIndex = 0; commandIndex < commands.length; commandIndex += 1) {
     const words = commands[commandIndex]
+    errexitEnabled = shellSetNamedOptionState(words, "errexit", errexitEnabled)
     const index = shellCommandIndexAfterPrefixes(words)
     const command = words[index]
     if ([".", "eval", "exec", "source"].includes(command) || /[$`]/.test(command ?? "")) {
@@ -4653,7 +4669,7 @@ function shellTrapActionOverridesStatus(action, sourceText = action, resolving =
     if (/^[+-]?\d+$/.test(status)) return !shellStatusIsNonzero(status)
     return true
   }
-  return false
+  return !errexitEnabled
 }
 
 function shellHasStatusOverridingFailureTrapBeforeLine(text, targetLineIndex) {
@@ -4688,8 +4704,34 @@ function shellHasStatusOverridingFailureTrapBeforeLine(text, targetLineIndex) {
   return overridingSignals.size > 0
 }
 
+function shellStaticValue(rawValue, variables) {
+  let value = rawValue
+  for (let pass = 0; pass < 10; pass += 1) {
+    const before = value
+    value = value.replace(
+      /\$\{([A-Za-z_][A-Za-z0-9_]*):-([^{}]*)\}/g,
+      (_, name, fallback) => variables.get(name) || fallback
+    )
+    let unresolved = false
+    value = value.replace(
+      /\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)/g,
+      (_, bracedName, plainName) => {
+        const replacement = variables.get(bracedName ?? plainName)
+        if (replacement === undefined) {
+          unresolved = true
+          return ""
+        }
+        return replacement
+      }
+    )
+    if (unresolved) return null
+    if (value === before) break
+  }
+  return /[$`*?[\]{}()<>]/.test(value) ? null : value
+}
+
 function shellSourcedHelperMasksFailure(root, sourcePath, resolving = new Set()) {
-  if (/[$`*?[\]{}()<>]/.test(sourcePath)) return false
+  if (/[$`*?[\]{}()<>]/.test(sourcePath)) return true
   if (
     path.isAbsolute(sourcePath) ||
     sourcePath.includes("\\") ||
@@ -4738,19 +4780,51 @@ function shellSourcedHelperMasksFailure(root, sourcePath, resolving = new Set())
   )
 }
 
-function shellHasFailureMaskingSourceBeforeLine(root, text, targetLineIndex) {
+function shellHasFailureMaskingSourceBeforeLine(root, proofPath, text, targetLineIndex) {
+  const variables = new Map()
   const lines = text.split(/\r?\n/).slice(0, targetLineIndex)
-  return lines.some((line) =>
-    shellCommandSegments(line).some((words) => {
+  for (const line of lines) {
+    const scriptDirectory = line.match(
+      /^\s*([A-Za-z_][A-Za-z0-9_]*)=\$\(\s*CDPATH=\s*cd\s+--\s+"\$\(dirname\s+--\s+"\$0"\)"\s+&&\s+pwd\s*\)\s*$/
+    )
+    if (scriptDirectory !== null) {
+      variables.set(scriptDirectory[1], path.posix.dirname(proofPath))
+    }
+    const normalizedDirectory = line.match(
+      /^\s*([A-Za-z_][A-Za-z0-9_]*)=\$\(\s*CDPATH=\s*cd\s+--\s+"([^"]+)"\s+&&\s+pwd\s*\)\s*$/
+    )
+    if (normalizedDirectory !== null) {
+      const resolved = shellStaticValue(normalizedDirectory[2], variables)
+      if (resolved === null) variables.delete(normalizedDirectory[1])
+      else variables.set(normalizedDirectory[1], path.posix.normalize(resolved))
+    }
+    for (const words of shellCommandSegments(line)) {
+      const assignmentWords = ["export", "readonly"].includes(words[0]) ? words.slice(1) : words
+      if (assignmentWords.length === 1) {
+        const assignment = assignmentWords[0].match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/)
+        if (assignment !== null) {
+          const resolved = shellStaticValue(assignment[2], variables)
+          if (resolved === null) variables.delete(assignment[1])
+          else variables.set(assignment[1], resolved)
+          continue
+        }
+      }
       const index = shellCommandIndexAfterPrefixes(words)
-      if (![".", "source"].includes(words[index])) return false
-      const sourcePath = words[index + 1]
-      return sourcePath !== undefined && shellSourcedHelperMasksFailure(root, sourcePath)
-    })
-  )
+      if (![".", "source"].includes(words[index])) continue
+      const sourcePath = shellStaticValue(words[index + 1] ?? "", variables)
+      if (
+        sourcePath === null ||
+        sourcePath === "" ||
+        shellSourcedHelperMasksFailure(root, sourcePath)
+      ) {
+        return true
+      }
+    }
+  }
+  return false
 }
 
-function shellLineHasExecutableFailureAnchor(root, text, line, selector, lineIndex) {
+function shellLineHasExecutableFailureAnchor(root, proofPath, text, line, selector, lineIndex) {
   const segments = shellCommandSegments(line)
   const operators = shellLineControlOperators(line)
   if (operators === null || segments.length !== operators.length + 1) return false
@@ -4762,7 +4836,7 @@ function shellLineHasExecutableFailureAnchor(root, text, line, selector, lineInd
   if (shellSelectorInsideCompoundCommand(text, selector)) return false
   if (shellSelectorInsideSubstitution(text, selector)) return false
   if (shellHasStatusOverridingFailureTrapBeforeLine(text, lineIndex)) return false
-  if (shellHasFailureMaskingSourceBeforeLine(root, text, lineIndex)) return false
+  if (shellHasFailureMaskingSourceBeforeLine(root, proofPath, text, lineIndex)) return false
 
   const failureFunctions = shellFailureFunctions(text)
   const hasPipelineOrBackground = operators.some((operator) => ["|", "&"].includes(operator))
@@ -4912,7 +4986,14 @@ function hasExecutableProofAnchor(root, proof) {
     return hasExecutableJavaScriptProofAnchor(text, proof.selector, proof.path)
   }
   if (proof.path.startsWith("scripts/test/") && proof.path.endsWith(".sh")) {
-    return shellLineHasExecutableFailureAnchor(root, text, line, proof.selector, lineIndex)
+    return shellLineHasExecutableFailureAnchor(
+      root,
+      proof.path,
+      text,
+      line,
+      proof.selector,
+      lineIndex
+    )
   }
   if (proof.path.startsWith(".github/workflows/")) {
     return line === proof.selector

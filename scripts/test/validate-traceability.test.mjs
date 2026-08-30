@@ -6610,6 +6610,169 @@ for (const [name, activeSignal, resetSignal] of [
   })
 }
 
+test("post-4648 exact-head regression: a Promise constructor callback cannot terminate proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "tests/promise-constructor-exit.test.js"
+    contract.requirements[0].proofs[0].path = proofPath
+    files[proofPath] =
+      'import test from "node:test"\n' +
+      'test("fixture-proof", () => { throw new Error("unreached proof") })\n' +
+      "new Promise(() => process.exit(0))\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("post-4648 adjacent regression: a named Promise constructor callback cannot terminate proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "tests/named-promise-constructor-exit.test.js"
+    contract.requirements[0].proofs[0].path = proofPath
+    files[proofPath] =
+      'import test from "node:test"\n' +
+      'test("fixture-proof", () => { throw new Error("unreached proof") })\n' +
+      "function terminateFromConstructor() { process.exit(0) }\n" +
+      "new Promise(terminateFromConstructor)\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("post-4648 exact-head regression: an ERR trap cannot disable proof-side errexit", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] = "set -e\ntrap 'set +e' ERR\nfalse fixture-proof\ntrue\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("post-4648 adjacent safety: an ERR trap that preserves errexit remains attributable", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] = "set -e\ntrap 'set -e' ERR\nfalse fixture-proof\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+test("post-4648 adjacent regression: an ERR trap cannot disable long-form errexit", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] =
+      "set -e\ntrap 'builtin set +o errexit' ERR\nfalse fixture-proof\ntrue\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+for (const [name, helper, expectedStatus] of [
+  ["masking", "set +e", "FAIL"],
+  ["harmless", "export FIXTURE_CONTEXT=ready", "PASS"]
+]) {
+  test(`post-4648 dynamic source safety: a ${name} resolved helper is classified`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+      files["scripts/test/wired-proof.sh"] =
+        "set -e\n" +
+        "HELPER=scripts/test/dynamic-source.sh\n" +
+        'source "$HELPER"\n' +
+        "false fixture-proof\ntrue\n"
+      files["scripts/test/dynamic-source.sh"] = `${helper}\n`
+      files[".github/workflows/ci.yml"] =
+        "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+    })
+    const report = run(root)
+    assert.equal(report.status, expectedStatus, report.errors.join("\n"))
+  })
+}
+
+for (const [name, sourceCommand] of [
+  ["unresolved variable", 'source "$UNRESOLVED_HELPER"'],
+  ["command substitution", 'source "$(printf scripts/test/harmless-source.sh)"']
+]) {
+  test(`post-4648 adjacent regression: a source ${name} fails closed`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+      files["scripts/test/wired-proof.sh"] = `set -e\n${sourceCommand}\nfalse fixture-proof\ntrue\n`
+      files["scripts/test/harmless-source.sh"] = "export FIXTURE_CONTEXT=ready\n"
+      files[".github/workflows/ci.yml"] =
+        "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+    })
+    assertExecutableProofRejected(root)
+  })
+}
+
+test("post-4648 adjacent safety: a static source parameter fallback remains attributable", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] =
+      'set -e\nHELPER="${HELPER_OVERRIDE:-scripts/test/harmless-source.sh}"\n' +
+      'source "$HELPER"\nfalse fixture-proof\n'
+    files["scripts/test/harmless-source.sh"] = "export FIXTURE_CONTEXT=ready\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+for (const [name, shell] of [
+  ["short", "bash -e -D {0}"],
+  ["clustered", "bash -eD {0}"],
+  ["long", "bash --dump-strings -e {0}"],
+  ["po", "bash -e --dump-po-strings {0}"]
+]) {
+  test(`post-4648 exact-head regression: ${name} dump-strings shell cannot authorize proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+      files["scripts/test/wired-proof.sh"] = "false fixture-proof\n"
+      files[".github/workflows/ci.yml"] =
+        `jobs:\n  verify:\n    steps:\n      - shell: ${shell}\n        run: bash scripts/test/wired-proof.sh\n`
+    })
+    assertExecutableProofRejected(root)
+  })
+}
+
+for (const [value, expectedStatus] of [
+  ["true", "FAIL"],
+  ["false", "PASS"]
+]) {
+  test(`post-4648 Gradle provider safety: configured ignoreFailures ${value} is classified`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+      contract.requirements[0].proofs[0].path = proofPath
+      contract.requirements[0].proofs[0].selector = "fixtureProof"
+      files[proofPath] =
+        "package example;\n" +
+        "import org.junit.jupiter.api.Test;\n" +
+        "class ExampleTests {\n  @Test\n  void fixtureProof() {}\n}\n"
+      addGradleProofRunnerFixture(files)
+      files["apps/api/build.gradle.kts"] +=
+        `tasks.named<Test>("test").configure { ignoreFailures = ${value} }\n`
+    })
+    const report = run(root)
+    assert.equal(report.status, expectedStatus, report.errors.join("\n"))
+  })
+}
+
+test("post-4648 adjacent regression: provider setIgnoreFailures true fails closed", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+    contract.requirements[0].proofs[0].path = proofPath
+    contract.requirements[0].proofs[0].selector = "fixtureProof"
+    files[proofPath] =
+      "package example;\n" +
+      "import org.junit.jupiter.api.Test;\n" +
+      "class ExampleTests {\n  @Test\n  void fixtureProof() {}\n}\n"
+    addGradleProofRunnerFixture(files)
+    files["apps/api/build.gradle.kts"] +=
+      'tasks.named<Test>("test").configure { setIgnoreFailures(true) }\n'
+  })
+  assertExecutableProofRejected(root)
+})
+
 test("ready-for-review remains an explicit release-owner gate", () => {
   const graph = fs.readFileSync(path.join(repositoryRoot, ".loop/t085-traceability.yaml"), "utf8")
   const traceability = fs.readFileSync(
