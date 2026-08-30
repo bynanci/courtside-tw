@@ -760,12 +760,21 @@ function javaScriptRunnerCommandSelects(command, packageRelativePath) {
   }
   if (
     normalizedTokens.some((token) =>
-      /^--test-(?:name-pattern|only|rerun-failures|shard|skip-pattern)(?:=|$)/.test(token)
+      /^--test-(?:global-setup|name-pattern|only|reporter|rerun-failures|shard|skip-pattern)(?:=|$)/.test(
+        token
+      )
     )
   ) {
     return false
   }
   if (normalizedTokens.some((token) => /^--env-file(?:-if-exists)?(?:=|$)/.test(token))) {
+    return false
+  }
+  if (
+    normalizedTokens.some((token) =>
+      /^(?:-r.*|--(?:experimental-loader|import|loader|require)(?:=.*)?)$/.test(token)
+    )
+  ) {
     return false
   }
   return normalizedTokens.some((rawToken) => {
@@ -1352,6 +1361,20 @@ function shellCommandSegments(script) {
   return segments
 }
 
+function shellCommandIndexAfterPrefixes(words) {
+  let index = 0
+  while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[index] ?? "")) index += 1
+  while (["builtin", "command"].includes(words[index])) {
+    index += 1
+    while ((words[index] ?? "").startsWith("-")) {
+      const option = words[index]
+      index += 1
+      if (option === "--") break
+    }
+  }
+  return index
+}
+
 function shellSetNamedOptionState(words, optionName, currentState) {
   let index = 0
   while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[index] ?? "")) index += 1
@@ -1472,7 +1495,9 @@ function shellScriptOperandIndex(words, shellIndex) {
 }
 
 function shellRunStepExecutesProof(script, relativePath) {
-  if (shellRunStepHasUnsafeControlFlow(script)) return false
+  if (shellRunStepHasUnsafeControlFlow(script) || shellRunStepHasStartupFileEnvironment(script)) {
+    return false
+  }
   const expectedCommands = new Set([relativePath, `./${relativePath}`])
   for (const words of shellCommandSegments(script)) {
     let index = 0
@@ -1491,6 +1516,22 @@ function shellRunStepExecutesProof(script, relativePath) {
     if (expectedCommands.has(words[index])) return true
   }
   return false
+}
+
+function shellRunStepHasStartupFileEnvironment(script) {
+  return shellCommandSegments(script).some((words) => {
+    let index = 0
+    while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[index] ?? "")) {
+      if (/^(?:BASH_ENV|ENV)=/.test(words[index])) return true
+      index += 1
+    }
+    while (["builtin", "command"].includes(words[index])) {
+      index += 1
+      while ((words[index] ?? "").startsWith("-")) index += 1
+    }
+    if (!["declare", "export", "readonly", "typeset"].includes(words[index])) return false
+    return words.slice(index + 1).some((word) => /^(?:BASH_ENV|ENV)=/.test(word))
+  })
 }
 
 function shellRunStepExecutesGradleTest(script) {
@@ -1588,6 +1629,12 @@ function ciWorkflowExecutableRunSteps(workflowText) {
     const jobs = workflow.jobs ?? {}
     if (jobs === null || typeof jobs !== "object" || Array.isArray(jobs)) return []
     const workflowShell = workflow.defaults?.run?.shell
+    const hasStartupFileEnvironment = (environment) =>
+      environment !== null &&
+      typeof environment === "object" &&
+      !Array.isArray(environment) &&
+      ["BASH_ENV", "ENV"].some((name) => Object.hasOwn(environment, name))
+    if (hasStartupFileEnvironment(workflow.env)) return []
     const reachability = new Map()
     const visiting = new Set()
     const isUnconditionallyReachable = (jobName) => {
@@ -1623,7 +1670,7 @@ function ciWorkflowExecutableRunSteps(workflowText) {
       return reachable
     }
     return Object.entries(jobs).flatMap(([jobName, job]) => {
-      if (!isUnconditionallyReachable(jobName)) return []
+      if (!isUnconditionallyReachable(jobName) || hasStartupFileEnvironment(job.env)) return []
       return (job.steps ?? [])
         .filter(
           (step) =>
@@ -1631,6 +1678,7 @@ function ciWorkflowExecutableRunSteps(workflowText) {
             typeof step === "object" &&
             step.if === undefined &&
             (step["continue-on-error"] === undefined || step["continue-on-error"] === false) &&
+            !hasStartupFileEnvironment(step.env) &&
             typeof step.run === "string" &&
             githubActionsShellPropagatesFailure(
               step.shell ?? job.defaults?.run?.shell ?? workflowShell
@@ -1738,6 +1786,7 @@ const javaScriptFunctionTypes = new Set([
 ])
 const javaScriptProofBindingRoles = new Set(["node-test", "playwright-test"])
 const nodeTestLifecycleHookNames = new Set(["after", "afterEach", "before", "beforeEach"])
+const playwrightLifecycleHookNames = new Set(["afterAll", "afterEach", "beforeAll", "beforeEach"])
 
 function normalizeJavaScriptExpression(node) {
   let current = node
@@ -2446,7 +2495,7 @@ function javaScriptNodeTestHookCallback(node, bindings) {
     : null
 }
 
-function hasPotentialNodeTestHookRegistration(ancestors, bindings, playwrightDisableNames) {
+function hasPotentialJavaScriptHookRegistration(ancestors, bindings, playwrightDisableNames) {
   for (let index = 0; index < ancestors.length; index += 1) {
     if (!javaScriptFunctionTypes.has(ancestors[index]?.type)) continue
     if (
@@ -2537,7 +2586,7 @@ function hasUnsafeNodeTestHook(ast, bindings, playwrightDisableNames) {
     const callback = javaScriptNodeTestHookCallback(node, bindings)
     if (
       callback === null ||
-      !hasPotentialNodeTestHookRegistration(ancestors, bindings, playwrightDisableNames)
+      !hasPotentialJavaScriptHookRegistration(ancestors, bindings, playwrightDisableNames)
     ) {
       return
     }
@@ -3126,7 +3175,7 @@ function hasScheduledJavaScriptProcessExit(ast, bindings, playwrightDisableNames
     const schedulesCallback = schedulers.pathIsScheduler(callee)
     if (
       !schedulesCallback ||
-      !hasPotentialNodeTestHookRegistration(ancestors, bindings, playwrightDisableNames)
+      !hasPotentialJavaScriptHookRegistration(ancestors, bindings, playwrightDisableNames)
     ) {
       return
     }
@@ -3515,6 +3564,90 @@ function hasPlaywrightTestDisable(callbackNode, bindings, disableNames = new Set
   return disabled
 }
 
+function hasUnsafePlaywrightTestHook(ast, bindings, disableNames) {
+  const processExitTerminators = javaScriptProcessExitTerminatorNames(ast)
+  let unsafe = false
+  walkJavaScriptAst(ast, (node, ancestors) => {
+    if (unsafe) return
+    if (node.type === "MemberExpression") {
+      const memberPath = javaScriptMemberPath(node)
+      const binding = bindings.get(memberPath.segments[0], node)
+      if (binding?.role !== "playwright-test") return
+      const parent = ancestors.at(-1)
+      const directCall = parent?.type === "CallExpression" && parent.callee === node
+      if (
+        hasPotentialJavaScriptHookRegistration(ancestors, bindings, disableNames) &&
+        (memberPath.ambiguous ||
+          (memberPath.segments.length === 2 &&
+            playwrightLifecycleHookNames.has(memberPath.segments[1]) &&
+            !directCall))
+      ) {
+        unsafe = true
+      }
+      return
+    }
+    if (["AssignmentExpression", "VariableDeclarator"].includes(node.type)) {
+      const source = normalizeJavaScriptExpression(
+        node.type === "VariableDeclarator" ? node.init : node.right
+      ).expression
+      const target = node.type === "VariableDeclarator" ? node.id : node.left
+      const sourcePath = javaScriptMemberPath(source)
+      const sourceBinding = bindings.get(sourcePath.segments[0], node)
+      if (
+        sourceBinding?.role === "playwright-test" &&
+        sourcePath.segments.length === 1 &&
+        target?.type === "ObjectPattern" &&
+        target.properties?.some((property) => {
+          if (property?.type === "RestElement") return true
+          const key = staticJavaScriptObjectPropertyKey(property)
+          return !key.known || playwrightLifecycleHookNames.has(key.value)
+        })
+      ) {
+        unsafe = true
+      }
+      return
+    }
+    if (node.type !== "CallExpression" || node.optional === true) return
+    const memberPath = javaScriptMemberPath(node.callee)
+    const binding = bindings.get(memberPath.segments[0], node)
+    if (binding?.role !== "playwright-test") return
+    if (memberPath.ambiguous) {
+      unsafe = true
+      return
+    }
+    if (
+      memberPath.segments.length !== 2 ||
+      !playwrightLifecycleHookNames.has(memberPath.segments[1]) ||
+      !hasPotentialJavaScriptHookRegistration(ancestors, bindings, disableNames)
+    ) {
+      return
+    }
+    if (node.arguments?.length !== 1 || node.arguments[0]?.type === "SpreadElement") {
+      unsafe = true
+      return
+    }
+    const callback = normalizeJavaScriptExpression(node.arguments[0])
+    if (callback.ambiguous) {
+      unsafe = true
+      return
+    }
+    if (javaScriptFunctionTypes.has(callback.expression?.type)) {
+      unsafe =
+        hasPlaywrightTestDisable(callback.expression, bindings, disableNames) ||
+        hasJavaScriptProcessExit(callback.expression, { includeFunctions: true }) ||
+        javaScriptCallsTerminator(callback.expression, processExitTerminators, {
+          includeFunctions: true
+        })
+      return
+    }
+    unsafe =
+      callback.expression?.type !== "Identifier" ||
+      disableNames.has(callback.expression.name) ||
+      processExitTerminators.has(callback.expression.name)
+  })
+  return unsafe
+}
+
 function hasAttributableJavaScriptRegistration(node, ancestors, bindings, playwrightDisableNames) {
   if (
     hasConditionalJavaScriptRegistration(node, ancestors) ||
@@ -3561,6 +3694,7 @@ function hasExecutableJavaScriptProofAnchor(text, selector, proofPath) {
     if (
       hasEscapedNodeTestLifecycleHook(ast, bindings) ||
       hasUnsafeNodeTestHook(ast, bindings, playwrightDisableNames) ||
+      hasUnsafePlaywrightTestHook(ast, bindings, playwrightDisableNames) ||
       hasScheduledJavaScriptProcessExit(ast, bindings, playwrightDisableNames)
     ) {
       return false
@@ -4245,6 +4379,90 @@ function shellSelectorInsideCompoundCommand(text, selector) {
   return compoundStack.length > 0
 }
 
+function shellSelectorInsideSubstitution(text, selector) {
+  const targetOffset = text.indexOf(selector)
+  if (targetOffset === -1) return false
+  const substitutions = []
+  let quote = null
+  let escaped = false
+  let comment = false
+  let wordStarted = false
+  for (let index = 0; index < targetOffset; index += 1) {
+    const character = text[index]
+    if (comment) {
+      if (character === "\n") {
+        comment = false
+        wordStarted = false
+      }
+      continue
+    }
+    if (escaped) {
+      escaped = false
+      wordStarted = true
+      continue
+    }
+    const activeSubstitution = substitutions.at(-1)
+    if (activeSubstitution?.kind === "backtick" && character === "`") {
+      substitutions.pop()
+      quote = activeSubstitution.outerQuote
+      wordStarted = true
+      continue
+    }
+    if (quote === "'") {
+      if (character === "'") quote = null
+      continue
+    }
+    if (quote === '"') {
+      if (character === '"') quote = null
+      else if (character === "\\") escaped = true
+      else if (character === "$" && text[index + 1] === "(" && text[index + 2] !== "(") {
+        substitutions.push({ depth: 1, kind: "parenthesized", outerQuote: quote })
+        quote = null
+        index += 1
+      } else if (character === "`") {
+        substitutions.push({ kind: "backtick", outerQuote: quote })
+        quote = null
+      }
+      continue
+    }
+    if (character === "\\") {
+      escaped = true
+      wordStarted = true
+    } else if (["'", '"'].includes(character)) {
+      quote = character
+      wordStarted = true
+    } else if (character === "#" && !wordStarted) {
+      comment = true
+    } else if (["<", ">"].includes(character) && text[index + 1] === "(") {
+      substitutions.push({ depth: 1, kind: "parenthesized", outerQuote: quote })
+      index += 1
+      wordStarted = true
+    } else if (character === "$" && text[index + 1] === "(" && text[index + 2] !== "(") {
+      substitutions.push({ depth: 1, kind: "parenthesized", outerQuote: quote })
+      index += 1
+      wordStarted = true
+    } else if (character === "`") {
+      substitutions.push({ kind: "backtick", outerQuote: quote })
+      wordStarted = true
+    } else if (activeSubstitution?.kind === "parenthesized" && character === "(") {
+      activeSubstitution.depth += 1
+      wordStarted = false
+    } else if (activeSubstitution?.kind === "parenthesized" && character === ")") {
+      activeSubstitution.depth -= 1
+      if (activeSubstitution.depth === 0) {
+        substitutions.pop()
+        quote = activeSubstitution.outerQuote
+      }
+      wordStarted = false
+    } else if (/\s/.test(character) || [";", "|", "&"].includes(character)) {
+      wordStarted = false
+    } else {
+      wordStarted = true
+    }
+  }
+  return substitutions.length > 0
+}
+
 function shellHasLaterExecutableLine(text, targetLineIndex) {
   return text
     .split(/\r?\n/)
@@ -4323,9 +4541,7 @@ function shellExitTrapActionOverridesStatus(action, sourceText = action, resolvi
   const commands = shellCommandSegments(action)
   for (let commandIndex = 0; commandIndex < commands.length; commandIndex += 1) {
     const words = commands[commandIndex]
-    let index = 0
-    while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[index] ?? "")) index += 1
-    while (["builtin", "command"].includes(words[index])) index += 1
+    const index = shellCommandIndexAfterPrefixes(words)
     const command = words[index]
     if ([".", "eval", "source"].includes(command) || /[$`]/.test(command ?? "")) return true
     if (command !== "exit") {
@@ -4358,13 +4574,15 @@ function shellHasStatusOverridingExitTrapBeforeLine(text, targetLineIndex) {
   const lines = text.split(/\r?\n/).slice(0, targetLineIndex)
   for (const line of lines) {
     for (const words of shellCommandSegments(line)) {
-      let index = 0
-      while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[index] ?? "")) index += 1
-      while (["builtin", "command"].includes(words[index])) index += 1
+      const index = shellCommandIndexAfterPrefixes(words)
       if (words[index] !== "trap") continue
-      const action = words[index + 1]
-      const signals = words.slice(index + 2)
-      if (!signals.some((signal) => ["0", "EXIT"].includes(signal))) continue
+      let actionIndex = index + 1
+      if (words[actionIndex] === "--") actionIndex += 1
+      const action = words[actionIndex]
+      const signals = words.slice(actionIndex + 1)
+      if (!signals.some((signal) => /^0+$/.test(signal) || signal.toUpperCase() === "EXIT")) {
+        continue
+      }
       if (/^-[lp]+$/.test(action ?? "")) continue
       overridesStatus =
         ![undefined, "", "-"].includes(action) && shellExitTrapActionOverridesStatus(action, text)
@@ -4383,6 +4601,7 @@ function shellLineHasExecutableFailureAnchor(text, line, selector, lineIndex) {
   if (!selectorIsExecutable) return false
   if (shellSelectorInsideFunctionDefinition(text, selector)) return false
   if (shellSelectorInsideCompoundCommand(text, selector)) return false
+  if (shellSelectorInsideSubstitution(text, selector)) return false
   if (shellHasStatusOverridingExitTrapBeforeLine(text, lineIndex)) return false
 
   const failureFunctions = shellFailureFunctions(text)

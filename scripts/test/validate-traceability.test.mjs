@@ -6148,6 +6148,197 @@ test("follow-up exact-head safety: a harmless traditional Node hook remains attr
   assert.equal(report.status, "PASS", report.errors.join("\n"))
 })
 
+for (const [direction, operator] of [
+  ["input", "<"],
+  ["output", ">"]
+]) {
+  test(`post-5695 exact-head regression: ${direction} process substitution cannot hide a failing shell proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+      files["scripts/test/wired-proof.sh"] =
+        `set -e\ncat ${operator}(\n  false fixture-proof\n)\ntrue\n`
+      files[".github/workflows/ci.yml"] =
+        "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+    })
+    assertExecutableProofRejected(root)
+  })
+}
+
+test("post-5695 adjacent safety: a completed harmless process substitution preserves proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] =
+      "set -e\ncat <(printf harmless) >/dev/null\nfalse fixture-proof\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+for (const [substitutionKind, open, close] of [
+  ["command", "$(", ")"],
+  ["legacy command", "`", "`"]
+]) {
+  test(`post-5695 adjacent regression: ${substitutionKind} substitution cannot hide a failing shell proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+      files["scripts/test/wired-proof.sh"] =
+        `set -e\nprintf '%s\\n' "${open}\n  false fixture-proof\n${close}"\ntrue\n`
+      files[".github/workflows/ci.yml"] =
+        "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+    })
+    assertExecutableProofRejected(root)
+  })
+}
+
+for (const [substitutionKind, expression] of [
+  ["command", "$(printf harmless)"],
+  ["legacy command", "`printf harmless`"]
+]) {
+  test(`post-5695 adjacent safety: a completed harmless ${substitutionKind} substitution preserves proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+      files["scripts/test/wired-proof.sh"] =
+        `set -e\nprintf '%s\\n' "${expression}"\nfalse fixture-proof\n`
+      files[".github/workflows/ci.yml"] =
+        "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+    })
+    const report = run(root)
+    assert.equal(report.status, "PASS", report.errors.join("\n"))
+  })
+}
+
+test("post-5695 exact-head regression: trap -- cannot hide an overriding EXIT action", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] = "trap -- 'exit 0' EXIT\nfalse fixture-proof\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+for (const [trapVariant, source] of [
+  ["command separator", "command -- trap -- 'exit 0' EXIT"],
+  ["wrapped action", "trap 'command -- exit 0' EXIT"],
+  ["lowercase signal", "trap 'exit 0' exit"],
+  ["zero-padded signal", "trap 'exit 0' 00"]
+]) {
+  test(`post-5695 adjacent regression: ${trapVariant} cannot hide an overriding EXIT action`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+      files["scripts/test/wired-proof.sh"] = `${source}\nfalse fixture-proof\n`
+      files[".github/workflows/ci.yml"] =
+        "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+    })
+    assertExecutableProofRejected(root)
+  })
+}
+
+test("post-5695 exact-head regression: a Playwright lifecycle hook cannot skip proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "tests/playwright-hook-skip.test.js"
+    contract.requirements[0].proofs[0].path = proofPath
+    files[proofPath] =
+      'import { test } from "@playwright/test"\n' +
+      "test.beforeEach(() => test.skip())\n" +
+      'test("fixture-proof", () => { throw new Error("unreached proof") })\n'
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("post-5695 adjacent safety: a harmless Playwright lifecycle hook preserves proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "tests/harmless-playwright-hook.test.js"
+    contract.requirements[0].proofs[0].path = proofPath
+    files[proofPath] =
+      'import { test } from "@playwright/test"\n' +
+      "test.beforeEach(() => {})\n" +
+      'test("fixture-proof", () => {})\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+test("post-5695 adjacent regression: an escaped Playwright lifecycle hook cannot skip proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "tests/aliased-playwright-hook-skip.test.js"
+    contract.requirements[0].proofs[0].path = proofPath
+    files[proofPath] =
+      'import { test } from "@playwright/test"\n' +
+      "const prepare = test.beforeEach\n" +
+      "prepare(() => test.skip())\n" +
+      'test("fixture-proof", () => { throw new Error("unreached proof") })\n'
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("post-5695 adjacent regression: a Playwright lifecycle hook cannot terminate proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "tests/playwright-hook-exit.test.js"
+    contract.requirements[0].proofs[0].path = proofPath
+    files[proofPath] =
+      'import { test } from "@playwright/test"\n' +
+      "test.beforeAll(() => process.exit(0))\n" +
+      'test("fixture-proof", () => { throw new Error("unreached proof") })\n'
+  })
+  assertExecutableProofRejected(root)
+})
+
+for (const [preloadOption, preloadPath] of [
+  ["--require", "./scripts/test/exit-zero.cjs"],
+  ["--import", "./scripts/test/exit-zero.mjs"],
+  ["--test-global-setup", "./scripts/test/exit-zero-setup.mjs"],
+  ["--test-reporter", "./scripts/test/exit-zero-reporter.mjs"]
+]) {
+  test(`post-5695 exact-head regression: Node ${preloadOption} cannot select proof`, () => {
+    const root = makeFixture(({ files }) => {
+      files["package.json"] = JSON.stringify({
+        private: true,
+        scripts: {
+          test: `node ${preloadOption} ${preloadPath} --test tests/*.test.js`
+        }
+      })
+      files[preloadPath.slice(2)] = "process.exit(0)\n"
+    })
+    assertExecutableProofRejected(root)
+  })
+}
+
+test("post-5695 exact-head regression: BASH_ENV cannot preload a successful shell exit", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] = "false fixture-proof\n"
+    files["scripts/test/exit-zero.sh"] = "exit 0\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: BASH_ENV=scripts/test/exit-zero.sh bash scripts/test/wired-proof.sh\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("post-5695 adjacent regression: exported BASH_ENV cannot preload a successful shell exit", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] = "false fixture-proof\n"
+    files["scripts/test/exit-zero.sh"] = "exit 0\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: |\n          export BASH_ENV=scripts/test/exit-zero.sh\n          bash scripts/test/wired-proof.sh\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("post-5695 adjacent regression: workflow BASH_ENV cannot preload a successful shell exit", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] = "false fixture-proof\n"
+    files["scripts/test/exit-zero.sh"] = "exit 0\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    env:\n      BASH_ENV: scripts/test/exit-zero.sh\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
 test("ready-for-review remains an explicit release-owner gate", () => {
   const graph = fs.readFileSync(path.join(repositoryRoot, ".loop/t085-traceability.yaml"), "utf8")
   const traceability = fs.readFileSync(
