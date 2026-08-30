@@ -283,6 +283,12 @@ function makeFixture(mutate = () => {}) {
     [`${featurePath}/tasks.md`]: tasks,
     [`${featurePath}/traceability.md`]: markdown(contract),
     ".loop/evidence/t085-dispatch.json": JSON.stringify(canonicalDispatch()),
+    "package.json": JSON.stringify({
+      private: true,
+      scripts: {
+        test: "node --test tests/*.test.js tests/*.test.mjs tests/*.test.ts"
+      }
+    }),
     "tests/fixture-proof.test.js": 'import test from "node:test"\ntest("fixture-proof", () => {})\n'
   }
   mutate({ contract, files })
@@ -2283,6 +2289,56 @@ for (const method of ["skip", "todo"]) {
   })
 }
 
+test("a Playwright callback self-disabled with test.skip cannot serve as proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/self-disabled-playwright-proof.test.js"
+    files["tests/self-disabled-playwright-proof.test.js"] =
+      'import { test } from "@playwright/test"\n' +
+      'test("fixture-proof", async () => { test.skip(); throw new Error("unreached proof") })\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+})
+
+for (const [runner, source] of [
+  [
+    "node:test",
+    'import test from "node:test"\n' +
+      'test("fixture-proof", t => { if (process.platform === "linux") t.skip(); throw new Error("proof") })\n'
+  ],
+  [
+    "Playwright",
+    'import { test } from "@playwright/test"\n' +
+      'test("fixture-proof", async () => { if (process.platform === "linux") test.skip(); throw new Error("proof") })\n'
+  ]
+]) {
+  test(`a conditionally self-disabled ${runner} callback cannot serve as proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "tests/conditional-self-disabled-proof.test.js"
+      files["tests/conditional-self-disabled-proof.test.js"] = source
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+  })
+}
+
+test("a proof registration bypassed by a conditional return cannot serve as proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/conditional-return-proof.test.js"
+    files["tests/conditional-return-proof.test.js"] =
+      'import test, { describe } from "node:test"\n' +
+      'describe("suite", () => {\n' +
+      "  if (process.env.SKIP_PROOF) return\n" +
+      '  test("fixture-proof", () => {})\n' +
+      "})\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+})
+
 for (const [optionsKind, declaration, options] of [
   ["dynamic", "const options = { skip: true }\n", "options"],
   ["spread", "", "{ ...{ todo: true } }"]
@@ -2495,6 +2551,45 @@ for (const [binding, source] of [
   })
 }
 
+test("a nested parameter does not shadow a top-level node:test proof call", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/lexical-import-proof.test.js"
+    files["tests/lexical-import-proof.test.js"] =
+      'import test from "node:test"\n' +
+      "function helper(test) { return test }\n" +
+      'test("fixture-proof", () => {})\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+test("node:test default export describe registers nested executable proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/default-describe-proof.test.js"
+    files["tests/default-describe-proof.test.js"] =
+      'import test from "node:test"\n' +
+      'test.describe("suite", () => {\n' +
+      '  test("fixture-proof", () => {})\n' +
+      "})\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+test("a JavaScript proof outside the configured runner globs cannot serve as proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/fixtures/unwired-proof.test.js"
+    files["tests/fixtures/unwired-proof.test.js"] =
+      'import test from "node:test"\ntest("fixture-proof", () => {})\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(
+    report.errors.join("\n"),
+    /VERIFIED repository proof must be an executable check or durable receipt/
+  )
+})
+
 for (const [commentStyle, source] of [
   ["line-commented", 'import test from "node:test"\n// test("fixture-proof", () => {})\n'],
   ["block-commented", 'import test from "node:test"\n/* test("fixture-proof", () => {}) */\n'],
@@ -2637,6 +2732,32 @@ function makePinnedRepositoryReceiptFixture(mutate = () => {}) {
       task: "T085",
       repository: "bynanci/courtside-tw",
       issue: "https://github.com/bynanci/courtside-tw/issues/145",
+      current_base_reconciliation_review: {
+        scope_review: {
+          pr_diff_paths_expected: 13,
+          runtime_files_added_to_pr_diff: false,
+          workflow_changed: true,
+          t085_checked: false,
+          ready_or_merge_performed: false,
+          forbidden_scope_changed: false
+        }
+      },
+      post_merge_scope_correction: {
+        schema_version: "courtside-t085-review-correction/v1",
+        recorded_at: "2026-08-29T05:34:16Z",
+        source: "https://github.com/bynanci/courtside-tw/pull/149#discussion_r3885070244",
+        target: "current_base_reconciliation_review.scope_review",
+        supersedes: {
+          pr_diff_paths_expected: 12,
+          workflow_changed: false
+        },
+        corrected: {
+          pr_diff_paths_expected: 13,
+          workflow_changed: true
+        },
+        reason:
+          "The accepted PR149 implementation scope contains 13 paths, including .github/workflows/ci.yml."
+      },
       historical_acceptance_readback: {
         requirement_id: "SC-010",
         task: "T081",
@@ -2667,6 +2788,34 @@ function makePinnedRepositoryReceiptFixture(mutate = () => {}) {
     }
     mutate({ receipt, proof })
     files[".loop/evidence/t085-review.json"] = `${JSON.stringify(receipt, null, 2)}\n`
+  })
+}
+
+for (const [name, mutate] of [
+  [
+    "missing scope correction",
+    ({ receipt }) => {
+      delete receipt.post_merge_scope_correction
+    }
+  ],
+  [
+    "stale reconciled scope",
+    ({ receipt }) => {
+      receipt.current_base_reconciliation_review.scope_review.pr_diff_paths_expected = 12
+      receipt.current_base_reconciliation_review.scope_review.workflow_changed = false
+    }
+  ],
+  [
+    "drifted corrected scope",
+    ({ receipt }) => {
+      receipt.post_merge_scope_correction.corrected.pr_diff_paths_expected = 12
+    }
+  ]
+]) {
+  test(`the pinned repository receipt rejects ${name}`, () => {
+    const report = run(makePinnedRepositoryReceiptFixture(mutate))
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /accepted 13-path scope correction/)
   })
 }
 

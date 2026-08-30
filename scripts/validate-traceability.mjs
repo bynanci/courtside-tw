@@ -128,6 +128,30 @@ const t085RepositoryReviewReceipt = Object.freeze({
     media_variants: 2,
     checksum_sample_requested: 2,
     checksum_sample_verified: 2
+  }),
+  scope_review: Object.freeze({
+    pr_diff_paths_expected: 13,
+    runtime_files_added_to_pr_diff: false,
+    workflow_changed: true,
+    t085_checked: false,
+    ready_or_merge_performed: false,
+    forbidden_scope_changed: false
+  }),
+  post_merge_scope_correction: Object.freeze({
+    schema_version: "courtside-t085-review-correction/v1",
+    recorded_at: "2026-08-29T05:34:16Z",
+    source: "https://github.com/bynanci/courtside-tw/pull/149#discussion_r3885070244",
+    target: "current_base_reconciliation_review.scope_review",
+    supersedes: Object.freeze({
+      pr_diff_paths_expected: 12,
+      workflow_changed: false
+    }),
+    corrected: Object.freeze({
+      pr_diff_paths_expected: 13,
+      workflow_changed: true
+    }),
+    reason:
+      "The accepted PR149 implementation scope contains 13 paths, including .github/workflows/ci.yml."
   })
 })
 const implementationCheckedTasks = new Set([
@@ -706,15 +730,118 @@ function literalOccurrenceCount(text, selector) {
   return count
 }
 
-function isExecutableProofPath(relativePath) {
-  return (
-    relativePath?.startsWith(".github/workflows/") ||
-    relativePath?.startsWith(".loop/evidence/") ||
-    relativePath?.startsWith("scripts/test/") ||
-    /(?:^|\/)(?:test|tests)\//.test(relativePath ?? "") ||
-    /(?:IT|Test)\.java$/.test(relativePath ?? "") ||
-    /\.(?:test|spec)\.[cm]?[jt]sx?$/.test(relativePath ?? "")
-  )
+function readRunnerConfiguration(root, relativePath) {
+  try {
+    return fs.readFileSync(path.resolve(root, relativePath), "utf8")
+  } catch {
+    return null
+  }
+}
+
+function javaScriptRunnerCommandSelects(command, packageRelativePath) {
+  if (typeof command !== "string") return false
+  return command.split(/&&|\|\||[;|]/).some((segment) => {
+    const tokens = segment.match(/"[^"]*"|'[^']*'|[^\s]+/g) ?? []
+    const normalizedTokens = tokens.map((rawToken) =>
+      rawToken.replace(/^(?:"([^"]*)"|'([^']*)')$/, "$1$2")
+    )
+    if (normalizedTokens[0] !== "node" || !normalizedTokens.includes("--test")) return false
+    return normalizedTokens.some((rawToken) => {
+      const token = rawToken.replace(/^\.\//, "")
+      return (
+        /\.(?:test|spec)\.[cm]?[jt]sx?$/.test(token) && path.matchesGlob(packageRelativePath, token)
+      )
+    })
+  })
+}
+
+function packageRunnerSelectsJavaScriptProof(root, relativePath) {
+  const absoluteRoot = path.resolve(root)
+  const absoluteProof = path.resolve(absoluteRoot, relativePath)
+  if (!absoluteProof.startsWith(`${absoluteRoot}${path.sep}`)) return false
+
+  let packageDirectory = path.dirname(absoluteProof)
+  while (packageDirectory.startsWith(absoluteRoot)) {
+    const packagePath = path.join(packageDirectory, "package.json")
+    if (fs.existsSync(packagePath)) {
+      try {
+        const packageJson = JSON.parse(fs.readFileSync(packagePath, "utf8"))
+        const packageRelativePath = path
+          .relative(packageDirectory, absoluteProof)
+          .split(path.sep)
+          .join("/")
+        const scriptNames =
+          packageDirectory === absoluteRoot ? ["test", "contract:traceability"] : ["test"]
+        return scriptNames.some((name) =>
+          javaScriptRunnerCommandSelects(packageJson.scripts?.[name], packageRelativePath)
+        )
+      } catch {
+        return false
+      }
+    }
+    if (packageDirectory === absoluteRoot) break
+    packageDirectory = path.dirname(packageDirectory)
+  }
+  return false
+}
+
+function playwrightRunnerSelectsProof(root, relativePath) {
+  if (!/^apps\/web\/.*\.(?:test|spec)\.[cm]?[jt]sx?$/.test(relativePath)) return false
+  const packageText = readRunnerConfiguration(root, "apps/web/package.json")
+  const configText = readRunnerConfiguration(root, "apps/web/playwright.config.ts")
+  const workflowText = readRunnerConfiguration(root, ".github/workflows/ci.yml")
+  if (packageText === null || configText === null || workflowText === null) return false
+
+  try {
+    const packageJson = JSON.parse(packageText)
+    if (!/^playwright\s+test(?:\s|$)/.test(packageJson.scripts?.["test:e2e"] ?? "")) {
+      return false
+    }
+  } catch {
+    return false
+  }
+  if (!workflowText.includes("pnpm --filter @courtside/web run test:e2e")) return false
+  const testDirectory = configText.match(/\btestDir\s*:\s*["']([^"']+)["']/)?.[1]
+  if (typeof testDirectory !== "string") return false
+  const packageRelativePath = relativePath.slice("apps/web/".length)
+  const normalizedTestDirectory = testDirectory.replace(/^\.\//, "").replace(/\/$/, "")
+  return packageRelativePath.startsWith(`${normalizedTestDirectory}/`)
+}
+
+function gradleRunnerSelectsJavaProof(root, relativePath) {
+  if (!/^apps\/api\/src\/test\/java\/.+(?:IT|Test)\.java$/.test(relativePath)) return false
+  const buildText = readRunnerConfiguration(root, "apps/api/build.gradle.kts")
+  const workflowText = readRunnerConfiguration(root, ".github/workflows/ci.yml")
+  if (buildText === null || workflowText === null) return false
+  const includesIntegrationTests =
+    !relativePath.endsWith("IT.java") || buildText.includes('include("**/*IT.class")')
+  return includesIntegrationTests && /gradle[^\n]*\s-p\s+apps\/api[^\n]*\btest\b/.test(workflowText)
+}
+
+function ciWorkflowSelectsShellProof(root, relativePath) {
+  if (!relativePath.startsWith("scripts/test/") || !relativePath.endsWith(".sh")) return false
+  const workflowText = readRunnerConfiguration(root, ".github/workflows/ci.yml")
+  return workflowText?.includes(relativePath) === true
+}
+
+function isExecutableProofPath(root, relativePath) {
+  if (typeof relativePath !== "string") return false
+  if (
+    relativePath.startsWith(".github/workflows/") ||
+    (relativePath.startsWith(".loop/evidence/") && relativePath.endsWith(".json"))
+  ) {
+    return true
+  }
+  if (/(?:IT|Test)\.java$/.test(relativePath)) {
+    return gradleRunnerSelectsJavaProof(root, relativePath)
+  }
+  if (/\.(?:test|spec)\.[cm]?[jt]sx?$/.test(relativePath)) {
+    return (
+      packageRunnerSelectsJavaScriptProof(root, relativePath) ||
+      playwrightRunnerSelectsProof(root, relativePath)
+    )
+  }
+  return ciWorkflowSelectsShellProof(root, relativePath)
 }
 
 const disabledJavaScriptSuiteModifiers = new Set([
@@ -1087,6 +1214,23 @@ function javaScriptTestCallOverload(expression) {
   return null
 }
 
+function javaScriptSuiteBinding(expression, memberPath, bindings) {
+  const importedBinding = bindings.get(memberPath.segments[0], expression)
+  if (importedBinding?.role === "node-suite") {
+    return { binding: importedBinding, modifierStart: 1 }
+  }
+  if (
+    importedBinding?.role === "node-test" &&
+    ["describe", "suite"].includes(memberPath.segments[1])
+  ) {
+    return { binding: { role: "node-suite" }, modifierStart: 2 }
+  }
+  if (importedBinding?.role === "playwright-test" && memberPath.segments[1] === "describe") {
+    return { binding: importedBinding, modifierStart: 2 }
+  }
+  return null
+}
+
 function classifyJavaScriptSuiteCall(node, bindings) {
   const normalized = normalizeJavaScriptExpression(node)
   const expression = normalized.expression
@@ -1096,14 +1240,9 @@ function classifyJavaScriptSuiteCall(node, bindings) {
     return "disabled"
   }
 
-  const binding = bindings.get(memberPath.segments[0])
-  const modifierStart =
-    binding?.role === "playwright-test" && memberPath.segments[1] === "describe"
-      ? 2
-      : binding?.role === "node-suite"
-        ? 1
-        : null
-  if (modifierStart === null) return "unknown"
+  const suite = javaScriptSuiteBinding(expression, memberPath, bindings)
+  if (suite === null) return "unknown"
+  const { binding, modifierStart } = suite
   if (normalized.ambiguous || expression.optional === true || memberPath.ambiguous) {
     return "ambiguous"
   }
@@ -1238,70 +1377,131 @@ function authorizedJavaScriptImportRole(declaration, specifier) {
   return null
 }
 
+const javaScriptLexicalScopeTypes = new Set([
+  "BlockStatement",
+  "CatchClause",
+  "ForInStatement",
+  "ForOfStatement",
+  "ForStatement",
+  "Program",
+  "StaticBlock",
+  "SwitchStatement",
+  ...javaScriptFunctionTypes
+])
+
+function nearestJavaScriptScope(ancestors, { functionScope = false } = {}) {
+  for (let index = ancestors.length - 1; index >= 0; index -= 1) {
+    const ancestor = ancestors[index]
+    if (
+      ancestor?.type === "Program" ||
+      javaScriptFunctionTypes.has(ancestor?.type) ||
+      (!functionScope && javaScriptLexicalScopeTypes.has(ancestor?.type))
+    ) {
+      return ancestor
+    }
+  }
+  return null
+}
+
 function attributableJavaScriptBindings(ast) {
   const authorizedImports = new Map()
-  const declarationCounts = new Map()
-  const writtenBindings = new Set()
-  const declare = (name) => declarationCounts.set(name, (declarationCounts.get(name) ?? 0) + 1)
-  const declarePattern = (pattern) => {
+  const nodeAncestors = new WeakMap()
+  const shadowedBindings = new WeakMap()
+  const writes = []
+  const shadow = (scope, name) => {
+    if (scope === null) return
+    const names = shadowedBindings.get(scope) ?? new Set()
+    names.add(name)
+    shadowedBindings.set(scope, names)
+  }
+  const shadowPattern = (scope, pattern) => {
     const names = new Set()
     collectJavaScriptPatternBindings(pattern, names)
-    for (const name of names) declare(name)
+    for (const name of names) shadow(scope, name)
   }
 
-  walkJavaScriptAst(ast, (node) => {
+  walkJavaScriptAst(ast, (node, ancestors) => {
+    nodeAncestors.set(node, ancestors)
     if (node.type === "ImportDeclaration") {
       for (const specifier of node.specifiers ?? []) {
         const localName = specifier.local?.name
         if (typeof localName !== "string") continue
-        declare(localName)
         const role = authorizedJavaScriptImportRole(node, specifier)
         if (role !== null) {
           const candidates = authorizedImports.get(localName) ?? []
           candidates.push({ role })
           authorizedImports.set(localName, candidates)
+        } else {
+          shadow(ast, localName)
         }
       }
     } else if (node.type === "VariableDeclarator") {
-      declarePattern(node.id)
-    } else if (
-      ["FunctionDeclaration", "FunctionExpression", "TSDeclareFunction"].includes(node.type)
-    ) {
-      declarePattern(node.id)
-      for (const parameter of node.params ?? []) declarePattern(parameter)
+      const declaration = ancestors.at(-1)
+      const scope = nearestJavaScriptScope(ancestors, {
+        functionScope: declaration?.kind === "var"
+      })
+      shadowPattern(scope, node.id)
+    } else if (["FunctionDeclaration", "TSDeclareFunction"].includes(node.type)) {
+      shadowPattern(nearestJavaScriptScope(ancestors), node.id)
+      for (const parameter of node.params ?? []) shadowPattern(node, parameter)
+    } else if (node.type === "FunctionExpression") {
+      shadowPattern(node, node.id)
+      for (const parameter of node.params ?? []) shadowPattern(node, parameter)
     } else if (node.type === "ArrowFunctionExpression") {
-      for (const parameter of node.params ?? []) declarePattern(parameter)
-    } else if (["ClassDeclaration", "ClassExpression", "TSEnumDeclaration"].includes(node.type)) {
-      declarePattern(node.id)
+      for (const parameter of node.params ?? []) shadowPattern(node, parameter)
+    } else if (["ClassDeclaration", "TSEnumDeclaration"].includes(node.type)) {
+      shadowPattern(nearestJavaScriptScope(ancestors), node.id)
+    } else if (node.type === "ClassExpression") {
+      shadowPattern(node, node.id)
     } else if (node.type === "CatchClause") {
-      declarePattern(node.param)
+      shadowPattern(node, node.param)
     } else if (node.type === "TSImportEqualsDeclaration") {
-      declarePattern(node.id)
+      shadowPattern(nearestJavaScriptScope(ancestors), node.id)
     } else if (
       ["ForInStatement", "ForOfStatement"].includes(node.type) &&
       node.left?.type !== "VariableDeclaration"
     ) {
-      collectJavaScriptAssignedBindings(node.left, writtenBindings)
+      const names = new Set()
+      collectJavaScriptAssignedBindings(node.left, names)
+      writes.push({ names, node })
     } else if (node.type === "AssignmentExpression") {
-      collectJavaScriptAssignedBindings(node.left, writtenBindings)
+      const names = new Set()
+      collectJavaScriptAssignedBindings(node.left, names)
+      writes.push({ names, node })
     } else if (node.type === "UpdateExpression") {
-      collectJavaScriptAssignedBindings(node.argument, writtenBindings)
+      const names = new Set()
+      collectJavaScriptAssignedBindings(node.argument, names)
+      writes.push({ names, node })
     } else if (node.type === "UnaryExpression" && node.operator === "delete") {
-      collectJavaScriptAssignedBindings(node.argument, writtenBindings)
+      const names = new Set()
+      collectJavaScriptAssignedBindings(node.argument, names)
+      writes.push({ names, node })
     }
   })
 
-  const bindings = new Map()
-  for (const [localName, candidates] of authorizedImports) {
-    if (
-      candidates.length === 1 &&
-      declarationCounts.get(localName) === 1 &&
-      !writtenBindings.has(localName)
-    ) {
-      bindings.set(localName, candidates[0])
+  const resolvesAuthorizedImport = (name, node) => {
+    const candidates = authorizedImports.get(name)
+    if (candidates?.length !== 1) return null
+    const ancestors = nodeAncestors.get(node) ?? []
+    for (const ancestor of ancestors) {
+      if (shadowedBindings.get(ancestor)?.has(name)) return null
+    }
+    return candidates[0]
+  }
+
+  const writtenImports = new Set()
+  for (const write of writes) {
+    for (const name of write.names) {
+      if (resolvesAuthorizedImport(name, write.node) !== null) writtenImports.add(name)
     }
   }
-  return bindings
+
+  return {
+    get(name, node) {
+      if (writtenImports.has(name)) return null
+      return resolvesAuthorizedImport(name, node)
+    }
+  }
 }
 
 function javaScriptProofCall(node, targetOffset, selector, textLength, bindings) {
@@ -1309,7 +1509,7 @@ function javaScriptProofCall(node, targetOffset, selector, textLength, bindings)
   const expression = node
 
   const memberPath = javaScriptMemberPath(expression.callee)
-  const binding = bindings.get(memberPath.segments[0])
+  const binding = bindings.get(memberPath.segments[0], expression)
   if (memberPath.ambiguous || !javaScriptProofBindingRoles.has(binding?.role)) return false
   if (binding.role === "playwright-test" && memberPath.segments[1] === "describe") return false
   const modifiers = memberPath.segments.slice(1)
@@ -1325,10 +1525,15 @@ function javaScriptProofCall(node, targetOffset, selector, textLength, bindings)
   if (binding.role === "node-test") {
     if (
       classifyNodeTestOptions(overload.options, { rejectCallbackOverride: true }) !== "active" ||
-      hasUnconditionalNodeTestContextDisable(overload.callback)
+      hasNodeTestContextDisable(overload.callback)
     ) {
       return false
     }
+  } else if (
+    binding.role === "playwright-test" &&
+    hasPlaywrightTestDisable(overload.callback, bindings)
+  ) {
+    return false
   }
 
   const title = expression.arguments?.[0]
@@ -1349,8 +1554,8 @@ function javaScriptFunctionRegistration(functionIndex, ancestors, bindings) {
   const parent = ancestors[parentIndex]
   if (parent?.type !== "CallExpression") return "unknown"
   const memberPath = javaScriptMemberPath(parent.callee)
-  const binding = bindings.get(memberPath.segments[0])
-  const overload = javaScriptSuiteCallOverload(parent, binding)
+  const suite = javaScriptSuiteBinding(parent, memberPath, bindings)
+  const overload = javaScriptSuiteCallOverload(parent, suite?.binding)
   if (overload?.callback !== child) return "unknown"
   return classifyJavaScriptSuiteCall(parent, bindings)
 }
@@ -1371,7 +1576,7 @@ function isProvablyNonemptyJavaScriptForOf(statement) {
   )
 }
 
-function isAlwaysAbruptJavaScriptStatement(statement) {
+function canBypassLaterJavaScriptStatement(statement) {
   if (
     ["BreakStatement", "ContinueStatement", "ReturnStatement", "ThrowStatement"].includes(
       statement?.type
@@ -1380,10 +1585,23 @@ function isAlwaysAbruptJavaScriptStatement(statement) {
     return true
   }
   if (statement?.type === "LabeledStatement") {
-    return isAlwaysAbruptJavaScriptStatement(statement.body)
+    return canBypassLaterJavaScriptStatement(statement.body)
   }
   if (statement?.type === "BlockStatement") {
-    return (statement.body ?? []).some((child) => isAlwaysAbruptJavaScriptStatement(child))
+    return (statement.body ?? []).some((child) => canBypassLaterJavaScriptStatement(child))
+  }
+  if (statement?.type === "IfStatement") {
+    return (
+      canBypassLaterJavaScriptStatement(statement.consequent) ||
+      canBypassLaterJavaScriptStatement(statement.alternate)
+    )
+  }
+  if (statement?.type === "TryStatement") {
+    return (
+      canBypassLaterJavaScriptStatement(statement.block) ||
+      canBypassLaterJavaScriptStatement(statement.handler?.body) ||
+      canBypassLaterJavaScriptStatement(statement.finalizer)
+    )
   }
   return false
 }
@@ -1397,7 +1615,7 @@ function hasPriorAbruptJavaScriptCompletion(parent, child) {
     childIndex > 0 &&
     statements
       .slice(0, childIndex)
-      .some((statement) => isAlwaysAbruptJavaScriptStatement(statement))
+      .some((statement) => canBypassLaterJavaScriptStatement(statement))
   )
 }
 
@@ -1451,23 +1669,42 @@ function hasDeferredClassFieldRegistration(node, ancestors) {
   return false
 }
 
-function hasUnconditionalNodeTestContextDisable(callbackNode) {
+function hasNodeTestContextDisable(callbackNode) {
   const normalized = normalizeJavaScriptExpression(callbackNode)
   const callback = normalized.expression
   const contextName = callback?.params?.[0]?.type === "Identifier" ? callback.params[0].name : null
   if (normalized.ambiguous || contextName === null) return false
 
   let disabled = false
-  walkJavaScriptAst(callback.body, (node, ancestors) => {
-    if (disabled || node.type !== "CallExpression" || node.optional === true) return
-    if (ancestors.some((ancestor) => javaScriptFunctionTypes.has(ancestor?.type))) return
+  walkJavaScriptAst(callback.body, (node) => {
+    if (disabled || node.type !== "CallExpression") return
     const memberPath = javaScriptMemberPath(node.callee)
     if (
-      memberPath.ambiguous ||
       memberPath.segments.length !== 2 ||
       memberPath.segments[0] !== contextName ||
-      !["skip", "todo"].includes(memberPath.segments[1]) ||
-      hasConditionalJavaScriptRegistration(node, ancestors)
+      !["skip", "todo"].includes(memberPath.segments[1])
+    ) {
+      return
+    }
+    disabled = true
+  })
+  return disabled
+}
+
+function hasPlaywrightTestDisable(callbackNode, bindings) {
+  const normalized = normalizeJavaScriptExpression(callbackNode)
+  const callback = normalized.expression
+  if (normalized.ambiguous || !javaScriptFunctionTypes.has(callback?.type)) return false
+
+  let disabled = false
+  walkJavaScriptAst(callback.body, (node) => {
+    if (disabled || node.type !== "CallExpression") return
+    const memberPath = javaScriptMemberPath(node.callee)
+    const binding = bindings.get(memberPath.segments[0], node)
+    if (
+      memberPath.segments.length !== 2 ||
+      binding?.role !== "playwright-test" ||
+      !["fail", "fixme", "skip"].includes(memberPath.segments[1])
     ) {
       return
     }
@@ -1628,6 +1865,15 @@ function validateRepositoryEvidenceReceipt(root, proof, requirementId, label, er
     !isDeepStrictEqual(historical?.restore_receipt, expected.restore_receipt)
   ) {
     errors.push(`${label} repository proof receipt must contain a passing bounded restore receipt`)
+  }
+  if (
+    !isDeepStrictEqual(
+      receipt.current_base_reconciliation_review?.scope_review,
+      expected.scope_review
+    ) ||
+    !isDeepStrictEqual(receipt.post_merge_scope_correction, expected.post_merge_scope_correction)
+  ) {
+    errors.push(`${label} repository proof receipt must bind the accepted 13-path scope correction`)
   }
   const expectedSelector = `"restore_receipt_sha256": "${expected.restore_receipt_sha256}"`
   if (proof.selector !== expectedSelector) {
@@ -2538,7 +2784,7 @@ export function validateTraceability({
           errors.push(`${label} VERIFIED rows require an allowed proof kind`)
         }
         for (const proof of proofs.filter((proof) => proof?.kind === "REPOSITORY_PROOF")) {
-          if (!isExecutableProofPath(proof.path)) {
+          if (!isExecutableProofPath(root, proof.path)) {
             errors.push(
               `${label} VERIFIED repository proof must be an executable check or durable receipt`
             )
