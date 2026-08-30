@@ -2289,6 +2289,18 @@ for (const method of ["skip", "todo"]) {
   })
 }
 
+test("a node:test callback with an ambiguous computed context call cannot serve as proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/computed-context-proof.test.js"
+    files["tests/computed-context-proof.test.js"] =
+      'import test from "node:test"\n' +
+      'test("fixture-proof", t => { t["sk" + "ip"](); throw new Error("unreached proof") })\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+})
+
 test("a Playwright callback self-disabled with test.skip cannot serve as proof", () => {
   const root = makeFixture(({ contract, files }) => {
     contract.requirements[0].proofs[0].path = "tests/self-disabled-playwright-proof.test.js"
@@ -2589,6 +2601,34 @@ test("a JavaScript proof outside the configured runner globs cannot serve as pro
     /VERIFIED repository proof must be an executable check or durable receipt/
   )
 })
+
+for (const suffix of ["Tests", "TestCase"]) {
+  test(`a Gradle-configured *${suffix}.java source remains executable proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      const proofPath = `apps/api/src/test/java/example/Example${suffix}.java`
+      contract.requirements[0].proofs[0].path = proofPath
+      contract.requirements[0].proofs[0].selector = "fixtureProof"
+      files[proofPath] =
+        "package example;\n\n" +
+        "import org.junit.jupiter.api.Test;\n\n" +
+        `class Example${suffix} {\n` +
+        "  @Test\n" +
+        "  void fixtureProof() {}\n" +
+        "}\n"
+      files["apps/api/build.gradle.kts"] =
+        "tasks.withType<Test> {\n" +
+        '  include("**/*Test.class")\n' +
+        '  include("**/*Tests.class")\n' +
+        '  include("**/*TestCase.class")\n' +
+        '  include("**/*IT.class")\n' +
+        "}\n"
+      files[".github/workflows/ci.yml"] =
+        "steps:\n  - run: gradle --no-daemon --console=plain -p apps/api test\n"
+    })
+    const report = run(root)
+    assert.equal(report.status, "PASS", report.errors.join("\n"))
+  })
+}
 
 for (const [commentStyle, source] of [
   ["line-commented", 'import test from "node:test"\n// test("fixture-proof", () => {})\n'],

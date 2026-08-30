@@ -808,14 +808,32 @@ function playwrightRunnerSelectsProof(root, relativePath) {
   return packageRelativePath.startsWith(`${normalizedTestDirectory}/`)
 }
 
+const gradleJavaTestIncludesBySourceSuffix = new Map([
+  ["Test.java", 'include("**/*Test.class")'],
+  ["Tests.java", 'include("**/*Tests.class")'],
+  ["TestCase.java", 'include("**/*TestCase.class")'],
+  ["IT.java", 'include("**/*IT.class")']
+])
+
+function gradleJavaTestInclude(relativePath) {
+  for (const [sourceSuffix, configuredInclude] of gradleJavaTestIncludesBySourceSuffix) {
+    if (relativePath.endsWith(sourceSuffix)) return configuredInclude
+  }
+  return null
+}
+
 function gradleRunnerSelectsJavaProof(root, relativePath) {
-  if (!/^apps\/api\/src\/test\/java\/.+(?:IT|Test)\.java$/.test(relativePath)) return false
+  const configuredInclude = gradleJavaTestInclude(relativePath)
+  if (!relativePath.startsWith("apps/api/src/test/java/") || configuredInclude === null) {
+    return false
+  }
   const buildText = readRunnerConfiguration(root, "apps/api/build.gradle.kts")
   const workflowText = readRunnerConfiguration(root, ".github/workflows/ci.yml")
   if (buildText === null || workflowText === null) return false
-  const includesIntegrationTests =
-    !relativePath.endsWith("IT.java") || buildText.includes('include("**/*IT.class")')
-  return includesIntegrationTests && /gradle[^\n]*\s-p\s+apps\/api[^\n]*\btest\b/.test(workflowText)
+  return (
+    buildText.includes(configuredInclude) &&
+    /gradle[^\n]*\s-p\s+apps\/api[^\n]*\btest\b/.test(workflowText)
+  )
 }
 
 function ciWorkflowSelectsShellProof(root, relativePath) {
@@ -832,7 +850,7 @@ function isExecutableProofPath(root, relativePath) {
   ) {
     return true
   }
-  if (/(?:IT|Test)\.java$/.test(relativePath)) {
+  if (gradleJavaTestInclude(relativePath) !== null) {
     return gradleRunnerSelectsJavaProof(root, relativePath)
   }
   if (/\.(?:test|spec)\.[cm]?[jt]sx?$/.test(relativePath)) {
@@ -1679,14 +1697,14 @@ function hasNodeTestContextDisable(callbackNode) {
   walkJavaScriptAst(callback.body, (node) => {
     if (disabled || node.type !== "CallExpression") return
     const memberPath = javaScriptMemberPath(node.callee)
-    if (
-      memberPath.segments.length !== 2 ||
-      memberPath.segments[0] !== contextName ||
-      !["skip", "todo"].includes(memberPath.segments[1])
-    ) {
+    if (memberPath.segments[0] !== contextName) return
+    if (memberPath.ambiguous) {
+      disabled = true
       return
     }
-    disabled = true
+    if (memberPath.segments.length === 2 && ["skip", "todo"].includes(memberPath.segments[1])) {
+      disabled = true
+    }
   })
   return disabled
 }
@@ -1770,7 +1788,7 @@ function hasExecutableProofAnchor(root, proof) {
   if (lineIndex === -1) return false
   const line = lines[lineIndex].trim()
 
-  if (/(?:IT|Test)\.java$/.test(proof.path)) {
+  if (gradleJavaTestInclude(proof.path) !== null) {
     const escapedSelector = proof.selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
     const annotationContext = lines.slice(Math.max(0, lineIndex - 5), lineIndex + 1).join("\n")
     return (
