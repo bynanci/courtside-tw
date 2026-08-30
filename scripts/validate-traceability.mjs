@@ -756,6 +756,9 @@ function javaScriptRunnerCommandSelects(command, packageRelativePath) {
   ) {
     return false
   }
+  if (normalizedTokens.some((token) => /^--env-file(?:-if-exists)?(?:=|$)/.test(token))) {
+    return false
+  }
   return normalizedTokens.some((rawToken) => {
     const token = rawToken.replace(/^\.\//, "")
     return (
@@ -814,6 +817,7 @@ const playwrightCollectionFilterKeys = new Set([
   "testIgnore",
   "testMatch"
 ])
+const playwrightLifecycleHookKeys = new Set(["globalSetup", "globalTeardown"])
 
 function playwrightRunnerConfiguration(configText) {
   let ast
@@ -929,12 +933,14 @@ function playwrightRunnerConfiguration(configText) {
       continue
     }
     if (playwrightCollectionFilterKeys.has(key.value)) filtered = true
+    if (playwrightLifecycleHookKeys.has(key.value)) invalid = true
     if (key.value === "testDir") assignTestDirectory(property.value)
   }
   walkJavaScriptAst(configurationObject, (node) => {
     if (node.type !== "Property") return
     const key = staticJavaScriptObjectPropertyKey(node)
     if (key.known && playwrightCollectionFilterKeys.has(key.value)) filtered = true
+    if (key.known && playwrightLifecycleHookKeys.has(key.value)) invalid = true
   })
   walkJavaScriptAst(ast, (node) => {
     if (node.type === "CallExpression") {
@@ -963,6 +969,7 @@ function playwrightRunnerConfiguration(configText) {
     }
     const property = memberPath.segments[1]
     if (playwrightCollectionFilterKeys.has(property)) filtered = true
+    if (playwrightLifecycleHookKeys.has(property)) invalid = true
     if (node.operator !== "=") {
       invalid = true
       return
@@ -1130,7 +1137,22 @@ function gradleTestSelection(buildText) {
     "when",
     "while"
   ])
+  const junitPlatformSelectionMethods = new Set([
+    "excludeEngines",
+    "excludeTags",
+    "includeEngines",
+    "includeTags"
+  ])
   let invalid = false
+  for (let index = 0; index < tokens.length - 1; index += 1) {
+    if (
+      tokens[index].type === "identifier" &&
+      junitPlatformSelectionMethods.has(tokens[index].value) &&
+      tokens[index + 1].value === "("
+    ) {
+      invalid = true
+    }
+  }
   const testBlocks = []
   for (let index = 0; index < tokens.length - 6; index += 1) {
     const sequence = tokens.slice(index, index + 7).map((token) => token.value)
@@ -1297,6 +1319,16 @@ function shellCommandSegments(script) {
 function shellSetNamedOptionState(words, optionName, currentState) {
   let index = 0
   while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[index] ?? "")) index += 1
+  while (["builtin", "command"].includes(words[index])) {
+    index += 1
+    while ((words[index] ?? "").startsWith("-")) {
+      if (words[index] === "--") {
+        index += 1
+        break
+      }
+      index += 1
+    }
+  }
   if (words[index] !== "set") return currentState
   let state = currentState
   for (let argumentIndex = index + 1; argumentIndex < words.length; argumentIndex += 1) {
@@ -1308,6 +1340,10 @@ function shellSetNamedOptionState(words, optionName, currentState) {
       continue
     }
     if (!/^[-+][A-Za-z]+$/.test(argument)) continue
+    if (optionName === "errexit" && argument.slice(1).includes("e")) {
+      state = argument[0] === "-"
+      continue
+    }
     const optionIndex = argument.indexOf("o", 1)
     if (optionIndex === -1) continue
     const inlineOption = argument.slice(optionIndex + 1)
@@ -1341,11 +1377,15 @@ function shellPipelinesHaveActivePipefail(script) {
 function shellRunStepHasUnsafeControlFlow(script) {
   return (
     /<<-?/.test(script) ||
+    /(?:^|[;\n])\s*[A-Za-z_][A-Za-z0-9_]*\s*\(\s*\)\s*\{/m.test(script) ||
     /(?:^|[;\n])\s*(?:case|do|done|elif|else|esac|fi|for|function|if|select|then|until|while)\b/.test(
       script
     ) ||
     script.includes("||") ||
-    /(?:^|[;\n])\s*set\s+(?:--\s+)?(?:\+[A-Za-z]*e[A-Za-z]*|\+o\s+errexit)(?:\s|$)/m.test(script) ||
+    script.includes("&&") ||
+    shellCommandSegments(script).some(
+      (words) => shellSetNamedOptionState(words, "errexit", true) === false
+    ) ||
     /(^|[^&<>|])&(?=$|[^&>])/m.test(script) ||
     !shellPipelinesHaveActivePipefail(script)
   )
@@ -1435,12 +1475,22 @@ function shellRunStepExecutesGradleTest(script) {
           argumentsAfterCommand[argumentIndex + 1] === "apps/api") ||
         /^(?:-p|--project-dir)=apps\/api$/.test(argument)
     )
-    const testExcluded = argumentsAfterCommand.some(
-      (argument, argumentIndex) =>
-        (["-x", "--exclude-task"].includes(argument) &&
-          argumentsAfterCommand[argumentIndex + 1] === "test") ||
-        /^(?:-x|--exclude-task)=test$/.test(argument)
-    )
+    const gradleTaskName = (argument) => {
+      if (typeof argument !== "string" || argument.length === 0) return null
+      return (
+        argument
+          .split(":")
+          .filter((segment) => segment.length > 0)
+          .at(-1) ?? null
+      )
+    }
+    const testExcluded = argumentsAfterCommand.some((argument, argumentIndex) => {
+      if (["-x", "--exclude-task"].includes(argument)) {
+        return gradleTaskName(argumentsAfterCommand[argumentIndex + 1]) === "test"
+      }
+      const inlineExclusion = argument.match(/^(?:-x|--exclude-task)=(.+)$/)
+      return inlineExclusion !== null && gradleTaskName(inlineExclusion[1]) === "test"
+    })
     const testFiltered = argumentsAfterCommand.some(
       (argument) => argument === "--tests" || argument.startsWith("--tests=")
     )
@@ -1499,15 +1549,44 @@ function ciWorkflowExecutableRunSteps(workflowText) {
     if (workflow === null || typeof workflow !== "object" || Array.isArray(workflow.jobs)) {
       return []
     }
-    return Object.values(workflow.jobs ?? {}).flatMap((job) => {
+    const jobs = workflow.jobs ?? {}
+    if (jobs === null || typeof jobs !== "object" || Array.isArray(jobs)) return []
+    const reachability = new Map()
+    const visiting = new Set()
+    const isUnconditionallyReachable = (jobName) => {
+      if (reachability.has(jobName)) return reachability.get(jobName)
+      if (visiting.has(jobName) || !Object.hasOwn(jobs, jobName)) return false
+      const job = jobs[jobName]
       if (
         job === null ||
         typeof job !== "object" ||
+        Array.isArray(job) ||
         job.if !== undefined ||
         (job["continue-on-error"] !== undefined && job["continue-on-error"] !== false)
       ) {
-        return []
+        reachability.set(jobName, false)
+        return false
       }
+      const dependencies =
+        job.needs === undefined
+          ? []
+          : typeof job.needs === "string"
+            ? [job.needs]
+            : Array.isArray(job.needs) && job.needs.every((need) => typeof need === "string")
+              ? job.needs
+              : null
+      if (dependencies === null) {
+        reachability.set(jobName, false)
+        return false
+      }
+      visiting.add(jobName)
+      const reachable = dependencies.every((dependency) => isUnconditionallyReachable(dependency))
+      visiting.delete(jobName)
+      reachability.set(jobName, reachable)
+      return reachable
+    }
+    return Object.entries(jobs).flatMap(([jobName, job]) => {
+      if (!isUnconditionallyReachable(jobName)) return []
       return (job.steps ?? [])
         .filter(
           (step) =>
@@ -2386,6 +2465,28 @@ function hasJavaScriptProcessExit(
     ) {
       return
     }
+    if (node.type === "CallExpression") {
+      const reflectiveCallee = javaScriptMemberPath(node.callee)
+      if (
+        !reflectiveCallee.ambiguous &&
+        reflectiveCallee.segments.join(".") === "Reflect.get" &&
+        node.arguments?.length >= 2 &&
+        javaScriptMemberPathReferencesProcessObject(
+          javaScriptMemberPath(node.arguments[0]),
+          processObjectNames
+        )
+      ) {
+        const reflectedProperty = normalizeJavaScriptExpression(node.arguments[1])
+        if (
+          reflectedProperty.ambiguous ||
+          reflectedProperty.expression?.type !== "Literal" ||
+          reflectedProperty.expression.value === "exit"
+        ) {
+          exits = true
+          return
+        }
+      }
+    }
     const memberPath = javaScriptMemberPath(node.type === "CallExpression" ? node.callee : node)
     if (javaScriptMemberPathInvokesProcessExit(memberPath, processObjectNames)) {
       exits = true
@@ -2416,12 +2517,72 @@ function javaScriptProcessExitTerminatorNames(expression) {
   const classBodies = new Map()
   const aliases = []
   const terminatorNames = new Set()
+  const processObjectNames = new Set(["process"])
+  const isProcessModuleCall = (value) => {
+    const normalized = normalizeJavaScriptExpression(value)
+    const call = normalized.expression
+    return (
+      normalized.ambiguous === false &&
+      call?.type === "CallExpression" &&
+      call.callee?.type === "Identifier" &&
+      call.callee.name === "require" &&
+      call.arguments?.length === 1 &&
+      call.arguments[0]?.type === "Literal" &&
+      ["node:process", "process"].includes(call.arguments[0].value)
+    )
+  }
+  const addProcessModuleBinding = (target) => {
+    if (target?.type === "Identifier") {
+      processObjectNames.add(target.name)
+      return
+    }
+    if (target?.type !== "ObjectPattern") return
+    for (const property of target.properties ?? []) {
+      if (property?.type === "RestElement") {
+        const names = new Set()
+        collectJavaScriptAssignedBindings(property.argument, names)
+        for (const name of names) processObjectNames.add(name)
+        continue
+      }
+      const key = staticJavaScriptObjectPropertyKey(property)
+      if (!key.known || key.value !== "exit") continue
+      const names = new Set()
+      collectJavaScriptAssignedBindings(property.value, names)
+      for (const name of names) terminatorNames.add(name)
+    }
+  }
   walkJavaScriptAst(expression, (node) => {
+    if (
+      node.type === "ImportDeclaration" &&
+      node.source?.type === "Literal" &&
+      ["node:process", "process"].includes(node.source.value)
+    ) {
+      for (const specifier of node.specifiers ?? []) {
+        if (specifier.type === "ImportSpecifier") {
+          const importedName = specifier.imported?.name ?? specifier.imported?.value
+          if (importedName === "exit" && specifier.local?.type === "Identifier") {
+            terminatorNames.add(specifier.local.name)
+          } else if (importedName === "default" && specifier.local?.type === "Identifier") {
+            processObjectNames.add(specifier.local.name)
+          }
+        } else if (
+          ["ImportDefaultSpecifier", "ImportNamespaceSpecifier"].includes(specifier.type) &&
+          specifier.local?.type === "Identifier"
+        ) {
+          processObjectNames.add(specifier.local.name)
+        }
+      }
+      return
+    }
     if (node.type === "FunctionDeclaration" && node.id?.type === "Identifier") {
       functionBodies.set(node.id.name, node.body)
       return
     }
     if (node.type === "VariableDeclarator") {
+      if (isProcessModuleCall(node.init)) {
+        addProcessModuleBinding(node.id)
+        return
+      }
       const initializer = normalizeJavaScriptExpression(node.init)
       if (
         node.id?.type === "Identifier" &&
@@ -2442,11 +2603,14 @@ function javaScriptProcessExitTerminatorNames(expression) {
       return
     }
     if (node.type === "AssignmentExpression" && node.operator === "=") {
+      if (isProcessModuleCall(node.right)) {
+        addProcessModuleBinding(node.left)
+        return
+      }
       aliases.push({ target: node.left, source: node.right })
     }
   })
 
-  const processObjectNames = new Set(["process"])
   let processAliasesChanged = true
   while (processAliasesChanged) {
     processAliasesChanged = false
@@ -3004,8 +3168,7 @@ function hasExecutableJavaScriptProofAnchor(text, selector, proofPath) {
 const javaJUnitProofAnnotations = [
   ["Test", "org.junit.jupiter.api.Test", "void"],
   ["ParameterizedTest", "org.junit.jupiter.params.ParameterizedTest", "void"],
-  ["RepeatedTest", "org.junit.jupiter.api.RepeatedTest", "void"],
-  ["TestFactory", "org.junit.jupiter.api.TestFactory", "factory"]
+  ["RepeatedTest", "org.junit.jupiter.api.RepeatedTest", "void"]
 ]
 
 function escapeRegularExpression(value) {
@@ -3171,17 +3334,6 @@ function javaBraceDepthAt(maskedText, targetOffset) {
   return depth
 }
 
-function javaTestFactorySignature(context, escapedSelector) {
-  const dynamicNode = "(?:[A-Za-z_$][\\w$]*\\.)*(?:DynamicNode|DynamicTest|DynamicContainer)"
-  const dynamicArray = `${dynamicNode}\\s*(?:\\[\\s*\\])+`
-  const dynamicCollection =
-    "(?:[A-Za-z_$][\\w$]*\\.)*(?:Collection|Iterable|Iterator|Stream)" +
-    `\\s*<[^;{}()]*${dynamicNode}[^;{}()]*>`
-  return new RegExp(`(?:${dynamicArray}|${dynamicCollection})\\s+${escapedSelector}\\s*\\(`).test(
-    context
-  )
-}
-
 function javaDeclarationContext(sourceLines, declarationLineIndex) {
   let start = declarationLineIndex
   while (start > 0) {
@@ -3260,6 +3412,70 @@ function javaComposedNonExecutableAnnotations(root, nonExecutableAnnotation) {
     }
   }
   return composed
+}
+
+function javaClassHasNonExecutableAncestor(
+  root,
+  classContext,
+  nonExecutableAnnotation,
+  composedNonExecutableAnnotations,
+  registeredExecutionExtension
+) {
+  const sourceTexts = javaSourceTexts(root)
+  if (sourceTexts === null) return true
+  const parentName = (context) =>
+    context.match(
+      /\bclass\s+[A-Za-z_$][\w$]*(?:\s*<[^;{}]*>)?[^;{}]*?\bextends\s+(?:[A-Za-z_$][\w$]*\.)*([A-Za-z_$][\w$]*)\b/
+    )?.[1] ?? null
+  const hasComposedAnnotation = (context) =>
+    [...composedNonExecutableAnnotations].some((name) =>
+      new RegExp("@(?:[A-Za-z_$][\\w$]*\\.)*" + escapeRegularExpression(name) + "\\b").test(context)
+    )
+  const records = new Map()
+  for (const sourceText of sourceTexts) {
+    const translatedText = translateJavaUnicodeEscapes(sourceText)
+    if (translatedText === null) return true
+    const maskedText = maskJavaCommentsAndLiterals(translatedText)
+    const maskedLines = maskedText.split(/\r?\n/)
+    for (const match of maskedText.matchAll(/\bclass\s+([A-Za-z_$][\w$]*)[^;{}]*\{/g)) {
+      const open = match.index + match[0].lastIndexOf("{")
+      let depth = 1
+      let close = -1
+      for (let index = open + 1; index < maskedText.length; index += 1) {
+        if (maskedText[index] === "{") depth += 1
+        else if (maskedText[index] === "}") depth -= 1
+        if (depth === 0) {
+          close = index
+          break
+        }
+      }
+      if (close === -1) return true
+      const lineIndex = translatedText.slice(0, match.index).split(/\r?\n/).length - 1
+      const declarationContext = javaDeclarationContext(maskedLines, lineIndex)
+      const record = {
+        directlyNonExecutable:
+          nonExecutableAnnotation.test(declarationContext) ||
+          hasComposedAnnotation(declarationContext) ||
+          registeredExecutionExtension.test(maskedText.slice(open + 1, close)),
+        parent: parentName(declarationContext)
+      }
+      if (records.has(match[1])) records.set(match[1], null)
+      else records.set(match[1], record)
+    }
+  }
+
+  const firstParent = parentName(classContext)
+  if (firstParent === null) return false
+  const visited = new Set()
+  let current = firstParent
+  while (current !== null) {
+    if (visited.has(current)) return true
+    visited.add(current)
+    const record = records.get(current)
+    if (record === undefined || record === null || record.directlyNonExecutable) return true
+    current = record.parent
+  }
+  return false
 }
 
 function javaMethodBody(maskedText, targetOffset) {
@@ -3415,15 +3631,28 @@ function shellFailureFunctions(text) {
   for (const match of text.matchAll(
     /(?:^|\n)\s*(?:function\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*\(\s*\)\s*\{([\s\S]*?)\n\s*\}/g
   )) {
+    if (
+      /(?:^|[;\n])\s*(?:case|do|done|elif|else|esac|fi|for|if|select|then|until|while)\b/.test(
+        match[2]
+      ) ||
+      match[2].includes("||") ||
+      match[2].includes("&&") ||
+      shellLineControlOperators(match[2])?.some((operator) => ["|", "&"].includes(operator))
+    ) {
+      continue
+    }
     const commands = shellCommandSegments(match[2])
-    const exitsNonzero = commands.some(
-      (words) => words[0] === "exit" && words.length >= 2 && shellStatusIsNonzero(words[1])
-    )
-    const returnsNonzero = commands.some(
-      (words) => words[0] === "return" && words.length >= 2 && shellStatusIsNonzero(words[1])
-    )
-    if (exitsNonzero && !returnsNonzero) exiting.add(match[1])
-    else if (returnsNonzero && !exitsNonzero) returning.add(match[1])
+    let terminal = null
+    for (const words of commands) {
+      let index = 0
+      while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[index] ?? "")) index += 1
+      if (!["exit", "return"].includes(words[index])) continue
+      terminal = { command: words[index], status: words[index + 1] }
+      break
+    }
+    if (terminal === null || !shellStatusIsNonzero(terminal.status)) continue
+    if (terminal.command === "exit") exiting.add(match[1])
+    else returning.add(match[1])
   }
   return { exiting, returning }
 }
@@ -3530,7 +3759,18 @@ function shellLineHasExecutableFailureAnchor(text, line, selector, lineIndex) {
   const failurePropagates =
     shellErrexitEnabledBeforeLine(text, lineIndex) || !shellHasLaterExecutableLine(text, lineIndex)
 
-  if (/^\s*raise\s+(?:[A-Za-z_$][\w$]*\.)*(?:AssertionError|SystemExit)\s*\(/.test(line)) {
+  if (/^\s*raise\s+(?:[A-Za-z_$][\w$]*\.)*AssertionError\s*\(/.test(line)) {
+    return failurePropagates
+  }
+  const systemExit = line.match(
+    /^\s*raise\s+(?:[A-Za-z_$][\w$]*\.)*SystemExit\s*\(\s*([+-]?\d+)\s*\)/
+  )
+  if (systemExit !== null) {
+    return shellStatusIsNonzero(systemExit[1]) && failurePropagates
+  }
+  if (
+    /^\s*raise\s+(?:[A-Za-z_$][\w$]*\.)*SystemExit\s*\(\s*(["'])(?:\\.|(?!\1).)*\1\s*\)/.test(line)
+  ) {
     return failurePropagates
   }
   for (const words of segments) {
@@ -3604,10 +3844,8 @@ function hasExecutableProofAnchor(root, proof) {
         )
       )
     const signatureExecutable =
-      proofAnnotation?.[2] === "factory"
-        ? javaTestFactorySignature(methodDeclarationContext, escapedSelector)
-        : proofAnnotation?.[2] === "void" &&
-          new RegExp(`\\bvoid\\s+${escapedSelector}\\s*\\(`).test(methodDeclarationContext)
+      proofAnnotation?.[2] === "void" &&
+      new RegExp(`\\bvoid\\s+${escapedSelector}\\s*\\(`).test(methodDeclarationContext)
     const methodModifiersExecutable = !/\b(?:abstract|native|private|static)\b/.test(
       methodDeclarationContext
     )
@@ -3626,6 +3864,16 @@ function hasExecutableProofAnchor(root, proof) {
       !hasComposedNonExecutableAnnotation(methodDeclarationContext) &&
       classContexts.every((context) => !hasComposedNonExecutableAnnotation(context)) &&
       !enclosingClassHasRegisteredExtension &&
+      classContexts.every(
+        (context) =>
+          !javaClassHasNonExecutableAncestor(
+            root,
+            context,
+            nonExecutableAnnotation,
+            composedNonExecutableAnnotations,
+            registeredExecutionExtension
+          )
+      ) &&
       classModifiersExecutable &&
       methodModifiersExecutable &&
       !javaMethodUsesAbortingAssumption(maskedText, methodBody) &&

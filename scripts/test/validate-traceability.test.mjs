@@ -3848,7 +3848,7 @@ test("a JUnit proof in an undiscovered nested class cannot serve as executable p
   assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
 })
 
-test("an imported JUnit @TestFactory with a dynamic stream remains executable proof", () => {
+test("current-head regression: an empty JUnit @TestFactory cannot serve as proof", () => {
   const root = makeFixture(({ contract, files }) => {
     const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
     contract.requirements[0].proofs[0].path = proofPath
@@ -3864,7 +3864,8 @@ test("an imported JUnit @TestFactory with a dynamic stream remains executable pr
     addGradleProofRunnerFixture(files)
   })
   const report = run(root)
-  assert.equal(report.status, "PASS", report.errors.join("\n"))
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
 })
 
 test("a locally declared @Test annotation cannot authorize a JUnit proof", () => {
@@ -5038,6 +5039,470 @@ test("reviewed multi-clause rows remain partial until every MUST clause has attr
       "unknown creative presets render only a dimensioned attributed fallback"
     ]
   )
+})
+
+function assertExecutableProofRejected(root) {
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(
+    report.errors.join("\n"),
+    /(?:selector must identify an executable test anchor|VERIFIED repository proof must be an executable check or durable receipt)/
+  )
+}
+
+test("current-head regression: an exit imported from node:process cannot bypass proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "tests/imported-process-exit.test.js"
+    contract.requirements[0].proofs[0].path = proofPath
+    files[proofPath] =
+      'import test from "node:test"\n' +
+      'import { exit as terminate } from "node:process"\n' +
+      'test("fixture-proof", () => { throw new Error("unreached proof") })\n' +
+      "terminate(0)\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("current-head regression: a prefixed set +e cannot authorize shell proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/unwired-proof.sh"
+    files["scripts/test/unwired-proof.sh"] = "false fixture-proof\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: |\n          X=1 set +e\n          bash scripts/test/unwired-proof.sh\n          true\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("current-head regression: a qualified Gradle exclusion cannot authorize Java proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+    contract.requirements[0].proofs[0].path = proofPath
+    contract.requirements[0].proofs[0].selector = "fixtureProof"
+    files[proofPath] =
+      "package example;\n" +
+      "import org.junit.jupiter.api.Test;\n" +
+      "class ExampleTests {\n  @Test\n  void fixtureProof() {}\n}\n"
+    addGradleProofRunnerFixture(files)
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: gradle -p apps/api test -x :test\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("current-head regression: an inherited JUnit extension cannot authorize proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+    contract.requirements[0].proofs[0].path = proofPath
+    contract.requirements[0].proofs[0].selector = "fixtureProof"
+    files[proofPath] =
+      "package example;\n" +
+      "import org.junit.jupiter.api.Test;\n" +
+      "class ExampleTests extends DisabledBase {\n  @Test\n  void fixtureProof() {}\n}\n"
+    files["apps/api/src/test/java/example/DisabledBase.java"] =
+      "package example;\n" +
+      "import org.junit.jupiter.api.extension.ExtendWith;\n" +
+      "@ExtendWith(AlwaysDisabled.class)\n" +
+      "class DisabledBase {}\n"
+    addGradleProofRunnerFixture(files)
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("current-head regression: an unreachable exit in a shell helper cannot authorize proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] =
+      "fail() {\n  return 0\n  exit 1\n}\n" + 'fail "fixture-proof"\n'
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("current-head regression: a POSIX shell function cannot shadow the proof runner", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/unwired-proof.sh"
+    files["scripts/test/unwired-proof.sh"] = "false fixture-proof\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: |\n          bash() { return 0; }\n          bash scripts/test/unwired-proof.sh\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("current-head regression: a Node env file cannot conceal a test filter", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "tests/env-file-proof.test.js"
+    contract.requirements[0].proofs[0].path = proofPath
+    files[proofPath] = 'import test from "node:test"\ntest("fixture-proof", () => {})\n'
+    files[".env"] = "NODE_OPTIONS=--test-name-pattern=unrelated\n"
+    files["package.json"] = JSON.stringify({
+      private: true,
+      scripts: { test: "node --env-file=.env --test tests/*.test.js" }
+    })
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("current-head regression: a Gradle JUnit tag filter cannot authorize proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+    contract.requirements[0].proofs[0].path = proofPath
+    contract.requirements[0].proofs[0].selector = "fixtureProof"
+    files[proofPath] =
+      "package example;\n" +
+      "import org.junit.jupiter.api.Tag;\n" +
+      "import org.junit.jupiter.api.Test;\n" +
+      'class ExampleTests {\n  @Tag("proof")\n  @Test\n  void fixtureProof() {}\n}\n'
+    addGradleProofRunnerFixture(files)
+    files["apps/api/build.gradle.kts"] +=
+      'tasks.test { useJUnitPlatform { excludeTags("proof") } }\n'
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("current-head regression: Playwright globalSetup cannot authorize proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "apps/web/tests/e2e/fixture-proof.spec.ts"
+    contract.requirements[0].proofs[0].path = proofPath
+    files[proofPath] = 'import { test } from "@playwright/test"\ntest("fixture-proof", () => {})\n'
+    files["apps/web/package.json"] = JSON.stringify({
+      private: true,
+      scripts: { "test:e2e": "playwright test" }
+    })
+    files["apps/web/playwright.config.ts"] =
+      'export default { testDir: "./tests/e2e", globalSetup: "./global-setup.ts" }\n'
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: pnpm --filter @courtside/web run test:e2e\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("current-head regression: Python SystemExit zero cannot serve as failure proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    contract.requirements[0].proofs[0].selector = "SystemExit(0)"
+    files["scripts/test/wired-proof.sh"] =
+      "set -e\npython - <<'PY'\nraise SystemExit(0) # fixture-proof\nPY\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("current-head regression: a skipped needed job cannot authorize proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/unwired-proof.sh"
+    files["scripts/test/unwired-proof.sh"] = "false fixture-proof\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n" +
+      "  gate:\n" +
+      "    if: ${{{ false }}\n" +
+      "    steps:\n" +
+      "      - run: true\n" +
+      "  verify:\n" +
+      "    needs: gate\n" +
+      "    steps:\n" +
+      "      - run: bash scripts/test/unwired-proof.sh\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("second-review regression: builtin pipefail disable cannot authorize Java proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+    contract.requirements[0].proofs[0].path = proofPath
+    contract.requirements[0].proofs[0].selector = "fixtureProof"
+    files[proofPath] =
+      "package example;\n" +
+      "import org.junit.jupiter.api.Test;\n" +
+      "class ExampleTests {\n  @Test\n  void fixtureProof() {}\n}\n"
+    addGradleProofRunnerFixture(files)
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: |\n          set -o pipefail\n          builtin set +o pipefail\n          gradle -p apps/api test | tee proof.log\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("second-review regression: reflective process exit cannot bypass proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "tests/reflective-process-exit.test.js"
+    contract.requirements[0].proofs[0].path = proofPath
+    files[proofPath] =
+      'import test from "node:test"\n' +
+      'test("fixture-proof", () => { throw new Error("unreached proof") })\n' +
+      'Reflect.get(process, "exit")(0)\n'
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("second-review regression: an unreachable workflow runner cannot authorize proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/unwired-proof.sh"
+    files["scripts/test/unwired-proof.sh"] = "false fixture-proof\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: |\n          false && bash scripts/test/unwired-proof.sh\n          true\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+for (const [importKind, source] of [
+  [
+    "namespace import",
+    'import * as runtime from "node:process"\n' +
+      'test("fixture-proof", () => { throw new Error("unreached proof") })\n' +
+      "runtime.exit(0)\n"
+  ],
+  [
+    "default import",
+    'import runtime from "process"\n' +
+      'test("fixture-proof", () => { throw new Error("unreached proof") })\n' +
+      "runtime.exit(0)\n"
+  ],
+  [
+    "destructured CommonJS require",
+    'const { exit: terminate } = require("node:process")\n' +
+      'test("fixture-proof", () => { throw new Error("unreached proof") })\n' +
+      "terminate(0)\n"
+  ],
+  [
+    "CommonJS process object",
+    'const runtime = require("process")\n' +
+      'test("fixture-proof", () => { throw new Error("unreached proof") })\n' +
+      "runtime.exit(0)\n"
+  ]
+]) {
+  test("adjacent process-module safety: " + importKind + " cannot bypass proof", () => {
+    const root = makeFixture(({ contract, files }) => {
+      const proofPath = "tests/adjacent-process-module.test.js"
+      contract.requirements[0].proofs[0].path = proofPath
+      files[proofPath] = 'import test from "node:test"\n' + source
+    })
+    assertExecutableProofRejected(root)
+  })
+}
+
+test("adjacent process-module safety: a harmless named import remains proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "tests/harmless-process-import.test.js"
+    contract.requirements[0].proofs[0].path = proofPath
+    files[proofPath] =
+      'import test from "node:test"\n' +
+      'import { pid } from "node:process"\n' +
+      "void pid\n" +
+      'test("fixture-proof", () => {})\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+test("adjacent shell safety: builtin set +e cannot authorize shell proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/unwired-proof.sh"
+    files["scripts/test/unwired-proof.sh"] = "false fixture-proof\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: |\n          builtin set +e\n          bash scripts/test/unwired-proof.sh\n          true\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("adjacent Gradle safety: an inline qualified exclusion cannot authorize Java proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+    contract.requirements[0].proofs[0].path = proofPath
+    contract.requirements[0].proofs[0].selector = "fixtureProof"
+    files[proofPath] =
+      "package example;\n" +
+      "import org.junit.jupiter.api.Test;\n" +
+      "class ExampleTests {\n  @Test\n  void fixtureProof() {}\n}\n"
+    addGradleProofRunnerFixture(files)
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: gradle -p apps/api test --exclude-task=:app:test\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("adjacent JUnit safety: a transitive inherited extension cannot authorize proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+    contract.requirements[0].proofs[0].path = proofPath
+    contract.requirements[0].proofs[0].selector = "fixtureProof"
+    files[proofPath] =
+      "package example;\n" +
+      "import org.junit.jupiter.api.Test;\n" +
+      "class ExampleTests extends MiddleBase {\n  @Test\n  void fixtureProof() {}\n}\n"
+    files["apps/api/src/test/java/example/MiddleBase.java"] =
+      "package example;\nclass MiddleBase extends DisabledBase {}\n"
+    files["apps/api/src/test/java/example/DisabledBase.java"] =
+      "package example;\n" +
+      "import org.junit.jupiter.api.extension.ExtendWith;\n" +
+      "@ExtendWith(AlwaysDisabled.class)\n" +
+      "class DisabledBase {}\n"
+    addGradleProofRunnerFixture(files)
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("adjacent shell safety: a reachable exit remains an exiting helper", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] =
+      "die() {\n  exit 1\n  return 0\n}\n" + 'die "fixture-proof" || true\n'
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+test("adjacent Node-runner safety: env-file-if-exists cannot conceal a test filter", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "tests/env-file-if-exists-proof.test.js"
+    contract.requirements[0].proofs[0].path = proofPath
+    files[proofPath] = 'import test from "node:test"\ntest("fixture-proof", () => {})\n'
+    files["package.json"] = JSON.stringify({
+      private: true,
+      scripts: {
+        test: "node --env-file-if-exists .env --test tests/*.test.js"
+      }
+    })
+  })
+  assertExecutableProofRejected(root)
+})
+
+for (const platformFilter of [
+  'includeTags("unrelated")',
+  'excludeEngines("junit-jupiter")',
+  'includeEngines("unrelated")'
+]) {
+  test("adjacent Gradle safety: " + platformFilter + " cannot authorize Java proof", () => {
+    const root = makeFixture(({ contract, files }) => {
+      const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+      contract.requirements[0].proofs[0].path = proofPath
+      contract.requirements[0].proofs[0].selector = "fixtureProof"
+      files[proofPath] =
+        "package example;\n" +
+        "import org.junit.jupiter.api.Test;\n" +
+        "class ExampleTests {\n  @Test\n  void fixtureProof() {}\n}\n"
+      addGradleProofRunnerFixture(files)
+      files["apps/api/build.gradle.kts"] +=
+        "tasks.test { useJUnitPlatform { " + platformFilter + " } }\n"
+    })
+    assertExecutableProofRejected(root)
+  })
+}
+
+for (const [hookKind, config] of [
+  [
+    "globalTeardown property",
+    'export default { testDir: "./tests/e2e", globalTeardown: "./global-teardown.ts" }\n'
+  ],
+  [
+    "assigned globalSetup",
+    'const config = { testDir: "./tests/e2e" }\n' +
+      'config.globalSetup = "./global-setup.ts"\n' +
+      "export default config\n"
+  ]
+]) {
+  test("adjacent Playwright safety: " + hookKind + " cannot authorize proof", () => {
+    const root = makeFixture(({ contract, files }) => {
+      const proofPath = "apps/web/tests/e2e/fixture-proof.spec.ts"
+      contract.requirements[0].proofs[0].path = proofPath
+      files[proofPath] =
+        'import { test } from "@playwright/test"\ntest("fixture-proof", () => {})\n'
+      files["apps/web/package.json"] = JSON.stringify({
+        private: true,
+        scripts: { "test:e2e": "playwright test" }
+      })
+      files["apps/web/playwright.config.ts"] = config
+      files[".github/workflows/ci.yml"] =
+        "jobs:\n  verify:\n    steps:\n      - run: pnpm --filter @courtside/web run test:e2e\n"
+    })
+    assertExecutableProofRejected(root)
+  })
+}
+
+for (const statusExpression of ["", "256", "False"]) {
+  test(
+    "adjacent Python safety: SystemExit(" + statusExpression + ") cannot serve as failure proof",
+    () => {
+      const root = makeFixture(({ contract, files }) => {
+        contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+        contract.requirements[0].proofs[0].selector = "SystemExit(" + statusExpression + ")"
+        files["scripts/test/wired-proof.sh"] =
+          "set -e\npython - <<'PY'\nraise SystemExit(" +
+          statusExpression +
+          ") # fixture-proof\nPY\n"
+        files[".github/workflows/ci.yml"] =
+          "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+      })
+      assertExecutableProofRejected(root)
+    }
+  )
+}
+
+test("adjacent Python safety: a literal-message SystemExit remains failure proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] =
+      "set -e\npython - <<'PY'\nraise SystemExit(\"fixture-proof\")\nPY\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+test("adjacent Python safety: a statically nonzero SystemExit remains failure proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    contract.requirements[0].proofs[0].selector = "SystemExit(7)"
+    files["scripts/test/wired-proof.sh"] =
+      "set -e\npython - <<'PY'\nraise SystemExit(7) # fixture-proof\nPY\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+test("adjacent workflow safety: a transitive skipped dependency cannot authorize proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/unwired-proof.sh"
+    files["scripts/test/unwired-proof.sh"] = "false fixture-proof\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n" +
+      "  gate:\n" +
+      "    if: ${{{ false }}\n" +
+      "    steps:\n" +
+      "      - run: true\n" +
+      "  middle:\n" +
+      "    needs: gate\n" +
+      "    steps:\n" +
+      "      - run: true\n" +
+      "  verify:\n" +
+      "    needs: middle\n" +
+      "    steps:\n" +
+      "      - run: bash scripts/test/unwired-proof.sh\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("adjacent workflow safety: an unconditional dependency chain remains proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] = "false fixture-proof\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n" +
+      "  gate:\n" +
+      "    steps:\n" +
+      "      - run: true\n" +
+      "  verify:\n" +
+      "    needs: gate\n" +
+      "    steps:\n" +
+      "      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
 })
 
 test("ready-for-review remains an explicit release-owner gate", () => {
