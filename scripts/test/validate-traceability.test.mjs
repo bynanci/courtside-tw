@@ -2223,6 +2223,66 @@ test("a node:test callback overridden through options cannot serve as proof", ()
   assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
 })
 
+test("a node:test generator callback cannot serve as executable proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/generator-test-callback-proof.test.js"
+    files["tests/generator-test-callback-proof.test.js"] =
+      'import test from "node:test"\n' +
+      'test("fixture-proof", function* () { throw new Error("unreached proof") })\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+})
+
+test("a node:test registration without a callback cannot serve as executable proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/missing-test-callback-proof.test.js"
+    files["tests/missing-test-callback-proof.test.js"] =
+      'import test from "node:test"\n' + 'test("fixture-proof")\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+})
+
+test("a test registration in a non-static class field cannot serve as executable proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/instance-field-proof.test.js"
+    files["tests/instance-field-proof.test.js"] =
+      'import test from "node:test"\n' +
+      'class DeferredProof { proof = test("fixture-proof", () => {}) }\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+})
+
+test("a test registration in a static class field remains executable proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/static-field-proof.test.js"
+    files["tests/static-field-proof.test.js"] =
+      'import test from "node:test"\n' +
+      'class ImmediateProof { static proof = test("fixture-proof", () => {}) }\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+for (const method of ["skip", "todo"]) {
+  test(`a node:test callback self-disabled with t.${method} cannot serve as proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "tests/self-disabled-proof.test.js"
+      files["tests/self-disabled-proof.test.js"] =
+        'import test from "node:test"\n' +
+        `test("fixture-proof", t => { t.${method}(); throw new Error("unreached proof") })\n`
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+  })
+}
+
 for (const [optionsKind, declaration, options] of [
   ["dynamic", "const options = { skip: true }\n", "options"],
   ["spread", "", "{ ...{ todo: true } }"]

@@ -940,9 +940,14 @@ function isStaticJavaScriptSuiteTitle(node) {
   )
 }
 
-function isInlineJavaScriptFunction(node) {
+function isExecutableJavaScriptTestCallback(node) {
   const normalized = normalizeJavaScriptExpression(node)
-  return normalized.ambiguous === false && javaScriptFunctionTypes.has(normalized.expression?.type)
+  const callback = normalized.expression
+  return (
+    normalized.ambiguous === false &&
+    javaScriptFunctionTypes.has(callback?.type) &&
+    callback.generator !== true
+  )
 }
 
 function isStaticJavaScriptOptionsObject(node) {
@@ -1065,6 +1070,18 @@ function javaScriptSuiteCallOverload(expression, binding) {
     isStaticJavaScriptOptionsObject(args[1]) &&
     isExecutableJavaScriptSuiteCallback(args[2], binding)
   ) {
+    return { callback: args[2], options: args[1] }
+  }
+  return null
+}
+
+function javaScriptTestCallOverload(expression) {
+  const args = expression.arguments ?? []
+  if (args.some((argument) => argument?.type === "SpreadElement")) return null
+  if (args.length === 2 && isExecutableJavaScriptTestCallback(args[1])) {
+    return { callback: args[1], options: null }
+  }
+  if (args.length === 3 && isExecutableJavaScriptTestCallback(args[2])) {
     return { callback: args[2], options: args[1] }
   }
   return null
@@ -1303,13 +1320,13 @@ function javaScriptProofCall(node, targetOffset, selector, textLength, bindings)
   ) {
     return false
   }
+  const overload = javaScriptTestCallOverload(expression)
+  if (overload === null) return false
   if (binding.role === "node-test") {
-    const args = expression.arguments ?? []
-    if (args.length > 3 || args.some((argument) => argument?.type === "SpreadElement")) {
-      return false
-    }
-    const options = args.length >= 2 && !isInlineJavaScriptFunction(args[1]) ? args[1] : null
-    if (classifyNodeTestOptions(options, { rejectCallbackOverride: true }) !== "active") {
+    if (
+      classifyNodeTestOptions(overload.options, { rejectCallbackOverride: true }) !== "active" ||
+      hasUnconditionalNodeTestContextDisable(overload.callback)
+    ) {
       return false
     }
   }
@@ -1422,8 +1439,50 @@ function hasConditionalJavaScriptRegistration(node, ancestors) {
   return false
 }
 
+function hasDeferredClassFieldRegistration(node, ancestors) {
+  let child = node
+  for (let index = ancestors.length - 1; index >= 0; index -= 1) {
+    const parent = ancestors[index]
+    if (parent.type === "PropertyDefinition" && parent.static !== true && parent.value === child) {
+      return true
+    }
+    child = parent
+  }
+  return false
+}
+
+function hasUnconditionalNodeTestContextDisable(callbackNode) {
+  const normalized = normalizeJavaScriptExpression(callbackNode)
+  const callback = normalized.expression
+  const contextName = callback?.params?.[0]?.type === "Identifier" ? callback.params[0].name : null
+  if (normalized.ambiguous || contextName === null) return false
+
+  let disabled = false
+  walkJavaScriptAst(callback.body, (node, ancestors) => {
+    if (disabled || node.type !== "CallExpression" || node.optional === true) return
+    if (ancestors.some((ancestor) => javaScriptFunctionTypes.has(ancestor?.type))) return
+    const memberPath = javaScriptMemberPath(node.callee)
+    if (
+      memberPath.ambiguous ||
+      memberPath.segments.length !== 2 ||
+      memberPath.segments[0] !== contextName ||
+      !["skip", "todo"].includes(memberPath.segments[1]) ||
+      hasConditionalJavaScriptRegistration(node, ancestors)
+    ) {
+      return
+    }
+    disabled = true
+  })
+  return disabled
+}
+
 function hasAttributableJavaScriptRegistration(node, ancestors, bindings) {
-  if (hasConditionalJavaScriptRegistration(node, ancestors)) return false
+  if (
+    hasConditionalJavaScriptRegistration(node, ancestors) ||
+    hasDeferredClassFieldRegistration(node, ancestors)
+  ) {
+    return false
+  }
   for (let index = 0; index < ancestors.length; index += 1) {
     if (!javaScriptFunctionTypes.has(ancestors[index]?.type)) continue
     if (javaScriptFunctionRegistration(index, ancestors, bindings) !== "active") return false
