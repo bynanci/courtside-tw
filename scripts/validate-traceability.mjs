@@ -794,6 +794,19 @@ function packageRunnerSelectsJavaScriptProof(root, relativePath) {
   return false
 }
 
+function playwrightRunnerCommandSelectsAllProofs(command) {
+  if (typeof command !== "string") return false
+  const tokens = command.match(/"[^"]*"|'[^']*'|[^\s]+/g) ?? []
+  const normalizedTokens = tokens.map((rawToken) =>
+    rawToken.replace(/^(?:"([^"]*)"|'([^']*)')$/, "$1$2")
+  )
+  return (
+    normalizedTokens.length === 2 &&
+    normalizedTokens[0] === "playwright" &&
+    normalizedTokens[1] === "test"
+  )
+}
+
 function playwrightRunnerSelectsProof(root, relativePath) {
   if (!/^apps\/web\/.*\.(?:test|spec)\.[cm]?[jt]sx?$/.test(relativePath)) return false
   const packageText = readRunnerConfiguration(root, "apps/web/package.json")
@@ -803,13 +816,20 @@ function playwrightRunnerSelectsProof(root, relativePath) {
 
   try {
     const packageJson = JSON.parse(packageText)
-    if (!/^playwright\s+test(?:\s|$)/.test(packageJson.scripts?.["test:e2e"] ?? "")) {
+    if (!playwrightRunnerCommandSelectsAllProofs(packageJson.scripts?.["test:e2e"])) {
       return false
     }
   } catch {
     return false
   }
-  if (!workflowText.includes("pnpm --filter @courtside/web run test:e2e")) return false
+  if (
+    !ciWorkflowExecutableRunSteps(workflowText).some((script) =>
+      shellRunStepExecutesPlaywrightTest(script)
+    )
+  ) {
+    return false
+  }
+  if (/\b(?:grep|grepInvert|shard|testIgnore|testMatch)\s*:/.test(configText)) return false
   const testDirectory = configText.match(/\btestDir\s*:\s*["']([^"']+)["']/)?.[1]
   if (typeof testDirectory !== "string") return false
   const packageRelativePath = relativePath.slice("apps/web/".length)
@@ -849,7 +869,9 @@ function gradleRunnerSelectsJavaProof(root, relativePath) {
   if (buildText === null || workflowText === null) return false
   return (
     buildText.includes(configuredInclude) &&
-    /gradle[^\n]*\s-p\s+apps\/api[^\n]*\btest\b/.test(workflowText)
+    ciWorkflowExecutableRunSteps(workflowText).some((script) =>
+      shellRunStepExecutesGradleTest(script)
+    )
   )
 }
 
@@ -916,18 +938,21 @@ function shellCommandSegments(script) {
   return segments
 }
 
-function shellRunStepExecutesProof(script, relativePath) {
-  if (
+function shellRunStepHasUnsafeControlFlow(script) {
+  return (
     /<<-?/.test(script) ||
     /(?:^|[;\n])\s*(?:case|do|done|elif|else|esac|fi|for|function|if|select|then|until|while)\b/.test(
       script
     ) ||
     script.includes("||") ||
+    /(?:^|[;\n])\s*set\s+(?:--\s+)?(?:\+[A-Za-z]*e[A-Za-z]*|\+o\s+errexit)(?:\s|$)/m.test(script) ||
     /(^|[^&<>|])&(?=$|[^&>])/m.test(script) ||
     (script.includes("|") && !/(?:^|\n)\s*set\s+-o\s+pipefail(?:\s|$)/.test(script))
-  ) {
-    return false
-  }
+  )
+}
+
+function shellRunStepExecutesProof(script, relativePath) {
+  if (shellRunStepHasUnsafeControlFlow(script)) return false
   const expectedCommands = new Set([relativePath, `./${relativePath}`])
   for (const words of shellCommandSegments(script)) {
     let index = 0
@@ -947,30 +972,96 @@ function shellRunStepExecutesProof(script, relativePath) {
   return false
 }
 
+function shellRunStepExecutesGradleTest(script) {
+  if (shellRunStepHasUnsafeControlFlow(script)) return false
+  for (const words of shellCommandSegments(script)) {
+    let index = 0
+    while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[index] ?? "")) index += 1
+    if (["builtin", "command"].includes(words[index])) {
+      index += 1
+      while ((words[index] ?? "").startsWith("-")) index += 1
+    }
+    if (["exec", "exit", "return"].includes(words[index])) return false
+    if (!["gradle", "./gradlew", "apps/api/gradlew"].includes(words[index])) continue
+    const argumentsAfterCommand = words.slice(index + 1)
+    const projectDirectorySelected = argumentsAfterCommand.some(
+      (argument, argumentIndex) =>
+        (["-p", "--project-dir"].includes(argument) &&
+          argumentsAfterCommand[argumentIndex + 1] === "apps/api") ||
+        /^(?:-p|--project-dir)=apps\/api$/.test(argument)
+    )
+    const testExcluded = argumentsAfterCommand.some(
+      (argument, argumentIndex) =>
+        (["-x", "--exclude-task"].includes(argument) &&
+          argumentsAfterCommand[argumentIndex + 1] === "test") ||
+        /^(?:-x|--exclude-task)=test$/.test(argument)
+    )
+    const testFiltered = argumentsAfterCommand.some(
+      (argument) => argument === "--tests" || argument.startsWith("--tests=")
+    )
+    if (
+      projectDirectorySelected &&
+      argumentsAfterCommand.includes("test") &&
+      !testExcluded &&
+      !testFiltered
+    ) {
+      return true
+    }
+  }
+  return false
+}
+
+function shellRunStepExecutesPlaywrightTest(script) {
+  if (shellRunStepHasUnsafeControlFlow(script)) return false
+  for (const words of shellCommandSegments(script)) {
+    let index = 0
+    while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[index] ?? "")) index += 1
+    if (["builtin", "command"].includes(words[index])) {
+      index += 1
+      while ((words[index] ?? "").startsWith("-")) index += 1
+    }
+    if (["exec", "exit", "return"].includes(words[index])) return false
+    if (words[index] !== "pnpm") continue
+    const command = words.slice(index)
+    const exactPrefix = ["pnpm", "--filter", "@courtside/web", "run", "test:e2e"]
+    if (!exactPrefix.every((token, tokenIndex) => command[tokenIndex] === token)) continue
+    const trailing = command.slice(exactPrefix.length)
+    if (trailing.every((token) => /^\d*[<>]$/.test(token))) return true
+  }
+  return false
+}
+
+function ciWorkflowExecutableRunSteps(workflowText) {
+  try {
+    const workflow = YAML.parse(workflowText)
+    if (workflow === null || typeof workflow !== "object" || Array.isArray(workflow.jobs)) {
+      return []
+    }
+    return Object.values(workflow.jobs ?? {}).flatMap((job) => {
+      if (job === null || typeof job !== "object" || job.if !== undefined) return []
+      return (job.steps ?? [])
+        .filter(
+          (step) =>
+            step !== null &&
+            typeof step === "object" &&
+            step.if === undefined &&
+            (step["continue-on-error"] === undefined || step["continue-on-error"] === false) &&
+            typeof step.run === "string"
+        )
+        .map((step) => step.run)
+    })
+  } catch {
+    return []
+  }
+}
+
 function ciWorkflowSelectsShellProof(root, relativePath) {
   if (!relativePath.startsWith("scripts/test/") || !relativePath.endsWith(".sh")) return false
   const workflowText = readRunnerConfiguration(root, ".github/workflows/ci.yml")
   if (workflowText === null) return false
-  try {
-    const workflow = YAML.parse(workflowText)
-    if (workflow === null || typeof workflow !== "object" || Array.isArray(workflow.jobs)) {
-      return false
-    }
-    return Object.values(workflow.jobs ?? {}).some((job) => {
-      if (job === null || typeof job !== "object" || job.if !== undefined) return false
-      return (job.steps ?? []).some(
-        (step) =>
-          step !== null &&
-          typeof step === "object" &&
-          step.if === undefined &&
-          (step["continue-on-error"] === undefined || step["continue-on-error"] === false) &&
-          typeof step.run === "string" &&
-          shellRunStepExecutesProof(step.run, relativePath)
-      )
-    })
-  } catch {
-    return false
-  }
+  return ciWorkflowExecutableRunSteps(workflowText).some((script) =>
+    shellRunStepExecutesProof(script, relativePath)
+  )
 }
 
 function isExecutableProofPath(root, relativePath) {
@@ -1660,7 +1751,7 @@ function attributableJavaScriptBindings(ast) {
   }
 }
 
-function javaScriptProofCall(node, targetOffset, selector, textLength, bindings) {
+function javaScriptProofCall(node, targetOffset, selector, textLength, bindings, ast) {
   if (node?.type !== "CallExpression" || node.optional === true) return false
   const expression = node
 
@@ -1684,7 +1775,15 @@ function javaScriptProofCall(node, targetOffset, selector, textLength, bindings)
   }
   const overload = javaScriptTestCallOverload(expression)
   if (overload === null) return false
-  if (hasJavaScriptProcessExit(overload.callback, { includeFunctions: true })) return false
+  const processExitTerminators = javaScriptProcessExitTerminatorNames(ast)
+  if (
+    hasJavaScriptProcessExit(overload.callback, { includeFunctions: true }) ||
+    javaScriptCallsTerminator(overload.callback, processExitTerminators, {
+      includeFunctions: true
+    })
+  ) {
+    return false
+  }
   if (binding.role === "node-test") {
     if (
       classifyNodeTestOptions(overload.options, { rejectCallbackOverride: true }) !== "active" ||
@@ -1763,15 +1862,150 @@ function hasJavaScriptProcessExit(expression, { includeFunctions = false } = {})
   return exits
 }
 
+function javaScriptCallsTerminator(expression, terminatorNames, { includeFunctions = false } = {}) {
+  let callsTerminator = false
+  walkJavaScriptAst(expression, (node, ancestors) => {
+    if (callsTerminator || node.type !== "CallExpression") return
+    if (
+      !includeFunctions &&
+      ancestors.some((ancestor) => javaScriptFunctionTypes.has(ancestor?.type))
+    ) {
+      return
+    }
+    const calleePath = javaScriptMemberPath(node.callee)
+    if (!terminatorNames.has(calleePath.segments[0])) return
+    callsTerminator = true
+  })
+  return callsTerminator
+}
+
+function javaScriptProcessExitTerminatorNames(expression) {
+  const functionBodies = new Map()
+  const aliases = []
+  const terminatorNames = new Set()
+  walkJavaScriptAst(expression, (node) => {
+    if (node.type === "FunctionDeclaration" && node.id?.type === "Identifier") {
+      functionBodies.set(node.id.name, node.body)
+      return
+    }
+    if (node.type === "VariableDeclarator") {
+      const initializer = normalizeJavaScriptExpression(node.init)
+      if (
+        node.id?.type === "Identifier" &&
+        !initializer.ambiguous &&
+        javaScriptFunctionTypes.has(initializer.expression?.type)
+      ) {
+        functionBodies.set(node.id.name, initializer.expression.body)
+      } else if (
+        node.id?.type === "Identifier" &&
+        hasJavaScriptProcessExit(initializer.expression, { includeFunctions: true })
+      ) {
+        terminatorNames.add(node.id.name)
+      } else {
+        aliases.push({ target: node.id, source: node.init })
+      }
+      return
+    }
+    if (
+      ["ClassDeclaration", "ClassExpression"].includes(node.type) &&
+      node.id?.type === "Identifier" &&
+      hasJavaScriptProcessExit(node.body, { includeFunctions: true })
+    ) {
+      terminatorNames.add(node.id.name)
+      return
+    }
+    if (node.type === "AssignmentExpression" && node.operator === "=") {
+      aliases.push({ target: node.left, source: node.right })
+    }
+  })
+
+  for (const [name, body] of functionBodies) {
+    if (hasJavaScriptProcessExit(body, { includeFunctions: true })) terminatorNames.add(name)
+  }
+
+  let changed = true
+  while (changed) {
+    changed = false
+    for (const [name, body] of functionBodies) {
+      if (
+        !terminatorNames.has(name) &&
+        javaScriptCallsTerminator(body, terminatorNames, { includeFunctions: true })
+      ) {
+        terminatorNames.add(name)
+        changed = true
+      }
+    }
+    for (const { target, source } of aliases) {
+      const normalizedSource = normalizeJavaScriptExpression(source)
+      const sourcePath = javaScriptMemberPath(source)
+      const sourceTerminates =
+        (sourcePath.segments[0] === "process" &&
+          (sourcePath.ambiguous || sourcePath.segments[1] === "exit")) ||
+        (!normalizedSource.ambiguous &&
+          normalizedSource.expression?.type === "Identifier" &&
+          terminatorNames.has(normalizedSource.expression.name))
+      if (target?.type === "Identifier" && sourceTerminates && !terminatorNames.has(target.name)) {
+        terminatorNames.add(target.name)
+        changed = true
+      }
+      if (
+        target?.type === "ObjectPattern" &&
+        normalizedSource.ambiguous === false &&
+        normalizedSource.expression?.type === "Identifier" &&
+        normalizedSource.expression.name === "process"
+      ) {
+        for (const property of target.properties ?? []) {
+          const key = staticJavaScriptObjectPropertyKey(property)
+          const alias = property?.value
+          if (
+            key.known &&
+            key.value === "exit" &&
+            alias?.type === "Identifier" &&
+            !terminatorNames.has(alias.name)
+          ) {
+            terminatorNames.add(alias.name)
+            changed = true
+          }
+        }
+      }
+    }
+  }
+  return terminatorNames
+}
+
+function hasInvokedJavaScriptProcessExit(expression) {
+  let invokedExit = false
+  walkJavaScriptAst(expression, (node) => {
+    if (invokedExit || node.type !== "CallExpression") return
+    const callee = normalizeJavaScriptExpression(node.callee)
+    if (
+      !callee.ambiguous &&
+      javaScriptFunctionTypes.has(callee.expression?.type) &&
+      hasJavaScriptProcessExit(callee.expression.body, { includeFunctions: true })
+    ) {
+      invokedExit = true
+    }
+  })
+  return invokedExit
+}
+
 function hasLaterJavaScriptProcessExit(parent, child) {
   const expressions = parent?.type === "SequenceExpression" ? parent.expressions : null
   const statements = ["BlockStatement", "Program", "StaticBlock"].includes(parent?.type)
     ? parent.body
     : expressions
   const childIndex = statements?.indexOf(child) ?? -1
+  const terminatorNames = javaScriptProcessExitTerminatorNames(statements)
   return (
     childIndex >= 0 &&
-    statements.slice(childIndex + 1).some((statement) => hasJavaScriptProcessExit(statement))
+    statements
+      .slice(childIndex + 1)
+      .some(
+        (statement) =>
+          hasJavaScriptProcessExit(statement) ||
+          hasInvokedJavaScriptProcessExit(statement) ||
+          javaScriptCallsTerminator(statement, terminatorNames)
+      )
   )
 }
 
@@ -2045,7 +2279,7 @@ function hasExecutableJavaScriptProofAnchor(text, selector, proofPath) {
   try {
     bindings = attributableJavaScriptBindings(ast)
     walkJavaScriptAst(ast, (node, ancestors) => {
-      if (javaScriptProofCall(node, targetOffset, selector, text.length, bindings)) {
+      if (javaScriptProofCall(node, targetOffset, selector, text.length, bindings, ast)) {
         matches.push({ ancestors, node })
       }
     })
@@ -2232,6 +2466,132 @@ function javaTestFactorySignature(context, escapedSelector) {
   )
 }
 
+function javaDeclarationContext(sourceLines, declarationLineIndex) {
+  let start = declarationLineIndex
+  while (start > 0) {
+    const previous = sourceLines[start - 1].trim()
+    if (
+      /[;{}]\s*$/.test(previous) ||
+      /\b(?:class|enum|interface|record)\s+[A-Za-z_$].*\{\s*$/.test(previous)
+    ) {
+      break
+    }
+    start -= 1
+  }
+  return sourceLines.slice(start, declarationLineIndex + 1).join("\n")
+}
+
+function javaSourceTexts(root) {
+  const sourceRoot = path.resolve(root, "apps/api/src")
+  if (!fs.existsSync(sourceRoot)) return []
+  const rootPath = path.resolve(root)
+  if (!sourceRoot.startsWith(`${rootPath}${path.sep}`)) return null
+  const texts = []
+  const pending = [sourceRoot]
+  try {
+    while (pending.length > 0) {
+      const directory = pending.pop()
+      for (const entry of fs
+        .readdirSync(directory, { withFileTypes: true })
+        .sort((left, right) => left.name.localeCompare(right.name))) {
+        if (entry.isSymbolicLink()) return null
+        const absolutePath = path.join(directory, entry.name)
+        if (entry.isDirectory()) pending.push(absolutePath)
+        else if (entry.isFile() && entry.name.endsWith(".java")) {
+          texts.push(fs.readFileSync(absolutePath, "utf8"))
+        }
+      }
+    }
+  } catch {
+    return null
+  }
+  return texts
+}
+
+function javaComposedNonExecutableAnnotations(root, nonExecutableAnnotation) {
+  const sourceTexts = javaSourceTexts(root)
+  if (sourceTexts === null) return null
+  const declarations = []
+  for (const sourceText of sourceTexts) {
+    const translatedText = translateJavaUnicodeEscapes(sourceText)
+    if (translatedText === null) return null
+    const maskedText = maskJavaCommentsAndLiterals(translatedText)
+    const maskedLines = maskedText.split(/\r?\n/)
+    for (const match of maskedText.matchAll(/@interface\s+([A-Za-z_$][\w$]*)[^;{}]*\{/g)) {
+      const lineIndex = translatedText.slice(0, match.index).split(/\r?\n/).length - 1
+      declarations.push({
+        context: javaDeclarationContext(maskedLines, lineIndex),
+        name: match[1]
+      })
+    }
+  }
+
+  const composed = new Set()
+  let changed = true
+  while (changed) {
+    changed = false
+    for (const declaration of declarations) {
+      if (composed.has(declaration.name)) continue
+      const composesKnownDisabled = [...composed].some((name) =>
+        new RegExp(`@(?:[A-Za-z_$][\\w$]*\\.)*${escapeRegularExpression(name)}\\b`).test(
+          declaration.context
+        )
+      )
+      if (nonExecutableAnnotation.test(declaration.context) || composesKnownDisabled) {
+        composed.add(declaration.name)
+        changed = true
+      }
+    }
+  }
+  return composed
+}
+
+function javaMethodBody(maskedText, targetOffset) {
+  const parametersOpen = maskedText.indexOf("(", targetOffset)
+  if (parametersOpen === -1) return null
+  let parameterDepth = 1
+  let parametersClose = -1
+  for (let index = parametersOpen + 1; index < maskedText.length; index += 1) {
+    if (maskedText[index] === "(") parameterDepth += 1
+    else if (maskedText[index] === ")") parameterDepth -= 1
+    if (parameterDepth === 0) {
+      parametersClose = index
+      break
+    }
+  }
+  if (parametersClose === -1) return null
+  const bodyOpen = maskedText.indexOf("{", parametersClose + 1)
+  const declarationEnd = maskedText.indexOf(";", parametersClose + 1)
+  if (bodyOpen === -1 || (declarationEnd !== -1 && declarationEnd < bodyOpen)) return null
+  let bodyDepth = 1
+  for (let index = bodyOpen + 1; index < maskedText.length; index += 1) {
+    if (maskedText[index] === "{") bodyDepth += 1
+    else if (maskedText[index] === "}") bodyDepth -= 1
+    if (bodyDepth === 0) return maskedText.slice(bodyOpen + 1, index)
+  }
+  return null
+}
+
+function javaMethodUsesAbortingAssumption(maskedText, methodBody) {
+  if (methodBody === null) return true
+  const assumptionMethod = "(?:assume[A-Za-z0-9_$]*|assumingThat|abort)"
+  const qualifiedAssumption = new RegExp(
+    `\\b(?:(?:org\\.junit\\.(?:jupiter\\.api\\.Assumptions|Assume))|Assumptions|Assume)\\s*\\.\\s*${assumptionMethod}\\s*\\(`
+  )
+  if (qualifiedAssumption.test(maskedText)) return true
+  const staticAssumptionImport = new RegExp(
+    `^\\s*import\\s+static\\s+org\\.junit\\.(?:jupiter\\.api\\.Assumptions|Assume)\\.(?:\\*|${assumptionMethod})\\s*;`,
+    "m"
+  )
+  return (
+    (staticAssumptionImport.test(maskedText) &&
+      new RegExp(`(?:^|[^.\\w$])${assumptionMethod}\\s*\\(`).test(maskedText)) ||
+    /\bthrow\s+new\s+(?:[A-Za-z_$][\w$]*\.)*(?:TestAbortedException|AssumptionViolatedException)\b/.test(
+      maskedText
+    )
+  )
+}
+
 function hasExecutableProofAnchor(root, proof) {
   const text = fs.readFileSync(path.resolve(root, proof.path), "utf8")
   const lines = text.split(/\r?\n/)
@@ -2249,58 +2609,24 @@ function hasExecutableProofAnchor(root, proof) {
     const maskedLines = maskedText.split(/\r?\n/)
     const targetOffset = translatedText.indexOf(proof.selector)
     const translatedLineIndex = translatedText.slice(0, targetOffset).split(/\r?\n/).length - 1
-    const declarationContext = (sourceLines, declarationLineIndex) => {
-      let start = declarationLineIndex
-      while (start > 0) {
-        const previous = sourceLines[start - 1].trim()
-        if (
-          /[;{}]\s*$/.test(previous) ||
-          /\b(?:class|enum|interface|record)\s+[A-Za-z_$].*\{\s*$/.test(previous)
-        ) {
-          break
-        }
-        start -= 1
-      }
-      return sourceLines.slice(start, declarationLineIndex + 1).join("\n")
-    }
     const nonExecutableAnnotation =
       /@(?:[A-Za-z_$][\w$]*\.)*(?:(?:Disabled|Enabled)[A-Za-z0-9_$]*|Ignore)\b/
-    const annotationDeclarations = [
-      ...maskedText.matchAll(/@interface\s+([A-Za-z_$][\w$]*)[^;{}]*\{/g)
-    ].map((match) => {
-      const annotationLineIndex = translatedText.slice(0, match.index).split(/\r?\n/).length - 1
-      return {
-        context: declarationContext(maskedLines, annotationLineIndex),
-        name: match[1]
-      }
-    })
-    const composedNonExecutableAnnotations = new Set()
-    let discoveredComposedAnnotation = true
-    while (discoveredComposedAnnotation) {
-      discoveredComposedAnnotation = false
-      for (const declaration of annotationDeclarations) {
-        if (composedNonExecutableAnnotations.has(declaration.name)) continue
-        const composesKnownDisabled = [...composedNonExecutableAnnotations].some((name) =>
-          new RegExp(`@(?:[A-Za-z_$][\\w$]*\\.)*${escapeRegularExpression(name)}\\b`).test(
-            declaration.context
-          )
-        )
-        if (nonExecutableAnnotation.test(declaration.context) || composesKnownDisabled) {
-          composedNonExecutableAnnotations.add(declaration.name)
-          discoveredComposedAnnotation = true
-        }
-      }
-    }
+    const composedNonExecutableAnnotations = javaComposedNonExecutableAnnotations(
+      root,
+      nonExecutableAnnotation
+    )
+    if (composedNonExecutableAnnotations === null) return false
     const hasComposedNonExecutableAnnotation = (context) =>
       [...composedNonExecutableAnnotations].some((name) =>
         new RegExp(`@(?:[A-Za-z_$][\\w$]*\\.)*${escapeRegularExpression(name)}\\b`).test(context)
       )
-    const methodDeclarationContext = declarationContext(maskedLines, translatedLineIndex)
+    const methodDeclarationContext = javaDeclarationContext(maskedLines, translatedLineIndex)
+    const methodBody = javaMethodBody(maskedText, targetOffset)
     const proofAnnotation = javaResolvedProofAnnotation(maskedText, methodDeclarationContext)
     const classRanges = javaClassRanges(maskedText, targetOffset)
     const classContexts = classRanges.map(({ declarationOffset }) => {
       const classLineIndex = translatedText.slice(0, declarationOffset).split(/\r?\n/).length - 1
-      return declarationContext(maskedLines, classLineIndex)
+      return javaDeclarationContext(maskedLines, classLineIndex)
     })
     const configuredClassInclude = gradleJavaTestIncludeForClassName(classRanges[0]?.name ?? "")
     const buildText = readRunnerConfiguration(root, "apps/api/build.gradle.kts")
@@ -2340,6 +2666,7 @@ function hasExecutableProofAnchor(root, proof) {
       classContexts.every((context) => !hasComposedNonExecutableAnnotation(context)) &&
       classModifiersExecutable &&
       methodModifiersExecutable &&
+      !javaMethodUsesAbortingAssumption(maskedText, methodBody) &&
       signatureExecutable
     )
   }
