@@ -580,7 +580,7 @@ test("native Android performance harness invokes the behavioral boundaries", () 
   equal(systemWindowProbeIndex < uiAutomatorProbeIndex, true)
   match(
     performanceHarness,
-    /const systemWindowPreflight = probePixelLauncherAnrWindow\(preflightDeadline\)[\s\S]*deadlineAt:\s*preflightDeadline[\s\S]*dismissedPrompts: preflightDismissedPrompts[\s\S]*probeChromeContentSurfaceAtActivityBoundary\(\s*normalizationDeadline,\s*systemWindowPreflight\.displaySize\s*\)/u
+    /const systemWindowPreflight = probePixelLauncherAnrWindow\(preflightDeadline\)[\s\S]*deadlineAt:\s*preflightDeadline[\s\S]*activityPreflightDeadline[\s\S]*initialSurfaceActivity[\s\S]*dismissedPrompts: preflightDismissedPrompts[\s\S]*probeChromeContentSurfaceAtActivityBoundary\(\s*normalizationDeadline,\s*systemWindowPreflight\.displaySize,\s*activityBefore\s*\)/u
   )
   match(
     performanceHarness,
@@ -607,7 +607,7 @@ test("native Android performance harness invokes the behavioral boundaries", () 
   )
   match(
     performanceHarness,
-    /probeSurface:\s*\(\)\s*=>\s*probeChromeContentSurfaceAtActivityBoundary\(\s*normalizationDeadline,\s*systemWindowPreflight\.displaySize\s*\)/u
+    /probeSurface:\s*\(\)\s*=>\s*\{[\s\S]*const activityBefore = initialSurfaceActivity[\s\S]*initialSurfaceActivity = null[\s\S]*probeChromeContentSurfaceAtActivityBoundary\(\s*normalizationDeadline,\s*systemWindowPreflight\.displaySize,\s*activityBefore\s*\)/u
   )
   doesNotMatch(
     performanceHarness,
@@ -1744,7 +1744,7 @@ test("production binds c8bb activity acquisition to existing normalization limit
   )
   match(
     performanceHarness,
-    /captureChromeSurfaceProbeBoundaryWithActivityAcquisition\(\{[\s\S]*acquireActivity: \(label\) => acquireChromeSurfaceActivityWithinDeadline\(deadline, label\)[\s\S]*probeSurface: \(\) => probeChromeContentSurface\(deadline, displaySize\)/u
+    /captureChromeSurfaceProbeBoundaryWithActivityAcquisition\(\{[\s\S]*acquireActivity: \(label\) =>[\s\S]*label === "pre-surface activity"[\s\S]*initialActivityBefore \?\? acquireChromeSurfaceActivityWithinDeadline\(deadline, label\)[\s\S]*: acquireChromeSurfaceActivityWithinDeadline\(deadline, label\)[\s\S]*probeSurface: \(\) => probeChromeContentSurface\(deadline, displaySize\)/u
   )
   doesNotMatch(
     performanceHarness,
@@ -2388,6 +2388,37 @@ test("cold native preflight and UIAutomator normalization have independent bound
   match(
     performanceHarness,
     /async function requireClearChromeContentSurface\(\) \{\s*const deadline =\s*performance\.now\(\) \+ CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS/u
+  )
+})
+
+test("cold native activity acquisition cannot consume the UIAutomator normalization deadline", () => {
+  const performanceHarness = readFileSync(
+    new URL("../../scripts/android-chrome-performance-smoke.mjs", import.meta.url),
+    "utf8"
+  )
+  const activityPreflightDeadline = "const activityPreflightDeadline ="
+  const activityPreflight =
+    "let initialSurfaceActivity = await acquireChromeSurfaceActivityWithinDeadline("
+  const activityPreflightAcceptance = '"activity preflight acceptance"'
+  const normalizationDeadline =
+    "const normalizationDeadline = performance.now() + CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS"
+
+  const activityPreflightDeadlineIndex = performanceHarness.indexOf(activityPreflightDeadline)
+  const activityPreflightIndex = performanceHarness.indexOf(activityPreflight)
+  const activityPreflightAcceptanceIndex = performanceHarness.indexOf(activityPreflightAcceptance)
+  const normalizationDeadlineIndex = performanceHarness.indexOf(normalizationDeadline)
+
+  equal(activityPreflightDeadlineIndex >= 0, true)
+  equal(activityPreflightDeadlineIndex < activityPreflightIndex, true)
+  equal(activityPreflightIndex < activityPreflightAcceptanceIndex, true)
+  equal(activityPreflightAcceptanceIndex < normalizationDeadlineIndex, true)
+  match(
+    performanceHarness,
+    /probeSurface:\s*\(\)\s*=>\s*\{[\s\S]*const activityBefore = initialSurfaceActivity[\s\S]*initialSurfaceActivity = null[\s\S]*probeChromeContentSurfaceAtActivityBoundary\([\s\S]*activityBefore[\s\S]*\)/u
+  )
+  match(
+    performanceHarness,
+    /function probeChromeContentSurfaceAtActivityBoundary\(\s*deadline,\s*displaySize,\s*initialActivityBefore\s*=\s*null\s*\)[\s\S]*label === "pre-surface activity"[\s\S]*initialActivityBefore \?\? acquireChromeSurfaceActivityWithinDeadline\(deadline, label\)/u
   )
 })
 
@@ -3676,7 +3707,7 @@ test("Android smoke diagnostics preserve the failing producer and bound probes",
   match(performanceHarness, /timeout: probeTimeoutMilliseconds/u)
   match(
     performanceHarness,
-    /function probeChromeContentSurfaceAtActivityBoundary\(deadline, displaySize\) \{[\s\S]*captureChromeSurfaceProbeBoundaryWithActivityAcquisition\(\{[\s\S]*acquireChromeSurfaceActivityWithinDeadline\(deadline, label\)[\s\S]*probeChromeContentSurface\(deadline, displaySize\)/u
+    /function probeChromeContentSurfaceAtActivityBoundary\(\s*deadline,\s*displaySize,\s*initialActivityBefore = null\s*\) \{[\s\S]*captureChromeSurfaceProbeBoundaryWithActivityAcquisition\(\{[\s\S]*initialActivityBefore \?\? acquireChromeSurfaceActivityWithinDeadline\(deadline, label\)[\s\S]*probeChromeContentSurface\(deadline, displaySize\)/u
   )
   match(
     performanceHarness,

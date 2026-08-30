@@ -988,9 +988,16 @@ function acquireChromeSurfaceActivityWithinDeadline(deadline, label) {
   })
 }
 
-function probeChromeContentSurfaceAtActivityBoundary(deadline, displaySize) {
+function probeChromeContentSurfaceAtActivityBoundary(
+  deadline,
+  displaySize,
+  initialActivityBefore = null
+) {
   return captureChromeSurfaceProbeBoundaryWithActivityAcquisition({
-    acquireActivity: (label) => acquireChromeSurfaceActivityWithinDeadline(deadline, label),
+    acquireActivity: (label) =>
+      label === "pre-surface activity"
+        ? (initialActivityBefore ?? acquireChromeSurfaceActivityWithinDeadline(deadline, label))
+        : acquireChromeSurfaceActivityWithinDeadline(deadline, label),
     probeSurface: () => probeChromeContentSurface(deadline, displaySize)
   })
 }
@@ -1041,17 +1048,32 @@ async function normalizeChromeContentSurface() {
   }
 
   requireRemainingAutomationMilliseconds(preflightDeadline, 1, "system-window preflight acceptance")
+  const activityPreflightDeadline =
+    performance.now() + CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS
+  let initialSurfaceActivity = await acquireChromeSurfaceActivityWithinDeadline(
+    activityPreflightDeadline,
+    "pre-surface activity"
+  )
+  requireRemainingAutomationMilliseconds(
+    activityPreflightDeadline,
+    1,
+    "activity preflight acceptance"
+  )
   const normalizationDeadline = performance.now() + CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS
   const normalization = await normalizeChromeAutomationSurfaceWithinDeadline({
     deadlineAt: normalizationDeadline,
     now: () => performance.now(),
     maximumPollMilliseconds: CHROME_AUTOMATION_POLL_MILLISECONDS,
     dismissedPrompts: preflightDismissedPrompts,
-    probeSurface: () =>
-      probeChromeContentSurfaceAtActivityBoundary(
+    probeSurface: () => {
+      const activityBefore = initialSurfaceActivity
+      initialSurfaceActivity = null
+      return probeChromeContentSurfaceAtActivityBoundary(
         normalizationDeadline,
-        systemWindowPreflight.displaySize
-      ),
+        systemWindowPreflight.displaySize,
+        activityBefore
+      )
+    },
     tap: (dismissTap, label) =>
       executeBoundChromeSurfaceTap({
         deadlineAt: normalizationDeadline,
