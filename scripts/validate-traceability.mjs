@@ -1154,24 +1154,33 @@ function gradleTestSelection(buildText) {
     }
   }
   const testBlocks = []
-  for (let index = 0; index < tokens.length - 6; index += 1) {
-    const sequence = tokens.slice(index, index + 7).map((token) => token.value)
-    if (sequence.join(" ") !== "tasks . withType < Test > {") continue
+  const testBlockPrefixes = [
+    ["tasks", ".", "withType", "<", "Test", ">", "{"],
+    ["tasks", ".", "test", "{"],
+    ["tasks", ".", "named", "<", "Test", ">", "(", "test", ")", "{"],
+    ["tasks", ".", "named", "(", "test", ")", "{"],
+    ["tasks", ".", "getByName", "<", "Test", ">", "(", "test", ")", "{"]
+  ]
+  for (let index = 0; index < tokens.length; index += 1) {
+    const prefix = testBlockPrefixes.find((candidate) =>
+      candidate.every((value, offset) => tokens[index + offset]?.value === value)
+    )
+    if (prefix === undefined) continue
     let depth = 1
-    let close = index + 7
+    let close = index + prefix.length
     while (close < tokens.length && depth > 0) {
       if (tokens[close].value === "{") depth += 1
       else if (tokens[close].value === "}") depth -= 1
       close += 1
     }
     if (depth !== 0) return null
-    testBlocks.push(tokens.slice(index + 7, close - 1))
+    testBlocks.push(tokens.slice(index + prefix.length, close - 1))
     index = close - 1
   }
 
   for (const block of testBlocks) {
     let blockDepth = 0
-    for (let index = 0; index < block.length - 2; index += 1) {
+    for (let index = 0; index < block.length; index += 1) {
       const method = block[index]
       if (method.value === "{") {
         blockDepth += 1
@@ -1184,6 +1193,18 @@ function gradleTestSelection(buildText) {
       }
       if (method.type === "identifier" && dynamicConfigurationKeywords.has(method.value)) {
         invalid = true
+        continue
+      }
+      if (method.value === "enabled" && block[index + 1]?.value === "=") {
+        if (block[index + 2]?.value !== "true") invalid = true
+        index += 2
+        continue
+      }
+      if (method.value === "setEnabled" && block[index + 1]?.value === "(") {
+        if (block[index + 2]?.value !== "true" || block[index + 3]?.value !== ")") {
+          invalid = true
+        }
+        index += 3
         continue
       }
       if (
@@ -1672,6 +1693,7 @@ const javaScriptFunctionTypes = new Set([
   "FunctionExpression"
 ])
 const javaScriptProofBindingRoles = new Set(["node-test", "playwright-test"])
+const nodeTestLifecycleHookNames = new Set(["after", "afterEach", "before", "beforeEach"])
 
 function normalizeJavaScriptExpression(node) {
   let current = node
@@ -2164,6 +2186,7 @@ function authorizedJavaScriptImportRole(declaration, specifier) {
     const importedName = javaScriptImportedName(specifier)
     if (["it", "test"].includes(importedName)) return "node-test"
     if (["describe", "suite"].includes(importedName)) return "node-suite"
+    if (nodeTestLifecycleHookNames.has(importedName)) return "node-hook"
   }
   if (
     source === "@playwright/test" &&
@@ -2359,6 +2382,57 @@ function javaScriptProofCall(
 
   const title = expression.arguments?.[0]
   return javaScriptTitleContainsSelector(title, targetOffset, selector, textLength)
+}
+
+function javaScriptNodeTestHookCallback(node, bindings) {
+  if (node?.type !== "CallExpression" || node.optional === true) return null
+  const memberPath = javaScriptMemberPath(node.callee)
+  if (memberPath.ambiguous) return null
+  const binding = bindings.get(memberPath.segments[0], node)
+  const directHook = binding?.role === "node-hook" && memberPath.segments.length === 1
+  const namespaceHook =
+    binding?.role === "node-test-namespace" &&
+    memberPath.segments.length === 2 &&
+    nodeTestLifecycleHookNames.has(memberPath.segments[1])
+  if (!directHook && !namespaceHook) return null
+  if (node.arguments?.some((argument) => argument?.type === "SpreadElement")) return null
+  const callback = normalizeJavaScriptExpression(node.arguments?.[0]).expression
+  return isExecutableJavaScriptTestCallback(callback) || callback?.type === "Identifier"
+    ? callback
+    : null
+}
+
+function hasPotentialNodeTestHookRegistration(ancestors, bindings, playwrightDisableNames) {
+  for (let index = 0; index < ancestors.length; index += 1) {
+    if (!javaScriptFunctionTypes.has(ancestors[index]?.type)) continue
+    if (
+      javaScriptFunctionRegistration(index, ancestors, bindings, playwrightDisableNames) !==
+      "active"
+    ) {
+      return false
+    }
+  }
+  return true
+}
+
+function hasTerminatingNodeTestHook(ast, bindings, playwrightDisableNames) {
+  const processExitTerminators = javaScriptProcessExitTerminatorNames(ast)
+  let terminating = false
+  walkJavaScriptAst(ast, (node, ancestors) => {
+    if (terminating) return
+    const callback = javaScriptNodeTestHookCallback(node, bindings)
+    if (
+      callback === null ||
+      !hasPotentialNodeTestHookRegistration(ancestors, bindings, playwrightDisableNames)
+    ) {
+      return
+    }
+    terminating =
+      (callback.type === "Identifier" && processExitTerminators.has(callback.name)) ||
+      hasJavaScriptProcessExit(callback, { includeFunctions: true }) ||
+      javaScriptCallsTerminator(callback, processExitTerminators, { includeFunctions: true })
+  })
+  return terminating
 }
 
 function javaScriptFunctionRegistration(
@@ -3136,6 +3210,7 @@ function hasExecutableJavaScriptProofAnchor(text, selector, proofPath) {
   try {
     bindings = attributableJavaScriptBindings(ast)
     playwrightDisableNames = javaScriptPlaywrightDisableNames(ast, bindings)
+    if (hasTerminatingNodeTestHook(ast, bindings, playwrightDisableNames)) return false
     walkJavaScriptAst(ast, (node, ancestors) => {
       if (
         javaScriptProofCall(
@@ -3735,6 +3810,108 @@ function shellHasLaterExecutableLine(text, targetLineIndex) {
     .some((line) => shellCommandSegments(line).length > 0)
 }
 
+function shellPythonHereDocumentContainsLine(text, targetLineIndex) {
+  const lines = text.split(/\r?\n/)
+  let activeHereDocument = null
+  for (let lineIndex = 0; lineIndex <= targetLineIndex; lineIndex += 1) {
+    const line = lines[lineIndex] ?? ""
+    if (activeHereDocument !== null) {
+      const candidate = activeHereDocument.stripTabs ? line.replace(/^\t+/, "") : line
+      if (candidate === activeHereDocument.delimiter) {
+        activeHereDocument = null
+      } else if (lineIndex === targetLineIndex) {
+        return true
+      }
+      continue
+    }
+    if (lineIndex === targetLineIndex) return false
+    for (const words of shellCommandSegments(line)) {
+      let delimiter = null
+      let stripTabs = false
+      let delimiterIndex = -1
+      for (let index = 0; index < words.length; index += 1) {
+        const inline = words[index].match(/^<<(-?)([A-Za-z_][A-Za-z0-9_]*)$/)
+        if (inline !== null) {
+          stripTabs = inline[1] === "-"
+          delimiter = inline[2]
+          delimiterIndex = index
+          break
+        }
+        if (["<<", "<<-"].includes(words[index])) {
+          const next = words[index + 1]
+          if (/^[A-Za-z_][A-Za-z0-9_]*$/.test(next ?? "")) {
+            stripTabs = words[index] === "<<-"
+            delimiter = next
+            delimiterIndex = index
+          }
+          break
+        }
+      }
+      if (delimiter === null) continue
+      let commandIndex = 0
+      while (
+        commandIndex < delimiterIndex &&
+        /^[A-Za-z_][A-Za-z0-9_]*=/.test(words[commandIndex] ?? "")
+      ) {
+        commandIndex += 1
+      }
+      while (["builtin", "command"].includes(words[commandIndex])) commandIndex += 1
+      if (words[commandIndex] === "env") {
+        commandIndex += 1
+        while (commandIndex < delimiterIndex && (words[commandIndex] ?? "").startsWith("-")) {
+          commandIndex += 1
+        }
+        while (
+          commandIndex < delimiterIndex &&
+          /^[A-Za-z_][A-Za-z0-9_]*=/.test(words[commandIndex] ?? "")
+        ) {
+          commandIndex += 1
+        }
+      }
+      const invokesPython = /(?:^|\/)python(?:3(?:\.\d+)*)?$/.test(words[commandIndex] ?? "")
+      if (invokesPython) activeHereDocument = { delimiter, stripTabs }
+    }
+  }
+  return false
+}
+
+function shellExitTrapActionOverridesStatus(action) {
+  const commands = shellCommandSegments(action)
+  for (let commandIndex = 0; commandIndex < commands.length; commandIndex += 1) {
+    const words = commands[commandIndex]
+    let index = 0
+    while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[index] ?? "")) index += 1
+    while (["builtin", "command"].includes(words[index])) index += 1
+    if (words[index] !== "exit") continue
+    const status = words[index + 1]
+    if (status === undefined || status === "$?" || status === "${?}") {
+      return commandIndex !== 0
+    }
+    if (/^[+-]?\d+$/.test(status)) return !shellStatusIsNonzero(status)
+    return true
+  }
+  return false
+}
+
+function shellHasStatusOverridingExitTrapBeforeLine(text, targetLineIndex) {
+  let overridesStatus = false
+  const lines = text.split(/\r?\n/).slice(0, targetLineIndex)
+  for (const line of lines) {
+    for (const words of shellCommandSegments(line)) {
+      let index = 0
+      while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[index] ?? "")) index += 1
+      while (["builtin", "command"].includes(words[index])) index += 1
+      if (words[index] !== "trap") continue
+      const action = words[index + 1]
+      const signals = words.slice(index + 2)
+      if (!signals.some((signal) => ["0", "EXIT"].includes(signal))) continue
+      overridesStatus =
+        ![undefined, "", "-"].includes(action) && shellExitTrapActionOverridesStatus(action)
+    }
+  }
+  return overridesStatus
+}
+
 function shellLineHasExecutableFailureAnchor(text, line, selector, lineIndex) {
   const segments = shellCommandSegments(line)
   const operators = shellLineControlOperators(line)
@@ -3743,6 +3920,7 @@ function shellLineHasExecutableFailureAnchor(text, line, selector, lineIndex) {
     words.some((word) => word.includes(selector))
   )
   if (!selectorIsExecutable) return false
+  if (shellHasStatusOverridingExitTrapBeforeLine(text, lineIndex)) return false
 
   const failureFunctions = shellFailureFunctions(text)
   const hasPipelineOrBackground = operators.some((operator) => ["|", "&"].includes(operator))
@@ -3759,18 +3937,25 @@ function shellLineHasExecutableFailureAnchor(text, line, selector, lineIndex) {
   const failurePropagates =
     shellErrexitEnabledBeforeLine(text, lineIndex) || !shellHasLaterExecutableLine(text, lineIndex)
 
-  if (/^\s*raise\s+(?:[A-Za-z_$][\w$]*\.)*AssertionError\s*\(/.test(line)) {
-    return failurePropagates
-  }
+  const isPythonAssertion = /^\s*raise\s+(?:[A-Za-z_$][\w$]*\.)*AssertionError\s*\(/.test(line)
   const systemExit = line.match(
     /^\s*raise\s+(?:[A-Za-z_$][\w$]*\.)*SystemExit\s*\(\s*([+-]?\d+)\s*\)/
   )
+  const isMessageSystemExit =
+    /^\s*raise\s+(?:[A-Za-z_$][\w$]*\.)*SystemExit\s*\(\s*(["'])(?:\\.|(?!\1).)*\1\s*\)/.test(line)
+  if (
+    (isPythonAssertion || systemExit !== null || isMessageSystemExit) &&
+    !shellPythonHereDocumentContainsLine(text, lineIndex)
+  ) {
+    return false
+  }
+  if (isPythonAssertion) {
+    return failurePropagates
+  }
   if (systemExit !== null) {
     return shellStatusIsNonzero(systemExit[1]) && failurePropagates
   }
-  if (
-    /^\s*raise\s+(?:[A-Za-z_$][\w$]*\.)*SystemExit\s*\(\s*(["'])(?:\\.|(?!\1).)*\1\s*\)/.test(line)
-  ) {
+  if (isMessageSystemExit) {
     return failurePropagates
   }
   for (const words of segments) {
