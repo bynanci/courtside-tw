@@ -823,6 +823,14 @@ function gradleJavaTestInclude(relativePath) {
   return null
 }
 
+function gradleJavaTestIncludeForClassName(className) {
+  for (const [sourceSuffix, configuredInclude] of gradleJavaTestIncludesBySourceSuffix) {
+    const classSuffix = sourceSuffix.slice(0, -".java".length)
+    if (className.endsWith(classSuffix)) return configuredInclude
+  }
+  return null
+}
+
 function gradleRunnerSelectsJavaProof(root, relativePath) {
   const configuredInclude = gradleJavaTestInclude(relativePath)
   if (!relativePath.startsWith("apps/api/src/test/java/") || configuredInclude === null) {
@@ -912,16 +920,22 @@ function shellRunStepExecutesProof(script, relativePath) {
     return false
   }
   const expectedCommands = new Set([relativePath, `./${relativePath}`])
-  return shellCommandSegments(script).some((words) => {
+  for (const words of shellCommandSegments(script)) {
     let index = 0
     while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[index] ?? "")) index += 1
+    if (["builtin", "command"].includes(words[index])) {
+      index += 1
+      while ((words[index] ?? "").startsWith("-")) index += 1
+    }
+    if (["exec", "exit", "return"].includes(words[index])) return false
     const shell = words[index]
     if (["bash", "/bin/bash", "sh", "/bin/sh"].includes(shell)) {
       index += 1
       while ((words[index] ?? "").startsWith("-")) index += 1
     }
-    return expectedCommands.has(words[index])
-  })
+    if (expectedCommands.has(words[index])) return true
+  }
+  return false
 }
 
 function ciWorkflowSelectsShellProof(root, relativePath) {
@@ -1702,7 +1716,29 @@ function isProvablyNonemptyJavaScriptForOf(statement) {
   )
 }
 
+function hasJavaScriptProcessExit(expression) {
+  let exits = false
+  walkJavaScriptAst(expression, (node, ancestors) => {
+    if (
+      exits ||
+      node.type !== "CallExpression" ||
+      ancestors.some((ancestor) => javaScriptFunctionTypes.has(ancestor?.type))
+    ) {
+      return
+    }
+    const memberPath = javaScriptMemberPath(node.callee)
+    if (
+      memberPath.segments[0] === "process" &&
+      (memberPath.ambiguous || memberPath.segments[1] === "exit")
+    ) {
+      exits = true
+    }
+  })
+  return exits
+}
+
 function canBypassLaterJavaScriptStatement(statement) {
+  if (hasJavaScriptProcessExit(statement)) return true
   if (
     ["BreakStatement", "ContinueStatement", "ReturnStatement", "ThrowStatement"].includes(
       statement?.type
@@ -1798,8 +1834,10 @@ function hasDeferredClassFieldRegistration(node, ancestors) {
 function hasNodeTestContextDisable(callbackNode) {
   const normalized = normalizeJavaScriptExpression(callbackNode)
   const callback = normalized.expression
-  const contextName = callback?.params?.[0]?.type === "Identifier" ? callback.params[0].name : null
-  if (normalized.ambiguous || contextName === null) return false
+  if (normalized.ambiguous || !javaScriptFunctionTypes.has(callback?.type)) return true
+  if ((callback.params?.length ?? 0) === 0) return false
+  if (callback.params[0]?.type !== "Identifier") return true
+  const contextName = callback.params[0].name
 
   let disabled = false
   walkJavaScriptAst(callback.body, (node) => {
@@ -1850,13 +1888,12 @@ function hasPlaywrightTestDisable(callbackNode, bindings) {
 
   let disabled = false
   walkJavaScriptAst(callback.body, (node) => {
-    if (disabled || node.type !== "CallExpression") return
-    const memberPath = javaScriptMemberPath(node.callee)
+    if (disabled || node.type !== "MemberExpression") return
+    const memberPath = javaScriptMemberPath(node)
     const binding = bindings.get(memberPath.segments[0], node)
     if (
-      memberPath.segments.length !== 2 ||
       binding?.role !== "playwright-test" ||
-      !["fail", "fixme", "skip"].includes(memberPath.segments[1])
+      (!memberPath.ambiguous && !["fail", "fixme", "skip"].includes(memberPath.segments[1]))
     ) {
       return
     }
@@ -1915,6 +1952,160 @@ function hasExecutableJavaScriptProofAnchor(text, selector, proofPath) {
   )
 }
 
+const javaJUnitProofAnnotations = [
+  ["Test", "org.junit.jupiter.api.Test", "void"],
+  ["ParameterizedTest", "org.junit.jupiter.params.ParameterizedTest", "void"],
+  ["RepeatedTest", "org.junit.jupiter.api.RepeatedTest", "void"],
+  ["TestFactory", "org.junit.jupiter.api.TestFactory", "factory"]
+]
+
+function escapeRegularExpression(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+}
+
+function maskJavaCommentsAndLiterals(text) {
+  const characters = text.split("")
+  let state = "code"
+  const mask = (index) => {
+    if (characters[index] !== "\n" && characters[index] !== "\r") characters[index] = " "
+  }
+
+  for (let index = 0; index < characters.length; index += 1) {
+    const character = characters[index]
+    const next = characters[index + 1]
+    const third = characters[index + 2]
+    if (state === "line-comment") {
+      if (character === "\n") state = "code"
+      else mask(index)
+      continue
+    }
+    if (state === "block-comment") {
+      mask(index)
+      if (character === "*" && next === "/") {
+        mask(index + 1)
+        index += 1
+        state = "code"
+      }
+      continue
+    }
+    if (state === "string" || state === "character") {
+      const delimiter = state === "string" ? '"' : "'"
+      mask(index)
+      if (character === "\\") {
+        mask(index + 1)
+        index += 1
+      } else if (character === delimiter) {
+        state = "code"
+      }
+      continue
+    }
+    if (state === "text-block") {
+      mask(index)
+      if (character === '"' && next === '"' && third === '"') {
+        mask(index + 1)
+        mask(index + 2)
+        index += 2
+        state = "code"
+      }
+      continue
+    }
+    if (character === "/" && next === "/") {
+      mask(index)
+      mask(index + 1)
+      index += 1
+      state = "line-comment"
+    } else if (character === "/" && next === "*") {
+      mask(index)
+      mask(index + 1)
+      index += 1
+      state = "block-comment"
+    } else if (character === '"' && next === '"' && third === '"') {
+      mask(index)
+      mask(index + 1)
+      mask(index + 2)
+      index += 2
+      state = "text-block"
+    } else if (character === '"') {
+      mask(index)
+      state = "string"
+    } else if (character === "'") {
+      mask(index)
+      state = "character"
+    }
+  }
+  return characters.join("")
+}
+
+function javaAnnotationResolves(maskedText, context, simpleName, qualifiedName) {
+  const escapedSimpleName = escapeRegularExpression(simpleName)
+  const escapedQualifiedName = escapeRegularExpression(qualifiedName)
+  if (new RegExp(`@${escapedQualifiedName}\\b`).test(context)) return true
+  if (!new RegExp(`@${escapedSimpleName}\\b`).test(context)) return false
+  if (
+    new RegExp(
+      `\\b(?:class|enum|interface|record)\\s+${escapedSimpleName}\\b|@interface\\s+${escapedSimpleName}\\b`
+    ).test(maskedText)
+  ) {
+    return false
+  }
+  const packageName = qualifiedName.slice(0, qualifiedName.lastIndexOf("."))
+  return (
+    new RegExp(`^\\s*import\\s+${escapedQualifiedName}\\s*;`, "m").test(maskedText) ||
+    new RegExp(`^\\s*import\\s+${escapeRegularExpression(packageName)}\\.\\*\\s*;`, "m").test(
+      maskedText
+    )
+  )
+}
+
+function javaResolvedProofAnnotation(maskedText, context) {
+  const matches = javaJUnitProofAnnotations.filter(([simpleName, qualifiedName]) =>
+    javaAnnotationResolves(maskedText, context, simpleName, qualifiedName)
+  )
+  return matches.length === 1 ? matches[0] : null
+}
+
+function javaClassRanges(maskedText, targetOffset) {
+  const ranges = []
+  const declaration = /\b(?:class|enum|interface|record)\s+([A-Za-z_$][\w$]*)[^;{}]*\{/g
+  for (const match of maskedText.matchAll(declaration)) {
+    const open = match.index + match[0].lastIndexOf("{")
+    let depth = 1
+    let close = -1
+    for (let index = open + 1; index < maskedText.length; index += 1) {
+      if (maskedText[index] === "{") depth += 1
+      else if (maskedText[index] === "}") depth -= 1
+      if (depth === 0) {
+        close = index
+        break
+      }
+    }
+    if (open < targetOffset && targetOffset < close) {
+      ranges.push({ declarationOffset: match.index, name: match[1], open })
+    }
+  }
+  return ranges.sort((left, right) => left.open - right.open)
+}
+
+function javaBraceDepthAt(maskedText, targetOffset) {
+  let depth = 0
+  for (let index = 0; index < targetOffset; index += 1) {
+    if (maskedText[index] === "{") depth += 1
+    else if (maskedText[index] === "}") depth -= 1
+  }
+  return depth
+}
+
+function javaTestFactorySignature(context, escapedSelector) {
+  const dynamicNode = "(?:[A-Za-z_$][\\w$]*\\.)*(?:DynamicNode|DynamicTest|DynamicContainer)"
+  const dynamicArray = `${dynamicNode}\\s*(?:\\[\\s*\\])+`
+  const dynamicCollection =
+    "(?:[A-Za-z_$][\\w$]*\\.)*(?:Collection|Iterable|Iterator|Stream)" +
+    `\\s*<[^;{}()]*${dynamicNode}[^;{}()]*>`
+  return new RegExp(`(?:${dynamicArray}|${dynamicCollection})\\s+${escapedSelector}\\s*\\(`).test(
+    context
+  )
+}
+
 function hasExecutableProofAnchor(root, proof) {
   const text = fs.readFileSync(path.resolve(root, proof.path), "utf8")
   const lines = text.split(/\r?\n/)
@@ -1923,37 +2114,65 @@ function hasExecutableProofAnchor(root, proof) {
   const line = lines[lineIndex].trim()
 
   if (gradleJavaTestInclude(proof.path) !== null) {
-    const escapedSelector = proof.selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
-    const annotationContext = lines.slice(Math.max(0, lineIndex - 5), lineIndex + 1).join("\n")
-    const classLineIndex = lines
-      .slice(0, lineIndex + 1)
-      .findLastIndex((candidate) =>
-        /\b(?:class|enum|interface|record)\s+[A-Za-z_$]/.test(candidate)
-      )
-    const declarationContext = (declarationLineIndex) => {
+    const escapedSelector = escapeRegularExpression(proof.selector)
+    const maskedText = maskJavaCommentsAndLiterals(text)
+    const maskedLines = maskedText.split(/\r?\n/)
+    const targetOffset = text.indexOf(proof.selector)
+    const declarationContext = (sourceLines, declarationLineIndex) => {
       let start = declarationLineIndex
       while (start > 0) {
-        const previous = lines[start - 1].trim()
+        const previous = sourceLines[start - 1].trim()
         if (
-          /[;}]\s*$/.test(previous) ||
+          /[;{}]\s*$/.test(previous) ||
           /\b(?:class|enum|interface|record)\s+[A-Za-z_$].*\{\s*$/.test(previous)
         ) {
           break
         }
         start -= 1
       }
-      return lines.slice(start, declarationLineIndex + 1).join("\n")
+      return sourceLines.slice(start, declarationLineIndex + 1).join("\n")
     }
     const nonExecutableAnnotation =
       /@(?:[A-Za-z_$][\w$]*\.)*(?:(?:Disabled|Enabled)[A-Za-z0-9_$]*|Ignore)\b/
-    const methodDeclarationContext = declarationContext(lineIndex)
-    const classDeclarationContext = classLineIndex === -1 ? "" : declarationContext(classLineIndex)
+    const methodDeclarationContext = declarationContext(maskedLines, lineIndex)
+    const proofAnnotation = javaResolvedProofAnnotation(maskedText, methodDeclarationContext)
+    const classRanges = javaClassRanges(maskedText, targetOffset)
+    const classContexts = classRanges.map(({ declarationOffset }) => {
+      const classLineIndex = text.slice(0, declarationOffset).split(/\r?\n/).length - 1
+      return declarationContext(maskedLines, classLineIndex)
+    })
+    const configuredClassInclude = gradleJavaTestIncludeForClassName(classRanges[0]?.name ?? "")
+    const buildText = readRunnerConfiguration(root, "apps/api/build.gradle.kts")
+    const topLevelClassSelected =
+      configuredClassInclude !== null && buildText?.includes(configuredClassInclude) === true
+    const nestedClassesDiscoverable = classRanges
+      .slice(1)
+      .every((_, index) =>
+        javaAnnotationResolves(
+          maskedText,
+          classContexts[index + 1],
+          "Nested",
+          "org.junit.jupiter.api.Nested"
+        )
+      )
+    const signatureExecutable =
+      proofAnnotation?.[2] === "factory"
+        ? javaTestFactorySignature(methodDeclarationContext, escapedSelector)
+        : proofAnnotation?.[2] === "void" &&
+          new RegExp(`\\bvoid\\s+${escapedSelector}\\s*\\(`).test(methodDeclarationContext)
+    const methodModifiersExecutable = !/\b(?:abstract|native|private|static)\b/.test(
+      methodDeclarationContext
+    )
     return (
-      classLineIndex !== -1 &&
-      /@(Test|ParameterizedTest|RepeatedTest|TestFactory)\b/.test(annotationContext) &&
+      classRanges.length > 0 &&
+      javaBraceDepthAt(maskedText, targetOffset) === classRanges.length &&
+      topLevelClassSelected &&
+      nestedClassesDiscoverable &&
+      proofAnnotation !== null &&
       !nonExecutableAnnotation.test(methodDeclarationContext) &&
-      !nonExecutableAnnotation.test(classDeclarationContext) &&
-      new RegExp(`\\bvoid\\s+${escapedSelector}\\s*\\(`).test(line)
+      classContexts.every((context) => !nonExecutableAnnotation.test(context)) &&
+      methodModifiersExecutable &&
+      signatureExecutable
     )
   }
   if (/\.(?:test|spec)\.[cm]?[jt]sx?$/.test(proof.path)) {

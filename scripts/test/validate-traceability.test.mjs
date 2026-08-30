@@ -2323,6 +2323,27 @@ for (const [aliasKind, disableSource] of [
   })
 }
 
+for (const [parameterKind, source] of [
+  [
+    "rest parameter",
+    'test("fixture-proof", (...args) => { args[0].skip(); throw new Error("unreached") })\n'
+  ],
+  [
+    "destructured parameter",
+    'test("fixture-proof", ({ skip }) => { skip(); throw new Error("unreached") })\n'
+  ]
+]) {
+  test(`a node:test context hidden by a ${parameterKind} cannot serve as proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "tests/hidden-context-disable.test.js"
+      files["tests/hidden-context-disable.test.js"] = 'import test from "node:test"\n' + source
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+  })
+}
+
 test("a Playwright callback self-disabled with test.skip cannot serve as proof", () => {
   const root = makeFixture(({ contract, files }) => {
     contract.requirements[0].proofs[0].path = "tests/self-disabled-playwright-proof.test.js"
@@ -2334,6 +2355,24 @@ test("a Playwright callback self-disabled with test.skip cannot serve as proof",
   assert.equal(report.status, "FAIL")
   assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
 })
+
+for (const [invocationKind, disableSource] of [
+  ["Function.call", "test.skip.call(test)"],
+  ["computed member", 'test["sk" + "ip"]()'],
+  ["member alias", "const disable = test.fixme; disable()"]
+]) {
+  test(`a Playwright callback disabled through ${invocationKind} cannot serve as proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "tests/indirect-playwright-disable.test.js"
+      files["tests/indirect-playwright-disable.test.js"] =
+        'import { test } from "@playwright/test"\n' +
+        `test("fixture-proof", async () => { ${disableSource}; throw new Error("unreached") })\n`
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+  })
+}
 
 for (const [runner, source] of [
   [
@@ -2367,6 +2406,19 @@ test("a proof registration bypassed by a conditional return cannot serve as proo
       "  if (process.env.SKIP_PROOF) return\n" +
       '  test("fixture-proof", () => {})\n' +
       "})\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+})
+
+test("a proof registration after process.exit cannot serve as proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/process-exit-proof.test.js"
+    files["tests/process-exit-proof.test.js"] =
+      'import test from "node:test"\n' +
+      "process.exit(0)\n" +
+      'test("fixture-proof", () => { throw new Error("unreached proof") })\n'
   })
   const report = run(root)
   assert.equal(report.status, "FAIL")
@@ -2652,6 +2704,10 @@ for (const [mentionKind, workflow] of [
   [
     "workflow pipeline without pipefail",
     "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/unwired-proof.sh | tee proof.log\n"
+  ],
+  [
+    "workflow command after exit",
+    "jobs:\n  verify:\n    steps:\n      - run: |\n          exit 0\n          bash scripts/test/unwired-proof.sh\n"
   ]
 ]) {
   test(`a shell proof mentioned only in a ${mentionKind} cannot serve as proof`, () => {
@@ -2743,6 +2799,122 @@ for (const [annotationScope, source] of [
     assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
   })
 }
+
+test("a JUnit proof in an undiscovered nested class cannot serve as executable proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+    contract.requirements[0].proofs[0].path = proofPath
+    contract.requirements[0].proofs[0].selector = "fixtureProof"
+    files[proofPath] =
+      "import org.junit.jupiter.api.Test;\n\n" +
+      "class ExampleTests {\n" +
+      "  class Helper {\n" +
+      "    @Test\n" +
+      "    void fixtureProof() {}\n" +
+      "  }\n" +
+      "}\n"
+    addGradleProofRunnerFixture(files)
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+})
+
+test("an imported JUnit @TestFactory with a dynamic stream remains executable proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+    contract.requirements[0].proofs[0].path = proofPath
+    contract.requirements[0].proofs[0].selector = "fixtureProof"
+    files[proofPath] =
+      "import java.util.stream.Stream;\n" +
+      "import org.junit.jupiter.api.DynamicTest;\n" +
+      "import org.junit.jupiter.api.TestFactory;\n\n" +
+      "class ExampleTests {\n" +
+      "  @TestFactory\n" +
+      "  Stream<DynamicTest> fixtureProof() { return Stream.empty(); }\n" +
+      "}\n"
+    addGradleProofRunnerFixture(files)
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+test("a locally declared @Test annotation cannot authorize a JUnit proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "apps/api/src/test/java/example/ExampleTestCase.java"
+    contract.requirements[0].proofs[0].path = proofPath
+    contract.requirements[0].proofs[0].selector = "fixtureProof"
+    files[proofPath] =
+      "@interface Test {}\n\n" +
+      "class ExampleTestCase {\n" +
+      "  @Test\n" +
+      "  void fixtureProof() {}\n" +
+      "}\n"
+    addGradleProofRunnerFixture(files)
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+})
+
+test("a commented JUnit annotation cannot authorize a proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+    contract.requirements[0].proofs[0].path = proofPath
+    contract.requirements[0].proofs[0].selector = "fixtureProof"
+    files[proofPath] =
+      "import org.junit.jupiter.api.Test;\n\n" +
+      "class ExampleTests {\n" +
+      "  // @Test\n" +
+      "  void fixtureProof() {}\n" +
+      "}\n"
+    addGradleProofRunnerFixture(files)
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+})
+
+for (const modifier of ["private", "static"]) {
+  test(`a ${modifier} JUnit method cannot serve as executable proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+      contract.requirements[0].proofs[0].path = proofPath
+      contract.requirements[0].proofs[0].selector = "fixtureProof"
+      files[proofPath] =
+        "import org.junit.jupiter.api.Test;\n\n" +
+        "class ExampleTests {\n" +
+        "  @Test\n" +
+        `  ${modifier} void fixtureProof() {}\n` +
+        "}\n"
+      addGradleProofRunnerFixture(files)
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+  })
+}
+
+test("an imported JUnit @Nested class remains discoverable proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+    contract.requirements[0].proofs[0].path = proofPath
+    contract.requirements[0].proofs[0].selector = "fixtureProof"
+    files[proofPath] =
+      "import org.junit.jupiter.api.Nested;\n" +
+      "import org.junit.jupiter.api.Test;\n\n" +
+      "class ExampleTests {\n" +
+      "  @Nested\n" +
+      "  class Proofs {\n" +
+      "    @Test\n" +
+      "    void fixtureProof() {}\n" +
+      "  }\n" +
+      "}\n"
+    addGradleProofRunnerFixture(files)
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
 
 for (const [commentStyle, source] of [
   ["line-commented", 'import test from "node:test"\n// test("fixture-proof", () => {})\n'],
