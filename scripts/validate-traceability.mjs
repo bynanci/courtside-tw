@@ -2958,7 +2958,7 @@ function javaScriptCallbackSchedulers(ast) {
       else if (["default", "*"].includes(importedName)) processObjectNames.add(localName)
     } else if (["node:timers", "timers"].includes(moduleName)) {
       if (javaScriptCallbackSchedulerNames.has(importedName)) schedulerNames.add(localName)
-      else if (importedName === "*") timerObjectNames.add(localName)
+      else if (["default", "*"].includes(importedName)) timerObjectNames.add(localName)
     }
   }
 
@@ -3302,6 +3302,20 @@ function hasNodeTestContextDisable(callbackNode) {
   const normalized = normalizeJavaScriptExpression(callbackNode)
   const callback = normalized.expression
   if (normalized.ambiguous || !javaScriptFunctionTypes.has(callback?.type)) return true
+  if (callback.type !== "ArrowFunctionExpression") {
+    let referencesImplicitContext = false
+    walkJavaScriptAst(callback.body, (node, ancestors) => {
+      if (
+        node.type === "ThisExpression" ||
+        (node.type === "Identifier" &&
+          node.name === "arguments" &&
+          isJavaScriptIdentifierReference(node, ancestors))
+      ) {
+        referencesImplicitContext = true
+      }
+    })
+    if (referencesImplicitContext) return true
+  }
   if ((callback.params?.length ?? 0) === 0) return false
   if (callback.params[0]?.type !== "Identifier") return true
   const contextName = callback.params[0].name
@@ -4205,11 +4219,13 @@ function shellSelectorInsideCompoundCommand(text, selector) {
   const targetOffset = text.indexOf(selector)
   if (targetOffset === -1) return false
   const compoundStack = []
-  const openingCommands = new Set(["case", "for", "if", "select", "until", "while"])
+  const openingCommands = new Set(["(", "case", "for", "if", "select", "until", "while", "{"])
   const closingCommands = new Map([
+    [")", new Set(["("])],
     ["done", new Set(["for", "select", "until", "while"])],
     ["esac", new Set(["case"])],
-    ["fi", new Set(["if"])]
+    ["fi", new Set(["if"])],
+    ["}", new Set(["{"])]
   ])
   for (const words of shellCommandSegments(text.slice(0, targetOffset + selector.length))) {
     let index = 0
@@ -4222,7 +4238,8 @@ function shellSelectorInsideCompoundCommand(text, selector) {
     const matchingOpeners = closingCommands.get(command)
     if (matchingOpeners === undefined) continue
     const opener = compoundStack.at(-1)
-    if (opener === undefined || !matchingOpeners.has(opener)) return true
+    if (opener === undefined) continue
+    if (!matchingOpeners.has(opener)) return true
     compoundStack.pop()
   }
   return compoundStack.length > 0
@@ -4348,7 +4365,7 @@ function shellHasStatusOverridingExitTrapBeforeLine(text, targetLineIndex) {
       const action = words[index + 1]
       const signals = words.slice(index + 2)
       if (!signals.some((signal) => ["0", "EXIT"].includes(signal))) continue
-      if (action === "-p") continue
+      if (/^-[lp]+$/.test(action ?? "")) continue
       overridesStatus =
         ![undefined, "", "-"].includes(action) && shellExitTrapActionOverridesStatus(action, text)
     }

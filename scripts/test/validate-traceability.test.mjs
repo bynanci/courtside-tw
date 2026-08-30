@@ -6076,6 +6076,78 @@ for (const fluentMethod of ["configureEach", "all"]) {
   })
 }
 
+test("follow-up exact-head regression: a named default timers import cannot authorize proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "tests/named-default-timer-exit.test.js"
+    contract.requirements[0].proofs[0].path = proofPath
+    files[proofPath] =
+      'import test from "node:test"\n' +
+      'import { default as timers } from "node:timers"\n' +
+      'test("fixture-proof", async () => new Promise(() => {}))\n' +
+      "timers.setImmediate(() => process.exit(0))\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+for (const [groupKind, open, close] of [
+  ["brace", "{", "}"],
+  ["subshell", "(", ")"]
+]) {
+  test(`follow-up exact-head regression: an anchor in a gated ${groupKind} group is rejected`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+      files["scripts/test/wired-proof.sh"] =
+        `set -e\nfalse && ${open}\n  false fixture-proof\n${close}\ntrue\n`
+      files[".github/workflows/ci.yml"] =
+        "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+    })
+    assertExecutableProofRejected(root)
+  })
+}
+
+for (const queryOption of ["-l", "-lp"]) {
+  test(`follow-up exact-head regression: trap ${queryOption} preserves an overriding EXIT trap`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+      files["scripts/test/wired-proof.sh"] =
+        `trap 'exit 0' EXIT\ntrap ${queryOption} EXIT >/dev/null\nfalse fixture-proof\n`
+      files[".github/workflows/ci.yml"] =
+        "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+    })
+    assertExecutableProofRejected(root)
+  })
+}
+
+for (const [contextKind, access] of [
+  ["arguments", 'arguments[0].skip("disabled")'],
+  ["this", 'this.skip("disabled")']
+]) {
+  test(`follow-up exact-head regression: a Node hook cannot skip through ${contextKind}`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      const proofPath = `tests/implicit-${contextKind}-hook-skip.test.js`
+      contract.requirements[0].proofs[0].path = proofPath
+      files[proofPath] =
+        'import test, { beforeEach } from "node:test"\n' +
+        `beforeEach(function () { ${access} })\n` +
+        'test("fixture-proof", () => { throw new Error("unreached proof") })\n'
+    })
+    assertExecutableProofRejected(root)
+  })
+}
+
+test("follow-up exact-head safety: a harmless traditional Node hook remains attributable", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "tests/harmless-traditional-hook.test.js"
+    contract.requirements[0].proofs[0].path = proofPath
+    files[proofPath] =
+      'import test, { beforeEach } from "node:test"\n' +
+      "beforeEach(function () {})\n" +
+      'test("fixture-proof", () => {})\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
 test("ready-for-review remains an explicit release-owner gate", () => {
   const graph = fs.readFileSync(path.join(repositoryRoot, ".loop/t085-traceability.yaml"), "utf8")
   const traceability = fs.readFileSync(
