@@ -1165,6 +1165,8 @@ function gradleTestSelection(buildText) {
   const testBlocks = []
   const testBlockPrefixes = [
     ["tasks", ".", "withType", "<", "Test", ">", "{"],
+    ["tasks", ".", "withType", "<", "Test", ">", "(", ")", ".", "configureEach", "{"],
+    ["tasks", ".", "withType", "<", "Test", ">", "(", ")", ".", "all", "{"],
     ["tasks", ".", "test", "{"],
     ["tasks", ".", "named", "<", "Test", ">", "(", "test", ")", "{"],
     ["tasks", ".", "named", "(", "test", ")", "{"],
@@ -2527,7 +2529,7 @@ function hasEscapedNodeTestLifecycleHook(ast, bindings) {
   return escaped
 }
 
-function hasTerminatingNodeTestHook(ast, bindings, playwrightDisableNames) {
+function hasUnsafeNodeTestHook(ast, bindings, playwrightDisableNames) {
   const processExitTerminators = javaScriptProcessExitTerminatorNames(ast)
   let terminating = false
   walkJavaScriptAst(ast, (node, ancestors) => {
@@ -2540,6 +2542,7 @@ function hasTerminatingNodeTestHook(ast, bindings, playwrightDisableNames) {
       return
     }
     terminating =
+      hasNodeTestContextDisable(callback) ||
       (callback.type === "Identifier" && processExitTerminators.has(callback.name)) ||
       hasJavaScriptProcessExit(callback, { includeFunctions: true }) ||
       javaScriptCallsTerminator(callback, processExitTerminators, { includeFunctions: true })
@@ -2920,21 +2923,207 @@ function hasInvokedJavaScriptProcessExit(expression, terminatorNames = new Set()
   return invokedExit
 }
 
+const javaScriptCallbackSchedulerNames = new Set([
+  "queueMicrotask",
+  "setImmediate",
+  "setInterval",
+  "setTimeout"
+])
+
+function staticJavaScriptRequiredModule(node) {
+  const normalized = normalizeJavaScriptExpression(node)
+  const call = normalized.expression
+  return normalized.ambiguous === false &&
+    call?.type === "CallExpression" &&
+    call.callee?.type === "Identifier" &&
+    call.callee.name === "require" &&
+    call.arguments?.length === 1 &&
+    call.arguments[0]?.type === "Literal" &&
+    typeof call.arguments[0].value === "string"
+    ? call.arguments[0].value
+    : null
+}
+
+function javaScriptCallbackSchedulers(ast) {
+  const globalObjectNames = new Set(javaScriptGlobalObjectNames)
+  const processObjectNames = new Set(["process"])
+  const timerObjectNames = new Set()
+  const schedulerNames = new Set(javaScriptCallbackSchedulerNames)
+  const aliases = []
+
+  const addImportedBinding = (moduleName, importedName, localName) => {
+    if (typeof localName !== "string") return
+    if (["node:process", "process"].includes(moduleName)) {
+      if (importedName === "nextTick") schedulerNames.add(localName)
+      else if (["default", "*"].includes(importedName)) processObjectNames.add(localName)
+    } else if (["node:timers", "timers"].includes(moduleName)) {
+      if (javaScriptCallbackSchedulerNames.has(importedName)) schedulerNames.add(localName)
+      else if (importedName === "*") timerObjectNames.add(localName)
+    }
+  }
+
+  walkJavaScriptAst(ast, (node) => {
+    if (node.type === "ImportDeclaration" && typeof node.source?.value === "string") {
+      for (const specifier of node.specifiers ?? []) {
+        if (specifier.local?.type !== "Identifier") continue
+        if (specifier.type === "ImportSpecifier") {
+          addImportedBinding(
+            node.source.value,
+            specifier.imported?.name ?? specifier.imported?.value,
+            specifier.local.name
+          )
+        } else if (specifier.type === "ImportDefaultSpecifier") {
+          addImportedBinding(node.source.value, "default", specifier.local.name)
+        } else if (specifier.type === "ImportNamespaceSpecifier") {
+          addImportedBinding(node.source.value, "*", specifier.local.name)
+        }
+      }
+      return
+    }
+    if (node.type === "VariableDeclarator") {
+      aliases.push({ source: node.init, target: node.id })
+    } else if (node.type === "AssignmentExpression" && node.operator === "=") {
+      aliases.push({ source: node.right, target: node.left })
+    }
+  })
+
+  const pathIsGlobalObject = (path) =>
+    !path.ambiguous && path.segments.length === 1 && globalObjectNames.has(path.segments[0])
+  const pathIsProcessObject = (path) =>
+    !path.ambiguous &&
+    ((path.segments.length === 1 && processObjectNames.has(path.segments[0])) ||
+      (path.segments.length === 2 &&
+        globalObjectNames.has(path.segments[0]) &&
+        path.segments[1] === "process"))
+  const pathIsTimerObject = (path) =>
+    !path.ambiguous && path.segments.length === 1 && timerObjectNames.has(path.segments[0])
+  const pathIsScheduler = (path) =>
+    !path.ambiguous &&
+    ((path.segments.length === 1 && schedulerNames.has(path.segments[0])) ||
+      (path.segments.length === 2 &&
+        globalObjectNames.has(path.segments[0]) &&
+        javaScriptCallbackSchedulerNames.has(path.segments[1])) ||
+      (path.segments.length === 2 &&
+        processObjectNames.has(path.segments[0]) &&
+        path.segments[1] === "nextTick") ||
+      (path.segments.length === 2 &&
+        timerObjectNames.has(path.segments[0]) &&
+        javaScriptCallbackSchedulerNames.has(path.segments[1])) ||
+      (path.segments.length === 3 &&
+        globalObjectNames.has(path.segments[0]) &&
+        path.segments[1] === "process" &&
+        path.segments[2] === "nextTick"))
+
+  const addPatternBindings = (pattern, destination) => {
+    const names = new Set()
+    collectJavaScriptAssignedBindings(pattern, names)
+    let changed = false
+    for (const name of names) {
+      if (!destination.has(name)) {
+        destination.add(name)
+        changed = true
+      }
+    }
+    return changed
+  }
+
+  let changed = true
+  while (changed) {
+    changed = false
+    for (const { source, target } of aliases) {
+      const requiredModule = staticJavaScriptRequiredModule(source)
+      if (requiredModule !== null) {
+        if (target?.type === "Identifier") {
+          if (
+            ["node:process", "process"].includes(requiredModule) &&
+            !processObjectNames.has(target.name)
+          ) {
+            processObjectNames.add(target.name)
+            changed = true
+          } else if (
+            ["node:timers", "timers"].includes(requiredModule) &&
+            !timerObjectNames.has(target.name)
+          ) {
+            timerObjectNames.add(target.name)
+            changed = true
+          }
+        }
+        if (target?.type === "ObjectPattern") {
+          for (const property of target.properties ?? []) {
+            if (property?.type === "RestElement") continue
+            const key = staticJavaScriptObjectPropertyKey(property)
+            if (!key.known) continue
+            if (
+              (["node:process", "process"].includes(requiredModule) && key.value === "nextTick") ||
+              (["node:timers", "timers"].includes(requiredModule) &&
+                javaScriptCallbackSchedulerNames.has(key.value))
+            ) {
+              changed = addPatternBindings(property.value, schedulerNames) || changed
+            }
+          }
+        }
+        continue
+      }
+
+      const sourcePath = javaScriptMemberPath(source)
+      if (target?.type === "Identifier") {
+        if (pathIsGlobalObject(sourcePath) && !globalObjectNames.has(target.name)) {
+          globalObjectNames.add(target.name)
+          changed = true
+        }
+        if (pathIsProcessObject(sourcePath) && !processObjectNames.has(target.name)) {
+          processObjectNames.add(target.name)
+          changed = true
+        }
+        if (pathIsTimerObject(sourcePath) && !timerObjectNames.has(target.name)) {
+          timerObjectNames.add(target.name)
+          changed = true
+        }
+        if (pathIsScheduler(sourcePath) && !schedulerNames.has(target.name)) {
+          schedulerNames.add(target.name)
+          changed = true
+        }
+        continue
+      }
+      if (target?.type !== "ObjectPattern") continue
+      for (const property of target.properties ?? []) {
+        if (property?.type === "RestElement") {
+          if (pathIsGlobalObject(sourcePath)) {
+            changed = addPatternBindings(property.argument, globalObjectNames) || changed
+          } else if (pathIsProcessObject(sourcePath)) {
+            changed = addPatternBindings(property.argument, processObjectNames) || changed
+          } else if (pathIsTimerObject(sourcePath)) {
+            changed = addPatternBindings(property.argument, timerObjectNames) || changed
+          }
+          continue
+        }
+        const key = staticJavaScriptObjectPropertyKey(property)
+        if (!key.known) continue
+        if (
+          (pathIsGlobalObject(sourcePath) && javaScriptCallbackSchedulerNames.has(key.value)) ||
+          (pathIsProcessObject(sourcePath) && key.value === "nextTick") ||
+          (pathIsTimerObject(sourcePath) && javaScriptCallbackSchedulerNames.has(key.value))
+        ) {
+          changed = addPatternBindings(property.value, schedulerNames) || changed
+        } else if (pathIsGlobalObject(sourcePath) && key.value === "process") {
+          changed = addPatternBindings(property.value, processObjectNames) || changed
+        }
+      }
+    }
+  }
+
+  return { pathIsScheduler }
+}
+
 function hasScheduledJavaScriptProcessExit(ast, bindings, playwrightDisableNames) {
   const terminatorNames = javaScriptProcessExitTerminatorNames(ast)
+  const schedulers = javaScriptCallbackSchedulers(ast)
   let scheduledExit = false
   walkJavaScriptAst(ast, (node, ancestors) => {
     if (scheduledExit || node.type !== "CallExpression" || node.optional === true) return
     const callee = javaScriptMemberPath(node.callee)
     if (callee.ambiguous) return
-    const schedulesCallback =
-      (callee.segments.length === 1 &&
-        ["queueMicrotask", "setImmediate", "setInterval", "setTimeout"].includes(
-          callee.segments[0]
-        )) ||
-      (callee.segments.length === 2 &&
-        callee.segments[0] === "process" &&
-        callee.segments[1] === "nextTick")
+    const schedulesCallback = schedulers.pathIsScheduler(callee)
     if (
       !schedulesCallback ||
       !hasPotentialNodeTestHookRegistration(ancestors, bindings, playwrightDisableNames)
@@ -3357,7 +3546,7 @@ function hasExecutableJavaScriptProofAnchor(text, selector, proofPath) {
     playwrightDisableNames = javaScriptPlaywrightDisableNames(ast, bindings)
     if (
       hasEscapedNodeTestLifecycleHook(ast, bindings) ||
-      hasTerminatingNodeTestHook(ast, bindings, playwrightDisableNames) ||
+      hasUnsafeNodeTestHook(ast, bindings, playwrightDisableNames) ||
       hasScheduledJavaScriptProcessExit(ast, bindings, playwrightDisableNames)
     ) {
       return false
@@ -4006,19 +4195,37 @@ function shellErrexitEnabledBeforeLine(text, targetLineIndex) {
   const lines = text.split(/\r?\n/).slice(0, targetLineIndex + 1)
   for (const line of lines) {
     for (const words of shellCommandSegments(line)) {
-      let index = 0
-      while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[index] ?? "")) index += 1
-      if (words[index] !== "set") continue
-      for (let argumentIndex = index + 1; argumentIndex < words.length; argumentIndex += 1) {
-        const argument = words[argumentIndex]
-        if (argument === "-o" && words[argumentIndex + 1] === "errexit") enabled = true
-        else if (argument === "+o" && words[argumentIndex + 1] === "errexit") enabled = false
-        else if (/^-[A-Za-z]*e[A-Za-z]*$/.test(argument)) enabled = true
-        else if (/^\+[A-Za-z]*e[A-Za-z]*$/.test(argument)) enabled = false
-      }
+      enabled = shellSetNamedOptionState(words, "errexit", enabled)
     }
   }
   return enabled
+}
+
+function shellSelectorInsideCompoundCommand(text, selector) {
+  const targetOffset = text.indexOf(selector)
+  if (targetOffset === -1) return false
+  const compoundStack = []
+  const openingCommands = new Set(["case", "for", "if", "select", "until", "while"])
+  const closingCommands = new Map([
+    ["done", new Set(["for", "select", "until", "while"])],
+    ["esac", new Set(["case"])],
+    ["fi", new Set(["if"])]
+  ])
+  for (const words of shellCommandSegments(text.slice(0, targetOffset + selector.length))) {
+    let index = 0
+    while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[index] ?? "")) index += 1
+    const command = words[index]
+    if (openingCommands.has(command)) {
+      compoundStack.push(command)
+      continue
+    }
+    const matchingOpeners = closingCommands.get(command)
+    if (matchingOpeners === undefined) continue
+    const opener = compoundStack.at(-1)
+    if (opener === undefined || !matchingOpeners.has(opener)) return true
+    compoundStack.pop()
+  }
+  return compoundStack.length > 0
 }
 
 function shellHasLaterExecutableLine(text, targetLineIndex) {
@@ -4141,6 +4348,7 @@ function shellHasStatusOverridingExitTrapBeforeLine(text, targetLineIndex) {
       const action = words[index + 1]
       const signals = words.slice(index + 2)
       if (!signals.some((signal) => ["0", "EXIT"].includes(signal))) continue
+      if (action === "-p") continue
       overridesStatus =
         ![undefined, "", "-"].includes(action) && shellExitTrapActionOverridesStatus(action, text)
     }
@@ -4157,6 +4365,7 @@ function shellLineHasExecutableFailureAnchor(text, line, selector, lineIndex) {
   )
   if (!selectorIsExecutable) return false
   if (shellSelectorInsideFunctionDefinition(text, selector)) return false
+  if (shellSelectorInsideCompoundCommand(text, selector)) return false
   if (shellHasStatusOverridingExitTrapBeforeLine(text, lineIndex)) return false
 
   const failureFunctions = shellFailureFunctions(text)

@@ -5945,6 +5945,137 @@ test("final-head adjacent safety: a harmless microtask remains proof", () => {
   assert.equal(report.status, "PASS", report.errors.join("\n"))
 })
 
+test("exact-head review regression: a qualified microtask exit cannot authorize proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "tests/qualified-microtask-exit.test.js"
+    contract.requirements[0].proofs[0].path = proofPath
+    files[proofPath] =
+      'import test from "node:test"\n' +
+      'test("fixture-proof", () => { throw new Error("unreached proof") })\n' +
+      "globalThis.queueMicrotask(() => process.exit(0))\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("exact-head adjacent safety: a static scheduler alias cannot authorize proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "tests/aliased-scheduler-exit.test.js"
+    contract.requirements[0].proofs[0].path = proofPath
+    files[proofPath] =
+      'import test from "node:test"\n' +
+      "const schedule = global.setImmediate\n" +
+      'test("fixture-proof", () => {})\n' +
+      "schedule(() => process.exit(0))\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("exact-head review regression: querying an overriding EXIT trap preserves rejection", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] =
+      "trap 'exit 0' EXIT\ntrap -p EXIT >/dev/null\nfalse fixture-proof\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("exact-head adjacent safety: resetting an EXIT trap restores attributable failure", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] = "trap 'exit 0' EXIT\ntrap - EXIT\nfalse fixture-proof\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+test("exact-head review regression: an anchor in an unreachable if branch cannot authorize proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] =
+      "set -e\nif false; then\n  false fixture-proof\nfi\ntrue\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+for (const [compoundKind, source] of [
+  ["loop", "set -e\nwhile false; do\n  false fixture-proof\ndone\ntrue\n"],
+  ["case branch", "set -e\ncase x in\n  y)\n    false fixture-proof\n    ;;\nesac\ntrue\n"]
+]) {
+  test(`exact-head adjacent safety: an anchor in an unreachable ${compoundKind} is rejected`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+      files["scripts/test/wired-proof.sh"] = source
+      files[".github/workflows/ci.yml"] =
+        "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+    })
+    assertExecutableProofRejected(root)
+  })
+}
+
+for (const commandPrefix of ["builtin", "command"]) {
+  test(`exact-head review regression: ${commandPrefix} set +e disables proof-side errexit`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+      files["scripts/test/wired-proof.sh"] =
+        `set -e\n${commandPrefix} set +e\nfalse fixture-proof\ntrue\n`
+      files[".github/workflows/ci.yml"] =
+        "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+    })
+    assertExecutableProofRejected(root)
+  })
+}
+
+for (const hookName of ["beforeEach", "afterEach"]) {
+  test(`exact-head review regression: a Node ${hookName} skip cannot authorize proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      const proofPath = `tests/${hookName}-skip.test.js`
+      contract.requirements[0].proofs[0].path = proofPath
+      files[proofPath] =
+        `import test, { ${hookName} } from "node:test"\n` +
+        `${hookName}((t) => t.skip("disabled"))\n` +
+        'test("fixture-proof", () => { throw new Error("unreached proof") })\n'
+    })
+    assertExecutableProofRejected(root)
+  })
+}
+
+test("exact-head adjacent safety: a harmless Node hook context remains attributable", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "tests/harmless-hook-context.test.js"
+    contract.requirements[0].proofs[0].path = proofPath
+    files[proofPath] =
+      'import test, { beforeEach } from "node:test"\n' +
+      'beforeEach((t) => t.diagnostic("starting"))\n' +
+      'test("fixture-proof", () => {})\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+for (const fluentMethod of ["configureEach", "all"]) {
+  test(`exact-head review regression: a fluent Gradle ${fluentMethod} disable cannot authorize proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+      contract.requirements[0].proofs[0].path = proofPath
+      contract.requirements[0].proofs[0].selector = "fixtureProof"
+      files[proofPath] =
+        "package example;\n" +
+        "import org.junit.jupiter.api.Test;\n" +
+        "class ExampleTests {\n  @Test\n  void fixtureProof() {}\n}\n"
+      addGradleProofRunnerFixture(files)
+      files["apps/api/build.gradle.kts"] +=
+        `tasks.withType<Test>().${fluentMethod} { enabled = false }\n`
+    })
+    assertExecutableProofRejected(root)
+  })
+}
+
 test("ready-for-review remains an explicit release-owner gate", () => {
   const graph = fs.readFileSync(path.join(repositoryRoot, ".loop/t085-traceability.yaml"), "utf8")
   const traceability = fs.readFileSync(
