@@ -6339,6 +6339,90 @@ test("post-5695 adjacent regression: workflow BASH_ENV cannot preload a successf
   assertExecutableProofRejected(root)
 })
 
+for (const [callbackKind, declaration, registration] of [
+  ["inline", "", "test.beforeEach(function () { arguments[1].skip() })"],
+  [
+    "named",
+    "function disableFromHookContext() { arguments[1].skip() }\n",
+    "test.beforeEach(disableFromHookContext)"
+  ]
+]) {
+  test(`post-3adb exact-head regression: ${callbackKind} Playwright hook arguments cannot skip proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      const proofPath = `tests/${callbackKind}-playwright-hook-arguments.test.js`
+      contract.requirements[0].proofs[0].path = proofPath
+      files[proofPath] =
+        'import { test } from "@playwright/test"\n' +
+        declaration +
+        `${registration}\n` +
+        'test("fixture-proof", () => { throw new Error("unreached proof") })\n'
+    })
+    assertExecutableProofRejected(root)
+  })
+}
+
+test("post-3adb exact-head regression: GITHUB_ENV cannot preload a later shell proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] = "false fixture-proof\n"
+    files["scripts/test/exit-zero.sh"] = "exit 0\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: echo 'BASH_ENV=scripts/test/exit-zero.sh' >> \"$GITHUB_ENV\"\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+for (const [reaction, source] of [
+  ["then", "Promise.resolve().then(() => process.exit(0))"],
+  ["catch", "Promise.reject(new Error()).catch(() => process.exit(0))"],
+  ["finally", "Promise.resolve().finally(() => process.exit(0))"]
+]) {
+  test(`post-3adb exact-head regression: Promise ${reaction} cannot schedule a terminating callback`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      const proofPath = `tests/promise-${reaction}-exit.test.js`
+      contract.requirements[0].proofs[0].path = proofPath
+      files[proofPath] =
+        'import test from "node:test"\n' +
+        'test("fixture-proof", () => { throw new Error("unreached proof") })\n' +
+        `${source}\n`
+    })
+    assertExecutableProofRejected(root)
+  })
+}
+
+test("post-3adb exact-head regression: an exec EXIT trap cannot override proof failure", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] = "trap 'exec true' EXIT\nfalse fixture-proof\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("post-3adb exact-head regression: a named coprocess cannot hide proof failure", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] =
+      "set -e\ncoproc WORKER {\n  false fixture-proof\n}\ntrue\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("post-3adb adjacent safety: proof after a closed harmless coprocess remains attributable", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] =
+      "set -e\ncoproc WORKER {\n  true\n}\nfalse fixture-proof\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
 test("ready-for-review remains an explicit release-owner gate", () => {
   const graph = fs.readFileSync(path.join(repositoryRoot, ".loop/t085-traceability.yaml"), "utf8")
   const traceability = fs.readFileSync(

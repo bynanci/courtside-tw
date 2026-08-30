@@ -1534,6 +1534,14 @@ function shellRunStepHasStartupFileEnvironment(script) {
   })
 }
 
+function shellRunStepWritesStartupFileEnvironment(script) {
+  return shellCommandSegments(script).some(
+    (words) =>
+      words.some((word) => /^(?:BASH_ENV|ENV)(?:=|<<)/.test(word)) &&
+      words.some((word) => /(?:^|[^A-Za-z0-9_])GITHUB_ENV(?:$|[^A-Za-z0-9_])/.test(word))
+  )
+}
+
 function shellRunStepExecutesGradleTest(script) {
   if (shellRunStepHasUnsafeControlFlow(script)) return false
   for (const words of shellCommandSegments(script)) {
@@ -1671,20 +1679,28 @@ function ciWorkflowExecutableRunSteps(workflowText) {
     }
     return Object.entries(jobs).flatMap(([jobName, job]) => {
       if (!isUnconditionallyReachable(jobName) || hasStartupFileEnvironment(job.env)) return []
-      return (job.steps ?? [])
-        .filter(
-          (step) =>
-            step !== null &&
-            typeof step === "object" &&
-            step.if === undefined &&
-            (step["continue-on-error"] === undefined || step["continue-on-error"] === false) &&
-            !hasStartupFileEnvironment(step.env) &&
-            typeof step.run === "string" &&
-            githubActionsShellPropagatesFailure(
-              step.shell ?? job.defaults?.run?.shell ?? workflowShell
-            )
-        )
-        .map((step) => step.run)
+      const executableRunSteps = []
+      let startupFileEnvironmentPersisted = false
+      for (const step of job.steps ?? []) {
+        if (step === null || typeof step !== "object") continue
+        if (typeof step.run === "string" && shellRunStepWritesStartupFileEnvironment(step.run)) {
+          startupFileEnvironmentPersisted = true
+        }
+        if (
+          startupFileEnvironmentPersisted ||
+          step.if !== undefined ||
+          (step["continue-on-error"] !== undefined && step["continue-on-error"] !== false) ||
+          hasStartupFileEnvironment(step.env) ||
+          typeof step.run !== "string" ||
+          !githubActionsShellPropagatesFailure(
+            step.shell ?? job.defaults?.run?.shell ?? workflowShell
+          )
+        ) {
+          continue
+        }
+        executableRunSteps.push(step.run)
+      }
+      return executableRunSteps
     })
   } catch {
     return []
@@ -3062,6 +3078,8 @@ function javaScriptCallbackSchedulers(ast) {
         globalObjectNames.has(path.segments[0]) &&
         path.segments[1] === "process" &&
         path.segments[2] === "nextTick"))
+  const pathIsPromiseReaction = (path) =>
+    path.segments.length > 1 && ["catch", "finally", "then"].includes(path.segments.at(-1))
 
   const addPatternBindings = (pattern, destination) => {
     const names = new Set()
@@ -3161,7 +3179,7 @@ function javaScriptCallbackSchedulers(ast) {
     }
   }
 
-  return { pathIsScheduler }
+  return { pathIsPromiseReaction, pathIsScheduler }
 }
 
 function hasScheduledJavaScriptProcessExit(ast, bindings, playwrightDisableNames) {
@@ -3171,22 +3189,22 @@ function hasScheduledJavaScriptProcessExit(ast, bindings, playwrightDisableNames
   walkJavaScriptAst(ast, (node, ancestors) => {
     if (scheduledExit || node.type !== "CallExpression" || node.optional === true) return
     const callee = javaScriptMemberPath(node.callee)
-    if (callee.ambiguous) return
-    const schedulesCallback = schedulers.pathIsScheduler(callee)
+    const schedulesCallback =
+      schedulers.pathIsScheduler(callee) || schedulers.pathIsPromiseReaction(callee)
     if (
       !schedulesCallback ||
       !hasPotentialJavaScriptHookRegistration(ancestors, bindings, playwrightDisableNames)
     ) {
       return
     }
-    const callback = normalizeJavaScriptExpression(node.arguments?.[0]).expression
-    if (callback?.type === "Identifier" && terminatorNames.has(callback.name)) {
-      scheduledExit = true
-      return
-    }
-    scheduledExit =
-      hasJavaScriptProcessExit(callback, { includeFunctions: true }) ||
-      javaScriptCallsTerminator(callback, terminatorNames, { includeFunctions: true })
+    scheduledExit = (node.arguments ?? []).some((argument) => {
+      const callback = normalizeJavaScriptExpression(argument).expression
+      return (
+        (callback?.type === "Identifier" && terminatorNames.has(callback.name)) ||
+        hasJavaScriptProcessExit(callback, { includeFunctions: true }) ||
+        javaScriptCallsTerminator(callback, terminatorNames, { includeFunctions: true })
+      )
+    })
   })
   return scheduledExit
 }
@@ -3403,6 +3421,13 @@ function hasNodeTestContextDisable(callbackNode) {
 
 const playwrightDisableMembers = new Set(["fail", "fixme", "skip"])
 
+function javaScriptFunctionUsesImplicitArguments(functionNode) {
+  return (
+    ["FunctionDeclaration", "FunctionExpression"].includes(functionNode?.type) &&
+    javaScriptExpressionReferencesIdentifier(functionNode.body, "arguments")
+  )
+}
+
 function javaScriptCallsPlaywrightDisable(expression, bindings, disableNames) {
   let disables = false
   walkJavaScriptAst(expression, (node) => {
@@ -3425,11 +3450,15 @@ function javaScriptCallsPlaywrightDisable(expression, bindings, disableNames) {
 
 function javaScriptPlaywrightDisableNames(ast, bindings) {
   const functionBodies = new Map()
+  const implicitArgumentNames = new Set()
   const aliases = []
   const disableNames = new Set()
   walkJavaScriptAst(ast, (node) => {
     if (node.type === "FunctionDeclaration" && node.id?.type === "Identifier") {
       functionBodies.set(node.id.name, node.body)
+      if (javaScriptFunctionUsesImplicitArguments(node)) {
+        implicitArgumentNames.add(node.id.name)
+      }
       return
     }
     if (node.type === "VariableDeclarator") {
@@ -3440,6 +3469,9 @@ function javaScriptPlaywrightDisableNames(ast, bindings) {
         javaScriptFunctionTypes.has(initializer.expression?.type)
       ) {
         functionBodies.set(node.id.name, initializer.expression.body)
+        if (javaScriptFunctionUsesImplicitArguments(initializer.expression)) {
+          implicitArgumentNames.add(node.id.name)
+        }
       } else {
         aliases.push({ target: node.id, source: node.init })
       }
@@ -3490,7 +3522,8 @@ function javaScriptPlaywrightDisableNames(ast, bindings) {
     for (const [name, body] of functionBodies) {
       if (
         !disableNames.has(name) &&
-        javaScriptCallsPlaywrightDisable(body, bindings, disableNames)
+        (implicitArgumentNames.has(name) ||
+          javaScriptCallsPlaywrightDisable(body, bindings, disableNames))
       ) {
         disableNames.add(name)
         changed = true
@@ -3504,6 +3537,7 @@ function hasPlaywrightTestDisable(callbackNode, bindings, disableNames = new Set
   const normalized = normalizeJavaScriptExpression(callbackNode)
   const callback = normalized.expression
   if (normalized.ambiguous || !javaScriptFunctionTypes.has(callback?.type)) return false
+  if (javaScriptFunctionUsesImplicitArguments(callback)) return true
   if ((callback.params?.length ?? 0) > 1 && callback.params[1]?.type !== "Identifier") return true
   const testInfoName = callback.params?.[1]?.name ?? null
 
@@ -4365,6 +4399,11 @@ function shellSelectorInsideCompoundCommand(text, selector) {
     let index = 0
     while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[index] ?? "")) index += 1
     const command = words[index]
+    if (command === "coproc") {
+      const opener = words.slice(index + 1).find((word) => ["(", "{"].includes(word))
+      if (opener !== undefined) compoundStack.push(opener)
+      continue
+    }
     if (openingCommands.has(command)) {
       compoundStack.push(command)
       continue
@@ -4543,7 +4582,9 @@ function shellExitTrapActionOverridesStatus(action, sourceText = action, resolvi
     const words = commands[commandIndex]
     const index = shellCommandIndexAfterPrefixes(words)
     const command = words[index]
-    if ([".", "eval", "source"].includes(command) || /[$`]/.test(command ?? "")) return true
+    if ([".", "eval", "exec", "source"].includes(command) || /[$`]/.test(command ?? "")) {
+      return true
+    }
     if (command !== "exit") {
       const definitions = shellFunctionDefinitions(sourceText).filter(
         ({ name }) => name === command
