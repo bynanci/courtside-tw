@@ -2301,6 +2301,28 @@ test("a node:test callback with an ambiguous computed context call cannot serve 
   assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
 })
 
+for (const [aliasKind, disableSource] of [
+  ["Function.call", "t.skip.call(t)"],
+  ["Function.apply", "t.todo.apply(t, [])"],
+  ["Function.bind alias", "const disable = t.skip.bind(t); disable()"],
+  ["member alias", "const disable = t.todo; disable()"],
+  ["destructured alias", "const { skip: disable } = t; disable()"],
+  ["context alias", "const alias = t; alias.todo()"],
+  ["helper alias", "const disable = context => context.skip(); disable(t)"]
+]) {
+  test(`a node:test context disable reached through ${aliasKind} cannot serve as proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "tests/aliased-context-disable.test.js"
+      files["tests/aliased-context-disable.test.js"] =
+        'import test from "node:test"\n' +
+        `test("fixture-proof", t => { ${disableSource}; throw new Error("unreached proof") })\n`
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+  })
+}
+
 test("a Playwright callback self-disabled with test.skip cannot serve as proof", () => {
   const root = makeFixture(({ contract, files }) => {
     contract.requirements[0].proofs[0].path = "tests/self-disabled-playwright-proof.test.js"
@@ -2602,6 +2624,74 @@ test("a JavaScript proof outside the configured runner globs cannot serve as pro
   )
 })
 
+for (const [mentionKind, workflow] of [
+  [
+    "workflow comment",
+    "jobs:\n  verify:\n    steps:\n      - run: |\n          # scripts/test/unwired-proof.sh\n          echo done\n"
+  ],
+  [
+    "workflow environment value",
+    "jobs:\n  verify:\n    env:\n      PROOF_PATH: scripts/test/unwired-proof.sh\n    steps:\n      - run: echo done\n"
+  ],
+  [
+    "workflow diagnostic message",
+    "jobs:\n  verify:\n    steps:\n      - run: echo scripts/test/unwired-proof.sh\n"
+  ],
+  [
+    "workflow heredoc body",
+    "jobs:\n  verify:\n    steps:\n      - run: |\n          cat <<'EOF'\n          scripts/test/unwired-proof.sh\n          EOF\n"
+  ],
+  [
+    "unreached workflow branch",
+    "jobs:\n  verify:\n    steps:\n      - run: |\n          if false; then\n            scripts/test/unwired-proof.sh\n          fi\n"
+  ],
+  [
+    "forgiven workflow step",
+    "jobs:\n  verify:\n    steps:\n      - continue-on-error: ${{ true }}\n        run: bash scripts/test/unwired-proof.sh\n"
+  ],
+  [
+    "workflow pipeline without pipefail",
+    "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/unwired-proof.sh | tee proof.log\n"
+  ]
+]) {
+  test(`a shell proof mentioned only in a ${mentionKind} cannot serve as proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "scripts/test/unwired-proof.sh"
+      files["scripts/test/unwired-proof.sh"] = "exit 1 # fixture-proof\n"
+      files[".github/workflows/ci.yml"] = workflow
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(
+      report.errors.join("\n"),
+      /VERIFIED repository proof must be an executable check or durable receipt/
+    )
+  })
+}
+
+test("a shell proof invoked by a workflow run step remains executable proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] = "exit 1 # fixture-proof\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: |\n          set -o pipefail\n          PROOF_MODE=1 bash scripts/test/wired-proof.sh 2>&1 | tee proof.log\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+function addGradleProofRunnerFixture(files) {
+  files["apps/api/build.gradle.kts"] =
+    "tasks.withType<Test> {\n" +
+    '  include("**/*Test.class")\n' +
+    '  include("**/*Tests.class")\n' +
+    '  include("**/*TestCase.class")\n' +
+    '  include("**/*IT.class")\n' +
+    "}\n"
+  files[".github/workflows/ci.yml"] =
+    "steps:\n  - run: gradle --no-daemon --console=plain -p apps/api test\n"
+}
+
 for (const suffix of ["Tests", "TestCase"]) {
   test(`a Gradle-configured *${suffix}.java source remains executable proof`, () => {
     const root = makeFixture(({ contract, files }) => {
@@ -2615,18 +2705,42 @@ for (const suffix of ["Tests", "TestCase"]) {
         "  @Test\n" +
         "  void fixtureProof() {}\n" +
         "}\n"
-      files["apps/api/build.gradle.kts"] =
-        "tasks.withType<Test> {\n" +
-        '  include("**/*Test.class")\n' +
-        '  include("**/*Tests.class")\n' +
-        '  include("**/*TestCase.class")\n' +
-        '  include("**/*IT.class")\n' +
-        "}\n"
-      files[".github/workflows/ci.yml"] =
-        "steps:\n  - run: gradle --no-daemon --console=plain -p apps/api test\n"
+      addGradleProofRunnerFixture(files)
     })
     const report = run(root)
     assert.equal(report.status, "PASS", report.errors.join("\n"))
+  })
+}
+
+for (const [annotationScope, source] of [
+  [
+    "method-level @Disabled",
+    "class ExampleTests {\n  @org.junit.jupiter.api.Disabled\n  @Test\n  void fixtureProof() {}\n}\n"
+  ],
+  [
+    "class-level @Disabled",
+    "@Disabled\nclass ExampleTests {\n  @Test\n  void fixtureProof() {}\n}\n"
+  ],
+  [
+    "method-level conditional annotation",
+    "class ExampleTests {\n  @EnabledOnOs(OS.LINUX)\n  @Test\n  void fixtureProof() {}\n}\n"
+  ],
+  [
+    "class-level conditional annotation",
+    "@DisabledOnOs(OS.WINDOWS)\nclass ExampleTests {\n  @Test\n  void fixtureProof() {}\n}\n"
+  ]
+]) {
+  test(`a JUnit proof with ${annotationScope} cannot serve as executable proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+      contract.requirements[0].proofs[0].path = proofPath
+      contract.requirements[0].proofs[0].selector = "fixtureProof"
+      files[proofPath] = "import org.junit.jupiter.api.Test;\n\n" + source
+      addGradleProofRunnerFixture(files)
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
   })
 }
 

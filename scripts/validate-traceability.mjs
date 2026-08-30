@@ -6,6 +6,7 @@ import path from "node:path"
 import { fileURLToPath, pathToFileURL } from "node:url"
 import { isDeepStrictEqual } from "node:util"
 import typescriptPlugin from "prettier/plugins/typescript"
+import YAML from "yaml"
 
 export const TRACEABILITY_SCHEMA = "courtside-traceability/v1"
 export const COMPLETION_RECEIPT_SCHEMA = "courtside-t085-completion-receipt/v1"
@@ -836,10 +837,117 @@ function gradleRunnerSelectsJavaProof(root, relativePath) {
   )
 }
 
+function shellCommandSegments(script) {
+  const segments = []
+  let words = []
+  let word = ""
+  let quote = null
+  let escaped = false
+  let comment = false
+  const finishWord = () => {
+    if (word.length === 0) return
+    words.push(word)
+    word = ""
+  }
+  const finishSegment = () => {
+    finishWord()
+    if (words.length > 0) segments.push(words)
+    words = []
+  }
+
+  for (let index = 0; index < script.length; index += 1) {
+    const character = script[index]
+    if (comment) {
+      if (character === "\n") {
+        comment = false
+        finishSegment()
+      }
+      continue
+    }
+    if (escaped) {
+      if (character !== "\n") word += character
+      escaped = false
+      continue
+    }
+    if (quote === "'") {
+      if (character === "'") quote = null
+      else word += character
+      continue
+    }
+    if (quote === '"') {
+      if (character === '"') quote = null
+      else if (character === "\\") escaped = true
+      else word += character
+      continue
+    }
+    if (character === "\\") {
+      escaped = true
+    } else if (character === "'" || character === '"') {
+      quote = character
+    } else if (character === "#" && word.length === 0) {
+      comment = true
+    } else if (/\s/.test(character)) {
+      if (character === "\n") finishSegment()
+      else finishWord()
+    } else if ([";", "|", "&"].includes(character)) {
+      finishSegment()
+    } else {
+      word += character
+    }
+  }
+  if (quote !== null || escaped) return []
+  finishSegment()
+  return segments
+}
+
+function shellRunStepExecutesProof(script, relativePath) {
+  if (
+    /<<-?/.test(script) ||
+    /(?:^|[;\n])\s*(?:case|do|done|elif|else|esac|fi|for|function|if|select|then|until|while)\b/.test(
+      script
+    ) ||
+    script.includes("||") ||
+    (script.includes("|") && !/(?:^|\n)\s*set\s+-o\s+pipefail(?:\s|$)/.test(script))
+  ) {
+    return false
+  }
+  const expectedCommands = new Set([relativePath, `./${relativePath}`])
+  return shellCommandSegments(script).some((words) => {
+    let index = 0
+    while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[index] ?? "")) index += 1
+    const shell = words[index]
+    if (["bash", "/bin/bash", "sh", "/bin/sh"].includes(shell)) {
+      index += 1
+      while ((words[index] ?? "").startsWith("-")) index += 1
+    }
+    return expectedCommands.has(words[index])
+  })
+}
+
 function ciWorkflowSelectsShellProof(root, relativePath) {
   if (!relativePath.startsWith("scripts/test/") || !relativePath.endsWith(".sh")) return false
   const workflowText = readRunnerConfiguration(root, ".github/workflows/ci.yml")
-  return workflowText?.includes(relativePath) === true
+  if (workflowText === null) return false
+  try {
+    const workflow = YAML.parse(workflowText)
+    if (workflow === null || typeof workflow !== "object" || Array.isArray(workflow.jobs)) {
+      return false
+    }
+    return Object.values(workflow.jobs ?? {}).some((job) => {
+      if (job === null || typeof job !== "object" || job.if !== undefined) return false
+      return (job.steps ?? []).some(
+        (step) =>
+          step !== null &&
+          typeof step === "object" &&
+          step.if === undefined &&
+          (step["continue-on-error"] === undefined || step["continue-on-error"] === false) &&
+          typeof step.run === "string" &&
+          shellRunStepExecutesProof(step.run, relativePath)
+      )
+    })
+  } catch {
+    return false
+  }
 }
 
 function isExecutableProofPath(root, relativePath) {
@@ -1695,14 +1803,40 @@ function hasNodeTestContextDisable(callbackNode) {
 
   let disabled = false
   walkJavaScriptAst(callback.body, (node) => {
-    if (disabled || node.type !== "CallExpression") return
-    const memberPath = javaScriptMemberPath(node.callee)
-    if (memberPath.segments[0] !== contextName) return
-    if (memberPath.ambiguous) {
+    if (disabled) return
+    if (
+      node.type === "CallExpression" &&
+      node.arguments?.some((argument) => {
+        const normalizedArgument = normalizeJavaScriptExpression(argument)
+        return (
+          normalizedArgument.ambiguous === false &&
+          normalizedArgument.expression?.type === "Identifier" &&
+          normalizedArgument.expression.name === contextName
+        )
+      })
+    ) {
       disabled = true
       return
     }
-    if (memberPath.segments.length === 2 && ["skip", "todo"].includes(memberPath.segments[1])) {
+    const aliasSource =
+      node.type === "VariableDeclarator"
+        ? node.init
+        : node.type === "AssignmentExpression"
+          ? node.right
+          : null
+    const normalizedAliasSource = normalizeJavaScriptExpression(aliasSource)
+    if (
+      normalizedAliasSource.ambiguous === false &&
+      normalizedAliasSource.expression?.type === "Identifier" &&
+      normalizedAliasSource.expression.name === contextName
+    ) {
+      disabled = true
+      return
+    }
+    if (node.type !== "MemberExpression") return
+    const memberPath = javaScriptMemberPath(node)
+    if (memberPath.segments[0] !== contextName) return
+    if (memberPath.ambiguous || ["skip", "todo"].includes(memberPath.segments[1])) {
       disabled = true
     }
   })
@@ -1791,8 +1925,34 @@ function hasExecutableProofAnchor(root, proof) {
   if (gradleJavaTestInclude(proof.path) !== null) {
     const escapedSelector = proof.selector.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
     const annotationContext = lines.slice(Math.max(0, lineIndex - 5), lineIndex + 1).join("\n")
+    const classLineIndex = lines
+      .slice(0, lineIndex + 1)
+      .findLastIndex((candidate) =>
+        /\b(?:class|enum|interface|record)\s+[A-Za-z_$]/.test(candidate)
+      )
+    const declarationContext = (declarationLineIndex) => {
+      let start = declarationLineIndex
+      while (start > 0) {
+        const previous = lines[start - 1].trim()
+        if (
+          /[;}]\s*$/.test(previous) ||
+          /\b(?:class|enum|interface|record)\s+[A-Za-z_$].*\{\s*$/.test(previous)
+        ) {
+          break
+        }
+        start -= 1
+      }
+      return lines.slice(start, declarationLineIndex + 1).join("\n")
+    }
+    const nonExecutableAnnotation =
+      /@(?:[A-Za-z_$][\w$]*\.)*(?:(?:Disabled|Enabled)[A-Za-z0-9_$]*|Ignore)\b/
+    const methodDeclarationContext = declarationContext(lineIndex)
+    const classDeclarationContext = classLineIndex === -1 ? "" : declarationContext(classLineIndex)
     return (
+      classLineIndex !== -1 &&
       /@(Test|ParameterizedTest|RepeatedTest|TestFactory)\b/.test(annotationContext) &&
+      !nonExecutableAnnotation.test(methodDeclarationContext) &&
+      !nonExecutableAnnotation.test(classDeclarationContext) &&
       new RegExp(`\\bvoid\\s+${escapedSelector}\\s*\\(`).test(line)
     )
   }
