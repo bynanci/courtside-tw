@@ -1294,6 +1294,50 @@ function shellCommandSegments(script) {
   return segments
 }
 
+function shellSetNamedOptionState(words, optionName, currentState) {
+  let index = 0
+  while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[index] ?? "")) index += 1
+  if (words[index] !== "set") return currentState
+  let state = currentState
+  for (let argumentIndex = index + 1; argumentIndex < words.length; argumentIndex += 1) {
+    const argument = words[argumentIndex]
+    if (argument === "--") break
+    if (["-o", "+o"].includes(argument)) {
+      if (words[argumentIndex + 1] === optionName) state = argument === "-o"
+      argumentIndex += 1
+      continue
+    }
+    if (!/^[-+][A-Za-z]+$/.test(argument)) continue
+    const optionIndex = argument.indexOf("o", 1)
+    if (optionIndex === -1) continue
+    const inlineOption = argument.slice(optionIndex + 1)
+    if (inlineOption === optionName) state = argument[0] === "-"
+    else if (inlineOption.length === 0 && words[argumentIndex + 1] === optionName) {
+      state = argument[0] === "-"
+      argumentIndex += 1
+    }
+  }
+  return state
+}
+
+function shellPipelinesHaveActivePipefail(script) {
+  let pipefailEnabled = false
+  for (const line of script.split(/\r?\n/)) {
+    const segments = shellCommandSegments(line)
+    const operators = shellLineControlOperators(line)
+    if (segments.length === 0 && operators?.length === 0) continue
+    if (operators === null || segments.length !== operators.length + 1) return false
+    for (let index = 0; index < segments.length; index += 1) {
+      const operator = operators[index]
+      if (operator === "|" && !pipefailEnabled) return false
+      if (operator !== "|") {
+        pipefailEnabled = shellSetNamedOptionState(segments[index], "pipefail", pipefailEnabled)
+      }
+    }
+  }
+  return true
+}
+
 function shellRunStepHasUnsafeControlFlow(script) {
   return (
     /<<-?/.test(script) ||
@@ -1303,7 +1347,7 @@ function shellRunStepHasUnsafeControlFlow(script) {
     script.includes("||") ||
     /(?:^|[;\n])\s*set\s+(?:--\s+)?(?:\+[A-Za-z]*e[A-Za-z]*|\+o\s+errexit)(?:\s|$)/m.test(script) ||
     /(^|[^&<>|])&(?=$|[^&>])/m.test(script) ||
-    (script.includes("|") && !/(?:^|\n)\s*set\s+-o\s+pipefail(?:\s|$)/.test(script))
+    !shellPipelinesHaveActivePipefail(script)
   )
 }
 
@@ -1400,15 +1444,28 @@ function shellRunStepExecutesGradleTest(script) {
     const testFiltered = argumentsAfterCommand.some(
       (argument) => argument === "--tests" || argument.startsWith("--tests=")
     )
-    const tasksSuppressed = argumentsAfterCommand.some(
-      (argument) => ["-m", "--dry-run"].includes(argument) || argument.startsWith("--dry-run=")
+    const executionSuppressed = argumentsAfterCommand.some(
+      (argument) =>
+        [
+          "-?",
+          "-h",
+          "--help",
+          "-v",
+          "--version",
+          "--status",
+          "--stop",
+          "--foreground",
+          "-m",
+          "--dry-run"
+        ].includes(argument) ||
+        ["--help=", "--version=", "--dry-run="].some((prefix) => argument.startsWith(prefix))
     )
     if (
       projectDirectorySelected &&
       argumentsAfterCommand.includes("test") &&
       !testExcluded &&
       !testFiltered &&
-      !tasksSuppressed
+      !executionSuppressed
     ) {
       return true
     }
@@ -2266,6 +2323,53 @@ function isProvablyNonemptyJavaScriptForOf(statement) {
   )
 }
 
+const javaScriptGlobalObjectNames = new Set(["global", "globalThis"])
+
+function javaScriptProcessObjectPathIndex(memberPath, processObjectNames) {
+  if (processObjectNames.has(memberPath.segments[0])) return 0
+  if (
+    javaScriptGlobalObjectNames.has(memberPath.segments[0]) &&
+    memberPath.segments[1] === "process"
+  ) {
+    return 1
+  }
+  return -1
+}
+
+function javaScriptMemberPathReferencesProcessObject(memberPath, processObjectNames) {
+  return javaScriptProcessObjectPathIndex(memberPath, processObjectNames) !== -1
+}
+
+function javaScriptMemberPathInvokesProcessExit(memberPath, processObjectNames) {
+  const processIndex = javaScriptProcessObjectPathIndex(memberPath, processObjectNames)
+  return (
+    processIndex !== -1 &&
+    (memberPath.ambiguous || memberPath.segments[processIndex + 1] === "exit")
+  )
+}
+
+function javaScriptExpressionReferencesProcessObject(expression, processObjectNames) {
+  let referencesProcess = false
+  walkJavaScriptAst(expression, (node, ancestors) => {
+    if (referencesProcess) return
+    if (
+      node.type === "Identifier" &&
+      isJavaScriptIdentifierReference(node, ancestors) &&
+      processObjectNames.has(node.name)
+    ) {
+      referencesProcess = true
+      return
+    }
+    if (
+      node.type === "MemberExpression" &&
+      javaScriptMemberPathReferencesProcessObject(javaScriptMemberPath(node), processObjectNames)
+    ) {
+      referencesProcess = true
+    }
+  })
+  return referencesProcess
+}
+
 function hasJavaScriptProcessExit(
   expression,
   { includeFunctions = false, processObjectNames = new Set(["process"]) } = {}
@@ -2283,10 +2387,7 @@ function hasJavaScriptProcessExit(
       return
     }
     const memberPath = javaScriptMemberPath(node.type === "CallExpression" ? node.callee : node)
-    if (
-      processObjectNames.has(memberPath.segments[0]) &&
-      (memberPath.ambiguous || memberPath.segments[1] === "exit")
-    ) {
+    if (javaScriptMemberPathInvokesProcessExit(memberPath, processObjectNames)) {
       exits = true
     }
   })
@@ -2365,9 +2466,7 @@ function javaScriptProcessExitTerminatorNames(expression) {
   }
 
   for (const [name, body] of functionBodies) {
-    const referencesProcess = [...processObjectNames].some((processName) =>
-      javaScriptExpressionReferencesIdentifier(body, processName)
-    )
+    const referencesProcess = javaScriptExpressionReferencesProcessObject(body, processObjectNames)
     if (
       referencesProcess ||
       hasJavaScriptProcessExit(body, { includeFunctions: true, processObjectNames })
@@ -2376,9 +2475,7 @@ function javaScriptProcessExitTerminatorNames(expression) {
     }
   }
   for (const [name, body] of classBodies) {
-    const referencesProcess = [...processObjectNames].some((processName) =>
-      javaScriptExpressionReferencesIdentifier(body, processName)
-    )
+    const referencesProcess = javaScriptExpressionReferencesProcessObject(body, processObjectNames)
     if (
       referencesProcess ||
       hasJavaScriptProcessExit(body, { includeFunctions: true, processObjectNames })
@@ -2402,12 +2499,12 @@ function javaScriptProcessExitTerminatorNames(expression) {
     for (const { target, source } of aliases) {
       const normalizedSource = normalizeJavaScriptExpression(source)
       const sourcePath = javaScriptMemberPath(source)
-      const sourceReferencesProcess = [...processObjectNames].some((name) =>
-        javaScriptExpressionReferencesIdentifier(source, name)
+      const sourceReferencesProcess = javaScriptExpressionReferencesProcessObject(
+        source,
+        processObjectNames
       )
       const sourceTerminates =
-        (processObjectNames.has(sourcePath.segments[0]) &&
-          (sourcePath.ambiguous || sourcePath.segments[1] === "exit")) ||
+        javaScriptMemberPathReferencesProcessObject(sourcePath, processObjectNames) ||
         sourceReferencesProcess ||
         hasJavaScriptProcessExit(normalizedSource.expression, {
           includeFunctions: true,
@@ -3059,7 +3156,7 @@ function javaClassRanges(maskedText, targetOffset) {
       }
     }
     if (open < targetOffset && targetOffset < close) {
-      ranges.push({ declarationOffset: match.index, name: match[1], open })
+      ranges.push({ close, declarationOffset: match.index, name: match[1], open })
     }
   }
   return ranges.sort((left, right) => left.open - right.open)
@@ -3312,18 +3409,23 @@ function shellStatusIsNonzero(rawStatus) {
   return Number.isSafeInteger(status) && ((status % 256) + 256) % 256 !== 0
 }
 
-function shellFailureFunctionNames(text) {
-  const names = new Set()
+function shellFailureFunctions(text) {
+  const exiting = new Set()
+  const returning = new Set()
   for (const match of text.matchAll(
     /(?:^|\n)\s*(?:function\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*\(\s*\)\s*\{([\s\S]*?)\n\s*\}/g
   )) {
-    const exitsNonzero = shellCommandSegments(match[2]).some(
-      (words) =>
-        ["exit", "return"].includes(words[0]) && words.length >= 2 && shellStatusIsNonzero(words[1])
+    const commands = shellCommandSegments(match[2])
+    const exitsNonzero = commands.some(
+      (words) => words[0] === "exit" && words.length >= 2 && shellStatusIsNonzero(words[1])
     )
-    if (exitsNonzero) names.add(match[1])
+    const returnsNonzero = commands.some(
+      (words) => words[0] === "return" && words.length >= 2 && shellStatusIsNonzero(words[1])
+    )
+    if (exitsNonzero && !returnsNonzero) exiting.add(match[1])
+    else if (returnsNonzero && !exitsNonzero) returning.add(match[1])
   }
-  return names
+  return { exiting, returning }
 }
 
 function shellLineControlOperators(line) {
@@ -3413,14 +3515,14 @@ function shellLineHasExecutableFailureAnchor(text, line, selector, lineIndex) {
   )
   if (!selectorIsExecutable) return false
 
-  const failureFunctions = shellFailureFunctionNames(text)
+  const failureFunctions = shellFailureFunctions(text)
   const hasPipelineOrBackground = operators.some((operator) => ["|", "&"].includes(operator))
   const hasUnconditionalShellExit = segments.some((words, segmentIndex) => {
     let index = 0
     while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[index] ?? "")) index += 1
     const exitsShell =
       (words[index] === "exit" && shellStatusIsNonzero(words[index + 1])) ||
-      failureFunctions.has(words[index])
+      failureFunctions.exiting.has(words[index])
     return exitsShell && operators.slice(0, segmentIndex).every((operator) => operator === ";")
   })
   if (hasUnconditionalShellExit && !hasPipelineOrBackground) return true
@@ -3439,7 +3541,8 @@ function shellLineHasExecutableFailureAnchor(text, line, selector, lineIndex) {
       return words[index] === "exit" || failurePropagates
     }
     if (words[index] === "false") return failurePropagates
-    if (failureFunctions.has(words[index])) return true
+    if (failureFunctions.exiting.has(words[index])) return true
+    if (failureFunctions.returning.has(words[index])) return failurePropagates
   }
   return false
 }
@@ -3462,7 +3565,8 @@ function hasExecutableProofAnchor(root, proof) {
     const targetOffset = translatedText.indexOf(proof.selector)
     const translatedLineIndex = translatedText.slice(0, targetOffset).split(/\r?\n/).length - 1
     const nonExecutableAnnotation =
-      /@(?:[A-Za-z_$][\w$]*\.)*(?:(?:Disabled|Enabled)[A-Za-z0-9_$]*|Ignore)\b/
+      /@(?:[A-Za-z_$][\w$]*\.)*(?:(?:Disabled|Enabled)[A-Za-z0-9_$]*|Ignore|ExtendWith)\b/
+    const registeredExecutionExtension = /@(?:[A-Za-z_$][\w$]*\.)*RegisterExtension\b/
     const composedNonExecutableAnnotations = javaComposedNonExecutableAnnotations(
       root,
       nonExecutableAnnotation
@@ -3480,6 +3584,9 @@ function hasExecutableProofAnchor(root, proof) {
       const classLineIndex = translatedText.slice(0, declarationOffset).split(/\r?\n/).length - 1
       return javaDeclarationContext(maskedLines, classLineIndex)
     })
+    const enclosingClassHasRegisteredExtension = classRanges.some(({ open, close }) =>
+      registeredExecutionExtension.test(maskedText.slice(open + 1, close))
+    )
     const configuredClassInclude = gradleJavaTestIncludeForClassName(classRanges[0]?.name ?? "")
     const buildText = readRunnerConfiguration(root, "apps/api/build.gradle.kts")
     const topLevelClassSelected =
@@ -3518,6 +3625,7 @@ function hasExecutableProofAnchor(root, proof) {
       classContexts.every((context) => !nonExecutableAnnotation.test(context)) &&
       !hasComposedNonExecutableAnnotation(methodDeclarationContext) &&
       classContexts.every((context) => !hasComposedNonExecutableAnnotation(context)) &&
+      !enclosingClassHasRegisteredExtension &&
       classModifiersExecutable &&
       methodModifiersExecutable &&
       !javaMethodUsesAbortingAssumption(maskedText, methodBody) &&

@@ -2654,6 +2654,47 @@ test("a helper returning the process object cannot hide a later exit", () => {
   assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
 })
 
+test("an exit through the globalThis process object cannot bypass a registered proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/global-process-proof.test.js"
+    files["tests/global-process-proof.test.js"] =
+      'import test from "node:test"\n' +
+      'test("fixture-proof", () => { throw new Error("unreached proof") })\n' +
+      "globalThis.process.exit(0)\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+})
+
+for (const invocation of ["global.process.exit(0)", 'globalThis["process"]["exit"](0)']) {
+  test(`an exit through ${invocation} cannot bypass a registered proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "tests/adjacent-global-process-proof.test.js"
+      files["tests/adjacent-global-process-proof.test.js"] =
+        'import test from "node:test"\n' +
+        'test("fixture-proof", () => { throw new Error("unreached proof") })\n' +
+        `${invocation}\n`
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+  })
+}
+
+test("a plain object property named process does not become a false terminator", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/plain-process-property.test.js"
+    files["tests/plain-process-property.test.js"] =
+      'import test from "node:test"\n' +
+      'function metadata() { return { process: "safe" } }\n' +
+      "metadata()\n" +
+      'test("fixture-proof", () => {})\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
 for (const [optionsKind, declaration, options] of [
   ["dynamic", "const options = { skip: true }\n", "options"],
   ["spread", "", "{ ...{ todo: true } }"]
@@ -3281,6 +3322,44 @@ test("a shell failure masked by a successful OR branch cannot serve as proof", (
   assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
 })
 
+test("a returning shell helper masked by a successful OR branch cannot serve as proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] =
+      "fail() {\n  return 1\n}\n" + 'fail "fixture-proof" || true\n'
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+})
+
+test("a returning shell helper followed by a successful command cannot serve as proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] =
+      "fail() {\n  return 1\n}\n" + 'fail "fixture-proof"\ntrue\n'
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+})
+
+test("an exiting shell helper remains a failure even when followed by an OR branch", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] =
+      "die() {\n  exit 1\n}\n" + 'die "fixture-proof" || true\n'
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
 for (const [maskingKind, source] of [
   ["later command", 'false "fixture-proof"\ntrue\n'],
   ["semicolon", 'false "fixture-proof"; true\n'],
@@ -3509,6 +3588,109 @@ test("a Gradle -m dry-run workflow command cannot select Java proof", () => {
   )
 })
 
+test("a Gradle --version workflow command cannot select Java proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+    contract.requirements[0].proofs[0].path = proofPath
+    contract.requirements[0].proofs[0].selector = "fixtureProof"
+    files[proofPath] =
+      "package example;\n" +
+      "import org.junit.jupiter.api.Test;\n" +
+      "class ExampleTests {\n  @Test\n  void fixtureProof() {}\n}\n"
+    addGradleProofRunnerFixture(files)
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: gradle --version -p apps/api test\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(
+    report.errors.join("\n"),
+    /VERIFIED repository proof must be an executable check or durable receipt/
+  )
+})
+
+for (const earlyExitOption of ["--help", "-v"]) {
+  test(`a Gradle ${earlyExitOption} workflow command cannot select Java proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+      contract.requirements[0].proofs[0].path = proofPath
+      contract.requirements[0].proofs[0].selector = "fixtureProof"
+      files[proofPath] =
+        "package example;\n" +
+        "import org.junit.jupiter.api.Test;\n" +
+        "class ExampleTests {\n  @Test\n  void fixtureProof() {}\n}\n"
+      addGradleProofRunnerFixture(files)
+      files[".github/workflows/ci.yml"] =
+        `jobs:\n  verify:\n    steps:\n      - run: gradle ${earlyExitOption} -p apps/api test\n`
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(
+      report.errors.join("\n"),
+      /VERIFIED repository proof must be an executable check or durable receipt/
+    )
+  })
+}
+
+test("pipefail enabled after a Gradle pipeline cannot select Java proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+    contract.requirements[0].proofs[0].path = proofPath
+    contract.requirements[0].proofs[0].selector = "fixtureProof"
+    files[proofPath] =
+      "package example;\n" +
+      "import org.junit.jupiter.api.Test;\n" +
+      "class ExampleTests {\n  @Test\n  void fixtureProof() {}\n}\n"
+    addGradleProofRunnerFixture(files)
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: |\n          gradle -p apps/api test | tee proof.log\n          set -o pipefail\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(
+    report.errors.join("\n"),
+    /VERIFIED repository proof must be an executable check or durable receipt/
+  )
+})
+
+test("pipefail disabled again before a Gradle pipeline cannot select Java proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+    contract.requirements[0].proofs[0].path = proofPath
+    contract.requirements[0].proofs[0].selector = "fixtureProof"
+    files[proofPath] =
+      "package example;\n" +
+      "import org.junit.jupiter.api.Test;\n" +
+      "class ExampleTests {\n  @Test\n  void fixtureProof() {}\n}\n"
+    addGradleProofRunnerFixture(files)
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: |\n          set -o pipefail\n          set +o pipefail\n          gradle -p apps/api test | tee proof.log\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(
+    report.errors.join("\n"),
+    /VERIFIED repository proof must be an executable check or durable receipt/
+  )
+})
+
+test("pipefail enabled on the same command list before a Gradle pipeline remains proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+    contract.requirements[0].proofs[0].path = proofPath
+    contract.requirements[0].proofs[0].selector = "fixtureProof"
+    files[proofPath] =
+      "package example;\n" +
+      "import org.junit.jupiter.api.Test;\n" +
+      "class ExampleTests {\n  @Test\n  void fixtureProof() {}\n}\n"
+    addGradleProofRunnerFixture(files)
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: set -o pipefail; gradle -p apps/api test | tee proof.log\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
 test("the repository-style Gradle pipeline remains attributable Java proof", () => {
   const root = makeFixture(({ contract, files }) => {
     const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
@@ -3580,6 +3762,71 @@ for (const [annotationScope, source] of [
     assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
   })
 }
+
+test("a JUnit proof disabled by an execution-condition extension cannot serve as proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+    contract.requirements[0].proofs[0].path = proofPath
+    contract.requirements[0].proofs[0].selector = "fixtureProof"
+    files[proofPath] =
+      "package example;\n" +
+      "import org.junit.jupiter.api.Test;\n" +
+      "import org.junit.jupiter.api.extension.ConditionEvaluationResult;\n" +
+      "import org.junit.jupiter.api.extension.ExecutionCondition;\n" +
+      "import org.junit.jupiter.api.extension.ExtendWith;\n" +
+      "import org.junit.jupiter.api.extension.ExtensionContext;\n" +
+      "class AlwaysDisabled implements ExecutionCondition {\n" +
+      "  public ConditionEvaluationResult evaluateExecutionCondition(ExtensionContext context) {\n" +
+      '    return ConditionEvaluationResult.disabled("disabled");\n' +
+      "  }\n" +
+      "}\n" +
+      "@ExtendWith(AlwaysDisabled.class)\n" +
+      "class ExampleTests {\n  @Test\n  void fixtureProof() {}\n}\n"
+    addGradleProofRunnerFixture(files)
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+})
+
+test("a composed JUnit execution extension cannot authorize a proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+    contract.requirements[0].proofs[0].path = proofPath
+    contract.requirements[0].proofs[0].selector = "fixtureProof"
+    files[proofPath] =
+      "import org.junit.jupiter.api.Test;\n" +
+      "import org.junit.jupiter.api.extension.ExtendWith;\n" +
+      "@ExtendWith(AlwaysDisabled.class)\n" +
+      "@interface ConditionallyDisabled {}\n" +
+      "@ConditionallyDisabled\n" +
+      "class ExampleTests {\n  @Test\n  void fixtureProof() {}\n}\n"
+    addGradleProofRunnerFixture(files)
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+})
+
+test("a registered JUnit execution extension cannot authorize a proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+    contract.requirements[0].proofs[0].path = proofPath
+    contract.requirements[0].proofs[0].selector = "fixtureProof"
+    files[proofPath] =
+      "import org.junit.jupiter.api.Test;\n" +
+      "import org.junit.jupiter.api.extension.RegisterExtension;\n" +
+      "class ExampleTests {\n" +
+      "  @RegisterExtension static final AlwaysDisabled condition = new AlwaysDisabled();\n" +
+      "  @Test\n" +
+      "  void fixtureProof() {}\n" +
+      "}\n"
+    addGradleProofRunnerFixture(files)
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+})
 
 test("a JUnit proof in an undiscovered nested class cannot serve as executable proof", () => {
   const root = makeFixture(({ contract, files }) => {
