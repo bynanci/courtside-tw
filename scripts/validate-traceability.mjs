@@ -741,18 +741,19 @@ function readRunnerConfiguration(root, relativePath) {
 
 function javaScriptRunnerCommandSelects(command, packageRelativePath) {
   if (typeof command !== "string") return false
-  return command.split(/&&|\|\||[;|]/).some((segment) => {
-    const tokens = segment.match(/"[^"]*"|'[^']*'|[^\s]+/g) ?? []
-    const normalizedTokens = tokens.map((rawToken) =>
-      rawToken.replace(/^(?:"([^"]*)"|'([^']*)')$/, "$1$2")
+  const commandWithoutAndChains = command.replaceAll("&&", "")
+  if (command.includes("||") || /[;&|\n\r]/.test(commandWithoutAndChains)) return false
+  const [unconditionalSegment] = command.split("&&")
+  const tokens = unconditionalSegment.match(/"[^"]*"|'[^']*'|[^\s]+/g) ?? []
+  const normalizedTokens = tokens.map((rawToken) =>
+    rawToken.replace(/^(?:"([^"]*)"|'([^']*)')$/, "$1$2")
+  )
+  if (normalizedTokens[0] !== "node" || !normalizedTokens.includes("--test")) return false
+  return normalizedTokens.some((rawToken) => {
+    const token = rawToken.replace(/^\.\//, "")
+    return (
+      /\.(?:test|spec)\.[cm]?[jt]sx?$/.test(token) && path.matchesGlob(packageRelativePath, token)
     )
-    if (normalizedTokens[0] !== "node" || !normalizedTokens.includes("--test")) return false
-    return normalizedTokens.some((rawToken) => {
-      const token = rawToken.replace(/^\.\//, "")
-      return (
-        /\.(?:test|spec)\.[cm]?[jt]sx?$/.test(token) && path.matchesGlob(packageRelativePath, token)
-      )
-    })
   })
 }
 
@@ -1365,6 +1366,12 @@ function javaScriptSuiteBinding(expression, memberPath, bindings) {
   ) {
     return { binding: { role: "node-suite" }, modifierStart: 2 }
   }
+  if (
+    importedBinding?.role === "node-test-namespace" &&
+    ["describe", "suite"].includes(memberPath.segments[1])
+  ) {
+    return { binding: { role: "node-suite" }, modifierStart: 2 }
+  }
   if (importedBinding?.role === "playwright-test" && memberPath.segments[1] === "describe") {
     return { binding: importedBinding, modifierStart: 2 }
   }
@@ -1501,6 +1508,7 @@ function authorizedJavaScriptImportRole(declaration, specifier) {
   if (declaration.importKind === "type" || specifier.importKind === "type") return null
   const source = declaration.source?.value
   if (source === "node:test") {
+    if (specifier.type === "ImportNamespaceSpecifier") return "node-test-namespace"
     if (specifier.type === "ImportDefaultSpecifier") return "node-test"
     if (specifier.type !== "ImportSpecifier") return null
     const importedName = javaScriptImportedName(specifier)
@@ -1649,10 +1657,16 @@ function javaScriptProofCall(node, targetOffset, selector, textLength, bindings)
   const expression = node
 
   const memberPath = javaScriptMemberPath(expression.callee)
-  const binding = bindings.get(memberPath.segments[0], expression)
+  const importedBinding = bindings.get(memberPath.segments[0], expression)
+  const binding =
+    importedBinding?.role === "node-test-namespace" &&
+    ["it", "test"].includes(memberPath.segments[1])
+      ? { role: "node-test" }
+      : importedBinding
+  const modifierStart = importedBinding?.role === "node-test-namespace" ? 2 : 1
   if (memberPath.ambiguous || !javaScriptProofBindingRoles.has(binding?.role)) return false
   if (binding.role === "playwright-test" && memberPath.segments[1] === "describe") return false
-  const modifiers = memberPath.segments.slice(1)
+  const modifiers = memberPath.segments.slice(modifierStart)
   const activeModifierChains = activeJavaScriptTestModifierChains.get(binding.role)
   if (
     modifiers.some((modifier) => nonExecutableTestModifiers.has(modifier)) ||
@@ -1737,32 +1751,38 @@ function hasJavaScriptProcessExit(expression) {
   return exits
 }
 
-function canBypassLaterJavaScriptStatement(statement) {
+function canBypassLaterJavaScriptStatement(statement, { breakBypasses = true } = {}) {
   if (hasJavaScriptProcessExit(statement)) return true
-  if (
-    ["BreakStatement", "ContinueStatement", "ReturnStatement", "ThrowStatement"].includes(
-      statement?.type
-    )
-  ) {
+  if (["ContinueStatement", "ReturnStatement", "ThrowStatement"].includes(statement?.type)) {
     return true
   }
+  if (statement?.type === "BreakStatement") return breakBypasses || statement.label !== null
   if (statement?.type === "LabeledStatement") {
-    return canBypassLaterJavaScriptStatement(statement.body)
+    return canBypassLaterJavaScriptStatement(statement.body, { breakBypasses })
   }
   if (statement?.type === "BlockStatement") {
-    return (statement.body ?? []).some((child) => canBypassLaterJavaScriptStatement(child))
+    return (statement.body ?? []).some((child) =>
+      canBypassLaterJavaScriptStatement(child, { breakBypasses })
+    )
   }
   if (statement?.type === "IfStatement") {
     return (
-      canBypassLaterJavaScriptStatement(statement.consequent) ||
-      canBypassLaterJavaScriptStatement(statement.alternate)
+      canBypassLaterJavaScriptStatement(statement.consequent, { breakBypasses }) ||
+      canBypassLaterJavaScriptStatement(statement.alternate, { breakBypasses })
     )
   }
   if (statement?.type === "TryStatement") {
     return (
-      canBypassLaterJavaScriptStatement(statement.block) ||
-      canBypassLaterJavaScriptStatement(statement.handler?.body) ||
-      canBypassLaterJavaScriptStatement(statement.finalizer)
+      canBypassLaterJavaScriptStatement(statement.block, { breakBypasses }) ||
+      canBypassLaterJavaScriptStatement(statement.handler?.body, { breakBypasses }) ||
+      canBypassLaterJavaScriptStatement(statement.finalizer, { breakBypasses })
+    )
+  }
+  if (statement?.type === "SwitchStatement") {
+    return (statement.cases ?? []).some((switchCase) =>
+      (switchCase.consequent ?? []).some((child) =>
+        canBypassLaterJavaScriptStatement(child, { breakBypasses: false })
+      )
     )
   }
   return false
@@ -1888,7 +1908,23 @@ function hasPlaywrightTestDisable(callbackNode, bindings) {
 
   let disabled = false
   walkJavaScriptAst(callback.body, (node) => {
-    if (disabled || node.type !== "MemberExpression") return
+    if (disabled) return
+    const aliasSource =
+      node.type === "VariableDeclarator"
+        ? node.init
+        : node.type === "AssignmentExpression"
+          ? node.right
+          : null
+    const normalizedAliasSource = normalizeJavaScriptExpression(aliasSource)
+    if (
+      normalizedAliasSource.ambiguous === false &&
+      normalizedAliasSource.expression?.type === "Identifier" &&
+      bindings.get(normalizedAliasSource.expression.name, node)?.role === "playwright-test"
+    ) {
+      disabled = true
+      return
+    }
+    if (node.type !== "MemberExpression") return
     const memberPath = javaScriptMemberPath(node)
     const binding = bindings.get(memberPath.segments[0], node)
     if (
@@ -1961,6 +1997,26 @@ const javaJUnitProofAnnotations = [
 
 function escapeRegularExpression(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+}
+
+function translateJavaUnicodeEscapes(text) {
+  let translated = ""
+  let translatedBackslashRun = 0
+  for (let index = 0; index < text.length; index += 1) {
+    const character = text[index]
+    if (character === "\\" && translatedBackslashRun % 2 === 0 && text[index + 1] === "u") {
+      const unicodeEscape = text.slice(index).match(/^\\u+([0-9a-fA-F]{4})/)
+      if (unicodeEscape === null) return null
+      const decoded = String.fromCharCode(Number.parseInt(unicodeEscape[1], 16))
+      translated += decoded
+      translatedBackslashRun = decoded === "\\" ? translatedBackslashRun + 1 : 0
+      index += unicodeEscape[0].length - 1
+      continue
+    }
+    translated += character
+    translatedBackslashRun = character === "\\" ? translatedBackslashRun + 1 : 0
+  }
+  return translated
 }
 
 function maskJavaCommentsAndLiterals(text) {
@@ -2115,9 +2171,14 @@ function hasExecutableProofAnchor(root, proof) {
 
   if (gradleJavaTestInclude(proof.path) !== null) {
     const escapedSelector = escapeRegularExpression(proof.selector)
-    const maskedText = maskJavaCommentsAndLiterals(text)
+    const translatedText = translateJavaUnicodeEscapes(text)
+    if (translatedText === null || literalOccurrenceCount(translatedText, proof.selector) !== 1) {
+      return false
+    }
+    const maskedText = maskJavaCommentsAndLiterals(translatedText)
     const maskedLines = maskedText.split(/\r?\n/)
-    const targetOffset = text.indexOf(proof.selector)
+    const targetOffset = translatedText.indexOf(proof.selector)
+    const translatedLineIndex = translatedText.slice(0, targetOffset).split(/\r?\n/).length - 1
     const declarationContext = (sourceLines, declarationLineIndex) => {
       let start = declarationLineIndex
       while (start > 0) {
@@ -2134,11 +2195,11 @@ function hasExecutableProofAnchor(root, proof) {
     }
     const nonExecutableAnnotation =
       /@(?:[A-Za-z_$][\w$]*\.)*(?:(?:Disabled|Enabled)[A-Za-z0-9_$]*|Ignore)\b/
-    const methodDeclarationContext = declarationContext(maskedLines, lineIndex)
+    const methodDeclarationContext = declarationContext(maskedLines, translatedLineIndex)
     const proofAnnotation = javaResolvedProofAnnotation(maskedText, methodDeclarationContext)
     const classRanges = javaClassRanges(maskedText, targetOffset)
     const classContexts = classRanges.map(({ declarationOffset }) => {
-      const classLineIndex = text.slice(0, declarationOffset).split(/\r?\n/).length - 1
+      const classLineIndex = translatedText.slice(0, declarationOffset).split(/\r?\n/).length - 1
       return declarationContext(maskedLines, classLineIndex)
     })
     const configuredClassInclude = gradleJavaTestIncludeForClassName(classRanges[0]?.name ?? "")
@@ -2163,6 +2224,7 @@ function hasExecutableProofAnchor(root, proof) {
     const methodModifiersExecutable = !/\b(?:abstract|native|private|static)\b/.test(
       methodDeclarationContext
     )
+    const classModifiersExecutable = classContexts.every((context) => !/\babstract\b/.test(context))
     return (
       classRanges.length > 0 &&
       javaBraceDepthAt(maskedText, targetOffset) === classRanges.length &&
@@ -2171,6 +2233,7 @@ function hasExecutableProofAnchor(root, proof) {
       proofAnnotation !== null &&
       !nonExecutableAnnotation.test(methodDeclarationContext) &&
       classContexts.every((context) => !nonExecutableAnnotation.test(context)) &&
+      classModifiersExecutable &&
       methodModifiersExecutable &&
       signatureExecutable
     )
@@ -2179,7 +2242,11 @@ function hasExecutableProofAnchor(root, proof) {
     return hasExecutableJavaScriptProofAnchor(text, proof.selector, proof.path)
   }
   if (proof.path.startsWith("scripts/test/") && proof.path.endsWith(".sh")) {
-    return /\b(?:raise|assert|fail|exit|SystemExit)\b/.test(line)
+    const hasFailingExit = [...line.matchAll(/\bexit\s+([+-]?\d+)\b/g)].some((match) => {
+      const status = Number(match[1])
+      return Number.isSafeInteger(status) && ((status % 256) + 256) % 256 !== 0
+    })
+    return hasFailingExit || /\b(?:raise|assert|fail|SystemExit)\b/.test(line)
   }
   if (proof.path.startsWith(".github/workflows/")) {
     return line === proof.selector
