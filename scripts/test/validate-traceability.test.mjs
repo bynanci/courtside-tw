@@ -2323,6 +2323,18 @@ for (const [aliasKind, disableSource] of [
   })
 }
 
+test("a node:test context stored in a composite value cannot serve as proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/composite-context-disable.test.js"
+    files["tests/composite-context-disable.test.js"] =
+      'import test from "node:test"\n' +
+      'test("fixture-proof", t => { const holder = { context: t }; holder.context.skip(); throw new Error("unreached") })\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+})
+
 for (const [parameterKind, source] of [
   [
     "rest parameter",
@@ -2362,6 +2374,30 @@ test("a Playwright callback disabled through an alias of test cannot serve as pr
     files["tests/aliased-playwright-disable.test.js"] =
       'import { test } from "@playwright/test"\n' +
       'test("fixture-proof", async () => { const runner = test; runner.skip(); throw new Error("unreached") })\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+})
+
+test("a Playwright test binding stored in a composite value cannot serve as proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/composite-playwright-disable.test.js"
+    files["tests/composite-playwright-disable.test.js"] =
+      'import { test } from "@playwright/test"\n' +
+      'test("fixture-proof", async () => { const holder = { runner: test }; holder.runner.skip(); throw new Error("unreached") })\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+})
+
+test("a Playwright callback disabled through TestInfo cannot serve as proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "tests/test-info-disable.test.js"
+    files["tests/test-info-disable.test.js"] =
+      'import { test } from "@playwright/test"\n' +
+      'test("fixture-proof", async ({}, testInfo) => { testInfo.skip(); throw new Error("unreached") })\n'
   })
   const report = run(root)
   assert.equal(report.status, "FAIL")
@@ -2451,6 +2487,35 @@ test("a proof registration after process.exit cannot serve as proof", () => {
   assert.equal(report.status, "FAIL")
   assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
 })
+
+for (const [termination, source] of [
+  [
+    "after registration",
+    'test("fixture-proof", () => { throw new Error("unreached proof") })\nprocess.exit(0)\n'
+  ],
+  [
+    "inside its callback",
+    'test("fixture-proof", () => { process.exit(0); throw new Error("unreached proof") })\n'
+  ],
+  [
+    "inside an invoked nested callback",
+    'test("fixture-proof", () => { (() => process.exit(0))(); throw new Error("unreached proof") })\n'
+  ],
+  [
+    "through an exit alias",
+    'const terminate = process.exit\ntest("fixture-proof", () => { throw new Error("unreached proof") })\nterminate(0)\n'
+  ]
+]) {
+  test(`a proof with process.exit ${termination} cannot serve as proof`, () => {
+    const root = makeFixture(({ contract, files }) => {
+      contract.requirements[0].proofs[0].path = "tests/post-registration-exit.test.js"
+      files["tests/post-registration-exit.test.js"] = 'import test from "node:test"\n' + source
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+  })
+}
 
 for (const [optionsKind, declaration, options] of [
   ["dynamic", "const options = { skip: true }\n", "options"],
@@ -2725,6 +2790,29 @@ for (const command of [
   })
 }
 
+for (const filter of [
+  "--test-name-pattern=unrelated",
+  "--test-only",
+  "--test-rerun-failures=state.json",
+  "--test-shard=2/2",
+  "--test-skip-pattern=fixture-proof"
+]) {
+  test(`a Node runner ${filter} collection filter cannot select proof`, () => {
+    const root = makeFixture(({ files }) => {
+      files["package.json"] = JSON.stringify({
+        private: true,
+        scripts: { test: `node --test ${filter} tests/*.test.js` }
+      })
+    })
+    const report = run(root)
+    assert.equal(report.status, "FAIL")
+    assert.match(
+      report.errors.join("\n"),
+      /VERIFIED repository proof must be an executable check or durable receipt/
+    )
+  })
+}
+
 test("a JavaScript proof outside the configured runner globs cannot serve as proof", () => {
   const root = makeFixture(({ contract, files }) => {
     contract.requirements[0].proofs[0].path = "tests/fixtures/unwired-proof.test.js"
@@ -2771,6 +2859,10 @@ for (const [mentionKind, workflow] of [
   [
     "workflow command after exit",
     "jobs:\n  verify:\n    steps:\n      - run: |\n          exit 0\n          bash scripts/test/unwired-proof.sh\n"
+  ],
+  [
+    "backgrounded workflow command",
+    "jobs:\n  verify:\n    steps:\n      - run: |\n          bash scripts/test/unwired-proof.sh &\n          true\n"
   ]
 ]) {
   test(`a shell proof mentioned only in a ${mentionKind} cannot serve as proof`, () => {
@@ -2975,6 +3067,46 @@ test("a JUnit proof in an abstract class cannot serve as executable proof", () =
     files[proofPath] =
       "import org.junit.jupiter.api.Test;\n\n" +
       "abstract class ExampleTests {\n" +
+      "  @Test\n" +
+      "  void fixtureProof() {}\n" +
+      "}\n"
+    addGradleProofRunnerFixture(files)
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+})
+
+test("a JUnit proof in an interface cannot serve as executable proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+    contract.requirements[0].proofs[0].path = proofPath
+    contract.requirements[0].proofs[0].selector = "fixtureProof"
+    files[proofPath] =
+      "import org.junit.jupiter.api.Test;\n\n" +
+      "interface ExampleTests {\n" +
+      "  @Test\n" +
+      "  void fixtureProof();\n" +
+      "}\n"
+    addGradleProofRunnerFixture(files)
+  })
+  const report = run(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /selector must identify an executable test anchor/)
+})
+
+test("a composed JUnit disabling annotation cannot authorize a proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+    contract.requirements[0].proofs[0].path = proofPath
+    contract.requirements[0].proofs[0].selector = "fixtureProof"
+    files[proofPath] =
+      "import org.junit.jupiter.api.Disabled;\n" +
+      "import org.junit.jupiter.api.Test;\n\n" +
+      "@Disabled\n" +
+      "@interface Quarantined {}\n\n" +
+      "class ExampleTests {\n" +
+      "  @Quarantined\n" +
       "  @Test\n" +
       "  void fixtureProof() {}\n" +
       "}\n"

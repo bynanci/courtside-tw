@@ -749,6 +749,13 @@ function javaScriptRunnerCommandSelects(command, packageRelativePath) {
     rawToken.replace(/^(?:"([^"]*)"|'([^']*)')$/, "$1$2")
   )
   if (normalizedTokens[0] !== "node" || !normalizedTokens.includes("--test")) return false
+  if (
+    normalizedTokens.some((token) =>
+      /^--test-(?:name-pattern|only|rerun-failures|shard|skip-pattern)(?:=|$)/.test(token)
+    )
+  ) {
+    return false
+  }
   return normalizedTokens.some((rawToken) => {
     const token = rawToken.replace(/^\.\//, "")
     return (
@@ -916,6 +923,7 @@ function shellRunStepExecutesProof(script, relativePath) {
       script
     ) ||
     script.includes("||") ||
+    /(^|[^&<>|])&(?=$|[^&>])/m.test(script) ||
     (script.includes("|") && !/(?:^|\n)\s*set\s+-o\s+pipefail(?:\s|$)/.test(script))
   ) {
     return false
@@ -1676,6 +1684,7 @@ function javaScriptProofCall(node, targetOffset, selector, textLength, bindings)
   }
   const overload = javaScriptTestCallOverload(expression)
   if (overload === null) return false
+  if (hasJavaScriptProcessExit(overload.callback, { includeFunctions: true })) return false
   if (binding.role === "node-test") {
     if (
       classifyNodeTestOptions(overload.options, { rejectCallbackOverride: true }) !== "active" ||
@@ -1730,17 +1739,20 @@ function isProvablyNonemptyJavaScriptForOf(statement) {
   )
 }
 
-function hasJavaScriptProcessExit(expression) {
+function hasJavaScriptProcessExit(expression, { includeFunctions = false } = {}) {
   let exits = false
   walkJavaScriptAst(expression, (node, ancestors) => {
+    const functionDepth = ancestors.filter((ancestor) =>
+      javaScriptFunctionTypes.has(ancestor?.type)
+    ).length
     if (
       exits ||
-      node.type !== "CallExpression" ||
-      ancestors.some((ancestor) => javaScriptFunctionTypes.has(ancestor?.type))
+      !["CallExpression", "MemberExpression"].includes(node.type) ||
+      (!includeFunctions && functionDepth > 0)
     ) {
       return
     }
-    const memberPath = javaScriptMemberPath(node.callee)
+    const memberPath = javaScriptMemberPath(node.type === "CallExpression" ? node.callee : node)
     if (
       memberPath.segments[0] === "process" &&
       (memberPath.ambiguous || memberPath.segments[1] === "exit")
@@ -1749,6 +1761,18 @@ function hasJavaScriptProcessExit(expression) {
     }
   })
   return exits
+}
+
+function hasLaterJavaScriptProcessExit(parent, child) {
+  const expressions = parent?.type === "SequenceExpression" ? parent.expressions : null
+  const statements = ["BlockStatement", "Program", "StaticBlock"].includes(parent?.type)
+    ? parent.body
+    : expressions
+  const childIndex = statements?.indexOf(child) ?? -1
+  return (
+    childIndex >= 0 &&
+    statements.slice(childIndex + 1).some((statement) => hasJavaScriptProcessExit(statement))
+  )
 }
 
 function canBypassLaterJavaScriptStatement(statement, { breakBypasses = true } = {}) {
@@ -1830,7 +1854,8 @@ function hasConditionalJavaScriptRegistration(node, ancestors) {
         parent.body === child &&
         !isProvablyNonemptyJavaScriptForOf(parent)) ||
       (parent.type === "CatchClause" && parent.body === child) ||
-      hasPriorAbruptJavaScriptCompletion(parent, child)
+      hasPriorAbruptJavaScriptCompletion(parent, child) ||
+      hasLaterJavaScriptProcessExit(parent, child)
     ) {
       return true
     }
@@ -1851,6 +1876,41 @@ function hasDeferredClassFieldRegistration(node, ancestors) {
   return false
 }
 
+function isJavaScriptIdentifierReference(node, ancestors) {
+  if (node?.type !== "Identifier") return false
+  const parent = ancestors.at(-1)
+  return !(
+    (parent?.type === "MemberExpression" && parent.property === node && parent.computed !== true) ||
+    (parent?.type === "Property" &&
+      parent.key === node &&
+      parent.computed !== true &&
+      parent.shorthand !== true)
+  )
+}
+
+function javaScriptExpressionReferencesIdentifier(expression, identifier) {
+  let referenced = false
+  walkJavaScriptAst(expression, (node, ancestors) => {
+    if (isJavaScriptIdentifierReference(node, ancestors) && node.name === identifier) {
+      referenced = true
+    }
+  })
+  return referenced
+}
+
+function javaScriptExpressionReferencesBinding(expression, bindings, role) {
+  let referenced = false
+  walkJavaScriptAst(expression, (node, ancestors) => {
+    if (
+      isJavaScriptIdentifierReference(node, ancestors) &&
+      bindings.get(node.name, node)?.role === role
+    ) {
+      referenced = true
+    }
+  })
+  return referenced
+}
+
 function hasNodeTestContextDisable(callbackNode) {
   const normalized = normalizeJavaScriptExpression(callbackNode)
   const callback = normalized.expression
@@ -1864,14 +1924,9 @@ function hasNodeTestContextDisable(callbackNode) {
     if (disabled) return
     if (
       node.type === "CallExpression" &&
-      node.arguments?.some((argument) => {
-        const normalizedArgument = normalizeJavaScriptExpression(argument)
-        return (
-          normalizedArgument.ambiguous === false &&
-          normalizedArgument.expression?.type === "Identifier" &&
-          normalizedArgument.expression.name === contextName
-        )
-      })
+      node.arguments?.some((argument) =>
+        javaScriptExpressionReferencesIdentifier(argument, contextName)
+      )
     ) {
       disabled = true
       return
@@ -1882,12 +1937,7 @@ function hasNodeTestContextDisable(callbackNode) {
         : node.type === "AssignmentExpression"
           ? node.right
           : null
-    const normalizedAliasSource = normalizeJavaScriptExpression(aliasSource)
-    if (
-      normalizedAliasSource.ambiguous === false &&
-      normalizedAliasSource.expression?.type === "Identifier" &&
-      normalizedAliasSource.expression.name === contextName
-    ) {
+    if (javaScriptExpressionReferencesIdentifier(aliasSource, contextName)) {
       disabled = true
       return
     }
@@ -1905,27 +1955,47 @@ function hasPlaywrightTestDisable(callbackNode, bindings) {
   const normalized = normalizeJavaScriptExpression(callbackNode)
   const callback = normalized.expression
   if (normalized.ambiguous || !javaScriptFunctionTypes.has(callback?.type)) return false
+  if ((callback.params?.length ?? 0) > 1 && callback.params[1]?.type !== "Identifier") return true
+  const testInfoName = callback.params?.[1]?.name ?? null
 
   let disabled = false
   walkJavaScriptAst(callback.body, (node) => {
     if (disabled) return
+    if (
+      node.type === "CallExpression" &&
+      node.arguments?.some(
+        (argument) =>
+          (testInfoName !== null &&
+            javaScriptExpressionReferencesIdentifier(argument, testInfoName)) ||
+          javaScriptExpressionReferencesBinding(argument, bindings, "playwright-test")
+      )
+    ) {
+      disabled = true
+      return
+    }
     const aliasSource =
       node.type === "VariableDeclarator"
         ? node.init
         : node.type === "AssignmentExpression"
           ? node.right
           : null
-    const normalizedAliasSource = normalizeJavaScriptExpression(aliasSource)
     if (
-      normalizedAliasSource.ambiguous === false &&
-      normalizedAliasSource.expression?.type === "Identifier" &&
-      bindings.get(normalizedAliasSource.expression.name, node)?.role === "playwright-test"
+      javaScriptExpressionReferencesBinding(aliasSource, bindings, "playwright-test") ||
+      (testInfoName !== null && javaScriptExpressionReferencesIdentifier(aliasSource, testInfoName))
     ) {
       disabled = true
       return
     }
     if (node.type !== "MemberExpression") return
     const memberPath = javaScriptMemberPath(node)
+    if (
+      testInfoName !== null &&
+      memberPath.segments[0] === testInfoName &&
+      (memberPath.ambiguous || ["fail", "fixme", "skip"].includes(memberPath.segments[1]))
+    ) {
+      disabled = true
+      return
+    }
     const binding = bindings.get(memberPath.segments[0], node)
     if (
       binding?.role !== "playwright-test" ||
@@ -2122,7 +2192,7 @@ function javaResolvedProofAnnotation(maskedText, context) {
 
 function javaClassRanges(maskedText, targetOffset) {
   const ranges = []
-  const declaration = /\b(?:class|enum|interface|record)\s+([A-Za-z_$][\w$]*)[^;{}]*\{/g
+  const declaration = /\bclass\s+([A-Za-z_$][\w$]*)[^;{}]*\{/g
   for (const match of maskedText.matchAll(declaration)) {
     const open = match.index + match[0].lastIndexOf("{")
     let depth = 1
@@ -2195,6 +2265,36 @@ function hasExecutableProofAnchor(root, proof) {
     }
     const nonExecutableAnnotation =
       /@(?:[A-Za-z_$][\w$]*\.)*(?:(?:Disabled|Enabled)[A-Za-z0-9_$]*|Ignore)\b/
+    const annotationDeclarations = [
+      ...maskedText.matchAll(/@interface\s+([A-Za-z_$][\w$]*)[^;{}]*\{/g)
+    ].map((match) => {
+      const annotationLineIndex = translatedText.slice(0, match.index).split(/\r?\n/).length - 1
+      return {
+        context: declarationContext(maskedLines, annotationLineIndex),
+        name: match[1]
+      }
+    })
+    const composedNonExecutableAnnotations = new Set()
+    let discoveredComposedAnnotation = true
+    while (discoveredComposedAnnotation) {
+      discoveredComposedAnnotation = false
+      for (const declaration of annotationDeclarations) {
+        if (composedNonExecutableAnnotations.has(declaration.name)) continue
+        const composesKnownDisabled = [...composedNonExecutableAnnotations].some((name) =>
+          new RegExp(`@(?:[A-Za-z_$][\\w$]*\\.)*${escapeRegularExpression(name)}\\b`).test(
+            declaration.context
+          )
+        )
+        if (nonExecutableAnnotation.test(declaration.context) || composesKnownDisabled) {
+          composedNonExecutableAnnotations.add(declaration.name)
+          discoveredComposedAnnotation = true
+        }
+      }
+    }
+    const hasComposedNonExecutableAnnotation = (context) =>
+      [...composedNonExecutableAnnotations].some((name) =>
+        new RegExp(`@(?:[A-Za-z_$][\\w$]*\\.)*${escapeRegularExpression(name)}\\b`).test(context)
+      )
     const methodDeclarationContext = declarationContext(maskedLines, translatedLineIndex)
     const proofAnnotation = javaResolvedProofAnnotation(maskedText, methodDeclarationContext)
     const classRanges = javaClassRanges(maskedText, targetOffset)
@@ -2224,7 +2324,10 @@ function hasExecutableProofAnchor(root, proof) {
     const methodModifiersExecutable = !/\b(?:abstract|native|private|static)\b/.test(
       methodDeclarationContext
     )
-    const classModifiersExecutable = classContexts.every((context) => !/\babstract\b/.test(context))
+    const classModifiersExecutable = classContexts.every(
+      (context, index) =>
+        !/\babstract\b/.test(context) && (index === 0 || !/\b(?:private|static)\b/.test(context))
+    )
     return (
       classRanges.length > 0 &&
       javaBraceDepthAt(maskedText, targetOffset) === classRanges.length &&
@@ -2233,6 +2336,8 @@ function hasExecutableProofAnchor(root, proof) {
       proofAnnotation !== null &&
       !nonExecutableAnnotation.test(methodDeclarationContext) &&
       classContexts.every((context) => !nonExecutableAnnotation.test(context)) &&
+      !hasComposedNonExecutableAnnotation(methodDeclarationContext) &&
+      classContexts.every((context) => !hasComposedNonExecutableAnnotation(context)) &&
       classModifiersExecutable &&
       methodModifiersExecutable &&
       signatureExecutable
