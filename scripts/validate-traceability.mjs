@@ -1457,10 +1457,15 @@ function shellScriptOperandIndex(words, shellIndex) {
     if (argument === "--") return index + 1 < words.length ? index + 1 : null
     if (argument === "-" || !argument.startsWith("-")) return index
     if (
-      ["--noexec", "--dump-strings", "--dump-po-strings", "--help", "--version"].includes(
-        argument
-      ) ||
-      ["--noexec=", "--dump-strings=", "--dump-po-strings="].some((prefix) =>
+      [
+        "--noexec",
+        "--interactive",
+        "--dump-strings",
+        "--dump-po-strings",
+        "--help",
+        "--version"
+      ].includes(argument) ||
+      ["--noexec=", "--interactive=", "--dump-strings=", "--dump-po-strings="].some((prefix) =>
         argument.startsWith(prefix)
       )
     ) {
@@ -1477,7 +1482,7 @@ function shellScriptOperandIndex(words, shellIndex) {
       index += 1
       continue
     }
-    if (/^-[^-]*[cDns]/.test(argument)) return null
+    if (/^-[^-]*[cDins]/.test(argument)) return null
     const optionIndex = argument.indexOf("o", 1)
     if (optionIndex !== -1) {
       const inlineOption = argument.slice(optionIndex + 1)
@@ -1518,11 +1523,20 @@ function shellRunStepExecutesProof(script, relativePath) {
   return false
 }
 
+function shellStartupEnvironmentName(name) {
+  return ["BASH_ENV", "ENV"].includes(name) || /^PYTHON[A-Z0-9_]*$/.test(name)
+}
+
+function shellStartupEnvironmentAssignment(word) {
+  const name = word?.match(/^([A-Za-z_][A-Za-z0-9_]*)(?:=|<<)/)?.[1]
+  return name !== undefined && shellStartupEnvironmentName(name)
+}
+
 function shellRunStepHasStartupFileEnvironment(script) {
   return shellCommandSegments(script).some((words) => {
     let index = 0
     while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[index] ?? "")) {
-      if (/^(?:BASH_ENV|ENV)=/.test(words[index])) return true
+      if (shellStartupEnvironmentAssignment(words[index])) return true
       index += 1
     }
     while (["builtin", "command"].includes(words[index])) {
@@ -1530,14 +1544,14 @@ function shellRunStepHasStartupFileEnvironment(script) {
       while ((words[index] ?? "").startsWith("-")) index += 1
     }
     if (!["declare", "export", "readonly", "typeset"].includes(words[index])) return false
-    return words.slice(index + 1).some((word) => /^(?:BASH_ENV|ENV)=/.test(word))
+    return words.slice(index + 1).some(shellStartupEnvironmentAssignment)
   })
 }
 
 function shellRunStepWritesStartupFileEnvironment(script) {
   return shellCommandSegments(script).some(
     (words) =>
-      words.some((word) => /^(?:BASH_ENV|ENV)(?:=|<<)/.test(word)) &&
+      words.some(shellStartupEnvironmentAssignment) &&
       words.some((word) => /(?:^|[^A-Za-z0-9_])GITHUB_ENV(?:$|[^A-Za-z0-9_])/.test(word))
   )
 }
@@ -1641,7 +1655,7 @@ function ciWorkflowExecutableRunSteps(workflowText) {
       environment !== null &&
       typeof environment === "object" &&
       !Array.isArray(environment) &&
-      ["BASH_ENV", "ENV"].some((name) => Object.hasOwn(environment, name))
+      Object.keys(environment).some(shellStartupEnvironmentName)
     if (hasStartupFileEnvironment(workflow.env)) return []
     const reachability = new Map()
     const visiting = new Set()
@@ -2657,6 +2671,7 @@ function isProvablyNonemptyJavaScriptForOf(statement) {
 }
 
 const javaScriptGlobalObjectNames = new Set(["global", "globalThis"])
+const javaScriptProcessTerminationMembers = new Set(["exit", "reallyExit"])
 
 function javaScriptProcessObjectPathIndex(memberPath, processObjectNames) {
   if (processObjectNames.has(memberPath.segments[0])) return 0
@@ -2677,7 +2692,8 @@ function javaScriptMemberPathInvokesProcessExit(memberPath, processObjectNames) 
   const processIndex = javaScriptProcessObjectPathIndex(memberPath, processObjectNames)
   return (
     processIndex !== -1 &&
-    (memberPath.ambiguous || memberPath.segments[processIndex + 1] === "exit")
+    (memberPath.ambiguous ||
+      javaScriptProcessTerminationMembers.has(memberPath.segments[processIndex + 1]))
   )
 }
 
@@ -2734,7 +2750,7 @@ function hasJavaScriptProcessExit(
         if (
           reflectedProperty.ambiguous ||
           reflectedProperty.expression?.type !== "Literal" ||
-          reflectedProperty.expression.value === "exit"
+          javaScriptProcessTerminationMembers.has(reflectedProperty.expression.value)
         ) {
           exits = true
           return
@@ -2799,7 +2815,7 @@ function javaScriptProcessExitTerminatorNames(expression) {
         continue
       }
       const key = staticJavaScriptObjectPropertyKey(property)
-      if (!key.known || key.value !== "exit") continue
+      if (!key.known || !javaScriptProcessTerminationMembers.has(key.value)) continue
       const names = new Set()
       collectJavaScriptAssignedBindings(property.value, names)
       for (const name of names) terminatorNames.add(name)
@@ -2814,7 +2830,10 @@ function javaScriptProcessExitTerminatorNames(expression) {
       for (const specifier of node.specifiers ?? []) {
         if (specifier.type === "ImportSpecifier") {
           const importedName = specifier.imported?.name ?? specifier.imported?.value
-          if (importedName === "exit" && specifier.local?.type === "Identifier") {
+          if (
+            javaScriptProcessTerminationMembers.has(importedName) &&
+            specifier.local?.type === "Identifier"
+          ) {
             terminatorNames.add(specifier.local.name)
           } else if (importedName === "default" && specifier.local?.type === "Identifier") {
             processObjectNames.add(specifier.local.name)
@@ -2952,7 +2971,7 @@ function javaScriptProcessExitTerminatorNames(expression) {
           const alias = property?.value
           if (
             key.known &&
-            key.value === "exit" &&
+            javaScriptProcessTerminationMembers.has(key.value) &&
             alias?.type === "Identifier" &&
             !terminatorNames.has(alias.name)
           ) {
@@ -4548,10 +4567,12 @@ function shellPythonHereDocumentContainsLine(text, targetLineIndex) {
       }
       if (delimiter === null) continue
       let commandIndex = 0
+      let hasStartupEnvironment = false
       while (
         commandIndex < delimiterIndex &&
         /^[A-Za-z_][A-Za-z0-9_]*=/.test(words[commandIndex] ?? "")
       ) {
+        hasStartupEnvironment ||= shellStartupEnvironmentAssignment(words[commandIndex])
         commandIndex += 1
       }
       while (["builtin", "command"].includes(words[commandIndex])) commandIndex += 1
@@ -4564,13 +4585,16 @@ function shellPythonHereDocumentContainsLine(text, targetLineIndex) {
           commandIndex < delimiterIndex &&
           /^[A-Za-z_][A-Za-z0-9_]*=/.test(words[commandIndex] ?? "")
         ) {
+          hasStartupEnvironment ||= shellStartupEnvironmentAssignment(words[commandIndex])
           commandIndex += 1
         }
       }
       const invokesPython = /(?:^|\/)python(?:3(?:\.\d+)*)?$/.test(words[commandIndex] ?? "")
       const pythonArguments = words.slice(commandIndex + 1, delimiterIndex)
       const readsHereDocument = pythonArguments.length === 0 || pythonArguments[0] === "-"
-      if (invokesPython && readsHereDocument) activeHereDocument = { delimiter, stripTabs }
+      if (invokesPython && readsHereDocument && !hasStartupEnvironment) {
+        activeHereDocument = { delimiter, stripTabs }
+      }
     }
   }
   return false
