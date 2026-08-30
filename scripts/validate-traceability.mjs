@@ -751,6 +751,15 @@ function javaScriptRunnerCommandSelects(command, packageRelativePath) {
   if (normalizedTokens[0] !== "node" || !normalizedTokens.includes("--test")) return false
   if (
     normalizedTokens.some((token) =>
+      /^(?:-c|--check|-e|--eval(?:=|$)|-h|--help|-p|--print(?:=|$)|-v|--version|--v8-options|--completion-bash)$/.test(
+        token
+      )
+    )
+  ) {
+    return false
+  }
+  if (
+    normalizedTokens.some((token) =>
       /^--test-(?:name-pattern|only|rerun-failures|shard|skip-pattern)(?:=|$)/.test(token)
     )
   ) {
@@ -1207,6 +1216,10 @@ function gradleTestSelection(buildText) {
         index += 3
         continue
       }
+      if (["onlyIf", "setOnlyIf"].includes(method.value)) {
+        invalid = true
+        continue
+      }
       if (
         method.type !== "identifier" ||
         !["exclude", "include"].includes(method.value) ||
@@ -1572,6 +1585,7 @@ function ciWorkflowExecutableRunSteps(workflowText) {
     }
     const jobs = workflow.jobs ?? {}
     if (jobs === null || typeof jobs !== "object" || Array.isArray(jobs)) return []
+    const workflowShell = workflow.defaults?.run?.shell
     const reachability = new Map()
     const visiting = new Set()
     const isUnconditionallyReachable = (jobName) => {
@@ -1615,13 +1629,41 @@ function ciWorkflowExecutableRunSteps(workflowText) {
             typeof step === "object" &&
             step.if === undefined &&
             (step["continue-on-error"] === undefined || step["continue-on-error"] === false) &&
-            typeof step.run === "string"
+            typeof step.run === "string" &&
+            githubActionsShellPropagatesFailure(
+              step.shell ?? job.defaults?.run?.shell ?? workflowShell
+            )
         )
         .map((step) => step.run)
     })
   } catch {
     return []
   }
+}
+
+function githubActionsShellPropagatesFailure(shell) {
+  if (shell === undefined) return true
+  if (typeof shell !== "string") return false
+  const words = shell.match(/"[^"]*"|'[^']*'|[^\s]+/g) ?? []
+  const normalizedWords = words.map((word) => word.replace(/^(?:"([^"]*)"|'([^']*)')$/, "$1$2"))
+  const executable = path.posix.basename(normalizedWords[0] ?? "")
+  if (!["bash", "sh"].includes(executable)) return false
+  if (normalizedWords.length === 1) return true
+  const placeholderIndex = normalizedWords.indexOf("{0}")
+  const shellArguments = normalizedWords.slice(
+    1,
+    placeholderIndex === -1 ? normalizedWords.length : placeholderIndex
+  )
+  const optionBoundary = shellArguments.indexOf("--")
+  const shellOptions = shellArguments.slice(
+    0,
+    optionBoundary === -1 ? shellArguments.length : optionBoundary
+  )
+  if (shellOptions.some((word) => ["-c", "--command"].includes(word))) return false
+  return shellOptions.some((word, index, arguments_) => {
+    if (/^-[A-Za-z]*e[A-Za-z]*$/.test(word)) return true
+    return word === "-o" && arguments_[index + 1] === "errexit"
+  })
 }
 
 function ciWorkflowSelectsShellProof(root, relativePath) {
@@ -2415,6 +2457,76 @@ function hasPotentialNodeTestHookRegistration(ancestors, bindings, playwrightDis
   return true
 }
 
+function hasEscapedNodeTestLifecycleHook(ast, bindings) {
+  let escaped = false
+  walkJavaScriptAst(ast, (node, ancestors) => {
+    if (escaped) return
+    if (node.type === "MemberExpression") {
+      const memberPath = javaScriptMemberPath(node)
+      const binding = bindings.get(memberPath.segments[0], node)
+      const lifecycleMember =
+        !memberPath.ambiguous &&
+        binding?.role === "node-test-namespace" &&
+        memberPath.segments.length === 2 &&
+        nodeTestLifecycleHookNames.has(memberPath.segments[1])
+      const parent = ancestors.at(-1)
+      if (lifecycleMember && !(parent?.type === "CallExpression" && parent.callee === node)) {
+        escaped = true
+      }
+      return
+    }
+    if (node.type === "Identifier" && bindings.get(node.name, node)?.role === "node-hook") {
+      const parent = ancestors.at(-1)
+      const declarationIdentifier = parent?.type === "ImportSpecifier"
+      const staticPropertyKey =
+        parent?.type === "Property" &&
+        parent.key === node &&
+        parent.computed !== true &&
+        parent.shorthand !== true
+      if (
+        !declarationIdentifier &&
+        !staticPropertyKey &&
+        !(parent?.type === "CallExpression" && parent.callee === node)
+      ) {
+        escaped = true
+      }
+      return
+    }
+    if (!["AssignmentExpression", "VariableDeclarator"].includes(node.type)) return
+    const source = normalizeJavaScriptExpression(
+      node.type === "VariableDeclarator" ? node.init : node.right
+    ).expression
+    const target = node.type === "VariableDeclarator" ? node.id : node.left
+    const sourcePath = javaScriptMemberPath(source)
+    if (sourcePath.ambiguous) return
+    const sourceBinding = bindings.get(sourcePath.segments[0], node)
+    const aliasesDirectHook =
+      (sourceBinding?.role === "node-hook" && sourcePath.segments.length === 1) ||
+      (sourceBinding?.role === "node-test-namespace" &&
+        sourcePath.segments.length === 2 &&
+        nodeTestLifecycleHookNames.has(sourcePath.segments[1]))
+    if (aliasesDirectHook) {
+      const names = new Set()
+      collectJavaScriptPatternBindings(target, names)
+      escaped = names.size > 0
+      return
+    }
+    if (
+      sourceBinding?.role !== "node-test-namespace" ||
+      sourcePath.segments.length !== 1 ||
+      target?.type !== "ObjectPattern"
+    ) {
+      return
+    }
+    escaped = (target.properties ?? []).some((property) => {
+      if (property?.type === "RestElement") return true
+      const key = staticJavaScriptObjectPropertyKey(property)
+      return !key.known || nodeTestLifecycleHookNames.has(key.value)
+    })
+  })
+  return escaped
+}
+
 function hasTerminatingNodeTestHook(ast, bindings, playwrightDisableNames) {
   const processExitTerminators = javaScriptProcessExitTerminatorNames(ast)
   let terminating = false
@@ -2806,6 +2918,39 @@ function hasInvokedJavaScriptProcessExit(expression, terminatorNames = new Set()
     }
   })
   return invokedExit
+}
+
+function hasScheduledJavaScriptProcessExit(ast, bindings, playwrightDisableNames) {
+  const terminatorNames = javaScriptProcessExitTerminatorNames(ast)
+  let scheduledExit = false
+  walkJavaScriptAst(ast, (node, ancestors) => {
+    if (scheduledExit || node.type !== "CallExpression" || node.optional === true) return
+    const callee = javaScriptMemberPath(node.callee)
+    if (callee.ambiguous) return
+    const schedulesCallback =
+      (callee.segments.length === 1 &&
+        ["queueMicrotask", "setImmediate", "setInterval", "setTimeout"].includes(
+          callee.segments[0]
+        )) ||
+      (callee.segments.length === 2 &&
+        callee.segments[0] === "process" &&
+        callee.segments[1] === "nextTick")
+    if (
+      !schedulesCallback ||
+      !hasPotentialNodeTestHookRegistration(ancestors, bindings, playwrightDisableNames)
+    ) {
+      return
+    }
+    const callback = normalizeJavaScriptExpression(node.arguments?.[0]).expression
+    if (callback?.type === "Identifier" && terminatorNames.has(callback.name)) {
+      scheduledExit = true
+      return
+    }
+    scheduledExit =
+      hasJavaScriptProcessExit(callback, { includeFunctions: true }) ||
+      javaScriptCallsTerminator(callback, terminatorNames, { includeFunctions: true })
+  })
+  return scheduledExit
 }
 
 function hasLaterJavaScriptProcessExit(parent, child) {
@@ -3210,7 +3355,13 @@ function hasExecutableJavaScriptProofAnchor(text, selector, proofPath) {
   try {
     bindings = attributableJavaScriptBindings(ast)
     playwrightDisableNames = javaScriptPlaywrightDisableNames(ast, bindings)
-    if (hasTerminatingNodeTestHook(ast, bindings, playwrightDisableNames)) return false
+    if (
+      hasEscapedNodeTestLifecycleHook(ast, bindings) ||
+      hasTerminatingNodeTestHook(ast, bindings, playwrightDisableNames) ||
+      hasScheduledJavaScriptProcessExit(ast, bindings, playwrightDisableNames)
+    ) {
+      return false
+    }
     walkJavaScriptAst(ast, (node, ancestors) => {
       if (
         javaScriptProofCall(
@@ -3700,6 +3851,73 @@ function shellStatusIsNonzero(rawStatus) {
   return Number.isSafeInteger(status) && ((status % 256) + 256) % 256 !== 0
 }
 
+function shellFunctionDefinitions(text) {
+  const definitions = []
+  const pattern = /(?:^|[;\n])\s*(?:function\s+)?([A-Za-z_][A-Za-z0-9_]*)\s*(?:\(\s*\))?\s*\{/g
+  for (const match of text.matchAll(pattern)) {
+    const open = match.index + match[0].lastIndexOf("{")
+    let close = -1
+    let depth = 1
+    let escaped = false
+    let quote = null
+    let comment = false
+    for (let index = open + 1; index < text.length; index += 1) {
+      const character = text[index]
+      if (comment) {
+        if (character === "\n") comment = false
+        continue
+      }
+      if (escaped) {
+        escaped = false
+        continue
+      }
+      if (quote === "'") {
+        if (character === "'") quote = null
+        continue
+      }
+      if (quote === '"') {
+        if (character === '"') quote = null
+        else if (character === "\\") escaped = true
+        continue
+      }
+      if (character === "\\") {
+        escaped = true
+      } else if (["'", '"'].includes(character)) {
+        quote = character
+      } else if (character === "#" && (index === 0 || /[\s;]/.test(text[index - 1]))) {
+        comment = true
+      } else if (character === "{") {
+        depth += 1
+      } else if (character === "}") {
+        depth -= 1
+        if (depth === 0) {
+          close = index
+          break
+        }
+      }
+    }
+    if (close !== -1) {
+      definitions.push({
+        body: text.slice(open + 1, close),
+        close,
+        name: match[1],
+        open
+      })
+    }
+  }
+  return definitions
+}
+
+function shellSelectorInsideFunctionDefinition(text, selector) {
+  const targetOffset = text.indexOf(selector)
+  return (
+    targetOffset !== -1 &&
+    shellFunctionDefinitions(text).some(
+      ({ close, open }) => targetOffset > open && targetOffset < close
+    )
+  )
+}
+
 function shellFailureFunctions(text) {
   const exiting = new Set()
   const returning = new Set()
@@ -3869,20 +4087,38 @@ function shellPythonHereDocumentContainsLine(text, targetLineIndex) {
         }
       }
       const invokesPython = /(?:^|\/)python(?:3(?:\.\d+)*)?$/.test(words[commandIndex] ?? "")
-      if (invokesPython) activeHereDocument = { delimiter, stripTabs }
+      const pythonArguments = words.slice(commandIndex + 1, delimiterIndex)
+      const readsHereDocument = pythonArguments.length === 0 || pythonArguments[0] === "-"
+      if (invokesPython && readsHereDocument) activeHereDocument = { delimiter, stripTabs }
     }
   }
   return false
 }
 
-function shellExitTrapActionOverridesStatus(action) {
+function shellExitTrapActionOverridesStatus(action, sourceText = action, resolving = new Set()) {
   const commands = shellCommandSegments(action)
   for (let commandIndex = 0; commandIndex < commands.length; commandIndex += 1) {
     const words = commands[commandIndex]
     let index = 0
     while (/^[A-Za-z_][A-Za-z0-9_]*=/.test(words[index] ?? "")) index += 1
     while (["builtin", "command"].includes(words[index])) index += 1
-    if (words[index] !== "exit") continue
+    const command = words[index]
+    if ([".", "eval", "source"].includes(command) || /[$`]/.test(command ?? "")) return true
+    if (command !== "exit") {
+      const definitions = shellFunctionDefinitions(sourceText).filter(
+        ({ name }) => name === command
+      )
+      if (definitions.length > 1) return true
+      if (definitions.length === 1) {
+        if (resolving.has(command)) return true
+        const nestedResolving = new Set(resolving)
+        nestedResolving.add(command)
+        if (shellExitTrapActionOverridesStatus(definitions[0].body, sourceText, nestedResolving)) {
+          return true
+        }
+      }
+      continue
+    }
     const status = words[index + 1]
     if (status === undefined || status === "$?" || status === "${?}") {
       return commandIndex !== 0
@@ -3906,7 +4142,7 @@ function shellHasStatusOverridingExitTrapBeforeLine(text, targetLineIndex) {
       const signals = words.slice(index + 2)
       if (!signals.some((signal) => ["0", "EXIT"].includes(signal))) continue
       overridesStatus =
-        ![undefined, "", "-"].includes(action) && shellExitTrapActionOverridesStatus(action)
+        ![undefined, "", "-"].includes(action) && shellExitTrapActionOverridesStatus(action, text)
     }
   }
   return overridesStatus
@@ -3920,6 +4156,7 @@ function shellLineHasExecutableFailureAnchor(text, line, selector, lineIndex) {
     words.some((word) => word.includes(selector))
   )
   if (!selectorIsExecutable) return false
+  if (shellSelectorInsideFunctionDefinition(text, selector)) return false
   if (shellHasStatusOverridingExitTrapBeforeLine(text, lineIndex)) return false
 
   const failureFunctions = shellFailureFunctions(text)

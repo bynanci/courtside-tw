@@ -5683,6 +5683,268 @@ for (const [trapKind, action, expectedStatus] of [
   })
 }
 
+test("final-head review regression: an escaped Node lifecycle alias cannot authorize proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "tests/escaped-lifecycle-alias.test.js"
+    contract.requirements[0].proofs[0].path = proofPath
+    files[proofPath] =
+      'import test, * as nodeTest from "node:test"\n' +
+      "const { before: prepare } = nodeTest\n" +
+      "prepare(() => process.exit(0))\n" +
+      'test("fixture-proof", () => { throw new Error("unreached proof") })\n'
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("final-head review regression: Gradle onlyIf suppression cannot authorize proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+    contract.requirements[0].proofs[0].path = proofPath
+    contract.requirements[0].proofs[0].selector = "fixtureProof"
+    files[proofPath] =
+      "package example;\n" +
+      "import org.junit.jupiter.api.Test;\n" +
+      "class ExampleTests {\n  @Test\n  void fixtureProof() {}\n}\n"
+    addGradleProofRunnerFixture(files)
+    files["apps/api/build.gradle.kts"] += "tasks.test { onlyIf { false } }\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("final-head review regression: a Python early-exit option cannot authorize a heredoc", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] =
+      "set -e\npython3 --version <<'PY'\nraise AssertionError(\"fixture-proof\")\nPY\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("final-head review regression: an EXIT-trap helper that exits zero cannot authorize proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] =
+      "cleanup() { exit 0; }\ntrap cleanup EXIT\nfalse fixture-proof\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("final-head review regression: a Node early-exit runner option cannot select proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "tests/fixture-proof.test.js"
+    contract.requirements[0].proofs[0].path = proofPath
+    files[proofPath] = 'import test from "node:test"\ntest("fixture-proof", () => {})\n'
+    files["package.json"] = JSON.stringify({
+      private: true,
+      scripts: { test: "node --version --test tests/fixture-proof.test.js" }
+    })
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("final-head review regression: a workflow shell without errexit cannot authorize proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] = "false fixture-proof\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n" +
+      "  verify:\n" +
+      "    steps:\n" +
+      "      - shell: bash {0}\n" +
+      "        run: bash scripts/test/wired-proof.sh; true\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("final-head review regression: an anchor in an uncalled shell function cannot authorize proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] = "set -e\nproof() {\n  false fixture-proof\n}\ntrue\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("final-head review regression: a scheduled Node exit cannot authorize proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "tests/scheduled-exit.test.js"
+    contract.requirements[0].proofs[0].path = proofPath
+    files[proofPath] =
+      'import test from "node:test"\n' +
+      'test("fixture-proof", () => { throw new Error("unreached proof") })\n' +
+      "queueMicrotask(() => process.exit(0))\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("final-head adjacent safety: a Node lifecycle member alias fails closed", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "tests/escaped-lifecycle-member.test.js"
+    contract.requirements[0].proofs[0].path = proofPath
+    files[proofPath] =
+      'import test, * as nodeTest from "node:test"\n' +
+      "const prepare = nodeTest.before\n" +
+      "prepare(() => process.exit(0))\n" +
+      'test("fixture-proof", () => {})\n'
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("final-head adjacent safety: Gradle setOnlyIf suppression cannot authorize proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+    contract.requirements[0].proofs[0].path = proofPath
+    contract.requirements[0].proofs[0].selector = "fixtureProof"
+    files[proofPath] =
+      "package example;\n" +
+      "import org.junit.jupiter.api.Test;\n" +
+      "class ExampleTests {\n  @Test\n  void fixtureProof() {}\n}\n"
+    addGradleProofRunnerFixture(files)
+    files["apps/api/build.gradle.kts"] += "tasks.test { setOnlyIf({ false }) }\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("final-head adjacent safety: Python -V cannot authorize a heredoc", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] =
+      "set -e\npython3 -V <<'PY'\nraise AssertionError(\"fixture-proof\")\nPY\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("final-head adjacent safety: explicit Python stdin with arguments remains proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] =
+      "set -e\npython3 - input.json <<'PY'\nraise AssertionError(\"fixture-proof\")\nPY\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+test("final-head adjacent safety: a transitive zero-status EXIT helper cannot authorize proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] =
+      "finish() { exit 0; }\ncleanup() { finish; }\ntrap cleanup EXIT\nfalse fixture-proof\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("final-head adjacent safety: a nonzero EXIT helper preserves proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] =
+      "cleanup() { exit 7; }\ntrap cleanup EXIT\nfalse fixture-proof\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+test("final-head adjacent safety: Node --help cannot select proof", () => {
+  const root = makeFixture(({ files }) => {
+    files["package.json"] = JSON.stringify({
+      private: true,
+      scripts: { test: "node --help --test tests/fixture-proof.test.js" }
+    })
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("final-head adjacent safety: an unsafe workflow default shell cannot authorize proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] = "false fixture-proof\n"
+    files[".github/workflows/ci.yml"] =
+      "defaults:\n" +
+      "  run:\n" +
+      "    shell: bash {0}\n" +
+      "jobs:\n" +
+      "  verify:\n" +
+      "    steps:\n" +
+      "      - run: bash scripts/test/wired-proof.sh; true\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("final-head adjacent safety: an explicit errexit workflow shell remains proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] = "false fixture-proof\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n" +
+      "  verify:\n" +
+      "    steps:\n" +
+      "      - shell: bash -e {0}\n" +
+      "        run: bash scripts/test/wired-proof.sh; true\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+test("final-head adjacent safety: a one-line uncalled shell function cannot authorize proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] = "set -e; proof() { false fixture-proof; }; true\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("final-head adjacent safety: process.nextTick cannot schedule a terminating helper", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "tests/next-tick-exit.test.js"
+    contract.requirements[0].proofs[0].path = proofPath
+    files[proofPath] =
+      'import test from "node:test"\n' +
+      "function terminate() { process.exit(0) }\n" +
+      'test("fixture-proof", () => {})\n' +
+      "process.nextTick(terminate)\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("final-head adjacent safety: setTimeout cannot schedule a terminating callback", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "tests/timer-exit.test.js"
+    contract.requirements[0].proofs[0].path = proofPath
+    files[proofPath] =
+      'import test from "node:test"\n' +
+      'test("fixture-proof", () => {})\n' +
+      "setTimeout(() => process.exit(0), 0)\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("final-head adjacent safety: a harmless microtask remains proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "tests/harmless-microtask.test.js"
+    contract.requirements[0].proofs[0].path = proofPath
+    files[proofPath] =
+      'import test from "node:test"\n' +
+      "queueMicrotask(() => {})\n" +
+      'test("fixture-proof", () => {})\n'
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
 test("ready-for-review remains an explicit release-owner gate", () => {
   const graph = fs.readFileSync(path.join(repositoryRoot, ".loop/t085-traceability.yaml"), "utf8")
   const traceability = fs.readFileSync(
