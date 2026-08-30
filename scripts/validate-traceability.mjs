@@ -1227,6 +1227,18 @@ function gradleTestSelection(buildText) {
         index += 3
         continue
       }
+      if (method.value === "ignoreFailures" && block[index + 1]?.value === "=") {
+        if (block[index + 2]?.value !== "false") invalid = true
+        index += 2
+        continue
+      }
+      if (method.value === "setIgnoreFailures" && block[index + 1]?.value === "(") {
+        if (block[index + 2]?.value !== "false" || block[index + 3]?.value !== ")") {
+          invalid = true
+        }
+        index += 3
+        continue
+      }
       if (["onlyIf", "setOnlyIf"].includes(method.value)) {
         invalid = true
         continue
@@ -1740,6 +1752,15 @@ function githubActionsShellPropagatesFailure(shell) {
     optionBoundary === -1 ? shellArguments.length : optionBoundary
   )
   if (shellOptions.some((word) => ["-c", "--command"].includes(word))) return false
+  if (
+    shellOptions.some((word, index, arguments_) => {
+      if (word === "--noexec" || /^-[A-Za-z]*n[A-Za-z]*$/.test(word)) return true
+      if (word === "--option=noexec") return true
+      return ["-o", "--option"].includes(word) && arguments_[index + 1] === "noexec"
+    })
+  ) {
+    return false
+  }
   return shellOptions.some((word, index, arguments_) => {
     if (/^-[A-Za-z]*e[A-Za-z]*$/.test(word)) return true
     return word === "-o" && arguments_[index + 1] === "errexit"
@@ -3210,13 +3231,7 @@ function hasScheduledJavaScriptProcessExit(ast, bindings, playwrightDisableNames
     const callee = javaScriptMemberPath(node.callee)
     const schedulesCallback =
       schedulers.pathIsScheduler(callee) || schedulers.pathIsPromiseReaction(callee)
-    if (
-      !schedulesCallback ||
-      !hasPotentialJavaScriptHookRegistration(ancestors, bindings, playwrightDisableNames)
-    ) {
-      return
-    }
-    scheduledExit = (node.arguments ?? []).some((argument) => {
+    const hasTerminatingCallback = (node.arguments ?? []).some((argument) => {
       const callback = normalizeJavaScriptExpression(argument).expression
       return (
         (callback?.type === "Identifier" && terminatorNames.has(callback.name)) ||
@@ -3224,6 +3239,13 @@ function hasScheduledJavaScriptProcessExit(ast, bindings, playwrightDisableNames
         javaScriptCallsTerminator(callback, terminatorNames, { includeFunctions: true })
       )
     })
+    if (
+      (!schedulesCallback && !hasTerminatingCallback) ||
+      !hasPotentialJavaScriptHookRegistration(ancestors, bindings, playwrightDisableNames)
+    ) {
+      return
+    }
+    scheduledExit = hasTerminatingCallback
   })
   return scheduledExit
 }
@@ -4600,7 +4622,7 @@ function shellPythonHereDocumentContainsLine(text, targetLineIndex) {
   return false
 }
 
-function shellExitTrapActionOverridesStatus(action, sourceText = action, resolving = new Set()) {
+function shellTrapActionOverridesStatus(action, sourceText = action, resolving = new Set()) {
   const commands = shellCommandSegments(action)
   for (let commandIndex = 0; commandIndex < commands.length; commandIndex += 1) {
     const words = commands[commandIndex]
@@ -4618,7 +4640,7 @@ function shellExitTrapActionOverridesStatus(action, sourceText = action, resolvi
         if (resolving.has(command)) return true
         const nestedResolving = new Set(resolving)
         nestedResolving.add(command)
-        if (shellExitTrapActionOverridesStatus(definitions[0].body, sourceText, nestedResolving)) {
+        if (shellTrapActionOverridesStatus(definitions[0].body, sourceText, nestedResolving)) {
           return true
         }
       }
@@ -4634,8 +4656,8 @@ function shellExitTrapActionOverridesStatus(action, sourceText = action, resolvi
   return false
 }
 
-function shellHasStatusOverridingExitTrapBeforeLine(text, targetLineIndex) {
-  let overridesStatus = false
+function shellHasStatusOverridingFailureTrapBeforeLine(text, targetLineIndex) {
+  const overridingSignals = new Set()
   const lines = text.split(/\r?\n/).slice(0, targetLineIndex)
   for (const line of lines) {
     for (const words of shellCommandSegments(line)) {
@@ -4645,18 +4667,90 @@ function shellHasStatusOverridingExitTrapBeforeLine(text, targetLineIndex) {
       if (words[actionIndex] === "--") actionIndex += 1
       const action = words[actionIndex]
       const signals = words.slice(actionIndex + 1)
-      if (!signals.some((signal) => /^0+$/.test(signal) || signal.toUpperCase() === "EXIT")) {
-        continue
+      const failureSignals = new Set()
+      for (const signal of signals) {
+        if (/^0+$/.test(signal) || signal.toUpperCase() === "EXIT") {
+          failureSignals.add("EXIT")
+        } else if (signal.toUpperCase() === "ERR") {
+          failureSignals.add("ERR")
+        }
       }
+      if (failureSignals.size === 0) continue
       if (/^-[lp]+$/.test(action ?? "")) continue
-      overridesStatus =
-        ![undefined, "", "-"].includes(action) && shellExitTrapActionOverridesStatus(action, text)
+      const overridesStatus =
+        ![undefined, "", "-"].includes(action) && shellTrapActionOverridesStatus(action, text)
+      for (const signal of failureSignals) {
+        if (overridesStatus) overridingSignals.add(signal)
+        else overridingSignals.delete(signal)
+      }
     }
   }
-  return overridesStatus
+  return overridingSignals.size > 0
 }
 
-function shellLineHasExecutableFailureAnchor(text, line, selector, lineIndex) {
+function shellSourcedHelperMasksFailure(root, sourcePath, resolving = new Set()) {
+  if (/[$`*?[\]{}()<>]/.test(sourcePath)) return false
+  if (
+    path.isAbsolute(sourcePath) ||
+    sourcePath.includes("\\") ||
+    sourcePath.split("/").includes("..")
+  ) {
+    return true
+  }
+
+  const absoluteRoot = fs.realpathSync(root)
+  const candidate = path.resolve(absoluteRoot, sourcePath)
+  if (
+    !candidate.startsWith(`${absoluteRoot}${path.sep}`) ||
+    !fs.existsSync(candidate) ||
+    !fs.statSync(candidate).isFile()
+  ) {
+    return true
+  }
+  const realCandidate = fs.realpathSync(candidate)
+  if (!realCandidate.startsWith(`${absoluteRoot}${path.sep}`) || resolving.has(realCandidate)) {
+    return true
+  }
+
+  const helperText = fs.readFileSync(realCandidate, "utf8")
+  const nestedResolving = new Set(resolving)
+  nestedResolving.add(realCandidate)
+  let errexitEnabled = true
+  for (const words of shellCommandSegments(helperText)) {
+    errexitEnabled = shellSetNamedOptionState(words, "errexit", errexitEnabled)
+    const index = shellCommandIndexAfterPrefixes(words)
+    const command = words[index]
+    if (["eval", "exec", "exit"].includes(command)) return true
+    if ([".", "source"].includes(command)) {
+      const nestedSourcePath = words[index + 1]
+      if (
+        nestedSourcePath === undefined ||
+        /[$`*?[\]{}()<>]/.test(nestedSourcePath) ||
+        shellSourcedHelperMasksFailure(root, nestedSourcePath, nestedResolving)
+      ) {
+        return true
+      }
+    }
+  }
+  return (
+    !errexitEnabled ||
+    shellHasStatusOverridingFailureTrapBeforeLine(helperText, helperText.split(/\r?\n/).length)
+  )
+}
+
+function shellHasFailureMaskingSourceBeforeLine(root, text, targetLineIndex) {
+  const lines = text.split(/\r?\n/).slice(0, targetLineIndex)
+  return lines.some((line) =>
+    shellCommandSegments(line).some((words) => {
+      const index = shellCommandIndexAfterPrefixes(words)
+      if (![".", "source"].includes(words[index])) return false
+      const sourcePath = words[index + 1]
+      return sourcePath !== undefined && shellSourcedHelperMasksFailure(root, sourcePath)
+    })
+  )
+}
+
+function shellLineHasExecutableFailureAnchor(root, text, line, selector, lineIndex) {
   const segments = shellCommandSegments(line)
   const operators = shellLineControlOperators(line)
   if (operators === null || segments.length !== operators.length + 1) return false
@@ -4667,7 +4761,8 @@ function shellLineHasExecutableFailureAnchor(text, line, selector, lineIndex) {
   if (shellSelectorInsideFunctionDefinition(text, selector)) return false
   if (shellSelectorInsideCompoundCommand(text, selector)) return false
   if (shellSelectorInsideSubstitution(text, selector)) return false
-  if (shellHasStatusOverridingExitTrapBeforeLine(text, lineIndex)) return false
+  if (shellHasStatusOverridingFailureTrapBeforeLine(text, lineIndex)) return false
+  if (shellHasFailureMaskingSourceBeforeLine(root, text, lineIndex)) return false
 
   const failureFunctions = shellFailureFunctions(text)
   const hasPipelineOrBackground = operators.some((operator) => ["|", "&"].includes(operator))
@@ -4817,7 +4912,7 @@ function hasExecutableProofAnchor(root, proof) {
     return hasExecutableJavaScriptProofAnchor(text, proof.selector, proof.path)
   }
   if (proof.path.startsWith("scripts/test/") && proof.path.endsWith(".sh")) {
-    return shellLineHasExecutableFailureAnchor(text, line, proof.selector, lineIndex)
+    return shellLineHasExecutableFailureAnchor(root, text, line, proof.selector, lineIndex)
   }
   if (proof.path.startsWith(".github/workflows/")) {
     return line === proof.selector
