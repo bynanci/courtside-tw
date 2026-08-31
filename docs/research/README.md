@@ -2,8 +2,8 @@
 
 **研究主題**：籃球數位雜誌 × Web3 的使用與商業價值  
 **狀態**：EXPERIMENTAL／尚未取得真實參與者數據  
-**版本**：v0.1.0  
-**As of**：2026-08-09  
+**版本**：v0.1.1<br>
+**As of**：2026-08-27<br>
 **Owner**：Product／Research／Engineering
 
 ## 研究定位
@@ -33,6 +33,7 @@ Web3 只能在前一層價值被證明後出場；它不能成為匿名閱讀、
 | [`001-web3-magazine-user-research-method.md`](./001-web3-magazine-user-research-method.md) | 研究問題、假設、樣本、指標、分析與 Go／Hold／Cancel 判準 | 待執行 |
 | [`002-experiment-protocol.md`](./002-experiment-protocol.md) | P1 prototype、分組、任務腳本、事件契約與研究執行流程 | 待執行 |
 | [`003-source-artifact-index.md`](./003-source-artifact-index.md) | 附件、設計模擬與產品 brief 的來源索引及限制 | 已整理，非實測證據 |
+| [`stage-a-pretest/`](./stage-a-pretest/) | Issue #110 六人 T1/T2 pretest 的 screener／consent placeholders、主持腳本、任務卡、觀察表、分母規則、分析表與決策收據 | Kit ready；尚未招募或執行 |
 | [`assets/`](./assets/) | 原始或整理後的研究輸入素材 | 研究輸入 |
 
 ## 已知、未知與禁止推論

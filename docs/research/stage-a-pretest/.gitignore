@@ -1,0 +1,15 @@
+# Completed human-research records belong in approved restricted storage.
+private/
+working/
+completed/
+*.participant.md
+*.participant.csv
+*.working.csv
+*.private.md
+*.private.json
+*.verbatim.txt
+*.consent.json
+*.screener.csv
+*.screening.csv
+stage-a-analysis.csv
+stage-a-analysis.completed.csv

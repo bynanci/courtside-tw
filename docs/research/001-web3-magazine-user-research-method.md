@@ -1,8 +1,8 @@
 # 籃球數位雜誌 × Web3 實驗性使用者研究方法
 
 **Status**：EXPERIMENTAL／RESEARCH PLAN  
-**Version**：v0.1.0  
-**As of**：2026-08-09  
+**Version**：v0.1.1<br>
+**As of**：2026-08-27<br>
 **研究類型**：混合方法（質性探索 → 隨機原型比較 → 真實使用 pilot）  
 **前置條件**：P1 `Home → Issue → TOC → Article → Closure` vertical slice 可操作
 
@@ -78,10 +78,12 @@ Magazine-first
 
 **目的**：找出資訊架構、文案、操作與研究腳本的致命問題。P0 不作統計推論。
 
-- 招募：深度台籃讀者 2、人一般球迷 2、泛體育讀者 1、Web3 熟悉者 1。
+- 招募：深度台籃讀者 2、一般台籃球迷 2、泛體育讀者 1、Web3 熟悉者 1；segment 必須由 Stage A kit 定義的 study-independent blinded source 取得，不得在 T2 前用直接問題提示 domain／classification。
 - 範圍：只測 `Home → Issue → TOC → Article → Closure`。
+- Variant：六位 retained participants 全部使用同一個 frozen baseline `A`；A／B／C 隨機分組只適用 P2，不適用 P0／Stage A。
 - 不顯示 wallet、token、marketplace；不先告知「這是 Web3 產品」。
-- 通過條件：能完成任務、問題可被觀察、研究員能記錄 evidence；不以 6 人百分比宣稱市場結論。
+- 通過條件：能完成任務、問題可被觀察、研究員能記錄 evidence，並套用 issue #110 的 bounded diagnostic progression gates：T1 `6/6`、T1 median activations `<=3`、T2 `>=5/6`。這些整數門檻只決定本輪 pretest `GO/HOLD`，不是統計推論、P1 acceptance 或市場結論。
+- 規則優先序：issue #110 Stage A 執行時，以 [`stage-a-pretest/05-denominator-and-decision-rules.md`](./stage-a-pretest/05-denominator-and-decision-rules.md) 的同版本 frozen rule 為準；任何變更都必須另開版本與新 cohort。
 
 ### P1：20 人質性使用研究
 
@@ -118,8 +120,8 @@ Magazine-first
 
 | ID | 任務 | 主要指標 | provisional gate |
 | --- | --- | --- | --- |
-| T1 | 首次訪客找到指定文章 | 成功率、操作次數、迷路點 | P1 目標 ≥90%；P0 僅診斷 |
-| T2 | 閱讀 5 分鐘後描述產品 | Magazine recognition | ≥80% 說是台籃數位雜誌／檔案 |
+| T1 | 首次訪客找到指定文章 | 成功率、操作次數、迷路點 | P1 目標 ≥90%；Stage A 診斷 gate 在 n=6 時為 6/6，median activations ≤3 |
+| T2 | 閱讀 5 分鐘後描述產品 | Magazine recognition | ≥80% 說是台籃數位雜誌／檔案；Stage A 在 n=6 時為 ≥5/6 |
 | T3 | 解讀版本與來源面板 | Provenance comprehension | ≥80% 理解為版本一致，不是內容必真 |
 | T4 | 完讀後領取 Reader Stamp | claim success、完成時間、放棄原因 | Email／OIDC 可完成；不得 wallet-first |
 | T5 | 一週後回訪 Passport | D7 return、故事線找回率 | 方向性目標 ≥50%；需附樣本與 CI |
@@ -132,11 +134,11 @@ Magazine-first
 
 ### 7.1 開場與中性說明
 
-研究員只說：
+研究員只說；Stage A 的逐字腳本與污染規則以 [`stage-a-pretest/02-moderator-script.md`](./stage-a-pretest/02-moderator-script.md) 為準：
 
-> 這是一個台灣籃球數位雜誌原型。請依你平常看內容的方式使用；我們測試的是產品，不是在考你。
+> 這是一個數位內容原型。請依你平常看內容的方式使用；我們測試的是產品，不是在考你。
 
-不要在任務前說「Web3」、「NFT」、「錢包」或預期答案。
+在 T2 第一個自然回答鎖定前，不得說「台灣籃球數位雜誌」、「雜誌」、「期刊」、「檔案」、「新聞」、「會員」、「Web3」、「NFT」、「錢包」或其他分類提示；否則 T2 受到污染。
 
 ### 7.2 固定任務順序
 
@@ -219,6 +221,8 @@ type ResearchEvent = {
 ```
 
 禁止收集或公開：email、姓名、精確閱讀歷史、精確觀看時間、location、IP、device ID、private media、rights contract、storage key 與未經明確 opt-in 的 wallet address。研究資料與產品 credential 資料分離保存。
+
+Issue #110 Stage A 不建立上述逐事件資料列，也不保存 `occurredAt`、`elapsedMs` 或 per-action timestamps。它只在 restricted working record 保存 T1 五秒取整 task duration、activation/wrong-turn／prompt counts、T2 prompt timing band、categorical response-window disposition、consent-covered 的最小逐字 T2 第一回答，以及必要 outcome/coding fields；公開輸出預設只有 withdrawal cutoff 後、通過 privacy review 的 aggregate receipt，且不含逐字回答。任何更細事件追蹤都需要新的 consent／retention／deletion data contract。
 
 ## 10. 分析方法
 

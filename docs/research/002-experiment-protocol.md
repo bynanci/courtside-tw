@@ -1,8 +1,9 @@
 # P1 Prototype 與使用者研究執行協議
 
 **Status**：READY FOR PRETEST，尚未執行  
-**Version**：v0.1.0  
-**Related method**：[`001-web3-magazine-user-research-method.md`](./001-web3-magazine-user-research-method.md)
+**Version**：v0.1.1<br>
+**Related method**：[`001-web3-magazine-user-research-method.md`](./001-web3-magazine-user-research-method.md)<br>
+**Stage A runnable kit**：[`stage-a-pretest/`](./stage-a-pretest/)
 
 ## 1. 執行前置條件
 
@@ -26,6 +27,8 @@ Home → Issue → TOC → Article → Closure
 
 ## 2. 原型分組
 
+Issue #110 Stage A 只使用一個 frozen baseline：六位 retained participants 全部為 Variant `A`。不得在六人內切分 A／B／C，也不得依個別結果換 variant。下列 participant assignment 與 A／B／C 比較規則只適用後續 P2 隨機原型比較；不適用 Stage A。
+
 | Variant | 開啟能力 | 關閉能力 | 主要比較 |
 | --- | --- | --- | --- |
 | A | Magazine、TOC、Article、source、bookmark／resume | Stamp、Passport、wallet delivery | Magazine baseline |
@@ -35,11 +38,13 @@ Home → Issue → TOC → Article → Closure
 分組原則：
 
 - 相同 `issueId`、文章內容、素材、載入條件與研究腳本。
-- 只在 participant assignment 後決定 variant；研究員不能依興趣手動挑組。
+- P2 才在 participant assignment 後依預先登錄的隨機規則決定 variant；研究員不能依興趣手動挑組。
 - 研究員不在前置說明中暴露 variant 名稱或預期結果。
 - C 組拒絕 wallet、錯 chain、provider outage、簽名失敗都必須可回到 P1 閱讀流程。
 
 ## 3. 任務卡
+
+Stage A T1/T2 的逐字提示、timing、assistance 與 coding 以 [`stage-a-pretest/03-t1-t2-task-cards.md`](./stage-a-pretest/03-t1-t2-task-cards.md) 為準；以下為跨階段摘要。
 
 ### Task T1：找到指定文章
 
@@ -76,12 +81,14 @@ Home → Issue → TOC → Article → Closure
 **Prompt**：如果這是正式產品，你會選擇免費閱讀、Supporter 或 Patron Edition 哪一個？若願意，請完成 checkout。  
 **記錄**：offer comprehension、checkout start、payment、refund／cancel intent；不得只記「願意」。
 
-## 4. Moderated session runbook
+## 4. P1+／cross-stage moderated session runbook
+
+本節的開場、追問與結束問題只適用後續 P1+／T3–T7 研究，不得混入 issue #110 Stage A。Stage A 必須逐字使用 [`stage-a-pretest/02-moderator-script.md`](./stage-a-pretest/02-moderator-script.md)，並在 T2 鎖定前後遵守該腳本的 bounded diagnostics 與禁止提示規則。
 
 ### 開場
 
 ```text
-你今天要使用的是一個台灣籃球數位雜誌原型。
+你今天要使用的是一個數位內容原型。
 我們測試產品，不測試你的籃球知識，也沒有標準答案。
 請邊做邊說出你想找什麼；如果卡住，先告訴我你原本期待發生什麼。
 ```
@@ -149,6 +156,8 @@ privacy_concern
 
 `participantKey` 必須是研究專用 pseudonym，不能由 email、姓名或 wallet address 可逆推出。研究 event log 不公開上鏈，也不直接餵給 public credential。
 
+Issue #110 Stage A 不建立這種逐事件 log，也不保存精確 `occurredAt`／`elapsedMs`。Stage A 僅保存 restricted 的 T1 五秒取整 task duration、activation/wrong-turn／prompt counts、T2 prompt timing band、categorical response-window disposition、consent-covered 的最小逐字 T2 第一回答與必要 outcome/coding fields；公開輸出依 kit 的 withdrawal-cutoff aggregate allowlist，且不含逐字回答。
+
 ### Reason code 建議
 
 | Code | 意義 |
@@ -165,7 +174,7 @@ privacy_concern
 
 ## 6. 觀察記錄格式
 
-每位參與者只保留研究必要資料：
+每位參與者只在 approved restricted research store 保留研究必要資料；completed participant row 不得提交到 repository。Issue #110 Stage A 使用 [`stage-a-pretest/04-observation-sheet.template.md`](./stage-a-pretest/04-observation-sheet.template.md)，下列格式只作跨階段摘要：
 
 ```md
 # Participant p_014
@@ -173,7 +182,12 @@ privacy_concern
 - Segment: deep-basketball-reader
 - Variant: B
 - Session: D0 / D7
-- Consent: recorded / not recorded
+- Participation consent verified: true / false
+- Consent version: [private consent version only]
+- Optional-permission version: [private version only]
+- Audio recording: NOT_ASKED / DECLINED / GRANTED / REVOKED
+- Screen recording: NOT_ASKED / DECLINED / GRANTED / REVOKED
+- De-identified report-quote use: NOT_ASKED / DECLINED / GRANTED / REVOKED
 
 ## Task observations
 
