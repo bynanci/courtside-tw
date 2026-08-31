@@ -35,6 +35,7 @@ const featurePath = "specs/001-taiwan-basketball-magazine-ebook"
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const completionReceiptPath = ".loop/evidence/t085-completion-receipt.json"
 const completionReceiptSchema = "courtside-t085-completion-receipt/v2"
+const ownerAuthorizationSchema = "courtside-t085-owner-authorization/v1"
 const fixtureReceiptHead = "1111111111111111111111111111111111111111"
 const fixtureReceiptBase = "2222222222222222222222222222222222222222"
 const fixtureActionsMergeSha = "3333333333333333333333333333333333333333"
@@ -515,6 +516,34 @@ function makeFixturePushActionsContext(root, environmentOverrides = {}) {
   })
 }
 
+function makeOwnerAuthorizationReadback(receipt, overrides = {}) {
+  const authorization = {
+    schema_version: ownerAuthorizationSchema,
+    decision: "ACCEPTED",
+    accepted_by: fixtureReceiptOwner,
+    receipt_base_sha: receipt.authorization_base_sha,
+    traceability_sha256: receipt.authorization_traceability_sha256,
+    scope_boundaries: { ...receipt.scope_boundaries }
+  }
+  return {
+    status: "VERIFIED",
+    source: "github-api",
+    html_url: receipt.authorization_ref,
+    issue_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/145",
+    user_login: fixtureReceiptOwner,
+    author_association: "OWNER",
+    created_at: receipt.recorded_at,
+    updated_at: receipt.recorded_at,
+    body: [
+      "<!-- t085:owner-authorization:start -->",
+      JSON.stringify(authorization),
+      "<!-- t085:owner-authorization:end -->"
+    ].join("\n"),
+    errors: [],
+    ...overrides
+  }
+}
+
 function writeFixturePushExactHead(root) {
   fs.writeFileSync(
     path.join(root, "artifacts/exact-head.json"),
@@ -548,6 +577,7 @@ function runReceiptFixture(fixture, overrides = {}) {
     evaluatedHeadCommittedAt: fixtureReceiptHeadCommittedAt,
     requireExactHeadEvidence: true,
     githubActionsContext: makeFixtureActionsContext(fixture.root),
+    ownerAuthorizationReadback: makeOwnerAuthorizationReadback(fixture.receipt),
     acceptedTraceabilitySha256: fixture.acceptedTraceabilitySha256,
     acceptedPendingTasksSha256: fixture.acceptedPendingTasksSha256,
     acceptedCompletedTasksSha256: fixture.acceptedCompletedTasksSha256,
@@ -1429,6 +1459,77 @@ test("receipt candidate requires a trusted audited-base commit timestamp", () =>
   assert.match(
     report.errors.join("\n"),
     /completion receipt requires a trusted audited change-base commit timestamp/
+  )
+})
+
+test("receipt candidate requires an available GitHub owner-authorization readback", () => {
+  const fixture = makeReceiptFixture()
+  const report = runReceiptFixture(fixture, { ownerAuthorizationReadback: null })
+
+  assert.equal(report.status, "FAIL")
+  assert.match(
+    report.errors.join("\n"),
+    /completion receipt requires a verified GitHub owner-authorization readback/
+  )
+})
+
+test("receipt candidate rejects a referenced comment not authored by the repository owner", () => {
+  const fixture = makeReceiptFixture()
+  const ownerAuthorizationReadback = makeOwnerAuthorizationReadback(fixture.receipt, {
+    user_login: "attacker",
+    author_association: "NONE"
+  })
+  const report = runReceiptFixture(fixture, { ownerAuthorizationReadback })
+
+  assert.equal(report.status, "FAIL")
+  assert.match(
+    report.errors.join("\n"),
+    /completion receipt authorization comment must be authored by the repository owner/
+  )
+})
+
+test("receipt candidate rejects a GitHub comment timestamp that differs from recorded_at", () => {
+  const fixture = makeReceiptFixture()
+  const ownerAuthorizationReadback = makeOwnerAuthorizationReadback(fixture.receipt, {
+    created_at: "2026-08-31T04:50:01Z",
+    updated_at: "2026-08-31T04:50:01Z"
+  })
+  const report = runReceiptFixture(fixture, { ownerAuthorizationReadback })
+
+  assert.equal(report.status, "FAIL")
+  assert.match(
+    report.errors.join("\n"),
+    /completion receipt recorded_at must equal the GitHub authorization comment created_at/
+  )
+})
+
+test("receipt candidate rejects mutable edited authorization evidence", () => {
+  const fixture = makeReceiptFixture()
+  const ownerAuthorizationReadback = makeOwnerAuthorizationReadback(fixture.receipt, {
+    updated_at: "2026-08-31T04:51:00Z"
+  })
+  const report = runReceiptFixture(fixture, { ownerAuthorizationReadback })
+
+  assert.equal(report.status, "FAIL")
+  assert.match(
+    report.errors.join("\n"),
+    /completion receipt authorization comment must be immutable after creation/
+  )
+})
+
+test("receipt candidate rejects authorization body drift from the audited base and hash", () => {
+  const fixture = makeReceiptFixture()
+  const ownerAuthorizationReadback = makeOwnerAuthorizationReadback(fixture.receipt)
+  ownerAuthorizationReadback.body = ownerAuthorizationReadback.body.replace(
+    fixture.receipt.authorization_traceability_sha256,
+    "0".repeat(64)
+  )
+  const report = runReceiptFixture(fixture, { ownerAuthorizationReadback })
+
+  assert.equal(report.status, "FAIL")
+  assert.match(
+    report.errors.join("\n"),
+    /completion receipt authorization body must bind the audited receipt base, traceability hash, and scope boundaries/
   )
 })
 
