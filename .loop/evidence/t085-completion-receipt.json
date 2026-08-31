@@ -1,0 +1,131 @@
+{
+  "schema_version": "courtside-t085-completion-receipt/v2",
+  "task": "T085",
+  "decision": "ACCEPTED",
+  "actor_type": "HUMAN",
+  "accepted_by": "bynanci",
+  "authorization_ref": "https://github.com/bynanci/courtside-tw/issues/145#issuecomment-5477043645",
+  "recorded_at": "2026-08-31T10:29:02Z",
+  "repository": "bynanci/courtside-tw",
+  "issue": "https://github.com/bynanci/courtside-tw/issues/145",
+  "implementation_head_sha": "27b955581a909e292ae4fe6c1fb05de0e94753da",
+  "implementation_merge_sha": "a2491b81066ac225a0b5d2dab93be79fb6dfbe65",
+  "receipt_base_sha": "ea7ce5b51c791df2803aea04e852adc907132700",
+  "authorization_base_sha": "ea7ce5b51c791df2803aea04e852adc907132700",
+  "implementation_scope": {
+    "changed_files": 13,
+    "changed_paths": [
+      ".github/workflows/ci.yml",
+      ".loop/evidence/t085-dispatch.json",
+      ".loop/evidence/t085-local.json",
+      ".loop/evidence/t085-red.json",
+      ".loop/evidence/t085-review.json",
+      ".loop/t085-traceability-ledger.json",
+      ".loop/t085-traceability.yaml",
+      "Makefile",
+      "package.json",
+      "scripts/test/validate-traceability.test.mjs",
+      "scripts/validate-traceability.mjs",
+      "specs/001-taiwan-basketball-magazine-ebook/plan.md",
+      "specs/001-taiwan-basketball-magazine-ebook/traceability.md"
+    ],
+    "required_checks": "14/14"
+  },
+  "traceability_sha256": "204662214eada892332d1ddbeab8d0b8037cfc5477d9152d6fb3a61e56832b79",
+  "authorization_traceability_sha256": "204662214eada892332d1ddbeab8d0b8037cfc5477d9152d6fb3a61e56832b79",
+  "tasks_before_sha256": "23190fbeab15b181800ddb275478f058cc0a0514e581b8f3c2aaeb82c184b1f3",
+  "gates": {
+    "ci": {
+      "result": "PASS",
+      "jobs": "5/5",
+      "run_id": 33226451857,
+      "source_head_sha": "27b955581a909e292ae4fe6c1fb05de0e94753da"
+    },
+    "security": {
+      "result": "PASS",
+      "jobs": "8/8",
+      "run_id": 33226451860,
+      "source_head_sha": "27b955581a909e292ae4fe6c1fb05de0e94753da"
+    },
+    "exact_head_artifacts": {
+      "result": "PASS",
+      "source_head_sha": "27b955581a909e292ae4fe6c1fb05de0e94753da",
+      "expected_source_head": "27b955581a909e292ae4fe6c1fb05de0e94753da",
+      "artifact_id": 9707044002,
+      "github_archive_sha256": "88baa1d7bd1e3ef08193b7d65799484d16363677c7c446001fa531efb6a8706f",
+      "exact_head_sha256": "8126aebe79e1cacbbdcac5136373cc2cfa889b9c09264e1ce75cbf06d506e803",
+      "traceability_report_sha256": "5e6201ee0b646e0d9c619b440cccf0dd6928bede6869032fa81d06d05bd9a440",
+      "run_id": 33226451857,
+      "run_number": 982,
+      "run_attempt": 1
+    },
+    "review_threads": {
+      "unresolved": 0
+    },
+    "mergeability": "PASS",
+    "protected_merge": {
+      "result": "PASS",
+      "expected_head_sha": "27b955581a909e292ae4fe6c1fb05de0e94753da",
+      "merge_commit_sha": "a2491b81066ac225a0b5d2dab93be79fb6dfbe65"
+    }
+  },
+  "deviation_snapshot": {
+    "total": 47,
+    "open": 43,
+    "accepted": 0,
+    "resolved": 4,
+    "open_ids": [
+      "DEV-T085-005",
+      "DEV-T085-006",
+      "DEV-T085-007",
+      "DEV-T085-008",
+      "DEV-T085-009",
+      "DEV-T085-010",
+      "DEV-T085-011",
+      "DEV-T085-012",
+      "DEV-T085-013",
+      "DEV-T085-014",
+      "DEV-T085-015",
+      "DEV-T085-016",
+      "DEV-T085-017",
+      "DEV-T085-018",
+      "DEV-T085-019",
+      "DEV-T085-020",
+      "DEV-T085-021",
+      "DEV-T085-022",
+      "DEV-T085-023",
+      "DEV-T085-024",
+      "DEV-T085-025",
+      "DEV-T085-026",
+      "DEV-T085-027",
+      "DEV-T085-028",
+      "DEV-T085-029",
+      "DEV-T085-030",
+      "DEV-T085-031",
+      "DEV-T085-032",
+      "DEV-T085-033",
+      "DEV-T085-034",
+      "DEV-T085-035",
+      "DEV-T085-036",
+      "DEV-T085-037",
+      "DEV-T085-038",
+      "DEV-T085-039",
+      "DEV-T085-040",
+      "DEV-T085-041",
+      "DEV-T085-042",
+      "DEV-T085-043",
+      "DEV-T085-044",
+      "DEV-T085-045",
+      "DEV-T085-046",
+      "DEV-T085-047"
+    ]
+  },
+  "scope_boundaries": {
+    "t086_dispatched": false,
+    "participant_research_executed": false,
+    "web3_activated": false,
+    "production_activated": false,
+    "provider_configured": false,
+    "secrets_changed": false
+  }
+}
