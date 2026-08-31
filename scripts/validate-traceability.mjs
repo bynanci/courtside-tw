@@ -193,6 +193,13 @@ const receiptSupportChangedPaths = new Set([
   "scripts/test/validate-traceability.test.mjs",
   "scripts/validate-traceability.mjs"
 ])
+const ownerReadbackSupportBaseSha = "483aaffbb884f4d9fbeb92ef6573a6c9111c0e0e"
+const ownerReadbackSupportChangedPathList = Object.freeze([
+  ".github/workflows/ci.yml",
+  "scripts/test/validate-traceability.test.mjs",
+  "scripts/validate-traceability.mjs"
+])
+const ownerReadbackSupportChangedPaths = new Set(ownerReadbackSupportChangedPathList)
 const postT085RemediationChangedPaths = new Set(POST_T085_REMEDIATION_CHANGED_PATHS)
 const expectedDispatch = {
   schema_version: "courtside-t085-dispatch/v1",
@@ -316,6 +323,22 @@ function isExactPostT085RemediationScope({
     Array.isArray(changedPaths) &&
     changedPaths.length === POST_T085_REMEDIATION_CHANGED_PATHS.length &&
     sameValues(changedPaths, POST_T085_REMEDIATION_CHANGED_PATHS)
+  )
+}
+
+function isExactOwnerReadbackSupportScope({
+  state,
+  changeBaseSha,
+  boundedScopeActive,
+  changedPaths
+}) {
+  return (
+    state === t085States.PENDING &&
+    boundedScopeActive === false &&
+    changeBaseSha === ownerReadbackSupportBaseSha &&
+    Array.isArray(changedPaths) &&
+    changedPaths.length === ownerReadbackSupportChangedPathList.length &&
+    sameValues(changedPaths, ownerReadbackSupportChangedPathList)
   )
 }
 
@@ -6089,6 +6112,12 @@ export function validateTraceability({
     boundedScopeActive,
     changedPaths
   })
+  const ownerReadbackSupportScopeActive = isExactOwnerReadbackSupportScope({
+    state,
+    changeBaseSha,
+    boundedScopeActive,
+    changedPaths
+  })
 
   if (!/^[0-9a-f]{40}$/.test(currentHead ?? "")) {
     errors.push("currentHead must be a full lowercase commit SHA")
@@ -6172,9 +6201,11 @@ export function validateTraceability({
   } else if (state === t085States.PENDING && Array.isArray(changedPaths)) {
     const pendingAllowedPaths =
       boundedScopeActive === false
-        ? postT085RemediationScopeActive
-          ? postT085RemediationChangedPaths
-          : receiptSupportChangedPaths
+        ? ownerReadbackSupportScopeActive
+          ? ownerReadbackSupportChangedPaths
+          : postT085RemediationScopeActive
+            ? postT085RemediationChangedPaths
+            : receiptSupportChangedPaths
         : authorizedChangedPaths
     for (const changedPath of changedPaths) {
       if (!pendingAllowedPaths.has(changedPath)) {
@@ -6838,9 +6869,11 @@ export function validateTraceability({
                   (changedPath) =>
                     !(
                       boundedScopeActive === false
-                        ? postT085RemediationScopeActive
-                          ? postT085RemediationChangedPaths
-                          : receiptSupportChangedPaths
+                        ? ownerReadbackSupportScopeActive
+                          ? ownerReadbackSupportChangedPaths
+                          : postT085RemediationScopeActive
+                            ? postT085RemediationChangedPaths
+                            : receiptSupportChangedPaths
                         : authorizedChangedPaths
                     ).has(changedPath)
                 )
@@ -7092,10 +7125,24 @@ export function inspectOwnerAuthorization(authorizationRef, { environment = proc
   }
 }
 
-function inspectOwnerAuthorizationAtRoot(root, { environment = process.env } = {}) {
+export function inspectOwnerAuthorizationForState(
+  root,
+  {
+    changeBaseTasksText = null,
+    environment = process.env,
+    inspect = inspectOwnerAuthorization
+  } = {}
+) {
   try {
+    const tasksText = fs.readFileSync(
+      path.join(root, "specs/001-taiwan-basketball-magazine-ebook/tasks.md"),
+      "utf8"
+    )
+    if (classifyT085State(changeBaseTasksText, tasksText) !== t085States.RECEIPT_CANDIDATE) {
+      return null
+    }
     const receipt = JSON.parse(fs.readFileSync(path.join(root, COMPLETION_RECEIPT_PATH), "utf8"))
-    return inspectOwnerAuthorization(receipt?.authorization_ref, { environment })
+    return inspect(receipt?.authorization_ref, { environment })
   } catch {
     return null
   }
@@ -7217,7 +7264,10 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 
 export function runCli(root = repositoryRoot, { environment = process.env } = {}) {
   const inspection = inspectGit(root, { environment })
-  const ownerAuthorizationReadback = inspectOwnerAuthorizationAtRoot(root, { environment })
+  const ownerAuthorizationReadback = inspectOwnerAuthorizationForState(root, {
+    changeBaseTasksText: inspection.change_base_tasks_text,
+    environment
+  })
   const githubActionsContext = inspectGitHubActionsContext({ environment, gitBinding: inspection })
   const isGitHubActions = environment.GITHUB_ACTIONS === "true"
   const report = validateTraceability({

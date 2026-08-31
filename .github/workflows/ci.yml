@@ -11,6 +11,7 @@ on:
 
 permissions:
   contents: read
+  issues: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
@@ -64,6 +65,8 @@ jobs:
         run: pnpm run contract:openapi
 
       - name: Run repository verification
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -o pipefail
           make verify 2>&1 | tee artifacts/frontend/make-verify.log
