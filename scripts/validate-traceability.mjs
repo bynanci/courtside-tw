@@ -1178,15 +1178,37 @@ function gradleTestSelection(buildText) {
     ["tasks", ".", "named", "(", "test", ")"]
   ]
   for (let index = 0; index < tokens.length; index += 1) {
-    if (
-      tokens[index]?.value !== "val" ||
-      tokens[index + 1]?.type !== "identifier" ||
-      tokens[index + 2]?.value !== "="
-    ) {
-      continue
+    if (tokens[index]?.value !== "val" || tokens[index + 1]?.type !== "identifier") continue
+    let assignmentIndex = index + 2
+    if (tokens[assignmentIndex]?.value === ":") {
+      assignmentIndex += 1
+      let sawTypeName = false
+      let genericDepth = 0
+      for (; assignmentIndex < tokens.length; assignmentIndex += 1) {
+        const token = tokens[assignmentIndex]
+        if (token.value === "=" && genericDepth === 0) break
+        if (token.type === "identifier") {
+          sawTypeName = true
+          continue
+        }
+        if (token.value === "<") {
+          genericDepth += 1
+          continue
+        }
+        if (token.value === ">" && genericDepth > 0) {
+          genericDepth -= 1
+          continue
+        }
+        if (![".", ",", "?", "*"].includes(token.value)) {
+          assignmentIndex = tokens.length
+          break
+        }
+      }
+      if (!sawTypeName || genericDepth !== 0) continue
     }
+    if (tokens[assignmentIndex]?.value !== "=") continue
     const providerPrefix = namedTestProviderPrefixes.find((candidate) =>
-      candidate.every((value, offset) => tokens[index + 3 + offset]?.value === value)
+      candidate.every((value, offset) => tokens[assignmentIndex + 1 + offset]?.value === value)
     )
     if (providerPrefix !== undefined) testProviderAliases.add(tokens[index + 1].value)
   }
@@ -1563,6 +1585,32 @@ function shellApplyStaticAssignment(word, variables) {
   return true
 }
 
+function shellStaticUnset(words, commandIndex) {
+  let functionOnly = false
+  let variableMode = false
+  let optionsActive = true
+  const names = []
+  for (const word of words.slice(commandIndex + 1)) {
+    if (optionsActive && word === "--") {
+      optionsActive = false
+      continue
+    }
+    if (optionsActive && /^-[^-]+$/.test(word)) {
+      for (const option of word.slice(1)) {
+        if (option === "f") functionOnly = true
+        else if (["n", "v"].includes(option)) variableMode = true
+        else return null
+      }
+      continue
+    }
+    optionsActive = false
+    if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(word)) return null
+    names.push(word)
+  }
+  if (functionOnly && variableMode) return null
+  return { names, removesVariables: !functionOnly }
+}
+
 function shellRunStepProofEnvironments(script, relativePath, inheritedEnvironment) {
   if (
     inheritedEnvironment === null ||
@@ -1572,12 +1620,22 @@ function shellRunStepProofEnvironments(script, relativePath, inheritedEnvironmen
     return null
   }
   const expectedCommands = new Set([relativePath, `./${relativePath}`])
-  const persistentEnvironment = new Map(inheritedEnvironment)
+  const persistentVariables = new Map(inheritedEnvironment)
+  const exportedNames = new Set(inheritedEnvironment.keys())
   const proofEnvironments = []
   for (const words of shellCommandSegments(script)) {
     let index = 0
-    const commandEnvironment = new Map(persistentEnvironment)
-    while (shellApplyStaticAssignment(words[index] ?? "", commandEnvironment)) index += 1
+    const commandVariables = new Map(persistentVariables)
+    const commandEnvironment = new Map(
+      [...persistentVariables].filter(([name]) => exportedNames.has(name))
+    )
+    const assignmentNames = []
+    while (shellApplyStaticAssignment(words[index] ?? "", commandVariables)) {
+      const name = words[index].slice(0, words[index].indexOf("="))
+      commandEnvironment.set(name, commandVariables.get(name))
+      assignmentNames.push(name)
+      index += 1
+    }
     while (["builtin", "command"].includes(words[index])) {
       index += 1
       while ((words[index] ?? "").startsWith("-")) {
@@ -1587,21 +1645,48 @@ function shellRunStepProofEnvironments(script, relativePath, inheritedEnvironmen
       }
     }
     if (["export", "readonly"].includes(words[index])) {
+      if (assignmentNames.length > 0) return null
+      const exportsVariables = words[index] === "export"
       index += 1
-      while ((words[index] ?? "").startsWith("-")) index += 1
-      for (; index < words.length; index += 1) {
-        if (!shellApplyStaticAssignment(words[index], persistentEnvironment)) {
-          persistentEnvironment.set(words[index], null)
+      let removesExport = false
+      while ((words[index] ?? "").startsWith("-")) {
+        if (words[index] === "--") {
+          index += 1
+          break
         }
+        if (exportsVariables && words[index] === "-n") removesExport = true
+        else return null
+        index += 1
+      }
+      for (; index < words.length; index += 1) {
+        const assignment = words[index].match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/)
+        const name = assignment?.[1] ?? words[index]
+        if (!/^[A-Za-z_][A-Za-z0-9_]*$/.test(name)) return null
+        if (assignment !== null) {
+          persistentVariables.set(name, shellStaticValue(assignment[2], persistentVariables))
+        } else if (!persistentVariables.has(name)) {
+          persistentVariables.set(name, null)
+        }
+        if (exportsVariables && removesExport) exportedNames.delete(name)
+        else if (exportsVariables) exportedNames.add(name)
       }
       continue
     }
     if (words[index] === "unset") {
-      for (const name of words.slice(index + 1)) persistentEnvironment.delete(name)
+      const unset = shellStaticUnset(words, index)
+      if (unset === null) return null
+      if (unset.removesVariables) {
+        for (const name of unset.names) {
+          persistentVariables.delete(name)
+          exportedNames.delete(name)
+        }
+      }
       continue
     }
     if (words[index] === undefined) {
-      for (const [name, value] of commandEnvironment) persistentEnvironment.set(name, value)
+      for (const name of assignmentNames) {
+        persistentVariables.set(name, commandVariables.get(name))
+      }
       continue
     }
     if (words[index] === "env") {
@@ -1647,10 +1732,8 @@ function shellRunStepHasStartupFileEnvironment(script) {
 }
 
 function shellRunStepWritesStartupFileEnvironment(script) {
-  return shellCommandSegments(script).some(
-    (words) =>
-      words.some(shellStartupEnvironmentAssignment) &&
-      words.some((word) => /(?:^|[^A-Za-z0-9_])GITHUB_ENV(?:$|[^A-Za-z0-9_])/.test(word))
+  return shellCommandSegments(script).some((words) =>
+    words.some((word) => /(?:^|[^A-Za-z0-9_])GITHUB_ENV(?:$|[^A-Za-z0-9_])/.test(word))
   )
 }
 
@@ -3145,6 +3228,40 @@ function javaScriptProcessExitTerminatorNames(expression) {
   return terminatorNames
 }
 
+function javaScriptProcessExitTerminatorMemberPaths(expression, terminatorNames) {
+  const paths = new Set()
+  const inspectObject = (objectExpression, prefix) => {
+    if (objectExpression?.type !== "ObjectExpression") return
+    for (const property of objectExpression.properties ?? []) {
+      if (property?.type === "SpreadElement") continue
+      const key = staticJavaScriptObjectPropertyKey(property)
+      if (!key.known) continue
+      const path = `${prefix}.${key.value}`
+      const value = normalizeJavaScriptExpression(property.value).expression
+      if (value?.type === "ObjectExpression") inspectObject(value, path)
+      if (
+        (value?.type === "Identifier" && terminatorNames.has(value.name)) ||
+        hasJavaScriptProcessExit(value, { includeFunctions: true }) ||
+        javaScriptCallsTerminator(value, terminatorNames, { includeFunctions: true })
+      ) {
+        paths.add(path)
+      }
+    }
+  }
+  walkJavaScriptAst(expression, (node) => {
+    if (node.type === "VariableDeclarator" && node.id?.type === "Identifier") {
+      inspectObject(normalizeJavaScriptExpression(node.init).expression, node.id.name)
+    } else if (
+      node.type === "AssignmentExpression" &&
+      node.operator === "=" &&
+      node.left?.type === "Identifier"
+    ) {
+      inspectObject(normalizeJavaScriptExpression(node.right).expression, node.left.name)
+    }
+  })
+  return paths
+}
+
 function hasInvokedJavaScriptProcessExit(expression, terminatorNames = new Set()) {
   let invokedExit = false
   walkJavaScriptAst(expression, (node) => {
@@ -3360,6 +3477,7 @@ function javaScriptCallbackSchedulers(ast) {
 
 function hasScheduledJavaScriptProcessExit(ast, bindings, playwrightDisableNames) {
   const terminatorNames = javaScriptProcessExitTerminatorNames(ast)
+  const terminatorMemberPaths = javaScriptProcessExitTerminatorMemberPaths(ast, terminatorNames)
   const schedulers = javaScriptCallbackSchedulers(ast)
   let scheduledExit = false
   walkJavaScriptAst(ast, (node, ancestors) => {
@@ -3383,9 +3501,12 @@ function hasScheduledJavaScriptProcessExit(ast, bindings, playwrightDisableNames
     })
     const constructorCallee =
       node.type === "NewExpression" ? normalizeJavaScriptExpression(node.callee).expression : null
+    const constructorPath = javaScriptMemberPath(constructorCallee)
     const hasTerminatingConstructor =
       constructorCallee !== null &&
       ((constructorCallee.type === "Identifier" && terminatorNames.has(constructorCallee.name)) ||
+        (!constructorPath.ambiguous &&
+          terminatorMemberPaths.has(constructorPath.segments.join("."))) ||
         hasJavaScriptProcessExit(constructorCallee, { includeFunctions: true }) ||
         javaScriptCallsTerminator(constructorCallee, terminatorNames, { includeFunctions: true }))
     if (
@@ -4778,6 +4899,18 @@ function shellTrapCommandStatus(words) {
   return null
 }
 
+function shellActionWithoutTrailingSeparators(action) {
+  let cursor = action.length
+  let foundSeparator = false
+  while (cursor > 0) {
+    while (cursor > 0 && /\s/u.test(action[cursor - 1])) cursor -= 1
+    if (action[cursor - 1] !== ";") break
+    foundSeparator = true
+    cursor -= 1
+  }
+  return foundSeparator ? action.slice(0, cursor) : action
+}
+
 function shellTrapActionOverridesStatus(
   action,
   sourceText = action,
@@ -4785,7 +4918,7 @@ function shellTrapActionOverridesStatus(
   trackErrexit = false
 ) {
   const commands = shellCommandSegments(action)
-  const controlAction = action.replace(/\r?\n/g, ";").replace(/(?:\s*;\s*)+$/, "")
+  const controlAction = shellActionWithoutTrailingSeparators(action.replace(/\r?\n/g, ";"))
   const operators = shellLineControlOperators(controlAction)
   if (trackErrexit && (operators === null || commands.length !== operators.length + 1)) return true
   let errexitEnabled = true
@@ -4889,7 +5022,7 @@ function shellStaticValue(rawValue, variables) {
       /\$\{([A-Za-z_][A-Za-z0-9_]*)\}|\$([A-Za-z_][A-Za-z0-9_]*)/g,
       (_, bracedName, plainName) => {
         const replacement = variables.get(bracedName ?? plainName)
-        if (replacement === undefined) {
+        if (replacement === undefined || replacement === null) {
           unresolved = true
           return ""
         }
@@ -5008,20 +5141,34 @@ function shellSourceEnvironmentMasksFailure(
               : !previousStatus
       }
       const assignmentWords = ["export", "readonly"].includes(words[0]) ? words.slice(1) : words
-      if (assignmentWords.length === 1) {
-        const assignment = assignmentWords[0].match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/)
-        if (assignment !== null) {
-          if (execution === null) {
-            variables.set(assignment[1], null)
-            previousStatus = null
-          } else if (execution) {
+      const assignments = assignmentWords.map((word) =>
+        word.match(/^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/)
+      )
+      if (assignments.length > 0 && assignments.every((assignment) => assignment !== null)) {
+        if (execution === null) {
+          for (const assignment of assignments) variables.set(assignment[1], null)
+          previousStatus = null
+        } else if (execution) {
+          for (const assignment of assignments) {
             variables.set(assignment[1], shellStaticValue(assignment[2], variables))
-            previousStatus = true
           }
-          continue
+          previousStatus = true
         }
+        continue
       }
       const index = shellCommandIndexAfterPrefixes(words)
+      if (words[index] === "unset") {
+        if (execution === null) return true
+        if (execution) {
+          const unset = shellStaticUnset(words, index)
+          if (unset === null) return true
+          if (unset.removesVariables) {
+            for (const name of unset.names) variables.delete(name)
+          }
+          previousStatus = true
+        }
+        continue
+      }
       if ([".", "source"].includes(words[index])) {
         if (execution === null) return true
         if (execution) {

@@ -7001,6 +7001,188 @@ test("post-90cb adjacent regression: clustered plus-D workflow shell cannot auth
   assertExecutableProofRejected(root)
 })
 
+test("current-head regression: GITHUB_ENV source overrides cannot authorize proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] =
+      'source "${HELPER_OVERRIDE:-scripts/test/harmless-source.sh}"\nfalse fixture-proof\n'
+    files["scripts/test/harmless-source.sh"] = "export FIXTURE_CONTEXT=ready\n"
+    files["scripts/test/masking-source.sh"] = "set +e\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n" +
+      "      - run: echo 'HELPER_OVERRIDE=scripts/test/masking-source.sh' >> \"$GITHUB_ENV\"\n" +
+      "      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("current-head regression: unset -f preserves an inherited source override", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] =
+      'source "${HELPER_OVERRIDE:-scripts/test/harmless-source.sh}"\nfalse fixture-proof\n'
+    files["scripts/test/harmless-source.sh"] = "export FIXTURE_CONTEXT=ready\n"
+    files["scripts/test/masking-source.sh"] = "set +e\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - env:\n" +
+      "          HELPER_OVERRIDE: scripts/test/masking-source.sh\n" +
+      "        run: unset -f HELPER_OVERRIDE; bash scripts/test/wired-proof.sh\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("current-head regression: every assignment-only source variable is modeled", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] =
+      "set -e\nHELPER=scripts/test/harmless-source.sh; " +
+      "HELPER=scripts/test/masking-source.sh OTHER=value; " +
+      'source "$HELPER"\nfalse fixture-proof\n'
+    files["scripts/test/harmless-source.sh"] = "export FIXTURE_CONTEXT=ready\n"
+    files["scripts/test/masking-source.sh"] = "set +e\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("current-head regression: typed Gradle provider aliases cannot ignore failures", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+    contract.requirements[0].proofs[0].path = proofPath
+    contract.requirements[0].proofs[0].selector = "fixtureProof"
+    files[proofPath] =
+      "package example;\n" +
+      "import org.junit.jupiter.api.Test;\n" +
+      "class ExampleTests {\n  @Test\n  void fixtureProof() {}\n}\n"
+    addGradleProofRunnerFixture(files)
+    files["apps/api/build.gradle.kts"] +=
+      'val selectedTest: org.gradle.api.tasks.TaskProvider<Test> = tasks.named<Test>("test")\n' +
+      "selectedTest.configure { ignoreFailures = true }\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("current-head safety: typed Gradle provider aliases keep failures strict", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "apps/api/src/test/java/example/ExampleTests.java"
+    contract.requirements[0].proofs[0].path = proofPath
+    contract.requirements[0].proofs[0].selector = "fixtureProof"
+    files[proofPath] =
+      "package example;\n" +
+      "import org.junit.jupiter.api.Test;\n" +
+      "class ExampleTests {\n  @Test\n  void fixtureProof() {}\n}\n"
+    addGradleProofRunnerFixture(files)
+    files["apps/api/build.gradle.kts"] +=
+      'val selectedTest: org.gradle.api.tasks.TaskProvider<Test> = tasks.named<Test>("test")\n' +
+      "selectedTest.configure { ignoreFailures = false }\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+test("current-head regression: unknown plain source variables fail closed", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] =
+      'source "scripts/test/$HELPER_OVERRIDE"\nfalse fixture-proof\n'
+    files["scripts/test/null"] = "export FIXTURE_CONTEXT=ready\n"
+    files["scripts/test/masking-source.sh"] = "set +e\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - env:\n" +
+      "          HELPER_OVERRIDE: ${{ vars.HELPER_OVERRIDE }}\n" +
+      "        run: bash scripts/test/wired-proof.sh\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("current-head regression: sourced-helper resolution applies unset", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] =
+      "unset HELPER_OVERRIDE\n" +
+      'HELPER="${HELPER_OVERRIDE:-scripts/test/masking-source.sh}"\n' +
+      'source "$HELPER"\nfalse fixture-proof\n'
+    files["scripts/test/harmless-source.sh"] = "export FIXTURE_CONTEXT=ready\n"
+    files["scripts/test/masking-source.sh"] = "set +e\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - env:\n" +
+      "          HELPER_OVERRIDE: scripts/test/harmless-source.sh\n" +
+      "        run: bash scripts/test/wired-proof.sh\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("current-head regression: unexported assignments do not reach child proofs", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] =
+      'source "${HELPER_OVERRIDE:-scripts/test/masking-source.sh}"\nfalse fixture-proof\n'
+    files["scripts/test/harmless-source.sh"] = "export FIXTURE_CONTEXT=ready\n"
+    files["scripts/test/masking-source.sh"] = "set +e\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: |\n" +
+      "          HELPER_OVERRIDE=scripts/test/harmless-source.sh\n" +
+      "          bash scripts/test/wired-proof.sh\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("current-head safety: exported assignments reach child proofs", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    files["scripts/test/wired-proof.sh"] =
+      'source "${HELPER_OVERRIDE:-scripts/test/masking-source.sh}"\nfalse fixture-proof\n'
+    files["scripts/test/harmless-source.sh"] = "export FIXTURE_CONTEXT=ready\n"
+    files["scripts/test/masking-source.sh"] = "set +e\n"
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: |\n" +
+      "          export HELPER_OVERRIDE=scripts/test/harmless-source.sh\n" +
+      "          bash scripts/test/wired-proof.sh\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+test("current-head regression: static member constructors cannot terminate proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "tests/static-member-constructor-exit.test.js"
+    contract.requirements[0].proofs[0].path = proofPath
+    files[proofPath] =
+      'import test from "node:test"\n' +
+      'test("fixture-proof", () => { throw new Error("unreached proof") })\n' +
+      "const constructors = { Exit: function () { process.exit(0) } }\n" +
+      "new constructors.Exit()\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
+test("current-head safety: harmless static member constructors preserve proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "tests/harmless-static-member-constructor.test.js"
+    contract.requirements[0].proofs[0].path = proofPath
+    files[proofPath] =
+      'import test from "node:test"\n' +
+      'test("fixture-proof", () => { throw new Error("attributable proof") })\n' +
+      "const constructors = { Ready: function () { this.ready = true } }\n" +
+      "new constructors.Ready()\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+test("current-head regression: long trailing trap separators remain bounded", () => {
+  const root = makeFixture(({ contract, files }) => {
+    contract.requirements[0].proofs[0].path = "scripts/test/wired-proof.sh"
+    const trailingSeparators = " ;".repeat(2048)
+    files["scripts/test/wired-proof.sh"] =
+      `set -e\ntrap 'exit 0${trailingSeparators}' EXIT\nfalse fixture-proof\n`
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: bash scripts/test/wired-proof.sh\n"
+  })
+  assertExecutableProofRejected(root)
+})
+
 test("ready-for-review remains an explicit release-owner gate", () => {
   const graph = fs.readFileSync(path.join(repositoryRoot, ".loop/t085-traceability.yaml"), "utf8")
   const traceability = fs.readFileSync(
