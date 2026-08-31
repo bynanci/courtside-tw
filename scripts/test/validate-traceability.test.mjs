@@ -50,6 +50,11 @@ const fixtureSecurityRunId = 33226451860
 const fixtureReceiptOwner = "bynanci"
 const fixtureReceiptAuthorizationRef =
   "https://github.com/bynanci/courtside-tw/issues/145#issuecomment-5459765126"
+const fixtureFreshReceiptAuthorizationRef =
+  "https://github.com/bynanci/courtside-tw/issues/145#issuecomment-6000000001"
+const fixtureReceiptBaseCommittedAt = "2026-08-31T04:47:24Z"
+const fixtureFreshAuthorizationRecordedAt = "2026-08-31T04:50:00Z"
+const fixtureReceiptHeadCommittedAt = "2026-08-31T04:55:52Z"
 const fixtureFrontendArtifactId = 9707044002
 const fixtureFrontendArchiveSha256 =
   "88baa1d7bd1e3ef08193b7d65799484d16363677c7c446001fa531efb6a8706f"
@@ -1337,6 +1342,89 @@ test("receipt mode requires an evaluated head commit timestamp", () => {
   assert.match(
     report.errors.join("\n"),
     /completion receipt requires a trusted evaluated head commit timestamp/
+  )
+})
+
+test("receipt candidate accepts a fresh owner authorization recorded after the audited base", () => {
+  const fixture = makeReceiptFixture(({ receipt }) => {
+    receipt.authorization_ref = fixtureFreshReceiptAuthorizationRef
+    receipt.recorded_at = fixtureFreshAuthorizationRecordedAt
+    receipt.authorization_base_sha = fixtureReceiptBase
+    receipt.authorization_traceability_sha256 = receipt.traceability_sha256
+  })
+  const report = runReceiptFixture(fixture, {
+    changeBaseCommittedAt: fixtureReceiptBaseCommittedAt,
+    evaluatedHeadCommittedAt: fixtureReceiptHeadCommittedAt
+  })
+
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+test("receipt candidate rejects an owner authorization recorded before the audited base", () => {
+  const fixture = makeReceiptFixture(({ receipt }) => {
+    receipt.authorization_ref = fixtureFreshReceiptAuthorizationRef
+    receipt.recorded_at = "2026-08-31T04:47:23Z"
+    receipt.authorization_base_sha = fixtureReceiptBase
+    receipt.authorization_traceability_sha256 = receipt.traceability_sha256
+  })
+  const report = runReceiptFixture(fixture, {
+    changeBaseCommittedAt: fixtureReceiptBaseCommittedAt,
+    evaluatedHeadCommittedAt: fixtureReceiptHeadCommittedAt
+  })
+
+  assert.equal(report.status, "FAIL")
+  assert.match(
+    report.errors.join("\n"),
+    /completion receipt recorded_at must not predate the audited change base/
+  )
+})
+
+test("receipt candidate binds the fresh owner authorization to the audited base", () => {
+  const fixture = makeReceiptFixture(({ receipt }) => {
+    receipt.authorization_ref = fixtureFreshReceiptAuthorizationRef
+    receipt.recorded_at = fixtureFreshAuthorizationRecordedAt
+    receipt.authorization_base_sha = "6".repeat(40)
+    receipt.authorization_traceability_sha256 = receipt.traceability_sha256
+  })
+  const report = runReceiptFixture(fixture, {
+    changeBaseCommittedAt: fixtureReceiptBaseCommittedAt,
+    evaluatedHeadCommittedAt: fixtureReceiptHeadCommittedAt
+  })
+
+  assert.equal(report.status, "FAIL")
+  assert.match(
+    report.errors.join("\n"),
+    /completion receipt authorization_base_sha must equal the audited change base/
+  )
+})
+
+test("receipt candidate binds the fresh owner authorization to the frozen traceability hash", () => {
+  const fixture = makeReceiptFixture(({ receipt }) => {
+    receipt.authorization_ref = fixtureFreshReceiptAuthorizationRef
+    receipt.recorded_at = fixtureFreshAuthorizationRecordedAt
+    receipt.authorization_base_sha = fixtureReceiptBase
+    receipt.authorization_traceability_sha256 = "0".repeat(64)
+  })
+  const report = runReceiptFixture(fixture, {
+    changeBaseCommittedAt: fixtureReceiptBaseCommittedAt,
+    evaluatedHeadCommittedAt: fixtureReceiptHeadCommittedAt
+  })
+
+  assert.equal(report.status, "FAIL")
+  assert.match(
+    report.errors.join("\n"),
+    /completion receipt authorization_traceability_sha256 must equal the frozen traceability contract/
+  )
+})
+
+test("receipt candidate requires a trusted audited-base commit timestamp", () => {
+  const fixture = makeReceiptFixture()
+  const report = runReceiptFixture(fixture, { changeBaseCommittedAt: null })
+
+  assert.equal(report.status, "FAIL")
+  assert.match(
+    report.errors.join("\n"),
+    /completion receipt requires a trusted audited change-base commit timestamp/
   )
 })
 
