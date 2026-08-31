@@ -56,6 +56,7 @@ const fixtureReceiptAuthorizationRef =
 const fixtureReceiptBaseCommittedAt = "2026-08-31T04:47:24Z"
 const fixtureFreshAuthorizationRecordedAt = "2026-08-31T04:50:00Z"
 const fixtureReceiptHeadCommittedAt = "2026-08-31T04:55:52Z"
+const fixtureOwnerReadbackSupportBase = "483aaffbb884f4d9fbeb92ef6573a6c9111c0e0e"
 const fixtureFrontendArtifactId = 9707044002
 const fixtureFrontendArchiveSha256 =
   "88baa1d7bd1e3ef08193b7d65799484d16363677c7c446001fa531efb6a8706f"
@@ -1531,6 +1532,38 @@ test("receipt candidate rejects authorization body drift from the audited base a
     report.errors.join("\n"),
     /completion receipt authorization body must bind the audited receipt base, traceability hash, and scope boundaries/
   )
+})
+
+test("owner authorization read-back runs only for a receipt candidate", () => {
+  assert.equal(typeof traceabilityValidator.inspectOwnerAuthorizationForState, "function")
+  const fixture = makeReceiptFixture()
+  let calls = 0
+  const readback = traceabilityValidator.inspectOwnerAuthorizationForState(fixture.root, {
+    changeBaseTasksText: fixture.changeBaseTasksText,
+    inspect: (authorizationRef) => {
+      calls += 1
+      return { status: "VERIFIED", html_url: authorizationRef }
+    }
+  })
+
+  assert.equal(calls, 1)
+  assert.equal(readback.html_url, fixture.receipt.authorization_ref)
+})
+
+test("completed T085 skips owner authorization read-back", () => {
+  assert.equal(typeof traceabilityValidator.inspectOwnerAuthorizationForState, "function")
+  const fixture = makeCompletedFixture()
+  let calls = 0
+  const readback = traceabilityValidator.inspectOwnerAuthorizationForState(fixture.root, {
+    changeBaseTasksText: fixture.changeBaseTasksText,
+    inspect: () => {
+      calls += 1
+      return { status: "VERIFIED" }
+    }
+  })
+
+  assert.equal(readback, null)
+  assert.equal(calls, 0)
 })
 
 test("receipt candidate rejects a receipt that was already present at its audited base", () => {
@@ -4898,6 +4931,38 @@ test("pending T085 permits a support change from the frozen implementation allow
   assert.equal(report.status, "PASS", report.errors.join("\n"))
   assert.deepEqual(inspection.changedPaths, ["scripts/validate-traceability.mjs"])
   assert.match(inspection.change_base_committed_at, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/)
+})
+
+test("pending T085 permits only the exact authenticated owner-readback support scope", () => {
+  const root = makeFixture()
+  const report = run(root, {
+    changedPaths: [
+      ".github/workflows/ci.yml",
+      "scripts/test/validate-traceability.test.mjs",
+      "scripts/validate-traceability.mjs"
+    ],
+    changeBaseSha: fixtureOwnerReadbackSupportBase,
+    changeBaseTasksText: fs.readFileSync(path.join(root, featurePath, "tasks.md"), "utf8"),
+    changeBaseTraceabilityText: fs.readFileSync(
+      path.join(root, featurePath, "traceability.md"),
+      "utf8"
+    ),
+    boundedScopeActive: false
+  })
+
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+test("CI gives only the repository-verification step authenticated issue read-back", () => {
+  const workflow = fs.readFileSync(path.join(repositoryRoot, ".github/workflows/ci.yml"), "utf8")
+
+  assert.match(workflow, /permissions:\n  contents: read\n  issues: read/)
+  assert.match(
+    workflow,
+    /- name: Run repository verification\n        env:\n          GITHUB_TOKEN: \$\{\{ github\.token \}\}\n        run:/
+  )
+  assert.equal(workflow.match(/GITHUB_TOKEN: \$\{\{ github\.token \}\}/g)?.length, 1)
+  assert.match(workflow, /persist-credentials: false/)
 })
 
 test("pending T085 permits the exact one-time post-review and Android harness remediation", () => {
