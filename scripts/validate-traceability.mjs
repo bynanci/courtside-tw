@@ -10,6 +10,7 @@ import YAML from "yaml"
 
 export const TRACEABILITY_SCHEMA = "courtside-traceability/v1"
 export const COMPLETION_RECEIPT_SCHEMA = "courtside-t085-completion-receipt/v2"
+export const OWNER_AUTHORIZATION_SCHEMA = "courtside-t085-owner-authorization/v1"
 export const COMPLETION_RECEIPT_PATH = ".loop/evidence/t085-completion-receipt.json"
 export const ACCEPTED_IMPLEMENTATION_HEAD_SHA = "27b955581a909e292ae4fe6c1fb05de0e94753da"
 export const ACCEPTED_IMPLEMENTATION_MERGE_SHA = "a2491b81066ac225a0b5d2dab93be79fb6dfbe65"
@@ -165,6 +166,16 @@ const receiptChangedPaths = [
 const t086LockedPaths = new Set([".github/workflows/release.yml", "docs/release/beta-checklist.md"])
 const receiptAuthorizationRefPattern =
   /^https:\/\/github\.com\/bynanci\/courtside-tw\/issues\/145#issuecomment-[1-9]\d*$/
+const ownerAuthorizationStart = "<!-- t085:owner-authorization:start -->"
+const ownerAuthorizationEnd = "<!-- t085:owner-authorization:end -->"
+const expectedReceiptScopeBoundaries = Object.freeze({
+  t086_dispatched: false,
+  participant_research_executed: false,
+  web3_activated: false,
+  production_activated: false,
+  provider_configured: false,
+  secrets_changed: false
+})
 
 function isT086LockedPath(changedPath) {
   return (
@@ -5592,11 +5603,86 @@ function validateCompletionGate(receipt, name, jobs, acceptedRunId, errors) {
   }
 }
 
+function parseOwnerAuthorizationBody(body, errors) {
+  if (typeof body !== "string") {
+    errors.push("completion receipt authorization comment must contain a structured body")
+    return null
+  }
+  const start = body.indexOf(ownerAuthorizationStart)
+  const end = body.indexOf(ownerAuthorizationEnd)
+  if (
+    start < 0 ||
+    end <= start ||
+    body.indexOf(ownerAuthorizationStart, start + ownerAuthorizationStart.length) >= 0 ||
+    body.indexOf(ownerAuthorizationEnd, end + ownerAuthorizationEnd.length) >= 0
+  ) {
+    errors.push("completion receipt authorization comment must contain one structured body")
+    return null
+  }
+  const payload = body.slice(start + ownerAuthorizationStart.length, end).trim()
+  try {
+    assertUniqueJsonObjectKeys(payload)
+    const parsed = JSON.parse(payload)
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      errors.push("completion receipt authorization comment body must be a JSON object")
+      return null
+    }
+    return parsed
+  } catch (error) {
+    errors.push(`completion receipt authorization comment body is invalid: ${error.message}`)
+    return null
+  }
+}
+
+function validateOwnerAuthorizationReadback({ receipt, readback, errors }) {
+  if (readback?.status !== "VERIFIED" || readback?.source !== "github-api") {
+    errors.push("completion receipt requires a verified GitHub owner-authorization readback")
+    return
+  }
+  if (
+    readback.html_url !== receipt.authorization_ref ||
+    readback.issue_url !== "https://api.github.com/repos/bynanci/courtside-tw/issues/145"
+  ) {
+    errors.push("completion receipt authorization readback must match the referenced issue comment")
+  }
+  if (
+    readback.user_login !== ACCEPTED_RECEIPT_OWNER ||
+    readback.user_login !== receipt.accepted_by ||
+    readback.author_association !== "OWNER"
+  ) {
+    errors.push("completion receipt authorization comment must be authored by the repository owner")
+  }
+  if (readback.created_at !== receipt.recorded_at) {
+    errors.push(
+      "completion receipt recorded_at must equal the GitHub authorization comment created_at"
+    )
+  }
+  if (readback.updated_at !== readback.created_at) {
+    errors.push("completion receipt authorization comment must be immutable after creation")
+  }
+
+  const authorization = parseOwnerAuthorizationBody(readback.body, errors)
+  if (
+    authorization === null ||
+    authorization.schema_version !== OWNER_AUTHORIZATION_SCHEMA ||
+    authorization.decision !== "ACCEPTED" ||
+    authorization.accepted_by !== ACCEPTED_RECEIPT_OWNER ||
+    authorization.receipt_base_sha !== receipt.authorization_base_sha ||
+    authorization.traceability_sha256 !== receipt.authorization_traceability_sha256 ||
+    !isDeepStrictEqual(authorization.scope_boundaries, expectedReceiptScopeBoundaries)
+  ) {
+    errors.push(
+      "completion receipt authorization body must bind the audited receipt base, traceability hash, and scope boundaries"
+    )
+  }
+}
+
 function validateCompletionReceipt({
   receipt,
   state,
   evaluatedHeadCommittedAt,
   changeBaseCommittedAt,
+  ownerAuthorizationReadback,
   changeBaseSha,
   changeBaseTasksText,
   changeBaseTraceabilityText,
@@ -5693,6 +5779,11 @@ function validateCompletionReceipt({
     )
   }
   if (state === t085States.RECEIPT_CANDIDATE) {
+    validateOwnerAuthorizationReadback({
+      receipt,
+      readback: ownerAuthorizationReadback,
+      errors
+    })
     if (!isIsoTimestamp(changeBaseCommittedAt)) {
       errors.push("completion receipt requires a trusted audited change-base commit timestamp")
     }
@@ -5949,6 +6040,7 @@ export function validateTraceability({
   currentHead = null,
   evaluatedHeadCommittedAt = null,
   changeBaseCommittedAt = null,
+  ownerAuthorizationReadback = null,
   gitBinding = null,
   changedPaths = null,
   changeBaseSha = REVIEW_BASE_SHA,
@@ -6543,6 +6635,7 @@ export function validateTraceability({
         state,
         evaluatedHeadCommittedAt,
         changeBaseCommittedAt,
+        ownerAuthorizationReadback,
         changeBaseSha,
         changeBaseTasksText,
         changeBaseTraceabilityText,
@@ -6631,6 +6724,20 @@ export function validateTraceability({
       evaluated_head_sha: currentHead,
       evaluated_head_committed_at: evaluatedHeadCommittedAt,
       audited_change_base_committed_at: changeBaseCommittedAt,
+      owner_authorization_readback: ownerAuthorizationReadback
+        ? {
+            status: ownerAuthorizationReadback.status ?? "UNAVAILABLE",
+            source: ownerAuthorizationReadback.source ?? null,
+            html_url: ownerAuthorizationReadback.html_url ?? null,
+            issue_url: ownerAuthorizationReadback.issue_url ?? null,
+            user_login: ownerAuthorizationReadback.user_login ?? null,
+            author_association: ownerAuthorizationReadback.author_association ?? null,
+            created_at: ownerAuthorizationReadback.created_at ?? null,
+            updated_at: ownerAuthorizationReadback.updated_at ?? null,
+            body_sha256: sha256(ownerAuthorizationReadback.body ?? null),
+            errors: ownerAuthorizationReadback.errors ?? []
+          }
+        : null,
       exact_head_evidence: exactHeadEvidence,
       github_actions_context: githubActionsContext
         ? {
@@ -6920,6 +7027,80 @@ function inspectImplementationMergeAncestor(root, changeBaseSha) {
   }
 }
 
+const githubCommentFetchScript = String.raw`
+const url = process.argv[1]
+const headers = {
+  Accept: "application/vnd.github+json",
+  "User-Agent": "courtside-t085-receipt-validator",
+  "X-GitHub-Api-Version": "2022-11-28"
+}
+if (process.env.GITHUB_TOKEN) headers.Authorization = "Bearer " + process.env.GITHUB_TOKEN
+const response = await fetch(url, {
+  headers,
+  redirect: "error",
+  signal: AbortSignal.timeout(10000)
+})
+if (!response.ok) throw new Error("GitHub comment read-back returned HTTP " + response.status)
+const body = await response.text()
+if (Buffer.byteLength(body) > 1024 * 1024) throw new Error("GitHub comment read-back exceeded 1 MiB")
+process.stdout.write(body)
+`
+
+export function inspectOwnerAuthorization(authorizationRef, { environment = process.env } = {}) {
+  const match = authorizationRef?.match(receiptAuthorizationRefPattern)
+  const commentId = match?.[0]?.match(/issuecomment-([1-9]\d*)$/)?.[1] ?? null
+  if (commentId === null) {
+    return {
+      status: "UNAVAILABLE",
+      source: "github-api",
+      errors: ["authorization_ref does not identify an issue 145 comment"]
+    }
+  }
+  const apiUrl = `https://api.github.com/repos/bynanci/courtside-tw/issues/comments/${commentId}`
+  try {
+    const raw = execFileSync(
+      process.execPath,
+      ["--input-type=module", "--eval", githubCommentFetchScript, apiUrl],
+      {
+        encoding: "utf8",
+        env: environment,
+        maxBuffer: 1024 * 1024,
+        stdio: ["ignore", "pipe", "pipe"],
+        timeout: 15000
+      }
+    )
+    const comment = JSON.parse(raw)
+    return {
+      status: "VERIFIED",
+      source: "github-api",
+      html_url: comment?.html_url ?? null,
+      issue_url: comment?.issue_url ?? null,
+      user_login: comment?.user?.login ?? null,
+      author_association: comment?.author_association ?? null,
+      created_at: comment?.created_at ?? null,
+      updated_at: comment?.updated_at ?? null,
+      body: comment?.body ?? null,
+      errors: []
+    }
+  } catch (error) {
+    return {
+      status: "UNAVAILABLE",
+      source: "github-api",
+      html_url: authorizationRef ?? null,
+      errors: [`GitHub owner-authorization read-back failed: ${error.message}`]
+    }
+  }
+}
+
+function inspectOwnerAuthorizationAtRoot(root, { environment = process.env } = {}) {
+  try {
+    const receipt = JSON.parse(fs.readFileSync(path.join(root, COMPLETION_RECEIPT_PATH), "utf8"))
+    return inspectOwnerAuthorization(receipt?.authorization_ref, { environment })
+  } catch {
+    return null
+  }
+}
+
 export function inspectGit(root, { environment = process.env } = {}) {
   try {
     const head = execFileSync("git", ["rev-parse", "HEAD"], {
@@ -7036,6 +7217,7 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 
 export function runCli(root = repositoryRoot, { environment = process.env } = {}) {
   const inspection = inspectGit(root, { environment })
+  const ownerAuthorizationReadback = inspectOwnerAuthorizationAtRoot(root, { environment })
   const githubActionsContext = inspectGitHubActionsContext({ environment, gitBinding: inspection })
   const isGitHubActions = environment.GITHUB_ACTIONS === "true"
   const report = validateTraceability({
@@ -7043,6 +7225,7 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
     currentHead: inspection.head,
     evaluatedHeadCommittedAt: inspection.head_committed_at,
     changeBaseCommittedAt: inspection.change_base_committed_at,
+    ownerAuthorizationReadback,
     gitBinding: {
       status: inspection.status,
       head: inspection.head,
