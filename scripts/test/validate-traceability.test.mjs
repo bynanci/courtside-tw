@@ -34,7 +34,7 @@ const baseSha = AUTHORIZED_BASE_SHA
 const featurePath = "specs/001-taiwan-basketball-magazine-ebook"
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const completionReceiptPath = ".loop/evidence/t085-completion-receipt.json"
-const completionReceiptSchema = "courtside-t085-completion-receipt/v1"
+const completionReceiptSchema = "courtside-t085-completion-receipt/v2"
 const fixtureReceiptHead = "1111111111111111111111111111111111111111"
 const fixtureReceiptBase = "2222222222222222222222222222222222222222"
 const fixtureActionsMergeSha = "3333333333333333333333333333333333333333"
@@ -48,9 +48,9 @@ const fixtureCompletedBase = "5555555555555555555555555555555555555555"
 const fixtureCiRunId = 33226451857
 const fixtureSecurityRunId = 33226451860
 const fixtureReceiptOwner = "bynanci"
-const fixtureReceiptAuthorizationRef =
+const fixtureLegacyReceiptAuthorizationRef =
   "https://github.com/bynanci/courtside-tw/issues/145#issuecomment-5459765126"
-const fixtureFreshReceiptAuthorizationRef =
+const fixtureReceiptAuthorizationRef =
   "https://github.com/bynanci/courtside-tw/issues/145#issuecomment-6000000001"
 const fixtureReceiptBaseCommittedAt = "2026-08-31T04:47:24Z"
 const fixtureFreshAuthorizationRecordedAt = "2026-08-31T04:50:00Z"
@@ -321,18 +321,20 @@ function makeReceiptFixture(mutate = () => {}) {
       actor_type: "HUMAN",
       accepted_by: fixtureReceiptOwner,
       authorization_ref: fixtureReceiptAuthorizationRef,
-      recorded_at: "2026-08-29T03:00:00Z",
+      recorded_at: fixtureFreshAuthorizationRecordedAt,
       repository: "bynanci/courtside-tw",
       issue: "https://github.com/bynanci/courtside-tw/issues/145",
       implementation_head_sha: fixtureImplementationHead,
       implementation_merge_sha: fixtureImplementationMerge,
       receipt_base_sha: fixtureReceiptBase,
+      authorization_base_sha: fixtureReceiptBase,
       implementation_scope: {
         changed_files: fixtureImplementationChangedPaths.length,
         changed_paths: [...fixtureImplementationChangedPaths],
         required_checks: "14/14"
       },
       traceability_sha256: sha256(baseTraceabilityText),
+      authorization_traceability_sha256: sha256(baseTraceabilityText),
       tasks_before_sha256: sha256(baseTasksText),
       gates: {
         ci: {
@@ -538,11 +540,12 @@ function runReceiptFixture(fixture, overrides = {}) {
   return run(fixture.root, {
     changedPaths: fixture.changedPaths,
     changeBaseSha: fixtureReceiptBase,
+    changeBaseCommittedAt: fixtureReceiptBaseCommittedAt,
     implementationMergeAncestorOfChangeBase: true,
     boundedScopeActive: false,
     changeBaseTasksText: fixture.changeBaseTasksText,
     changeBaseTraceabilityText: fixture.changeBaseTraceabilityText,
-    evaluatedHeadCommittedAt: "2026-08-29T04:00:00Z",
+    evaluatedHeadCommittedAt: fixtureReceiptHeadCommittedAt,
     requireExactHeadEvidence: true,
     githubActionsContext: makeFixtureActionsContext(fixture.root),
     acceptedTraceabilitySha256: fixture.acceptedTraceabilitySha256,
@@ -553,6 +556,7 @@ function runReceiptFixture(fixture, overrides = {}) {
       head: fixtureReceiptHead,
       change_base_ref: "fixture:trusted-base",
       change_base_sha: fixtureReceiptBase,
+      change_base_committed_at: fixtureReceiptBaseCommittedAt,
       change_base_ancestor: true,
       head_parent_sha: fixtureReceiptBase,
       head_parent_count: 1
@@ -584,7 +588,7 @@ function runCompletedFixture(fixture, overrides = {}) {
   return run(fixture.root, {
     changedPaths: fixture.changedPaths,
     changeBaseSha: fixtureCompletedBase,
-    evaluatedHeadCommittedAt: "2026-08-29T04:00:00Z",
+    evaluatedHeadCommittedAt: fixtureReceiptHeadCommittedAt,
     boundedScopeActive: false,
     changeBaseTasksText: fixture.changeBaseTasksText,
     changeBaseTraceabilityText: fixture.changeBaseTraceabilityText,
@@ -1347,7 +1351,7 @@ test("receipt mode requires an evaluated head commit timestamp", () => {
 
 test("receipt candidate accepts a fresh owner authorization recorded after the audited base", () => {
   const fixture = makeReceiptFixture(({ receipt }) => {
-    receipt.authorization_ref = fixtureFreshReceiptAuthorizationRef
+    receipt.authorization_ref = fixtureReceiptAuthorizationRef
     receipt.recorded_at = fixtureFreshAuthorizationRecordedAt
     receipt.authorization_base_sha = fixtureReceiptBase
     receipt.authorization_traceability_sha256 = receipt.traceability_sha256
@@ -1362,7 +1366,7 @@ test("receipt candidate accepts a fresh owner authorization recorded after the a
 
 test("receipt candidate rejects an owner authorization recorded before the audited base", () => {
   const fixture = makeReceiptFixture(({ receipt }) => {
-    receipt.authorization_ref = fixtureFreshReceiptAuthorizationRef
+    receipt.authorization_ref = fixtureReceiptAuthorizationRef
     receipt.recorded_at = "2026-08-31T04:47:23Z"
     receipt.authorization_base_sha = fixtureReceiptBase
     receipt.authorization_traceability_sha256 = receipt.traceability_sha256
@@ -1381,7 +1385,7 @@ test("receipt candidate rejects an owner authorization recorded before the audit
 
 test("receipt candidate binds the fresh owner authorization to the audited base", () => {
   const fixture = makeReceiptFixture(({ receipt }) => {
-    receipt.authorization_ref = fixtureFreshReceiptAuthorizationRef
+    receipt.authorization_ref = fixtureReceiptAuthorizationRef
     receipt.recorded_at = fixtureFreshAuthorizationRecordedAt
     receipt.authorization_base_sha = "6".repeat(40)
     receipt.authorization_traceability_sha256 = receipt.traceability_sha256
@@ -1400,7 +1404,7 @@ test("receipt candidate binds the fresh owner authorization to the audited base"
 
 test("receipt candidate binds the fresh owner authorization to the frozen traceability hash", () => {
   const fixture = makeReceiptFixture(({ receipt }) => {
-    receipt.authorization_ref = fixtureFreshReceiptAuthorizationRef
+    receipt.authorization_ref = fixtureReceiptAuthorizationRef
     receipt.recorded_at = fixtureFreshAuthorizationRecordedAt
     receipt.authorization_base_sha = fixtureReceiptBase
     receipt.authorization_traceability_sha256 = "0".repeat(64)
@@ -1476,7 +1480,7 @@ for (const [name, mutate, expected] of [
     ({ receipt }) => {
       receipt.schema_version = "courtside-t085-completion-receipt/v0"
     },
-    /completion receipt schema_version must be courtside-t085-completion-receipt\/v1/
+    /completion receipt schema_version must be courtside-t085-completion-receipt\/v2/
   ],
   [
     "an automated actor",
@@ -1493,16 +1497,16 @@ for (const [name, mutate, expected] of [
     /completion receipt recorded_at must be an ISO-8601 UTC timestamp/
   ],
   [
-    "a timestamp before the pinned owner authorization",
+    "a timestamp before the audited change base",
     ({ receipt }) => {
-      receipt.recorded_at = "2026-08-29T02:24:08Z"
+      receipt.recorded_at = "2026-08-31T04:47:23Z"
     },
-    /completion receipt recorded_at must not predate the pinned owner authorization/
+    /completion receipt recorded_at must not predate the audited change base/
   ],
   [
     "a timestamp after the evaluated head commit",
     ({ receipt }) => {
-      receipt.recorded_at = "2026-08-29T04:00:01Z"
+      receipt.recorded_at = "2026-08-31T04:55:53Z"
     },
     /completion receipt recorded_at must not postdate the evaluated head commit/
   ],
@@ -1514,11 +1518,18 @@ for (const [name, mutate, expected] of [
     /completion receipt accepted_by must equal the authorized repository owner/
   ],
   [
-    "an unpinned receipt authorization",
+    "an invalid receipt authorization URL",
     ({ receipt }) => {
       receipt.authorization_ref = "self-declared-authorization"
     },
-    /completion receipt authorization_ref must equal the pinned owner authorization/
+    /completion receipt authorization_ref must identify an issue 145 comment/
+  ],
+  [
+    "the stale pre-base receipt authorization",
+    ({ receipt }) => {
+      receipt.authorization_ref = fixtureLegacyReceiptAuthorizationRef
+    },
+    /completion receipt authorization_ref must identify a fresh post-base owner decision/
   ],
   ...[
     ["implementation_head_sha", "missing", undefined],
@@ -1526,7 +1537,9 @@ for (const [name, mutate, expected] of [
     ["implementation_merge_sha", "missing", undefined],
     ["implementation_merge_sha", "invalid", "A".repeat(40)],
     ["receipt_base_sha", "missing", undefined],
-    ["receipt_base_sha", "invalid", "A".repeat(40)]
+    ["receipt_base_sha", "invalid", "A".repeat(40)],
+    ["authorization_base_sha", "missing", undefined],
+    ["authorization_base_sha", "invalid", "A".repeat(40)]
   ].map(([field, condition, value]) => [
     `a ${condition} ${field}`,
     ({ receipt }) => {
@@ -4783,6 +4796,7 @@ test("pending T085 permits a support change from the frozen implementation allow
 
   assert.equal(report.status, "PASS", report.errors.join("\n"))
   assert.deepEqual(inspection.changedPaths, ["scripts/validate-traceability.mjs"])
+  assert.match(inspection.change_base_committed_at, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/)
 })
 
 test("pending T085 permits the exact one-time post-review and Android harness remediation", () => {

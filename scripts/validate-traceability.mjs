@@ -9,7 +9,7 @@ import typescriptPlugin from "prettier/plugins/typescript"
 import YAML from "yaml"
 
 export const TRACEABILITY_SCHEMA = "courtside-traceability/v1"
-export const COMPLETION_RECEIPT_SCHEMA = "courtside-t085-completion-receipt/v1"
+export const COMPLETION_RECEIPT_SCHEMA = "courtside-t085-completion-receipt/v2"
 export const COMPLETION_RECEIPT_PATH = ".loop/evidence/t085-completion-receipt.json"
 export const ACCEPTED_IMPLEMENTATION_HEAD_SHA = "27b955581a909e292ae4fe6c1fb05de0e94753da"
 export const ACCEPTED_IMPLEMENTATION_MERGE_SHA = "a2491b81066ac225a0b5d2dab93be79fb6dfbe65"
@@ -31,9 +31,8 @@ export const ACCEPTED_PENDING_TASKS_SHA256 =
 export const ACCEPTED_COMPLETED_TASKS_SHA256 =
   "90b950e3522e9d6e119f57d92d4ab9f8d3fe013b456450415a8abbdd70f446c3"
 export const ACCEPTED_RECEIPT_OWNER = "bynanci"
-export const ACCEPTED_RECEIPT_AUTHORIZATION_REF =
+export const LEGACY_RECEIPT_AUTHORIZATION_REF =
   "https://github.com/bynanci/courtside-tw/issues/145#issuecomment-5459765126"
-export const ACCEPTED_RECEIPT_AUTHORIZATION_RECORDED_AT = "2026-08-29T02:24:09Z"
 export const ACCEPTED_IMPLEMENTATION_CHANGED_PATHS = Object.freeze([
   ".github/workflows/ci.yml",
   ".loop/evidence/t085-dispatch.json",
@@ -164,6 +163,8 @@ const receiptChangedPaths = [
   "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
 ]
 const t086LockedPaths = new Set([".github/workflows/release.yml", "docs/release/beta-checklist.md"])
+const receiptAuthorizationRefPattern =
+  /^https:\/\/github\.com\/bynanci\/courtside-tw\/issues\/145#issuecomment-[1-9]\d*$/
 
 function isT086LockedPath(changedPath) {
   return (
@@ -5595,6 +5596,7 @@ function validateCompletionReceipt({
   receipt,
   state,
   evaluatedHeadCommittedAt,
+  changeBaseCommittedAt,
   changeBaseSha,
   changeBaseTasksText,
   changeBaseTraceabilityText,
@@ -5626,20 +5628,19 @@ function validateCompletionReceipt({
   if (receipt.accepted_by !== ACCEPTED_RECEIPT_OWNER) {
     errors.push("completion receipt accepted_by must equal the authorized repository owner")
   }
-  if (receipt.authorization_ref !== ACCEPTED_RECEIPT_AUTHORIZATION_REF) {
-    errors.push("completion receipt authorization_ref must equal the pinned owner authorization")
+  if (!receiptAuthorizationRefPattern.test(receipt.authorization_ref ?? "")) {
+    errors.push("completion receipt authorization_ref must identify an issue 145 comment")
+  }
+  if (receipt.authorization_ref === LEGACY_RECEIPT_AUTHORIZATION_REF) {
+    errors.push(
+      "completion receipt authorization_ref must identify a fresh post-base owner decision"
+    )
   }
   if (!isIsoTimestamp(receipt.recorded_at)) {
     errors.push("completion receipt recorded_at must be an ISO-8601 UTC timestamp")
   }
   if (!isIsoTimestamp(evaluatedHeadCommittedAt)) {
     errors.push("completion receipt requires a trusted evaluated head commit timestamp")
-  }
-  if (
-    isIsoTimestamp(receipt.recorded_at) &&
-    Date.parse(receipt.recorded_at) < Date.parse(ACCEPTED_RECEIPT_AUTHORIZATION_RECORDED_AT)
-  ) {
-    errors.push("completion receipt recorded_at must not predate the pinned owner authorization")
   }
   if (
     isIsoTimestamp(receipt.recorded_at) &&
@@ -5669,6 +5670,20 @@ function validateCompletionReceipt({
   if (!/^[0-9a-f]{40}$/.test(receipt.receipt_base_sha ?? "")) {
     errors.push("completion receipt receipt_base_sha must be a full lowercase commit SHA")
   }
+  if (!/^[0-9a-f]{40}$/.test(receipt.authorization_base_sha ?? "")) {
+    errors.push("completion receipt authorization_base_sha must be a full lowercase commit SHA")
+  }
+  if (receipt.authorization_base_sha !== receipt.receipt_base_sha) {
+    errors.push("completion receipt authorization_base_sha must equal the audited change base")
+  }
+  if (
+    receipt.authorization_traceability_sha256 !== receipt.traceability_sha256 ||
+    receipt.authorization_traceability_sha256 !== acceptedTraceabilitySha256
+  ) {
+    errors.push(
+      "completion receipt authorization_traceability_sha256 must equal the frozen traceability contract"
+    )
+  }
   if (receipt.protected_main_sha !== undefined) {
     errors.push("completion receipt must not use the deprecated protected_main_sha field")
   }
@@ -5678,6 +5693,16 @@ function validateCompletionReceipt({
     )
   }
   if (state === t085States.RECEIPT_CANDIDATE) {
+    if (!isIsoTimestamp(changeBaseCommittedAt)) {
+      errors.push("completion receipt requires a trusted audited change-base commit timestamp")
+    }
+    if (
+      isIsoTimestamp(receipt.recorded_at) &&
+      isIsoTimestamp(changeBaseCommittedAt) &&
+      Date.parse(receipt.recorded_at) < Date.parse(changeBaseCommittedAt)
+    ) {
+      errors.push("completion receipt recorded_at must not predate the audited change base")
+    }
     if (receipt.receipt_base_sha !== changeBaseSha) {
       errors.push("completion receipt receipt_base_sha must equal the audited change base")
     }
@@ -5923,6 +5948,7 @@ export function validateTraceability({
   root,
   currentHead = null,
   evaluatedHeadCommittedAt = null,
+  changeBaseCommittedAt = null,
   gitBinding = null,
   changedPaths = null,
   changeBaseSha = REVIEW_BASE_SHA,
@@ -5991,6 +6017,13 @@ export function validateTraceability({
   ) {
     errors.push("git binding head commit timestamp must equal evaluatedHeadCommittedAt")
   }
+  if (
+    gitBinding?.change_base_committed_at !== undefined &&
+    changeBaseCommittedAt !== null &&
+    gitBinding.change_base_committed_at !== changeBaseCommittedAt
+  ) {
+    errors.push("git binding change base commit timestamp must equal changeBaseCommittedAt")
+  }
   if (gitBinding?.change_base_sha !== undefined && gitBinding.change_base_sha !== changeBaseSha) {
     errors.push("git binding change base must equal changeBaseSha")
   }
@@ -6022,6 +6055,8 @@ export function validateTraceability({
       gitBinding?.head !== currentHead ||
       typeof gitBinding?.change_base_ref !== "string" ||
       gitBinding.change_base_sha !== changeBaseSha ||
+      gitBinding.change_base_committed_at !== changeBaseCommittedAt ||
+      !isIsoTimestamp(gitBinding.change_base_committed_at) ||
       gitBinding.change_base_ancestor !== true
     ) {
       errors.push("receipt candidate requires trusted audited Git binding")
@@ -6507,6 +6542,7 @@ export function validateTraceability({
         receipt: completionReceipt,
         state,
         evaluatedHeadCommittedAt,
+        changeBaseCommittedAt,
         changeBaseSha,
         changeBaseTasksText,
         changeBaseTraceabilityText,
@@ -6594,6 +6630,7 @@ export function validateTraceability({
       review_base_sha: reviewBaseSha,
       evaluated_head_sha: currentHead,
       evaluated_head_committed_at: evaluatedHeadCommittedAt,
+      audited_change_base_committed_at: changeBaseCommittedAt,
       exact_head_evidence: exactHeadEvidence,
       github_actions_context: githubActionsContext
         ? {
@@ -6652,6 +6689,11 @@ export function validateTraceability({
           path: paths.completionReceipt,
           schema_version: completionReceipt.schema_version ?? null,
           decision: completionReceipt.decision ?? null,
+          authorization_ref: completionReceipt.authorization_ref ?? null,
+          recorded_at: completionReceipt.recorded_at ?? null,
+          authorization_base_sha: completionReceipt.authorization_base_sha ?? null,
+          authorization_traceability_sha256:
+            completionReceipt.authorization_traceability_sha256 ?? null,
           implementation_head_sha: completionReceipt.implementation_head_sha ?? null,
           implementation_merge_sha: completionReceipt.implementation_merge_sha ?? null,
           receipt_base_sha: completionReceipt.receipt_base_sha ?? null,
@@ -6852,6 +6894,21 @@ function inspectHeadTopology(root, head) {
   }
 }
 
+function inspectCommitTimestamp(root, commit) {
+  if (!/^[0-9a-f]{40}$/.test(commit ?? "")) return null
+  try {
+    return new Date(
+      execFileSync("git", ["show", "-s", "--format=%cI", commit], {
+        cwd: root,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"]
+      }).trim()
+    ).toISOString()
+  } catch {
+    return null
+  }
+}
+
 function inspectImplementationMergeAncestor(root, changeBaseSha) {
   if (!/^[0-9a-f]{40}$/.test(changeBaseSha ?? "")) return null
   try {
@@ -6890,6 +6947,7 @@ export function inspectGit(root, { environment = process.env } = {}) {
     const authorizedBaseAncestor = inspectAncestor(root, AUTHORIZED_BASE_SHA, head)
     const reviewBaseAncestor = inspectAncestor(root, REVIEW_BASE_SHA, head)
     const changeBase = resolveChangeBase(root, head, environment)
+    const changeBaseCommittedAt = inspectCommitTimestamp(root, changeBase.sha)
     const headTopology = inspectHeadTopology(root, head)
     const implementationMergeAncestorOfChangeBase = inspectImplementationMergeAncestor(
       root,
@@ -6940,6 +6998,7 @@ export function inspectGit(root, { environment = process.env } = {}) {
       review_base_ancestor: reviewBaseAncestor,
       change_base_ref: changeBase.ref,
       change_base_sha: changeBase.sha,
+      change_base_committed_at: changeBaseCommittedAt,
       change_base_ancestor: changeBase.ancestor,
       head_parent_sha: headTopology.first,
       head_parent_count: headTopology.count,
@@ -6959,6 +7018,7 @@ export function inspectGit(root, { environment = process.env } = {}) {
       review_base_ancestor: null,
       change_base_ref: null,
       change_base_sha: null,
+      change_base_committed_at: null,
       change_base_ancestor: null,
       head_parent_sha: null,
       head_parent_count: null,
@@ -6982,6 +7042,7 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
     root,
     currentHead: inspection.head,
     evaluatedHeadCommittedAt: inspection.head_committed_at,
+    changeBaseCommittedAt: inspection.change_base_committed_at,
     gitBinding: {
       status: inspection.status,
       head: inspection.head,
@@ -6990,6 +7051,7 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
       review_base_ancestor: inspection.review_base_ancestor,
       change_base_ref: inspection.change_base_ref,
       change_base_sha: inspection.change_base_sha,
+      change_base_committed_at: inspection.change_base_committed_at,
       change_base_ancestor: inspection.change_base_ancestor,
       head_parent_sha: inspection.head_parent_sha,
       head_parent_count: inspection.head_parent_count,
