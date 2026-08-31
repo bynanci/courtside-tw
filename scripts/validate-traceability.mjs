@@ -9,7 +9,8 @@ import typescriptPlugin from "prettier/plugins/typescript"
 import YAML from "yaml"
 
 export const TRACEABILITY_SCHEMA = "courtside-traceability/v1"
-export const COMPLETION_RECEIPT_SCHEMA = "courtside-t085-completion-receipt/v1"
+export const COMPLETION_RECEIPT_SCHEMA = "courtside-t085-completion-receipt/v2"
+export const OWNER_AUTHORIZATION_SCHEMA = "courtside-t085-owner-authorization/v1"
 export const COMPLETION_RECEIPT_PATH = ".loop/evidence/t085-completion-receipt.json"
 export const ACCEPTED_IMPLEMENTATION_HEAD_SHA = "27b955581a909e292ae4fe6c1fb05de0e94753da"
 export const ACCEPTED_IMPLEMENTATION_MERGE_SHA = "a2491b81066ac225a0b5d2dab93be79fb6dfbe65"
@@ -31,9 +32,8 @@ export const ACCEPTED_PENDING_TASKS_SHA256 =
 export const ACCEPTED_COMPLETED_TASKS_SHA256 =
   "90b950e3522e9d6e119f57d92d4ab9f8d3fe013b456450415a8abbdd70f446c3"
 export const ACCEPTED_RECEIPT_OWNER = "bynanci"
-export const ACCEPTED_RECEIPT_AUTHORIZATION_REF =
+export const LEGACY_RECEIPT_AUTHORIZATION_REF =
   "https://github.com/bynanci/courtside-tw/issues/145#issuecomment-5459765126"
-export const ACCEPTED_RECEIPT_AUTHORIZATION_RECORDED_AT = "2026-08-29T02:24:09Z"
 export const ACCEPTED_IMPLEMENTATION_CHANGED_PATHS = Object.freeze([
   ".github/workflows/ci.yml",
   ".loop/evidence/t085-dispatch.json",
@@ -164,6 +164,18 @@ const receiptChangedPaths = [
   "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
 ]
 const t086LockedPaths = new Set([".github/workflows/release.yml", "docs/release/beta-checklist.md"])
+const receiptAuthorizationRefPattern =
+  /^https:\/\/github\.com\/bynanci\/courtside-tw\/issues\/145#issuecomment-[1-9]\d*$/
+const ownerAuthorizationStart = "<!-- t085:owner-authorization:start -->"
+const ownerAuthorizationEnd = "<!-- t085:owner-authorization:end -->"
+const expectedReceiptScopeBoundaries = Object.freeze({
+  t086_dispatched: false,
+  participant_research_executed: false,
+  web3_activated: false,
+  production_activated: false,
+  provider_configured: false,
+  secrets_changed: false
+})
 
 function isT086LockedPath(changedPath) {
   return (
@@ -181,6 +193,13 @@ const receiptSupportChangedPaths = new Set([
   "scripts/test/validate-traceability.test.mjs",
   "scripts/validate-traceability.mjs"
 ])
+const ownerReadbackSupportBaseSha = "483aaffbb884f4d9fbeb92ef6573a6c9111c0e0e"
+const ownerReadbackSupportChangedPathList = Object.freeze([
+  ".github/workflows/ci.yml",
+  "scripts/test/validate-traceability.test.mjs",
+  "scripts/validate-traceability.mjs"
+])
+const ownerReadbackSupportChangedPaths = new Set(ownerReadbackSupportChangedPathList)
 const postT085RemediationChangedPaths = new Set(POST_T085_REMEDIATION_CHANGED_PATHS)
 const expectedDispatch = {
   schema_version: "courtside-t085-dispatch/v1",
@@ -304,6 +323,22 @@ function isExactPostT085RemediationScope({
     Array.isArray(changedPaths) &&
     changedPaths.length === POST_T085_REMEDIATION_CHANGED_PATHS.length &&
     sameValues(changedPaths, POST_T085_REMEDIATION_CHANGED_PATHS)
+  )
+}
+
+function isExactOwnerReadbackSupportScope({
+  state,
+  changeBaseSha,
+  boundedScopeActive,
+  changedPaths
+}) {
+  return (
+    state === t085States.PENDING &&
+    boundedScopeActive === false &&
+    changeBaseSha === ownerReadbackSupportBaseSha &&
+    Array.isArray(changedPaths) &&
+    changedPaths.length === ownerReadbackSupportChangedPathList.length &&
+    sameValues(changedPaths, ownerReadbackSupportChangedPathList)
   )
 }
 
@@ -5591,10 +5626,86 @@ function validateCompletionGate(receipt, name, jobs, acceptedRunId, errors) {
   }
 }
 
+function parseOwnerAuthorizationBody(body, errors) {
+  if (typeof body !== "string") {
+    errors.push("completion receipt authorization comment must contain a structured body")
+    return null
+  }
+  const start = body.indexOf(ownerAuthorizationStart)
+  const end = body.indexOf(ownerAuthorizationEnd)
+  if (
+    start < 0 ||
+    end <= start ||
+    body.indexOf(ownerAuthorizationStart, start + ownerAuthorizationStart.length) >= 0 ||
+    body.indexOf(ownerAuthorizationEnd, end + ownerAuthorizationEnd.length) >= 0
+  ) {
+    errors.push("completion receipt authorization comment must contain one structured body")
+    return null
+  }
+  const payload = body.slice(start + ownerAuthorizationStart.length, end).trim()
+  try {
+    assertUniqueJsonObjectKeys(payload)
+    const parsed = JSON.parse(payload)
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      errors.push("completion receipt authorization comment body must be a JSON object")
+      return null
+    }
+    return parsed
+  } catch (error) {
+    errors.push(`completion receipt authorization comment body is invalid: ${error.message}`)
+    return null
+  }
+}
+
+function validateOwnerAuthorizationReadback({ receipt, readback, errors }) {
+  if (readback?.status !== "VERIFIED" || readback?.source !== "github-api") {
+    errors.push("completion receipt requires a verified GitHub owner-authorization readback")
+    return
+  }
+  if (
+    readback.html_url !== receipt.authorization_ref ||
+    readback.issue_url !== "https://api.github.com/repos/bynanci/courtside-tw/issues/145"
+  ) {
+    errors.push("completion receipt authorization readback must match the referenced issue comment")
+  }
+  if (
+    readback.user_login !== ACCEPTED_RECEIPT_OWNER ||
+    readback.user_login !== receipt.accepted_by ||
+    readback.author_association !== "OWNER"
+  ) {
+    errors.push("completion receipt authorization comment must be authored by the repository owner")
+  }
+  if (readback.created_at !== receipt.recorded_at) {
+    errors.push(
+      "completion receipt recorded_at must equal the GitHub authorization comment created_at"
+    )
+  }
+  if (readback.updated_at !== readback.created_at) {
+    errors.push("completion receipt authorization comment must be immutable after creation")
+  }
+
+  const authorization = parseOwnerAuthorizationBody(readback.body, errors)
+  if (
+    authorization === null ||
+    authorization.schema_version !== OWNER_AUTHORIZATION_SCHEMA ||
+    authorization.decision !== "ACCEPTED" ||
+    authorization.accepted_by !== ACCEPTED_RECEIPT_OWNER ||
+    authorization.receipt_base_sha !== receipt.authorization_base_sha ||
+    authorization.traceability_sha256 !== receipt.authorization_traceability_sha256 ||
+    !isDeepStrictEqual(authorization.scope_boundaries, expectedReceiptScopeBoundaries)
+  ) {
+    errors.push(
+      "completion receipt authorization body must bind the audited receipt base, traceability hash, and scope boundaries"
+    )
+  }
+}
+
 function validateCompletionReceipt({
   receipt,
   state,
   evaluatedHeadCommittedAt,
+  changeBaseCommittedAt,
+  ownerAuthorizationReadback,
   changeBaseSha,
   changeBaseTasksText,
   changeBaseTraceabilityText,
@@ -5626,20 +5737,19 @@ function validateCompletionReceipt({
   if (receipt.accepted_by !== ACCEPTED_RECEIPT_OWNER) {
     errors.push("completion receipt accepted_by must equal the authorized repository owner")
   }
-  if (receipt.authorization_ref !== ACCEPTED_RECEIPT_AUTHORIZATION_REF) {
-    errors.push("completion receipt authorization_ref must equal the pinned owner authorization")
+  if (!receiptAuthorizationRefPattern.test(receipt.authorization_ref ?? "")) {
+    errors.push("completion receipt authorization_ref must identify an issue 145 comment")
+  }
+  if (receipt.authorization_ref === LEGACY_RECEIPT_AUTHORIZATION_REF) {
+    errors.push(
+      "completion receipt authorization_ref must identify a fresh post-base owner decision"
+    )
   }
   if (!isIsoTimestamp(receipt.recorded_at)) {
     errors.push("completion receipt recorded_at must be an ISO-8601 UTC timestamp")
   }
   if (!isIsoTimestamp(evaluatedHeadCommittedAt)) {
     errors.push("completion receipt requires a trusted evaluated head commit timestamp")
-  }
-  if (
-    isIsoTimestamp(receipt.recorded_at) &&
-    Date.parse(receipt.recorded_at) < Date.parse(ACCEPTED_RECEIPT_AUTHORIZATION_RECORDED_AT)
-  ) {
-    errors.push("completion receipt recorded_at must not predate the pinned owner authorization")
   }
   if (
     isIsoTimestamp(receipt.recorded_at) &&
@@ -5669,6 +5779,20 @@ function validateCompletionReceipt({
   if (!/^[0-9a-f]{40}$/.test(receipt.receipt_base_sha ?? "")) {
     errors.push("completion receipt receipt_base_sha must be a full lowercase commit SHA")
   }
+  if (!/^[0-9a-f]{40}$/.test(receipt.authorization_base_sha ?? "")) {
+    errors.push("completion receipt authorization_base_sha must be a full lowercase commit SHA")
+  }
+  if (receipt.authorization_base_sha !== receipt.receipt_base_sha) {
+    errors.push("completion receipt authorization_base_sha must equal the audited change base")
+  }
+  if (
+    receipt.authorization_traceability_sha256 !== receipt.traceability_sha256 ||
+    receipt.authorization_traceability_sha256 !== acceptedTraceabilitySha256
+  ) {
+    errors.push(
+      "completion receipt authorization_traceability_sha256 must equal the frozen traceability contract"
+    )
+  }
   if (receipt.protected_main_sha !== undefined) {
     errors.push("completion receipt must not use the deprecated protected_main_sha field")
   }
@@ -5678,6 +5802,21 @@ function validateCompletionReceipt({
     )
   }
   if (state === t085States.RECEIPT_CANDIDATE) {
+    validateOwnerAuthorizationReadback({
+      receipt,
+      readback: ownerAuthorizationReadback,
+      errors
+    })
+    if (!isIsoTimestamp(changeBaseCommittedAt)) {
+      errors.push("completion receipt requires a trusted audited change-base commit timestamp")
+    }
+    if (
+      isIsoTimestamp(receipt.recorded_at) &&
+      isIsoTimestamp(changeBaseCommittedAt) &&
+      Date.parse(receipt.recorded_at) < Date.parse(changeBaseCommittedAt)
+    ) {
+      errors.push("completion receipt recorded_at must not predate the audited change base")
+    }
     if (receipt.receipt_base_sha !== changeBaseSha) {
       errors.push("completion receipt receipt_base_sha must equal the audited change base")
     }
@@ -5923,6 +6062,8 @@ export function validateTraceability({
   root,
   currentHead = null,
   evaluatedHeadCommittedAt = null,
+  changeBaseCommittedAt = null,
+  ownerAuthorizationReadback = null,
   gitBinding = null,
   changedPaths = null,
   changeBaseSha = REVIEW_BASE_SHA,
@@ -5971,6 +6112,12 @@ export function validateTraceability({
     boundedScopeActive,
     changedPaths
   })
+  const ownerReadbackSupportScopeActive = isExactOwnerReadbackSupportScope({
+    state,
+    changeBaseSha,
+    boundedScopeActive,
+    changedPaths
+  })
 
   if (!/^[0-9a-f]{40}$/.test(currentHead ?? "")) {
     errors.push("currentHead must be a full lowercase commit SHA")
@@ -5990,6 +6137,13 @@ export function validateTraceability({
     gitBinding.head_committed_at !== evaluatedHeadCommittedAt
   ) {
     errors.push("git binding head commit timestamp must equal evaluatedHeadCommittedAt")
+  }
+  if (
+    gitBinding?.change_base_committed_at !== undefined &&
+    changeBaseCommittedAt !== null &&
+    gitBinding.change_base_committed_at !== changeBaseCommittedAt
+  ) {
+    errors.push("git binding change base commit timestamp must equal changeBaseCommittedAt")
   }
   if (gitBinding?.change_base_sha !== undefined && gitBinding.change_base_sha !== changeBaseSha) {
     errors.push("git binding change base must equal changeBaseSha")
@@ -6022,6 +6176,8 @@ export function validateTraceability({
       gitBinding?.head !== currentHead ||
       typeof gitBinding?.change_base_ref !== "string" ||
       gitBinding.change_base_sha !== changeBaseSha ||
+      gitBinding.change_base_committed_at !== changeBaseCommittedAt ||
+      !isIsoTimestamp(gitBinding.change_base_committed_at) ||
       gitBinding.change_base_ancestor !== true
     ) {
       errors.push("receipt candidate requires trusted audited Git binding")
@@ -6045,9 +6201,11 @@ export function validateTraceability({
   } else if (state === t085States.PENDING && Array.isArray(changedPaths)) {
     const pendingAllowedPaths =
       boundedScopeActive === false
-        ? postT085RemediationScopeActive
-          ? postT085RemediationChangedPaths
-          : receiptSupportChangedPaths
+        ? ownerReadbackSupportScopeActive
+          ? ownerReadbackSupportChangedPaths
+          : postT085RemediationScopeActive
+            ? postT085RemediationChangedPaths
+            : receiptSupportChangedPaths
         : authorizedChangedPaths
     for (const changedPath of changedPaths) {
       if (!pendingAllowedPaths.has(changedPath)) {
@@ -6507,6 +6665,8 @@ export function validateTraceability({
         receipt: completionReceipt,
         state,
         evaluatedHeadCommittedAt,
+        changeBaseCommittedAt,
+        ownerAuthorizationReadback,
         changeBaseSha,
         changeBaseTasksText,
         changeBaseTraceabilityText,
@@ -6594,6 +6754,21 @@ export function validateTraceability({
       review_base_sha: reviewBaseSha,
       evaluated_head_sha: currentHead,
       evaluated_head_committed_at: evaluatedHeadCommittedAt,
+      audited_change_base_committed_at: changeBaseCommittedAt,
+      owner_authorization_readback: ownerAuthorizationReadback
+        ? {
+            status: ownerAuthorizationReadback.status ?? "UNAVAILABLE",
+            source: ownerAuthorizationReadback.source ?? null,
+            html_url: ownerAuthorizationReadback.html_url ?? null,
+            issue_url: ownerAuthorizationReadback.issue_url ?? null,
+            user_login: ownerAuthorizationReadback.user_login ?? null,
+            author_association: ownerAuthorizationReadback.author_association ?? null,
+            created_at: ownerAuthorizationReadback.created_at ?? null,
+            updated_at: ownerAuthorizationReadback.updated_at ?? null,
+            body_sha256: sha256(ownerAuthorizationReadback.body ?? null),
+            errors: ownerAuthorizationReadback.errors ?? []
+          }
+        : null,
       exact_head_evidence: exactHeadEvidence,
       github_actions_context: githubActionsContext
         ? {
@@ -6652,6 +6827,11 @@ export function validateTraceability({
           path: paths.completionReceipt,
           schema_version: completionReceipt.schema_version ?? null,
           decision: completionReceipt.decision ?? null,
+          authorization_ref: completionReceipt.authorization_ref ?? null,
+          recorded_at: completionReceipt.recorded_at ?? null,
+          authorization_base_sha: completionReceipt.authorization_base_sha ?? null,
+          authorization_traceability_sha256:
+            completionReceipt.authorization_traceability_sha256 ?? null,
           implementation_head_sha: completionReceipt.implementation_head_sha ?? null,
           implementation_merge_sha: completionReceipt.implementation_merge_sha ?? null,
           receipt_base_sha: completionReceipt.receipt_base_sha ?? null,
@@ -6689,9 +6869,11 @@ export function validateTraceability({
                   (changedPath) =>
                     !(
                       boundedScopeActive === false
-                        ? postT085RemediationScopeActive
-                          ? postT085RemediationChangedPaths
-                          : receiptSupportChangedPaths
+                        ? ownerReadbackSupportScopeActive
+                          ? ownerReadbackSupportChangedPaths
+                          : postT085RemediationScopeActive
+                            ? postT085RemediationChangedPaths
+                            : receiptSupportChangedPaths
                         : authorizedChangedPaths
                     ).has(changedPath)
                 )
@@ -6852,12 +7034,115 @@ function inspectHeadTopology(root, head) {
   }
 }
 
+function inspectCommitTimestamp(root, commit) {
+  if (!/^[0-9a-f]{40}$/.test(commit ?? "")) return null
+  try {
+    return new Date(
+      execFileSync("git", ["show", "-s", "--format=%cI", commit], {
+        cwd: root,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"]
+      }).trim()
+    ).toISOString()
+  } catch {
+    return null
+  }
+}
+
 function inspectImplementationMergeAncestor(root, changeBaseSha) {
   if (!/^[0-9a-f]{40}$/.test(changeBaseSha ?? "")) return null
   try {
     const receipt = JSON.parse(fs.readFileSync(path.join(root, COMPLETION_RECEIPT_PATH), "utf8"))
     if (!/^[0-9a-f]{40}$/.test(receipt?.implementation_merge_sha ?? "")) return null
     return inspectAncestor(root, receipt.implementation_merge_sha, changeBaseSha)
+  } catch {
+    return null
+  }
+}
+
+const githubCommentFetchScript = String.raw`
+const url = process.argv[1]
+const headers = {
+  Accept: "application/vnd.github+json",
+  "User-Agent": "courtside-t085-receipt-validator",
+  "X-GitHub-Api-Version": "2022-11-28"
+}
+if (process.env.GITHUB_TOKEN) headers.Authorization = "Bearer " + process.env.GITHUB_TOKEN
+const response = await fetch(url, {
+  headers,
+  redirect: "error",
+  signal: AbortSignal.timeout(10000)
+})
+if (!response.ok) throw new Error("GitHub comment read-back returned HTTP " + response.status)
+const body = await response.text()
+if (Buffer.byteLength(body) > 1024 * 1024) throw new Error("GitHub comment read-back exceeded 1 MiB")
+process.stdout.write(body)
+`
+
+export function inspectOwnerAuthorization(authorizationRef, { environment = process.env } = {}) {
+  const match = authorizationRef?.match(receiptAuthorizationRefPattern)
+  const commentId = match?.[0]?.match(/issuecomment-([1-9]\d*)$/)?.[1] ?? null
+  if (commentId === null) {
+    return {
+      status: "UNAVAILABLE",
+      source: "github-api",
+      errors: ["authorization_ref does not identify an issue 145 comment"]
+    }
+  }
+  const apiUrl = `https://api.github.com/repos/bynanci/courtside-tw/issues/comments/${commentId}`
+  try {
+    const raw = execFileSync(
+      process.execPath,
+      ["--input-type=module", "--eval", githubCommentFetchScript, apiUrl],
+      {
+        encoding: "utf8",
+        env: environment,
+        maxBuffer: 1024 * 1024,
+        stdio: ["ignore", "pipe", "pipe"],
+        timeout: 15000
+      }
+    )
+    const comment = JSON.parse(raw)
+    return {
+      status: "VERIFIED",
+      source: "github-api",
+      html_url: comment?.html_url ?? null,
+      issue_url: comment?.issue_url ?? null,
+      user_login: comment?.user?.login ?? null,
+      author_association: comment?.author_association ?? null,
+      created_at: comment?.created_at ?? null,
+      updated_at: comment?.updated_at ?? null,
+      body: comment?.body ?? null,
+      errors: []
+    }
+  } catch (error) {
+    return {
+      status: "UNAVAILABLE",
+      source: "github-api",
+      html_url: authorizationRef ?? null,
+      errors: [`GitHub owner-authorization read-back failed: ${error.message}`]
+    }
+  }
+}
+
+export function inspectOwnerAuthorizationForState(
+  root,
+  {
+    changeBaseTasksText = null,
+    environment = process.env,
+    inspect = inspectOwnerAuthorization
+  } = {}
+) {
+  try {
+    const tasksText = fs.readFileSync(
+      path.join(root, "specs/001-taiwan-basketball-magazine-ebook/tasks.md"),
+      "utf8"
+    )
+    if (classifyT085State(changeBaseTasksText, tasksText) !== t085States.RECEIPT_CANDIDATE) {
+      return null
+    }
+    const receipt = JSON.parse(fs.readFileSync(path.join(root, COMPLETION_RECEIPT_PATH), "utf8"))
+    return inspect(receipt?.authorization_ref, { environment })
   } catch {
     return null
   }
@@ -6890,6 +7175,7 @@ export function inspectGit(root, { environment = process.env } = {}) {
     const authorizedBaseAncestor = inspectAncestor(root, AUTHORIZED_BASE_SHA, head)
     const reviewBaseAncestor = inspectAncestor(root, REVIEW_BASE_SHA, head)
     const changeBase = resolveChangeBase(root, head, environment)
+    const changeBaseCommittedAt = inspectCommitTimestamp(root, changeBase.sha)
     const headTopology = inspectHeadTopology(root, head)
     const implementationMergeAncestorOfChangeBase = inspectImplementationMergeAncestor(
       root,
@@ -6940,6 +7226,7 @@ export function inspectGit(root, { environment = process.env } = {}) {
       review_base_ancestor: reviewBaseAncestor,
       change_base_ref: changeBase.ref,
       change_base_sha: changeBase.sha,
+      change_base_committed_at: changeBaseCommittedAt,
       change_base_ancestor: changeBase.ancestor,
       head_parent_sha: headTopology.first,
       head_parent_count: headTopology.count,
@@ -6959,6 +7246,7 @@ export function inspectGit(root, { environment = process.env } = {}) {
       review_base_ancestor: null,
       change_base_ref: null,
       change_base_sha: null,
+      change_base_committed_at: null,
       change_base_ancestor: null,
       head_parent_sha: null,
       head_parent_count: null,
@@ -6976,12 +7264,18 @@ const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url))
 
 export function runCli(root = repositoryRoot, { environment = process.env } = {}) {
   const inspection = inspectGit(root, { environment })
+  const ownerAuthorizationReadback = inspectOwnerAuthorizationForState(root, {
+    changeBaseTasksText: inspection.change_base_tasks_text,
+    environment
+  })
   const githubActionsContext = inspectGitHubActionsContext({ environment, gitBinding: inspection })
   const isGitHubActions = environment.GITHUB_ACTIONS === "true"
   const report = validateTraceability({
     root,
     currentHead: inspection.head,
     evaluatedHeadCommittedAt: inspection.head_committed_at,
+    changeBaseCommittedAt: inspection.change_base_committed_at,
+    ownerAuthorizationReadback,
     gitBinding: {
       status: inspection.status,
       head: inspection.head,
@@ -6990,6 +7284,7 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
       review_base_ancestor: inspection.review_base_ancestor,
       change_base_ref: inspection.change_base_ref,
       change_base_sha: inspection.change_base_sha,
+      change_base_committed_at: inspection.change_base_committed_at,
       change_base_ancestor: inspection.change_base_ancestor,
       head_parent_sha: inspection.head_parent_sha,
       head_parent_count: inspection.head_parent_count,
