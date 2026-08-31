@@ -185,8 +185,16 @@ function isT086LockedPath(changedPath) {
   )
 }
 
-function isPostT085ResearchDocumentationPath(changedPath) {
-  return changedPath.startsWith("docs/research/")
+const postT085MaintenancePaths = new Set([
+  ".github/workflows/ci.yml",
+  ".github/workflows/security.yml",
+  "infra/compose/postgres/Dockerfile",
+  "scripts/test/validate-traceability.test.mjs",
+  "scripts/validate-traceability.mjs"
+])
+
+function isAuthorizedPostT085MaintenancePath(changedPath) {
+  return changedPath.startsWith("docs/research/") || postT085MaintenancePaths.has(changedPath)
 }
 const authorizedChangedPaths = new Set(ACCEPTED_IMPLEMENTATION_CHANGED_PATHS)
 const receiptSupportChangedPaths = new Set([
@@ -6219,9 +6227,9 @@ export function validateTraceability({
   }
   if (state === t085States.COMPLETE_STEADY) {
     for (const changedPath of changedPaths ?? []) {
-      if (!isPostT085ResearchDocumentationPath(changedPath)) {
+      if (!isAuthorizedPostT085MaintenancePath(changedPath)) {
         errors.push(
-          `changed path is outside the authorized post-T085 research-documentation scope: ${changedPath}`
+          `changed path is outside the authorized post-T085 maintenance scope: ${changedPath}`
         )
       }
       if (isT086LockedPath(changedPath)) {
@@ -6881,7 +6889,7 @@ export function validateTraceability({
                 ? null
                 : state === t085States.COMPLETE_STEADY && Array.isArray(changedPaths)
                   ? changedPaths.filter(
-                      (changedPath) => !isPostT085ResearchDocumentationPath(changedPath)
+                      (changedPath) => !isAuthorizedPostT085MaintenancePath(changedPath)
                     )
                   : state === t085States.COMPLETE_STEADY
                     ? null

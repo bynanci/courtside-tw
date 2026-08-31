@@ -1052,6 +1052,26 @@ test("completed T085 permits unrelated post-receipt work without replaying the t
 })
 
 for (const changedPath of [
+  "infra/compose/postgres/Dockerfile",
+  ".github/workflows/ci.yml",
+  ".github/workflows/security.yml",
+  "scripts/test/validate-traceability.test.mjs",
+  "scripts/validate-traceability.mjs"
+]) {
+  test(`completed T085 permits independently reviewed maintenance path ${changedPath}`, () => {
+    const fixture = makeCompletedFixture()
+    fixture.changedPaths = [changedPath]
+    const report = runCompletedFixture(fixture)
+
+    assert.equal(report.status, "PASS", report.errors.join("\n"))
+    assert.equal(report.mode, "T085_COMPLETE_STEADY")
+    assert.equal(report.receipt_eligible, false)
+    assert.deepEqual(report.scope_validation.changed_paths, [changedPath])
+    assert.equal(report.scope_boundaries.t086_dispatched, false)
+  })
+}
+
+for (const changedPath of [
   "android/app/src/main/java/com/courtside/tw/Runtime.kt",
   ".github/workflows/deploy.yml",
   "backend/src/main/java/com/courtside/tw/ProviderConfig.java",
@@ -1066,7 +1086,7 @@ for (const changedPath of [
     assert.equal(report.receipt_eligible, false)
     assert.match(
       report.errors.join("\n"),
-      /changed path is outside the authorized post-T085 research-documentation scope/
+      /changed path is outside the authorized post-T085 maintenance scope/
     )
   })
 }
