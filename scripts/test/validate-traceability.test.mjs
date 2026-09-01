@@ -1337,6 +1337,10 @@ for (const [name, readbackOverrides, expected] of [
 
     assert.equal(report.status, "FAIL")
     assert.match(report.errors.join("\n"), expected)
+    assert.equal(report.scope_validation.status, "EXTERNAL_READBACK_REQUIRED")
+    assert.deepEqual(report.scope_validation.unauthorized_paths, [
+      "apps/web/tests/e2e/us6-offline-issue.spec.ts"
+    ])
   })
 }
 
@@ -1597,7 +1601,7 @@ test("maintenance authorization pagination rejects oversize and truncated respon
     traceabilityValidator.fetchPostT085MaintenanceComments(firstUrl, {
       fetchImpl: async () => new Response("[truncated")
     }),
-    /Unexpected end of JSON input/
+    /not valid JSON|Unexpected end of JSON input/
   )
 })
 
@@ -1662,6 +1666,77 @@ test("maintenance authorization rejects duplicate JSON keys", () => {
 
   assert.equal(report.status, "FAIL")
   assert.match(report.errors.join("\n"), /duplicate JSON object key/)
+})
+
+test("Git inspection extracts exact merge parents and detects a candidate-tree drift", () => {
+  const fixture = makePostT085MaintenanceFixture()
+  const root = fixture.root
+  const base = initializeGitFixture(root)
+  git(root, "switch", "-c", "maintenance-candidate")
+  for (const changedPath of postT085MaintenanceChangedPaths) {
+    const absolutePath = path.join(root, changedPath)
+    fs.mkdirSync(path.dirname(absolutePath), { recursive: true })
+    fs.writeFileSync(absolutePath, `authorized maintenance ${changedPath}\n`)
+  }
+  git(root, "add", ...postT085MaintenanceChangedPaths)
+  git(root, "commit", "-m", "build maintenance candidate")
+  const candidate = git(root, "rev-parse", "HEAD")
+
+  git(root, "switch", "main")
+  git(root, "merge", "--no-ff", "--no-edit", "maintenance-candidate")
+  const mergeHead = git(root, "rev-parse", "HEAD")
+  const eventPath = path.join(root, "github-maintenance-merge-push.json")
+  fs.writeFileSync(
+    eventPath,
+    JSON.stringify({
+      repository: { full_name: "bynanci/courtside-tw" },
+      before: base,
+      after: mergeHead,
+      ref: "refs/heads/main"
+    })
+  )
+  const mergeInspection = traceabilityValidator.inspectGit(root, {
+    environment: { GITHUB_ACTIONS: "true", GITHUB_EVENT_PATH: eventPath }
+  })
+
+  assert.deepEqual(mergeInspection.head_parent_shas, [base, candidate])
+  assert.equal(mergeInspection.head_parent_count, 2)
+  assert.equal(mergeInspection.head_tree_sha, mergeInspection.second_parent_tree_sha)
+  assert.match(mergeInspection.second_parent_committed_at, /^\d{4}-\d{2}-\d{2}T/)
+  assert.deepEqual(mergeInspection.changedPaths, postT085MaintenanceChangedPaths)
+
+  git(root, "switch", "maintenance-candidate")
+  fs.writeFileSync(path.join(root, "drift.txt"), "unauthorized merge-tree drift\n")
+  git(root, "add", "drift.txt")
+  git(root, "commit", "-m", "create an unauthorized tree")
+  const driftTree = git(root, "rev-parse", "HEAD^{tree}")
+  const driftMerge = git(
+    root,
+    "commit-tree",
+    driftTree,
+    "-p",
+    base,
+    "-p",
+    candidate,
+    "-m",
+    "forge merge tree drift"
+  )
+  git(root, "switch", "--detach", driftMerge)
+  fs.writeFileSync(
+    eventPath,
+    JSON.stringify({
+      repository: { full_name: "bynanci/courtside-tw" },
+      before: base,
+      after: driftMerge,
+      ref: "refs/heads/main"
+    })
+  )
+  const driftInspection = traceabilityValidator.inspectGit(root, {
+    environment: { GITHUB_ACTIONS: "true", GITHUB_EVENT_PATH: eventPath }
+  })
+
+  assert.deepEqual(driftInspection.head_parent_shas, [base, candidate])
+  assert.notEqual(driftInspection.head_tree_sha, driftInspection.second_parent_tree_sha)
 })
 
 for (const changedPath of [
