@@ -434,6 +434,23 @@ function validateWorkflow(root, errors) {
   ) {
     errors.push("T086 dependency startup pipeline must enable pipefail")
   }
+  const decisionSteps = workflow?.jobs?.decision?.steps
+  const decisionInstallsDependencies =
+    Array.isArray(decisionSteps) &&
+    decisionSteps.some(
+      (step) =>
+        step?.name === "Set up pnpm and Node.js" &&
+        step?.with?.runtime === "node@${{ env.NODE_VERSION }}"
+    ) &&
+    decisionSteps.some(
+      (step) =>
+        step?.name === "Install JavaScript dependencies" &&
+        typeof step?.run === "string" &&
+        step.run.includes("pnpm install --frozen-lockfile --ignore-scripts")
+    )
+  if (!decisionInstallsDependencies) {
+    errors.push("T086 decision job must install JavaScript dependencies before running validator")
+  }
   const permissionBlock = text.match(/^permissions:\s*\n((?: {2}[^\n]+\n?)+)/mu)?.[1] ?? ""
   for (const permission of ["actions: read", "contents: read", "issues: read"]) {
     if (!permissionBlock.includes(permission)) {

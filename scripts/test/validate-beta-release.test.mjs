@@ -244,6 +244,27 @@ test("dependency startup pipeline fails closed when the health check fails", () 
   assert.match(report.errors.join("\n"), /dependency startup.*pipefail/u)
 })
 
+test("decision job installs validator dependencies before execution", () => {
+  const root = copyCanonicalFixture()
+  const workflowPath = path.join(root, ".github/workflows/release.yml")
+  const workflow = fs.readFileSync(workflowPath, "utf8")
+  const decisionStart = workflow.indexOf("  decision:\n")
+  assert.notEqual(decisionStart, -1)
+  const prefix = workflow.slice(0, decisionStart)
+  const decision = workflow
+    .slice(decisionStart)
+    .replace(
+      "        run: pnpm install --frozen-lockfile --ignore-scripts",
+      "        run: echo missing install"
+    )
+  fs.writeFileSync(workflowPath, prefix + decision)
+
+  const report = runFixture(root)
+
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /decision job must install JavaScript dependencies/u)
+})
+
 function stabilityReceipts({ count = 20, head = candidateSha } = {}) {
   return Array.from({ length: count }, (_, offset) => ({
     schema_version: "courtside-t086-stability-run/v1",
