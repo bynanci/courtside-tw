@@ -122,10 +122,7 @@ test("dispatch base, frozen traceability and task frontier cannot drift", () => 
   assert.equal(report.status, "FAIL")
   assert.match(report.errors.join("\n"), /dispatch.*base/u)
 
-  fs.copyFileSync(
-    path.join(repositoryRoot, ".loop/evidence/t086-dispatch.json"),
-    dispatchPath
-  )
+  fs.copyFileSync(path.join(repositoryRoot, ".loop/evidence/t086-dispatch.json"), dispatchPath)
   fs.appendFileSync(
     path.join(root, "specs/001-taiwan-basketball-magazine-ebook/traceability.md"),
     "\nforged drift\n"
@@ -187,6 +184,22 @@ test("release workflow stays read-only, exact-head-bound and non-deploying", () 
   report = runFixture(root)
   assert.equal(report.status, "FAIL")
   assert.match(report.errors.join("\n"), /credentials, secrets or deployment/u)
+
+  fs.copyFileSync(path.join(repositoryRoot, ".github/workflows/release.yml"), workflowPath)
+  fs.writeFileSync(
+    workflowPath,
+    fs.readFileSync(workflowPath, "utf8").replace("surface_result=PASS", "surface_result=FAIL")
+  )
+  report = runFixture(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /prerequisite jobs to PASS/u)
+
+  const validatorSource = fs.readFileSync(
+    path.join(repositoryRoot, "scripts/validate-beta-release.mjs"),
+    "utf8"
+  )
+  assert.doesNotMatch(validatorSource, /GITHUB_TOKEN|headers\.Authorization/u)
+  assert.match(validatorSource, /env: \{\}/u)
 })
 
 function stabilityReceipts({ count = 20, head = candidateSha } = {}) {
@@ -208,9 +221,22 @@ test("stability gate accepts exactly 20 ordered clean runs on one candidate SHA"
 
 for (const [name, mutate, pattern] of [
   ["nineteen runs", (rows) => rows.slice(0, 19), /exactly 20/u],
-  ["mixed head", (rows) => rows.map((row, index) => index === 9 ? { ...row, candidate_sha: "b".repeat(40) } : row), /same candidate SHA/u],
-  ["failed run", (rows) => rows.map((row, index) => index === 9 ? { ...row, result: "FAIL" } : row), /all 20 runs must PASS/u],
-  ["duplicate index", (rows) => rows.map((row, index) => index === 9 ? { ...row, run: 9 } : row), /ordered 1 through 20/u]
+  [
+    "mixed head",
+    (rows) =>
+      rows.map((row, index) => (index === 9 ? { ...row, candidate_sha: "b".repeat(40) } : row)),
+    /same candidate SHA/u
+  ],
+  [
+    "failed run",
+    (rows) => rows.map((row, index) => (index === 9 ? { ...row, result: "FAIL" } : row)),
+    /all 20 runs must PASS/u
+  ],
+  [
+    "duplicate index",
+    (rows) => rows.map((row, index) => (index === 9 ? { ...row, run: 9 } : row)),
+    /ordered 1 through 20/u
+  ]
 ]) {
   test(`stability gate rejects ${name}`, () => {
     const report = validateStabilityReceipts(mutate(stabilityReceipts()), { candidateSha })

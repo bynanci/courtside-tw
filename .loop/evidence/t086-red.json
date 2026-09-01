@@ -8,11 +8,32 @@
   "authorization_ref": "https://github.com/bynanci/courtside-tw/issues/160#issuecomment-5488168546",
   "test_path": "scripts/test/validate-beta-release.test.mjs",
   "test_sha256": "7f0d2578ab98ff8861f2d7200ab06a4b1f90c3f8d921bef322f3c2210fa89225",
-  "command": "node --test scripts/test/validate-beta-release.test.mjs",
-  "exit_code": 1,
-  "failure_code": "ERR_MODULE_NOT_FOUND",
-  "missing_path": "scripts/validate-beta-release.mjs",
-  "attribution": "The tests define the T086 control-plane, authorization, scope, workflow, blocker and 20-run contracts before the implementation module exists.",
+  "local_red": {
+    "command": "node --test scripts/test/validate-beta-release.test.mjs",
+    "exit_code": 1,
+    "failure_code": "ERR_MODULE_NOT_FOUND",
+    "missing_path": "scripts/validate-beta-release.mjs",
+    "attribution": "The tests define the T086 control-plane, authorization, scope, workflow, blocker and 20-run contracts before the implementation module exists."
+  },
+  "remote_red": {
+    "head_sha": "415f1d8cd7bd25f60708b05d538254d740106197",
+    "pull_request": "https://github.com/bynanci/courtside-tw/pull/161",
+    "ci": {
+      "run_id": 33464411070,
+      "run_number": 1047,
+      "conclusion": "failure",
+      "failed_job_id": 99721169381,
+      "failed_job": "Frontend and contract verification",
+      "failed_step": "Run repository verification",
+      "failure": "Prettier rejected scripts/test/validate-beta-release.test.mjs at the tests-first RED head."
+    },
+    "security": {
+      "run_id": 33464411071,
+      "run_number": 1051,
+      "conclusion": "success"
+    },
+    "attribution": "The protected-base branch contained only the T086 tests, graph and dispatch receipts. CI failed on the new test fixture before implementation; Java and isolated dependency/backup/rollback jobs passed and Security passed."
+  },
   "task_state_changed": false,
   "beta_flag_removed": false
 }

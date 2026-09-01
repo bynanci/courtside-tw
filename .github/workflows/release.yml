@@ -1,0 +1,354 @@
+name: T086 Beta Release
+
+on:
+  pull_request:
+    branches:
+      - main
+    paths:
+      - ".github/workflows/ci.yml"
+      - ".github/workflows/release.yml"
+      - ".loop/evidence/t086-*"
+      - ".loop/t086-*"
+      - "Makefile"
+      - "docs/release/beta-checklist.md"
+      - "package.json"
+      - "scripts/test/validate-beta-release.test.mjs"
+      - "scripts/test/validate-traceability.test.mjs"
+      - "scripts/validate-beta-release.mjs"
+      - "scripts/validate-traceability.mjs"
+  workflow_dispatch:
+
+permissions:
+  actions: read
+  contents: read
+  issues: read
+
+concurrency:
+  group: t086-release-${{ github.event.pull_request.head.sha || github.sha }}
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: 24.14.0
+  PNPM_VERSION: 11.7.0
+  GRADLE_VERSION: 8.14.3
+  CANDIDATE_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
+jobs:
+  control-plane:
+    name: Owner dispatch and fail-closed contract
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify exact source head
+        env:
+          EXPECTED_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: bash scripts/ci/verify-source-head.sh
+
+      - name: Set up pnpm and Node.js
+        uses: pnpm/setup@84cb39b217b10273981911c288cd62326dc7c6d2 # v2.0.2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          runtime: node@${{ env.NODE_VERSION }}
+          cache: true
+          cache-dependency-path: pnpm-lock.yaml
+          install: false
+
+      - name: Install JavaScript dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Test and validate the release control plane
+        run: |
+          set -o pipefail
+          mkdir -p artifacts/t086
+          pnpm run test:beta-release 2>&1 | tee artifacts/t086/control-plane-tests.log
+          node scripts/validate-beta-release.mjs \
+            --mode control \
+            --output artifacts/t086/control-plane.json \
+            2>&1 | tee artifacts/t086/control-plane.log
+
+      - name: Upload control-plane evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: t086-control-plane-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            artifacts/t086
+            artifacts/exact-head.json
+          if-no-files-found: error
+          retention-days: 14
+
+  surface-preflight:
+    name: Seven-surface exact-head preflight
+    needs: control-plane
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify exact source head
+        env:
+          EXPECTED_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: bash scripts/ci/verify-source-head.sh
+
+      - name: Set up pnpm and Node.js
+        uses: pnpm/setup@84cb39b217b10273981911c288cd62326dc7c6d2 # v2.0.2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          runtime: node@${{ env.NODE_VERSION }}
+          cache: true
+          cache-dependency-path: pnpm-lock.yaml
+          install: false
+
+      - name: Set up Java
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+          cache-dependency-path: apps/api/**/*.gradle*
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          gradle-version: ${{ env.GRADLE_VERSION }}
+
+      - name: Install JavaScript and Chromium dependencies
+        run: |
+          pnpm install --frozen-lockfile --ignore-scripts
+          pnpm --filter @courtside/web exec playwright install --with-deps chromium
+
+      - name: Start isolated repository dependencies
+        run: |
+          mkdir -p artifacts/t086/surfaces
+          DEPENDENCY_TIMEOUT_SECONDS=120 scripts/dev/check-dependencies.sh check \
+            2>&1 | tee artifacts/t086/surfaces/dependencies.log
+
+      # t086-surface:public-read
+      - name: Verify public read
+        run: |
+          set -o pipefail
+          pnpm --filter @courtside/web run test:us1-us2 \
+            2>&1 | tee artifacts/t086/surfaces/public-read.log
+
+      # t086-surface:two-role-publish
+      - name: Verify two-role publication
+        run: |
+          set -o pipefail
+          pnpm --filter @courtside/web exec node --experimental-strip-types --test \
+            tests/integration/studio-rbac.test.ts \
+            2>&1 | tee artifacts/t086/surfaces/two-role-publish-web.log
+          gradle --no-daemon --console=plain -p apps/api test \
+            --tests tw.basketball.magazine.publication.api.EditorialPublicationApiIT \
+            2>&1 | tee artifacts/t086/surfaces/two-role-publish-api.log
+
+      # t086-surface:retry
+      - name: Verify retry and dead-letter bounds
+        run: |
+          set -o pipefail
+          gradle --no-daemon --console=plain -p apps/api test \
+            --tests tw.basketball.magazine.publication.PublicationReliabilityIT \
+            --tests tw.basketball.magazine.outbox.OutboxRetryDeadLetterIntegrationTest \
+            2>&1 | tee artifacts/t086/surfaces/retry.log
+
+      # t086-surface:revision
+      - name: Verify revision boundaries
+        run: |
+          set -o pipefail
+          pnpm --filter @courtside/web exec node --experimental-strip-types --test \
+            tests/unit/reader/useLocalReadingProgress.test.ts \
+            2>&1 | tee artifacts/t086/surfaces/revision.log
+          gradle --no-daemon --console=plain -p apps/api test \
+            --tests tw.basketball.magazine.content.application.PublishedArticleSnapshotFactoryTest \
+            2>&1 | tee -a artifacts/t086/surfaces/revision.log
+
+      # t086-surface:withdrawal
+      - name: Verify withdrawal denial and reconciliation
+        run: |
+          set -o pipefail
+          pnpm --filter @courtside/web exec node --experimental-strip-types --test \
+            tests/unit/withdrawal-reconciler.test.ts \
+            tests/unit/offline-issue-manager.test.ts \
+            2>&1 | tee artifacts/t086/surfaces/withdrawal.log
+
+      # t086-surface:backup-restore
+      - name: Verify isolated backup restore
+        run: |
+          set -o pipefail
+          mkdir -p artifacts/t086/surfaces/backup-restore
+          T081_ARTIFACT_DIR=artifacts/t086/surfaces/backup-restore \
+            bash scripts/test/verify-backup-restore.sh \
+            2>&1 | tee artifacts/t086/surfaces/backup-restore.log
+
+      # t086-surface:rollback
+      - name: Verify non-destructive application rollback
+        run: |
+          set -o pipefail
+          mkdir -p artifacts/t086/surfaces/rollback
+          T082_ARTIFACT_DIR=artifacts/t086/surfaces/rollback \
+            bash scripts/test/verify-deployment-rollback.sh \
+            2>&1 | tee artifacts/t086/surfaces/rollback.log
+
+      - name: Stop isolated repository dependencies
+        if: ${{ always() }}
+        run: |
+          mkdir -p artifacts/t086/surfaces
+          scripts/dev/check-dependencies.sh status > artifacts/t086/surfaces/status.log 2>&1 || true
+          scripts/dev/check-dependencies.sh down > artifacts/t086/surfaces/cleanup.log 2>&1 || true
+
+      - name: Upload seven-surface evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: t086-seven-surfaces-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            artifacts/t086/surfaces
+            artifacts/exact-head.json
+          if-no-files-found: error
+          retention-days: 14
+
+  stability:
+    name: Twenty consecutive exact-head runs
+    needs: surface-preflight
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify exact source head
+        env:
+          EXPECTED_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: bash scripts/ci/verify-source-head.sh
+
+      - name: Set up pnpm and Node.js
+        uses: pnpm/setup@84cb39b217b10273981911c288cd62326dc7c6d2 # v2.0.2
+        with:
+          version: ${{ env.PNPM_VERSION }}
+          runtime: node@${{ env.NODE_VERSION }}
+          cache: true
+          cache-dependency-path: pnpm-lock.yaml
+          install: false
+
+      - name: Set up Java
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+          cache-dependency-path: apps/api/**/*.gradle*
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@9c971963bec38e04b3d30dcc455b5382be2fdbfb # v6.3.0
+        with:
+          gradle-version: ${{ env.GRADLE_VERSION }}
+
+      - name: Install JavaScript dependencies
+        run: pnpm install --frozen-lockfile --ignore-scripts
+
+      - name: Run the bounded suite twenty times
+        run: |
+          set -euo pipefail
+          mkdir -p artifacts/t086/stability/runs artifacts/t086/stability/logs
+          for run in $(seq 1 20); do
+            run_id=$(printf '%02d' "$run")
+            pnpm --filter @courtside/web exec node --experimental-strip-types --test \
+              tests/component/reader/reader-components.test.ts \
+              tests/integration/studio-rbac.test.ts \
+              tests/unit/reader/useLocalReadingProgress.test.ts \
+              tests/unit/withdrawal-reconciler.test.ts \
+              2>&1 | tee "artifacts/t086/stability/logs/web-$run_id.log"
+            gradle --no-daemon --console=plain --rerun-tasks -p apps/api test \
+              --tests tw.basketball.magazine.content.application.PublishedArticleSnapshotFactoryTest \
+              --tests tw.basketball.magazine.outbox.OutboxHandlerRegistryTest \
+              --tests tw.basketball.magazine.publication.application.PublicationIdempotencyPolicyTest \
+              --tests tw.basketball.magazine.publication.domain.PublicationWorkflowTest \
+              2>&1 | tee "artifacts/t086/stability/logs/api-$run_id.log"
+            node scripts/validate-beta-release.mjs \
+              --mode record-run \
+              --run "$run" \
+              --candidate-sha "$CANDIDATE_SHA" \
+              --output "artifacts/t086/stability/runs/run-$run_id.json"
+          done
+          node scripts/validate-beta-release.mjs \
+            --mode aggregate \
+            --candidate-sha "$CANDIDATE_SHA" \
+            --runs-dir artifacts/t086/stability/runs \
+            --output artifacts/t086/stability/report.json
+
+      - name: Upload stability evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: t086-stability-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            artifacts/t086/stability
+            artifacts/exact-head.json
+          if-no-files-found: error
+          retention-days: 14
+
+  decision:
+    name: Fail-closed beta decision
+    if: ${{ always() }}
+    needs:
+      - control-plane
+      - surface-preflight
+      - stability
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout exact candidate
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Verify exact source head
+        env:
+          EXPECTED_SOURCE_HEAD: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: bash scripts/ci/verify-source-head.sh
+
+      - name: Read back the protected decision
+        run: |
+          set -euo pipefail
+          surface_result=FAIL
+          stability_result=FAIL
+          if [ "${{ needs.surface-preflight.result }}" = "success" ]; then
+            surface_result=PASS
+          fi
+          if [ "${{ needs.stability.result }}" = "success" ]; then
+            stability_result=PASS
+          fi
+          node scripts/validate-beta-release.mjs \
+            --mode decision \
+            --surface-result "$surface_result" \
+            --stability-result "$stability_result" \
+            --output artifacts/t086/decision.json \
+            --require-release-pass
+
+      - name: Upload decision packet
+        if: ${{ always() }}
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
+        with:
+          name: t086-decision-${{ github.event.pull_request.head.sha || github.sha }}
+          path: |
+            artifacts/t086/decision.json
+            artifacts/exact-head.json
+          if-no-files-found: warn
+          retention-days: 14

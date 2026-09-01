@@ -8,6 +8,12 @@ import test from "node:test"
 import { fileURLToPath } from "node:url"
 
 import * as traceabilityValidator from "../validate-traceability.mjs"
+import {
+  EXPECTED_OWNER_AUTHORIZATION as EXPECTED_T086_OWNER_AUTHORIZATION,
+  T086_AUTHORIZATION_REF,
+  T086_AUTHORIZED_BASE_SHA,
+  T086_AUTHORIZED_CHANGED_PATHS
+} from "../validate-beta-release.mjs"
 
 const {
   ACCEPTED_CI_RUN_ID,
@@ -539,6 +545,28 @@ function makeOwnerAuthorizationReadback(receipt, overrides = {}) {
       "<!-- t085:owner-authorization:start -->",
       JSON.stringify(authorization),
       "<!-- t085:owner-authorization:end -->"
+    ].join("\n"),
+    errors: [],
+    ...overrides
+  }
+}
+
+function makeT086OwnerAuthorizationReadback(overrides = {}) {
+  return {
+    status: "VERIFIED",
+    source: "github-api",
+    html_url: T086_AUTHORIZATION_REF,
+    issue_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/160",
+    user_login: "bynanci",
+    author_association: "OWNER",
+    created_at: "2026-09-01T02:50:47Z",
+    updated_at: "2026-09-01T02:50:47Z",
+    body: [
+      "<!-- t086:owner-authorization:start -->",
+      "```json",
+      JSON.stringify(EXPECTED_T086_OWNER_AUTHORIZATION, null, 2),
+      "```",
+      "<!-- t086:owner-authorization:end -->"
     ].join("\n"),
     errors: [],
     ...overrides
@@ -1101,6 +1129,57 @@ test("completed T085 keeps T086 dispatch paths blocked until validator evolution
   assert.match(
     report.errors.join("\n"),
     /changed path requires separately authorized T086 validator evolution/
+  )
+})
+
+test("completed T085 admits the exact owner-authorized T086 successor scope", () => {
+  const tasksText = fs.readFileSync(path.join(repositoryRoot, featurePath, "tasks.md"), "utf8")
+  const traceabilityText = fs.readFileSync(
+    path.join(repositoryRoot, featurePath, "traceability.md"),
+    "utf8"
+  )
+  const completionReceiptText = fs.readFileSync(
+    path.join(repositoryRoot, completionReceiptPath),
+    "utf8"
+  )
+  const currentHead = "6".repeat(40)
+  const runT086 = (t086OwnerAuthorizationReadback) =>
+    validateTraceability({
+      root: repositoryRoot,
+      currentHead,
+      evaluatedHeadCommittedAt: "2026-09-01T00:00:00Z",
+      changedPaths: [...T086_AUTHORIZED_CHANGED_PATHS],
+      changeBaseSha: T086_AUTHORIZED_BASE_SHA,
+      boundedScopeActive: false,
+      changeBaseTasksText: tasksText,
+      changeBaseTraceabilityText: traceabilityText,
+      changeBaseCompletionReceiptText: completionReceiptText,
+      t086OwnerAuthorizationReadback,
+      gitBinding: {
+        status: "CLEAN",
+        head: currentHead,
+        change_base_ref: "fixture:t086-protected-base",
+        change_base_sha: T086_AUTHORIZED_BASE_SHA,
+        change_base_ancestor: true,
+        bounded_scope_active: false
+      }
+    })
+
+  const accepted = runT086(makeT086OwnerAuthorizationReadback())
+  assert.equal(accepted.status, "PASS", accepted.errors.join("\n"))
+  assert.equal(accepted.scope_validation.status, "T086_DISPATCH_AUDITED")
+  assert.equal(accepted.successor_scope.t086_requested, true)
+  assert.equal(accepted.successor_scope.t086_authorized, true)
+  assert.equal(accepted.scope_boundaries.t086_dispatched, false)
+
+  const rejected = runT086(
+    makeT086OwnerAuthorizationReadback({ author_association: "CONTRIBUTOR" })
+  )
+  assert.equal(rejected.status, "FAIL")
+  assert.equal(rejected.scope_validation.status, "T086_DISPATCH_REJECTED")
+  assert.match(
+    rejected.errors.join("\n"),
+    /owner authorization must be authored by repository OWNER/u
   )
 })
 

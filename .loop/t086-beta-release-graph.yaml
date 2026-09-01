@@ -16,19 +16,19 @@ scope:
 nodes:
   - id: A
     action: Verify owner dispatch and evolve the fail-closed validator boundary.
-    status: in_progress
+    status: completed
     proof:
       - .loop/evidence/t086-dispatch.json
       - .loop/evidence/t086-red.json
     stop: Owner read-back, exact base, frozen hash or authorized diff fails.
   - id: B
     action: Add the beta checklist and non-deploying release workflow.
-    status: blocked
+    status: completed
     needs: [A]
     stop: Workflow requests write permission, secrets, an environment or deployment.
   - id: C
     action: Execute seven-surface preflight and 20 consecutive exact-head stability runs.
-    status: blocked
+    status: in_progress
     needs: [B]
     stop: Any run fails, changes SHA or lacks an attributable receipt.
   - id: D
@@ -37,17 +37,21 @@ nodes:
     needs: [C]
     stop: Any required human or external evidence is absent; remain HOLD.
 delta:
-  recorded_at: 2026-09-01T02:54:47Z
-  event: tests_first_red
-  from: dependency_ready_undispatched
-  to: owner_dispatched_red
-  ready_frontier: [A]
-  evidence: .loop/evidence/t086-red.json
+  recorded_at: 2026-09-01T03:25:41Z
+  event: control_plane_local_green
+  from: owner_dispatched_red
+  to: exact_head_execution_ready
+  ready_frontier: [C]
+  evidence:
+    - .loop/evidence/t086-red.json
+    - .loop/evidence/t086-local.json
 memory:
   decision: GRAPH_LOOP
   terminal: running
+  release_decision: HOLD
   critical_path: [A, B, C, D]
   minimum_cut:
-    - authenticated owner authorization
-    - exact protected base
-    - frozen T085 traceability hash
+    - exact-head seven-surface preflight
+    - 20 consecutive exact-head stability runs
+    - 18 separately adjudicated frozen T085 deviations
+    - final owner read-back
