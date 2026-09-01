@@ -88,6 +88,26 @@ const postT085RemediationChangedPaths = [
   "scripts/validate-traceability.mjs",
   "specs/001-taiwan-basketball-magazine-ebook/traceability.md"
 ]
+const postT085MaintenanceBaseSha = "92773201398306b89cca7fc0b7852cb06dd4d4c7"
+const postT085MaintenanceCandidateHead = "6666666666666666666666666666666666666666"
+const postT085MaintenanceMergeHead = "7777777777777777777777777777777777777777"
+const postT085MaintenanceChangedPaths = [
+  "apps/web/tests/e2e/us6-offline-issue.spec.ts",
+  "scripts/test/validate-traceability.test.mjs",
+  "scripts/validate-traceability.mjs"
+]
+const postT085MaintenanceScopeBoundaries = {
+  product_runtime_changed: false,
+  t086_task_state_changed: false,
+  beta_flag_removed: false,
+  participant_research_executed: false,
+  web3_activated: false,
+  production_or_provider_mutated: false,
+  credentials_or_secrets_accessed_or_changed: false,
+  external_product_writes: false,
+  t087_or_later_dispatched: false,
+  risk_acceptance_for_t085_deviations: false
+}
 
 function sha256(text) {
   return createHash("sha256").update(text).digest("hex")
@@ -545,6 +565,132 @@ function makeOwnerAuthorizationReadback(receipt, overrides = {}) {
   }
 }
 
+function makePostT085MaintenanceAuthorizationReadback(
+  fixture,
+  {
+    candidateHeadSha = postT085MaintenanceCandidateHead,
+    decision = "CANDIDATE_ACCEPTED",
+    authorizationOverrides = {},
+    readbackOverrides = {}
+  } = {}
+) {
+  const traceabilitySha256 = sha256(fixture.changeBaseTraceabilityText)
+  const authorization = {
+    schema_version: "courtside-post-t085-maintenance-exact-head-authorization/v1",
+    decision,
+    accepted_by: "bynanci",
+    dispatch_authorization_ref:
+      "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5494383925",
+    repository: "bynanci/courtside-tw",
+    issue: 162,
+    pull_request: 163,
+    branch: "fix/us6-offline-clock-deterministic",
+    head_repository_id: 1324872306,
+    base_sha: postT085MaintenanceBaseSha,
+    candidate_head_sha: candidateHeadSha,
+    changed_paths: [...postT085MaintenanceChangedPaths],
+    maintenance_paths: ["apps/web/tests/e2e/us6-offline-issue.spec.ts"],
+    traceability_sha256: traceabilitySha256,
+    required_merge_method: "merge",
+    scope_boundaries: { ...postT085MaintenanceScopeBoundaries },
+    ...authorizationOverrides
+  }
+  return {
+    status: "VERIFIED",
+    source: "github-api",
+    comment_id: 6000000002,
+    html_url: "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-6000000002",
+    issue_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/162",
+    user_login: "bynanci",
+    author_association: "OWNER",
+    created_at: "2026-09-01T00:00:00Z",
+    updated_at: "2026-09-01T00:00:00Z",
+    body: [
+      "<!-- post-t085-maintenance:exact-head-authorization:start -->",
+      JSON.stringify(authorization),
+      "<!-- post-t085-maintenance:exact-head-authorization:end -->"
+    ].join("\n"),
+    errors: [],
+    ...readbackOverrides
+  }
+}
+
+function makePostT085MaintenancePullRequestContext(root) {
+  const eventPath = path.join(root, "github-post-t085-maintenance-pr-event.json")
+  fs.writeFileSync(
+    eventPath,
+    JSON.stringify({
+      repository: { full_name: "bynanci/courtside-tw" },
+      number: 163,
+      pull_request: {
+        number: 163,
+        head: {
+          sha: postT085MaintenanceCandidateHead,
+          ref: "fix/us6-offline-clock-deterministic",
+          repo: { full_name: "bynanci/courtside-tw" }
+        },
+        base: { sha: postT085MaintenanceBaseSha, ref: "main" }
+      }
+    })
+  )
+  return traceabilityValidator.inspectGitHubActionsContext({
+    environment: {
+      GITHUB_ACTIONS: "true",
+      GITHUB_REPOSITORY: "bynanci/courtside-tw",
+      GITHUB_EVENT_NAME: "pull_request",
+      GITHUB_EVENT_PATH: eventPath,
+      GITHUB_SHA: "8888888888888888888888888888888888888888",
+      GITHUB_WORKFLOW: "CI",
+      GITHUB_JOB: "frontend-contract",
+      GITHUB_RUN_ID: fixtureActionsRunId,
+      GITHUB_RUN_NUMBER: fixtureActionsRunNumber,
+      GITHUB_RUN_ATTEMPT: fixtureActionsRunAttempt,
+      GITHUB_REF: "refs/pull/163/merge",
+      GITHUB_BASE_REF: "main",
+      GITHUB_HEAD_REF: "fix/us6-offline-clock-deterministic"
+    },
+    gitBinding: {
+      head: postT085MaintenanceCandidateHead,
+      change_base_sha: postT085MaintenanceBaseSha,
+      change_base_ancestor: true
+    }
+  })
+}
+
+function makePostT085MaintenancePushContext(root) {
+  const eventPath = path.join(root, "github-post-t085-maintenance-push-event.json")
+  fs.writeFileSync(
+    eventPath,
+    JSON.stringify({
+      repository: { full_name: "bynanci/courtside-tw" },
+      before: postT085MaintenanceBaseSha,
+      after: postT085MaintenanceMergeHead,
+      ref: "refs/heads/main"
+    })
+  )
+  return traceabilityValidator.inspectGitHubActionsContext({
+    environment: {
+      GITHUB_ACTIONS: "true",
+      GITHUB_REPOSITORY: "bynanci/courtside-tw",
+      GITHUB_EVENT_NAME: "push",
+      GITHUB_EVENT_PATH: eventPath,
+      GITHUB_SHA: postT085MaintenanceMergeHead,
+      GITHUB_WORKFLOW: "CI",
+      GITHUB_JOB: "frontend-contract",
+      GITHUB_RUN_ID: fixtureActionsRunId,
+      GITHUB_RUN_NUMBER: fixtureActionsRunNumber,
+      GITHUB_RUN_ATTEMPT: fixtureActionsRunAttempt,
+      GITHUB_REF: "refs/heads/main",
+      GITHUB_REF_NAME: "main"
+    },
+    gitBinding: {
+      head: postT085MaintenanceMergeHead,
+      change_base_sha: postT085MaintenanceBaseSha,
+      change_base_ancestor: true
+    }
+  })
+}
+
 function writeFixturePushExactHead(root) {
   fs.writeFileSync(
     path.join(root, "artifacts/exact-head.json"),
@@ -638,6 +784,12 @@ function runCompletedFixture(fixture, overrides = {}) {
     },
     ...overrides
   })
+}
+
+function makePostT085MaintenanceFixture() {
+  const fixture = makeCompletedFixture()
+  fs.rmSync(path.join(fixture.root, "artifacts/exact-head.json"), { force: true })
+  return fixture
 }
 
 function git(root, ...args) {
@@ -1070,6 +1222,240 @@ for (const changedPath of [
     assert.equal(report.scope_boundaries.t086_dispatched, false)
   })
 }
+
+test("completed T085 accepts the exact authenticated PR163 maintenance scope", () => {
+  const fixture = makePostT085MaintenanceFixture()
+  const maintenanceAuthorizationReadback = makePostT085MaintenanceAuthorizationReadback(fixture)
+  const gitBinding = {
+    status: "CLEAN",
+    head: postT085MaintenanceCandidateHead,
+    change_base_ref: "github-event:pull_request.base.sha",
+    change_base_sha: postT085MaintenanceBaseSha,
+    change_base_ancestor: true,
+    bounded_scope_active: false,
+    head_parent_shas: ["9999999999999999999999999999999999999999"],
+    head_parent_sha: "9999999999999999999999999999999999999999",
+    head_parent_count: 1,
+    head_tree_sha: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  }
+  const report = runCompletedFixture(fixture, {
+    currentHead: postT085MaintenanceCandidateHead,
+    changedPaths: [...postT085MaintenanceChangedPaths],
+    changeBaseSha: postT085MaintenanceBaseSha,
+    maintenanceAuthorizationReadback,
+    postT085MaintenanceTraceabilitySha256: sha256(fixture.changeBaseTraceabilityText),
+    githubActionsContext: makePostT085MaintenancePullRequestContext(fixture.root),
+    gitBinding
+  })
+
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+  assert.equal(report.scope_validation.status, "T085_AUTHENTICATED_MAINTENANCE_AUDITED")
+  assert.equal(
+    report.source.maintenance_authorization_readback.comment_id,
+    maintenanceAuthorizationReadback.comment_id
+  )
+  assert.deepEqual(report.scope_validation.changed_paths, postT085MaintenanceChangedPaths)
+  assert.deepEqual(report.scope_validation.unauthorized_paths, [])
+})
+
+test("completed T085 revalidates PR163 as an exact merge commit on protected main", () => {
+  const fixture = makePostT085MaintenanceFixture()
+  const maintenanceAuthorizationReadback = makePostT085MaintenanceAuthorizationReadback(fixture)
+  const gitBinding = {
+    status: "CLEAN",
+    head: postT085MaintenanceMergeHead,
+    change_base_ref: "github-event:before",
+    change_base_sha: postT085MaintenanceBaseSha,
+    change_base_ancestor: true,
+    bounded_scope_active: false,
+    head_parent_shas: [postT085MaintenanceBaseSha, postT085MaintenanceCandidateHead],
+    head_parent_sha: postT085MaintenanceBaseSha,
+    head_parent_count: 2,
+    head_tree_sha: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    second_parent_tree_sha: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+  }
+  const report = runCompletedFixture(fixture, {
+    currentHead: postT085MaintenanceMergeHead,
+    changedPaths: [...postT085MaintenanceChangedPaths],
+    changeBaseSha: postT085MaintenanceBaseSha,
+    maintenanceAuthorizationReadback,
+    postT085MaintenanceTraceabilitySha256: sha256(fixture.changeBaseTraceabilityText),
+    githubActionsContext: makePostT085MaintenancePushContext(fixture.root),
+    gitBinding
+  })
+
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+  assert.equal(report.scope_validation.status, "T085_AUTHENTICATED_MAINTENANCE_AUDITED")
+})
+
+for (const [name, readbackOverrides, expected] of [
+  [
+    "missing authorization",
+    null,
+    /requires a verified GitHub OWNER maintenance-authorization readback/
+  ],
+  [
+    "unavailable authorization",
+    { status: "UNAVAILABLE" },
+    /requires a verified GitHub OWNER maintenance-authorization readback/
+  ],
+  [
+    "an edited authorization",
+    { updated_at: "2026-09-01T00:00:01Z" },
+    /maintenance authorization comment must be immutable after creation/
+  ],
+  [
+    "a non-owner authorization",
+    { user_login: "attacker", author_association: "NONE" },
+    /maintenance authorization comment must be authored by the repository owner/
+  ]
+]) {
+  test(`completed T085 rejects ${name} for the PR163 product-test path`, () => {
+    const fixture = makePostT085MaintenanceFixture()
+    const maintenanceAuthorizationReadback =
+      readbackOverrides === null
+        ? null
+        : makePostT085MaintenanceAuthorizationReadback(fixture, { readbackOverrides })
+    const report = runCompletedFixture(fixture, {
+      currentHead: postT085MaintenanceCandidateHead,
+      changedPaths: [...postT085MaintenanceChangedPaths],
+      changeBaseSha: postT085MaintenanceBaseSha,
+      maintenanceAuthorizationReadback,
+      postT085MaintenanceTraceabilitySha256: sha256(fixture.changeBaseTraceabilityText),
+      githubActionsContext: makePostT085MaintenancePullRequestContext(fixture.root),
+      gitBinding: {
+        status: "CLEAN",
+        head: postT085MaintenanceCandidateHead,
+        change_base_sha: postT085MaintenanceBaseSha,
+        change_base_ancestor: true,
+        bounded_scope_active: false,
+        head_parent_shas: ["9999999999999999999999999999999999999999"],
+        head_parent_count: 1
+      }
+    })
+
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), expected)
+  })
+}
+
+for (const [name, overrides, expected] of [
+  [
+    "a stale authorization base",
+    { changeBaseSha: "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee" },
+    /outside the authorized post-T085 maintenance scope/
+  ],
+  [
+    "an extra path",
+    { changedPaths: [...postT085MaintenanceChangedPaths, "docs/research/extra.md"] },
+    /outside the authorized post-T085 maintenance scope/
+  ],
+  [
+    "a mismatched exact head",
+    {
+      maintenanceAuthorizationReadback: (fixture) =>
+        makePostT085MaintenanceAuthorizationReadback(fixture, {
+          candidateHeadSha: "dddddddddddddddddddddddddddddddddddddddd"
+        })
+    },
+    /maintenance authorization candidate_head_sha must match the exact PR head/
+  ]
+]) {
+  test(`completed T085 rejects ${name} for the one-time PR163 scope`, () => {
+    const fixture = makePostT085MaintenanceFixture()
+    const maintenanceAuthorizationReadback =
+      typeof overrides.maintenanceAuthorizationReadback === "function"
+        ? overrides.maintenanceAuthorizationReadback(fixture)
+        : makePostT085MaintenanceAuthorizationReadback(fixture)
+    const report = runCompletedFixture(fixture, {
+      currentHead: postT085MaintenanceCandidateHead,
+      changedPaths: [...postT085MaintenanceChangedPaths],
+      changeBaseSha: postT085MaintenanceBaseSha,
+      postT085MaintenanceTraceabilitySha256: sha256(fixture.changeBaseTraceabilityText),
+      githubActionsContext: makePostT085MaintenancePullRequestContext(fixture.root),
+      gitBinding: {
+        status: "CLEAN",
+        head: postT085MaintenanceCandidateHead,
+        change_base_sha: overrides.changeBaseSha ?? postT085MaintenanceBaseSha,
+        change_base_ancestor: true,
+        bounded_scope_active: false,
+        head_parent_shas: ["9999999999999999999999999999999999999999"],
+        head_parent_count: 1
+      },
+      maintenanceAuthorizationReadback,
+      ...overrides,
+      ...(typeof overrides.maintenanceAuthorizationReadback === "function"
+        ? { maintenanceAuthorizationReadback }
+        : {})
+    })
+
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), expected)
+  })
+}
+
+for (const [name, gitBindingOverrides, expected] of [
+  [
+    "a squash or rebase merge",
+    {
+      head_parent_shas: [postT085MaintenanceBaseSha],
+      head_parent_count: 1,
+      second_parent_tree_sha: null
+    },
+    /maintenance authorization requires exact merge-commit parents/
+  ],
+  [
+    "a merge commit with a different candidate parent",
+    {
+      head_parent_shas: [postT085MaintenanceBaseSha, "dddddddddddddddddddddddddddddddddddddddd"]
+    },
+    /maintenance authorization requires exact merge-commit parents/
+  ],
+  [
+    "a merge commit whose tree differs from the candidate",
+    { second_parent_tree_sha: "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" },
+    /maintenance merge tree must equal the authorized candidate tree/
+  ]
+]) {
+  test(`protected main rejects ${name} for PR163`, () => {
+    const fixture = makePostT085MaintenanceFixture()
+    const report = runCompletedFixture(fixture, {
+      currentHead: postT085MaintenanceMergeHead,
+      changedPaths: [...postT085MaintenanceChangedPaths],
+      changeBaseSha: postT085MaintenanceBaseSha,
+      maintenanceAuthorizationReadback: makePostT085MaintenanceAuthorizationReadback(fixture),
+      postT085MaintenanceTraceabilitySha256: sha256(fixture.changeBaseTraceabilityText),
+      githubActionsContext: makePostT085MaintenancePushContext(fixture.root),
+      gitBinding: {
+        status: "CLEAN",
+        head: postT085MaintenanceMergeHead,
+        change_base_sha: postT085MaintenanceBaseSha,
+        change_base_ancestor: true,
+        bounded_scope_active: false,
+        head_parent_shas: [postT085MaintenanceBaseSha, postT085MaintenanceCandidateHead],
+        head_parent_sha: postT085MaintenanceBaseSha,
+        head_parent_count: 2,
+        head_tree_sha: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        second_parent_tree_sha: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        ...gitBindingOverrides
+      }
+    })
+
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), expected)
+  })
+}
+
+test("completed T085 static maintenance paths do not require external authorization", () => {
+  const fixture = makeCompletedFixture()
+  fixture.changedPaths = ["scripts/validate-traceability.mjs"]
+  const report = runCompletedFixture(fixture, {
+    maintenanceAuthorizationReadback: null,
+    githubActionsContext: null
+  })
+
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
 
 for (const changedPath of [
   "android/app/src/main/java/com/courtside/tw/Runtime.kt",
