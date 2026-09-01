@@ -7,7 +7,7 @@ NODE_VERSION := 24.14.0
 PNPM_VERSION := 11.7.0
 PNPM_STORE_DIR ?= /tmp/courtside-tw-pnpm-store
 
-.PHONY: setup dev demo format format-check lint typecheck test contract contract-schema contract-openapi contract-observability contract-analytics contract-traceability verify check-toolchain check-root-contract _run-workspace
+.PHONY: setup dev demo format format-check lint typecheck test contract contract-schema contract-openapi contract-observability contract-analytics contract-traceability contract-beta-release verify check-toolchain check-root-contract _run-workspace
 
 setup: check-toolchain
 	@if test -f pnpm-lock.yaml; then \
@@ -39,7 +39,7 @@ typecheck: check-toolchain
 test: check-toolchain
 	@$(MAKE) --no-print-directory _run-workspace SCRIPT=test
 
-contract: check-toolchain contract-schema contract-openapi contract-observability contract-analytics contract-traceability
+contract: check-toolchain contract-schema contract-openapi contract-observability contract-analytics contract-traceability contract-beta-release
 	@$(MAKE) --no-print-directory _run-workspace SCRIPT=contract
 
 contract-schema: check-toolchain
@@ -56,6 +56,9 @@ contract-analytics: check-toolchain
 
 contract-traceability: check-toolchain
 	@$(PNPM) run contract:traceability
+
+contract-beta-release: check-toolchain
+	@$(PNPM) run contract:beta-release
 
 verify: check-toolchain check-root-contract format-check lint typecheck test contract
 	@echo "verify: pass (root contract and available workspace checks)"

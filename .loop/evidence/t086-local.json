@@ -1,0 +1,85 @@
+{
+  "schema_version": "courtside-t086-local-proof/v1",
+  "recorded_at": "2026-09-01T03:35:40Z",
+  "repository": "bynanci/courtside-tw",
+  "task": "T086",
+  "branch": "agent/t086-beta-release-gate",
+  "authorized_base_sha": "92773201398306b89cca7fc0b7852cb06dd4d4c7",
+  "authorization_ref": "https://github.com/bynanci/courtside-tw/issues/160#issuecomment-5488168546",
+  "frozen_t085_traceability_sha256": "204662214eada892332d1ddbeab8d0b8037cfc5477d9152d6fb3a61e56832b79",
+  "proof": {
+    "beta_release_contract_tests": {
+      "command": "corepack pnpm --config.engine-strict=false run test:beta-release",
+      "result": "PASS",
+      "passed": 12,
+      "failed": 0
+    },
+    "traceability_mutation_tests": {
+      "command": "node --test --test-reporter=spec scripts/test/validate-traceability.test.mjs",
+      "result": "PASS",
+      "passed": 631,
+      "failed": 0
+    },
+    "workflow_yaml": {
+      "result": "PASS"
+    },
+    "eslint": {
+      "command": "corepack pnpm --config.engine-strict=false exec eslint scripts/validate-beta-release.mjs scripts/test/validate-beta-release.test.mjs",
+      "result": "PASS"
+    },
+    "prettier_and_diff_check": {
+      "result": "PASS"
+    },
+    "canonical_control": {
+      "status": "PASS",
+      "release_decision": "HOLD",
+      "authorization": "VERIFIED",
+      "traceability_blockers": 18,
+      "t085": "COMPLETE",
+      "t086": "OPEN",
+      "unauthorized_paths": []
+    }
+  },
+  "artifact_sha256": {
+    "scripts/test/validate-beta-release.test.mjs": "a7b7e1b460926eed91e8d5bf48bb3ae0a78cd3929b9fb908873afdd1753315b7",
+    "scripts/validate-beta-release.mjs": "44ec323bf1d5fe024b5bf429bd65277af6db1143a058a4441d78fbbd7207baee",
+    ".github/workflows/release.yml": "8bfaafd53f3dfdccde1faa755688f1c2abc59f9bbd177b0f91ba36fba25af06f",
+    "docs/release/beta-checklist.md": "1ee3a507b9ad74638676d5a73630cb395ccffeb963d80af0ab27046ff7676df5"
+  },
+  "toolchain": {
+    "pnpm": "11.7.0",
+    "node": "24.19.0",
+    "required_node": "24.14.x",
+    "exact_toolchain_ci": "PENDING"
+  },
+  "remote_exact_head": "PENDING",
+  "remote_attempts": [
+    {
+      "candidate_sha": "728013399b3558f27730e36d9e59cf9fb9fd18d8",
+      "release_run_id": 33466402488,
+      "control_plane": "PASS",
+      "control_artifact_id": 9784995547,
+      "control_release_decision": "HOLD",
+      "seven_surface_preflight": "PASS",
+      "seven_surface_artifact_id": 9785108223,
+      "ci_run_id": 33466402419,
+      "ci": "FAIL",
+      "security_run_id": 33466402416,
+      "security": "PASS",
+      "attributable_failure": "The new T086 successor-scope unit fixture used a synthetic head while CI had created artifacts/exact-head.json for the real candidate. The assertion failed closed on that mismatch; the fixture now binds git rev-parse HEAD."
+    }
+  ],
+  "seven_surface_preflight": "NOT_RUN",
+  "twenty_run_stability": "NOT_RUN",
+  "scope_boundaries": {
+    "participant_research_executed": false,
+    "web3_activated": false,
+    "production_activated": false,
+    "provider_configured": false,
+    "credentials_or_secrets_accessed_or_changed": false,
+    "external_product_writes": false,
+    "t087_or_later_dispatched": false,
+    "t086_task_state_changed": false,
+    "beta_flag_removed": false
+  }
+}

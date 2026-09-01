@@ -8,6 +8,14 @@ import { isDeepStrictEqual } from "node:util"
 import typescriptPlugin from "prettier/plugins/typescript"
 import YAML from "yaml"
 
+import {
+  T086_AUTHORIZED_BASE_SHA,
+  T086_DISPATCH_PATH,
+  inspectT086OwnerAuthorization,
+  isT086AuthorizedPath,
+  validateT086DispatchScope
+} from "./validate-beta-release.mjs"
+
 export const TRACEABILITY_SCHEMA = "courtside-traceability/v1"
 export const COMPLETION_RECEIPT_SCHEMA = "courtside-t085-completion-receipt/v2"
 export const OWNER_AUTHORIZATION_SCHEMA = "courtside-t085-owner-authorization/v1"
@@ -6072,6 +6080,7 @@ export function validateTraceability({
   evaluatedHeadCommittedAt = null,
   changeBaseCommittedAt = null,
   ownerAuthorizationReadback = null,
+  t086OwnerAuthorizationReadback = null,
   gitBinding = null,
   changedPaths = null,
   changeBaseSha = REVIEW_BASE_SHA,
@@ -6126,6 +6135,21 @@ export function validateTraceability({
     boundedScopeActive,
     changedPaths
   })
+  const t086ScopeRequested =
+    state === t085States.COMPLETE_STEADY &&
+    changeBaseSha === T086_AUTHORIZED_BASE_SHA &&
+    Array.isArray(changedPaths) &&
+    changedPaths.includes(T086_DISPATCH_PATH)
+  const t086ScopeValidation = t086ScopeRequested
+    ? validateT086DispatchScope({
+        root,
+        changeBaseSha,
+        changedPaths,
+        ownerAuthorizationReadback: t086OwnerAuthorizationReadback,
+        requireOwnerReadback: true
+      })
+    : null
+  const t086ScopeActive = t086ScopeValidation?.status === "PASS"
 
   if (!/^[0-9a-f]{40}$/.test(currentHead ?? "")) {
     errors.push("currentHead must be a full lowercase commit SHA")
@@ -6226,16 +6250,22 @@ export function validateTraceability({
     }
   }
   if (state === t085States.COMPLETE_STEADY) {
-    for (const changedPath of changedPaths ?? []) {
-      if (!isAuthorizedPostT085MaintenancePath(changedPath)) {
-        errors.push(
-          `changed path is outside the authorized post-T085 maintenance scope: ${changedPath}`
-        )
+    if (t086ScopeRequested) {
+      for (const error of t086ScopeValidation.errors) {
+        errors.push(`invalid owner-authorized T086 scope: ${error}`)
       }
-      if (isT086LockedPath(changedPath)) {
-        errors.push(
-          `changed path requires separately authorized T086 validator evolution: ${changedPath}`
-        )
+    } else {
+      for (const changedPath of changedPaths ?? []) {
+        if (!isAuthorizedPostT085MaintenancePath(changedPath)) {
+          errors.push(
+            `changed path is outside the authorized post-T085 maintenance scope: ${changedPath}`
+          )
+        }
+        if (isT086LockedPath(changedPath)) {
+          errors.push(
+            `changed path requires separately authorized T086 validator evolution: ${changedPath}`
+          )
+        }
       }
     }
     if (typeof changeBaseCompletionReceiptText !== "string") {
@@ -6861,7 +6891,11 @@ export function validateTraceability({
             ? "T085_RECEIPT_AUDITED"
             : "EXTERNAL_READBACK_REQUIRED"
           : state === t085States.COMPLETE_STEADY && Array.isArray(changedPaths)
-            ? "T085_COMPLETE_STEADY_AUDITED"
+            ? t086ScopeActive
+              ? "T086_DISPATCH_AUDITED"
+              : t086ScopeRequested
+                ? "T086_DISPATCH_REJECTED"
+                : "T085_COMPLETE_STEADY_AUDITED"
             : state === t085States.PENDING && Array.isArray(changedPaths)
               ? "AUDITED"
               : "EXTERNAL_READBACK_REQUIRED",
@@ -6888,12 +6922,20 @@ export function validateTraceability({
               : state === t085States.PENDING
                 ? null
                 : state === t085States.COMPLETE_STEADY && Array.isArray(changedPaths)
-                  ? changedPaths.filter(
-                      (changedPath) => !isAuthorizedPostT085MaintenancePath(changedPath)
-                    )
+                  ? t086ScopeRequested
+                    ? changedPaths.filter((changedPath) => !isT086AuthorizedPath(changedPath))
+                    : changedPaths.filter(
+                        (changedPath) => !isAuthorizedPostT085MaintenancePath(changedPath)
+                      )
                   : state === t085States.COMPLETE_STEADY
                     ? null
                     : null
+    },
+    successor_scope: {
+      t086_requested: t086ScopeRequested,
+      t086_authorized: t086ScopeActive,
+      authorization_ref: t086ScopeValidation?.authorization?.html_url ?? null,
+      errors: t086ScopeValidation?.errors ?? []
     },
     head_binding: gitBinding ?? {
       status: "UNVERIFIED_FIXTURE",
@@ -7276,6 +7318,11 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
     changeBaseTasksText: inspection.change_base_tasks_text,
     environment
   })
+  const t086OwnerAuthorizationReadback =
+    inspection.change_base_sha === T086_AUTHORIZED_BASE_SHA &&
+    inspection.changedPaths?.includes(T086_DISPATCH_PATH)
+      ? inspectT086OwnerAuthorization()
+      : null
   const githubActionsContext = inspectGitHubActionsContext({ environment, gitBinding: inspection })
   const isGitHubActions = environment.GITHUB_ACTIONS === "true"
   const report = validateTraceability({
@@ -7284,6 +7331,7 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
     evaluatedHeadCommittedAt: inspection.head_committed_at,
     changeBaseCommittedAt: inspection.change_base_committed_at,
     ownerAuthorizationReadback,
+    t086OwnerAuthorizationReadback,
     gitBinding: {
       status: inspection.status,
       head: inspection.head,

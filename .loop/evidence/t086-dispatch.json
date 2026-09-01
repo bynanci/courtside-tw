@@ -1,0 +1,34 @@
+{
+  "schema_version": "courtside-t086-dispatch/v1",
+  "recorded_at": "2026-09-01T02:50:47Z",
+  "repository": "bynanci/courtside-tw",
+  "task": "T086",
+  "issue": "https://github.com/bynanci/courtside-tw/issues/160",
+  "authorization_ref": "https://github.com/bynanci/courtside-tw/issues/160#issuecomment-5488168546",
+  "branch": "agent/t086-beta-release-gate",
+  "base": {
+    "branch": "main",
+    "sha": "92773201398306b89cca7fc0b7852cb06dd4d4c7",
+    "protected": true
+  },
+  "frozen_t085_traceability_sha256": "204662214eada892332d1ddbeab8d0b8037cfc5477d9152d6fb3a61e56832b79",
+  "owner": {
+    "login": "bynanci",
+    "author_association": "OWNER"
+  },
+  "task_state_at_dispatch": {
+    "t085": "COMPLETE",
+    "t086": "OPEN"
+  },
+  "scope_boundaries": {
+    "participant_research_executed": false,
+    "web3_activated": false,
+    "production_activated": false,
+    "provider_configured": false,
+    "credentials_or_secrets_accessed_or_changed": false,
+    "external_product_writes": false,
+    "t087_or_later_dispatched": false,
+    "t086_task_state_changed": false,
+    "beta_flag_removed": false
+  }
+}
