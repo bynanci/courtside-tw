@@ -1142,7 +1142,10 @@ test("completed T085 admits the exact owner-authorized T086 successor scope", ()
     path.join(repositoryRoot, completionReceiptPath),
     "utf8"
   )
-  const currentHead = "6".repeat(40)
+  const currentHead = execFileSync("git", ["rev-parse", "HEAD"], {
+    cwd: repositoryRoot,
+    encoding: "utf8"
+  }).trim()
   const runT086 = (t086OwnerAuthorizationReadback) =>
     validateTraceability({
       root: repositoryRoot,

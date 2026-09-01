@@ -37,10 +37,10 @@ nodes:
     needs: [C]
     stop: Any required human or external evidence is absent; remain HOLD.
 delta:
-  recorded_at: 2026-09-01T03:25:41Z
-  event: control_plane_local_green
-  from: owner_dispatched_red
-  to: exact_head_execution_ready
+  recorded_at: 2026-09-01T03:33:50Z
+  event: exact_head_fixture_failure_attributed
+  from: exact_head_execution_ready
+  to: exact_head_fix_in_progress
   ready_frontier: [C]
   evidence:
     - .loop/evidence/t086-red.json

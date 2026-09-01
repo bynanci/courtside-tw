@@ -1,6 +1,6 @@
 {
   "schema_version": "courtside-t086-local-proof/v1",
-  "recorded_at": "2026-09-01T03:25:41Z",
+  "recorded_at": "2026-09-01T03:35:40Z",
   "repository": "bynanci/courtside-tw",
   "task": "T086",
   "branch": "agent/t086-beta-release-gate",
@@ -53,6 +53,22 @@
     "exact_toolchain_ci": "PENDING"
   },
   "remote_exact_head": "PENDING",
+  "remote_attempts": [
+    {
+      "candidate_sha": "728013399b3558f27730e36d9e59cf9fb9fd18d8",
+      "release_run_id": 33466402488,
+      "control_plane": "PASS",
+      "control_artifact_id": 9784995547,
+      "control_release_decision": "HOLD",
+      "seven_surface_preflight": "PASS",
+      "seven_surface_artifact_id": 9785108223,
+      "ci_run_id": 33466402419,
+      "ci": "FAIL",
+      "security_run_id": 33466402416,
+      "security": "PASS",
+      "attributable_failure": "The new T086 successor-scope unit fixture used a synthetic head while CI had created artifacts/exact-head.json for the real candidate. The assertion failed closed on that mismatch; the fixture now binds git rev-parse HEAD."
+    }
+  ],
   "seven_surface_preflight": "NOT_RUN",
   "twenty_run_stability": "NOT_RUN",
   "scope_boundaries": {
