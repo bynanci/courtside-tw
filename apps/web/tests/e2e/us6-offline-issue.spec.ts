@@ -138,6 +138,10 @@ async function openOfflineIssue(page: Page) {
 }
 
 test.describe("US6 offline issue", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.clock.setFixedTime(new Date("2026-08-16T00:00:00Z"))
+  })
+
   test("does not install a partially downloaded issue after interruption", async ({ page }) => {
     await routeManifest(page)
     await page.route("**/api/v1/public/offline/issues/**/articles/**", (route) =>
@@ -330,7 +334,6 @@ test.describe("US6 offline issue", () => {
   })
 
   test("removes an installed issue when its rights expiry has passed", async ({ page }) => {
-    await page.clock.install({ time: new Date("2026-08-16T00:00:00Z") })
     await routeManifest(page)
     await routeArticleContent(page)
     await openOfflineIssue(page)
