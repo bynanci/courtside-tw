@@ -1,9 +1,11 @@
 import assert from "node:assert/strict"
+import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import os from "node:os"
 import path from "node:path"
 import test from "node:test"
 import { fileURLToPath } from "node:url"
+import { runInNewContext } from "node:vm"
 
 import * as betaReleaseModule from "../validate-beta-release.mjs"
 
@@ -634,5 +636,138 @@ test("owner adjudication pagination rejects malformed or unavailable page read-b
     const result = readOwnerAdjudicationPages(pageReadback)
     assert.equal(result.status, "UNAVAILABLE")
     assert.match(result.errors.join("\n"), /pagination|page|unavailable|read-back/iu)
+  }
+})
+
+function embeddedGithubIssueCommentsFetchScript() {
+  const source = fs.readFileSync(
+    path.join(repositoryRoot, "scripts/validate-beta-release.mjs"),
+    "utf8"
+  )
+  const match = source.match(
+    /const githubIssueCommentsFetchScript = (\[[\s\S]*?\])\.join\("\\n"\)/u
+  )
+  assert.notEqual(match, null, "embedded GitHub pagination script must remain inspectable")
+  const lines = runInNewContext(match[1], Object.create(null))
+  assert.ok(Array.isArray(lines))
+  return lines.join("\n")
+}
+
+function runEmbeddedGithubIssueCommentsPagination({ firstPage, secondPage, nextUrl }) {
+  const fixture = {
+    expected_paths: ["/repos/bynanci/courtside-tw/issues/160/comments", new URL(nextUrl).pathname],
+    responses: [
+      { comments: firstPage, link: `<${nextUrl}>; rel="next"` },
+      { comments: secondPage, link: null }
+    ]
+  }
+  const mockFetchScript = [
+    `const mockFixture = ${JSON.stringify(fixture)}`,
+    "globalThis.fetch = async (input) => {",
+    "  const requestUrl = new URL(String(input))",
+    "  const page = Number(requestUrl.searchParams.get('page'))",
+    "  const response = mockFixture.responses[page - 1]",
+    "  if (response === undefined || requestUrl.pathname !== mockFixture.expected_paths[page - 1]) throw new Error('unexpected mock pagination request: ' + requestUrl)",
+    "  return {",
+    "    ok: true,",
+    "    status: 200,",
+    "    text: async () => JSON.stringify(response.comments),",
+    "    headers: { get: (name) => String(name).toLowerCase() === 'link' ? response.link : null }",
+    "  }",
+    "}"
+  ].join("\n")
+  const raw = execFileSync(
+    process.execPath,
+    [
+      "--input-type=module",
+      "--eval",
+      mockFetchScript + "\n" + embeddedGithubIssueCommentsFetchScript(),
+      "https://api.github.com/repos/bynanci/courtside-tw/issues/160/comments?per_page=100&page=1",
+      "10",
+      String(4 * 1024 * 1024)
+    ],
+    {
+      encoding: "utf8",
+      env: {},
+      maxBuffer: 5 * 1024 * 1024,
+      stdio: ["ignore", "pipe", "pipe"],
+      timeout: 5000
+    }
+  )
+  return JSON.parse(raw)
+}
+
+test("embedded pagination accepts GitHub canonical repository Link and reads comment 101", () => {
+  const earlier = adjudicationReadback({
+    created_at: "2026-09-01T14:00:00Z",
+    updated_at: "2026-09-01T14:00:00Z"
+  })
+  const later = adjudicationReadback({
+    html_url: "https://github.com/bynanci/courtside-tw/issues/160#issuecomment-8000000101",
+    created_at: "2026-09-01T15:00:00Z",
+    updated_at: "2026-09-01T15:00:00Z"
+  })
+  const firstPage = [
+    githubIssueComment({ id: 8000000001, createdAt: earlier.created_at, body: earlier.body }),
+    ...Array.from({ length: 99 }, (_, index) =>
+      githubIssueComment({
+        id: 8000000002 + index,
+        createdAt: `2026-09-01T14:${String(index % 60).padStart(2, "0")}:30Z`
+      })
+    )
+  ]
+  const secondPage = [
+    githubIssueComment({ id: 8000000101, createdAt: later.created_at, body: later.body })
+  ]
+  const pageReadback = runEmbeddedGithubIssueCommentsPagination({
+    firstPage,
+    secondPage,
+    nextUrl:
+      "https://api.github.com/repositories/1324872306/issues/160/comments?per_page=100&page=2"
+  })
+  const result = readOwnerAdjudicationPages(pageReadback)
+
+  assert.equal(result.status, "VERIFIED", result.errors.join("\n"))
+  assert.equal(result.html_url, later.html_url)
+})
+
+test("embedded pagination rejects unsafe or non-contiguous Link targets", () => {
+  const firstPage = Array.from({ length: 100 }, (_, index) =>
+    githubIssueComment({
+      id: 9000000000 + index,
+      createdAt: `2026-09-01T16:${String(index % 60).padStart(2, "0")}:00Z`
+    })
+  )
+  for (const [nextUrl, expectedError] of [
+    [
+      "https://api.github.com/repositories/9999999999/issues/160/comments?per_page=100&page=2",
+      /pagination escaped the issue comments endpoint/u
+    ],
+    [
+      "https://api.github.com/repositories/1324872306/issues/161/comments?per_page=100&page=2",
+      /pagination escaped the issue comments endpoint/u
+    ],
+    [
+      "https://example.com/repositories/1324872306/issues/160/comments?per_page=100&page=2",
+      /pagination escaped the issue comments endpoint/u
+    ],
+    [
+      "https://api.github.com/repositories/1324872306/issues/160/comments?per_page=100&page=2&extra=true",
+      /pagination query is malformed/u
+    ],
+    [
+      "https://api.github.com/repositories/1324872306/issues/160/comments?per_page=100&page=3",
+      /pagination is not contiguous/u
+    ]
+  ]) {
+    assert.throws(
+      () =>
+        runEmbeddedGithubIssueCommentsPagination({
+          firstPage,
+          secondPage: [],
+          nextUrl
+        }),
+      expectedError
+    )
   }
 })
