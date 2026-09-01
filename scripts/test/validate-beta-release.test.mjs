@@ -307,3 +307,150 @@ for (const [name, mutate, pattern] of [
     assert.match(report.errors.join("\n"), pattern)
   })
 }
+
+const blockingDeviationMetadata = Object.freeze([
+  { id: "DEV-T085-016", severity: "HIGH", type: "PARTIAL_ACCEPTANCE", affected_ids: ["FR-030", "SC-006"] },
+  { id: "DEV-T085-026", severity: "HIGH", type: "PROXY_ONLY", affected_ids: ["SC-008"] },
+  { id: "DEV-T085-027", severity: "MEDIUM", type: "PARTIAL_ACCEPTANCE", affected_ids: ["SC-009"] },
+  { id: "DEV-T085-030", severity: "HIGH", type: "EDITORIAL_CAPABILITY_GAP", affected_ids: ["FR-011"] },
+  { id: "DEV-T085-031", severity: "HIGH", type: "AUDIT_COVERAGE_GAP", affected_ids: ["FR-019"] },
+  { id: "DEV-T085-032", severity: "HIGH", type: "ASSET_REVOCATION_OFFLINE_IMPACT_GAP", affected_ids: ["FR-025"] },
+  { id: "DEV-T085-035", severity: "HIGH", type: "RATE_LIMIT_ENFORCEMENT_GAP", affected_ids: ["FR-041"] },
+  { id: "DEV-T085-036", severity: "HIGH", type: "NO_JS_ACCEPTANCE_GAP", affected_ids: ["SC-003", "SC-013"] },
+  { id: "DEV-T085-037", severity: "HIGH", type: "WRITE_API_CONTRACT_COVERAGE_GAP", affected_ids: ["FR-042"] },
+  { id: "DEV-T085-039", severity: "MEDIUM", type: "SEO_PROOF_COVERAGE_GAP", affected_ids: ["FR-009"] },
+  { id: "DEV-T085-040", severity: "HIGH", type: "ISSUE_WORKFLOW_COMPLETENESS_GAP", affected_ids: ["FR-013"] },
+  { id: "DEV-T085-041", severity: "MEDIUM", type: "PUBLIC_ISSUE_LIST_FIELD_PROOF_GAP", affected_ids: ["FR-001"] },
+  { id: "DEV-T085-042", severity: "HIGH", type: "PUBLICATION_ROLE_BOUNDARY_PROOF_GAP", affected_ids: ["FR-014"] },
+  { id: "DEV-T085-043", severity: "HIGH", type: "PUBLICATION_IDEMPOTENCY_AND_REVISION_GATE_PROOF_GAP", affected_ids: ["FR-016"] },
+  { id: "DEV-T085-044", severity: "HIGH", type: "PUBLICATION_RIGHTS_CLAUSE_PROOF_GAP", affected_ids: ["FR-023"] },
+  { id: "DEV-T085-045", severity: "HIGH", type: "OIDC_PASSWORD_STORAGE_PROOF_GAP", affected_ids: ["FR-031"] },
+  { id: "DEV-T085-046", severity: "HIGH", type: "CANONICAL_ROLE_MATRIX_PROOF_GAP", affected_ids: ["FR-032"] },
+  { id: "DEV-T085-047", severity: "HIGH", type: "CREATIVE_RUNTIME_FAILURE_FALLBACK_PROOF_GAP", affected_ids: ["FR-048"] }
+])
+
+function adjudicationReadback({
+  entries = blockingDeviationMetadata.map((row) => ({
+    ...row,
+    outcome: "RISK_ACCEPTED_FOR_BETA",
+    rationale: "Owner explicitly accepts this bounded beta risk pending tracked remediation.",
+    evidence_refs: [],
+    follow_up_issue: "https://github.com/bynanci/courtside-tw/issues/121"
+  })),
+  contractOverrides = {},
+  ...readbackOverrides
+} = {}) {
+  const contract = {
+    schema_version: "courtside-t086-owner-adjudication/v1",
+    decision: "ADJUDICATION_ACCEPTED",
+    accepted_by: "bynanci",
+    repository: "bynanci/courtside-tw",
+    issue: "https://github.com/bynanci/courtside-tw/issues/160",
+    task: "T086",
+    candidate_sha: candidateSha,
+    protected_base_sha: T086_AUTHORIZED_BASE_SHA,
+    frozen_t085_traceability_sha256: FROZEN_T085_TRACEABILITY_SHA256,
+    adjudications: entries,
+    scope_boundaries: {
+      participant_research_executed: false,
+      web3_activated: false,
+      production_activated: false,
+      provider_configured: false,
+      credentials_or_secrets_accessed_or_changed: false,
+      external_product_writes: false,
+      t087_or_later_dispatched: false,
+      t086_task_state_changed: false,
+      beta_flag_removed: false
+    },
+    ...contractOverrides
+  }
+  const body = [
+    "<!-- t086:owner-adjudication:start -->",
+    "\`\`\`json",
+    JSON.stringify(contract, null, 2),
+    "\`\`\`",
+    "<!-- t086:owner-adjudication:end -->"
+  ].join("\n")
+  return {
+    status: "VERIFIED",
+    source: "github-api",
+    html_url: "https://github.com/bynanci/courtside-tw/issues/160#issuecomment-6000000000",
+    issue_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/160",
+    user_login: "bynanci",
+    author_association: "OWNER",
+    created_at: "2026-09-01T11:30:00Z",
+    updated_at: "2026-09-01T11:30:00Z",
+    body,
+    errors: [],
+    ...readbackOverrides
+  }
+}
+
+test("blocking deviation packet preserves frozen type and affected IDs", () => {
+  const root = copyCanonicalFixture()
+  const report = runFixture(root)
+  const deviation = report.blockers.traceability.find((row) => row.id === "DEV-T085-016")
+
+  assert.equal(deviation.type, "PARTIAL_ACCEPTANCE")
+  assert.deepEqual(deviation.affected_ids, ["FR-030", "SC-006"])
+})
+
+test("complete owner adjudication makes the T086 gate reachable", () => {
+  const root = copyCanonicalFixture()
+  const report = runFixture(root, {
+    ownerAdjudicationReadback: adjudicationReadback(),
+    surfaceResult: "PASS",
+    stabilityResult: "PASS"
+  })
+
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+  assert.equal(report.decision_scope, "T086_GATE_ONLY")
+  assert.equal(report.release_decision, "PASS")
+  assert.equal(report.adjudication.status, "VERIFIED")
+  assert.equal(report.blockers.source_count, 18)
+  assert.equal(report.blockers.count, 0)
+  assert.equal(report.protected_transitions.merge, "ELIGIBLE_FOR_OWNER_READBACK")
+  assert.equal(report.task_state.t086, "OPEN")
+  assert.equal(report.scope_boundaries.beta_flag_removed, false)
+})
+
+test("partial owner adjudication fails closed", () => {
+  const root = copyCanonicalFixture()
+  const report = runFixture(root, {
+    ownerAdjudicationReadback: adjudicationReadback({
+      entries: blockingDeviationMetadata.slice(0, -1).map((row) => ({
+        ...row,
+        outcome: "RISK_ACCEPTED_FOR_BETA",
+        rationale: "Owner explicitly accepts this bounded beta risk pending tracked remediation.",
+        evidence_refs: [],
+        follow_up_issue: "https://github.com/bynanci/courtside-tw/issues/121"
+      }))
+    }),
+    surfaceResult: "PASS",
+    stabilityResult: "PASS"
+  })
+
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /adjudication.*exact blocker set/u)
+  assert.equal(report.release_decision, "HOLD")
+})
+
+test("owner adjudication must be an unedited GitHub OWNER comment", () => {
+  const root = copyCanonicalFixture()
+  for (const ownerAdjudicationReadback of [
+    adjudicationReadback({ author_association: "CONTRIBUTOR" }),
+    adjudicationReadback({ user_login: "not-bynanci" }),
+    adjudicationReadback({ updated_at: "2026-09-01T11:31:00Z" }),
+    adjudicationReadback({ status: "UNAVAILABLE", errors: ["offline"] })
+  ]) {
+    const report = runFixture(root, {
+      ownerAdjudicationReadback,
+      surfaceResult: "PASS",
+      stabilityResult: "PASS"
+    })
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /owner adjudication/u)
+    assert.equal(report.release_decision, "HOLD")
+  }
+}
+
