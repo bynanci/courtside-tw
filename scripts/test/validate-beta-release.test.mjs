@@ -145,6 +145,19 @@ test("dispatch base, frozen traceability and task frontier cannot drift", () => 
   assert.match(report.errors.join("\n"), /T086 must remain open/u)
 })
 
+test("a JSON null dispatch receipt fails closed", () => {
+  const root = copyCanonicalFixture()
+  fs.writeFileSync(path.join(root, ".loop/evidence/t086-dispatch.json"), "null\n")
+
+  const report = runFixture(root)
+
+  assert.equal(report.status, "FAIL")
+  assert.match(
+    report.errors.join("\n"),
+    /dispatch receipt must match the immutable owner dispatch/u
+  )
+})
+
 test("the audited diff rejects every path outside the owner allowlist", () => {
   const root = copyCanonicalFixture()
   const report = runFixture(root, {
@@ -194,12 +207,41 @@ test("release workflow stays read-only, exact-head-bound and non-deploying", () 
   assert.equal(report.status, "FAIL")
   assert.match(report.errors.join("\n"), /prerequisite jobs to PASS/u)
 
+  fs.copyFileSync(path.join(repositoryRoot, ".github/workflows/release.yml"), workflowPath)
+  fs.writeFileSync(
+    workflowPath,
+    fs
+      .readFileSync(workflowPath, "utf8")
+      .replace("  control-plane:\n", "  control-plane:\n    permissions:\n      contents: write\n")
+  )
+  report = runFixture(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /read-only permissions/u)
+
   const validatorSource = fs.readFileSync(
     path.join(repositoryRoot, "scripts/validate-beta-release.mjs"),
     "utf8"
   )
   assert.doesNotMatch(validatorSource, /GITHUB_TOKEN|headers\.Authorization/u)
   assert.match(validatorSource, /env: \{\}/u)
+})
+
+test("dependency startup pipeline fails closed when the health check fails", () => {
+  const root = copyCanonicalFixture()
+  const workflowPath = path.join(root, ".github/workflows/release.yml")
+  fs.writeFileSync(
+    workflowPath,
+    fs
+      .readFileSync(workflowPath, "utf8")
+      .replace(
+        "          set -o pipefail\n          mkdir -p artifacts/t086/surfaces",
+        "          mkdir -p artifacts/t086/surfaces"
+      )
+  )
+  const report = runFixture(root)
+
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /dependency startup.*pipefail/u)
 })
 
 function stabilityReceipts({ count = 20, head = candidateSha } = {}) {

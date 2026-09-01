@@ -131,6 +131,7 @@ jobs:
 
       - name: Start isolated repository dependencies
         run: |
+          set -o pipefail
           mkdir -p artifacts/t086/surfaces
           DEPENDENCY_TIMEOUT_SECONDS=120 scripts/dev/check-dependencies.sh check \
             2>&1 | tee artifacts/t086/surfaces/dependencies.log

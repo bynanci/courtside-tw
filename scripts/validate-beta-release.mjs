@@ -5,6 +5,7 @@ import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { isDeepStrictEqual } from "node:util"
+import YAML from "yaml"
 
 export const T086_SCHEMA = "courtside-t086-beta-release/v1"
 export const T086_DISPATCH_SCHEMA = "courtside-t086-dispatch/v1"
@@ -320,7 +321,9 @@ function taskState(tasksText, taskId) {
 
 function validateDispatchAndFrozenState(root, errors) {
   const dispatch = parseJsonFile(root, T086_DISPATCH_PATH, errors, "T086 dispatch receipt")
-  if (dispatch !== null && !isDeepStrictEqual(dispatch, EXPECTED_DISPATCH)) {
+  if (dispatch === null || typeof dispatch !== "object" || Array.isArray(dispatch)) {
+    errors.push("T086 dispatch receipt must match the immutable owner dispatch")
+  } else if (!isDeepStrictEqual(dispatch, EXPECTED_DISPATCH)) {
     errors.push(
       dispatch?.base?.sha !== T086_AUTHORIZED_BASE_SHA
         ? "T086 dispatch base must equal the owner-authorized protected base"
@@ -395,6 +398,42 @@ function validateChecklist(root, errors) {
 function validateWorkflow(root, errors) {
   const text = readText(root, T086_WORKFLOW_PATH, errors, "T086 release workflow")
   if (text === null) return
+  let workflow = null
+  try {
+    workflow = YAML.parse(text)
+  } catch (error) {
+    errors.push("T086 release workflow must be valid YAML: " + error.message)
+  }
+  const permissionBlocks = []
+  const visitPermissionBlocks = (value) => {
+    if (value === null || typeof value !== "object" || Array.isArray(value)) return
+    if (Object.hasOwn(value, "permissions")) permissionBlocks.push(value.permissions)
+    Object.values(value).forEach(visitPermissionBlocks)
+  }
+  visitPermissionBlocks(workflow)
+  const readOnlyPermissions = (permissions) => {
+    if (permissions === "read-all") return true
+    if (permissions === "write-all" || permissions === "write") return false
+    return (
+      permissions !== null &&
+      typeof permissions === "object" &&
+      !Array.isArray(permissions) &&
+      Object.values(permissions).every((value) => value === "read" || value === "none")
+    )
+  }
+  if (permissionBlocks.some((permissions) => !readOnlyPermissions(permissions))) {
+    errors.push("T086 release workflow must use read-only permissions")
+  }
+  const surfacePreflightSteps = workflow?.jobs?.["surface-preflight"]?.steps
+  const dependencyStep = Array.isArray(surfacePreflightSteps)
+    ? surfacePreflightSteps.find((step) => step?.name === "Start isolated repository dependencies")
+    : null
+  if (
+    typeof dependencyStep?.run !== "string" ||
+    !/^\s*set -o pipefail\s*$/mu.test(dependencyStep.run)
+  ) {
+    errors.push("T086 dependency startup pipeline must enable pipefail")
+  }
   const permissionBlock = text.match(/^permissions:\s*\n((?: {2}[^\n]+\n?)+)/mu)?.[1] ?? ""
   for (const permission of ["actions: read", "contents: read", "issues: read"]) {
     if (!permissionBlock.includes(permission)) {
