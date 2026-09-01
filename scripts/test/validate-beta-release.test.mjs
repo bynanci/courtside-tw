@@ -309,24 +309,99 @@ for (const [name, mutate, pattern] of [
 }
 
 const blockingDeviationMetadata = Object.freeze([
-  { id: "DEV-T085-016", severity: "HIGH", type: "PARTIAL_ACCEPTANCE", affected_ids: ["FR-030", "SC-006"] },
+  {
+    id: "DEV-T085-016",
+    severity: "HIGH",
+    type: "PARTIAL_ACCEPTANCE",
+    affected_ids: ["FR-030", "SC-006"]
+  },
   { id: "DEV-T085-026", severity: "HIGH", type: "PROXY_ONLY", affected_ids: ["SC-008"] },
   { id: "DEV-T085-027", severity: "MEDIUM", type: "PARTIAL_ACCEPTANCE", affected_ids: ["SC-009"] },
-  { id: "DEV-T085-030", severity: "HIGH", type: "EDITORIAL_CAPABILITY_GAP", affected_ids: ["FR-011"] },
+  {
+    id: "DEV-T085-030",
+    severity: "HIGH",
+    type: "EDITORIAL_CAPABILITY_GAP",
+    affected_ids: ["FR-011"]
+  },
   { id: "DEV-T085-031", severity: "HIGH", type: "AUDIT_COVERAGE_GAP", affected_ids: ["FR-019"] },
-  { id: "DEV-T085-032", severity: "HIGH", type: "ASSET_REVOCATION_OFFLINE_IMPACT_GAP", affected_ids: ["FR-025"] },
-  { id: "DEV-T085-035", severity: "HIGH", type: "RATE_LIMIT_ENFORCEMENT_GAP", affected_ids: ["FR-041"] },
-  { id: "DEV-T085-036", severity: "HIGH", type: "NO_JS_ACCEPTANCE_GAP", affected_ids: ["SC-003", "SC-013"] },
-  { id: "DEV-T085-037", severity: "HIGH", type: "WRITE_API_CONTRACT_COVERAGE_GAP", affected_ids: ["FR-042"] },
-  { id: "DEV-T085-039", severity: "MEDIUM", type: "SEO_PROOF_COVERAGE_GAP", affected_ids: ["FR-009"] },
-  { id: "DEV-T085-040", severity: "HIGH", type: "ISSUE_WORKFLOW_COMPLETENESS_GAP", affected_ids: ["FR-013"] },
-  { id: "DEV-T085-041", severity: "MEDIUM", type: "PUBLIC_ISSUE_LIST_FIELD_PROOF_GAP", affected_ids: ["FR-001"] },
-  { id: "DEV-T085-042", severity: "HIGH", type: "PUBLICATION_ROLE_BOUNDARY_PROOF_GAP", affected_ids: ["FR-014"] },
-  { id: "DEV-T085-043", severity: "HIGH", type: "PUBLICATION_IDEMPOTENCY_AND_REVISION_GATE_PROOF_GAP", affected_ids: ["FR-016"] },
-  { id: "DEV-T085-044", severity: "HIGH", type: "PUBLICATION_RIGHTS_CLAUSE_PROOF_GAP", affected_ids: ["FR-023"] },
-  { id: "DEV-T085-045", severity: "HIGH", type: "OIDC_PASSWORD_STORAGE_PROOF_GAP", affected_ids: ["FR-031"] },
-  { id: "DEV-T085-046", severity: "HIGH", type: "CANONICAL_ROLE_MATRIX_PROOF_GAP", affected_ids: ["FR-032"] },
-  { id: "DEV-T085-047", severity: "HIGH", type: "CREATIVE_RUNTIME_FAILURE_FALLBACK_PROOF_GAP", affected_ids: ["FR-048"] }
+  {
+    id: "DEV-T085-032",
+    severity: "HIGH",
+    type: "ASSET_REVOCATION_OFFLINE_IMPACT_GAP",
+    affected_ids: ["FR-025"]
+  },
+  {
+    id: "DEV-T085-035",
+    severity: "HIGH",
+    type: "RATE_LIMIT_ENFORCEMENT_GAP",
+    affected_ids: ["FR-041"]
+  },
+  {
+    id: "DEV-T085-036",
+    severity: "HIGH",
+    type: "NO_JS_ACCEPTANCE_GAP",
+    affected_ids: ["SC-003", "SC-013"]
+  },
+  {
+    id: "DEV-T085-037",
+    severity: "HIGH",
+    type: "WRITE_API_CONTRACT_COVERAGE_GAP",
+    affected_ids: ["FR-042"]
+  },
+  {
+    id: "DEV-T085-039",
+    severity: "MEDIUM",
+    type: "SEO_PROOF_COVERAGE_GAP",
+    affected_ids: ["FR-009"]
+  },
+  {
+    id: "DEV-T085-040",
+    severity: "HIGH",
+    type: "ISSUE_WORKFLOW_COMPLETENESS_GAP",
+    affected_ids: ["FR-013"]
+  },
+  {
+    id: "DEV-T085-041",
+    severity: "MEDIUM",
+    type: "PUBLIC_ISSUE_LIST_FIELD_PROOF_GAP",
+    affected_ids: ["FR-001"]
+  },
+  {
+    id: "DEV-T085-042",
+    severity: "HIGH",
+    type: "PUBLICATION_ROLE_BOUNDARY_PROOF_GAP",
+    affected_ids: ["FR-014"]
+  },
+  {
+    id: "DEV-T085-043",
+    severity: "HIGH",
+    type: "PUBLICATION_IDEMPOTENCY_AND_REVISION_GATE_PROOF_GAP",
+    affected_ids: ["FR-016"]
+  },
+  {
+    id: "DEV-T085-044",
+    severity: "HIGH",
+    type: "PUBLICATION_RIGHTS_CLAUSE_PROOF_GAP",
+    affected_ids: ["FR-023"]
+  },
+  {
+    id: "DEV-T085-045",
+    severity: "HIGH",
+    type: "OIDC_PASSWORD_STORAGE_PROOF_GAP",
+    affected_ids: ["FR-031"]
+  },
+  {
+    id: "DEV-T085-046",
+    severity: "HIGH",
+    type: "CANONICAL_ROLE_MATRIX_PROOF_GAP",
+    affected_ids: ["FR-032"]
+  },
+  {
+    id: "DEV-T085-047",
+    severity: "HIGH",
+    type: "CREATIVE_RUNTIME_FAILURE_FALLBACK_PROOF_GAP",
+    affected_ids: ["FR-048"]
+  }
 ])
 
 function adjudicationReadback({

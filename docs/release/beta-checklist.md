@@ -1,8 +1,8 @@
 # T086 staged beta release checklist
 
-Status: owner-dispatched control-plane implementation; release decision remains
+Status: owner-dispatched control-plane implementation. The T086 gate remains
 `HOLD` until every row below has attributable evidence on one exact candidate
-SHA and every frozen T085 blocker has a separately authorized adjudication.
+SHA and every frozen T085 blocker has an explicit, unedited owner adjudication.
 
 This checklist is non-deploying. It does not change production/provider state,
 read credentials or secrets, execute participant research, start Web3/T087+, set
@@ -25,7 +25,8 @@ the T086 checkbox, or remove a beta flag.
 | Control                 | Owner comment read-back, exact base/hash, unchanged T085/T086 frontier, allowlisted diff, read-only workflow | `HOLD`; do not run release mutation                                                |
 | Seven-surface preflight | All seven rows below pass at the candidate SHA                                                               | `HOLD` on `FAIL`, `UNKNOWN` or missing artifact                                    |
 | Stability               | Runs 1–20 pass consecutively on the same candidate SHA                                                       | Stop immediately; the sequence is invalid and restarts at run 1 on a new execution |
-| Blocker read-back       | Frozen T085 blockers are zero after separately authorized adjudication                                       | `HOLD`; repository proof cannot silently adjudicate a deviation                    |
+| Blocker read-back       | An unedited issue #160 OWNER comment binds this SHA and explicitly adjudicates every frozen blocker          | `HOLD`; repository proof cannot silently adjudicate a deviation                    |
+| Repository checks       | Fresh exact-head CI and Security checks pass independently of the T086 gate                                  | `HOLD`; gate-local PASS is not total release authorization                         |
 | Protected transition    | Fresh owner read-back after all other gates pass                                                             | Merge, task checkbox and beta removal remain blocked                               |
 
 ## Required surfaces
@@ -95,6 +96,21 @@ isolated drill.
     "t087_or_later_dispatched": false,
     "t086_task_state_changed": false,
     "beta_flag_removed": false
+  },
+  "adjudication_gate": {
+    "source": "unedited-github-owner-comment",
+    "issue": "https://github.com/bynanci/courtside-tw/issues/160",
+    "exact_candidate_sha": true,
+    "frozen_source_unchanged": true,
+    "exact_blocker_set_required": true,
+    "allowed_outcomes": ["RESOLVED_BY_EVIDENCE", "RISK_ACCEPTED_FOR_BETA"],
+    "any_missing_invalid_or_unavailable_is_hold": true
+  },
+  "decision_scope": "T086_GATE_ONLY",
+  "repo_wide_checks": {
+    "ci_required": true,
+    "security_required": true,
+    "not_claimed_by_gate_pass": true
   }
 }
 ```
@@ -106,9 +122,11 @@ isolated drill.
 `scripts/validate-beta-release.mjs` reports two independent values:
 
 - `status` validates the release control plane itself.
-- `release_decision` remains `HOLD` until seven-surface evidence, 20/20
-  stability, zero unadjudicated blockers, and the final owner read-back all
-  exist.
+- `release_decision` is scoped to `T086_GATE_ONLY`. It remains `HOLD` until
+  seven-surface evidence, 20/20 stability, and zero unadjudicated blockers
+  exist. `PASS` means eligible for owner read-back; it does not include the
+  independent repository CI/Security checks or authorize merge, checkbox, or
+  beta-flag transitions.
 
 Do not convert `HOLD` to `PASS` by editing this document, retrying a failed run
 in place, substituting proxy/AI evidence for required human evidence, or

@@ -10,6 +10,7 @@ import YAML from "yaml"
 export const T086_SCHEMA = "courtside-t086-beta-release/v1"
 export const T086_DISPATCH_SCHEMA = "courtside-t086-dispatch/v1"
 export const T086_OWNER_AUTHORIZATION_SCHEMA = "courtside-t086-owner-authorization/v1"
+export const T086_OWNER_ADJUDICATION_SCHEMA = "courtside-t086-owner-adjudication/v1"
 export const T086_AUTHORIZED_BASE_SHA = "92773201398306b89cca7fc0b7852cb06dd4d4c7"
 export const FROZEN_T085_TRACEABILITY_SHA256 =
   "204662214eada892332d1ddbeab8d0b8037cfc5477d9152d6fb3a61e56832b79"
@@ -141,6 +142,21 @@ export const EXPECTED_CHECKLIST_CONTRACT = Object.freeze({
     any_failure_resets_sequence: true,
     surfaces: [...STABILITY_RELEASE_SURFACES]
   },
+  adjudication_gate: {
+    source: "unedited-github-owner-comment",
+    issue: "https://github.com/bynanci/courtside-tw/issues/160",
+    exact_candidate_sha: true,
+    frozen_source_unchanged: true,
+    exact_blocker_set_required: true,
+    allowed_outcomes: ["RESOLVED_BY_EVIDENCE", "RISK_ACCEPTED_FOR_BETA"],
+    any_missing_invalid_or_unavailable_is_hold: true
+  },
+  decision_scope: "T086_GATE_ONLY",
+  repo_wide_checks: {
+    ci_required: true,
+    security_required: true,
+    not_claimed_by_gate_pass: true
+  },
   protected_transitions: {
     merge_requires_release_pass: true,
     task_checkbox_requires_release_pass: true,
@@ -187,6 +203,8 @@ const EXPECTED_DISPATCH = Object.freeze({
 
 const authorizationStart = "<!-- t086:owner-authorization:start -->"
 const authorizationEnd = "<!-- t086:owner-authorization:end -->"
+const adjudicationStart = "<!-- t086:owner-adjudication:start -->"
+const adjudicationEnd = "<!-- t086:owner-adjudication:end -->"
 const checklistStart = "<!-- t086:checklist-contract:start -->"
 const checklistEnd = "<!-- t086:checklist-contract:end -->"
 
@@ -523,10 +541,206 @@ function blockingDeviations(traceabilityText, errors) {
     .map((row) => ({
       id: row.id,
       severity: row.severity ?? null,
-      kind: row.kind ?? null,
-      requirement_ids: row.requirement_ids ?? [],
+      type: row.type ?? null,
+      affected_ids: Array.isArray(row.affected_ids) ? row.affected_ids : [],
+      expected: row.expected ?? null,
+      observed: row.observed ?? null,
       disposition: row.disposition ?? null
     }))
+}
+
+const adjudicationContractKeys = Object.freeze([
+  "accepted_by",
+  "adjudications",
+  "candidate_sha",
+  "decision",
+  "frozen_t085_traceability_sha256",
+  "issue",
+  "protected_base_sha",
+  "repository",
+  "schema_version",
+  "scope_boundaries",
+  "task"
+])
+
+const adjudicationEntryKeys = Object.freeze([
+  "affected_ids",
+  "evidence_refs",
+  "follow_up_issue",
+  "id",
+  "outcome",
+  "rationale",
+  "severity",
+  "type"
+])
+
+function hasExactKeys(value, expectedKeys) {
+  return (
+    value !== null &&
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    isDeepStrictEqual(Object.keys(value).sort(), [...expectedKeys].sort())
+  )
+}
+
+function isRepositoryEvidenceRef(value) {
+  return (
+    typeof value === "string" &&
+    /^https:\/\/github[.]com\/bynanci\/courtside-tw\/(?:actions\/runs|issues|pull|commit)\//u.test(
+      value
+    )
+  )
+}
+
+function validateOwnerAdjudication(readback, blockers, currentHead, errors) {
+  if (readback === null || readback === undefined || readback.status === "NOT_FOUND") {
+    return {
+      status: "NOT_FOUND",
+      html_url: null,
+      body_sha256: null,
+      adjudicated: [],
+      unadjudicated: blockers
+    }
+  }
+
+  const adjudicationErrors = []
+  if (readback.status !== "VERIFIED") {
+    adjudicationErrors.push("owner adjudication read-back is not VERIFIED")
+  }
+  if (
+    readback.issue_url !== "https://api.github.com/repos/bynanci/courtside-tw/issues/160" ||
+    !/^https:\/\/github[.]com\/bynanci\/courtside-tw\/issues\/160#issuecomment-\d+$/u.test(
+      readback.html_url ?? ""
+    )
+  ) {
+    adjudicationErrors.push("owner adjudication source is not an issue 160 comment")
+  }
+  if (readback.user_login !== "bynanci" || readback.author_association !== "OWNER") {
+    adjudicationErrors.push("owner adjudication must be authored by repository OWNER bynanci")
+  }
+  if (
+    typeof readback.created_at !== "string" ||
+    readback.created_at.length === 0 ||
+    readback.updated_at !== readback.created_at
+  ) {
+    adjudicationErrors.push("owner adjudication must be an unedited GitHub comment")
+  }
+
+  const contract = embeddedJson(
+    readback.body,
+    adjudicationStart,
+    adjudicationEnd,
+    adjudicationErrors,
+    "owner adjudication"
+  )
+  if (!hasExactKeys(contract, adjudicationContractKeys)) {
+    adjudicationErrors.push("owner adjudication contract has unexpected or missing fields")
+  }
+  if (
+    contract?.schema_version !== T086_OWNER_ADJUDICATION_SCHEMA ||
+    contract?.decision !== "ADJUDICATION_ACCEPTED" ||
+    contract?.accepted_by !== "bynanci" ||
+    contract?.repository !== "bynanci/courtside-tw" ||
+    contract?.issue !== "https://github.com/bynanci/courtside-tw/issues/160" ||
+    contract?.task !== "T086" ||
+    contract?.candidate_sha !== currentHead ||
+    contract?.protected_base_sha !== T086_AUTHORIZED_BASE_SHA ||
+    contract?.frozen_t085_traceability_sha256 !== FROZEN_T085_TRACEABILITY_SHA256 ||
+    !isDeepStrictEqual(contract?.scope_boundaries, EXPECTED_OWNER_AUTHORIZATION.scope_boundaries)
+  ) {
+    adjudicationErrors.push(
+      "owner adjudication must bind the exact candidate, base, frozen hash and scope boundaries"
+    )
+  }
+
+  const entries = Array.isArray(contract?.adjudications) ? contract.adjudications : []
+  if (
+    entries.length !== blockers.length ||
+    !isDeepStrictEqual(
+      entries.map((entry) => entry?.id),
+      blockers.map((blocker) => blocker.id)
+    )
+  ) {
+    adjudicationErrors.push("owner adjudication must cover the exact blocker set in frozen order")
+  }
+
+  entries.forEach((entry, index) => {
+    const blocker = blockers[index]
+    if (!hasExactKeys(entry, adjudicationEntryKeys)) {
+      adjudicationErrors.push("owner adjudication entry " + (index + 1) + " has invalid fields")
+      return
+    }
+    if (
+      blocker === undefined ||
+      entry.id !== blocker.id ||
+      entry.severity !== blocker.severity ||
+      entry.type !== blocker.type ||
+      !isDeepStrictEqual(entry.affected_ids, blocker.affected_ids)
+    ) {
+      adjudicationErrors.push(
+        "owner adjudication entry " + (index + 1) + " does not match the frozen blocker"
+      )
+    }
+    if (!["RESOLVED_BY_EVIDENCE", "RISK_ACCEPTED_FOR_BETA"].includes(entry.outcome)) {
+      adjudicationErrors.push(
+        "owner adjudication entry " + (index + 1) + " has an unsupported outcome"
+      )
+    }
+    if (typeof entry.rationale !== "string" || entry.rationale.trim().length < 24) {
+      adjudicationErrors.push(
+        "owner adjudication entry " + (index + 1) + " requires a specific rationale"
+      )
+    }
+    if (
+      !Array.isArray(entry.evidence_refs) ||
+      entry.evidence_refs.some((reference) => !isRepositoryEvidenceRef(reference))
+    ) {
+      adjudicationErrors.push(
+        "owner adjudication entry " + (index + 1) + " has invalid evidence refs"
+      )
+    }
+    if (entry.outcome === "RESOLVED_BY_EVIDENCE" && entry.evidence_refs.length === 0) {
+      adjudicationErrors.push(
+        "owner adjudication entry " + (index + 1) + " requires resolution evidence"
+      )
+    }
+    if (
+      entry.outcome === "RISK_ACCEPTED_FOR_BETA" &&
+      !/^https:\/\/github[.]com\/bynanci\/courtside-tw\/issues\/\d+$/u.test(
+        entry.follow_up_issue ?? ""
+      )
+    ) {
+      adjudicationErrors.push(
+        "owner adjudication entry " + (index + 1) + " requires a follow-up issue"
+      )
+    }
+    if (
+      entry.outcome === "RESOLVED_BY_EVIDENCE" &&
+      entry.follow_up_issue !== null &&
+      !/^https:\/\/github[.]com\/bynanci\/courtside-tw\/issues\/\d+$/u.test(
+        entry.follow_up_issue ?? ""
+      )
+    ) {
+      adjudicationErrors.push(
+        "owner adjudication entry " + (index + 1) + " has an invalid follow-up issue"
+      )
+    }
+  })
+
+  const valid = adjudicationErrors.length === 0
+  if (!valid) errors.push(...adjudicationErrors)
+  return {
+    status: valid ? "VERIFIED" : "INVALID",
+    html_url: readback.html_url ?? null,
+    user_login: readback.user_login ?? null,
+    author_association: readback.author_association ?? null,
+    created_at: readback.created_at ?? null,
+    updated_at: readback.updated_at ?? null,
+    candidate_sha: contract?.candidate_sha ?? null,
+    body_sha256: typeof readback.body === "string" ? sha256(readback.body) : null,
+    adjudicated: valid ? entries : [],
+    unadjudicated: valid ? [] : blockers
+  }
 }
 
 export function validateStabilityReceipts(receipts, { candidateSha }) {
@@ -575,6 +789,7 @@ export function validateBetaRelease({
   changeBaseSha,
   changedPaths,
   ownerAuthorizationReadback = null,
+  ownerAdjudicationReadback = null,
   requireOwnerReadback = true,
   surfaceResult = "NOT_RUN",
   stabilityResult = "NOT_RUN"
@@ -593,10 +808,17 @@ export function validateBetaRelease({
   errors.push(...scope.errors)
   validateChecklist(root, errors)
   validateWorkflow(root, errors)
-  const blockers = blockingDeviations(
+  const sourceBlockers = blockingDeviations(
     readText(root, T086_TRACEABILITY_PATH, errors, "frozen T085 traceability"),
     errors
   )
+  const adjudication = validateOwnerAdjudication(
+    ownerAdjudicationReadback,
+    sourceBlockers,
+    currentHead,
+    errors
+  )
+  const blockers = adjudication.unadjudicated
   const reasons = []
   if (blockers.length > 0) {
     reasons.push(blockers.length + " traceability deviations require separate adjudication")
@@ -607,12 +829,14 @@ export function validateBetaRelease({
   return {
     schema_version: T086_SCHEMA,
     task: "T086",
+    decision_scope: "T086_GATE_ONLY",
     status: errors.length === 0 ? "PASS" : "FAIL",
     release_decision: reasons.length === 0 ? "PASS" : "HOLD",
     release_decision_reasons: reasons,
     candidate_sha: currentHead,
     base: { branch: "main", sha: changeBaseSha, authorized_sha: T086_AUTHORIZED_BASE_SHA },
     authorization: scope.authorization,
+    adjudication,
     frozen_t085_traceability: {
       path: T086_TRACEABILITY_PATH,
       sha256: scope.frozen_t085_traceability_sha256,
@@ -627,7 +851,19 @@ export function validateBetaRelease({
     scope_boundaries: scope.dispatch?.scope_boundaries ?? null,
     surfaces: { required: [...REQUIRED_RELEASE_SURFACES], result: surfaceResult },
     stability: { required_consecutive_runs: 20, same_candidate_sha: true, result: stabilityResult },
-    blockers: { traceability: blockers, count: blockers.length },
+    blockers: {
+      traceability: sourceBlockers,
+      source: sourceBlockers,
+      source_count: sourceBlockers.length,
+      adjudicated: adjudication.adjudicated,
+      unadjudicated: blockers,
+      count: blockers.length
+    },
+    external_required_checks: {
+      ci: "REQUIRES_GITHUB_READBACK",
+      security: "REQUIRES_GITHUB_READBACK",
+      included_in_gate_decision: false
+    },
     protected_transitions: {
       merge: reasons.length === 0 ? "ELIGIBLE_FOR_OWNER_READBACK" : "BLOCKED",
       task_checkbox: reasons.length === 0 ? "ELIGIBLE_FOR_OWNER_READBACK" : "BLOCKED",
@@ -680,6 +916,73 @@ export function inspectT086OwnerAuthorization() {
       source: "github-api",
       html_url: T086_AUTHORIZATION_REF,
       errors: ["GitHub owner authorization read-back failed: " + error.message]
+    }
+  }
+}
+
+const githubIssueCommentsFetchScript = [
+  "const url = process.argv[1]",
+  "const headers = { Accept: 'application/vnd.github+json', 'User-Agent': 'courtside-t086-release-validator', 'X-GitHub-Api-Version': '2022-11-28' }",
+  "const response = await fetch(url, { headers, redirect: 'error', signal: AbortSignal.timeout(10000) })",
+  "if (!response.ok) throw new Error('GitHub owner adjudication returned HTTP ' + response.status)",
+  "const body = await response.text()",
+  "if (Buffer.byteLength(body) > 1024 * 1024) throw new Error('GitHub owner adjudication exceeded 1 MiB')",
+  "process.stdout.write(body)"
+].join("\n")
+
+export function inspectT086OwnerAdjudication() {
+  const apiUrl =
+    "https://api.github.com/repos/bynanci/courtside-tw/issues/160/comments?per_page=100"
+  try {
+    const raw = execFileSync(
+      process.execPath,
+      ["--input-type=module", "--eval", githubIssueCommentsFetchScript, apiUrl],
+      {
+        encoding: "utf8",
+        env: {},
+        maxBuffer: 1024 * 1024,
+        stdio: ["ignore", "pipe", "pipe"],
+        timeout: 15000
+      }
+    )
+    const comments = JSON.parse(raw)
+    if (!Array.isArray(comments)) throw new Error("GitHub issue comments response is not an array")
+    const ownerComments = comments
+      .filter(
+        (comment) =>
+          typeof comment?.body === "string" &&
+          comment.body.includes(adjudicationStart) &&
+          comment?.user?.login === "bynanci" &&
+          comment?.author_association === "OWNER"
+      )
+      .sort((left, right) => String(left.created_at).localeCompare(String(right.created_at)))
+    const comment = ownerComments.at(-1)
+    if (comment === undefined) {
+      return {
+        status: "NOT_FOUND",
+        source: "github-api",
+        issue_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/160",
+        errors: []
+      }
+    }
+    return {
+      status: "VERIFIED",
+      source: "github-api",
+      html_url: comment.html_url ?? null,
+      issue_url: comment.issue_url ?? null,
+      user_login: comment?.user?.login ?? null,
+      author_association: comment.author_association ?? null,
+      created_at: comment.created_at ?? null,
+      updated_at: comment.updated_at ?? null,
+      body: comment.body,
+      errors: []
+    }
+  } catch (error) {
+    return {
+      status: "UNAVAILABLE",
+      source: "github-api",
+      issue_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/160",
+      errors: ["GitHub owner adjudication read-back failed: " + error.message]
     }
   }
 }
@@ -780,6 +1083,7 @@ export function runCli(
     changeBaseSha: inspection.changeBaseSha,
     changedPaths: inspection.changedPaths,
     ownerAuthorizationReadback: inspectT086OwnerAuthorization(),
+    ownerAdjudicationReadback: inspectT086OwnerAdjudication(),
     surfaceResult: argumentValue(argumentsList, "--surface-result") ?? "NOT_RUN",
     stabilityResult: argumentValue(argumentsList, "--stability-result") ?? "NOT_RUN"
   })
