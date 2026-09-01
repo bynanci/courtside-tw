@@ -11,6 +11,8 @@ import YAML from "yaml"
 export const TRACEABILITY_SCHEMA = "courtside-traceability/v1"
 export const COMPLETION_RECEIPT_SCHEMA = "courtside-t085-completion-receipt/v2"
 export const OWNER_AUTHORIZATION_SCHEMA = "courtside-t085-owner-authorization/v1"
+export const POST_T085_MAINTENANCE_AUTHORIZATION_SCHEMA =
+  "courtside-post-t085-maintenance-authorization/v3"
 export const COMPLETION_RECEIPT_PATH = ".loop/evidence/t085-completion-receipt.json"
 export const ACCEPTED_IMPLEMENTATION_HEAD_SHA = "27b955581a909e292ae4fe6c1fb05de0e94753da"
 export const ACCEPTED_IMPLEMENTATION_MERGE_SHA = "a2491b81066ac225a0b5d2dab93be79fb6dfbe65"
@@ -58,19 +60,26 @@ export const POST_T085_REMEDIATION_CHANGED_PATHS = Object.freeze([
   "scripts/validate-traceability.mjs",
   "specs/001-taiwan-basketball-magazine-ebook/traceability.md"
 ])
-export const POST_T085_MAINTENANCE_AUTHORIZATION_SCHEMA =
-  "courtside-post-t085-maintenance-exact-head-authorization/v1"
-export const POST_T085_MAINTENANCE_BASE_SHA = "92773201398306b89cca7fc0b7852cb06dd4d4c7"
-export const POST_T085_MAINTENANCE_TRACEABILITY_SHA256 = ACCEPTED_TRACEABILITY_SHA256
-export const POST_T085_MAINTENANCE_CHANGED_PATHS = Object.freeze([
-  "apps/web/tests/e2e/us6-offline-issue.spec.ts",
-  "scripts/test/validate-traceability.test.mjs",
-  "scripts/validate-traceability.mjs"
-])
 export const CONTRACT_START = "<!-- t085:contract:start -->"
 export const CONTRACT_END = "<!-- t085:contract:end -->"
 export const AUTHORIZED_BASE_SHA = "3fc14dd29b216ce46e4d364ceaec79a971dcef44"
 export const REVIEW_BASE_SHA = "84db3db95aa596eb317b71c4eea0926fc1fc15ce"
+export const POST_T085_MAINTENANCE_AUTHORIZATION_REF =
+  "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5495299187"
+export const POST_T085_MAINTENANCE_SUPERSEDED_AUTHORIZATION_REFS = Object.freeze([
+  "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5494383925",
+  "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5494892447",
+  "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5494952244"
+])
+export const POST_T085_MAINTENANCE_AUTHORIZATION_RECORDED_AT = "2026-09-01T14:13:02Z"
+export const POST_T085_MAINTENANCE_AUTHORIZATION_BASE_SHA =
+  "92773201398306b89cca7fc0b7852cb06dd4d4c7"
+export const POST_T085_MAINTENANCE_AUTHORIZED_HEAD_SHA = "3889de292067ad067b3dad2752e20ad16a269c25"
+export const POST_T085_MAINTENANCE_AUTHORIZED_PATHS = Object.freeze([
+  "apps/web/tests/e2e/us6-offline-issue.spec.ts",
+  "scripts/test/validate-traceability.test.mjs",
+  "scripts/validate-traceability.mjs"
+])
 
 const requirementPattern = /^- \*\*((?:FR|SC)-\d{3})\*\*:/gm
 const taskPattern = /^- \[([ xX])\] (T\d{3})\b/gm
@@ -177,18 +186,21 @@ const receiptAuthorizationRefPattern =
   /^https:\/\/github\.com\/bynanci\/courtside-tw\/issues\/145#issuecomment-[1-9]\d*$/
 const ownerAuthorizationStart = "<!-- t085:owner-authorization:start -->"
 const ownerAuthorizationEnd = "<!-- t085:owner-authorization:end -->"
-const maintenanceAuthorizationStart =
-  "<!-- post-t085-maintenance:exact-head-authorization:start -->"
-const maintenanceAuthorizationEnd = "<!-- post-t085-maintenance:exact-head-authorization:end -->"
-const maintenanceDispatchAuthorizationRef =
-  "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5494383925"
-const maintenanceAuthorizationIssueNumber = 162
-const maintenanceAuthorizationPullRequestNumber = 163
-const maintenanceAuthorizationBranch = "fix/us6-offline-clock-deterministic"
-const maintenanceAuthorizationRepositoryId = 1324872306
-const maintenanceAuthorizationPaths = new Set(POST_T085_MAINTENANCE_CHANGED_PATHS)
-const maintenanceProductTestPaths = Object.freeze(["apps/web/tests/e2e/us6-offline-issue.spec.ts"])
-const expectedMaintenanceScopeBoundaries = Object.freeze({
+const postT085MaintenanceAuthorizationStart =
+  "<!-- post-t085-maintenance:owner-authorization:start -->"
+const postT085MaintenanceAuthorizationEnd = "<!-- post-t085-maintenance:owner-authorization:end -->"
+const expectedReceiptScopeBoundaries = Object.freeze({
+  t086_dispatched: false,
+  participant_research_executed: false,
+  web3_activated: false,
+  production_activated: false,
+  provider_configured: false,
+  secrets_changed: false
+})
+const expectedPostT085MaintenanceScopeBoundaries = Object.freeze({
+  ready_for_review_transition_authorized: false,
+  protected_main_push_authorized: false,
+  merge_authorized: false,
   product_runtime_changed: false,
   t086_task_state_changed: false,
   beta_flag_removed: false,
@@ -197,16 +209,41 @@ const expectedMaintenanceScopeBoundaries = Object.freeze({
   production_or_provider_mutated: false,
   credentials_or_secrets_accessed_or_changed: false,
   external_product_writes: false,
-  t087_or_later_dispatched: false,
-  risk_acceptance_for_t085_deviations: false
+  t087_or_later_dispatched: false
 })
-const expectedReceiptScopeBoundaries = Object.freeze({
-  t086_dispatched: false,
-  participant_research_executed: false,
-  web3_activated: false,
-  production_activated: false,
-  provider_configured: false,
-  secrets_changed: false
+const expectedPostT085MaintenanceAuthorization = Object.freeze({
+  schema_version: POST_T085_MAINTENANCE_AUTHORIZATION_SCHEMA,
+  decision: "EVIDENCE_ONLY_ACCEPTED",
+  accepted_by: ACCEPTED_RECEIPT_OWNER,
+  repository: "bynanci/courtside-tw",
+  issue: "https://github.com/bynanci/courtside-tw/issues/162",
+  pull_request: 163,
+  branch: "fix/us6-offline-clock-deterministic",
+  supersedes_authorization_refs: [...POST_T085_MAINTENANCE_SUPERSEDED_AUTHORIZATION_REFS],
+  authorization_base: {
+    branch: "main",
+    sha: POST_T085_MAINTENANCE_AUTHORIZATION_BASE_SHA,
+    protected: true
+  },
+  authorized_candidate_ancestor_sha: POST_T085_MAINTENANCE_AUTHORIZED_HEAD_SHA,
+  frozen_t085_traceability_sha256: ACCEPTED_TRACEABILITY_SHA256,
+  authorized_paths: [...POST_T085_MAINTENANCE_AUTHORIZED_PATHS],
+  authorized_actions: [
+    "amend draft PR 163 with tests-first authenticated maintenance-scope validation",
+    "run fresh exact-head CI, Security, complete browser, Android and review read-back",
+    "preserve the draft state and return the final gate decision to the owner"
+  ],
+  acceptance: [
+    "the US6 suite uses one deterministic active clock while preserving the explicit post-expiry transition",
+    "only the exact three authorized paths are accepted",
+    "the authorization is read back from this immutable GitHub OWNER comment",
+    "all superseded comments confer no ready-for-review, protected-main-push, merge, credential or secret authority",
+    "missing, edited, non-owner, wrong-base, wrong-ancestor, wrong-path or unavailable authorization fails closed",
+    "fresh exact-head CI, Security, complete browser and Android evidence are required",
+    "no generic product or E2E maintenance allowlist is introduced"
+  ],
+  terminal_policy: "STOP_DRAFT_AFTER_EVIDENCE",
+  scope_boundaries: expectedPostT085MaintenanceScopeBoundaries
 })
 
 function isT086LockedPath(changedPath) {
@@ -224,6 +261,7 @@ const postT085MaintenancePaths = new Set([
   "scripts/test/validate-traceability.test.mjs",
   "scripts/validate-traceability.mjs"
 ])
+const postT085MaintenanceAuthorizedPaths = new Set(POST_T085_MAINTENANCE_AUTHORIZED_PATHS)
 
 function isAuthorizedPostT085MaintenancePath(changedPath) {
   return changedPath.startsWith("docs/research/") || postT085MaintenancePaths.has(changedPath)
@@ -350,16 +388,6 @@ function classifyT085State(changeBaseTasksText, tasksText) {
   return t085States.UNKNOWN
 }
 
-function isExactPostT085MaintenanceScope({ state, changeBaseSha, changedPaths }) {
-  return (
-    state === t085States.COMPLETE_STEADY &&
-    changeBaseSha === POST_T085_MAINTENANCE_BASE_SHA &&
-    Array.isArray(changedPaths) &&
-    changedPaths.length === POST_T085_MAINTENANCE_CHANGED_PATHS.length &&
-    sameValues(changedPaths, POST_T085_MAINTENANCE_CHANGED_PATHS)
-  )
-}
-
 function isExactPostT085RemediationScope({
   state,
   changeBaseSha,
@@ -389,6 +417,22 @@ function isExactOwnerReadbackSupportScope({
     Array.isArray(changedPaths) &&
     changedPaths.length === ownerReadbackSupportChangedPathList.length &&
     sameValues(changedPaths, ownerReadbackSupportChangedPathList)
+  )
+}
+
+function isExactPostT085MaintenanceAuthorizationScope({
+  state,
+  changeBaseSha,
+  boundedScopeActive,
+  changedPaths
+}) {
+  return (
+    state === t085States.COMPLETE_STEADY &&
+    boundedScopeActive === false &&
+    changeBaseSha === POST_T085_MAINTENANCE_AUTHORIZATION_BASE_SHA &&
+    Array.isArray(changedPaths) &&
+    changedPaths.length === POST_T085_MAINTENANCE_AUTHORIZED_PATHS.length &&
+    sameValues(changedPaths, POST_T085_MAINTENANCE_AUTHORIZED_PATHS)
   )
 }
 
@@ -614,8 +658,7 @@ export function inspectGitHubActionsContext({ environment = process.env, gitBind
     source_head_sha: gitBinding?.head ?? null,
     source_base_sha: gitBinding?.change_base_sha ?? null,
     pull_request_number: null,
-    head_repository_full_name: null,
-    head_repository_id: null,
+    pull_request_draft: null,
     authority: null,
     errors
   }
@@ -665,8 +708,7 @@ export function inspectGitHubActionsContext({ environment = process.env, gitBind
     if (context.event_name === "pull_request") {
       context.authority = "PULL_REQUEST"
       context.pull_request_number = event?.number ?? event?.pull_request?.number ?? null
-      context.head_repository_full_name = event?.pull_request?.head?.repo?.full_name ?? null
-      context.head_repository_id = event?.pull_request?.head?.repo?.id ?? null
+      context.pull_request_draft = event?.pull_request?.draft ?? null
       if (context.base_ref !== "main") errors.push("GITHUB_BASE_REF must be main")
       if (!/^refs\/pull\/\d+\/(?:merge|head)$/.test(context.github_ref ?? "")) {
         errors.push("GITHUB_REF must identify a pull-request ref")
@@ -5713,174 +5755,6 @@ function parseOwnerAuthorizationBody(body, errors) {
   }
 }
 
-function parseMaintenanceAuthorizationBody(body, errors) {
-  if (typeof body !== "string") {
-    errors.push("maintenance authorization comment must contain a structured body")
-    return null
-  }
-  const start = body.indexOf(maintenanceAuthorizationStart)
-  const end = body.indexOf(maintenanceAuthorizationEnd)
-  if (
-    start < 0 ||
-    end <= start ||
-    body.indexOf(maintenanceAuthorizationStart, start + maintenanceAuthorizationStart.length) >=
-      0 ||
-    body.indexOf(maintenanceAuthorizationEnd, end + maintenanceAuthorizationEnd.length) >= 0
-  ) {
-    errors.push("maintenance authorization comment must contain one structured body")
-    return null
-  }
-  const payload = body.slice(start + maintenanceAuthorizationStart.length, end).trim()
-  try {
-    assertUniqueJsonObjectKeys(payload)
-    const parsed = JSON.parse(payload)
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      errors.push("maintenance authorization comment body must be a JSON object")
-      return null
-    }
-    return parsed
-  } catch (error) {
-    errors.push(`maintenance authorization comment body is invalid: ${error.message}`)
-    return null
-  }
-}
-
-function validatePostT085MaintenanceAuthorizationReadback({
-  readback,
-  currentHead,
-  evaluatedHeadCommittedAt,
-  changeBaseSha,
-  changeBaseTraceabilityText,
-  traceabilityText,
-  expectedTraceabilitySha256,
-  githubActionsContext,
-  gitBinding,
-  errors
-}) {
-  if (readback?.status !== "VERIFIED" || readback?.source !== "github-api") {
-    errors.push(
-      "post-T085 maintenance requires a verified GitHub OWNER maintenance-authorization readback"
-    )
-    return null
-  }
-
-  const commentIdMatch = readback.html_url?.match(
-    /^https:\/\/github\.com\/bynanci\/courtside-tw\/issues\/162#issuecomment-([1-9]\d*)$/
-  )
-  if (
-    !Number.isInteger(readback.comment_id) ||
-    readback.comment_id <= 0 ||
-    commentIdMatch?.[1] !== String(readback.comment_id) ||
-    readback.issue_url !== "https://api.github.com/repos/bynanci/courtside-tw/issues/162"
-  ) {
-    errors.push("maintenance authorization readback must identify an issue 162 comment")
-  }
-  if (readback.user_login !== ACCEPTED_RECEIPT_OWNER || readback.author_association !== "OWNER") {
-    errors.push("maintenance authorization comment must be authored by the repository owner")
-  }
-  if (!isIsoTimestamp(readback.created_at) || !isIsoTimestamp(readback.updated_at)) {
-    errors.push("maintenance authorization comment must have trusted GitHub timestamps")
-  }
-  if (readback.updated_at !== readback.created_at) {
-    errors.push("maintenance authorization comment must be immutable after creation")
-  }
-
-  const authorization = parseMaintenanceAuthorizationBody(readback.body, errors)
-  if (authorization === null) return null
-  if (!/^[0-9a-f]{40}$/.test(authorization.candidate_head_sha ?? "")) {
-    errors.push("maintenance authorization candidate_head_sha must be a full commit SHA")
-  }
-  const expectedAuthorization = {
-    schema_version: POST_T085_MAINTENANCE_AUTHORIZATION_SCHEMA,
-    decision: "CANDIDATE_ACCEPTED",
-    accepted_by: ACCEPTED_RECEIPT_OWNER,
-    dispatch_authorization_ref: maintenanceDispatchAuthorizationRef,
-    repository: "bynanci/courtside-tw",
-    issue: maintenanceAuthorizationIssueNumber,
-    pull_request: maintenanceAuthorizationPullRequestNumber,
-    branch: maintenanceAuthorizationBranch,
-    head_repository_id: maintenanceAuthorizationRepositoryId,
-    base_sha: POST_T085_MAINTENANCE_BASE_SHA,
-    candidate_head_sha: authorization.candidate_head_sha,
-    changed_paths: [...POST_T085_MAINTENANCE_CHANGED_PATHS],
-    maintenance_paths: [...maintenanceProductTestPaths],
-    traceability_sha256: expectedTraceabilitySha256,
-    required_merge_method: "merge",
-    scope_boundaries: expectedMaintenanceScopeBoundaries
-  }
-  if (!isDeepStrictEqual(authorization, expectedAuthorization)) {
-    errors.push(
-      "maintenance authorization body must bind the exact repository, issue, PR, base, head, paths, merge method, traceability hash, and scope boundaries"
-    )
-  }
-  if (
-    changeBaseSha !== POST_T085_MAINTENANCE_BASE_SHA ||
-    sha256(changeBaseTraceabilityText) !== expectedTraceabilitySha256 ||
-    sha256(traceabilityText) !== expectedTraceabilitySha256
-  ) {
-    errors.push("maintenance authorization must preserve the exact frozen T085 traceability bytes")
-  }
-  if (!isAuthenticatedGitHubActionsContext(githubActionsContext)) {
-    errors.push("maintenance authorization requires authenticated GitHub Actions event metadata")
-    return authorization
-  }
-
-  let candidateCommittedAt = null
-  if (githubActionsContext.authority === "PULL_REQUEST") {
-    candidateCommittedAt = evaluatedHeadCommittedAt
-    if (authorization.candidate_head_sha !== currentHead) {
-      errors.push("maintenance authorization candidate_head_sha must match the exact PR head")
-    }
-    if (
-      githubActionsContext.pull_request_number !== maintenanceAuthorizationPullRequestNumber ||
-      githubActionsContext.head_ref !== maintenanceAuthorizationBranch ||
-      githubActionsContext.head_repository_full_name !== "bynanci/courtside-tw" ||
-      githubActionsContext.head_repository_id !== maintenanceAuthorizationRepositoryId ||
-      githubActionsContext.source_head_sha !== currentHead ||
-      githubActionsContext.source_base_sha !== POST_T085_MAINTENANCE_BASE_SHA ||
-      githubActionsContext.base_ref !== "main"
-    ) {
-      errors.push("maintenance authorization must match the authenticated PR163 event")
-    }
-  } else if (githubActionsContext.authority === "PROTECTED_MAIN_PUSH") {
-    candidateCommittedAt = gitBinding?.second_parent_committed_at ?? null
-    if (
-      !Array.isArray(gitBinding?.head_parent_shas) ||
-      !isDeepStrictEqual(gitBinding.head_parent_shas, [
-        POST_T085_MAINTENANCE_BASE_SHA,
-        authorization.candidate_head_sha
-      ]) ||
-      gitBinding?.head_parent_count !== 2
-    ) {
-      errors.push("maintenance authorization requires exact merge-commit parents")
-    }
-    if (
-      !/^[0-9a-f]{40}$/.test(gitBinding?.head_tree_sha ?? "") ||
-      gitBinding.head_tree_sha !== gitBinding?.second_parent_tree_sha
-    ) {
-      errors.push("maintenance merge tree must equal the authorized candidate tree")
-    }
-    if (
-      githubActionsContext.source_base_sha !== POST_T085_MAINTENANCE_BASE_SHA ||
-      githubActionsContext.source_head_sha !== currentHead
-    ) {
-      errors.push("maintenance authorization must match the authenticated protected-main push")
-    }
-  } else {
-    errors.push("maintenance authorization requires a PR or protected-main push event")
-  }
-
-  if (!isIsoTimestamp(candidateCommittedAt)) {
-    errors.push("maintenance authorization requires a trusted candidate commit timestamp")
-  } else if (
-    isIsoTimestamp(readback.created_at) &&
-    Date.parse(readback.created_at) < Date.parse(candidateCommittedAt)
-  ) {
-    errors.push("maintenance authorization comment must not predate the authorized candidate")
-  }
-  return authorization
-}
-
 function validateOwnerAuthorizationReadback({ receipt, readback, errors }) {
   if (readback?.status !== "VERIFIED" || readback?.source !== "github-api") {
     errors.push("completion receipt requires a verified GitHub owner-authorization readback")
@@ -5922,6 +5796,135 @@ function validateOwnerAuthorizationReadback({ receipt, readback, errors }) {
       "completion receipt authorization body must bind the audited receipt base, traceability hash, and scope boundaries"
     )
   }
+}
+
+function parsePostT085MaintenanceAuthorizationBody(body, errors) {
+  if (typeof body !== "string") {
+    errors.push("post-T085 maintenance authorization comment must contain a structured body")
+    return null
+  }
+  const start = body.indexOf(postT085MaintenanceAuthorizationStart)
+  const end = body.indexOf(postT085MaintenanceAuthorizationEnd)
+  if (
+    start < 0 ||
+    end <= start ||
+    body.indexOf(
+      postT085MaintenanceAuthorizationStart,
+      start + postT085MaintenanceAuthorizationStart.length
+    ) >= 0 ||
+    body.indexOf(
+      postT085MaintenanceAuthorizationEnd,
+      end + postT085MaintenanceAuthorizationEnd.length
+    ) >= 0
+  ) {
+    errors.push("post-T085 maintenance authorization comment must contain one structured body")
+    return null
+  }
+  let payload = body.slice(start + postT085MaintenanceAuthorizationStart.length, end).trim()
+  const fencedPayload = payload.match(/^```json\r?\n([\s\S]*)\r?\n```$/)
+  if (fencedPayload) {
+    payload = fencedPayload[1].trim()
+  } else if (payload.includes("```")) {
+    errors.push("post-T085 maintenance authorization JSON fence is invalid")
+    return null
+  }
+  try {
+    assertUniqueJsonObjectKeys(payload)
+    const parsed = JSON.parse(payload)
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      errors.push("post-T085 maintenance authorization body must be a JSON object")
+      return null
+    }
+    return parsed
+  } catch (error) {
+    errors.push(`post-T085 maintenance authorization body is invalid: ${error.message}`)
+    return null
+  }
+}
+
+function validatePostT085MaintenanceAuthorizationReadback({
+  readback,
+  gitBinding,
+  requireExactHeadEvidence,
+  githubActionsContext,
+  errors
+}) {
+  const initialErrorCount = errors.length
+  if (readback?.status !== "VERIFIED" || readback?.source !== "github-api") {
+    errors.push("post-T085 maintenance requires a verified GitHub owner-authorization readback")
+    return false
+  }
+  if (
+    readback.html_url !== POST_T085_MAINTENANCE_AUTHORIZATION_REF ||
+    readback.issue_url !== "https://api.github.com/repos/bynanci/courtside-tw/issues/162"
+  ) {
+    errors.push(
+      "post-T085 maintenance authorization readback must match the authorized issue comment"
+    )
+  }
+  if (readback.user_login !== ACCEPTED_RECEIPT_OWNER || readback.author_association !== "OWNER") {
+    errors.push(
+      "post-T085 maintenance authorization comment must be authored by the repository owner"
+    )
+  }
+  if (readback.created_at !== POST_T085_MAINTENANCE_AUTHORIZATION_RECORDED_AT) {
+    errors.push("post-T085 maintenance authorization timestamp must match the owner dispatch")
+  }
+  if (readback.updated_at !== readback.created_at) {
+    errors.push("post-T085 maintenance authorization comment must be immutable after creation")
+  }
+  if (gitBinding?.post_t085_maintenance_authorized_head_ancestor !== true) {
+    errors.push("authorized US6 E2E head must be an ancestor of the evaluated maintenance head")
+  }
+  if (gitBinding?.post_t085_maintenance_e2e_matches_authorized_head !== true) {
+    errors.push("authorized US6 E2E bytes must remain unchanged from the owner-signed candidate")
+  }
+  const authorizedHeadCommittedAt = Date.parse(
+    gitBinding?.post_t085_maintenance_authorized_head_committed_at ?? ""
+  )
+  const authorizationRecordedAt = Date.parse(readback.created_at ?? "")
+  if (
+    !Number.isFinite(authorizedHeadCommittedAt) ||
+    !Number.isFinite(authorizationRecordedAt) ||
+    authorizationRecordedAt <= authorizedHeadCommittedAt
+  ) {
+    errors.push("post-T085 maintenance authorization must postdate the owner-signed candidate")
+  }
+
+  const authorization = parsePostT085MaintenanceAuthorizationBody(readback.body, errors)
+  if (
+    authorization === null ||
+    !isDeepStrictEqual(authorization, expectedPostT085MaintenanceAuthorization)
+  ) {
+    errors.push("post-T085 maintenance authorization body must match the exact owner dispatch")
+  }
+
+  if (!requireExactHeadEvidence) {
+    errors.push("post-T085 evidence-only authorization requires exact-head CI mode")
+  }
+  if (!isAuthenticatedGitHubActionsContext(githubActionsContext)) {
+    errors.push("post-T085 maintenance authorization requires authenticated GitHub Actions context")
+  } else if (githubActionsContext.authority === "PULL_REQUEST") {
+    if (
+      githubActionsContext.source_base_sha !== POST_T085_MAINTENANCE_AUTHORIZATION_BASE_SHA ||
+      githubActionsContext.pull_request_number !==
+        expectedPostT085MaintenanceAuthorization.pull_request ||
+      githubActionsContext.head_ref !== expectedPostT085MaintenanceAuthorization.branch ||
+      !new RegExp(
+        `^refs/pull/${expectedPostT085MaintenanceAuthorization.pull_request}/(?:merge|head)$`
+      ).test(githubActionsContext.github_ref ?? "")
+    ) {
+      errors.push(
+        "post-T085 maintenance Actions context must bind authorized PR 163, branch and base"
+      )
+    }
+    if (githubActionsContext.pull_request_draft !== true) {
+      errors.push("post-T085 evidence-only authorization requires PR 163 to remain draft")
+    }
+  } else {
+    errors.push("post-T085 evidence-only authorization requires pull-request authority")
+  }
+  return errors.length === initialErrorCount
 }
 
 function validateCompletionReceipt({
@@ -6288,7 +6291,7 @@ export function validateTraceability({
   evaluatedHeadCommittedAt = null,
   changeBaseCommittedAt = null,
   ownerAuthorizationReadback = null,
-  maintenanceAuthorizationReadback = null,
+  postT085MaintenanceAuthorizationReadback = null,
   gitBinding = null,
   changedPaths = null,
   changeBaseSha = REVIEW_BASE_SHA,
@@ -6298,7 +6301,6 @@ export function validateTraceability({
   implementationMergeAncestorOfChangeBase = null,
   acceptedTraceabilitySha256 = ACCEPTED_TRACEABILITY_SHA256,
   preRemediationTraceabilitySha256 = PRE_REMEDIATION_TRACEABILITY_SHA256,
-  postT085MaintenanceTraceabilitySha256 = POST_T085_MAINTENANCE_TRACEABILITY_SHA256,
   acceptedPendingTasksSha256 = ACCEPTED_PENDING_TASKS_SHA256,
   acceptedCompletedTasksSha256 = ACCEPTED_COMPLETED_TASKS_SHA256,
   boundedScopeActive = changeBaseSha === REVIEW_BASE_SHA,
@@ -6344,30 +6346,17 @@ export function validateTraceability({
     boundedScopeActive,
     changedPaths
   })
-  const postT085MaintenanceScopeActive = isExactPostT085MaintenanceScope({
+  const postT085MaintenanceAuthorizationScopeActive = isExactPostT085MaintenanceAuthorizationScope({
     state,
     changeBaseSha,
+    boundedScopeActive,
     changedPaths
   })
-  const maintenanceAuthorizationErrorCount = errors.length
-  const maintenanceAuthorization = postT085MaintenanceScopeActive
-    ? validatePostT085MaintenanceAuthorizationReadback({
-        readback: maintenanceAuthorizationReadback,
-        currentHead,
-        evaluatedHeadCommittedAt,
-        changeBaseSha,
-        changeBaseTraceabilityText,
-        traceabilityText,
-        expectedTraceabilitySha256: postT085MaintenanceTraceabilitySha256,
-        githubActionsContext,
-        gitBinding,
-        errors
-      })
-    : null
-  const postT085MaintenanceAuthorizationValid =
-    postT085MaintenanceScopeActive &&
-    maintenanceAuthorization !== null &&
-    errors.length === maintenanceAuthorizationErrorCount
+  const postT085MaintenanceAuthorizationRequested =
+    state === t085States.COMPLETE_STEADY &&
+    Array.isArray(changedPaths) &&
+    changedPaths.includes(POST_T085_MAINTENANCE_AUTHORIZED_PATHS[0])
+  let postT085MaintenanceAuthorizationAccepted = false
 
   if (!/^[0-9a-f]{40}$/.test(currentHead ?? "")) {
     errors.push("currentHead must be a full lowercase commit SHA")
@@ -6468,10 +6457,30 @@ export function validateTraceability({
     }
   }
   if (state === t085States.COMPLETE_STEADY) {
+    if (postT085MaintenanceAuthorizationRequested) {
+      if (!postT085MaintenanceAuthorizationScopeActive) {
+        errors.push(
+          "post-T085 maintenance authorization requires the exact three-path bootstrap scope"
+        )
+      } else {
+        postT085MaintenanceAuthorizationAccepted = validatePostT085MaintenanceAuthorizationReadback(
+          {
+            readback: postT085MaintenanceAuthorizationReadback,
+            gitBinding,
+            requireExactHeadEvidence,
+            githubActionsContext,
+            errors
+          }
+        )
+      }
+    }
     for (const changedPath of changedPaths ?? []) {
       if (
         !isAuthorizedPostT085MaintenancePath(changedPath) &&
-        !(postT085MaintenanceAuthorizationValid && maintenanceAuthorizationPaths.has(changedPath))
+        !(
+          postT085MaintenanceAuthorizationAccepted &&
+          postT085MaintenanceAuthorizedPaths.has(changedPath)
+        )
       ) {
         errors.push(
           `changed path is outside the authorized post-T085 maintenance scope: ${changedPath}`
@@ -7022,20 +7031,18 @@ export function validateTraceability({
             errors: ownerAuthorizationReadback.errors ?? []
           }
         : null,
-      maintenance_authorization_readback: maintenanceAuthorizationReadback
+      post_t085_maintenance_authorization_readback: postT085MaintenanceAuthorizationReadback
         ? {
-            status: maintenanceAuthorizationReadback.status ?? "UNAVAILABLE",
-            source: maintenanceAuthorizationReadback.source ?? null,
-            comment_id: maintenanceAuthorizationReadback.comment_id ?? null,
-            html_url: maintenanceAuthorizationReadback.html_url ?? null,
-            issue_url: maintenanceAuthorizationReadback.issue_url ?? null,
-            user_login: maintenanceAuthorizationReadback.user_login ?? null,
-            author_association: maintenanceAuthorizationReadback.author_association ?? null,
-            created_at: maintenanceAuthorizationReadback.created_at ?? null,
-            updated_at: maintenanceAuthorizationReadback.updated_at ?? null,
-            body_sha256: sha256(maintenanceAuthorizationReadback.body ?? null),
-            candidate_head_sha: maintenanceAuthorization?.candidate_head_sha ?? null,
-            errors: maintenanceAuthorizationReadback.errors ?? []
+            status: postT085MaintenanceAuthorizationReadback.status ?? "UNAVAILABLE",
+            source: postT085MaintenanceAuthorizationReadback.source ?? null,
+            html_url: postT085MaintenanceAuthorizationReadback.html_url ?? null,
+            issue_url: postT085MaintenanceAuthorizationReadback.issue_url ?? null,
+            user_login: postT085MaintenanceAuthorizationReadback.user_login ?? null,
+            author_association: postT085MaintenanceAuthorizationReadback.author_association ?? null,
+            created_at: postT085MaintenanceAuthorizationReadback.created_at ?? null,
+            updated_at: postT085MaintenanceAuthorizationReadback.updated_at ?? null,
+            body_sha256: sha256(postT085MaintenanceAuthorizationReadback.body ?? null),
+            errors: postT085MaintenanceAuthorizationReadback.errors ?? []
           }
         : null,
       exact_head_evidence: exactHeadEvidence,
@@ -7051,8 +7058,7 @@ export function validateTraceability({
             run_number: githubActionsContext.run_number ?? null,
             run_attempt: githubActionsContext.run_attempt ?? null,
             pull_request_number: githubActionsContext.pull_request_number ?? null,
-            head_repository_full_name: githubActionsContext.head_repository_full_name ?? null,
-            head_repository_id: githubActionsContext.head_repository_id ?? null,
+            pull_request_draft: githubActionsContext.pull_request_draft ?? null,
             errors: githubActionsContext.errors ?? []
           }
         : null,
@@ -7125,11 +7131,7 @@ export function validateTraceability({
             ? "T085_RECEIPT_AUDITED"
             : "EXTERNAL_READBACK_REQUIRED"
           : state === t085States.COMPLETE_STEADY && Array.isArray(changedPaths)
-            ? postT085MaintenanceAuthorizationValid
-              ? "T085_AUTHENTICATED_MAINTENANCE_AUDITED"
-              : postT085MaintenanceScopeActive
-                ? "EXTERNAL_READBACK_REQUIRED"
-                : "T085_COMPLETE_STEADY_AUDITED"
+            ? "T085_COMPLETE_STEADY_AUDITED"
             : state === t085States.PENDING && Array.isArray(changedPaths)
               ? "AUDITED"
               : "EXTERNAL_READBACK_REQUIRED",
@@ -7160,8 +7162,8 @@ export function validateTraceability({
                       (changedPath) =>
                         !isAuthorizedPostT085MaintenancePath(changedPath) &&
                         !(
-                          postT085MaintenanceAuthorizationValid &&
-                          maintenanceAuthorizationPaths.has(changedPath)
+                          postT085MaintenanceAuthorizationAccepted &&
+                          postT085MaintenanceAuthorizedPaths.has(changedPath)
                         )
                     )
                   : state === t085States.COMPLETE_STEADY
@@ -7203,6 +7205,18 @@ export function validateTraceability({
 function inspectAncestor(root, baseSha, head) {
   try {
     execFileSync("git", ["merge-base", "--is-ancestor", baseSha, head], {
+      cwd: root,
+      stdio: "ignore"
+    })
+    return true
+  } catch (error) {
+    return error?.status === 1 ? false : null
+  }
+}
+
+function inspectPathUnchangedBetweenCommits(root, beforeSha, afterSha, filePath) {
+  try {
+    execFileSync("git", ["diff", "--quiet", beforeSha, afterSha, "--", filePath], {
       cwd: root,
       stdio: "ignore"
     })
@@ -7309,35 +7323,9 @@ function inspectHeadTopology(root, head) {
       stdio: ["ignore", "pipe", "ignore"]
     }).trim()
     const parents = parentLine.split(/\s+/).filter((parent) => /^[0-9a-f]{40}$/.test(parent))
-    const headTreeSha = execFileSync("git", ["rev-parse", "--verify", `${head}^{tree}`], {
-      cwd: root,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"]
-    }).trim()
-    const secondParentTreeSha = parents[1]
-      ? execFileSync("git", ["rev-parse", "--verify", `${parents[1]}^{tree}`], {
-          cwd: root,
-          encoding: "utf8",
-          stdio: ["ignore", "pipe", "ignore"]
-        }).trim()
-      : null
-    return {
-      parents,
-      first: parents[0] ?? null,
-      count: parents.length,
-      headTreeSha,
-      secondParentTreeSha,
-      secondParentCommittedAt: parents[1] ? inspectCommitTimestamp(root, parents[1]) : null
-    }
+    return { first: parents[0] ?? null, count: parents.length }
   } catch {
-    return {
-      parents: null,
-      first: null,
-      count: null,
-      headTreeSha: null,
-      secondParentTreeSha: null,
-      secondParentCommittedAt: null
-    }
+    return { first: null, count: null }
   }
 }
 
@@ -7374,7 +7362,6 @@ const headers = {
   "User-Agent": "courtside-t085-receipt-validator",
   "X-GitHub-Api-Version": "2022-11-28"
 }
-if (process.env.GITHUB_TOKEN) headers.Authorization = "Bearer " + process.env.GITHUB_TOKEN
 const response = await fetch(url, {
   headers,
   redirect: "error",
@@ -7386,131 +7373,18 @@ if (Buffer.byteLength(body) > 1024 * 1024) throw new Error("GitHub comment read-
 process.stdout.write(body)
 `
 
-export async function fetchPostT085MaintenanceComments(
-  firstUrl,
-  {
-    fetchImpl = globalThis.fetch,
-    token = process.env.GITHUB_TOKEN,
-    maxBytes = 4 * 1024 * 1024,
-    maxPages = 20,
-    timeoutMs = 10000
-  } = {}
+function inspectGitHubAuthorizationComment(
+  authorizationRef,
+  { environment, isAuthorizedRef, invalidRefError, readbackErrorPrefix }
 ) {
-  if (typeof fetchImpl !== "function") throw new Error("GitHub issue-comments fetch is unavailable")
-  if (!Number.isSafeInteger(maxBytes) || maxBytes < 1 || maxBytes > 4 * 1024 * 1024) {
-    throw new Error("GitHub issue-comments maxBytes is outside the fail-closed bound")
-  }
-  if (!Number.isSafeInteger(maxPages) || maxPages < 1 || maxPages > 20) {
-    throw new Error("GitHub issue-comments maxPages is outside the fail-closed bound")
-  }
-  if (!Number.isSafeInteger(timeoutMs) || timeoutMs < 1 || timeoutMs > 10000) {
-    throw new Error("GitHub issue-comments timeout is outside the fail-closed bound")
-  }
-
-  const headers = {
-    Accept: "application/vnd.github+json",
-    "User-Agent": "courtside-post-t085-maintenance-validator",
-    "X-GitHub-Api-Version": "2022-11-28"
-  }
-  if (typeof token === "string" && token !== "") headers.Authorization = `Bearer ${token}`
-  const allowedPaths = new Set([
-    "/repos/bynanci/courtside-tw/issues/162/comments",
-    "/repositories/1324872306/issues/162/comments"
-  ])
-  const comments = []
-  const seen = new Set()
-  let nextUrl = new URL(firstUrl)
-  let expectedPage = 1
-  let totalBytes = 0
-  let lastCommentId = 0
-
-  for (let pageCount = 0; nextUrl !== null; pageCount += 1) {
-    if (pageCount >= maxPages) {
-      throw new Error(`GitHub comments pagination exceeded ${maxPages} pages`)
-    }
-    const unexpectedParameters = [...nextUrl.searchParams.keys()].filter(
-      (key) => key !== "page" && key !== "per_page"
-    )
-    if (
-      nextUrl.protocol !== "https:" ||
-      nextUrl.hostname !== "api.github.com" ||
-      nextUrl.username !== "" ||
-      nextUrl.password !== "" ||
-      !allowedPaths.has(nextUrl.pathname) ||
-      nextUrl.searchParams.get("per_page") !== "100" ||
-      unexpectedParameters.length > 0
-    ) {
-      throw new Error("GitHub comments pagination escaped the authorized issue endpoint")
-    }
-    const page = Number(nextUrl.searchParams.get("page") ?? "1")
-    if (!Number.isSafeInteger(page) || page !== expectedPage || seen.has(nextUrl.href)) {
-      throw new Error("GitHub comments pagination was non-contiguous or repeated")
-    }
-    seen.add(nextUrl.href)
-
-    const response = await fetchImpl(nextUrl, {
-      headers,
-      redirect: "error",
-      signal: AbortSignal.timeout(timeoutMs)
-    })
-    if (response?.redirected === true) {
-      throw new Error("GitHub issue-comments read-back redirected unexpectedly")
-    }
-    if (!response?.ok) {
-      throw new Error(
-        `GitHub issue-comments read-back returned HTTP ${response?.status ?? "unknown"}`
-      )
-    }
-    const body = await response.text()
-    totalBytes += Buffer.byteLength(body)
-    if (totalBytes > maxBytes) {
-      throw new Error(`GitHub issue-comments read-back exceeded ${maxBytes} bytes`)
-    }
-    const pageComments = JSON.parse(body)
-    if (!Array.isArray(pageComments)) {
-      throw new Error("GitHub issue-comments read-back was not an array")
-    }
-    if (pageComments.length > 100) {
-      throw new Error("GitHub issue-comments page exceeded the requested bound")
-    }
-    for (const comment of pageComments) {
-      if (!Number.isSafeInteger(comment?.id) || comment.id <= lastCommentId) {
-        throw new Error("GitHub issue-comments pages were not strictly ordered and unique")
-      }
-      lastCommentId = comment.id
-    }
-    comments.push(...pageComments)
-
-    const link = response.headers.get("link")
-    const nextMatches = [...(link?.matchAll(/<([^>]+)>;\s*rel="next"/g) ?? [])].map(
-      (match) => match[1]
-    )
-    if (/rel\s*=\s*"?next\b/i.test(link ?? "") && nextMatches.length !== 1) {
-      throw new Error("GitHub comments pagination had an invalid next link")
-    }
-    if (nextMatches.length > 1) {
-      throw new Error("GitHub comments pagination had duplicate next links")
-    }
-    nextUrl = nextMatches.length === 1 ? new URL(nextMatches[0]) : null
-    expectedPage += 1
-  }
-  return comments
-}
-
-const githubIssueCommentsFetchScript = String.raw`
-const validator = await import(process.argv[1])
-const comments = await validator.fetchPostT085MaintenanceComments(process.argv[2])
-process.stdout.write(JSON.stringify(comments))
-`
-
-export function inspectOwnerAuthorization(authorizationRef, { environment = process.env } = {}) {
-  const match = authorizationRef?.match(receiptAuthorizationRefPattern)
-  const commentId = match?.[0]?.match(/issuecomment-([1-9]\d*)$/)?.[1] ?? null
+  const commentId = isAuthorizedRef(authorizationRef)
+    ? (authorizationRef.match(/issuecomment-([1-9]\d*)$/)?.[1] ?? null)
+    : null
   if (commentId === null) {
     return {
       status: "UNAVAILABLE",
       source: "github-api",
-      errors: ["authorization_ref does not identify an issue 145 comment"]
+      errors: [invalidRefError]
     }
   }
   const apiUrl = `https://api.github.com/repos/bynanci/courtside-tw/issues/comments/${commentId}`
@@ -7520,7 +7394,7 @@ export function inspectOwnerAuthorization(authorizationRef, { environment = proc
       ["--input-type=module", "--eval", githubCommentFetchScript, apiUrl],
       {
         encoding: "utf8",
-        env: environment,
+        env: { PATH: environment?.PATH ?? process.env.PATH ?? "" },
         maxBuffer: 1024 * 1024,
         stdio: ["ignore", "pipe", "pipe"],
         timeout: 15000
@@ -7544,96 +7418,31 @@ export function inspectOwnerAuthorization(authorizationRef, { environment = proc
       status: "UNAVAILABLE",
       source: "github-api",
       html_url: authorizationRef ?? null,
-      errors: [`GitHub owner-authorization read-back failed: ${error.message}`]
+      errors: [`${readbackErrorPrefix}: ${error.message}`]
     }
   }
 }
 
-export function selectLatestPostT085MaintenanceAuthorization(comments) {
-  if (!Array.isArray(comments)) throw new Error("GitHub issue-comments payload was not an array")
-  const terminalComments = comments
-    .filter(
-      (comment) =>
-        comment?.user?.login === ACCEPTED_RECEIPT_OWNER &&
-        comment?.author_association === "OWNER" &&
-        typeof comment?.body === "string" &&
-        (comment.body.includes(maintenanceAuthorizationStart) ||
-          comment.body.includes(maintenanceAuthorizationEnd))
-    )
-    .sort((left, right) => Number(left.id ?? 0) - Number(right.id ?? 0))
-  const comment = terminalComments.at(-1)
-  if (!comment) {
-    throw new Error("no repository-owner exact-head maintenance authorization was found")
-  }
-  return {
-    status: "VERIFIED",
-    source: "github-api",
-    comment_id: comment.id ?? null,
-    html_url: comment.html_url ?? null,
-    issue_url: comment.issue_url ?? null,
-    user_login: comment.user?.login ?? null,
-    author_association: comment.author_association ?? null,
-    created_at: comment.created_at ?? null,
-    updated_at: comment.updated_at ?? null,
-    body: comment.body ?? null,
-    errors: []
-  }
+export function inspectOwnerAuthorization(authorizationRef, { environment = process.env } = {}) {
+  return inspectGitHubAuthorizationComment(authorizationRef, {
+    environment,
+    isAuthorizedRef: (value) => receiptAuthorizationRefPattern.test(value ?? ""),
+    invalidRefError: "authorization_ref does not identify an issue 145 comment",
+    readbackErrorPrefix: "GitHub owner-authorization read-back failed"
+  })
 }
 
-export function inspectPostT085MaintenanceAuthorization({ environment = process.env } = {}) {
-  const apiUrl =
-    "https://api.github.com/repos/bynanci/courtside-tw/issues/162/comments?per_page=100&page=1"
-  try {
-    const raw = execFileSync(
-      process.execPath,
-      ["--input-type=module", "--eval", githubIssueCommentsFetchScript, import.meta.url, apiUrl],
-      {
-        encoding: "utf8",
-        env: environment,
-        maxBuffer: 4 * 1024 * 1024,
-        stdio: ["ignore", "pipe", "pipe"],
-        timeout: 55000
-      }
-    )
-    const comments = JSON.parse(raw)
-    return selectLatestPostT085MaintenanceAuthorization(comments)
-  } catch (error) {
-    return {
-      status: "UNAVAILABLE",
-      source: "github-api",
-      html_url: "https://github.com/bynanci/courtside-tw/issues/162",
-      errors: [`GitHub maintenance-authorization read-back failed: ${error.message}`]
-    }
-  }
-}
-
-export function inspectPostT085MaintenanceAuthorizationForState(
-  root,
-  {
-    inspection = null,
-    environment = process.env,
-    inspect = inspectPostT085MaintenanceAuthorization
-  } = {}
+export function inspectPostT085MaintenanceAuthorization(
+  authorizationRef,
+  { environment = process.env } = {}
 ) {
-  try {
-    const tasksText = fs.readFileSync(
-      path.join(root, "specs/001-taiwan-basketball-magazine-ebook/tasks.md"),
-      "utf8"
-    )
-    const state = classifyT085State(inspection?.change_base_tasks_text ?? null, tasksText)
-    if (
-      !isExactPostT085MaintenanceScope({
-        state,
-        changeBaseSha: inspection?.change_base_sha ?? null,
-        changedPaths: inspection?.changedPaths ?? null
-      })
-    ) {
-      return null
-    }
-    return inspect({ environment })
-  } catch {
-    return null
-  }
+  return inspectGitHubAuthorizationComment(authorizationRef, {
+    environment,
+    isAuthorizedRef: (value) => value === POST_T085_MAINTENANCE_AUTHORIZATION_REF,
+    invalidRefError:
+      "post-T085 maintenance authorization_ref does not identify the authorized issue 162 comment",
+    readbackErrorPrefix: "GitHub post-T085 maintenance authorization read-back failed"
+  })
 }
 
 export function inspectOwnerAuthorizationForState(
@@ -7654,6 +7463,39 @@ export function inspectOwnerAuthorizationForState(
     }
     const receipt = JSON.parse(fs.readFileSync(path.join(root, COMPLETION_RECEIPT_PATH), "utf8"))
     return inspect(receipt?.authorization_ref, { environment })
+  } catch {
+    return null
+  }
+}
+
+export function inspectPostT085MaintenanceAuthorizationForState(
+  root,
+  {
+    changeBaseTasksText = null,
+    changeBaseSha = null,
+    boundedScopeActive = null,
+    changedPaths = null,
+    environment = process.env,
+    inspect = inspectPostT085MaintenanceAuthorization
+  } = {}
+) {
+  try {
+    const tasksText = fs.readFileSync(
+      path.join(root, "specs/001-taiwan-basketball-magazine-ebook/tasks.md"),
+      "utf8"
+    )
+    const state = classifyT085State(changeBaseTasksText, tasksText)
+    if (
+      !isExactPostT085MaintenanceAuthorizationScope({
+        state,
+        changeBaseSha,
+        boundedScopeActive,
+        changedPaths
+      })
+    ) {
+      return null
+    }
+    return inspect(POST_T085_MAINTENANCE_AUTHORIZATION_REF, { environment })
   } catch {
     return null
   }
@@ -7685,6 +7527,21 @@ export function inspectGit(root, { environment = process.env } = {}) {
       : "CLEAN"
     const authorizedBaseAncestor = inspectAncestor(root, AUTHORIZED_BASE_SHA, head)
     const reviewBaseAncestor = inspectAncestor(root, REVIEW_BASE_SHA, head)
+    const postT085MaintenanceAuthorizedHeadAncestor = inspectAncestor(
+      root,
+      POST_T085_MAINTENANCE_AUTHORIZED_HEAD_SHA,
+      head
+    )
+    const postT085MaintenanceAuthorizedHeadCommittedAt = inspectCommitTimestamp(
+      root,
+      POST_T085_MAINTENANCE_AUTHORIZED_HEAD_SHA
+    )
+    const postT085MaintenanceE2eMatchesAuthorizedHead = inspectPathUnchangedBetweenCommits(
+      root,
+      POST_T085_MAINTENANCE_AUTHORIZED_HEAD_SHA,
+      head,
+      POST_T085_MAINTENANCE_AUTHORIZED_PATHS[0]
+    )
     const changeBase = resolveChangeBase(root, head, environment)
     const changeBaseCommittedAt = inspectCommitTimestamp(root, changeBase.sha)
     const headTopology = inspectHeadTopology(root, head)
@@ -7735,16 +7592,17 @@ export function inspectGit(root, { environment = process.env } = {}) {
       status,
       authorized_base_ancestor: authorizedBaseAncestor,
       review_base_ancestor: reviewBaseAncestor,
+      post_t085_maintenance_authorized_head_ancestor: postT085MaintenanceAuthorizedHeadAncestor,
+      post_t085_maintenance_authorized_head_committed_at:
+        postT085MaintenanceAuthorizedHeadCommittedAt,
+      post_t085_maintenance_e2e_matches_authorized_head:
+        postT085MaintenanceE2eMatchesAuthorizedHead,
       change_base_ref: changeBase.ref,
       change_base_sha: changeBase.sha,
       change_base_committed_at: changeBaseCommittedAt,
       change_base_ancestor: changeBase.ancestor,
       head_parent_sha: headTopology.first,
       head_parent_count: headTopology.count,
-      head_parent_shas: headTopology.parents,
-      head_tree_sha: headTopology.headTreeSha,
-      second_parent_tree_sha: headTopology.secondParentTreeSha,
-      second_parent_committed_at: headTopology.secondParentCommittedAt,
       implementation_merge_ancestor_of_change_base: implementationMergeAncestorOfChangeBase,
       change_base_tasks_text: changeBaseTasksText,
       change_base_traceability_text: changeBaseTraceabilityText,
@@ -7759,16 +7617,15 @@ export function inspectGit(root, { environment = process.env } = {}) {
       status: "UNAVAILABLE",
       authorized_base_ancestor: null,
       review_base_ancestor: null,
+      post_t085_maintenance_authorized_head_ancestor: null,
+      post_t085_maintenance_authorized_head_committed_at: null,
+      post_t085_maintenance_e2e_matches_authorized_head: null,
       change_base_ref: null,
       change_base_sha: null,
       change_base_committed_at: null,
       change_base_ancestor: null,
       head_parent_sha: null,
       head_parent_count: null,
-      head_parent_shas: null,
-      head_tree_sha: null,
-      second_parent_tree_sha: null,
-      second_parent_committed_at: null,
       implementation_merge_ancestor_of_change_base: null,
       change_base_tasks_text: null,
       change_base_traceability_text: null,
@@ -7787,10 +7644,16 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
     changeBaseTasksText: inspection.change_base_tasks_text,
     environment
   })
-  const maintenanceAuthorizationReadback = inspectPostT085MaintenanceAuthorizationForState(root, {
-    inspection,
-    environment
-  })
+  const postT085MaintenanceAuthorizationReadback = inspectPostT085MaintenanceAuthorizationForState(
+    root,
+    {
+      changeBaseTasksText: inspection.change_base_tasks_text,
+      changeBaseSha: inspection.change_base_sha,
+      boundedScopeActive: inspection.bounded_scope_active,
+      changedPaths: inspection.changedPaths,
+      environment
+    }
+  )
   const githubActionsContext = inspectGitHubActionsContext({ environment, gitBinding: inspection })
   const isGitHubActions = environment.GITHUB_ACTIONS === "true"
   const report = validateTraceability({
@@ -7799,23 +7662,25 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
     evaluatedHeadCommittedAt: inspection.head_committed_at,
     changeBaseCommittedAt: inspection.change_base_committed_at,
     ownerAuthorizationReadback,
-    maintenanceAuthorizationReadback,
+    postT085MaintenanceAuthorizationReadback,
     gitBinding: {
       status: inspection.status,
       head: inspection.head,
       head_committed_at: inspection.head_committed_at,
       authorized_base_ancestor: inspection.authorized_base_ancestor,
       review_base_ancestor: inspection.review_base_ancestor,
+      post_t085_maintenance_authorized_head_ancestor:
+        inspection.post_t085_maintenance_authorized_head_ancestor,
+      post_t085_maintenance_authorized_head_committed_at:
+        inspection.post_t085_maintenance_authorized_head_committed_at,
+      post_t085_maintenance_e2e_matches_authorized_head:
+        inspection.post_t085_maintenance_e2e_matches_authorized_head,
       change_base_ref: inspection.change_base_ref,
       change_base_sha: inspection.change_base_sha,
       change_base_committed_at: inspection.change_base_committed_at,
       change_base_ancestor: inspection.change_base_ancestor,
       head_parent_sha: inspection.head_parent_sha,
       head_parent_count: inspection.head_parent_count,
-      head_parent_shas: inspection.head_parent_shas,
-      head_tree_sha: inspection.head_tree_sha,
-      second_parent_tree_sha: inspection.second_parent_tree_sha,
-      second_parent_committed_at: inspection.second_parent_committed_at,
       implementation_merge_ancestor_of_change_base:
         inspection.implementation_merge_ancestor_of_change_base,
       bounded_scope_active: inspection.bounded_scope_active
