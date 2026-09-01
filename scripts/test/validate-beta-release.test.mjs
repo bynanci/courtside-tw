@@ -5,6 +5,8 @@ import path from "node:path"
 import test from "node:test"
 import { fileURLToPath } from "node:url"
 
+import * as betaReleaseModule from "../validate-beta-release.mjs"
+
 import {
   EXPECTED_OWNER_AUTHORIZATION,
   FROZEN_T085_TRACEABILITY_SHA256,
@@ -526,5 +528,111 @@ test("owner adjudication must be an unedited GitHub OWNER comment", () => {
     assert.equal(report.status, "FAIL")
     assert.match(report.errors.join("\n"), /owner adjudication/u)
     assert.equal(report.release_decision, "HOLD")
+  }
+})
+
+function githubIssueComment({ id, createdAt, body = "no adjudication marker" }) {
+  return {
+    id,
+    html_url: `https://github.com/bynanci/courtside-tw/issues/160#issuecomment-${id}`,
+    issue_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/160",
+    user: { login: body.includes("t086:owner-adjudication") ? "bynanci" : "reader" },
+    author_association: body.includes("t086:owner-adjudication") ? "OWNER" : "NONE",
+    created_at: createdAt,
+    updated_at: createdAt,
+    body
+  }
+}
+
+function readOwnerAdjudicationPages(pageReadback) {
+  assert.equal(
+    typeof betaReleaseModule.ownerAdjudicationReadbackFromPages,
+    "function",
+    "the validator must expose its deterministic bounded-pagination decision"
+  )
+  return betaReleaseModule.ownerAdjudicationReadbackFromPages(pageReadback)
+}
+
+test("owner adjudication scans a deterministic 101-comment two-page result", () => {
+  const earlier = adjudicationReadback({
+    html_url: "https://github.com/bynanci/courtside-tw/issues/160#issuecomment-6000000001",
+    created_at: "2026-09-01T11:30:00Z",
+    updated_at: "2026-09-01T11:30:00Z"
+  })
+  const later = adjudicationReadback({
+    html_url: "https://github.com/bynanci/courtside-tw/issues/160#issuecomment-6000000101",
+    created_at: "2026-09-01T12:30:00Z",
+    updated_at: "2026-09-01T12:30:00Z"
+  })
+  const firstPage = [
+    githubIssueComment({ id: 6000000001, createdAt: earlier.created_at, body: earlier.body }),
+    ...Array.from({ length: 99 }, (_, index) =>
+      githubIssueComment({
+        id: 6000000002 + index,
+        createdAt: `2026-09-01T11:${String(index % 60).padStart(2, "0")}:30Z`
+      })
+    )
+  ]
+  const secondPage = [
+    githubIssueComment({ id: 6000000101, createdAt: later.created_at, body: later.body })
+  ]
+
+  const result = readOwnerAdjudicationPages({
+    status: "COMPLETE",
+    complete: true,
+    max_pages: 10,
+    pages_fetched: 2,
+    pages: [firstPage, secondPage]
+  })
+
+  assert.equal(result.status, "VERIFIED", result.errors.join("\n"))
+  assert.equal(result.html_url, later.html_url)
+  assert.equal(result.created_at, later.created_at)
+})
+
+test("owner adjudication pagination fails closed when incomplete or over its bound", () => {
+  const fullPage = Array.from({ length: 100 }, (_, index) =>
+    githubIssueComment({
+      id: 7000000000 + index,
+      createdAt: `2026-09-01T13:${String(index % 60).padStart(2, "0")}:00Z`
+    })
+  )
+
+  for (const pageReadback of [
+    {
+      status: "INCOMPLETE",
+      complete: false,
+      max_pages: 10,
+      pages_fetched: 1,
+      pages: [fullPage]
+    },
+    {
+      status: "LIMIT_EXCEEDED",
+      complete: false,
+      max_pages: 10,
+      pages_fetched: 10,
+      pages: Array.from({ length: 10 }, () => fullPage)
+    }
+  ]) {
+    const result = readOwnerAdjudicationPages(pageReadback)
+    assert.equal(result.status, "UNAVAILABLE")
+    assert.match(result.errors.join("\n"), /pagination|complete|limit/iu)
+  }
+})
+
+test("owner adjudication pagination rejects malformed or unavailable page read-back", () => {
+  for (const pageReadback of [
+    {
+      status: "COMPLETE",
+      complete: true,
+      max_pages: 10,
+      pages_fetched: 1,
+      pages: ["not-an-array"]
+    },
+    { status: "UNAVAILABLE", complete: false, errors: ["offline"] }
+  ]) {
+    const result = readOwnerAdjudicationPages(pageReadback)
+    assert.equal(result.status, "UNAVAILABLE")
+    assert.match(result.errors.join("\n"), /pagination|page|unavailable|read-back/iu)
   }
 })
