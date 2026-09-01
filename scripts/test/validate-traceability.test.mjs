@@ -627,7 +627,7 @@ function makePostT085MaintenancePullRequestContext(root) {
         head: {
           sha: postT085MaintenanceCandidateHead,
           ref: "fix/us6-offline-clock-deterministic",
-          repo: { full_name: "bynanci/courtside-tw" }
+          repo: { full_name: "bynanci/courtside-tw", id: 1324872306 }
         },
         base: { sha: postT085MaintenanceBaseSha, ref: "main" }
       }
@@ -1272,7 +1272,8 @@ test("completed T085 revalidates PR163 as an exact merge commit on protected mai
     head_parent_sha: postT085MaintenanceBaseSha,
     head_parent_count: 2,
     head_tree_sha: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    second_parent_tree_sha: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+    second_parent_tree_sha: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    second_parent_committed_at: "2026-08-31T23:59:00Z"
   }
   const report = runCompletedFixture(fixture, {
     currentHead: postT085MaintenanceMergeHead,
@@ -1437,6 +1438,7 @@ for (const [name, gitBindingOverrides, expected] of [
         head_parent_count: 2,
         head_tree_sha: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
         second_parent_tree_sha: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        second_parent_committed_at: "2026-08-31T23:59:00Z",
         ...gitBindingOverrides
       }
     })
@@ -1455,6 +1457,211 @@ test("completed T085 static maintenance paths do not require external authorizat
   })
 
   assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+test("the latest OWNER terminal marker wins while a newer non-owner marker is ignored", () => {
+  const fixture = makePostT085MaintenanceFixture()
+  const accepted = makePostT085MaintenanceAuthorizationReadback(fixture)
+  const toComment = (readback, overrides = {}) => ({
+    id: readback.comment_id,
+    html_url: readback.html_url,
+    issue_url: readback.issue_url,
+    user: { login: readback.user_login },
+    author_association: readback.author_association,
+    created_at: readback.created_at,
+    updated_at: readback.updated_at,
+    body: readback.body,
+    ...overrides
+  })
+  const selected = traceabilityValidator.selectLatestPostT085MaintenanceAuthorization([
+    toComment(accepted),
+    toComment(accepted, {
+      id: 6000000003,
+      html_url: "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-6000000003",
+      body: "<!-- post-t085-maintenance:exact-head-authorization:start -->\n{"
+    }),
+    toComment(accepted, {
+      id: 6000000004,
+      html_url: "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-6000000004",
+      user: { login: "attacker" },
+      author_association: "NONE",
+      body: "<!-- post-t085-maintenance:exact-head-authorization:start -->\n{}"
+    })
+  ])
+
+  assert.equal(selected.comment_id, 6000000003)
+  const report = runCompletedFixture(fixture, {
+    currentHead: postT085MaintenanceCandidateHead,
+    changedPaths: [...postT085MaintenanceChangedPaths],
+    changeBaseSha: postT085MaintenanceBaseSha,
+    maintenanceAuthorizationReadback: selected,
+    postT085MaintenanceTraceabilitySha256: sha256(fixture.changeBaseTraceabilityText),
+    githubActionsContext: makePostT085MaintenancePullRequestContext(fixture.root),
+    gitBinding: {
+      status: "CLEAN",
+      head: postT085MaintenanceCandidateHead,
+      change_base_sha: postT085MaintenanceBaseSha,
+      change_base_ancestor: true,
+      bounded_scope_active: false
+    }
+  })
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /must contain one structured body/)
+})
+
+test("maintenance authorization pagination reads a terminal comment after the first 100", async () => {
+  const firstUrl =
+    "https://api.github.com/repos/bynanci/courtside-tw/issues/162/comments?per_page=100&page=1"
+  const pageTwoUrl =
+    "https://api.github.com/repositories/1324872306/issues/162/comments?per_page=100&page=2"
+  const requests = []
+  const fetchImpl = async (url, options) => {
+    requests.push({ url: String(url), options })
+    const page = String(url) === firstUrl ? 1 : 2
+    const start = page === 1 ? 1 : 101
+    const end = page === 1 ? 100 : 101
+    const comments = Array.from({ length: end - start + 1 }, (_, index) => ({
+      id: start + index
+    }))
+    return new Response(JSON.stringify(comments), {
+      status: 200,
+      headers:
+        page === 1 ? { Link: `<${pageTwoUrl}>; rel="next", <${pageTwoUrl}>; rel="last"` } : {}
+    })
+  }
+
+  const comments = await traceabilityValidator.fetchPostT085MaintenanceComments(firstUrl, {
+    fetchImpl,
+    token: "fixture-token"
+  })
+
+  assert.equal(comments.length, 101)
+  assert.equal(comments.at(-1).id, 101)
+  assert.deepEqual(
+    requests.map(({ url }) => url),
+    [firstUrl, pageTwoUrl]
+  )
+  assert.equal(requests[0].options.headers.Authorization, "Bearer fixture-token")
+  assert.equal(requests[0].options.redirect, "error")
+})
+
+for (const [name, nextUrl, expected] of [
+  [
+    "a cross-origin next link",
+    "https://attacker.invalid/repos/bynanci/courtside-tw/issues/162/comments?per_page=100&page=2",
+    /escaped the authorized issue endpoint/
+  ],
+  [
+    "a wrong-issue next link",
+    "https://api.github.com/repos/bynanci/courtside-tw/issues/163/comments?per_page=100&page=2",
+    /escaped the authorized issue endpoint/
+  ],
+  [
+    "a non-contiguous next page",
+    "https://api.github.com/repos/bynanci/courtside-tw/issues/162/comments?per_page=100&page=3",
+    /non-contiguous or repeated/
+  ],
+  [
+    "an unexpected query parameter",
+    "https://api.github.com/repos/bynanci/courtside-tw/issues/162/comments?per_page=100&page=2&since=forged",
+    /escaped the authorized issue endpoint/
+  ]
+]) {
+  test(`maintenance authorization pagination rejects ${name}`, async () => {
+    const firstUrl =
+      "https://api.github.com/repos/bynanci/courtside-tw/issues/162/comments?per_page=100&page=1"
+    const fetchImpl = async () =>
+      new Response(JSON.stringify([{ id: 1 }]), {
+        status: 200,
+        headers: { Link: `<${nextUrl}>; rel="next"` }
+      })
+
+    await assert.rejects(
+      traceabilityValidator.fetchPostT085MaintenanceComments(firstUrl, { fetchImpl }),
+      expected
+    )
+  })
+}
+
+test("maintenance authorization pagination rejects oversize and truncated responses", async () => {
+  const firstUrl =
+    "https://api.github.com/repos/bynanci/courtside-tw/issues/162/comments?per_page=100&page=1"
+  await assert.rejects(
+    traceabilityValidator.fetchPostT085MaintenanceComments(firstUrl, {
+      fetchImpl: async () => new Response(JSON.stringify([{ id: 1, body: "oversize" }])),
+      maxBytes: 10
+    }),
+    /exceeded 10 bytes/
+  )
+  await assert.rejects(
+    traceabilityValidator.fetchPostT085MaintenanceComments(firstUrl, {
+      fetchImpl: async () => new Response("[truncated")
+    }),
+    /Unexpected end of JSON input/
+  )
+})
+
+test("maintenance authorization read-back runs only for the exact one-time scope", () => {
+  const fixture = makePostT085MaintenanceFixture()
+  let calls = 0
+  const inspect = () => {
+    calls += 1
+    return { status: "VERIFIED" }
+  }
+  const exactReadback = traceabilityValidator.inspectPostT085MaintenanceAuthorizationForState(
+    fixture.root,
+    {
+      inspection: {
+        change_base_tasks_text: fixture.changeBaseTasksText,
+        change_base_sha: postT085MaintenanceBaseSha,
+        changedPaths: [...postT085MaintenanceChangedPaths]
+      },
+      inspect
+    }
+  )
+  const staticReadback = traceabilityValidator.inspectPostT085MaintenanceAuthorizationForState(
+    fixture.root,
+    {
+      inspection: {
+        change_base_tasks_text: fixture.changeBaseTasksText,
+        change_base_sha: postT085MaintenanceBaseSha,
+        changedPaths: ["scripts/validate-traceability.mjs"]
+      },
+      inspect
+    }
+  )
+
+  assert.deepEqual(exactReadback, { status: "VERIFIED" })
+  assert.equal(staticReadback, null)
+  assert.equal(calls, 1)
+})
+
+test("maintenance authorization rejects duplicate JSON keys", () => {
+  const fixture = makePostT085MaintenanceFixture()
+  const maintenanceAuthorizationReadback = makePostT085MaintenanceAuthorizationReadback(fixture)
+  maintenanceAuthorizationReadback.body = [
+    "<!-- post-t085-maintenance:exact-head-authorization:start -->",
+    '{"schema_version":"first","schema_version":"second"}',
+    "<!-- post-t085-maintenance:exact-head-authorization:end -->"
+  ].join("\n")
+  const report = runCompletedFixture(fixture, {
+    currentHead: postT085MaintenanceCandidateHead,
+    changedPaths: [...postT085MaintenanceChangedPaths],
+    changeBaseSha: postT085MaintenanceBaseSha,
+    maintenanceAuthorizationReadback,
+    postT085MaintenanceTraceabilitySha256: sha256(fixture.changeBaseTraceabilityText),
+    githubActionsContext: makePostT085MaintenancePullRequestContext(fixture.root),
+    gitBinding: {
+      status: "CLEAN",
+      head: postT085MaintenanceCandidateHead,
+      change_base_sha: postT085MaintenanceBaseSha,
+      change_base_ancestor: true,
+      bounded_scope_active: false
+    }
+  })
+
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /duplicate JSON object key/)
 })
 
 for (const changedPath of [
