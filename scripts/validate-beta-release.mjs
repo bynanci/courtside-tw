@@ -920,34 +920,51 @@ export function inspectT086OwnerAuthorization() {
   }
 }
 
-const githubIssueCommentsFetchScript = [
-  "const url = process.argv[1]",
-  "const headers = { Accept: 'application/vnd.github+json', 'User-Agent': 'courtside-t086-release-validator', 'X-GitHub-Api-Version': '2022-11-28' }",
-  "const response = await fetch(url, { headers, redirect: 'error', signal: AbortSignal.timeout(10000) })",
-  "if (!response.ok) throw new Error('GitHub owner adjudication returned HTTP ' + response.status)",
-  "const body = await response.text()",
-  "if (Buffer.byteLength(body) > 1024 * 1024) throw new Error('GitHub owner adjudication exceeded 1 MiB')",
-  "process.stdout.write(body)"
-].join("\n")
+const adjudicationIssueApiUrl = "https://api.github.com/repos/bynanci/courtside-tw/issues/160"
+const githubIssueCommentsMaxPages = 10
+const githubIssueCommentsMaxBytes = 4 * 1024 * 1024
 
-export function inspectT086OwnerAdjudication() {
-  const apiUrl =
-    "https://api.github.com/repos/bynanci/courtside-tw/issues/160/comments?per_page=100"
+function unavailableOwnerAdjudicationReadback(reason) {
+  return {
+    status: "UNAVAILABLE",
+    source: "github-api",
+    issue_url: adjudicationIssueApiUrl,
+    errors: ["GitHub owner adjudication read-back failed: " + reason]
+  }
+}
+
+export function ownerAdjudicationReadbackFromPages(pageReadback) {
   try {
-    const raw = execFileSync(
-      process.execPath,
-      ["--input-type=module", "--eval", githubIssueCommentsFetchScript, apiUrl],
-      {
-        encoding: "utf8",
-        env: {},
-        maxBuffer: 1024 * 1024,
-        stdio: ["ignore", "pipe", "pipe"],
-        timeout: 15000
+    if (pageReadback === null || typeof pageReadback !== "object" || Array.isArray(pageReadback)) {
+      throw new Error("pagination read-back is malformed")
+    }
+    if (pageReadback.status !== "COMPLETE" || pageReadback.complete !== true) {
+      throw new Error("pagination read-back is incomplete, unavailable, or exceeded its limit")
+    }
+    if (pageReadback.max_pages !== githubIssueCommentsMaxPages) {
+      throw new Error("pagination read-back has an invalid page limit")
+    }
+    if (
+      !Array.isArray(pageReadback.pages) ||
+      !Number.isSafeInteger(pageReadback.pages_fetched) ||
+      pageReadback.pages_fetched !== pageReadback.pages.length ||
+      pageReadback.pages.length === 0 ||
+      pageReadback.pages.length > githubIssueCommentsMaxPages
+    ) {
+      throw new Error("pagination read-back has malformed page metadata")
+    }
+
+    for (const [index, page] of pageReadback.pages.entries()) {
+      if (!Array.isArray(page) || page.length > 100) {
+        throw new Error("pagination read-back contains a malformed page")
       }
-    )
-    const comments = JSON.parse(raw)
-    if (!Array.isArray(comments)) throw new Error("GitHub issue comments response is not an array")
-    const ownerComments = comments
+      if (index < pageReadback.pages.length - 1 && page.length !== 100) {
+        throw new Error("pagination read-back is incomplete before the final page")
+      }
+    }
+
+    const ownerComments = pageReadback.pages
+      .flat()
       .filter(
         (comment) =>
           typeof comment?.body === "string" &&
@@ -961,7 +978,7 @@ export function inspectT086OwnerAdjudication() {
       return {
         status: "NOT_FOUND",
         source: "github-api",
-        issue_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/160",
+        issue_url: adjudicationIssueApiUrl,
         errors: []
       }
     }
@@ -978,12 +995,82 @@ export function inspectT086OwnerAdjudication() {
       errors: []
     }
   } catch (error) {
-    return {
-      status: "UNAVAILABLE",
-      source: "github-api",
-      issue_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/160",
-      errors: ["GitHub owner adjudication read-back failed: " + error.message]
-    }
+    return unavailableOwnerAdjudicationReadback(error.message)
+  }
+}
+
+const githubIssueCommentsFetchScript = [
+  "const initialUrl = new URL(process.argv[1])",
+  "const maxPages = Number(process.argv[2])",
+  "const maxBytes = Number(process.argv[3])",
+  "const headers = { Accept: 'application/vnd.github+json', 'User-Agent': 'courtside-t086-release-validator', 'X-GitHub-Api-Version': '2022-11-28' }",
+  "function nextPageUrl(linkHeader, currentUrl) {",
+  "  if (linkHeader === null) return null",
+  "  if (typeof linkHeader !== 'string' || linkHeader.trim() === '') throw new Error('GitHub owner adjudication pagination Link is malformed')",
+  "  const links = new Map()",
+  "  for (const part of linkHeader.split(',')) {",
+  '    const match = part.trim().match(/^<([^>]+)>;\\s*rel="([^"]+)"$/u)',
+  "    if (match === null) throw new Error('GitHub owner adjudication pagination Link is malformed')",
+  "    const candidate = new URL(match[1], currentUrl)",
+  "    if (candidate.origin !== initialUrl.origin || candidate.pathname !== initialUrl.pathname) throw new Error('GitHub owner adjudication pagination escaped the issue comments endpoint')",
+  "    if (candidate.searchParams.getAll('per_page').length !== 1 || candidate.searchParams.get('per_page') !== '100' || candidate.searchParams.getAll('page').length !== 1) throw new Error('GitHub owner adjudication pagination query is malformed')",
+  "    if ([...candidate.searchParams.keys()].some((name) => name !== 'per_page' && name !== 'page')) throw new Error('GitHub owner adjudication pagination query is malformed')",
+  "    const candidatePage = Number(candidate.searchParams.get('page'))",
+  "    if (!Number.isSafeInteger(candidatePage) || candidatePage < 1) throw new Error('GitHub owner adjudication pagination page is malformed')",
+  "    for (const rel of match[2].split(' ')) {",
+  "      if (!['next', 'last', 'first', 'prev'].includes(rel) || links.has(rel)) throw new Error('GitHub owner adjudication pagination relation is malformed')",
+  "      links.set(rel, candidate)",
+  "    }",
+  "  }",
+  "  const next = links.get('next') ?? null",
+  "  if (next !== null && Number(next.searchParams.get('page')) !== Number(currentUrl.searchParams.get('page')) + 1) throw new Error('GitHub owner adjudication pagination is not contiguous')",
+  "  return next",
+  "}",
+  "const pages = []",
+  "let totalBytes = 0",
+  "let url = initialUrl",
+  "for (let pageNumber = 1; ; pageNumber += 1) {",
+  "  const response = await fetch(url, { headers, redirect: 'error', signal: AbortSignal.timeout(5000) })",
+  "  if (!response.ok) throw new Error('GitHub owner adjudication returned HTTP ' + response.status)",
+  "  const body = await response.text()",
+  "  totalBytes += Buffer.byteLength(body)",
+  "  if (totalBytes > maxBytes) throw new Error('GitHub owner adjudication pagination exceeded its byte limit')",
+  "  const comments = JSON.parse(body)",
+  "  if (!Array.isArray(comments) || comments.length > 100) throw new Error('GitHub issue comments page is malformed')",
+  "  pages.push(comments)",
+  "  const next = nextPageUrl(response.headers.get('link'), url)",
+  "  if (next === null) break",
+  "  if (comments.length !== 100) throw new Error('GitHub owner adjudication pagination is incomplete')",
+  "  if (pageNumber >= maxPages) throw new Error('GitHub owner adjudication pagination exceeded its page limit')",
+  "  url = next",
+  "}",
+  "process.stdout.write(JSON.stringify({ status: 'COMPLETE', complete: true, max_pages: maxPages, pages_fetched: pages.length, pages }))"
+].join("\n")
+
+export function inspectT086OwnerAdjudication() {
+  const apiUrl = adjudicationIssueApiUrl + "/comments?per_page=100&page=1"
+  try {
+    const raw = execFileSync(
+      process.execPath,
+      [
+        "--input-type=module",
+        "--eval",
+        githubIssueCommentsFetchScript,
+        apiUrl,
+        String(githubIssueCommentsMaxPages),
+        String(githubIssueCommentsMaxBytes)
+      ],
+      {
+        encoding: "utf8",
+        env: {},
+        maxBuffer: 5 * 1024 * 1024,
+        stdio: ["ignore", "pipe", "pipe"],
+        timeout: 30000
+      }
+    )
+    return ownerAdjudicationReadbackFromPages(JSON.parse(raw))
+  } catch (error) {
+    return unavailableOwnerAdjudicationReadback(error.message)
   }
 }
 
