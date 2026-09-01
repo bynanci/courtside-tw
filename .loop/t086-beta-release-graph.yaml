@@ -1,0 +1,53 @@
+schema_version: courtside-loop-graph/v1
+task: T086
+repository: bynanci/courtside-tw
+issue: https://github.com/bynanci/courtside-tw/issues/160
+authorization_ref: https://github.com/bynanci/courtside-tw/issues/160#issuecomment-5488168546
+objective: Build and execute a non-deploying fail-closed beta release control plane without changing release state.
+scope:
+  base_sha: 92773201398306b89cca7fc0b7852cb06dd4d4c7
+  frozen_t085_traceability_sha256: 204662214eada892332d1ddbeab8d0b8037cfc5477d9152d6fb3a61e56832b79
+  task_state_changes: false
+  beta_flag_removal: false
+  participant_research: false
+  web3: false
+  production_or_provider_mutation: false
+  credentials_or_secrets: false
+nodes:
+  - id: A
+    action: Verify owner dispatch and evolve the fail-closed validator boundary.
+    status: in_progress
+    proof:
+      - .loop/evidence/t086-dispatch.json
+      - .loop/evidence/t086-red.json
+    stop: Owner read-back, exact base, frozen hash or authorized diff fails.
+  - id: B
+    action: Add the beta checklist and non-deploying release workflow.
+    status: blocked
+    needs: [A]
+    stop: Workflow requests write permission, secrets, an environment or deployment.
+  - id: C
+    action: Execute seven-surface preflight and 20 consecutive exact-head stability runs.
+    status: blocked
+    needs: [B]
+    stop: Any run fails, changes SHA or lacks an attributable receipt.
+  - id: D
+    action: Read back blockers and request the smallest truthful owner decision.
+    status: blocked
+    needs: [C]
+    stop: Any required human or external evidence is absent; remain HOLD.
+delta:
+  recorded_at: 2026-09-01T02:54:47Z
+  event: tests_first_red
+  from: dependency_ready_undispatched
+  to: owner_dispatched_red
+  ready_frontier: [A]
+  evidence: .loop/evidence/t086-red.json
+memory:
+  decision: GRAPH_LOOP
+  terminal: running
+  critical_path: [A, B, C, D]
+  minimum_cut:
+    - authenticated owner authorization
+    - exact protected base
+    - frozen T085 traceability hash

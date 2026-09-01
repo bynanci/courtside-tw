@@ -1,0 +1,220 @@
+import assert from "node:assert/strict"
+import fs from "node:fs"
+import os from "node:os"
+import path from "node:path"
+import test from "node:test"
+import { fileURLToPath } from "node:url"
+
+import {
+  EXPECTED_OWNER_AUTHORIZATION,
+  FROZEN_T085_TRACEABILITY_SHA256,
+  REQUIRED_RELEASE_SURFACES,
+  T086_AUTHORIZATION_REF,
+  T086_AUTHORIZED_BASE_SHA,
+  T086_AUTHORIZED_CHANGED_PATHS,
+  validateBetaRelease,
+  validateStabilityReceipts
+} from "../validate-beta-release.mjs"
+
+const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
+const candidateSha = "a".repeat(40)
+const canonicalFiles = [
+  ".github/workflows/release.yml",
+  ".loop/evidence/t086-dispatch.json",
+  "docs/release/beta-checklist.md",
+  "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+  "specs/001-taiwan-basketball-magazine-ebook/traceability.md"
+]
+
+function copyCanonicalFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "courtside-t086-"))
+  for (const relativePath of canonicalFiles) {
+    const destination = path.join(root, relativePath)
+    fs.mkdirSync(path.dirname(destination), { recursive: true })
+    fs.copyFileSync(path.join(repositoryRoot, relativePath), destination)
+  }
+  return root
+}
+
+function authorizationReadback(overrides = {}) {
+  const contract = structuredClone(EXPECTED_OWNER_AUTHORIZATION)
+  const body = [
+    "<!-- t086:owner-authorization:start -->",
+    "```json",
+    JSON.stringify(contract, null, 2),
+    "```",
+    "<!-- t086:owner-authorization:end -->"
+  ].join("\n")
+  return {
+    status: "VERIFIED",
+    source: "github-api",
+    html_url: T086_AUTHORIZATION_REF,
+    issue_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/160",
+    user_login: "bynanci",
+    author_association: "OWNER",
+    created_at: "2026-09-01T02:50:47Z",
+    updated_at: "2026-09-01T02:50:47Z",
+    body,
+    errors: [],
+    ...overrides
+  }
+}
+
+function runFixture(root, overrides = {}) {
+  return validateBetaRelease({
+    root,
+    currentHead: candidateSha,
+    changeBaseSha: T086_AUTHORIZED_BASE_SHA,
+    changedPaths: [...T086_AUTHORIZED_CHANGED_PATHS],
+    ownerAuthorizationReadback: authorizationReadback(),
+    ...overrides
+  })
+}
+
+test("canonical T086 control plane passes while truthful release blockers remain HOLD", () => {
+  const root = copyCanonicalFixture()
+  const report = runFixture(root)
+
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+  assert.equal(report.release_decision, "HOLD")
+  assert.equal(report.authorization.status, "VERIFIED")
+  assert.equal(report.base.sha, T086_AUTHORIZED_BASE_SHA)
+  assert.equal(report.frozen_t085_traceability.sha256, FROZEN_T085_TRACEABILITY_SHA256)
+  assert.deepEqual(report.surfaces.required, REQUIRED_RELEASE_SURFACES)
+  assert.equal(report.stability.required_consecutive_runs, 20)
+  assert.equal(report.blockers.traceability.length, 18)
+  assert.equal(report.scope_boundaries.beta_flag_removed, false)
+  assert.equal(report.scope_boundaries.t086_task_state_changed, false)
+})
+
+test("owner authorization must be an unedited GitHub OWNER comment", () => {
+  const root = copyCanonicalFixture()
+  for (const ownerAuthorizationReadback of [
+    authorizationReadback({ author_association: "CONTRIBUTOR" }),
+    authorizationReadback({ user_login: "not-bynanci" }),
+    authorizationReadback({ updated_at: "2026-09-01T02:51:00Z" }),
+    authorizationReadback({ status: "UNAVAILABLE", errors: ["offline"] })
+  ]) {
+    const report = runFixture(root, { ownerAuthorizationReadback })
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /owner authorization/u)
+  }
+})
+
+test("authorization payload mutation is rejected", () => {
+  const root = copyCanonicalFixture()
+  const readback = authorizationReadback()
+  readback.body = readback.body.replace('"beta_flag_removed": false', '"beta_flag_removed": true')
+  const report = runFixture(root, { ownerAuthorizationReadback: readback })
+
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /authorization contract/u)
+})
+
+test("dispatch base, frozen traceability and task frontier cannot drift", () => {
+  const root = copyCanonicalFixture()
+  const dispatchPath = path.join(root, ".loop/evidence/t086-dispatch.json")
+  const dispatch = JSON.parse(fs.readFileSync(dispatchPath, "utf8"))
+  dispatch.base.sha = "b".repeat(40)
+  fs.writeFileSync(dispatchPath, `${JSON.stringify(dispatch, null, 2)}\n`)
+
+  let report = runFixture(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /dispatch.*base/u)
+
+  fs.copyFileSync(
+    path.join(repositoryRoot, ".loop/evidence/t086-dispatch.json"),
+    dispatchPath
+  )
+  fs.appendFileSync(
+    path.join(root, "specs/001-taiwan-basketball-magazine-ebook/traceability.md"),
+    "\nforged drift\n"
+  )
+  report = runFixture(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /frozen T085 traceability/u)
+
+  fs.copyFileSync(
+    path.join(repositoryRoot, "specs/001-taiwan-basketball-magazine-ebook/traceability.md"),
+    path.join(root, "specs/001-taiwan-basketball-magazine-ebook/traceability.md")
+  )
+  const tasksPath = path.join(root, "specs/001-taiwan-basketball-magazine-ebook/tasks.md")
+  fs.writeFileSync(
+    tasksPath,
+    fs.readFileSync(tasksPath, "utf8").replace(/^- \[ \] T086\b/mu, "- [x] T086")
+  )
+  report = runFixture(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /T086 must remain open/u)
+})
+
+test("the audited diff rejects every path outside the owner allowlist", () => {
+  const root = copyCanonicalFixture()
+  const report = runFixture(root, {
+    changedPaths: [...T086_AUTHORIZED_CHANGED_PATHS, "apps/web/server/secrets.ts"]
+  })
+
+  assert.equal(report.status, "FAIL")
+  assert.deepEqual(report.scope.unauthorized_paths, ["apps/web/server/secrets.ts"])
+})
+
+test("checklist must retain all seven surfaces and protected transitions", () => {
+  const root = copyCanonicalFixture()
+  const checklistPath = path.join(root, "docs/release/beta-checklist.md")
+  fs.writeFileSync(
+    checklistPath,
+    fs.readFileSync(checklistPath, "utf8").replace('"backup-restore",', "")
+  )
+  const report = runFixture(root)
+
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /seven required release surfaces/u)
+})
+
+test("release workflow stays read-only, exact-head-bound and non-deploying", () => {
+  const root = copyCanonicalFixture()
+  const workflowPath = path.join(root, ".github/workflows/release.yml")
+  fs.writeFileSync(
+    workflowPath,
+    fs.readFileSync(workflowPath, "utf8").replace("contents: read", "contents: write")
+  )
+  let report = runFixture(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /read-only permissions/u)
+
+  fs.copyFileSync(path.join(repositoryRoot, ".github/workflows/release.yml"), workflowPath)
+  fs.appendFileSync(workflowPath, "\n# secrets: ${{ secrets.PRODUCTION_TOKEN }}\n")
+  report = runFixture(root)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /credentials, secrets or deployment/u)
+})
+
+function stabilityReceipts({ count = 20, head = candidateSha } = {}) {
+  return Array.from({ length: count }, (_, offset) => ({
+    schema_version: "courtside-t086-stability-run/v1",
+    task: "T086",
+    run: offset + 1,
+    candidate_sha: head,
+    result: "PASS",
+    surfaces: ["public-read", "two-role-publish", "retry", "revision", "withdrawal"]
+  }))
+}
+
+test("stability gate accepts exactly 20 ordered clean runs on one candidate SHA", () => {
+  const report = validateStabilityReceipts(stabilityReceipts(), { candidateSha })
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+  assert.equal(report.consecutive_clean_runs, 20)
+})
+
+for (const [name, mutate, pattern] of [
+  ["nineteen runs", (rows) => rows.slice(0, 19), /exactly 20/u],
+  ["mixed head", (rows) => rows.map((row, index) => index === 9 ? { ...row, candidate_sha: "b".repeat(40) } : row), /same candidate SHA/u],
+  ["failed run", (rows) => rows.map((row, index) => index === 9 ? { ...row, result: "FAIL" } : row), /all 20 runs must PASS/u],
+  ["duplicate index", (rows) => rows.map((row, index) => index === 9 ? { ...row, run: 9 } : row), /ordered 1 through 20/u]
+]) {
+  test(`stability gate rejects ${name}`, () => {
+    const report = validateStabilityReceipts(mutate(stabilityReceipts()), { candidateSha })
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), pattern)
+  })
+}

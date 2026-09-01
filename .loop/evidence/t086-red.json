@@ -1,0 +1,18 @@
+{
+  "schema_version": "courtside-t086-tests-first-red/v1",
+  "recorded_at": "2026-09-01T02:54:47Z",
+  "repository": "bynanci/courtside-tw",
+  "task": "T086",
+  "branch": "agent/t086-beta-release-gate",
+  "base_sha": "92773201398306b89cca7fc0b7852cb06dd4d4c7",
+  "authorization_ref": "https://github.com/bynanci/courtside-tw/issues/160#issuecomment-5488168546",
+  "test_path": "scripts/test/validate-beta-release.test.mjs",
+  "test_sha256": "7f0d2578ab98ff8861f2d7200ab06a4b1f90c3f8d921bef322f3c2210fa89225",
+  "command": "node --test scripts/test/validate-beta-release.test.mjs",
+  "exit_code": 1,
+  "failure_code": "ERR_MODULE_NOT_FOUND",
+  "missing_path": "scripts/validate-beta-release.mjs",
+  "attribution": "The tests define the T086 control-plane, authorization, scope, workflow, blocker and 20-run contracts before the implementation module exists.",
+  "task_state_changed": false,
+  "beta_flag_removed": false
+}
