@@ -452,5 +452,4 @@ test("owner adjudication must be an unedited GitHub OWNER comment", () => {
     assert.match(report.errors.join("\n"), /owner adjudication/u)
     assert.equal(report.release_decision, "HOLD")
   }
-}
-
+})
