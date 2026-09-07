@@ -1,11 +1,11 @@
 # syntax=docker/dockerfile:1.7
 
-# S3Mock 5.1.0 is the latest released image. Build the pinned upstream
-# 5.2.0 development line so its runtime dependency removals and updates are
-# applied without depending on an unpublished mutable image tag.
+# Build the pinned upstream S3Mock source and override its managed Tomcat line;
+# even the 5.2.0 release resolves below the first fixed 11.0.x version.
 FROM maven:3.9.15-eclipse-temurin-26@sha256:029a8e2838ae68238ffb8be407cddbb3f07d4d839c60c6f26c619a69fd184531 AS s3mock-build
 
 ARG S3MOCK_COMMIT=627bf8d37938a5eb89e5775391c0b475c2686f98
+ARG TOMCAT_EMBED_VERSION=11.0.25
 
 RUN set -eux; \
     git init /src; \
@@ -16,11 +16,13 @@ RUN set -eux; \
 
 WORKDIR /src
 
-RUN mvn -B -ntp -pl server -am -DskipTests -DskipDocker=true package
+RUN mvn -B -ntp -pl server -am -DskipTests -DskipDocker=true \
+      -Dtomcat.version="$TOMCAT_EMBED_VERSION" package
 
 RUN set -eux; \
     jar="$(find server/target -maxdepth 1 -type f -name 's3mock-*-exec.jar' -print -quit)"; \
     test -n "$jar"; \
+    jar tf "$jar" | grep -Fx "BOOT-INF/lib/tomcat-embed-core-$TOMCAT_EMBED_VERSION.jar"; \
     cp "$jar" /tmp/s3mock-exec.jar
 
 # The final image keeps root so the Compose named volume can be initialized
