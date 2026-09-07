@@ -89,20 +89,32 @@ const postT085RemediationChangedPaths = [
   "scripts/validate-traceability.mjs",
   "specs/001-taiwan-basketball-magazine-ebook/traceability.md"
 ]
-const postT085MaintenanceAuthorizationSchema = "courtside-post-t085-maintenance-authorization/v4"
+const postT085MaintenanceAuthorizationSchema = "courtside-post-t085-maintenance-authorization/v5"
 const postT085MaintenanceAuthorizationRef =
-  "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5572646990"
+  "https://github.com/bynanci/courtside-tw/issues/167#issuecomment-5573190561"
 const postT085MaintenanceSupersededAuthorizationRefs = [
   "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5494383925",
   "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5494845838",
   "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5494892447",
   "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5494952244",
-  "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5495299187"
+  "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5495299187",
+  "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5572646990"
 ]
 const postT085MaintenanceAuthorizationBaseSha = "92773201398306b89cca7fc0b7852cb06dd4d4c7"
-const postT085MaintenanceAuthorizedHeadSha = "f73487c90458ffcfd89a7961622e536e6ddbfc9f"
+const postT085MaintenanceSecurityHeadSha = "1cfe608c24b13b95a7365dc362bfd2b8c2e0823d"
+const postT085MaintenanceSecurityTreeSha = "c2eec3e6a769c717b72aa186633f21d968713ff2"
+const postT085MaintenanceUs6HeadSha = "e5b923b35c37bb9ad34978a1e02b71a52286083e"
+const postT085MaintenanceUs6TreeSha = "b59c6b5aa84517a39332834946738d8e8395ff87"
+const postT085MaintenancePureMergeSha = "8f59c20327d0d939570921e5aa8f3288fff91ef8"
+const postT085MaintenancePureMergeTreeSha = "6d7a39adbaa7c4abe92c2e71236ec6678b9c4c6b"
+const postT085MaintenanceAuthorizedHeadSha = "926673069ea1fdff07dc7662fd6f19b5a29996f0"
+const postT085MaintenanceAuthorizedHeadTreeSha = "feb6378287994dbc4ed5ec01cfd70dc46bdddddb"
 const postT085MaintenanceAuthorizedPaths = [
   "apps/web/tests/e2e/us6-offline-issue.spec.ts",
+  "infra/compose/postgres/Dockerfile",
+  "infra/compose/s3mock/Dockerfile",
+  "pnpm-lock.yaml",
+  "pnpm-workspace.yaml",
   "scripts/test/validate-traceability.test.mjs",
   "scripts/validate-traceability.mjs"
 ]
@@ -110,8 +122,42 @@ const postT085MaintenanceAuthorizedAmendmentPaths = [
   "scripts/test/validate-traceability.test.mjs",
   "scripts/validate-traceability.mjs"
 ]
-const postT085MaintenanceAuthorizedHeadCommittedAt = "2026-09-01T14:19:19.000Z"
-const postT085MaintenanceAuthorizationRecordedAt = "2026-09-07T15:14:11Z"
+const postT085MaintenanceComposabilityChangedPaths = ["scripts/test/validate-traceability.test.mjs"]
+const postT085MaintenancePreservedPayloadBlobs = [
+  {
+    path: "apps/web/tests/e2e/us6-offline-issue.spec.ts",
+    source_head_sha: postT085MaintenanceUs6HeadSha,
+    git_blob_oid: "42a171efa6507dc4440d4afe55d1694950153972"
+  },
+  {
+    path: "infra/compose/postgres/Dockerfile",
+    source_head_sha: postT085MaintenanceSecurityHeadSha,
+    git_blob_oid: "87ea652090aec4420986ac291542b52ee464ef65"
+  },
+  {
+    path: "infra/compose/s3mock/Dockerfile",
+    source_head_sha: postT085MaintenanceSecurityHeadSha,
+    git_blob_oid: "bfb235a3ec6af4f3eafbdeb39b7a433ff499f589"
+  },
+  {
+    path: "pnpm-lock.yaml",
+    source_head_sha: postT085MaintenanceSecurityHeadSha,
+    git_blob_oid: "de0dcec9ff1427e74e1da363f1455a415ab745a1"
+  },
+  {
+    path: "pnpm-workspace.yaml",
+    source_head_sha: postT085MaintenanceSecurityHeadSha,
+    git_blob_oid: "9474ee61c6c0f276ee9acb3a337533f0de068b78"
+  }
+]
+const postT085MaintenanceExpectedPayloadBlobOids = Object.fromEntries(
+  postT085MaintenancePreservedPayloadBlobs.map(({ path: filePath, git_blob_oid }) => [
+    filePath,
+    git_blob_oid
+  ])
+)
+const postT085MaintenanceAuthorizedHeadCommittedAt = "2026-09-07T16:01:49.000Z"
+const postT085MaintenanceAuthorizationRecordedAt = "2026-09-07T16:05:25Z"
 
 function sha256(text) {
   return createHash("sha256").update(text).digest("hex")
@@ -544,9 +590,9 @@ function makeFixturePushActionsContext(root, environmentOverrides = {}) {
 function makePostT085MaintenanceActionsContext(
   root,
   {
-    pullRequest = 163,
+    pullRequest = 168,
     eventPullRequest = pullRequest,
-    headRef = "fix/us6-offline-clock-deterministic",
+    headRef = "fix/security-baseline-20260907",
     baseSha = postT085MaintenanceAuthorizationBaseSha,
     githubRef = `refs/pull/${pullRequest}/merge`,
     pullRequestDraft = true
@@ -682,52 +728,92 @@ function makePostT085MaintenanceAuthorizationReadback({
     authorizationOverrides
   const authorization = {
     schema_version: postT085MaintenanceAuthorizationSchema,
-    decision: "READY_AND_SINGLE_MERGE_AUTHORIZED",
+    decision: "COMBINED_PR168_SINGLE_MERGE_AUTHORIZED",
     accepted_by: fixtureReceiptOwner,
     repository: "bynanci/courtside-tw",
-    issue: "https://github.com/bynanci/courtside-tw/issues/162",
-    pull_request: 163,
-    branch: "fix/us6-offline-clock-deterministic",
+    issue: "https://github.com/bynanci/courtside-tw/issues/167",
+    incorporated_issue: "https://github.com/bynanci/courtside-tw/issues/162",
+    pull_request: 168,
+    branch: "fix/security-baseline-20260907",
     supersedes_authorization_refs: [...postT085MaintenanceSupersededAuthorizationRefs],
     authorization_base: {
       branch: "main",
       sha: postT085MaintenanceAuthorizationBaseSha,
       protected: true
     },
-    authorized_candidate_ancestor_sha: postT085MaintenanceAuthorizedHeadSha,
     frozen_t085_traceability_sha256:
       "204662214eada892332d1ddbeab8d0b8037cfc5477d9152d6fb3a61e56832b79",
+    candidate_graph: {
+      security: {
+        pull_request: 168,
+        head_sha: postT085MaintenanceSecurityHeadSha,
+        tree_sha: postT085MaintenanceSecurityTreeSha
+      },
+      us6_governance: {
+        pull_request: 163,
+        head_sha: postT085MaintenanceUs6HeadSha,
+        tree_sha: postT085MaintenanceUs6TreeSha,
+        authorization_ref:
+          "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5572646990"
+      },
+      pure_merge: {
+        head_sha: postT085MaintenancePureMergeSha,
+        tree_sha: postT085MaintenancePureMergeTreeSha,
+        parent_shas: [postT085MaintenanceSecurityHeadSha, postT085MaintenanceUs6HeadSha],
+        resolution_paths: []
+      },
+      composability_child: {
+        head_sha: postT085MaintenanceAuthorizedHeadSha,
+        tree_sha: postT085MaintenanceAuthorizedHeadTreeSha,
+        parent_shas: [postT085MaintenancePureMergeSha],
+        changed_paths: [...postT085MaintenanceComposabilityChangedPaths]
+      }
+    },
     authorized_paths: [...postT085MaintenanceAuthorizedPaths],
-    authorized_amendment_paths: [...postT085MaintenanceAuthorizedAmendmentPaths],
+    preserved_payload_blobs: postT085MaintenancePreservedPayloadBlobs.map((binding) => ({
+      ...binding
+    })),
+    authorized_final_support: {
+      parent_sha: postT085MaintenanceAuthorizedHeadSha,
+      commit_count: 1,
+      parent_count: 1,
+      changed_paths: [...postT085MaintenanceAuthorizedAmendmentPaths]
+    },
     required_merge_method: "merge",
     authorized_actions: [
-      "amend draft PR 163 only in the two validator paths to add fail-closed ready and exact merge-push lifecycle validation",
-      "run fresh exact-head CI, Security, complete browser, Android and review read-back",
-      "transition PR 163 from draft to ready only after every required check passes and no unresolved review thread remains",
-      "merge PR 163 exactly once with regular merge and the expected final head, then read back the two-parent protected-main merge and its CI and Security"
+      "add exactly one final support commit directly after the bound composability child and change only the two validator paths",
+      "run fresh exact-head required CI, Security, browser and review read-back on the final PR 168 head",
+      "transition PR 168 to ready only after every required context passes and no review thread remains unresolved",
+      "merge PR 168 exactly once by regular merge with its expected final head and read back protected main CI and Security"
     ],
     merge_preconditions: [
-      "protected main remains at the authorization base",
-      "the final PR head descends from the authorized candidate and changes only the exact three authorized paths from the base",
-      "the US6 E2E bytes remain identical to the authorized candidate",
-      "all current ruleset-required contexts pass on the final exact PR head",
-      "the PR is mergeable with zero unresolved review threads",
-      "any base, head, path, ruleset, check, thread or mergeability drift cancels this authorization"
+      "protected main remains exactly at the authorization base and the active ruleset is neither changed nor bypassed",
+      "the pure merge has exactly the recorded tree and ordered parents and contains no merge-resolution changes",
+      "the composability child has exactly the recorded tree, sole parent and sole changed path",
+      "the final PR head is a direct one-parent child of the composability child and changes exactly the two authorized final-support paths",
+      "the pure merge, composability child and final PR head each differ from the authorization base by exactly the seven authorized paths",
+      "the five preserved payload blobs equal their recorded source-candidate blobs at the pure merge, composability child and final PR head",
+      "the final PR head has fresh passing current ruleset-required contexts, Security 8/8, mergeability and zero unresolved review threads",
+      "any base, candidate, tree, parent order, path, payload, ruleset, check, review-thread or mergeability drift cancels this authorization"
     ],
     acceptance: [
-      "the US6 suite keeps one deterministic active clock and the explicit post-expiry transition",
-      "the authorization is read back from this immutable GitHub OWNER comment",
-      "the protected-main push is accepted only for a two-parent merge whose first parent is the authorization base and whose second parent is the final authorized PR head",
-      "all non-PR contexts other than that single exact merge push remain fail-closed",
-      "the merge does not claim the current security baseline; the separate security-only PR must provide fresh evidence",
-      "no generic product, E2E maintenance or protected-main-push allowlist is introduced"
+      "the September security payload is byte-identical to the reviewed PR 168 security candidate",
+      "the US6 deterministic-clock payload is byte-identical to the reviewed PR 163 candidate",
+      "the only post-merge composability correction is the recorded test assertion and the only subsequent support changes are the two validator paths",
+      "the protected-main push is accepted only for a two-parent merge whose first parent is the authorization base and whose second parent is the final authorized PR 168 head",
+      "the protected-main merge tree equals the final PR 168 head tree",
+      "PR 163 is incorporated as ancestry and is not separately authorized to merge",
+      "no generic push, automatic merge, ruleset bypass, T086, product/runtime, research, provider, production, credential or secret authority is introduced"
     ],
-    terminal_policy: "STOP_AFTER_SINGLE_MERGE_AND_PROTECTED_MAIN_READBACK",
+    terminal_policy: "STOP_AFTER_SINGLE_COMBINED_PR168_MERGE_AND_PROTECTED_MAIN_READBACK",
     scope_boundaries: {
-      ready_for_review_transition_authorized: true,
+      pr168_ready_for_review_transition_authorized: true,
+      single_combined_pr168_regular_merge_authorized: true,
       single_exact_protected_main_push_authorized: true,
-      single_regular_merge_authorized: true,
+      separate_pr163_merge_authorized: false,
+      automatic_merge_authorized: false,
       generic_protected_main_push_authorized: false,
+      ruleset_bypass_authorized: false,
       product_runtime_changed: false,
       t086_task_state_changed: false,
       beta_flag_removed: false,
@@ -745,7 +831,7 @@ function makePostT085MaintenanceAuthorizationReadback({
     status: "VERIFIED",
     source: "github-api",
     html_url: postT085MaintenanceAuthorizationRef,
-    issue_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/162",
+    issue_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/167",
     user_login: fixtureReceiptOwner,
     author_association: "OWNER",
     created_at: postT085MaintenanceAuthorizationRecordedAt,
@@ -874,10 +960,19 @@ function makePostT085MaintenanceGitBinding(overrides = {}) {
     post_t085_maintenance_authorized_head_committed_at:
       postT085MaintenanceAuthorizedHeadCommittedAt,
     post_t085_maintenance_e2e_matches_authorized_head: true,
+    post_t085_maintenance_candidate_graph_matches: true,
     post_t085_maintenance_final_pr_head_sha: fixtureReceiptHead,
+    post_t085_maintenance_final_pr_head_parent_shas: [postT085MaintenanceAuthorizedHeadSha],
+    post_t085_maintenance_final_pr_head_parent_count: 1,
+    post_t085_maintenance_final_pr_head_tree_sha: "a".repeat(40),
     post_t085_maintenance_candidate_amendment_paths: [
       ...postT085MaintenanceAuthorizedAmendmentPaths
     ],
+    post_t085_maintenance_preserved_payload_blob_oids: {
+      pure_merge: { ...postT085MaintenanceExpectedPayloadBlobOids },
+      composability_child: { ...postT085MaintenanceExpectedPayloadBlobOids },
+      final_pr_head: { ...postT085MaintenanceExpectedPayloadBlobOids }
+    },
     ...overrides
   }
 }
@@ -1381,27 +1476,27 @@ for (const [name, contextFactory, expected] of [
   [
     "wrong pull-request ref",
     (fixture) => makePostT085MaintenanceActionsContext(fixture.root, { pullRequest: 164 }),
-    /post-T085 maintenance Actions context must bind authorized PR 163, branch and base/
+    /post-T085 maintenance Actions context must bind authorized PR 168, branch and base/
   ],
   [
     "mismatched event pull-request number",
     (fixture) => makePostT085MaintenanceActionsContext(fixture.root, { eventPullRequest: 164 }),
-    /post-T085 maintenance Actions context must bind authorized PR 163, branch and base/
+    /post-T085 maintenance Actions context must bind authorized PR 168, branch and base/
   ],
   [
     "wrong head branch",
     (fixture) => makePostT085MaintenanceActionsContext(fixture.root, { headRef: "fix/unrelated" }),
-    /post-T085 maintenance Actions context must bind authorized PR 163, branch and base/
+    /post-T085 maintenance Actions context must bind authorized PR 168, branch and base/
   ],
   [
     "wrong base SHA",
     (fixture) => makePostT085MaintenanceActionsContext(fixture.root, { baseSha: "0".repeat(40) }),
-    /post-T085 maintenance Actions context must bind authorized PR 163, branch and base/
+    /post-T085 maintenance Actions context must bind authorized PR 168, branch and base/
   ],
   [
     "missing PR draft state",
     (fixture) => makePostT085MaintenanceActionsContext(fixture.root, { pullRequestDraft: null }),
-    /post-T085 maintenance Actions context must bind the PR 163 draft state/
+    /post-T085 maintenance Actions context must bind the PR 168 draft state/
   ]
 ]) {
   test(`completed T085 fails closed for ${name} in exact-head mode`, () => {
@@ -1421,7 +1516,7 @@ for (const [name, contextFactory, expected] of [
   })
 }
 
-test("completed T085 accepts the authorized PR 163 ready state", () => {
+test("completed T085 accepts the authorized PR 168 ready state", () => {
   const fixture = makeCompletedFixture()
   fixture.changedPaths = [...postT085MaintenanceAuthorizedPaths]
   const githubActionsContext = makePostT085MaintenanceActionsContext(fixture.root, {
@@ -1464,7 +1559,7 @@ for (const [name, bindingOverrides, expected] of [
       head_parent_sha: "0".repeat(40),
       head_parent_shas: ["0".repeat(40), fixturePostT085FinalPrHead]
     },
-    /post-T085 protected-main authority requires the single exact two-parent PR 163 merge/
+    /post-T085 protected-main authority requires the single exact two-parent PR 168 merge/
   ],
   [
     "single-parent push",
@@ -1475,7 +1570,7 @@ for (const [name, bindingOverrides, expected] of [
       second_parent_tree_sha: null,
       post_t085_maintenance_final_pr_head_sha: null
     },
-    /post-T085 protected-main authority requires the single exact two-parent PR 163 merge/
+    /post-T085 protected-main authority requires the single exact two-parent PR 168 merge/
   ],
   [
     "merge-tree drift",
@@ -1525,6 +1620,70 @@ test("completed T085 rejects post-authorization changes outside the two validato
     /post-authorization amendments must change exactly the two validator paths/
   )
 })
+
+for (const [name, parentShas, parentCount] of [
+  ["wrong final-support parent", ["0".repeat(40)], 1],
+  ["merge final-support commit", [postT085MaintenanceAuthorizedHeadSha, "0".repeat(40)], 2]
+]) {
+  test(`completed T085 rejects ${name}`, () => {
+    const fixture = makeCompletedFixture()
+    fixture.changedPaths = [...postT085MaintenanceAuthorizedPaths]
+    const report = runPostT085MaintenanceFixture(fixture, {
+      gitBinding: makePostT085MaintenanceGitBinding({
+        post_t085_maintenance_final_pr_head_parent_shas: parentShas,
+        post_t085_maintenance_final_pr_head_parent_count: parentCount
+      })
+    })
+
+    assert.equal(report.status, "FAIL")
+    assert.match(
+      report.errors.join("\n"),
+      /final PR 168 head must be the direct one-parent child of the authorized composability candidate/
+    )
+  })
+}
+
+test("completed T085 rejects candidate graph drift", () => {
+  const fixture = makeCompletedFixture()
+  fixture.changedPaths = [...postT085MaintenanceAuthorizedPaths]
+  const report = runPostT085MaintenanceFixture(fixture, {
+    gitBinding: makePostT085MaintenanceGitBinding({
+      post_t085_maintenance_candidate_graph_matches: false
+    })
+  })
+
+  assert.equal(report.status, "FAIL")
+  assert.match(
+    report.errors.join("\n"),
+    /post-T085 maintenance candidate graph must match the exact owner dispatch/
+  )
+})
+
+for (const { path: payloadPath } of postT085MaintenancePreservedPayloadBlobs) {
+  test(`completed T085 rejects frozen payload drift at ${payloadPath}`, () => {
+    const fixture = makeCompletedFixture()
+    fixture.changedPaths = [...postT085MaintenanceAuthorizedPaths]
+    const payloadBlobOids = {
+      pure_merge: { ...postT085MaintenanceExpectedPayloadBlobOids },
+      composability_child: { ...postT085MaintenanceExpectedPayloadBlobOids },
+      final_pr_head: {
+        ...postT085MaintenanceExpectedPayloadBlobOids,
+        [payloadPath]: "0".repeat(40)
+      }
+    }
+    const report = runPostT085MaintenanceFixture(fixture, {
+      gitBinding: makePostT085MaintenanceGitBinding({
+        post_t085_maintenance_preserved_payload_blob_oids: payloadBlobOids
+      })
+    })
+
+    assert.equal(report.status, "FAIL")
+    assert.match(
+      report.errors.join("\n"),
+      /post-T085 maintenance payload blobs must match all five frozen bindings/
+    )
+  })
+}
 
 for (const [name, readback, expected] of [
   [
@@ -1618,9 +1777,34 @@ for (const [name, readback, expected] of [
     /post-T085 maintenance authorization body must match the exact owner dispatch/
   ],
   [
-    "wrong signed ancestor",
+    "wrong combined candidate graph",
     makePostT085MaintenanceAuthorizationReadback({
-      authorizationOverrides: { authorized_candidate_ancestor_sha: "0".repeat(40) }
+      authorizationOverrides: { candidate_graph: {} }
+    }),
+    /post-T085 maintenance authorization body must match the exact owner dispatch/
+  ],
+  [
+    "wrong frozen payload binding",
+    makePostT085MaintenanceAuthorizationReadback({
+      authorizationOverrides: {
+        preserved_payload_blobs: postT085MaintenancePreservedPayloadBlobs.map((binding, index) =>
+          index === 0 ? { ...binding, git_blob_oid: "0".repeat(40) } : { ...binding }
+        )
+      }
+    }),
+    /post-T085 maintenance authorization body must match the exact owner dispatch/
+  ],
+  [
+    "wrong final-support binding",
+    makePostT085MaintenanceAuthorizationReadback({
+      authorizationOverrides: {
+        authorized_final_support: {
+          parent_sha: "0".repeat(40),
+          commit_count: 1,
+          parent_count: 1,
+          changed_paths: [...postT085MaintenanceAuthorizedAmendmentPaths]
+        }
+      }
     }),
     /post-T085 maintenance authorization body must match the exact owner dispatch/
   ],
@@ -1635,7 +1819,7 @@ for (const [name, readback, expected] of [
     "revoked ready-for-review permission",
     makePostT085MaintenanceAuthorizationReadback({
       authorizationOverrides: {
-        scope_boundaries: { ready_for_review_transition_authorized: false }
+        scope_boundaries: { pr168_ready_for_review_transition_authorized: false }
       }
     }),
     /post-T085 maintenance authorization body must match the exact owner dispatch/
@@ -1644,7 +1828,7 @@ for (const [name, readback, expected] of [
     "revoked merge permission",
     makePostT085MaintenanceAuthorizationReadback({
       authorizationOverrides: {
-        scope_boundaries: { single_regular_merge_authorized: false }
+        scope_boundaries: { single_combined_pr168_regular_merge_authorized: false }
       }
     }),
     /post-T085 maintenance authorization body must match the exact owner dispatch/
@@ -1729,11 +1913,11 @@ test("completed T085 rejects a partial US6 maintenance path grant", () => {
   assert.equal(report.status, "FAIL")
   assert.match(
     report.errors.join("\n"),
-    /post-T085 maintenance authorization requires the exact three-path bootstrap scope/
+    /post-T085 maintenance authorization requires the exact seven-path combined scope/
   )
 })
 
-test("completed T085 rejects an extra fourth maintenance path", () => {
+test("completed T085 rejects an extra eighth maintenance path", () => {
   const fixture = makeCompletedFixture()
   fixture.changedPaths = [...postT085MaintenanceAuthorizedPaths, "docs/research/unrelated.md"]
   const report = runPostT085MaintenanceFixture(fixture)
@@ -1741,7 +1925,7 @@ test("completed T085 rejects an extra fourth maintenance path", () => {
   assert.equal(report.status, "FAIL")
   assert.match(
     report.errors.join("\n"),
-    /post-T085 maintenance authorization requires the exact three-path bootstrap scope/
+    /post-T085 maintenance authorization requires the exact seven-path combined scope/
   )
 })
 
@@ -1767,7 +1951,7 @@ test("completed T085 binds the maintenance support commit to the authorized E2E 
   assert.equal(report.status, "FAIL")
   assert.match(
     report.errors.join("\n"),
-    /authorized US6 E2E head must be an ancestor of the evaluated maintenance head/
+    /authorized combined candidate must be an ancestor of the evaluated maintenance head/
   )
 })
 
@@ -1793,7 +1977,7 @@ test("completed T085 binds the E2E bytes to the owner-signed candidate", () => {
   assert.equal(report.status, "FAIL")
   assert.match(
     report.errors.join("\n"),
-    /authorized US6 E2E bytes must remain unchanged from the owner-signed candidate/
+    /authorized US6 E2E bytes must remain unchanged from the combined candidate/
   )
 })
 
@@ -1885,7 +2069,7 @@ for (const supersededAuthorizationRef of postT085MaintenanceSupersededAuthorizat
     )
 
     assert.equal(readback.status, "UNAVAILABLE")
-    assert.match(readback.errors.join("\n"), /does not identify the authorized issue 162 comment/)
+    assert.match(readback.errors.join("\n"), /does not identify the authorized issue 167 comment/)
   })
 }
 
@@ -5886,6 +6070,25 @@ test("Git inspection binds the real maintenance DAG and signed E2E bytes", () =>
   const repositoryInspection = traceabilityValidator.inspectGit(repositoryRoot, { environment: {} })
   assert.equal(repositoryInspection.post_t085_maintenance_authorized_head_ancestor, true)
   assert.equal(repositoryInspection.post_t085_maintenance_e2e_matches_authorized_head, true)
+  assert.equal(repositoryInspection.post_t085_maintenance_candidate_graph_matches, true)
+  assert.deepEqual(repositoryInspection.post_t085_maintenance_candidate_graph, {
+    matches: true,
+    pure_merge_parent_shas: [postT085MaintenanceSecurityHeadSha, postT085MaintenanceUs6HeadSha],
+    pure_merge_tree_sha: postT085MaintenancePureMergeTreeSha,
+    composability_parent_shas: [postT085MaintenancePureMergeSha],
+    composability_tree_sha: postT085MaintenanceAuthorizedHeadTreeSha,
+    base_to_pure_merge_paths: postT085MaintenanceAuthorizedPaths,
+    base_to_composability_paths: postT085MaintenanceAuthorizedPaths,
+    composability_changed_paths: postT085MaintenanceComposabilityChangedPaths
+  })
+  assert.deepEqual(
+    repositoryInspection.post_t085_maintenance_preserved_payload_blob_oids.pure_merge,
+    postT085MaintenanceExpectedPayloadBlobOids
+  )
+  assert.deepEqual(
+    repositoryInspection.post_t085_maintenance_preserved_payload_blob_oids.composability_child,
+    postT085MaintenanceExpectedPayloadBlobOids
+  )
   assert.equal(
     repositoryInspection.post_t085_maintenance_authorized_head_committed_at,
     postT085MaintenanceAuthorizedHeadCommittedAt
