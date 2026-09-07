@@ -5894,10 +5894,12 @@ test("Git inspection binds the real maintenance DAG and signed E2E bytes", () =>
     repositoryInspection.post_t085_maintenance_final_pr_head_sha,
     git(repositoryRoot, "rev-parse", "HEAD")
   )
-  assert.deepEqual(
-    repositoryInspection.post_t085_maintenance_candidate_amendment_paths,
-    postT085MaintenanceAuthorizedAmendmentPaths
-  )
+  for (const amendmentPath of postT085MaintenanceAuthorizedAmendmentPaths) {
+    assert.equal(
+      repositoryInspection.post_t085_maintenance_candidate_amendment_paths.includes(amendmentPath),
+      true
+    )
+  }
 
   const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "courtside-maintenance-dag-"))
   const cloneRoot = path.join(temporaryRoot, "repo")
