@@ -1053,6 +1053,9 @@ test("completed T085 permits unrelated post-receipt work without replaying the t
 
 for (const changedPath of [
   "infra/compose/postgres/Dockerfile",
+  "infra/compose/s3mock/Dockerfile",
+  "pnpm-lock.yaml",
+  "pnpm-workspace.yaml",
   ".github/workflows/ci.yml",
   ".github/workflows/security.yml",
   "scripts/test/validate-traceability.test.mjs",
