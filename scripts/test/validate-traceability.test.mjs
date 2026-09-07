@@ -46,6 +46,7 @@ const fixtureActionsHeadRef = "codex/t085-completion-receipt"
 const fixtureImplementationHead = "27b955581a909e292ae4fe6c1fb05de0e94753da"
 const fixtureImplementationMerge = "a2491b81066ac225a0b5d2dab93be79fb6dfbe65"
 const fixtureCompletedBase = "5555555555555555555555555555555555555555"
+const fixturePostT085FinalPrHead = "7777777777777777777777777777777777777777"
 const fixtureCiRunId = 33226451857
 const fixtureSecurityRunId = 33226451860
 const fixtureReceiptOwner = "bynanci"
@@ -88,23 +89,29 @@ const postT085RemediationChangedPaths = [
   "scripts/validate-traceability.mjs",
   "specs/001-taiwan-basketball-magazine-ebook/traceability.md"
 ]
-const postT085MaintenanceAuthorizationSchema = "courtside-post-t085-maintenance-authorization/v3"
+const postT085MaintenanceAuthorizationSchema = "courtside-post-t085-maintenance-authorization/v4"
 const postT085MaintenanceAuthorizationRef =
-  "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5495299187"
+  "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5572646990"
 const postT085MaintenanceSupersededAuthorizationRefs = [
   "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5494383925",
+  "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5494845838",
   "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5494892447",
-  "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5494952244"
+  "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5494952244",
+  "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5495299187"
 ]
 const postT085MaintenanceAuthorizationBaseSha = "92773201398306b89cca7fc0b7852cb06dd4d4c7"
-const postT085MaintenanceAuthorizedHeadSha = "3889de292067ad067b3dad2752e20ad16a269c25"
+const postT085MaintenanceAuthorizedHeadSha = "f73487c90458ffcfd89a7961622e536e6ddbfc9f"
 const postT085MaintenanceAuthorizedPaths = [
   "apps/web/tests/e2e/us6-offline-issue.spec.ts",
   "scripts/test/validate-traceability.test.mjs",
   "scripts/validate-traceability.mjs"
 ]
-const postT085MaintenanceAuthorizedHeadCommittedAt = "2026-09-01T13:42:26.000Z"
-const postT085MaintenanceAuthorizationRecordedAt = "2026-09-01T14:13:02Z"
+const postT085MaintenanceAuthorizedAmendmentPaths = [
+  "scripts/test/validate-traceability.test.mjs",
+  "scripts/validate-traceability.mjs"
+]
+const postT085MaintenanceAuthorizedHeadCommittedAt = "2026-09-01T14:19:19.000Z"
+const postT085MaintenanceAuthorizationRecordedAt = "2026-09-07T15:14:11Z"
 
 function sha256(text) {
   return createHash("sha256").update(text).digest("hex")
@@ -671,9 +678,11 @@ function makePostT085MaintenanceAuthorizationReadback({
   authorizationOverrides = {},
   readbackOverrides = {}
 } = {}) {
+  const { scope_boundaries: scopeBoundaryOverrides = {}, ...topLevelAuthorizationOverrides } =
+    authorizationOverrides
   const authorization = {
     schema_version: postT085MaintenanceAuthorizationSchema,
-    decision: "EVIDENCE_ONLY_ACCEPTED",
+    decision: "READY_AND_SINGLE_MERGE_AUTHORIZED",
     accepted_by: fixtureReceiptOwner,
     repository: "bynanci/courtside-tw",
     issue: "https://github.com/bynanci/courtside-tw/issues/162",
@@ -689,25 +698,36 @@ function makePostT085MaintenanceAuthorizationReadback({
     frozen_t085_traceability_sha256:
       "204662214eada892332d1ddbeab8d0b8037cfc5477d9152d6fb3a61e56832b79",
     authorized_paths: [...postT085MaintenanceAuthorizedPaths],
+    authorized_amendment_paths: [...postT085MaintenanceAuthorizedAmendmentPaths],
+    required_merge_method: "merge",
     authorized_actions: [
-      "amend draft PR 163 with tests-first authenticated maintenance-scope validation",
+      "amend draft PR 163 only in the two validator paths to add fail-closed ready and exact merge-push lifecycle validation",
       "run fresh exact-head CI, Security, complete browser, Android and review read-back",
-      "preserve the draft state and return the final gate decision to the owner"
+      "transition PR 163 from draft to ready only after every required check passes and no unresolved review thread remains",
+      "merge PR 163 exactly once with regular merge and the expected final head, then read back the two-parent protected-main merge and its CI and Security"
+    ],
+    merge_preconditions: [
+      "protected main remains at the authorization base",
+      "the final PR head descends from the authorized candidate and changes only the exact three authorized paths from the base",
+      "the US6 E2E bytes remain identical to the authorized candidate",
+      "all current ruleset-required contexts pass on the final exact PR head",
+      "the PR is mergeable with zero unresolved review threads",
+      "any base, head, path, ruleset, check, thread or mergeability drift cancels this authorization"
     ],
     acceptance: [
-      "the US6 suite uses one deterministic active clock while preserving the explicit post-expiry transition",
-      "only the exact three authorized paths are accepted",
+      "the US6 suite keeps one deterministic active clock and the explicit post-expiry transition",
       "the authorization is read back from this immutable GitHub OWNER comment",
-      "all superseded comments confer no ready-for-review, protected-main-push, merge, credential or secret authority",
-      "missing, edited, non-owner, wrong-base, wrong-ancestor, wrong-path or unavailable authorization fails closed",
-      "fresh exact-head CI, Security, complete browser and Android evidence are required",
-      "no generic product or E2E maintenance allowlist is introduced"
+      "the protected-main push is accepted only for a two-parent merge whose first parent is the authorization base and whose second parent is the final authorized PR head",
+      "all non-PR contexts other than that single exact merge push remain fail-closed",
+      "the merge does not claim the current security baseline; the separate security-only PR must provide fresh evidence",
+      "no generic product, E2E maintenance or protected-main-push allowlist is introduced"
     ],
-    terminal_policy: "STOP_DRAFT_AFTER_EVIDENCE",
+    terminal_policy: "STOP_AFTER_SINGLE_MERGE_AND_PROTECTED_MAIN_READBACK",
     scope_boundaries: {
-      ready_for_review_transition_authorized: false,
-      protected_main_push_authorized: false,
-      merge_authorized: false,
+      ready_for_review_transition_authorized: true,
+      single_exact_protected_main_push_authorized: true,
+      single_regular_merge_authorized: true,
+      generic_protected_main_push_authorized: false,
       product_runtime_changed: false,
       t086_task_state_changed: false,
       beta_flag_removed: false,
@@ -716,9 +736,10 @@ function makePostT085MaintenanceAuthorizationReadback({
       production_or_provider_mutated: false,
       credentials_or_secrets_accessed_or_changed: false,
       external_product_writes: false,
-      t087_or_later_dispatched: false
+      t087_or_later_dispatched: false,
+      ...scopeBoundaryOverrides
     },
-    ...authorizationOverrides
+    ...topLevelAuthorizationOverrides
   }
   return {
     status: "VERIFIED",
@@ -836,27 +857,41 @@ function runCompletedFixture(fixture, overrides = {}) {
   })
 }
 
+function makePostT085MaintenanceGitBinding(overrides = {}) {
+  return {
+    status: "CLEAN",
+    head: fixtureReceiptHead,
+    change_base_ref: "fixture:post-t085-maintenance-base",
+    change_base_sha: postT085MaintenanceAuthorizationBaseSha,
+    change_base_ancestor: true,
+    head_parent_sha: postT085MaintenanceAuthorizedHeadSha,
+    head_second_parent_sha: null,
+    head_parent_shas: [postT085MaintenanceAuthorizedHeadSha],
+    head_parent_count: 1,
+    head_tree_sha: "a".repeat(40),
+    second_parent_tree_sha: null,
+    post_t085_maintenance_authorized_head_ancestor: true,
+    post_t085_maintenance_authorized_head_committed_at:
+      postT085MaintenanceAuthorizedHeadCommittedAt,
+    post_t085_maintenance_e2e_matches_authorized_head: true,
+    post_t085_maintenance_final_pr_head_sha: fixtureReceiptHead,
+    post_t085_maintenance_candidate_amendment_paths: [
+      ...postT085MaintenanceAuthorizedAmendmentPaths
+    ],
+    ...overrides
+  }
+}
+
 function runPostT085MaintenanceFixture(fixture, overrides = {}) {
-  const githubActionsContext = makePostT085MaintenanceActionsContext(fixture.root)
+  const githubActionsContext =
+    overrides.githubActionsContext ?? makePostT085MaintenanceActionsContext(fixture.root)
   writeExactHeadForActionsContext(fixture.root, githubActionsContext)
   return runCompletedFixture(fixture, {
     changeBaseSha: postT085MaintenanceAuthorizationBaseSha,
     postT085MaintenanceAuthorizationReadback: makePostT085MaintenanceAuthorizationReadback(),
     requireExactHeadEvidence: true,
     githubActionsContext,
-    gitBinding: {
-      status: "CLEAN",
-      head: fixtureReceiptHead,
-      change_base_ref: "fixture:post-t085-maintenance-base",
-      change_base_sha: postT085MaintenanceAuthorizationBaseSha,
-      change_base_ancestor: true,
-      head_parent_sha: postT085MaintenanceAuthorizedHeadSha,
-      head_parent_count: 1,
-      post_t085_maintenance_authorized_head_ancestor: true,
-      post_t085_maintenance_authorized_head_committed_at:
-        postT085MaintenanceAuthorizedHeadCommittedAt,
-      post_t085_maintenance_e2e_matches_authorized_head: true
-    },
+    gitBinding: makePostT085MaintenanceGitBinding(),
     ...overrides
   })
 }
@@ -1319,7 +1354,7 @@ test("completed T085 maintenance scope is non-authoritative outside exact-head C
   assert.equal(report.status, "FAIL")
   assert.match(
     report.errors.join("\n"),
-    /post-T085 evidence-only authorization requires exact-head CI mode/
+    /post-T085 maintenance authorization requires exact-head CI mode/
   )
   assert.deepEqual(report.scope_validation.unauthorized_paths, [
     "apps/web/tests/e2e/us6-offline-issue.spec.ts"
@@ -1361,14 +1396,9 @@ for (const [name, contextFactory, expected] of [
     /post-T085 maintenance Actions context must bind authorized PR 163, branch and base/
   ],
   [
-    "ready-for-review PR",
-    (fixture) => makePostT085MaintenanceActionsContext(fixture.root, { pullRequestDraft: false }),
-    /post-T085 evidence-only authorization requires PR 163 to remain draft/
-  ],
-  [
     "missing PR draft state",
     (fixture) => makePostT085MaintenanceActionsContext(fixture.root, { pullRequestDraft: null }),
-    /post-T085 evidence-only authorization requires PR 163 to remain draft/
+    /post-T085 maintenance Actions context must bind the PR 163 draft state/
   ]
 ]) {
   test(`completed T085 fails closed for ${name} in exact-head mode`, () => {
@@ -1388,20 +1418,108 @@ for (const [name, contextFactory, expected] of [
   })
 }
 
-test("completed T085 evidence-only authorization rejects protected-main push authority", () => {
+test("completed T085 accepts the authorized PR 163 ready state", () => {
+  const fixture = makeCompletedFixture()
+  fixture.changedPaths = [...postT085MaintenanceAuthorizedPaths]
+  const githubActionsContext = makePostT085MaintenanceActionsContext(fixture.root, {
+    pullRequestDraft: false
+  })
+  writeExactHeadForActionsContext(fixture.root, githubActionsContext)
+  const report = runPostT085MaintenanceFixture(fixture, { githubActionsContext })
+
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+  assert.equal(report.source.github_actions_context.pull_request_draft, false)
+})
+
+test("completed T085 accepts the single exact protected-main merge push", () => {
   const fixture = makeCompletedFixture()
   fixture.changedPaths = [...postT085MaintenanceAuthorizedPaths]
   const githubActionsContext = makePostT085MaintenancePushActionsContext(fixture.root)
   writeExactHeadForActionsContext(fixture.root, githubActionsContext)
   const report = runPostT085MaintenanceFixture(fixture, {
     requireExactHeadEvidence: true,
-    githubActionsContext
+    githubActionsContext,
+    gitBinding: makePostT085MaintenanceGitBinding({
+      head_parent_sha: postT085MaintenanceAuthorizationBaseSha,
+      head_second_parent_sha: fixturePostT085FinalPrHead,
+      head_parent_shas: [postT085MaintenanceAuthorizationBaseSha, fixturePostT085FinalPrHead],
+      head_parent_count: 2,
+      head_tree_sha: "a".repeat(40),
+      second_parent_tree_sha: "a".repeat(40),
+      post_t085_maintenance_final_pr_head_sha: fixturePostT085FinalPrHead
+    })
+  })
+
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+  assert.equal(report.source.github_actions_context.authority, "PROTECTED_MAIN_PUSH")
+})
+
+for (const [name, bindingOverrides, expected] of [
+  [
+    "wrong merge parent",
+    {
+      head_parent_sha: "0".repeat(40),
+      head_parent_shas: ["0".repeat(40), fixturePostT085FinalPrHead]
+    },
+    /post-T085 protected-main authority requires the single exact two-parent PR 163 merge/
+  ],
+  [
+    "single-parent push",
+    {
+      head_second_parent_sha: null,
+      head_parent_shas: [postT085MaintenanceAuthorizationBaseSha],
+      head_parent_count: 1,
+      second_parent_tree_sha: null,
+      post_t085_maintenance_final_pr_head_sha: null
+    },
+    /post-T085 protected-main authority requires the single exact two-parent PR 163 merge/
+  ],
+  [
+    "merge-tree drift",
+    { second_parent_tree_sha: "b".repeat(40) },
+    /post-T085 merge tree must equal the final authorized PR head tree/
+  ]
+]) {
+  test(`completed T085 rejects ${name} for protected-main authority`, () => {
+    const fixture = makeCompletedFixture()
+    fixture.changedPaths = [...postT085MaintenanceAuthorizedPaths]
+    const githubActionsContext = makePostT085MaintenancePushActionsContext(fixture.root)
+    writeExactHeadForActionsContext(fixture.root, githubActionsContext)
+    const report = runPostT085MaintenanceFixture(fixture, {
+      githubActionsContext,
+      gitBinding: makePostT085MaintenanceGitBinding({
+        head_parent_sha: postT085MaintenanceAuthorizationBaseSha,
+        head_second_parent_sha: fixturePostT085FinalPrHead,
+        head_parent_shas: [postT085MaintenanceAuthorizationBaseSha, fixturePostT085FinalPrHead],
+        head_parent_count: 2,
+        head_tree_sha: "a".repeat(40),
+        second_parent_tree_sha: "a".repeat(40),
+        post_t085_maintenance_final_pr_head_sha: fixturePostT085FinalPrHead,
+        ...bindingOverrides
+      })
+    })
+
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), expected)
+  })
+}
+
+test("completed T085 rejects post-authorization changes outside the two validator paths", () => {
+  const fixture = makeCompletedFixture()
+  fixture.changedPaths = [...postT085MaintenanceAuthorizedPaths]
+  const report = runPostT085MaintenanceFixture(fixture, {
+    gitBinding: makePostT085MaintenanceGitBinding({
+      post_t085_maintenance_candidate_amendment_paths: [
+        ...postT085MaintenanceAuthorizedAmendmentPaths,
+        "apps/web/tests/e2e/us6-offline-issue.spec.ts"
+      ]
+    })
   })
 
   assert.equal(report.status, "FAIL")
   assert.match(
     report.errors.join("\n"),
-    /post-T085 evidence-only authorization requires pull-request authority/
+    /post-authorization amendments must change exactly the two validator paths/
   )
 })
 
@@ -1511,67 +1629,28 @@ for (const [name, readback, expected] of [
     /post-T085 maintenance authorization body must match the exact owner dispatch/
   ],
   [
-    "ready-for-review permission",
+    "revoked ready-for-review permission",
     makePostT085MaintenanceAuthorizationReadback({
       authorizationOverrides: {
-        scope_boundaries: {
-          ready_for_review_transition_authorized: true,
-          protected_main_push_authorized: false,
-          merge_authorized: false,
-          product_runtime_changed: false,
-          t086_task_state_changed: false,
-          beta_flag_removed: false,
-          participant_research_executed: false,
-          web3_activated: false,
-          production_or_provider_mutated: false,
-          credentials_or_secrets_accessed_or_changed: false,
-          external_product_writes: false,
-          t087_or_later_dispatched: false
-        }
+        scope_boundaries: { ready_for_review_transition_authorized: false }
       }
     }),
     /post-T085 maintenance authorization body must match the exact owner dispatch/
   ],
   [
-    "merge permission",
+    "revoked merge permission",
     makePostT085MaintenanceAuthorizationReadback({
       authorizationOverrides: {
-        scope_boundaries: {
-          ready_for_review_transition_authorized: false,
-          protected_main_push_authorized: false,
-          merge_authorized: true,
-          product_runtime_changed: false,
-          t086_task_state_changed: false,
-          beta_flag_removed: false,
-          participant_research_executed: false,
-          web3_activated: false,
-          production_or_provider_mutated: false,
-          credentials_or_secrets_accessed_or_changed: false,
-          external_product_writes: false,
-          t087_or_later_dispatched: false
-        }
+        scope_boundaries: { single_regular_merge_authorized: false }
       }
     }),
     /post-T085 maintenance authorization body must match the exact owner dispatch/
   ],
   [
-    "protected-main-push permission",
+    "generic protected-main-push permission",
     makePostT085MaintenanceAuthorizationReadback({
       authorizationOverrides: {
-        scope_boundaries: {
-          ready_for_review_transition_authorized: false,
-          protected_main_push_authorized: true,
-          merge_authorized: false,
-          product_runtime_changed: false,
-          t086_task_state_changed: false,
-          beta_flag_removed: false,
-          participant_research_executed: false,
-          web3_activated: false,
-          production_or_provider_mutated: false,
-          credentials_or_secrets_accessed_or_changed: false,
-          external_product_writes: false,
-          t087_or_later_dispatched: false
-        }
+        scope_boundaries: { generic_protected_main_push_authorized: true }
       }
     }),
     /post-T085 maintenance authorization body must match the exact owner dispatch/
@@ -5808,6 +5887,14 @@ test("Git inspection binds the real maintenance DAG and signed E2E bytes", () =>
     repositoryInspection.post_t085_maintenance_authorized_head_committed_at,
     postT085MaintenanceAuthorizedHeadCommittedAt
   )
+  assert.equal(
+    repositoryInspection.post_t085_maintenance_final_pr_head_sha,
+    git(repositoryRoot, "rev-parse", "HEAD")
+  )
+  assert.deepEqual(
+    repositoryInspection.post_t085_maintenance_candidate_amendment_paths,
+    postT085MaintenanceAuthorizedAmendmentPaths
+  )
 
   const temporaryRoot = fs.mkdtempSync(path.join(os.tmpdir(), "courtside-maintenance-dag-"))
   const cloneRoot = path.join(temporaryRoot, "repo")
@@ -5833,6 +5920,70 @@ test("Git inspection binds the real maintenance DAG and signed E2E bytes", () =>
   git(cloneRoot, "commit", "-m", "create divergent maintenance head")
   const divergentInspection = traceabilityValidator.inspectGit(cloneRoot, { environment: {} })
   assert.equal(divergentInspection.post_t085_maintenance_authorized_head_ancestor, false)
+})
+
+test("Git inspection binds an exact two-parent merge tree and detects merge-time drift", () => {
+  const root = makeFixture()
+  const base = initializeGitFixture(root)
+  git(root, "switch", "-c", "maintenance-candidate")
+  fs.writeFileSync(path.join(root, "candidate.txt"), "authorized candidate\n")
+  git(root, "add", "candidate.txt")
+  git(root, "commit", "-m", "build maintenance candidate")
+  const candidate = git(root, "rev-parse", "HEAD")
+
+  git(root, "switch", "main")
+  git(root, "merge", "--no-ff", "--no-edit", "maintenance-candidate")
+  const mergeHead = git(root, "rev-parse", "HEAD")
+  const eventPath = path.join(root, "github-maintenance-merge-push.json")
+  fs.writeFileSync(
+    eventPath,
+    JSON.stringify({
+      repository: { full_name: "bynanci/courtside-tw" },
+      before: base,
+      after: mergeHead,
+      ref: "refs/heads/main"
+    })
+  )
+  const mergeInspection = traceabilityValidator.inspectGit(root, {
+    environment: {
+      GITHUB_ACTIONS: "true",
+      GITHUB_EVENT_NAME: "push",
+      GITHUB_EVENT_PATH: eventPath
+    }
+  })
+
+  assert.deepEqual(mergeInspection.head_parent_shas, [base, candidate])
+  assert.equal(mergeInspection.head_parent_count, 2)
+  assert.equal(mergeInspection.head_tree_sha, mergeInspection.second_parent_tree_sha)
+  assert.equal(mergeInspection.post_t085_maintenance_final_pr_head_sha, candidate)
+
+  git(root, "switch", "maintenance-candidate")
+  fs.writeFileSync(path.join(root, "drift.txt"), "unauthorized merge-tree drift\n")
+  git(root, "add", "drift.txt")
+  git(root, "commit", "-m", "create an unauthorized tree")
+  const driftTree = git(root, "rev-parse", "HEAD^{tree}")
+  const driftMerge = git(
+    root,
+    "commit-tree",
+    driftTree,
+    "-p",
+    base,
+    "-p",
+    candidate,
+    "-m",
+    "forge merge tree drift"
+  )
+  git(root, "switch", "--detach", driftMerge)
+  const driftInspection = traceabilityValidator.inspectGit(root, {
+    environment: {
+      GITHUB_ACTIONS: "true",
+      GITHUB_EVENT_NAME: "push",
+      GITHUB_EVENT_PATH: eventPath
+    }
+  })
+
+  assert.deepEqual(driftInspection.head_parent_shas, [base, candidate])
+  assert.notEqual(driftInspection.head_tree_sha, driftInspection.second_parent_tree_sha)
 })
 
 for (const changedPath of [

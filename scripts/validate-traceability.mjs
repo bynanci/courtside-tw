@@ -12,7 +12,7 @@ export const TRACEABILITY_SCHEMA = "courtside-traceability/v1"
 export const COMPLETION_RECEIPT_SCHEMA = "courtside-t085-completion-receipt/v2"
 export const OWNER_AUTHORIZATION_SCHEMA = "courtside-t085-owner-authorization/v1"
 export const POST_T085_MAINTENANCE_AUTHORIZATION_SCHEMA =
-  "courtside-post-t085-maintenance-authorization/v3"
+  "courtside-post-t085-maintenance-authorization/v4"
 export const COMPLETION_RECEIPT_PATH = ".loop/evidence/t085-completion-receipt.json"
 export const ACCEPTED_IMPLEMENTATION_HEAD_SHA = "27b955581a909e292ae4fe6c1fb05de0e94753da"
 export const ACCEPTED_IMPLEMENTATION_MERGE_SHA = "a2491b81066ac225a0b5d2dab93be79fb6dfbe65"
@@ -65,18 +65,24 @@ export const CONTRACT_END = "<!-- t085:contract:end -->"
 export const AUTHORIZED_BASE_SHA = "3fc14dd29b216ce46e4d364ceaec79a971dcef44"
 export const REVIEW_BASE_SHA = "84db3db95aa596eb317b71c4eea0926fc1fc15ce"
 export const POST_T085_MAINTENANCE_AUTHORIZATION_REF =
-  "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5495299187"
+  "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5572646990"
 export const POST_T085_MAINTENANCE_SUPERSEDED_AUTHORIZATION_REFS = Object.freeze([
   "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5494383925",
+  "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5494845838",
   "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5494892447",
-  "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5494952244"
+  "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5494952244",
+  "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5495299187"
 ])
-export const POST_T085_MAINTENANCE_AUTHORIZATION_RECORDED_AT = "2026-09-01T14:13:02Z"
+export const POST_T085_MAINTENANCE_AUTHORIZATION_RECORDED_AT = "2026-09-07T15:14:11Z"
 export const POST_T085_MAINTENANCE_AUTHORIZATION_BASE_SHA =
   "92773201398306b89cca7fc0b7852cb06dd4d4c7"
-export const POST_T085_MAINTENANCE_AUTHORIZED_HEAD_SHA = "3889de292067ad067b3dad2752e20ad16a269c25"
+export const POST_T085_MAINTENANCE_AUTHORIZED_HEAD_SHA = "f73487c90458ffcfd89a7961622e536e6ddbfc9f"
 export const POST_T085_MAINTENANCE_AUTHORIZED_PATHS = Object.freeze([
   "apps/web/tests/e2e/us6-offline-issue.spec.ts",
+  "scripts/test/validate-traceability.test.mjs",
+  "scripts/validate-traceability.mjs"
+])
+export const POST_T085_MAINTENANCE_AUTHORIZED_AMENDMENT_PATHS = Object.freeze([
   "scripts/test/validate-traceability.test.mjs",
   "scripts/validate-traceability.mjs"
 ])
@@ -198,9 +204,10 @@ const expectedReceiptScopeBoundaries = Object.freeze({
   secrets_changed: false
 })
 const expectedPostT085MaintenanceScopeBoundaries = Object.freeze({
-  ready_for_review_transition_authorized: false,
-  protected_main_push_authorized: false,
-  merge_authorized: false,
+  ready_for_review_transition_authorized: true,
+  single_exact_protected_main_push_authorized: true,
+  single_regular_merge_authorized: true,
+  generic_protected_main_push_authorized: false,
   product_runtime_changed: false,
   t086_task_state_changed: false,
   beta_flag_removed: false,
@@ -213,7 +220,7 @@ const expectedPostT085MaintenanceScopeBoundaries = Object.freeze({
 })
 const expectedPostT085MaintenanceAuthorization = Object.freeze({
   schema_version: POST_T085_MAINTENANCE_AUTHORIZATION_SCHEMA,
-  decision: "EVIDENCE_ONLY_ACCEPTED",
+  decision: "READY_AND_SINGLE_MERGE_AUTHORIZED",
   accepted_by: ACCEPTED_RECEIPT_OWNER,
   repository: "bynanci/courtside-tw",
   issue: "https://github.com/bynanci/courtside-tw/issues/162",
@@ -228,21 +235,31 @@ const expectedPostT085MaintenanceAuthorization = Object.freeze({
   authorized_candidate_ancestor_sha: POST_T085_MAINTENANCE_AUTHORIZED_HEAD_SHA,
   frozen_t085_traceability_sha256: ACCEPTED_TRACEABILITY_SHA256,
   authorized_paths: [...POST_T085_MAINTENANCE_AUTHORIZED_PATHS],
+  authorized_amendment_paths: [...POST_T085_MAINTENANCE_AUTHORIZED_AMENDMENT_PATHS],
+  required_merge_method: "merge",
   authorized_actions: [
-    "amend draft PR 163 with tests-first authenticated maintenance-scope validation",
+    "amend draft PR 163 only in the two validator paths to add fail-closed ready and exact merge-push lifecycle validation",
     "run fresh exact-head CI, Security, complete browser, Android and review read-back",
-    "preserve the draft state and return the final gate decision to the owner"
+    "transition PR 163 from draft to ready only after every required check passes and no unresolved review thread remains",
+    "merge PR 163 exactly once with regular merge and the expected final head, then read back the two-parent protected-main merge and its CI and Security"
+  ],
+  merge_preconditions: [
+    "protected main remains at the authorization base",
+    "the final PR head descends from the authorized candidate and changes only the exact three authorized paths from the base",
+    "the US6 E2E bytes remain identical to the authorized candidate",
+    "all current ruleset-required contexts pass on the final exact PR head",
+    "the PR is mergeable with zero unresolved review threads",
+    "any base, head, path, ruleset, check, thread or mergeability drift cancels this authorization"
   ],
   acceptance: [
-    "the US6 suite uses one deterministic active clock while preserving the explicit post-expiry transition",
-    "only the exact three authorized paths are accepted",
+    "the US6 suite keeps one deterministic active clock and the explicit post-expiry transition",
     "the authorization is read back from this immutable GitHub OWNER comment",
-    "all superseded comments confer no ready-for-review, protected-main-push, merge, credential or secret authority",
-    "missing, edited, non-owner, wrong-base, wrong-ancestor, wrong-path or unavailable authorization fails closed",
-    "fresh exact-head CI, Security, complete browser and Android evidence are required",
-    "no generic product or E2E maintenance allowlist is introduced"
+    "the protected-main push is accepted only for a two-parent merge whose first parent is the authorization base and whose second parent is the final authorized PR head",
+    "all non-PR contexts other than that single exact merge push remain fail-closed",
+    "the merge does not claim the current security baseline; the separate security-only PR must provide fresh evidence",
+    "no generic product, E2E maintenance or protected-main-push allowlist is introduced"
   ],
-  terminal_policy: "STOP_DRAFT_AFTER_EVIDENCE",
+  terminal_policy: "STOP_AFTER_SINGLE_MERGE_AND_PROTECTED_MAIN_READBACK",
   scope_boundaries: expectedPostT085MaintenanceScopeBoundaries
 })
 
@@ -5879,6 +5896,18 @@ function validatePostT085MaintenanceAuthorizationReadback({
   if (gitBinding?.post_t085_maintenance_e2e_matches_authorized_head !== true) {
     errors.push("authorized US6 E2E bytes must remain unchanged from the owner-signed candidate")
   }
+  if (
+    !Array.isArray(gitBinding?.post_t085_maintenance_candidate_amendment_paths) ||
+    !sameValues(
+      gitBinding.post_t085_maintenance_candidate_amendment_paths,
+      POST_T085_MAINTENANCE_AUTHORIZED_AMENDMENT_PATHS
+    )
+  ) {
+    errors.push("post-authorization amendments must change exactly the two validator paths")
+  }
+  if (!/^[0-9a-f]{40}$/.test(gitBinding?.post_t085_maintenance_final_pr_head_sha ?? "")) {
+    errors.push("post-T085 maintenance requires a trusted final PR head")
+  }
   const authorizedHeadCommittedAt = Date.parse(
     gitBinding?.post_t085_maintenance_authorized_head_committed_at ?? ""
   )
@@ -5900,7 +5929,7 @@ function validatePostT085MaintenanceAuthorizationReadback({
   }
 
   if (!requireExactHeadEvidence) {
-    errors.push("post-T085 evidence-only authorization requires exact-head CI mode")
+    errors.push("post-T085 maintenance authorization requires exact-head CI mode")
   }
   if (!isAuthenticatedGitHubActionsContext(githubActionsContext)) {
     errors.push("post-T085 maintenance authorization requires authenticated GitHub Actions context")
@@ -5910,6 +5939,8 @@ function validatePostT085MaintenanceAuthorizationReadback({
       githubActionsContext.pull_request_number !==
         expectedPostT085MaintenanceAuthorization.pull_request ||
       githubActionsContext.head_ref !== expectedPostT085MaintenanceAuthorization.branch ||
+      githubActionsContext.source_head_sha !==
+        gitBinding?.post_t085_maintenance_final_pr_head_sha ||
       !new RegExp(
         `^refs/pull/${expectedPostT085MaintenanceAuthorization.pull_request}/(?:merge|head)$`
       ).test(githubActionsContext.github_ref ?? "")
@@ -5918,11 +5949,32 @@ function validatePostT085MaintenanceAuthorizationReadback({
         "post-T085 maintenance Actions context must bind authorized PR 163, branch and base"
       )
     }
-    if (githubActionsContext.pull_request_draft !== true) {
-      errors.push("post-T085 evidence-only authorization requires PR 163 to remain draft")
+    if (typeof githubActionsContext.pull_request_draft !== "boolean") {
+      errors.push("post-T085 maintenance Actions context must bind the PR 163 draft state")
+    }
+  } else if (githubActionsContext.authority === "PROTECTED_MAIN_PUSH") {
+    if (
+      githubActionsContext.source_base_sha !== POST_T085_MAINTENANCE_AUTHORIZATION_BASE_SHA ||
+      githubActionsContext.source_head_sha !== gitBinding?.head ||
+      !Array.isArray(gitBinding?.head_parent_shas) ||
+      !isDeepStrictEqual(gitBinding.head_parent_shas, [
+        POST_T085_MAINTENANCE_AUTHORIZATION_BASE_SHA,
+        gitBinding?.post_t085_maintenance_final_pr_head_sha
+      ]) ||
+      gitBinding?.head_parent_count !== 2
+    ) {
+      errors.push(
+        "post-T085 protected-main authority requires the single exact two-parent PR 163 merge"
+      )
+    }
+    if (
+      !/^[0-9a-f]{40}$/.test(gitBinding?.head_tree_sha ?? "") ||
+      gitBinding.head_tree_sha !== gitBinding?.second_parent_tree_sha
+    ) {
+      errors.push("post-T085 merge tree must equal the final authorized PR head tree")
     }
   } else {
-    errors.push("post-T085 evidence-only authorization requires pull-request authority")
+    errors.push("post-T085 maintenance authorization requires PR 163 or its exact merge push")
   }
   return errors.length === initialErrorCount
 }
@@ -7226,6 +7278,25 @@ function inspectPathUnchangedBetweenCommits(root, beforeSha, afterSha, filePath)
   }
 }
 
+function inspectChangedPathsBetweenCommits(root, beforeSha, afterSha) {
+  if (!/^[0-9a-f]{40}$/.test(beforeSha ?? "") || !/^[0-9a-f]{40}$/.test(afterSha ?? "")) {
+    return null
+  }
+  try {
+    return execFileSync("git", ["diff", "--no-renames", "--name-only", beforeSha, afterSha], {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"]
+    })
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .sort()
+  } catch {
+    return null
+  }
+}
+
 function eventChangeBaseCandidates(environment) {
   const candidates = []
   let constrained = environment.GITHUB_ACTIONS === "true" && Boolean(environment.GITHUB_EVENT_PATH)
@@ -7323,9 +7394,35 @@ function inspectHeadTopology(root, head) {
       stdio: ["ignore", "pipe", "ignore"]
     }).trim()
     const parents = parentLine.split(/\s+/).filter((parent) => /^[0-9a-f]{40}$/.test(parent))
-    return { first: parents[0] ?? null, count: parents.length }
+    const headTreeSha = execFileSync("git", ["rev-parse", "--verify", `${head}^{tree}`], {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"]
+    }).trim()
+    const secondParentTreeSha = parents[1]
+      ? execFileSync("git", ["rev-parse", "--verify", `${parents[1]}^{tree}`], {
+          cwd: root,
+          encoding: "utf8",
+          stdio: ["ignore", "pipe", "ignore"]
+        }).trim()
+      : null
+    return {
+      parents,
+      first: parents[0] ?? null,
+      second: parents[1] ?? null,
+      count: parents.length,
+      headTreeSha,
+      secondParentTreeSha
+    }
   } catch {
-    return { first: null, count: null }
+    return {
+      parents: null,
+      first: null,
+      second: null,
+      count: null,
+      headTreeSha: null,
+      secondParentTreeSha: null
+    }
   }
 }
 
@@ -7527,6 +7624,11 @@ export function inspectGit(root, { environment = process.env } = {}) {
       : "CLEAN"
     const authorizedBaseAncestor = inspectAncestor(root, AUTHORIZED_BASE_SHA, head)
     const reviewBaseAncestor = inspectAncestor(root, REVIEW_BASE_SHA, head)
+    const headTopology = inspectHeadTopology(root, head)
+    const postT085MaintenanceFinalPrHead =
+      environment.GITHUB_ACTIONS === "true" && environment.GITHUB_EVENT_NAME === "push"
+        ? headTopology.second
+        : head
     const postT085MaintenanceAuthorizedHeadAncestor = inspectAncestor(
       root,
       POST_T085_MAINTENANCE_AUTHORIZED_HEAD_SHA,
@@ -7542,9 +7644,13 @@ export function inspectGit(root, { environment = process.env } = {}) {
       head,
       POST_T085_MAINTENANCE_AUTHORIZED_PATHS[0]
     )
+    const postT085MaintenanceCandidateAmendmentPaths = inspectChangedPathsBetweenCommits(
+      root,
+      POST_T085_MAINTENANCE_AUTHORIZED_HEAD_SHA,
+      postT085MaintenanceFinalPrHead
+    )
     const changeBase = resolveChangeBase(root, head, environment)
     const changeBaseCommittedAt = inspectCommitTimestamp(root, changeBase.sha)
-    const headTopology = inspectHeadTopology(root, head)
     const implementationMergeAncestorOfChangeBase = inspectImplementationMergeAncestor(
       root,
       changeBase.sha
@@ -7597,12 +7703,18 @@ export function inspectGit(root, { environment = process.env } = {}) {
         postT085MaintenanceAuthorizedHeadCommittedAt,
       post_t085_maintenance_e2e_matches_authorized_head:
         postT085MaintenanceE2eMatchesAuthorizedHead,
+      post_t085_maintenance_final_pr_head_sha: postT085MaintenanceFinalPrHead,
+      post_t085_maintenance_candidate_amendment_paths: postT085MaintenanceCandidateAmendmentPaths,
       change_base_ref: changeBase.ref,
       change_base_sha: changeBase.sha,
       change_base_committed_at: changeBaseCommittedAt,
       change_base_ancestor: changeBase.ancestor,
       head_parent_sha: headTopology.first,
+      head_second_parent_sha: headTopology.second,
+      head_parent_shas: headTopology.parents,
       head_parent_count: headTopology.count,
+      head_tree_sha: headTopology.headTreeSha,
+      second_parent_tree_sha: headTopology.secondParentTreeSha,
       implementation_merge_ancestor_of_change_base: implementationMergeAncestorOfChangeBase,
       change_base_tasks_text: changeBaseTasksText,
       change_base_traceability_text: changeBaseTraceabilityText,
@@ -7620,12 +7732,18 @@ export function inspectGit(root, { environment = process.env } = {}) {
       post_t085_maintenance_authorized_head_ancestor: null,
       post_t085_maintenance_authorized_head_committed_at: null,
       post_t085_maintenance_e2e_matches_authorized_head: null,
+      post_t085_maintenance_final_pr_head_sha: null,
+      post_t085_maintenance_candidate_amendment_paths: null,
       change_base_ref: null,
       change_base_sha: null,
       change_base_committed_at: null,
       change_base_ancestor: null,
       head_parent_sha: null,
+      head_second_parent_sha: null,
+      head_parent_shas: null,
       head_parent_count: null,
+      head_tree_sha: null,
+      second_parent_tree_sha: null,
       implementation_merge_ancestor_of_change_base: null,
       change_base_tasks_text: null,
       change_base_traceability_text: null,
@@ -7675,12 +7793,19 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
         inspection.post_t085_maintenance_authorized_head_committed_at,
       post_t085_maintenance_e2e_matches_authorized_head:
         inspection.post_t085_maintenance_e2e_matches_authorized_head,
+      post_t085_maintenance_final_pr_head_sha: inspection.post_t085_maintenance_final_pr_head_sha,
+      post_t085_maintenance_candidate_amendment_paths:
+        inspection.post_t085_maintenance_candidate_amendment_paths,
       change_base_ref: inspection.change_base_ref,
       change_base_sha: inspection.change_base_sha,
       change_base_committed_at: inspection.change_base_committed_at,
       change_base_ancestor: inspection.change_base_ancestor,
       head_parent_sha: inspection.head_parent_sha,
+      head_second_parent_sha: inspection.head_second_parent_sha,
+      head_parent_shas: inspection.head_parent_shas,
       head_parent_count: inspection.head_parent_count,
+      head_tree_sha: inspection.head_tree_sha,
+      second_parent_tree_sha: inspection.second_parent_tree_sha,
       implementation_merge_ancestor_of_change_base:
         inspection.implementation_merge_ancestor_of_change_base,
       bounded_scope_active: inspection.bounded_scope_active
