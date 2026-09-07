@@ -189,6 +189,9 @@ const postT085MaintenancePaths = new Set([
   ".github/workflows/ci.yml",
   ".github/workflows/security.yml",
   "infra/compose/postgres/Dockerfile",
+  "infra/compose/s3mock/Dockerfile",
+  "pnpm-lock.yaml",
+  "pnpm-workspace.yaml",
   "scripts/test/validate-traceability.test.mjs",
   "scripts/validate-traceability.mjs"
 ])
