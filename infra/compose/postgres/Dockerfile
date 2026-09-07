@@ -37,17 +37,24 @@ FROM postgres:18.6-alpine3.24@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c5
 
 # CVE-2026-14456 requires both Alpine OpenSSL libraries at 3.5.8-r0 or newer.
 ARG OPENSSL_MINIMUM_VERSION=3.5.8-r0
+# CVE-2026-53612/53613/53614/76642/78408/78409/78410 are fixed in
+# Alpine's util-linux 2.42.3-r1 line.
+ARG LIBUUID_MINIMUM_VERSION=2.42.3-r1
 
 COPY --from=gosu-build /out/gosu /usr/local/bin/gosu
 
 RUN set -eux; \
     chmod 0755 /usr/local/bin/gosu; \
-    apk add --no-cache --upgrade c-ares libcrypto3 libssl3; \
+    apk add --no-cache --upgrade c-ares libcrypto3 libssl3 libuuid; \
     for package in libcrypto3 libssl3; do \
       installed="$(apk list --installed "$package" 2>/dev/null | awk 'NR == 1 { print $1 }')"; \
       installed="${installed#${package}-}"; \
       test -n "$installed"; \
       test "$(apk version -t "$installed" "$OPENSSL_MINIMUM_VERSION")" != "<"; \
     done; \
+    installed_libuuid="$(apk list --installed libuuid 2>/dev/null | awk 'NR == 1 { print $1 }')"; \
+    installed_libuuid="${installed_libuuid#libuuid-}"; \
+    test -n "$installed_libuuid"; \
+    test "$(apk version -t "$installed_libuuid" "$LIBUUID_MINIMUM_VERSION")" != "<"; \
     gosu --version; \
     gosu nobody true

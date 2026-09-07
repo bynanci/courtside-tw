@@ -11,6 +11,8 @@ import YAML from "yaml"
 export const TRACEABILITY_SCHEMA = "courtside-traceability/v1"
 export const COMPLETION_RECEIPT_SCHEMA = "courtside-t085-completion-receipt/v2"
 export const OWNER_AUTHORIZATION_SCHEMA = "courtside-t085-owner-authorization/v1"
+export const POST_T085_MAINTENANCE_AUTHORIZATION_SCHEMA =
+  "courtside-post-t085-maintenance-authorization/v5"
 export const COMPLETION_RECEIPT_PATH = ".loop/evidence/t085-completion-receipt.json"
 export const ACCEPTED_IMPLEMENTATION_HEAD_SHA = "27b955581a909e292ae4fe6c1fb05de0e94753da"
 export const ACCEPTED_IMPLEMENTATION_MERGE_SHA = "a2491b81066ac225a0b5d2dab93be79fb6dfbe65"
@@ -62,6 +64,74 @@ export const CONTRACT_START = "<!-- t085:contract:start -->"
 export const CONTRACT_END = "<!-- t085:contract:end -->"
 export const AUTHORIZED_BASE_SHA = "3fc14dd29b216ce46e4d364ceaec79a971dcef44"
 export const REVIEW_BASE_SHA = "84db3db95aa596eb317b71c4eea0926fc1fc15ce"
+export const POST_T085_MAINTENANCE_AUTHORIZATION_REF =
+  "https://github.com/bynanci/courtside-tw/issues/167#issuecomment-5573190561"
+export const POST_T085_MAINTENANCE_SUPERSEDED_AUTHORIZATION_REFS = Object.freeze([
+  "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5494383925",
+  "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5494845838",
+  "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5494892447",
+  "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5494952244",
+  "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5495299187",
+  "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5572646990"
+])
+export const POST_T085_MAINTENANCE_AUTHORIZATION_RECORDED_AT = "2026-09-07T16:05:25Z"
+export const POST_T085_MAINTENANCE_AUTHORIZATION_BASE_SHA =
+  "92773201398306b89cca7fc0b7852cb06dd4d4c7"
+export const POST_T085_MAINTENANCE_SECURITY_HEAD_SHA = "1cfe608c24b13b95a7365dc362bfd2b8c2e0823d"
+export const POST_T085_MAINTENANCE_SECURITY_TREE_SHA = "c2eec3e6a769c717b72aa186633f21d968713ff2"
+export const POST_T085_MAINTENANCE_US6_HEAD_SHA = "e5b923b35c37bb9ad34978a1e02b71a52286083e"
+export const POST_T085_MAINTENANCE_US6_TREE_SHA = "b59c6b5aa84517a39332834946738d8e8395ff87"
+export const POST_T085_MAINTENANCE_PURE_MERGE_SHA = "8f59c20327d0d939570921e5aa8f3288fff91ef8"
+export const POST_T085_MAINTENANCE_PURE_MERGE_TREE_SHA = "6d7a39adbaa7c4abe92c2e71236ec6678b9c4c6b"
+export const POST_T085_MAINTENANCE_COMPOSABILITY_HEAD_SHA =
+  "926673069ea1fdff07dc7662fd6f19b5a29996f0"
+export const POST_T085_MAINTENANCE_COMPOSABILITY_TREE_SHA =
+  "feb6378287994dbc4ed5ec01cfd70dc46bdddddb"
+export const POST_T085_MAINTENANCE_AUTHORIZED_HEAD_SHA =
+  POST_T085_MAINTENANCE_COMPOSABILITY_HEAD_SHA
+export const POST_T085_MAINTENANCE_AUTHORIZED_PATHS = Object.freeze([
+  "apps/web/tests/e2e/us6-offline-issue.spec.ts",
+  "infra/compose/postgres/Dockerfile",
+  "infra/compose/s3mock/Dockerfile",
+  "pnpm-lock.yaml",
+  "pnpm-workspace.yaml",
+  "scripts/test/validate-traceability.test.mjs",
+  "scripts/validate-traceability.mjs"
+])
+export const POST_T085_MAINTENANCE_AUTHORIZED_AMENDMENT_PATHS = Object.freeze([
+  "scripts/test/validate-traceability.test.mjs",
+  "scripts/validate-traceability.mjs"
+])
+export const POST_T085_MAINTENANCE_COMPOSABILITY_CHANGED_PATHS = Object.freeze([
+  "scripts/test/validate-traceability.test.mjs"
+])
+export const POST_T085_MAINTENANCE_PRESERVED_PAYLOAD_BLOBS = Object.freeze([
+  Object.freeze({
+    path: "apps/web/tests/e2e/us6-offline-issue.spec.ts",
+    source_head_sha: POST_T085_MAINTENANCE_US6_HEAD_SHA,
+    git_blob_oid: "42a171efa6507dc4440d4afe55d1694950153972"
+  }),
+  Object.freeze({
+    path: "infra/compose/postgres/Dockerfile",
+    source_head_sha: POST_T085_MAINTENANCE_SECURITY_HEAD_SHA,
+    git_blob_oid: "87ea652090aec4420986ac291542b52ee464ef65"
+  }),
+  Object.freeze({
+    path: "infra/compose/s3mock/Dockerfile",
+    source_head_sha: POST_T085_MAINTENANCE_SECURITY_HEAD_SHA,
+    git_blob_oid: "bfb235a3ec6af4f3eafbdeb39b7a433ff499f589"
+  }),
+  Object.freeze({
+    path: "pnpm-lock.yaml",
+    source_head_sha: POST_T085_MAINTENANCE_SECURITY_HEAD_SHA,
+    git_blob_oid: "de0dcec9ff1427e74e1da363f1455a415ab745a1"
+  }),
+  Object.freeze({
+    path: "pnpm-workspace.yaml",
+    source_head_sha: POST_T085_MAINTENANCE_SECURITY_HEAD_SHA,
+    git_blob_oid: "9474ee61c6c0f276ee9acb3a337533f0de068b78"
+  })
+])
 
 const requirementPattern = /^- \*\*((?:FR|SC)-\d{3})\*\*:/gm
 const taskPattern = /^- \[([ xX])\] (T\d{3})\b/gm
@@ -168,6 +238,9 @@ const receiptAuthorizationRefPattern =
   /^https:\/\/github\.com\/bynanci\/courtside-tw\/issues\/145#issuecomment-[1-9]\d*$/
 const ownerAuthorizationStart = "<!-- t085:owner-authorization:start -->"
 const ownerAuthorizationEnd = "<!-- t085:owner-authorization:end -->"
+const postT085MaintenanceAuthorizationStart =
+  "<!-- post-t085-maintenance:owner-authorization:start -->"
+const postT085MaintenanceAuthorizationEnd = "<!-- post-t085-maintenance:owner-authorization:end -->"
 const expectedReceiptScopeBoundaries = Object.freeze({
   t086_dispatched: false,
   participant_research_executed: false,
@@ -175,6 +248,105 @@ const expectedReceiptScopeBoundaries = Object.freeze({
   production_activated: false,
   provider_configured: false,
   secrets_changed: false
+})
+const expectedPostT085MaintenanceScopeBoundaries = Object.freeze({
+  pr168_ready_for_review_transition_authorized: true,
+  single_combined_pr168_regular_merge_authorized: true,
+  single_exact_protected_main_push_authorized: true,
+  separate_pr163_merge_authorized: false,
+  automatic_merge_authorized: false,
+  generic_protected_main_push_authorized: false,
+  ruleset_bypass_authorized: false,
+  product_runtime_changed: false,
+  t086_task_state_changed: false,
+  beta_flag_removed: false,
+  participant_research_executed: false,
+  web3_activated: false,
+  production_or_provider_mutated: false,
+  credentials_or_secrets_accessed_or_changed: false,
+  external_product_writes: false,
+  t087_or_later_dispatched: false
+})
+const expectedPostT085MaintenanceAuthorization = Object.freeze({
+  schema_version: POST_T085_MAINTENANCE_AUTHORIZATION_SCHEMA,
+  decision: "COMBINED_PR168_SINGLE_MERGE_AUTHORIZED",
+  accepted_by: ACCEPTED_RECEIPT_OWNER,
+  repository: "bynanci/courtside-tw",
+  issue: "https://github.com/bynanci/courtside-tw/issues/167",
+  incorporated_issue: "https://github.com/bynanci/courtside-tw/issues/162",
+  pull_request: 168,
+  branch: "fix/security-baseline-20260907",
+  supersedes_authorization_refs: [...POST_T085_MAINTENANCE_SUPERSEDED_AUTHORIZATION_REFS],
+  authorization_base: {
+    branch: "main",
+    sha: POST_T085_MAINTENANCE_AUTHORIZATION_BASE_SHA,
+    protected: true
+  },
+  frozen_t085_traceability_sha256: ACCEPTED_TRACEABILITY_SHA256,
+  candidate_graph: {
+    security: {
+      pull_request: 168,
+      head_sha: POST_T085_MAINTENANCE_SECURITY_HEAD_SHA,
+      tree_sha: POST_T085_MAINTENANCE_SECURITY_TREE_SHA
+    },
+    us6_governance: {
+      pull_request: 163,
+      head_sha: POST_T085_MAINTENANCE_US6_HEAD_SHA,
+      tree_sha: POST_T085_MAINTENANCE_US6_TREE_SHA,
+      authorization_ref:
+        "https://github.com/bynanci/courtside-tw/issues/162#issuecomment-5572646990"
+    },
+    pure_merge: {
+      head_sha: POST_T085_MAINTENANCE_PURE_MERGE_SHA,
+      tree_sha: POST_T085_MAINTENANCE_PURE_MERGE_TREE_SHA,
+      parent_shas: [POST_T085_MAINTENANCE_SECURITY_HEAD_SHA, POST_T085_MAINTENANCE_US6_HEAD_SHA],
+      resolution_paths: []
+    },
+    composability_child: {
+      head_sha: POST_T085_MAINTENANCE_COMPOSABILITY_HEAD_SHA,
+      tree_sha: POST_T085_MAINTENANCE_COMPOSABILITY_TREE_SHA,
+      parent_shas: [POST_T085_MAINTENANCE_PURE_MERGE_SHA],
+      changed_paths: [...POST_T085_MAINTENANCE_COMPOSABILITY_CHANGED_PATHS]
+    }
+  },
+  authorized_paths: [...POST_T085_MAINTENANCE_AUTHORIZED_PATHS],
+  preserved_payload_blobs: POST_T085_MAINTENANCE_PRESERVED_PAYLOAD_BLOBS.map((binding) => ({
+    ...binding
+  })),
+  authorized_final_support: {
+    parent_sha: POST_T085_MAINTENANCE_COMPOSABILITY_HEAD_SHA,
+    commit_count: 1,
+    parent_count: 1,
+    changed_paths: [...POST_T085_MAINTENANCE_AUTHORIZED_AMENDMENT_PATHS]
+  },
+  required_merge_method: "merge",
+  authorized_actions: [
+    "add exactly one final support commit directly after the bound composability child and change only the two validator paths",
+    "run fresh exact-head required CI, Security, browser and review read-back on the final PR 168 head",
+    "transition PR 168 to ready only after every required context passes and no review thread remains unresolved",
+    "merge PR 168 exactly once by regular merge with its expected final head and read back protected main CI and Security"
+  ],
+  merge_preconditions: [
+    "protected main remains exactly at the authorization base and the active ruleset is neither changed nor bypassed",
+    "the pure merge has exactly the recorded tree and ordered parents and contains no merge-resolution changes",
+    "the composability child has exactly the recorded tree, sole parent and sole changed path",
+    "the final PR head is a direct one-parent child of the composability child and changes exactly the two authorized final-support paths",
+    "the pure merge, composability child and final PR head each differ from the authorization base by exactly the seven authorized paths",
+    "the five preserved payload blobs equal their recorded source-candidate blobs at the pure merge, composability child and final PR head",
+    "the final PR head has fresh passing current ruleset-required contexts, Security 8/8, mergeability and zero unresolved review threads",
+    "any base, candidate, tree, parent order, path, payload, ruleset, check, review-thread or mergeability drift cancels this authorization"
+  ],
+  acceptance: [
+    "the September security payload is byte-identical to the reviewed PR 168 security candidate",
+    "the US6 deterministic-clock payload is byte-identical to the reviewed PR 163 candidate",
+    "the only post-merge composability correction is the recorded test assertion and the only subsequent support changes are the two validator paths",
+    "the protected-main push is accepted only for a two-parent merge whose first parent is the authorization base and whose second parent is the final authorized PR 168 head",
+    "the protected-main merge tree equals the final PR 168 head tree",
+    "PR 163 is incorporated as ancestry and is not separately authorized to merge",
+    "no generic push, automatic merge, ruleset bypass, T086, product/runtime, research, provider, production, credential or secret authority is introduced"
+  ],
+  terminal_policy: "STOP_AFTER_SINGLE_COMBINED_PR168_MERGE_AND_PROTECTED_MAIN_READBACK",
+  scope_boundaries: expectedPostT085MaintenanceScopeBoundaries
 })
 
 function isT086LockedPath(changedPath) {
@@ -189,9 +361,21 @@ const postT085MaintenancePaths = new Set([
   ".github/workflows/ci.yml",
   ".github/workflows/security.yml",
   "infra/compose/postgres/Dockerfile",
+  "infra/compose/s3mock/Dockerfile",
+  "pnpm-lock.yaml",
+  "pnpm-workspace.yaml",
   "scripts/test/validate-traceability.test.mjs",
   "scripts/validate-traceability.mjs"
 ])
+const postT085MaintenanceAuthorizedPaths = new Set(POST_T085_MAINTENANCE_AUTHORIZED_PATHS)
+const expectedPostT085MaintenancePayloadBlobOids = Object.freeze(
+  Object.fromEntries(
+    POST_T085_MAINTENANCE_PRESERVED_PAYLOAD_BLOBS.map(({ path: filePath, git_blob_oid }) => [
+      filePath,
+      git_blob_oid
+    ])
+  )
+)
 
 function isAuthorizedPostT085MaintenancePath(changedPath) {
   return changedPath.startsWith("docs/research/") || postT085MaintenancePaths.has(changedPath)
@@ -347,6 +531,22 @@ function isExactOwnerReadbackSupportScope({
     Array.isArray(changedPaths) &&
     changedPaths.length === ownerReadbackSupportChangedPathList.length &&
     sameValues(changedPaths, ownerReadbackSupportChangedPathList)
+  )
+}
+
+function isExactPostT085MaintenanceAuthorizationScope({
+  state,
+  changeBaseSha,
+  boundedScopeActive,
+  changedPaths
+}) {
+  return (
+    state === t085States.COMPLETE_STEADY &&
+    boundedScopeActive === false &&
+    changeBaseSha === POST_T085_MAINTENANCE_AUTHORIZATION_BASE_SHA &&
+    Array.isArray(changedPaths) &&
+    changedPaths.length === POST_T085_MAINTENANCE_AUTHORIZED_PATHS.length &&
+    sameValues(changedPaths, POST_T085_MAINTENANCE_AUTHORIZED_PATHS)
   )
 }
 
@@ -571,6 +771,8 @@ export function inspectGitHubActionsContext({ environment = process.env, gitBind
     source_ref: environment.GITHUB_HEAD_REF || environment.GITHUB_REF_NAME || null,
     source_head_sha: gitBinding?.head ?? null,
     source_base_sha: gitBinding?.change_base_sha ?? null,
+    pull_request_number: null,
+    pull_request_draft: null,
     authority: null,
     errors
   }
@@ -619,6 +821,8 @@ export function inspectGitHubActionsContext({ environment = process.env, gitBind
     }
     if (context.event_name === "pull_request") {
       context.authority = "PULL_REQUEST"
+      context.pull_request_number = event?.number ?? event?.pull_request?.number ?? null
+      context.pull_request_draft = event?.pull_request?.draft ?? null
       if (context.base_ref !== "main") errors.push("GITHUB_BASE_REF must be main")
       if (!/^refs\/pull\/\d+\/(?:merge|head)$/.test(context.github_ref ?? "")) {
         errors.push("GITHUB_REF must identify a pull-request ref")
@@ -5708,6 +5912,198 @@ function validateOwnerAuthorizationReadback({ receipt, readback, errors }) {
   }
 }
 
+function parsePostT085MaintenanceAuthorizationBody(body, errors) {
+  if (typeof body !== "string") {
+    errors.push("post-T085 maintenance authorization comment must contain a structured body")
+    return null
+  }
+  const start = body.indexOf(postT085MaintenanceAuthorizationStart)
+  const end = body.indexOf(postT085MaintenanceAuthorizationEnd)
+  if (
+    start < 0 ||
+    end <= start ||
+    body.indexOf(
+      postT085MaintenanceAuthorizationStart,
+      start + postT085MaintenanceAuthorizationStart.length
+    ) >= 0 ||
+    body.indexOf(
+      postT085MaintenanceAuthorizationEnd,
+      end + postT085MaintenanceAuthorizationEnd.length
+    ) >= 0
+  ) {
+    errors.push("post-T085 maintenance authorization comment must contain one structured body")
+    return null
+  }
+  let payload = body.slice(start + postT085MaintenanceAuthorizationStart.length, end).trim()
+  const fencedPayload = payload.match(/^```json\r?\n([\s\S]*)\r?\n```$/)
+  if (fencedPayload) {
+    payload = fencedPayload[1].trim()
+  } else if (payload.includes("```")) {
+    errors.push("post-T085 maintenance authorization JSON fence is invalid")
+    return null
+  }
+  try {
+    assertUniqueJsonObjectKeys(payload)
+    const parsed = JSON.parse(payload)
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      errors.push("post-T085 maintenance authorization body must be a JSON object")
+      return null
+    }
+    return parsed
+  } catch (error) {
+    errors.push(`post-T085 maintenance authorization body is invalid: ${error.message}`)
+    return null
+  }
+}
+
+function validatePostT085MaintenanceAuthorizationReadback({
+  readback,
+  gitBinding,
+  requireExactHeadEvidence,
+  githubActionsContext,
+  errors
+}) {
+  const initialErrorCount = errors.length
+  if (readback?.status !== "VERIFIED" || readback?.source !== "github-api") {
+    errors.push("post-T085 maintenance requires a verified GitHub owner-authorization readback")
+    return false
+  }
+  if (
+    readback.html_url !== POST_T085_MAINTENANCE_AUTHORIZATION_REF ||
+    readback.issue_url !== "https://api.github.com/repos/bynanci/courtside-tw/issues/167"
+  ) {
+    errors.push(
+      "post-T085 maintenance authorization readback must match the authorized issue comment"
+    )
+  }
+  if (readback.user_login !== ACCEPTED_RECEIPT_OWNER || readback.author_association !== "OWNER") {
+    errors.push(
+      "post-T085 maintenance authorization comment must be authored by the repository owner"
+    )
+  }
+  if (readback.created_at !== POST_T085_MAINTENANCE_AUTHORIZATION_RECORDED_AT) {
+    errors.push("post-T085 maintenance authorization timestamp must match the owner dispatch")
+  }
+  if (readback.updated_at !== readback.created_at) {
+    errors.push("post-T085 maintenance authorization comment must be immutable after creation")
+  }
+  if (gitBinding?.post_t085_maintenance_authorized_head_ancestor !== true) {
+    errors.push(
+      "authorized combined candidate must be an ancestor of the evaluated maintenance head"
+    )
+  }
+  if (gitBinding?.post_t085_maintenance_e2e_matches_authorized_head !== true) {
+    errors.push("authorized US6 E2E bytes must remain unchanged from the combined candidate")
+  }
+  if (gitBinding?.post_t085_maintenance_candidate_graph_matches !== true) {
+    errors.push("post-T085 maintenance candidate graph must match the exact owner dispatch")
+  }
+  if (
+    !isDeepStrictEqual(gitBinding?.post_t085_maintenance_final_pr_head_parent_shas, [
+      POST_T085_MAINTENANCE_COMPOSABILITY_HEAD_SHA
+    ]) ||
+    gitBinding?.post_t085_maintenance_final_pr_head_parent_count !== 1
+  ) {
+    errors.push(
+      "final PR 168 head must be the direct one-parent child of the authorized composability candidate"
+    )
+  }
+  const expectedPayloadBlobOids = {
+    pure_merge: expectedPostT085MaintenancePayloadBlobOids,
+    composability_child: expectedPostT085MaintenancePayloadBlobOids,
+    final_pr_head: expectedPostT085MaintenancePayloadBlobOids
+  }
+  if (
+    !isDeepStrictEqual(
+      gitBinding?.post_t085_maintenance_preserved_payload_blob_oids,
+      expectedPayloadBlobOids
+    )
+  ) {
+    errors.push("post-T085 maintenance payload blobs must match all five frozen bindings")
+  }
+  if (
+    !Array.isArray(gitBinding?.post_t085_maintenance_candidate_amendment_paths) ||
+    !sameValues(
+      gitBinding.post_t085_maintenance_candidate_amendment_paths,
+      POST_T085_MAINTENANCE_AUTHORIZED_AMENDMENT_PATHS
+    )
+  ) {
+    errors.push("post-authorization amendments must change exactly the two validator paths")
+  }
+  if (!/^[0-9a-f]{40}$/.test(gitBinding?.post_t085_maintenance_final_pr_head_sha ?? "")) {
+    errors.push("post-T085 maintenance requires a trusted final PR head")
+  }
+  const authorizedHeadCommittedAt = Date.parse(
+    gitBinding?.post_t085_maintenance_authorized_head_committed_at ?? ""
+  )
+  const authorizationRecordedAt = Date.parse(readback.created_at ?? "")
+  if (
+    !Number.isFinite(authorizedHeadCommittedAt) ||
+    !Number.isFinite(authorizationRecordedAt) ||
+    authorizationRecordedAt <= authorizedHeadCommittedAt
+  ) {
+    errors.push("post-T085 maintenance authorization must postdate the owner-signed candidate")
+  }
+
+  const authorization = parsePostT085MaintenanceAuthorizationBody(readback.body, errors)
+  if (
+    authorization === null ||
+    !isDeepStrictEqual(authorization, expectedPostT085MaintenanceAuthorization)
+  ) {
+    errors.push("post-T085 maintenance authorization body must match the exact owner dispatch")
+  }
+
+  if (!requireExactHeadEvidence) {
+    errors.push("post-T085 maintenance authorization requires exact-head CI mode")
+  }
+  if (!isAuthenticatedGitHubActionsContext(githubActionsContext)) {
+    errors.push("post-T085 maintenance authorization requires authenticated GitHub Actions context")
+  } else if (githubActionsContext.authority === "PULL_REQUEST") {
+    if (
+      githubActionsContext.source_base_sha !== POST_T085_MAINTENANCE_AUTHORIZATION_BASE_SHA ||
+      githubActionsContext.pull_request_number !==
+        expectedPostT085MaintenanceAuthorization.pull_request ||
+      githubActionsContext.head_ref !== expectedPostT085MaintenanceAuthorization.branch ||
+      githubActionsContext.source_head_sha !==
+        gitBinding?.post_t085_maintenance_final_pr_head_sha ||
+      !new RegExp(
+        `^refs/pull/${expectedPostT085MaintenanceAuthorization.pull_request}/(?:merge|head)$`
+      ).test(githubActionsContext.github_ref ?? "")
+    ) {
+      errors.push(
+        "post-T085 maintenance Actions context must bind authorized PR 168, branch and base"
+      )
+    }
+    if (typeof githubActionsContext.pull_request_draft !== "boolean") {
+      errors.push("post-T085 maintenance Actions context must bind the PR 168 draft state")
+    }
+  } else if (githubActionsContext.authority === "PROTECTED_MAIN_PUSH") {
+    if (
+      githubActionsContext.source_base_sha !== POST_T085_MAINTENANCE_AUTHORIZATION_BASE_SHA ||
+      githubActionsContext.source_head_sha !== gitBinding?.head ||
+      !Array.isArray(gitBinding?.head_parent_shas) ||
+      !isDeepStrictEqual(gitBinding.head_parent_shas, [
+        POST_T085_MAINTENANCE_AUTHORIZATION_BASE_SHA,
+        gitBinding?.post_t085_maintenance_final_pr_head_sha
+      ]) ||
+      gitBinding?.head_parent_count !== 2
+    ) {
+      errors.push(
+        "post-T085 protected-main authority requires the single exact two-parent PR 168 merge"
+      )
+    }
+    if (
+      !/^[0-9a-f]{40}$/.test(gitBinding?.head_tree_sha ?? "") ||
+      gitBinding.head_tree_sha !== gitBinding?.second_parent_tree_sha
+    ) {
+      errors.push("post-T085 merge tree must equal the final authorized PR head tree")
+    }
+  } else {
+    errors.push("post-T085 maintenance authorization requires PR 168 or its exact merge push")
+  }
+  return errors.length === initialErrorCount
+}
+
 function validateCompletionReceipt({
   receipt,
   state,
@@ -6072,6 +6468,7 @@ export function validateTraceability({
   evaluatedHeadCommittedAt = null,
   changeBaseCommittedAt = null,
   ownerAuthorizationReadback = null,
+  postT085MaintenanceAuthorizationReadback = null,
   gitBinding = null,
   changedPaths = null,
   changeBaseSha = REVIEW_BASE_SHA,
@@ -6126,6 +6523,17 @@ export function validateTraceability({
     boundedScopeActive,
     changedPaths
   })
+  const postT085MaintenanceAuthorizationScopeActive = isExactPostT085MaintenanceAuthorizationScope({
+    state,
+    changeBaseSha,
+    boundedScopeActive,
+    changedPaths
+  })
+  const postT085MaintenanceAuthorizationRequested =
+    state === t085States.COMPLETE_STEADY &&
+    Array.isArray(changedPaths) &&
+    changedPaths.includes(POST_T085_MAINTENANCE_AUTHORIZED_PATHS[0])
+  let postT085MaintenanceAuthorizationAccepted = false
 
   if (!/^[0-9a-f]{40}$/.test(currentHead ?? "")) {
     errors.push("currentHead must be a full lowercase commit SHA")
@@ -6226,8 +6634,31 @@ export function validateTraceability({
     }
   }
   if (state === t085States.COMPLETE_STEADY) {
+    if (postT085MaintenanceAuthorizationRequested) {
+      if (!postT085MaintenanceAuthorizationScopeActive) {
+        errors.push(
+          "post-T085 maintenance authorization requires the exact seven-path combined scope"
+        )
+      } else {
+        postT085MaintenanceAuthorizationAccepted = validatePostT085MaintenanceAuthorizationReadback(
+          {
+            readback: postT085MaintenanceAuthorizationReadback,
+            gitBinding,
+            requireExactHeadEvidence,
+            githubActionsContext,
+            errors
+          }
+        )
+      }
+    }
     for (const changedPath of changedPaths ?? []) {
-      if (!isAuthorizedPostT085MaintenancePath(changedPath)) {
+      if (
+        !isAuthorizedPostT085MaintenancePath(changedPath) &&
+        !(
+          postT085MaintenanceAuthorizationAccepted &&
+          postT085MaintenanceAuthorizedPaths.has(changedPath)
+        )
+      ) {
         errors.push(
           `changed path is outside the authorized post-T085 maintenance scope: ${changedPath}`
         )
@@ -6777,6 +7208,20 @@ export function validateTraceability({
             errors: ownerAuthorizationReadback.errors ?? []
           }
         : null,
+      post_t085_maintenance_authorization_readback: postT085MaintenanceAuthorizationReadback
+        ? {
+            status: postT085MaintenanceAuthorizationReadback.status ?? "UNAVAILABLE",
+            source: postT085MaintenanceAuthorizationReadback.source ?? null,
+            html_url: postT085MaintenanceAuthorizationReadback.html_url ?? null,
+            issue_url: postT085MaintenanceAuthorizationReadback.issue_url ?? null,
+            user_login: postT085MaintenanceAuthorizationReadback.user_login ?? null,
+            author_association: postT085MaintenanceAuthorizationReadback.author_association ?? null,
+            created_at: postT085MaintenanceAuthorizationReadback.created_at ?? null,
+            updated_at: postT085MaintenanceAuthorizationReadback.updated_at ?? null,
+            body_sha256: sha256(postT085MaintenanceAuthorizationReadback.body ?? null),
+            errors: postT085MaintenanceAuthorizationReadback.errors ?? []
+          }
+        : null,
       exact_head_evidence: exactHeadEvidence,
       github_actions_context: githubActionsContext
         ? {
@@ -6789,6 +7234,8 @@ export function validateTraceability({
             run_id: githubActionsContext.run_id ?? null,
             run_number: githubActionsContext.run_number ?? null,
             run_attempt: githubActionsContext.run_attempt ?? null,
+            pull_request_number: githubActionsContext.pull_request_number ?? null,
+            pull_request_draft: githubActionsContext.pull_request_draft ?? null,
             errors: githubActionsContext.errors ?? []
           }
         : null,
@@ -6889,7 +7336,12 @@ export function validateTraceability({
                 ? null
                 : state === t085States.COMPLETE_STEADY && Array.isArray(changedPaths)
                   ? changedPaths.filter(
-                      (changedPath) => !isAuthorizedPostT085MaintenancePath(changedPath)
+                      (changedPath) =>
+                        !isAuthorizedPostT085MaintenancePath(changedPath) &&
+                        !(
+                          postT085MaintenanceAuthorizationAccepted &&
+                          postT085MaintenanceAuthorizedPaths.has(changedPath)
+                        )
                     )
                   : state === t085States.COMPLETE_STEADY
                     ? null
@@ -6936,6 +7388,37 @@ function inspectAncestor(root, baseSha, head) {
     return true
   } catch (error) {
     return error?.status === 1 ? false : null
+  }
+}
+
+function inspectPathUnchangedBetweenCommits(root, beforeSha, afterSha, filePath) {
+  try {
+    execFileSync("git", ["diff", "--quiet", beforeSha, afterSha, "--", filePath], {
+      cwd: root,
+      stdio: "ignore"
+    })
+    return true
+  } catch (error) {
+    return error?.status === 1 ? false : null
+  }
+}
+
+function inspectChangedPathsBetweenCommits(root, beforeSha, afterSha) {
+  if (!/^[0-9a-f]{40}$/.test(beforeSha ?? "") || !/^[0-9a-f]{40}$/.test(afterSha ?? "")) {
+    return null
+  }
+  try {
+    return execFileSync("git", ["diff", "--no-renames", "--name-only", beforeSha, afterSha], {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"]
+    })
+      .trim()
+      .split("\n")
+      .filter(Boolean)
+      .sort()
+  } catch {
+    return null
   }
 }
 
@@ -7036,9 +7519,104 @@ function inspectHeadTopology(root, head) {
       stdio: ["ignore", "pipe", "ignore"]
     }).trim()
     const parents = parentLine.split(/\s+/).filter((parent) => /^[0-9a-f]{40}$/.test(parent))
-    return { first: parents[0] ?? null, count: parents.length }
+    const headTreeSha = execFileSync("git", ["rev-parse", "--verify", `${head}^{tree}`], {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"]
+    }).trim()
+    const secondParentTreeSha = parents[1]
+      ? execFileSync("git", ["rev-parse", "--verify", `${parents[1]}^{tree}`], {
+          cwd: root,
+          encoding: "utf8",
+          stdio: ["ignore", "pipe", "ignore"]
+        }).trim()
+      : null
+    return {
+      parents,
+      first: parents[0] ?? null,
+      second: parents[1] ?? null,
+      count: parents.length,
+      headTreeSha,
+      secondParentTreeSha
+    }
   } catch {
-    return { first: null, count: null }
+    return {
+      parents: null,
+      first: null,
+      second: null,
+      count: null,
+      headTreeSha: null,
+      secondParentTreeSha: null
+    }
+  }
+}
+
+function inspectPathBlobOid(root, commit, filePath) {
+  if (!/^[0-9a-f]{40}$/.test(commit ?? "")) return null
+  try {
+    const oid = execFileSync("git", ["rev-parse", "--verify", `${commit}:${filePath}`], {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"]
+    }).trim()
+    return /^[0-9a-f]{40}$/.test(oid) ? oid : null
+  } catch {
+    return null
+  }
+}
+
+function inspectPostT085MaintenancePayloadBlobOids(root, commit) {
+  return Object.fromEntries(
+    POST_T085_MAINTENANCE_PRESERVED_PAYLOAD_BLOBS.map(({ path: filePath }) => [
+      filePath,
+      inspectPathBlobOid(root, commit, filePath)
+    ])
+  )
+}
+
+function inspectPostT085MaintenanceCandidateGraph(root) {
+  const pureMergeTopology = inspectHeadTopology(root, POST_T085_MAINTENANCE_PURE_MERGE_SHA)
+  const composabilityTopology = inspectHeadTopology(
+    root,
+    POST_T085_MAINTENANCE_COMPOSABILITY_HEAD_SHA
+  )
+  const baseToPureMergePaths = inspectChangedPathsBetweenCommits(
+    root,
+    POST_T085_MAINTENANCE_AUTHORIZATION_BASE_SHA,
+    POST_T085_MAINTENANCE_PURE_MERGE_SHA
+  )
+  const baseToComposabilityPaths = inspectChangedPathsBetweenCommits(
+    root,
+    POST_T085_MAINTENANCE_AUTHORIZATION_BASE_SHA,
+    POST_T085_MAINTENANCE_COMPOSABILITY_HEAD_SHA
+  )
+  const composabilityChangedPaths = inspectChangedPathsBetweenCommits(
+    root,
+    POST_T085_MAINTENANCE_PURE_MERGE_SHA,
+    POST_T085_MAINTENANCE_COMPOSABILITY_HEAD_SHA
+  )
+  return {
+    matches:
+      isDeepStrictEqual(pureMergeTopology.parents, [
+        POST_T085_MAINTENANCE_SECURITY_HEAD_SHA,
+        POST_T085_MAINTENANCE_US6_HEAD_SHA
+      ]) &&
+      pureMergeTopology.headTreeSha === POST_T085_MAINTENANCE_PURE_MERGE_TREE_SHA &&
+      isDeepStrictEqual(composabilityTopology.parents, [POST_T085_MAINTENANCE_PURE_MERGE_SHA]) &&
+      composabilityTopology.headTreeSha === POST_T085_MAINTENANCE_COMPOSABILITY_TREE_SHA &&
+      Array.isArray(baseToPureMergePaths) &&
+      sameValues(baseToPureMergePaths, POST_T085_MAINTENANCE_AUTHORIZED_PATHS) &&
+      Array.isArray(baseToComposabilityPaths) &&
+      sameValues(baseToComposabilityPaths, POST_T085_MAINTENANCE_AUTHORIZED_PATHS) &&
+      Array.isArray(composabilityChangedPaths) &&
+      sameValues(composabilityChangedPaths, POST_T085_MAINTENANCE_COMPOSABILITY_CHANGED_PATHS),
+    pure_merge_parent_shas: pureMergeTopology.parents,
+    pure_merge_tree_sha: pureMergeTopology.headTreeSha,
+    composability_parent_shas: composabilityTopology.parents,
+    composability_tree_sha: composabilityTopology.headTreeSha,
+    base_to_pure_merge_paths: baseToPureMergePaths,
+    base_to_composability_paths: baseToComposabilityPaths,
+    composability_changed_paths: composabilityChangedPaths
   }
 }
 
@@ -7075,7 +7653,6 @@ const headers = {
   "User-Agent": "courtside-t085-receipt-validator",
   "X-GitHub-Api-Version": "2022-11-28"
 }
-if (process.env.GITHUB_TOKEN) headers.Authorization = "Bearer " + process.env.GITHUB_TOKEN
 const response = await fetch(url, {
   headers,
   redirect: "error",
@@ -7087,14 +7664,18 @@ if (Buffer.byteLength(body) > 1024 * 1024) throw new Error("GitHub comment read-
 process.stdout.write(body)
 `
 
-export function inspectOwnerAuthorization(authorizationRef, { environment = process.env } = {}) {
-  const match = authorizationRef?.match(receiptAuthorizationRefPattern)
-  const commentId = match?.[0]?.match(/issuecomment-([1-9]\d*)$/)?.[1] ?? null
+function inspectGitHubAuthorizationComment(
+  authorizationRef,
+  { environment, isAuthorizedRef, invalidRefError, readbackErrorPrefix }
+) {
+  const commentId = isAuthorizedRef(authorizationRef)
+    ? (authorizationRef.match(/issuecomment-([1-9]\d*)$/)?.[1] ?? null)
+    : null
   if (commentId === null) {
     return {
       status: "UNAVAILABLE",
       source: "github-api",
-      errors: ["authorization_ref does not identify an issue 145 comment"]
+      errors: [invalidRefError]
     }
   }
   const apiUrl = `https://api.github.com/repos/bynanci/courtside-tw/issues/comments/${commentId}`
@@ -7104,7 +7685,7 @@ export function inspectOwnerAuthorization(authorizationRef, { environment = proc
       ["--input-type=module", "--eval", githubCommentFetchScript, apiUrl],
       {
         encoding: "utf8",
-        env: environment,
+        env: { PATH: environment?.PATH ?? process.env.PATH ?? "" },
         maxBuffer: 1024 * 1024,
         stdio: ["ignore", "pipe", "pipe"],
         timeout: 15000
@@ -7128,9 +7709,31 @@ export function inspectOwnerAuthorization(authorizationRef, { environment = proc
       status: "UNAVAILABLE",
       source: "github-api",
       html_url: authorizationRef ?? null,
-      errors: [`GitHub owner-authorization read-back failed: ${error.message}`]
+      errors: [`${readbackErrorPrefix}: ${error.message}`]
     }
   }
+}
+
+export function inspectOwnerAuthorization(authorizationRef, { environment = process.env } = {}) {
+  return inspectGitHubAuthorizationComment(authorizationRef, {
+    environment,
+    isAuthorizedRef: (value) => receiptAuthorizationRefPattern.test(value ?? ""),
+    invalidRefError: "authorization_ref does not identify an issue 145 comment",
+    readbackErrorPrefix: "GitHub owner-authorization read-back failed"
+  })
+}
+
+export function inspectPostT085MaintenanceAuthorization(
+  authorizationRef,
+  { environment = process.env } = {}
+) {
+  return inspectGitHubAuthorizationComment(authorizationRef, {
+    environment,
+    isAuthorizedRef: (value) => value === POST_T085_MAINTENANCE_AUTHORIZATION_REF,
+    invalidRefError:
+      "post-T085 maintenance authorization_ref does not identify the authorized issue 167 comment",
+    readbackErrorPrefix: "GitHub post-T085 maintenance authorization read-back failed"
+  })
 }
 
 export function inspectOwnerAuthorizationForState(
@@ -7151,6 +7754,39 @@ export function inspectOwnerAuthorizationForState(
     }
     const receipt = JSON.parse(fs.readFileSync(path.join(root, COMPLETION_RECEIPT_PATH), "utf8"))
     return inspect(receipt?.authorization_ref, { environment })
+  } catch {
+    return null
+  }
+}
+
+export function inspectPostT085MaintenanceAuthorizationForState(
+  root,
+  {
+    changeBaseTasksText = null,
+    changeBaseSha = null,
+    boundedScopeActive = null,
+    changedPaths = null,
+    environment = process.env,
+    inspect = inspectPostT085MaintenanceAuthorization
+  } = {}
+) {
+  try {
+    const tasksText = fs.readFileSync(
+      path.join(root, "specs/001-taiwan-basketball-magazine-ebook/tasks.md"),
+      "utf8"
+    )
+    const state = classifyT085State(changeBaseTasksText, tasksText)
+    if (
+      !isExactPostT085MaintenanceAuthorizationScope({
+        state,
+        changeBaseSha,
+        boundedScopeActive,
+        changedPaths
+      })
+    ) {
+      return null
+    }
+    return inspect(POST_T085_MAINTENANCE_AUTHORIZATION_REF, { environment })
   } catch {
     return null
   }
@@ -7182,9 +7818,49 @@ export function inspectGit(root, { environment = process.env } = {}) {
       : "CLEAN"
     const authorizedBaseAncestor = inspectAncestor(root, AUTHORIZED_BASE_SHA, head)
     const reviewBaseAncestor = inspectAncestor(root, REVIEW_BASE_SHA, head)
+    const headTopology = inspectHeadTopology(root, head)
+    const postT085MaintenanceFinalPrHead =
+      environment.GITHUB_ACTIONS === "true" && environment.GITHUB_EVENT_NAME === "push"
+        ? headTopology.second
+        : head
+    const postT085MaintenanceFinalPrHeadTopology = inspectHeadTopology(
+      root,
+      postT085MaintenanceFinalPrHead
+    )
+    const postT085MaintenanceCandidateGraph = inspectPostT085MaintenanceCandidateGraph(root)
+    const postT085MaintenancePreservedPayloadBlobOids = {
+      pure_merge: inspectPostT085MaintenancePayloadBlobOids(
+        root,
+        POST_T085_MAINTENANCE_PURE_MERGE_SHA
+      ),
+      composability_child: inspectPostT085MaintenancePayloadBlobOids(
+        root,
+        POST_T085_MAINTENANCE_COMPOSABILITY_HEAD_SHA
+      ),
+      final_pr_head: inspectPostT085MaintenancePayloadBlobOids(root, postT085MaintenanceFinalPrHead)
+    }
+    const postT085MaintenanceAuthorizedHeadAncestor = inspectAncestor(
+      root,
+      POST_T085_MAINTENANCE_AUTHORIZED_HEAD_SHA,
+      head
+    )
+    const postT085MaintenanceAuthorizedHeadCommittedAt = inspectCommitTimestamp(
+      root,
+      POST_T085_MAINTENANCE_AUTHORIZED_HEAD_SHA
+    )
+    const postT085MaintenanceE2eMatchesAuthorizedHead = inspectPathUnchangedBetweenCommits(
+      root,
+      POST_T085_MAINTENANCE_AUTHORIZED_HEAD_SHA,
+      postT085MaintenanceFinalPrHead,
+      POST_T085_MAINTENANCE_AUTHORIZED_PATHS[0]
+    )
+    const postT085MaintenanceCandidateAmendmentPaths = inspectChangedPathsBetweenCommits(
+      root,
+      POST_T085_MAINTENANCE_AUTHORIZED_HEAD_SHA,
+      postT085MaintenanceFinalPrHead
+    )
     const changeBase = resolveChangeBase(root, head, environment)
     const changeBaseCommittedAt = inspectCommitTimestamp(root, changeBase.sha)
-    const headTopology = inspectHeadTopology(root, head)
     const implementationMergeAncestorOfChangeBase = inspectImplementationMergeAncestor(
       root,
       changeBase.sha
@@ -7232,12 +7908,33 @@ export function inspectGit(root, { environment = process.env } = {}) {
       status,
       authorized_base_ancestor: authorizedBaseAncestor,
       review_base_ancestor: reviewBaseAncestor,
+      post_t085_maintenance_authorized_head_ancestor: postT085MaintenanceAuthorizedHeadAncestor,
+      post_t085_maintenance_authorized_head_committed_at:
+        postT085MaintenanceAuthorizedHeadCommittedAt,
+      post_t085_maintenance_e2e_matches_authorized_head:
+        postT085MaintenanceE2eMatchesAuthorizedHead,
+      post_t085_maintenance_candidate_graph_matches: postT085MaintenanceCandidateGraph.matches,
+      post_t085_maintenance_candidate_graph: postT085MaintenanceCandidateGraph,
+      post_t085_maintenance_final_pr_head_sha: postT085MaintenanceFinalPrHead,
+      post_t085_maintenance_final_pr_head_parent_shas:
+        postT085MaintenanceFinalPrHeadTopology.parents,
+      post_t085_maintenance_final_pr_head_parent_count:
+        postT085MaintenanceFinalPrHeadTopology.count,
+      post_t085_maintenance_final_pr_head_tree_sha:
+        postT085MaintenanceFinalPrHeadTopology.headTreeSha,
+      post_t085_maintenance_candidate_amendment_paths: postT085MaintenanceCandidateAmendmentPaths,
+      post_t085_maintenance_preserved_payload_blob_oids:
+        postT085MaintenancePreservedPayloadBlobOids,
       change_base_ref: changeBase.ref,
       change_base_sha: changeBase.sha,
       change_base_committed_at: changeBaseCommittedAt,
       change_base_ancestor: changeBase.ancestor,
       head_parent_sha: headTopology.first,
+      head_second_parent_sha: headTopology.second,
+      head_parent_shas: headTopology.parents,
       head_parent_count: headTopology.count,
+      head_tree_sha: headTopology.headTreeSha,
+      second_parent_tree_sha: headTopology.secondParentTreeSha,
       implementation_merge_ancestor_of_change_base: implementationMergeAncestorOfChangeBase,
       change_base_tasks_text: changeBaseTasksText,
       change_base_traceability_text: changeBaseTraceabilityText,
@@ -7252,12 +7949,27 @@ export function inspectGit(root, { environment = process.env } = {}) {
       status: "UNAVAILABLE",
       authorized_base_ancestor: null,
       review_base_ancestor: null,
+      post_t085_maintenance_authorized_head_ancestor: null,
+      post_t085_maintenance_authorized_head_committed_at: null,
+      post_t085_maintenance_e2e_matches_authorized_head: null,
+      post_t085_maintenance_candidate_graph_matches: null,
+      post_t085_maintenance_candidate_graph: null,
+      post_t085_maintenance_final_pr_head_sha: null,
+      post_t085_maintenance_final_pr_head_parent_shas: null,
+      post_t085_maintenance_final_pr_head_parent_count: null,
+      post_t085_maintenance_final_pr_head_tree_sha: null,
+      post_t085_maintenance_candidate_amendment_paths: null,
+      post_t085_maintenance_preserved_payload_blob_oids: null,
       change_base_ref: null,
       change_base_sha: null,
       change_base_committed_at: null,
       change_base_ancestor: null,
       head_parent_sha: null,
+      head_second_parent_sha: null,
+      head_parent_shas: null,
       head_parent_count: null,
+      head_tree_sha: null,
+      second_parent_tree_sha: null,
       implementation_merge_ancestor_of_change_base: null,
       change_base_tasks_text: null,
       change_base_traceability_text: null,
@@ -7276,6 +7988,16 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
     changeBaseTasksText: inspection.change_base_tasks_text,
     environment
   })
+  const postT085MaintenanceAuthorizationReadback = inspectPostT085MaintenanceAuthorizationForState(
+    root,
+    {
+      changeBaseTasksText: inspection.change_base_tasks_text,
+      changeBaseSha: inspection.change_base_sha,
+      boundedScopeActive: inspection.bounded_scope_active,
+      changedPaths: inspection.changedPaths,
+      environment
+    }
+  )
   const githubActionsContext = inspectGitHubActionsContext({ environment, gitBinding: inspection })
   const isGitHubActions = environment.GITHUB_ACTIONS === "true"
   const report = validateTraceability({
@@ -7284,18 +8006,43 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
     evaluatedHeadCommittedAt: inspection.head_committed_at,
     changeBaseCommittedAt: inspection.change_base_committed_at,
     ownerAuthorizationReadback,
+    postT085MaintenanceAuthorizationReadback,
     gitBinding: {
       status: inspection.status,
       head: inspection.head,
       head_committed_at: inspection.head_committed_at,
       authorized_base_ancestor: inspection.authorized_base_ancestor,
       review_base_ancestor: inspection.review_base_ancestor,
+      post_t085_maintenance_authorized_head_ancestor:
+        inspection.post_t085_maintenance_authorized_head_ancestor,
+      post_t085_maintenance_authorized_head_committed_at:
+        inspection.post_t085_maintenance_authorized_head_committed_at,
+      post_t085_maintenance_e2e_matches_authorized_head:
+        inspection.post_t085_maintenance_e2e_matches_authorized_head,
+      post_t085_maintenance_candidate_graph_matches:
+        inspection.post_t085_maintenance_candidate_graph_matches,
+      post_t085_maintenance_candidate_graph: inspection.post_t085_maintenance_candidate_graph,
+      post_t085_maintenance_final_pr_head_sha: inspection.post_t085_maintenance_final_pr_head_sha,
+      post_t085_maintenance_final_pr_head_parent_shas:
+        inspection.post_t085_maintenance_final_pr_head_parent_shas,
+      post_t085_maintenance_final_pr_head_parent_count:
+        inspection.post_t085_maintenance_final_pr_head_parent_count,
+      post_t085_maintenance_final_pr_head_tree_sha:
+        inspection.post_t085_maintenance_final_pr_head_tree_sha,
+      post_t085_maintenance_candidate_amendment_paths:
+        inspection.post_t085_maintenance_candidate_amendment_paths,
+      post_t085_maintenance_preserved_payload_blob_oids:
+        inspection.post_t085_maintenance_preserved_payload_blob_oids,
       change_base_ref: inspection.change_base_ref,
       change_base_sha: inspection.change_base_sha,
       change_base_committed_at: inspection.change_base_committed_at,
       change_base_ancestor: inspection.change_base_ancestor,
       head_parent_sha: inspection.head_parent_sha,
+      head_second_parent_sha: inspection.head_second_parent_sha,
+      head_parent_shas: inspection.head_parent_shas,
       head_parent_count: inspection.head_parent_count,
+      head_tree_sha: inspection.head_tree_sha,
+      second_parent_tree_sha: inspection.second_parent_tree_sha,
       implementation_merge_ancestor_of_change_base:
         inspection.implementation_merge_ancestor_of_change_base,
       bounded_scope_active: inspection.bounded_scope_active
