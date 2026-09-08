@@ -3725,3 +3725,39 @@ test("Android smoke diagnostics preserve the failing producer and bound probes",
     /pauseSnapshot\.runningCount !== 0 \|\| pauseSnapshot\.targetStatus === "running"/u
   )
 })
+
+test("known-prompt normalization preserves a full bounded follow-up UIAutomator window", () => {
+  const commandTimeout = Reflect.get(timelineHelpers, "androidCommandTimeoutMilliseconds")
+  equal(typeof commandTimeout, "function")
+  if (typeof commandTimeout !== "function") return
+
+  const performanceHarness = readFileSync(
+    new URL("../../scripts/android-chrome-performance-smoke.mjs", import.meta.url),
+    "utf8"
+  )
+
+  match(
+    performanceHarness,
+    /const CHROME_AUTOMATION_NORMALIZATION_TIMEOUT_MILLISECONDS = 30_000\b/u
+  )
+  match(
+    performanceHarness,
+    /const CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS = 10_000\b/u
+  )
+  match(
+    performanceHarness,
+    /const normalizationDeadline =\s*performance\.now\(\) \+\s*CHROME_AUTOMATION_NORMALIZATION_TIMEOUT_MILLISECONDS/u
+  )
+  match(
+    performanceHarness,
+    /const probeTimeoutMilliseconds = requireRemainingAutomationMilliseconds\(\s*deadline,\s*CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS,\s*"UIAutomator probe"/u
+  )
+  match(
+    performanceHarness,
+    /async function requireClearChromeContentSurface\(\) \{\s*const deadline =\s*performance\.now\(\) \+ CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS/u
+  )
+
+  equal(commandTimeout(30_000, 7_825, 10_000), 10_000)
+  equal(commandTimeout(30_000, 20_000, 10_000), 10_000)
+  equal(commandTimeout(30_000, 29_000, 10_000), 1_000)
+})
