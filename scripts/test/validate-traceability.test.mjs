@@ -169,6 +169,12 @@ const androidNativeSurfaceSeedHeadSha = "5caa1c933f1e682773d9e3d4e270fee6800f1d3
 const androidNativeSurfaceBranch = "agent/android-native-surface-deadline"
 const androidNativeSurfaceDispatchRecordedAt = "2026-09-08T06:50:38Z"
 const androidNativeSurfaceAuthorizationRecordedAt = "2026-09-08T07:18:46Z"
+const androidNativeSurfaceForegroundScopeProposalRef =
+  "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5581306844"
+const androidNativeSurfaceForegroundAuthorizationRef =
+  "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5581452635"
+const androidNativeSurfaceForegroundAuthorizationRecordedAt = "2026-09-08T08:01:23Z"
+const androidNativeSurfaceForegroundSeedHeadSha = "8713630e0aece87012ce04c1c65395ba5d55297b"
 const androidNativeSurfaceAuthorizedPaths = [
   "apps/web/scripts/android-chrome-performance-smoke.mjs",
   "apps/web/tests/unit/android-creative-timeline.test.ts",
@@ -922,8 +928,10 @@ function makePostT085MaintenanceAuthorizationReadback({
 function makeAndroidNativeSurfaceAuthorizationReadback({
   dispatchAuthorizationOverrides = {},
   addendumAuthorizationOverrides = {},
+  foregroundAuthorizationOverrides = {},
   dispatchReadbackOverrides = {},
-  addendumReadbackOverrides = {}
+  addendumReadbackOverrides = {},
+  foregroundReadbackOverrides = {}
 } = {}) {
   const dispatchAuthorization = {
     schema_version: "courtside-android-native-surface-owner-dispatch/v1",
@@ -1011,6 +1019,60 @@ function makeAndroidNativeSurfaceAuthorizationReadback({
     merge_authorization: false,
     ...addendumAuthorizationOverrides
   }
+  const foregroundAuthorization = {
+    schema_version: "courtside-android-native-surface-foreground-deadline-addendum/v1",
+    decision: "SAME_FOUR_PATH_FOREGROUND_DEADLINE_ADDENDUM_ACCEPTED",
+    accepted_by: fixtureReceiptOwner,
+    repository: "bynanci/courtside-tw",
+    issue: "https://github.com/bynanci/courtside-tw/issues/121",
+    dispatch_ref: androidNativeSurfaceDispatchRef,
+    prior_addendum_ref: androidNativeSurfaceAuthorizationRef,
+    scope_proposal_ref: androidNativeSurfaceForegroundScopeProposalRef,
+    pull_request: 169,
+    authorization_base: {
+      branch: "main",
+      sha: androidNativeSurfaceAuthorizationBaseSha,
+      protected: true
+    },
+    seed_head: {
+      branch: androidNativeSurfaceBranch,
+      sha: androidNativeSurfaceForegroundSeedHeadSha
+    },
+    frozen_t085_traceability_sha256: ACCEPTED_TRACEABILITY_SHA256,
+    authorized_paths: [...androidNativeSurfaceAuthorizedPaths],
+    authorized_amendment: {
+      parent_sha: androidNativeSurfaceForegroundSeedHeadSha,
+      maximum_commit_count: 2,
+      changed_paths: [...androidNativeSurfaceAuthorizedPaths],
+      tests_first: true
+    },
+    authorized_actions: [
+      "add deterministic fail-closed tests before implementation",
+      "ensure final foreground activity acquisition cannot deplete the following UIAutomator probe",
+      "preserve the 5000 millisecond per-probe cap and a bounded total final-proof envelope",
+      "authenticate this exact OWNER addendum for PR 169",
+      "run fresh exact-head CI and Security",
+      "obtain two independent same-head Android passes and exact-head review"
+    ],
+    acceptance: [
+      "the original dispatch and prior addendum remain byte-for-byte immutable and owner-authored",
+      "the final PR diff remains exactly the authorized four-path set",
+      "the frozen T085 traceability contract remains byte-for-byte unchanged",
+      "repository, owner, base, branch, pull request, seed ancestry, exact-head Actions context and draft state all match",
+      "foreground activity acquisition and the following UIAutomator probe each receive an independent maximum 5000 millisecond window within one explicit bounded final-proof envelope",
+      "comment deletion or mutation, API failure, actor mismatch, base or head ancestry drift, branch or path drift, replay by another pull request, excessive commits, merge commits or generic product-path authorization fails closed"
+    ],
+    forbidden: [
+      "merge or ready-for-review transition",
+      "generic product-path authorization or reuse by another pull request",
+      "workflow, ruleset, provider, deployment, credential, secret or frozen T085 evidence mutation",
+      "PR 161 rebase, ready transition or merge",
+      "T086, task-checkbox, beta-flag, research, Web3 or external-product change"
+    ],
+    terminal_policy: "STOP_AT_DRAFT_EXACT_HEAD_REVIEW_GATE_RECEIPT",
+    merge_authorization: false,
+    ...foregroundAuthorizationOverrides
+  }
   return {
     dispatch: {
       status: "VERIFIED",
@@ -1049,6 +1111,25 @@ function makeAndroidNativeSurfaceAuthorizationReadback({
       ].join("\n"),
       errors: [],
       ...addendumReadbackOverrides
+    },
+    foregroundAddendum: {
+      status: "VERIFIED",
+      source: "github-api",
+      html_url: androidNativeSurfaceForegroundAuthorizationRef,
+      issue_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/121",
+      user_login: fixtureReceiptOwner,
+      author_association: "OWNER",
+      created_at: androidNativeSurfaceForegroundAuthorizationRecordedAt,
+      updated_at: androidNativeSurfaceForegroundAuthorizationRecordedAt,
+      body: [
+        "<!-- android-native-surface:foreground-deadline-addendum:v1:start -->",
+        "```json",
+        JSON.stringify(foregroundAuthorization),
+        "```",
+        "<!-- android-native-surface:foreground-deadline-addendum:v1:end -->"
+      ].join("\n"),
+      errors: [],
+      ...foregroundReadbackOverrides
     }
   }
 }
@@ -1208,6 +1289,11 @@ function makeAndroidNativeSurfaceGitBinding(overrides = {}) {
     android_native_surface_amendment_commit_count: 2,
     android_native_surface_amendment_merge_commit_count: 0,
     android_native_surface_amendment_paths: [...androidNativeSurfaceAmendmentPaths],
+    android_native_surface_foreground_seed_ancestor: true,
+    android_native_surface_foreground_seed_committed_at: "2026-09-08T07:49:14.000Z",
+    android_native_surface_foreground_amendment_commit_count: 2,
+    android_native_surface_foreground_amendment_merge_commit_count: 0,
+    android_native_surface_foreground_amendment_paths: [...androidNativeSurfaceAuthorizedPaths],
     ...overrides
   }
 }
@@ -1860,6 +1946,99 @@ test("completed T085 authenticates only the draft PR 169 exact four-path addendu
     assert.match(
       report.errors.join("\n"),
       /requires the exact four-path PR 169 scope|outside the authorized post-T085 maintenance scope/
+    )
+  }
+})
+
+test("completed T085 fails closed unless the exact foreground-deadline addendum is authenticated", () => {
+  const fixture = makeCompletedFixture()
+  fixture.changedPaths = [...androidNativeSurfaceAuthorizedPaths]
+
+  const passing = runAndroidNativeSurfaceFixture(fixture)
+  assert.equal(passing.status, "PASS", passing.errors.join("\n"))
+  assert.equal(
+    passing.source.android_native_surface_authorization_readback.foregroundAddendum.html_url,
+    androidNativeSurfaceForegroundAuthorizationRef
+  )
+
+  for (const [name, overrides] of [
+    [
+      "missing foreground receipt",
+      {
+        androidNativeSurfaceAuthorizationReadback: {
+          ...makeAndroidNativeSurfaceAuthorizationReadback(),
+          foregroundAddendum: null
+        }
+      }
+    ],
+    [
+      "foreground API failure",
+      {
+        androidNativeSurfaceAuthorizationReadback: makeAndroidNativeSurfaceAuthorizationReadback({
+          foregroundReadbackOverrides: { status: "UNAVAILABLE" }
+        })
+      }
+    ],
+    [
+      "foreground actor mismatch",
+      {
+        androidNativeSurfaceAuthorizationReadback: makeAndroidNativeSurfaceAuthorizationReadback({
+          foregroundReadbackOverrides: { user_login: "attacker" }
+        })
+      }
+    ],
+    [
+      "foreground mutation",
+      {
+        androidNativeSurfaceAuthorizationReadback: makeAndroidNativeSurfaceAuthorizationReadback({
+          foregroundAuthorizationOverrides: {
+            authorized_paths: ["apps/web/unrelated.ts"]
+          }
+        })
+      }
+    ],
+    [
+      "foreground seed ancestry drift",
+      {
+        gitBinding: makeAndroidNativeSurfaceGitBinding({
+          android_native_surface_foreground_seed_ancestor: false
+        })
+      }
+    ],
+    [
+      "foreground path widening",
+      {
+        gitBinding: makeAndroidNativeSurfaceGitBinding({
+          android_native_surface_foreground_amendment_paths: [
+            ...androidNativeSurfaceAuthorizedPaths,
+            "apps/web/unrelated.ts"
+          ]
+        })
+      }
+    ],
+    [
+      "foreground commit overflow",
+      {
+        gitBinding: makeAndroidNativeSurfaceGitBinding({
+          android_native_surface_foreground_amendment_commit_count: 3
+        })
+      }
+    ],
+    [
+      "foreground merge commit",
+      {
+        gitBinding: makeAndroidNativeSurfaceGitBinding({
+          android_native_surface_foreground_amendment_merge_commit_count: 1
+        })
+      }
+    ]
+  ]) {
+    const report = runAndroidNativeSurfaceFixture(fixture, overrides)
+    assert.equal(report.status, "FAIL", name)
+    assert.match(
+      report.errors.join("\n"),
+      /foreground-deadline|foreground addendum|foreground seed|foreground amendments/u,
+      name
     )
   }
 })

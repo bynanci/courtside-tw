@@ -3758,3 +3758,28 @@ test("known-prompt normalization preserves a full bounded follow-up UIAutomator 
   equal(commandTimeout(30_000, 20_000, 10_000), 10_000)
   equal(commandTimeout(30_000, 29_000, 10_000), 1_000)
 })
+
+test("final foreground activity acquisition preserves the following UIAutomator window", () => {
+  const performanceHarness = readFileSync(
+    new URL("../../scripts/android-chrome-performance-smoke.mjs", import.meta.url),
+    "utf8"
+  )
+
+  match(performanceHarness, /const CHROME_AUTOMATION_FINAL_PROOF_TIMEOUT_MILLISECONDS = 15_000\b/u)
+  match(
+    performanceHarness,
+    /function createBoundedAutomationSubdeadline\([\s\S]*androidCommandTimeoutMilliseconds\(\s*totalDeadline,\s*nowAt,\s*maximumMilliseconds\s*\)[\s\S]*return nowAt \+ timeoutMilliseconds/u
+  )
+  match(
+    performanceHarness,
+    /function probeChromeContentSurfaceAtActivityBoundary\([\s\S]*postSurfaceActivityDeadline = \(\) => deadline[\s\S]*acquireChromeSurfaceActivityWithinDeadline\(\s*postSurfaceActivityDeadline\(\),\s*label\s*\)/u
+  )
+  match(
+    performanceHarness,
+    /async function requireClearChromeContentSurface\(\) \{\s*const finalProofDeadline =\s*performance\.now\(\) \+ CHROME_AUTOMATION_FINAL_PROOF_TIMEOUT_MILLISECONDS[\s\S]*const initialActivityBefore =\s*await acquireChromeSurfaceActivityWithinDeadline\(\s*createBoundedAutomationSubdeadline\(\s*finalProofDeadline,\s*CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS,[\s\S]*const surfaceProbeDeadline = createBoundedAutomationSubdeadline\(\s*finalProofDeadline,\s*CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS,[\s\S]*probeChromeContentSurfaceAtActivityBoundary\(\s*surfaceProbeDeadline,\s*undefined,\s*initialActivityBefore,\s*\(\) =>\s*createBoundedAutomationSubdeadline\(\s*finalProofDeadline,\s*CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS,/u
+  )
+  match(
+    performanceHarness,
+    /requireRemainingAutomationMilliseconds\(\s*finalProofDeadline,\s*1,\s*"final foreground proof acceptance"\s*\)/u
+  )
+})
