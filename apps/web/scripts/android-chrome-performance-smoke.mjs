@@ -35,6 +35,7 @@ const BROWSER_QUIESCENCE_TIMEOUT_MILLISECONDS = 10_000
 const BROWSER_QUIESCENCE_MAX_FRAME_GAP_MILLISECONDS = 200
 const BROWSER_QUIESCENCE_CONSECUTIVE_FRAMES = 5
 const CHROME_AUTOMATION_POLL_MILLISECONDS = 100
+const CHROME_AUTOMATION_NORMALIZATION_TIMEOUT_MILLISECONDS = 30_000
 const CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS = 5_000
 const CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS = 10_000
 const EXPECTED_ANDROID_DISPLAY = Object.freeze({ width: 1080, height: 2400 })
@@ -1059,7 +1060,8 @@ async function normalizeChromeContentSurface() {
     1,
     "activity preflight acceptance"
   )
-  const normalizationDeadline = performance.now() + CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS
+  const normalizationDeadline =
+    performance.now() + CHROME_AUTOMATION_NORMALIZATION_TIMEOUT_MILLISECONDS
   const normalization = await normalizeChromeAutomationSurfaceWithinDeadline({
     deadlineAt: normalizationDeadline,
     now: () => performance.now(),
