@@ -5,7 +5,7 @@
 # from its pinned upstream source with a patched Go toolchain and x/sys version.
 # The pinned builder also excludes the Go standard library versions flagged by
 # CVE-2026-39821 and CVE-2026-46600 in the previous build stage.
-FROM golang:1.27.0@sha256:4013ae0f9e7994f8535c58c811f8f863fbed38b72e0d51e6592156f758d66146 AS gosu-build
+FROM golang:1.27.1@sha256:512690a5660563b57d37ecc31129e7f136e831db2aed24a1dbeb8ad7380dc0fa AS gosu-build
 
 ARG GOSU_COMMIT=40506998e34a7a679e6dae41374c1b7aa37eb73f
 ARG GOSU_X_SYS_VERSION=0.44.0
