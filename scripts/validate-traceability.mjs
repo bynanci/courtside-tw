@@ -17,6 +17,19 @@ export const ANDROID_NATIVE_SURFACE_AUTHORIZATION_SCHEMA =
   "courtside-android-native-surface-traceability-addendum/v1"
 export const ANDROID_NATIVE_SURFACE_FOREGROUND_AUTHORIZATION_SCHEMA =
   "courtside-android-native-surface-foreground-deadline-addendum/v1"
+export const POST169_GOVERNANCE_AUTHORIZATION_SCHEMA =
+  "courtside-post169-governance-reconciliation-owner-dispatch/v1"
+export const POST169_GOVERNANCE_ADDENDUM_SCHEMA =
+  "courtside-post169-governance-reconciliation-addendum/v1"
+export const POST169_GOVERNANCE_FORMAT_ADDENDUM_SCHEMA =
+  "courtside-post169-governance-reconciliation-format-addendum/v1"
+export const POST169_GOVERNANCE_REVIEW_REMEDIATION_SCHEMA =
+  "courtside-post169-governance-reconciliation-review-remediation-addendum/v1"
+export const POST169_GOVERNANCE_FINAL_SEAL_SCHEMA =
+  "courtside-post169-governance-reconciliation-final-seal/v2"
+export const POST169_GOVERNANCE_SQUASH_PUSH_SUPERSESSION_SCHEMA =
+  "courtside-post169-governance-squash-push-final-supersession/v2"
+export const POST169_GOVERNANCE_FINAL_SEAL_V4_SCHEMA = "courtside-post169-governance-final-seal/v4"
 export const COMPLETION_RECEIPT_PATH = ".loop/evidence/t085-completion-receipt.json"
 export const ACCEPTED_IMPLEMENTATION_HEAD_SHA = "27b955581a909e292ae4fe6c1fb05de0e94753da"
 export const ACCEPTED_IMPLEMENTATION_MERGE_SHA = "a2491b81066ac225a0b5d2dab93be79fb6dfbe65"
@@ -34,8 +47,12 @@ export const PRE_REMEDIATION_TRACEABILITY_SHA256 =
 export const ACCEPTED_TRACEABILITY_SHA256 =
   "204662214eada892332d1ddbeab8d0b8037cfc5477d9152d6fb3a61e56832b79"
 export const ACCEPTED_PENDING_TASKS_SHA256 =
-  "23190fbeab15b181800ddb275478f058cc0a0514e581b8f3c2aaeb82c184b1f3"
+  "b0a0a6c66b7f111c92a4e3ddfd9f3965d9c60b5867096991a12de6008570d2dc"
 export const ACCEPTED_COMPLETED_TASKS_SHA256 =
+  "f4f9bae0e9b64ae41ef8cfe110e68b594b6f5b15f0ffe869d1d4f243424b9e4d"
+const FROZEN_T085_PENDING_TASKS_SHA256 =
+  "23190fbeab15b181800ddb275478f058cc0a0514e581b8f3c2aaeb82c184b1f3"
+const FROZEN_T085_COMPLETED_TASKS_SHA256 =
   "90b950e3522e9d6e119f57d92d4ab9f8d3fe013b456450415a8abbdd70f446c3"
 export const ACCEPTED_RECEIPT_OWNER = "bynanci"
 export const LEGACY_RECEIPT_AUTHORIZATION_REF =
@@ -154,6 +171,9 @@ export const ANDROID_NATIVE_SURFACE_AUTHORIZATION_BASE_SHA =
 export const ANDROID_NATIVE_SURFACE_SEED_HEAD_SHA = "5caa1c933f1e682773d9e3d4e270fee6800f1d3f"
 export const ANDROID_NATIVE_SURFACE_FOREGROUND_SEED_HEAD_SHA =
   "8713630e0aece87012ce04c1c65395ba5d55297b"
+export const ANDROID_NATIVE_SURFACE_MERGED_HEAD_SHA = "19f1b983878489ca3838d84696a19fa18ff8bbc5"
+export const ANDROID_NATIVE_SURFACE_MERGE_SHA = "d79daefec49b0f5d059a2a6c349c0be107afd2d4"
+export const ANDROID_NATIVE_SURFACE_MERGE_TREE_SHA = "b5ab5a28d1cbda5e9d0c0779bc4b5cc70b47d606"
 export const ANDROID_NATIVE_SURFACE_BRANCH = "agent/android-native-surface-deadline"
 export const ANDROID_NATIVE_SURFACE_AUTHORIZED_PATHS = Object.freeze([
   "apps/web/scripts/android-chrome-performance-smoke.mjs",
@@ -165,6 +185,65 @@ export const ANDROID_NATIVE_SURFACE_AMENDMENT_PATHS = Object.freeze([
   "scripts/validate-traceability.mjs",
   "scripts/test/validate-traceability.test.mjs"
 ])
+export const POST169_GOVERNANCE_DISPATCH_REF =
+  "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5582375304"
+export const POST169_GOVERNANCE_ADDENDUM_REF =
+  "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5582607893"
+export const POST169_GOVERNANCE_FORMAT_ADDENDUM_REF =
+  "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5583242540"
+export const POST169_GOVERNANCE_REVIEW_PROPOSAL_REF =
+  "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5583593931"
+export const POST169_GOVERNANCE_REVIEW_REMEDIATION_REF =
+  "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5585253492"
+export const POST169_GOVERNANCE_SQUASH_PUSH_ADDENDUM_REF =
+  "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5585746176"
+export const POST169_GOVERNANCE_PRIOR_FINAL_SEAL_REF =
+  "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5585969745"
+export const POST169_GOVERNANCE_SQUASH_PUSH_SUPERSESSION_REF =
+  "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5586409180"
+export const POST169_GOVERNANCE_DISPATCH_RECORDED_AT = "2026-09-08T09:10:03Z"
+export const POST169_GOVERNANCE_ADDENDUM_RECORDED_AT = "2026-09-08T09:24:02Z"
+export const POST169_GOVERNANCE_FORMAT_ADDENDUM_RECORDED_AT = "2026-09-08T10:00:15Z"
+export const POST169_GOVERNANCE_REVIEW_REMEDIATION_RECORDED_AT = "2026-09-08T12:38:15Z"
+export const POST169_GOVERNANCE_SQUASH_PUSH_SUPERSESSION_RECORDED_AT = "2026-09-08T14:05:15Z"
+export const POST169_GOVERNANCE_AUTHORIZATION_BASE_SHA = ANDROID_NATIVE_SURFACE_MERGE_SHA
+export const POST169_GOVERNANCE_BRANCH = "fix/post169-governance-reconciliation"
+export const POST169_GOVERNANCE_PULL_REQUEST = 170
+export const POST169_GOVERNANCE_SEED_HEAD_SHA = "681d98506d67b10d89e09c3de02b32498a06c60b"
+export const POST169_GOVERNANCE_BLOCKED_HEAD_SHA = "e06765cd88d8826c67138d76a43e9bcf56b16412"
+export const POST169_GOVERNANCE_BLOCKED_TREE_SHA = "ae40b12aabe43415122927da04d5b47eb5bf05bc"
+export const POST169_GOVERNANCE_PRIOR_FINAL_HEAD_SHA = "5dcffd0c683a13ca3d8b49e9c83b6abaea12086d"
+export const POST169_GOVERNANCE_PRIOR_FINAL_TREE_SHA = "3103525786fa157dcdce7d548d436f9f6d047f1b"
+export const POST169_GOVERNANCE_PRIOR_FINAL_HEAD_COMMITTED_AT = "2026-09-08T13:32:35.000Z"
+export const POST169_GOVERNANCE_PRIOR_FINAL_TEST_BLOB_SHA =
+  "57a6024cbf9f72e66a68978ed65a0ae6cbac31a5"
+export const POST169_GOVERNANCE_PRIOR_FINAL_VALIDATOR_BLOB_SHA =
+  "0e61003a117c0f93a8dad1c29fc3545109b0da43"
+export const POST169_GOVERNANCE_SUPERSEDED_FINAL_HEAD_SHA =
+  "395afae7826bb76a1a79f230270443c51d96f601"
+export const POST169_GOVERNANCE_SUPERSEDED_FINAL_TREE_SHA =
+  "e29bf7af3ae7645f966820a3739e1914af18c78a"
+export const POST169_GOVERNANCE_SUPERSEDED_FINAL_SEAL_REF =
+  "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5586302989"
+export const POST169_GOVERNANCE_SEED_TEST_BLOB_SHA = "dc0271965b06af369645cb792045f5d6d1a613f6"
+export const POST169_GOVERNANCE_FORMATTED_TEST_BLOB_SHA = "33d7256bf001c1a4b321a4f19ddcaf6a33d587f0"
+export const POST169_GOVERNANCE_BLOCKED_README_BLOB_SHA = "321bd716f953232016c7e44feb692ce285af6a85"
+export const POST169_GOVERNANCE_BLOCKED_TASKS_BLOB_SHA = "9e477c0ac0ad2c7b38979e20f61564601dd1fcbd"
+export const POST169_GOVERNANCE_TASK_CHECKBOX_SIGNATURE_SHA256 =
+  "7229c5ad498658144e513f7af91a24b121b91817057e5673d3db3cb62aac73b3"
+export const POST169_GOVERNANCE_AUTHORIZED_PATHS = Object.freeze([
+  "README.md",
+  "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+  "scripts/test/validate-traceability.test.mjs",
+  "scripts/validate-traceability.mjs"
+])
+export const POST169_GOVERNANCE_AMENDMENT_PATHS = Object.freeze([
+  "README.md",
+  "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+  "scripts/validate-traceability.mjs"
+])
+export const POST169_T086_STATUS_SUFFIX =
+  " Current governance state (2026-09-08): #169 maintenance is merged; T086 remains HOLD in draft PR #161 until protected-main CI/Security, #164 required-context enforcement, a fresh exact-base dispatch/rebase, exact-head evidence, and OWNER adjudication of every blocker pass. The beta flag remains unchanged."
 
 const requirementPattern = /^- \*\*((?:FR|SC)-\d{3})\*\*:/gm
 const taskPattern = /^- \[([ xX])\] (T\d{3})\b/gm
@@ -284,6 +363,32 @@ const androidNativeSurfaceForegroundAuthorizationStart =
   "<!-- android-native-surface:foreground-deadline-addendum:v1:start -->"
 const androidNativeSurfaceForegroundAuthorizationEnd =
   "<!-- android-native-surface:foreground-deadline-addendum:v1:end -->"
+const post169GovernanceDispatchStart =
+  "<!-- post169-governance-reconciliation:owner-dispatch:v1:start -->"
+const post169GovernanceDispatchEnd =
+  "<!-- post169-governance-reconciliation:owner-dispatch:v1:end -->"
+const post169GovernanceAddendumStart =
+  "<!-- post169-governance-reconciliation:addendum:v1:start -->"
+const post169GovernanceAddendumEnd = "<!-- post169-governance-reconciliation:addendum:v1:end -->"
+const post169GovernanceFormatAddendumStart =
+  "<!-- post169-governance-reconciliation:format-addendum:v1:start -->"
+const post169GovernanceFormatAddendumEnd =
+  "<!-- post169-governance-reconciliation:format-addendum:v1:end -->"
+const post169GovernanceReviewRemediationStart =
+  "<!-- post169-governance-reconciliation:review-remediation-addendum:v1:start -->"
+const post169GovernanceReviewRemediationEnd =
+  "<!-- post169-governance-reconciliation:review-remediation-addendum:v1:end -->"
+const post169GovernanceFinalSealStart =
+  "<!-- post169-governance-reconciliation:final-seal:v2:start -->"
+const post169GovernanceFinalSealEnd = "<!-- post169-governance-reconciliation:final-seal:v2:end -->"
+const post169GovernanceSquashPushSupersessionStart =
+  "<!-- post169-governance-reconciliation:squash-push-final-supersession:v2:start -->"
+const post169GovernanceSquashPushSupersessionEnd =
+  "<!-- post169-governance-reconciliation:squash-push-final-supersession:v2:end -->"
+const post169GovernanceFinalSealV4Start =
+  "<!-- post169-governance-reconciliation:final-seal:v4:start -->"
+const post169GovernanceFinalSealV4End =
+  "<!-- post169-governance-reconciliation:final-seal:v4:end -->"
 const expectedReceiptScopeBoundaries = Object.freeze({
   t086_dispatched: false,
   participant_research_executed: false,
@@ -528,6 +633,336 @@ const expectedAndroidNativeSurfaceForegroundAuthorization = Object.freeze({
   terminal_policy: "STOP_AT_DRAFT_EXACT_HEAD_REVIEW_GATE_RECEIPT",
   merge_authorization: false
 })
+const expectedPost169GovernanceDispatch = Object.freeze({
+  schema_version: POST169_GOVERNANCE_AUTHORIZATION_SCHEMA,
+  decision: "DISPATCH_ACCEPTED",
+  accepted_by: ACCEPTED_RECEIPT_OWNER,
+  repository: "bynanci/courtside-tw",
+  authorization_base: {
+    branch: "main",
+    sha: POST169_GOVERNANCE_AUTHORIZATION_BASE_SHA,
+    parent_sha: ANDROID_NATIVE_SURFACE_AUTHORIZATION_BASE_SHA,
+    merged_pull_request: 169,
+    merged_head_sha: ANDROID_NATIVE_SURFACE_MERGED_HEAD_SHA
+  },
+  branch: POST169_GOVERNANCE_BRANCH,
+  objective:
+    "make the frozen post-T085 validator accept the authenticated PR 169 squash result on protected-main push while reconciling README and the T086 task description to the same live HOLD state",
+  authorized_paths: [
+    "README.md",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    "scripts/validate-traceability.mjs",
+    "scripts/test/validate-traceability.test.mjs"
+  ],
+  authorized_actions: [
+    "create the bounded branch and draft pull request",
+    "commit deterministic tests before implementation",
+    "apply the minimum fail-closed post-merge recognition",
+    "update only current progress and T086 HOLD wording in README.md and tasks.md",
+    "run fresh exact-head CI and Security and obtain exact-head review"
+  ],
+  acceptance: [
+    "PR 169 merged exact head, merge SHA, protected base parent, repository, owner and exact four-path history are authenticated",
+    "pull-request-head and protected-main-push contexts are distinguished without a generic maintenance bypass",
+    "mutation, deletion, actor mismatch, SHA mismatch, branch mismatch, path drift, replay or API failure fails closed",
+    "README reports 86 checked tasks: T001-T085 and T097",
+    "T086 remains unchecked and the beta flag remains unchanged",
+    "no other task or issue checkbox changes"
+  ],
+  commit_budget: { maximum_commits: 2, tests_first: true },
+  forbidden: [
+    "merge or ready-for-review transition under this receipt",
+    "PR 161 rebase, ready transition or merge",
+    "T086 completion, task-checkbox change or beta-flag removal",
+    "workflow, ruleset, provider, deployment, credential, secret, frozen T085 evidence, research, Web3 or external-product mutation",
+    "risk acceptance for any frozen T085 deviation"
+  ],
+  terminal_policy: "STOP_AT_DRAFT_EXACT_HEAD_REVIEW_GATE",
+  merge_authorization: false
+})
+const expectedPost169GovernanceAddendum = Object.freeze({
+  schema_version: POST169_GOVERNANCE_ADDENDUM_SCHEMA,
+  decision: "EXACT_HEAD_ADDENDUM_ACCEPTED",
+  accepted_by: ACCEPTED_RECEIPT_OWNER,
+  repository: "bynanci/courtside-tw",
+  issue: "https://github.com/bynanci/courtside-tw/issues/121",
+  dispatch_ref: POST169_GOVERNANCE_DISPATCH_REF,
+  pull_request: POST169_GOVERNANCE_PULL_REQUEST,
+  authorization_base: {
+    branch: "main",
+    sha: POST169_GOVERNANCE_AUTHORIZATION_BASE_SHA,
+    protected: true
+  },
+  seed_head: {
+    branch: POST169_GOVERNANCE_BRANCH,
+    sha: POST169_GOVERNANCE_SEED_HEAD_SHA
+  },
+  authorized_paths: [...POST169_GOVERNANCE_AUTHORIZED_PATHS],
+  authorized_amendment: {
+    parent_sha: POST169_GOVERNANCE_SEED_HEAD_SHA,
+    commit_count: 1,
+    changed_paths: [...POST169_GOVERNANCE_AMENDMENT_PATHS],
+    tests_first: true
+  },
+  acceptance: [
+    "the dispatch and addendum remain immutable and OWNER-authored",
+    "the final PR diff is exactly the four authorized paths",
+    "the seed is the sole parent of one implementation commit and no merge commit exists",
+    "README and tasks.md carry the same current HOLD state while every task checkbox remains unchanged",
+    "PR 169 squash provenance is bound by exact base, merged head, merge SHA and identical tree",
+    "API failure, actor mismatch, base, branch, PR, path, ancestry, commit-count or content drift fails closed"
+  ],
+  forbidden: [
+    "merge or ready-for-review transition",
+    "PR 161 rebase, ready transition or merge",
+    "T086 completion, task-checkbox change or beta-flag removal",
+    "workflow, ruleset, provider, deployment, credential, secret, frozen T085 evidence, research, Web3 or external-product mutation"
+  ],
+  terminal_policy: "STOP_AT_DRAFT_EXACT_HEAD_REVIEW_GATE",
+  merge_authorization: false
+})
+const expectedPost169GovernanceFormatAddendum = Object.freeze({
+  schema_version: POST169_GOVERNANCE_FORMAT_ADDENDUM_SCHEMA,
+  decision: "SAME_FOUR_PATH_FORMAT_REMEDIATION_ACCEPTED",
+  accepted_by: ACCEPTED_RECEIPT_OWNER,
+  repository: "bynanci/courtside-tw",
+  issue: "https://github.com/bynanci/courtside-tw/issues/121",
+  dispatch_ref: POST169_GOVERNANCE_DISPATCH_REF,
+  prior_addendum_ref: POST169_GOVERNANCE_ADDENDUM_REF,
+  pull_request: POST169_GOVERNANCE_PULL_REQUEST,
+  authorization_base: {
+    branch: "main",
+    sha: POST169_GOVERNANCE_AUTHORIZATION_BASE_SHA,
+    protected: true
+  },
+  tests_first_seed: {
+    branch: POST169_GOVERNANCE_BRANCH,
+    sha: POST169_GOVERNANCE_SEED_HEAD_SHA
+  },
+  failed_exact_head: {
+    sha: "76723fae7599d8c71957f8cb75534968e129971a",
+    ci_run: 34212743088,
+    failed_job: "Frontend and contract verification",
+    failed_step: "Run repository verification",
+    failure: "Prettier format-check rejected scripts/test/validate-traceability.test.mjs"
+  },
+  authorized_paths: [...POST169_GOVERNANCE_AUTHORIZED_PATHS],
+  authorized_amendment: {
+    parent_sha: POST169_GOVERNANCE_SEED_HEAD_SHA,
+    commit_count: 1,
+    changed_paths: [...POST169_GOVERNANCE_AUTHORIZED_PATHS],
+    test_file_delta: "prettier-only",
+    tests_first: true
+  },
+  acceptance: [
+    "the final PR remains exactly the same four authorized paths and two-commit tests-first topology",
+    "the test-file delta from the seed is formatting-only and changes no assertion, fixture, authorization value or executable behavior",
+    "the immutable dispatch, prior addendum and this format addendum are OWNER-authored and read back exactly",
+    "fresh exact-head CI and Security pass and exact-head review reports no blocking finding"
+  ],
+  forbidden: [
+    "merge or ready-for-review transition",
+    "any test semantic change or path widening",
+    "PR 161 rebase, ready transition or merge",
+    "T086 completion, task-checkbox change or beta-flag removal",
+    "workflow, ruleset, provider, deployment, credential, secret, frozen T085 evidence, research, Web3 or external-product mutation"
+  ],
+  terminal_policy: "STOP_AT_DRAFT_EXACT_HEAD_REVIEW_GATE",
+  merge_authorization: false
+})
+const expectedPost169GovernanceReviewRemediation = Object.freeze({
+  schema_version: POST169_GOVERNANCE_REVIEW_REMEDIATION_SCHEMA,
+  decision: "REVIEW_REMEDIATION_ACCEPTED",
+  accepted_by: ACCEPTED_RECEIPT_OWNER,
+  repository: "bynanci/courtside-tw",
+  issue: "https://github.com/bynanci/courtside-tw/issues/121",
+  dispatch_ref: POST169_GOVERNANCE_DISPATCH_REF,
+  proposal_ref: POST169_GOVERNANCE_REVIEW_PROPOSAL_REF,
+  pull_request: POST169_GOVERNANCE_PULL_REQUEST,
+  authorization_base: {
+    branch: "main",
+    sha: POST169_GOVERNANCE_AUTHORIZATION_BASE_SHA,
+    protected: true
+  },
+  blocked_head: {
+    sha: POST169_GOVERNANCE_BLOCKED_HEAD_SHA,
+    tree_sha: POST169_GOVERNANCE_BLOCKED_TREE_SHA
+  },
+  tests_first_seed: {
+    branch: POST169_GOVERNANCE_BRANCH,
+    sha: POST169_GOVERNANCE_SEED_HEAD_SHA
+  },
+  authorized_paths: [...POST169_GOVERNANCE_AUTHORIZED_PATHS],
+  authorized_delta_paths: [
+    "scripts/test/validate-traceability.test.mjs",
+    "scripts/validate-traceability.mjs"
+  ],
+  authorized_actions: [
+    "add deterministic regression coverage for the production-default PR 169 protected-main push and fail-closed near misses",
+    "select the frozen completed-task digest only for the exact authenticated PR 169 protected-main push",
+    "authenticate one later immutable OWNER seal binding the exact final PR 170 head, tree, parent, topology, paths and content blobs",
+    "recreate the sole implementation child of the existing tests-first seed without changing README.md or tasks.md bytes",
+    "run fresh exact-head CI and Security and obtain exact-head review"
+  ],
+  acceptance: [
+    "the exact authenticated PR 169 protected-main push accepts frozen completed-task digest 90b950e3522e9d6e119f57d92d4ab9f8d3fe013b456450415a8abbdd70f446c3 and every near miss fails closed",
+    "a missing, non-OWNER, edited, stale-head, wrong-tree, wrong-parent, wrong-path, wrong-test-blob or wrong-validator-blob final seal fails closed",
+    "the final PR remains exactly four paths and two linear commits with seed 681d98506d67b10d89e09c3de02b32498a06c60b as sole parent of the implementation commit",
+    "README.md and tasks.md remain byte-identical to blocked head e06765cd88d8826c67138d76a43e9bcf56b16412 and every task checkbox remains unchanged",
+    "fresh exact-head CI and Security pass and exact-head review reports no blocking finding"
+  ],
+  forbidden: [
+    "merge or ready-for-review transition",
+    "path widening or README.md, tasks.md, task-checkbox, T086 or beta-flag change",
+    "PR 161 rebase, ready transition or merge",
+    "workflow, ruleset, provider, deployment, credential, secret, frozen T085 evidence, research, Web3 or external-product mutation",
+    "risk acceptance or generic maintenance bypass"
+  ],
+  terminal_policy: "STOP_AT_DRAFT_EXACT_HEAD_REVIEW_GATE",
+  merge_authorization: false
+})
+
+const expectedPost169GovernanceFinalSeal = Object.freeze({
+  schema_version: POST169_GOVERNANCE_FINAL_SEAL_SCHEMA,
+  decision: "FINAL_HEAD_SEALED",
+  accepted_by: ACCEPTED_RECEIPT_OWNER,
+  repository: "bynanci/courtside-tw",
+  issue: "https://github.com/bynanci/courtside-tw/issues/121",
+  dispatch_ref: POST169_GOVERNANCE_DISPATCH_REF,
+  remediation_ref: POST169_GOVERNANCE_REVIEW_REMEDIATION_REF,
+  pull_request: POST169_GOVERNANCE_PULL_REQUEST,
+  authorization_base: {
+    branch: "main",
+    sha: POST169_GOVERNANCE_AUTHORIZATION_BASE_SHA,
+    protected: true
+  },
+  final_head: {
+    branch: POST169_GOVERNANCE_BRANCH,
+    sha: POST169_GOVERNANCE_PRIOR_FINAL_HEAD_SHA,
+    tree_sha: POST169_GOVERNANCE_PRIOR_FINAL_TREE_SHA,
+    parent_sha: POST169_GOVERNANCE_SEED_HEAD_SHA,
+    parent_count: 1,
+    commit_count: 2,
+    merge_commit_count: 0
+  },
+  authorized_paths: [...POST169_GOVERNANCE_AUTHORIZED_PATHS],
+  content_blobs: {
+    "README.md": POST169_GOVERNANCE_BLOCKED_README_BLOB_SHA,
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md":
+      POST169_GOVERNANCE_BLOCKED_TASKS_BLOB_SHA,
+    "scripts/test/validate-traceability.test.mjs": POST169_GOVERNANCE_PRIOR_FINAL_TEST_BLOB_SHA,
+    "scripts/validate-traceability.mjs": POST169_GOVERNANCE_PRIOR_FINAL_VALIDATOR_BLOB_SHA
+  },
+  blocked_head_preservation: {
+    blocked_head_sha: POST169_GOVERNANCE_BLOCKED_HEAD_SHA,
+    readme_blob_sha: POST169_GOVERNANCE_BLOCKED_README_BLOB_SHA,
+    tasks_blob_sha: POST169_GOVERNANCE_BLOCKED_TASKS_BLOB_SHA,
+    task_checkbox_signature_sha256: POST169_GOVERNANCE_TASK_CHECKBOX_SIGNATURE_SHA256
+  },
+  state: {
+    draft: true,
+    hold: true,
+    ready_for_review: false,
+    merge_authorization: false
+  },
+  terminal_policy: "STOP_AT_DRAFT_EXACT_HEAD_REVIEW_GATE"
+})
+
+const expectedPost169GovernanceSquashPushSupersession = Object.freeze({
+  schema_version: POST169_GOVERNANCE_SQUASH_PUSH_SUPERSESSION_SCHEMA,
+  decision: "V3_SEAL_PRESERVED__V4_FINAL_SEAL_AUTHORIZED",
+  accepted_by: ACCEPTED_RECEIPT_OWNER,
+  repository: "bynanci/courtside-tw",
+  issue: "https://github.com/bynanci/courtside-tw/issues/121",
+  pull_request: POST169_GOVERNANCE_PULL_REQUEST,
+  prior_supersession_ref:
+    "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5586021132",
+  prior_final_head: {
+    sha: POST169_GOVERNANCE_SUPERSEDED_FINAL_HEAD_SHA,
+    tree_sha: POST169_GOVERNANCE_SUPERSEDED_FINAL_TREE_SHA,
+    final_seal_ref: POST169_GOVERNANCE_SUPERSEDED_FINAL_SEAL_REF
+  },
+  authorization_base: {
+    branch: "main",
+    sha: POST169_GOVERNANCE_AUTHORIZATION_BASE_SHA,
+    protected: true
+  },
+  tests_first_seed_sha: POST169_GOVERNANCE_SEED_HEAD_SHA,
+  authorized_delta_paths: [
+    "scripts/test/validate-traceability.test.mjs",
+    "scripts/validate-traceability.mjs"
+  ],
+  required_result: {
+    final_seal_marker: "post169-governance-reconciliation:final-seal:v4",
+    merge_method: "squash",
+    one_time: true,
+    bypass: false,
+    protected_main_push_parent_sha: POST169_GOVERNANCE_AUTHORIZATION_BASE_SHA
+  },
+  acceptance: [
+    "the v3 seal remains immutable historical evidence for 395afae7826bb76a1a79f230270443c51d96f601",
+    "the authenticated PR 170 identity requires the exact four-path governance scope even if prose paths are restored",
+    "one immutable OWNER v4 seal binds the replacement PR head, tree, seed parent, committed_at, exact four blobs and unchanged task-checkbox signature",
+    "only an authenticated protected-main push with source base d79daefec49b0f5d059a2a6c349c0be107afd2d4, one parent equal to that base, and a tree and four blobs equal to the v4-sealed PR head is accepted",
+    "fresh exact-head CI 5 of 5, Security 8 of 8 and current-head review have no unresolved P0 or P1 before the one-time squash merge"
+  ],
+  forbidden: [
+    "README, tasks, task-checkbox, T086 or beta-flag change",
+    "PR 161 rebase, ready transition or merge",
+    "path widening, workflow, ruleset, provider, deployment, credential, secret, research, Web3 or external-product mutation",
+    "merge before every gate passes or any merge-method or ruleset bypass"
+  ]
+})
+
+function expectedPost169GovernanceFinalSealV4({
+  sealedHeadSha,
+  sealedHeadTreeSha,
+  sealedHeadCommittedAt,
+  gitBinding
+}) {
+  return {
+    schema_version: POST169_GOVERNANCE_FINAL_SEAL_V4_SCHEMA,
+    decision: "FINAL_HEAD_SEALED__CONDITIONAL_SQUASH_MERGE",
+    accepted_by: ACCEPTED_RECEIPT_OWNER,
+    repository: "bynanci/courtside-tw",
+    issue: "https://github.com/bynanci/courtside-tw/issues/121",
+    supersession_ref: POST169_GOVERNANCE_SQUASH_PUSH_SUPERSESSION_REF,
+    pull_request: POST169_GOVERNANCE_PULL_REQUEST,
+    authorization_base: {
+      branch: "main",
+      sha: POST169_GOVERNANCE_AUTHORIZATION_BASE_SHA,
+      protected: true
+    },
+    final_head: {
+      branch: POST169_GOVERNANCE_BRANCH,
+      sha: sealedHeadSha,
+      tree_sha: sealedHeadTreeSha,
+      parent_sha: POST169_GOVERNANCE_SEED_HEAD_SHA,
+      committed_at: sealedHeadCommittedAt
+    },
+    topology: { total_commits: 2, implementation_commits: 1, merge_commits: 0 },
+    authorized_paths: [...POST169_GOVERNANCE_AUTHORIZED_PATHS],
+    content_blobs: {
+      "README.md": gitBinding?.post169_governance_final_readme_blob_sha ?? null,
+      "specs/001-taiwan-basketball-magazine-ebook/tasks.md":
+        gitBinding?.post169_governance_final_tasks_blob_sha ?? null,
+      "scripts/test/validate-traceability.test.mjs":
+        gitBinding?.post169_governance_final_test_blob_sha ?? null,
+      "scripts/validate-traceability.mjs":
+        gitBinding?.post169_governance_final_validator_blob_sha ?? null
+    },
+    task_checkbox_signature_sha256:
+      gitBinding?.post169_governance_task_checkbox_signature_sha256 ?? null,
+    merge_authorization: { method: "squash", one_time: true, bypass: false },
+    scope_boundaries: {
+      t086_checkbox_changed: false,
+      beta_flag_removed: false,
+      pr161_rebased_or_readied: false,
+      ruleset_or_provider_mutated: false,
+      research_web3_production_or_secrets_expanded: false
+    }
+  }
+}
 
 function isT086LockedPath(changedPath) {
   return (
@@ -549,6 +984,7 @@ const postT085MaintenancePaths = new Set([
 ])
 const postT085MaintenanceAuthorizedPaths = new Set(POST_T085_MAINTENANCE_AUTHORIZED_PATHS)
 const androidNativeSurfaceAuthorizedPaths = new Set(ANDROID_NATIVE_SURFACE_AUTHORIZED_PATHS)
+const post169GovernanceAuthorizedPaths = new Set(POST169_GOVERNANCE_AUTHORIZED_PATHS)
 const expectedPostT085MaintenancePayloadBlobOids = Object.freeze(
   Object.fromEntries(
     POST_T085_MAINTENANCE_PRESERVED_PAYLOAD_BLOBS.map(({ path: filePath, git_blob_oid }) => [
@@ -656,6 +1092,14 @@ function sha256(text) {
   return text === null ? null : createHash("sha256").update(text).digest("hex")
 }
 
+function taskCheckboxSignatureSha256(tasksText) {
+  if (typeof tasksText !== "string") return null
+  const signature = [...tasksText.matchAll(taskPattern)]
+    .map(([, checked, taskId]) => `${taskId}:${checked.toLowerCase() === "x" ? "1" : "0"}`)
+    .join("\n")
+  return sha256(signature)
+}
+
 const t085States = Object.freeze({
   PENDING: "T085_PENDING",
   RECEIPT_CANDIDATE: "T085_RECEIPT_CANDIDATE",
@@ -681,6 +1125,48 @@ function classifyT085State(changeBaseTasksText, tasksText) {
   }
   if (currentChecked === true && baseChecked === null) return t085States.RECEIPT_CANDIDATE
   return t085States.UNKNOWN
+}
+
+function expectedPost169TasksText(changeBaseTasksText) {
+  if (typeof changeBaseTasksText !== "string") return null
+  const rows = [...changeBaseTasksText.matchAll(/^- \[ \] T086[^\n]*$/gm)]
+  if (rows.length !== 1 || rows[0][0].includes(POST169_T086_STATUS_SUFFIX)) return null
+  return changeBaseTasksText.replace(
+    /^- \[ \] T086[^\n]*$/m,
+    `${rows[0][0]}${POST169_T086_STATUS_SUFFIX}`
+  )
+}
+
+function expectedPost169ReadmeText(changeBaseReadmeText) {
+  if (typeof changeBaseReadmeText !== "string") return null
+  const replacements = [
+    [
+      "截至目前，`tasks.md` 已記錄 82 個完成項目：`T001–T081` 與 `T097`。這代表產品已經從基礎契約與公開閱讀，推進到出版流程、搜尋、閱讀延續、離線能力，以及第一階段的品質與復原準備。",
+      "截至目前，`tasks.md` 已記錄 86 個完成項目：`T001–T085` 與 `T097`。這代表產品已經從基礎契約與公開閱讀，推進到出版流程、搜尋、閱讀延續、離線能力，以及部署、rollback、觀測與隱私分析準備；`T086` 仍維持 HOLD。"
+    ],
+    [
+      "| 生產準備 | T082–T086 | 下一階段：部署、rollback、觀測、隱私分析與 beta checklist |",
+      "| 生產準備 | T082–T085 | 已完成：部署、rollback、觀測與隱私分析準備；T086 beta gate 維持 HOLD |"
+    ],
+    [
+      "- **下一個產品準備工作**：完成部署與 rollback 的操作準備，再進入 beta release checklist。",
+      "- **下一個產品準備工作**：先讓 #169 合併後的 protected-main CI/Security 恢復 GREEN，完成 #164 required-context enforcement，再以 fresh exact-base OWNER dispatch 推進 draft PR #161 的 T086 gate。"
+    ],
+    [
+      "- 尚未宣稱 beta/GA release；部署、rollback、觀測與 release checklist 仍在 T082–T086。",
+      "- 尚未宣稱 beta/GA release；T082–T085 已完成，T086 仍在 draft PR #161 維持 HOLD，beta flag 未移除。"
+    ],
+    [
+      "1. **T082**：補齊部署、資料庫 migration 與 application rollback 的可執行流程。\n2. **T083–T086**：建立服務觀測、隱私友善的產品分析、可靠性準備與 beta checklist。\n3. **完成 P1 release gates 後**：再評估 T087–T096 的 provenance／Web3 方向。\n4. **更後續**：依產品決策與使用者研究結果，才進入 T098–T112 的台灣籃球 domain、evidence、Fan Passport 與 archive。",
+      "1. **恢復 protected-main GREEN**：驗證 #169 合併後的 CI 與 Security，並完成 #164 required-context enforcement。\n2. **T086／PR #161**：維持 draft、HOLD、NO MERGE；取得 fresh exact-base OWNER dispatch 後才可 rebase，並重新建立 exact-head checks、review 與 blocker adjudication。\n3. **完成 P1 release gates 後**：再評估 T087–T096 的 provenance／Web3 方向。\n4. **獨立研究 frontier**：依產品決策與真實使用者研究結果，再推進 T098–T112 的台灣籃球 domain、evidence、Fan Passport 與 archive。"
+    ]
+  ]
+  let expected = changeBaseReadmeText
+  for (const [before, after] of replacements) {
+    if (expected.split(before).length !== 2) return null
+    expected = expected.replace(before, after)
+  }
+  return expected
 }
 
 function isExactPostT085RemediationScope({
@@ -744,6 +1230,22 @@ function isExactAndroidNativeSurfaceAuthorizationScope({
     Array.isArray(changedPaths) &&
     changedPaths.length === ANDROID_NATIVE_SURFACE_AUTHORIZED_PATHS.length &&
     sameValues(changedPaths, ANDROID_NATIVE_SURFACE_AUTHORIZED_PATHS)
+  )
+}
+
+function isExactPost169GovernanceAuthorizationScope({
+  state,
+  changeBaseSha,
+  boundedScopeActive,
+  changedPaths
+}) {
+  return (
+    state === t085States.COMPLETE_STEADY &&
+    boundedScopeActive === false &&
+    changeBaseSha === POST169_GOVERNANCE_AUTHORIZATION_BASE_SHA &&
+    Array.isArray(changedPaths) &&
+    changedPaths.length === POST169_GOVERNANCE_AUTHORIZED_PATHS.length &&
+    sameValues(changedPaths, POST169_GOVERNANCE_AUTHORIZED_PATHS)
   )
 }
 
@@ -6342,8 +6844,476 @@ function parseAndroidNativeSurfaceAuthorizationBody(
   }
 }
 
+function validatePost169GovernanceCommentReadback(
+  readback,
+  errors,
+  {
+    requireFormatAddendum = false,
+    requireReviewRemediation = false,
+    requireSquashPushRemediation = false,
+    protectedMainPush = false,
+    gitBinding = null
+  } = {}
+) {
+  const initialErrorCount = errors.length
+  const dispatch = readback?.dispatch
+  const addendum = readback?.addendum
+  const formatAddendum = readback?.formatAddendum
+  const reviewRemediation = readback?.reviewRemediation
+  const finalSeal = readback?.finalSeal
+  const squashPushSupersession = readback?.squashPushSupersession
+  const finalSealV4 = readback?.finalSealV4
+  if (
+    dispatch?.status !== "VERIFIED" ||
+    dispatch?.source !== "github-api" ||
+    addendum?.status !== "VERIFIED" ||
+    addendum?.source !== "github-api"
+  ) {
+    errors.push(
+      "post-169 governance authorization requires verified GitHub dispatch and addendum read-backs"
+    )
+    return false
+  }
+  if (
+    requireFormatAddendum &&
+    (formatAddendum?.status !== "VERIFIED" || formatAddendum?.source !== "github-api")
+  ) {
+    errors.push(
+      "post-169 governance format remediation requires a verified GitHub format-addendum read-back"
+    )
+    return false
+  }
+  if (
+    requireReviewRemediation &&
+    (reviewRemediation?.status !== "VERIFIED" ||
+      reviewRemediation?.source !== "github-api" ||
+      finalSeal?.status !== "VERIFIED" ||
+      finalSeal?.source !== "github-api")
+  ) {
+    errors.push(
+      "post-169 governance review remediation requires verified OWNER addendum and final-seal read-backs"
+    )
+    return false
+  }
+  if (
+    requireSquashPushRemediation &&
+    (squashPushSupersession?.status !== "VERIFIED" ||
+      squashPushSupersession?.source !== "github-api" ||
+      finalSealV4?.status !== "VERIFIED" ||
+      finalSealV4?.source !== "github-api")
+  ) {
+    errors.push(
+      "post-169 squash-push remediation requires verified OWNER supersession and v4 final-seal read-backs"
+    )
+    return false
+  }
+  if (
+    dispatch.html_url !== POST169_GOVERNANCE_DISPATCH_REF ||
+    addendum.html_url !== POST169_GOVERNANCE_ADDENDUM_REF ||
+    dispatch.issue_url !== "https://api.github.com/repos/bynanci/courtside-tw/issues/121" ||
+    addendum.issue_url !== "https://api.github.com/repos/bynanci/courtside-tw/issues/121"
+  ) {
+    errors.push("post-169 governance read-backs must match the two authorized issue comments")
+  }
+  if (
+    requireFormatAddendum &&
+    (formatAddendum.html_url !== POST169_GOVERNANCE_FORMAT_ADDENDUM_REF ||
+      formatAddendum.issue_url !== "https://api.github.com/repos/bynanci/courtside-tw/issues/121")
+  ) {
+    errors.push("post-169 governance format read-back must match the authorized issue comment")
+  }
+  if (
+    requireReviewRemediation &&
+    (reviewRemediation.html_url !== POST169_GOVERNANCE_REVIEW_REMEDIATION_REF ||
+      reviewRemediation.issue_url !==
+        "https://api.github.com/repos/bynanci/courtside-tw/issues/121" ||
+      !/^https:\/\/github\.com\/bynanci\/courtside-tw\/issues\/121#issuecomment-[1-9]\d*$/.test(
+        finalSeal.html_url ?? ""
+      ) ||
+      finalSeal.issue_url !== "https://api.github.com/repos/bynanci/courtside-tw/issues/121")
+  ) {
+    errors.push("post-169 governance remediation read-backs must match issue 121 OWNER comments")
+  }
+  if (
+    requireSquashPushRemediation &&
+    (squashPushSupersession.html_url !== POST169_GOVERNANCE_SQUASH_PUSH_SUPERSESSION_REF ||
+      squashPushSupersession.issue_url !==
+        "https://api.github.com/repos/bynanci/courtside-tw/issues/121" ||
+      !/^https:\/\/github\.com\/bynanci\/courtside-tw\/issues\/121#issuecomment-[1-9]\d*$/.test(
+        finalSealV4.html_url ?? ""
+      ) ||
+      finalSealV4.issue_url !== "https://api.github.com/repos/bynanci/courtside-tw/issues/121")
+  ) {
+    errors.push("post-169 squash-push remediation must match issue 121 OWNER comments")
+  }
+  if (
+    dispatch.user_login !== ACCEPTED_RECEIPT_OWNER ||
+    dispatch.author_association !== "OWNER" ||
+    addendum.user_login !== ACCEPTED_RECEIPT_OWNER ||
+    addendum.author_association !== "OWNER"
+  ) {
+    errors.push("post-169 governance comments must be authored by the repository owner")
+  }
+  if (
+    requireFormatAddendum &&
+    (formatAddendum.user_login !== ACCEPTED_RECEIPT_OWNER ||
+      formatAddendum.author_association !== "OWNER")
+  ) {
+    errors.push("post-169 governance format addendum must be authored by the repository owner")
+  }
+  if (
+    requireReviewRemediation &&
+    (reviewRemediation.user_login !== ACCEPTED_RECEIPT_OWNER ||
+      reviewRemediation.author_association !== "OWNER" ||
+      finalSeal.user_login !== ACCEPTED_RECEIPT_OWNER ||
+      finalSeal.author_association !== "OWNER")
+  ) {
+    errors.push("post-169 governance remediation comments must be authored by the repository owner")
+  }
+  if (
+    requireSquashPushRemediation &&
+    (squashPushSupersession.user_login !== ACCEPTED_RECEIPT_OWNER ||
+      squashPushSupersession.author_association !== "OWNER" ||
+      finalSealV4.user_login !== ACCEPTED_RECEIPT_OWNER ||
+      finalSealV4.author_association !== "OWNER")
+  ) {
+    errors.push(
+      "post-169 squash-push remediation comments must be authored by the repository owner"
+    )
+  }
+  if (
+    dispatch.created_at !== POST169_GOVERNANCE_DISPATCH_RECORDED_AT ||
+    addendum.created_at !== POST169_GOVERNANCE_ADDENDUM_RECORDED_AT
+  ) {
+    errors.push("post-169 governance comment timestamps must match the owner receipts")
+  }
+  if (
+    requireFormatAddendum &&
+    formatAddendum.created_at !== POST169_GOVERNANCE_FORMAT_ADDENDUM_RECORDED_AT
+  ) {
+    errors.push("post-169 governance format-addendum timestamp must match the owner receipt")
+  }
+  if (
+    requireReviewRemediation &&
+    reviewRemediation.created_at !== POST169_GOVERNANCE_REVIEW_REMEDIATION_RECORDED_AT
+  ) {
+    errors.push("post-169 governance remediation-addendum timestamp must match the owner receipt")
+  }
+  if (
+    requireSquashPushRemediation &&
+    squashPushSupersession.created_at !== POST169_GOVERNANCE_SQUASH_PUSH_SUPERSESSION_RECORDED_AT
+  ) {
+    errors.push("post-169 squash-push supersession timestamp must match the owner receipt")
+  }
+  if (dispatch.updated_at !== dispatch.created_at || addendum.updated_at !== addendum.created_at) {
+    errors.push("post-169 governance comments must be immutable after creation")
+  }
+  if (requireFormatAddendum && formatAddendum.updated_at !== formatAddendum.created_at) {
+    errors.push("post-169 governance format addendum must be immutable after creation")
+  }
+  if (
+    requireReviewRemediation &&
+    (reviewRemediation.updated_at !== reviewRemediation.created_at ||
+      finalSeal.updated_at !== finalSeal.created_at)
+  ) {
+    errors.push("post-169 governance remediation comments must be immutable after creation")
+  }
+  if (
+    requireSquashPushRemediation &&
+    (squashPushSupersession.updated_at !== squashPushSupersession.created_at ||
+      finalSealV4.updated_at !== finalSealV4.created_at)
+  ) {
+    errors.push("post-169 squash-push remediation comments must be immutable after creation")
+  }
+  if (requireReviewRemediation) {
+    const finalSealRecordedAt = Date.parse(finalSeal.created_at ?? "")
+    const finalHeadCommittedAt = Date.parse(POST169_GOVERNANCE_PRIOR_FINAL_HEAD_COMMITTED_AT)
+    const remediationRecordedAt = Date.parse(reviewRemediation.created_at ?? "")
+    if (
+      !Number.isFinite(finalSealRecordedAt) ||
+      !Number.isFinite(finalHeadCommittedAt) ||
+      !Number.isFinite(remediationRecordedAt) ||
+      finalSealRecordedAt <= finalHeadCommittedAt ||
+      finalSealRecordedAt <= remediationRecordedAt
+    ) {
+      errors.push("post-169 governance final seal must be recorded after the exact final head")
+    }
+  }
+
+  const dispatchAuthorization = parseAndroidNativeSurfaceAuthorizationBody(
+    {
+      body: dispatch.body,
+      startMarker: post169GovernanceDispatchStart,
+      endMarker: post169GovernanceDispatchEnd,
+      label: "post-169 governance dispatch"
+    },
+    errors
+  )
+  const addendumAuthorization = parseAndroidNativeSurfaceAuthorizationBody(
+    {
+      body: addendum.body,
+      startMarker: post169GovernanceAddendumStart,
+      endMarker: post169GovernanceAddendumEnd,
+      label: "post-169 governance addendum"
+    },
+    errors
+  )
+  const formatAuthorization = requireFormatAddendum
+    ? parseAndroidNativeSurfaceAuthorizationBody(
+        {
+          body: formatAddendum.body,
+          startMarker: post169GovernanceFormatAddendumStart,
+          endMarker: post169GovernanceFormatAddendumEnd,
+          label: "post-169 governance format addendum"
+        },
+        errors
+      )
+    : null
+  const reviewRemediationAuthorization = requireReviewRemediation
+    ? parseAndroidNativeSurfaceAuthorizationBody(
+        {
+          body: reviewRemediation.body,
+          startMarker: post169GovernanceReviewRemediationStart,
+          endMarker: post169GovernanceReviewRemediationEnd,
+          label: "post-169 governance review remediation addendum"
+        },
+        errors
+      )
+    : null
+  const finalSealAuthorization = requireReviewRemediation
+    ? parseAndroidNativeSurfaceAuthorizationBody(
+        {
+          body: finalSeal.body,
+          startMarker: post169GovernanceFinalSealStart,
+          endMarker: post169GovernanceFinalSealEnd,
+          label: "post-169 governance final seal"
+        },
+        errors
+      )
+    : null
+  const squashPushSupersessionAuthorization = requireSquashPushRemediation
+    ? parseAndroidNativeSurfaceAuthorizationBody(
+        {
+          body: squashPushSupersession.body,
+          startMarker: post169GovernanceSquashPushSupersessionStart,
+          endMarker: post169GovernanceSquashPushSupersessionEnd,
+          label: "post-169 squash-push supersession"
+        },
+        errors
+      )
+    : null
+  const finalSealV4Authorization = requireSquashPushRemediation
+    ? parseAndroidNativeSurfaceAuthorizationBody(
+        {
+          body: finalSealV4.body,
+          startMarker: post169GovernanceFinalSealV4Start,
+          endMarker: post169GovernanceFinalSealV4End,
+          label: "post-169 governance v4 final seal"
+        },
+        errors
+      )
+    : null
+  const sealedHeadSha = protectedMainPush
+    ? finalSealV4Authorization?.final_head?.sha
+    : gitBinding?.head
+  const sealedHeadTreeSha = protectedMainPush
+    ? finalSealV4Authorization?.final_head?.tree_sha
+    : gitBinding?.head_tree_sha
+  const sealedHeadCommittedAt = protectedMainPush
+    ? finalSealV4Authorization?.final_head?.committed_at
+    : gitBinding?.head_committed_at
+  if (requireSquashPushRemediation) {
+    const supersessionRecordedAt = Date.parse(squashPushSupersession.created_at ?? "")
+    const sealedHeadRecordedAt = Date.parse(sealedHeadCommittedAt ?? "")
+    const finalSealV4RecordedAt = Date.parse(finalSealV4.created_at ?? "")
+    if (
+      !/^[0-9a-f]{40}$/.test(sealedHeadSha ?? "") ||
+      !/^[0-9a-f]{40}$/.test(sealedHeadTreeSha ?? "") ||
+      !isIsoTimestamp(sealedHeadCommittedAt) ||
+      !Number.isFinite(supersessionRecordedAt) ||
+      !Number.isFinite(sealedHeadRecordedAt) ||
+      !Number.isFinite(finalSealV4RecordedAt) ||
+      supersessionRecordedAt >= sealedHeadRecordedAt ||
+      finalSealV4RecordedAt <= sealedHeadRecordedAt ||
+      (protectedMainPush && sealedHeadTreeSha !== gitBinding?.head_tree_sha)
+    ) {
+      errors.push("post-169 governance v4 final seal must follow and bind the exact sealed PR head")
+    }
+  }
+  const normalizedDispatchAuthorization = dispatchAuthorization
+    ? {
+        ...dispatchAuthorization,
+        authorized_paths: Array.isArray(dispatchAuthorization.authorized_paths)
+          ? [...dispatchAuthorization.authorized_paths].sort()
+          : dispatchAuthorization.authorized_paths
+      }
+    : dispatchAuthorization
+  const normalizedExpectedDispatch = {
+    ...expectedPost169GovernanceDispatch,
+    authorized_paths: [...expectedPost169GovernanceDispatch.authorized_paths].sort()
+  }
+  if (
+    !isDeepStrictEqual(normalizedDispatchAuthorization, normalizedExpectedDispatch) ||
+    !isDeepStrictEqual(addendumAuthorization, expectedPost169GovernanceAddendum) ||
+    (requireFormatAddendum &&
+      !isDeepStrictEqual(formatAuthorization, expectedPost169GovernanceFormatAddendum)) ||
+    (requireReviewRemediation &&
+      (!isDeepStrictEqual(
+        reviewRemediationAuthorization,
+        expectedPost169GovernanceReviewRemediation
+      ) ||
+        !isDeepStrictEqual(finalSealAuthorization, expectedPost169GovernanceFinalSeal))) ||
+    (requireSquashPushRemediation &&
+      (!isDeepStrictEqual(
+        squashPushSupersessionAuthorization,
+        expectedPost169GovernanceSquashPushSupersession
+      ) ||
+        !isDeepStrictEqual(
+          finalSealV4Authorization,
+          expectedPost169GovernanceFinalSealV4({
+            sealedHeadSha,
+            sealedHeadTreeSha,
+            sealedHeadCommittedAt,
+            gitBinding
+          })
+        )))
+  ) {
+    errors.push("post-169 governance bodies must match the exact owner dispatch and addendum")
+  }
+  if (
+    requireReviewRemediation &&
+    (gitBinding?.post169_governance_final_readme_blob_sha !==
+      POST169_GOVERNANCE_BLOCKED_README_BLOB_SHA ||
+      gitBinding?.post169_governance_final_tasks_blob_sha !==
+        POST169_GOVERNANCE_BLOCKED_TASKS_BLOB_SHA ||
+      gitBinding?.post169_governance_task_checkbox_signature_sha256 !==
+        POST169_GOVERNANCE_TASK_CHECKBOX_SIGNATURE_SHA256)
+  ) {
+    errors.push("post-169 governance final seal must preserve README, tasks and task checkboxes")
+  }
+  if (
+    requireReviewRemediation &&
+    ![
+      gitBinding?.head,
+      gitBinding?.head_tree_sha,
+      gitBinding?.post169_governance_final_test_blob_sha,
+      gitBinding?.post169_governance_final_validator_blob_sha
+    ].every((value) => /^[0-9a-f]{40}$/.test(value ?? ""))
+  ) {
+    errors.push("post-169 governance final seal requires exact head, tree and validator blobs")
+  }
+  return errors.length === initialErrorCount
+}
+
+function validatePost169GovernanceAuthorizationReadback({
+  readback,
+  gitBinding,
+  requireExactHeadEvidence,
+  githubActionsContext,
+  errors
+}) {
+  const initialErrorCount = errors.length
+  const protectedMainPush =
+    githubActionsContext?.authority === "PROTECTED_MAIN_PUSH" &&
+    githubActionsContext?.source_base_sha === POST169_GOVERNANCE_AUTHORIZATION_BASE_SHA &&
+    githubActionsContext?.source_head_sha === gitBinding?.head &&
+    gitBinding?.head_parent_count === 1 &&
+    isDeepStrictEqual(gitBinding?.head_parent_shas, [POST169_GOVERNANCE_AUTHORIZATION_BASE_SHA]) &&
+    /^[0-9a-f]{40}$/.test(gitBinding?.head_tree_sha ?? "")
+  const formatRemediation =
+    Array.isArray(gitBinding?.post169_governance_amendment_paths) &&
+    sameValues(gitBinding.post169_governance_amendment_paths, POST169_GOVERNANCE_AUTHORIZED_PATHS)
+  const squashPushRemediation = gitBinding?.head !== POST169_GOVERNANCE_PRIOR_FINAL_HEAD_SHA
+  validatePost169GovernanceCommentReadback(readback, errors, {
+    requireFormatAddendum: formatRemediation,
+    requireReviewRemediation: true,
+    requireSquashPushRemediation: squashPushRemediation,
+    protectedMainPush,
+    gitBinding
+  })
+
+  const seedCommittedAt = Date.parse(gitBinding?.post169_governance_seed_committed_at ?? "")
+  const dispatchRecordedAt = Date.parse(readback?.dispatch?.created_at ?? "")
+  const addendumRecordedAt = Date.parse(readback?.addendum?.created_at ?? "")
+  if (
+    !Number.isFinite(seedCommittedAt) ||
+    !Number.isFinite(dispatchRecordedAt) ||
+    !Number.isFinite(addendumRecordedAt) ||
+    dispatchRecordedAt >= seedCommittedAt ||
+    addendumRecordedAt <= seedCommittedAt
+  ) {
+    errors.push("post-169 governance addendum must follow its exact tests-first seed head")
+  }
+  if (!protectedMainPush && gitBinding?.post169_governance_seed_ancestor !== true) {
+    errors.push("post-169 governance seed must be an ancestor of the evaluated head")
+  }
+  if (
+    !protectedMainPush &&
+    (gitBinding?.head_parent_sha !== POST169_GOVERNANCE_SEED_HEAD_SHA ||
+      gitBinding?.head_parent_count !== 1)
+  ) {
+    errors.push("post-169 governance implementation must be the seed's sole one-parent child")
+  }
+  if (
+    !Array.isArray(gitBinding?.post169_governance_amendment_paths) ||
+    (!sameValues(
+      gitBinding.post169_governance_amendment_paths,
+      POST169_GOVERNANCE_AMENDMENT_PATHS
+    ) &&
+      !formatRemediation)
+  ) {
+    errors.push(
+      "post-169 governance amendment must match the exact owner-authorized content or format-remediation paths"
+    )
+  }
+  if (!protectedMainPush && gitBinding?.post169_governance_amendment_commit_count !== 1) {
+    errors.push("post-169 governance amendment must contain exactly one implementation commit")
+  }
+  if (!protectedMainPush && gitBinding?.post169_governance_amendment_merge_commit_count !== 0) {
+    errors.push("post-169 governance amendment must contain no merge commit")
+  }
+  if (
+    formatRemediation &&
+    gitBinding?.post169_governance_seed_test_blob_sha !== POST169_GOVERNANCE_SEED_TEST_BLOB_SHA
+  ) {
+    errors.push("post-169 governance review remediation must preserve the exact tests-first seed")
+  }
+  if (
+    gitBinding?.android_native_surface_merged_head_tree_sha !==
+      ANDROID_NATIVE_SURFACE_MERGE_TREE_SHA ||
+    gitBinding?.android_native_surface_merge_tree_sha !== ANDROID_NATIVE_SURFACE_MERGE_TREE_SHA ||
+    !isDeepStrictEqual(gitBinding?.android_native_surface_merge_parent_shas, [
+      ANDROID_NATIVE_SURFACE_AUTHORIZATION_BASE_SHA
+    ])
+  ) {
+    errors.push("post-169 governance receipt must bind the exact PR 169 squash provenance")
+  }
+  if (!requireExactHeadEvidence) {
+    errors.push("post-169 governance authorization requires exact-head CI mode")
+  }
+  if (!isAuthenticatedGitHubActionsContext(githubActionsContext)) {
+    errors.push("post-169 governance authorization requires authenticated GitHub Actions context")
+  } else if (githubActionsContext.authority === "PULL_REQUEST") {
+    if (
+      githubActionsContext.source_base_sha !== POST169_GOVERNANCE_AUTHORIZATION_BASE_SHA ||
+      githubActionsContext.pull_request_number !== POST169_GOVERNANCE_PULL_REQUEST ||
+      githubActionsContext.head_ref !== POST169_GOVERNANCE_BRANCH ||
+      githubActionsContext.source_head_sha !== gitBinding?.head ||
+      !/^refs\/pull\/170\/(?:merge|head)$/.test(githubActionsContext.github_ref ?? "")
+    ) {
+      errors.push("post-169 governance Actions context must bind draft PR 170, branch and base")
+    } else if (githubActionsContext.pull_request_draft !== true) {
+      errors.push("post-169 governance PR 170 must remain draft until its merge gate passes")
+    }
+  } else if (!protectedMainPush) {
+    errors.push("post-169 governance Actions context must bind PR 170 or its exact squash push")
+  }
+  return errors.length === initialErrorCount
+}
+
 function validateAndroidNativeSurfaceAuthorizationReadback({
   readback,
+  post169GovernanceAuthorizationReadback,
   gitBinding,
   requireExactHeadEvidence,
   githubActionsContext,
@@ -6511,17 +7481,37 @@ function validateAndroidNativeSurfaceAuthorizationReadback({
     errors.push(
       "Android native-surface authorization requires authenticated GitHub Actions context"
     )
-  } else if (
-    githubActionsContext.authority !== "PULL_REQUEST" ||
-    githubActionsContext.source_base_sha !== ANDROID_NATIVE_SURFACE_AUTHORIZATION_BASE_SHA ||
-    githubActionsContext.pull_request_number !== 169 ||
-    githubActionsContext.head_ref !== ANDROID_NATIVE_SURFACE_BRANCH ||
-    githubActionsContext.source_head_sha !== gitBinding?.head ||
-    !/^refs\/pull\/169\/(?:merge|head)$/.test(githubActionsContext.github_ref ?? "")
-  ) {
-    errors.push("Android native-surface Actions context must bind draft PR 169, branch and base")
-  } else if (githubActionsContext.pull_request_draft !== true) {
-    errors.push("Android native-surface PR 169 must remain draft and NO MERGE")
+  } else if (githubActionsContext.authority === "PULL_REQUEST") {
+    if (
+      githubActionsContext.source_base_sha !== ANDROID_NATIVE_SURFACE_AUTHORIZATION_BASE_SHA ||
+      githubActionsContext.pull_request_number !== 169 ||
+      githubActionsContext.head_ref !== ANDROID_NATIVE_SURFACE_BRANCH ||
+      githubActionsContext.source_head_sha !== gitBinding?.head ||
+      !/^refs\/pull\/169\/(?:merge|head)$/.test(githubActionsContext.github_ref ?? "")
+    ) {
+      errors.push("Android native-surface Actions context must bind draft PR 169, branch and base")
+    } else if (githubActionsContext.pull_request_draft !== true) {
+      errors.push("Android native-surface PR 169 must remain draft and NO MERGE")
+    }
+  } else if (githubActionsContext.authority === "PROTECTED_MAIN_PUSH") {
+    validatePost169GovernanceCommentReadback(post169GovernanceAuthorizationReadback, errors)
+    if (
+      githubActionsContext.source_base_sha !== ANDROID_NATIVE_SURFACE_AUTHORIZATION_BASE_SHA ||
+      githubActionsContext.source_head_sha !== ANDROID_NATIVE_SURFACE_MERGE_SHA ||
+      gitBinding?.head !== ANDROID_NATIVE_SURFACE_MERGE_SHA ||
+      gitBinding?.head_parent_sha !== ANDROID_NATIVE_SURFACE_AUTHORIZATION_BASE_SHA ||
+      gitBinding?.head_parent_count !== 1 ||
+      gitBinding?.head_tree_sha !== ANDROID_NATIVE_SURFACE_MERGE_TREE_SHA ||
+      gitBinding?.android_native_surface_final_pr_head_sha !==
+        ANDROID_NATIVE_SURFACE_MERGED_HEAD_SHA ||
+      gitBinding?.android_native_surface_final_pr_head_tree_sha !==
+        ANDROID_NATIVE_SURFACE_MERGE_TREE_SHA ||
+      gitBinding?.android_native_surface_merge_tree_matches_final_head !== true
+    ) {
+      errors.push("Android native-surface protected-main push must bind the exact PR 169 squash")
+    }
+  } else {
+    errors.push("Android native-surface authorization requires PR 169 or its exact merge push")
   }
   return errors.length === initialErrorCount
 }
@@ -6544,6 +7534,10 @@ function validateCompletionReceipt({
   lifecycle,
   errors
 }) {
+  const acceptedReceiptPendingTasksSha256 =
+    acceptedPendingTasksSha256 === ACCEPTED_PENDING_TASKS_SHA256
+      ? FROZEN_T085_PENDING_TASKS_SHA256
+      : acceptedPendingTasksSha256
   if (!receipt || typeof receipt !== "object" || Array.isArray(receipt)) {
     errors.push("checked T085 requires a structured completion receipt")
     return
@@ -6721,7 +7715,7 @@ function validateCompletionReceipt({
   ) {
     errors.push("completion receipt must bind the frozen traceability contract")
   }
-  if (receipt.tasks_before_sha256 !== acceptedPendingTasksSha256) {
+  if (receipt.tasks_before_sha256 !== acceptedReceiptPendingTasksSha256) {
     errors.push("completion receipt tasks_before_sha256 must bind the audited change base")
   }
   if (state === t085States.RECEIPT_CANDIDATE) {
@@ -6790,7 +7784,10 @@ function validateAcceptedSnapshots({
   preRemediationTraceabilitySha256,
   acceptedPendingTasksSha256,
   acceptedCompletedTasksSha256,
+  frozenT085CompletedTasksSha256,
   postT085RemediationScopeActive,
+  post169GovernanceAuthorizationAccepted,
+  exactAndroidNativeSurfaceProtectedPushAccepted,
   requireAuditedScope,
   errors
 }) {
@@ -6813,14 +7810,24 @@ function validateAcceptedSnapshots({
     errors.push("traceability must match the accepted implementation snapshot")
   }
 
-  const expectedCurrentTasksSha =
-    state === t085States.PENDING ? acceptedPendingTasksSha256 : acceptedCompletedTasksSha256
-  const expectedBaseTasksSha =
-    state === t085States.PENDING || state === t085States.RECEIPT_CANDIDATE
+  const expectedCurrentTasksSha = exactAndroidNativeSurfaceProtectedPushAccepted
+    ? frozenT085CompletedTasksSha256
+    : state === t085States.PENDING
       ? acceptedPendingTasksSha256
       : acceptedCompletedTasksSha256
+  const expectedBaseTasksSha =
+    post169GovernanceAuthorizationAccepted || exactAndroidNativeSurfaceProtectedPushAccepted
+      ? acceptedCompletedTasksSha256 === ACCEPTED_COMPLETED_TASKS_SHA256
+        ? frozenT085CompletedTasksSha256
+        : acceptedCompletedTasksSha256
+      : state === t085States.PENDING || state === t085States.RECEIPT_CANDIDATE
+        ? acceptedPendingTasksSha256
+        : acceptedCompletedTasksSha256
+  const tasksMatchAcceptedSnapshot = post169GovernanceAuthorizationAccepted
+    ? tasksText === expectedPost169TasksText(changeBaseTasksText)
+    : sha256(tasksText) === expectedCurrentTasksSha
   if (
-    sha256(tasksText) !== expectedCurrentTasksSha ||
+    !tasksMatchAcceptedSnapshot ||
     (typeof changeBaseTasksText === "string" &&
       sha256(changeBaseTasksText) !== expectedBaseTasksSha)
   ) {
@@ -6892,10 +7899,12 @@ export function validateTraceability({
   ownerAuthorizationReadback = null,
   postT085MaintenanceAuthorizationReadback = null,
   androidNativeSurfaceAuthorizationReadback = null,
+  post169GovernanceAuthorizationReadback = null,
   gitBinding = null,
   changedPaths = null,
   changeBaseSha = REVIEW_BASE_SHA,
   changeBaseTasksText = null,
+  changeBaseReadmeText = null,
   changeBaseTraceabilityText = null,
   changeBaseCompletionReceiptText = null,
   implementationMergeAncestorOfChangeBase = null,
@@ -6903,6 +7912,7 @@ export function validateTraceability({
   preRemediationTraceabilitySha256 = PRE_REMEDIATION_TRACEABILITY_SHA256,
   acceptedPendingTasksSha256 = ACCEPTED_PENDING_TASKS_SHA256,
   acceptedCompletedTasksSha256 = ACCEPTED_COMPLETED_TASKS_SHA256,
+  frozenT085CompletedTasksSha256 = FROZEN_T085_COMPLETED_TASKS_SHA256,
   boundedScopeActive = changeBaseSha === REVIEW_BASE_SHA,
   reviewBaseSha = REVIEW_BASE_SHA,
   requireExactHeadEvidence = false,
@@ -6916,6 +7926,7 @@ export function validateTraceability({
   let deviationRows = []
   let approvedOrphanIds = []
   const paths = {
+    readme: "README.md",
     spec: "specs/001-taiwan-basketball-magazine-ebook/spec.md",
     plan: "specs/001-taiwan-basketball-magazine-ebook/plan.md",
     tasks: "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
@@ -6925,6 +7936,9 @@ export function validateTraceability({
   }
 
   const specText = readText(root, paths.spec, errors, "spec source")
+  const readmeText = fs.existsSync(path.resolve(root, paths.readme))
+    ? readText(root, paths.readme, errors, "README source")
+    : null
   const planText = readText(root, paths.plan, errors, "plan source")
   const tasksText = readText(root, paths.tasks, errors, "tasks source")
   const traceabilityText = readText(root, paths.traceability, errors, "T085 traceability artifact")
@@ -6971,6 +7985,22 @@ export function validateTraceability({
       ANDROID_NATIVE_SURFACE_AUTHORIZED_PATHS.slice(0, 2).includes(changedPath)
     )
   let androidNativeSurfaceAuthorizationAccepted = false
+  const post169GovernanceAuthorizationScopeActive = isExactPost169GovernanceAuthorizationScope({
+    state,
+    changeBaseSha,
+    boundedScopeActive,
+    changedPaths
+  })
+  const post169GovernanceAuthorizationRequested =
+    state === t085States.COMPLETE_STEADY &&
+    ((Array.isArray(changedPaths) &&
+      changedPaths.some((changedPath) =>
+        ["README.md", "specs/001-taiwan-basketball-magazine-ebook/tasks.md"].includes(changedPath)
+      )) ||
+      (isAuthenticatedGitHubActionsContext(githubActionsContext) &&
+        githubActionsContext.authority === "PULL_REQUEST" &&
+        githubActionsContext.pull_request_number === POST169_GOVERNANCE_PULL_REQUEST))
+  let post169GovernanceAuthorizationAccepted = false
 
   if (!/^[0-9a-f]{40}$/.test(currentHead ?? "")) {
     errors.push("currentHead must be a full lowercase commit SHA")
@@ -7071,6 +8101,21 @@ export function validateTraceability({
     }
   }
   if (state === t085States.COMPLETE_STEADY) {
+    if (post169GovernanceAuthorizationRequested) {
+      if (!post169GovernanceAuthorizationScopeActive) {
+        errors.push(
+          "post-169 governance authorization requires the exact four-path governance reconciliation scope"
+        )
+      } else {
+        post169GovernanceAuthorizationAccepted = validatePost169GovernanceAuthorizationReadback({
+          readback: post169GovernanceAuthorizationReadback,
+          gitBinding,
+          requireExactHeadEvidence,
+          githubActionsContext,
+          errors
+        })
+      }
+    }
     if (androidNativeSurfaceAuthorizationRequested) {
       if (!androidNativeSurfaceAuthorizationScopeActive) {
         errors.push(
@@ -7080,6 +8125,7 @@ export function validateTraceability({
         androidNativeSurfaceAuthorizationAccepted =
           validateAndroidNativeSurfaceAuthorizationReadback({
             readback: androidNativeSurfaceAuthorizationReadback,
+            post169GovernanceAuthorizationReadback,
             gitBinding,
             requireExactHeadEvidence,
             githubActionsContext,
@@ -7114,6 +8160,10 @@ export function validateTraceability({
         !(
           androidNativeSurfaceAuthorizationAccepted &&
           androidNativeSurfaceAuthorizedPaths.has(changedPath)
+        ) &&
+        !(
+          post169GovernanceAuthorizationAccepted &&
+          post169GovernanceAuthorizedPaths.has(changedPath)
         )
       ) {
         errors.push(
@@ -7132,13 +8182,36 @@ export function validateTraceability({
     if (completionReceiptText !== changeBaseCompletionReceiptText) {
       errors.push("completed T085 must preserve the base completion receipt byte-for-byte")
     }
-    if (tasksText !== changeBaseTasksText) {
+    if (post169GovernanceAuthorizationAccepted) {
+      const expectedTasksText = expectedPost169TasksText(changeBaseTasksText)
+      if (expectedTasksText === null || tasksText !== expectedTasksText) {
+        errors.push(
+          "post-169 governance tasks change must append only the exact T086 HOLD status without changing any task checkbox"
+        )
+      }
+      if (typeof changeBaseReadmeText === "string" || readmeText !== null) {
+        const expectedReadmeText = expectedPost169ReadmeText(changeBaseReadmeText)
+        if (expectedReadmeText === null || readmeText !== expectedReadmeText) {
+          errors.push("post-169 governance README must match the exact current HOLD state")
+        }
+      }
+    } else if (tasksText !== changeBaseTasksText) {
       errors.push("completed T085 must preserve base tasks.md byte-for-byte")
     }
     if (traceabilityText !== changeBaseTraceabilityText) {
       errors.push("completed T085 must preserve the frozen traceability contract byte-for-byte")
     }
   }
+  const exactAndroidNativeSurfaceProtectedPushAccepted =
+    androidNativeSurfaceAuthorizationAccepted &&
+    githubActionsContext?.authority === "PROTECTED_MAIN_PUSH" &&
+    githubActionsContext.source_base_sha === ANDROID_NATIVE_SURFACE_AUTHORIZATION_BASE_SHA &&
+    githubActionsContext.source_head_sha === ANDROID_NATIVE_SURFACE_MERGE_SHA &&
+    gitBinding?.head === ANDROID_NATIVE_SURFACE_MERGE_SHA &&
+    gitBinding?.head_parent_sha === ANDROID_NATIVE_SURFACE_AUTHORIZATION_BASE_SHA &&
+    gitBinding?.head_parent_count === 1 &&
+    gitBinding?.head_tree_sha === ANDROID_NATIVE_SURFACE_MERGE_TREE_SHA &&
+    gitBinding?.android_native_surface_merge_tree_matches_final_head === true
   if (
     (state === t085States.PENDING || state === t085States.RECEIPT_CANDIDATE) &&
     (changeBaseSha === null || boundedScopeActive === null || !Array.isArray(changedPaths))
@@ -7211,7 +8284,10 @@ export function validateTraceability({
     preRemediationTraceabilitySha256,
     acceptedPendingTasksSha256,
     acceptedCompletedTasksSha256,
+    frozenT085CompletedTasksSha256,
     postT085RemediationScopeActive,
+    post169GovernanceAuthorizationAccepted,
+    exactAndroidNativeSurfaceProtectedPushAccepted,
     requireAuditedScope,
     errors
   })
@@ -7701,6 +8777,36 @@ export function validateTraceability({
             })
           )
         : null,
+      post169_governance_authorization_readback: post169GovernanceAuthorizationReadback
+        ? Object.fromEntries(
+            [
+              "dispatch",
+              "addendum",
+              "formatAddendum",
+              "reviewRemediation",
+              "finalSeal",
+              "squashPushSupersession",
+              "finalSealV4"
+            ].map((name) => {
+              const comment = post169GovernanceAuthorizationReadback[name] ?? {}
+              return [
+                name,
+                {
+                  status: comment.status ?? "UNAVAILABLE",
+                  source: comment.source ?? null,
+                  html_url: comment.html_url ?? null,
+                  issue_url: comment.issue_url ?? null,
+                  user_login: comment.user_login ?? null,
+                  author_association: comment.author_association ?? null,
+                  created_at: comment.created_at ?? null,
+                  updated_at: comment.updated_at ?? null,
+                  body_sha256: sha256(comment.body ?? null),
+                  errors: comment.errors ?? []
+                }
+              ]
+            })
+          )
+        : null,
       exact_head_evidence: exactHeadEvidence,
       github_actions_context: githubActionsContext
         ? {
@@ -7824,6 +8930,10 @@ export function validateTraceability({
                         !(
                           androidNativeSurfaceAuthorizationAccepted &&
                           androidNativeSurfaceAuthorizedPaths.has(changedPath)
+                        ) &&
+                        !(
+                          post169GovernanceAuthorizationAccepted &&
+                          post169GovernanceAuthorizedPaths.has(changedPath)
                         )
                     )
                   : state === t085States.COMPLETE_STEADY
@@ -8155,6 +9265,8 @@ const headers = {
   "User-Agent": "courtside-t085-receipt-validator",
   "X-GitHub-Api-Version": "2022-11-28"
 }
+const token = process.env.GITHUB_TOKEN?.trim()
+if (token) headers.Authorization = "Bearer " + token
 const response = await fetch(url, {
   headers,
   redirect: "error",
@@ -8165,6 +9277,71 @@ const body = await response.text()
 if (Buffer.byteLength(body) > 1024 * 1024) throw new Error("GitHub comment read-back exceeded 1 MiB")
 process.stdout.write(body)
 `
+
+const githubIssueCommentMarkerFetchScript = String.raw`
+const initialUrl = process.argv[1]
+const marker = process.argv[2]
+const headers = {
+  Accept: "application/vnd.github+json",
+  "User-Agent": "courtside-t085-receipt-validator",
+  "X-GitHub-Api-Version": "2022-11-28"
+}
+const token = process.env.GITHUB_TOKEN?.trim()
+if (token) headers.Authorization = "Bearer " + token
+const expectedPath = "/repos/bynanci/courtside-tw/issues/121/comments"
+const seen = new Set()
+let nextUrl = initialUrl
+let transferredBytes = 0
+let matches = []
+while (nextUrl) {
+  const parsedUrl = new URL(nextUrl)
+  if (
+    parsedUrl.protocol !== "https:" ||
+    parsedUrl.hostname !== "api.github.com" ||
+    parsedUrl.pathname !== expectedPath ||
+    parsedUrl.searchParams.get("per_page") !== "100" ||
+    seen.has(parsedUrl.href)
+  ) {
+    throw new Error("GitHub comment pagination returned an invalid next URL")
+  }
+  seen.add(parsedUrl.href)
+  const response = await fetch(parsedUrl.href, {
+    headers,
+    redirect: "error",
+    signal: AbortSignal.timeout(10000)
+  })
+  if (!response.ok) throw new Error("GitHub comment read-back returned HTTP " + response.status)
+  const body = await response.text()
+  transferredBytes += Buffer.byteLength(body)
+  if (transferredBytes > 16 * 1024 * 1024) {
+    throw new Error("GitHub paginated comment read-back exceeded 16 MiB")
+  }
+  const comments = JSON.parse(body)
+  if (!Array.isArray(comments)) throw new Error("GitHub comment read-back was not an array")
+  matches.push(
+    ...comments.filter((comment) =>
+      typeof comment?.body === "string" ? comment.body.includes(marker) : false
+    )
+  )
+  const link = response.headers.get("link") ?? ""
+  const nextMatch = link
+    .split(",")
+    .map((value) => value.trim().match(/^<([^>]+)>;\s*rel="next"$/))
+    .find(Boolean)
+  nextUrl = nextMatch?.[1] ?? null
+}
+process.stdout.write(
+  JSON.stringify({ match_count: matches.length, comment: matches.length === 1 ? matches[0] : null })
+)
+`
+
+function githubReadbackEnvironment(environment) {
+  const childEnvironment = { PATH: environment?.PATH ?? process.env.PATH ?? "" }
+  if (typeof environment?.GITHUB_TOKEN === "string" && environment.GITHUB_TOKEN.trim() !== "") {
+    childEnvironment.GITHUB_TOKEN = environment.GITHUB_TOKEN
+  }
+  return childEnvironment
+}
 
 function inspectGitHubAuthorizationComment(
   authorizationRef,
@@ -8187,7 +9364,7 @@ function inspectGitHubAuthorizationComment(
       ["--input-type=module", "--eval", githubCommentFetchScript, apiUrl],
       {
         encoding: "utf8",
-        env: { PATH: environment?.PATH ?? process.env.PATH ?? "" },
+        env: githubReadbackEnvironment(environment),
         maxBuffer: 1024 * 1024,
         stdio: ["ignore", "pipe", "pipe"],
         timeout: 15000
@@ -8211,6 +9388,56 @@ function inspectGitHubAuthorizationComment(
       status: "UNAVAILABLE",
       source: "github-api",
       html_url: authorizationRef ?? null,
+      errors: [`${readbackErrorPrefix}: ${error.message}`]
+    }
+  }
+}
+
+function inspectGitHubIssueCommentByMarker(
+  marker,
+  { environment, readbackErrorPrefix, missingError }
+) {
+  const apiUrl =
+    "https://api.github.com/repos/bynanci/courtside-tw/issues/121/comments?per_page=100"
+  try {
+    const raw = execFileSync(
+      process.execPath,
+      ["--input-type=module", "--eval", githubIssueCommentMarkerFetchScript, apiUrl, marker],
+      {
+        encoding: "utf8",
+        env: githubReadbackEnvironment(environment),
+        maxBuffer: 1024 * 1024,
+        stdio: ["ignore", "pipe", "pipe"],
+        timeout: 60000
+      }
+    )
+    const result = JSON.parse(raw)
+    if (result?.match_count !== 1 || !result?.comment) {
+      return {
+        status: "UNAVAILABLE",
+        source: "github-api",
+        errors: [
+          result?.match_count === 0 ? missingError : `${readbackErrorPrefix}: duplicate markers`
+        ]
+      }
+    }
+    const comment = result.comment
+    return {
+      status: "VERIFIED",
+      source: "github-api",
+      html_url: comment?.html_url ?? null,
+      issue_url: comment?.issue_url ?? null,
+      user_login: comment?.user?.login ?? null,
+      author_association: comment?.author_association ?? null,
+      created_at: comment?.created_at ?? null,
+      updated_at: comment?.updated_at ?? null,
+      body: comment?.body ?? null,
+      errors: []
+    }
+  } catch (error) {
+    return {
+      status: "UNAVAILABLE",
+      source: "github-api",
       errors: [`${readbackErrorPrefix}: ${error.message}`]
     }
   }
@@ -8261,6 +9488,57 @@ export function inspectAndroidNativeSurfaceAuthorization({ environment = process
         readbackErrorPrefix: "GitHub Android native-surface foreground addendum read-back failed"
       }
     )
+  }
+}
+
+export function inspectPost169GovernanceAuthorization({ environment = process.env } = {}) {
+  return {
+    dispatch: inspectGitHubAuthorizationComment(POST169_GOVERNANCE_DISPATCH_REF, {
+      environment,
+      isAuthorizedRef: (value) => value === POST169_GOVERNANCE_DISPATCH_REF,
+      invalidRefError: "post-169 governance dispatch ref is not authorized",
+      readbackErrorPrefix: "GitHub post-169 governance dispatch read-back failed"
+    }),
+    addendum: inspectGitHubAuthorizationComment(POST169_GOVERNANCE_ADDENDUM_REF, {
+      environment,
+      isAuthorizedRef: (value) => value === POST169_GOVERNANCE_ADDENDUM_REF,
+      invalidRefError: "post-169 governance addendum ref is not authorized",
+      readbackErrorPrefix: "GitHub post-169 governance addendum read-back failed"
+    }),
+    formatAddendum: inspectGitHubAuthorizationComment(POST169_GOVERNANCE_FORMAT_ADDENDUM_REF, {
+      environment,
+      isAuthorizedRef: (value) => value === POST169_GOVERNANCE_FORMAT_ADDENDUM_REF,
+      invalidRefError: "post-169 governance format addendum ref is not authorized",
+      readbackErrorPrefix: "GitHub post-169 governance format-addendum read-back failed"
+    }),
+    reviewRemediation: inspectGitHubAuthorizationComment(
+      POST169_GOVERNANCE_REVIEW_REMEDIATION_REF,
+      {
+        environment,
+        isAuthorizedRef: (value) => value === POST169_GOVERNANCE_REVIEW_REMEDIATION_REF,
+        invalidRefError: "post-169 governance review-remediation ref is not authorized",
+        readbackErrorPrefix: "GitHub post-169 governance review-remediation read-back failed"
+      }
+    ),
+    finalSeal: inspectGitHubIssueCommentByMarker(post169GovernanceFinalSealStart, {
+      environment,
+      readbackErrorPrefix: "GitHub post-169 governance final-seal read-back failed",
+      missingError: "post-169 governance final seal is not recorded"
+    }),
+    squashPushSupersession: inspectGitHubAuthorizationComment(
+      POST169_GOVERNANCE_SQUASH_PUSH_SUPERSESSION_REF,
+      {
+        environment,
+        isAuthorizedRef: (value) => value === POST169_GOVERNANCE_SQUASH_PUSH_SUPERSESSION_REF,
+        invalidRefError: "post-169 squash-push supersession ref is not authorized",
+        readbackErrorPrefix: "GitHub post-169 squash-push supersession read-back failed"
+      }
+    ),
+    finalSealV4: inspectGitHubIssueCommentByMarker(post169GovernanceFinalSealV4Start, {
+      environment,
+      readbackErrorPrefix: "GitHub post-169 governance v4 final-seal read-back failed",
+      missingError: "post-169 governance v4 final seal is not recorded"
+    })
   }
 }
 
@@ -8353,6 +9631,42 @@ export function inspectAndroidNativeSurfaceAuthorizationForState(
   }
 }
 
+export function inspectPost169GovernanceAuthorizationForState(
+  root,
+  {
+    changeBaseTasksText = null,
+    changeBaseSha = null,
+    boundedScopeActive = null,
+    changedPaths = null,
+    environment = process.env,
+    inspect = inspectPost169GovernanceAuthorization
+  } = {}
+) {
+  try {
+    const tasksText = fs.readFileSync(
+      path.join(root, "specs/001-taiwan-basketball-magazine-ebook/tasks.md"),
+      "utf8"
+    )
+    const state = classifyT085State(changeBaseTasksText, tasksText)
+    const post169Scope = isExactPost169GovernanceAuthorizationScope({
+      state,
+      changeBaseSha,
+      boundedScopeActive,
+      changedPaths
+    })
+    const androidMergeScope = isExactAndroidNativeSurfaceAuthorizationScope({
+      state,
+      changeBaseSha,
+      boundedScopeActive,
+      changedPaths
+    })
+    if (!post169Scope && !androidMergeScope) return null
+    return inspect({ environment })
+  } catch {
+    return null
+  }
+}
+
 export function inspectGit(root, { environment = process.env } = {}) {
   try {
     const head = execFileSync("git", ["rev-parse", "HEAD"], {
@@ -8420,10 +9734,16 @@ export function inspectGit(root, { environment = process.env } = {}) {
       POST_T085_MAINTENANCE_AUTHORIZED_HEAD_SHA,
       postT085MaintenanceFinalPrHead
     )
+    const androidNativeSurfaceFinalPrHead =
+      environment.GITHUB_ACTIONS === "true" &&
+      environment.GITHUB_EVENT_NAME === "push" &&
+      head === ANDROID_NATIVE_SURFACE_MERGE_SHA
+        ? ANDROID_NATIVE_SURFACE_MERGED_HEAD_SHA
+        : head
     const androidNativeSurfaceSeedAncestor = inspectAncestor(
       root,
       ANDROID_NATIVE_SURFACE_SEED_HEAD_SHA,
-      head
+      androidNativeSurfaceFinalPrHead
     )
     const androidNativeSurfaceSeedCommittedAt = inspectCommitTimestamp(
       root,
@@ -8448,7 +9768,7 @@ export function inspectGit(root, { environment = process.env } = {}) {
     const androidNativeSurfaceForegroundSeedAncestor = inspectAncestor(
       root,
       ANDROID_NATIVE_SURFACE_FOREGROUND_SEED_HEAD_SHA,
-      head
+      androidNativeSurfaceFinalPrHead
     )
     const androidNativeSurfaceForegroundSeedCommittedAt = inspectCommitTimestamp(
       root,
@@ -8457,18 +9777,78 @@ export function inspectGit(root, { environment = process.env } = {}) {
     const androidNativeSurfaceForegroundAmendmentPaths = inspectChangedPathsBetweenCommits(
       root,
       ANDROID_NATIVE_SURFACE_FOREGROUND_SEED_HEAD_SHA,
-      head
+      androidNativeSurfaceFinalPrHead
     )
     const androidNativeSurfaceForegroundAmendmentCommitCount = inspectCommitCountBetween(
       root,
       ANDROID_NATIVE_SURFACE_FOREGROUND_SEED_HEAD_SHA,
-      head
+      androidNativeSurfaceFinalPrHead
     )
     const androidNativeSurfaceForegroundAmendmentMergeCommitCount = inspectCommitCountBetween(
       root,
       ANDROID_NATIVE_SURFACE_FOREGROUND_SEED_HEAD_SHA,
+      androidNativeSurfaceFinalPrHead,
+      { mergesOnly: true }
+    )
+    const androidNativeSurfaceMergedHeadTopology = inspectHeadTopology(
+      root,
+      ANDROID_NATIVE_SURFACE_MERGED_HEAD_SHA
+    )
+    const androidNativeSurfaceMergeTopology = inspectHeadTopology(
+      root,
+      ANDROID_NATIVE_SURFACE_MERGE_SHA
+    )
+    const post169GovernanceSeedAncestor = inspectAncestor(
+      root,
+      POST169_GOVERNANCE_SEED_HEAD_SHA,
+      head
+    )
+    const post169GovernanceSeedCommittedAt = inspectCommitTimestamp(
+      root,
+      POST169_GOVERNANCE_SEED_HEAD_SHA
+    )
+    const post169GovernanceAmendmentPaths = inspectChangedPathsBetweenCommits(
+      root,
+      POST169_GOVERNANCE_SEED_HEAD_SHA,
+      head
+    )
+    const post169GovernanceAmendmentCommitCount = inspectCommitCountBetween(
+      root,
+      POST169_GOVERNANCE_SEED_HEAD_SHA,
+      head
+    )
+    const post169GovernanceAmendmentMergeCommitCount = inspectCommitCountBetween(
+      root,
+      POST169_GOVERNANCE_SEED_HEAD_SHA,
       head,
       { mergesOnly: true }
+    )
+    const post169GovernanceSeedTestBlobSha = inspectPathBlobOid(
+      root,
+      POST169_GOVERNANCE_SEED_HEAD_SHA,
+      "scripts/test/validate-traceability.test.mjs"
+    )
+    const post169GovernanceFinalTestBlobSha = inspectPathBlobOid(
+      root,
+      head,
+      "scripts/test/validate-traceability.test.mjs"
+    )
+    const post169GovernanceFinalValidatorBlobSha = inspectPathBlobOid(
+      root,
+      head,
+      "scripts/validate-traceability.mjs"
+    )
+    const post169GovernanceFinalReadmeBlobSha = inspectPathBlobOid(root, head, "README.md")
+    const post169GovernanceFinalTasksBlobSha = inspectPathBlobOid(
+      root,
+      head,
+      "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
+    )
+    const post169GovernanceTaskCheckboxSignatureSha256 = taskCheckboxSignatureSha256(
+      fs.readFileSync(
+        path.join(root, "specs/001-taiwan-basketball-magazine-ebook/tasks.md"),
+        "utf8"
+      )
     )
     const changeBase = resolveChangeBase(root, head, environment)
     const changeBaseCommittedAt = inspectCommitTimestamp(root, changeBase.sha)
@@ -8487,6 +9867,7 @@ export function inspectGit(root, { environment = process.env } = {}) {
       changeBase.sha,
       "specs/001-taiwan-basketball-magazine-ebook/tasks.md"
     )
+    const changeBaseReadmeText = readTextAtCommit(root, changeBase.sha, "README.md")
     const changeBaseTraceabilityText = readTextAtCommit(
       root,
       changeBase.sha,
@@ -8551,6 +9932,29 @@ export function inspectGit(root, { environment = process.env } = {}) {
         androidNativeSurfaceForegroundAmendmentCommitCount,
       android_native_surface_foreground_amendment_merge_commit_count:
         androidNativeSurfaceForegroundAmendmentMergeCommitCount,
+      android_native_surface_final_pr_head_sha: ANDROID_NATIVE_SURFACE_MERGED_HEAD_SHA,
+      android_native_surface_final_pr_head_tree_sha:
+        androidNativeSurfaceMergedHeadTopology.headTreeSha,
+      android_native_surface_merged_head_tree_sha:
+        androidNativeSurfaceMergedHeadTopology.headTreeSha,
+      android_native_surface_merge_tree_sha: androidNativeSurfaceMergeTopology.headTreeSha,
+      android_native_surface_merge_parent_shas: androidNativeSurfaceMergeTopology.parents,
+      android_native_surface_merge_tree_matches_final_head:
+        androidNativeSurfaceMergeTopology.headTreeSha !== null &&
+        androidNativeSurfaceMergeTopology.headTreeSha ===
+          androidNativeSurfaceMergedHeadTopology.headTreeSha,
+      post169_governance_seed_ancestor: post169GovernanceSeedAncestor,
+      post169_governance_seed_committed_at: post169GovernanceSeedCommittedAt,
+      post169_governance_amendment_paths: post169GovernanceAmendmentPaths,
+      post169_governance_amendment_commit_count: post169GovernanceAmendmentCommitCount,
+      post169_governance_amendment_merge_commit_count: post169GovernanceAmendmentMergeCommitCount,
+      post169_governance_seed_test_blob_sha: post169GovernanceSeedTestBlobSha,
+      post169_governance_final_test_blob_sha: post169GovernanceFinalTestBlobSha,
+      post169_governance_final_validator_blob_sha: post169GovernanceFinalValidatorBlobSha,
+      post169_governance_final_readme_blob_sha: post169GovernanceFinalReadmeBlobSha,
+      post169_governance_final_tasks_blob_sha: post169GovernanceFinalTasksBlobSha,
+      post169_governance_task_checkbox_signature_sha256:
+        post169GovernanceTaskCheckboxSignatureSha256,
       change_base_ref: changeBase.ref,
       change_base_sha: changeBase.sha,
       change_base_committed_at: changeBaseCommittedAt,
@@ -8563,6 +9967,7 @@ export function inspectGit(root, { environment = process.env } = {}) {
       second_parent_tree_sha: headTopology.secondParentTreeSha,
       implementation_merge_ancestor_of_change_base: implementationMergeAncestorOfChangeBase,
       change_base_tasks_text: changeBaseTasksText,
+      change_base_readme_text: changeBaseReadmeText,
       change_base_traceability_text: changeBaseTraceabilityText,
       change_base_completion_receipt_text: changeBaseCompletionReceiptText,
       bounded_scope_active: boundedScopeActive,
@@ -8596,6 +10001,23 @@ export function inspectGit(root, { environment = process.env } = {}) {
       android_native_surface_foreground_amendment_paths: null,
       android_native_surface_foreground_amendment_commit_count: null,
       android_native_surface_foreground_amendment_merge_commit_count: null,
+      android_native_surface_final_pr_head_sha: null,
+      android_native_surface_final_pr_head_tree_sha: null,
+      android_native_surface_merged_head_tree_sha: null,
+      android_native_surface_merge_tree_sha: null,
+      android_native_surface_merge_parent_shas: null,
+      android_native_surface_merge_tree_matches_final_head: null,
+      post169_governance_seed_ancestor: null,
+      post169_governance_seed_committed_at: null,
+      post169_governance_amendment_paths: null,
+      post169_governance_amendment_commit_count: null,
+      post169_governance_amendment_merge_commit_count: null,
+      post169_governance_seed_test_blob_sha: null,
+      post169_governance_final_test_blob_sha: null,
+      post169_governance_final_validator_blob_sha: null,
+      post169_governance_final_readme_blob_sha: null,
+      post169_governance_final_tasks_blob_sha: null,
+      post169_governance_task_checkbox_signature_sha256: null,
       change_base_ref: null,
       change_base_sha: null,
       change_base_committed_at: null,
@@ -8608,6 +10030,7 @@ export function inspectGit(root, { environment = process.env } = {}) {
       second_parent_tree_sha: null,
       implementation_merge_ancestor_of_change_base: null,
       change_base_tasks_text: null,
+      change_base_readme_text: null,
       change_base_traceability_text: null,
       change_base_completion_receipt_text: null,
       bounded_scope_active: null,
@@ -8642,6 +10065,16 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
       changedPaths: inspection.changedPaths,
       environment
     })
+  const post169GovernanceAuthorizationReadback = inspectPost169GovernanceAuthorizationForState(
+    root,
+    {
+      changeBaseTasksText: inspection.change_base_tasks_text,
+      changeBaseSha: inspection.change_base_sha,
+      boundedScopeActive: inspection.bounded_scope_active,
+      changedPaths: inspection.changedPaths,
+      environment
+    }
+  )
   const githubActionsContext = inspectGitHubActionsContext({ environment, gitBinding: inspection })
   const isGitHubActions = environment.GITHUB_ACTIONS === "true"
   const report = validateTraceability({
@@ -8652,6 +10085,7 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
     ownerAuthorizationReadback,
     postT085MaintenanceAuthorizationReadback,
     androidNativeSurfaceAuthorizationReadback,
+    post169GovernanceAuthorizationReadback,
     gitBinding: {
       status: inspection.status,
       head: inspection.head,
@@ -8695,6 +10129,30 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
         inspection.android_native_surface_foreground_amendment_commit_count,
       android_native_surface_foreground_amendment_merge_commit_count:
         inspection.android_native_surface_foreground_amendment_merge_commit_count,
+      android_native_surface_final_pr_head_sha: inspection.android_native_surface_final_pr_head_sha,
+      android_native_surface_final_pr_head_tree_sha:
+        inspection.android_native_surface_final_pr_head_tree_sha,
+      android_native_surface_merged_head_tree_sha:
+        inspection.android_native_surface_merged_head_tree_sha,
+      android_native_surface_merge_tree_sha: inspection.android_native_surface_merge_tree_sha,
+      android_native_surface_merge_parent_shas: inspection.android_native_surface_merge_parent_shas,
+      android_native_surface_merge_tree_matches_final_head:
+        inspection.android_native_surface_merge_tree_matches_final_head,
+      post169_governance_seed_ancestor: inspection.post169_governance_seed_ancestor,
+      post169_governance_seed_committed_at: inspection.post169_governance_seed_committed_at,
+      post169_governance_amendment_paths: inspection.post169_governance_amendment_paths,
+      post169_governance_amendment_commit_count:
+        inspection.post169_governance_amendment_commit_count,
+      post169_governance_amendment_merge_commit_count:
+        inspection.post169_governance_amendment_merge_commit_count,
+      post169_governance_seed_test_blob_sha: inspection.post169_governance_seed_test_blob_sha,
+      post169_governance_final_test_blob_sha: inspection.post169_governance_final_test_blob_sha,
+      post169_governance_final_validator_blob_sha:
+        inspection.post169_governance_final_validator_blob_sha,
+      post169_governance_final_readme_blob_sha: inspection.post169_governance_final_readme_blob_sha,
+      post169_governance_final_tasks_blob_sha: inspection.post169_governance_final_tasks_blob_sha,
+      post169_governance_task_checkbox_signature_sha256:
+        inspection.post169_governance_task_checkbox_signature_sha256,
       change_base_ref: inspection.change_base_ref,
       change_base_sha: inspection.change_base_sha,
       change_base_committed_at: inspection.change_base_committed_at,
@@ -8712,6 +10170,7 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
     changedPaths: inspection.changedPaths,
     changeBaseSha: inspection.change_base_sha,
     changeBaseTasksText: inspection.change_base_tasks_text,
+    changeBaseReadmeText: inspection.change_base_readme_text,
     changeBaseTraceabilityText: inspection.change_base_traceability_text,
     changeBaseCompletionReceiptText: inspection.change_base_completion_receipt_text,
     implementationMergeAncestorOfChangeBase:
