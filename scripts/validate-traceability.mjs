@@ -13,6 +13,8 @@ export const COMPLETION_RECEIPT_SCHEMA = "courtside-t085-completion-receipt/v2"
 export const OWNER_AUTHORIZATION_SCHEMA = "courtside-t085-owner-authorization/v1"
 export const POST_T085_MAINTENANCE_AUTHORIZATION_SCHEMA =
   "courtside-post-t085-maintenance-authorization/v5"
+export const ANDROID_NATIVE_SURFACE_AUTHORIZATION_SCHEMA =
+  "courtside-android-native-surface-traceability-addendum/v1"
 export const COMPLETION_RECEIPT_PATH = ".loop/evidence/t085-completion-receipt.json"
 export const ACCEPTED_IMPLEMENTATION_HEAD_SHA = "27b955581a909e292ae4fe6c1fb05de0e94753da"
 export const ACCEPTED_IMPLEMENTATION_MERGE_SHA = "a2491b81066ac225a0b5d2dab93be79fb6dfbe65"
@@ -132,6 +134,28 @@ export const POST_T085_MAINTENANCE_PRESERVED_PAYLOAD_BLOBS = Object.freeze([
     git_blob_oid: "9474ee61c6c0f276ee9acb3a337533f0de068b78"
   })
 ])
+export const ANDROID_NATIVE_SURFACE_DISPATCH_REF =
+  "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5580592465"
+export const ANDROID_NATIVE_SURFACE_SCOPE_PROPOSAL_REF =
+  "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5580831466"
+export const ANDROID_NATIVE_SURFACE_AUTHORIZATION_REF =
+  "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5580939141"
+export const ANDROID_NATIVE_SURFACE_DISPATCH_RECORDED_AT = "2026-09-08T06:50:38Z"
+export const ANDROID_NATIVE_SURFACE_AUTHORIZATION_RECORDED_AT = "2026-09-08T07:18:46Z"
+export const ANDROID_NATIVE_SURFACE_AUTHORIZATION_BASE_SHA =
+  "2103adfb9d8d2255fb0fbdcf48f2df7a7e4628c3"
+export const ANDROID_NATIVE_SURFACE_SEED_HEAD_SHA = "5caa1c933f1e682773d9e3d4e270fee6800f1d3f"
+export const ANDROID_NATIVE_SURFACE_BRANCH = "agent/android-native-surface-deadline"
+export const ANDROID_NATIVE_SURFACE_AUTHORIZED_PATHS = Object.freeze([
+  "apps/web/scripts/android-chrome-performance-smoke.mjs",
+  "apps/web/tests/unit/android-creative-timeline.test.ts",
+  "scripts/validate-traceability.mjs",
+  "scripts/test/validate-traceability.test.mjs"
+])
+export const ANDROID_NATIVE_SURFACE_AMENDMENT_PATHS = Object.freeze([
+  "scripts/validate-traceability.mjs",
+  "scripts/test/validate-traceability.test.mjs"
+])
 
 const requirementPattern = /^- \*\*((?:FR|SC)-\d{3})\*\*:/gm
 const taskPattern = /^- \[([ xX])\] (T\d{3})\b/gm
@@ -241,6 +265,12 @@ const ownerAuthorizationEnd = "<!-- t085:owner-authorization:end -->"
 const postT085MaintenanceAuthorizationStart =
   "<!-- post-t085-maintenance:owner-authorization:start -->"
 const postT085MaintenanceAuthorizationEnd = "<!-- post-t085-maintenance:owner-authorization:end -->"
+const androidNativeSurfaceDispatchStart = "<!-- android-native-surface:owner-dispatch:v1:start -->"
+const androidNativeSurfaceDispatchEnd = "<!-- android-native-surface:owner-dispatch:v1:end -->"
+const androidNativeSurfaceAuthorizationStart =
+  "<!-- android-native-surface:traceability-addendum:v1:start -->"
+const androidNativeSurfaceAuthorizationEnd =
+  "<!-- android-native-surface:traceability-addendum:v1:end -->"
 const expectedReceiptScopeBoundaries = Object.freeze({
   t086_dispatched: false,
   participant_research_executed: false,
@@ -348,6 +378,90 @@ const expectedPostT085MaintenanceAuthorization = Object.freeze({
   terminal_policy: "STOP_AFTER_SINGLE_COMBINED_PR168_MERGE_AND_PROTECTED_MAIN_READBACK",
   scope_boundaries: expectedPostT085MaintenanceScopeBoundaries
 })
+const expectedAndroidNativeSurfaceDispatch = Object.freeze({
+  schema_version: "courtside-android-native-surface-owner-dispatch/v1",
+  decision: "DISPATCH_ACCEPTED",
+  accepted_by: ACCEPTED_RECEIPT_OWNER,
+  repository: "bynanci/courtside-tw",
+  authorization_base: {
+    branch: "main",
+    sha: ANDROID_NATIVE_SURFACE_AUTHORIZATION_BASE_SHA
+  },
+  branch: ANDROID_NATIVE_SURFACE_BRANCH,
+  objective:
+    "eliminate the repeated initial-native-surface failure caused when known-prompt handling leaves a later UIAutomator probe with only a depleted shared deadline",
+  authorized_paths: ANDROID_NATIVE_SURFACE_AUTHORIZED_PATHS.slice(0, 2),
+  authorized_actions: [
+    "create the bounded branch and a draft pull request",
+    "commit a deterministic RED contract before implementation",
+    "apply the minimum fail-closed GREEN change within the two paths",
+    "run fresh CI and Security",
+    "obtain two independent same-head Android passes and exact-head review"
+  ],
+  acceptance: [
+    "known-prompt handling cannot reduce the next UIAutomator probe below its bounded command window while the total normalization remains bounded",
+    "Chrome activity identity is preserved across every surface probe",
+    "unknown modals, activity drift, ADB or UIAutomator failure, and expired total bounds still fail closed",
+    "a failed-job rerun does not erase a recorded repeated failure"
+  ],
+  forbidden: [
+    "merge",
+    "ready PR 161 or rebase PR 161",
+    "change T086 or any task checkbox",
+    "remove the beta flag",
+    "mutate workflows, rulesets, providers, deployments, credentials, secrets, frozen T085 evidence, research state, Web3, or external products"
+  ],
+  merge_authorization: false
+})
+const expectedAndroidNativeSurfaceAuthorization = Object.freeze({
+  schema_version: ANDROID_NATIVE_SURFACE_AUTHORIZATION_SCHEMA,
+  decision: "EXACT_FOUR_PATH_TRACEABILITY_ADDENDUM_ACCEPTED",
+  accepted_by: ACCEPTED_RECEIPT_OWNER,
+  repository: "bynanci/courtside-tw",
+  issue: "https://github.com/bynanci/courtside-tw/issues/121",
+  dispatch_ref: ANDROID_NATIVE_SURFACE_DISPATCH_REF,
+  scope_proposal_ref: ANDROID_NATIVE_SURFACE_SCOPE_PROPOSAL_REF,
+  pull_request: 169,
+  authorization_base: {
+    branch: "main",
+    sha: ANDROID_NATIVE_SURFACE_AUTHORIZATION_BASE_SHA,
+    protected: true
+  },
+  seed_head: {
+    branch: ANDROID_NATIVE_SURFACE_BRANCH,
+    sha: ANDROID_NATIVE_SURFACE_SEED_HEAD_SHA
+  },
+  frozen_t085_traceability_sha256: ACCEPTED_TRACEABILITY_SHA256,
+  authorized_paths: [...ANDROID_NATIVE_SURFACE_AUTHORIZED_PATHS],
+  authorized_amendment: {
+    parent_sha: ANDROID_NATIVE_SURFACE_SEED_HEAD_SHA,
+    maximum_commit_count: 2,
+    changed_paths: [...ANDROID_NATIVE_SURFACE_AMENDMENT_PATHS],
+    tests_first: true
+  },
+  authorized_actions: [
+    "add deterministic fail-closed validator tests before implementation",
+    "apply the minimum PR 169-specific authorization recognition",
+    "run fresh exact-head CI and Security",
+    "obtain two independent same-head Android passes and exact-head review"
+  ],
+  acceptance: [
+    "the original owner dispatch remains byte-for-byte immutable and owner-authored",
+    "the final PR diff is exactly the authorized four-path set",
+    "the frozen T085 traceability contract remains byte-for-byte unchanged",
+    "repository, owner, base, branch, pull request, seed head, exact-head Actions context and draft state all match",
+    "comment deletion or mutation, API failure, actor mismatch, base or head ancestry drift, branch or path drift, replay by another pull request, or generic product-path authorization fails closed"
+  ],
+  forbidden: [
+    "merge or ready-for-review transition",
+    "generic product-path authorization or reuse by another pull request",
+    "workflow, ruleset, provider, deployment, credential, secret or frozen T085 evidence mutation",
+    "PR 161 rebase, ready transition or merge",
+    "T086, task-checkbox, beta-flag, research, Web3 or external-product change"
+  ],
+  terminal_policy: "STOP_AT_DRAFT_EXACT_HEAD_GATE_RECEIPT",
+  merge_authorization: false
+})
 
 function isT086LockedPath(changedPath) {
   return (
@@ -368,6 +482,7 @@ const postT085MaintenancePaths = new Set([
   "scripts/validate-traceability.mjs"
 ])
 const postT085MaintenanceAuthorizedPaths = new Set(POST_T085_MAINTENANCE_AUTHORIZED_PATHS)
+const androidNativeSurfaceAuthorizedPaths = new Set(ANDROID_NATIVE_SURFACE_AUTHORIZED_PATHS)
 const expectedPostT085MaintenancePayloadBlobOids = Object.freeze(
   Object.fromEntries(
     POST_T085_MAINTENANCE_PRESERVED_PAYLOAD_BLOBS.map(({ path: filePath, git_blob_oid }) => [
@@ -547,6 +662,22 @@ function isExactPostT085MaintenanceAuthorizationScope({
     Array.isArray(changedPaths) &&
     changedPaths.length === POST_T085_MAINTENANCE_AUTHORIZED_PATHS.length &&
     sameValues(changedPaths, POST_T085_MAINTENANCE_AUTHORIZED_PATHS)
+  )
+}
+
+function isExactAndroidNativeSurfaceAuthorizationScope({
+  state,
+  changeBaseSha,
+  boundedScopeActive,
+  changedPaths
+}) {
+  return (
+    state === t085States.COMPLETE_STEADY &&
+    boundedScopeActive === false &&
+    changeBaseSha === ANDROID_NATIVE_SURFACE_AUTHORIZATION_BASE_SHA &&
+    Array.isArray(changedPaths) &&
+    changedPaths.length === ANDROID_NATIVE_SURFACE_AUTHORIZED_PATHS.length &&
+    sameValues(changedPaths, ANDROID_NATIVE_SURFACE_AUTHORIZED_PATHS)
   )
 }
 
@@ -6104,6 +6235,175 @@ function validatePostT085MaintenanceAuthorizationReadback({
   return errors.length === initialErrorCount
 }
 
+function parseAndroidNativeSurfaceAuthorizationBody(
+  { body, startMarker, endMarker, label },
+  errors
+) {
+  if (typeof body !== "string") {
+    errors.push(`${label} must contain a structured body`)
+    return null
+  }
+  const start = body.indexOf(startMarker)
+  const end = body.indexOf(endMarker)
+  if (
+    start < 0 ||
+    end <= start ||
+    body.indexOf(startMarker, start + startMarker.length) >= 0 ||
+    body.indexOf(endMarker, end + endMarker.length) >= 0
+  ) {
+    errors.push(`${label} must contain one structured body`)
+    return null
+  }
+  let payload = body.slice(start + startMarker.length, end).trim()
+  const fencedPayload = payload.match(/^```json\r?\n([\s\S]*)\r?\n```$/)
+  if (fencedPayload) {
+    payload = fencedPayload[1].trim()
+  } else if (payload.includes("```")) {
+    errors.push(`${label} JSON fence is invalid`)
+    return null
+  }
+  try {
+    assertUniqueJsonObjectKeys(payload)
+    const parsed = JSON.parse(payload)
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      errors.push(`${label} body must be a JSON object`)
+      return null
+    }
+    return parsed
+  } catch (error) {
+    errors.push(`${label} body is invalid: ${error.message}`)
+    return null
+  }
+}
+
+function validateAndroidNativeSurfaceAuthorizationReadback({
+  readback,
+  gitBinding,
+  requireExactHeadEvidence,
+  githubActionsContext,
+  errors
+}) {
+  const initialErrorCount = errors.length
+  const dispatch = readback?.dispatch
+  const addendum = readback?.addendum
+  if (
+    dispatch?.status !== "VERIFIED" ||
+    dispatch?.source !== "github-api" ||
+    addendum?.status !== "VERIFIED" ||
+    addendum?.source !== "github-api"
+  ) {
+    errors.push(
+      "Android native-surface authorization requires verified GitHub dispatch and addendum read-backs"
+    )
+    return false
+  }
+  if (
+    dispatch.html_url !== ANDROID_NATIVE_SURFACE_DISPATCH_REF ||
+    addendum.html_url !== ANDROID_NATIVE_SURFACE_AUTHORIZATION_REF ||
+    dispatch.issue_url !== "https://api.github.com/repos/bynanci/courtside-tw/issues/121" ||
+    addendum.issue_url !== "https://api.github.com/repos/bynanci/courtside-tw/issues/121"
+  ) {
+    errors.push("Android native-surface read-backs must match the two authorized issue comments")
+  }
+  if (
+    dispatch.user_login !== ACCEPTED_RECEIPT_OWNER ||
+    dispatch.author_association !== "OWNER" ||
+    addendum.user_login !== ACCEPTED_RECEIPT_OWNER ||
+    addendum.author_association !== "OWNER"
+  ) {
+    errors.push("Android native-surface comments must be authored by the repository owner")
+  }
+  if (
+    dispatch.created_at !== ANDROID_NATIVE_SURFACE_DISPATCH_RECORDED_AT ||
+    addendum.created_at !== ANDROID_NATIVE_SURFACE_AUTHORIZATION_RECORDED_AT
+  ) {
+    errors.push("Android native-surface comment timestamps must match the owner receipts")
+  }
+  if (dispatch.updated_at !== dispatch.created_at || addendum.updated_at !== addendum.created_at) {
+    errors.push("Android native-surface comments must be immutable after creation")
+  }
+
+  const dispatchAuthorization = parseAndroidNativeSurfaceAuthorizationBody(
+    {
+      body: dispatch.body,
+      startMarker: androidNativeSurfaceDispatchStart,
+      endMarker: androidNativeSurfaceDispatchEnd,
+      label: "Android native-surface dispatch"
+    },
+    errors
+  )
+  const addendumAuthorization = parseAndroidNativeSurfaceAuthorizationBody(
+    {
+      body: addendum.body,
+      startMarker: androidNativeSurfaceAuthorizationStart,
+      endMarker: androidNativeSurfaceAuthorizationEnd,
+      label: "Android native-surface addendum"
+    },
+    errors
+  )
+  if (
+    !isDeepStrictEqual(dispatchAuthorization, expectedAndroidNativeSurfaceDispatch) ||
+    !isDeepStrictEqual(addendumAuthorization, expectedAndroidNativeSurfaceAuthorization)
+  ) {
+    errors.push("Android native-surface bodies must match the exact owner dispatch and addendum")
+  }
+
+  const seedCommittedAt = Date.parse(gitBinding?.android_native_surface_seed_committed_at ?? "")
+  const dispatchRecordedAt = Date.parse(dispatch.created_at ?? "")
+  const addendumRecordedAt = Date.parse(addendum.created_at ?? "")
+  if (
+    !Number.isFinite(seedCommittedAt) ||
+    !Number.isFinite(dispatchRecordedAt) ||
+    !Number.isFinite(addendumRecordedAt) ||
+    dispatchRecordedAt >= seedCommittedAt ||
+    addendumRecordedAt <= seedCommittedAt
+  ) {
+    errors.push("Android native-surface addendum must postdate the dispatched seed head")
+  }
+  if (gitBinding?.android_native_surface_seed_ancestor !== true) {
+    errors.push("Android native-surface seed head must be an ancestor of the evaluated head")
+  }
+  if (
+    !Array.isArray(gitBinding?.android_native_surface_amendment_paths) ||
+    !sameValues(
+      gitBinding.android_native_surface_amendment_paths,
+      ANDROID_NATIVE_SURFACE_AMENDMENT_PATHS
+    )
+  ) {
+    errors.push(
+      "Android native-surface post-seed amendments must change exactly the two validator paths"
+    )
+  }
+  if (gitBinding?.android_native_surface_amendment_commit_count !== 2) {
+    errors.push(
+      "Android native-surface amendments must contain one tests-first commit and one implementation commit at most"
+    )
+  }
+  if (gitBinding?.android_native_surface_amendment_merge_commit_count !== 0) {
+    errors.push("Android native-surface amendments must contain no merge commit")
+  }
+  if (!requireExactHeadEvidence) {
+    errors.push("Android native-surface authorization requires exact-head CI mode")
+  }
+  if (!isAuthenticatedGitHubActionsContext(githubActionsContext)) {
+    errors.push(
+      "Android native-surface authorization requires authenticated GitHub Actions context"
+    )
+  } else if (
+    githubActionsContext.authority !== "PULL_REQUEST" ||
+    githubActionsContext.source_base_sha !== ANDROID_NATIVE_SURFACE_AUTHORIZATION_BASE_SHA ||
+    githubActionsContext.pull_request_number !== 169 ||
+    githubActionsContext.head_ref !== ANDROID_NATIVE_SURFACE_BRANCH ||
+    githubActionsContext.source_head_sha !== gitBinding?.head ||
+    !/^refs\/pull\/169\/(?:merge|head)$/.test(githubActionsContext.github_ref ?? "")
+  ) {
+    errors.push("Android native-surface Actions context must bind draft PR 169, branch and base")
+  } else if (githubActionsContext.pull_request_draft !== true) {
+    errors.push("Android native-surface PR 169 must remain draft and NO MERGE")
+  }
+  return errors.length === initialErrorCount
+}
+
 function validateCompletionReceipt({
   receipt,
   state,
@@ -6469,6 +6769,7 @@ export function validateTraceability({
   changeBaseCommittedAt = null,
   ownerAuthorizationReadback = null,
   postT085MaintenanceAuthorizationReadback = null,
+  androidNativeSurfaceAuthorizationReadback = null,
   gitBinding = null,
   changedPaths = null,
   changeBaseSha = REVIEW_BASE_SHA,
@@ -6534,6 +6835,20 @@ export function validateTraceability({
     Array.isArray(changedPaths) &&
     changedPaths.includes(POST_T085_MAINTENANCE_AUTHORIZED_PATHS[0])
   let postT085MaintenanceAuthorizationAccepted = false
+  const androidNativeSurfaceAuthorizationScopeActive =
+    isExactAndroidNativeSurfaceAuthorizationScope({
+      state,
+      changeBaseSha,
+      boundedScopeActive,
+      changedPaths
+    })
+  const androidNativeSurfaceAuthorizationRequested =
+    state === t085States.COMPLETE_STEADY &&
+    Array.isArray(changedPaths) &&
+    changedPaths.some((changedPath) =>
+      ANDROID_NATIVE_SURFACE_AUTHORIZED_PATHS.slice(0, 2).includes(changedPath)
+    )
+  let androidNativeSurfaceAuthorizationAccepted = false
 
   if (!/^[0-9a-f]{40}$/.test(currentHead ?? "")) {
     errors.push("currentHead must be a full lowercase commit SHA")
@@ -6634,6 +6949,22 @@ export function validateTraceability({
     }
   }
   if (state === t085States.COMPLETE_STEADY) {
+    if (androidNativeSurfaceAuthorizationRequested) {
+      if (!androidNativeSurfaceAuthorizationScopeActive) {
+        errors.push(
+          "Android native-surface authorization requires the exact four-path PR 169 scope"
+        )
+      } else {
+        androidNativeSurfaceAuthorizationAccepted =
+          validateAndroidNativeSurfaceAuthorizationReadback({
+            readback: androidNativeSurfaceAuthorizationReadback,
+            gitBinding,
+            requireExactHeadEvidence,
+            githubActionsContext,
+            errors
+          })
+      }
+    }
     if (postT085MaintenanceAuthorizationRequested) {
       if (!postT085MaintenanceAuthorizationScopeActive) {
         errors.push(
@@ -6657,6 +6988,10 @@ export function validateTraceability({
         !(
           postT085MaintenanceAuthorizationAccepted &&
           postT085MaintenanceAuthorizedPaths.has(changedPath)
+        ) &&
+        !(
+          androidNativeSurfaceAuthorizationAccepted &&
+          androidNativeSurfaceAuthorizedPaths.has(changedPath)
         )
       ) {
         errors.push(
@@ -7222,6 +7557,28 @@ export function validateTraceability({
             errors: postT085MaintenanceAuthorizationReadback.errors ?? []
           }
         : null,
+      android_native_surface_authorization_readback: androidNativeSurfaceAuthorizationReadback
+        ? Object.fromEntries(
+            ["dispatch", "addendum"].map((name) => {
+              const comment = androidNativeSurfaceAuthorizationReadback[name] ?? {}
+              return [
+                name,
+                {
+                  status: comment.status ?? "UNAVAILABLE",
+                  source: comment.source ?? null,
+                  html_url: comment.html_url ?? null,
+                  issue_url: comment.issue_url ?? null,
+                  user_login: comment.user_login ?? null,
+                  author_association: comment.author_association ?? null,
+                  created_at: comment.created_at ?? null,
+                  updated_at: comment.updated_at ?? null,
+                  body_sha256: sha256(comment.body ?? null),
+                  errors: comment.errors ?? []
+                }
+              ]
+            })
+          )
+        : null,
       exact_head_evidence: exactHeadEvidence,
       github_actions_context: githubActionsContext
         ? {
@@ -7341,6 +7698,10 @@ export function validateTraceability({
                         !(
                           postT085MaintenanceAuthorizationAccepted &&
                           postT085MaintenanceAuthorizedPaths.has(changedPath)
+                        ) &&
+                        !(
+                          androidNativeSurfaceAuthorizationAccepted &&
+                          androidNativeSurfaceAuthorizedPaths.has(changedPath)
                         )
                     )
                   : state === t085States.COMPLETE_STEADY
@@ -7635,6 +7996,25 @@ function inspectCommitTimestamp(root, commit) {
   }
 }
 
+function inspectCommitCountBetween(root, base, head, { mergesOnly = false } = {}) {
+  if (!/^[0-9a-f]{40}$/.test(base ?? "") || !/^[0-9a-f]{40}$/.test(head ?? "")) return null
+  try {
+    const argumentsList = ["rev-list", "--count"]
+    if (mergesOnly) argumentsList.push("--merges")
+    argumentsList.push(`${base}..${head}`)
+    const count = Number(
+      execFileSync("git", argumentsList, {
+        cwd: root,
+        encoding: "utf8",
+        stdio: ["ignore", "pipe", "ignore"]
+      }).trim()
+    )
+    return Number.isInteger(count) && count >= 0 ? count : null
+  } catch {
+    return null
+  }
+}
+
 function inspectImplementationMergeAncestor(root, changeBaseSha) {
   if (!/^[0-9a-f]{40}$/.test(changeBaseSha ?? "")) return null
   try {
@@ -7736,6 +8116,23 @@ export function inspectPostT085MaintenanceAuthorization(
   })
 }
 
+export function inspectAndroidNativeSurfaceAuthorization({ environment = process.env } = {}) {
+  return {
+    dispatch: inspectGitHubAuthorizationComment(ANDROID_NATIVE_SURFACE_DISPATCH_REF, {
+      environment,
+      isAuthorizedRef: (value) => value === ANDROID_NATIVE_SURFACE_DISPATCH_REF,
+      invalidRefError: "Android native-surface dispatch ref is not authorized",
+      readbackErrorPrefix: "GitHub Android native-surface dispatch read-back failed"
+    }),
+    addendum: inspectGitHubAuthorizationComment(ANDROID_NATIVE_SURFACE_AUTHORIZATION_REF, {
+      environment,
+      isAuthorizedRef: (value) => value === ANDROID_NATIVE_SURFACE_AUTHORIZATION_REF,
+      invalidRefError: "Android native-surface addendum ref is not authorized",
+      readbackErrorPrefix: "GitHub Android native-surface addendum read-back failed"
+    })
+  }
+}
+
 export function inspectOwnerAuthorizationForState(
   root,
   {
@@ -7787,6 +8184,39 @@ export function inspectPostT085MaintenanceAuthorizationForState(
       return null
     }
     return inspect(POST_T085_MAINTENANCE_AUTHORIZATION_REF, { environment })
+  } catch {
+    return null
+  }
+}
+
+export function inspectAndroidNativeSurfaceAuthorizationForState(
+  root,
+  {
+    changeBaseTasksText = null,
+    changeBaseSha = null,
+    boundedScopeActive = null,
+    changedPaths = null,
+    environment = process.env,
+    inspect = inspectAndroidNativeSurfaceAuthorization
+  } = {}
+) {
+  try {
+    const tasksText = fs.readFileSync(
+      path.join(root, "specs/001-taiwan-basketball-magazine-ebook/tasks.md"),
+      "utf8"
+    )
+    const state = classifyT085State(changeBaseTasksText, tasksText)
+    if (
+      !isExactAndroidNativeSurfaceAuthorizationScope({
+        state,
+        changeBaseSha,
+        boundedScopeActive,
+        changedPaths
+      })
+    ) {
+      return null
+    }
+    return inspect({ environment })
   } catch {
     return null
   }
@@ -7859,6 +8289,31 @@ export function inspectGit(root, { environment = process.env } = {}) {
       POST_T085_MAINTENANCE_AUTHORIZED_HEAD_SHA,
       postT085MaintenanceFinalPrHead
     )
+    const androidNativeSurfaceSeedAncestor = inspectAncestor(
+      root,
+      ANDROID_NATIVE_SURFACE_SEED_HEAD_SHA,
+      head
+    )
+    const androidNativeSurfaceSeedCommittedAt = inspectCommitTimestamp(
+      root,
+      ANDROID_NATIVE_SURFACE_SEED_HEAD_SHA
+    )
+    const androidNativeSurfaceAmendmentPaths = inspectChangedPathsBetweenCommits(
+      root,
+      ANDROID_NATIVE_SURFACE_SEED_HEAD_SHA,
+      head
+    )
+    const androidNativeSurfaceAmendmentCommitCount = inspectCommitCountBetween(
+      root,
+      ANDROID_NATIVE_SURFACE_SEED_HEAD_SHA,
+      head
+    )
+    const androidNativeSurfaceAmendmentMergeCommitCount = inspectCommitCountBetween(
+      root,
+      ANDROID_NATIVE_SURFACE_SEED_HEAD_SHA,
+      head,
+      { mergesOnly: true }
+    )
     const changeBase = resolveChangeBase(root, head, environment)
     const changeBaseCommittedAt = inspectCommitTimestamp(root, changeBase.sha)
     const implementationMergeAncestorOfChangeBase = inspectImplementationMergeAncestor(
@@ -7925,6 +8380,12 @@ export function inspectGit(root, { environment = process.env } = {}) {
       post_t085_maintenance_candidate_amendment_paths: postT085MaintenanceCandidateAmendmentPaths,
       post_t085_maintenance_preserved_payload_blob_oids:
         postT085MaintenancePreservedPayloadBlobOids,
+      android_native_surface_seed_ancestor: androidNativeSurfaceSeedAncestor,
+      android_native_surface_seed_committed_at: androidNativeSurfaceSeedCommittedAt,
+      android_native_surface_amendment_paths: androidNativeSurfaceAmendmentPaths,
+      android_native_surface_amendment_commit_count: androidNativeSurfaceAmendmentCommitCount,
+      android_native_surface_amendment_merge_commit_count:
+        androidNativeSurfaceAmendmentMergeCommitCount,
       change_base_ref: changeBase.ref,
       change_base_sha: changeBase.sha,
       change_base_committed_at: changeBaseCommittedAt,
@@ -7960,6 +8421,11 @@ export function inspectGit(root, { environment = process.env } = {}) {
       post_t085_maintenance_final_pr_head_tree_sha: null,
       post_t085_maintenance_candidate_amendment_paths: null,
       post_t085_maintenance_preserved_payload_blob_oids: null,
+      android_native_surface_seed_ancestor: null,
+      android_native_surface_seed_committed_at: null,
+      android_native_surface_amendment_paths: null,
+      android_native_surface_amendment_commit_count: null,
+      android_native_surface_amendment_merge_commit_count: null,
       change_base_ref: null,
       change_base_sha: null,
       change_base_committed_at: null,
@@ -7998,6 +8464,14 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
       environment
     }
   )
+  const androidNativeSurfaceAuthorizationReadback =
+    inspectAndroidNativeSurfaceAuthorizationForState(root, {
+      changeBaseTasksText: inspection.change_base_tasks_text,
+      changeBaseSha: inspection.change_base_sha,
+      boundedScopeActive: inspection.bounded_scope_active,
+      changedPaths: inspection.changedPaths,
+      environment
+    })
   const githubActionsContext = inspectGitHubActionsContext({ environment, gitBinding: inspection })
   const isGitHubActions = environment.GITHUB_ACTIONS === "true"
   const report = validateTraceability({
@@ -8007,6 +8481,7 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
     changeBaseCommittedAt: inspection.change_base_committed_at,
     ownerAuthorizationReadback,
     postT085MaintenanceAuthorizationReadback,
+    androidNativeSurfaceAuthorizationReadback,
     gitBinding: {
       status: inspection.status,
       head: inspection.head,
@@ -8033,6 +8508,13 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
         inspection.post_t085_maintenance_candidate_amendment_paths,
       post_t085_maintenance_preserved_payload_blob_oids:
         inspection.post_t085_maintenance_preserved_payload_blob_oids,
+      android_native_surface_seed_ancestor: inspection.android_native_surface_seed_ancestor,
+      android_native_surface_seed_committed_at: inspection.android_native_surface_seed_committed_at,
+      android_native_surface_amendment_paths: inspection.android_native_surface_amendment_paths,
+      android_native_surface_amendment_commit_count:
+        inspection.android_native_surface_amendment_commit_count,
+      android_native_surface_amendment_merge_commit_count:
+        inspection.android_native_surface_amendment_merge_commit_count,
       change_base_ref: inspection.change_base_ref,
       change_base_sha: inspection.change_base_sha,
       change_base_committed_at: inspection.change_base_committed_at,
