@@ -2367,13 +2367,13 @@ test("cold native preflight and UIAutomator normalization have independent bound
   const preflightAcceptance =
     'requireRemainingAutomationMilliseconds(preflightDeadline, 1, "system-window preflight acceptance")'
   const normalizationDeadline =
-    "const normalizationDeadline = performance.now() + CHROME_AUTOMATION_NORMALIZATION_TIMEOUT_MILLISECONDS"
+    /const normalizationDeadline =\s*performance\.now\(\) \+\s*CHROME_AUTOMATION_NORMALIZATION_TIMEOUT_MILLISECONDS/u
   const normalizationCall = "normalizeChromeAutomationSurfaceWithinDeadline({"
 
   const preflightDeadlineIndex = performanceHarness.indexOf(preflightDeadline)
   const preflightProbeIndex = performanceHarness.indexOf(preflightProbe)
   const preflightAcceptanceIndex = performanceHarness.indexOf(preflightAcceptance)
-  const normalizationDeadlineIndex = performanceHarness.indexOf(normalizationDeadline)
+  const normalizationDeadlineIndex = performanceHarness.search(normalizationDeadline)
   const normalizationCallIndex = performanceHarness.indexOf(normalizationCall)
 
   equal(preflightDeadlineIndex >= 0, true)
@@ -2401,12 +2401,12 @@ test("cold native activity acquisition cannot consume the UIAutomator normalizat
     "let initialSurfaceActivity = await acquireChromeSurfaceActivityWithinDeadline("
   const activityPreflightAcceptance = '"activity preflight acceptance"'
   const normalizationDeadline =
-    "const normalizationDeadline = performance.now() + CHROME_AUTOMATION_NORMALIZATION_TIMEOUT_MILLISECONDS"
+    /const normalizationDeadline =\s*performance\.now\(\) \+\s*CHROME_AUTOMATION_NORMALIZATION_TIMEOUT_MILLISECONDS/u
 
   const activityPreflightDeadlineIndex = performanceHarness.indexOf(activityPreflightDeadline)
   const activityPreflightIndex = performanceHarness.indexOf(activityPreflight)
   const activityPreflightAcceptanceIndex = performanceHarness.indexOf(activityPreflightAcceptance)
-  const normalizationDeadlineIndex = performanceHarness.indexOf(normalizationDeadline)
+  const normalizationDeadlineIndex = performanceHarness.search(normalizationDeadline)
 
   equal(activityPreflightDeadlineIndex >= 0, true)
   equal(activityPreflightDeadlineIndex < activityPreflightIndex, true)
