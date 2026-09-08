@@ -186,6 +186,36 @@ const androidNativeSurfaceAmendmentPaths = [
   "scripts/test/validate-traceability.test.mjs"
 ]
 
+const androidNativeSurfaceMergedHeadSha = "19f1b983878489ca3838d84696a19fa18ff8bbc5"
+const androidNativeSurfaceMergeSha = "d79daefec49b0f5d059a2a6c349c0be107afd2d4"
+const androidNativeSurfaceMergeTreeSha = "b5ab5a28d1cbda5e9d0c0779bc4b5cc70b47d606"
+const post169GovernanceDispatchRef =
+  "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5582375304"
+const post169GovernanceDispatchRecordedAt = "2026-09-08T09:10:03Z"
+const post169GovernanceAddendumRef =
+  traceabilityValidator.POST169_GOVERNANCE_ADDENDUM_REF ??
+  "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-1"
+const post169GovernanceAddendumRecordedAt =
+  traceabilityValidator.POST169_GOVERNANCE_ADDENDUM_RECORDED_AT ?? "2026-09-08T09:30:00Z"
+const post169GovernanceAuthorizationBaseSha = androidNativeSurfaceMergeSha
+const post169GovernanceBranch = "fix/post169-governance-reconciliation"
+const post169GovernancePullRequest = 170
+const post169GovernanceSeedHeadSha =
+  traceabilityValidator.POST169_GOVERNANCE_SEED_HEAD_SHA ?? "4444444444444444444444444444444444444444"
+const post169GovernanceAuthorizedPaths = [
+  "README.md",
+  `${featurePath}/tasks.md`,
+  "scripts/test/validate-traceability.test.mjs",
+  "scripts/validate-traceability.mjs"
+]
+const post169GovernanceAmendmentPaths = [
+  "README.md",
+  `${featurePath}/tasks.md`,
+  "scripts/validate-traceability.mjs"
+]
+const post169T086StatusSuffix =
+  " Current governance state (2026-09-08): #169 maintenance is merged; T086 remains HOLD in draft PR #161 until protected-main CI/Security, #164 required-context enforcement, a fresh exact-base dispatch/rebase, exact-head evidence, and OWNER adjudication of every blocker pass. The beta flag remains unchanged."
+
 function sha256(text) {
   return createHash("sha256").update(text).digest("hex")
 }
@@ -714,6 +744,40 @@ function makeAndroidNativeSurfaceActionsContext(
   })
 }
 
+function makeAndroidNativeSurfacePushActionsContext(root, { after = androidNativeSurfaceMergeSha } = {}) {
+  const eventPath = path.join(root, "github-android-native-surface-push-event.json")
+  fs.writeFileSync(
+    eventPath,
+    JSON.stringify({
+      repository: { full_name: "bynanci/courtside-tw" },
+      before: androidNativeSurfaceAuthorizationBaseSha,
+      after,
+      ref: "refs/heads/main"
+    })
+  )
+  return traceabilityValidator.inspectGitHubActionsContext({
+    environment: {
+      GITHUB_ACTIONS: "true",
+      GITHUB_REPOSITORY: "bynanci/courtside-tw",
+      GITHUB_EVENT_NAME: "push",
+      GITHUB_EVENT_PATH: eventPath,
+      GITHUB_SHA: after,
+      GITHUB_WORKFLOW: "CI",
+      GITHUB_JOB: "frontend-contract",
+      GITHUB_RUN_ID: fixtureActionsRunId,
+      GITHUB_RUN_NUMBER: fixtureActionsRunNumber,
+      GITHUB_RUN_ATTEMPT: fixtureActionsRunAttempt,
+      GITHUB_REF: "refs/heads/main",
+      GITHUB_REF_NAME: "main"
+    },
+    gitBinding: {
+      head: after,
+      change_base_sha: androidNativeSurfaceAuthorizationBaseSha,
+      change_base_ancestor: true
+    }
+  })
+}
+
 function makePostT085MaintenancePushActionsContext(root) {
   const eventPath = path.join(root, "github-post-t085-maintenance-push-event.json")
   fs.writeFileSync(
@@ -1134,6 +1198,139 @@ function makeAndroidNativeSurfaceAuthorizationReadback({
   }
 }
 
+function makePost169GovernanceAuthorizationReadback({
+  dispatchAuthorizationOverrides = {},
+  addendumAuthorizationOverrides = {},
+  dispatchReadbackOverrides = {},
+  addendumReadbackOverrides = {}
+} = {}) {
+  const dispatchAuthorization = {
+    schema_version: "courtside-post169-governance-reconciliation-owner-dispatch/v1",
+    decision: "DISPATCH_ACCEPTED",
+    accepted_by: fixtureReceiptOwner,
+    repository: "bynanci/courtside-tw",
+    authorization_base: {
+      branch: "main",
+      sha: post169GovernanceAuthorizationBaseSha,
+      parent_sha: androidNativeSurfaceAuthorizationBaseSha,
+      merged_pull_request: 169,
+      merged_head_sha: androidNativeSurfaceMergedHeadSha
+    },
+    branch: post169GovernanceBranch,
+    objective:
+      "make the frozen post-T085 validator accept the authenticated PR 169 squash result on protected-main push while reconciling README and the T086 task description to the same live HOLD state",
+    authorized_paths: [...post169GovernanceAuthorizedPaths],
+    authorized_actions: [
+      "create the bounded branch and draft pull request",
+      "commit deterministic tests before implementation",
+      "apply the minimum fail-closed post-merge recognition",
+      "update only current progress and T086 HOLD wording in README.md and tasks.md",
+      "run fresh exact-head CI and Security and obtain exact-head review"
+    ],
+    acceptance: [
+      "PR 169 merged exact head, merge SHA, protected base parent, repository, owner and exact four-path history are authenticated",
+      "pull-request-head and protected-main-push contexts are distinguished without a generic maintenance bypass",
+      "mutation, deletion, actor mismatch, SHA mismatch, branch mismatch, path drift, replay or API failure fails closed",
+      "README reports 86 checked tasks: T001-T085 and T097",
+      "T086 remains unchecked and the beta flag remains unchanged",
+      "no other task or issue checkbox changes"
+    ],
+    commit_budget: { maximum_commits: 2, tests_first: true },
+    forbidden: [
+      "merge or ready-for-review transition under this receipt",
+      "PR 161 rebase, ready transition or merge",
+      "T086 completion, task-checkbox change or beta-flag removal",
+      "workflow, ruleset, provider, deployment, credential, secret, frozen T085 evidence, research, Web3 or external-product mutation",
+      "risk acceptance for any frozen T085 deviation"
+    ],
+    terminal_policy: "STOP_AT_DRAFT_EXACT_HEAD_REVIEW_GATE",
+    merge_authorization: false,
+    ...dispatchAuthorizationOverrides
+  }
+  const addendumAuthorization = {
+    schema_version: "courtside-post169-governance-reconciliation-addendum/v1",
+    decision: "EXACT_HEAD_ADDENDUM_ACCEPTED",
+    accepted_by: fixtureReceiptOwner,
+    repository: "bynanci/courtside-tw",
+    issue: "https://github.com/bynanci/courtside-tw/issues/121",
+    dispatch_ref: post169GovernanceDispatchRef,
+    pull_request: post169GovernancePullRequest,
+    authorization_base: {
+      branch: "main",
+      sha: post169GovernanceAuthorizationBaseSha,
+      protected: true
+    },
+    seed_head: {
+      branch: post169GovernanceBranch,
+      sha: post169GovernanceSeedHeadSha
+    },
+    authorized_paths: [...post169GovernanceAuthorizedPaths],
+    authorized_amendment: {
+      parent_sha: post169GovernanceSeedHeadSha,
+      commit_count: 1,
+      changed_paths: [...post169GovernanceAmendmentPaths],
+      tests_first: true
+    },
+    acceptance: [
+      "the dispatch and addendum remain immutable and OWNER-authored",
+      "the final PR diff is exactly the four authorized paths",
+      "the seed is the sole parent of one implementation commit and no merge commit exists",
+      "README and tasks.md carry the same current HOLD state while every task checkbox remains unchanged",
+      "PR 169 squash provenance is bound by exact base, merged head, merge SHA and identical tree",
+      "API failure, actor mismatch, base, branch, PR, path, ancestry, commit-count or content drift fails closed"
+    ],
+    forbidden: [
+      "merge or ready-for-review transition",
+      "PR 161 rebase, ready transition or merge",
+      "T086 completion, task-checkbox change or beta-flag removal",
+      "workflow, ruleset, provider, deployment, credential, secret, frozen T085 evidence, research, Web3 or external-product mutation"
+    ],
+    terminal_policy: "STOP_AT_DRAFT_EXACT_HEAD_REVIEW_GATE",
+    merge_authorization: false,
+    ...addendumAuthorizationOverrides
+  }
+  return {
+    dispatch: {
+      status: "VERIFIED",
+      source: "github-api",
+      html_url: post169GovernanceDispatchRef,
+      issue_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/121",
+      user_login: fixtureReceiptOwner,
+      author_association: "OWNER",
+      created_at: post169GovernanceDispatchRecordedAt,
+      updated_at: post169GovernanceDispatchRecordedAt,
+      body: [
+        "<!-- post169-governance-reconciliation:owner-dispatch:v1:start -->",
+        "```json",
+        JSON.stringify(dispatchAuthorization),
+        "```",
+        "<!-- post169-governance-reconciliation:owner-dispatch:v1:end -->"
+      ].join("\n"),
+      errors: [],
+      ...dispatchReadbackOverrides
+    },
+    addendum: {
+      status: "VERIFIED",
+      source: "github-api",
+      html_url: post169GovernanceAddendumRef,
+      issue_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/121",
+      user_login: fixtureReceiptOwner,
+      author_association: "OWNER",
+      created_at: post169GovernanceAddendumRecordedAt,
+      updated_at: post169GovernanceAddendumRecordedAt,
+      body: [
+        "<!-- post169-governance-reconciliation:addendum:v1:start -->",
+        "```json",
+        JSON.stringify(addendumAuthorization),
+        "```",
+        "<!-- post169-governance-reconciliation:addendum:v1:end -->"
+      ].join("\n"),
+      errors: [],
+      ...addendumReadbackOverrides
+    }
+  }
+}
+
 function writeFixturePushExactHead(root) {
   fs.writeFileSync(
     path.join(root, "artifacts/exact-head.json"),
@@ -1308,6 +1505,47 @@ function runAndroidNativeSurfaceFixture(fixture, overrides = {}) {
     requireExactHeadEvidence: true,
     githubActionsContext,
     gitBinding: makeAndroidNativeSurfaceGitBinding(),
+    ...overrides
+  })
+}
+
+function makePost169GovernanceGitBinding(overrides = {}) {
+  return {
+    status: "CLEAN",
+    head: fixtureReceiptHead,
+    change_base_ref: "fixture:post169-governance-base",
+    change_base_sha: post169GovernanceAuthorizationBaseSha,
+    change_base_ancestor: true,
+    head_parent_sha: post169GovernanceSeedHeadSha,
+    head_parent_shas: [post169GovernanceSeedHeadSha],
+    head_parent_count: 1,
+    post169_governance_seed_ancestor: true,
+    post169_governance_seed_committed_at: "2026-09-08T09:20:00.000Z",
+    post169_governance_amendment_commit_count: 1,
+    post169_governance_amendment_merge_commit_count: 0,
+    post169_governance_amendment_paths: [...post169GovernanceAmendmentPaths],
+    android_native_surface_merged_head_tree_sha: androidNativeSurfaceMergeTreeSha,
+    android_native_surface_merge_tree_sha: androidNativeSurfaceMergeTreeSha,
+    android_native_surface_merge_parent_shas: [androidNativeSurfaceAuthorizationBaseSha],
+    ...overrides
+  }
+}
+
+function runPost169GovernanceFixture(fixture, overrides = {}) {
+  const githubActionsContext =
+    overrides.githubActionsContext ??
+    makeAndroidNativeSurfaceActionsContext(fixture.root, {
+      pullRequest: post169GovernancePullRequest,
+      headRef: post169GovernanceBranch,
+      baseSha: post169GovernanceAuthorizationBaseSha
+    })
+  writeExactHeadForActionsContext(fixture.root, githubActionsContext)
+  return runCompletedFixture(fixture, {
+    changeBaseSha: post169GovernanceAuthorizationBaseSha,
+    post169GovernanceAuthorizationReadback: makePost169GovernanceAuthorizationReadback(),
+    requireExactHeadEvidence: true,
+    githubActionsContext,
+    gitBinding: makePost169GovernanceGitBinding(),
     ...overrides
   })
 }
@@ -2041,6 +2279,104 @@ test("completed T085 fails closed unless the exact foreground-deadline addendum 
       name
     )
   }
+})
+
+test("the authenticated PR 169 squash push preserves exact four-path authority", () => {
+  const fixture = makeCompletedFixture()
+  fixture.changedPaths = [...androidNativeSurfaceAuthorizedPaths]
+  const githubActionsContext = makeAndroidNativeSurfacePushActionsContext(fixture.root)
+  writeExactHeadForActionsContext(fixture.root, githubActionsContext)
+  const report = runAndroidNativeSurfaceFixture(fixture, {
+    currentHead: androidNativeSurfaceMergeSha,
+    githubActionsContext,
+    post169GovernanceAuthorizationReadback: makePost169GovernanceAuthorizationReadback(),
+    gitBinding: makeAndroidNativeSurfaceGitBinding({
+      head: androidNativeSurfaceMergeSha,
+      head_parent_sha: androidNativeSurfaceAuthorizationBaseSha,
+      head_parent_shas: [androidNativeSurfaceAuthorizationBaseSha],
+      head_parent_count: 1,
+      head_tree_sha: androidNativeSurfaceMergeTreeSha,
+      android_native_surface_final_pr_head_sha: androidNativeSurfaceMergedHeadSha,
+      android_native_surface_final_pr_head_tree_sha: androidNativeSurfaceMergeTreeSha,
+      android_native_surface_merge_tree_matches_final_head: true
+    })
+  })
+
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+  assert.equal(report.source.github_actions_context.authority, "PROTECTED_MAIN_PUSH")
+})
+
+test("post-169 governance reconciliation authenticates one exact tests-first four-path draft", () => {
+  const fixture = makeCompletedFixture()
+  const tasksPath = path.join(fixture.root, featurePath, "tasks.md")
+  const baseTasks = fs.readFileSync(tasksPath, "utf8")
+  const reconciledTasks = baseTasks.replace(
+    /^- \[ \] T086 fixture$/m,
+    `- [ ] T086 fixture${post169T086StatusSuffix}`
+  )
+  assert.notEqual(reconciledTasks, baseTasks)
+  fs.writeFileSync(tasksPath, reconciledTasks)
+  fixture.changedPaths = [...post169GovernanceAuthorizedPaths]
+
+  const passing = runPost169GovernanceFixture(fixture)
+  assert.equal(passing.status, "PASS", passing.errors.join("\n"))
+  assert.equal(passing.counts.checked_tasks, 86)
+  assert.deepEqual(passing.scope_validation.unauthorized_paths, [])
+  assert.equal(
+    passing.source.post169_governance_authorization_readback.addendum.html_url,
+    post169GovernanceAddendumRef
+  )
+
+  for (const [name, overrides, expected] of [
+    [
+      "missing readback",
+      { post169GovernanceAuthorizationReadback: null },
+      /requires verified GitHub dispatch and addendum read-backs/
+    ],
+    [
+      "actor mismatch",
+      {
+        post169GovernanceAuthorizationReadback: makePost169GovernanceAuthorizationReadback({
+          addendumReadbackOverrides: { user_login: "attacker" }
+        })
+      },
+      /must be authored by the repository owner/
+    ],
+    [
+      "PR replay",
+      {
+        githubActionsContext: makeAndroidNativeSurfaceActionsContext(fixture.root, {
+          pullRequest: post169GovernancePullRequest + 1,
+          headRef: post169GovernanceBranch,
+          baseSha: post169GovernanceAuthorizationBaseSha
+        })
+      },
+      /Actions context must bind draft PR 170, branch and base/
+    ],
+    [
+      "path widening",
+      { changedPaths: [...post169GovernanceAuthorizedPaths, "docs/research/unrelated.md"] },
+      /requires the exact four-path governance reconciliation scope|outside the authorized post-T085 maintenance scope/
+    ],
+    [
+      "seed ancestry drift",
+      {
+        gitBinding: makePost169GovernanceGitBinding({
+          post169_governance_seed_ancestor: false
+        })
+      },
+      /governance seed must be an ancestor/
+    ]
+  ]) {
+    const report = runPost169GovernanceFixture(fixture, overrides)
+    assert.equal(report.status, "FAIL", name)
+    assert.match(report.errors.join("\n"), expected, name)
+  }
+
+  fs.writeFileSync(tasksPath, reconciledTasks.replace("- [ ] T086", "- [x] T086"))
+  const checkboxDrift = runPost169GovernanceFixture(fixture)
+  assert.equal(checkboxDrift.status, "FAIL")
+  assert.match(checkboxDrift.errors.join("\n"), /T086|task checkbox/u)
 })
 
 test("completed T085 accepts the exact authenticated US6 maintenance bootstrap scope", () => {
