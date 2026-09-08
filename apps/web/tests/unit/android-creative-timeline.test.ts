@@ -2367,7 +2367,7 @@ test("cold native preflight and UIAutomator normalization have independent bound
   const preflightAcceptance =
     'requireRemainingAutomationMilliseconds(preflightDeadline, 1, "system-window preflight acceptance")'
   const normalizationDeadline =
-    "const normalizationDeadline = performance.now() + CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS"
+    "const normalizationDeadline = performance.now() + CHROME_AUTOMATION_NORMALIZATION_TIMEOUT_MILLISECONDS"
   const normalizationCall = "normalizeChromeAutomationSurfaceWithinDeadline({"
 
   const preflightDeadlineIndex = performanceHarness.indexOf(preflightDeadline)
@@ -2401,7 +2401,7 @@ test("cold native activity acquisition cannot consume the UIAutomator normalizat
     "let initialSurfaceActivity = await acquireChromeSurfaceActivityWithinDeadline("
   const activityPreflightAcceptance = '"activity preflight acceptance"'
   const normalizationDeadline =
-    "const normalizationDeadline = performance.now() + CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS"
+    "const normalizationDeadline = performance.now() + CHROME_AUTOMATION_NORMALIZATION_TIMEOUT_MILLISECONDS"
 
   const activityPreflightDeadlineIndex = performanceHarness.indexOf(activityPreflightDeadline)
   const activityPreflightIndex = performanceHarness.indexOf(activityPreflight)
