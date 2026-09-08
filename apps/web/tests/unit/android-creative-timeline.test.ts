@@ -3740,10 +3740,7 @@ test("known-prompt normalization preserves a full bounded follow-up UIAutomator 
     performanceHarness,
     /const CHROME_AUTOMATION_NORMALIZATION_TIMEOUT_MILLISECONDS = 30_000\b/u
   )
-  match(
-    performanceHarness,
-    /const CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS = 10_000\b/u
-  )
+  match(performanceHarness, /const CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS = 10_000\b/u)
   match(
     performanceHarness,
     /const normalizationDeadline =\s*performance\.now\(\) \+\s*CHROME_AUTOMATION_NORMALIZATION_TIMEOUT_MILLISECONDS/u
