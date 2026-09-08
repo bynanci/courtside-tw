@@ -622,7 +622,7 @@ test("native Android performance harness invokes the behavioral boundaries", () 
     /delay:\s*\(milliseconds\)\s*=>\s*new Promise\(\(resolve\)\s*=>\s*setTimeout\(resolve,\s*milliseconds\)\)/u
   )
   const finalSurfaceProof = performanceHarness.match(
-    /async function requireClearChromeContentSurface\(\) \{[\s\S]*?\n\}/u
+    /async function requireClearChromeContentSurface\(foregroundDisplaySize\) \{[\s\S]*?\n\}/u
   )?.[0]
   equal(typeof finalSurfaceProof, "string")
   if (typeof finalSurfaceProof === "string") {
@@ -1744,7 +1744,7 @@ test("production binds c8bb activity acquisition to existing normalization limit
   )
   match(
     performanceHarness,
-    /captureChromeSurfaceProbeBoundaryWithActivityAcquisition\(\{[\s\S]*acquireActivity: \(label\) =>[\s\S]*label === "pre-surface activity"[\s\S]*initialActivityBefore \?\? acquireChromeSurfaceActivityWithinDeadline\(deadline, label\)[\s\S]*: acquireChromeSurfaceActivityWithinDeadline\(deadline, label\)[\s\S]*probeSurface: \(\) => probeChromeContentSurface\(deadline, displaySize\)/u
+    /captureChromeSurfaceProbeBoundaryWithActivityAcquisition\(\{[\s\S]*acquireActivity: \(label\) =>[\s\S]*label === "pre-surface activity"[\s\S]*initialActivityBefore \?\? acquireChromeSurfaceActivityWithinDeadline\(deadline, label\)[\s\S]*: acquireChromeSurfaceActivityWithinDeadline\(\s*postSurfaceActivityDeadline\(\),\s*label\s*\)[\s\S]*probeSurface: \(\) => probeChromeContentSurface\(deadline, displaySize\)/u
   )
   doesNotMatch(
     performanceHarness,
@@ -1752,7 +1752,7 @@ test("production binds c8bb activity acquisition to existing normalization limit
   )
   match(
     performanceHarness,
-    /requireClearChromeContentSurface\(\)[\s\S]*CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS/u
+    /requireClearChromeContentSurface\(\s*foregroundNativeSurface\.displaySize\s*\)[\s\S]*CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS/u
   )
 })
 
@@ -2329,7 +2329,7 @@ test("one shared deadline charges every blocking Android automation command", ()
   equal(commandTimeout(5_000, 4_999.2, 5_000), 0)
 })
 
-test("cold UIAutomator can use the remaining normalization envelope without widening final proof", () => {
+test("cold UIAutomator can use the remaining normalization envelope within bounded final proof", () => {
   const commandTimeout = Reflect.get(timelineHelpers, "androidCommandTimeoutMilliseconds")
   equal(typeof commandTimeout, "function")
   if (typeof commandTimeout !== "function") return
@@ -2347,7 +2347,7 @@ test("cold UIAutomator can use the remaining normalization envelope without wide
   )
   match(
     performanceHarness,
-    /function requireClearChromeContentSurface\(\) \{\s*const deadline =\s*performance\.now\(\) \+ CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS/u
+    /async function requireClearChromeContentSurface\(foregroundDisplaySize\) \{\s*const finalProofDeadline =\s*performance\.now\(\) \+ CHROME_AUTOMATION_FINAL_PROOF_TIMEOUT_MILLISECONDS/u
   )
   match(
     performanceHarness,
@@ -2387,7 +2387,7 @@ test("cold native preflight and UIAutomator normalization have independent bound
   )
   match(
     performanceHarness,
-    /async function requireClearChromeContentSurface\(\) \{\s*const deadline =\s*performance\.now\(\) \+ CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS/u
+    /async function requireClearChromeContentSurface\(foregroundDisplaySize\) \{\s*const finalProofDeadline =\s*performance\.now\(\) \+ CHROME_AUTOMATION_FINAL_PROOF_TIMEOUT_MILLISECONDS/u
   )
 })
 
@@ -2418,7 +2418,7 @@ test("cold native activity acquisition cannot consume the UIAutomator normalizat
   )
   match(
     performanceHarness,
-    /function probeChromeContentSurfaceAtActivityBoundary\(\s*deadline,\s*displaySize,\s*initialActivityBefore\s*=\s*null\s*\)[\s\S]*label === "pre-surface activity"[\s\S]*initialActivityBefore \?\? acquireChromeSurfaceActivityWithinDeadline\(deadline, label\)/u
+    /function probeChromeContentSurfaceAtActivityBoundary\(\s*deadline,\s*displaySize,\s*initialActivityBefore\s*=\s*null,\s*postSurfaceActivityDeadline = \(\) => deadline\s*\)[\s\S]*label === "pre-surface activity"[\s\S]*initialActivityBefore \?\? acquireChromeSurfaceActivityWithinDeadline\(deadline, label\)/u
   )
 })
 
@@ -3702,12 +3702,12 @@ test("Android smoke diagnostics preserve the failing producer and bound probes",
   doesNotMatch(performanceHarness, /result\.error\?\.code === "ETIMEDOUT"\) \{\s*return ""/u)
   match(
     performanceHarness,
-    /normalizeChromeContentSurface\(\)[\s\S]*observeForegroundFrameTimeline\([\s\S]*requireClearChromeContentSurface\(\)[\s\S]*evaluateAndroidForegroundFrameTimeline/u
+    /normalizeChromeContentSurface\(\)[\s\S]*observeForegroundFrameTimeline\([\s\S]*requireClearChromeContentSurface\(\s*foregroundNativeSurface\.displaySize\s*\)[\s\S]*evaluateAndroidForegroundFrameTimeline/u
   )
   match(performanceHarness, /timeout: probeTimeoutMilliseconds/u)
   match(
     performanceHarness,
-    /function probeChromeContentSurfaceAtActivityBoundary\(\s*deadline,\s*displaySize,\s*initialActivityBefore = null\s*\) \{[\s\S]*captureChromeSurfaceProbeBoundaryWithActivityAcquisition\(\{[\s\S]*initialActivityBefore \?\? acquireChromeSurfaceActivityWithinDeadline\(deadline, label\)[\s\S]*probeChromeContentSurface\(deadline, displaySize\)/u
+    /function probeChromeContentSurfaceAtActivityBoundary\(\s*deadline,\s*displaySize,\s*initialActivityBefore = null,\s*postSurfaceActivityDeadline = \(\) => deadline\s*\) \{[\s\S]*captureChromeSurfaceProbeBoundaryWithActivityAcquisition\(\{[\s\S]*initialActivityBefore \?\? acquireChromeSurfaceActivityWithinDeadline\(deadline, label\)[\s\S]*probeChromeContentSurface\(deadline, displaySize\)/u
   )
   match(
     performanceHarness,
@@ -3751,7 +3751,7 @@ test("known-prompt normalization preserves a full bounded follow-up UIAutomator 
   )
   match(
     performanceHarness,
-    /async function requireClearChromeContentSurface\(\) \{\s*const deadline =\s*performance\.now\(\) \+ CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS/u
+    /async function requireClearChromeContentSurface\(foregroundDisplaySize\) \{\s*const finalProofDeadline =\s*performance\.now\(\) \+ CHROME_AUTOMATION_FINAL_PROOF_TIMEOUT_MILLISECONDS/u
   )
 
   equal(commandTimeout(30_000, 7_825, 10_000), 10_000)
@@ -3776,7 +3776,11 @@ test("final foreground activity acquisition preserves the following UIAutomator 
   )
   match(
     performanceHarness,
-    /async function requireClearChromeContentSurface\(\) \{\s*const finalProofDeadline =\s*performance\.now\(\) \+ CHROME_AUTOMATION_FINAL_PROOF_TIMEOUT_MILLISECONDS[\s\S]*const initialActivityBefore =\s*await acquireChromeSurfaceActivityWithinDeadline\(\s*createBoundedAutomationSubdeadline\(\s*finalProofDeadline,\s*CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS,[\s\S]*const surfaceProbeDeadline = createBoundedAutomationSubdeadline\(\s*finalProofDeadline,\s*CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS,[\s\S]*probeChromeContentSurfaceAtActivityBoundary\(\s*surfaceProbeDeadline,\s*undefined,\s*initialActivityBefore,\s*\(\) =>\s*createBoundedAutomationSubdeadline\(\s*finalProofDeadline,\s*CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS,/u
+    /async function requireClearChromeContentSurface\(foregroundDisplaySize\) \{\s*const finalProofDeadline =\s*performance\.now\(\) \+ CHROME_AUTOMATION_FINAL_PROOF_TIMEOUT_MILLISECONDS[\s\S]*const initialActivityBefore =\s*await acquireChromeSurfaceActivityWithinDeadline\(\s*createBoundedAutomationSubdeadline\(\s*finalProofDeadline,\s*CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS,[\s\S]*const surfaceProbeDeadline = createBoundedAutomationSubdeadline\(\s*finalProofDeadline,\s*CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS,[\s\S]*probeChromeContentSurfaceAtActivityBoundary\(\s*surfaceProbeDeadline,\s*foregroundDisplaySize,\s*initialActivityBefore,\s*\(\) =>\s*createBoundedAutomationSubdeadline\(\s*finalProofDeadline,\s*CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS,/u
+  )
+  match(
+    performanceHarness,
+    /foregroundNativeSurfaceBoundary = await requireClearChromeContentSurface\(\s*foregroundNativeSurface\.displaySize\s*\)/u
   )
   match(
     performanceHarness,

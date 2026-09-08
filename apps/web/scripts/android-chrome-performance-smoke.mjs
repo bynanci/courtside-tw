@@ -36,6 +36,7 @@ const BROWSER_QUIESCENCE_MAX_FRAME_GAP_MILLISECONDS = 200
 const BROWSER_QUIESCENCE_CONSECUTIVE_FRAMES = 5
 const CHROME_AUTOMATION_POLL_MILLISECONDS = 100
 const CHROME_AUTOMATION_NORMALIZATION_TIMEOUT_MILLISECONDS = 30_000
+const CHROME_AUTOMATION_FINAL_PROOF_TIMEOUT_MILLISECONDS = 15_000
 const CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS = 5_000
 const CHROME_AUTOMATION_SETTLE_TIMEOUT_MILLISECONDS = 10_000
 const EXPECTED_ANDROID_DISPLAY = Object.freeze({ width: 1080, height: 2400 })
@@ -215,7 +216,9 @@ try {
     5_000,
     BUDGETS.foregroundObservationMilliseconds
   )
-  const foregroundNativeSurfaceBoundary = await requireClearChromeContentSurface()
+  const foregroundNativeSurfaceBoundary = await requireClearChromeContentSurface(
+    foregroundNativeSurface.displaySize
+  )
   const foregroundFrames = evaluateAndroidForegroundFrameTimeline(foregroundFrameTimeline, BUDGETS)
 
   await markPhase(page, "creative-long-task-budget")
@@ -886,6 +889,19 @@ function requireRemainingAutomationMilliseconds(deadline, maximumMilliseconds, l
   return timeoutMilliseconds
 }
 
+function createBoundedAutomationSubdeadline(totalDeadline, maximumMilliseconds, label) {
+  const nowAt = performance.now()
+  const timeoutMilliseconds = androidCommandTimeoutMilliseconds(
+    totalDeadline,
+    nowAt,
+    maximumMilliseconds
+  )
+  if (timeoutMilliseconds === 0) {
+    throw new Error(`Android Chrome ${label} exceeded the total automation deadline`)
+  }
+  return nowAt + timeoutMilliseconds
+}
+
 function probePixelLauncherAnrWindow(deadline) {
   const startedAt = performance.now()
   const displaySize = requireExpectedAndroidDisplaySize(deadline)
@@ -992,13 +1008,14 @@ function acquireChromeSurfaceActivityWithinDeadline(deadline, label) {
 function probeChromeContentSurfaceAtActivityBoundary(
   deadline,
   displaySize,
-  initialActivityBefore = null
+  initialActivityBefore = null,
+  postSurfaceActivityDeadline = () => deadline
 ) {
   return captureChromeSurfaceProbeBoundaryWithActivityAcquisition({
     acquireActivity: (label) =>
       label === "pre-surface activity"
         ? (initialActivityBefore ?? acquireChromeSurfaceActivityWithinDeadline(deadline, label))
-        : acquireChromeSurfaceActivityWithinDeadline(deadline, label),
+        : acquireChromeSurfaceActivityWithinDeadline(postSurfaceActivityDeadline(), label),
     probeSurface: () => probeChromeContentSurface(deadline, displaySize)
   })
 }
@@ -1101,6 +1118,7 @@ async function normalizeChromeContentSurface() {
       preflightPixelLauncherAnrWaitTap ??
       normalization.dismissedTaps["known-pixel-launcher-anr"] ??
       null,
+    displaySize: normalization.surface.displaySize,
     normalizationActivity: normalization.normalizationActivity,
     activityBefore: normalization.surface.activityBefore,
     activityAfter: normalization.surface.activityAfter,
@@ -1108,14 +1126,37 @@ async function normalizeChromeContentSurface() {
   }
 }
 
-async function requireClearChromeContentSurface() {
-  const deadline = performance.now() + CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS
+async function requireClearChromeContentSurface(foregroundDisplaySize) {
+  const finalProofDeadline = performance.now() + CHROME_AUTOMATION_FINAL_PROOF_TIMEOUT_MILLISECONDS
   const attempts = []
-  while (performance.now() < deadline) {
-    const surface = await probeChromeContentSurfaceAtActivityBoundary(deadline)
+  while (performance.now() < finalProofDeadline) {
+    const initialActivityBefore = await acquireChromeSurfaceActivityWithinDeadline(
+      createBoundedAutomationSubdeadline(
+        finalProofDeadline,
+        CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS,
+        "foreground pre-surface activity"
+      ),
+      "pre-surface activity"
+    )
+    const surfaceProbeDeadline = createBoundedAutomationSubdeadline(
+      finalProofDeadline,
+      CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS,
+      "foreground UIAutomator probe"
+    )
+    const surface = await probeChromeContentSurfaceAtActivityBoundary(
+      surfaceProbeDeadline,
+      foregroundDisplaySize,
+      initialActivityBefore,
+      () =>
+        createBoundedAutomationSubdeadline(
+          finalProofDeadline,
+          CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS,
+          "foreground post-surface activity"
+        )
+    )
     attempts.push(surfaceReceipt(surface))
     if (surface.status === "activity-unresolved") {
-      const pollRemainingMilliseconds = deadline - performance.now()
+      const pollRemainingMilliseconds = finalProofDeadline - performance.now()
       await new Promise((resolve) =>
         setTimeout(
           resolve,
@@ -1130,12 +1171,16 @@ async function requireClearChromeContentSurface() {
           `status=${surface.status}`
       )
     }
-    requireRemainingAutomationMilliseconds(deadline, 1, "surface acceptance")
+    requireRemainingAutomationMilliseconds(
+      finalProofDeadline,
+      1,
+      "final foreground proof acceptance"
+    )
     return { ...surfaceReceipt(surface), attempts }
   }
   throw new Error(
     `Android Chrome activity identity did not resolve at the foreground observation boundary ` +
-      `within ${CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS} ms; ` +
+      `within ${CHROME_AUTOMATION_FINAL_PROOF_TIMEOUT_MILLISECONDS} ms; ` +
       `attempts=${JSON.stringify(attempts)}`
   )
 }

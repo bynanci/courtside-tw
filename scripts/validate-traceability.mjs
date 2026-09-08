@@ -15,6 +15,8 @@ export const POST_T085_MAINTENANCE_AUTHORIZATION_SCHEMA =
   "courtside-post-t085-maintenance-authorization/v5"
 export const ANDROID_NATIVE_SURFACE_AUTHORIZATION_SCHEMA =
   "courtside-android-native-surface-traceability-addendum/v1"
+export const ANDROID_NATIVE_SURFACE_FOREGROUND_AUTHORIZATION_SCHEMA =
+  "courtside-android-native-surface-foreground-deadline-addendum/v1"
 export const COMPLETION_RECEIPT_PATH = ".loop/evidence/t085-completion-receipt.json"
 export const ACCEPTED_IMPLEMENTATION_HEAD_SHA = "27b955581a909e292ae4fe6c1fb05de0e94753da"
 export const ACCEPTED_IMPLEMENTATION_MERGE_SHA = "a2491b81066ac225a0b5d2dab93be79fb6dfbe65"
@@ -142,9 +144,16 @@ export const ANDROID_NATIVE_SURFACE_AUTHORIZATION_REF =
   "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5580939141"
 export const ANDROID_NATIVE_SURFACE_DISPATCH_RECORDED_AT = "2026-09-08T06:50:38Z"
 export const ANDROID_NATIVE_SURFACE_AUTHORIZATION_RECORDED_AT = "2026-09-08T07:18:46Z"
+export const ANDROID_NATIVE_SURFACE_FOREGROUND_SCOPE_PROPOSAL_REF =
+  "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5581306844"
+export const ANDROID_NATIVE_SURFACE_FOREGROUND_AUTHORIZATION_REF =
+  "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5581452635"
+export const ANDROID_NATIVE_SURFACE_FOREGROUND_AUTHORIZATION_RECORDED_AT = "2026-09-08T08:01:23Z"
 export const ANDROID_NATIVE_SURFACE_AUTHORIZATION_BASE_SHA =
   "2103adfb9d8d2255fb0fbdcf48f2df7a7e4628c3"
 export const ANDROID_NATIVE_SURFACE_SEED_HEAD_SHA = "5caa1c933f1e682773d9e3d4e270fee6800f1d3f"
+export const ANDROID_NATIVE_SURFACE_FOREGROUND_SEED_HEAD_SHA =
+  "8713630e0aece87012ce04c1c65395ba5d55297b"
 export const ANDROID_NATIVE_SURFACE_BRANCH = "agent/android-native-surface-deadline"
 export const ANDROID_NATIVE_SURFACE_AUTHORIZED_PATHS = Object.freeze([
   "apps/web/scripts/android-chrome-performance-smoke.mjs",
@@ -271,6 +280,10 @@ const androidNativeSurfaceAuthorizationStart =
   "<!-- android-native-surface:traceability-addendum:v1:start -->"
 const androidNativeSurfaceAuthorizationEnd =
   "<!-- android-native-surface:traceability-addendum:v1:end -->"
+const androidNativeSurfaceForegroundAuthorizationStart =
+  "<!-- android-native-surface:foreground-deadline-addendum:v1:start -->"
+const androidNativeSurfaceForegroundAuthorizationEnd =
+  "<!-- android-native-surface:foreground-deadline-addendum:v1:end -->"
 const expectedReceiptScopeBoundaries = Object.freeze({
   t086_dispatched: false,
   participant_research_executed: false,
@@ -460,6 +473,59 @@ const expectedAndroidNativeSurfaceAuthorization = Object.freeze({
     "T086, task-checkbox, beta-flag, research, Web3 or external-product change"
   ],
   terminal_policy: "STOP_AT_DRAFT_EXACT_HEAD_GATE_RECEIPT",
+  merge_authorization: false
+})
+const expectedAndroidNativeSurfaceForegroundAuthorization = Object.freeze({
+  schema_version: ANDROID_NATIVE_SURFACE_FOREGROUND_AUTHORIZATION_SCHEMA,
+  decision: "SAME_FOUR_PATH_FOREGROUND_DEADLINE_ADDENDUM_ACCEPTED",
+  accepted_by: ACCEPTED_RECEIPT_OWNER,
+  repository: "bynanci/courtside-tw",
+  issue: "https://github.com/bynanci/courtside-tw/issues/121",
+  dispatch_ref: ANDROID_NATIVE_SURFACE_DISPATCH_REF,
+  prior_addendum_ref: ANDROID_NATIVE_SURFACE_AUTHORIZATION_REF,
+  scope_proposal_ref: ANDROID_NATIVE_SURFACE_FOREGROUND_SCOPE_PROPOSAL_REF,
+  pull_request: 169,
+  authorization_base: {
+    branch: "main",
+    sha: ANDROID_NATIVE_SURFACE_AUTHORIZATION_BASE_SHA,
+    protected: true
+  },
+  seed_head: {
+    branch: ANDROID_NATIVE_SURFACE_BRANCH,
+    sha: ANDROID_NATIVE_SURFACE_FOREGROUND_SEED_HEAD_SHA
+  },
+  frozen_t085_traceability_sha256: ACCEPTED_TRACEABILITY_SHA256,
+  authorized_paths: [...ANDROID_NATIVE_SURFACE_AUTHORIZED_PATHS],
+  authorized_amendment: {
+    parent_sha: ANDROID_NATIVE_SURFACE_FOREGROUND_SEED_HEAD_SHA,
+    maximum_commit_count: 2,
+    changed_paths: [...ANDROID_NATIVE_SURFACE_AUTHORIZED_PATHS],
+    tests_first: true
+  },
+  authorized_actions: [
+    "add deterministic fail-closed tests before implementation",
+    "ensure final foreground activity acquisition cannot deplete the following UIAutomator probe",
+    "preserve the 5000 millisecond per-probe cap and a bounded total final-proof envelope",
+    "authenticate this exact OWNER addendum for PR 169",
+    "run fresh exact-head CI and Security",
+    "obtain two independent same-head Android passes and exact-head review"
+  ],
+  acceptance: [
+    "the original dispatch and prior addendum remain byte-for-byte immutable and owner-authored",
+    "the final PR diff remains exactly the authorized four-path set",
+    "the frozen T085 traceability contract remains byte-for-byte unchanged",
+    "repository, owner, base, branch, pull request, seed ancestry, exact-head Actions context and draft state all match",
+    "foreground activity acquisition and the following UIAutomator probe each receive an independent maximum 5000 millisecond window within one explicit bounded final-proof envelope",
+    "comment deletion or mutation, API failure, actor mismatch, base or head ancestry drift, branch or path drift, replay by another pull request, excessive commits, merge commits or generic product-path authorization fails closed"
+  ],
+  forbidden: [
+    "merge or ready-for-review transition",
+    "generic product-path authorization or reuse by another pull request",
+    "workflow, ruleset, provider, deployment, credential, secret or frozen T085 evidence mutation",
+    "PR 161 rebase, ready transition or merge",
+    "T086, task-checkbox, beta-flag, research, Web3 or external-product change"
+  ],
+  terminal_policy: "STOP_AT_DRAFT_EXACT_HEAD_REVIEW_GATE_RECEIPT",
   merge_authorization: false
 })
 
@@ -6286,40 +6352,54 @@ function validateAndroidNativeSurfaceAuthorizationReadback({
   const initialErrorCount = errors.length
   const dispatch = readback?.dispatch
   const addendum = readback?.addendum
+  const foregroundAddendum = readback?.foregroundAddendum
   if (
     dispatch?.status !== "VERIFIED" ||
     dispatch?.source !== "github-api" ||
     addendum?.status !== "VERIFIED" ||
-    addendum?.source !== "github-api"
+    addendum?.source !== "github-api" ||
+    foregroundAddendum?.status !== "VERIFIED" ||
+    foregroundAddendum?.source !== "github-api"
   ) {
     errors.push(
-      "Android native-surface authorization requires verified GitHub dispatch and addendum read-backs"
+      "Android native-surface authorization requires verified GitHub dispatch and addendum read-backs plus the foreground-deadline read-back"
     )
     return false
   }
   if (
     dispatch.html_url !== ANDROID_NATIVE_SURFACE_DISPATCH_REF ||
     addendum.html_url !== ANDROID_NATIVE_SURFACE_AUTHORIZATION_REF ||
+    foregroundAddendum.html_url !== ANDROID_NATIVE_SURFACE_FOREGROUND_AUTHORIZATION_REF ||
     dispatch.issue_url !== "https://api.github.com/repos/bynanci/courtside-tw/issues/121" ||
-    addendum.issue_url !== "https://api.github.com/repos/bynanci/courtside-tw/issues/121"
+    addendum.issue_url !== "https://api.github.com/repos/bynanci/courtside-tw/issues/121" ||
+    foregroundAddendum.issue_url !== "https://api.github.com/repos/bynanci/courtside-tw/issues/121"
   ) {
-    errors.push("Android native-surface read-backs must match the two authorized issue comments")
+    errors.push("Android native-surface read-backs must match the three authorized issue comments")
   }
   if (
     dispatch.user_login !== ACCEPTED_RECEIPT_OWNER ||
     dispatch.author_association !== "OWNER" ||
     addendum.user_login !== ACCEPTED_RECEIPT_OWNER ||
-    addendum.author_association !== "OWNER"
+    addendum.author_association !== "OWNER" ||
+    foregroundAddendum.user_login !== ACCEPTED_RECEIPT_OWNER ||
+    foregroundAddendum.author_association !== "OWNER"
   ) {
-    errors.push("Android native-surface comments must be authored by the repository owner")
+    errors.push(
+      "Android native-surface foreground addendum and prior comments must be authored by the repository owner"
+    )
   }
   if (
     dispatch.created_at !== ANDROID_NATIVE_SURFACE_DISPATCH_RECORDED_AT ||
-    addendum.created_at !== ANDROID_NATIVE_SURFACE_AUTHORIZATION_RECORDED_AT
+    addendum.created_at !== ANDROID_NATIVE_SURFACE_AUTHORIZATION_RECORDED_AT ||
+    foregroundAddendum.created_at !== ANDROID_NATIVE_SURFACE_FOREGROUND_AUTHORIZATION_RECORDED_AT
   ) {
     errors.push("Android native-surface comment timestamps must match the owner receipts")
   }
-  if (dispatch.updated_at !== dispatch.created_at || addendum.updated_at !== addendum.created_at) {
+  if (
+    dispatch.updated_at !== dispatch.created_at ||
+    addendum.updated_at !== addendum.created_at ||
+    foregroundAddendum.updated_at !== foregroundAddendum.created_at
+  ) {
     errors.push("Android native-surface comments must be immutable after creation")
   }
 
@@ -6341,24 +6421,44 @@ function validateAndroidNativeSurfaceAuthorizationReadback({
     },
     errors
   )
+  const foregroundAuthorization = parseAndroidNativeSurfaceAuthorizationBody(
+    {
+      body: foregroundAddendum.body,
+      startMarker: androidNativeSurfaceForegroundAuthorizationStart,
+      endMarker: androidNativeSurfaceForegroundAuthorizationEnd,
+      label: "Android native-surface foreground addendum"
+    },
+    errors
+  )
   if (
     !isDeepStrictEqual(dispatchAuthorization, expectedAndroidNativeSurfaceDispatch) ||
-    !isDeepStrictEqual(addendumAuthorization, expectedAndroidNativeSurfaceAuthorization)
+    !isDeepStrictEqual(addendumAuthorization, expectedAndroidNativeSurfaceAuthorization) ||
+    !isDeepStrictEqual(foregroundAuthorization, expectedAndroidNativeSurfaceForegroundAuthorization)
   ) {
-    errors.push("Android native-surface bodies must match the exact owner dispatch and addendum")
+    errors.push(
+      "Android native-surface bodies must match the exact owner dispatch and addendum, including the foreground addendum"
+    )
   }
 
   const seedCommittedAt = Date.parse(gitBinding?.android_native_surface_seed_committed_at ?? "")
   const dispatchRecordedAt = Date.parse(dispatch.created_at ?? "")
   const addendumRecordedAt = Date.parse(addendum.created_at ?? "")
+  const foregroundSeedCommittedAt = Date.parse(
+    gitBinding?.android_native_surface_foreground_seed_committed_at ?? ""
+  )
+  const foregroundRecordedAt = Date.parse(foregroundAddendum.created_at ?? "")
   if (
     !Number.isFinite(seedCommittedAt) ||
     !Number.isFinite(dispatchRecordedAt) ||
     !Number.isFinite(addendumRecordedAt) ||
+    !Number.isFinite(foregroundSeedCommittedAt) ||
+    !Number.isFinite(foregroundRecordedAt) ||
     dispatchRecordedAt >= seedCommittedAt ||
-    addendumRecordedAt <= seedCommittedAt
+    addendumRecordedAt <= seedCommittedAt ||
+    addendumRecordedAt >= foregroundSeedCommittedAt ||
+    foregroundRecordedAt <= foregroundSeedCommittedAt
   ) {
-    errors.push("Android native-surface addendum must postdate the dispatched seed head")
+    errors.push("Android native-surface addenda must follow their exact seed heads in order")
   }
   if (gitBinding?.android_native_surface_seed_ancestor !== true) {
     errors.push("Android native-surface seed head must be an ancestor of the evaluated head")
@@ -6381,6 +6481,28 @@ function validateAndroidNativeSurfaceAuthorizationReadback({
   }
   if (gitBinding?.android_native_surface_amendment_merge_commit_count !== 0) {
     errors.push("Android native-surface amendments must contain no merge commit")
+  }
+  if (gitBinding?.android_native_surface_foreground_seed_ancestor !== true) {
+    errors.push("Android native-surface foreground seed must be an ancestor of the evaluated head")
+  }
+  if (
+    !Array.isArray(gitBinding?.android_native_surface_foreground_amendment_paths) ||
+    !sameValues(
+      gitBinding.android_native_surface_foreground_amendment_paths,
+      ANDROID_NATIVE_SURFACE_AUTHORIZED_PATHS
+    )
+  ) {
+    errors.push(
+      "Android native-surface foreground amendments must change exactly the authorized four paths"
+    )
+  }
+  if (gitBinding?.android_native_surface_foreground_amendment_commit_count !== 2) {
+    errors.push(
+      "Android native-surface foreground amendments must contain exactly one tests-first commit and one implementation commit"
+    )
+  }
+  if (gitBinding?.android_native_surface_foreground_amendment_merge_commit_count !== 0) {
+    errors.push("Android native-surface foreground amendments must contain no merge commit")
   }
   if (!requireExactHeadEvidence) {
     errors.push("Android native-surface authorization requires exact-head CI mode")
@@ -7559,7 +7681,7 @@ export function validateTraceability({
         : null,
       android_native_surface_authorization_readback: androidNativeSurfaceAuthorizationReadback
         ? Object.fromEntries(
-            ["dispatch", "addendum"].map((name) => {
+            ["dispatch", "addendum", "foregroundAddendum"].map((name) => {
               const comment = androidNativeSurfaceAuthorizationReadback[name] ?? {}
               return [
                 name,
@@ -8129,7 +8251,16 @@ export function inspectAndroidNativeSurfaceAuthorization({ environment = process
       isAuthorizedRef: (value) => value === ANDROID_NATIVE_SURFACE_AUTHORIZATION_REF,
       invalidRefError: "Android native-surface addendum ref is not authorized",
       readbackErrorPrefix: "GitHub Android native-surface addendum read-back failed"
-    })
+    }),
+    foregroundAddendum: inspectGitHubAuthorizationComment(
+      ANDROID_NATIVE_SURFACE_FOREGROUND_AUTHORIZATION_REF,
+      {
+        environment,
+        isAuthorizedRef: (value) => value === ANDROID_NATIVE_SURFACE_FOREGROUND_AUTHORIZATION_REF,
+        invalidRefError: "Android native-surface foreground addendum ref is not authorized",
+        readbackErrorPrefix: "GitHub Android native-surface foreground addendum read-back failed"
+      }
+    )
   }
 }
 
@@ -8301,16 +8432,41 @@ export function inspectGit(root, { environment = process.env } = {}) {
     const androidNativeSurfaceAmendmentPaths = inspectChangedPathsBetweenCommits(
       root,
       ANDROID_NATIVE_SURFACE_SEED_HEAD_SHA,
-      head
+      ANDROID_NATIVE_SURFACE_FOREGROUND_SEED_HEAD_SHA
     )
     const androidNativeSurfaceAmendmentCommitCount = inspectCommitCountBetween(
       root,
       ANDROID_NATIVE_SURFACE_SEED_HEAD_SHA,
-      head
+      ANDROID_NATIVE_SURFACE_FOREGROUND_SEED_HEAD_SHA
     )
     const androidNativeSurfaceAmendmentMergeCommitCount = inspectCommitCountBetween(
       root,
       ANDROID_NATIVE_SURFACE_SEED_HEAD_SHA,
+      ANDROID_NATIVE_SURFACE_FOREGROUND_SEED_HEAD_SHA,
+      { mergesOnly: true }
+    )
+    const androidNativeSurfaceForegroundSeedAncestor = inspectAncestor(
+      root,
+      ANDROID_NATIVE_SURFACE_FOREGROUND_SEED_HEAD_SHA,
+      head
+    )
+    const androidNativeSurfaceForegroundSeedCommittedAt = inspectCommitTimestamp(
+      root,
+      ANDROID_NATIVE_SURFACE_FOREGROUND_SEED_HEAD_SHA
+    )
+    const androidNativeSurfaceForegroundAmendmentPaths = inspectChangedPathsBetweenCommits(
+      root,
+      ANDROID_NATIVE_SURFACE_FOREGROUND_SEED_HEAD_SHA,
+      head
+    )
+    const androidNativeSurfaceForegroundAmendmentCommitCount = inspectCommitCountBetween(
+      root,
+      ANDROID_NATIVE_SURFACE_FOREGROUND_SEED_HEAD_SHA,
+      head
+    )
+    const androidNativeSurfaceForegroundAmendmentMergeCommitCount = inspectCommitCountBetween(
+      root,
+      ANDROID_NATIVE_SURFACE_FOREGROUND_SEED_HEAD_SHA,
       head,
       { mergesOnly: true }
     )
@@ -8386,6 +8542,15 @@ export function inspectGit(root, { environment = process.env } = {}) {
       android_native_surface_amendment_commit_count: androidNativeSurfaceAmendmentCommitCount,
       android_native_surface_amendment_merge_commit_count:
         androidNativeSurfaceAmendmentMergeCommitCount,
+      android_native_surface_foreground_seed_ancestor: androidNativeSurfaceForegroundSeedAncestor,
+      android_native_surface_foreground_seed_committed_at:
+        androidNativeSurfaceForegroundSeedCommittedAt,
+      android_native_surface_foreground_amendment_paths:
+        androidNativeSurfaceForegroundAmendmentPaths,
+      android_native_surface_foreground_amendment_commit_count:
+        androidNativeSurfaceForegroundAmendmentCommitCount,
+      android_native_surface_foreground_amendment_merge_commit_count:
+        androidNativeSurfaceForegroundAmendmentMergeCommitCount,
       change_base_ref: changeBase.ref,
       change_base_sha: changeBase.sha,
       change_base_committed_at: changeBaseCommittedAt,
@@ -8426,6 +8591,11 @@ export function inspectGit(root, { environment = process.env } = {}) {
       android_native_surface_amendment_paths: null,
       android_native_surface_amendment_commit_count: null,
       android_native_surface_amendment_merge_commit_count: null,
+      android_native_surface_foreground_seed_ancestor: null,
+      android_native_surface_foreground_seed_committed_at: null,
+      android_native_surface_foreground_amendment_paths: null,
+      android_native_surface_foreground_amendment_commit_count: null,
+      android_native_surface_foreground_amendment_merge_commit_count: null,
       change_base_ref: null,
       change_base_sha: null,
       change_base_committed_at: null,
@@ -8515,6 +8685,16 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
         inspection.android_native_surface_amendment_commit_count,
       android_native_surface_amendment_merge_commit_count:
         inspection.android_native_surface_amendment_merge_commit_count,
+      android_native_surface_foreground_seed_ancestor:
+        inspection.android_native_surface_foreground_seed_ancestor,
+      android_native_surface_foreground_seed_committed_at:
+        inspection.android_native_surface_foreground_seed_committed_at,
+      android_native_surface_foreground_amendment_paths:
+        inspection.android_native_surface_foreground_amendment_paths,
+      android_native_surface_foreground_amendment_commit_count:
+        inspection.android_native_surface_foreground_amendment_commit_count,
+      android_native_surface_foreground_amendment_merge_commit_count:
+        inspection.android_native_surface_foreground_amendment_merge_commit_count,
       change_base_ref: inspection.change_base_ref,
       change_base_sha: inspection.change_base_sha,
       change_base_committed_at: inspection.change_base_committed_at,
