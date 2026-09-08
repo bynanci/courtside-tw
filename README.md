@@ -51,7 +51,7 @@ Courtside TW 不只是文章集合，也不是把雜誌換成另一種內容管�
 
 ## 目前進度
 
-截至目前，`tasks.md` 已記錄 82 個完成項目：`T001–T081` 與 `T097`。這代表產品已經從基礎契約與公開閱讀，推進到出版流程、搜尋、閱讀延續、離線能力，以及第一階段的品質與復原準備。
+截至目前，`tasks.md` 已記錄 86 個完成項目：`T001–T085` 與 `T097`。這代表產品已經從基礎契約與公開閱讀，推進到出版流程、搜尋、閱讀延續、離線能力，以及部署、rollback、觀測與隱私分析準備；`T086` 仍維持 HOLD。
 
 | 產品階段 | 已完成 | 下一步／狀態 |
 | --- | --- | --- |
@@ -62,7 +62,7 @@ Courtside TW 不只是文章集合，也不是把雜誌換成另一種內容管�
 | 閱讀延續 | T064–T076 | 已完成：書籤、跨裝置進度、Reader Stamp 基礎與離線閱讀 |
 | P1 品質與復原 | T077–T081 | 已完成：first issue、品質驗證、威脅模型、備份與 isolated restore |
 | 產品／架構對齊 | T097 | 已完成：台灣籃球、evidence graph、Fan Passport 與 Web3 邊界 |
-| 生產準備 | T082–T086 | 下一階段：部署、rollback、觀測、隱私分析與 beta checklist |
+| 生產準備 | T082–T085 | 已完成：部署、rollback、觀測與隱私分析準備；T086 beta gate 維持 HOLD |
 | Provenance／Web3 | T087–T096 | 尚未開始，等待 P1 release gates 與必要決策 |
 | 台灣籃球資料與文化延伸 | T098–T112 | 尚未開始，包含 domain、evidence、Passport、credential 與 archive |
 
@@ -70,7 +70,7 @@ Courtside TW 不只是文章集合，也不是把雜誌換成另一種內容管�
 
 - **可以展示的核心**：從 Home／Issue 進入 TOC、Article、Closure 的公開閱讀旅程。
 - **已建立的產品信任基礎**：出版版本、權利判定、撤回、搜尋／快取／離線同步，以及可驗證的備份復原流程。
-- **下一個產品準備工作**：完成部署與 rollback 的操作準備，再進入 beta release checklist。
+- **下一個產品準備工作**：先讓 #169 合併後的 protected-main CI/Security 恢復 GREEN，完成 #164 required-context enforcement，再以 fresh exact-base OWNER dispatch 推進 draft PR #161 的 T086 gate。
 - **刻意暫緩的方向**：Web3、wallet、IPFS、chain attestation、參與者研究與更深的台灣籃球資料建模。
 
 ## 完成證據
@@ -110,14 +110,14 @@ Courtside TW 不只是文章集合，也不是把雜誌換成另一種內容管�
 
 - 尚未承諾 chain attestation、IPFS mirror、SIWE、wallet credential 或任何金融／投機用途。
 - 尚未承諾完成正式 participant study、使用者採用率、留存率或營收驗證。
-- 尚未宣稱 beta/GA release；部署、rollback、觀測與 release checklist 仍在 T082–T086。
+- 尚未宣稱 beta/GA release；T082–T085 已完成，T086 仍在 draft PR #161 維持 HOLD，beta flag 未移除。
 
 ## 下一步路線
 
-1. **T082**：補齊部署、資料庫 migration 與 application rollback 的可執行流程。
-2. **T083–T086**：建立服務觀測、隱私友善的產品分析、可靠性準備與 beta checklist。
+1. **恢復 protected-main GREEN**：驗證 #169 合併後的 CI 與 Security，並完成 #164 required-context enforcement。
+2. **T086／PR #161**：維持 draft、HOLD、NO MERGE；取得 fresh exact-base OWNER dispatch 後才可 rebase，並重新建立 exact-head checks、review 與 blocker adjudication。
 3. **完成 P1 release gates 後**：再評估 T087–T096 的 provenance／Web3 方向。
-4. **更後續**：依產品決策與使用者研究結果，才進入 T098–T112 的台灣籃球 domain、evidence、Fan Passport 與 archive。
+4. **獨立研究 frontier**：依產品決策與真實使用者研究結果，再推進 T098–T112 的台灣籃球 domain、evidence、Fan Passport 與 archive。
 
 ## 給協作者
 
