@@ -2191,6 +2191,81 @@ export function createStudioCompletionAuthorizationGate(binding = STUDIO_COMPLET
 }
 const studioCompletionGate = createStudioCompletionAuthorizationGate()
 
+// A separate, closed authority for the published-media rights guard.  Its
+// implementation is deliberately narrower than the Studio and release gates:
+// exactly two runtime/test paths plus these two validator support files, all
+// bound to the immutable OWNER dispatch recorded after the seed commit.
+export const MEDIA_RIGHTS_PATHS = Object.freeze([
+  "apps/api/src/main/java/tw/basketball/magazine/media/application/EditorialMediaMetadataService.java",
+  "apps/api/src/test/java/tw/basketball/magazine/media/api/EditorialMediaMetadataApiIT.java",
+  "scripts/validate-traceability.mjs",
+  "scripts/test/validate-traceability.test.mjs"
+])
+export const MEDIA_RIGHTS_MODES = Object.freeze(
+  Object.fromEntries(MEDIA_RIGHTS_PATHS.map((filePath) => [filePath, "100644"]))
+)
+export const MEDIA_RIGHTS_AUTHORIZATION = Object.freeze({
+  ref: "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5597854589",
+  body_sha256: "c30b19fcdf5d759176b2fbba932e2d5d539d39fec4731f244db0abbf31fb9f78",
+  recorded_at: "2026-09-09T07:20:23Z",
+  pr: 178,
+  branch: "fix/media-rights-metadata",
+  base_sha: "31256aaca413acef93927ba4000da86c2f5a5820",
+  initial_seed: Object.freeze({
+    head_sha: "0a0dc371586abff0ae01494aea80891fdd000f10",
+    tree_sha: "fb1a262beff6398f2379e145929fc5e642df0d7e",
+    changed_paths: Object.freeze(MEDIA_RIGHTS_PATHS.slice(0, 2))
+  }),
+  required_paths: MEDIA_RIGHTS_PATHS,
+  optional_paths: Object.freeze([])
+})
+const mediaRightsChangedPaths = new Set(MEDIA_RIGHTS_PATHS)
+const mediaRightsRuntimePaths = new Set(MEDIA_RIGHTS_PATHS.slice(0, 2))
+function isExactMediaRightsScope(changeBaseSha, changedPaths) {
+  return (
+    changeBaseSha === MEDIA_RIGHTS_AUTHORIZATION.base_sha &&
+    Array.isArray(changedPaths) &&
+    changedPaths.length === MEDIA_RIGHTS_PATHS.length &&
+    sameValues(changedPaths, MEDIA_RIGHTS_PATHS)
+  )
+}
+export function createMediaRightsAuthorizationGate(binding = MEDIA_RIGHTS_AUTHORIZATION) {
+  const c = structuredClone(binding)
+  const bound =
+    /^https:\/\/github\.com\/bynanci\/courtside-tw\/issues\/121#issuecomment-[1-9]\d*$/.test(
+      c.ref ?? ""
+    ) &&
+    /^[0-9a-f]{64}$/.test(c.body_sha256 ?? "") &&
+    isIsoTimestamp(c.recorded_at) &&
+    Number.isInteger(c.pr) &&
+    c.pr > 0 &&
+    c.branch === "fix/media-rights-metadata" &&
+    /^[0-9a-f]{40}$/.test(c.base_sha ?? "") &&
+    /^[0-9a-f]{40}$/.test(c.initial_seed?.head_sha ?? "") &&
+    /^[0-9a-f]{40}$/.test(c.initial_seed?.tree_sha ?? "") &&
+    sameValues(c.required_paths ?? [], MEDIA_RIGHTS_PATHS) &&
+    sameValues(c.optional_paths ?? [], []) &&
+    sameValues(c.initial_seed?.changed_paths ?? [], MEDIA_RIGHTS_PATHS.slice(0, 2))
+  return Object.freeze({
+    requested(changedPaths) {
+      return Array.isArray(changedPaths) && changedPaths.some((p) => mediaRightsChangedPaths.has(p))
+    },
+    validate({ changedPaths, changeBaseSha, errors = [] } = {}) {
+      const ok = bound && isExactMediaRightsScope(changeBaseSha, changedPaths)
+      if (!bound) errors.push("media-rights OWNER dispatch is not bound")
+      else if (!ok) errors.push("media-rights requires the exact four-path scope and base")
+      return ok
+    },
+    allowsPath(filePath) {
+      return bound && mediaRightsChangedPaths.has(filePath)
+    },
+    isBound() {
+      return bound
+    }
+  })
+}
+const mediaRightsGate = createMediaRightsAuthorizationGate()
+
 // Deliberately unbound until the successor main, cache seed and immutable OWNER record exist.
 // Rebinding changes only this sealed descriptor. This authority never accepts a beta release.
 export const PUBLICATION_CACHE_PATHS = Object.freeze([
@@ -9631,6 +9706,11 @@ export function validateTraceability({
   let productRemediationAuthorizationAccepted = false
   let studioCompletionAuthorizationAccepted = false
   let publicationCacheAuthorizationAccepted = false
+  const mediaRightsAuthorizationRequested =
+    state === t085States.COMPLETE_STEADY &&
+    Array.isArray(changedPaths) &&
+    changedPaths.some((changedPath) => mediaRightsRuntimePaths.has(changedPath))
+  let mediaRightsAuthorizationAccepted = false
 
   if (!/^[0-9a-f]{40}$/.test(currentHead ?? "")) {
     errors.push("currentHead must be a full lowercase commit SHA")
@@ -9769,6 +9849,13 @@ export function validateTraceability({
         errors
       })
     }
+    if (mediaRightsAuthorizationRequested) {
+      mediaRightsAuthorizationAccepted = mediaRightsGate.validate({
+        changedPaths,
+        changeBaseSha,
+        errors
+      })
+    }
     if (
       productRemediationAuthorizationRequested(
         changedPaths,
@@ -9861,6 +9948,7 @@ export function validateTraceability({
         !isAuthorizedPostT085MaintenancePath(changedPath) &&
         !(studioCompletionAuthorizationAccepted && studioCompletionGate.allowsPath(changedPath)) &&
         !(publicationCacheAuthorizationAccepted && publicationCacheGate.allowsPath(changedPath)) &&
+        !(mediaRightsAuthorizationAccepted && mediaRightsGate.allowsPath(changedPath)) &&
         !(pnpmSecurityAuthorizationAccepted && pnpmSecurityAuthorizedPaths.has(changedPath)) &&
         !(
           productRemediationAuthorizationAccepted &&
@@ -10710,6 +10798,10 @@ export function validateTraceability({
                         !(
                           publicationCacheAuthorizationAccepted &&
                           publicationCacheGate.allowsPath(changedPath)
+                        ) &&
+                        !(
+                          mediaRightsAuthorizationAccepted &&
+                          mediaRightsGate.allowsPath(changedPath)
                         ) &&
                         !(
                           productRemediationAuthorizationAccepted &&
