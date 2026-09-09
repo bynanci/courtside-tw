@@ -1307,11 +1307,19 @@ paths:
       summary: List private media available to editorial users
       description: Returns bounded media metadata in descending asset UUID order.
         The cursor is the last assetId from the previous page. Private object
-        keys, provider URLs and credentials are never included.
+        keys, provider URLs and credentials are never included. Archived library entries
+        are excluded by default; archived=true returns only archived entries.
+        Library archive does not change processing state, rights or existing publications.
       security:
         - bffSession: []
         - oidcBearer: []
       parameters:
+        - name: archived
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
         - name: cursor
           in: query
           required: false
@@ -1354,6 +1362,7 @@ paths:
                         width: 1200
                         height: 800
                         version: 2
+                        archivedAt: null
                     nextCursor: null
         "400":
           $ref: "#/components/responses/Problem400"
@@ -1365,6 +1374,81 @@ paths:
           $ref: "#/components/responses/Problem429"
       x-required-roles:
         - EDITOR
+  /api/v1/publisher/media:
+    get:
+      tags:
+        - Editorial
+      operationId: listPublisherPrivateMedia
+      summary: List private media available to editorial users
+      description: Returns bounded media metadata in descending asset UUID order.
+        The cursor is the last assetId from the previous page. Private object
+        keys, provider URLs and credentials are never included. Archived library entries
+        are excluded by default; archived=true returns only archived entries.
+        Library archive does not change processing state, rights or existing publications.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - name: archived
+          in: query
+          required: false
+          schema:
+            type: boolean
+            default: false
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/Uuid"
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+      responses:
+        "200":
+          description: A private media page with a nullable next cursor.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store, private
+            X-Content-Type-Options:
+              schema:
+                type: string
+                const: nosniff
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrivateMediaPage"
+              examples:
+                valid:
+                  value:
+                    items:
+                      - assetId: 00000000-0000-4000-8000-000000000001
+                        mimeType: image/jpeg
+                        processingState: READY
+                        altText: Private editorial image
+                        width: 1200
+                        height: 800
+                        version: 2
+                        archivedAt: null
+                    nextCursor: null
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-required-roles:
+        - PUBLISHER
   /api/v1/editor/media/{id}/preview:
     parameters:
       - name: id
@@ -3048,6 +3132,108 @@ paths:
       x-optimistic-lock: If-Match
       x-required-roles:
         - EDITOR
+  /api/v1/editor/media/{id}:archive:
+    post:
+      tags:
+        - Media
+      operationId: archiveEditorMedia
+      summary: Archive media in the editorial library
+      description: Archives library membership using the asset version. Processing state,
+        rights records, bytes and existing published snapshots remain unchanged. Archived
+        media cannot be newly referenced by article drafts or issue covers. The archive
+        remains available in the archived library. A stale version returns 409.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+      responses:
+        "200":
+          description: Media archived or already archived at the supplied current version.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaLibraryArchiveResult"
+              examples:
+                valid:
+                  value:
+                    assetId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    version: 2
+                    archivedAt: 2026-08-10T00:00:00Z
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-write-concurrency: IF_MATCH
+      x-optimistic-lock: If-Match
+      x-idempotent: false
+      x-required-roles:
+        - EDITOR
+  /api/v1/publisher/media/{id}:archive:
+    post:
+      tags:
+        - Media
+      operationId: archivePublisherMedia
+      summary: Archive media in the editorial library
+      description: Archives library membership using the asset version. Processing state,
+        rights records, bytes and existing published snapshots remain unchanged. Archived
+        media cannot be newly referenced by article drafts or issue covers. The archive
+        remains available in the archived library. A stale version returns 409.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+      responses:
+        "200":
+          description: Media archived or already archived at the supplied current version.
+          headers:
+            ETag:
+              $ref: "#/components/headers/ETag"
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MediaLibraryArchiveResult"
+              examples:
+                valid:
+                  value:
+                    assetId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    version: 2
+                    archivedAt: 2026-08-10T00:00:00Z
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-write-concurrency: IF_MATCH
+      x-optimistic-lock: If-Match
+      x-idempotent: false
+      x-required-roles:
+        - PUBLISHER
   /api/v1/publisher/media/{id}:revoke:
     post:
       tags:
@@ -5459,6 +5645,7 @@ components:
       type: object
       additionalProperties: false
       required:
+        - archivedAt
         - assetId
         - mimeType
         - processingState
@@ -5467,6 +5654,11 @@ components:
         - height
         - version
       properties:
+        archivedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
         assetId:
           $ref: "#/components/schemas/Uuid"
         mimeType:
@@ -5519,6 +5711,23 @@ components:
           oneOf:
             - $ref: "#/components/schemas/Uuid"
             - type: "null"
+    MediaLibraryArchiveResult:
+      type: object
+      additionalProperties: false
+      required:
+        - assetId
+        - version
+        - archivedAt
+      properties:
+        assetId:
+          $ref: "#/components/schemas/Uuid"
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+        archivedAt:
+          type: string
+          format: date-time
     MediaMetadata:
       type: object
       additionalProperties: false

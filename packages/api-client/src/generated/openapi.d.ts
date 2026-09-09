@@ -493,9 +493,29 @@ export interface paths {
     }
     /**
      * List private media available to editorial users
-     * @description Returns bounded media metadata in descending asset UUID order. The cursor is the last assetId from the previous page. Private object keys, provider URLs and credentials are never included.
+     * @description Returns bounded media metadata in descending asset UUID order. The cursor is the last assetId from the previous page. Private object keys, provider URLs and credentials are never included. Archived library entries are excluded by default; archived=true returns only archived entries. Library archive does not change processing state, rights or existing publications.
      */
     get: operations["listPrivateMedia"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/publisher/media": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List private media available to editorial users
+     * @description Returns bounded media metadata in descending asset UUID order. The cursor is the last assetId from the previous page. Private object keys, provider URLs and credentials are never included. Archived library entries are excluded by default; archived=true returns only archived entries. Library archive does not change processing state, rights or existing publications.
+     */
+    get: operations["listPublisherPrivateMedia"]
     put?: never
     post?: never
     delete?: never
@@ -1015,6 +1035,46 @@ export interface paths {
      * @description Persists alt text and a versioned rights record with an If-Match lock on the media asset.
      */
     patch: operations["updateEditorMediaMetadata"]
+    trace?: never
+  }
+  "/api/v1/editor/media/{id}:archive": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Archive media in the editorial library
+     * @description Archives library membership using the asset version. Processing state, rights records, bytes and existing published snapshots remain unchanged. Archived media cannot be newly referenced by article drafts or issue covers. The archive remains available in the archived library. A stale version returns 409.
+     */
+    post: operations["archiveEditorMedia"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/publisher/media/{id}:archive": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Archive media in the editorial library
+     * @description Archives library membership using the asset version. Processing state, rights records, bytes and existing published snapshots remain unchanged. Archived media cannot be newly referenced by article drafts or issue covers. The archive remains available in the archived library. A stale version returns 409.
+     */
+    post: operations["archivePublisherMedia"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
     trace?: never
   }
   "/api/v1/publisher/media/{id}:revoke": {
@@ -1715,6 +1775,8 @@ export interface components {
       rights?: components["schemas"]["MediaRightsMetadataInput"]
     }
     PrivateMediaSummary: {
+      /** Format: date-time */
+      archivedAt: string | null
       assetId: components["schemas"]["Uuid"]
       /** @enum {string} */
       mimeType: "image/avif" | "image/jpeg" | "image/png" | "image/webp"
@@ -1729,6 +1791,13 @@ export interface components {
     PrivateMediaPage: {
       items: components["schemas"]["PrivateMediaSummary"][]
       nextCursor: components["schemas"]["Uuid"] | null
+    }
+    MediaLibraryArchiveResult: {
+      assetId: components["schemas"]["Uuid"]
+      /** Format: int64 */
+      version: number
+      /** Format: date-time */
+      archivedAt: string
     }
     MediaMetadata: {
       assetId: components["schemas"]["Uuid"]
@@ -3163,6 +3232,38 @@ export interface operations {
   listPrivateMedia: {
     parameters: {
       query?: {
+        archived?: boolean
+        cursor?: components["schemas"]["Uuid"]
+        limit?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description A private media page with a nullable next cursor. */
+      200: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          "Cache-Control"?: "no-store, private"
+          "X-Content-Type-Options"?: "nosniff"
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["PrivateMediaPage"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  listPublisherPrivateMedia: {
+    parameters: {
+      query?: {
+        archived?: boolean
         cursor?: components["schemas"]["Uuid"]
         limit?: number
       }
@@ -4234,6 +4335,72 @@ export interface operations {
       404: components["responses"]["Problem404"]
       409: components["responses"]["Problem409"]
       422: components["responses"]["Problem422"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  archiveEditorMedia: {
+    parameters: {
+      query?: never
+      header: {
+        /** @description Optimistic-lock version or ETag. The server rejects stale values with 409 VERSION_CONFLICT. */
+        "If-Match": components["parameters"]["IfMatch"]
+      }
+      path: {
+        id: components["parameters"]["Id"]
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Media archived or already archived at the supplied current version. */
+      200: {
+        headers: {
+          ETag: components["headers"]["ETag"]
+          "X-Request-Id": components["headers"]["XRequestId"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["MediaLibraryArchiveResult"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      409: components["responses"]["Problem409"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  archivePublisherMedia: {
+    parameters: {
+      query?: never
+      header: {
+        /** @description Optimistic-lock version or ETag. The server rejects stale values with 409 VERSION_CONFLICT. */
+        "If-Match": components["parameters"]["IfMatch"]
+      }
+      path: {
+        id: components["parameters"]["Id"]
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Media archived or already archived at the supplied current version. */
+      200: {
+        headers: {
+          ETag: components["headers"]["ETag"]
+          "X-Request-Id": components["headers"]["XRequestId"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["MediaLibraryArchiveResult"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      409: components["responses"]["Problem409"]
       429: components["responses"]["Problem429"]
     }
   }

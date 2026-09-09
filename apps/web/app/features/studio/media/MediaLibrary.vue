@@ -2,11 +2,13 @@
 import { computed, ref } from "vue"
 
 import StudioShell from "../StudioShell.vue"
+import MediaArchivePanel from "./MediaArchivePanel.vue"
 import {
   getMediaMetadata,
   StudioApiError,
   updateMediaMetadata,
-  type MediaMetadata
+  type MediaMetadata,
+  type StudioMediaItem
 } from "../studio-api"
 import type { StudioMediaState, StudioRole } from "../studio-contract"
 import { mediaStateLabel } from "../studio-contract"
@@ -159,6 +161,25 @@ async function upload(): Promise<void> {
   }
 }
 
+async function selectLibraryMedia(item: StudioMediaItem | null): Promise<void> {
+  file.value = null
+  assetId.value = item?.assetId ?? null
+  metadataVersion.value = null
+  rightsVersion.value = null
+  feedback.value = ""
+  if (!item || props.role !== "EDITOR") return
+  const selectedId = item.assetId
+  metadataBusy.value = true
+  try {
+    const metadata = await getMediaMetadata(selectedId)
+    if (assetId.value === selectedId) syncMetadata(metadata)
+  } catch {
+    if (assetId.value === selectedId) feedback.value = "媒體資料讀取失敗，請重新選取。"
+  } finally {
+    if (assetId.value === selectedId) metadataBusy.value = false
+  }
+}
+
 async function loadMetadata(id: string): Promise<void> {
   const metadata = await getMediaMetadata(id)
   syncMetadata(metadata)
@@ -254,7 +275,12 @@ function defaultRightsEnd(): string {
     eyebrow="Studio / Media"
     description="原始檔留在 private storage；alt text、credit 與 rights metadata 透過 editor API 持久化，才進入發布檢查。"
   >
-    <section class="studio-grid studio-grid--media" aria-label="媒體上傳工作區">
+    <MediaArchivePanel :role="role" @select="selectLibraryMedia" />
+    <section
+      v-if="role === 'EDITOR'"
+      class="studio-grid studio-grid--media"
+      aria-label="媒體上傳工作區"
+    >
       <form class="studio-panel studio-panel--primary" @submit.prevent="upload">
         <div class="studio-panel__heading">
           <div>

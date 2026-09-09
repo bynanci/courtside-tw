@@ -329,16 +329,32 @@ public final class JdbcEditorialArticleRepository implements EditorialArticleRep
         List<UUID> assetIds = ContentMediaReferences.extract(content);
         if (!assetIds.isEmpty()) {
             String placeholders = String.join(", ", java.util.Collections.nCopies(assetIds.size(), "?"));
-            List<UUID> existingAssetIds = jdbcTemplate.query(
-                    "SELECT id FROM media_asset WHERE id IN (" + placeholders + ")",
-                    (resultSet, rowNumber) -> resultSet.getObject("id", UUID.class),
-                    assetIds.toArray()
+            List<Object> parameters = new ArrayList<>();
+            parameters.add(revisionId);
+            parameters.addAll(assetIds);
+            // Share locks serialize new references with library archive, while a draft
+            // may retain references it already had before the asset was archived.
+            List<Boolean> blockedAssets = jdbcTemplate.query(
+                    """
+                    SELECT asset.archived_at IS NOT NULL AND NOT EXISTS (
+                        SELECT 1 FROM article_revision_media link
+                        WHERE link.article_revision_id = ? AND link.asset_id = asset.id
+                    ) AS blocked
+                    FROM media_asset asset WHERE asset.id IN (
+                    """ + placeholders + ") ORDER BY asset.id FOR SHARE OF asset",
+                    (resultSet, rowNumber) -> resultSet.getBoolean("blocked"),
+                    parameters.toArray()
             );
-            if (existingAssetIds.size() != assetIds.size()) {
+            if (blockedAssets.size() != assetIds.size()) {
                 throw EditorialProblemException.invalid(
                         "/content",
                         "MEDIA_REFERENCE_NOT_FOUND",
                         "content references a media asset that does not exist"
+                );
+            }
+            if (blockedAssets.contains(Boolean.TRUE)) {
+                throw EditorialProblemException.invalid(
+                        "/content", "MEDIA_ARCHIVED", "archived media cannot be newly referenced"
                 );
             }
         }

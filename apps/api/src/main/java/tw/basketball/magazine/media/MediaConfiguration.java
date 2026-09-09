@@ -13,6 +13,7 @@ import tw.basketball.magazine.audit.AuditWriter;
 import tw.basketball.magazine.media.application.EditorialMediaService;
 import tw.basketball.magazine.media.application.EditorialMediaMetadataService;
 import tw.basketball.magazine.media.application.PublisherMediaService;
+import tw.basketball.magazine.media.application.MediaLibraryArchiveService;
 import tw.basketball.magazine.media.persistence.JdbcMediaAssetRepository;
 import tw.basketball.magazine.media.persistence.JdbcMediaUploadIdempotencyRepository;
 import tw.basketball.magazine.media.persistence.MediaAssetRepository;
@@ -94,6 +95,14 @@ public final class MediaConfiguration {
                 new TransactionTemplate(transactionManager),
                 objectMapper
         );
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(MediaLibraryArchiveService.class)
+    public MediaLibraryArchiveService mediaLibraryArchiveService(
+            JdbcTemplate jdbcTemplate, AuditWriter auditWriter, PlatformTransactionManager transactionManager
+    ) {
+        return new MediaLibraryArchiveService(jdbcTemplate, auditWriter, new TransactionTemplate(transactionManager));
     }
 
     @Bean

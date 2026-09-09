@@ -36,6 +36,49 @@ final class PublicArticleApiIT extends PublicIssueApiIntegrationTestSupport {
     private static final String CHECKSUM = "b".repeat(64);
 
     @Test
+    void libraryArchivePreservesPublishedArticleAndCoverButRevocationStillBlocks() throws Exception {
+        IssueFixture issue = createIssue("library-archive-issue", 91,
+                Instant.parse("2026-08-08T00:00:00Z"), "PUBLISHED", true);
+        addArticle(issue, "Archive", 1, "library-archive-article", 1, "PUBLISHED");
+        UUID assetId = UUID.randomUUID();
+        String document = """
+                {"schemaVersion":1,"documentId":"0190f7b0-7c4b-7e3a-8f12-123456789abc","blocks":[
+                  {"id":"00000000-0000-4000-8000-000000000019","type":"image","version":1,
+                   "payload":{"assetId":"%s","variant":"inline","altText":"Published archive fixture"}}]}
+                """.formatted(assetId);
+        replaceDocument("library-archive-article", document);
+        replaceSnapshotDocument("library-archive-article", document);
+        addFixtureMedia("library-archive-article", document);
+        MvcResult articleBefore = mockMvc.perform(get("/api/v1/public/articles/library-archive-article"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.media[0].assetId").value(assetId.toString()))
+                .andReturn();
+        MvcResult issueBefore = mockMvc.perform(get("/api/v1/public/issues/library-archive-issue"))
+                .andExpect(status().isOk()).andReturn();
+        UUID coverAssetId = jdbcTemplate.queryForObject(
+                "SELECT cover_asset_id FROM publication_issue WHERE id = ?", UUID.class, issue.id());
+        var service = new tw.basketball.magazine.media.application.MediaLibraryArchiveService(jdbcTemplate,
+                new tw.basketball.magazine.audit.JdbcAuditWriter(jdbcTemplate, new tools.jackson.databind.ObjectMapper()),
+                new org.springframework.transaction.support.TransactionTemplate(
+                        new org.springframework.jdbc.datasource.DataSourceTransactionManager(jdbcTemplate.getDataSource())));
+        var editor = tw.basketball.magazine.shared.ActorContext.user("library-editor",
+                java.util.Set.of(tw.basketball.magazine.shared.RoleCode.EDITOR),
+                tw.basketball.magazine.shared.RequestId.of("archive-published"));
+        service.archive(editor, assetId, tw.basketball.magazine.shared.Version.initial());
+        service.archive(editor, coverAssetId, tw.basketball.magazine.shared.Version.initial());
+        mockMvc.perform(get("/api/v1/public/articles/library-archive-article"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.ETAG, articleBefore.getResponse().getHeader(HttpHeaders.ETAG)))
+                .andExpect(content().json(articleBefore.getResponse().getContentAsString()));
+        mockMvc.perform(get("/api/v1/public/issues/library-archive-issue"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.ETAG, issueBefore.getResponse().getHeader(HttpHeaders.ETAG)))
+                .andExpect(content().json(issueBefore.getResponse().getContentAsString()));
+        jdbcTemplate.update("UPDATE media_asset SET processing_state = 'REVOKED' WHERE id = ?", assetId);
+        mockMvc.perform(get("/api/v1/public/articles/library-archive-article"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     void returnsPublishedRevisionAndIssueNavigation() throws Exception {
         IssueFixture issue = createIssue(
                 "issue-2026-04",

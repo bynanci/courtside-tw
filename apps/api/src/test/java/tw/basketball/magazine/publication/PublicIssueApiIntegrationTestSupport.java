@@ -71,6 +71,7 @@ public abstract class PublicIssueApiIntegrationTestSupport {
         applyMigration(dataSource, TAXONOMY_SEARCH_MIGRATION);
         applyMigration(dataSource, "/db/migration/V015__offline_withdrawal_manifest_version.sql");
         applyMigration(dataSource, "/db/migration/V017__asset_revocation_withdrawal_cursor.sql");
+        applyMigration(dataSource, "/db/migration/V019__media_library_archive.sql");
         jdbcTemplate = new JdbcTemplate(dataSource);
     }
 

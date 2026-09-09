@@ -29,6 +29,7 @@ import tw.basketball.magazine.shared.VersionConflictException;
     tw.basketball.magazine.content.api.EditorialContributorController.class,
     EditorialMediaController.class,
     EditorialMediaMetadataController.class,
+    tw.basketball.magazine.media.api.MediaLibraryArchiveController.class,
     EditorialIssueController.class,
     PublisherMediaController.class,
     EditorialAuditController.class
