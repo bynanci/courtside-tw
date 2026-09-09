@@ -2201,6 +2201,16 @@ export const MEDIA_RIGHTS_PATHS = Object.freeze([
   "scripts/validate-traceability.mjs",
   "scripts/test/validate-traceability.test.mjs"
 ])
+// The immutable v1 OWNER receipt contains a historical typo for the validator
+// path (`scripts/test/validate-traceability.mjs`). Keep that receipt byte
+// bound while mapping the typo to the only real validator path in the closed
+// implementation scope below. This is an explicit alias, not normalization.
+export const MEDIA_RIGHTS_DISPATCH_PATHS = Object.freeze([
+  "apps/api/src/main/java/tw/basketball/magazine/media/application/EditorialMediaMetadataService.java",
+  "apps/api/src/test/java/tw/basketball/magazine/media/api/EditorialMediaMetadataApiIT.java",
+  "scripts/test/validate-traceability.mjs",
+  "scripts/test/validate-traceability.test.mjs"
+])
 export const MEDIA_RIGHTS_MODES = Object.freeze(
   Object.fromEntries(MEDIA_RIGHTS_PATHS.map((filePath) => [filePath, "100644"]))
 )
@@ -2217,6 +2227,7 @@ export const MEDIA_RIGHTS_AUTHORIZATION = Object.freeze({
     changed_paths: Object.freeze(MEDIA_RIGHTS_PATHS.slice(0, 2))
   }),
   required_paths: MEDIA_RIGHTS_PATHS,
+  dispatch_required_paths: MEDIA_RIGHTS_DISPATCH_PATHS,
   optional_paths: Object.freeze([])
 })
 const mediaRightsChangedPaths = new Set(MEDIA_RIGHTS_PATHS)
@@ -2232,7 +2243,7 @@ function isExactMediaRightsScope(changeBaseSha, changedPaths) {
 export function createMediaRightsAuthorizationGate(binding = MEDIA_RIGHTS_AUTHORIZATION) {
   const c = structuredClone(binding)
   const sha = (value) => typeof value === "string" && /^[0-9a-f]{40}$/.test(value)
-  const allPaths = new Set(c.required_paths ?? [])
+  const allPaths = new Set(MEDIA_RIGHTS_PATHS)
   const closure = (paths) =>
     Array.isArray(paths) &&
     new Set(paths).size === paths.length &&
@@ -2261,6 +2272,7 @@ export function createMediaRightsAuthorizationGate(binding = MEDIA_RIGHTS_AUTHOR
     /^[0-9a-f]{40}$/.test(c.initial_seed?.head_sha ?? "") &&
     /^[0-9a-f]{40}$/.test(c.initial_seed?.tree_sha ?? "") &&
     sameValues(c.required_paths ?? [], MEDIA_RIGHTS_PATHS) &&
+    sameValues(c.dispatch_required_paths ?? [], MEDIA_RIGHTS_DISPATCH_PATHS) &&
     sameValues(c.optional_paths ?? [], []) &&
     sameValues(c.initial_seed?.changed_paths ?? [], MEDIA_RIGHTS_PATHS.slice(0, 2))
 
@@ -2460,7 +2472,7 @@ export function createMediaRightsAuthorizationGate(binding = MEDIA_RIGHTS_AUTHOR
           dispatch?.branch === c.branch &&
           dispatch?.base_sha === c.base_sha &&
           isDeepStrictEqual(dispatch?.initial_seed, c.initial_seed) &&
-          sameValues(dispatch?.required_paths ?? [], c.required_paths) &&
+          sameValues(dispatch?.required_paths ?? [], c.dispatch_required_paths) &&
           sameValues(dispatch?.optional_paths ?? [], c.optional_paths),
         "dispatch body must match the sealed descriptor"
       )
