@@ -10802,7 +10802,8 @@ function requiredGateRuntime() {
   assert.ok(match, "trusted workflow contains the actual pure evaluator")
   return new Function(
     "createHash",
-    match[1] + "\nreturn {evaluateSnapshot, classifyCandidate, canonicalComment, commentIdentity};"
+    match[1] +
+      "\nreturn {evaluateSnapshot, classifyCandidate, canonicalComment, commentIdentity, advanceCommentFence, parseUniqueJson};"
   )(createHash)
 }
 
@@ -11082,4 +11083,116 @@ test("required T086 gate ignores spoofed new comments but treats owner marker re
     987
   )
   assert.equal(canonicalComment([]), null)
+})
+
+test("required T086 gate does not revive an older OWNER success after canonical deletion", () => {
+  const s = requiredGateFixture()
+  s.commentFence = { id: 999, invalidated: true }
+  assert.equal(requiredGateRuntime().evaluateSnapshot(s).decision, "HOLD")
+})
+
+test("required T086 gate rejects an invalidated revision even if its body is restored", () => {
+  const s = requiredGateFixture()
+  s.commentFence = { id: s.comments[0].id, invalidated: true }
+  assert.equal(requiredGateRuntime().evaluateSnapshot(s).decision, "HOLD")
+})
+
+test("required T086 gate revokes prior own successes before rejecting ambiguous producers", async () => {
+  const workflow = fs.readFileSync(
+    path.join(repositoryRoot, ".github/workflows/t086-required-gate.yml"),
+    "utf8"
+  )
+  const source = workflow.match(
+    /async function checkStart\(pr\) \{[\s\S]*?(?=async function checkFinish\()/u
+  )?.[0]
+  assert.ok(source)
+  const updates = []
+  const github = {
+    rest: {
+      checks: {
+        update: async (payload) => {
+          updates.push(payload)
+          return { data: {} }
+        }
+      }
+    }
+  }
+  const existing = [
+    { id: 10, app: { id: 15368 }, external_id: "courtside-t086:pr:161", conclusion: "success" },
+    { id: 11, app: { id: 15368 }, external_id: "other", conclusion: "success" }
+  ]
+  const checkStart = new Function(
+    "github",
+    "paginated",
+    "CHECK_NAME",
+    "APP_ID",
+    "owner",
+    "repo",
+    "runUrl",
+    "context",
+    "advanceCommentFence",
+    source + ";return checkStart;"
+  )(
+    github,
+    async () => existing,
+    "T086 final release decision",
+    15368,
+    "bynanci",
+    "courtside-tw",
+    "https://github.com/bynanci/courtside-tw/actions/runs/1",
+    { payload: {} },
+    () => null
+  )
+  await assert.rejects(checkStart({ number: 161, head: { sha: "1".repeat(40) } }), /ambiguous/u)
+  assert.deepEqual(
+    updates.map((row) => ({
+      id: row.check_run_id,
+      status: row.status,
+      conclusion: row.conclusion
+    })),
+    [
+      { id: 10, status: "completed", conclusion: "failure" },
+      { id: 11, status: "completed", conclusion: "failure" }
+    ]
+  )
+})
+
+test("required T086 gate rejects duplicate and escaped-equivalent OWNER keys", () => {
+  for (const duplicate of [
+    '"decision":"HOLD","decision":"ADJUDICATION_ACCEPTED"',
+    '"decisi\\u006fn":"HOLD","decision":"ADJUDICATION_ACCEPTED"'
+  ]) {
+    const s = requiredGateFixture()
+    s.comments[0].body = s.comments[0].body.replace('"decision":"ADJUDICATION_ACCEPTED"', duplicate)
+    s.report.adjudication.body_sha256 = createHash("sha256")
+      .update(s.comments[0].body)
+      .digest("hex")
+    assert.equal(requiredGateRuntime().evaluateSnapshot(s).decision, "HOLD")
+  }
+})
+
+test("required T086 gate rejects duplicate artifact JSON keys at any depth", () => {
+  const { parseUniqueJson } = requiredGateRuntime()
+  assert.throws(
+    () => parseUniqueJson('{"release_decision":"HOLD","release_decision":"PASS"}'),
+    /Duplicate/u
+  )
+  assert.throws(
+    () => parseUniqueJson('{"adjudication":{"status":"INVALID","sta\\u0074us":"VERIFIED"}}'),
+    /Duplicate/u
+  )
+  assert.deepEqual(parseUniqueJson('{"nested":[true,false,null,1.25,"a\\\\b"]}'), {
+    nested: [true, false, null, 1.25, "a\\b"]
+  })
+})
+
+test("required T086 gate fences same-ID revision drift even without mutation event", () => {
+  const { advanceCommentFence, commentIdentity, evaluateSnapshot } = requiredGateRuntime()
+  const s = requiredGateFixture()
+  const prior = { ...commentIdentity(s.comments[0]), invalidated: false }
+  s.comments[0].body += "\n"
+  s.commentFence = advanceCommentFence(prior, s.comments[0], {})
+  s.report.adjudication.body_sha256 = createHash("sha256").update(s.comments[0].body).digest("hex")
+  assert.equal(s.commentFence.invalidated, true)
+  assert.equal(evaluateSnapshot(s).decision, "HOLD")
 })
