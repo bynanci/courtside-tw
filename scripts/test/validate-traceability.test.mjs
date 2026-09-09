@@ -31,6 +31,424 @@ const {
 } = traceabilityValidator
 
 const baseSha = AUTHORIZED_BASE_SHA
+const requiredGateBase = "d34f20cc3c44b887ab5a322f7d0d51f7ba21d895"
+const requiredGateBranch = "fix/t086-required-gate-d34f20c"
+const requiredGateAuthorizationRef =
+  "https://github.com/bynanci/courtside-tw/issues/164#issuecomment-5599895601"
+const requiredGatePaths = [
+  ".github/workflows/t086-required-gate.yml",
+  "scripts/validate-traceability.mjs",
+  "scripts/test/validate-traceability.test.mjs"
+]
+// Verbatim immutable OWNER receipt, including its implementation-only boundaries.
+const requiredGateAuthorizationBody = [
+  "<!-- t086-required-gate:owner-exact-path-dispatch:v6:start -->",
+  "## Fresh OWNER exact-base dispatch — #164 current-main trusted producer",
+  "",
+  "**Decision:** `DISPATCH_ACCEPTED / IMPLEMENTATION_REVIEW_OPTIMIZE_MERGE_ENGINEERING_ONLY`.",
+  "",
+  "This immutable successor is bound to the protected main that includes PR #180. It supersedes the stale v5 implementation-only snapshot for this new PR only; it does not refresh PR #161 or authorize provider/ruleset mutation.",
+  "",
+  "```json",
+  "{",
+  '  "schema_version": "courtside-t086-required-gate-owner-exact-path-dispatch/v4",',
+  '  "decision": "DISPATCH_ACCEPTED",',
+  '  "accepted_by": "bynanci",',
+  '  "repository": "bynanci/courtside-tw",',
+  '  "tracker_issue": 164,',
+  '  "pr": 181,',
+  '  "branch": "fix/t086-required-gate-d34f20c",',
+  '  "authorization_base": {',
+  '    "branch": "main",',
+  '    "sha": "d34f20cc3c44b887ab5a322f7d0d51f7ba21d895",',
+  '    "parent_sha": "d0cb5bc2e0dede4dc474794fdb5c4a78452107ae",',
+  '    "tree_sha": "b32287339b499359e548020b6c7496835b5c1e5b",',
+  '    "protected": true,',
+  '    "push_ci": "PENDING_ANDROID_RETRY",',
+  '    "push_security": {',
+  '      "run_id": 34334431985,',
+  '      "result": "PASS",',
+  '      "jobs": "8/8"',
+  "    }",
+  "  },",
+  '  "initial_seed": {',
+  '    "head_sha": "0331dde4e20118a0d89ab86b143ea2746377e620",',
+  '    "tree_sha": "728f0d0c6235afc7d4b4ba161a4cd63cf3eb4284",',
+  '    "changed_paths": [',
+  '      "scripts/test/validate-traceability.test.mjs"',
+  "    ],",
+  '    "role": "accepted pre-dispatch tests-first RED seed; no implementation or release behavior"',
+  "  },",
+  '  "authorized_paths": [',
+  '    ".github/workflows/t086-required-gate.yml",',
+  '    "scripts/validate-traceability.mjs",',
+  '    "scripts/test/validate-traceability.test.mjs"',
+  "  ],",
+  '  "allowed_actions": [',
+  '    "append the causal tests-first amendments and trusted protected-main producer in the three exact paths",',
+  '    "run exact-head non-deploying CI, Security, independent review and optimize",',
+  '    "mark PR #181 ready only after the exact-head evidence and review pass",',
+  '    "perform one protected exact-head squash merge of PR #181 after all required checks and zero unresolved threads"',
+  "  ],",
+  '  "invariants": [',
+  '    "all frozen T085 receipt bytes, README bytes and task checkbox bytes remain unchanged",',
+  '    "no beta flag removal, T086 PASS claim, release acceptance or risk adjudication",',
+  '    "no PR #161 rebase or mutation",',
+  '    "no ruleset, branch protection, provider, production, credential or secret mutation",',
+  '    "no participant research, Web3/T087+ work or external product write",',
+  '    "post-dispatch commits are linear and stay within the exact three-path closure"',
+  "  ],",
+  '  "user_instruction": "請幫我將剩餘的任務完成 ,完成後@review 並且 @optimize ，最終再依你的經驗merge",',
+  '  "authorization_source": "The user\'s current instruction in this conversation, recorded through the connected OWNER account for this bounded engineering scope."',
+  "}",
+  "```",
+  "",
+  "### Acceptance and stop rules",
+  "",
+  "- The final candidate must retain the exact current-base parent and three-path closure.",
+  "- RED evidence must remain attributable to the pre-dispatch seed; GREEN evidence must bind the final exact head.",
+  "- HOLD, FAIL, UNKNOWN, missing/stale/ambiguous/spoofed/edited/deleted/unavailable evidence remains blocking.",
+  "- The trusted workflow must execute only protected-main code with least privilege and must not checkout or run PR-head code.",
+  "- Ruleset `20822671` remains the recorded 12-context snapshot; installing a required context needs a separate provider gate.",
+  "- If Android retry or any required check is not green, stop before ready/merge.",
+  "",
+  "<!-- t086-required-gate:owner-exact-path-dispatch:v6:end -->"
+].join("\n")
+function makeRequiredGateReadback(overrides = {}) {
+  return {
+    status: "VERIFIED",
+    source: "github-api",
+    html_url: requiredGateAuthorizationRef,
+    issue_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/164",
+    user_login: "bynanci",
+    author_association: "OWNER",
+    created_at: "2026-09-09T09:49:06Z",
+    updated_at: "2026-09-09T09:49:06Z",
+    body: requiredGateAuthorizationBody,
+    errors: [],
+    ...overrides
+  }
+}
+
+function makeRequiredGateActionsContext(
+  root,
+  { eventOverrides = {}, environmentOverrides = {} } = {}
+) {
+  const eventPath = path.join(root, "required-gate-event.json")
+  const pullRequest = {
+    number: 181,
+    state: "open",
+    draft: true,
+    head: {
+      sha: fixtureReceiptHead,
+      ref: requiredGateBranch,
+      repo: { full_name: "bynanci/courtside-tw" }
+    },
+    base: { sha: requiredGateBase, ref: "main", repo: { full_name: "bynanci/courtside-tw" } },
+    ...eventOverrides
+  }
+  fs.writeFileSync(
+    eventPath,
+    JSON.stringify({
+      repository: { full_name: "bynanci/courtside-tw" },
+      number: pullRequest.number,
+      pull_request: pullRequest
+    })
+  )
+  return traceabilityValidator.inspectGitHubActionsContext({
+    environment: {
+      GITHUB_ACTIONS: "true",
+      GITHUB_REPOSITORY: "bynanci/courtside-tw",
+      GITHUB_EVENT_NAME: "pull_request",
+      GITHUB_EVENT_PATH: eventPath,
+      GITHUB_SHA: fixtureActionsMergeSha,
+      GITHUB_WORKFLOW: "CI",
+      GITHUB_JOB: "frontend-contract",
+      GITHUB_RUN_ID: fixtureActionsRunId,
+      GITHUB_RUN_NUMBER: fixtureActionsRunNumber,
+      GITHUB_RUN_ATTEMPT: fixtureActionsRunAttempt,
+      GITHUB_REF: "refs/pull/181/merge",
+      GITHUB_BASE_REF: "main",
+      GITHUB_HEAD_REF: requiredGateBranch,
+      ...environmentOverrides
+    },
+    gitBinding: {
+      head: fixtureReceiptHead,
+      change_base_sha: requiredGateBase,
+      change_base_ancestor: true
+    }
+  })
+}
+
+function runRequiredGateFixture(fixture, overrides = {}) {
+  const githubActionsContext =
+    overrides.githubActionsContext ?? makeRequiredGateActionsContext(fixture.root)
+  writeExactHeadForActionsContext(fixture.root, githubActionsContext)
+  return runCompletedFixture(fixture, {
+    changeBaseSha: requiredGateBase,
+    changedPaths: [...requiredGatePaths],
+    evaluatedHeadCommittedAt: "2026-09-09T10:00:00.000Z",
+    requireExactHeadEvidence: true,
+    githubActionsContext,
+    requiredGateAuthorizationReadback: makeRequiredGateReadback(),
+    gitBinding: {
+      status: "CLEAN",
+      head: fixtureReceiptHead,
+      change_base_sha: requiredGateBase,
+      change_base_ancestor: true,
+      head_parent_count: 1,
+      required_gate_commit_count: 1,
+      required_gate_merge_commit_count: 0
+    },
+    ...overrides
+  })
+}
+
+test("issue 164 authenticates only the immutable OWNER three-path draft from its exact base", () => {
+  const fixture = makeCompletedFixture()
+  const report = runRequiredGateFixture(fixture)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+  assert.deepEqual(report.scope_validation.unauthorized_paths, [])
+  assert.equal(
+    report.source.required_gate_authorization_readback.body_sha256,
+    "23cd58dd69241be57688b244b6f37ae17a674bebab5012f08ea30401ea8212b9"
+  )
+  assert.equal(report.scope_boundaries.t086_dispatched, false)
+})
+
+test("issue 164 rejects missing, stale, spoofed, edited and widened OWNER authority", () => {
+  const fixture = makeCompletedFixture()
+  for (const [label, readback] of [
+    ["missing", null],
+    ["unavailable", makeRequiredGateReadback({ status: "UNAVAILABLE" })],
+    ["source", makeRequiredGateReadback({ source: "fixture" })],
+    ["actor", makeRequiredGateReadback({ user_login: "attacker" })],
+    ["association", makeRequiredGateReadback({ author_association: "MEMBER" })],
+    ["comment", makeRequiredGateReadback({ html_url: requiredGateAuthorizationRef + "0" })],
+    [
+      "issue",
+      makeRequiredGateReadback({
+        issue_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/160"
+      })
+    ],
+    ["created", makeRequiredGateReadback({ created_at: "2026-09-08T15:47:25Z" })],
+    ["edited", makeRequiredGateReadback({ updated_at: "2026-09-08T15:47:27Z" })],
+    [
+      "body",
+      makeRequiredGateReadback({
+        body: requiredGateAuthorizationBody.replace(
+          '"decision": "DISPATCH_ACCEPTED"',
+          '"decision": "DISPATCH_REJECTED"'
+        )
+      })
+    ],
+    [
+      "suffix",
+      makeRequiredGateReadback({
+        body: requiredGateAuthorizationBody + "\nMerge is now authorized."
+      })
+    ],
+    ["errors", makeRequiredGateReadback({ errors: ["partial readback"] })]
+  ]) {
+    const report = runRequiredGateFixture(fixture, { requiredGateAuthorizationReadback: readback })
+    assert.equal(report.status, "FAIL", label)
+    assert.match(report.errors.join("\n"), /issue 164/, label)
+  }
+})
+
+test("issue 164 rejects scope, base, exact-head, draft, PR, fork, Actions and topology replays", () => {
+  const fixture = makeCompletedFixture()
+  const context = makeRequiredGateActionsContext(fixture.root)
+  for (const [label, overrides] of [
+    ["extra path", { changedPaths: [...requiredGatePaths, "docs/research/unrelated.md"] }],
+    ["missing workflow", { changedPaths: requiredGatePaths.slice(1) }],
+    ["duplicate path", { changedPaths: [...requiredGatePaths, requiredGatePaths[1]] }],
+    [
+      "different workflow",
+      { changedPaths: [".github/workflows/unrelated.yml", ...requiredGatePaths.slice(1)] }
+    ],
+    ["base", { changeBaseSha: fixtureCompletedBase }],
+    ["non-exact", { requireExactHeadEvidence: false }],
+    ["untrusted", { githubActionsContext: { ...context } }],
+    ["wrong evaluated head", { currentHead: fixturePostT085FinalPrHead }],
+    ["pre-dispatch head", { evaluatedHeadCommittedAt: "2026-09-09T09:49:06Z" }],
+    [
+      "ready",
+      {
+        githubActionsContext: makeRequiredGateActionsContext(fixture.root, {
+          eventOverrides: { draft: false }
+        })
+      }
+    ],
+    [
+      "closed",
+      {
+        githubActionsContext: makeRequiredGateActionsContext(fixture.root, {
+          eventOverrides: { state: "closed" }
+        })
+      }
+    ],
+    [
+      "wrong PR ref",
+      {
+        githubActionsContext: makeRequiredGateActionsContext(fixture.root, {
+          environmentOverrides: { GITHUB_REF: "refs/pull/172/merge" }
+        })
+      }
+    ],
+    [
+      "historical PR 161",
+      {
+        githubActionsContext: makeRequiredGateActionsContext(fixture.root, {
+          eventOverrides: { number: 161 },
+          environmentOverrides: { GITHUB_REF: "refs/pull/161/merge" }
+        })
+      }
+    ],
+    [
+      "another coherent PR",
+      {
+        githubActionsContext: makeRequiredGateActionsContext(fixture.root, {
+          eventOverrides: { number: 172 },
+          environmentOverrides: { GITHUB_REF: "refs/pull/172/merge" }
+        })
+      }
+    ],
+    [
+      "fork",
+      {
+        githubActionsContext: makeRequiredGateActionsContext(fixture.root, {
+          eventOverrides: {
+            head: {
+              sha: fixtureReceiptHead,
+              ref: requiredGateBranch,
+              repo: { full_name: "attacker/courtside-tw" }
+            }
+          }
+        })
+      }
+    ],
+    [
+      "branch",
+      {
+        githubActionsContext: makeRequiredGateActionsContext(fixture.root, {
+          environmentOverrides: { GITHUB_HEAD_REF: "other" }
+        })
+      }
+    ],
+    ["push", { githubActionsContext: makeFixturePushActionsContext(fixture.root) }],
+    [
+      "dirty",
+      {
+        gitBinding: {
+          status: "DIRTY",
+          head: fixtureReceiptHead,
+          change_base_sha: requiredGateBase,
+          change_base_ancestor: true,
+          required_gate_commit_count: 1,
+          required_gate_merge_commit_count: 0
+        }
+      }
+    ],
+    [
+      "merge ancestry",
+      {
+        gitBinding: {
+          status: "CLEAN",
+          head: fixtureReceiptHead,
+          change_base_sha: requiredGateBase,
+          change_base_ancestor: true,
+          required_gate_commit_count: 2,
+          required_gate_merge_commit_count: 1
+        }
+      }
+    ],
+    [
+      "unreadable ancestry",
+      {
+        gitBinding: {
+          status: "CLEAN",
+          head: fixtureReceiptHead,
+          change_base_sha: requiredGateBase,
+          change_base_ancestor: null,
+          required_gate_commit_count: null,
+          required_gate_merge_commit_count: null
+        }
+      }
+    ]
+  ]) {
+    const report = runRequiredGateFixture(fixture, overrides)
+    assert.equal(report.status, "FAIL", label)
+    assert.match(report.errors.join("\n"), /issue 164/, label)
+  }
+})
+
+test("issue 164 leaves tasks and frozen traceability immutable and descendant maintenance available", () => {
+  const fixture = makeCompletedFixture()
+  const tasksPath = path.join(fixture.root, featurePath, "tasks.md")
+  const original = fs.readFileSync(tasksPath, "utf8")
+  fs.writeFileSync(tasksPath, original.replace("- [ ] T086", "- [x] T086"))
+  assert.equal(runRequiredGateFixture(fixture).status, "FAIL")
+  fs.writeFileSync(tasksPath, original)
+  const traceabilityPath = path.join(fixture.root, featurePath, "traceability.md")
+  fs.appendFileSync(traceabilityPath, "\nfrozen drift")
+  assert.equal(runRequiredGateFixture(fixture).status, "FAIL")
+  fs.writeFileSync(traceabilityPath, fixture.changeBaseTraceabilityText)
+  assert.equal(
+    runCompletedFixture(fixture, {
+      changedPaths: ["scripts/validate-traceability.mjs"],
+      changeBaseSha: requiredGateBase,
+      gitBinding: {
+        status: "CLEAN",
+        head: fixtureReceiptHead,
+        change_base_sha: requiredGateBase,
+        change_base_ancestor: true
+      }
+    }).status,
+    "PASS"
+  )
+})
+
+test("issue 164 CLI inspection reads only the exact authorized scope and pinned comment", () => {
+  assert.equal(typeof traceabilityValidator.inspectRequiredGateAuthorizationForState, "function")
+  const fixture = makeCompletedFixture()
+  let calls = 0
+  const inspect = ({ environment }) => {
+    calls += 1
+    assert.equal(environment.GITHUB_TOKEN, "read-only-fixture")
+    return makeRequiredGateReadback()
+  }
+  const options = {
+    changeBaseTasksText: fixture.changeBaseTasksText,
+    changeBaseSha: requiredGateBase,
+    boundedScopeActive: false,
+    changedPaths: [...requiredGatePaths],
+    environment: { GITHUB_TOKEN: "read-only-fixture" },
+    inspect
+  }
+  const report = traceabilityValidator.inspectRequiredGateAuthorizationForState(
+    fixture.root,
+    options
+  )
+  assert.equal(report.html_url, requiredGateAuthorizationRef)
+  assert.equal(calls, 1)
+  for (const overrides of [
+    { changedPaths: requiredGatePaths.slice(1) },
+    { changedPaths: [...requiredGatePaths, "README.md"] },
+    { changeBaseSha: fixtureCompletedBase },
+    { boundedScopeActive: true },
+    { changeBaseTasksText: null }
+  ]) {
+    assert.equal(
+      traceabilityValidator.inspectRequiredGateAuthorizationForState(fixture.root, {
+        ...options,
+        ...overrides
+      }),
+      null
+    )
+  }
+  assert.equal(calls, 1)
+})
 const featurePath = "specs/001-taiwan-basketball-magazine-ebook"
 const repositoryRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
 const completionReceiptPath = ".loop/evidence/t085-completion-receipt.json"
@@ -10454,6 +10872,409 @@ test("ready-for-review remains an explicit release-owner gate", () => {
   )
   assert.match(traceability, /protected `main@84db3db95aa596eb317b71c4eea0926fc1fc15ce`/)
   assert.match(traceability, /`EXTERNAL_READBACK_REQUIRED`/)
+})
+function requiredGateRuntime() {
+  const workflow = fs.readFileSync(
+    path.join(repositoryRoot, ".github/workflows/t086-required-gate.yml"),
+    "utf8"
+  )
+  const match = workflow.match(/\/\/ T086_PURE_START\n([\s\S]*?)\s*\/\/ T086_PURE_END/u)
+  assert.ok(match, "trusted workflow contains the actual pure evaluator")
+  return new Function(
+    "createHash",
+    match[1] +
+      "\nreturn {evaluateSnapshot, classifyCandidate, canonicalComment, commentIdentity, advanceCommentFence, parseUniqueJson};"
+  )(createHash)
+}
+
+function requiredGateFixture() {
+  const candidate = "1".repeat(40)
+  const base = "2".repeat(40)
+  const frozen = "204662214eada892332d1ddbeab8d0b8037cfc5477d9152d6fb3a61e56832b79"
+  const boundaries = {
+    participant_research_executed: false,
+    web3_activated: false,
+    production_activated: false,
+    provider_configured: false,
+    credentials_or_secrets_accessed_or_changed: false,
+    external_product_writes: false,
+    t087_or_later_dispatched: false,
+    t086_task_state_changed: false,
+    beta_flag_removed: false
+  }
+  const entries = [
+    {
+      id: "DEV-1",
+      severity: "P1",
+      type: "HUMAN_OPEN",
+      affected_ids: ["SC-001"],
+      outcome: "RISK_ACCEPTED_FOR_BETA",
+      rationale: "Explicit owner adjudication for this exact candidate only.",
+      evidence_refs: [],
+      follow_up_issue: "https://github.com/bynanci/courtside-tw/issues/171"
+    }
+  ]
+  const contract = {
+    schema_version: "courtside-t086-owner-adjudication/v1",
+    accepted_by: "bynanci",
+    decision: "ADJUDICATION_ACCEPTED",
+    repository: "bynanci/courtside-tw",
+    issue: "https://github.com/bynanci/courtside-tw/issues/160",
+    task: "T086",
+    candidate_sha: candidate,
+    protected_base_sha: base,
+    frozen_t085_traceability_sha256: frozen,
+    scope_boundaries: boundaries,
+    adjudications: entries
+  }
+  const comment = {
+    id: 987,
+    user: { login: "bynanci" },
+    author_association: "OWNER",
+    created_at: "2026-09-08T10:00:00Z",
+    updated_at: "2026-09-08T10:00:00Z",
+    html_url: "https://github.com/bynanci/courtside-tw/issues/160#issuecomment-987",
+    body:
+      "<!-- t086:owner-adjudication:start -->\n```json\n" +
+      JSON.stringify(contract) +
+      "\n```\n<!-- t086:owner-adjudication:end -->"
+  }
+  const report = {
+    schema_version: "courtside-t086-beta-release/v1",
+    task: "T086",
+    decision_scope: "T086_GATE_ONLY",
+    status: "PASS",
+    release_decision: "PASS",
+    release_decision_reasons: [],
+    candidate_sha: candidate,
+    base: { branch: "main", sha: base, authorized_sha: base },
+    frozen_t085_traceability: { sha256: frozen, expected_sha256: frozen },
+    scope_boundaries: boundaries,
+    errors: [],
+    surfaces: {
+      result: "PASS",
+      required: [
+        "public-read",
+        "two-role-publish",
+        "retry",
+        "revision",
+        "withdrawal",
+        "backup-restore",
+        "rollback"
+      ]
+    },
+    stability: { result: "PASS", required_consecutive_runs: 20, same_candidate_sha: true },
+    blockers: {
+      source_count: 1,
+      count: 0,
+      source: [{ id: "DEV-1", severity: "P1", type: "HUMAN_OPEN", affected_ids: ["SC-001"] }],
+      unadjudicated: [],
+      adjudicated: entries
+    },
+    adjudication: {
+      status: "VERIFIED",
+      html_url: comment.html_url,
+      created_at: comment.created_at,
+      updated_at: comment.updated_at,
+      candidate_sha: candidate,
+      body_sha256: createHash("sha256").update(comment.body).digest("hex"),
+      adjudicated: entries,
+      unadjudicated: []
+    }
+  }
+  return {
+    classification: "T086",
+    candidate,
+    base,
+    mergeBase: base,
+    frozenHash: frozen,
+    sourceBlockers: report.blockers.source,
+    comments: [comment],
+    producerTrusted: true,
+    requiredEvidenceFresh: true,
+    report,
+    decisionStartedAt: "2026-09-08T11:00:00Z",
+    decisionCompletedAt: "2026-09-08T11:01:00Z",
+    artifactCreatedAt: "2026-09-08T11:01:01Z"
+  }
+}
+
+test("required T086 gate accepts only independently bound complete PASS", () => {
+  assert.equal(requiredGateRuntime().evaluateSnapshot(requiredGateFixture()).decision, "PASS")
+})
+
+for (const [name, mutate] of [
+  [
+    "HOLD",
+    (s) => {
+      s.report.release_decision = "HOLD"
+    }
+  ],
+  [
+    "FAIL",
+    (s) => {
+      s.report.status = "FAIL"
+    }
+  ],
+  [
+    "UNKNOWN",
+    (s) => {
+      s.report.release_decision = "UNKNOWN"
+    }
+  ],
+  [
+    "missing report",
+    (s) => {
+      s.report = null
+    }
+  ],
+  [
+    "untrusted producer",
+    (s) => {
+      s.producerTrusted = false
+    }
+  ],
+  [
+    "unavailable evidence",
+    (s) => {
+      s.requiredEvidenceFresh = false
+    }
+  ],
+  [
+    "stale head",
+    (s) => {
+      s.report.candidate_sha = "3".repeat(40)
+    }
+  ],
+  [
+    "stale protected base",
+    (s) => {
+      s.report.base.sha = "3".repeat(40)
+    }
+  ],
+  [
+    "stale merge base",
+    (s) => {
+      s.mergeBase = "3".repeat(40)
+    }
+  ],
+  [
+    "stale frozen hash",
+    (s) => {
+      s.frozenHash = "3".repeat(64)
+    }
+  ],
+  [
+    "deleted adjudication",
+    (s) => {
+      s.comments = []
+    }
+  ],
+  [
+    "spoofed owner",
+    (s) => {
+      s.comments[0].user.login = "attacker"
+    }
+  ],
+  [
+    "wrong association",
+    (s) => {
+      s.comments[0].author_association = "CONTRIBUTOR"
+    }
+  ],
+  [
+    "edited adjudication",
+    (s) => {
+      s.comments[0].updated_at = "2026-09-08T12:00:00Z"
+    }
+  ],
+  [
+    "new comment after decision",
+    (s) => {
+      s.comments[0].created_at = s.comments[0].updated_at = "2026-09-08T12:00:00Z"
+    }
+  ],
+  [
+    "incomplete blockers",
+    (s) => {
+      s.report.blockers.adjudicated = []
+    }
+  ],
+  [
+    "missing surface",
+    (s) => {
+      s.report.surfaces.required.pop()
+    }
+  ],
+  [
+    "failed stability",
+    (s) => {
+      s.report.stability.result = "FAIL"
+    }
+  ],
+  [
+    "expanded scope",
+    (s) => {
+      s.report.scope_boundaries.web3_activated = true
+    }
+  ],
+  [
+    "missing canonical digest",
+    (s) => {
+      delete s.report.adjudication.body_sha256
+    }
+  ],
+  [
+    "missing artifact freshness",
+    (s) => {
+      s.artifactCreatedAt = "2026-09-08T09:00:00Z"
+    }
+  ]
+]) {
+  test("required T086 gate blocks " + name, () => {
+    const s = requiredGateFixture()
+    mutate(s)
+    assert.equal(requiredGateRuntime().evaluateSnapshot(s).decision, "HOLD")
+  })
+}
+
+test("required T086 gate classifies only complete server-side non-T086 file lists", () => {
+  const { classifyCandidate } = requiredGateRuntime()
+  assert.equal(classifyCandidate(161, [{ filename: "README.md" }], 1), "T086")
+  assert.equal(classifyCandidate(171, [{ filename: "README.md" }], 1), "NOT_APPLICABLE")
+  assert.equal(
+    classifyCandidate(
+      171,
+      [{ filename: "renamed.txt", previous_filename: "scripts/validate-beta-release.mjs" }],
+      1
+    ),
+    "T086"
+  )
+  assert.equal(classifyCandidate(171, [{ filename: "README.md" }], 2), "UNKNOWN")
+  assert.equal(classifyCandidate(171, [], 0), "UNKNOWN")
+})
+
+test("required T086 gate ignores spoofed new comments but treats owner marker removal as invalidation", () => {
+  const { canonicalComment } = requiredGateRuntime()
+  const s = requiredGateFixture()
+  assert.equal(
+    canonicalComment([...s.comments, { ...s.comments[0], id: 999, user: { login: "attacker" } }])
+      .id,
+    987
+  )
+  assert.equal(canonicalComment([]), null)
+})
+
+test("required T086 gate does not revive an older OWNER success after canonical deletion", () => {
+  const s = requiredGateFixture()
+  s.commentFence = { id: 999, invalidated: true }
+  assert.equal(requiredGateRuntime().evaluateSnapshot(s).decision, "HOLD")
+})
+
+test("required T086 gate rejects an invalidated revision even if its body is restored", () => {
+  const s = requiredGateFixture()
+  s.commentFence = { id: s.comments[0].id, invalidated: true }
+  assert.equal(requiredGateRuntime().evaluateSnapshot(s).decision, "HOLD")
+})
+
+test("required T086 gate revokes prior own successes before rejecting ambiguous producers", async () => {
+  const workflow = fs.readFileSync(
+    path.join(repositoryRoot, ".github/workflows/t086-required-gate.yml"),
+    "utf8"
+  )
+  const source = workflow.match(
+    /async function checkStart\(pr\) \{[\s\S]*?(?=async function checkFinish\()/u
+  )?.[0]
+  assert.ok(source)
+  const updates = []
+  const github = {
+    rest: {
+      checks: {
+        update: async (payload) => {
+          updates.push(payload)
+          return { data: {} }
+        }
+      }
+    }
+  }
+  const existing = [
+    { id: 10, app: { id: 15368 }, external_id: "courtside-t086:pr:161", conclusion: "success" },
+    { id: 11, app: { id: 15368 }, external_id: "other", conclusion: "success" }
+  ]
+  const checkStart = new Function(
+    "github",
+    "paginated",
+    "CHECK_NAME",
+    "APP_ID",
+    "owner",
+    "repo",
+    "runUrl",
+    "context",
+    "advanceCommentFence",
+    source + ";return checkStart;"
+  )(
+    github,
+    async () => existing,
+    "T086 final release decision",
+    15368,
+    "bynanci",
+    "courtside-tw",
+    "https://github.com/bynanci/courtside-tw/actions/runs/1",
+    { payload: {} },
+    () => null
+  )
+  await assert.rejects(checkStart({ number: 161, head: { sha: "1".repeat(40) } }), /ambiguous/u)
+  assert.deepEqual(
+    updates.map((row) => ({
+      id: row.check_run_id,
+      status: row.status,
+      conclusion: row.conclusion
+    })),
+    [
+      { id: 10, status: "completed", conclusion: "failure" },
+      { id: 11, status: "completed", conclusion: "failure" }
+    ]
+  )
+})
+
+test("required T086 gate rejects duplicate and escaped-equivalent OWNER keys", () => {
+  for (const duplicate of [
+    '"decision":"HOLD","decision":"ADJUDICATION_ACCEPTED"',
+    '"decisi\\u006fn":"HOLD","decision":"ADJUDICATION_ACCEPTED"'
+  ]) {
+    const s = requiredGateFixture()
+    s.comments[0].body = s.comments[0].body.replace('"decision":"ADJUDICATION_ACCEPTED"', duplicate)
+    s.report.adjudication.body_sha256 = createHash("sha256")
+      .update(s.comments[0].body)
+      .digest("hex")
+    assert.equal(requiredGateRuntime().evaluateSnapshot(s).decision, "HOLD")
+  }
+})
+
+test("required T086 gate rejects duplicate artifact JSON keys at any depth", () => {
+  const { parseUniqueJson } = requiredGateRuntime()
+  assert.throws(
+    () => parseUniqueJson('{"release_decision":"HOLD","release_decision":"PASS"}'),
+    /Duplicate/u
+  )
+  assert.throws(
+    () => parseUniqueJson('{"adjudication":{"status":"INVALID","sta\\u0074us":"VERIFIED"}}'),
+    /Duplicate/u
+  )
+  assert.deepEqual(parseUniqueJson('{"nested":[true,false,null,1.25,"a\\\\b"]}'), {
+    nested: [true, false, null, 1.25, "a\\b"]
+  })
+})
+
+test("required T086 gate fences same-ID revision drift even without mutation event", () => {
+  const { advanceCommentFence, commentIdentity, evaluateSnapshot } = requiredGateRuntime()
+  const s = requiredGateFixture()
+  const prior = { ...commentIdentity(s.comments[0]), invalidated: false }
+  s.comments[0].body += "\n"
+  s.commentFence = advanceCommentFence(prior, s.comments[0], {})
+  s.report.adjudication.body_sha256 = createHash("sha256").update(s.comments[0].body).digest("hex")
+  assert.equal(s.commentFence.invalidated, true)
+  assert.equal(evaluateSnapshot(s).decision, "HOLD")
 })
 
 const pnpmSecurityBase = "db19da68807bf2974e0b052f2ce5dbcf3accbab7"
