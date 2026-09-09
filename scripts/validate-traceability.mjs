@@ -12,13 +12,13 @@ export const TRACEABILITY_SCHEMA = "courtside-traceability/v1"
 export const COMPLETION_RECEIPT_SCHEMA = "courtside-t085-completion-receipt/v2"
 export const OWNER_AUTHORIZATION_SCHEMA = "courtside-t085-owner-authorization/v1"
 export const REQUIRED_GATE_AUTHORIZATION_REF =
-  "https://github.com/bynanci/courtside-tw/issues/164#issuecomment-5599895601"
-export const REQUIRED_GATE_AUTHORIZATION_BASE_SHA = "d34f20cc3c44b887ab5a322f7d0d51f7ba21d895"
-export const REQUIRED_GATE_BRANCH = "fix/t086-required-gate-d34f20c"
-export const REQUIRED_GATE_PULL_REQUEST = 181
+  "https://github.com/bynanci/courtside-tw/issues/164#issuecomment-5600290742"
+export const REQUIRED_GATE_AUTHORIZATION_BASE_SHA = "b8f092534f7cb3d550738be2d66ee1d96d676980"
+export const REQUIRED_GATE_BRANCH = "fix/t086-required-gate-push-b8f0925"
+export const REQUIRED_GATE_PULL_REQUEST = 182
 export const REQUIRED_GATE_AUTHORIZATION_BODY_SHA256 =
-  "23cd58dd69241be57688b244b6f37ae17a674bebab5012f08ea30401ea8212b9"
-const requiredGateAuthorizationRecordedAt = "2026-09-09T09:49:06Z"
+  "c8913a5188201a57907cb24f3e5fa690de028aebd8f1b5cd516ffdd1de5e35e4"
+const requiredGateAuthorizationRecordedAt = "2026-09-09T10:21:32Z"
 export const REQUIRED_GATE_AUTHORIZED_PATHS = Object.freeze([
   ".github/workflows/t086-required-gate.yml",
   "scripts/validate-traceability.mjs",
@@ -3734,6 +3734,68 @@ function validateRequiredGateAuthorization({
   ) {
     errors.push(
       "issue 164 requires authenticated exact-head CI for the dedicated same-repository open draft PR; push and merge are not authorized"
+    )
+  }
+  return errors.length === initialErrors
+}
+
+function validateRequiredGateProtectedMainPush({
+  readback,
+  gitBinding,
+  currentHead,
+  evaluatedHeadCommittedAt,
+  requireExactHeadEvidence,
+  githubActionsContext,
+  errors
+}) {
+  const initialErrors = errors.length
+  if (
+    readback?.status !== "VERIFIED" ||
+    readback?.source !== "github-api" ||
+    !Array.isArray(readback?.errors) ||
+    readback.errors.length !== 0 ||
+    readback.html_url !== REQUIRED_GATE_AUTHORIZATION_REF ||
+    readback.issue_url !== "https://api.github.com/repos/bynanci/courtside-tw/issues/164" ||
+    readback.user_login !== ACCEPTED_RECEIPT_OWNER ||
+    readback.author_association !== "OWNER" ||
+    readback.created_at !== requiredGateAuthorizationRecordedAt ||
+    readback.updated_at !== requiredGateAuthorizationRecordedAt ||
+    sha256(readback.body ?? null) !== REQUIRED_GATE_AUTHORIZATION_BODY_SHA256
+  ) {
+    errors.push(
+      "issue 164 protected-main push requires the verified immutable exact OWNER comment and complete body digest"
+    )
+  }
+  const context = githubActionsContext
+  if (
+    requireExactHeadEvidence !== true ||
+    !isAuthenticatedGitHubActionsContext(context) ||
+    context.authority !== "PROTECTED_MAIN_PUSH" ||
+    context.event_name !== "push" ||
+    context.source_head_sha !== currentHead ||
+    context.source_base_sha !== REQUIRED_GATE_AUTHORIZATION_BASE_SHA ||
+    context.source_ref !== "main" ||
+    context.base_ref !== "" ||
+    context.head_ref !== "" ||
+    context.github_ref !== "refs/heads/main" ||
+    gitBinding?.status !== "CLEAN" ||
+    gitBinding.head !== currentHead ||
+    currentHead === REQUIRED_GATE_AUTHORIZATION_BASE_SHA ||
+    gitBinding.change_base_sha !== REQUIRED_GATE_AUTHORIZATION_BASE_SHA ||
+    gitBinding.change_base_ancestor !== true ||
+    gitBinding.head_parent_sha !== REQUIRED_GATE_AUTHORIZATION_BASE_SHA ||
+    !Array.isArray(gitBinding.head_parent_shas) ||
+    !isDeepStrictEqual(gitBinding.head_parent_shas, [REQUIRED_GATE_AUTHORIZATION_BASE_SHA]) ||
+    gitBinding.head_parent_count !== 1 ||
+    !/^[0-9a-f]{40}$/.test(gitBinding.head_tree_sha ?? "") ||
+    !Number.isSafeInteger(gitBinding.required_gate_commit_count) ||
+    gitBinding.required_gate_commit_count !== 1 ||
+    gitBinding.required_gate_merge_commit_count !== 0 ||
+    !isIsoTimestamp(evaluatedHeadCommittedAt) ||
+    Date.parse(evaluatedHeadCommittedAt) <= Date.parse(requiredGateAuthorizationRecordedAt)
+  ) {
+    errors.push(
+      "issue 164 protected-main push must be one clean exact-base one-parent squash with exact-head evidence"
     )
   }
   return errors.length === initialErrors
@@ -10646,6 +10708,16 @@ export function validateTraceability({
         errors.push(
           "issue 164 authorization requires exactly its three paths and immutable protected base"
         )
+      } else if (githubActionsContext?.authority === "PROTECTED_MAIN_PUSH") {
+        requiredGateAuthorizationAccepted = validateRequiredGateProtectedMainPush({
+          readback: requiredGateAuthorizationReadback,
+          gitBinding,
+          currentHead,
+          evaluatedHeadCommittedAt,
+          requireExactHeadEvidence,
+          githubActionsContext,
+          errors
+        })
       } else {
         requiredGateAuthorizationAccepted = validateRequiredGateAuthorization({
           readback: requiredGateAuthorizationReadback,
