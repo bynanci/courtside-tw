@@ -1960,6 +1960,61 @@ test("canonical inventory, forward mapping, reverse ledger and proof pass", () =
   assert.equal(report.counts.tasks_in_plan, 112)
 })
 
+test("media-rights authorization binds the exact owner-dispatched scope", () => {
+  const gate = traceabilityValidator.createMediaRightsAuthorizationGate()
+  const errors = []
+  const changedPaths = [...traceabilityValidator.MEDIA_RIGHTS_PATHS]
+
+  assert.equal(gate.isBound(), true)
+  assert.equal(
+    gate.requested(
+      changedPaths,
+      null,
+      null,
+      traceabilityValidator.MEDIA_RIGHTS_AUTHORIZATION.base_sha
+    ),
+    true
+  )
+  assert.equal(
+    gate.validate({
+      changedPaths,
+      changeBaseSha: traceabilityValidator.MEDIA_RIGHTS_AUTHORIZATION.base_sha,
+      errors
+    }),
+    false
+  )
+  assert.match(errors.join("\n"), /OWNER comment/u)
+  assert.equal(gate.allowsPath(changedPaths[0]), true)
+})
+
+test("media-rights authorization rejects base drift and path expansion", () => {
+  const gate = traceabilityValidator.createMediaRightsAuthorizationGate()
+  const errors = []
+  const changedPaths = [...traceabilityValidator.MEDIA_RIGHTS_PATHS, "README.md"]
+
+  assert.equal(
+    gate.validate({
+      changedPaths,
+      changeBaseSha: "0000000000000000000000000000000000000000",
+      errors
+    }),
+    false
+  )
+  assert.match(errors.join("\n"), /exact four-path scope and base/u)
+  assert.equal(gate.allowsPath("README.md"), false)
+})
+
+test("media-rights dispatch keeps its legacy typo as an explicit non-scope alias", () => {
+  assert.equal(
+    traceabilityValidator.MEDIA_RIGHTS_DISPATCH_PATHS[2],
+    "scripts/test/validate-traceability.mjs"
+  )
+  assert.equal(traceabilityValidator.MEDIA_RIGHTS_PATHS[2], "scripts/validate-traceability.mjs")
+  const gate = traceabilityValidator.createMediaRightsAuthorizationGate()
+  assert.equal(gate.allowsPath("scripts/test/validate-traceability.mjs"), false)
+  assert.equal(gate.allowsPath("scripts/validate-traceability.mjs"), true)
+})
+
 test("receipt authority is pinned to the protected PR149 implementation snapshot", () => {
   const traceabilityText = fs.readFileSync(
     path.join(repositoryRoot, featurePath, "traceability.md"),

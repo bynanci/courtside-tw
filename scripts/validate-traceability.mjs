@@ -2191,6 +2191,375 @@ export function createStudioCompletionAuthorizationGate(binding = STUDIO_COMPLET
 }
 const studioCompletionGate = createStudioCompletionAuthorizationGate()
 
+// A separate, closed authority for the published-media rights guard.  Its
+// implementation is deliberately narrower than the Studio and release gates:
+// exactly two runtime/test paths plus these two validator support files, all
+// bound to the immutable OWNER dispatch recorded after the seed commit.
+export const MEDIA_RIGHTS_PATHS = Object.freeze([
+  "apps/api/src/main/java/tw/basketball/magazine/media/application/EditorialMediaMetadataService.java",
+  "apps/api/src/test/java/tw/basketball/magazine/media/api/EditorialMediaMetadataApiIT.java",
+  "scripts/validate-traceability.mjs",
+  "scripts/test/validate-traceability.test.mjs"
+])
+// The immutable v1 OWNER receipt contains a historical typo for the validator
+// path (`scripts/test/validate-traceability.mjs`). Keep that receipt byte
+// bound while mapping the typo to the only real validator path in the closed
+// implementation scope below. This is an explicit alias, not normalization.
+export const MEDIA_RIGHTS_DISPATCH_PATHS = Object.freeze([
+  "apps/api/src/main/java/tw/basketball/magazine/media/application/EditorialMediaMetadataService.java",
+  "apps/api/src/test/java/tw/basketball/magazine/media/api/EditorialMediaMetadataApiIT.java",
+  "scripts/test/validate-traceability.mjs",
+  "scripts/test/validate-traceability.test.mjs"
+])
+export const MEDIA_RIGHTS_MODES = Object.freeze(
+  Object.fromEntries(MEDIA_RIGHTS_PATHS.map((filePath) => [filePath, "100644"]))
+)
+export const MEDIA_RIGHTS_AUTHORIZATION = Object.freeze({
+  ref: "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5597854589",
+  body_sha256: "c30b19fcdf5d759176b2fbba932e2d5d539d39fec4731f244db0abbf31fb9f78",
+  recorded_at: "2026-09-09T07:20:23Z",
+  pr: 178,
+  branch: "fix/media-rights-metadata",
+  base_sha: "31256aaca413acef93927ba4000da86c2f5a5820",
+  initial_seed: Object.freeze({
+    head_sha: "0a0dc371586abff0ae01494aea80891fdd000f10",
+    tree_sha: "fb1a262beff6398f2379e145929fc5e642df0d7e",
+    changed_paths: Object.freeze(MEDIA_RIGHTS_PATHS.slice(0, 2))
+  }),
+  required_paths: MEDIA_RIGHTS_PATHS,
+  dispatch_required_paths: MEDIA_RIGHTS_DISPATCH_PATHS,
+  optional_paths: Object.freeze([])
+})
+const mediaRightsChangedPaths = new Set(MEDIA_RIGHTS_PATHS)
+const mediaRightsRuntimePaths = new Set(MEDIA_RIGHTS_PATHS.slice(0, 2))
+function isExactMediaRightsScope(changeBaseSha, changedPaths) {
+  return (
+    changeBaseSha === MEDIA_RIGHTS_AUTHORIZATION.base_sha &&
+    Array.isArray(changedPaths) &&
+    changedPaths.length === MEDIA_RIGHTS_PATHS.length &&
+    sameValues(changedPaths, MEDIA_RIGHTS_PATHS)
+  )
+}
+export function createMediaRightsAuthorizationGate(binding = MEDIA_RIGHTS_AUTHORIZATION) {
+  const c = structuredClone(binding)
+  const sha = (value) => typeof value === "string" && /^[0-9a-f]{40}$/.test(value)
+  const allPaths = new Set(MEDIA_RIGHTS_PATHS)
+  const closure = (paths) =>
+    Array.isArray(paths) &&
+    new Set(paths).size === paths.length &&
+    sameValues(paths, MEDIA_RIGHTS_PATHS) &&
+    paths.every((filePath) => allPaths.has(filePath))
+  const authentic = (authorization) =>
+    authorization?.status === "VERIFIED" &&
+    authorization?.source === "github-api" &&
+    authorization?.html_url === c.ref &&
+    authorization?.issue_url === "https://api.github.com/repos/bynanci/courtside-tw/issues/121" &&
+    authorization?.user_login === ACCEPTED_RECEIPT_OWNER &&
+    authorization?.author_association === "OWNER" &&
+    authorization?.created_at === c.recorded_at &&
+    authorization?.updated_at === c.recorded_at &&
+    sha256(authorization?.body ?? null) === c.body_sha256
+  const bound =
+    /^https:\/\/github\.com\/bynanci\/courtside-tw\/issues\/121#issuecomment-[1-9]\d*$/.test(
+      c.ref ?? ""
+    ) &&
+    /^[0-9a-f]{64}$/.test(c.body_sha256 ?? "") &&
+    isIsoTimestamp(c.recorded_at) &&
+    Number.isInteger(c.pr) &&
+    c.pr > 0 &&
+    c.branch === "fix/media-rights-metadata" &&
+    /^[0-9a-f]{40}$/.test(c.base_sha ?? "") &&
+    /^[0-9a-f]{40}$/.test(c.initial_seed?.head_sha ?? "") &&
+    /^[0-9a-f]{40}$/.test(c.initial_seed?.tree_sha ?? "") &&
+    sameValues(c.required_paths ?? [], MEDIA_RIGHTS_PATHS) &&
+    sameValues(c.dispatch_required_paths ?? [], MEDIA_RIGHTS_DISPATCH_PATHS) &&
+    sameValues(c.optional_paths ?? [], []) &&
+    sameValues(c.initial_seed?.changed_paths ?? [], MEDIA_RIGHTS_PATHS.slice(0, 2))
+
+  const inspectCandidate = (root, head) => {
+    if (!bound || !sha(head)) return null
+    try {
+      const git = (args) =>
+        execFileSync("git", args, {
+          cwd: root,
+          encoding: "utf8",
+          maxBuffer: 1024 * 1024,
+          stdio: ["ignore", "pipe", "ignore"]
+        }).trim()
+      const list = (args) => git(args).split("\n").filter(Boolean)
+      const seed = inspectHeadTopology(root, c.initial_seed.head_sha)
+      const firstAmendment = list([
+        "rev-list",
+        "--reverse",
+        `${c.initial_seed.head_sha}..${head}`
+      ])[0]
+      const firstTopology = firstAmendment ? inspectHeadTopology(root, firstAmendment) : null
+      const entries = git(["ls-tree", "-r", "-z", head, "--", ...MEDIA_RIGHTS_PATHS])
+        .split("\0")
+        .filter(Boolean)
+      const present = new Set(entries.map((entry) => entry.split("\t")[1]))
+      const frozen = (filePath) =>
+        filePath === "README.md" ||
+        filePath.startsWith("specs/") ||
+        filePath.startsWith(".loop/t085") ||
+        filePath.startsWith(".loop/evidence/t085") ||
+        isT086LockedPath(filePath)
+      return {
+        head,
+        tree_sha: inspectHeadTopology(root, head).headTreeSha,
+        base_ancestor: inspectAncestor(root, c.base_sha, head),
+        seed_ancestor: inspectAncestor(root, c.initial_seed.head_sha, head),
+        seed_tree_sha: seed.headTreeSha,
+        seed_parent_shas: seed.parents,
+        first_amendment_parent_shas: firstTopology?.parents ?? null,
+        first_amendment_changed_paths: firstAmendment
+          ? inspectChangedPathsBetweenCommits(root, c.initial_seed.head_sha, firstAmendment)
+          : null,
+        seed_changed_paths: inspectChangedPathsBetweenCommits(
+          root,
+          c.base_sha,
+          c.initial_seed.head_sha
+        ),
+        changed_paths: inspectChangedPathsBetweenCommits(root, c.base_sha, head),
+        history_paths: [
+          ...new Set(
+            list(["log", "--format=", "--name-only", "--no-renames", `${c.base_sha}..${head}`])
+          )
+        ].sort(),
+        commit_count: inspectCommitCountBetween(root, c.initial_seed.head_sha, head),
+        merge_commit_count: inspectCommitCountBetween(root, c.initial_seed.head_sha, head, {
+          mergesOnly: true
+        }),
+        commits_postdate_authorization: list([
+          "log",
+          "--format=%aI%n%cI",
+          `${c.initial_seed.head_sha}..${head}`
+        ]).every((timestamp) => Date.parse(timestamp) > Date.parse(c.recorded_at)),
+        allowed_path_modes_match:
+          MEDIA_RIGHTS_PATHS.every((filePath) => present.has(filePath)) &&
+          entries.every((entry) => /^100644 blob [0-9a-f]{40}\t/.test(entry)),
+        frozen_blobs_match: list(["ls-tree", "-r", "--name-only", c.base_sha])
+          .filter(frozen)
+          .every(
+            (filePath) =>
+              git(["ls-tree", c.base_sha, "--", filePath]) ===
+              git(["ls-tree", head, "--", filePath])
+          )
+      }
+    } catch {
+      return null
+    }
+  }
+
+  return Object.freeze({
+    requested(changedPaths, context, readback = null, base = null) {
+      return (
+        readback !== null ||
+        context?.head_ref === c.branch ||
+        (bound &&
+          base === c.base_sha &&
+          Array.isArray(changedPaths) &&
+          changedPaths.some((p) => mediaRightsRuntimePaths.has(p)))
+      )
+    },
+    inspect(
+      root,
+      {
+        environment = process.env,
+        inspectComment = inspectGitHubAuthorizationComment,
+        fetchJson = (url) =>
+          JSON.parse(
+            execFileSync(
+              process.execPath,
+              ["--input-type=module", "--eval", githubCommentFetchScript, url],
+              {
+                encoding: "utf8",
+                env: githubReadbackEnvironment(environment),
+                maxBuffer: 1024 * 1024,
+                stdio: ["ignore", "pipe", "pipe"],
+                timeout: 15000
+              }
+            )
+          ),
+        candidateInspector = inspectCandidate
+      } = {}
+    ) {
+      if (!bound) {
+        return {
+          status: "UNAVAILABLE",
+          source: "github-api",
+          errors: ["media-rights authority is unbound"]
+        }
+      }
+      try {
+        const authorization = inspectComment(c.ref, {
+          environment,
+          isAuthorizedRef: (ref) => ref === c.ref,
+          invalidRefError: "media-rights owner ref is not authorized",
+          readbackErrorPrefix: "media-rights OWNER read-back failed"
+        })
+        if (!authentic(authorization)) {
+          return {
+            status: "UNAVAILABLE",
+            source: "github-api",
+            errors: ["media-rights OWNER read-back failed"]
+          }
+        }
+        const pull_request = fetchJson(
+          `https://api.github.com/repos/bynanci/courtside-tw/pulls/${c.pr}`
+        )
+        const protected_main = fetchJson(
+          "https://api.github.com/repos/bynanci/courtside-tw/branches/main"
+        )
+        return {
+          status: "VERIFIED",
+          source: "github-api",
+          authorization,
+          pull_request,
+          protected_main,
+          candidate: candidateInspector(root, pull_request?.head?.sha),
+          errors: []
+        }
+      } catch {
+        return {
+          status: "UNAVAILABLE",
+          source: "github-api",
+          errors: ["media-rights OWNER read-back failed"]
+        }
+      }
+    },
+    validate({
+      readback,
+      gitBinding,
+      changedPaths,
+      changeBaseSha,
+      boundedScopeActive,
+      githubActionsContext,
+      requireExactHeadEvidence,
+      errors = []
+    } = {}) {
+      const start = errors.length
+      const check = (ok, message) => {
+        if (!ok) errors.push(`media-rights authorization ${message}`)
+      }
+      check(bound, "is unbound")
+      check(
+        changeBaseSha === c.base_sha && boundedScopeActive === false && closure(changedPaths),
+        "requires the exact four-path scope and base"
+      )
+      check(
+        authentic(readback?.authorization) && readback?.status === "VERIFIED",
+        "requires the exact immutable OWNER comment"
+      )
+      const dispatch = parseAndroidNativeSurfaceAuthorizationBody(
+        {
+          body: readback?.authorization?.body,
+          startMarker: "<!-- media-rights-metadata:owner-dispatch:v1:start -->",
+          endMarker: "<!-- media-rights-metadata:owner-dispatch:v1:end -->",
+          label: "media-rights dispatch"
+        },
+        errors
+      )
+      check(
+        dispatch?.schema_version === "courtside-media-rights-metadata-owner-dispatch/v1" &&
+          dispatch?.decision === "DISPATCH_ACCEPTED" &&
+          dispatch?.gate_scope === "MEDIA_RIGHTS_IMPLEMENTATION_ONLY" &&
+          dispatch?.release_accepted === false &&
+          dispatch?.task_state_changed === false &&
+          dispatch?.ruleset_mutated === false &&
+          dispatch?.repository === "bynanci/courtside-tw" &&
+          dispatch?.pr === c.pr &&
+          dispatch?.branch === c.branch &&
+          dispatch?.base_sha === c.base_sha &&
+          isDeepStrictEqual(dispatch?.initial_seed, c.initial_seed) &&
+          sameValues(dispatch?.required_paths ?? [], c.dispatch_required_paths) &&
+          sameValues(dispatch?.optional_paths ?? [], c.optional_paths),
+        "dispatch body must match the sealed descriptor"
+      )
+      const pr = readback?.pull_request
+      const candidate = readback?.candidate
+      check(
+        pr?.number === c.pr &&
+          pr?.html_url === `https://github.com/bynanci/courtside-tw/pull/${c.pr}` &&
+          pr?.head?.ref === c.branch &&
+          pr?.base?.ref === "main" &&
+          pr?.base?.sha === c.base_sha &&
+          pr?.head?.repo?.full_name === "bynanci/courtside-tw" &&
+          pr?.base?.repo?.full_name === "bynanci/courtside-tw" &&
+          sha(pr?.head?.sha) &&
+          candidate?.head === pr?.head?.sha,
+        "requires the live same-repository PR binding"
+      )
+      check(
+        candidate?.base_ancestor === true &&
+          candidate?.seed_ancestor === true &&
+          candidate?.seed_tree_sha === c.initial_seed.tree_sha &&
+          sameValues(candidate?.seed_parent_shas ?? [], [c.base_sha]) &&
+          sameValues(candidate?.seed_changed_paths ?? [], c.initial_seed.changed_paths) &&
+          sameValues(candidate?.first_amendment_parent_shas ?? [], [c.initial_seed.head_sha]) &&
+          sameValues(candidate?.first_amendment_changed_paths ?? [], [
+            "scripts/test/validate-traceability.test.mjs"
+          ]) &&
+          Number.isInteger(candidate?.commit_count) &&
+          candidate.commit_count >= 2 &&
+          candidate?.merge_commit_count === 0 &&
+          candidate?.commits_postdate_authorization === true &&
+          closure(candidate?.changed_paths) &&
+          sameValues(candidate?.changed_paths ?? [], changedPaths) &&
+          closure(candidate?.history_paths) &&
+          candidate?.frozen_blobs_match === true &&
+          candidate?.allowed_path_modes_match === true,
+        "requires the exact seed, linear post-dispatch history, regular files and frozen bytes"
+      )
+      check(
+        gitBinding?.status === "CLEAN" &&
+          sha(gitBinding?.head) &&
+          gitBinding?.change_base_ancestor === true &&
+          gitBinding?.change_base_sha === c.base_sha &&
+          candidate?.tree_sha === gitBinding?.head_tree_sha,
+        "requires a clean exact Git tree"
+      )
+      check(
+        readback?.protected_main?.name === "main" &&
+          readback?.protected_main?.protected === true &&
+          readback?.protected_main?.commit?.sha === c.base_sha,
+        "requires fresh protected main"
+      )
+      check(
+        requireExactHeadEvidence && isAuthenticatedGitHubActionsContext(githubActionsContext),
+        "requires authenticated exact-head Actions metadata"
+      )
+      check(
+        githubActionsContext?.source_base_sha === c.base_sha &&
+          githubActionsContext?.source_head_sha === gitBinding?.head,
+        "must bind the Actions event base and evaluated head"
+      )
+      check(
+        githubActionsContext?.authority === "PULL_REQUEST" &&
+          githubActionsContext?.pull_request_number === c.pr &&
+          githubActionsContext?.source_head_sha === pr?.head?.sha &&
+          githubActionsContext?.head_ref === c.branch &&
+          new RegExp(`^refs/pull/${c.pr}/(?:merge|head)$`).test(
+            githubActionsContext?.github_ref ?? ""
+          ) &&
+          pr?.state === "open" &&
+          pr?.merged === false &&
+          typeof pr?.draft === "boolean" &&
+          githubActionsContext?.pull_request_draft === pr?.draft,
+        "requires the live draft or ready PR event"
+      )
+      return errors.length === start
+    },
+    allowsPath(filePath) {
+      return bound && mediaRightsChangedPaths.has(filePath)
+    },
+    isBound() {
+      return bound
+    }
+  })
+}
+const mediaRightsGate = createMediaRightsAuthorizationGate()
+
 // Deliberately unbound until the successor main, cache seed and immutable OWNER record exist.
 // Rebinding changes only this sealed descriptor. This authority never accepts a beta release.
 export const PUBLICATION_CACHE_PATHS = Object.freeze([
@@ -9526,6 +9895,7 @@ export function validateTraceability({
   productRemediationAuthorizationReadback = null,
   studioCompletionAuthorizationReadback = null,
   publicationCacheAuthorizationReadback = null,
+  mediaRightsAuthorizationReadback = null,
   gitBinding = null,
   changedPaths = null,
   changeBaseSha = REVIEW_BASE_SHA,
@@ -9631,6 +10001,16 @@ export function validateTraceability({
   let productRemediationAuthorizationAccepted = false
   let studioCompletionAuthorizationAccepted = false
   let publicationCacheAuthorizationAccepted = false
+  const mediaRightsAuthorizationRequested =
+    state === t085States.COMPLETE_STEADY &&
+    Array.isArray(changedPaths) &&
+    mediaRightsGate.requested(
+      changedPaths,
+      githubActionsContext,
+      mediaRightsAuthorizationReadback,
+      changeBaseSha
+    )
+  let mediaRightsAuthorizationAccepted = false
 
   if (!/^[0-9a-f]{40}$/.test(currentHead ?? "")) {
     errors.push("currentHead must be a full lowercase commit SHA")
@@ -9769,6 +10149,18 @@ export function validateTraceability({
         errors
       })
     }
+    if (mediaRightsAuthorizationRequested) {
+      mediaRightsAuthorizationAccepted = mediaRightsGate.validate({
+        readback: mediaRightsAuthorizationReadback,
+        gitBinding,
+        changedPaths,
+        changeBaseSha,
+        boundedScopeActive,
+        githubActionsContext,
+        requireExactHeadEvidence,
+        errors
+      })
+    }
     if (
       productRemediationAuthorizationRequested(
         changedPaths,
@@ -9861,6 +10253,7 @@ export function validateTraceability({
         !isAuthorizedPostT085MaintenancePath(changedPath) &&
         !(studioCompletionAuthorizationAccepted && studioCompletionGate.allowsPath(changedPath)) &&
         !(publicationCacheAuthorizationAccepted && publicationCacheGate.allowsPath(changedPath)) &&
+        !(mediaRightsAuthorizationAccepted && mediaRightsGate.allowsPath(changedPath)) &&
         !(pnpmSecurityAuthorizationAccepted && pnpmSecurityAuthorizedPaths.has(changedPath)) &&
         !(
           productRemediationAuthorizationAccepted &&
@@ -10546,6 +10939,18 @@ export function validateTraceability({
             errors: publicationCacheAuthorizationReadback.errors ?? []
           }
         : null,
+      media_rights_authorization_readback: mediaRightsAuthorizationReadback
+        ? {
+            status: mediaRightsAuthorizationReadback.status,
+            accepted: mediaRightsAuthorizationAccepted,
+            authorization_ref: mediaRightsAuthorizationReadback.authorization?.html_url ?? null,
+            body_sha256: sha256(mediaRightsAuthorizationReadback.authorization?.body ?? null),
+            pull_request: mediaRightsAuthorizationReadback.pull_request?.number ?? null,
+            protected_main: mediaRightsAuthorizationReadback.protected_main ?? null,
+            candidate: mediaRightsAuthorizationReadback.candidate ?? null,
+            errors: mediaRightsAuthorizationReadback.errors ?? []
+          }
+        : null,
       product_remediation_authorization_readback: productRemediationAuthorizationReadback
         ? {
             status: productRemediationAuthorizationReadback.status,
@@ -10710,6 +11115,10 @@ export function validateTraceability({
                         !(
                           publicationCacheAuthorizationAccepted &&
                           publicationCacheGate.allowsPath(changedPath)
+                        ) &&
+                        !(
+                          mediaRightsAuthorizationAccepted &&
+                          mediaRightsGate.allowsPath(changedPath)
                         ) &&
                         !(
                           productRemediationAuthorizationAccepted &&
@@ -11902,6 +12311,14 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
   )
     ? publicationCacheGate.inspect(root, { environment })
     : null
+  const mediaRightsAuthorizationReadback = mediaRightsGate.requested(
+    inspection.changedPaths,
+    githubActionsContext,
+    null,
+    inspection.change_base_sha
+  )
+    ? mediaRightsGate.inspect(root, { environment })
+    : null
   const isGitHubActions = environment.GITHUB_ACTIONS === "true"
   const report = validateTraceability({
     root,
@@ -11916,6 +12333,7 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
     productRemediationAuthorizationReadback,
     studioCompletionAuthorizationReadback,
     publicationCacheAuthorizationReadback,
+    mediaRightsAuthorizationReadback,
     gitBinding: {
       status: inspection.status,
       head: inspection.head,

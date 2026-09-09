@@ -76,6 +76,15 @@ public final class EditorialMediaMetadataService {
                 : null;
 
         EditorialWorkflowService.OperationResult result = transactionTemplate.execute(status -> {
+            // Publication and publisher revocation lock the asset before its rights.
+            // Read the references in a fresh statement after that lock is acquired,
+            // so a publication that committed while we waited cannot be missed.
+            if (jdbcTemplate.query(
+                    "SELECT id FROM media_asset WHERE id = ? FOR UPDATE",
+                    (row, index) -> row.getObject(1, UUID.class), assetId
+            ).isEmpty()) {
+                throw EditorialProblemException.notFound("/id", "media asset was not found");
+            }
             MediaMetadata current = find(assetId).orElseThrow(() -> EditorialProblemException.notFound(
                     "/id", "media asset was not found"
             ));
@@ -91,6 +100,16 @@ public final class EditorialMediaMetadataService {
                         List.of(new FieldError(
                                 "/state", "MEDIA_REVOKED", "revoked media metadata cannot be changed"
                         ))
+                );
+            }
+            if (rights != null) {
+                validateRightsVersion(current.rights(), rights);
+            }
+            boolean rightsChanged = rights != null && !sameRights(current.rights(), rights);
+            if (rightsChanged && hasPublicationReference(assetId)) {
+                throw EditorialProblemException.gate(
+                        "/rights", "PUBLISHED_RIGHTS_IMMUTABLE",
+                        "published media rights are immutable; use publisher revocation and a replacement asset"
                 );
             }
             if (jdbcTemplate.update(
@@ -118,7 +137,7 @@ public final class EditorialMediaMetadataService {
                         new Version(currentVersion(assetId))
                 );
             }
-            if (rights != null) {
+            if (rights != null && rightsChanged) {
                 persistRights(assetId, current.rights(), rights);
             }
             MediaMetadata updated = find(assetId).orElseThrow(() -> new IllegalStateException(
@@ -131,7 +150,7 @@ public final class EditorialMediaMetadataService {
                     assetId,
                     Map.of(
                             "altTextPresent", !altText.isBlank(),
-                            "rightsUpdated", rights != null,
+                            "rightsUpdated", rightsChanged,
                             "state", updated.state().name()
                     )
             ));
@@ -140,13 +159,69 @@ public final class EditorialMediaMetadataService {
         return Objects.requireNonNull(result, "metadata transaction returned no result");
     }
 
-    private void persistRights(UUID assetId, RightsRecord current, RightsInput input) {
+    private boolean hasPublicationReference(UUID assetId) {
+        Boolean referenced = jdbcTemplate.queryForObject("""
+                SELECT EXISTS (
+                    SELECT 1 FROM publication_impact_link WHERE asset_id = ?
+                ) OR EXISTS (
+                    SELECT 1 FROM article_revision_media media
+                    JOIN article_revision revision ON revision.id = media.article_revision_id
+                    WHERE media.asset_id = ? AND (revision.state = 'PUBLISHED' OR EXISTS (
+                        SELECT 1 FROM publication_snapshot snapshot
+                        WHERE snapshot.aggregate_type = 'ARTICLE'
+                          AND snapshot.aggregate_id = revision.article_id
+                          AND snapshot.revision_id = revision.id
+                    ))
+                ) OR EXISTS (
+                    SELECT 1 FROM publication_issue
+                    WHERE cover_asset_id = ? AND state = 'PUBLISHED'
+                ) OR EXISTS (
+                    SELECT 1 FROM publication_snapshot snapshot
+                    WHERE snapshot.content_document->>'coverAssetId' = ?
+                       OR snapshot.content_document->'media' @>
+                          jsonb_build_array(jsonb_build_object('assetId', CAST(? AS text)))
+                )
+                """, Boolean.class, assetId, assetId, assetId,
+                assetId.toString(), assetId.toString());
+        return Boolean.TRUE.equals(referenced);
+    }
+
+    private static boolean sameRights(RightsRecord current, RightsInput input) {
+        return current != null
+                && current.owner().equals(input.owner())
+                && current.licenseName().equals(input.licenseName())
+                && current.allowedChannels().equals(input.allowedChannels())
+                && current.territories().equals(input.territories())
+                && current.validFrom().equals(input.validFrom())
+                && current.validUntil().equals(input.validUntil())
+                && current.credit().equals(input.credit())
+                && current.withdrawalTerms().equals(input.withdrawalTerms())
+                && current.status().equals(input.status());
+    }
+
+    private static void validateRightsVersion(RightsRecord current, RightsInput input) {
         if (current == null) {
             if (input.version() != null) {
                 throw EditorialProblemException.invalid(
                         "/rights/version", "RIGHTS_VERSION_INVALID", "new rights records cannot have a version"
                 );
             }
+            return;
+        }
+        if (input.version() == null) {
+            throw EditorialProblemException.gate(
+                    "/rights/version", "RIGHTS_VERSION_REQUIRED", "existing rights records require a version"
+            );
+        }
+        if (current.version() != input.version()) {
+            throw new VersionConflictException(
+                    new Version(input.version()), new Version(current.version())
+            );
+        }
+    }
+
+    private void persistRights(UUID assetId, RightsRecord current, RightsInput input) {
+        if (current == null) {
             jdbcTemplate.update(
                     """
                     INSERT INTO rights_record (
@@ -166,17 +241,6 @@ public final class EditorialMediaMetadataService {
                     input.status()
             );
             return;
-        }
-        if (input.version() == null) {
-            throw EditorialProblemException.gate(
-                    "/rights/version", "RIGHTS_VERSION_REQUIRED", "existing rights records require a version"
-            );
-        }
-        if (current.version() != input.version()) {
-            throw new VersionConflictException(
-                    new Version(input.version()),
-                    new Version(current.version())
-            );
         }
         if (jdbcTemplate.update(
                 """
