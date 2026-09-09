@@ -190,7 +190,8 @@ final class MediaRevocationHandlerIT extends EditorialApiIntegrationTestSupport 
             assertLocked("UPDATE rights_record SET status = 'REVOKED' WHERE asset_id = '" + fixture.assetId() + "'");
         });
         jdbcTemplate.update("UPDATE rights_record SET status = 'REVOKED' WHERE asset_id = ?", fixture.assetId());
-        assertFalse(transactions().execute(status -> repository.readyForPublication(fixture.issueId(), Instant.now())));
+        assertEquals(Boolean.FALSE,
+                transactions().execute(status -> repository.readyForPublication(fixture.issueId(), Instant.now())));
     }
 
     @ParameterizedTest

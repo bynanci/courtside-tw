@@ -85,6 +85,17 @@ public final class RouteRateLimiter {
     public record Decision(boolean allowed, long retryAfterSeconds) {
     }
 
+    private synchronized void completeAuthentication(AuthenticationReservation reservation, boolean authenticated) {
+        if (reservation.completed || reservation.window == null) {
+            return;
+        }
+        reservation.completed = true;
+        reservation.window.pendingAuthentication--;
+        if (authenticated) {
+            reservation.window.accepted--;
+        }
+    }
+
     /** Single-use admission held until a verified JWT or a failed authentication is observed. */
     public final class AuthenticationReservation {
         private final Decision decision;
@@ -101,16 +112,7 @@ public final class RouteRateLimiter {
         }
 
         public void complete(boolean authenticated) {
-            synchronized (RouteRateLimiter.this) {
-                if (completed || window == null) {
-                    return;
-                }
-                completed = true;
-                window.pendingAuthentication--;
-                if (authenticated) {
-                    window.accepted--;
-                }
-            }
+            completeAuthentication(this, authenticated);
         }
     }
 

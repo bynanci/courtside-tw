@@ -82,8 +82,8 @@ public final class VerifiedRoleAuditService {
 
     static String identityDigest(JwtAuthenticationToken authentication) {
         try {
-            String issuer = authentication.getToken().getIssuer().toString();
-            String subject = authentication.getToken().getSubject();
+            String issuer = Objects.requireNonNull(authentication.getToken().getIssuer(), "verified issuer").toString();
+            String subject = Objects.requireNonNull(authentication.getToken().getSubject(), "verified subject");
             // Length framing avoids ambiguous concatenations without persisting issuer or subject.
             String framed = issuer.length() + ":" + issuer + subject.length() + ":" + subject;
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(framed.getBytes(StandardCharsets.UTF_8)));

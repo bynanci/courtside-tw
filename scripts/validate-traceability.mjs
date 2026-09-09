@@ -1307,6 +1307,32 @@ export const PRODUCT_REMEDIATION_OPTIONAL_PATHS = Object.freeze([
   "apps/web/tests/unit/android-creative-timeline.test.ts",
   "apps/web/tests/unit/offline-issue-manager.test.ts"
 ])
+const productFixturePath =
+  "apps/api/src/test/java/tw/basketball/magazine/publication/PublicationReliabilityIT.java"
+const productFixtureRef =
+  "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5595331899"
+const productFixtureBodyHash = "47b66a49d5b6be23a286ceaa322fd356812019c041e4ead232b74c6d24935216"
+const productFixtureTime = "2026-09-09T03:28:09Z"
+const productFixtureBoundary = "f37082e5aa61c932f1740ebb64e507fde713c67f"
+const productFixtureBoundaryTree = "7c931a371088652f066830ef6ed54ba98953520b"
+
+const productAdditionalScopes = Object.freeze([
+  {
+    key: "fixture_addendum",
+    path: productFixturePath,
+    ref: productFixtureRef,
+    bodyHash: productFixtureBodyHash,
+    recordedAt: productFixtureTime
+  },
+  {
+    key: "browser_addendum",
+    path: "apps/web/tests/e2e/us5-reader-library.spec.ts",
+    ref: "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5595411052",
+    bodyHash: "189ed4f11645ef05580e6742e566e1efd8ddb8b270fc4362a71d8758ec0a7dff",
+    recordedAt: "2026-09-09T03:38:26Z"
+  }
+])
+
 const productRemediationSeedPaths = PRODUCT_REMEDIATION_REQUIRED_PATHS.filter(
   (p) =>
     !["scripts/validate-traceability.mjs", "scripts/test/validate-traceability.test.mjs"].includes(
@@ -1315,7 +1341,8 @@ const productRemediationSeedPaths = PRODUCT_REMEDIATION_REQUIRED_PATHS.filter(
 )
 const productRemediationAuthorizedPaths = new Set([
   ...PRODUCT_REMEDIATION_REQUIRED_PATHS,
-  ...PRODUCT_REMEDIATION_OPTIONAL_PATHS
+  ...PRODUCT_REMEDIATION_OPTIONAL_PATHS,
+  ...productAdditionalScopes.map((scope) => scope.path)
 ])
 
 function productRemediationPathClosureMatches(paths) {
@@ -1433,6 +1460,30 @@ function validateProductRemediationAuthorization({
     candidate?.tree_sha !== gitBinding?.head_tree_sha
   )
     reject("requires a clean exact candidate tree and audited Git binding")
+  for (const scope of productAdditionalScopes) {
+    if (!changedPaths?.includes(scope.path) && !candidate?.history_paths?.includes(scope.path))
+      continue
+    const addendum = readback?.[scope.key]
+    const amendment = candidate?.[scope.key]
+    if (
+      addendum?.status !== "VERIFIED" ||
+      addendum?.source !== "github-api" ||
+      addendum?.html_url !== scope.ref ||
+      addendum?.issue_url !== "https://api.github.com/repos/bynanci/courtside-tw/issues/121" ||
+      addendum?.user_login !== ACCEPTED_RECEIPT_OWNER ||
+      addendum?.author_association !== "OWNER" ||
+      addendum?.created_at !== scope.recordedAt ||
+      addendum?.updated_at !== scope.recordedAt ||
+      sha256(addendum?.body ?? null) !== scope.bodyHash ||
+      amendment?.boundary_ancestor !== true ||
+      amendment?.boundary_tree_sha !== productFixtureBoundaryTree ||
+      amendment?.regular_file !== true ||
+      amendment?.changes_postdate_addendum !== true ||
+      !changedPaths?.includes(scope.path)
+    ) {
+      reject(`requires immutable ${scope.key} and post-boundary regular-file path history`)
+    }
+  }
   const protectedMain = readback?.protected_main
   if (
     protectedMain?.name !== "main" ||
@@ -1501,6 +1552,43 @@ export function inspectProductRemediationFiles(root, head) {
   }
 }
 
+// Pure Git proof; production callers use the immutable defaults. Overrides are
+// for isolated Git fixtures, and never change the separate authority validation.
+export function inspectProductFixtureAddendum(
+  root,
+  head,
+  {
+    boundary = productFixtureBoundary,
+    filePath = productFixturePath,
+    recordedAt = productFixtureTime
+  } = {}
+) {
+  try {
+    const git = (args) =>
+      execFileSync("git", args, {
+        cwd: root,
+        encoding: "utf8",
+        maxBuffer: 1024 * 1024,
+        stdio: ["ignore", "pipe", "ignore"]
+      }).trim()
+    const times = git(["log", "--format=%aI%n%cI", `${boundary}..${head}`, "--", filePath])
+      .split("\n")
+      .filter(Boolean)
+    return {
+      boundary_ancestor: inspectAncestor(root, boundary, head),
+      boundary_tree_sha: inspectHeadTopology(root, boundary).headTreeSha,
+      regular_file: /^100644 blob [0-9a-f]{40}\t/u.test(git(["ls-tree", head, "--", filePath])),
+      changes_postdate_addendum:
+        times.length > 0 &&
+        times.every(
+          (time) => Number.isFinite(Date.parse(time)) && Date.parse(time) > Date.parse(recordedAt)
+        )
+    }
+  } catch {
+    return null
+  }
+}
+
 export function inspectProductRemediationCandidate(root, head) {
   if (!/^[0-9a-f]{40}$/.test(head ?? "")) return null
   try {
@@ -1554,6 +1642,17 @@ export function inspectProductRemediationCandidate(root, head) {
         head
       ),
       history_paths: [...new Set(historyPaths)].sort(),
+      ...Object.fromEntries(
+        productAdditionalScopes.map((scope) => [
+          scope.key,
+          historyPaths.includes(scope.path)
+            ? inspectProductFixtureAddendum(root, head, {
+                filePath: scope.path,
+                recordedAt: scope.recordedAt
+              })
+            : null
+        ])
+      ),
       commits_postdate_authorization:
         commitTimes.length > 0 &&
         commitTimes.every(
@@ -1628,13 +1727,28 @@ export function inspectProductRemediationAuthorization(
     const protectedMain = fetchMain(
       "https://api.github.com/repos/bynanci/courtside-tw/branches/main"
     )
+    const candidate = inspectCandidate(root, pullRequest?.head?.sha)
+    const addenda = Object.fromEntries(
+      productAdditionalScopes.map((scope) => [
+        scope.key,
+        candidate?.history_paths?.includes(scope.path)
+          ? inspectComment(scope.ref, {
+              environment,
+              isAuthorizedRef: (ref) => ref === scope.ref,
+              invalidRefError: `product ${scope.key} reference is not authorized`,
+              readbackErrorPrefix: `product ${scope.key} read-back failed`
+            })
+          : null
+      ])
+    )
     return {
       status: "VERIFIED",
       source: "github-api",
       authorization,
+      ...addenda,
       pull_request: pullRequest,
       protected_main: protectedMain,
-      candidate: inspectCandidate(root, pullRequest?.head?.sha),
+      candidate,
       errors: []
     }
   } catch {
@@ -9552,6 +9666,21 @@ export function validateTraceability({
             pull_request: productRemediationAuthorizationReadback.pull_request?.number ?? null,
             protected_main: productRemediationAuthorizationReadback.protected_main ?? null,
             candidate: productRemediationAuthorizationReadback.candidate ?? null,
+            addenda: Object.fromEntries(
+              productAdditionalScopes.map((scope) => {
+                const entry = productRemediationAuthorizationReadback[scope.key]
+                return [
+                  scope.key,
+                  entry
+                    ? {
+                        status: entry.status,
+                        ref: entry.html_url,
+                        body_sha256: sha256(entry.body ?? null)
+                      }
+                    : null
+                ]
+              })
+            ),
             errors: productRemediationAuthorizationReadback.errors ?? []
           }
         : null,

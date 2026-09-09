@@ -204,12 +204,34 @@ test.describe("US5 reader library", () => {
   })
 
   test("shows a withdrawn bookmark without restricted article body", async ({ page, request }) => {
+    test.setTimeout(120_000)
     const reset = await request.post(
       "http://127.0.0.1:4010/test/reader-library/reset?withdrawn=true"
     )
     expect(reset.ok()).toBeTruthy()
 
-    await page.goto("/auth/login?returnTo=%2Flibrary")
+    const loginPath = "/auth/login?returnTo=%2Flibrary"
+    let loginResponse = await page.goto(loginPath)
+    if (loginResponse?.status() === 429) {
+      expect(await loginResponse.json()).toMatchObject({
+        status: 429,
+        code: "RATE_LIMITED",
+        instance: "/auth/login"
+      })
+      const retryAfter = loginResponse.headers()["retry-after"]
+      expect(retryAfter).toMatch(/^[1-9]\d?$/)
+      const retryAfterSeconds = Number(retryAfter)
+      expect(retryAfterSeconds).toBeGreaterThanOrEqual(1)
+      expect(retryAfterSeconds).toBeLessThanOrEqual(60)
+      // The shared socket's production quota spans test contexts. Honor its
+      // observed expiry once; preserve both the limiter and withdrawal checks.
+      await page.waitForTimeout(retryAfterSeconds * 1000)
+      loginResponse = await page.goto(loginPath)
+    }
+    expect(loginResponse?.ok()).toBe(true)
+    const session = await page.request.get("/auth/session")
+    expect(session.ok()).toBe(true)
+    expect(await session.json()).toMatchObject({ authenticated: true })
     await page.goto("/library", { waitUntil: "domcontentloaded" })
 
     await expect(page.getByTestId("library-unavailable")).toBeVisible()

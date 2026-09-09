@@ -11580,3 +11580,296 @@ for (const supersededComment of [5594498950, 5594575189]) {
     assert.match(report.errors.join("\n"), /immutable issue 121 OWNER dispatch/u)
   })
 }
+
+const productFixturePath =
+  "apps/api/src/test/java/tw/basketball/magazine/publication/PublicationReliabilityIT.java"
+const productFixtureBody =
+  '<!-- product175:fixture-addendum:v1:start -->\nThis immutable, one-path addendum records the user\'s continuing completion, review, optimization and merge authorization. The assistant records it through the owner\'s connected account on the user\'s behalf; it is not a separate human release-risk acceptance.\n\nUser instruction: "請幫我將剩餘的任務完成 ,完成後@review 並且 @optimize ，最終再依你的經驗merge"; resumed with "繼續完成".\n\nRepository: bynanci/courtside-tw\nPR: 175\nBranch: fix/t086-product-remediation\nProtected base: 74d3b6dfba087394a3e522252dc4a8cf5e1b3f0d\nRequired original authorization: https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5594585089\nAlready-published boundary head: f37082e5aa61c932f1740ebb64e507fde713c67f\nBoundary tree: 7c931a371088652f066830ef6ed54ba98953520b\n\nAdditional path:\n- apps/api/src/test/java/tw/basketball/magazine/publication/PublicationReliabilityIT.java\n\nPurpose: V016 now enforces draft-only contributor changes. The historical withdrawal fixture creates an already-WITHDRAWN revision before inserting its credits, so the new invariant correctly rejects the fixture setup. Create that same fixture in DRAFT, insert its credits, then transition to WITHDRAWN before executing the original recovery assertions. Do not weaken the database trigger, test assertions, production authorization, or migration coverage.\n\nThe already-authorized scripts/validate-traceability.mjs and scripts/test/validate-traceability.test.mjs may add fail-closed validation of this exact immutable addendum. Require the original authorization as well as this addendum whenever the extra path appears in final or historical changes. Require the exact published boundary as an ancestor and every new change to this extra path to postdate this comment. Preserve existing branch/base, complete path/history, exact-head CI/Security, single-parent identical-tree squash and thread-resolution requirements.\n\nNo other path is added. All frozen T085 records, README, task checkbox lines, beta flag, T086 acceptance, participant research, Web3, deployment, provider configuration, credentials and secrets retain their current boundaries. This addendum does not adjudicate any release blocker.\n<!-- product175:fixture-addendum:v1:end -->'
+function makeProductFixtureAddendumCase(options = {}) {
+  const context = makeProductRemediationFixture(options)
+  context.fixture.changedPaths.push(productFixturePath)
+  context.readback.candidate.changed_paths.push(productFixturePath)
+  context.readback.candidate.history_paths.push(productFixturePath)
+  context.readback.candidate.fixture_addendum = {
+    boundary_ancestor: true,
+    boundary_tree_sha: "7c931a371088652f066830ef6ed54ba98953520b",
+    regular_file: true,
+    changes_postdate_addendum: true
+  }
+  context.readback.fixture_addendum = {
+    ...context.readback.authorization,
+    html_url: "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5595331899",
+    created_at: "2026-09-09T03:28:09Z",
+    updated_at: "2026-09-09T03:28:09Z",
+    body: productFixtureBody
+  }
+  return context
+}
+for (const push of [false, true]) {
+  test(`product fixture addendum accepts authenticated exact ${push ? "squash" : "PR"} amendment`, () => {
+    const c = makeProductFixtureAddendumCase({ push })
+    const r = runProductRemediationFixture(c)
+    assert.equal(r.status, "PASS", r.errors.join("\n"))
+  })
+}
+for (const [name, mutate] of [
+  [
+    "deleted or symlink fixture",
+    (c) => {
+      c.readback.candidate.fixture_addendum.regular_file = false
+    }
+  ],
+  [
+    "missing comment",
+    (c) => {
+      c.readback.fixture_addendum = null
+    }
+  ],
+  [
+    "edited comment",
+    (c) => {
+      c.readback.fixture_addendum.updated_at = "2026-09-10T00:00:00Z"
+    }
+  ],
+  [
+    "changed body",
+    (c) => {
+      c.readback.fixture_addendum.body += "\n"
+    }
+  ],
+  [
+    "wrong owner",
+    (c) => {
+      c.readback.fixture_addendum.user_login = "attacker"
+    }
+  ],
+  [
+    "wrong issue",
+    (c) => {
+      c.readback.fixture_addendum.issue_url += "0"
+    }
+  ],
+  [
+    "unavailable API",
+    (c) => {
+      c.readback.fixture_addendum.status = "UNAVAILABLE"
+    }
+  ],
+  [
+    "old boundary",
+    (c) => {
+      c.readback.candidate.fixture_addendum.boundary_ancestor = false
+    }
+  ],
+  [
+    "changed boundary tree",
+    (c) => {
+      c.readback.candidate.fixture_addendum.boundary_tree_sha = "0".repeat(40)
+    }
+  ],
+  [
+    "predated path change",
+    (c) => {
+      c.readback.candidate.fixture_addendum.changes_postdate_addendum = false
+    }
+  ],
+  [
+    "removed historical path",
+    (c) => {
+      c.fixture.changedPaths = c.fixture.changedPaths.filter((p) => p !== productFixturePath)
+      c.readback.candidate.changed_paths = [...c.fixture.changedPaths]
+    }
+  ],
+  [
+    "missing original authority",
+    (c) => {
+      c.readback.authorization = null
+    }
+  ]
+]) {
+  test(`product fixture addendum rejects ${name}`, () => {
+    const c = makeProductFixtureAddendumCase()
+    mutate(c)
+    assert.equal(runProductRemediationFixture(c).status, "FAIL")
+  })
+}
+test("product fixture addendum reader fetches the exact comment only when the path history requires it", () => {
+  const c = makeProductFixtureAddendumCase()
+  const refs = []
+  const r = traceabilityValidator.inspectProductRemediationAuthorization(c.fixture.root, {
+    inspectComment: (ref) => {
+      refs.push(ref)
+      return ref === c.readback.authorization.html_url
+        ? c.readback.authorization
+        : c.readback.fixture_addendum
+    },
+    fetchPr: () => c.readback.pull_request,
+    fetchMain: () => c.readback.protected_main,
+    inspectCandidate: () => c.readback.candidate
+  })
+  assert.deepEqual(refs, [c.readback.authorization.html_url, c.readback.fixture_addendum.html_url])
+  assert.equal(r.fixture_addendum.body, productFixtureBody)
+})
+
+test("product fixture addendum inspects isolated Git ancestry timestamps and file mode", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "product-fixture-git-"))
+  const cloned = path.join(root, "repo.git")
+  execFileSync("git", ["init", "--bare", "--quiet", cloned])
+  const environment = {
+    ...process.env,
+    GIT_INDEX_FILE: path.join(root, "index"),
+    GIT_AUTHOR_NAME: "Fixture",
+    GIT_AUTHOR_EMAIL: "fixture@example.invalid",
+    GIT_COMMITTER_NAME: "Fixture",
+    GIT_COMMITTER_EMAIL: "fixture@example.invalid",
+    GIT_AUTHOR_DATE: "2026-09-09T12:00:00Z",
+    GIT_COMMITTER_DATE: "2026-09-09T12:00:00Z"
+  }
+  const run = (args, input = undefined, env = environment) =>
+    execFileSync("git", args, {
+      cwd: cloned,
+      env,
+      input,
+      encoding: "utf8",
+      stdio: ["pipe", "pipe", "pipe"]
+    }).trim()
+  try {
+    run(["read-tree", "--empty"])
+    const oldBlob = run(["hash-object", "-w", "--stdin"], "old fixture\n")
+    run(["update-index", "--add", "--cacheinfo", `100644,${oldBlob},${productFixturePath}`])
+    const boundaryTree = run(["write-tree"])
+    const boundary = run(["commit-tree", boundaryTree], "Synthetic boundary\n")
+    const options = { boundary, filePath: productFixturePath, recordedAt: "2026-09-09T03:28:09Z" }
+    const blob = run(["hash-object", "-w", "--stdin"], "updated fixture\n")
+    run(["update-index", "--cacheinfo", `100644,${blob},${productFixturePath}`])
+    const tree = run(["write-tree"])
+    const head = run(["commit-tree", tree, "-p", boundary], "Synthetic local fixture only\n")
+    assert.deepEqual(traceabilityValidator.inspectProductFixtureAddendum(cloned, head, options), {
+      boundary_ancestor: true,
+      boundary_tree_sha: boundaryTree,
+      regular_file: true,
+      changes_postdate_addendum: true
+    })
+    const early = run(["commit-tree", tree, "-p", boundary], "Predated synthetic fixture\n", {
+      ...environment,
+      GIT_AUTHOR_DATE: "2026-09-09T01:00:00Z",
+      GIT_COMMITTER_DATE: "2026-09-09T01:00:00Z"
+    })
+    assert.equal(
+      traceabilityValidator.inspectProductFixtureAddendum(cloned, early, options)
+        ?.changes_postdate_addendum,
+      false
+    )
+    run(["update-index", "--index-info"], `0 ${"0".repeat(40)}\t${productFixturePath}\n`)
+    const deleted = run(
+      ["commit-tree", run(["write-tree"]), "-p", boundary],
+      "Deleted synthetic fixture\n"
+    )
+    assert.equal(
+      traceabilityValidator.inspectProductFixtureAddendum(cloned, deleted, options)?.regular_file,
+      false
+    )
+    run(["update-index", "--add", "--cacheinfo", `120000,${blob},${productFixturePath}`])
+    const symlink = run(
+      ["commit-tree", run(["write-tree"]), "-p", boundary],
+      "Symlink synthetic fixture\n"
+    )
+    assert.equal(
+      traceabilityValidator.inspectProductFixtureAddendum(cloned, symlink, options)?.regular_file,
+      false
+    )
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true })
+  }
+})
+
+const productBrowserPath = "apps/web/tests/e2e/us5-reader-library.spec.ts"
+const productBrowserBody =
+  "<!-- product175:browser-addendum:v1:start -->\nThis immutable, one-path addendum records the user's continuing instruction to finish remaining tasks, review, optimize and merge after verification. Recorded by the assistant through the owner's connected GitHub account on the user's behalf; not a separate human release-risk acceptance.\n\nRepository: bynanci/courtside-tw\nPR: 175\nBranch: fix/t086-product-remediation\nProtected base: 74d3b6dfba087394a3e522252dc4a8cf5e1b3f0d\nRequired original authorization: https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5594585089\nPublished boundary head: f37082e5aa61c932f1740ebb64e507fde713c67f\nBoundary tree: 7c931a371088652f066830ef6ed54ba98953520b\n\nAdditional path:\n- apps/web/tests/e2e/us5-reader-library.spec.ts\n\nCause and correction: CI run 34306856835 artifact 10087089132 proves the withdrawn-bookmark test is the eleventh login from the shared runner socket within 60 seconds. Both attempts receive genuine 429 RATE_LIMITED, with Retry-After 53 and 47 respectively. Its fixture reset does not reset the production Nuxt limiter. Allow only this test to verify the 429 contract, honor a bounded 1..60-second Retry-After, and retry login once before the original authenticated/withdrawn-content assertions. Keep a finite test deadline. Do not disable, bypass, reset, raise or replace the production limiter, spoof client IP, weaken assertions, or skip any test.\n\nThe already-authorized traceability validator and tests may validate this exact immutable additional scope. The original authorization is still mandatory. The fixture-only addendum https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5595331899 remains separately mandatory for PublicationReliabilityIT.java and cannot authorize this browser path. Each additional path must remain a regular file, retain its own unchanged OWNER comment, preserve the published boundary as an ancestor, and have only post-comment modifications.\n\nAll existing exact base/head/tree/history, fresh CI/Security, conversation resolution, and single-parent identical-tree squash conditions remain. No other new path, task checkbox, frozen T085 receipt, README, beta flag, release adjudication, participant research, Web3, deployment, provider configuration, credential or secret change is authorized.\n<!-- product175:browser-addendum:v1:end -->"
+function makeProductBrowserAddendumCase() {
+  const context = makeProductFixtureAddendumCase()
+  context.fixture.changedPaths.push(productBrowserPath)
+  context.readback.candidate.changed_paths.push(productBrowserPath)
+  context.readback.candidate.history_paths.push(productBrowserPath)
+  context.readback.candidate.browser_addendum = { ...context.readback.candidate.fixture_addendum }
+  context.readback.browser_addendum = {
+    ...context.readback.fixture_addendum,
+    html_url: "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5595411052",
+    created_at: "2026-09-09T03:38:26Z",
+    updated_at: "2026-09-09T03:38:26Z",
+    body: productBrowserBody
+  }
+  return context
+}
+test("product browser addendum accepts both separately authenticated repairs", () => {
+  const c = makeProductBrowserAddendumCase()
+  const r = runProductRemediationFixture(c)
+  assert.equal(r.status, "PASS", r.errors.join("\n"))
+})
+for (const [name, mutate] of [
+  [
+    "fixture comment substituted",
+    (c) => {
+      c.readback.browser_addendum = c.readback.fixture_addendum
+    }
+  ],
+  [
+    "missing browser comment",
+    (c) => {
+      c.readback.browser_addendum = null
+    }
+  ],
+  [
+    "edited browser comment",
+    (c) => {
+      c.readback.browser_addendum.updated_at = "2026-09-10T00:00:00Z"
+    }
+  ],
+  [
+    "missing fixture comment",
+    (c) => {
+      c.readback.fixture_addendum = null
+    }
+  ],
+  [
+    "pre-comment browser change",
+    (c) => {
+      c.readback.candidate.browser_addendum.changes_postdate_addendum = false
+    }
+  ],
+  [
+    "deleted browser file",
+    (c) => {
+      c.readback.candidate.browser_addendum.regular_file = false
+    }
+  ]
+]) {
+  test(`product browser addendum rejects ${name}`, () => {
+    const c = makeProductBrowserAddendumCase()
+    mutate(c)
+    assert.equal(runProductRemediationFixture(c).status, "FAIL")
+  })
+}
+test("product browser addendum reader independently fetches both live authorities", () => {
+  const c = makeProductBrowserAddendumCase()
+  const refs = []
+  const comments = [
+    c.readback.authorization,
+    c.readback.fixture_addendum,
+    c.readback.browser_addendum
+  ]
+  const r = traceabilityValidator.inspectProductRemediationAuthorization(c.fixture.root, {
+    inspectComment: (ref) => {
+      refs.push(ref)
+      return comments.find((c) => c.html_url === ref)
+    },
+    fetchPr: () => c.readback.pull_request,
+    fetchMain: () => c.readback.protected_main,
+    inspectCandidate: () => c.readback.candidate
+  })
+  assert.deepEqual(
+    refs,
+    comments.map((c) => c.html_url)
+  )
+  assert.equal(r.browser_addendum.body, productBrowserBody)
+})

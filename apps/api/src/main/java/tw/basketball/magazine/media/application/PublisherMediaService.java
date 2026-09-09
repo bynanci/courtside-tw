@@ -149,12 +149,12 @@ public final class PublisherMediaService {
                                 WHERE impact.asset_id = ?))
                         ORDER BY issue.aggregate_id
                         """, (row, index) -> row.getObject(1, UUID.class), assetId.toString(), assetId, assetId);
-                appendImpact(assetId, "MEDIA_ASSET", assetId);
+                appendImpact(jdbcTemplate, assetId, "MEDIA_ASSET", assetId);
                 for (UUID articleId : affectedArticles) {
-                    appendImpact(assetId, "ARTICLE", articleId);
+                    appendImpact(jdbcTemplate, assetId, "ARTICLE", articleId);
                 }
                 for (UUID issueId : affectedPackages) {
-                    appendImpact(assetId, "ISSUE", issueId);
+                    appendImpact(jdbcTemplate, assetId, "ISSUE", issueId);
                 }
                 jdbcTemplate.update("""
                         INSERT INTO outbox_event (event_type, aggregate_type, aggregate_id, idempotency_key, payload)
@@ -202,7 +202,7 @@ public final class PublisherMediaService {
         return Objects.requireNonNull(result, "transaction returned no revocation result");
     }
 
-    private void appendImpact(UUID assetId, String aggregateType, UUID aggregateId) {
+    private static void appendImpact(JdbcTemplate jdbcTemplate, UUID assetId, String aggregateType, UUID aggregateId) {
         jdbcTemplate.update("""
                 INSERT INTO media_revocation_impact (asset_id, aggregate_type, aggregate_id)
                 VALUES (?, ?, ?) ON CONFLICT DO NOTHING
