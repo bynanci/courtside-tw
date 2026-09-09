@@ -9804,13 +9804,13 @@ function parseOidcSecurityRemediationAuthorizationBody(
     return null
   }
   let payload = body.slice(start + startMarker.length, end).trim()
-  const fencedPayload = payload.match(/^```json\r?\n([\s\S]*)\r?\n```$/)
-  if (fencedPayload) {
-    payload = fencedPayload[1].trim()
-  } else if (payload.includes("```")) {
+  const fencedPayload = payload.match(/```json\r?\n([\s\S]*?)\r?\n```/)
+  const fenceCount = (payload.match(/```/g) ?? []).length
+  if (!fencedPayload || fenceCount !== 2) {
     errors.push(`${label} JSON fence is invalid`)
     return null
   }
+  payload = fencedPayload[1].trim()
   try {
     assertUniqueJsonObjectKeys(payload)
     const parsed = JSON.parse(payload)
