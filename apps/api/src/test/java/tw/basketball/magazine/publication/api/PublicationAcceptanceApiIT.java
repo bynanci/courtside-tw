@@ -128,7 +128,13 @@ final class PublicationAcceptanceApiIT extends EditorialApiIntegrationTestSuppor
                 throw new AssertionError("A publish retry must not withdraw the article");
             }
         };
-        PublicationJobHandler worker = worker(projection);
+        AtomicInteger invalidations = new AtomicInteger();
+        PublicationJobHandler worker = worker(projection, request -> {
+            assertTrue(!org.springframework.transaction.support.TransactionSynchronizationManager
+                    .isActualTransactionActive());
+            assertTrue(request.surrogateKeys().contains("article:" + article.articleId()));
+            invalidations.incrementAndGet();
+        });
         OutboxEvent event = publicationEvent(article, "PUBLISH");
         worker.handle(event);
 
@@ -157,6 +163,7 @@ final class PublicationAcceptanceApiIT extends EditorialApiIntegrationTestSuppor
         assertEquals("SUCCEEDED", jdbcTemplate.queryForObject(
                 "SELECT status FROM publication_job WHERE aggregate_id = ?", String.class, article.articleId()));
         assertEquals(1, projections.get());
+        assertEquals(1, invalidations.get());
     }
 
     @ParameterizedTest
@@ -365,12 +372,19 @@ final class PublicationAcceptanceApiIT extends EditorialApiIntegrationTestSuppor
     }
 
     private PublicationJobHandler worker(SearchProjection projection) {
+        return worker(projection, request -> {
+            throw new AssertionError("Blocked schedule must not invoke external invalidation");
+        });
+    }
+
+    private PublicationJobHandler worker(
+            SearchProjection projection,
+            tw.basketball.magazine.publication.worker.PublicationExternalInvalidator invalidator
+    ) {
         return new PublicationJobHandler(
                 new JdbcEditorialArticleRepository(jdbcTemplate), transactions(), JSON,
                 Clock.fixed(EXECUTED_AT, ZoneOffset.UTC),
-                request -> {
-                    throw new AssertionError("Publish and blocked schedule must not invoke withdrawal invalidation");
-                },
+                invalidator,
                 projection
         );
     }

@@ -62,7 +62,8 @@ export default defineEventHandler(async (event) => {
     return "  <url><loc>" + location + "</loc></url>"
   })
   setHeader(event, "content-type", "application/xml; charset=utf-8")
-  setHeader(event, "cache-control", "public, max-age=300, must-revalidate")
+  // Reserve part of the 60-second consistency budget for origin and worker propagation.
+  setHeader(event, "cache-control", "public, max-age=30, must-revalidate")
   return (
     '<?xml version="1.0" encoding="UTF-8"?>\n' +
     '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n' +
