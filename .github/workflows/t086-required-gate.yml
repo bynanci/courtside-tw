@@ -226,7 +226,9 @@ jobs:
               const invalidation={schema_version:'courtside-t086-required-gate/v1',decision:ambiguous?'HOLD':'PENDING',candidate_sha:pr.head.sha,comment_fence:fence,reasons:['Prior decision invalidated before current evidence read-back']};
               const output={title:ambiguous?'HOLD: ambiguous producer':'Recomputing current release evidence',summary:'```json\n'+JSON.stringify(invalidation)+'\n```'};
               // Revoke every existing Actions success BEFORE reporting producer ambiguity.
-              for(const check of actionChecks) await github.rest.checks.update({owner,repo,check_run_id:check.id,status:ambiguous?'completed':'in_progress',conclusion:ambiguous?'failure':null,started_at:new Date().toISOString(),output,details_url:runUrl});
+              const invalidationUpdate={owner,repo,status:ambiguous?'completed':'in_progress',started_at:new Date().toISOString(),output,details_url:runUrl};
+              if(ambiguous) invalidationUpdate.conclusion='failure';
+              for(const check of actionChecks) await github.rest.checks.update({...invalidationUpdate,check_run_id:check.id});
               if(ambiguous) {
                 if(actionChecks.length===0) await github.rest.checks.create({owner,repo,name:CHECK_NAME,head_sha:pr.head.sha,external_id:`courtside-t086:pr:${pr.number}`,status:'completed',conclusion:'failure',output,details_url:runUrl});
                 throw new Error('Required context producer is ambiguous; prior Actions successes revoked');
