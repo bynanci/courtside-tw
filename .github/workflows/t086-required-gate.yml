@@ -18,6 +18,8 @@ permissions: {}
 
 # Each run reconciles ALL current PRs, so a newer pending event safely subsumes
 # an older one. Never cancel an active invalidation or publish cached event state.
+# The same exact three-path contract also read-backs the single protected-main
+# squash push after this producer is merged; push evidence never authorizes a PR.
 concurrency:
   group: t086-required-gate-${{ github.repository }}
   cancel-in-progress: false
