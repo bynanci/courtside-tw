@@ -2091,6 +2091,15 @@ test("media-library archive scope records the write-controller contract fixture"
   )
 })
 
+test("media-library archive fixture remains a regular source path", () => {
+  assert.equal(
+    traceabilityValidator.MEDIA_ARCHIVE_MODES[
+      "apps/api/src/test/java/tw/basketball/magazine/shared/WriteApiContractTest.java"
+    ],
+    "100644"
+  )
+})
+
 test("receipt authority is pinned to the protected PR149 implementation snapshot", () => {
   const traceabilityText = fs.readFileSync(
     path.join(repositoryRoot, featurePath, "traceability.md"),
