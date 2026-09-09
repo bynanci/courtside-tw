@@ -1,9 +1,9 @@
 # syntax=docker/dockerfile:1.7
 
-# Keep the upstream 6.0.1 test image and its immutable digest fixed while
+# Keep the upstream 6.0.2 test image and its immutable digest fixed while
 # upgrading the Wolfi packages required by the security gate. This keeps the
 # OIDC test surface attributable to the pinned upstream application image.
-FROM ghcr.io/navikt/mock-oauth2-server:6.0.1@sha256:b97e48a499d312631206d166e2f2266adb9af34ef8b411dba9b15e48c6dc0dbe
+FROM ghcr.io/navikt/mock-oauth2-server:6.0.2@sha256:b538810afd589d42fbfb856c588c2065eaeed1dc528d6c532972048e67fc2aff
 
 ARG BUSYBOX_MINIMUM_VERSION=1.38.0-r0
 # CVE-2026-14456 is remediated by the 3.6.3-r5 package floor.
