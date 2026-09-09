@@ -133,6 +133,50 @@ public final class JdbcEditorialIssueRepository implements EditorialIssueReposit
     }
 
     @Override
+    public List<IssueArticleRecord> listArticles(UUID issueId) {
+        return jdbcTemplate.query("""
+                SELECT entry.article_id, entry.revision_id, entry.section_id, entry.position,
+                       revision.title, article.slug, revision.revision_number
+                FROM issue_article entry
+                JOIN issue_section section ON section.id = entry.section_id AND section.issue_id = entry.issue_id
+                JOIN article ON article.id = entry.article_id
+                LEFT JOIN article_revision revision ON revision.id = entry.revision_id AND revision.article_id = entry.article_id
+                WHERE entry.issue_id = ?
+                ORDER BY section.position, entry.position, entry.id
+                """, (resultSet, rowNumber) -> new IssueArticleRecord(
+                uuid(resultSet, "article_id"),
+                resultSet.getString("revision_id") == null ? null : uuid(resultSet, "revision_id"),
+                uuid(resultSet, "section_id"), resultSet.getInt("position"),
+                resultSet.getString("title"), resultSet.getString("slug"), resultSet.getObject("revision_number", Integer.class)
+        ), issueId);
+    }
+
+    @Override
+    public boolean lockPublishedArticleRevision(UUID articleId, UUID revisionId, Instant checkedAt, boolean requireCurrentRevision) {
+        return !jdbcTemplate.query("""
+                SELECT revision.id FROM article
+                JOIN article_revision revision ON revision.article_id = article.id AND revision.id = ?
+                WHERE article.id = ?
+                  AND article.state = 'PUBLISHED' AND revision.state = 'PUBLISHED'
+                  AND article.published_at <= ?
+                  AND (NOT ? OR article.published_revision_id = revision.id)
+                FOR SHARE OF article, revision
+                """, (resultSet, rowNumber) -> uuid(resultSet, "id"),
+                revisionId, articleId, Timestamp.from(checkedAt), requireCurrentRevision).isEmpty();
+    }
+
+    @Override
+    public void replaceArticles(UUID issueId, List<IssueArticleAssignment> assignments) {
+        jdbcTemplate.update("DELETE FROM issue_article WHERE issue_id = ?", issueId);
+        jdbcTemplate.batchUpdate("""
+                INSERT INTO issue_article (issue_id, article_id, revision_id, section_id, position)
+                VALUES (?, ?, ?, ?, ?)
+                """, assignments.stream().map(assignment -> new Object[] {
+                issueId, assignment.articleId(), assignment.revisionId(), assignment.sectionId(), assignment.position()
+        }).toList());
+    }
+
+    @Override
     public void shiftSectionsForInsert(UUID issueId, int position, int offset) {
         jdbcTemplate.update("""
                 UPDATE issue_section
@@ -291,7 +335,7 @@ public final class JdbcEditorialIssueRepository implements EditorialIssueReposit
                 FROM issue_article entry
                 JOIN article ON article.id = entry.article_id
                 JOIN article_revision revision
-                  ON revision.id = article.published_revision_id AND revision.article_id = article.id
+                  ON revision.id = entry.revision_id AND revision.article_id = article.id
                 WHERE entry.issue_id = ?
                 ORDER BY revision.id
                 FOR SHARE OF revision
@@ -321,7 +365,7 @@ public final class JdbcEditorialIssueRepository implements EditorialIssueReposit
                           LEFT JOIN article entry_article
                             ON entry_article.id = entry.article_id
                           LEFT JOIN article_revision entry_revision
-                            ON entry_revision.id = entry_article.published_revision_id
+                            ON entry_revision.id = entry.revision_id
                            AND entry_revision.article_id = entry_article.id
                           WHERE entry.issue_id = issue.id
                             AND (
@@ -402,7 +446,7 @@ public final class JdbcEditorialIssueRepository implements EditorialIssueReposit
                     FROM issue_article
                     JOIN article ON article.id = issue_article.article_id
                     JOIN article_revision revision
-                      ON revision.id = article.published_revision_id
+                      ON revision.id = issue_article.revision_id
                      AND revision.article_id = article.id
                     WHERE issue_article.issue_id = ?
                       AND issue_article.section_id = ?

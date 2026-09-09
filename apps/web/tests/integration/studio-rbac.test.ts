@@ -8,6 +8,17 @@ import {
   resolveStudioRole
 } from "../../app/features/studio/studio-contract.ts"
 import { isAllowedStudioPath, isSafeProxyPath } from "../../server/api/studio/[...path].ts"
+
+test("Studio BFF exposes contributor management only inside its authenticated editor prefix", () => {
+  assert.equal(isAllowedStudioPath("editor/contributors"), true)
+  assert.equal(
+    isAllowedStudioPath("editor/contributors/00000000-0000-4000-8000-000000000001:archive"),
+    true
+  )
+  assert.equal(isAllowedStudioPath("editor/contributors-unsafe"), false)
+  assert.equal(isAllowedStudioPath("publisher/contributors"), false)
+  assert.equal(isAllowedStudioPath("editor/contributors/../admin"), false)
+})
 import { canReviewAction } from "../../app/features/studio/review/review-contract.ts"
 
 test("Studio authorization keeps editor and publisher actions isolated", () => {

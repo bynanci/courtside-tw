@@ -21,6 +21,7 @@ import { validateTrustedApiOrigin } from "../../security/headers.ts"
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"])
 const ALLOWED_PREFIXES = [
   "editor/articles",
+  "editor/contributors",
   "editor/issues",
   "editor/media",
   "editor/taxonomy",
@@ -119,10 +120,11 @@ async function proxyStudioRequest(
   }
 
   setResponseStatus(event, upstream.status)
-  for (const name of ["content-type", "etag", "cache-control", "x-request-id"]) {
+  for (const name of ["content-type", "etag", "x-request-id"]) {
     const value = upstream.headers.get(name)
     if (value) setResponseHeader(event, name, value)
   }
+  setResponseHeader(event, "cache-control", "private, no-store")
   if (upstream.status === 204 || method === "HEAD") {
     return null
   }

@@ -1,4 +1,5 @@
 import { randomBytes } from "node:crypto"
+import { getRequestURL } from "h3"
 
 import {
   allowsLoopbackApiOrigin,
@@ -10,7 +11,12 @@ export default defineNitroPlugin((nitroApp) => {
   nitroApp.hooks.hook("request", (event) => {
     const nonce = randomBytes(16).toString("base64")
     event.context.cspNonce = nonce
-    applySecurityHeaders(event.node.res, nonce, configuredApiOrigin())
+    applySecurityHeaders(
+      event.node.res,
+      nonce,
+      configuredApiOrigin(),
+      getRequestURL(event).pathname
+    )
   })
 
   nitroApp.hooks.hook("render:html", (html, { event }) => {

@@ -241,7 +241,7 @@ final class PublicationReliabilityIT extends EditorialApiIntegrationTestSupport 
         jdbcTemplate.update("""
                 INSERT INTO publication_issue (
                     id, issue_number, slug, title, summary, cover_asset_id, state, published_at
-                ) VALUES (?, 99, 'reliability-origin', 'Reliability issue', 'Reliability issue', ?, 'PUBLISHED', ?)
+                ) VALUES (?, 99, 'reliability-origin', 'Reliability issue', 'Reliability issue', ?, 'DRAFT', ?)
                 """, issueId, coverAssetId, Timestamp.from(publishedAt));
         jdbcTemplate.update("""
                 INSERT INTO issue_section (id, issue_id, title, position)
@@ -271,9 +271,10 @@ final class PublicationReliabilityIT extends EditorialApiIntegrationTestSupport 
                 WHERE id = ?
                 """, revisionId, Timestamp.from(publishedAt), articleId);
         jdbcTemplate.update("""
-                INSERT INTO issue_article (issue_id, section_id, article_id, position)
-                VALUES (?, ?, ?, 1)
-                """, issueId, sectionId, articleId);
+                INSERT INTO issue_article (issue_id, section_id, article_id, revision_id, position)
+                VALUES (?, ?, ?, ?, 1)
+                """, issueId, sectionId, articleId, revisionId);
+        jdbcTemplate.update("UPDATE publication_issue SET state = 'PUBLISHED' WHERE id = ?", issueId);
 
         PublicArticleService origin = new PublicArticleService(
                 new JdbcPublicArticleRepository(jdbcTemplate),

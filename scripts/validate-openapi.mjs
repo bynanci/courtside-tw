@@ -35,6 +35,8 @@ const expectedPaths = {
   "/api/v1/editor/issues": ["post", "get", "patch"],
   "/api/v1/editor/issues/{issueId}:submit": ["post"],
   "/api/v1/editor/issues/{issueId}/sections": ["get", "post", "patch"],
+  "/api/v1/editor/issues/{issueId}/articles": ["get", "put"],
+  "/api/v1/publisher/issues/{issueId}/articles": ["get"],
   "/api/v1/editor/issues/{issueId}/sections/{sectionId}": ["patch", "delete"],
   "/api/v1/editor/articles": ["post", "get", "patch"],
   "/api/v1/editor/articles/{id}": ["get"],
@@ -56,7 +58,10 @@ const expectedPaths = {
   "/api/v1/publisher/articles/{id}:archive": ["post"],
   "/api/v1/editor/audit": ["get"],
   "/api/v1/editor/media/uploads": ["post"],
+  "/api/v1/editor/media": ["get"],
   "/api/v1/editor/media/{id}": ["get", "patch"],
+  "/api/v1/editor/media/{id}/preview": ["get"],
+  "/api/v1/publisher/media/{id}/preview": ["get"],
   "/api/v1/editor/media/{id}:complete": ["post"],
   "/api/v1/publisher/media/{id}:revoke": ["post"],
   "/api/v1/editor/taxonomy": ["post", "get"],
@@ -97,6 +102,33 @@ const stableCodes = {
   409: "VERSION_CONFLICT",
   422: "RIGHTS_OR_CONTENT_GATE",
   429: "RATE_LIMITED"
+}
+// Provider unavailability belongs only to these binary reads; other APIs retain
+// the existing closed error status catalog and stable Problem responses.
+const privatePreviewOperations = new Map([
+  ["getPrivateMediaPreview", { path: "/api/v1/editor/media/{id}/preview", role: "EDITOR" }],
+  [
+    "getPublisherPrivateMediaPreview",
+    { path: "/api/v1/publisher/media/{id}/preview", role: "PUBLISHER" }
+  ]
+])
+
+const assertPrivateResponseHeaders = (response, operationId) => {
+  assert.equal(
+    response.headers?.["X-Request-Id"]?.$ref,
+    "#/components/headers/XRequestId",
+    `private request ID header missing for ${operationId}`
+  )
+  assert.equal(
+    response.headers?.["Cache-Control"]?.schema?.const,
+    "no-store, private",
+    `private no-store header missing for ${operationId}`
+  )
+  assert.equal(
+    response.headers?.["X-Content-Type-Options"]?.schema?.const,
+    "nosniff",
+    `private nosniff header missing for ${operationId}`
+  )
 }
 
 assert.equal(document.openapi, "3.1.0", "OpenAPI 3.1 is required")
@@ -156,6 +188,24 @@ for (const { pathName, method, operation } of operations) {
     `duplicate operationId ${operation.operationId}`
   )
   operationIds.add(operation.operationId)
+  const privatePreview = privatePreviewOperations.get(operation.operationId)
+  if (privatePreview) {
+    assert.equal(pathName, privatePreview.path, "private preview exception must remain path-bound")
+    assert.equal(method, "get")
+    assert.deepEqual(operation["x-required-roles"], [privatePreview.role])
+    assert.ok(
+      operation.responses?.[200]?.content,
+      `binary response missing for ${operation.operationId}`
+    )
+    assert.ok(
+      operation.responses?.[422],
+      `media readiness response missing for ${operation.operationId}`
+    )
+    assert.ok(
+      operation.responses?.[503],
+      `provider unavailable response missing for ${operation.operationId}`
+    )
+  }
   assert.ok(
     operation.summary && operation.description,
     `summary/description missing for ${operation.operationId}`
@@ -236,6 +286,21 @@ for (const { pathName, method, operation } of operations) {
     if (numericStatus >= 200 && numericStatus < 300) {
       seenStatuses.add(numericStatus)
       if (response.content) {
+        if (privatePreview) {
+          assert.equal(numericStatus, 200)
+          assertPrivateResponseHeaders(response, operation.operationId)
+          assert.deepEqual(Object.keys(response.content).sort(), [
+            "image/avif",
+            "image/jpeg",
+            "image/png",
+            "image/webp"
+          ])
+          for (const media of Object.values(response.content)) {
+            assert.equal(media.schema?.type, "string")
+            assert.equal(media.schema?.format, "binary")
+          }
+          continue
+        }
         const media = response.content["application/json"]
         assert.ok(media?.schema, `success schema missing for ${operation.operationId}`)
         assert.ok(
@@ -253,6 +318,14 @@ for (const { pathName, method, operation } of operations) {
       )
       continue
     }
+    if (numericStatus === 503 && privatePreview) {
+      assert.equal(
+        responseRefName(response),
+        "PrivateMediaPreviewUnavailable",
+        `preview unavailable response mismatch for ${operation.operationId}`
+      )
+      continue
+    }
     assert.ok(
       expectedErrorStatuses.includes(numericStatus),
       `unstable error status ${status} in ${operation.operationId}`
@@ -267,6 +340,36 @@ for (const { pathName, method, operation } of operations) {
     seenStatuses.add(numericStatus)
   }
 }
+for (const operationId of privatePreviewOperations.keys()) {
+  assert.ok(operationIds.has(operationId), `private preview operation missing: ${operationId}`)
+}
+const previewUnavailable = components.responses.PrivateMediaPreviewUnavailable
+assertPrivateResponseHeaders(previewUnavailable, "PrivateMediaPreviewUnavailable")
+assert.equal(
+  previewUnavailable.content?.["application/problem+json"]?.schema?.$ref,
+  "#/components/schemas/ProblemDetails"
+)
+assert.equal(previewUnavailable["x-stable-error-code"], "MEDIA_PREVIEW_UNAVAILABLE")
+assert.deepEqual(
+  previewUnavailable.content["application/problem+json"].examples?.unavailable?.value,
+  {
+    type: "https://courtside.tw/problems/media_preview_unavailable",
+    title: "Media preview unavailable",
+    status: 503,
+    detail: "Private media preview is temporarily unavailable.",
+    instance: "/api/v1/editor/media/00000000-0000-4000-8000-000000000001/preview",
+    requestId: "req_private_preview_unavailable",
+    code: "MEDIA_PREVIEW_UNAVAILABLE"
+  }
+)
+assert.ok(
+  components.schemas.ProblemDetails.properties.code.enum.includes("MEDIA_PREVIEW_UNAVAILABLE")
+)
+assertPrivateResponseHeaders(paths["/api/v1/editor/media"].get.responses[200], "listPrivateMedia")
+assert.equal(
+  paths["/api/v1/editor/media"].get.responses[200].content["application/json"].schema.$ref,
+  "#/components/schemas/PrivateMediaPage"
+)
 for (const status of expectedErrorStatuses) {
   assert.ok(seenStatuses.has(status), `stable error status ${status} is not used`)
   const response = components.responses[`Problem${status}`]
@@ -296,7 +399,8 @@ const paginated = [
   ["get", "/api/v1/me/progress"],
   ["get", "/api/v1/editor/issues"],
   ["get", "/api/v1/publisher/issues"],
-  ["get", "/api/v1/editor/articles"]
+  ["get", "/api/v1/editor/articles"],
+  ["get", "/api/v1/editor/media"]
 ]
 for (const [method, pathName] of paginated) {
   const operation = paths[pathName][method]

@@ -310,9 +310,12 @@ const publicMediaFixtures = new Map([
 let studioState = createStudioState("DRAFT")
 let studioIssueState = createStudioIssueState()
 let studioIssueSections = createStudioIssueSections()
+let studioIssueArticles = []
 let studioAuditEvents = []
 let studioReceipts = new Map()
 let studioTaxonomyTerms = []
+let studioContributors = []
+let studioCredits = []
 let readerLibraryState = createReaderLibraryState(false)
 
 function createReaderLibraryState(withdrawn) {
@@ -420,11 +423,17 @@ function createStudioState(initialState) {
 
 function resetStudioState(initialState = "DRAFT") {
   studioState = createStudioState(initialState)
-  studioIssueState = createStudioIssueState()
+  studioIssueState = {
+    ...createStudioIssueState(),
+    state: initialState === "PUBLISHED" ? "PUBLISHED" : "DRAFT"
+  }
   studioIssueSections = createStudioIssueSections()
+  studioIssueArticles = []
   studioAuditEvents = []
   studioReceipts = new Map()
   studioTaxonomyTerms = []
+  studioContributors = []
+  studioCredits = []
 }
 
 function studioArticle() {
@@ -536,6 +545,7 @@ const apiServer = createServer(async (request, response) => {
     const requestedState = requestUrl.searchParams.get("state") ?? "DRAFT"
     const allowedStates = new Set(["DRAFT", "APPROVED", "PUBLISHED"])
     resetStudioState(allowedStates.has(requestedState) ? requestedState : "DRAFT")
+    if (requestUrl.searchParams.get("issueState") === "DRAFT") studioIssueState.state = "DRAFT"
     writeJson(response, 204, null)
     return
   }
@@ -688,6 +698,251 @@ const apiServer = createServer(async (request, response) => {
         "Studio fixture requires a server-side session bearer.",
         "AUTHENTICATION_REQUIRED"
       )
+      return
+    }
+
+    const contributorBase = "/api/v1/editor/contributors"
+    if (requestUrl.pathname === contributorBase && request.method === "GET") {
+      const status = requestUrl.searchParams.get("status") ?? "ACTIVE"
+      writeJson(response, 200, {
+        items: studioContributors.filter((item) => status === "ALL" || item.status === status)
+      })
+      return
+    }
+    if (requestUrl.pathname === contributorBase && request.method === "POST") {
+      const body = await readJson(request)
+      const item = {
+        contributorId: `00000000-0000-4000-8000-${String(studioContributors.length + 801).padStart(12, "0")}`,
+        ...body,
+        status: "ACTIVE",
+        version: 1
+      }
+      studioContributors.push(item)
+      writeJson(response, 201, item)
+      return
+    }
+    if (requestUrl.pathname.startsWith(`${contributorBase}/`)) {
+      const id = requestUrl.pathname.slice(contributorBase.length + 1).split(":")[0]
+      const item = studioContributors.find((person) => person.contributorId === id)
+      if (!item) {
+        writeProblem(response, 404, "Contributor not found.", "RESOURCE_NOT_FOUND")
+        return
+      }
+      if (request.method === "GET") {
+        writeJson(response, 200, item)
+        return
+      }
+      const version = Number(String(request.headers["if-match"] ?? "").replaceAll('"', ""))
+      if (version !== item.version) {
+        writeProblem(response, 409, "Contributor version is stale.", "VERSION_CONFLICT")
+        return
+      }
+      const body = await readJson(request)
+      if (request.method === "PATCH") {
+        if (studioCredits.some((credit) => credit.contributorId === id)) {
+          writeProblem(
+            response,
+            409,
+            "Assigned contributor names are immutable.",
+            "CONTRIBUTOR_CREDIT_IMMUTABLE"
+          )
+          return
+        }
+        item.displayName = body.displayName
+      } else if (requestUrl.pathname.endsWith(":archive") && request.method === "POST") {
+        if (!body.reason?.trim()) {
+          writeProblem(response, 422, "Archive reason required.", "VALIDATION_FAILED")
+          return
+        }
+        item.status = "ARCHIVED"
+      } else {
+        writeProblem(response, 404, "Contributor operation not found.", "RESOURCE_NOT_FOUND")
+        return
+      }
+      item.version++
+      writeJson(response, 200, item)
+      return
+    }
+    const creditsPath = `/api/v1/editor/articles/${STUDIO_ARTICLE_ID}/revisions/${STUDIO_REVISION_ID}/contributors`
+    if (requestUrl.pathname === creditsPath) {
+      if (request.method === "PUT") {
+        const version = Number(String(request.headers["if-match"] ?? "").replaceAll('"', ""))
+        if (version !== studioState.version || studioState.state !== "DRAFT") {
+          writeProblem(response, 409, "Article version or state changed.", "VERSION_CONFLICT")
+          return
+        }
+        const body = await readJson(request)
+        if (
+          body.contributors.some(
+            (credit) =>
+              !studioContributors.some(
+                (person) =>
+                  person.contributorId === credit.contributorId && person.status === "ACTIVE"
+              )
+          )
+        ) {
+          writeProblem(response, 422, "Inactive contributor.", "VALIDATION_FAILED")
+          return
+        }
+        studioCredits = body.contributors.map((credit) => {
+          const person = studioContributors.find(
+            (item) => item.contributorId === credit.contributorId
+          )
+          return {
+            contributorId: person.contributorId,
+            slug: person.slug,
+            displayName: person.displayName,
+            role: credit.role
+          }
+        })
+        studioState.version++
+      }
+      writeJson(response, 200, {
+        articleId: STUDIO_ARTICLE_ID,
+        revisionId: STUDIO_REVISION_ID,
+        version: studioState.version,
+        contributors: studioCredits
+      })
+      return
+    }
+    if (
+      /^\/api\/v1\/editor\/media\/[0-9a-f-]+\/preview$/u.test(requestUrl.pathname) &&
+      request.method === "GET"
+    ) {
+      response.setHeader("content-type", "image/png")
+      response.setHeader("cache-control", "private, no-store")
+      response.end(
+        Buffer.from(
+          "iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAAFklEQVR4nGO8lGDCwMDAxMDAwMDAAAARkAFqmvBNrgAAAABJRU5ErkJggg==",
+          "base64"
+        )
+      )
+      return
+    }
+    if (requestUrl.pathname === "/api/v1/editor/articles" && request.method === "POST") {
+      const body = await readJson(request)
+      studioState = { ...createStudioState("DRAFT"), ...body }
+      studioCredits = []
+      writeJson(response, 201, studioArticle())
+      return
+    }
+    if (requestUrl.pathname === "/api/v1/editor/issues" && request.method === "POST") {
+      studioIssueState = { ...createStudioIssueState(), ...(await readJson(request)) }
+      studioIssueSections = []
+      studioIssueArticles = []
+      writeJson(response, 201, { ...studioIssueState })
+      return
+    }
+    if (requestUrl.pathname === "/api/v1/publisher/issues" && request.method === "GET") {
+      writeJson(response, 200, {
+        items: [{ ...studioIssueState }],
+        page: { limit: 20, nextCursor: null }
+      })
+      return
+    }
+    if (
+      new RegExp(`^/api/v1/(editor|publisher)/issues/${STUDIO_ISSUE_ID}/articles$`, "u").test(
+        requestUrl.pathname
+      )
+    ) {
+      if (request.method === "PUT") {
+        const version = Number(String(request.headers["if-match"] ?? "").replaceAll('"', ""))
+        if (studioIssueState.state !== "DRAFT" || version !== studioIssueState.version) {
+          writeProblem(response, 409, "Issue version or state changed.", "VERSION_CONFLICT")
+          return
+        }
+        const body = await readJson(request)
+        if (
+          !Array.isArray(body.articles) ||
+          body.articles.some(
+            (item) =>
+              item.articleId !== studioState.articleId ||
+              item.revisionId !== studioState.revisionId ||
+              studioState.state !== "PUBLISHED"
+          )
+        ) {
+          writeProblem(
+            response,
+            422,
+            "Article revision must already be published.",
+            "RIGHTS_OR_CONTENT_GATE"
+          )
+          return
+        }
+        studioIssueArticles = body.articles.map((item) => ({
+          ...item,
+          title: studioState.title,
+          slug: studioState.slug,
+          revisionNumber: studioState.revisionNumber
+        }))
+        studioIssueSections = studioIssueSections.map((section) => ({
+          ...section,
+          articleCount: studioIssueArticles.filter((item) => item.sectionId === section.sectionId)
+            .length
+        }))
+        studioIssueState = { ...studioIssueState, version: studioIssueState.version + 1 }
+      }
+      writeJson(response, 200, { ...studioIssueCollection(), articles: studioIssueArticles })
+      return
+    }
+    const issueTransition = requestUrl.pathname.match(
+      new RegExp(
+        `^/api/v1/(editor|publisher)/issues/${STUDIO_ISSUE_ID}:(submit|approve|publish|schedule)$`,
+        "u"
+      )
+    )
+    if (issueTransition && request.method === "POST") {
+      const action = issueTransition[2]
+      const expected = {
+        submit: "DRAFT",
+        approve: "IN_REVIEW",
+        publish: "APPROVED",
+        schedule: "APPROVED"
+      }
+      const next = {
+        submit: "IN_REVIEW",
+        approve: "APPROVED",
+        publish: "PUBLISHED",
+        schedule: "SCHEDULED"
+      }
+      const version = Number(String(request.headers["if-match"] ?? "").replaceAll('"', ""))
+      if (studioIssueState.state !== expected[action] || version !== studioIssueState.version) {
+        writeProblem(response, 409, "Issue version or state changed.", "VERSION_CONFLICT")
+        return
+      }
+      const body = await readJson(request)
+      studioIssueState = {
+        ...studioIssueState,
+        state: next[action],
+        version: studioIssueState.version + 1
+      }
+      writeJson(response, 202, {
+        operationId: "00000000-0000-4000-8000-000000000901",
+        status: next[action],
+        version: studioIssueState.version,
+        ...(action === "schedule" ? { scheduledAt: body.publishAt } : {})
+      })
+      return
+    }
+    if (
+      requestUrl.pathname === `/api/v1/publisher/issues/${STUDIO_ISSUE_ID}:archive` &&
+      request.method === "POST"
+    ) {
+      const version = Number(String(request.headers["if-match"] ?? "").replaceAll('"', ""))
+      if (version !== studioIssueState.version || studioIssueState.state !== "PUBLISHED") {
+        writeProblem(response, 409, "Issue version or state changed.", "VERSION_CONFLICT")
+        return
+      }
+      studioIssueState = {
+        ...studioIssueState,
+        state: "ARCHIVED",
+        version: studioIssueState.version + 1
+      }
+      writeJson(response, 202, {
+        operationId: "00000000-0000-4000-8000-000000000901",
+        status: "ARCHIVED",
+        version: studioIssueState.version
+      })
       return
     }
 
@@ -942,6 +1197,7 @@ const apiServer = createServer(async (request, response) => {
         ...studioState,
         title: String(body.changes?.title ?? studioState.title),
         dek: String(body.changes?.dek ?? studioState.dek),
+        content: body.changes?.content ?? studioState.content,
         version: studioState.version + 1
       }
       appendStudioAudit("ARTICLE_DRAFT_PATCHED", "editor.e2e", { version: studioState.version })
