@@ -14491,4 +14491,26 @@ test("OIDC security remediation authority fails closed when its exact scope or i
     errors.join("\n"),
     /OIDC security remediation dispatch must contain a structured body/u
   )
+
+  const proseErrors = []
+  assert.equal(
+    gate.validate({
+      readback: {
+        status: "UNAVAILABLE",
+        source: "github-api",
+        authorization: {
+          body: "<!-- oidc-security-remediation:owner-dispatch:v1:start -->\nDispatch context.\n\`\`\`json\n{}\n\`\`\`\nAcceptance context.\n<!-- oidc-security-remediation:owner-dispatch:v1:end -->"
+        }
+      },
+      gitBinding: null,
+      changedPaths: oidcSecurityRemediationBinding.authorized_paths,
+      changeBaseSha: oidcSecurityRemediationBinding.base_sha,
+      boundedScopeActive: false,
+      githubActionsContext: null,
+      requireExactHeadEvidence: true,
+      errors: proseErrors
+    }),
+    false
+  )
+  assert.doesNotMatch(proseErrors.join("\n"), /JSON fence is invalid/u)
 })
