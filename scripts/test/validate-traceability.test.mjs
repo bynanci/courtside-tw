@@ -14499,7 +14499,7 @@ test("OIDC security remediation authority fails closed when its exact scope or i
         status: "UNAVAILABLE",
         source: "github-api",
         authorization: {
-          body: "<!-- oidc-security-remediation:owner-dispatch:v1:start -->\nDispatch context.\n\`\`\`json\n{}\n\`\`\`\nAcceptance context.\n<!-- oidc-security-remediation:owner-dispatch:v1:end -->"
+          body: "<!-- oidc-security-remediation:owner-dispatch:v1:start -->\nDispatch context.\n```json\n{}\n```\nAcceptance context.\n<!-- oidc-security-remediation:owner-dispatch:v1:end -->"
         }
       },
       gitBinding: null,
