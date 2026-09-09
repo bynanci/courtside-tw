@@ -10,5 +10,6 @@ managePackageManagerVersions: false
 verifyDepsBeforeRun: false
 overrides:
   fast-uri: 3.1.6
-  js-yaml: 4.3.1
+  js-yaml: 4.3.2
   nanoid: 3.3.18
+  svgo: 4.1.0
