@@ -1764,6 +1764,433 @@ export function inspectProductRemediationAuthorization(
   }
 }
 
+// Sealed to the immutable OWNER dispatch for this exact Studio successor.
+// Legacy PR 174/175 authorities remain independent and unchanged.
+export const STUDIO_COMPLETION_AUTHORIZATION = Object.freeze({
+  ref: "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5595751207",
+  body_sha256: "df2303baad660a420ba9a9648cd892c7705bf5b4f7a339d7ba012de40713c6aa",
+  recorded_at: "2026-09-09T04:23:22Z",
+  pr: 176,
+  branch: "fix/studio-completion",
+  base_sha: "7e8eeb9e5b6b7d7f57ec5511e9addd20b18cce92",
+  initial_seed: Object.freeze({
+    head_sha: "dbc207cb0742d45fa599d3d239d28fd0facbbe07",
+    tree_sha: "42bf6adf226df2a3192a98bfc19280331c937691",
+    changed_paths: Object.freeze([
+      "apps/api/src/main/java/tw/basketball/magazine/media/PrivateMediaPreviewConfiguration.java",
+      "apps/api/src/main/java/tw/basketball/magazine/media/api/PrivateMediaPreviewController.java",
+      "apps/api/src/main/java/tw/basketball/magazine/media/application/PrivateMediaPreviewService.java",
+      "apps/api/src/main/java/tw/basketball/magazine/media/storage/PrivateMediaPreviewReader.java",
+      "apps/api/src/main/java/tw/basketball/magazine/media/storage/S3PrivateMediaPreviewReader.java",
+      "apps/api/src/main/java/tw/basketball/magazine/publication/api/EditorialIssueController.java",
+      "apps/api/src/main/java/tw/basketball/magazine/publication/application/EditorialIssueService.java",
+      "apps/api/src/main/java/tw/basketball/magazine/publication/persistence/EditorialIssueRepository.java",
+      "apps/api/src/main/java/tw/basketball/magazine/publication/persistence/JdbcEditorialIssueRepository.java",
+      "apps/api/src/main/java/tw/basketball/magazine/shared/ProblemCode.java",
+      "apps/api/src/main/resources/db/migration/V018__editorial_issue_article_assignments.sql",
+      "apps/api/src/test/java/tw/basketball/magazine/editorial/EditorialApiIntegrationTestSupport.java",
+      "apps/api/src/test/java/tw/basketball/magazine/media/api/PrivateMediaPreviewApiIT.java",
+      "apps/api/src/test/java/tw/basketball/magazine/media/storage/S3PrivateMediaPreviewReaderTest.java",
+      "apps/api/src/test/java/tw/basketball/magazine/publication/PublicationReliabilityIT.java",
+      "apps/api/src/test/java/tw/basketball/magazine/publication/api/EditorialIssueApiIT.java",
+      "apps/web/app/features/studio/StudioShell.vue",
+      "apps/web/app/features/studio/contributors/ContributorManager.vue",
+      "apps/web/app/features/studio/editor/ArticleEditor.vue",
+      "apps/web/app/features/studio/editor/article-draft-form.ts",
+      "apps/web/app/features/studio/issues/IssueContents.vue",
+      "apps/web/app/features/studio/issues/IssueEditor.vue",
+      "apps/web/app/features/studio/issues/issue-article-order.ts",
+      "apps/web/app/features/studio/studio-api.ts",
+      "apps/web/app/pages/studio/articles/index.vue",
+      "apps/web/app/pages/studio/contributors/index.vue",
+      "apps/web/app/pages/studio/issues/index.vue",
+      "apps/web/app/pages/studio/review/issues.vue",
+      "apps/web/server/api/studio/[...path].ts",
+      "apps/web/server/plugins/security.ts",
+      "apps/web/server/security/headers.ts",
+      "apps/web/tests/e2e/start-server.mjs",
+      "apps/web/tests/e2e/us3-studio-capabilities.spec.ts",
+      "apps/web/tests/integration/security-headers.test.ts",
+      "apps/web/tests/integration/studio-rbac.test.ts",
+      "apps/web/tests/unit/studio-capabilities.test.ts",
+      "contracts/openapi.yaml",
+      "packages/api-client/src/generated/openapi.d.ts",
+      "scripts/validate-openapi.mjs"
+    ])
+  }),
+  required_paths: Object.freeze([
+    "apps/api/src/main/java/tw/basketball/magazine/media/PrivateMediaPreviewConfiguration.java",
+    "apps/api/src/main/java/tw/basketball/magazine/media/api/PrivateMediaPreviewController.java",
+    "apps/api/src/main/java/tw/basketball/magazine/media/application/PrivateMediaPreviewService.java",
+    "apps/api/src/main/java/tw/basketball/magazine/media/storage/PrivateMediaPreviewReader.java",
+    "apps/api/src/main/java/tw/basketball/magazine/media/storage/S3PrivateMediaPreviewReader.java",
+    "apps/api/src/main/java/tw/basketball/magazine/publication/api/EditorialIssueController.java",
+    "apps/api/src/main/java/tw/basketball/magazine/publication/application/EditorialIssueService.java",
+    "apps/api/src/main/java/tw/basketball/magazine/publication/persistence/EditorialIssueRepository.java",
+    "apps/api/src/main/java/tw/basketball/magazine/publication/persistence/JdbcEditorialIssueRepository.java",
+    "apps/api/src/main/java/tw/basketball/magazine/shared/ProblemCode.java",
+    "apps/api/src/main/resources/db/migration/V018__editorial_issue_article_assignments.sql",
+    "apps/api/src/test/java/tw/basketball/magazine/editorial/EditorialApiIntegrationTestSupport.java",
+    "apps/api/src/test/java/tw/basketball/magazine/media/api/PrivateMediaPreviewApiIT.java",
+    "apps/api/src/test/java/tw/basketball/magazine/media/storage/S3PrivateMediaPreviewReaderTest.java",
+    "apps/api/src/test/java/tw/basketball/magazine/publication/PublicationReliabilityIT.java",
+    "apps/api/src/test/java/tw/basketball/magazine/publication/api/EditorialIssueApiIT.java",
+    "apps/web/app/features/studio/StudioShell.vue",
+    "apps/web/app/features/studio/contributors/ContributorManager.vue",
+    "apps/web/app/features/studio/editor/ArticleEditor.vue",
+    "apps/web/app/features/studio/editor/article-draft-form.ts",
+    "apps/web/app/features/studio/issues/IssueContents.vue",
+    "apps/web/app/features/studio/issues/IssueEditor.vue",
+    "apps/web/app/features/studio/issues/issue-article-order.ts",
+    "apps/web/app/features/studio/studio-api.ts",
+    "apps/web/app/pages/studio/articles/index.vue",
+    "apps/web/app/pages/studio/contributors/index.vue",
+    "apps/web/app/pages/studio/issues/index.vue",
+    "apps/web/app/pages/studio/review/issues.vue",
+    "apps/web/server/api/studio/[...path].ts",
+    "apps/web/server/plugins/security.ts",
+    "apps/web/server/security/headers.ts",
+    "apps/web/tests/e2e/start-server.mjs",
+    "apps/web/tests/e2e/us3-studio-capabilities.spec.ts",
+    "apps/web/tests/integration/security-headers.test.ts",
+    "apps/web/tests/integration/studio-rbac.test.ts",
+    "apps/web/tests/unit/studio-capabilities.test.ts",
+    "contracts/openapi.yaml",
+    "packages/api-client/src/generated/openapi.d.ts",
+    "scripts/test/validate-traceability.test.mjs",
+    "scripts/validate-openapi.mjs",
+    "scripts/validate-traceability.mjs"
+  ]),
+  optional_paths: Object.freeze([])
+})
+
+/** A separate closed authority. Fixture descriptors are used only by the exported pure factory. */
+export function createStudioCompletionAuthorizationGate(binding = STUDIO_COMPLETION_AUTHORIZATION) {
+  const c = structuredClone(binding)
+  const sha = (value) => typeof value === "string" && /^[0-9a-f]{40}$/.test(value)
+  const same = (left, right) =>
+    Array.isArray(left) && Array.isArray(right) && sameValues(left, right)
+  const allPaths = new Set([...(c.required_paths ?? []), ...(c.optional_paths ?? [])])
+  const supportPaths = [
+    "scripts/validate-traceability.mjs",
+    "scripts/test/validate-traceability.test.mjs"
+  ]
+  const bound =
+    /^https:\/\/github\.com\/bynanci\/courtside-tw\/issues\/121#issuecomment-[1-9]\d*$/.test(
+      c.ref ?? ""
+    ) &&
+    /^[0-9a-f]{64}$/.test(c.body_sha256 ?? "") &&
+    isIsoTimestamp(c.recorded_at) &&
+    Number.isInteger(c.pr) &&
+    c.pr > 175 &&
+    c.branch === "fix/studio-completion" &&
+    sha(c.base_sha) &&
+    sha(c.initial_seed?.head_sha) &&
+    sha(c.initial_seed?.tree_sha) &&
+    Array.isArray(c.required_paths) &&
+    Array.isArray(c.optional_paths) &&
+    allPaths.size === c.required_paths.length + c.optional_paths.length &&
+    supportPaths.every((p) => c.required_paths.includes(p)) &&
+    Array.isArray(c.initial_seed?.changed_paths) &&
+    c.initial_seed.changed_paths.length > 0 &&
+    new Set(c.initial_seed.changed_paths).size === c.initial_seed.changed_paths.length &&
+    c.initial_seed.changed_paths.every((p) => allPaths.has(p) && !supportPaths.includes(p)) &&
+    [...allPaths].every(
+      (p) =>
+        typeof p === "string" &&
+        !p.includes("..") &&
+        !p.includes("\\") &&
+        /^(?:apps\/(?:api|web)\/|contracts\/openapi\.yaml$|packages\/api-client\/src\/generated\/openapi\.d\.ts$|scripts\/(?:validate-(?:traceability|openapi)\.mjs|test\/validate-traceability\.test\.mjs)$)/.test(
+          p
+        )
+    )
+  const closure = (paths) =>
+    Array.isArray(paths) &&
+    new Set(paths).size === paths.length &&
+    c.required_paths.every((p) => paths.includes(p)) &&
+    paths.every((p) => allPaths.has(p))
+  const authentic = (a) =>
+    a?.status === "VERIFIED" &&
+    a?.source === "github-api" &&
+    a?.html_url === c.ref &&
+    a?.issue_url === "https://api.github.com/repos/bynanci/courtside-tw/issues/121" &&
+    a?.user_login === ACCEPTED_RECEIPT_OWNER &&
+    a?.author_association === "OWNER" &&
+    a?.created_at === c.recorded_at &&
+    a?.updated_at === c.recorded_at &&
+    sha256(a?.body ?? null) === c.body_sha256
+
+  const inspectCandidate = (root, head) => {
+    if (!bound || !sha(head)) return null
+    try {
+      const git = (args) =>
+        execFileSync("git", args, {
+          cwd: root,
+          encoding: "utf8",
+          maxBuffer: 1024 * 1024,
+          stdio: ["ignore", "pipe", "ignore"]
+        }).trim()
+      const list = (args) => git(args).split("\n").filter(Boolean)
+      const seed = inspectHeadTopology(root, c.initial_seed.head_sha)
+      const times = list(["log", "--format=%aI%n%cI", `${c.initial_seed.head_sha}..${head}`])
+      const firstAmendment = list([
+        "rev-list",
+        "--reverse",
+        `${c.initial_seed.head_sha}..${head}`
+      ])[0]
+      const firstTopology = firstAmendment ? inspectHeadTopology(root, firstAmendment) : null
+      const entries = git(["ls-tree", "-r", "-z", head, "--", ...allPaths])
+        .split("\0")
+        .filter(Boolean)
+      const present = new Set(entries.map((entry) => entry.split("\t")[1]))
+      const frozen = (p) =>
+        p === "README.md" ||
+        p.startsWith("specs/") ||
+        p.startsWith(".loop/t085") ||
+        p.startsWith(".loop/evidence/t085") ||
+        isT086LockedPath(p)
+      return {
+        head,
+        tree_sha: inspectHeadTopology(root, head).headTreeSha,
+        base_ancestor: inspectAncestor(root, c.base_sha, head),
+        seed_ancestor: inspectAncestor(root, c.initial_seed.head_sha, head),
+        seed_tree_sha: seed.headTreeSha,
+        seed_parent_shas: seed.parents,
+        first_amendment_parent_shas: firstTopology?.parents ?? null,
+        first_amendment_changed_paths: firstAmendment
+          ? inspectChangedPathsBetweenCommits(root, c.initial_seed.head_sha, firstAmendment)
+          : null,
+        seed_changed_paths: inspectChangedPathsBetweenCommits(
+          root,
+          c.base_sha,
+          c.initial_seed.head_sha
+        ),
+        changed_paths: inspectChangedPathsBetweenCommits(root, c.base_sha, head),
+        history_paths: [
+          ...new Set(
+            list(["log", "--format=", "--name-only", "--no-renames", `${c.base_sha}..${head}`])
+          )
+        ].sort(),
+        commit_count: inspectCommitCountBetween(root, c.initial_seed.head_sha, head),
+        merge_commit_count: inspectCommitCountBetween(root, c.initial_seed.head_sha, head, {
+          mergesOnly: true
+        }),
+        commits_postdate_authorization:
+          times.length > 0 &&
+          times.every(
+            (t) => Number.isFinite(Date.parse(t)) && Date.parse(t) > Date.parse(c.recorded_at)
+          ),
+        allowed_path_modes_match:
+          c.required_paths.every((p) => present.has(p)) &&
+          entries.every((entry) => /^100644 blob [0-9a-f]{40}\t/.test(entry)),
+        frozen_blobs_match: list(["ls-tree", "-r", "--name-only", c.base_sha])
+          .filter(frozen)
+          .every((p) => git(["ls-tree", c.base_sha, "--", p]) === git(["ls-tree", head, "--", p]))
+      }
+    } catch {
+      return null
+    }
+  }
+
+  return Object.freeze({
+    allowsPath: (p) => allPaths.has(p),
+    requested: (paths, context, readback = null, base = null) =>
+      readback !== null ||
+      (c.pr !== null && context?.pull_request_number === c.pr) ||
+      context?.head_ref === c.branch ||
+      (bound && base === c.base_sha && Array.isArray(paths) && paths.some((p) => allPaths.has(p))),
+    inspectCandidate,
+    inspect(
+      root,
+      {
+        environment = process.env,
+        inspectComment = inspectGitHubAuthorizationComment,
+        fetchJson = (url) =>
+          JSON.parse(
+            execFileSync(
+              process.execPath,
+              ["--input-type=module", "--eval", githubCommentFetchScript, url],
+              {
+                encoding: "utf8",
+                env: githubReadbackEnvironment(environment),
+                maxBuffer: 1024 * 1024,
+                stdio: ["ignore", "pipe", "pipe"],
+                timeout: 15000
+              }
+            )
+          ),
+        candidateInspector = inspectCandidate
+      } = {}
+    ) {
+      const unavailable = () => ({
+        status: "UNAVAILABLE",
+        source: "github-api",
+        errors: ["Studio completion authority is unbound or its exact GitHub read-back failed"]
+      })
+      if (!bound) return unavailable()
+      try {
+        const authorization = inspectComment(c.ref, {
+          environment,
+          isAuthorizedRef: (ref) => ref === c.ref,
+          invalidRefError: "Studio completion owner ref is not authorized",
+          readbackErrorPrefix: "Studio completion OWNER read-back failed"
+        })
+        if (!authentic(authorization)) return unavailable()
+        const pull_request = fetchJson(
+          `https://api.github.com/repos/bynanci/courtside-tw/pulls/${c.pr}`
+        )
+        const protected_main = fetchJson(
+          "https://api.github.com/repos/bynanci/courtside-tw/branches/main"
+        )
+        return {
+          status: "VERIFIED",
+          source: "github-api",
+          authorization,
+          pull_request,
+          protected_main,
+          candidate: candidateInspector(root, pull_request?.head?.sha),
+          errors: []
+        }
+      } catch {
+        return unavailable()
+      }
+    },
+    validate({
+      readback,
+      gitBinding: g,
+      changedPaths,
+      changeBaseSha,
+      boundedScopeActive,
+      githubActionsContext: event,
+      requireExactHeadEvidence,
+      errors
+    }) {
+      const start = errors.length
+      const check = (ok, message) => {
+        if (!ok) errors.push(`Studio completion authorization ${message}`)
+      }
+      check(bound, "is unbound; an immutable exact OWNER dispatch is required")
+      if (!bound) return false
+      check(
+        changeBaseSha === c.base_sha && boundedScopeActive === false && closure(changedPaths),
+        "requires the exact closed scope and base"
+      )
+      check(
+        readback?.status === "VERIFIED" &&
+          readback?.source === "github-api" &&
+          authentic(readback?.authorization),
+        "requires the exact immutable OWNER comment"
+      )
+      const dispatch = parseAndroidNativeSurfaceAuthorizationBody(
+        {
+          body: readback?.authorization?.body,
+          startMarker: "<!-- studio-completion:owner-dispatch:v1:start -->",
+          endMarker: "<!-- studio-completion:owner-dispatch:v1:end -->",
+          label: "Studio completion dispatch"
+        },
+        errors
+      )
+      check(
+        dispatch?.schema_version === "courtside-studio-completion-owner-dispatch/v1" &&
+          dispatch?.decision === "DISPATCH_ACCEPTED" &&
+          dispatch?.repository === "bynanci/courtside-tw" &&
+          ["pr", "branch", "base_sha"].every((key) => dispatch?.[key] === c[key]) &&
+          isDeepStrictEqual(dispatch?.initial_seed, c.initial_seed) &&
+          same(dispatch?.required_paths, c.required_paths) &&
+          same(dispatch?.optional_paths, c.optional_paths),
+        "must match the sealed descriptor without scope or seed drift"
+      )
+      const pr = readback?.pull_request
+      const candidate = readback?.candidate
+      const push = event?.authority === "PROTECTED_MAIN_PUSH"
+      check(
+        pr?.number === c.pr &&
+          pr?.html_url === `https://github.com/bynanci/courtside-tw/pull/${c.pr}` &&
+          pr?.head?.ref === c.branch &&
+          pr?.base?.ref === "main" &&
+          pr?.base?.sha === c.base_sha &&
+          pr?.head?.repo?.full_name === "bynanci/courtside-tw" &&
+          pr?.base?.repo?.full_name === "bynanci/courtside-tw" &&
+          sha(pr?.head?.sha) &&
+          candidate?.head === pr?.head?.sha,
+        "requires the live same-repository PR binding"
+      )
+      check(
+        candidate?.base_ancestor === true &&
+          candidate?.seed_ancestor === true &&
+          candidate?.seed_tree_sha === c.initial_seed.tree_sha &&
+          same(candidate?.seed_parent_shas, [c.base_sha]) &&
+          same(candidate?.seed_changed_paths, c.initial_seed.changed_paths) &&
+          same(candidate?.first_amendment_parent_shas, [c.initial_seed.head_sha]) &&
+          same(candidate?.first_amendment_changed_paths, [
+            "scripts/test/validate-traceability.test.mjs"
+          ]) &&
+          Number.isInteger(candidate?.commit_count) &&
+          candidate.commit_count >= 2 &&
+          candidate?.merge_commit_count === 0 &&
+          candidate?.commits_postdate_authorization === true &&
+          closure(candidate?.changed_paths) &&
+          same(candidate?.changed_paths, changedPaths) &&
+          closure(candidate?.history_paths) &&
+          candidate?.frozen_blobs_match === true &&
+          candidate?.allowed_path_modes_match === true,
+        "requires the exact seed, linear post-dispatch history, regular files and frozen bytes"
+      )
+      check(
+        g?.status === "CLEAN" &&
+          sha(g?.head) &&
+          g?.change_base_ancestor === true &&
+          g?.change_base_sha === c.base_sha &&
+          sha(candidate?.tree_sha) &&
+          candidate?.tree_sha === g?.head_tree_sha,
+        "requires a clean exact Git tree"
+      )
+      check(
+        readback?.protected_main?.name === "main" &&
+          readback?.protected_main?.protected === true &&
+          readback?.protected_main?.commit?.sha === (push ? g?.head : c.base_sha),
+        "requires fresh protected main"
+      )
+      check(
+        requireExactHeadEvidence && isAuthenticatedGitHubActionsContext(event),
+        "requires authenticated exact-head Actions metadata"
+      )
+      check(
+        event?.source_base_sha === c.base_sha && event?.source_head_sha === g?.head,
+        "must bind the Actions event base and evaluated head"
+      )
+      if (push) {
+        check(
+          pr?.state === "closed" &&
+            pr?.merged === true &&
+            pr?.draft === false &&
+            pr?.merge_commit_sha === g?.head &&
+            isIsoTimestamp(pr?.merged_at) &&
+            Date.parse(pr.merged_at) > Date.parse(c.recorded_at) &&
+            g?.head_parent_count === 1 &&
+            same(g?.head_parent_shas, [c.base_sha]),
+          "must bind only the exact same-tree single-parent squash push"
+        )
+      } else {
+        check(
+          event?.authority === "PULL_REQUEST" &&
+            event?.pull_request_number === c.pr &&
+            event?.source_head_sha === pr?.head?.sha &&
+            event?.head_ref === c.branch &&
+            new RegExp(`^refs/pull/${c.pr}/(?:merge|head)$`).test(event?.github_ref ?? "") &&
+            pr?.state === "open" &&
+            pr?.merged === false &&
+            typeof pr?.draft === "boolean" &&
+            event?.pull_request_draft === pr.draft,
+          "must bind the live draft or ready Studio PR event"
+        )
+      }
+      return errors.length === start
+    }
+  })
+}
+const studioCompletionGate = createStudioCompletionAuthorizationGate()
+
 function isT086LockedPath(changedPath) {
   return (
     t086LockedPaths.has(changedPath) ||
@@ -8702,6 +9129,7 @@ export function validateTraceability({
   post169GovernanceAuthorizationReadback = null,
   pnpmSecurityAuthorizationReadback = null,
   productRemediationAuthorizationReadback = null,
+  studioCompletionAuthorizationReadback = null,
   gitBinding = null,
   changedPaths = null,
   changeBaseSha = REVIEW_BASE_SHA,
@@ -8805,6 +9233,7 @@ export function validateTraceability({
   let post169GovernanceAuthorizationAccepted = false
   let pnpmSecurityAuthorizationAccepted = false
   let productRemediationAuthorizationAccepted = false
+  let studioCompletionAuthorizationAccepted = false
 
   if (!/^[0-9a-f]{40}$/.test(currentHead ?? "")) {
     errors.push("currentHead must be a full lowercase commit SHA")
@@ -8906,6 +9335,25 @@ export function validateTraceability({
   }
   if (state === t085States.COMPLETE_STEADY) {
     if (
+      studioCompletionGate.requested(
+        changedPaths,
+        githubActionsContext,
+        studioCompletionAuthorizationReadback,
+        changeBaseSha
+      )
+    ) {
+      studioCompletionAuthorizationAccepted = studioCompletionGate.validate({
+        readback: studioCompletionAuthorizationReadback,
+        gitBinding,
+        changedPaths,
+        changeBaseSha,
+        boundedScopeActive,
+        githubActionsContext,
+        requireExactHeadEvidence,
+        errors
+      })
+    }
+    if (
       productRemediationAuthorizationRequested(
         changedPaths,
         githubActionsContext,
@@ -8995,6 +9443,7 @@ export function validateTraceability({
     for (const changedPath of changedPaths ?? []) {
       if (
         !isAuthorizedPostT085MaintenancePath(changedPath) &&
+        !(studioCompletionAuthorizationAccepted && studioCompletionGate.allowsPath(changedPath)) &&
         !(pnpmSecurityAuthorizationAccepted && pnpmSecurityAuthorizedPaths.has(changedPath)) &&
         !(
           productRemediationAuthorizationAccepted &&
@@ -9654,6 +10103,19 @@ export function validateTraceability({
             })
           )
         : null,
+      studio_completion_authorization_readback: studioCompletionAuthorizationReadback
+        ? {
+            status: studioCompletionAuthorizationReadback.status,
+            accepted: studioCompletionAuthorizationAccepted,
+            authorization_ref:
+              studioCompletionAuthorizationReadback.authorization?.html_url ?? null,
+            body_sha256: sha256(studioCompletionAuthorizationReadback.authorization?.body ?? null),
+            pull_request: studioCompletionAuthorizationReadback.pull_request?.number ?? null,
+            protected_main: studioCompletionAuthorizationReadback.protected_main ?? null,
+            candidate: studioCompletionAuthorizationReadback.candidate ?? null,
+            errors: studioCompletionAuthorizationReadback.errors ?? []
+          }
+        : null,
       product_remediation_authorization_readback: productRemediationAuthorizationReadback
         ? {
             status: productRemediationAuthorizationReadback.status,
@@ -9811,6 +10273,10 @@ export function validateTraceability({
                   ? changedPaths.filter(
                       (changedPath) =>
                         !isAuthorizedPostT085MaintenancePath(changedPath) &&
+                        !(
+                          studioCompletionAuthorizationAccepted &&
+                          studioCompletionGate.allowsPath(changedPath)
+                        ) &&
                         !(
                           productRemediationAuthorizationAccepted &&
                           productRemediationAuthorizedPaths.has(changedPath)
@@ -10986,6 +11452,14 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
   )
     ? inspectProductRemediationAuthorization(root, { environment })
     : null
+  const studioCompletionAuthorizationReadback = studioCompletionGate.requested(
+    inspection.changedPaths,
+    githubActionsContext,
+    null,
+    inspection.change_base_sha
+  )
+    ? studioCompletionGate.inspect(root, { environment })
+    : null
   const isGitHubActions = environment.GITHUB_ACTIONS === "true"
   const report = validateTraceability({
     root,
@@ -10998,6 +11472,7 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
     post169GovernanceAuthorizationReadback,
     pnpmSecurityAuthorizationReadback,
     productRemediationAuthorizationReadback,
+    studioCompletionAuthorizationReadback,
     gitBinding: {
       status: inspection.status,
       head: inspection.head,

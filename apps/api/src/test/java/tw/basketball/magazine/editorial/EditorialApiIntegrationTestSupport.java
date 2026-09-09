@@ -185,6 +185,8 @@ public abstract class EditorialApiIntegrationTestSupport {
     }
 
     protected record CreatedArticle(UUID articleId, UUID revisionId, long version) {
+        public CreatedArticle {
+        }
     }
 
     protected CreatedArticle readCreatedArticle(String responseBody) throws IOException {

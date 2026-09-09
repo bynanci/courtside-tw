@@ -53,7 +53,7 @@ final class PrivateMediaPreviewApiIT extends EditorialApiIntegrationTestSupport 
         mockMvc.perform(get("/api/v1/editor/media/{id}/preview", asset).principal(actor("reader", RoleCode.READER)))
                 .andExpect(status().isForbidden());
         mockMvc.perform(get("/api/v1/editor/media/{id}/preview", asset).principal(actor("editor", RoleCode.EDITOR)))
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().is(422));
         assertEquals(0, reads.get());
     }
 
@@ -79,7 +79,7 @@ final class PrivateMediaPreviewApiIT extends EditorialApiIntegrationTestSupport 
             return JPEG.clone();
         });
         mockMvc.perform(get("/api/v1/editor/media/{id}/preview", asset).principal(actor("editor", RoleCode.EDITOR)))
-                .andExpect(status().isUnprocessableEntity());
+                .andExpect(status().is(422));
     }
 
     @Test
@@ -91,7 +91,7 @@ final class PrivateMediaPreviewApiIT extends EditorialApiIntegrationTestSupport 
         });
         mockMvc.perform(get("/api/v1/publisher/media/{id}/preview", asset)
                         .principal(actor("publisher", RoleCode.PUBLISHER)))
-                .andExpect(status().isUnprocessableEntity())
+                .andExpect(status().is(422))
                 .andExpect(jsonPath("$.errors[0].code").value("MEDIA_CHANGED"));
     }
 

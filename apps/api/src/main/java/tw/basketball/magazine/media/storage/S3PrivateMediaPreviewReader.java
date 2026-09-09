@@ -189,7 +189,7 @@ public final class S3PrivateMediaPreviewReader implements PrivateMediaPreviewRea
 
         @Override
         public CompletionStage<byte[]> getBody() {
-            return result;
+            return result.minimalCompletionStage();
         }
 
         @Override
@@ -200,9 +200,14 @@ public final class S3PrivateMediaPreviewReader implements PrivateMediaPreviewRea
 
         @Override
         public void onNext(List<ByteBuffer> buffers) {
+            Flow.Subscription current = subscription;
+            if (current == null) {
+                result.completeExceptionally(new IOException("private storage read failed"));
+                return;
+            }
             for (ByteBuffer buffer : buffers) {
                 if (buffer.remaining() > maximumBytes - bytes.size()) {
-                    subscription.cancel();
+                    current.cancel();
                     result.completeExceptionally(new IOException("private storage read failed"));
                     return;
                 }
