@@ -1966,17 +1966,25 @@ test("media-rights authorization binds the exact owner-dispatched scope", () => 
   const changedPaths = [...traceabilityValidator.MEDIA_RIGHTS_PATHS]
 
   assert.equal(gate.isBound(), true)
-  assert.equal(gate.requested(changedPaths), true)
+  assert.equal(
+    gate.requested(
+      changedPaths,
+      null,
+      null,
+      traceabilityValidator.MEDIA_RIGHTS_AUTHORIZATION.base_sha
+    ),
+    true
+  )
   assert.equal(
     gate.validate({
       changedPaths,
       changeBaseSha: traceabilityValidator.MEDIA_RIGHTS_AUTHORIZATION.base_sha,
       errors
     }),
-    true,
-    errors.join("\n")
+    false
   )
-  assert.deepEqual(errors, [])
+  assert.match(errors.join("\n"), /OWNER comment/u)
+  assert.equal(gate.allowsPath(changedPaths[0]), true)
 })
 
 test("media-rights authorization rejects base drift and path expansion", () => {
