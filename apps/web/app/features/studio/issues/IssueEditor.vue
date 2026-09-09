@@ -2,6 +2,7 @@
 import { computed, onMounted, ref } from "vue"
 
 import StudioShell from "../StudioShell.vue"
+import IssueContents from "./IssueContents.vue"
 import { canStudioAction, missingRoleMessage } from "../studio-rbac"
 import {
   createEditorIssueSection,
@@ -12,6 +13,7 @@ import {
   patchEditorIssueSection,
   reorderEditorIssueSections,
   StudioApiError,
+  transitionIssue,
   type IssueDraft,
   type IssueSection,
   type IssueSectionCollection
@@ -40,16 +42,14 @@ const busy = ref(false)
 const sections = ref<IssueSection[]>([])
 const sectionLoading = ref(true)
 const sectionBusy = ref(false)
+const articlesBusy = ref(false)
 const sectionError = ref<string | null>(null)
 const sectionMessage = ref("尚未載入章節")
 const newSectionTitle = ref("")
 
 const canEdit = computed(
   () =>
-    canStudioAction(props.role, "edit") &&
-    isIssueEditable(current.value.state) &&
-    title.value.trim().length > 0 &&
-    description.value.trim().length > 0
+    canStudioAction(props.role, "edit") && isIssueEditable(current.value.state) && !conflict.value
 )
 
 function applyIssue(issue: IssueDraft): void {
@@ -68,7 +68,15 @@ async function loadSections(): Promise<void> {
   sectionError.value = null
   try {
     const collection = await listEditorIssueSections(current.value.issueId)
-    applySectionCollection(collection)
+    if (collection.issueVersion !== current.value.version) {
+      throw new StudioApiError(
+        409,
+        "期刊與章節的版本不同，請重新讀取整期後比較；本機欄位尚未被覆蓋。",
+        "VERSION_CONFLICT",
+        null
+      )
+    }
+    sections.value = collection.sections
     sectionMessage.value = `已讀取 ${collection.sections.length} 個章節；issue v${collection.issueVersion}`
   } catch (error) {
     handleSectionError(error)
@@ -78,7 +86,11 @@ async function loadSections(): Promise<void> {
 }
 
 async function saveIssue(): Promise<void> {
-  if (!canEdit.value || busy.value) return
+  if (!canEdit.value || busy.value || sectionBusy.value || articlesBusy.value) return
+  if (!title.value.trim() || !description.value.trim()) {
+    apiError.value = "請輸入期刊標題與說明。"
+    return
+  }
   busy.value = true
   apiError.value = null
   conflict.value = false
@@ -100,13 +112,18 @@ async function saveIssue(): Promise<void> {
 }
 
 async function reloadIssue(): Promise<void> {
-  if (busy.value || sectionBusy.value) return
+  if (busy.value || sectionBusy.value || articlesBusy.value) return
   busy.value = true
   apiError.value = null
   conflict.value = false
   try {
-    const page = await listEditorIssues()
-    const latest = page.items.find((item) => item.issueId === current.value.issueId)
+    let cursor: string | undefined
+    let latest: IssueDraft | undefined
+    do {
+      const page = await listEditorIssues(100, cursor)
+      latest = page.items.find((item) => item.issueId === current.value.issueId)
+      cursor = page.page.nextCursor ?? undefined
+    } while (!latest && cursor)
     if (!latest) throw new Error("伺服器找不到這個 issue draft")
     applyIssue(latest)
     saveMessage.value = `已重新讀取 issue v${latest.version}`
@@ -119,10 +136,29 @@ async function reloadIssue(): Promise<void> {
   }
 }
 
+async function submitIssue(): Promise<void> {
+  if (!canEdit.value || busy.value || sectionBusy.value || articlesBusy.value) return
+  if (title.value !== current.value.title || description.value !== current.value.description) {
+    apiError.value = "請先儲存期刊資料，再送出審核。"
+    return
+  }
+  busy.value = true
+  apiError.value = null
+  try {
+    const result = await transitionIssue(current.value, "submit")
+    current.value = { ...current.value, version: result.version, state: "IN_REVIEW" }
+    saveMessage.value = "期刊已送出審核，目錄與引用版本已凍結。"
+  } catch (error) {
+    handleApiError(error)
+  } finally {
+    busy.value = false
+  }
+}
+
 async function persistSections(
   action: () => Promise<IssueSectionCollection>
 ): Promise<IssueSectionCollection | null> {
-  if (!canEdit.value || sectionBusy.value || busy.value) return null
+  if (!canEdit.value || sectionBusy.value || busy.value || articlesBusy.value) return null
   sectionBusy.value = true
   sectionError.value = null
   conflict.value = false
@@ -298,14 +334,14 @@ onMounted(() => {
           <button
             class="studio-button studio-button--primary"
             type="submit"
-            :disabled="!canEdit || busy"
+            :disabled="!canEdit || busy || sectionBusy || articlesBusy"
           >
             {{ busy ? "保存中…" : "保存期數 Save" }}
           </button>
           <button
             class="studio-button studio-button--quiet"
             type="button"
-            :disabled="busy || sectionBusy"
+            :disabled="busy || sectionBusy || articlesBusy"
             @click="reloadIssue"
           >
             重新讀取 Reload
@@ -313,6 +349,14 @@ onMounted(() => {
           <span class="studio-action-result" role="status" aria-live="polite">{{
             saveMessage
           }}</span>
+          <button
+            class="studio-button studio-button--quiet"
+            type="button"
+            :disabled="!canEdit || busy || sectionBusy || articlesBusy"
+            @click="submitIssue"
+          >
+            送出期刊審核
+          </button>
         </div>
         <p v-if="!canStudioAction(role, 'edit')" class="studio-inline-error" role="alert">
           {{ missingRoleMessage("edit") }}
@@ -416,6 +460,14 @@ onMounted(() => {
           </ol>
           <p class="studio-action-result" role="status" aria-live="polite">{{ sectionMessage }}</p>
         </div>
+        <IssueContents
+          v-if="!sectionLoading && !sectionError"
+          :issue="current"
+          :sections="sections"
+          :disabled="!canEdit || busy || sectionBusy"
+          @changed="applySectionCollection"
+          @busy="articlesBusy = $event"
+        />
       </form>
 
       <aside class="studio-panel studio-panel--rail">

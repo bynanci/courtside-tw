@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -185,6 +186,40 @@ public final class EditorialIssueController {
         return response(service.scheduleIssue(
                 actor(authentication, request),
                 uuid(issueId, "/id"),
+                Version.parseIfMatch(request.getHeader(HttpHeaders.IF_MATCH)),
+                request.getHeader("Idempotency-Key"),
+                body
+        ), requestId(request));
+    }
+
+    @GetMapping(path = "/api/v1/editor/issues/{issueId}/articles", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<JsonNode> listArticles(
+            @PathVariable String issueId,
+            Authentication authentication,
+            HttpServletRequest request
+    ) {
+        return response(service.listArticles(actor(authentication, request), uuid(issueId, "/issueId")), requestId(request));
+    }
+
+    @GetMapping(path = "/api/v1/publisher/issues/{issueId}/articles", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<JsonNode> listPublisherArticles(
+            @PathVariable String issueId,
+            Authentication authentication,
+            HttpServletRequest request
+    ) {
+        return response(service.listPublisherArticles(actor(authentication, request), uuid(issueId, "/issueId")), requestId(request));
+    }
+
+    @PutMapping(path = "/api/v1/editor/issues/{issueId}/articles", consumes = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<JsonNode> replaceArticles(
+            @PathVariable String issueId,
+            @RequestBody(required = false) String body,
+            Authentication authentication,
+            HttpServletRequest request
+    ) {
+        return response(service.replaceArticles(
+                actor(authentication, request),
+                uuid(issueId, "/issueId"),
                 Version.parseIfMatch(request.getHeader(HttpHeaders.IF_MATCH)),
                 request.getHeader("Idempotency-Key"),
                 body

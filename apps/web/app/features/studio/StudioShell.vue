@@ -7,7 +7,15 @@ import { roleLabel } from "./studio-contract"
 
 const props = defineProps<{
   role: StudioRole
-  active: "articles" | "issues" | "media" | "taxonomy" | "review" | "audit"
+  active:
+    | "articles"
+    | "issues"
+    | "media"
+    | "taxonomy"
+    | "contributors"
+    | "review"
+    | "issue-review"
+    | "audit"
   articleId?: string
   auditTargetType?: "ARTICLE" | "ISSUE" | "MEDIA_ASSET"
   auditTargetId?: string
@@ -67,10 +75,22 @@ const auditPath = computed(() => {
           >分類詞彙</NuxtLink
         >
         <NuxtLink
+          v-if="canStudioAction(role, 'edit')"
+          :class="{ 'is-active': active === 'contributors' }"
+          to="/studio/contributors"
+          >作者與署名</NuxtLink
+        >
+        <NuxtLink
           v-if="canStudioAction(role, 'publish')"
           :class="{ 'is-active': active === 'review' }"
           :to="reviewPath"
           >發布佇列</NuxtLink
+        >
+        <NuxtLink
+          v-if="canStudioAction(role, 'publish')"
+          :class="{ 'is-active': active === 'issue-review' }"
+          to="/studio/review/issues"
+          >期刊發布管理</NuxtLink
         >
         <NuxtLink
           v-if="canStudioAction(role, 'view-audit')"

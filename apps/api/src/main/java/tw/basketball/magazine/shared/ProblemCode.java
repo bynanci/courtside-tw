@@ -37,6 +37,12 @@ public enum ProblemCode {
             "Unprocessable content",
             "The content or rights gate blocks this operation."
     ),
+    MEDIA_PREVIEW_UNAVAILABLE(
+            503,
+            "https://courtside.tw/problems/media_preview_unavailable",
+            "Media preview unavailable",
+            "Private media preview is temporarily unavailable."
+    ),
     RATE_LIMITED(
             429,
             "https://courtside.tw/problems/rate_limited",

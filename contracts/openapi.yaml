@@ -1152,6 +1152,351 @@ paths:
       x-optimistic-lock: If-Match
       x-required-roles:
         - EDITOR
+  /api/v1/editor/issues/{issueId}/articles:
+    parameters:
+      - $ref: "#/components/parameters/IssueId"
+    get:
+      tags:
+        - Editorial
+      operationId: listEditorIssueArticles
+      summary: Read the exact issue article assignments
+      description: Returns ordered section membership and pinned published article
+        revision identities for editorial review.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      responses:
+        "200": &a1
+          description: The complete ordered TOC with exact article revisions and current
+            issue version.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+            ETag:
+              description: Current issue aggregate version.
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueArticleCollection"
+              examples:
+                valid:
+                  value:
+                    issueId: 00000000-0000-4000-8000-000000000001
+                    issueVersion: 2
+                    sections:
+                      - sectionId: 00000000-0000-4000-8000-000000000004
+                        title: 場邊
+                        position: 1
+                        articleCount: 1
+                        version: 0
+                    articles:
+                      - articleId: 00000000-0000-4000-8000-000000000002
+                        revisionId: 00000000-0000-4000-8000-000000000003
+                        sectionId: 00000000-0000-4000-8000-000000000004
+                        position: 1
+                        title: 場邊文章
+                        slug: courtside-story
+                        revisionNumber: 1
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-required-roles:
+        - EDITOR
+    put:
+      tags:
+        - Editorial
+      operationId: replaceEditorIssueArticles
+      summary: Replace draft issue article assignments
+      description: Atomically replaces up to 500 article assignments on a DRAFT issue.
+        Existing unchanged article/revision pairs retain their published pin; new
+        or changed references must name the current published revision. Each
+        article belongs to an existing section with a contiguous position. The
+        issue version advances once and retries reuse the stored idempotent
+        response.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      responses:
+        "200": *a1
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-required-roles:
+        - EDITOR
+      parameters:
+        - $ref: "#/components/parameters/IfMatch"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              additionalProperties: false
+              required:
+                - articles
+              properties:
+                articles:
+                  type: array
+                  maxItems: 500
+                  items:
+                    $ref: "#/components/schemas/IssueArticleAssignment"
+            examples:
+              valid:
+                value:
+                  articles:
+                    - articleId: 00000000-0000-4000-8000-000000000002
+                      revisionId: 00000000-0000-4000-8000-000000000003
+                      sectionId: 00000000-0000-4000-8000-000000000004
+                      position: 1
+      x-write-concurrency: IF_MATCH
+      x-idempotent: true
+      x-optimistic-lock: If-Match
+  /api/v1/publisher/issues/{issueId}/articles:
+    parameters:
+      - $ref: "#/components/parameters/IssueId"
+    get:
+      tags:
+        - Editorial
+      operationId: listPublisherIssueArticles
+      summary: Read the exact issue article assignments
+      description: Returns ordered section membership and pinned published article
+        revision identities for editorial review.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      responses:
+        "200": *a1
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-required-roles:
+        - PUBLISHER
+  /api/v1/editor/media:
+    get:
+      tags:
+        - Editorial
+      operationId: listPrivateMedia
+      summary: List private media available to editorial users
+      description: Returns bounded media metadata in descending asset UUID order.
+        The cursor is the last assetId from the previous page. Private object
+        keys, provider URLs and credentials are never included.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - name: cursor
+          in: query
+          required: false
+          schema:
+            $ref: "#/components/schemas/Uuid"
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 25
+      responses:
+        "200":
+          description: A private media page with a nullable next cursor.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store, private
+            X-Content-Type-Options:
+              schema:
+                type: string
+                const: nosniff
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PrivateMediaPage"
+              examples:
+                valid:
+                  value:
+                    items:
+                      - assetId: 00000000-0000-4000-8000-000000000001
+                        mimeType: image/jpeg
+                        processingState: READY
+                        altText: Private editorial image
+                        width: 1200
+                        height: 800
+                        version: 2
+                    nextCursor: null
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-required-roles:
+        - EDITOR
+  /api/v1/editor/media/{id}/preview:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/Uuid"
+    get:
+      tags:
+        - Editorial
+      operationId: getPrivateMediaPreview
+      summary: Read authenticated private image preview bytes
+      description: Returns a checksum-verified READY image original through the editor
+        boundary. The response uses private, no-store caching and never exposes
+        provider URLs. Missing storage, oversize content, changed metadata and
+        invalid originals fail closed.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      responses:
+        "200":
+          description: Bounded verified image bytes.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store, private
+            X-Content-Type-Options:
+              schema:
+                type: string
+                const: nosniff
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+            image/avif:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+        "503":
+          $ref: "#/components/responses/PrivateMediaPreviewUnavailable"
+      x-required-roles:
+        - EDITOR
+  /api/v1/publisher/media/{id}/preview:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema:
+          $ref: "#/components/schemas/Uuid"
+    get:
+      tags:
+        - Editorial
+      operationId: getPublisherPrivateMediaPreview
+      summary: Read private image preview bytes for publisher review
+      description: Returns a checksum-verified READY image through the publisher
+        boundary with a fresh state and version check after storage access.
+        Revoked or changed media return 422; unavailable storage or invalid
+        originals return 503 without provider URLs, object keys or image bytes.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      responses:
+        "200":
+          description: Bounded verified image bytes.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store, private
+            X-Content-Type-Options:
+              schema:
+                type: string
+                const: nosniff
+          content:
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+            image/avif:
+              schema:
+                type: string
+                format: binary
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+        "503":
+          $ref: "#/components/responses/PrivateMediaPreviewUnavailable"
+      x-required-roles:
+        - PUBLISHER
   /api/v1/editor/issues/{issueId}/sections:
     parameters:
       - $ref: "#/components/parameters/IssueId"
@@ -3834,6 +4179,7 @@ components:
             - VERSION_CONFLICT
             - RIGHTS_OR_CONTENT_GATE
             - RATE_LIMITED
+            - MEDIA_PREVIEW_UNAVAILABLE
         errors:
           type: array
           maxItems: 100
@@ -4747,6 +5093,79 @@ components:
           maxItems: 50
           items:
             $ref: "#/components/schemas/IssueSection"
+    IssueArticleAssignment:
+      type: object
+      additionalProperties: false
+      required:
+        - articleId
+        - revisionId
+        - sectionId
+        - position
+      properties:
+        articleId: &a1
+          $ref: "#/components/schemas/Uuid"
+        revisionId: &a2
+          $ref: "#/components/schemas/Uuid"
+        sectionId: &a3
+          $ref: "#/components/schemas/Uuid"
+        position: &a4
+          type: integer
+          minimum: 1
+          maximum: 500
+    IssueArticleEntry:
+      type: object
+      additionalProperties: false
+      required:
+        - articleId
+        - revisionId
+        - sectionId
+        - position
+        - title
+        - slug
+        - revisionNumber
+      properties:
+        articleId: *a1
+        revisionId:
+          oneOf:
+            - $ref: "#/components/schemas/Uuid"
+            - type: "null"
+        sectionId: *a3
+        position: *a4
+        title:
+          type:
+            - string
+            - "null"
+        slug:
+          type: string
+        revisionNumber:
+          type:
+            - integer
+            - "null"
+          minimum: 1
+    IssueArticleCollection:
+      type: object
+      additionalProperties: false
+      required:
+        - issueId
+        - issueVersion
+        - sections
+        - articles
+      properties:
+        issueId:
+          $ref: "#/components/schemas/Uuid"
+        issueVersion:
+          type: integer
+          minimum: 1
+        sections:
+          type: array
+          maxItems: 50
+          items:
+            $ref: "#/components/schemas/IssueSection"
+        articles:
+          type: array
+          maxItems: 500
+          items:
+            $ref: "#/components/schemas/IssueArticleEntry"
     ArticleDraftInput:
       type: object
       additionalProperties: false
@@ -5036,6 +5455,70 @@ components:
           maxLength: 1000
         rights:
           $ref: "#/components/schemas/MediaRightsMetadataInput"
+    PrivateMediaSummary:
+      type: object
+      additionalProperties: false
+      required:
+        - assetId
+        - mimeType
+        - processingState
+        - altText
+        - width
+        - height
+        - version
+      properties:
+        assetId:
+          $ref: "#/components/schemas/Uuid"
+        mimeType:
+          type: string
+          enum:
+            - image/avif
+            - image/jpeg
+            - image/png
+            - image/webp
+        processingState:
+          type: string
+          enum:
+            - PENDING
+            - PROCESSING
+            - READY
+            - FAILED
+            - REVOKED
+        altText:
+          type:
+            - string
+            - "null"
+          maxLength: 1000
+        width:
+          type:
+            - integer
+            - "null"
+          minimum: 1
+        height:
+          type:
+            - integer
+            - "null"
+          minimum: 1
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+    PrivateMediaPage:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - nextCursor
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/PrivateMediaSummary"
+        nextCursor:
+          oneOf:
+            - $ref: "#/components/schemas/Uuid"
+            - type: "null"
     MediaMetadata:
       type: object
       additionalProperties: false
@@ -5714,6 +6197,35 @@ components:
                 requestId: req_t009_t011_example
                 code: RATE_LIMITED
       x-stable-error-code: RATE_LIMITED
+    PrivateMediaPreviewUnavailable:
+      description: Private preview unavailable (503); no provider details or image bytes are returned.
+      headers:
+        X-Request-Id:
+          $ref: "#/components/headers/XRequestId"
+        Cache-Control:
+          schema:
+            type: string
+            const: no-store, private
+        X-Content-Type-Options:
+          schema:
+            type: string
+            const: nosniff
+      content:
+        application/problem+json:
+          schema:
+            $ref: "#/components/schemas/ProblemDetails"
+          examples:
+            unavailable:
+              summary: MEDIA_PREVIEW_UNAVAILABLE example
+              value:
+                type: https://courtside.tw/problems/media_preview_unavailable
+                title: Media preview unavailable
+                status: 503
+                detail: Private media preview is temporarily unavailable.
+                instance: /api/v1/editor/media/00000000-0000-4000-8000-000000000001/preview
+                requestId: req_private_preview_unavailable
+                code: MEDIA_PREVIEW_UNAVAILABLE
+      x-stable-error-code: MEDIA_PREVIEW_UNAVAILABLE
 x-contract-rules:
   problemMediaType: application/problem+json
   invalidRequestNormalization: Malformed JSON, invalid binding values and unsupported request media types use 400 INVALID_REQUEST without reflecting submitted values.

@@ -436,6 +436,118 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  "/api/v1/editor/issues/{issueId}/articles": {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        issueId: components["parameters"]["IssueId"]
+      }
+      cookie?: never
+    }
+    /**
+     * Read the exact issue article assignments
+     * @description Returns ordered section membership and pinned published article revision identities for editorial review.
+     */
+    get: operations["listEditorIssueArticles"]
+    /**
+     * Replace draft issue article assignments
+     * @description Atomically replaces up to 500 article assignments on a DRAFT issue. Existing unchanged article/revision pairs retain their published pin; new or changed references must name the current published revision. Each article belongs to an existing section with a contiguous position. The issue version advances once and retries reuse the stored idempotent response.
+     */
+    put: operations["replaceEditorIssueArticles"]
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/publisher/issues/{issueId}/articles": {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        issueId: components["parameters"]["IssueId"]
+      }
+      cookie?: never
+    }
+    /**
+     * Read the exact issue article assignments
+     * @description Returns ordered section membership and pinned published article revision identities for editorial review.
+     */
+    get: operations["listPublisherIssueArticles"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/editor/media": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List private media available to editorial users
+     * @description Returns bounded media metadata in descending asset UUID order. The cursor is the last assetId from the previous page. Private object keys, provider URLs and credentials are never included.
+     */
+    get: operations["listPrivateMedia"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/editor/media/{id}/preview": {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: components["schemas"]["Uuid"]
+      }
+      cookie?: never
+    }
+    /**
+     * Read authenticated private image preview bytes
+     * @description Returns a checksum-verified READY image original through the editor boundary. The response uses private, no-store caching and never exposes provider URLs. Missing storage, oversize content, changed metadata and invalid originals fail closed.
+     */
+    get: operations["getPrivateMediaPreview"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/publisher/media/{id}/preview": {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: components["schemas"]["Uuid"]
+      }
+      cookie?: never
+    }
+    /**
+     * Read private image preview bytes for publisher review
+     * @description Returns a checksum-verified READY image through the publisher boundary with a fresh state and version check after storage access. Revoked or changed media return 422; unavailable storage or invalid originals return 503 without provider URLs, object keys or image bytes.
+     */
+    get: operations["getPublisherPrivateMediaPreview"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   "/api/v1/editor/issues/{issueId}/sections": {
     parameters: {
       query?: never
@@ -1192,6 +1304,7 @@ export interface components {
         | "VERSION_CONFLICT"
         | "RIGHTS_OR_CONTENT_GATE"
         | "RATE_LIMITED"
+        | "MEDIA_PREVIEW_UNAVAILABLE"
       errors?: components["schemas"]["FieldError"][]
     }
     FieldError: {
@@ -1475,6 +1588,27 @@ export interface components {
       issueVersion: number
       sections: components["schemas"]["IssueSection"][]
     }
+    IssueArticleAssignment: {
+      articleId: components["schemas"]["Uuid"]
+      revisionId: components["schemas"]["Uuid"]
+      sectionId: components["schemas"]["Uuid"]
+      position: number
+    }
+    IssueArticleEntry: {
+      articleId: components["schemas"]["Uuid"]
+      revisionId: components["schemas"]["Uuid"] | null
+      sectionId: components["schemas"]["Uuid"]
+      position: number
+      title: string | null
+      slug: string
+      revisionNumber: number | null
+    }
+    IssueArticleCollection: {
+      issueId: components["schemas"]["Uuid"]
+      issueVersion: number
+      sections: components["schemas"]["IssueSection"][]
+      articles: components["schemas"]["IssueArticleEntry"][]
+    }
     ArticleDraftInput: {
       title: string
       slug: string
@@ -1579,6 +1713,22 @@ export interface components {
     MediaMetadataUpdate: {
       altText: string
       rights?: components["schemas"]["MediaRightsMetadataInput"]
+    }
+    PrivateMediaSummary: {
+      assetId: components["schemas"]["Uuid"]
+      /** @enum {string} */
+      mimeType: "image/avif" | "image/jpeg" | "image/png" | "image/webp"
+      /** @enum {string} */
+      processingState: "PENDING" | "PROCESSING" | "READY" | "FAILED" | "REVOKED"
+      altText: string | null
+      width: number | null
+      height: number | null
+      /** Format: int64 */
+      version: number
+    }
+    PrivateMediaPage: {
+      items: components["schemas"]["PrivateMediaSummary"][]
+      nextCursor: components["schemas"]["Uuid"] | null
     }
     MediaMetadata: {
       assetId: components["schemas"]["Uuid"]
@@ -2069,6 +2219,18 @@ export interface components {
       headers: {
         "X-Request-Id": components["headers"]["XRequestId"]
         "Retry-After": components["headers"]["RetryAfter"]
+        [name: string]: unknown
+      }
+      content: {
+        "application/problem+json": components["schemas"]["ProblemDetails"]
+      }
+    }
+    /** @description Private preview unavailable (503); no provider details or image bytes are returned. */
+    PrivateMediaPreviewUnavailable: {
+      headers: {
+        "X-Request-Id": components["headers"]["XRequestId"]
+        "Cache-Control"?: "no-store, private"
+        "X-Content-Type-Options"?: "nosniff"
         [name: string]: unknown
       }
       content: {
@@ -2893,6 +3055,209 @@ export interface operations {
       404: components["responses"]["Problem404"]
       409: components["responses"]["Problem409"]
       429: components["responses"]["Problem429"]
+    }
+  }
+  listEditorIssueArticles: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        issueId: components["parameters"]["IssueId"]
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description The complete ordered TOC with exact article revisions and current issue version. */
+      200: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          /** @description Current issue aggregate version. */
+          ETag?: string
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["IssueArticleCollection"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  replaceEditorIssueArticles: {
+    parameters: {
+      query?: never
+      header: {
+        /** @description Optimistic-lock version or ETag. The server rejects stale values with 409 VERSION_CONFLICT. */
+        "If-Match": components["parameters"]["IfMatch"]
+        /** @description Stable retry key. Replays return the original operation result. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"]
+      }
+      path: {
+        issueId: components["parameters"]["IssueId"]
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": {
+          articles: components["schemas"]["IssueArticleAssignment"][]
+        }
+      }
+    }
+    responses: {
+      /** @description The complete ordered TOC with exact article revisions and current issue version. */
+      200: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          /** @description Current issue aggregate version. */
+          ETag?: string
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["IssueArticleCollection"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      409: components["responses"]["Problem409"]
+      422: components["responses"]["Problem422"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  listPublisherIssueArticles: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        issueId: components["parameters"]["IssueId"]
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description The complete ordered TOC with exact article revisions and current issue version. */
+      200: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          /** @description Current issue aggregate version. */
+          ETag?: string
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["IssueArticleCollection"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  listPrivateMedia: {
+    parameters: {
+      query?: {
+        cursor?: components["schemas"]["Uuid"]
+        limit?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description A private media page with a nullable next cursor. */
+      200: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          "Cache-Control"?: "no-store, private"
+          "X-Content-Type-Options"?: "nosniff"
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["PrivateMediaPage"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  getPrivateMediaPreview: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: components["schemas"]["Uuid"]
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Bounded verified image bytes. */
+      200: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          "Cache-Control"?: "no-store, private"
+          "X-Content-Type-Options"?: "nosniff"
+          [name: string]: unknown
+        }
+        content: {
+          "image/png": string
+          "image/jpeg": string
+          "image/webp": string
+          "image/avif": string
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      422: components["responses"]["Problem422"]
+      429: components["responses"]["Problem429"]
+      503: components["responses"]["PrivateMediaPreviewUnavailable"]
+    }
+  }
+  getPublisherPrivateMediaPreview: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: components["schemas"]["Uuid"]
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Bounded verified image bytes. */
+      200: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          "Cache-Control"?: "no-store, private"
+          "X-Content-Type-Options"?: "nosniff"
+          [name: string]: unknown
+        }
+        content: {
+          "image/png": string
+          "image/jpeg": string
+          "image/webp": string
+          "image/avif": string
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      422: components["responses"]["Problem422"]
+      429: components["responses"]["Problem429"]
+      503: components["responses"]["PrivateMediaPreviewUnavailable"]
     }
   }
   listEditorIssueSections: {

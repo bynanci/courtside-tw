@@ -37,6 +37,7 @@ import tw.basketball.magazine.shared.Version;
 /** Application boundary for issue editing, publication, and optimistic-lock conflicts. */
 public final class EditorialIssueService {
     private static final int MAX_SECTIONS = 50;
+    private static final int MAX_ARTICLES = 500;
     private final EditorialIssueRepository repository;
     private final AuditWriter auditWriter;
     private final TransactionTemplate transactionTemplate;
@@ -365,6 +366,135 @@ public final class EditorialIssueService {
             ));
             return workflowResult("SCHEDULED", updated.version(), schedule.publishAt());
         });
+    }
+
+    public EditorialWorkflowService.OperationResult listArticles(ActorContext actor, UUID issueId) {
+        requireEditor(actor);
+        return readArticles(issueId);
+    }
+
+    public EditorialWorkflowService.OperationResult listPublisherArticles(ActorContext actor, UUID issueId) {
+        requirePublisher(actor);
+        return readArticles(issueId);
+    }
+
+    private EditorialWorkflowService.OperationResult readArticles(UUID issueId) {
+        // Serialize the version and TOC reads with aggregate edits so an ETag
+        // never labels a mixed response from two issue versions.
+        return Objects.requireNonNull(transactionTemplate.execute(status -> articlesResult(
+                repository.findForUpdate(issueId).orElseThrow(() ->
+                        EditorialProblemException.notFound("/issueId", "issue was not found"))
+        )), "transaction returned no issue articles");
+    }
+
+    public EditorialWorkflowService.OperationResult replaceArticles(
+            ActorContext actor,
+            UUID issueId,
+            Version expectedVersion,
+            String idempotencyKey,
+            String body
+    ) {
+        requireEditor(actor);
+        Objects.requireNonNull(expectedVersion, "expectedVersion");
+        JsonNode request = object(body);
+        List<EditorialIssueRepository.IssueArticleAssignment> assignments = parseArticleAssignments(request);
+        String hash = requestHash("REPLACE_ISSUE_ARTICLES|" + issueId + "|" + expectedVersion.value(), request);
+        return idempotent(actor, "REPLACE_ISSUE_ARTICLES", idempotencyKey, hash, () -> {
+            EditorialIssueRepository.IssueRecord current = requireIssue(issueId, expectedVersion);
+            if (current.state() != PublicationState.DRAFT) {
+                throw new EditorialProblemException(ProblemCode.VERSION_CONFLICT, List.of(new FieldError(
+                        "/issueId", "ISSUE_NOT_EDITABLE", "only draft issues can change article assignments"
+                )));
+            }
+            Set<UUID> sectionIds = repository.listSections(issueId).stream()
+                    .map(EditorialIssueRepository.SectionRecord::sectionId)
+                    .collect(java.util.stream.Collectors.toSet());
+            for (EditorialIssueRepository.IssueArticleAssignment assignment : assignments) {
+                if (!sectionIds.contains(assignment.sectionId())) {
+                    throw EditorialProblemException.notFound("/articles/sectionId", "section was not found in this issue");
+                }
+            }
+            Map<UUID, UUID> existingRevisions = new LinkedHashMap<>();
+            repository.listArticles(issueId).forEach(article -> existingRevisions.put(article.articleId(), article.revisionId()));
+            Instant checkedAt = applicationClock.now();
+            // Consistent row-lock order avoids deadlocks between issues sharing articles.
+            for (EditorialIssueRepository.IssueArticleAssignment assignment : assignments.stream()
+                    .sorted(java.util.Comparator.comparing(EditorialIssueRepository.IssueArticleAssignment::articleId))
+                    .toList()) {
+                // Retained pins remain editable after a newer article publication.
+                // A new article or an explicit revision change must select the current revision.
+                boolean requireCurrentRevision = !assignment.revisionId().equals(existingRevisions.get(assignment.articleId()));
+                if (!repository.lockPublishedArticleRevision(
+                        assignment.articleId(), assignment.revisionId(), checkedAt, requireCurrentRevision)) {
+                    throw new EditorialProblemException(ProblemCode.VERSION_CONFLICT, List.of(new FieldError(
+                            "/articles/revisionId", "ARTICLE_REVISION_NOT_PUBLISHED",
+                            "retained assignments require a published article and revision; new selections require its current published revision"
+                    )));
+                }
+            }
+            repository.replaceArticles(issueId, assignments);
+            EditorialIssueRepository.IssueRecord updated = advanceIssue(issueId, current.version());
+            auditWriter.append(new AuditEventDraft(actor, "ISSUE_ARTICLES_REPLACED", "ISSUE", issueId,
+                    Map.of("version", updated.version(), "articleCount", assignments.size())));
+            return articlesResult(updated);
+        });
+    }
+
+    private static List<EditorialIssueRepository.IssueArticleAssignment> parseArticleAssignments(JsonNode request) {
+        JsonNode articles = request.get("articles");
+        if (request.size() != 1 || articles == null || !articles.isArray() || articles.size() > MAX_ARTICLES) {
+            throw EditorialProblemException.invalid("/articles", "ARTICLES_REQUIRED", "request must contain only a bounded articles array");
+        }
+        List<EditorialIssueRepository.IssueArticleAssignment> assignments = new ArrayList<>();
+        Set<UUID> articleIds = new HashSet<>();
+        Map<UUID, Set<Integer>> positions = new LinkedHashMap<>();
+        for (int index = 0; index < articles.size(); index++) {
+            JsonNode entry = articles.get(index);
+            String path = "/articles/" + index;
+            if (entry == null || !entry.isObject() || entry.size() != 4) {
+                throw EditorialProblemException.invalid(path, "ARTICLE_INVALID", "article entry must contain only articleId, revisionId, sectionId and position");
+            }
+            UUID articleId = requiredUuid(entry, "articleId", path + "/articleId");
+            UUID revisionId = requiredUuid(entry, "revisionId", path + "/revisionId");
+            UUID sectionId = requiredUuid(entry, "sectionId", path + "/sectionId");
+            JsonNode position = entry.get("position");
+            if (position == null || !position.isIntegralNumber() || !position.canConvertToInt()
+                    || position.asInt() < 1 || position.asInt() > MAX_ARTICLES) {
+                throw EditorialProblemException.invalid(path + "/position", "ARTICLE_POSITION_INVALID", "position must be a bounded positive integer");
+            }
+            if (!articleIds.add(articleId)) {
+                throw EditorialProblemException.invalid(path + "/articleId", "ARTICLE_DUPLICATE", "an article can appear only once per issue");
+            }
+            if (!positions.computeIfAbsent(sectionId, key -> new HashSet<>()).add(position.asInt())) {
+                throw EditorialProblemException.invalid(path + "/position", "ARTICLE_POSITION_INVALID", "positions must be unique within each section");
+            }
+            assignments.add(new EditorialIssueRepository.IssueArticleAssignment(articleId, revisionId, sectionId, position.asInt()));
+        }
+        for (Set<Integer> sectionPositions : positions.values()) {
+            if (sectionPositions.stream().anyMatch(position -> position > sectionPositions.size())) {
+                throw EditorialProblemException.invalid("/articles", "ARTICLE_POSITION_INVALID", "positions must be contiguous within each section");
+            }
+        }
+        return List.copyOf(assignments);
+    }
+
+    private EditorialWorkflowService.OperationResult articlesResult(EditorialIssueRepository.IssueRecord issue) {
+        Map<String, Object> response = new LinkedHashMap<>();
+        response.put("issueId", issue.issueId().toString());
+        response.put("issueVersion", issue.version());
+        response.put("sections", repository.listSections(issue.issueId()).stream().map(this::sectionJson).toList());
+        response.put("articles", repository.listArticles(issue.issueId()).stream().map(article -> {
+            Map<String, Object> entry = new LinkedHashMap<>();
+            entry.put("articleId", article.articleId().toString());
+            entry.put("revisionId", article.revisionId() == null ? null : article.revisionId().toString());
+            entry.put("sectionId", article.sectionId().toString());
+            entry.put("position", article.position());
+            entry.put("title", article.title());
+            entry.put("slug", article.slug());
+            entry.put("revisionNumber", article.revisionNumber());
+            return entry;
+        }).toList());
+        return new EditorialWorkflowService.OperationResult(200, json(response), issue.version());
     }
 
     public EditorialWorkflowService.OperationResult listSections(ActorContext actor, UUID issueId) {

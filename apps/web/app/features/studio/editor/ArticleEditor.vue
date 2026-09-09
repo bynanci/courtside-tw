@@ -1,9 +1,27 @@
 <script setup lang="ts">
-import { computed, ref } from "vue"
+import { computed, onMounted, onBeforeUnmount, ref, watch } from "vue"
+import ContentDocumentRenderer from "../../../components/content-blocks/ContentDocumentRenderer.vue"
 
 import StudioShell from "../StudioShell.vue"
 import { canStudioAction, missingRoleMessage } from "../studio-rbac"
-import { getEditorArticle, patchEditorArticle, submitArticle, StudioApiError } from "../studio-api"
+import {
+  getEditorArticle,
+  patchEditorArticle,
+  submitArticle,
+  StudioApiError,
+  getArticleCredits,
+  setArticleCredits,
+  listContributors,
+  getPrivateMediaPreview,
+  type ArticleCredit,
+  type ManagedContributor
+} from "../studio-api"
+import {
+  buildCreditAssignments,
+  moveCredit,
+  parsePrivatePreview,
+  type CreditRole
+} from "./article-draft-form"
 import type { StudioArticleDraft, StudioRole } from "../studio-contract"
 import { articleStateLabel, readinessLabel, roleLabel } from "../studio-contract"
 import {
@@ -28,6 +46,151 @@ const contentError = ref<string | null>(null)
 const apiError = ref<string | null>(null)
 const generativePrompt = ref("")
 const busy = ref(false)
+const creditRoles: CreditRole[] = [
+  "AUTHOR",
+  "EDITOR",
+  "PHOTOGRAPHER",
+  "ILLUSTRATOR",
+  "TRANSLATOR",
+  "DESIGNER"
+]
+const credits = ref<ArticleCredit[]>([])
+const contributors = ref<ManagedContributor[]>([])
+const selectedContributor = ref("")
+const selectedCreditRole = ref<CreditRole>("AUTHOR")
+const creditError = ref<string | null>(null)
+const creditMessage = ref("")
+const creditsReady = ref(false)
+const savedCredits = ref("[]")
+const creditsDirty = computed(() => JSON.stringify(credits.value) !== savedCredits.value)
+const previewVisible = ref(false)
+const preview = computed(() => parsePrivatePreview(contentJson.value))
+const previewBlocks = computed(
+  () =>
+    preview.value.document?.blocks.map((block) => ({ ...block, payload: { ...block.payload } })) ??
+    []
+)
+const previewUrls = ref<Record<string, string>>({})
+const previewFailures = ref(new Set<string>())
+const previewMediaMessage = ref("")
+let previewController: AbortController | null = null
+
+function clearPreviewMedia() {
+  previewController?.abort()
+  previewController = null
+  Object.values(previewUrls.value).forEach((url) => URL.revokeObjectURL(url))
+  previewUrls.value = {}
+  previewFailures.value = new Set()
+}
+
+async function loadPreviewMedia() {
+  clearPreviewMedia()
+  if (!previewVisible.value || !preview.value.document) return
+  const controller = new AbortController()
+  previewController = controller
+  const ids = new Set<string>()
+  for (const block of preview.value.document.blocks) {
+    if (block.type === "image") ids.add(block.payload.assetId)
+    if (block.type === "gallery") block.payload.items.forEach((item) => ids.add(item.assetId))
+    if (block.type === "generative-canvas") ids.add(block.payload.posterAssetId)
+  }
+  previewMediaMessage.value = ids.size ? "正在讀取私人圖片預覽…" : ""
+  const pending = [...ids]
+  let failures = 0
+  await Promise.all(
+    Array.from({ length: Math.min(4, pending.length) }, async () => {
+      while (pending.length && !controller.signal.aborted) {
+        const id = pending.shift()!
+        try {
+          const blob = await getPrivateMediaPreview(id, controller.signal)
+          if (!controller.signal.aborted) previewUrls.value[id] = URL.createObjectURL(blob)
+        } catch {
+          if (!controller.signal.aborted) failures++
+        }
+      }
+    })
+  )
+  if (!controller.signal.aborted)
+    previewMediaMessage.value = failures
+      ? `${failures} 張圖片目前無法取得私人預覽，以下保留替代文字。`
+      : ""
+}
+const previewAssetUrl = (id: unknown) =>
+  typeof id === "string" ? (previewUrls.value[id] ?? "") : ""
+const previewAssetDimension = () => undefined
+const previewAssetAttribution = (_id: unknown, _variant?: string, credit?: unknown) =>
+  typeof credit === "string" ? credit : ""
+const previewRelatedLink = (slug: unknown) =>
+  typeof slug === "string" && /^[a-z0-9]+(?:-[a-z0-9]+)*$/u.test(slug) ? `/articles/${slug}` : null
+const noCreativePlayback = () => {}
+
+async function loadCredits() {
+  creditsReady.value = false
+  creditError.value = null
+  try {
+    const result = await getArticleCredits(current.value.articleId, current.value.revisionId)
+    if (result.version !== current.value.version)
+      throw new Error("文章版本已變更，請重新讀取文章後再安排署名。")
+    credits.value = result.contributors
+    savedCredits.value = JSON.stringify(result.contributors)
+    creditsReady.value = true
+  } catch (cause) {
+    creditError.value = cause instanceof Error ? cause.message : "無法讀取署名。"
+  }
+}
+function addCredit() {
+  const person = contributors.value.find((item) => item.contributorId === selectedContributor.value)
+  if (!person || !canEdit.value || !creditsReady.value) return
+  const updated = [
+    ...credits.value,
+    {
+      contributorId: person.contributorId,
+      slug: person.slug,
+      displayName: person.displayName,
+      role: selectedCreditRole.value
+    }
+  ]
+  try {
+    buildCreditAssignments(updated)
+    credits.value = updated
+    creditError.value = null
+  } catch (cause) {
+    creditError.value = cause instanceof Error ? cause.message : "署名無效。"
+  }
+}
+async function saveCredits() {
+  if (!canEdit.value || busy.value || !creditsReady.value) return
+  busy.value = true
+  creditError.value = null
+  try {
+    const payload = buildCreditAssignments(credits.value)
+    const result = await setArticleCredits(
+      current.value.articleId,
+      current.value.revisionId,
+      current.value.version,
+      payload.contributors
+    )
+    current.value = { ...current.value, version: result.version }
+    credits.value = result.contributors
+    savedCredits.value = JSON.stringify(result.contributors)
+    creditMessage.value = "署名與順序已儲存。"
+  } catch (cause) {
+    handleApiError(cause)
+    creditError.value = cause instanceof Error ? cause.message : "無法儲存署名。"
+  } finally {
+    busy.value = false
+  }
+}
+onMounted(async () => {
+  await loadCredits()
+  try {
+    contributors.value = (await listContributors()).items
+  } catch (cause) {
+    creditError.value = cause instanceof Error ? cause.message : "無法讀取作者清單。"
+  }
+})
+watch([previewVisible, contentJson], loadPreviewMedia)
+onBeforeUnmount(clearPreviewMedia)
 const savedFingerprint = ref(
   editorFingerprint(props.draft.title, props.draft.dek ?? "", contentJson.value)
 )
@@ -40,7 +203,9 @@ const canSubmit = computed(
   () => canStudioAction(props.role, "submit") && current.value.state === "DRAFT"
 )
 const isDirty = computed(
-  () => editorFingerprint(title.value, dek.value, contentJson.value) !== savedFingerprint.value
+  () =>
+    editorFingerprint(title.value, dek.value, contentJson.value) !== savedFingerprint.value ||
+    creditsDirty.value
 )
 
 function applyArticle(article: StudioArticleDraft): void {
@@ -101,6 +266,7 @@ async function submitForReview(): Promise<void> {
 
 async function refreshFromApi(): Promise<void> {
   applyArticle(await getEditorArticle(current.value.articleId))
+  await loadCredits()
 }
 
 function retrySave(): void {
@@ -226,6 +392,88 @@ function editorFingerprint(titleValue: string, dekValue: string, contentValue: s
         <p id="studio-content-help" class="studio-help">
           內容只接受固定 schema；不把任意 HTML 或未核准的生成結果直接送進發布路徑。
         </p>
+        <fieldset :disabled="!canEdit || busy || !creditsReady" aria-label="文章署名">
+          <legend>文章署名與順序</legend>
+          <div class="studio-form-grid">
+            <label class="studio-field"
+              ><span>選擇作者</span
+              ><select v-model="selectedContributor">
+                <option value="">選擇使用中的作者</option>
+                <option
+                  v-for="person in contributors"
+                  :key="person.contributorId"
+                  :value="person.contributorId"
+                >
+                  {{ person.displayName }}
+                </option>
+              </select></label
+            >
+            <label class="studio-field"
+              ><span>署名角色</span
+              ><select v-model="selectedCreditRole">
+                <option v-for="creditRole in creditRoles" :key="creditRole" :value="creditRole">
+                  {{ creditRole }}
+                </option>
+              </select></label
+            >
+            <button
+              class="studio-button studio-button--quiet"
+              type="button"
+              :disabled="!selectedContributor"
+              @click="addCredit"
+            >
+              加入署名
+            </button>
+          </div>
+          <ol aria-label="已安排署名" class="studio-audit-list">
+            <li v-for="(credit, index) in credits" :key="`${credit.contributorId}:${credit.role}`">
+              <span>{{ index + 1 }}</span>
+              <div>
+                <strong>{{ credit.displayName }}</strong
+                ><small>{{ credit.role }}</small>
+              </div>
+              <div class="studio-action-row">
+                <button
+                  class="studio-icon-button"
+                  type="button"
+                  :disabled="index === 0"
+                  :aria-label="`上移署名 ${credit.displayName}`"
+                  @click="credits = moveCredit(credits, index, -1)"
+                >
+                  ↑
+                </button>
+                <button
+                  class="studio-icon-button"
+                  type="button"
+                  :disabled="index === credits.length - 1"
+                  :aria-label="`下移署名 ${credit.displayName}`"
+                  @click="credits = moveCredit(credits, index, 1)"
+                >
+                  ↓
+                </button>
+                <button
+                  class="studio-icon-button"
+                  type="button"
+                  :aria-label="`移除署名 ${credit.displayName}`"
+                  @click="credits = credits.filter((_, position) => position !== index)"
+                >
+                  ×
+                </button>
+              </div>
+            </li>
+          </ol>
+          <button
+            class="studio-button studio-button--quiet"
+            type="button"
+            :disabled="!creditsDirty"
+            @click="saveCredits"
+          >
+            儲存署名順序
+          </button>
+        </fieldset>
+        <p v-if="creditError" class="studio-inline-error" role="alert">{{ creditError }}</p>
+        <p v-if="creditMessage" class="studio-help" role="status">{{ creditMessage }}</p>
+        <NuxtLink to="/studio/contributors">管理作者資料</NuxtLink>
         <p v-if="contentError || apiError" class="studio-inline-error" role="alert">
           {{ contentError ?? apiError }}
         </p>
@@ -237,6 +485,15 @@ function editorFingerprint(titleValue: string, dekValue: string, contentValue: s
             :disabled="!canEdit || busy"
           >
             {{ busy ? "處理中…" : "儲存 Save" }}
+          </button>
+          <button
+            class="studio-button studio-button--quiet"
+            type="button"
+            :aria-expanded="previewVisible"
+            aria-controls="studio-private-preview"
+            @click="previewVisible = !previewVisible"
+          >
+            {{ previewVisible ? "關閉私人預覽" : "預覽文章" }}
           </button>
           <button
             class="studio-button studio-button--quiet"
@@ -321,6 +578,38 @@ function editorFingerprint(titleValue: string, dekValue: string, contentValue: s
           </div>
         </dl>
       </aside>
+    </section>
+    <section
+      v-if="previewVisible"
+      id="studio-private-preview"
+      class="studio-panel studio-panel--primary"
+      aria-label="私人文章預覽"
+    >
+      <p class="studio-kicker">私人預覽 · 尚未發布</p>
+      <h2>{{ title }}</h2>
+      <p>{{ dek }}</p>
+      <p v-if="credits.length">
+        {{ credits.map((credit) => `${credit.displayName} · ${credit.role}`).join("、") }}
+      </p>
+      <p v-if="previewMediaMessage" role="status" class="studio-help">{{ previewMediaMessage }}</p>
+      <p v-if="preview.error" role="alert" class="studio-inline-error">{{ preview.error }}</p>
+      <div v-else-if="preview.document" class="article-body">
+        <ContentDocumentRenderer
+          :blocks="previewBlocks"
+          :article-revision-id="current.revisionId"
+          :client-ready="true"
+          motion-mode="reduced"
+          :interactive-enabled="false"
+          :get-asset-url="previewAssetUrl"
+          :get-asset-width="previewAssetDimension"
+          :get-asset-height="previewAssetDimension"
+          :get-asset-attribution="previewAssetAttribution"
+          :is-asset-failed="(key) => previewFailures.has(key)"
+          :mark-asset-failed="(key) => previewFailures.add(key)"
+          :related-article-href="previewRelatedLink"
+          :enable-creative="noCreativePlayback"
+        />
+      </div>
     </section>
   </StudioShell>
 </template>

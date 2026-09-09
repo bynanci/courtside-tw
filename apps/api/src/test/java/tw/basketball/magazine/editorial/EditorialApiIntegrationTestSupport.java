@@ -82,6 +82,7 @@ public abstract class EditorialApiIntegrationTestSupport {
         applyMigration(dataSource, "/db/migration/V015__offline_withdrawal_manifest_version.sql");
         applyMigration(dataSource, "/db/migration/V016__editorial_contributors_and_identity_audit.sql");
         applyMigration(dataSource, "/db/migration/V017__asset_revocation_withdrawal_cursor.sql");
+        applyMigration(dataSource, "/db/migration/V018__editorial_issue_article_assignments.sql");
         jdbcTemplate = new JdbcTemplate(dataSource);
         applicationClock = new ApplicationClock(
                 Clock.fixed(Instant.parse("2026-08-10T00:00:00Z"), ZoneOffset.UTC)
@@ -184,6 +185,8 @@ public abstract class EditorialApiIntegrationTestSupport {
     }
 
     protected record CreatedArticle(UUID articleId, UUID revisionId, long version) {
+        public CreatedArticle {
+        }
     }
 
     protected CreatedArticle readCreatedArticle(String responseBody) throws IOException {

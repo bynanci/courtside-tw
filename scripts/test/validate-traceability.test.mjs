@@ -11873,3 +11873,701 @@ test("product browser addendum reader independently fetches both live authoritie
   )
   assert.equal(r.browser_addendum.body, productBrowserBody)
 })
+
+// Studio uses a separate pinned authority; fixture trust never enters runCli/validateTraceability.
+function makeStudioAuthorizationFixture({ push = false, draft = true } = {}) {
+  const context = makeProductRemediationFixture({ push, draft })
+  const config = {
+    ref: "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-6000000176",
+    recorded_at: "2026-09-09T04:00:00Z",
+    pr: 176,
+    branch: "fix/studio-completion",
+    base_sha: "b".repeat(40),
+    initial_seed: {
+      head_sha: "c".repeat(40),
+      tree_sha: "d".repeat(40),
+      changed_paths: [
+        ...traceabilityValidator.STUDIO_COMPLETION_AUTHORIZATION.initial_seed.changed_paths
+      ]
+    },
+    required_paths: [...traceabilityValidator.STUDIO_COMPLETION_AUTHORIZATION.required_paths],
+    optional_paths: []
+  }
+  const dispatch = {
+    schema_version: "courtside-studio-completion-owner-dispatch/v1",
+    decision: "DISPATCH_ACCEPTED",
+    repository: "bynanci/courtside-tw",
+    pr: config.pr,
+    branch: config.branch,
+    base_sha: config.base_sha,
+    initial_seed: structuredClone(config.initial_seed),
+    required_paths: [...config.required_paths],
+    optional_paths: []
+  }
+  const body =
+    "<!-- studio-completion:owner-dispatch:v1:start -->\n```json\n" +
+    JSON.stringify(dispatch) +
+    "\n```\n<!-- studio-completion:owner-dispatch:v1:end -->"
+  config.body_sha256 = createHash("sha256").update(body).digest("hex")
+  Object.assign(context.readback.authorization, {
+    html_url: config.ref,
+    body,
+    created_at: config.recorded_at,
+    updated_at: config.recorded_at
+  })
+  Object.assign(context.readback.pull_request, {
+    number: config.pr,
+    html_url: `https://github.com/bynanci/courtside-tw/pull/${config.pr}`,
+    merged_at: push ? "2026-09-09T12:00:00Z" : null
+  })
+  context.readback.pull_request.head.ref = config.branch
+  context.readback.pull_request.base.sha = config.base_sha
+  context.readback.protected_main.commit.sha = push ? context.head : config.base_sha
+  Object.assign(context.readback.candidate, {
+    seed_tree_sha: config.initial_seed.tree_sha,
+    seed_parent_shas: [config.base_sha],
+    seed_changed_paths: [...config.initial_seed.changed_paths],
+    first_amendment_parent_shas: [config.initial_seed.head_sha],
+    first_amendment_changed_paths: ["scripts/test/validate-traceability.test.mjs"],
+    changed_paths: [...config.required_paths],
+    history_paths: [...config.required_paths]
+  })
+  Object.assign(context.gitBinding, {
+    change_base_sha: config.base_sha,
+    head_parent_sha: config.base_sha,
+    head_parent_shas: [config.base_sha]
+  })
+  const eventPath = path.join(context.fixture.root, "studio-event.json")
+  fs.writeFileSync(
+    eventPath,
+    JSON.stringify(
+      push
+        ? {
+            repository: { full_name: "bynanci/courtside-tw" },
+            ref: "refs/heads/main",
+            before: config.base_sha,
+            after: context.head
+          }
+        : {
+            repository: { full_name: "bynanci/courtside-tw" },
+            number: config.pr,
+            pull_request: context.readback.pull_request
+          }
+    )
+  )
+  context.githubActionsContext = traceabilityValidator.inspectGitHubActionsContext({
+    environment: {
+      GITHUB_ACTIONS: "true",
+      GITHUB_REPOSITORY: "bynanci/courtside-tw",
+      GITHUB_EVENT_NAME: push ? "push" : "pull_request",
+      GITHUB_EVENT_PATH: eventPath,
+      GITHUB_SHA: push ? context.head : fixtureActionsMergeSha,
+      GITHUB_WORKFLOW: "CI",
+      GITHUB_JOB: "frontend-contract",
+      GITHUB_RUN_ID: fixtureActionsRunId,
+      GITHUB_RUN_NUMBER: fixtureActionsRunNumber,
+      GITHUB_RUN_ATTEMPT: "1",
+      GITHUB_REF: push ? "refs/heads/main" : `refs/pull/${config.pr}/merge`,
+      GITHUB_REF_NAME: push ? "main" : `${config.pr}/merge`,
+      GITHUB_BASE_REF: push ? "" : "main",
+      GITHUB_HEAD_REF: push ? "" : config.branch
+    },
+    gitBinding: context.gitBinding
+  })
+  return {
+    config,
+    context,
+    options: {
+      readback: context.readback,
+      gitBinding: context.gitBinding,
+      changedPaths: [...config.required_paths],
+      changeBaseSha: config.base_sha,
+      boundedScopeActive: false,
+      githubActionsContext: context.githubActionsContext,
+      requireExactHeadEvidence: true
+    }
+  }
+}
+
+for (const state of ["draft", "ready", "squash-push"]) {
+  test(`Studio completion separate gate accepts authenticated exact ${state}`, () => {
+    const { config, options } = makeStudioAuthorizationFixture({
+      push: state === "squash-push",
+      draft: state === "draft"
+    })
+    const errors = []
+    assert.equal(
+      traceabilityValidator
+        .createStudioCompletionAuthorizationGate(config)
+        .validate({ ...options, errors }),
+      true,
+      errors.join("\n")
+    )
+  })
+}
+
+const studioNegativeCases = [
+  [
+    "implementation before traceability RED",
+    (o) => {
+      o.readback.candidate.first_amendment_changed_paths = [
+        "apps/web/app/features/studio/studio-api.ts"
+      ]
+    }
+  ],
+  [
+    "detached traceability RED",
+    (o) => {
+      o.readback.candidate.first_amendment_parent_shas = ["f".repeat(40)]
+    }
+  ],
+  [
+    "missing owner",
+    (o) => {
+      o.readback.authorization = null
+    }
+  ],
+  [
+    "unavailable API",
+    (o) => {
+      o.readback.status = "UNAVAILABLE"
+    }
+  ],
+  [
+    "wrong owner",
+    (o) => {
+      o.readback.authorization.user_login = "contributor"
+    }
+  ],
+  [
+    "wrong owner association",
+    (o) => {
+      o.readback.authorization.author_association = "MEMBER"
+    }
+  ],
+  [
+    "edited comment",
+    (o) => {
+      o.readback.authorization.updated_at = "2026-09-10T04:00:00Z"
+    }
+  ],
+  [
+    "changed body",
+    (o) => {
+      o.readback.authorization.body += " "
+    }
+  ],
+  [
+    "wrong immutable ref",
+    (o) => {
+      o.readback.authorization.html_url += "0"
+    }
+  ],
+  [
+    "wrong issue",
+    (o) => {
+      o.readback.authorization.issue_url += "0"
+    }
+  ],
+  [
+    "stale main",
+    (o) => {
+      o.readback.protected_main.commit.sha = "f".repeat(40)
+    }
+  ],
+  [
+    "unprotected main",
+    (o) => {
+      o.readback.protected_main.protected = false
+    }
+  ],
+  [
+    "other PR replay",
+    (o) => {
+      o.readback.pull_request.number = 175
+    }
+  ],
+  [
+    "other branch",
+    (o) => {
+      o.readback.pull_request.head.ref = "fix/unrelated"
+    }
+  ],
+  [
+    "fork head",
+    (o) => {
+      o.readback.pull_request.head.repo.full_name = "other/courtside-tw"
+    }
+  ],
+  [
+    "head drift",
+    (o) => {
+      o.readback.pull_request.head.sha = "f".repeat(40)
+    }
+  ],
+  [
+    "tree drift",
+    (o) => {
+      o.readback.candidate.tree_sha = "f".repeat(40)
+    }
+  ],
+  [
+    "base drift",
+    (o) => {
+      o.changeBaseSha = "f".repeat(40)
+    }
+  ],
+  [
+    "seed drift",
+    (o) => {
+      o.readback.candidate.seed_tree_sha = "f".repeat(40)
+    }
+  ],
+  [
+    "seed ancestry",
+    (o) => {
+      o.readback.candidate.seed_ancestor = false
+    }
+  ],
+  [
+    "predated implementation",
+    (o) => {
+      o.readback.candidate.commits_postdate_authorization = false
+    }
+  ],
+  [
+    "merged history",
+    (o) => {
+      o.readback.candidate.merge_commit_count = 1
+    }
+  ],
+  [
+    "missing required file",
+    (o) => {
+      o.changedPaths.pop()
+    }
+  ],
+  [
+    "extra file",
+    (o) => {
+      o.changedPaths.push("apps/web/server/unrelated.ts")
+    }
+  ],
+  [
+    "transient scope expansion",
+    (o) => {
+      o.readback.candidate.history_paths.push("README.md")
+    }
+  ],
+  [
+    "frozen bytes changed",
+    (o) => {
+      o.readback.candidate.frozen_blobs_match = false
+    }
+  ],
+  [
+    "symlink or deleted file",
+    (o) => {
+      o.readback.candidate.allowed_path_modes_match = false
+    }
+  ],
+  [
+    "dirty tree",
+    (o) => {
+      o.gitBinding.status = "DIRTY"
+    }
+  ],
+  [
+    "nonexact run",
+    (o) => {
+      o.requireExactHeadEvidence = false
+    }
+  ],
+  [
+    "forged Actions metadata",
+    (o) => {
+      o.githubActionsContext = JSON.parse(JSON.stringify(o.githubActionsContext))
+    }
+  ]
+]
+for (const [name, mutate] of studioNegativeCases) {
+  test(`Studio completion separate gate rejects ${name}`, () => {
+    const { config, options } = makeStudioAuthorizationFixture()
+    mutate(options)
+    const errors = []
+    assert.equal(
+      traceabilityValidator
+        .createStudioCompletionAuthorizationGate(config)
+        .validate({ ...options, errors }),
+      false
+    )
+    assert.match(errors.join("\n"), /Studio completion/u)
+  })
+}
+
+for (const mutate of [
+  (o) => {
+    o.gitBinding.head_parent_count = 2
+  },
+  (o) => {
+    o.gitBinding.head_parent_shas = ["f".repeat(40)]
+  },
+  (o) => {
+    o.readback.pull_request.merge_commit_sha = "f".repeat(40)
+  },
+  (o) => {
+    o.readback.pull_request.merged_at = "2026-09-09T03:00:00Z"
+  }
+]) {
+  test("Studio completion separate gate rejects a mismatched squash push", () => {
+    const { config, options } = makeStudioAuthorizationFixture({ push: true })
+    mutate(options)
+    assert.equal(
+      traceabilityValidator
+        .createStudioCompletionAuthorizationGate(config)
+        .validate({ ...options, errors: [] }),
+      false
+    )
+  })
+}
+
+test("Studio completion unbound descriptor cannot accept fixture authority or access GitHub", () => {
+  const { config, options } = makeStudioAuthorizationFixture()
+  const gate = traceabilityValidator.createStudioCompletionAuthorizationGate({
+    ...traceabilityValidator.STUDIO_COMPLETION_AUTHORIZATION,
+    ref: null,
+    body_sha256: null,
+    recorded_at: null,
+    pr: null,
+    base_sha: null
+  })
+  const errors = []
+  assert.equal(gate.validate({ ...options, errors }), false)
+  assert.match(errors.join("\n"), /unbound/u)
+  let calls = 0
+  const readback = gate.inspect(options, {
+    inspectComment() {
+      calls++
+      throw new Error("must not fetch")
+    }
+  })
+  assert.equal(readback.status, "UNAVAILABLE")
+  assert.equal(calls, 0)
+  assert.equal(gate.requested([], { head_ref: config.branch }), true)
+})
+
+test("Studio completion Git inspector proves actual seed, history, frozen bytes and regular files", () => {
+  const { config } = makeStudioAuthorizationFixture()
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "studio-authorization-git-"))
+  const git = (...args) =>
+    execFileSync("git", args, {
+      cwd: root,
+      encoding: "utf8",
+      env: {
+        ...process.env,
+        GIT_AUTHOR_DATE: "2026-09-09T12:01:00+08:00",
+        GIT_COMMITTER_DATE: "2026-09-09T12:01:00+08:00"
+      },
+      stdio: ["ignore", "pipe", "pipe"]
+    }).trim()
+  const write = (p, value) => {
+    fs.mkdirSync(path.dirname(path.join(root, p)), { recursive: true })
+    fs.writeFileSync(path.join(root, p), value)
+  }
+  const commit = (message) => {
+    git("add", "--all")
+    git("commit", "--quiet", "-m", message)
+    return git("rev-parse", "HEAD")
+  }
+  try {
+    git("init", "--quiet")
+    git("config", "user.name", "Controlled fixture")
+    git("config", "user.email", "fixture@example.test")
+    for (const p of [
+      ...config.required_paths,
+      "README.md",
+      "specs/fixture.md",
+      ".loop/evidence/t085-frozen.json"
+    ])
+      write(p, "base\n")
+    config.base_sha = commit("controlled base")
+    assert.ok(config.initial_seed.changed_paths.includes("apps/web/server/api/studio/[...path].ts"))
+    for (const p of config.initial_seed.changed_paths) write(p, "Studio seed\n")
+    config.initial_seed.head_sha = commit("accepted controlled seed")
+    config.initial_seed.tree_sha = git("rev-parse", "HEAD^{tree}")
+    write("scripts/test/validate-traceability.test.mjs", "RED fixture\n")
+    commit("controlled RED")
+    write("scripts/validate-traceability.mjs", "GREEN fixture\n")
+    const head = commit("controlled GREEN")
+    const gate = traceabilityValidator.createStudioCompletionAuthorizationGate(config)
+    const candidate = gate.inspectCandidate(root, head)
+    assert.equal(candidate.head, head)
+    assert.match(
+      git("log", "--format=%aI%n%cI", `${config.initial_seed.head_sha}..${head}`),
+      /[+]08:00/u
+    )
+    assert.equal(
+      candidate.commits_postdate_authorization,
+      true,
+      "non-UTC author and committer timestamps"
+    )
+    assert.deepEqual(candidate.first_amendment_parent_shas, [config.initial_seed.head_sha])
+    assert.deepEqual(candidate.first_amendment_changed_paths, [
+      "scripts/test/validate-traceability.test.mjs"
+    ])
+    assert.equal(candidate.commit_count, 2)
+    assert.equal(candidate.merge_commit_count, 0)
+    for (const key of [
+      "base_ancestor",
+      "seed_ancestor",
+      "commits_postdate_authorization",
+      "frozen_blobs_match",
+      "allowed_path_modes_match"
+    ]) {
+      assert.equal(candidate[key], true, key)
+    }
+    assert.deepEqual(candidate.seed_changed_paths, config.initial_seed.changed_paths)
+    assert.deepEqual(candidate.history_paths, [...config.required_paths].sort())
+    write("apps/web/transient-unrelated.ts", "not authorized\n")
+    commit("unauthorized historical write")
+    fs.unlinkSync(path.join(root, "apps/web/transient-unrelated.ts"))
+    const reverted = gate.inspectCandidate(root, commit("remove unrelated path"))
+    assert.deepEqual(reverted.changed_paths, candidate.changed_paths)
+    assert.ok(reverted.history_paths.includes("apps/web/transient-unrelated.ts"))
+    write("README.md", "changed frozen receipt\n")
+    assert.equal(
+      gate.inspectCandidate(root, commit("mutate frozen file")).frozen_blobs_match,
+      false
+    )
+    fs.unlinkSync(path.join(root, config.required_paths[0]))
+    fs.symlinkSync("../../../../README.md", path.join(root, config.required_paths[0]))
+    assert.equal(
+      gate.inspectCandidate(root, commit("symlink required file")).allowed_path_modes_match,
+      false
+    )
+    fs.unlinkSync(path.join(root, config.required_paths[0]))
+    assert.equal(
+      gate.inspectCandidate(root, commit("delete required file")).allowed_path_modes_match,
+      false
+    )
+    const merge = git(
+      "commit-tree",
+      git("rev-parse", "HEAD^{tree}"),
+      "-p",
+      git("rev-parse", "HEAD"),
+      "-p",
+      config.base_sha,
+      "-m",
+      "controlled merge"
+    )
+    assert.equal(gate.inspectCandidate(root, merge).merge_commit_count, 1)
+    assert.equal(gate.inspectCandidate(root, "--all"), null)
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true })
+  }
+})
+
+test("Studio completion API read-back selects only the sealed PR/comment and sanitizes failure", () => {
+  const { config, options } = makeStudioAuthorizationFixture()
+  const gate = traceabilityValidator.createStudioCompletionAuthorizationGate(config)
+  const calls = []
+  const adapters = {
+    inspectComment(ref, opts) {
+      calls.push("comment")
+      assert.equal(ref, config.ref)
+      assert.equal(opts.isAuthorizedRef(ref), true)
+      assert.equal(opts.isAuthorizedRef(ref + "0"), false)
+      return options.readback.authorization
+    },
+    fetchJson(url) {
+      calls.push(url)
+      return url.endsWith("/branches/main")
+        ? options.readback.protected_main
+        : options.readback.pull_request
+    },
+    candidateInspector(root, head) {
+      assert.equal(root, "controlled-root")
+      assert.equal(head, options.readback.pull_request.head.sha)
+      return options.readback.candidate
+    }
+  }
+  const readback = gate.inspect("controlled-root", adapters)
+  assert.deepEqual(calls, [
+    "comment",
+    "https://api.github.com/repos/bynanci/courtside-tw/pulls/176",
+    "https://api.github.com/repos/bynanci/courtside-tw/branches/main"
+  ])
+  assert.equal(gate.validate({ ...options, readback, errors: [] }), true)
+  for (const failedAdapter of ["inspectComment", "fetchJson", "candidateInspector"]) {
+    const failure = gate.inspect("controlled-root", {
+      ...adapters,
+      [failedAdapter]() {
+        throw new Error("secret-token-must-not-leak")
+      }
+    })
+    assert.equal(failure.status, "UNAVAILABLE")
+    assert.doesNotMatch(JSON.stringify(failure), /secret-token/u)
+  }
+})
+
+test("Studio completion refuses malformed pinned JSON and mismatch between seal and dispatch", () => {
+  for (const replace of [
+    (body) => body.replace('"decision":', '"decision":"DISPATCH_ACCEPTED","decision":'),
+    (body) => body.replace('"base_sha":"' + "b".repeat(40), '"base_sha":"' + "e".repeat(40)),
+    (body) => body + "\n<!-- studio-completion:owner-dispatch:v1:start -->"
+  ]) {
+    const { config, options } = makeStudioAuthorizationFixture()
+    options.readback.authorization.body = replace(options.readback.authorization.body)
+    config.body_sha256 = createHash("sha256")
+      .update(options.readback.authorization.body)
+      .digest("hex")
+    assert.equal(
+      traceabilityValidator
+        .createStudioCompletionAuthorizationGate(config)
+        .validate({ ...options, errors: [] }),
+      false
+    )
+  }
+})
+
+test("Studio completion singleton never accepts a caller-injected factory configuration", () => {
+  const { config, context, options } = makeStudioAuthorizationFixture()
+  context.fixture.changedPaths = [...config.required_paths]
+  writeExactHeadForActionsContext(context.fixture.root, options.githubActionsContext)
+  const report = runCompletedFixture(context.fixture, {
+    currentHead: context.head,
+    evaluatedHeadCommittedAt: "2026-09-09T12:00:00Z",
+    ...options,
+    studioCompletionAuthorizationReadback: context.readback,
+    studioCompletionConfiguration: config
+  })
+  assert.equal(report.status, "FAIL")
+  assert.equal(report.source.studio_completion_authorization_readback.accepted, false)
+  assert.match(report.errors.join("\n"), /Studio completion authorization/u)
+})
+
+test("Studio completion sealed singleton reaches full validator for draft, ready and same-tree squash", async () => {
+  for (const state of ["draft", "ready", "squash-push"]) {
+    const push = state === "squash-push"
+    const { config, context, options } = makeStudioAuthorizationFixture({
+      push,
+      draft: state === "draft"
+    })
+    const temporary = fs.mkdtempSync(path.join(os.tmpdir(), "studio-completion-sealed-module-"))
+    try {
+      fs.symlinkSync(
+        path.join(repositoryRoot, "node_modules"),
+        path.join(temporary, "node_modules"),
+        "dir"
+      )
+      const source = fs.readFileSync(
+        path.join(repositoryRoot, "scripts/validate-traceability.mjs"),
+        "utf8"
+      )
+      const start = source.indexOf("export const STUDIO_COMPLETION_AUTHORIZATION = Object.freeze({")
+      const end = source.indexOf("\n/** A separate closed authority.", start)
+      assert.ok(start > 0 && end > start)
+      // The controlled module substitutes only the descriptor. Production has no config input.
+      const fixtureModule = path.join(temporary, "validator.mjs")
+      fs.writeFileSync(
+        fixtureModule,
+        source.slice(0, start) +
+          "export const STUDIO_COMPLETION_AUTHORIZATION = Object.freeze(" +
+          JSON.stringify(config) +
+          ")\n" +
+          source.slice(end)
+      )
+      const { pathToFileURL } = await import("node:url")
+      const validator = await import(pathToFileURL(fixtureModule).href)
+      const actions = validator.inspectGitHubActionsContext({
+        environment: {
+          GITHUB_ACTIONS: "true",
+          GITHUB_REPOSITORY: "bynanci/courtside-tw",
+          GITHUB_EVENT_NAME: push ? "push" : "pull_request",
+          GITHUB_EVENT_PATH: path.join(context.fixture.root, "studio-event.json"),
+          GITHUB_SHA: push ? context.head : fixtureActionsMergeSha,
+          GITHUB_WORKFLOW: "CI",
+          GITHUB_JOB: "frontend-contract",
+          GITHUB_RUN_ID: fixtureActionsRunId,
+          GITHUB_RUN_NUMBER: fixtureActionsRunNumber,
+          GITHUB_RUN_ATTEMPT: "1",
+          GITHUB_REF: push ? "refs/heads/main" : `refs/pull/${config.pr}/merge`,
+          GITHUB_REF_NAME: push ? "main" : `${config.pr}/merge`,
+          GITHUB_BASE_REF: push ? "" : "main",
+          GITHUB_HEAD_REF: push ? "" : config.branch
+        },
+        gitBinding: context.gitBinding
+      })
+      writeExactHeadForActionsContext(context.fixture.root, actions)
+      const fixture = context.fixture
+      const validate = (overrides = {}) =>
+        validator.validateTraceability({
+          root: fixture.root,
+          currentHead: context.head,
+          evaluatedHeadCommittedAt: "2026-09-09T12:00:00Z",
+          boundedScopeActive: false,
+          changeBaseTasksText: fixture.changeBaseTasksText,
+          changeBaseTraceabilityText: fixture.changeBaseTraceabilityText,
+          changeBaseCompletionReceiptText: fixture.changeBaseCompletionReceiptText,
+          acceptedTraceabilitySha256: fixture.acceptedTraceabilitySha256,
+          acceptedPendingTasksSha256: fixture.acceptedPendingTasksSha256,
+          acceptedCompletedTasksSha256: fixture.acceptedCompletedTasksSha256,
+          ...options,
+          githubActionsContext: actions,
+          studioCompletionAuthorizationReadback: context.readback,
+          ...overrides
+        })
+      const report = validate()
+      assert.equal(
+        report.source.studio_completion_authorization_readback.accepted,
+        true,
+        report.errors.join("\n")
+      )
+      assert.equal(report.status, "PASS", state + "\n" + report.errors.join("\n"))
+      assert.deepEqual(report.scope_validation.unauthorized_paths, [])
+      if (state === "draft") {
+        for (const failure of ["forty-second path", "wrong PR", "missing OWNER"]) {
+          const readback = structuredClone(context.readback)
+          const changedPaths = [...options.changedPaths]
+          if (failure === "forty-second path") changedPaths.push(".github/workflows/ci.yml")
+          if (failure === "wrong PR") readback.pull_request.number = 174
+          if (failure === "missing OWNER") readback.authorization = null
+          const rejected = validate({
+            changedPaths,
+            studioCompletionAuthorizationReadback: readback
+          })
+          assert.equal(rejected.status, "FAIL", failure)
+          assert.equal(
+            rejected.source.studio_completion_authorization_readback.accepted,
+            false,
+            failure
+          )
+          assert.match(rejected.errors.join("\n"), /Studio completion authorization/u)
+        }
+      }
+    } finally {
+      fs.rmSync(temporary, { recursive: true, force: true })
+    }
+  }
+})
+
+for (const unsafePath of [
+  "apps/web/../escape.ts",
+  "apps/web/server/../../escape.ts",
+  "/apps/web/server/escape.ts",
+  "apps/web/server\\escape.ts"
+]) {
+  test(`Studio completion path guard rejects unsafe path ${unsafePath}`, () => {
+    const { config, options } = makeStudioAuthorizationFixture()
+    config.optional_paths.push(unsafePath)
+    const errors = []
+    assert.equal(
+      traceabilityValidator.createStudioCompletionAuthorizationGate(config).validate({
+        ...options,
+        errors
+      }),
+      false
+    )
+    assert.match(errors.join("\n"), /is unbound/u)
+  })
+}

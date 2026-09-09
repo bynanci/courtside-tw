@@ -29,6 +29,13 @@ public interface EditorialIssueRepository {
 
     List<SectionRecord> listSections(UUID issueId);
 
+    List<IssueArticleRecord> listArticles(UUID issueId);
+
+    boolean lockPublishedArticleRevision(UUID articleId, UUID revisionId, Instant checkedAt, boolean requireCurrentRevision);
+
+    void replaceArticles(UUID issueId, List<IssueArticleAssignment> assignments);
+
+
     void shiftSectionsForInsert(UUID issueId, int position, int offset);
 
     SectionRecord insertSection(UUID issueId, String title, int position);
@@ -162,6 +169,11 @@ public interface EditorialIssueRepository {
 
     record SectionPosition(UUID sectionId, int position) {
     }
+
+    record IssueArticleAssignment(UUID articleId, UUID revisionId, UUID sectionId, int position) { }
+
+    record IssueArticleRecord(UUID articleId, UUID revisionId, UUID sectionId, int position,
+            String title, String slug, Integer revisionNumber) { }
 
     record PublicationJobRecord(
             UUID jobId,

@@ -7,6 +7,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -209,6 +210,235 @@ final class EditorialIssueApiIT extends EditorialApiIntegrationTestSupport {
                 "SELECT count(*) FROM audit_event WHERE target_type = 'ISSUE' AND target_id = ? AND action = 'ISSUE_PUBLISHED'",
                 Integer.class,
                 issueId));
+    }
+
+    @Test
+    void editorAssignsTwoPublishedArticlesAndReordersThroughHttpWithExactReplay() throws Exception {
+        Authentication editor = actor("toc-editor", RoleCode.EDITOR);
+        Authentication publisher = actor("toc-publisher", RoleCode.PUBLISHER);
+        UUID issue = createIssue(editor, "toc-two-articles");
+        CreatedArticle first = createArticle(editor, "toc-first");
+        CreatedArticle second = createArticle(editor, "toc-second");
+        publishArticle(editor, publisher, first);
+        publishArticle(editor, publisher, second);
+        UUID section = createTocSection(editor, issue);
+        String path = "/api/v1/editor/issues/" + issue + "/articles";
+        String initial = tocBody(section, List.of(first, second));
+        mockMvc.perform(put(path).principal(editor).contentType(MediaType.APPLICATION_JSON)
+                        .header("If-Match", "\"2\"").header("Idempotency-Key", "toc-initial").content(initial))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.issueVersion").value(3))
+                .andExpect(jsonPath("$.articles[0].articleId").value(first.articleId().toString()))
+                .andExpect(jsonPath("$.articles[1].articleId").value(second.articleId().toString()));
+        String reordered = tocBody(section, List.of(second, first));
+        String response = mockMvc.perform(put(path).principal(editor).contentType(MediaType.APPLICATION_JSON)
+                        .header("If-Match", "\"3\"").header("Idempotency-Key", "toc-reordered").content(reordered))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.issueVersion").value(4))
+                .andReturn().getResponse().getContentAsString();
+        for (int retry = 0; retry < 10; retry++) {
+            assertEquals(response, mockMvc.perform(put(path).principal(editor).contentType(MediaType.APPLICATION_JSON)
+                            .header("If-Match", "\"3\"").header("Idempotency-Key", "toc-reordered").content(reordered))
+                    .andExpect(status().isOk()).andReturn().getResponse().getContentAsString());
+        }
+        for (String base : List.of("editor", "publisher")) {
+            mockMvc.perform(get("/api/v1/" + base + "/issues/" + issue + "/articles")
+                            .principal(base.equals("editor") ? editor : publisher))
+                    .andExpect(status().isOk()).andExpect(jsonPath("$.sections[0].articleCount").value(2))
+                    .andExpect(jsonPath("$.articles[0].slug").value("toc-second"))
+                    .andExpect(jsonPath("$.articles[1].position").value(2));
+        }
+        mockMvc.perform(put(path).principal(editor).contentType(MediaType.APPLICATION_JSON)
+                        .header("If-Match", "\"3\"").header("Idempotency-Key", "toc-stale").content(initial))
+                .andExpect(status().isConflict());
+        assertEquals(2, jdbcTemplate.queryForObject("SELECT count(*) FROM audit_event WHERE target_id = ? AND action = 'ISSUE_ARTICLES_REPLACED'", Integer.class, issue));
+        reviewIssue(editor, publisher, issue, 4);
+        issueCommand(publisher, issue, "publish", 6, "toc-publish").andExpect(status().isAccepted());
+        var snapshot = JSON.readTree(issueSnapshot(issue));
+        assertEquals(second.articleId().toString(), snapshot.path("sections").get(0).path("articles").get(0).path("articleId").asString());
+        assertEquals(first.revisionId().toString(), snapshot.path("sections").get(0).path("articles").get(1).path("revisionId").asString());
+        mockMvc.perform(put(path).principal(editor).contentType(MediaType.APPLICATION_JSON)
+                        .header("If-Match", "\"7\"").header("Idempotency-Key", "toc-after-publication").content(initial))
+                .andExpect(status().isConflict());
+        assertThrows(DataAccessException.class, () -> jdbcTemplate.update("DELETE FROM issue_article WHERE issue_id = ?", issue));
+    }
+
+    @Test
+    void tocRejectsUnpublishedWrongRevisionDuplicateAndForeignSectionWithoutPartialWrites() throws Exception {
+        Authentication editor = actor("toc-invalid-editor", RoleCode.EDITOR);
+        Authentication publisher = actor("toc-invalid-publisher", RoleCode.PUBLISHER);
+        UUID issue = createIssue(editor, "toc-invalid");
+        CreatedArticle article = createArticle(editor, "toc-unpublished");
+        UUID section = createTocSection(editor, issue);
+        String path = "/api/v1/editor/issues/" + issue + "/articles";
+        mockMvc.perform(put(path).principal(editor).contentType(MediaType.APPLICATION_JSON)
+                        .header("If-Match", "\"2\"").header("Idempotency-Key", "toc-unpublished").content(tocBody(section, List.of(article))))
+                .andExpect(status().isConflict());
+        publishArticle(editor, publisher, article);
+        mockMvc.perform(put(path).principal(editor).contentType(MediaType.APPLICATION_JSON)
+                        .header("If-Match", "\"2\"").header("Idempotency-Key", "toc-duplicate").content(tocBody(section, List.of(article, article))))
+                .andExpect(status().isBadRequest());
+        CreatedArticle wrongRevision = new CreatedArticle(article.articleId(), UUID.randomUUID(), 1);
+        mockMvc.perform(put(path).principal(editor).contentType(MediaType.APPLICATION_JSON)
+                        .header("If-Match", "\"2\"").header("Idempotency-Key", "toc-wrong-revision").content(tocBody(section, List.of(wrongRevision))))
+                .andExpect(status().isConflict());
+        mockMvc.perform(put(path).principal(editor).contentType(MediaType.APPLICATION_JSON)
+                        .header("If-Match", "\"2\"").header("Idempotency-Key", "toc-foreign-section").content(tocBody(UUID.randomUUID(), List.of(article))))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(put(path).principal(publisher).contentType(MediaType.APPLICATION_JSON)
+                        .header("If-Match", "\"2\"").header("Idempotency-Key", "toc-role-denied").content(tocBody(section, List.of(article))))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/v1/publisher/issues/" + issue + "/articles").principal(editor)).andExpect(status().isForbidden());
+        assertEquals(0, jdbcTemplate.queryForObject("SELECT count(*) FROM issue_article WHERE issue_id = ?", Integer.class, issue));
+        assertEquals(2L, jdbcTemplate.queryForObject("SELECT version FROM publication_issue WHERE id = ?", Long.class, issue));
+    }
+
+    @Test
+    void selectedRevisionRemainsPinnedWhenTheArticlePublishesANewerRevision() throws Exception {
+        Authentication editor = actor("toc-pinned-editor", RoleCode.EDITOR);
+        Authentication publisher = actor("toc-pinned-publisher", RoleCode.PUBLISHER);
+        UUID issue = createIssue(editor, "toc-pinned");
+        CreatedArticle first = createArticle(editor, "toc-pinned-article");
+        publishArticle(editor, publisher, first);
+        UUID section = createTocSection(editor, issue);
+        String path = "/api/v1/editor/issues/" + issue + "/articles";
+        String assignment = tocBody(section, List.of(first));
+        mockMvc.perform(put(path).principal(editor).contentType(MediaType.APPLICATION_JSON)
+                        .header("If-Match", "\"2\"").header("Idempotency-Key", "toc-pinned-initial").content(assignment))
+                .andExpect(status().isOk());
+
+        // Arrange an independent later article publication to isolate pointer drift
+        // from issue commands. The reviewed TOC must retain the editor's selection.
+        arrangeLaterArticlePublication(first);
+        mockMvc.perform(get(path).principal(editor))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.articles[0].revisionId").value(first.revisionId().toString()))
+                .andExpect(jsonPath("$.articles[0].revisionNumber").value(1));
+        // Retaining the already selected revision must not force an issue to adopt r2.
+        mockMvc.perform(put(path).principal(editor).contentType(MediaType.APPLICATION_JSON)
+                        .header("If-Match", "\"3\"").header("Idempotency-Key", "toc-pinned-retain").content(assignment))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.issueVersion").value(4));
+        reviewIssue(editor, publisher, issue, 4);
+        issueCommand(publisher, issue, "publish", 6, "toc-pinned-publish").andExpect(status().isAccepted());
+        var snapshotArticle = JSON.readTree(issueSnapshot(issue)).path("sections").get(0).path("articles").get(0);
+        assertEquals(first.revisionId().toString(), snapshotArticle.path("revisionId").asString());
+        assertEquals(1, snapshotArticle.path("revisionNumber").asInt());
+        assertEquals(first.revisionId(), jdbcTemplate.queryForObject(
+                "SELECT revision_id FROM issue_article WHERE issue_id = ?", UUID.class, issue));
+    }
+
+    @Test
+    void retainedPinsAllowReorderAdditionAndRemovalButWithdrawnContentStillBlocks() throws Exception {
+        Authentication editor = actor("toc-retained-editor", RoleCode.EDITOR);
+        Authentication publisher = actor("toc-retained-publisher", RoleCode.PUBLISHER);
+        UUID issue = createIssue(editor, "toc-retained");
+        CreatedArticle first = createArticle(editor, "toc-retained-first");
+        CreatedArticle second = createArticle(editor, "toc-retained-second");
+        CreatedArticle third = createArticle(editor, "toc-retained-third");
+        for (CreatedArticle article : List.of(first, second, third)) {
+            publishArticle(editor, publisher, article);
+        }
+        UUID section = createTocSection(editor, issue);
+        String path = "/api/v1/editor/issues/" + issue + "/articles";
+        mockMvc.perform(put(path).principal(editor).contentType(MediaType.APPLICATION_JSON)
+                        .header("If-Match", "\"2\"").header("Idempotency-Key", "toc-retained-initial")
+                        .content(tocBody(section, List.of(first, second))))
+                .andExpect(status().isOk());
+        arrangeLaterArticlePublication(first);
+        arrangeLaterArticlePublication(second);
+        // Both existing selections remain r1 while the newest pointers are r2.
+        mockMvc.perform(put(path).principal(editor).contentType(MediaType.APPLICATION_JSON)
+                        .header("If-Match", "\"3\"").header("Idempotency-Key", "toc-retained-reorder-add")
+                        .content(tocBody(section, List.of(second, first, third))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.issueVersion").value(4))
+                .andExpect(jsonPath("$.articles[0].revisionId").value(second.revisionId().toString()))
+                .andExpect(jsonPath("$.articles[1].revisionId").value(first.revisionId().toString()));
+        mockMvc.perform(put(path).principal(editor).contentType(MediaType.APPLICATION_JSON)
+                        .header("If-Match", "\"4\"").header("Idempotency-Key", "toc-retained-remove-one")
+                        .content(tocBody(section, List.of(second, third))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.issueVersion").value(5));
+        // Once removed, an old revision is a new selection and must be rejected.
+        mockMvc.perform(put(path).principal(editor).contentType(MediaType.APPLICATION_JSON)
+                        .header("If-Match", "\"5\"").header("Idempotency-Key", "toc-retained-readd-old")
+                        .content(tocBody(section, List.of(second, third, first))))
+                .andExpect(status().isConflict());
+        jdbcTemplate.update("UPDATE article_revision SET state = 'WITHDRAWN' WHERE id = ?", second.revisionId());
+        mockMvc.perform(put(path).principal(editor).contentType(MediaType.APPLICATION_JSON)
+                        .header("If-Match", "\"5\"").header("Idempotency-Key", "toc-retained-withdrawn-revision")
+                        .content(tocBody(section, List.of(second, third))))
+                .andExpect(status().isConflict());
+        jdbcTemplate.update("UPDATE article_revision SET state = 'PUBLISHED' WHERE id = ?", second.revisionId());
+        jdbcTemplate.update("UPDATE article SET state = 'WITHDRAWN' WHERE id = ?", second.articleId());
+        mockMvc.perform(put(path).principal(editor).contentType(MediaType.APPLICATION_JSON)
+                        .header("If-Match", "\"5\"").header("Idempotency-Key", "toc-retained-withdrawn-article")
+                        .content(tocBody(section, List.of(second, third))))
+                .andExpect(status().isConflict());
+        assertEquals(5L, jdbcTemplate.queryForObject("SELECT version FROM publication_issue WHERE id = ?", Long.class, issue));
+        assertEquals(2, jdbcTemplate.queryForObject("SELECT count(*) FROM issue_article WHERE issue_id = ?", Integer.class, issue));
+        // Removing withdrawn content is the recovery path; no invalid pin is retained.
+        mockMvc.perform(put(path).principal(editor).contentType(MediaType.APPLICATION_JSON)
+                        .header("If-Match", "\"5\"").header("Idempotency-Key", "toc-retained-remove-withdrawn")
+                        .content(tocBody(section, List.of(third))))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.issueVersion").value(6));
+    }
+
+    @Test
+    void tocValidatesOrderBeforeWritingAndSupportsAtomicRemoval() throws Exception {
+        Authentication editor = actor("toc-order-editor", RoleCode.EDITOR);
+        Authentication publisher = actor("toc-order-publisher", RoleCode.PUBLISHER);
+        UUID issue = createIssue(editor, "toc-order");
+        CreatedArticle first = createArticle(editor, "toc-order-first");
+        CreatedArticle second = createArticle(editor, "toc-order-second");
+        publishArticle(editor, publisher, first);
+        publishArticle(editor, publisher, second);
+        UUID section = createTocSection(editor, issue);
+        String path = "/api/v1/editor/issues/" + issue + "/articles";
+        String initial = tocBody(section, List.of(first, second));
+        mockMvc.perform(put(path).principal(editor).contentType(MediaType.APPLICATION_JSON)
+                        .header("If-Match", "\"2\"").header("Idempotency-Key", "toc-order-initial").content(initial))
+                .andExpect(status().isOk());
+        for (String invalid : List.of(
+                initial.replace("\"position\":2", "\"position\":1"),
+                initial.replace("\"position\":2", "\"position\":3"),
+                initial.replace("\"position\":2", "\"position\":18446744073709551618"),
+                initial.replace("\"position\":2", "\"position\":2,\"unexpected\":true"),
+                initial.substring(0, initial.length() - 1) + ",\"unexpected\":true}")) {
+            mockMvc.perform(put(path).principal(editor).contentType(MediaType.APPLICATION_JSON)
+                            .header("If-Match", "\"3\"").header("Idempotency-Key", "toc-order-invalid").content(invalid))
+                    .andExpect(status().isBadRequest());
+        }
+        assertEquals(2, jdbcTemplate.queryForObject("SELECT count(*) FROM issue_article WHERE issue_id = ?", Integer.class, issue));
+        assertEquals(3L, jdbcTemplate.queryForObject("SELECT version FROM publication_issue WHERE id = ?", Long.class, issue));
+        mockMvc.perform(put(path).principal(editor).contentType(MediaType.APPLICATION_JSON)
+                        .header("If-Match", "\"3\"").header("Idempotency-Key", "toc-order-initial").content(initial))
+                .andExpect(status().isConflict());
+        mockMvc.perform(put(path).principal(editor).contentType(MediaType.APPLICATION_JSON)
+                        .header("If-Match", "\"3\"").header("Idempotency-Key", "toc-order-remove").content("{\"articles\":[]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.issueVersion").value(4))
+                .andExpect(jsonPath("$.sections[0].articleCount").value(0))
+                .andExpect(jsonPath("$.articles").isEmpty());
+        assertEquals(0, jdbcTemplate.queryForObject("SELECT count(*) FROM issue_article WHERE issue_id = ?", Integer.class, issue));
+    }
+
+    @Test
+    void legacyAssignmentWithoutARevisionFailsPublicationClosed() throws Exception {
+        Authentication editor = actor("toc-legacy-editor", RoleCode.EDITOR);
+        Authentication publisher = actor("toc-legacy-publisher", RoleCode.PUBLISHER);
+        UUID issue = createIssue(editor, "toc-legacy");
+        CreatedArticle article = createArticle(editor, "toc-legacy-article");
+        publishArticle(editor, publisher, article);
+        populateIssue(editor, issue, article.articleId());
+        jdbcTemplate.update("UPDATE issue_article SET revision_id = NULL WHERE issue_id = ?", issue);
+        mockMvc.perform(get("/api/v1/editor/issues/{id}/articles", issue).principal(editor))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.articles[0].revisionId").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.articles[0].revisionNumber").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.articles[0].title").value(org.hamcrest.Matchers.nullValue()))
+                .andExpect(jsonPath("$.sections[0].articleCount").value(1));
+        reviewIssue(editor, publisher, issue, 2);
+        issueCommand(publisher, issue, "publish", 4, "toc-legacy-publish")
+                .andExpect(status().is(422)).andExpect(jsonPath("$.errors[0].code").value("ISSUE_NOT_READY"));
+        assertEquals(0, jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM publication_snapshot WHERE aggregate_type = 'ISSUE' AND aggregate_id = ?", Integer.class, issue));
     }
 
     @Test
@@ -700,6 +930,34 @@ final class EditorialIssueApiIT extends EditorialApiIntegrationTestSupport {
         }
     }
 
+    private void arrangeLaterArticlePublication(CreatedArticle article) {
+        UUID laterRevision = UUID.randomUUID();
+        jdbcTemplate.update("""
+                INSERT INTO article_revision (id, article_id, revision_number, title, dek, content_document, state)
+                SELECT ?, article_id, revision_number + 1, 'Later edition', dek, content_document, 'PUBLISHED'
+                FROM article_revision WHERE id = ?
+                """, laterRevision, article.revisionId());
+        jdbcTemplate.update("UPDATE article SET published_revision_id = ? WHERE id = ?", laterRevision, article.articleId());
+    }
+
+    private UUID createTocSection(Authentication editor, UUID issue) throws Exception {
+        String body = mockMvc.perform(post("/api/v1/editor/issues/{id}/sections", issue).principal(editor)
+                        .contentType(MediaType.APPLICATION_JSON).header("If-Match", "\"1\"")
+                        .header("Idempotency-Key", "toc-section-" + issue).content("{\"title\":\"Stories\"}"))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        return UUID.fromString(JSON.readTree(body).path("sections").get(0).path("sectionId").asString());
+    }
+
+    private static String tocBody(UUID section, List<CreatedArticle> articles) throws Exception {
+        List<java.util.Map<String, Object>> entries = new ArrayList<>();
+        for (int index = 0; index < articles.size(); index++) {
+            CreatedArticle article = articles.get(index);
+            entries.add(java.util.Map.of("articleId", article.articleId(), "revisionId", article.revisionId(),
+                    "sectionId", section, "position", index + 1));
+        }
+        return JSON.writeValueAsString(java.util.Map.of("articles", entries));
+    }
+
     private void populateIssue(Authentication editor, UUID issueId, UUID articleId) throws Exception {
         MvcResult result = mockMvc.perform(post("/api/v1/editor/issues/{id}/sections", issueId)
                         .principal(editor)
@@ -713,8 +971,10 @@ final class EditorialIssueApiIT extends EditorialApiIntegrationTestSupport {
                 .path("sections").get(0).path("sectionId").asString());
         // Membership is fixture arrangement; every issue and article state transition uses HTTP.
         jdbcTemplate.update("""
-                INSERT INTO issue_article (issue_id, section_id, article_id, position)
-                VALUES (?, ?, ?, 1)
+                INSERT INTO issue_article (issue_id, section_id, article_id, revision_id, position)
+                SELECT ?, ?, article.id, COALESCE(article.published_revision_id, revision.id), 1
+                FROM article JOIN article_revision revision ON revision.article_id = article.id
+                WHERE article.id = ? ORDER BY revision.revision_number DESC LIMIT 1
                 """, issueId, sectionId, articleId);
     }
 

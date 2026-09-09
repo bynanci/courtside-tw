@@ -1,4 +1,6 @@
 import { createApiClient, type components } from "@courtside/api-client"
+import type { CreditAssignment, CreditRole } from "./editor/article-draft-form"
+import type { ContentDocument } from "@courtside/content-schema/browser"
 
 export type ArticleDraftPage = components["schemas"]["ArticleDraftPage"]
 export type ArticleDraft = components["schemas"]["ArticleDraft"]
@@ -15,6 +17,28 @@ export type MediaMetadataUpdate = components["schemas"]["MediaMetadataUpdate"]
 export type MediaUploadIntent = components["schemas"]["MediaUploadIntent"]
 export type MediaUploadRequest = components["schemas"]["MediaUploadRequest"]
 export type ProblemDetails = components["schemas"]["ProblemDetails"]
+
+export interface ManagedContributor {
+  contributorId: string
+  slug: string
+  displayName: string
+  status: "ACTIVE" | "ARCHIVED"
+  version: number
+}
+
+export interface ArticleCredit {
+  contributorId: string
+  slug: string
+  displayName: string
+  role: CreditRole
+}
+
+export interface ArticleCredits {
+  articleId: string
+  revisionId: string
+  version: number
+  contributors: ArticleCredit[]
+}
 
 export type TaxonomyKind = "LEAGUE" | "SEASON" | "TEAM" | "PLAYER" | "PERSON" | "VENUE" | "TOPIC"
 export type TaxonomyStatus = "ACTIVE" | "RETIRED"
@@ -72,11 +96,162 @@ export function createStudioApiClient() {
   })
 }
 
-export async function listEditorArticles(limit = 100): Promise<ArticleDraftPage> {
+export async function listEditorArticles(limit = 100, cursor?: string): Promise<ArticleDraftPage> {
   const result = await createStudioApiClient().GET("/api/v1/editor/articles", {
-    params: { query: { limit } }
+    params: { query: { limit, ...(cursor ? { cursor } : {}) } }
   })
   return unwrap(result)
+}
+
+export async function createEditorArticle(input: {
+  title: string
+  slug: string
+  dek?: string
+  content: ContentDocument
+}): Promise<ArticleDraft> {
+  return taxonomyRequest("/api/v1/editor/articles", {
+    method: "POST",
+    headers: { "Idempotency-Key": crypto.randomUUID() },
+    body: JSON.stringify(input)
+  })
+}
+
+export async function createEditorIssue(
+  input: components["schemas"]["IssueDraftInput"]
+): Promise<IssueDraft> {
+  const result = await createStudioApiClient().POST("/api/v1/editor/issues", {
+    params: { header: { "Idempotency-Key": crypto.randomUUID() } },
+    body: input
+  })
+  return unwrap(result)
+}
+
+export async function listContributors(
+  status: "ACTIVE" | "ARCHIVED" | "ALL" = "ACTIVE"
+): Promise<{ items: ManagedContributor[] }> {
+  return taxonomyRequest(`/api/v1/editor/contributors?status=${status}`)
+}
+
+export async function createContributor(input: {
+  slug: string
+  displayName: string
+}): Promise<ManagedContributor> {
+  return taxonomyRequest("/api/v1/editor/contributors", {
+    method: "POST",
+    headers: { "Idempotency-Key": crypto.randomUUID() },
+    body: JSON.stringify(input)
+  })
+}
+
+export async function updateContributor(
+  contributor: ManagedContributor,
+  displayName: string
+): Promise<ManagedContributor> {
+  return taxonomyRequest(`/api/v1/editor/contributors/${contributor.contributorId}`, {
+    method: "PATCH",
+    headers: { "If-Match": ifMatch(contributor.version), "Idempotency-Key": crypto.randomUUID() },
+    body: JSON.stringify({ displayName })
+  })
+}
+
+export async function archiveContributor(
+  contributor: ManagedContributor,
+  reason: string
+): Promise<ManagedContributor> {
+  return taxonomyRequest(`/api/v1/editor/contributors/${contributor.contributorId}:archive`, {
+    method: "POST",
+    headers: { "If-Match": ifMatch(contributor.version), "Idempotency-Key": crypto.randomUUID() },
+    body: JSON.stringify({ reason })
+  })
+}
+
+export async function getArticleCredits(
+  articleId: string,
+  revisionId: string
+): Promise<ArticleCredits> {
+  return taxonomyRequest(
+    `/api/v1/editor/articles/${articleId}/revisions/${revisionId}/contributors`
+  )
+}
+
+export async function getPrivateMediaPreview(assetId: string, signal: AbortSignal): Promise<Blob> {
+  const response = await studioFetch(
+    new Request(`${STUDIO_BFF_BASE}/api/v1/editor/media/${assetId}/preview`, {
+      signal,
+      headers: { accept: "image/avif,image/jpeg,image/png,image/webp" },
+      cache: "no-store"
+    })
+  )
+  const contentType = response.headers.get("content-type")?.split(";")[0]
+  if (
+    !response.ok ||
+    !["image/avif", "image/jpeg", "image/png", "image/webp"].includes(contentType ?? "")
+  ) {
+    throw new StudioApiError(response.status, "目前無法取得這張圖片的私人預覽。", null, null)
+  }
+  const blob = await response.blob()
+  if (blob.size > 20 * 1024 * 1024) throw new Error("預覽圖片超過大小限制。")
+  return blob
+}
+
+export async function setArticleCredits(
+  articleId: string,
+  revisionId: string,
+  version: number,
+  contributors: CreditAssignment[]
+): Promise<ArticleCredits> {
+  return taxonomyRequest(
+    `/api/v1/editor/articles/${articleId}/revisions/${revisionId}/contributors`,
+    {
+      method: "PUT",
+      headers: { "If-Match": ifMatch(version), "Idempotency-Key": crypto.randomUUID() },
+      body: JSON.stringify({ contributors })
+    }
+  )
+}
+
+export async function listPublisherIssues(cursor?: string): Promise<IssueDraftPage> {
+  return taxonomyRequest(
+    `/api/v1/publisher/issues?limit=20${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`
+  )
+}
+
+export async function archiveIssue(issue: IssueDraft): Promise<WorkflowResult> {
+  return taxonomyRequest(`/api/v1/publisher/issues/${issue.issueId}:archive`, {
+    method: "POST",
+    headers: { "If-Match": ifMatch(issue.version), "Idempotency-Key": crypto.randomUUID() },
+    body: "{}"
+  })
+}
+
+export async function transitionIssue(
+  issue: IssueDraft,
+  action: "submit" | "approve" | "publish" | "schedule",
+  schedule?: { publishAt: string; timezone: string }
+): Promise<WorkflowResult> {
+  const scope = action === "submit" ? "editor" : "publisher"
+  return taxonomyRequest(`/api/v1/${scope}/issues/${issue.issueId}:${action}`, {
+    method: "POST",
+    headers: { "If-Match": ifMatch(issue.version), "Idempotency-Key": crypto.randomUUID() },
+    body: JSON.stringify(schedule ?? {})
+  })
+}
+
+export interface StudioMediaItem {
+  assetId: string
+  mimeType: string
+  processingState: "PENDING" | "PROCESSING" | "READY" | "FAILED" | "REVOKED"
+  altText: string | null
+  width: number | null
+  height: number | null
+  version: number
+}
+export async function listStudioMedia(
+  cursor?: string
+): Promise<{ items: StudioMediaItem[]; nextCursor?: string | null }> {
+  return taxonomyRequest(
+    `/api/v1/editor/media?limit=25${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`
+  )
 }
 
 export async function getEditorArticle(articleId: string): Promise<ArticleDraft> {
@@ -98,6 +273,28 @@ export async function listEditorIssueSections(issueId: string): Promise<IssueSec
     params: { path: { issueId } }
   })
   return unwrap(result)
+}
+
+export type IssueArticleAssignment = components["schemas"]["IssueArticleAssignment"]
+export type IssueArticleCollection = components["schemas"]["IssueArticleCollection"]
+
+export async function listIssueArticles(
+  issueId: string,
+  scope: "editor" | "publisher" = "editor"
+): Promise<IssueArticleCollection> {
+  return taxonomyRequest(`/api/v1/${scope}/issues/${issueId}/articles`)
+}
+
+export async function replaceIssueArticles(
+  issueId: string,
+  version: number,
+  articles: IssueArticleAssignment[]
+): Promise<IssueArticleCollection> {
+  return taxonomyRequest(`/api/v1/editor/issues/${issueId}/articles`, {
+    method: "PUT",
+    headers: { "If-Match": ifMatch(version), "Idempotency-Key": crypto.randomUUID() },
+    body: JSON.stringify({ articles })
+  })
 }
 
 export async function createEditorIssueSection(
@@ -459,7 +656,7 @@ async function taxonomyRequest<T>(path: string, init: RequestInit = {}): Promise
       response.status,
       typeof record?.detail === "string"
         ? record.detail
-        : `Taxonomy API request failed (${response.status})`,
+        : `Studio API request failed (${response.status})`,
       typeof record?.code === "string" ? record.code : null,
       details
     )

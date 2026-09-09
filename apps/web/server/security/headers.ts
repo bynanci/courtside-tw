@@ -56,8 +56,15 @@ export function validateTrustedApiOrigin(
 export function applySecurityHeaders(
   response: { setHeader(name: string, value: string): void },
   nonce?: string,
-  apiOrigin?: string
+  apiOrigin?: string,
+  requestPath?: string
 ): void {
+  const studioPage = /^\/studio(?:\/|$)/u.test(requestPath ?? "")
+  const studioApi = /^\/api\/studio(?:\/|$)/u.test(requestPath ?? "")
+  if (studioPage || studioApi) {
+    response.setHeader("Cache-Control", "private, no-store")
+    response.setHeader("X-Robots-Tag", "noindex, nofollow")
+  }
   const trustedApiOrigin = apiOrigin
     ? validateTrustedApiOrigin(apiOrigin, {
         allowPrivateNetwork: allowsLoopbackApiOrigin()
@@ -76,6 +83,7 @@ export function applySecurityHeaders(
           .replace("img-src 'self' https: data:", "img-src 'self' https: data: " + trustedApiOrigin)
           .replace("connect-src 'self'", "connect-src 'self' " + trustedApiOrigin)
       }
+      if (studioPage) headerValue = headerValue.replace("img-src 'self'", "img-src 'self' blob:")
     }
     response.setHeader(name, headerValue)
   }
