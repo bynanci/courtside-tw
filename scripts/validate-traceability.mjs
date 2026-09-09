@@ -24,6 +24,31 @@ export const REQUIRED_GATE_AUTHORIZED_PATHS = Object.freeze([
   "scripts/validate-traceability.mjs",
   "scripts/test/validate-traceability.test.mjs"
 ])
+export const OIDC_SECURITY_REMEDIATION_AUTHORIZATION_SCHEMA =
+  "courtside-oidc-security-remediation-owner-dispatch/v1"
+export const OIDC_SECURITY_REMEDIATION_AUTHORIZATION_REF =
+  "https://github.com/bynanci/courtside-tw/issues/188"
+export const OIDC_SECURITY_REMEDIATION_AUTHORIZATION_API_URL =
+  "https://api.github.com/repos/bynanci/courtside-tw/issues/188"
+export const OIDC_SECURITY_REMEDIATION_AUTHORIZATION_BODY_SHA256 =
+  "863e4202b768bcc7ae88f6f43700866bc944113ad23c5a46e7f6d7f10602a929"
+export const OIDC_SECURITY_REMEDIATION_AUTHORIZATION_RECORDED_AT = "2026-09-09T23:15:42Z"
+export const OIDC_SECURITY_REMEDIATION_AUTHORIZATION_BASE_SHA =
+  "2cc2cc5acac03af3667126ad28c1e80a58edb7b9"
+export const OIDC_SECURITY_REMEDIATION_AUTHORIZATION_BASE_TREE_SHA =
+  "958b1af410e7d0b521469a8f4e24d131c75b7a91"
+export const OIDC_SECURITY_REMEDIATION_BRANCH = "fix/oidc-security-mock-oauth2-6-0-2"
+export const OIDC_SECURITY_REMEDIATION_AUTHORIZED_PATHS = Object.freeze([
+  "infra/compose/oidc/Dockerfile",
+  "infra/compose/compose.yaml",
+  "scripts/test/validate-traceability.test.mjs",
+  "scripts/validate-traceability.mjs"
+])
+export const OIDC_SECURITY_REMEDIATION_TARGET = Object.freeze({
+  version: "6.0.2",
+  manifest_digest: "sha256:b538810afd589d42fbfb856c588c2065eaeed1dc528d6c532972048e67fc2aff",
+  local_compose_tag: "courtside-tw/mock-oauth2-server:6.0.2-busybox1.38"
+})
 export const POST_T085_MAINTENANCE_AUTHORIZATION_SCHEMA =
   "courtside-post-t085-maintenance-authorization/v5"
 export const ANDROID_NATIVE_SURFACE_AUTHORIZATION_SCHEMA =
@@ -2970,6 +2995,359 @@ export function createMediaArchiveAuthorizationGate(binding = MEDIA_ARCHIVE_AUTH
   })
 }
 const mediaArchiveGate = createMediaArchiveAuthorizationGate()
+
+const oidcSecurityRemediationPaths = new Set(OIDC_SECURITY_REMEDIATION_AUTHORIZED_PATHS)
+
+/** A closed exact-base authority for the OIDC image-only security remediation. */
+export function createOidcSecurityRemediationAuthorizationGate(
+  binding = {
+    schema_version: OIDC_SECURITY_REMEDIATION_AUTHORIZATION_SCHEMA,
+    ref: OIDC_SECURITY_REMEDIATION_AUTHORIZATION_REF,
+    api_url: OIDC_SECURITY_REMEDIATION_AUTHORIZATION_API_URL,
+    body_sha256: OIDC_SECURITY_REMEDIATION_AUTHORIZATION_BODY_SHA256,
+    recorded_at: OIDC_SECURITY_REMEDIATION_AUTHORIZATION_RECORDED_AT,
+    base_sha: OIDC_SECURITY_REMEDIATION_AUTHORIZATION_BASE_SHA,
+    base_tree_sha: OIDC_SECURITY_REMEDIATION_AUTHORIZATION_BASE_TREE_SHA,
+    branch: OIDC_SECURITY_REMEDIATION_BRANCH,
+    authorized_paths: OIDC_SECURITY_REMEDIATION_AUTHORIZED_PATHS,
+    target: OIDC_SECURITY_REMEDIATION_TARGET
+  }
+) {
+  const c = structuredClone(binding)
+  const sha = (value) => typeof value === "string" && /^[0-9a-f]{40}$/.test(value)
+  const same = (left, right) =>
+    Array.isArray(left) && Array.isArray(right) && sameValues(left, right)
+  const closure = (paths) =>
+    Array.isArray(paths) &&
+    new Set(paths).size === paths.length &&
+    same(paths, OIDC_SECURITY_REMEDIATION_AUTHORIZED_PATHS) &&
+    paths.every((filePath) => oidcSecurityRemediationPaths.has(filePath))
+  const bound =
+    c.schema_version === OIDC_SECURITY_REMEDIATION_AUTHORIZATION_SCHEMA &&
+    c.ref === OIDC_SECURITY_REMEDIATION_AUTHORIZATION_REF &&
+    c.api_url === OIDC_SECURITY_REMEDIATION_AUTHORIZATION_API_URL &&
+    c.body_sha256 === OIDC_SECURITY_REMEDIATION_AUTHORIZATION_BODY_SHA256 &&
+    c.recorded_at === OIDC_SECURITY_REMEDIATION_AUTHORIZATION_RECORDED_AT &&
+    c.base_sha === OIDC_SECURITY_REMEDIATION_AUTHORIZATION_BASE_SHA &&
+    c.base_tree_sha === OIDC_SECURITY_REMEDIATION_AUTHORIZATION_BASE_TREE_SHA &&
+    c.branch === OIDC_SECURITY_REMEDIATION_BRANCH &&
+    same(c.authorized_paths, OIDC_SECURITY_REMEDIATION_AUTHORIZED_PATHS) &&
+    isDeepStrictEqual(c.target, OIDC_SECURITY_REMEDIATION_TARGET)
+  const authentic = (authorization) =>
+    authorization?.url === c.api_url &&
+    authorization?.html_url === c.ref &&
+    authorization?.number === 188 &&
+    authorization?.title === "OIDC security remediation｜mock-oauth2-server 6.0.2" &&
+    authorization?.user?.login === ACCEPTED_RECEIPT_OWNER &&
+    authorization?.author_association === "OWNER" &&
+    authorization?.state === "open" &&
+    authorization?.locked === false &&
+    authorization?.created_at === c.recorded_at &&
+    authorization?.updated_at === c.recorded_at &&
+    authorization?.closed_at === null &&
+    sha256(authorization?.body ?? null) === c.body_sha256
+
+  const inspectCandidate = (root, head) => {
+    if (!bound || !sha(head)) return null
+    try {
+      const git = (args) =>
+        execFileSync("git", args, {
+          cwd: root,
+          encoding: "utf8",
+          maxBuffer: 4 * 1024 * 1024,
+          stdio: ["ignore", "pipe", "ignore"]
+        }).trim()
+      const list = (args) => git(args).split("\n").filter(Boolean)
+      const commits = list(["rev-list", "--reverse", `${c.base_sha}..${head}`])
+      const topology = inspectHeadTopology(root, head)
+      const baseTopology = inspectHeadTopology(root, c.base_sha)
+      const entries = git(["ls-tree", "-r", "-z", head, "--", ...c.authorized_paths])
+        .split("\0")
+        .filter(Boolean)
+      const present = new Set(entries.map((entry) => entry.split("\t")[1]))
+      const historyPaths = [
+        ...new Set(
+          list(["log", "--format=", "--name-only", "--no-renames", `${c.base_sha}..${head}`])
+        )
+      ].sort()
+      const baseDockerfile = readTextAtCommit(root, c.base_sha, "infra/compose/oidc/Dockerfile")
+      const candidateDockerfile = readTextAtCommit(root, head, "infra/compose/oidc/Dockerfile")
+      const baseCompose = readTextAtCommit(root, c.base_sha, "infra/compose/compose.yaml")
+      const candidateCompose = readTextAtCommit(root, head, "infra/compose/compose.yaml")
+      const expectedDockerfile =
+        typeof baseDockerfile === "string"
+          ? baseDockerfile
+              .replaceAll("6.0.1", c.target.version)
+              .replaceAll(
+                "sha256:b97e48a499d312631206d166e2f2266adb9af34ef8b411dba9b15e48c6dc0dbe",
+                c.target.manifest_digest
+              )
+          : null
+      const expectedCompose =
+        typeof baseCompose === "string"
+          ? baseCompose.replaceAll(
+              "courtside-tw/mock-oauth2-server:6.0.1-busybox1.38",
+              c.target.local_compose_tag
+            )
+          : null
+      return {
+        head,
+        tree_sha: topology.headTreeSha,
+        base_tree_sha: baseTopology.headTreeSha,
+        base_ancestor: inspectAncestor(root, c.base_sha, head),
+        changed_paths: inspectChangedPathsBetweenCommits(root, c.base_sha, head),
+        history_paths: historyPaths,
+        commit_count: inspectCommitCountBetween(root, c.base_sha, head),
+        merge_commit_count: inspectCommitCountBetween(root, c.base_sha, head, {
+          mergesOnly: true
+        }),
+        commits_postdate_authorization: list([
+          "log",
+          "--format=%aI%n%cI",
+          `${c.base_sha}..${head}`
+        ]).every((timestamp) => Date.parse(timestamp) > Date.parse(c.recorded_at)),
+        tests_first: same(
+          commits.length > 0 ? inspectChangedPathsBetweenCommits(root, c.base_sha, commits[0]) : [],
+          ["scripts/test/validate-traceability.test.mjs"]
+        ),
+        allowed_path_modes_match:
+          c.authorized_paths.every((filePath) => present.has(filePath)) &&
+          entries.every((entry) => /^100644 blob [0-9a-f]{40}\t/.test(entry)),
+        runtime_pins_match:
+          candidateDockerfile === expectedDockerfile && candidateCompose === expectedCompose
+      }
+    } catch {
+      return null
+    }
+  }
+
+  return Object.freeze({
+    requested(changedPaths, context, readback = null, base = null) {
+      return (
+        bound &&
+        (readback !== null ||
+          context?.head_ref === c.branch ||
+          (base === c.base_sha &&
+            Array.isArray(changedPaths) &&
+            changedPaths.some((filePath) => oidcSecurityRemediationPaths.has(filePath))))
+      )
+    },
+    inspect(
+      root,
+      {
+        environment = process.env,
+        fetchJson = (url) =>
+          JSON.parse(
+            execFileSync(
+              process.execPath,
+              ["--input-type=module", "--eval", githubCommentFetchScript, url],
+              {
+                encoding: "utf8",
+                env: githubReadbackEnvironment(environment),
+                maxBuffer: 1024 * 1024,
+                stdio: ["ignore", "pipe", "pipe"],
+                timeout: 15000
+              }
+            )
+          ),
+        headInspector = (repositoryRoot) =>
+          execFileSync("git", ["rev-parse", "HEAD"], {
+            cwd: repositoryRoot,
+            encoding: "utf8",
+            stdio: ["ignore", "pipe", "ignore"]
+          }).trim(),
+        candidateInspector = inspectCandidate
+      } = {}
+    ) {
+      if (!bound) {
+        return {
+          status: "UNAVAILABLE",
+          source: "github-api",
+          errors: ["OIDC security remediation authority is unbound"]
+        }
+      }
+      try {
+        const authorization = fetchJson(c.api_url)
+        if (!authentic(authorization)) throw new Error("untrusted authorization")
+        if (environment.GITHUB_ACTIONS !== "true" || !environment.GITHUB_EVENT_PATH) {
+          throw new Error("missing authenticated event")
+        }
+        const event = JSON.parse(fs.readFileSync(environment.GITHUB_EVENT_PATH, "utf8"))
+        const localHead = headInspector(root)
+        if (
+          !sha(localHead) ||
+          environment.GITHUB_EVENT_NAME !== "pull_request" ||
+          event?.pull_request?.head?.sha !== localHead ||
+          event?.pull_request?.head?.ref !== c.branch ||
+          event?.pull_request?.base?.sha !== c.base_sha ||
+          event?.pull_request?.base?.ref !== "main"
+        ) {
+          throw new Error("pull request event is not exact")
+        }
+        const pullRequestNumber = event?.pull_request?.number
+        if (!Number.isSafeInteger(pullRequestNumber) || pullRequestNumber <= 0) {
+          throw new Error("invalid pull request number")
+        }
+        const pullRequest = fetchJson(
+          `https://api.github.com/repos/bynanci/courtside-tw/pulls/${pullRequestNumber}`
+        )
+        const reviewedHeadCommit = fetchJson(
+          `https://api.github.com/repos/bynanci/courtside-tw/git/commits/${pullRequest?.head?.sha}`
+        )
+        const protectedMain = fetchJson(
+          "https://api.github.com/repos/bynanci/courtside-tw/branches/main"
+        )
+        return {
+          status: "VERIFIED",
+          source: "github-api",
+          authorization,
+          pull_request: pullRequest,
+          reviewed_head_commit: reviewedHeadCommit,
+          protected_main: protectedMain,
+          candidate: candidateInspector(root, pullRequest?.head?.sha),
+          errors: []
+        }
+      } catch {
+        return {
+          status: "UNAVAILABLE",
+          source: "github-api",
+          errors: ["OIDC security remediation OWNER read-back failed"]
+        }
+      }
+    },
+    validate({
+      readback,
+      gitBinding,
+      changedPaths,
+      changeBaseSha,
+      boundedScopeActive,
+      githubActionsContext,
+      requireExactHeadEvidence,
+      errors = []
+    } = {}) {
+      const start = errors.length
+      const check = (ok, message) => {
+        if (!ok) errors.push(`OIDC security remediation authorization ${message}`)
+      }
+      check(bound, "is unbound")
+      check(
+        changeBaseSha === c.base_sha && boundedScopeActive === false && closure(changedPaths),
+        "requires the exact four-path scope and base"
+      )
+      check(
+        readback?.status === "VERIFIED" &&
+          readback?.source === "github-api" &&
+          authentic(readback?.authorization),
+        "requires the exact immutable OWNER issue"
+      )
+      const dispatch = parseOidcSecurityRemediationAuthorizationBody(
+        {
+          body: readback?.authorization?.body,
+          startMarker: "<!-- oidc-security-remediation:owner-dispatch:v1:start -->",
+          endMarker: "<!-- oidc-security-remediation:owner-dispatch:v1:end -->",
+          label: "OIDC security remediation dispatch"
+        },
+        errors
+      )
+      check(
+        dispatch?.schema_version === c.schema_version &&
+          dispatch?.decision === "DISPATCH_ACCEPTED" &&
+          dispatch?.accepted_by === ACCEPTED_RECEIPT_OWNER &&
+          dispatch?.repository === "bynanci/courtside-tw" &&
+          dispatch?.branch === c.branch &&
+          dispatch?.authorization_base?.branch === "main" &&
+          dispatch?.authorization_base?.sha === c.base_sha &&
+          dispatch?.authorization_base?.tree_sha === c.base_tree_sha &&
+          dispatch?.authorization_base?.protected === true &&
+          same(dispatch?.authorized_paths, c.authorized_paths) &&
+          isDeepStrictEqual(
+            {
+              version: dispatch?.target?.version,
+              manifest_digest: dispatch?.target?.manifest_digest,
+              local_compose_tag: dispatch?.target?.local_compose_tag
+            },
+            c.target
+          ) &&
+          dispatch?.merge_authorization ===
+            "NONE — stop at fresh exact-head evidence; a separate owner decision is required before merge.",
+        "dispatch body must match the sealed descriptor and no-merge boundary"
+      )
+      const pr = readback?.pull_request
+      const candidate = readback?.candidate
+      check(
+        Number.isSafeInteger(pr?.number) &&
+          pr?.html_url === `https://github.com/bynanci/courtside-tw/pull/${pr.number}` &&
+          pr?.head?.ref === c.branch &&
+          pr?.base?.ref === "main" &&
+          pr?.base?.sha === c.base_sha &&
+          pr?.head?.repo?.full_name === "bynanci/courtside-tw" &&
+          pr?.base?.repo?.full_name === "bynanci/courtside-tw" &&
+          sha(pr?.head?.sha) &&
+          pr?.state === "open" &&
+          pr?.merged === false &&
+          typeof pr?.draft === "boolean",
+        "requires the live same-repository PR binding"
+      )
+      check(
+        readback?.reviewed_head_commit?.sha === pr?.head?.sha &&
+          readback?.reviewed_head_commit?.tree?.sha === candidate?.tree_sha &&
+          candidate?.head === pr?.head?.sha &&
+          candidate?.base_tree_sha === c.base_tree_sha &&
+          candidate?.base_ancestor === true &&
+          candidate?.commits_postdate_authorization === true &&
+          candidate?.tests_first === true &&
+          Number.isInteger(candidate?.commit_count) &&
+          candidate.commit_count >= 2 &&
+          candidate?.merge_commit_count === 0 &&
+          closure(candidate?.changed_paths) &&
+          same(candidate?.changed_paths, changedPaths) &&
+          closure(candidate?.history_paths) &&
+          candidate?.allowed_path_modes_match === true &&
+          candidate?.runtime_pins_match === true,
+        "requires tests-first linear history, aligned pins and the exact closed scope"
+      )
+      check(
+        gitBinding?.status === "CLEAN" &&
+          sha(gitBinding?.head) &&
+          gitBinding?.change_base_ancestor === true &&
+          gitBinding?.change_base_sha === c.base_sha &&
+          candidate?.tree_sha === gitBinding?.head_tree_sha,
+        "requires a clean exact Git tree"
+      )
+      check(
+        readback?.protected_main?.name === "main" &&
+          readback?.protected_main?.protected === true &&
+          readback?.protected_main?.commit?.sha === c.base_sha,
+        "requires the still-current protected main base"
+      )
+      check(
+        requireExactHeadEvidence && isAuthenticatedGitHubActionsContext(githubActionsContext),
+        "requires authenticated exact-head Actions metadata"
+      )
+      check(
+        githubActionsContext?.authority === "PULL_REQUEST" &&
+          githubActionsContext?.pull_request_number === pr?.number &&
+          githubActionsContext?.pull_request_payload_number === pr?.number &&
+          githubActionsContext?.source_base_sha === c.base_sha &&
+          githubActionsContext?.source_head_sha === gitBinding?.head &&
+          githubActionsContext?.head_ref === c.branch &&
+          new RegExp(`^refs/pull/${pr?.number}/(?:merge|head)$`).test(
+            githubActionsContext?.github_ref ?? ""
+          ) &&
+          githubActionsContext?.pull_request_draft === pr?.draft,
+        "must bind the live draft or ready PR event"
+      )
+      return errors.length === start
+    },
+    allowsPath(filePath) {
+      return bound && oidcSecurityRemediationPaths.has(filePath)
+    },
+    isBound() {
+      return bound
+    }
+  })
+}
+const oidcSecurityRemediationGate = createOidcSecurityRemediationAuthorizationGate()
 
 // Deliberately unbound until the successor main, cache seed and immutable OWNER record exist.
 // Rebinding changes only this sealed descriptor. This authority never accepts a beta release.
@@ -9406,6 +9784,47 @@ function parseAndroidNativeSurfaceAuthorizationBody(
   }
 }
 
+function parseOidcSecurityRemediationAuthorizationBody(
+  { body, startMarker, endMarker, label },
+  errors
+) {
+  if (typeof body !== "string") {
+    errors.push(`${label} must contain a structured body`)
+    return null
+  }
+  const start = body.indexOf(startMarker)
+  const end = body.indexOf(endMarker)
+  if (
+    start < 0 ||
+    end <= start ||
+    body.indexOf(startMarker, start + startMarker.length) >= 0 ||
+    body.indexOf(endMarker, end + endMarker.length) >= 0
+  ) {
+    errors.push(`${label} must contain one structured body`)
+    return null
+  }
+  let payload = body.slice(start + startMarker.length, end).trim()
+  const fencedPayload = payload.match(/^```json\r?\n([\s\S]*)\r?\n```$/)
+  if (fencedPayload) {
+    payload = fencedPayload[1].trim()
+  } else if (payload.includes("```")) {
+    errors.push(`${label} JSON fence is invalid`)
+    return null
+  }
+  try {
+    assertUniqueJsonObjectKeys(payload)
+    const parsed = JSON.parse(payload)
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      errors.push(`${label} body must be a JSON object`)
+      return null
+    }
+    return parsed
+  } catch (error) {
+    errors.push(`${label} body is invalid: ${error.message}`)
+    return null
+  }
+}
+
 function validatePost169GovernanceCommentReadback(
   readback,
   errors,
@@ -10469,6 +10888,7 @@ export function validateTraceability({
   publicationCacheAuthorizationReadback = null,
   mediaRightsAuthorizationReadback = null,
   mediaArchiveAuthorizationReadback = null,
+  oidcSecurityRemediationAuthorizationReadback = null,
   gitBinding = null,
   changedPaths = null,
   changeBaseSha = REVIEW_BASE_SHA,
@@ -10605,6 +11025,16 @@ export function validateTraceability({
       changeBaseSha
     )
   let mediaArchiveAuthorizationAccepted = false
+  const oidcSecurityRemediationAuthorizationRequested =
+    state === t085States.COMPLETE_STEADY &&
+    Array.isArray(changedPaths) &&
+    oidcSecurityRemediationGate.requested(
+      changedPaths,
+      githubActionsContext,
+      oidcSecurityRemediationAuthorizationReadback,
+      changeBaseSha
+    )
+  let oidcSecurityRemediationAuthorizationAccepted = false
 
   if (!/^[0-9a-f]{40}$/.test(currentHead ?? "")) {
     errors.push("currentHead must be a full lowercase commit SHA")
@@ -10794,6 +11224,18 @@ export function validateTraceability({
         errors
       })
     }
+    if (oidcSecurityRemediationAuthorizationRequested) {
+      oidcSecurityRemediationAuthorizationAccepted = oidcSecurityRemediationGate.validate({
+        readback: oidcSecurityRemediationAuthorizationReadback,
+        gitBinding,
+        changedPaths,
+        changeBaseSha,
+        boundedScopeActive,
+        githubActionsContext,
+        requireExactHeadEvidence,
+        errors
+      })
+    }
     if (
       productRemediationAuthorizationRequested(
         changedPaths,
@@ -10891,6 +11333,10 @@ export function validateTraceability({
         !(publicationCacheAuthorizationAccepted && publicationCacheGate.allowsPath(changedPath)) &&
         !(mediaRightsAuthorizationAccepted && mediaRightsGate.allowsPath(changedPath)) &&
         !(mediaArchiveAuthorizationAccepted && mediaArchiveGate.allowsPath(changedPath)) &&
+        !(
+          oidcSecurityRemediationAuthorizationAccepted &&
+          oidcSecurityRemediationGate.allowsPath(changedPath)
+        ) &&
         !(pnpmSecurityAuthorizationAccepted && pnpmSecurityAuthorizedPaths.has(changedPath)) &&
         !(
           productRemediationAuthorizationAccepted &&
@@ -11614,6 +12060,21 @@ export function validateTraceability({
             errors: mediaArchiveAuthorizationReadback.errors ?? []
           }
         : null,
+      oidc_security_remediation_authorization_readback: oidcSecurityRemediationAuthorizationReadback
+        ? {
+            status: oidcSecurityRemediationAuthorizationReadback.status,
+            accepted: oidcSecurityRemediationAuthorizationAccepted,
+            authorization_ref:
+              oidcSecurityRemediationAuthorizationReadback.authorization?.html_url ?? null,
+            body_sha256: sha256(
+              oidcSecurityRemediationAuthorizationReadback.authorization?.body ?? null
+            ),
+            pull_request: oidcSecurityRemediationAuthorizationReadback.pull_request?.number ?? null,
+            protected_main: oidcSecurityRemediationAuthorizationReadback.protected_main ?? null,
+            candidate: oidcSecurityRemediationAuthorizationReadback.candidate ?? null,
+            errors: oidcSecurityRemediationAuthorizationReadback.errors ?? []
+          }
+        : null,
       product_remediation_authorization_readback: productRemediationAuthorizationReadback
         ? {
             status: productRemediationAuthorizationReadback.status,
@@ -11786,6 +12247,14 @@ export function validateTraceability({
                         !(
                           mediaRightsAuthorizationAccepted &&
                           mediaRightsGate.allowsPath(changedPath)
+                        ) &&
+                        !(
+                          mediaArchiveAuthorizationAccepted &&
+                          mediaArchiveGate.allowsPath(changedPath)
+                        ) &&
+                        !(
+                          oidcSecurityRemediationAuthorizationAccepted &&
+                          oidcSecurityRemediationGate.allowsPath(changedPath)
                         ) &&
                         !(
                           productRemediationAuthorizationAccepted &&
@@ -13056,6 +13525,14 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
   )
     ? mediaArchiveGate.inspect(root, { environment })
     : null
+  const oidcSecurityRemediationAuthorizationReadback = oidcSecurityRemediationGate.requested(
+    inspection.changedPaths,
+    githubActionsContext,
+    null,
+    inspection.change_base_sha
+  )
+    ? oidcSecurityRemediationGate.inspect(root, { environment })
+    : null
   const isGitHubActions = environment.GITHUB_ACTIONS === "true"
   const report = validateTraceability({
     root,
@@ -13073,6 +13550,7 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
     publicationCacheAuthorizationReadback,
     mediaRightsAuthorizationReadback,
     mediaArchiveAuthorizationReadback,
+    oidcSecurityRemediationAuthorizationReadback,
     gitBinding: {
       status: inspection.status,
       head: inspection.head,
