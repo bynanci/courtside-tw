@@ -14437,7 +14437,6 @@ test("Publication cache sealed singleton reaches full validator for draft, ready
   }
 })
 
-
 const oidcSecurityRemediationBinding = Object.freeze({
   schema_version: "courtside-oidc-security-remediation-owner-dispatch/v1",
   ref: "https://github.com/bynanci/courtside-tw/issues/188",
@@ -14473,4 +14472,23 @@ test("OIDC security remediation authority fails closed when its exact scope or i
   const driftedPin = structuredClone(oidcSecurityRemediationBinding)
   driftedPin.target.version = "6.0.3"
   assert.equal(createOidcSecurityRemediationAuthorizationGate(driftedPin).isBound(), false)
+
+  const errors = []
+  assert.equal(
+    gate.validate({
+      readback: null,
+      gitBinding: null,
+      changedPaths: oidcSecurityRemediationBinding.authorized_paths,
+      changeBaseSha: oidcSecurityRemediationBinding.base_sha,
+      boundedScopeActive: false,
+      githubActionsContext: null,
+      requireExactHeadEvidence: true,
+      errors
+    }),
+    false
+  )
+  assert.match(
+    errors.join("\n"),
+    /OIDC security remediation dispatch must contain a structured body/u
+  )
 })
