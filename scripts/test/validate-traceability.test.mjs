@@ -2004,6 +2004,20 @@ test("media-rights authorization rejects base drift and path expansion", () => {
   assert.equal(gate.allowsPath("README.md"), false)
 })
 
+test("media-rights dispatch keeps its legacy typo as an explicit non-scope alias", () => {
+  assert.equal(
+    traceabilityValidator.MEDIA_RIGHTS_DISPATCH_PATHS[2],
+    "scripts/test/validate-traceability.mjs"
+  )
+  assert.equal(
+    traceabilityValidator.MEDIA_RIGHTS_PATHS[2],
+    "scripts/validate-traceability.mjs"
+  )
+  const gate = traceabilityValidator.createMediaRightsAuthorizationGate()
+  assert.equal(gate.allowsPath("scripts/test/validate-traceability.mjs"), false)
+  assert.equal(gate.allowsPath("scripts/validate-traceability.mjs"), true)
+})
+
 test("receipt authority is pinned to the protected PR149 implementation snapshot", () => {
   const traceabilityText = fs.readFileSync(
     path.join(repositoryRoot, featurePath, "traceability.md"),
