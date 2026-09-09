@@ -314,9 +314,11 @@ final class HttpPublicationExternalInvalidatorTest {
                     org.mockito.ArgumentMatchers.<HttpResponse.BodyHandler<byte[]>>any()))
                     .thenThrow(new IllegalArgumentException(privateDetails));
         }
-        try (var invalidator = invalidator(Duration.ofSeconds(3))) {
+        var invalidator = invalidator(Duration.ofSeconds(3));
+        // Release the real client before installing the test double. The try scope owns the replacement.
+        invalidator.close();
+        try (invalidator) {
             // Fault injection is confined to the test: do not expose a production client override.
-            invalidator.close();
             var field = HttpPublicationExternalInvalidator.class.getDeclaredField("client");
             field.setAccessible(true);
             field.set(invalidator, client);
