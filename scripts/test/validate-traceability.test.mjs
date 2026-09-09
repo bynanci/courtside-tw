@@ -333,6 +333,14 @@ test("issue 164 protected-main push rejects replayed topology", () => {
   }
 })
 
+test("T086 check-run lifecycle never sends a null conclusion while in progress", () => {
+  const workflowText = fs.readFileSync(
+    path.join(repositoryRoot, ".github/workflows/t086-required-gate.yml"),
+    "utf8"
+  )
+  assert.doesNotMatch(workflowText, /conclusion:[^,\n}]*\bnull\b/u)
+})
+
 test("issue 164 rejects missing, stale, spoofed, edited and widened OWNER authority", () => {
   const fixture = makeCompletedFixture()
   for (const [label, readback] of [
