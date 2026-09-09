@@ -229,9 +229,14 @@ test.describe("US5 reader library", () => {
       loginResponse = await page.goto(loginPath)
     }
     expect(loginResponse?.ok()).toBe(true)
-    const session = await page.request.get("/auth/session")
-    expect(session.ok()).toBe(true)
-    expect(await session.json()).toMatchObject({ authenticated: true })
+    // Chromium sends Secure __Host cookies on trusted loopback HTTP; the
+    // separate API request client does not. Verify the browser's own session.
+    const session = await page.evaluate(async () => {
+      const response = await fetch("/auth/session", { credentials: "same-origin" })
+      return { status: response.status, body: await response.json() }
+    })
+    expect(session.status).toBe(200)
+    expect(session.body).toMatchObject({ authenticated: true })
     await page.goto("/library", { waitUntil: "domcontentloaded" })
 
     await expect(page.getByTestId("library-unavailable")).toBeVisible()

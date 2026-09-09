@@ -155,7 +155,7 @@ final class MediaRevocationHandlerIT extends EditorialApiIntegrationTestSupport 
                 FOR EACH ROW EXECUTE FUNCTION reject_revocation_test_event();
                 """);
         try {
-            assertThrows(RuntimeException.class, () -> revoke(fixture.assetId()));
+            assertThrows(org.springframework.dao.DataAccessException.class, () -> revoke(fixture.assetId()));
             assertEquals("READY", jdbcTemplate.queryForObject(
                     "SELECT processing_state FROM media_asset WHERE id = ?", String.class, fixture.assetId()));
             assertEquals("PUBLISHED", articleState(fixture.articleId()));

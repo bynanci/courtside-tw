@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -32,7 +33,7 @@ class VerifiedRoleAuditServiceIT extends EditorialApiIntegrationTestSupport {
     }
 
     @Test
-    void changedVerifiedClaimsAppendExactlyOnceAndOlderTokensCannotReverseHistory() {
+    void changedVerifiedClaimsAppendExactlyOnceAndOlderTokensCannotReverseHistory() throws SQLException {
         var reader = token("https://idp.example", "private-email@example.com", "READER", "2026-09-08T00:00:00Z");
         var editor = token("https://idp.example", "private-email@example.com", "EDITOR", "2026-09-08T01:00:00Z");
         service.observe(reader, RequestId.of("roles-first"));
@@ -46,8 +47,8 @@ class VerifiedRoleAuditServiceIT extends EditorialApiIntegrationTestSupport {
         assertFalse(events.contains("private-email"));
         assertFalse(events.contains("private-token"));
         assertFalse(events.contains("https://idp.example"));
-        assertThrows(org.springframework.dao.DataAccessException.class,
-                () -> jdbcTemplate.update("DELETE FROM audit_event WHERE target_type = 'IDENTITY'"));
+        assertApplicationMutationDenied("DELETE FROM audit_event WHERE target_type = 'IDENTITY'");
+        assertEquals(2, jdbcTemplate.queryForObject("SELECT count(*) FROM audit_event WHERE target_type = 'IDENTITY'", Integer.class));
     }
 
     @Test

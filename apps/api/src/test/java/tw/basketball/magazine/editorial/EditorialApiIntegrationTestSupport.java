@@ -1,5 +1,7 @@
 package tw.basketball.magazine.editorial;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
@@ -126,6 +128,21 @@ public abstract class EditorialApiIntegrationTestSupport {
                 null,
                 List.of(new SimpleGrantedAuthority("ROLE_" + role.name()))
         );
+    }
+
+    protected void assertApplicationMutationDenied(String sql) throws SQLException {
+        // Fixture migrations use the database administrator. Check append-only
+        // privileges with the application role on one dedicated connection.
+        try (Connection connection = jdbcTemplate.getDataSource().getConnection();
+                Statement statement = connection.createStatement()) {
+            statement.execute("SET ROLE courtside_app");
+            try {
+                SQLException failure = assertThrows(SQLException.class, () -> statement.executeUpdate(sql));
+                assertEquals("42501", failure.getSQLState());
+            } finally {
+                statement.execute("RESET ROLE");
+            }
+        }
     }
 
     protected void linkMedia(

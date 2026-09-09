@@ -65,8 +65,9 @@ class EditorialContributorApiIT extends EditorialApiIntegrationTestSupport {
                         .header("Idempotency-Key", "archive-person").content("{\"reason\":\"No further assignments\"}"))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("ARCHIVED"));
         assertEquals(3, jdbcTemplate.queryForObject("SELECT count(*) FROM audit_event WHERE target_type = 'CONTRIBUTOR'", Integer.class));
-        assertThrows(org.springframework.dao.DataAccessException.class,
-                () -> jdbcTemplate.update("UPDATE audit_event SET action = 'ERASED' WHERE target_type = 'CONTRIBUTOR'"));
+        assertApplicationMutationDenied("UPDATE audit_event SET action = 'ERASED' WHERE target_type = 'CONTRIBUTOR'");
+        assertEquals(0, jdbcTemplate.queryForObject("SELECT count(*) FROM audit_event WHERE action = 'ERASED'", Integer.class));
+        assertEquals(3, jdbcTemplate.queryForObject("SELECT count(*) FROM audit_event WHERE target_type = 'CONTRIBUTOR'", Integer.class));
     }
 
     @Test

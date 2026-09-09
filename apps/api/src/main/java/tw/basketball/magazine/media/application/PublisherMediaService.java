@@ -10,6 +10,7 @@ import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.UncategorizedSQLException;
 import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -190,7 +191,13 @@ public final class PublisherMediaService {
                         200, persistedBody, versionFrom(persistedBody)
                 );
             });
-        } catch (CannotAcquireLockException exception) {
+        } catch (CannotAcquireLockException | UncategorizedSQLException exception) {
+            // PostgreSQL NOWAIT reports 55P03, which the SQL-state translator
+            // can leave uncategorized. Other SQL failures must still propagate.
+            if (exception instanceof UncategorizedSQLException sqlFailure
+                    && !"55P03".equals(sqlFailure.getSQLException().getSQLState())) {
+                throw exception;
+            }
             // NOWAIT conflicts leave no partial rights/state/receipt changes. The
             // same idempotency key is safe to retry after the publication finishes.
             throw new EditorialProblemException(ProblemCode.VERSION_CONFLICT, List.of(
