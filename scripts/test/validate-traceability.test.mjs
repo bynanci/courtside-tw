@@ -31,10 +31,10 @@ const {
 } = traceabilityValidator
 
 const baseSha = AUTHORIZED_BASE_SHA
-const requiredGateBase = "b8f092534f7cb3d550738be2d66ee1d96d676980"
-const requiredGateBranch = "fix/t086-required-gate-push-b8f0925"
+const requiredGateBase = "c2a4b2d2a5ba3f97fc3c50b7723c01f4d3b98e2d"
+const requiredGateBranch = "fix/t086-check-lifecycle-c2a4b2d"
 const requiredGateAuthorizationRef =
-  "https://github.com/bynanci/courtside-tw/issues/164#issuecomment-5600290742"
+  "https://github.com/bynanci/courtside-tw/issues/164#issuecomment-5600532821"
 const requiredGatePaths = [
   ".github/workflows/t086-required-gate.yml",
   "scripts/validate-traceability.mjs",
@@ -44,44 +44,45 @@ const requiredGateProtectedPushHead = "8888888888888888888888888888888888888888"
 const requiredGateProtectedPushTree = "9999999999999999999999999999999999999999"
 // Verbatim immutable OWNER receipt, including its implementation-only boundaries.
 const requiredGateAuthorizationBody = [
-  "<!-- t086-required-gate:owner-exact-path-dispatch:v7:start -->",
-  "## Fresh OWNER exact-base dispatch — #164 protected-main squash-push repair",
+  "<!-- t086-required-gate:owner-exact-path-dispatch:v8:start -->",
+  "## Fresh OWNER exact-base dispatch — #164 check-run lifecycle repair",
   "",
   "**Decision:** `DISPATCH_ACCEPTED / IMPLEMENTATION_REVIEW_OPTIMIZE_MERGE_ENGINEERING_ONLY`.",
   "",
-  "This immutable successor is bound to the protected main after PR #181. It authorizes the narrow repair for the newly observed protected-main push read-back regression; it does not refresh PR #161 or authorize provider/ruleset mutation.",
+  "This immutable successor is bound to the protected main after PR #182. It authorizes only the observed GitHub Checks API lifecycle repair: an in-progress update must omit `conclusion`; completed invalidation must retain an explicit failure conclusion. It does not refresh PR #161 or authorize provider/ruleset mutation.",
   "",
   "```json",
   "{",
-  '  "schema_version": "courtside-t086-required-gate-owner-exact-path-dispatch/v5",',
+  '  "schema_version": "courtside-t086-required-gate-owner-exact-path-dispatch/v6",',
   '  "decision": "DISPATCH_ACCEPTED",',
   '  "accepted_by": "bynanci",',
   '  "repository": "bynanci/courtside-tw",',
   '  "tracker_issue": 164,',
-  '  "pr": 182,',
-  '  "branch": "fix/t086-required-gate-push-b8f0925",',
+  '  "pr": 183,',
+  '  "branch": "fix/t086-check-lifecycle-c2a4b2d",',
   '  "authorization_base": {',
   '    "branch": "main",',
-  '    "sha": "b8f092534f7cb3d550738be2d66ee1d96d676980",',
-  '    "parent_sha": "d34f20cc3c44b887ab5a322f7d0d51f7ba21d895",',
-  '    "tree_sha": "8e27b93fd6163606de84212ba1ccd725842987a7",',
+  '    "sha": "c2a4b2d2a5ba3f97fc3c50b7723c01f4d3b98e2d",',
+  '    "parent_sha": "b8f092534f7cb3d550738be2d66ee1d96d676980",',
+  '    "tree_sha": "d68b05816e46c34f49c59ac2b228717c719c5e36",',
   '    "protected": true,',
   '    "t086_push": {',
-  '      "run_id": 34339096082,',
-  '      "result": "PASS"',
+  '      "run_id": 34341321199,',
+  '      "result": "FAIL",',
+  '      "reason": "Checks API rejected null conclusion on in-progress update"',
   "    },",
   '    "ci": {',
-  '      "run_id": 34339096064,',
-  '      "result": "FRONTEND_FAILURE_REQUIRES_REPAIR"',
+  '      "run_id": 34341321233,',
+  '      "result": "PENDING"',
   "    },",
   '    "security": {',
-  '      "run_id": 34339095982,',
-  '      "result": "PENDING_READBACK"',
+  '      "run_id": 34341321318,',
+  '      "result": "PENDING"',
   "    }",
   "  },",
   '  "initial_seed": {',
-  '    "head_sha": "25d99bc8b36cab1a5205ca6da994098e8e19d4e0",',
-  '    "tree_sha": "b3dc1f05312d4912551fec302aa80ae3ad5af988",',
+  '    "head_sha": "baf2e0fae0cc64eb932f4e7b4ac5b9b08c8381da",',
+  '    "tree_sha": "bc7c45f8b64694088181b1f4c38dfb3ab2f69986",',
   '    "changed_paths": [',
   '      "scripts/test/validate-traceability.test.mjs"',
   "    ],",
@@ -93,10 +94,10 @@ const requiredGateAuthorizationBody = [
   '    "scripts/test/validate-traceability.test.mjs"',
   "  ],",
   '  "allowed_actions": [',
-  '    "append the causal protected-main squash-push tests and fail-closed producer repair in the three exact paths",',
+  '    "append the causal check-run lifecycle test and trusted workflow repair in the three exact paths",',
   '    "run exact-head non-deploying CI, Security, independent review and optimize",',
-  '    "mark PR #182 ready only after the exact-head evidence and review pass",',
-  '    "perform one protected exact-head squash merge of PR #182 after all required checks and zero unresolved threads"',
+  '    "mark PR #183 ready only after exact-head evidence and review pass",',
+  '    "perform one protected exact-head squash merge of PR #183 after all required checks and zero unresolved threads"',
   "  ],",
   '  "invariants": [',
   '    "all frozen T085 receipt bytes, README bytes and task checkbox bytes remain unchanged",',
@@ -105,7 +106,7 @@ const requiredGateAuthorizationBody = [
   '    "no ruleset, branch protection, provider, production, credential or secret mutation",',
   '    "no participant research, Web3/T087+ work or external product write",',
   '    "post-dispatch commits are linear and stay within the exact three-path closure",',
-  '    "protected-main acceptance must require the exact authorized base, one-parent squash topology, exact three-path scope, clean evaluated head and exact-head evidence"',
+  '    "in-progress check updates omit conclusion while completed invalidation uses only an allowed conclusion"',
   "  ],",
   '  "user_instruction": "請幫我將剩餘的任務完成 ,完成後@review 並且 @optimize ，最終再依你的經驗merge",',
   '  "authorization_source": "The user\'s current instruction in this conversation, recorded through the connected OWNER account for this bounded engineering scope."',
@@ -114,14 +115,13 @@ const requiredGateAuthorizationBody = [
   "",
   "### Acceptance and stop rules",
   "",
-  "- The PR candidate must retain the exact current-main base and three-path closure.",
-  "- RED evidence must remain attributable to the named pre-dispatch seed; GREEN evidence must bind the final exact head.",
-  "- Draft PR validation remains exact-head and must never be accepted from push or merge contexts.",
-  "- After the one authorized squash merge, protected-main validation must accept only the exact one-parent push from this base and fail closed for parent, tree, count, scope, or evidence replay.",
+  "- The exact current-main base and three-path closure must remain unchanged.",
+  "- RED evidence must remain attributable to the named seed; GREEN evidence must bind the final exact head.",
+  "- No GitHub Checks API request may send a null conclusion; completed invalidations must use an allowed conclusion.",
   "- HOLD, FAIL, UNKNOWN, missing/stale/ambiguous/spoofed/edited/deleted/unavailable evidence remains blocking.",
-  "- No ruleset/provider change is authorized; the current 12-context snapshot remains unchanged.",
+  "- The current 12-context ruleset remains unchanged; provider/ruleset mutation needs a separate gate.",
   "",
-  "<!-- t086-required-gate:owner-exact-path-dispatch:v7:end -->"
+  "<!-- t086-required-gate:owner-exact-path-dispatch:v8:end -->"
 ].join("\n")
 function makeRequiredGateReadback(overrides = {}) {
   return {
@@ -131,8 +131,8 @@ function makeRequiredGateReadback(overrides = {}) {
     issue_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/164",
     user_login: "bynanci",
     author_association: "OWNER",
-    created_at: "2026-09-09T10:21:32Z",
-    updated_at: "2026-09-09T10:21:32Z",
+    created_at: "2026-09-09T10:41:33Z",
+    updated_at: "2026-09-09T10:41:33Z",
     body: requiredGateAuthorizationBody,
     errors: [],
     ...overrides
@@ -145,7 +145,7 @@ function makeRequiredGateActionsContext(
 ) {
   const eventPath = path.join(root, "required-gate-event.json")
   const pullRequest = {
-    number: 182,
+    number: 183,
     state: "open",
     draft: true,
     head: {
@@ -176,7 +176,7 @@ function makeRequiredGateActionsContext(
       GITHUB_RUN_ID: fixtureActionsRunId,
       GITHUB_RUN_NUMBER: fixtureActionsRunNumber,
       GITHUB_RUN_ATTEMPT: fixtureActionsRunAttempt,
-      GITHUB_REF: "refs/pull/182/merge",
+      GITHUB_REF: "refs/pull/183/merge",
       GITHUB_BASE_REF: "main",
       GITHUB_HEAD_REF: requiredGateBranch,
       ...environmentOverrides
@@ -238,7 +238,7 @@ function runRequiredGateFixture(fixture, overrides = {}) {
   return runCompletedFixture(fixture, {
     changeBaseSha: requiredGateBase,
     changedPaths: [...requiredGatePaths],
-    evaluatedHeadCommittedAt: "2026-09-09T10:30:00.000Z",
+    evaluatedHeadCommittedAt: "2026-09-09T11:00:00.000Z",
     requireExactHeadEvidence: true,
     githubActionsContext,
     requiredGateAuthorizationReadback: makeRequiredGateReadback(),
@@ -262,7 +262,7 @@ test("issue 164 authenticates only the immutable OWNER three-path draft from its
   assert.deepEqual(report.scope_validation.unauthorized_paths, [])
   assert.equal(
     report.source.required_gate_authorization_readback.body_sha256,
-    "c8913a5188201a57907cb24f3e5fa690de028aebd8f1b5cd516ffdd1de5e35e4"
+    "2ab2f94777e1dde20efe76166702b7f6f54e1733fd7ab7d7728bc6cd88d78373"
   )
   assert.equal(report.scope_boundaries.t086_dispatched, false)
 })
@@ -275,7 +275,7 @@ test("issue 164 authenticates the exact protected-main squash push after its dra
     currentHead: requiredGateProtectedPushHead,
     changeBaseSha: requiredGateBase,
     changedPaths: [...requiredGatePaths],
-    evaluatedHeadCommittedAt: "2026-09-09T10:30:00.000Z",
+    evaluatedHeadCommittedAt: "2026-09-09T11:00:00.000Z",
     requireExactHeadEvidence: true,
     githubActionsContext,
     requiredGateAuthorizationReadback: makeRequiredGateReadback(),
@@ -303,7 +303,7 @@ test("issue 164 protected-main push rejects replayed topology", () => {
     ["merge commit", { head_parent_count: 2 }],
     ["extra commit", { required_gate_commit_count: 2 }],
     ["merge ancestry", { required_gate_merge_commit_count: 1 }],
-    ["tree drift", { head_tree_sha: fixturePostT085FinalPrHead }]
+    ["tree drift", { head_tree_sha: "not-a-tree" }]
   ]) {
     const githubActionsContext = makeRequiredGateProtectedPushActionsContext(fixture.root, binding)
     writeExactHeadForActionsContext(fixture.root, githubActionsContext)
@@ -311,7 +311,7 @@ test("issue 164 protected-main push rejects replayed topology", () => {
       currentHead: requiredGateProtectedPushHead,
       changeBaseSha: requiredGateBase,
       changedPaths: [...requiredGatePaths],
-      evaluatedHeadCommittedAt: "2026-09-09T10:15:00.000Z",
+      evaluatedHeadCommittedAt: "2026-09-09T11:00:00.000Z",
       requireExactHeadEvidence: true,
       githubActionsContext,
       requiredGateAuthorizationReadback: makeRequiredGateReadback(),
@@ -331,6 +331,14 @@ test("issue 164 protected-main push rejects replayed topology", () => {
     assert.equal(report.status, "FAIL", label)
     assert.match(report.errors.join("\n"), /issue 164/, label)
   }
+})
+
+test("T086 check-run lifecycle never sends a null conclusion while in progress", () => {
+  const workflowText = fs.readFileSync(
+    path.join(repositoryRoot, ".github/workflows/t086-required-gate.yml"),
+    "utf8"
+  )
+  assert.doesNotMatch(workflowText, /conclusion:[^,\n}]*\bnull\b/u)
 })
 
 test("issue 164 rejects missing, stale, spoofed, edited and widened OWNER authority", () => {
@@ -388,7 +396,7 @@ test("issue 164 rejects scope, base, exact-head, draft, PR, fork, Actions and to
     ["non-exact", { requireExactHeadEvidence: false }],
     ["untrusted", { githubActionsContext: { ...context } }],
     ["wrong evaluated head", { currentHead: fixturePostT085FinalPrHead }],
-    ["pre-dispatch head", { evaluatedHeadCommittedAt: "2026-09-09T10:21:32Z" }],
+    ["pre-dispatch head", { evaluatedHeadCommittedAt: "2026-09-09T10:41:33Z" }],
     [
       "ready",
       {
