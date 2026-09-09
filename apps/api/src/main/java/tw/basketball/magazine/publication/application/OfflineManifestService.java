@@ -10,7 +10,6 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
@@ -178,12 +177,9 @@ public final class OfflineManifestService {
             FROM article
             JOIN article_revision revision ON revision.article_id = article.id
             WHERE revision.state IN ('WITHDRAWN', 'ARCHIVED')
+            UNION
+            SELECT aggregate_id AS id FROM media_revocation_impact
             ORDER BY id
-            """;
-    private static final String VERSION_SQL = """
-            SELECT version
-            FROM offline_withdrawal_manifest_state
-            WHERE singleton = TRUE
             """;
 
     private final JdbcTemplate jdbcTemplate;
@@ -278,13 +274,20 @@ public final class OfflineManifestService {
 
     public WithdrawalManifest withdrawalManifest() {
         Instant generatedAt = clock.instant();
-        Long version = jdbcTemplate.queryForObject(VERSION_SQL, Long.class);
-        List<UUID> withdrawals = new ArrayList<>(jdbcTemplate.query(
-                WITHDRAWAL_SQL,
-                (resultSet, rowNumber) -> resultSet.getObject("id", UUID.class)
-        ));
-        withdrawals.sort(Comparator.comparing(UUID::toString));
-        long manifestVersion = version == null ? 1 : Math.max(1, version);
+        // One PostgreSQL statement binds the cursor and membership to the same
+        // snapshot; a concurrent revocation cannot pair new IDs with an old cursor.
+        List<WithdrawalRow> rows = jdbcTemplate.query(
+                "WITH withdrawals AS (" + WITHDRAWAL_SQL + ") "
+                        + "SELECT state.version, withdrawals.id FROM offline_withdrawal_manifest_state state "
+                        + "LEFT JOIN withdrawals ON TRUE WHERE state.singleton = TRUE ORDER BY withdrawals.id",
+                (resultSet, rowNumber) -> new WithdrawalRow(
+                        resultSet.getLong("version"), resultSet.getObject("id", UUID.class))
+        );
+        if (rows.isEmpty()) {
+            throw new IllegalStateException("withdrawal manifest cursor is missing");
+        }
+        List<UUID> withdrawals = rows.stream().map(WithdrawalRow::id).filter(Objects::nonNull).toList();
+        long manifestVersion = rows.getFirst().version();
         String canonicalPayload = manifestVersion + "\n" + withdrawals.stream()
                 .map(UUID::toString)
                 .reduce((left, right) -> left + "\n" + right)
@@ -869,6 +872,9 @@ public final class OfflineManifestService {
         public byte[] body() {
             return body.clone();
         }
+    }
+
+    private record WithdrawalRow(long version, UUID id) {
     }
 
     public record WithdrawalManifest(

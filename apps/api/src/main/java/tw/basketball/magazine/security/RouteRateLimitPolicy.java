@@ -36,7 +36,7 @@ public final class RouteRateLimitPolicy {
     }
 
     public enum Bucket {
-        PUBLIC_READ(120), SEARCH(60), AUTHENTICATION(10), MEDIA_UPLOAD(20), BACKOFFICE(30);
+        PUBLIC_READ(120), SEARCH(60), AUTHENTICATION(10), AUTHENTICATION_FAILURE(10), MEDIA_UPLOAD(20), BACKOFFICE(30);
 
         private final Limit limit;
 

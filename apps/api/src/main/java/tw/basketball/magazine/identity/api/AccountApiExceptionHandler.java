@@ -10,7 +10,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import tw.basketball.magazine.identity.application.AccountProblemException;
 import tw.basketball.magazine.shared.FieldError;
@@ -21,7 +20,7 @@ import tw.basketball.magazine.shared.RequestId;
 
 /** Stable RFC 9457 mapping for account-data operations. */
 @RestControllerAdvice(assignableTypes = AccountController.class)
-public final class AccountApiExceptionHandler extends ResponseEntityExceptionHandler {
+public final class AccountApiExceptionHandler {
     private static final String REQUEST_ID_HEADER = "X-Request-Id";
 
     @ExceptionHandler(AccountProblemException.class)

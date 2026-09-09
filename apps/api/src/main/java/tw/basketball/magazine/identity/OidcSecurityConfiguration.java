@@ -15,6 +15,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
@@ -32,14 +33,17 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
-import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
+import org.springframework.security.web.authentication.AnonymousAuthenticationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfFilter;
+import org.springframework.security.web.header.HeaderWriterFilter;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
+import tw.basketball.magazine.audit.AuditWriter;
 import tw.basketball.magazine.shared.ProblemCode;
 import tw.basketball.magazine.shared.ProblemDetails;
 import tw.basketball.magazine.shared.ProblemDetailsMapper;
@@ -90,17 +94,22 @@ public final class OidcSecurityConfiguration {
             HttpSecurity http,
             JwtAuthenticationConverter converter,
             ObjectMapper objectMapper,
-            RouteRateLimiter routeRateLimiter
+            RouteRateLimiter routeRateLimiter,
+            ObjectProvider<AuditWriter> auditWriters,
+            ObjectProvider<VerifiedRoleAuditService> roleObservations
     ) {
         try {
+            installSecurityAudit(http, auditWriters, roleObservations);
             AuthenticationEntryPoint authenticationEntryPoint =
                     problemDetailsAuthenticationEntryPoint(objectMapper);
             AccessDeniedHandler accessDeniedHandler = problemDetailsAccessDeniedHandler(objectMapper);
+            // Admission precedes the audit/CSRF boundary; rejected floods cannot
+            // reach token decoding or create unbounded permission-denial writes.
             http
-                    .addFilterBefore(new RouteRateLimitFilter(routeRateLimiter, objectMapper,
-                                    RouteRateLimitFilter.Stage.AUTHENTICATION), BearerTokenAuthenticationFilter.class)
-                    .addFilterBefore(new RouteRateLimitFilter(routeRateLimiter, objectMapper,
-                                    RouteRateLimitFilter.Stage.APPLICATION), AuthorizationFilter.class)
+                    .addFilterAfter(new RouteRateLimitFilter(routeRateLimiter, objectMapper,
+                                    RouteRateLimitFilter.Stage.AUTHENTICATION), HeaderWriterFilter.class)
+                    .addFilterAfter(new RouteRateLimitFilter(routeRateLimiter, objectMapper,
+                                    RouteRateLimitFilter.Stage.APPLICATION), AnonymousAuthenticationFilter.class)
                     .csrf(csrf -> csrf
                             .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                             .ignoringRequestMatchers(BEARER_TOKEN_REQUEST))
@@ -142,14 +151,17 @@ public final class OidcSecurityConfiguration {
     public SecurityFilterChain unconfiguredSecurityFilterChain(
             HttpSecurity http,
             ObjectMapper objectMapper,
-            RouteRateLimiter routeRateLimiter
+            RouteRateLimiter routeRateLimiter,
+            ObjectProvider<AuditWriter> auditWriters,
+            ObjectProvider<VerifiedRoleAuditService> roleObservations
     ) {
         try {
+            installSecurityAudit(http, auditWriters, roleObservations);
             http
-                    .addFilterBefore(new RouteRateLimitFilter(routeRateLimiter, objectMapper,
-                                    RouteRateLimitFilter.Stage.AUTHENTICATION), BearerTokenAuthenticationFilter.class)
-                    .addFilterBefore(new RouteRateLimitFilter(routeRateLimiter, objectMapper,
-                                    RouteRateLimitFilter.Stage.APPLICATION), AuthorizationFilter.class)
+                    .addFilterAfter(new RouteRateLimitFilter(routeRateLimiter, objectMapper,
+                                    RouteRateLimitFilter.Stage.AUTHENTICATION), HeaderWriterFilter.class)
+                    .addFilterAfter(new RouteRateLimitFilter(routeRateLimiter, objectMapper,
+                                    RouteRateLimitFilter.Stage.APPLICATION), AnonymousAuthenticationFilter.class)
                     .csrf(csrf -> csrf
                             .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                             .ignoringRequestMatchers(BEARER_TOKEN_REQUEST))
@@ -167,6 +179,19 @@ public final class OidcSecurityConfiguration {
             return http.build();
         } catch (Exception exception) {
             throw new IllegalStateException("Unable to build unconfigured security chain", exception);
+        }
+    }
+
+    private static void installSecurityAudit(HttpSecurity http, ObjectProvider<AuditWriter> auditWriters,
+            ObjectProvider<VerifiedRoleAuditService> observations) {
+        AuditWriter audit = auditWriters.getIfAvailable();
+        if (audit != null) {
+            // These instances belong only to Spring Security. They are not Filter
+            // beans, so Boot cannot run them a second time outside this chain.
+            http.addFilterBefore(new SecurityAuditFilter(audit, null, SecurityAuditFilter.Stage.BOUNDARY),
+                    CsrfFilter.class);
+            http.addFilterBefore(new SecurityAuditFilter(audit, observations.getIfAvailable(),
+                    SecurityAuditFilter.Stage.VERIFIED_IDENTITY), AuthorizationFilter.class);
         }
     }
 
@@ -216,6 +241,10 @@ public final class OidcSecurityConfiguration {
     }
 
     private static RequestId requestId(HttpServletRequest request) {
+        Object stored = request.getAttribute(SecurityAuditFilter.class.getName() + ".requestId");
+        if (stored instanceof RequestId id) {
+            return id;
+        }
         String candidate = request.getHeader(REQUEST_ID_HEADER);
         if (candidate != null && !candidate.isBlank()) {
             try {

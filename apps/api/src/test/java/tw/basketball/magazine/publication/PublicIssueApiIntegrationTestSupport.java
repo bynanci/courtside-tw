@@ -70,6 +70,7 @@ public abstract class PublicIssueApiIntegrationTestSupport {
         applyMigration(dataSource, "/db/migration/V005__editorial_publication_gate_hardening.sql");
         applyMigration(dataSource, TAXONOMY_SEARCH_MIGRATION);
         applyMigration(dataSource, "/db/migration/V015__offline_withdrawal_manifest_version.sql");
+        applyMigration(dataSource, "/db/migration/V017__asset_revocation_withdrawal_cursor.sql");
         jdbcTemplate = new JdbcTemplate(dataSource);
     }
 
@@ -82,7 +83,7 @@ public abstract class PublicIssueApiIntegrationTestSupport {
     protected void createControllerAndCleanPublicationData() {
         jdbcTemplate.update("""
                 TRUNCATE TABLE search_document, article_taxonomy, taxonomy_alias, taxonomy_term,
-                    audit_event,
+                    audit_event, media_revocation_impact,
                     publication_impact_link, publication_snapshot, publication_review,
                     publication_rights_reference, publication_job, publication_idempotency,
                     article_contributor, contributor, issue_article, issue_section, article_revision, article,

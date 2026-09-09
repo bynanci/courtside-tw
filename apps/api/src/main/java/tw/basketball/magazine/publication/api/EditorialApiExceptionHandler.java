@@ -10,7 +10,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 import tw.basketball.magazine.publication.application.EditorialProblemException;
 import tw.basketball.magazine.publication.domain.PublicationWorkflowException;
@@ -27,13 +26,14 @@ import tw.basketball.magazine.shared.VersionConflictException;
 /** Maps editorial failures to the stable RFC 9457 contract. */
 @RestControllerAdvice(assignableTypes = {
     EditorialArticleController.class,
+    tw.basketball.magazine.content.api.EditorialContributorController.class,
     EditorialMediaController.class,
     EditorialMediaMetadataController.class,
     EditorialIssueController.class,
     PublisherMediaController.class,
     EditorialAuditController.class
 })
-public final class EditorialApiExceptionHandler extends ResponseEntityExceptionHandler {
+public final class EditorialApiExceptionHandler {
     private static final String REQUEST_ID_HEADER = "X-Request-Id";
 
     @ExceptionHandler(EditorialProblemException.class)

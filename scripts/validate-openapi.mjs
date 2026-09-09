@@ -46,6 +46,8 @@ const expectedPaths = {
   "/api/v1/publisher/articles/{id}:schedule": ["post"],
   "/api/v1/publisher/articles/{id}:publish": ["post"],
   "/api/v1/publisher/articles/{id}:request-changes": ["post"],
+  "/api/v1/publisher/issues": ["get"],
+  "/api/v1/publisher/issues/{id}": ["get"],
   "/api/v1/publisher/issues/{id}:publish": ["post"],
   "/api/v1/publisher/issues/{id}:approve": ["post"],
   "/api/v1/publisher/issues/{id}:schedule": ["post"],
@@ -59,7 +61,30 @@ const expectedPaths = {
   "/api/v1/publisher/media/{id}:revoke": ["post"],
   "/api/v1/editor/taxonomy": ["post", "get"],
   "/api/v1/editor/taxonomy/{termId}": ["patch"],
-  "/api/v1/editor/taxonomy/{termId}/aliases": ["post"]
+  "/api/v1/editor/taxonomy/{termId}/aliases": ["post"],
+  "/api/v1/editor/contributors": ["get", "post"],
+  "/api/v1/editor/contributors/{contributorId}": ["get", "patch"],
+  "/api/v1/editor/contributors/{contributorId}:archive": ["post"],
+  "/api/v1/editor/articles/{articleId}/revisions/{revisionId}/contributors": ["get", "put"]
+}
+
+// Closed exceptions describe existing command semantics; omitted If-Match is never an implicit waiver.
+const writeConcurrencyExceptions = {
+  putBookmark: "IDEMPOTENT_SET",
+  deleteBookmark: "IDEMPOTENT_SET",
+  putReadingProgress: "REVISION_GUARDED_PROGRESS",
+  mergeReadingProgress: "REVISION_GUARDED_MERGE",
+  requestAccountDeletion: "IDEMPOTENCY_KEY",
+  createEditorIssue: "IDEMPOTENCY_KEY",
+  createEditorArticle: "IDEMPOTENCY_KEY",
+  submitArticleForReview: "REVISION_ID_AND_IDEMPOTENCY_KEY",
+  createMediaUploadIntent: "IDEMPOTENCY_KEY",
+  completeMediaUpload: "IDEMPOTENCY_KEY",
+  createManagedTaxonomy: "UNIQUE_KEY_CREATE",
+  createEditorContributor: "IDEMPOTENCY_KEY",
+  createSiweChallenge: "PLANNED_US7",
+  verifySiweSignature: "PLANNED_US7",
+  revokeWalletLink: "PLANNED_US7"
 }
 
 const expectedErrorStatuses = [400, 401, 403, 404, 409, 422, 429]
@@ -156,6 +181,47 @@ for (const { pathName, method, operation } of operations) {
   if (operation["x-optimistic-lock"]) {
     assert.ok(names.has("If-Match"), `If-Match missing for ${operation.operationId}`)
   }
+  if (["post", "put", "patch", "delete"].includes(method)) {
+    const concurrency = writeConcurrencyExceptions[operation.operationId] ?? "IF_MATCH"
+    assert.equal(
+      operation["x-write-concurrency"],
+      concurrency,
+      `explicit write concurrency missing for ${operation.operationId}`
+    )
+    if (concurrency === "IF_MATCH") {
+      assert.equal(
+        operation["x-optimistic-lock"],
+        "If-Match",
+        `mutable resource lock missing for ${operation.operationId}`
+      )
+      assert.ok(
+        operation.responses[409],
+        `version conflict response missing for ${operation.operationId}`
+      )
+    }
+    if (concurrency.includes("IDEMPOTENCY_KEY")) {
+      assert.equal(operation["x-idempotent"], true)
+      assert.ok(names.has("Idempotency-Key"))
+    }
+    if (concurrency !== "PLANNED_US7") {
+      for (const status of [400, 401, 403, 429]) {
+        assert.equal(
+          responseRefName(operation.responses[status]),
+          `Problem${status}`,
+          `write error ${status} missing for ${operation.operationId}`
+        )
+      }
+      for (const [status, response] of Object.entries(operation.responses)) {
+        if (Number(status) >= 200 && Number(status) < 300) {
+          assert.equal(
+            response.headers?.["X-Request-Id"]?.$ref,
+            "#/components/headers/XRequestId",
+            `write request ID header missing for ${operation.operationId}`
+          )
+        }
+      }
+    }
+  }
   if (operation.requestBody) {
     const media = operation.requestBody.content?.["application/json"]
     assert.ok(media?.schema, `request schema missing for ${operation.operationId}`)
@@ -229,6 +295,7 @@ const paginated = [
   ["get", "/api/v1/me/bookmarks"],
   ["get", "/api/v1/me/progress"],
   ["get", "/api/v1/editor/issues"],
+  ["get", "/api/v1/publisher/issues"],
   ["get", "/api/v1/editor/articles"]
 ]
 for (const [method, pathName] of paginated) {

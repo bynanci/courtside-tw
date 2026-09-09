@@ -36,7 +36,15 @@ public final class RouteRateLimiter {
         latestObservedMillis = now;
         while (!expiry.isEmpty() && expiry.element().expiresAt <= now) {
             Window expired = expiry.remove();
-            windows.remove(expired.key);
+            if (expired.pendingAuthentication == 0) {
+                windows.remove(expired.key);
+            } else {
+                // In-flight decoders retain their admission slots across a window
+                // boundary; expiry must not admit unlimited stalled authentication.
+                expired.accepted = expired.pendingAuthentication;
+                expired.expiresAt = Math.addExact(now, expired.key.bucket.limit().window().toMillis());
+                expiry.add(expired);
+            }
         }
 
         Key key = new Key(bucket, identity);
@@ -56,6 +64,16 @@ public final class RouteRateLimiter {
         return new Decision(true, 0);
     }
 
+    public synchronized AuthenticationReservation reserveAuthentication(String identity) {
+        Decision decision = acquire(RouteRateLimitPolicy.Bucket.AUTHENTICATION_FAILURE, identity);
+        Window window = decision.allowed()
+                ? windows.get(new Key(RouteRateLimitPolicy.Bucket.AUTHENTICATION_FAILURE, identity)) : null;
+        if (window != null) {
+            window.pendingAuthentication++;
+        }
+        return new AuthenticationReservation(decision, window);
+    }
+
     synchronized int trackedBuckets() {
         return windows.size();
     }
@@ -67,13 +85,43 @@ public final class RouteRateLimiter {
     public record Decision(boolean allowed, long retryAfterSeconds) {
     }
 
+    /** Single-use admission held until a verified JWT or a failed authentication is observed. */
+    public final class AuthenticationReservation {
+        private final Decision decision;
+        private final Window window;
+        private boolean completed;
+
+        private AuthenticationReservation(Decision decision, Window window) {
+            this.decision = decision;
+            this.window = window;
+        }
+
+        public Decision decision() {
+            return decision;
+        }
+
+        public void complete(boolean authenticated) {
+            synchronized (RouteRateLimiter.this) {
+                if (completed || window == null) {
+                    return;
+                }
+                completed = true;
+                window.pendingAuthentication--;
+                if (authenticated) {
+                    window.accepted--;
+                }
+            }
+        }
+    }
+
     private record Key(RouteRateLimitPolicy.Bucket bucket, String identity) {
     }
 
     private static final class Window {
         private final Key key;
-        private final long expiresAt;
+        private long expiresAt;
         private int accepted;
+        private int pendingAuthentication;
 
         private Window(Key key, long expiresAt) {
             this.key = key;

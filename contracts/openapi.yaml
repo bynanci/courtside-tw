@@ -515,6 +515,7 @@ paths:
       tags:
         - Reader
       operationId: putBookmark
+      x-write-concurrency: IDEMPOTENT_SET
       summary: Create or keep a bookmark
       description: Idempotently creates the reader bookmark.
       security:
@@ -546,6 +547,7 @@ paths:
       tags:
         - Reader
       operationId: deleteBookmark
+      x-write-concurrency: IDEMPOTENT_SET
       summary: Delete a bookmark
       description: Idempotently deletes the reader bookmark.
       security:
@@ -616,6 +618,7 @@ paths:
       tags:
         - Reader
       operationId: putReadingProgress
+      x-write-concurrency: REVISION_GUARDED_PROGRESS
       summary: Upsert reading progress
       description: Upserts progress against an explicit article revision and block anchor.
       security:
@@ -674,6 +677,7 @@ paths:
       tags:
         - Reader
       operationId: mergeReadingProgress
+      x-write-concurrency: REVISION_GUARDED_MERGE
       summary: Merge local and server progress
       description: Previews or applies an explicit bounded merge of local progress.
       security:
@@ -763,6 +767,7 @@ paths:
       tags:
         - SIWE
       operationId: createSiweChallenge
+      x-write-concurrency: PLANNED_US7
       summary: Create a SIWE challenge
       description: Creates a short-lived domain- and chain-bound nonce; this optional endpoint never grants editor authority.
       security: []
@@ -810,6 +815,7 @@ paths:
       tags:
         - SIWE
       operationId: verifySiweSignature
+      x-write-concurrency: PLANNED_US7
       summary: Verify a SIWE signature
       description: Verifies the ERC-4361 message and may link a BFF session after explicit reader action.
       security: []
@@ -859,6 +865,7 @@ paths:
         - Reader
         - SIWE
       operationId: revokeWalletLink
+      x-write-concurrency: PLANNED_US7
       summary: Revoke a linked wallet
       description: Revokes an off-chain wallet link after re-authentication.
       security:
@@ -893,6 +900,7 @@ paths:
       tags:
         - Reader
       operationId: requestAccountDeletion
+      x-write-concurrency: IDEMPOTENCY_KEY
       summary: Request account deletion
       description: Starts the verified account deletion workflow.
       security:
@@ -941,6 +949,7 @@ paths:
       tags:
         - Editorial
       operationId: createEditorIssue
+      x-write-concurrency: IDEMPOTENCY_KEY
       summary: Create an issue draft
       description: Creates a draft issue owned by the editorial workflow.
       security:
@@ -1039,6 +1048,7 @@ paths:
       tags:
         - Editorial
       operationId: patchEditorIssue
+      x-write-concurrency: IF_MATCH
       summary: Patch an issue draft
       description: Updates an issue draft with an If-Match optimistic lock.
       security:
@@ -1100,6 +1110,7 @@ paths:
       tags:
         - Editorial
       operationId: submitEditorIssue
+      x-write-concurrency: IF_MATCH
       summary: Submit an issue for review
       description: Moves a draft issue into publisher review with an optimistic lock.
       security:
@@ -1197,6 +1208,7 @@ paths:
       tags:
         - Editorial
       operationId: createEditorIssueSection
+      x-write-concurrency: IF_MATCH
       summary: Create an issue section
       description: Creates a section and persists its explicit position inside a draft issue.
       security:
@@ -1218,6 +1230,9 @@ paths:
       responses:
         "201":
           description: Section created and ordering persisted.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
           content:
             application/json:
               schema:
@@ -1255,6 +1270,7 @@ paths:
       tags:
         - Editorial
       operationId: reorderEditorIssueSections
+      x-write-concurrency: IF_MATCH
       summary: Reorder issue sections
       description: Atomically replaces the complete section order with contiguous explicit positions.
       security:
@@ -1278,6 +1294,9 @@ paths:
       responses:
         "200":
           description: Section ordering persisted.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
           content:
             application/json:
               schema:
@@ -1324,6 +1343,7 @@ paths:
       tags:
         - Editorial
       operationId: patchEditorIssueSection
+      x-write-concurrency: IF_MATCH
       summary: Rename an issue section
       description: Updates section metadata inside a draft issue with the issue aggregate lock.
       security:
@@ -1345,6 +1365,9 @@ paths:
       responses:
         "200":
           description: Section metadata persisted.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
           content:
             application/json:
               schema:
@@ -1382,6 +1405,7 @@ paths:
       tags:
         - Editorial
       operationId: deleteEditorIssueSection
+      x-write-concurrency: IF_MATCH
       summary: Delete an empty issue section
       description: Deletes only an empty section and normalizes the remaining explicit positions.
       security:
@@ -1393,6 +1417,9 @@ paths:
       responses:
         "200":
           description: Section deleted and ordering persisted.
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
           content:
             application/json:
               schema:
@@ -1426,6 +1453,7 @@ paths:
       tags:
         - Editorial
       operationId: createEditorArticle
+      x-write-concurrency: IDEMPOTENCY_KEY
       summary: Create an article draft
       description: Creates article identity and an initial working revision.
       security:
@@ -1526,6 +1554,7 @@ paths:
       tags:
         - Editorial
       operationId: patchEditorArticle
+      x-write-concurrency: IF_MATCH
       summary: Patch an article draft
       description: Updates an article identity or working revision with an If-Match lock.
       security:
@@ -1641,6 +1670,7 @@ paths:
       tags:
         - Editorial
       operationId: submitArticleForReview
+      x-write-concurrency: REVISION_ID_AND_IDEMPOTENCY_KEY
       summary: Submit an article revision
       description: Validates content and rights before moving the article into review.
       security:
@@ -1697,6 +1727,7 @@ paths:
       tags:
         - Editorial
       operationId: createArticleRevision
+      x-write-concurrency: IF_MATCH
       summary: Create an article revision
       description: Creates a new draft revision without mutating the published snapshot.
       security:
@@ -1775,6 +1806,7 @@ paths:
       tags:
         - Publisher
       operationId: approvePublisherArticle
+      x-write-concurrency: IF_MATCH
       summary: Approve a frozen revision
       description: Approves an article revision after editorial review.
       security:
@@ -1911,6 +1943,7 @@ paths:
       tags:
         - Publisher
       operationId: schedulePublisherArticle
+      x-write-concurrency: IF_MATCH
       summary: Schedule an article
       description: Schedules article publication using an explicit IANA timezone.
       security:
@@ -1961,6 +1994,8 @@ paths:
           $ref: "#/components/responses/Problem409"
         "422":
           $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
       x-idempotent: true
       x-optimistic-lock: If-Match
       x-required-roles:
@@ -1970,6 +2005,7 @@ paths:
       tags:
         - Publisher
       operationId: publishPublisherArticle
+      x-write-concurrency: IF_MATCH
       summary: Publish an article now
       description: Publishes the approved article revision and records an immutable snapshot.
       security:
@@ -2008,6 +2044,8 @@ paths:
           $ref: "#/components/responses/Problem409"
         "422":
           $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
       x-idempotent: true
       x-optimistic-lock: If-Match
       x-required-roles:
@@ -2017,6 +2055,7 @@ paths:
       tags:
         - Publisher
       operationId: requestChangesPublisherArticle
+      x-write-concurrency: IF_MATCH
       summary: Request article changes
       description: Returns a frozen article revision to draft with an auditable reason.
       security:
@@ -2065,6 +2104,8 @@ paths:
           $ref: "#/components/responses/Problem409"
         "422":
           $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
       x-idempotent: true
       x-optimistic-lock: If-Match
       x-required-roles:
@@ -2074,6 +2115,7 @@ paths:
       tags:
         - Publisher
       operationId: publishPublisherIssue
+      x-write-concurrency: IF_MATCH
       summary: Publish an issue now
       description: Atomically publishes the approved issue and returns the operation result.
       security:
@@ -2122,6 +2164,7 @@ paths:
       tags:
         - Publisher
       operationId: approvePublisherIssue
+      x-write-concurrency: IF_MATCH
       summary: Approve an issue
       description: Moves an issue from editorial review into the approved publication state.
       security:
@@ -2168,6 +2211,7 @@ paths:
       tags:
         - Publisher
       operationId: schedulePublisherIssue
+      x-write-concurrency: IF_MATCH
       summary: Schedule an issue
       description: Schedules publication with an explicit IANA timezone.
       security:
@@ -2227,6 +2271,7 @@ paths:
       tags:
         - Publisher
       operationId: withdrawPublisherArticle
+      x-write-concurrency: IF_MATCH
       summary: Withdraw an article
       description: Performs an emergency withdrawal with an auditable reason.
       security:
@@ -2285,6 +2330,7 @@ paths:
       tags:
         - Publisher
       operationId: archivePublisherIssue
+      x-write-concurrency: IF_MATCH
       summary: Archive a published or withdrawn issue
       description: Archives a published or withdrawn issue while preserving its immutable publication snapshot and audit evidence.
       security:
@@ -2331,6 +2377,7 @@ paths:
       tags:
         - Publisher
       operationId: archivePublisherArticle
+      x-write-concurrency: IF_MATCH
       summary: Archive a withdrawn article
       description: Archives an already withdrawn article while preserving its publication evidence.
       security:
@@ -2428,6 +2475,7 @@ paths:
       tags:
         - Media
       operationId: createMediaUploadIntent
+      x-write-concurrency: IDEMPOTENCY_KEY
       summary: Create a signed media upload intent
       description: Creates a short-lived, size- and MIME-bounded upload intent.
       security:
@@ -2485,6 +2533,7 @@ paths:
       tags:
         - Media
       operationId: completeMediaUpload
+      x-write-concurrency: IDEMPOTENCY_KEY
       summary: Complete a media upload
       description: Confirms checksum and MIME before enqueueing processing.
       security:
@@ -2585,6 +2634,7 @@ paths:
       tags:
         - Media
       operationId: updateEditorMediaMetadata
+      x-write-concurrency: IF_MATCH
       summary: Update media metadata and rights
       description: Persists alt text and a versioned rights record with an If-Match lock on the media asset.
       security:
@@ -2659,6 +2709,7 @@ paths:
         - Media
         - Publisher
       operationId: revokePublisherMedia
+      x-write-concurrency: IF_MATCH
       summary: Revoke media rights
       description: Revokes rights and returns the impacted publication report.
       security:
@@ -2680,6 +2731,7 @@ paths:
                   value:
                     assetId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
                     affectedArticles: []
+                    affectedOfflinePackages: []
                     status: REVOKED
           headers:
             X-Request-Id:
@@ -2761,6 +2813,7 @@ paths:
       tags:
         - Editorial
       operationId: createManagedTaxonomy
+      x-write-concurrency: UNIQUE_KEY_CREATE
       summary: Create a managed taxonomy term
       description: Creates a UUID-addressed term with an immutable stable key.
       security:
@@ -2822,6 +2875,7 @@ paths:
       tags:
         - Editorial
       operationId: patchManagedTaxonomy
+      x-write-concurrency: IF_MATCH
       summary: Update taxonomy attributes
       description: Updates display attributes and lifecycle without changing the UUID or stable key.
       security:
@@ -2890,6 +2944,7 @@ paths:
       tags:
         - Editorial
       operationId: addManagedTaxonomyAlias
+      x-write-concurrency: IF_MATCH
       summary: Add a versioned taxonomy alias
       description: Adds a validity-bounded alias and advances the parent term version.
       security:
@@ -2961,6 +3016,484 @@ paths:
       x-optimistic-lock: If-Match
       x-required-roles:
         - EDITOR
+  /api/v1/editor/contributors:
+    get:
+      tags:
+        - Editorial
+      operationId: listEditorContributors
+      summary: List editorial contributor identities
+      description: Lists at most 100 identities. ACTIVE is the default; ARCHIVED or
+        ALL may be requested. Contributor is a public byline entity and never an
+        authentication role.
+      parameters:
+        - name: status
+          in: query
+          required: false
+          schema:
+            type: string
+            enum:
+              - ACTIVE
+              - ARCHIVED
+              - ALL
+            default: ACTIVE
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContributorPage"
+              examples:
+                valid:
+                  value:
+                    items:
+                      - &a1
+                        contributorId: 00000000-0000-4000-8000-000000000001
+                        slug: contract-contributor
+                        displayName: Contract Contributor
+                        status: ACTIVE
+                        version: 1
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-required-roles:
+        - EDITOR
+    post:
+      tags:
+        - Editorial
+      operationId: createEditorContributor
+      x-write-concurrency: IDEMPOTENCY_KEY
+      summary: Create a contributor identity
+      description: Creates an audited public identity with a stable unique slug and no
+        private contact data. Repeated Idempotency-Key returns the same
+        identity.
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "201":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EditorialContributor"
+              examples:
+                valid:
+                  value: *a1
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-required-roles:
+        - EDITOR
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContributorInput"
+            examples:
+              valid:
+                value:
+                  slug: contract-contributor
+                  displayName: Contract Contributor
+      x-idempotent: true
+  /api/v1/editor/contributors/{contributorId}:
+    get:
+      tags:
+        - Editorial
+      operationId: getEditorContributor
+      summary: Read a contributor identity
+      description: Returns the stable identity, status and current version to an editor.
+      parameters:
+        - name: contributorId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/Uuid"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EditorialContributor"
+              examples:
+                valid:
+                  value: *a1
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-required-roles:
+        - EDITOR
+    patch:
+      tags:
+        - Editorial
+      operationId: updateEditorContributor
+      x-write-concurrency: IF_MATCH
+      summary: Update an unused contributor name
+      description: Updates displayName under an If-Match lock. The slug is immutable.
+        Identities already assigned to any revision retain immutable public
+        credit and return 409; archived identities cannot change.
+      parameters:
+        - name: contributorId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/Uuid"
+        - $ref: "#/components/parameters/IfMatch"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EditorialContributor"
+              examples:
+                valid:
+                  value:
+                    contributorId: 00000000-0000-4000-8000-000000000001
+                    slug: contract-contributor
+                    displayName: Updated Contributor
+                    status: ACTIVE
+                    version: 2
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-required-roles:
+        - EDITOR
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContributorUpdate"
+            examples:
+              valid:
+                value:
+                  displayName: Updated Contributor
+      x-idempotent: true
+      x-optimistic-lock: If-Match
+  /api/v1/editor/contributors/{contributorId}:archive:
+    post:
+      tags:
+        - Editorial
+      operationId: archiveEditorContributor
+      x-write-concurrency: IF_MATCH
+      summary: Archive a contributor identity
+      description: Archives an identity with a required reason. Existing revision
+        credits and published snapshots remain intact; new assignments reject
+        archived identities.
+      parameters:
+        - name: contributorId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/Uuid"
+        - $ref: "#/components/parameters/IfMatch"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EditorialContributor"
+              examples:
+                valid:
+                  value:
+                    contributorId: 00000000-0000-4000-8000-000000000001
+                    slug: contract-contributor
+                    displayName: Contract Contributor
+                    status: ARCHIVED
+                    version: 2
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-required-roles:
+        - EDITOR
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContributorArchive"
+            examples:
+              valid:
+                value:
+                  reason: No longer available for new assignments
+      x-idempotent: true
+      x-optimistic-lock: If-Match
+  /api/v1/editor/articles/{articleId}/revisions/{revisionId}/contributors:
+    get:
+      tags:
+        - Editorial
+      operationId: getArticleRevisionContributors
+      summary: Read an ordered revision byline
+      description: Returns revision-scoped public credit to an editor, including
+        frozen revisions. The revision must belong to the article. The version field
+        is the current article version for conditional draft writes.
+      parameters:
+        - name: articleId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/Uuid"
+        - name: revisionId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/Uuid"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArticleRevisionContributors"
+              examples:
+                valid:
+                  value:
+                    articleId: 00000000-0000-4000-8000-000000000002
+                    revisionId: 00000000-0000-4000-8000-000000000003
+                    version: 2
+                    contributors:
+                      - contributorId: 00000000-0000-4000-8000-000000000001
+                        role: AUTHOR
+                        slug: contract-contributor
+                        displayName: Contract Contributor
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-required-roles:
+        - EDITOR
+    put:
+      tags:
+        - Editorial
+      operationId: assignArticleRevisionContributors
+      x-write-concurrency: IF_MATCH
+      summary: Replace the ordered draft byline
+      description: Replaces at most 50 distinct contributor/role pairs on the current
+        DRAFT revision. If-Match binds the article version; the article version
+        advances once. Published revision credit cannot be changed. An empty
+        array clears draft credit.
+      parameters:
+        - name: articleId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/Uuid"
+        - name: revisionId
+          in: path
+          required: true
+          schema:
+            $ref: "#/components/schemas/Uuid"
+        - $ref: "#/components/parameters/IfMatch"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ArticleRevisionContributors"
+              examples:
+                valid:
+                  value:
+                    articleId: 00000000-0000-4000-8000-000000000002
+                    revisionId: 00000000-0000-4000-8000-000000000003
+                    version: 2
+                    contributors:
+                      - contributorId: 00000000-0000-4000-8000-000000000001
+                        role: AUTHOR
+                        slug: contract-contributor
+                        displayName: Contract Contributor
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-required-roles:
+        - EDITOR
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContributorAssignment"
+            examples:
+              valid:
+                value:
+                  contributors:
+                    - contributorId: 00000000-0000-4000-8000-000000000001
+                      role: AUTHOR
+      x-idempotent: true
+      x-optimistic-lock: If-Match
+  /api/v1/publisher/issues:
+    get:
+      tags:
+        - Publisher
+      operationId: listPublisherIssues
+      summary: List issues for publisher review
+      description: Returns the bounded issue queue and current versions to a publisher
+        without requiring editor authority. No mutation is performed.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/Limit"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueDraftPage"
+              examples:
+                valid:
+                  value:
+                    items: []
+                    page:
+                      nextCursor: null
+                      limit: 20
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-required-roles:
+        - PUBLISHER
+  /api/v1/publisher/issues/{id}:
+    get:
+      tags:
+        - Publisher
+      operationId: getPublisherIssue
+      summary: Read an issue for publication decisions
+      description: Returns an issue projection and current optimistic-lock version to
+        a publisher. Draft editing remains an editor-only operation.
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Successful response.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/IssueDraft"
+              examples:
+                valid:
+                  value:
+                    issueId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    version: 2
+                    title: Issue 1 revised
+                    slug: issue-1
+                    state: DRAFT
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+            ETag:
+              description: Current issue version for an exact If-Match write.
+              schema:
+                type: string
+              example: '"2"'
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-required-roles:
+        - PUBLISHER
 components:
   securitySchemes:
     oidcBearer:
@@ -3106,6 +3639,150 @@ components:
         minimum: 1
         maximum: 3600
   schemas:
+    EditorialContributor:
+      type: object
+      additionalProperties: false
+      required:
+        - contributorId
+        - slug
+        - displayName
+        - status
+        - version
+      properties:
+        contributorId:
+          $ref: "#/components/schemas/Uuid"
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 128
+          pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 200
+        status:
+          type: string
+          enum:
+            - ACTIVE
+            - ARCHIVED
+        version:
+          type: integer
+          format: int64
+          minimum: 0
+    ContributorPage:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+      properties:
+        items:
+          type: array
+          maxItems: 100
+          items:
+            $ref: "#/components/schemas/EditorialContributor"
+    ContributorInput:
+      type: object
+      additionalProperties: false
+      required:
+        - slug
+        - displayName
+      properties:
+        slug:
+          type: string
+          minLength: 1
+          maxLength: 128
+          pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 200
+    ContributorUpdate:
+      type: object
+      additionalProperties: false
+      required:
+        - displayName
+      properties:
+        displayName:
+          type: string
+          minLength: 1
+          maxLength: 200
+    ContributorArchive:
+      type: object
+      additionalProperties: false
+      required:
+        - reason
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+    ContributorAssignment:
+      type: object
+      additionalProperties: false
+      required:
+        - contributors
+      properties:
+        contributors:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - contributorId
+              - role
+            properties:
+              contributorId:
+                $ref: "#/components/schemas/Uuid"
+              role: &a1
+                type: string
+                enum:
+                  - AUTHOR
+                  - EDITOR
+                  - PHOTOGRAPHER
+                  - ILLUSTRATOR
+                  - TRANSLATOR
+                  - DESIGNER
+    ArticleRevisionContributors:
+      type: object
+      additionalProperties: false
+      required:
+        - articleId
+        - revisionId
+        - version
+        - contributors
+      properties:
+        articleId:
+          $ref: "#/components/schemas/Uuid"
+        revisionId:
+          $ref: "#/components/schemas/Uuid"
+        version:
+          type: integer
+          format: int64
+          minimum: 1
+        contributors:
+          type: array
+          maxItems: 50
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - contributorId
+              - slug
+              - displayName
+              - role
+            properties:
+              contributorId:
+                $ref: "#/components/schemas/Uuid"
+              slug:
+                type: string
+                minLength: 1
+                maxLength: 128
+              displayName:
+                type: string
+                minLength: 1
+                maxLength: 200
+              role: *a1
     Uuid:
       type: string
       format: uuid
@@ -4474,8 +5151,15 @@ components:
       required:
         - assetId
         - affectedArticles
+        - affectedOfflinePackages
         - status
       properties:
+        affectedOfflinePackages:
+          type: array
+          uniqueItems: true
+          description: Sorted issue IDs whose immutable snapshots reference the revoked asset or an affected article revision, including historical and archived issues; every installed version of each issue must expire.
+          items:
+            $ref: "#/components/schemas/Uuid"
         assetId:
           $ref: "#/components/schemas/Uuid"
         affectedArticles:
@@ -4624,6 +5308,7 @@ components:
           format: date-time
         withdrawals:
           type: array
+          description: Withdrawn article, issue or revoked media asset IDs. Clients invalidate installed packages matching an articleId or assetId, including packages whose cover alone was revoked.
           items:
             $ref: "#/components/schemas/Uuid"
         checksum:
@@ -5031,6 +5716,8 @@ components:
       x-stable-error-code: RATE_LIMITED
 x-contract-rules:
   problemMediaType: application/problem+json
+  invalidRequestNormalization: Malformed JSON, invalid binding values and unsupported request media types use 400 INVALID_REQUEST without reflecting submitted values.
+  writeConcurrency: Mutable editorial resources require If-Match; revision-guarded progress and submission, idempotent reader sets, unique-key creation and command idempotency retain their explicit per-operation concurrency contract.
   stableErrorStatuses:
     - 400
     - 401

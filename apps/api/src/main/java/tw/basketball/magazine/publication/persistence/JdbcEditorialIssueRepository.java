@@ -264,6 +264,18 @@ public final class JdbcEditorialIssueRepository implements EditorialIssueReposit
 
     @Override
     public boolean readyForPublication(UUID issueId, Instant checkedAt) {
+        // Hold the cover and its rights through immutable snapshot/impact insertion.
+        // The revocation command takes this asset lock before discovering impacts.
+        jdbcTemplate.query("""
+                SELECT asset.id FROM publication_issue issue
+                JOIN media_asset asset ON asset.id = issue.cover_asset_id
+                WHERE issue.id = ? FOR UPDATE OF asset
+                """, (resultSet, rowNumber) -> uuid(resultSet, "id"), issueId);
+        jdbcTemplate.query("""
+                SELECT rights.id FROM publication_issue issue
+                JOIN rights_record rights ON rights.asset_id = issue.cover_asset_id
+                WHERE issue.id = ? ORDER BY rights.id FOR UPDATE OF rights
+                """, (resultSet, rowNumber) -> uuid(resultSet, "id"), issueId);
         // Keep article pointers and their referenced revisions stable through snapshot insertion.
         // Callers hold the issue aggregate lock within the publication transaction.
         jdbcTemplate.query("""
@@ -294,6 +306,10 @@ public final class JdbcEditorialIssueRepository implements EditorialIssueReposit
                     WHERE issue.id = ?
                       AND asset.processing_state = 'READY'
                       AND btrim(asset.alt_text) <> ''
+                      AND NOT EXISTS (
+                          SELECT 1 FROM rights_record revoked
+                          WHERE revoked.asset_id = asset.id AND revoked.status = 'REVOKED'
+                      )
                       AND variant.public_storage_key ~ '^[a-z0-9][a-z0-9._/-]{0,255}$'
                       AND position('..' IN variant.public_storage_key) = 0
                       AND position('//' IN variant.public_storage_key) = 0

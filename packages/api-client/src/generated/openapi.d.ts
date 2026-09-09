@@ -989,10 +989,184 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  "/api/v1/editor/contributors": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List editorial contributor identities
+     * @description Lists at most 100 identities. ACTIVE is the default; ARCHIVED or ALL may be requested. Contributor is a public byline entity and never an authentication role.
+     */
+    get: operations["listEditorContributors"]
+    put?: never
+    /**
+     * Create a contributor identity
+     * @description Creates an audited public identity with a stable unique slug and no private contact data. Repeated Idempotency-Key returns the same identity.
+     */
+    post: operations["createEditorContributor"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/editor/contributors/{contributorId}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Read a contributor identity
+     * @description Returns the stable identity, status and current version to an editor.
+     */
+    get: operations["getEditorContributor"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    /**
+     * Update an unused contributor name
+     * @description Updates displayName under an If-Match lock. The slug is immutable. Identities already assigned to any revision retain immutable public credit and return 409; archived identities cannot change.
+     */
+    patch: operations["updateEditorContributor"]
+    trace?: never
+  }
+  "/api/v1/editor/contributors/{contributorId}:archive": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Archive a contributor identity
+     * @description Archives an identity with a required reason. Existing revision credits and published snapshots remain intact; new assignments reject archived identities.
+     */
+    post: operations["archiveEditorContributor"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/editor/articles/{articleId}/revisions/{revisionId}/contributors": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Read an ordered revision byline
+     * @description Returns revision-scoped public credit to an editor, including frozen revisions. The revision must belong to the article. The version field is the current article version for conditional draft writes.
+     */
+    get: operations["getArticleRevisionContributors"]
+    /**
+     * Replace the ordered draft byline
+     * @description Replaces at most 50 distinct contributor/role pairs on the current DRAFT revision. If-Match binds the article version; the article version advances once. Published revision credit cannot be changed. An empty array clears draft credit.
+     */
+    put: operations["assignArticleRevisionContributors"]
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/publisher/issues": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List issues for publisher review
+     * @description Returns the bounded issue queue and current versions to a publisher without requiring editor authority. No mutation is performed.
+     */
+    get: operations["listPublisherIssues"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/publisher/issues/{id}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Read an issue for publication decisions
+     * @description Returns an issue projection and current optimistic-lock version to a publisher. Draft editing remains an editor-only operation.
+     */
+    get: operations["getPublisherIssue"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
 }
 export type webhooks = Record<string, never>
 export interface components {
   schemas: {
+    EditorialContributor: {
+      contributorId: components["schemas"]["Uuid"]
+      slug: string
+      displayName: string
+      /** @enum {string} */
+      status: "ACTIVE" | "ARCHIVED"
+      /** Format: int64 */
+      version: number
+    }
+    ContributorPage: {
+      items: components["schemas"]["EditorialContributor"][]
+    }
+    ContributorInput: {
+      slug: string
+      displayName: string
+    }
+    ContributorUpdate: {
+      displayName: string
+    }
+    ContributorArchive: {
+      reason: string
+    }
+    ContributorAssignment: {
+      contributors: {
+        contributorId: components["schemas"]["Uuid"]
+        /** @enum {string} */
+        role: "AUTHOR" | "EDITOR" | "PHOTOGRAPHER" | "ILLUSTRATOR" | "TRANSLATOR" | "DESIGNER"
+      }[]
+    }
+    ArticleRevisionContributors: {
+      articleId: components["schemas"]["Uuid"]
+      revisionId: components["schemas"]["Uuid"]
+      /** Format: int64 */
+      version: number
+      contributors: {
+        contributorId: components["schemas"]["Uuid"]
+        slug: string
+        displayName: string
+        /** @enum {string} */
+        role: "AUTHOR" | "EDITOR" | "PHOTOGRAPHER" | "ILLUSTRATOR" | "TRANSLATOR" | "DESIGNER"
+      }[]
+    }
     /**
      * Format: uuid
      * @description Stable public identifier.
@@ -1433,6 +1607,8 @@ export interface components {
       id: components["schemas"]["Uuid"]
     }
     RevokeImpactReport: {
+      /** @description Sorted issue IDs whose immutable snapshots reference the revoked asset or an affected article revision, including historical and archived issues; every installed version of each issue must expire. */
+      affectedOfflinePackages: components["schemas"]["Uuid"][]
       assetId: components["schemas"]["Uuid"]
       affectedArticles: components["schemas"]["Uuid"][]
       /** @enum {string} */
@@ -1478,6 +1654,7 @@ export interface components {
       version: number
       /** Format: date-time */
       generatedAt: string
+      /** @description Withdrawn article, issue or revoked media asset IDs. Clients invalidate installed packages matching an articleId or assetId, including packages whose cover alone was revoked. */
       withdrawals: components["schemas"]["Uuid"][]
       checksum: string
     }
@@ -2770,6 +2947,7 @@ export interface operations {
       /** @description Section created and ordering persisted. */
       201: {
         headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
           [name: string]: unknown
         }
         content: {
@@ -2808,6 +2986,7 @@ export interface operations {
       /** @description Section ordering persisted. */
       200: {
         headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
           [name: string]: unknown
         }
         content: {
@@ -2843,6 +3022,7 @@ export interface operations {
       /** @description Section deleted and ordering persisted. */
       200: {
         headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
           [name: string]: unknown
         }
         content: {
@@ -2882,6 +3062,7 @@ export interface operations {
       /** @description Section metadata persisted. */
       200: {
         headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
           [name: string]: unknown
         }
         content: {
@@ -3231,6 +3412,7 @@ export interface operations {
       404: components["responses"]["Problem404"]
       409: components["responses"]["Problem409"]
       422: components["responses"]["Problem422"]
+      429: components["responses"]["Problem429"]
     }
   }
   publishPublisherArticle: {
@@ -3265,6 +3447,7 @@ export interface operations {
       404: components["responses"]["Problem404"]
       409: components["responses"]["Problem409"]
       422: components["responses"]["Problem422"]
+      429: components["responses"]["Problem429"]
     }
   }
   requestChangesPublisherArticle: {
@@ -3303,6 +3486,7 @@ export interface operations {
       404: components["responses"]["Problem404"]
       409: components["responses"]["Problem409"]
       422: components["responses"]["Problem422"]
+      429: components["responses"]["Problem429"]
     }
   }
   publishPublisherIssue: {
@@ -3857,6 +4041,305 @@ export interface operations {
       403: components["responses"]["Problem403"]
       404: components["responses"]["Problem404"]
       409: components["responses"]["Problem409"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  listEditorContributors: {
+    parameters: {
+      query?: {
+        status?: "ACTIVE" | "ARCHIVED" | "ALL"
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response. */
+      200: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ContributorPage"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      409: components["responses"]["Problem409"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  createEditorContributor: {
+    parameters: {
+      query?: never
+      header: {
+        /** @description Stable retry key. Replays return the original operation result. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"]
+      }
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ContributorInput"]
+      }
+    }
+    responses: {
+      /** @description Successful response. */
+      201: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["EditorialContributor"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      409: components["responses"]["Problem409"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  getEditorContributor: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        contributorId: components["schemas"]["Uuid"]
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response. */
+      200: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["EditorialContributor"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      409: components["responses"]["Problem409"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  updateEditorContributor: {
+    parameters: {
+      query?: never
+      header: {
+        /** @description Optimistic-lock version or ETag. The server rejects stale values with 409 VERSION_CONFLICT. */
+        "If-Match": components["parameters"]["IfMatch"]
+        /** @description Stable retry key. Replays return the original operation result. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"]
+      }
+      path: {
+        contributorId: components["schemas"]["Uuid"]
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ContributorUpdate"]
+      }
+    }
+    responses: {
+      /** @description Successful response. */
+      200: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["EditorialContributor"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      409: components["responses"]["Problem409"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  archiveEditorContributor: {
+    parameters: {
+      query?: never
+      header: {
+        /** @description Optimistic-lock version or ETag. The server rejects stale values with 409 VERSION_CONFLICT. */
+        "If-Match": components["parameters"]["IfMatch"]
+        /** @description Stable retry key. Replays return the original operation result. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"]
+      }
+      path: {
+        contributorId: components["schemas"]["Uuid"]
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ContributorArchive"]
+      }
+    }
+    responses: {
+      /** @description Successful response. */
+      200: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["EditorialContributor"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      409: components["responses"]["Problem409"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  getArticleRevisionContributors: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        articleId: components["schemas"]["Uuid"]
+        revisionId: components["schemas"]["Uuid"]
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response. */
+      200: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ArticleRevisionContributors"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  assignArticleRevisionContributors: {
+    parameters: {
+      query?: never
+      header: {
+        /** @description Optimistic-lock version or ETag. The server rejects stale values with 409 VERSION_CONFLICT. */
+        "If-Match": components["parameters"]["IfMatch"]
+        /** @description Stable retry key. Replays return the original operation result. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"]
+      }
+      path: {
+        articleId: components["schemas"]["Uuid"]
+        revisionId: components["schemas"]["Uuid"]
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ContributorAssignment"]
+      }
+    }
+    responses: {
+      /** @description Successful response. */
+      200: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["ArticleRevisionContributors"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      409: components["responses"]["Problem409"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  listPublisherIssues: {
+    parameters: {
+      query?: {
+        /** @description Opaque cursor returned by the previous page. */
+        cursor?: components["parameters"]["Cursor"]
+        /** @description Bounded page size. */
+        limit?: components["parameters"]["Limit"]
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response. */
+      200: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["IssueDraftPage"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  getPublisherIssue: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: components["parameters"]["Id"]
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful response. */
+      200: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          /**
+           * @description Current issue version for an exact If-Match write.
+           * @example "2"
+           */
+          ETag?: string
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["IssueDraft"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
       429: components["responses"]["Problem429"]
     }
   }

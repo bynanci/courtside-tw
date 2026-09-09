@@ -17,12 +17,80 @@ import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.security.oauth2.jwt.Jwt;
+import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import tools.jackson.databind.ObjectMapper;
 
 final class RouteRateLimitFilterTest {
     @AfterEach
     void clearAuthentication() {
         SecurityContextHolder.clearContext();
+    }
+
+    @Test
+    void unsafeAnonymousRequestsReserveDenialCapacityBeforeDownstreamCsrf() throws Exception {
+        RouteRateLimitFilter filter = filter(RouteRateLimitFilter.Stage.AUTHENTICATION);
+        for (int attempt = 0; attempt <= 10; attempt++) {
+            MockHttpServletRequest request = new MockHttpServletRequest("POST", "/api/v1/editor/articles");
+            request.setRemoteAddr("192.0.2.1");
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            AtomicBoolean reachedCsrf = new AtomicBoolean();
+            filter.doFilter(request, response, (ignoredRequest, ignoredResponse) -> {
+                reachedCsrf.set(true);
+                response.setStatus(403);
+            });
+            assertEquals(attempt < 10, reachedCsrf.get());
+            assertEquals(attempt < 10 ? 403 : 429, response.getStatus());
+        }
+        for (int request = 0; request < 120; request++) {
+            assertEquals(200, perform(filter, "/api/v1/public/issues", "192.0.2.1", null).getStatus());
+        }
+    }
+
+    @Test
+    void chargesRejectedBearerAttemptsAcrossAllRoutesWithoutTrustingForwardedHeadersOrTokenNames() throws Exception {
+        RouteRateLimitFilter filter = filter(RouteRateLimitFilter.Stage.AUTHENTICATION);
+        List<String> paths = List.of("/api/v1/public/search", "/api/v1/editor/articles", "/api/v1/editor/media/uploads");
+        for (int attempt = 0; attempt <= 10; attempt++) {
+            MockHttpServletRequest request = new MockHttpServletRequest("GET", paths.get(attempt % paths.size()));
+            request.setRemoteAddr("192.0.2.1");
+            request.addHeader("Authorization", "bEaReR invalid-" + attempt);
+            request.addHeader("X-Forwarded-For", "198.51.100." + attempt);
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            AtomicBoolean reachedDecoder = new AtomicBoolean();
+            filter.doFilter(request, response, (ignoredRequest, ignoredResponse) -> {
+                reachedDecoder.set(true);
+                response.setStatus(401);
+            });
+            assertEquals(attempt < 10, reachedDecoder.get());
+            assertEquals(attempt < 10 ? 401 : 429, response.getStatus());
+        }
+    }
+
+    @Test
+    void verifiedJwtReleasesFailureAdmissionAndKeepsTheWholeUploadQuota() throws Exception {
+        RouteRateLimiter limiter = new RouteRateLimiter(Clock.systemUTC(), 100);
+        RouteRateLimitFilter authentication = new RouteRateLimitFilter(limiter, new ObjectMapper(),
+                RouteRateLimitFilter.Stage.AUTHENTICATION);
+        RouteRateLimitFilter application = new RouteRateLimitFilter(limiter, new ObjectMapper(),
+                RouteRateLimitFilter.Stage.APPLICATION);
+        for (int attempt = 0; attempt <= 20; attempt++) {
+            SecurityContextHolder.clearContext();
+            MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/editor/media/uploads");
+            request.setRemoteAddr("192.0.2.1");
+            request.addHeader("Authorization", "Bearer valid-editor");
+            MockHttpServletResponse response = new MockHttpServletResponse();
+            AtomicBoolean reachedApplication = new AtomicBoolean();
+            authentication.doFilter(request, response, (nextRequest, nextResponse) -> {
+                Jwt jwt = Jwt.withTokenValue("valid-editor").header("alg", "RS256")
+                        .subject("editor").issuer("https://issuer.example.test").build();
+                SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(jwt, List.of()));
+                application.doFilter(nextRequest, nextResponse, (ignoredRequest, ignoredResponse) ->
+                        reachedApplication.set(true));
+            });
+            assertEquals(attempt < 20, reachedApplication.get());
+            assertEquals(attempt < 20 ? 200 : 429, response.getStatus());
+        }
     }
 
     @Test

@@ -73,6 +73,25 @@ public final class EditorialIssueController {
         );
     }
 
+    @GetMapping(path = "/api/v1/publisher/issues", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<JsonNode> listPublisherIssues(
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "20") int limit,
+            Authentication authentication,
+            HttpServletRequest request
+    ) {
+        return response(service.listPublisherIssues(actor(authentication, request), cursor, limit), requestId(request));
+    }
+
+    @GetMapping(path = "/api/v1/publisher/issues/{issueId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<JsonNode> getPublisherIssue(
+            @PathVariable String issueId,
+            Authentication authentication,
+            HttpServletRequest request
+    ) {
+        return response(service.getPublisherIssue(actor(authentication, request), uuid(issueId, "/id")), requestId(request));
+    }
+
     @PatchMapping(path = "/api/v1/editor/issues", consumes = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<JsonNode> patchIssue(
             @RequestBody(required = false) String body,

@@ -1,6 +1,6 @@
 package tw.basketball.magazine.identity;
 
-import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -25,6 +25,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.authority.FactorGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.web.FilterChainProxy;
@@ -79,8 +80,10 @@ final class OidcRoleMatrixTest {
                     .andExpect(status().is(expectedStatus));
             if (expectedStatus == 200) {
                 result.andExpect(jsonPath("$.subject").value("matrix-" + role))
-                        .andExpect(jsonPath("$.authorities", hasSize(1)))
-                        .andExpect(jsonPath("$.authorities[0]").value("ROLE_" + role));
+                        // Spring Security 7 also identifies the verified bearer factor.
+                        // Assert the complete authority set so extra application roles fail.
+                        .andExpect(jsonPath("$.authorities", containsInAnyOrder(
+                                "ROLE_" + role, FactorGrantedAuthority.BEARER_AUTHORITY)));
             } else {
                 result.andExpect(jsonPath("$.code").value("FORBIDDEN"));
             }
@@ -114,7 +117,8 @@ final class OidcRoleMatrixTest {
             mockMvc.perform(get("/api/v1/" + boundary + "/role-matrix")
                             .header(HttpHeaders.AUTHORIZATION, "Bearer READER_EDITOR"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.authorities", hasSize(2)));
+                    .andExpect(jsonPath("$.authorities", containsInAnyOrder(
+                            "ROLE_READER", "ROLE_EDITOR", FactorGrantedAuthority.BEARER_AUTHORITY)));
         }
         for (String boundary : List.of("publisher", "admin")) {
             mockMvc.perform(get("/api/v1/" + boundary + "/role-matrix")

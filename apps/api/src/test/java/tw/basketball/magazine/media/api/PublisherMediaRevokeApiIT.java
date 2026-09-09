@@ -52,6 +52,7 @@ final class PublisherMediaRevokeApiIT extends EditorialApiIntegrationTestSupport
                 .andExpect(jsonPath("$.status").value("REVOKED"))
                 .andExpect(jsonPath("$.version").value(1))
                 .andExpect(jsonPath("$.affectedArticles").isArray())
+                .andExpect(jsonPath("$.affectedOfflinePackages").isArray())
                 .andReturn();
 
         MvcResult replay = mockMvc.perform(post("/api/v1/publisher/media/{id}:revoke", assetId)

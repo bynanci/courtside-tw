@@ -120,6 +120,46 @@ final class EditorialIssueApiIT extends EditorialApiIntegrationTestSupport {
     }
 
     @Test
+    void publisherCanReadIssueQueueAndVersionWithoutEditorAuthority() throws Exception {
+        UUID issueId = createIssue(actor("read-queue-editor", RoleCode.EDITOR), "publisher-queue");
+        Authentication publisher = actor("read-queue-publisher", RoleCode.PUBLISHER);
+        mockMvc.perform(get("/api/v1/publisher/issues").principal(publisher)
+                        .header("X-Request-Id", "publisher-queue-request"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].issueId").value(issueId.toString()))
+                .andExpect(jsonPath("$.items[0].version").value(1))
+                .andExpect(jsonPath("$.page.limit").value(20));
+        mockMvc.perform(get("/api/v1/publisher/issues/{id}", issueId).principal(publisher))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string(HttpHeaders.ETAG, "\"1\""))
+                .andExpect(jsonPath("$.issueId").value(issueId.toString()))
+                .andExpect(jsonPath("$.state").value("DRAFT"));
+        mockMvc.perform(get("/api/v1/publisher/issues/{id}", UUID.randomUUID()).principal(publisher))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("RESOURCE_NOT_FOUND"));
+    }
+
+    @Test
+    void publisherReadRoleIsExplicitAndDoesNotGrantEditorMutations() throws Exception {
+        UUID issueId = createIssue(actor("read-boundary-editor", RoleCode.EDITOR), "publisher-read-boundary");
+        for (String url : List.of("/api/v1/publisher/issues", "/api/v1/publisher/issues/" + issueId)) {
+            mockMvc.perform(get(url).principal(actor("only-editor", RoleCode.EDITOR)))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+            mockMvc.perform(get(url)).andExpect(status().isUnauthorized())
+                    .andExpect(jsonPath("$.code").value("AUTHENTICATION_REQUIRED"));
+            Authentication editorPublisher = new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                    "editor-publisher", null, List.of(
+                            new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_EDITOR"),
+                            new org.springframework.security.core.authority.SimpleGrantedAuthority("ROLE_PUBLISHER")));
+            mockMvc.perform(get(url).principal(editorPublisher)).andExpect(status().isOk());
+        }
+        mockMvc.perform(get("/api/v1/editor/issues").principal(actor("only-publisher", RoleCode.PUBLISHER)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     void publisherCannotMutateIssueDraft() throws Exception {
         mockMvc.perform(post("/api/v1/editor/issues")
                         .principal(actor("issue-publisher", RoleCode.PUBLISHER))
@@ -220,7 +260,7 @@ final class EditorialIssueApiIT extends EditorialApiIntegrationTestSupport {
         assertEquals("ARCHIVED", jdbcTemplate.queryForObject(
                 "SELECT state FROM publication_issue WHERE id = ?", String.class, issueId));
         assertEquals(List.of("SUBMITTED", "APPROVED"), jdbcTemplate.queryForList(
-                "SELECT decision FROM publication_review WHERE aggregate_type = 'ISSUE' AND aggregate_id = ? ORDER BY created_at, id",
+                "SELECT decision FROM publication_review WHERE aggregate_type = 'ISSUE' AND aggregate_id = ? ORDER BY occurred_at, id",
                 String.class, issueId));
         assertEquals(1, issueEventCount(issueId, "ISSUE_CREATED"));
         assertEquals(1, issueEventCount(issueId, "ISSUE_SUBMITTED"));

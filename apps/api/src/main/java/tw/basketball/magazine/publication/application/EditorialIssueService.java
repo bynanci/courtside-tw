@@ -108,6 +108,25 @@ public final class EditorialIssueService {
             int limit
     ) {
         requireEditor(actor);
+        return issuePage(cursor, limit);
+    }
+
+    public EditorialWorkflowService.OperationResult listPublisherIssues(
+            ActorContext actor,
+            String cursor,
+            int limit
+    ) {
+        requirePublisher(actor);
+        return issuePage(cursor, limit);
+    }
+
+    public EditorialWorkflowService.OperationResult getPublisherIssue(ActorContext actor, UUID issueId) {
+        requirePublisher(actor);
+        EditorialIssueRepository.IssueRecord issue = requireIssue(issueId);
+        return new EditorialWorkflowService.OperationResult(200, json(issueJson(issue)), issue.version());
+    }
+
+    private EditorialWorkflowService.OperationResult issuePage(String cursor, int limit) {
         int boundedLimit = Math.max(1, Math.min(limit, 100));
         EditorialIssueRepository.IssuePage issuePage = repository.list(cursor, boundedLimit);
         List<Map<String, Object>> items = issuePage.items().stream()

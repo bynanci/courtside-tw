@@ -20,6 +20,49 @@ import org.junit.jupiter.api.Test;
 
 final class RouteRateLimiterTest {
     @Test
+    void successfulAuthenticationReleasesReservationsWithoutSpendingTheFailureBudget() {
+        RouteRateLimiter limiter = new RouteRateLimiter(Clock.systemUTC(), 100);
+        for (int request = 0; request < 120; request++) {
+            var reservation = limiter.reserveAuthentication("peer");
+            assertTrue(reservation.decision().allowed());
+            reservation.complete(true);
+            reservation.complete(false);
+        }
+        for (int failure = 0; failure < 10; failure++) {
+            var reservation = limiter.reserveAuthentication("peer");
+            assertTrue(reservation.decision().allowed());
+            reservation.complete(false);
+            reservation.complete(true);
+        }
+        assertFalse(limiter.reserveAuthentication("peer").decision().allowed());
+    }
+
+    @Test
+    void outstandingAuthenticationCannotEscapeTheConcurrencyBoundAtWindowExpiry() {
+        MutableClock clock = new MutableClock();
+        RouteRateLimiter limiter = new RouteRateLimiter(clock, 100);
+        List<RouteRateLimiter.AuthenticationReservation> pending = new ArrayList<>();
+        for (int request = 0; request < 10; request++) {
+            var reservation = limiter.reserveAuthentication("peer");
+            assertTrue(reservation.decision().allowed());
+            pending.add(reservation);
+        }
+        assertFalse(limiter.reserveAuthentication("peer").decision().allowed());
+        clock.advanceMillis(120_000);
+        assertFalse(limiter.reserveAuthentication("peer").decision().allowed());
+        assertEquals(1, limiter.trackedBuckets());
+        pending.get(0).complete(true);
+        assertTrue(limiter.reserveAuthentication("peer").decision().allowed());
+        assertFalse(limiter.reserveAuthentication("peer").decision().allowed());
+        pending.get(0).complete(true);
+        assertFalse(limiter.reserveAuthentication("peer").decision().allowed());
+        for (int request = 1; request < pending.size(); request++) {
+            pending.get(request).complete(false);
+        }
+        assertFalse(limiter.reserveAuthentication("peer").decision().allowed());
+    }
+
+    @Test
     void enforcesEveryExistingBudgetWithoutSharingCategoriesOrActors() {
         RouteRateLimiter limiter = new RouteRateLimiter(Clock.systemUTC(), 100);
         for (RouteRateLimitPolicy.Bucket bucket : RouteRateLimitPolicy.Bucket.values()) {

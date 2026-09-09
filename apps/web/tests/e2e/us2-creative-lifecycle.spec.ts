@@ -240,39 +240,67 @@ for (const blockedModule of ["p5", "preset"] as const) {
   })
 }
 
-test("a p5 draw failure removes its canvas and retains the static reading path", async ({
-  page
-}) => {
-  const pageErrors: string[] = []
-  page.on("pageerror", (error) => pageErrors.push(error.message))
-  await page.addInitScript(() => {
-    const originalStroke = CanvasRenderingContext2D.prototype.stroke
-    CanvasRenderingContext2D.prototype.stroke = function (
-      ...args: Parameters<typeof originalStroke>
-    ) {
-      if (this.canvas.dataset.failCreativeDraw === "true") {
-        throw new Error("T086 forced production canvas draw failure")
+for (const failurePhase of ["setup", "draw", "resize"] as const) {
+  test(`a p5 ${failurePhase} failure removes its canvas and retains the static reading path`, async ({
+    page
+  }) => {
+    const pageErrors: string[] = []
+    page.on("pageerror", (error) => pageErrors.push(error.message))
+    await page.addInitScript((phase) => {
+      const originalStroke = CanvasRenderingContext2D.prototype.stroke
+      CanvasRenderingContext2D.prototype.stroke = function (
+        ...args: Parameters<typeof originalStroke>
+      ) {
+        if (
+          (phase === "setup" && this.canvas.closest('[data-testid="creative-runtime"]')) ||
+          this.canvas.dataset.failCreativeDraw === "true"
+        ) {
+          throw new Error(`T086 forced production canvas ${phase} failure`)
+        }
+        return originalStroke.apply(this, args)
       }
-      return originalStroke.apply(this, args)
+    }, failurePhase)
+    await page.emulateMedia({ reducedMotion: "no-preference" })
+    await page.goto(creativeArticlePath, { waitUntil: "networkidle" })
+    await page.getByTestId("generative-canvas").first().scrollIntoViewIfNeeded()
+    const runtime = page.getByTestId("creative-runtime").first()
+    if (failurePhase !== "setup") {
+      await expect(runtime).toHaveAttribute("data-runtime-status", "running")
+      await expect(runtime.locator("canvas")).toHaveCount(1)
+      if (failurePhase === "resize") {
+        await page.evaluate(() => window.dispatchEvent(new Event("blur")))
+        await expect(runtime).toHaveAttribute("data-runtime-status", "paused")
+      }
+      await runtime.locator("canvas").evaluate((canvas) => {
+        canvas.dataset.failCreativeDraw = "true"
+      })
+      if (failurePhase === "resize") {
+        await runtime.evaluate((host) => {
+          host.style.width = "240px"
+        })
+      }
     }
+    await expect(runtime).toHaveAttribute("data-runtime-status", "error")
+    await expect(runtime.locator("canvas")).toHaveCount(0)
+    await expectStaticCreativeArticle(page)
+    // Focus, scroll, and the debounced resize path cannot revive a failed host.
+    await page.evaluate(() => {
+      window.dispatchEvent(new Event("blur"))
+      window.dispatchEvent(new Event("focus"))
+      window.dispatchEvent(new Event("scroll"))
+    })
+    await runtime.evaluate((host) => {
+      host.style.width = "260px"
+    })
+    await page.waitForTimeout(350)
+    await expect(runtime).toHaveAttribute("data-runtime-status", "error")
+    await expect(runtime.locator("canvas")).toHaveCount(0)
+    await page.getByTestId("article-next").click()
+    await expect(page).toHaveURL(/\/articles\/courtside-notes/)
+    await expect(page.locator("canvas")).toHaveCount(0)
+    expect(pageErrors).toEqual([])
   })
-  await page.emulateMedia({ reducedMotion: "no-preference" })
-  await page.goto(creativeArticlePath, { waitUntil: "networkidle" })
-  await page.getByTestId("generative-canvas").first().scrollIntoViewIfNeeded()
-  const runtime = page.getByTestId("creative-runtime").first()
-  await expect(runtime).toHaveAttribute("data-runtime-status", "running")
-  await expect(runtime.locator("canvas")).toHaveCount(1)
-  await runtime.locator("canvas").evaluate((canvas) => {
-    canvas.dataset.failCreativeDraw = "true"
-  })
-  await expect(runtime).toHaveAttribute("data-runtime-status", "error")
-  await expect(runtime.locator("canvas")).toHaveCount(0)
-  await expectStaticCreativeArticle(page)
-  await page.getByTestId("article-next").click()
-  await expect(page).toHaveURL(/\/articles\/courtside-notes/)
-  await expect(page.locator("canvas")).toHaveCount(0)
-  expect(pageErrors).toEqual([])
-})
+}
 
 async function expectStaticCreativeArticle(page: Page): Promise<void> {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("主場燈光亮起之前")
