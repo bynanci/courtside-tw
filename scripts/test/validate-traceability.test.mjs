@@ -40,6 +40,8 @@ const requiredGatePaths = [
   "scripts/validate-traceability.mjs",
   "scripts/test/validate-traceability.test.mjs"
 ]
+const requiredGateProtectedPushHead = "8888888888888888888888888888888888888888"
+const requiredGateProtectedPushTree = "9999999999999999999999999999999999999999"
 // Verbatim immutable OWNER receipt, including its implementation-only boundaries.
 const requiredGateAuthorizationBody = [
   "<!-- t086-required-gate:owner-exact-path-dispatch:v6:start -->",
@@ -180,6 +182,47 @@ function makeRequiredGateActionsContext(
   })
 }
 
+function makeRequiredGateProtectedPushActionsContext(root, overrides = {}) {
+  const eventPath = path.join(root, "required-gate-protected-push-event.json")
+  const before = overrides.before ?? requiredGateBase
+  const after = overrides.after ?? requiredGateProtectedPushHead
+  fs.writeFileSync(
+    eventPath,
+    JSON.stringify({
+      repository: { full_name: "bynanci/courtside-tw" },
+      before,
+      after,
+      ref: "refs/heads/main"
+    })
+  )
+  return traceabilityValidator.inspectGitHubActionsContext({
+    environment: {
+      GITHUB_ACTIONS: "true",
+      GITHUB_REPOSITORY: "bynanci/courtside-tw",
+      GITHUB_EVENT_NAME: "push",
+      GITHUB_EVENT_PATH: eventPath,
+      GITHUB_SHA: after,
+      GITHUB_WORKFLOW: "CI",
+      GITHUB_JOB: "frontend-contract",
+      GITHUB_RUN_ID: fixtureActionsRunId,
+      GITHUB_RUN_NUMBER: fixtureActionsRunNumber,
+      GITHUB_RUN_ATTEMPT: fixtureActionsRunAttempt,
+      GITHUB_REF: "refs/heads/main",
+      GITHUB_REF_NAME: "main"
+    },
+    gitBinding: {
+      head: after,
+      change_base_sha: before,
+      change_base_ancestor: true,
+      head_parent_sha: overrides.head_parent_sha ?? requiredGateBase,
+      head_parent_count: overrides.head_parent_count ?? 1,
+      head_tree_sha: overrides.head_tree_sha ?? requiredGateProtectedPushTree,
+      required_gate_commit_count: overrides.required_gate_commit_count ?? 1,
+      required_gate_merge_commit_count: overrides.required_gate_merge_commit_count ?? 0
+    }
+  })
+}
+
 function runRequiredGateFixture(fixture, overrides = {}) {
   const githubActionsContext =
     overrides.githubActionsContext ?? makeRequiredGateActionsContext(fixture.root)
@@ -214,6 +257,70 @@ test("issue 164 authenticates only the immutable OWNER three-path draft from its
     "23cd58dd69241be57688b244b6f37ae17a674bebab5012f08ea30401ea8212b9"
   )
   assert.equal(report.scope_boundaries.t086_dispatched, false)
+})
+
+test("issue 164 authenticates the exact protected-main squash push after its draft merge", () => {
+  const fixture = makeCompletedFixture()
+  const githubActionsContext = makeRequiredGateProtectedPushActionsContext(fixture.root)
+  writeExactHeadForActionsContext(fixture.root, githubActionsContext)
+  const report = runCompletedFixture(fixture, {
+    currentHead: requiredGateProtectedPushHead,
+    changeBaseSha: requiredGateBase,
+    changedPaths: [...requiredGatePaths],
+    evaluatedHeadCommittedAt: "2026-09-09T10:15:00.000Z",
+    requireExactHeadEvidence: true,
+    githubActionsContext,
+    requiredGateAuthorizationReadback: makeRequiredGateReadback(),
+    gitBinding: {
+      status: "CLEAN",
+      head: requiredGateProtectedPushHead,
+      change_base_sha: requiredGateBase,
+      change_base_ancestor: true,
+      head_parent_sha: requiredGateBase,
+      head_parent_count: 1,
+      head_tree_sha: requiredGateProtectedPushTree,
+      required_gate_commit_count: 1,
+      required_gate_merge_commit_count: 0
+    }
+  })
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+  assert.deepEqual(report.scope_validation.unauthorized_paths, [])
+})
+
+test("issue 164 protected-main push rejects replayed topology", () => {
+  const fixture = makeCompletedFixture()
+  for (const [label, binding] of [
+    ["wrong parent", { head_parent_sha: fixtureCompletedBase }],
+    ["merge commit", { head_parent_count: 2 }],
+    ["extra commit", { required_gate_commit_count: 2 }],
+    ["merge ancestry", { required_gate_merge_commit_count: 1 }],
+    ["tree drift", { head_tree_sha: fixturePostT085FinalPrHead }]
+  ]) {
+    const githubActionsContext = makeRequiredGateProtectedPushActionsContext(fixture.root, binding)
+    writeExactHeadForActionsContext(fixture.root, githubActionsContext)
+    const report = runCompletedFixture(fixture, {
+      currentHead: requiredGateProtectedPushHead,
+      changeBaseSha: requiredGateBase,
+      changedPaths: [...requiredGatePaths],
+      evaluatedHeadCommittedAt: "2026-09-09T10:15:00.000Z",
+      requireExactHeadEvidence: true,
+      githubActionsContext,
+      requiredGateAuthorizationReadback: makeRequiredGateReadback(),
+      gitBinding: {
+        status: "CLEAN",
+        head: requiredGateProtectedPushHead,
+        change_base_sha: requiredGateBase,
+        change_base_ancestor: true,
+        head_parent_sha: binding.head_parent_sha ?? requiredGateBase,
+        head_parent_count: binding.head_parent_count ?? 1,
+        head_tree_sha: binding.head_tree_sha ?? requiredGateProtectedPushTree,
+        required_gate_commit_count: binding.required_gate_commit_count ?? 1,
+        required_gate_merge_commit_count: binding.required_gate_merge_commit_count ?? 0
+      }
+    })
+    assert.equal(report.status, "FAIL", label)
+    assert.match(report.errors.join("\n"), /issue 164/, label)
+  }
 })
 
 test("issue 164 rejects missing, stale, spoofed, edited and widened OWNER authority", () => {
