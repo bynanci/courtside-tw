@@ -194,9 +194,11 @@ public final class PublisherMediaService {
         } catch (CannotAcquireLockException | UncategorizedSQLException exception) {
             // PostgreSQL NOWAIT reports 55P03, which the SQL-state translator
             // can leave uncategorized. Other SQL failures must still propagate.
-            if (exception instanceof UncategorizedSQLException sqlFailure
-                    && !"55P03".equals(sqlFailure.getSQLException().getSQLState())) {
-                throw exception;
+            if (exception instanceof UncategorizedSQLException sqlFailure) {
+                var cause = sqlFailure.getSQLException();
+                if (cause == null || !"55P03".equals(cause.getSQLState())) {
+                    throw exception;
+                }
             }
             // NOWAIT conflicts leave no partial rights/state/receipt changes. The
             // same idempotency key is safe to retry after the publication finishes.
