@@ -2280,6 +2280,52 @@ paths:
       x-optimistic-lock: If-Match
       x-required-roles:
         - PUBLISHER
+  /api/v1/publisher/issues/{id}:archive:
+    post:
+      tags:
+        - Publisher
+      operationId: archivePublisherIssue
+      summary: Archive a published or withdrawn issue
+      description: Archives a published or withdrawn issue while preserving its immutable publication snapshot and audit evidence.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+        - $ref: "#/components/parameters/IfMatch"
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "202":
+          description: Archive accepted.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WorkflowResult"
+              examples:
+                valid:
+                  value:
+                    operationId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    status: ARCHIVED
+                    version: 2
+          headers:
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-idempotent: true
+      x-optimistic-lock: If-Match
+      x-required-roles:
+        - PUBLISHER
   /api/v1/publisher/articles/{id}:archive:
     post:
       tags:

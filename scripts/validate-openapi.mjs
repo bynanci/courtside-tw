@@ -49,6 +49,7 @@ const expectedPaths = {
   "/api/v1/publisher/issues/{id}:publish": ["post"],
   "/api/v1/publisher/issues/{id}:approve": ["post"],
   "/api/v1/publisher/issues/{id}:schedule": ["post"],
+  "/api/v1/publisher/issues/{id}:archive": ["post"],
   "/api/v1/publisher/articles/{id}:withdraw": ["post"],
   "/api/v1/publisher/articles/{id}:archive": ["post"],
   "/api/v1/editor/audit": ["get"],

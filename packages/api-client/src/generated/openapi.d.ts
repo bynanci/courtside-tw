@@ -781,6 +781,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  "/api/v1/publisher/issues/{id}:archive": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Archive a published or withdrawn issue
+     * @description Archives a published or withdrawn issue while preserving its immutable publication snapshot and audit evidence.
+     */
+    post: operations["archivePublisherIssue"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   "/api/v1/publisher/articles/{id}:archive": {
     parameters: {
       query?: never
@@ -3429,6 +3449,40 @@ export interface operations {
       404: components["responses"]["Problem404"]
       409: components["responses"]["Problem409"]
       422: components["responses"]["Problem422"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  archivePublisherIssue: {
+    parameters: {
+      query?: never
+      header: {
+        /** @description Optimistic-lock version or ETag. The server rejects stale values with 409 VERSION_CONFLICT. */
+        "If-Match": components["parameters"]["IfMatch"]
+        /** @description Stable retry key. Replays return the original operation result. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"]
+      }
+      path: {
+        id: components["parameters"]["Id"]
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Archive accepted. */
+      202: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["WorkflowResult"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      409: components["responses"]["Problem409"]
       429: components["responses"]["Problem429"]
     }
   }

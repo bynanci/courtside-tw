@@ -32,9 +32,11 @@ import org.springframework.security.oauth2.jwt.JwtDecoder;
 import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
+import org.springframework.security.oauth2.server.resource.web.authentication.BearerTokenAuthenticationFilter;
 import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.AccessDeniedHandler;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
@@ -43,6 +45,8 @@ import tw.basketball.magazine.shared.ProblemDetails;
 import tw.basketball.magazine.shared.ProblemDetailsMapper;
 import tw.basketball.magazine.shared.RequestId;
 import tw.basketball.magazine.shared.RoleCode;
+import tw.basketball.magazine.security.RouteRateLimitFilter;
+import tw.basketball.magazine.security.RouteRateLimiter;
 
 /**
  * Resource-server-only security foundation.
@@ -85,13 +89,18 @@ public final class OidcSecurityConfiguration {
     public SecurityFilterChain oidcResourceServerSecurityFilterChain(
             HttpSecurity http,
             JwtAuthenticationConverter converter,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            RouteRateLimiter routeRateLimiter
     ) {
         try {
             AuthenticationEntryPoint authenticationEntryPoint =
                     problemDetailsAuthenticationEntryPoint(objectMapper);
             AccessDeniedHandler accessDeniedHandler = problemDetailsAccessDeniedHandler(objectMapper);
             http
+                    .addFilterBefore(new RouteRateLimitFilter(routeRateLimiter, objectMapper,
+                                    RouteRateLimitFilter.Stage.AUTHENTICATION), BearerTokenAuthenticationFilter.class)
+                    .addFilterBefore(new RouteRateLimitFilter(routeRateLimiter, objectMapper,
+                                    RouteRateLimitFilter.Stage.APPLICATION), AuthorizationFilter.class)
                     .csrf(csrf -> csrf
                             .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                             .ignoringRequestMatchers(BEARER_TOKEN_REQUEST))
@@ -132,10 +141,15 @@ public final class OidcSecurityConfiguration {
     @ConditionalOnMissingBean(JwtDecoder.class)
     public SecurityFilterChain unconfiguredSecurityFilterChain(
             HttpSecurity http,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            RouteRateLimiter routeRateLimiter
     ) {
         try {
             http
+                    .addFilterBefore(new RouteRateLimitFilter(routeRateLimiter, objectMapper,
+                                    RouteRateLimitFilter.Stage.AUTHENTICATION), BearerTokenAuthenticationFilter.class)
+                    .addFilterBefore(new RouteRateLimitFilter(routeRateLimiter, objectMapper,
+                                    RouteRateLimitFilter.Stage.APPLICATION), AuthorizationFilter.class)
                     .csrf(csrf -> csrf
                             .csrfTokenRepository(CookieCsrfTokenRepository.withHttpOnlyFalse())
                             .ignoringRequestMatchers(BEARER_TOKEN_REQUEST))

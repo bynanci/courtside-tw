@@ -9,7 +9,14 @@ const firstIssueFixture = JSON.parse(
     "utf8"
   )
 ) as {
-  issue: { slug: string; title: string; articleCount: number }
+  issue: {
+    slug: string
+    title: string
+    summary: string
+    publishedAt: string
+    cover: { url: string }
+    articleCount: number
+  }
   sections: Array<{ articles: Array<{ slug: string }> }>
 }
 
@@ -87,6 +94,61 @@ test("the first issue completes Home to Issue to TOC to Article to Closure", asy
   )
   await expect(page.getByTestId("article-next")).toHaveAttribute("href", /courtside-notes/)
   await expect(page.getByTestId("article-media-attribution").first()).toBeVisible()
+})
+
+test("issue SEO binds SSR Open Graph, structured data and sitemap to the public issue", async ({
+  browser,
+  request
+}) => {
+  const issue = firstIssueFixture.issue
+  const issuePath = `/issues/${issue.slug}`
+  const canonical = `https://courtside.test${issuePath}`
+  const image = `http://127.0.0.1:4010${issue.cover.url}`
+  const context = await browser.newContext({ javaScriptEnabled: false })
+
+  try {
+    const page = await context.newPage()
+    const response = await page.goto(`http://127.0.0.1:4173${issuePath}`, {
+      waitUntil: "domcontentloaded"
+    })
+    expect(response?.status()).toBe(200)
+    await expect(page.getByRole("heading", { level: 1, name: issue.title })).toBeVisible()
+    await expect(page.locator('link[rel="canonical"]')).toHaveAttribute("href", canonical)
+
+    const openGraph = {
+      title: `${issue.title} — Courtside TW`,
+      description: issue.summary,
+      type: "article",
+      url: canonical,
+      image
+    }
+    for (const [property, value] of Object.entries(openGraph)) {
+      await expect(page.locator(`meta[property="og:${property}"]`)).toHaveAttribute(
+        "content",
+        value
+      )
+    }
+
+    const structuredDataElement = page.locator('script[type="application/ld+json"]')
+    await expect(structuredDataElement).toHaveCount(1)
+    const structuredData = JSON.parse((await structuredDataElement.textContent()) ?? "null")
+    expect(structuredData).toEqual({
+      "@context": "https://schema.org",
+      "@type": "Magazine",
+      name: issue.title,
+      description: issue.summary,
+      datePublished: issue.publishedAt,
+      image,
+      url: canonical,
+      inLanguage: "zh-Hant-TW"
+    })
+
+    const sitemap = await request.get("/sitemap.xml")
+    expect(sitemap.status()).toBe(200)
+    expect(await sitemap.text()).toContain(`<loc>${canonical}</loc>`)
+  } finally {
+    await context.close()
+  }
 })
 
 test("reader links remain available in SSR output without JavaScript", async ({ browser }) => {

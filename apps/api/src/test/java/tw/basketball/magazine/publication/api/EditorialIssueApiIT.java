@@ -1,6 +1,8 @@
 package tw.basketball.magazine.publication.api;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -9,10 +11,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.time.Clock;
+import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
@@ -23,8 +33,15 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import tw.basketball.magazine.audit.JdbcAuditWriter;
 import tw.basketball.magazine.editorial.EditorialApiIntegrationTestSupport;
+import tw.basketball.magazine.outbox.OutboxEvent;
+import tw.basketball.magazine.outbox.OutboxHandlerException;
+import tw.basketball.magazine.outbox.OutboxRepository;
 import tw.basketball.magazine.publication.application.EditorialIssueService;
+import tw.basketball.magazine.publication.application.EditorialWorkflowService;
+import tw.basketball.magazine.publication.persistence.JdbcEditorialArticleRepository;
 import tw.basketball.magazine.publication.persistence.JdbcEditorialIssueRepository;
+import tw.basketball.magazine.publication.worker.IssuePublicationJobHandler;
+import tw.basketball.magazine.publication.worker.PublicationExternalInvalidator;
 import tw.basketball.magazine.shared.RoleCode;
 
 final class EditorialIssueApiIT extends EditorialApiIntegrationTestSupport {
@@ -37,7 +54,15 @@ final class EditorialIssueApiIT extends EditorialApiIntegrationTestSupport {
                 JSON,
                 applicationClock
         );
-        mockMvc = MockMvcBuilders.standaloneSetup(new EditorialIssueController(service))
+        EditorialWorkflowService articleService = new EditorialWorkflowService(
+                new JdbcEditorialArticleRepository(jdbcTemplate),
+                new JdbcAuditWriter(jdbcTemplate, JSON),
+                new TransactionTemplate(new DataSourceTransactionManager(jdbcTemplate.getDataSource())),
+                JSON,
+                applicationClock
+        );
+        mockMvc = MockMvcBuilders.standaloneSetup(
+                        new EditorialIssueController(service), new EditorialArticleController(articleService))
                 .setControllerAdvice(new EditorialApiExceptionHandler())
                 .build();
     }
@@ -112,19 +137,19 @@ final class EditorialIssueApiIT extends EditorialApiIntegrationTestSupport {
         Authentication editor = actor("issue-workflow-editor", RoleCode.EDITOR);
         Authentication publisher = actor("issue-workflow-publisher", RoleCode.PUBLISHER);
         UUID issueId = createIssue(editor, "issue-workflow");
-        jdbcTemplate.update("UPDATE publication_issue SET state = 'APPROVED' WHERE id = ?", issueId);
+        reviewIssue(editor, publisher, issueId, 1);
 
         mockMvc.perform(post("/api/v1/publisher/issues/{issueId}:schedule", issueId)
                         .principal(publisher)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .header(HttpHeaders.IF_MATCH, "\"1\"")
+                        .header(HttpHeaders.IF_MATCH, "\"3\"")
                         .header("Idempotency-Key", "issue-schedule")
                         .content("""
                                 {"publishAt":"2026-08-11T09:00:00","timezone":"Asia/Taipei"}
                                 """))
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.status").value("SCHEDULED"))
-                .andExpect(jsonPath("$.version").value(2))
+                .andExpect(jsonPath("$.version").value(4))
                 .andExpect(jsonPath("$.scheduledAt").value("2026-08-11T01:00:00Z"));
 
         assertEquals("SCHEDULED", jdbcTemplate.queryForObject(
@@ -132,11 +157,11 @@ final class EditorialIssueApiIT extends EditorialApiIntegrationTestSupport {
 
         mockMvc.perform(post("/api/v1/publisher/issues/{issueId}:publish", issueId)
                         .principal(publisher)
-                        .header(HttpHeaders.IF_MATCH, "\"2\"")
+                        .header(HttpHeaders.IF_MATCH, "\"4\"")
                         .header("Idempotency-Key", "issue-publish"))
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.status").value("PUBLISHED"))
-                .andExpect(jsonPath("$.version").value(3));
+                .andExpect(jsonPath("$.version").value(5));
 
         assertEquals("PUBLISHED", jdbcTemplate.queryForObject(
                 "SELECT state FROM publication_issue WHERE id = ?", String.class, issueId));
@@ -144,6 +169,267 @@ final class EditorialIssueApiIT extends EditorialApiIntegrationTestSupport {
                 "SELECT count(*) FROM audit_event WHERE target_type = 'ISSUE' AND target_id = ? AND action = 'ISSUE_PUBLISHED'",
                 Integer.class,
                 issueId));
+    }
+
+    @Test
+    void populatedIssueCompletesLifecycleAndRetriesPreserveOneImmutableSnapshot() throws Exception {
+        Authentication editor = actor("issue-lifecycle-editor", RoleCode.EDITOR);
+        Authentication publisher = actor("issue-lifecycle-publisher", RoleCode.PUBLISHER);
+        UUID issueId = createIssue(editor, "populated-lifecycle");
+        CreatedArticle article = createArticle(editor, "populated-article");
+        publishArticle(editor, publisher, article);
+        populateIssue(editor, issueId, article.articleId());
+        reviewIssue(editor, publisher, issueId, 2);
+
+        MvcResult published = issueCommand(publisher, issueId, "publish", 4, "populated-publish")
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.status").value("PUBLISHED"))
+                .andExpect(jsonPath("$.version").value(5))
+                .andReturn();
+        String snapshot = issueSnapshot(issueId);
+        var document = JSON.readTree(snapshot);
+        assertEquals(1, document.path("sections").size());
+        assertEquals(1, document.path("sections").get(0).path("articles").size());
+        var publishedArticle = document.path("sections").get(0).path("articles").get(0);
+        assertEquals(article.articleId().toString(), publishedArticle.path("articleId").asString());
+        assertEquals(article.revisionId().toString(), publishedArticle.path("revisionId").asString());
+        assertEquals(1, publishedArticle.path("revisionNumber").asInt());
+        for (int retry = 0; retry < 10; retry++) {
+            MvcResult replay = issueCommand(publisher, issueId, "publish", 4, "populated-publish")
+                    .andExpect(status().isAccepted())
+                    .andReturn();
+            assertEquals(published.getResponse().getContentAsString(), replay.getResponse().getContentAsString());
+        }
+        assertEquals(1, issueEventCount(issueId, "ISSUE_PUBLISHED"));
+        assertEquals(1, jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM publication_snapshot WHERE aggregate_type = 'ISSUE' AND aggregate_id = ?",
+                Integer.class, issueId));
+        issueCommand(publisher, issueId, "publish", 4, "new-key-stale-publish")
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("VERSION_CONFLICT"));
+
+        MvcResult archived = issueCommand(publisher, issueId, "archive", 5, "populated-archive")
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.status").value("ARCHIVED"))
+                .andExpect(jsonPath("$.version").value(6))
+                .andReturn();
+        MvcResult archiveReplay = issueCommand(publisher, issueId, "archive", 5, "populated-archive")
+                .andExpect(status().isAccepted())
+                .andReturn();
+        assertEquals(archived.getResponse().getContentAsString(), archiveReplay.getResponse().getContentAsString());
+        assertEquals("ARCHIVED", jdbcTemplate.queryForObject(
+                "SELECT state FROM publication_issue WHERE id = ?", String.class, issueId));
+        assertEquals(List.of("SUBMITTED", "APPROVED"), jdbcTemplate.queryForList(
+                "SELECT decision FROM publication_review WHERE aggregate_type = 'ISSUE' AND aggregate_id = ? ORDER BY created_at, id",
+                String.class, issueId));
+        assertEquals(1, issueEventCount(issueId, "ISSUE_CREATED"));
+        assertEquals(1, issueEventCount(issueId, "ISSUE_SUBMITTED"));
+        assertEquals(1, issueEventCount(issueId, "ISSUE_APPROVED"));
+        assertEquals(1, issueEventCount(issueId, "ISSUE_ARCHIVED"));
+        assertEquals(snapshot, issueSnapshot(issueId));
+        assertThrows(DataAccessException.class, () -> jdbcTemplate.update(
+                "UPDATE publication_snapshot SET content_document = '{}'::jsonb WHERE aggregate_type = 'ISSUE' AND aggregate_id = ?",
+                issueId));
+        assertEquals(snapshot, issueSnapshot(issueId));
+    }
+
+    @Test
+    void includedUnapprovedRevisionBlocksIssueBeforeAnyPublicationSideEffect() throws Exception {
+        Authentication editor = actor("issue-unapproved-editor", RoleCode.EDITOR);
+        Authentication publisher = actor("issue-unapproved-publisher", RoleCode.PUBLISHER);
+        UUID issueId = createIssue(editor, "unapproved-revision-issue");
+        CreatedArticle article = createArticle(editor, "unapproved-revision-article");
+        populateIssue(editor, issueId, article.articleId());
+        reviewIssue(editor, publisher, issueId, 2);
+
+        issueCommand(publisher, issueId, "publish", 4, "reject-unapproved-revision")
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("RIGHTS_OR_CONTENT_GATE"))
+                .andExpect(jsonPath("$.errors[0].code").value("ISSUE_NOT_READY"));
+        assertEquals("DRAFT", jdbcTemplate.queryForObject(
+                "SELECT state FROM article_revision WHERE id = ?", String.class, article.revisionId()));
+        assertEquals("APPROVED", jdbcTemplate.queryForObject(
+                "SELECT state FROM publication_issue WHERE id = ?", String.class, issueId));
+        assertEquals(4L, jdbcTemplate.queryForObject(
+                "SELECT version FROM publication_issue WHERE id = ?", Long.class, issueId));
+        assertEquals(0, jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM publication_snapshot WHERE aggregate_type = 'ISSUE' AND aggregate_id = ?",
+                Integer.class, issueId));
+        assertEquals(0, issueEventCount(issueId, "ISSUE_PUBLISHED"));
+        assertEquals(0, jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM publication_idempotency WHERE idempotency_key = 'reject-unapproved-revision'",
+                Integer.class));
+
+        publishArticle(editor, publisher, article);
+        issueCommand(publisher, issueId, "publish", 4, "reject-unapproved-revision")
+                .andExpect(status().isAccepted());
+        assertEquals(article.revisionId().toString(), JSON.readTree(issueSnapshot(issueId))
+                .path("sections").get(0).path("articles").get(0).path("revisionId").asString());
+    }
+
+    @Test
+    void issueWorkflowRejectsSkippedTransitionsStaleWritesAndNonPublisherArchive() throws Exception {
+        Authentication editor = actor("issue-boundary-editor", RoleCode.EDITOR);
+        Authentication publisher = actor("issue-boundary-publisher", RoleCode.PUBLISHER);
+        UUID issueId = createIssue(editor, "issue-boundaries");
+        for (String command : List.of("approve", "publish", "archive")) {
+            issueCommand(publisher, issueId, command, 1, "skip-" + command)
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.code").value("VERSION_CONFLICT"))
+                    .andExpect(jsonPath("$.errors[0].code").value("INVALID_TRANSITION"));
+        }
+        for (RoleCode role : List.of(RoleCode.READER, RoleCode.EDITOR, RoleCode.ADMIN)) {
+            issueCommand(actor("archive-" + role.name(), role), issueId, "archive", 1, "denied-" + role.name())
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+        }
+        issueCommand(publisher, issueId, "archive", 0, "stale-archive")
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("VERSION_CONFLICT"));
+        assertEquals("DRAFT", jdbcTemplate.queryForObject(
+                "SELECT state FROM publication_issue WHERE id = ?", String.class, issueId));
+        assertEquals(0, issueEventCount(issueId, "ISSUE_ARCHIVED"));
+    }
+
+    @Test
+    void publicationReadinessLocksTheExactReferencedRevisionUntilSnapshotCreation() throws Exception {
+        Authentication editor = actor("issue-lock-editor", RoleCode.EDITOR);
+        Authentication publisher = actor("issue-lock-publisher", RoleCode.PUBLISHER);
+        UUID issueId = createIssue(editor, "issue-lock");
+        CreatedArticle article = createArticle(editor, "article-lock");
+        publishArticle(editor, publisher, article);
+        populateIssue(editor, issueId, article.articleId());
+        JdbcEditorialIssueRepository repository = new JdbcEditorialIssueRepository(jdbcTemplate, JSON);
+        try (Connection otherTransaction = java.util.Objects.requireNonNull(jdbcTemplate.getDataSource())
+                .getConnection(); Statement statement = otherTransaction.createStatement()) {
+            statement.execute("SET lock_timeout = '100ms'");
+            new TransactionTemplate(new DataSourceTransactionManager(jdbcTemplate.getDataSource()))
+                    .executeWithoutResult(status -> {
+                        repository.findForUpdate(issueId).orElseThrow();
+                        assertTrue(repository.readyForPublication(issueId, applicationClock.now()));
+                        SQLException blocked = assertThrows(SQLException.class, () -> statement.executeUpdate(
+                                "UPDATE article_revision SET state = 'WITHDRAWN' WHERE id = '" + article.revisionId() + "'"));
+                        assertEquals("55P03", blocked.getSQLState());
+                        var snapshot = JSON.readTree(repository.publicationSnapshotDocument(issueId));
+                        assertEquals(article.revisionId().toString(), snapshot.path("sections").get(0)
+                                .path("articles").get(0).path("revisionId").asString());
+                    });
+        }
+    }
+
+    @Test
+    void issuePublishAndArchiveOutboxRetryUntilInvalidationIsAcknowledged() throws Exception {
+        Authentication editor = actor("issue-outbox-editor", RoleCode.EDITOR);
+        Authentication publisher = actor("issue-outbox-publisher", RoleCode.PUBLISHER);
+        UUID issueId = createIssue(editor, "issue-outbox");
+        CreatedArticle article = createArticle(editor, "article-outbox");
+        publishArticle(editor, publisher, article);
+        populateIssue(editor, issueId, article.articleId());
+        reviewIssue(editor, publisher, issueId, 2);
+        issueCommand(publisher, issueId, "publish", 4, "issue-outbox-publish")
+                .andExpect(status().isAccepted());
+        String snapshot = issueSnapshot(issueId);
+        issueCommand(publisher, issueId, "archive", 5, "issue-outbox-archive")
+                .andExpect(status().isAccepted());
+        issueCommand(publisher, issueId, "archive", 5, "issue-outbox-archive")
+                .andExpect(status().isAccepted());
+        assertEquals(2, jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM publication_job WHERE aggregate_type = 'ISSUE' AND aggregate_id = ?",
+                Integer.class, issueId));
+        assertEquals(2, jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM outbox_event WHERE event_type = 'publication.issue.command' AND aggregate_id = ?",
+                Integer.class, issueId));
+
+        OutboxEvent archiveEvent = issueOutbox(issueId, "ARCHIVE");
+        IssuePublicationJobHandler unavailable = issueHandler(PublicationExternalInvalidator.unavailable());
+        OutboxHandlerException failure = assertThrows(OutboxHandlerException.class,
+                () -> unavailable.handle(archiveEvent));
+        assertTrue(failure.retryable());
+        assertEquals("PENDING", jdbcTemplate.queryForObject(
+                "SELECT status FROM publication_job WHERE aggregate_id = ? AND operation = 'ARCHIVE'",
+                String.class, issueId));
+        assertEquals("ARCHIVED", jdbcTemplate.queryForObject(
+                "SELECT state FROM publication_issue WHERE id = ?", String.class, issueId));
+
+        List<PublicationExternalInvalidator.Request> invalidations = new ArrayList<>();
+        IssuePublicationJobHandler worker = issueHandler(invalidations::add);
+        worker.handle(archiveEvent);
+        worker.handle(archiveEvent);
+        // Late publish delivery must invalidate the current archived state, never republish it.
+        worker.handle(issueOutbox(issueId, "PUBLISH"));
+        assertEquals(2, invalidations.size());
+        for (PublicationExternalInvalidator.Request invalidation : invalidations) {
+            assertEquals(List.of("issue:" + issueId, "issues", "search:issues", "sitemap:issues"),
+                    invalidation.surrogateKeys());
+        }
+        assertEquals(2, jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM publication_job WHERE aggregate_id = ? AND status = 'SUCCEEDED'",
+                Integer.class, issueId));
+        assertEquals("ARCHIVED", jdbcTemplate.queryForObject(
+                "SELECT state FROM publication_issue WHERE id = ?", String.class, issueId));
+        assertEquals(snapshot, issueSnapshot(issueId));
+        assertEquals(1, issueEventCount(issueId, "ISSUE_PUBLISHED"));
+        assertEquals(1, issueEventCount(issueId, "ISSUE_ARCHIVED"));
+    }
+
+    @Test
+    void scheduledPublicationCommitsBeforePurgeAndRetriesWithoutRepublishing() throws Exception {
+        Authentication editor = actor("issue-scheduled-editor", RoleCode.EDITOR);
+        Authentication publisher = actor("issue-scheduled-publisher", RoleCode.PUBLISHER);
+        UUID issueId = createIssue(editor, "issue-scheduled-populated");
+        CreatedArticle article = createArticle(editor, "article-scheduled-populated");
+        publishArticle(editor, publisher, article);
+        populateIssue(editor, issueId, article.articleId());
+        reviewIssue(editor, publisher, issueId, 2);
+        mockMvc.perform(post("/api/v1/publisher/issues/{id}:schedule", issueId)
+                        .principal(publisher)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.IF_MATCH, "\"4\"")
+                        .header("Idempotency-Key", "populated-schedule")
+                        .content("{\"publishAt\":\"2026-08-11T09:00:00\",\"timezone\":\"Asia/Taipei\"}"))
+                .andExpect(status().isAccepted());
+        OutboxEvent event = issueOutbox(issueId, "SCHEDULE");
+        Clock due = Clock.fixed(java.time.Instant.parse("2026-08-11T01:00:00Z"), ZoneOffset.UTC);
+        IssuePublicationJobHandler unavailable = issueHandler(PublicationExternalInvalidator.unavailable(), due);
+        assertTrue(assertThrows(OutboxHandlerException.class, () -> unavailable.handle(event)).retryable());
+        assertEquals("PUBLISHED", jdbcTemplate.queryForObject(
+                "SELECT state FROM publication_issue WHERE id = ?", String.class, issueId));
+        assertEquals(1, jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM publication_snapshot WHERE aggregate_type = 'ISSUE' AND aggregate_id = ?",
+                Integer.class, issueId));
+        assertEquals("PENDING", jdbcTemplate.queryForObject(
+                "SELECT status FROM publication_job WHERE aggregate_id = ? AND operation = 'SCHEDULE'",
+                String.class, issueId));
+        String committedSnapshot = issueSnapshot(issueId);
+        List<PublicationExternalInvalidator.Request> invalidations = new ArrayList<>();
+        IssuePublicationJobHandler worker = issueHandler(request -> {
+            try (Connection observer = java.util.Objects.requireNonNull(jdbcTemplate.getDataSource())
+                    .getConnection(); Statement query = observer.createStatement();
+                    var result = query.executeQuery("""
+                            SELECT state, (SELECT count(*) FROM publication_snapshot
+                              WHERE aggregate_type = 'ISSUE' AND aggregate_id = publication_issue.id) AS snapshots
+                            FROM publication_issue WHERE id = '%s'
+                            """.formatted(issueId))) {
+                assertTrue(result.next());
+                assertEquals("PUBLISHED", result.getString("state"));
+                assertEquals(1, result.getInt("snapshots"));
+            } catch (SQLException exception) {
+                throw new IllegalStateException("unable to inspect committed publication at purge time", exception);
+            }
+            invalidations.add(request);
+        }, due);
+        worker.handle(event);
+        worker.handle(event);
+        assertEquals(1, invalidations.size());
+        assertEquals("PUBLISHED", jdbcTemplate.queryForObject(
+                "SELECT state FROM publication_issue WHERE id = ?", String.class, issueId));
+        assertEquals("SUCCEEDED", jdbcTemplate.queryForObject(
+                "SELECT status FROM publication_job WHERE aggregate_id = ? AND operation = 'SCHEDULE'",
+                String.class, issueId));
+        assertEquals(article.revisionId().toString(), JSON.readTree(issueSnapshot(issueId))
+                .path("sections").get(0).path("articles").get(0).path("revisionId").asString());
+        assertEquals(committedSnapshot, issueSnapshot(issueId));
+        assertEquals(1, issueEventCount(issueId, "ISSUE_PUBLISHED"));
     }
 
     @Test
@@ -289,6 +575,120 @@ final class EditorialIssueApiIT extends EditorialApiIntegrationTestSupport {
                         .principal(actor("issue-section-publisher", RoleCode.PUBLISHER)))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
+    private IssuePublicationJobHandler issueHandler(PublicationExternalInvalidator invalidator) {
+        return issueHandler(invalidator, Clock.fixed(applicationClock.now(), ZoneOffset.UTC));
+    }
+
+    private IssuePublicationJobHandler issueHandler(PublicationExternalInvalidator invalidator, Clock clock) {
+        return new IssuePublicationJobHandler(
+                new JdbcEditorialIssueRepository(jdbcTemplate, JSON),
+                new JdbcAuditWriter(jdbcTemplate, JSON),
+                new TransactionTemplate(new DataSourceTransactionManager(jdbcTemplate.getDataSource())),
+                JSON,
+                clock,
+                invalidator
+        );
+    }
+
+    private OutboxEvent issueOutbox(UUID issueId, String action) {
+        UUID eventId = jdbcTemplate.queryForObject("""
+                SELECT id FROM outbox_event
+                WHERE event_type = 'publication.issue.command' AND aggregate_id = ? AND payload ->> 'action' = ?
+                """, UUID.class, issueId, action);
+        return new OutboxRepository(jdbcTemplate).findById(java.util.Objects.requireNonNull(eventId)).orElseThrow();
+    }
+
+    private org.springframework.test.web.servlet.ResultActions issueCommand(
+            Authentication publisher, UUID issueId, String command, long version, String key
+    ) throws Exception {
+        return mockMvc.perform(post("/api/v1/publisher/issues/{id}:" + command, issueId)
+                .principal(publisher)
+                .header(HttpHeaders.IF_MATCH, "\"" + version + "\"")
+                .header("Idempotency-Key", key));
+    }
+
+    private void reviewIssue(
+            Authentication editor, Authentication publisher, UUID issueId, long version
+    ) throws Exception {
+        mockMvc.perform(post("/api/v1/editor/issues/{id}:submit", issueId)
+                        .principal(editor)
+                        .header(HttpHeaders.IF_MATCH, "\"" + version + "\"")
+                        .header("Idempotency-Key", "submit-" + issueId))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.status").value("IN_REVIEW"))
+                .andExpect(jsonPath("$.version").value(version + 1));
+        issueCommand(publisher, issueId, "approve", version + 1, "approve-" + issueId)
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.status").value("APPROVED"))
+                .andExpect(jsonPath("$.version").value(version + 2));
+    }
+
+    private CreatedArticle createArticle(Authentication editor, String slug) throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/v1/editor/articles")
+                        .principal(editor)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header("Idempotency-Key", "create-" + slug)
+                        .content("""
+                                {"title":"Populated issue article","slug":"%s","dek":"Fixture article",
+                                 "content":{"schemaVersion":1,"documentId":"00000000-0000-7000-8000-000000000001",
+                                   "blocks":[{"id":"00000000-0000-4000-8000-000000000101","type":"paragraph","version":1,
+                                     "payload":{"content":[{"kind":"text","text":"Populated issue fixture"}]}}]}}
+                                """.formatted(slug)))
+                .andExpect(status().isCreated())
+                .andReturn();
+        return readCreatedArticle(result.getResponse().getContentAsString());
+    }
+
+    private void publishArticle(Authentication editor, Authentication publisher, CreatedArticle article)
+            throws Exception {
+        mockMvc.perform(post("/api/v1/editor/articles/{id}:submit", article.articleId())
+                        .principal(editor)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.IF_MATCH, "\"1\"")
+                        .header("Idempotency-Key", "article-submit-" + article.articleId())
+                        .content("{\"revisionId\":\"%s\"}".formatted(article.revisionId())))
+                .andExpect(status().isAccepted());
+        for (int index = 0; index < 2; index++) {
+            String command = index == 0 ? "approve" : "publish";
+            mockMvc.perform(post("/api/v1/publisher/articles/{id}:" + command, article.articleId())
+                            .principal(publisher)
+                            .header(HttpHeaders.IF_MATCH, "\"" + (index + 2) + "\"")
+                            .header("Idempotency-Key", "article-" + command + "-" + article.articleId()))
+                    .andExpect(status().isAccepted());
+        }
+    }
+
+    private void populateIssue(Authentication editor, UUID issueId, UUID articleId) throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/v1/editor/issues/{id}/sections", issueId)
+                        .principal(editor)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.IF_MATCH, "\"1\"")
+                        .header("Idempotency-Key", "populated-section-" + issueId)
+                        .content("{\"title\":\"Published articles\"}"))
+                .andExpect(status().isCreated())
+                .andReturn();
+        UUID sectionId = UUID.fromString(JSON.readTree(result.getResponse().getContentAsString())
+                .path("sections").get(0).path("sectionId").asString());
+        // Membership is fixture arrangement; every issue and article state transition uses HTTP.
+        jdbcTemplate.update("""
+                INSERT INTO issue_article (issue_id, section_id, article_id, position)
+                VALUES (?, ?, ?, 1)
+                """, issueId, sectionId, articleId);
+    }
+
+    private String issueSnapshot(UUID issueId) {
+        return jdbcTemplate.queryForObject(
+                "SELECT content_document::text FROM publication_snapshot WHERE aggregate_type = 'ISSUE' AND aggregate_id = ?",
+                String.class, issueId);
+    }
+
+    private int issueEventCount(UUID issueId, String action) {
+        Integer count = jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM audit_event WHERE target_type = 'ISSUE' AND target_id = ? AND action = ?",
+                Integer.class, issueId, action);
+        return java.util.Objects.requireNonNull(count);
     }
 
     private UUID createIssue(Authentication editor, String idempotencyKey) throws Exception {

@@ -3,6 +3,7 @@ package tw.basketball.magazine.readerlibrary;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -18,6 +19,8 @@ import java.sql.Statement;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import javax.sql.DataSource;
@@ -30,6 +33,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.BadSqlGrammarException;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -44,6 +48,7 @@ import org.testcontainers.postgresql.PostgreSQLContainer;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tw.basketball.magazine.MagazineApplication;
+import tw.basketball.magazine.identity.OidcRoleConverter;
 
 /** Executable US5 HTTP contract against the real Spring application seam. */
 @SpringBootTest(
@@ -272,6 +277,83 @@ final class ReaderLibraryApiIT {
     }
 
     @Test
+    void plaintextPasswordClaimsNeverEnterPersistedReaderDataOrTheAccountExport() throws Exception {
+        String canary = "test-only-plaintext-password-canary-DEV045";
+        Instant now = Instant.now();
+        Jwt jwt = Jwt.withTokenValue(canary)
+                .header("alg", "RS256")
+                .issuer(ISSUER)
+                .subject(SUBJECT)
+                .issuedAt(now.minusSeconds(10))
+                .expiresAt(now.plusSeconds(300))
+                .claim("auth_time", now.minusSeconds(10).getEpochSecond())
+                .claim("roles", List.of("READER"))
+                .claim("password", canary)
+                .claim("credentials", Map.of("plaintextPassword", canary))
+                .build();
+        JwtAuthenticationToken authentication = new JwtAuthenticationToken(
+                jwt, new OidcRoleConverter().convert(jwt)
+        );
+        ArticleFixture article = publishedArticle("reader-password-canary");
+
+        mockMvc.perform(put("/api/v1/me/bookmarks/{articleId}", article.articleId())
+                        .principal(authentication)
+                        .header("Idempotency-Key", "password-canary-bookmark"))
+                .andExpect(status().isNoContent());
+        mockMvc.perform(put("/api/v1/me/progress/{articleId}", article.articleId())
+                        .principal(authentication)
+                        .contentType(JSON)
+                        .header("Idempotency-Key", "password-canary-progress")
+                        .content(progressBody(article.revisionId(), article.blockId(), 37)))
+                .andExpect(status().isOk());
+
+        assertEquals(1, count("reader_profile"));
+        assertEquals(1, count("bookmark"));
+        assertEquals(1, count("reading_progress"));
+        assertEquals(Set.of("id", "issuer", "subject", "created_at", "updated_at", "version"),
+                Set.copyOf(jdbcTemplate.queryForList("""
+                        SELECT column_name FROM information_schema.columns
+                        WHERE table_schema = 'public' AND table_name = 'reader_profile'
+                        """, String.class)));
+        BadSqlGrammarException rejectedPasswordColumn = assertThrows(
+                BadSqlGrammarException.class,
+                () -> jdbcTemplate.update(
+                        "UPDATE reader_profile SET password = ? WHERE issuer = ? AND subject = ?",
+                        canary, ISSUER, SUBJECT
+                )
+        );
+        assertEquals("42703", rejectedPasswordColumn.getSQLException().getSQLState());
+        assertNoStoredPasswordCanary(canary);
+
+        MvcResult export = mockMvc.perform(get("/api/v1/me/export").principal(authentication))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.issuer").value(ISSUER))
+                .andExpect(jsonPath("$.subject").value(SUBJECT))
+                .andExpect(jsonPath("$.bookmarks", hasSize(1)))
+                .andExpect(jsonPath("$.progress", hasSize(1)))
+                .andReturn();
+        String exportBody = export.getResponse().getContentAsString();
+        JsonNode exported = objectMapper.readTree(exportBody);
+        assertEquals(Set.of("issuer", "subject", "bookmarks", "progress", "generatedAt"),
+                fieldNames(exported));
+        assertEquals(Set.of("articleId", "createdAt"), fieldNames(exported.path("bookmarks").path(0)));
+        assertEquals(Set.of("articleId", "revisionId", "blockId", "percent", "updatedAt"),
+                fieldNames(exported.path("progress").path(0)));
+        assertFalse(exportBody.contains(canary));
+
+        mockMvc.perform(delete("/api/v1/me")
+                        .principal(authentication)
+                        .contentType(JSON)
+                        .header("Idempotency-Key", "password-canary-erasure")
+                        .content("{\"confirm\":true}"))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.status").value("COMPLETED"));
+        assertEquals(1, count("account_erasure_job"));
+        assertEquals(1, count("audit_event"));
+        assertNoStoredPasswordCanary(canary);
+    }
+
+    @Test
     void accountDeletionRejectsAStaleAuthenticationWithoutMutatingReaderData() throws Exception {
         ArticleFixture article = publishedArticle("reader-stale-auth");
         putBookmark(article.articleId());
@@ -350,6 +432,23 @@ final class ReaderLibraryApiIT {
 
     private int count(String table) {
         return jdbcTemplate.queryForObject("SELECT count(*) FROM " + table, Integer.class);
+    }
+
+    private void assertNoStoredPasswordCanary(String canary) {
+        for (String table : List.of(
+                "reader_profile", "role_assignment", "bookmark", "reading_progress", "account_erasure_job", "audit_event"
+        )) {
+            List<String> storedRows = jdbcTemplate.queryForList(
+                    "SELECT to_jsonb(stored)::text FROM " + table + " stored", String.class
+            );
+            for (String row : storedRows) {
+                assertFalse(row.contains(canary), "Unapproved credential data persisted in " + table);
+            }
+        }
+    }
+
+    private static Set<String> fieldNames(JsonNode node) {
+        return node.properties().stream().map(Map.Entry::getKey).collect(java.util.stream.Collectors.toSet());
     }
 
     private static String progressBody(UUID revisionId, UUID blockId, double percent) {

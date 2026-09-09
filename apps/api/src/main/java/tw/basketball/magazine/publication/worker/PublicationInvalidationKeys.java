@@ -8,6 +8,15 @@ public final class PublicationInvalidationKeys {
     private PublicationInvalidationKeys() {
     }
 
+    public static List<String> forIssue(UUID issueId) {
+        return List.of(
+                "issue:" + issueId,
+                "issues",
+                "search:issues",
+                "sitemap:issues"
+        );
+    }
+
     public static List<String> forArticle(UUID articleId, UUID revisionId) {
         return List.of(
                 "article:" + articleId,

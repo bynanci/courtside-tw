@@ -35,7 +35,7 @@ import tw.basketball.magazine.shared.RequestId;
 import tw.basketball.magazine.shared.RoleCode;
 import tw.basketball.magazine.shared.Version;
 
-/** HTTP adapter for issue draft CRUD. */
+/** HTTP adapter for issue editing and the controlled publication lifecycle. */
 @RestController
 @ConditionalOnBean(EditorialIssueService.class)
 public final class EditorialIssueController {
@@ -129,6 +129,22 @@ public final class EditorialIssueController {
             HttpServletRequest request
     ) {
         return response(service.publishIssue(
+                actor(authentication, request),
+                uuid(issueId, "/id"),
+                Version.parseIfMatch(request.getHeader(HttpHeaders.IF_MATCH)),
+                request.getHeader("Idempotency-Key"),
+                body
+        ), requestId(request));
+    }
+
+    @PostMapping(path = "/api/v1/publisher/issues/{issueId}:archive")
+    public ResponseEntity<JsonNode> archiveIssue(
+            @PathVariable String issueId,
+            @RequestBody(required = false) String body,
+            Authentication authentication,
+            HttpServletRequest request
+    ) {
+        return response(service.archiveIssue(
                 actor(authentication, request),
                 uuid(issueId, "/id"),
                 Version.parseIfMatch(request.getHeader(HttpHeaders.IF_MATCH)),

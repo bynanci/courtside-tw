@@ -34,7 +34,7 @@ import tw.basketball.magazine.shared.ProblemCode;
 import tw.basketball.magazine.shared.RoleCode;
 import tw.basketball.magazine.shared.Version;
 
-/** Application boundary for issue draft CRUD and optimistic-lock conflicts. */
+/** Application boundary for issue editing, publication, and optimistic-lock conflicts. */
 public final class EditorialIssueService {
     private static final int MAX_SECTIONS = 50;
     private final EditorialIssueRepository repository;
@@ -212,9 +212,9 @@ public final class EditorialIssueService {
             Instant publishedAt = applicationClock.now();
             if (!repository.readyForPublication(issueId, publishedAt)) {
                 throw EditorialProblemException.gate(
-                        "/coverAssetId",
+                        "/issueId",
                         "ISSUE_NOT_READY",
-                        "issue cover must be ready, have a cover variant, alt text, and valid public rights"
+                        "issue cover requires valid public rights and each included article requires a published revision"
                 );
             }
             if (!repository.transition(
@@ -240,6 +240,7 @@ public final class EditorialIssueService {
                     actor.subject(),
                     updated.coverAssetId()
             );
+            repository.insertPublicationJob(issueId, "PUBLISH", idempotencyKey, actor.subject(), null, null);
             auditWriter.append(new AuditEventDraft(
                     actor,
                     "ISSUE_PUBLISHED",
@@ -248,6 +249,39 @@ public final class EditorialIssueService {
                     metadata(updated)
             ));
             return workflowResult("PUBLISHED", updated.version(), null);
+        });
+    }
+
+    public EditorialWorkflowService.OperationResult archiveIssue(
+            ActorContext actor,
+            UUID issueId,
+            Version expectedVersion,
+            String idempotencyKey,
+            String body
+    ) {
+        requirePublisher(actor);
+        Objects.requireNonNull(expectedVersion, "expectedVersion");
+        JsonNode request = body == null || body.isBlank()
+                ? objectMapper.createObjectNode()
+                : object(body);
+        String hash = requestHash(
+                "ARCHIVE_ISSUE|" + issueId + "|" + expectedVersion.value(), request
+        );
+        return idempotent(actor, "ARCHIVE", idempotencyKey, hash, () -> {
+            EditorialIssueRepository.IssueRecord current = requireIssue(issueId, expectedVersion);
+            if (current.state() != PublicationState.PUBLISHED
+                    && current.state() != PublicationState.WITHDRAWN) {
+                throw new tw.basketball.magazine.publication.domain.PublicationWorkflowException(
+                        "INVALID_TRANSITION", "only a published or withdrawn issue can be archived"
+                );
+            }
+            transitionIssue(issueId, current, PublicationState.ARCHIVED, expectedVersion);
+            EditorialIssueRepository.IssueRecord updated = requireIssue(issueId);
+            repository.insertPublicationJob(issueId, "ARCHIVE", idempotencyKey, actor.subject(), null, null);
+            auditWriter.append(new AuditEventDraft(
+                    actor, "ISSUE_ARCHIVED", "ISSUE", issueId, metadata(updated)
+            ));
+            return workflowResult("ARCHIVED", updated.version(), null);
         });
     }
 
@@ -556,6 +590,7 @@ public final class EditorialIssueService {
                                 || operation.equals("SCHEDULE")
                                 || operation.equals("SUBMIT")
                                 || operation.equals("APPROVE")
+                                || operation.equals("ARCHIVE")
                                 ? 202
                                 : operation.startsWith("CREATE") ? 201 : 200,
                         replayBody,
