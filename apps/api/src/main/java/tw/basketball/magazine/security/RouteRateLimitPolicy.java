@@ -1,34 +1,52 @@
 package tw.basketball.magazine.security;
 
 import java.time.Duration;
-import java.util.Map;
 import java.util.Objects;
 
-/** Route-specific rate-limit buckets; enforcement remains an adapter concern. */
+/** Stable route categories prevent query strings and resource IDs from creating fresh budgets. */
 public final class RouteRateLimitPolicy {
-    private static final Limit PUBLIC_READ = new Limit(120, Duration.ofMinutes(1));
-    private static final Limit SEARCH = new Limit(60, Duration.ofMinutes(1));
-    private static final Limit AUTHENTICATION = new Limit(10, Duration.ofMinutes(1));
-    private static final Limit MEDIA_UPLOAD = new Limit(20, Duration.ofMinutes(1));
-    private static final Limit DEFAULT = new Limit(30, Duration.ofMinutes(1));
-    private static final Map<String, Limit> EXACT_LIMITS = Map.of(
-            "/api/v1/public/search", SEARCH,
-            "/api/v1/auth/siwe/challenge", AUTHENTICATION,
-            "/api/v1/auth/siwe/verify", AUTHENTICATION,
-            "/api/v1/editor/media/uploads", MEDIA_UPLOAD
-    );
-
     private RouteRateLimitPolicy() {
     }
 
     public static Limit forPath(String path) {
+        Bucket bucket = bucketForPath(path);
+        return bucket == null ? Bucket.BACKOFFICE.limit() : bucket.limit();
+    }
+
+    public static Bucket bucketForPath(String path) {
         Objects.requireNonNull(path, "path");
         String normalized = path.split("\\?", 2)[0];
-        Limit exact = EXACT_LIMITS.get(normalized);
-        if (exact != null) {
-            return exact;
+        if (!within(normalized, "/api/v1")) {
+            return null;
         }
-        return normalized.startsWith("/api/v1/public/") ? PUBLIC_READ : DEFAULT;
+        if (within(normalized, "/api/v1/auth")) {
+            return Bucket.AUTHENTICATION;
+        }
+        if (within(normalized, "/api/v1/editor/media/uploads")) {
+            return Bucket.MEDIA_UPLOAD;
+        }
+        if (within(normalized, "/api/v1/public/search")) {
+            return Bucket.SEARCH;
+        }
+        return within(normalized, "/api/v1/public") ? Bucket.PUBLIC_READ : Bucket.BACKOFFICE;
+    }
+
+    private static boolean within(String path, String prefix) {
+        return path.equals(prefix) || path.startsWith(prefix + "/");
+    }
+
+    public enum Bucket {
+        PUBLIC_READ(120), SEARCH(60), AUTHENTICATION(10), AUTHENTICATION_FAILURE(10), MEDIA_UPLOAD(20), BACKOFFICE(30);
+
+        private final Limit limit;
+
+        Bucket(int maximumRequests) {
+            limit = new Limit(maximumRequests, Duration.ofMinutes(1));
+        }
+
+        public Limit limit() {
+            return limit;
+        }
     }
 
     public record Limit(int maximumRequests, Duration window) {

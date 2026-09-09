@@ -65,7 +65,8 @@ public final class PublicationWorkerConfiguration {
                 new JdbcAuditWriter(jdbcTemplate, objectMapper),
                 new TransactionTemplate(transactionManager),
                 objectMapper,
-                Clock.systemUTC()
+                Clock.systemUTC(),
+                PublicationExternalInvalidator.unavailable()
         );
     }
 

@@ -9,6 +9,8 @@ import java.util.Set;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import tw.basketball.magazine.media.domain.MediaProcessingState;
 import tw.basketball.magazine.media.domain.RightsPolicy;
@@ -120,6 +122,90 @@ final class PublicationWorkflowTest {
         assertEquals(List.of("RIGHTS_MISSING"), result.blockingCodes());
         assertEquals(ASSET_ID, result.blockers().get(0).assetId());
         assertEquals(draft, result.snapshot());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "SUBMIT,DRAFT,EDITOR,UNKNOWN,PUBLIC_WEB,RIGHTS_MISSING",
+            "SUBMIT,DRAFT,EDITOR,VALID,OFFLINE,RIGHTS_WRONG_CHANNEL",
+            "PUBLISH,APPROVED,PUBLISHER,UNKNOWN,PUBLIC_WEB,RIGHTS_MISSING",
+            "PUBLISH,APPROVED,PUBLISHER,VALID,OFFLINE,RIGHTS_WRONG_CHANNEL",
+            "PUBLISH,SCHEDULED,PUBLISHER,UNKNOWN,PUBLIC_WEB,RIGHTS_MISSING",
+            "PUBLISH,SCHEDULED,PUBLISHER,VALID,OFFLINE,RIGHTS_WRONG_CHANNEL"
+    })
+    void unknownAndWrongChannelRightsBlockSubmitAndExecutionWithoutAdvancingTheSnapshot(
+            PublicationAction action,
+            PublicationState state,
+            RoleCode role,
+            RightsPolicy.Status rightsStatus,
+            String channel,
+            String blockingCode
+    ) {
+        PublicationWorkflow.PublicationSnapshot current = new PublicationWorkflow.PublicationSnapshot(
+                ARTICLE_ID,
+                ARTICLE_REVISION_ID,
+                state,
+                new Version(7),
+                true,
+                List.of(rights(rightsStatus, Set.of(channel))),
+                state == PublicationState.SCHEDULED ? PUBLISH_AT : null
+        );
+
+        PublicationWorkflow.PublicationResult blocked = workflow.apply(
+                current,
+                command(action, role, new Version(7), PUBLISH_AT)
+        );
+
+        assertEquals(PublicationWorkflow.PublicationResult.Status.BLOCKED, blocked.status());
+        assertEquals(List.of(blockingCode), blocked.blockingCodes());
+        assertEquals(ASSET_ID, blocked.blockers().getFirst().assetId());
+        assertEquals(RIGHTS_ID, blocked.blockers().getFirst().rightsRecordId());
+        assertEquals(Long.valueOf(3), blocked.blockers().getFirst().rightsRecordVersion());
+        assertEquals(current, blocked.snapshot());
+        assertEquals(new Version(7), blocked.snapshot().version());
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "APPROVE,IN_REVIEW,APPROVED",
+            "PUBLISH,APPROVED,PUBLISHED",
+            "WITHDRAW,PUBLISHED,WITHDRAWN",
+            "ARCHIVE,WITHDRAWN,ARCHIVED"
+    })
+    void onlyPublisherCanApprovePublishWithdrawAndArchive(
+            PublicationAction action,
+            PublicationState initialState,
+            PublicationState expectedState
+    ) {
+        PublicationWorkflow.PublicationSnapshot current = snapshot(
+                initialState,
+                true,
+                rights(RightsPolicy.Status.VALID, Set.of(RightsPolicy.PUBLIC_WEB_CHANNEL))
+        );
+
+        PublicationWorkflowException denied = assertThrows(
+                PublicationWorkflowException.class,
+                () -> workflow.apply(current, PublicationWorkflow.PublicationCommand.withReason(
+                        action, RoleCode.EDITOR, new Version(0), ARTICLE_REVISION_ID,
+                        CHECKED_AT, "Emergency rights withdrawal"
+                ))
+        );
+
+        assertEquals("ROLE_REQUIRED", denied.code());
+        assertEquals(initialState, current.state());
+        assertEquals(new Version(0), current.version());
+
+        PublicationWorkflow.PublicationResult accepted = workflow.apply(
+                current,
+                PublicationWorkflow.PublicationCommand.withReason(
+                        action, RoleCode.PUBLISHER, new Version(0), ARTICLE_REVISION_ID,
+                        CHECKED_AT, "Emergency rights withdrawal"
+                )
+        );
+
+        assertEquals(expectedState, accepted.snapshot().state());
+        assertEquals(new Version(1), accepted.snapshot().version());
+        assertEquals(ARTICLE_REVISION_ID, accepted.snapshot().revisionId());
     }
 
     @Test

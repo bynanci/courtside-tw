@@ -23,7 +23,7 @@ import tw.basketball.magazine.publication.persistence.EditorialIssueRepository;
 import tw.basketball.magazine.shared.ActorContext;
 import tw.basketball.magazine.shared.RequestId;
 
-/** Executes scheduled issue publication against an immutable issue snapshot. */
+/** Publishes scheduled issues and retries durable publication cache invalidation. */
 public final class IssuePublicationJobHandler implements OutboxEventHandler {
     public static final String EVENT_TYPE = "publication.issue.command";
     private static final String WORKER_ACTOR = "system:issue-publication-worker";
@@ -33,6 +33,7 @@ public final class IssuePublicationJobHandler implements OutboxEventHandler {
     private final TransactionTemplate transactionTemplate;
     private final ObjectMapper objectMapper;
     private final Clock clock;
+    private final PublicationExternalInvalidator externalInvalidator;
 
     public IssuePublicationJobHandler(
             EditorialIssueRepository repository,
@@ -50,11 +51,24 @@ public final class IssuePublicationJobHandler implements OutboxEventHandler {
             ObjectMapper objectMapper,
             Clock clock
     ) {
+        this(repository, auditWriter, transactionTemplate, objectMapper, clock,
+                PublicationExternalInvalidator.unavailable());
+    }
+
+    public IssuePublicationJobHandler(
+            EditorialIssueRepository repository,
+            AuditWriter auditWriter,
+            TransactionTemplate transactionTemplate,
+            ObjectMapper objectMapper,
+            Clock clock,
+            PublicationExternalInvalidator externalInvalidator
+    ) {
         this.repository = Objects.requireNonNull(repository, "repository");
         this.auditWriter = Objects.requireNonNull(auditWriter, "auditWriter");
         this.transactionTemplate = Objects.requireNonNull(transactionTemplate, "transactionTemplate");
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper");
         this.clock = Objects.requireNonNull(clock, "clock");
+        this.externalInvalidator = Objects.requireNonNull(externalInvalidator, "externalInvalidator");
     }
 
     @Override
@@ -69,7 +83,16 @@ public final class IssuePublicationJobHandler implements OutboxEventHandler {
             throw new OutboxHandlerException("issue publication payload is invalid", exception, false);
         }
         try {
-            transactionTemplate.executeWithoutResult(status -> process(command));
+            PendingInvalidation pending = transactionTemplate.execute(status -> process(command));
+            if (pending == null) {
+                return;
+            }
+            // The origin and immutable snapshot must be committed before an external cache can refill.
+            externalInvalidator.invalidate(new PublicationExternalInvalidator.Request(
+                    "issue-publication:" + pending.jobId(), PublicationInvalidationKeys.forIssue(pending.issueId())
+            ));
+            transactionTemplate.executeWithoutResult(status ->
+                    repository.markPublicationJobSucceeded(pending.jobId(), clock.instant()));
         } catch (RetryableJobException exception) {
             throw new OutboxHandlerException(exception.getMessage(), exception, true);
         } catch (PermanentJobException exception) {
@@ -79,7 +102,7 @@ public final class IssuePublicationJobHandler implements OutboxEventHandler {
         }
     }
 
-    private void process(Command command) {
+    private PendingInvalidation process(Command command) {
         EditorialIssueRepository.PublicationJobRecord job = repository.findPublicationJob(
                 command.requestedBy(), command.action(), command.idempotencyKey()
         ).orElseThrow(() -> new PermanentJobException("issue publication job is missing"));
@@ -87,29 +110,40 @@ public final class IssuePublicationJobHandler implements OutboxEventHandler {
             throw new PermanentJobException("issue publication job aggregate does not match the event");
         }
         if ("SUCCEEDED".equals(job.status()) || "BLOCKED".equals(job.status())) {
-            return;
+            return null;
         }
-        if (!"SCHEDULE".equals(command.action())) {
+        Instant now = clock.instant();
+        EditorialIssueRepository.IssueRecord issue = repository.findForUpdate(command.issueId())
+                .orElseThrow(() -> new PermanentJobException("publication issue is missing"));
+        if ("ARCHIVE".equals(command.action())) {
+            if (issue.state() != PublicationState.ARCHIVED) {
+                throw new PermanentJobException("issue archive job did not reach its expected state");
+            }
+            return new PendingInvalidation(job.jobId(), job.issueId());
+        }
+        if (!"SCHEDULE".equals(command.action()) && !"PUBLISH".equals(command.action())) {
             throw new PermanentJobException("unsupported issue publication action: " + command.action());
         }
-
-        Instant now = clock.instant();
+        if (repository.hasPublicationSnapshot(issue.issueId())
+                && (issue.state() == PublicationState.PUBLISHED
+                || issue.state() == PublicationState.ARCHIVED
+                || issue.state() == PublicationState.WITHDRAWN)) {
+            // A delayed publish delivery may follow archive. Purge current state without replaying publication.
+            return new PendingInvalidation(job.jobId(), job.issueId());
+        }
+        if ("PUBLISH".equals(command.action())) {
+            throw new PermanentJobException("issue publish job has no committed publication snapshot");
+        }
         if (job.scheduledAt() == null || now.isBefore(job.scheduledAt())) {
             throw new RetryableJobException("scheduled issue publication is not due");
         }
-        EditorialIssueRepository.IssueRecord issue = repository.find(command.issueId())
-                .orElseThrow(() -> new PermanentJobException("publication issue is missing"));
-        if (issue.state() == PublicationState.PUBLISHED && repository.hasPublicationSnapshot(issue.issueId())) {
-            repository.markPublicationJobSucceeded(job.jobId(), now);
-            return;
-        }
         if (issue.state() != PublicationState.SCHEDULED) {
             block(job, "INVALID_SCHEDULED_STATE", now);
-            return;
+            return null;
         }
         if (!repository.readyForPublication(issue.issueId(), now)) {
             block(job, "ISSUE_NOT_READY", now);
-            return;
+            return null;
         }
         if (!repository.transition(
                 issue.issueId(), issue.version(), issue.state(), PublicationState.PUBLISHED, now
@@ -140,7 +174,7 @@ public final class IssuePublicationJobHandler implements OutboxEventHandler {
                         "snapshotVersion", snapshotVersion
                 )
         ));
-        repository.markPublicationJobSucceeded(job.jobId(), now);
+        return new PendingInvalidation(job.jobId(), job.issueId());
     }
 
     private void block(
@@ -203,6 +237,9 @@ public final class IssuePublicationJobHandler implements OutboxEventHandler {
 
     private static UUID requiredUuid(JsonNode payload, String field) {
         return UUID.fromString(required(payload, field));
+    }
+
+    private record PendingInvalidation(UUID jobId, UUID issueId) {
     }
 
     private record Command(UUID issueId, String action, String idempotencyKey, String requestedBy) {

@@ -254,13 +254,8 @@ final class PublicationReliabilityIT extends EditorialApiIntegrationTestSupport 
         jdbcTemplate.update("""
                 INSERT INTO article_revision (
                     id, article_id, revision_number, title, dek, content_document, state
-                ) VALUES (?, ?, 1, 'Withdrawn origin', 'Withdrawn origin', ?::jsonb, 'WITHDRAWN')
+                ) VALUES (?, ?, 1, 'Withdrawn origin', 'Withdrawn origin', ?::jsonb, 'DRAFT')
                 """, revisionId, articleId, CREATE_BODY_CONTENT);
-        jdbcTemplate.update("""
-                UPDATE article
-                SET state = 'WITHDRAWN', published_revision_id = ?, published_at = ?
-                WHERE id = ?
-                """, revisionId, Timestamp.from(publishedAt), articleId);
         jdbcTemplate.update("""
                 INSERT INTO contributor (id, slug, display_name)
                 VALUES (?, 'reliability-editor', 'Reliability editor')
@@ -269,6 +264,12 @@ final class PublicationReliabilityIT extends EditorialApiIntegrationTestSupport 
                 INSERT INTO article_contributor (article_revision_id, contributor_id, role, position)
                 VALUES (?, ?, 'EDITOR', 1)
                 """, revisionId, contributorId);
+        jdbcTemplate.update("UPDATE article_revision SET state = 'WITHDRAWN' WHERE id = ?", revisionId);
+        jdbcTemplate.update("""
+                UPDATE article
+                SET state = 'WITHDRAWN', published_revision_id = ?, published_at = ?
+                WHERE id = ?
+                """, revisionId, Timestamp.from(publishedAt), articleId);
         jdbcTemplate.update("""
                 INSERT INTO issue_article (issue_id, section_id, article_id, position)
                 VALUES (?, ?, ?, 1)

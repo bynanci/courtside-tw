@@ -1,5 +1,7 @@
 package tw.basketball.magazine.editorial;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 import java.io.IOException;
@@ -76,6 +78,10 @@ public abstract class EditorialApiIntegrationTestSupport {
         applyMigration(dataSource, "/db/migration/V011__editorial_media_reference_sync.sql");
         applyMigration(dataSource, "/db/migration/V012__taxonomy_and_search.sql");
         applyMigration(dataSource, "/db/migration/V013__editorial_taxonomy_assignment_sync.sql");
+        applyMigration(dataSource, "/db/migration/V014__reader_library.sql");
+        applyMigration(dataSource, "/db/migration/V015__offline_withdrawal_manifest_version.sql");
+        applyMigration(dataSource, "/db/migration/V016__editorial_contributors_and_identity_audit.sql");
+        applyMigration(dataSource, "/db/migration/V017__asset_revocation_withdrawal_cursor.sql");
         jdbcTemplate = new JdbcTemplate(dataSource);
         applicationClock = new ApplicationClock(
                 Clock.fixed(Instant.parse("2026-08-10T00:00:00Z"), ZoneOffset.UTC)
@@ -91,6 +97,8 @@ public abstract class EditorialApiIntegrationTestSupport {
     void createControllerAndCleanEditorialData() {
         jdbcTemplate.update("""
                 TRUNCATE TABLE search_document, article_taxonomy, taxonomy_alias, taxonomy_term,
+                    media_revocation_impact, contributor_command_receipt, identity_role_observation,
+                    article_contributor, contributor,
                     publication_impact_link, publication_idempotency,
                     publication_job, publication_snapshot, publication_rights_reference,
                     publication_review, article_revision_media, article_revision, article,
@@ -120,6 +128,21 @@ public abstract class EditorialApiIntegrationTestSupport {
                 null,
                 List.of(new SimpleGrantedAuthority("ROLE_" + role.name()))
         );
+    }
+
+    protected void assertApplicationMutationDenied(String sql) throws SQLException {
+        // Fixture migrations use the database administrator. Check append-only
+        // privileges with the application role on one dedicated connection.
+        try (Connection connection = jdbcTemplate.getDataSource().getConnection();
+                Statement statement = connection.createStatement()) {
+            statement.execute("SET ROLE courtside_app");
+            try {
+                SQLException failure = assertThrows(SQLException.class, () -> statement.executeUpdate(sql));
+                assertEquals("42501", failure.getSQLState());
+            } finally {
+                statement.execute("RESET ROLE");
+            }
+        }
     }
 
     protected void linkMedia(

@@ -10798,3 +10798,1078 @@ for (const [name, mutateEvent] of [
     assert.match(report.errors.join("\n"), /pnpm security/u)
   })
 }
+
+const productRemediationBase = "74d3b6dfba087394a3e522252dc4a8cf5e1b3f0d"
+const productRemediationPr = 175
+const productRemediationBranch = "fix/t086-product-remediation"
+const productRemediationPaths = [
+  "apps/api/src/main/java/tw/basketball/magazine/identity/OidcSecurityConfiguration.java",
+  "apps/api/src/main/java/tw/basketball/magazine/publication/api/EditorialIssueController.java",
+  "apps/api/src/main/java/tw/basketball/magazine/publication/application/EditorialIssueService.java",
+  "apps/api/src/main/java/tw/basketball/magazine/publication/persistence/JdbcEditorialIssueRepository.java",
+  "apps/api/src/main/java/tw/basketball/magazine/publication/worker/IssuePublicationJobHandler.java",
+  "apps/api/src/main/java/tw/basketball/magazine/publication/worker/PublicationInvalidationKeys.java",
+  "apps/api/src/main/java/tw/basketball/magazine/publication/worker/PublicationWorkerConfiguration.java",
+  "apps/api/src/main/java/tw/basketball/magazine/security/RouteRateLimitFilter.java",
+  "apps/api/src/main/java/tw/basketball/magazine/security/RouteRateLimitPolicy.java",
+  "apps/api/src/main/java/tw/basketball/magazine/security/RouteRateLimiter.java",
+  "apps/api/src/main/java/tw/basketball/magazine/security/SecurityBoundaryConfiguration.java",
+  "apps/api/src/test/java/tw/basketball/magazine/identity/OidcRoleMatrixTest.java",
+  "apps/api/src/test/java/tw/basketball/magazine/publication/PublicIssueApiIT.java",
+  "apps/api/src/test/java/tw/basketball/magazine/publication/api/EditorialIssueApiIT.java",
+  "apps/api/src/test/java/tw/basketball/magazine/publication/api/PublicationAcceptanceApiIT.java",
+  "apps/api/src/test/java/tw/basketball/magazine/publication/domain/PublicationWorkflowTest.java",
+  "apps/api/src/test/java/tw/basketball/magazine/readerlibrary/ReaderLibraryApiIT.java",
+  "apps/api/src/test/java/tw/basketball/magazine/security/RouteRateLimitFilterTest.java",
+  "apps/api/src/test/java/tw/basketball/magazine/security/RouteRateLimitHttpIT.java",
+  "apps/api/src/test/java/tw/basketball/magazine/security/RouteRateLimiterTest.java",
+  "apps/web/server/auth/rate-limit.ts",
+  "apps/web/server/middleware/auth.ts",
+  "apps/web/tests/e2e/us1-browse-issue.spec.ts",
+  "apps/web/tests/e2e/us2-creative-lifecycle.spec.ts",
+  "apps/web/tests/e2e/us2-no-js.spec.ts",
+  "apps/web/tests/integration/auth-rate-limit.test.ts",
+  "contracts/openapi.yaml",
+  "packages/api-client/src/generated/openapi.d.ts",
+  "scripts/test/validate-traceability.test.mjs",
+  "scripts/validate-openapi.mjs",
+  "scripts/validate-traceability.mjs"
+]
+const productRemediationOptionalPaths = [
+  "apps/api/src/main/java/tw/basketball/magazine/content/EditorialContributorConfiguration.java",
+  "apps/api/src/main/java/tw/basketball/magazine/content/api/EditorialContributorController.java",
+  "apps/api/src/main/java/tw/basketball/magazine/content/application/EditorialContributorService.java",
+  "apps/api/src/main/java/tw/basketball/magazine/identity/SecurityAuditConfiguration.java",
+  "apps/api/src/main/java/tw/basketball/magazine/identity/SecurityAuditFilter.java",
+  "apps/api/src/main/java/tw/basketball/magazine/identity/VerifiedRoleAuditService.java",
+  "apps/api/src/main/java/tw/basketball/magazine/identity/api/AccountApiExceptionHandler.java",
+  "apps/api/src/main/java/tw/basketball/magazine/media/MediaRevocationWorkerConfiguration.java",
+  "apps/api/src/main/java/tw/basketball/magazine/media/application/MediaRevocationHandler.java",
+  "apps/api/src/main/java/tw/basketball/magazine/media/application/PublisherMediaService.java",
+  "apps/api/src/main/java/tw/basketball/magazine/publication/api/EditorialApiExceptionHandler.java",
+  "apps/api/src/main/java/tw/basketball/magazine/publication/application/OfflineManifestService.java",
+  "apps/api/src/main/java/tw/basketball/magazine/readerlibrary/api/ReaderLibraryApiExceptionHandler.java",
+  "apps/api/src/main/java/tw/basketball/magazine/shared/ApiExceptionHandler.java",
+  "apps/api/src/main/java/tw/basketball/magazine/taxonomy/api/TaxonomyApiExceptionHandler.java",
+  "apps/api/src/main/resources/db/migration/V016__editorial_contributors_and_identity_audit.sql",
+  "apps/api/src/main/resources/db/migration/V017__asset_revocation_withdrawal_cursor.sql",
+  "apps/api/src/test/java/tw/basketball/magazine/content/api/EditorialContributorApiIT.java",
+  "apps/api/src/test/java/tw/basketball/magazine/editorial/EditorialApiIntegrationTestSupport.java",
+  "apps/api/src/test/java/tw/basketball/magazine/identity/SecurityAuditFilterTest.java",
+  "apps/api/src/test/java/tw/basketball/magazine/identity/VerifiedRoleAuditServiceIT.java",
+  "apps/api/src/test/java/tw/basketball/magazine/media/api/PublisherMediaRevokeApiIT.java",
+  "apps/api/src/test/java/tw/basketball/magazine/media/application/MediaRevocationHandlerIT.java",
+  "apps/api/src/test/java/tw/basketball/magazine/publication/PublicIssueApiIntegrationTestSupport.java",
+  "apps/api/src/test/java/tw/basketball/magazine/publication/api/EditorialCrudAcceptanceApiIT.java",
+  "apps/api/src/test/java/tw/basketball/magazine/shared/WriteApiConcurrencyIT.java",
+  "apps/api/src/test/java/tw/basketball/magazine/shared/WriteApiContractTest.java",
+  "apps/web/app/components/content-blocks/creative/P5CanvasHost.vue",
+  "apps/web/app/features/offline/services/OfflineIssueManager.ts",
+  "apps/web/scripts/android-chrome-performance-smoke.mjs",
+  "apps/web/scripts/android-creative-timeline.mjs",
+  "apps/web/tests/unit/android-creative-timeline.test.ts",
+  "apps/web/tests/unit/offline-issue-manager.test.ts"
+]
+const productRemediationOwnerBody =
+  '<!-- product175:owner-dispatch:v1:start -->\n## Bounded P1 product remediation authorization\n\nCanonical successor to comment #5594575189. All prior records remain immutable historical snapshots and cannot replace this canonical record. This record accepts the exact previously authorized test-only RED commit as a reviewable pre-successor snapshot; it does not backdate authorization or allow any other predated implementation. The completed dependency audit fixes the scope at 31 required and 33 optional code/test paths. The user\'s explicit completion/review/optimization/merge instruction is quoted below. Frozen release evidence, real human/provider prerequisites and protections remain in force.\n\n```json\n{\n  "allowed": [\n    "Implement and test the bounded P1 editorial, publication, asset withdrawal, identity, API contract, reader fallback and Android reliability remediation in the closed path union.",\n    "Create draft commits, run exact-head CI, conduct independent review, optimize accepted findings, mark ready, and perform one exact-head squash merge after required checks and thread resolution pass.",\n    "The named initial seed and exact accepted predecessor RED test commit are explicitly accepted as reviewable pre-dispatch snapshots. Every commit after that exact predecessor must form a linear history and postdate this immutable canonical dispatch. No other predated implementation is authorized."\n  ],\n  "authorization_source": "Recorded by the assistant through the owner\'s connected GitHub account on behalf of the user\'s explicit current-session instruction quoted above. This records actual session authorization, not a separate human acceptance of release blockers.",\n  "base_sha": "74d3b6dfba087394a3e522252dc4a8cf5e1b3f0d",\n  "branch": "fix/t086-product-remediation",\n  "decision": "DISPATCH_ACCEPTED",\n  "initial_seed": {\n    "changed_paths": [\n      "apps/api/src/main/java/tw/basketball/magazine/identity/OidcSecurityConfiguration.java",\n      "apps/api/src/main/java/tw/basketball/magazine/publication/api/EditorialIssueController.java",\n      "apps/api/src/main/java/tw/basketball/magazine/publication/application/EditorialIssueService.java",\n      "apps/api/src/main/java/tw/basketball/magazine/publication/persistence/JdbcEditorialIssueRepository.java",\n      "apps/api/src/main/java/tw/basketball/magazine/publication/worker/IssuePublicationJobHandler.java",\n      "apps/api/src/main/java/tw/basketball/magazine/publication/worker/PublicationInvalidationKeys.java",\n      "apps/api/src/main/java/tw/basketball/magazine/publication/worker/PublicationWorkerConfiguration.java",\n      "apps/api/src/main/java/tw/basketball/magazine/security/RouteRateLimitFilter.java",\n      "apps/api/src/main/java/tw/basketball/magazine/security/RouteRateLimitPolicy.java",\n      "apps/api/src/main/java/tw/basketball/magazine/security/RouteRateLimiter.java",\n      "apps/api/src/main/java/tw/basketball/magazine/security/SecurityBoundaryConfiguration.java",\n      "apps/api/src/test/java/tw/basketball/magazine/identity/OidcRoleMatrixTest.java",\n      "apps/api/src/test/java/tw/basketball/magazine/publication/PublicIssueApiIT.java",\n      "apps/api/src/test/java/tw/basketball/magazine/publication/api/EditorialIssueApiIT.java",\n      "apps/api/src/test/java/tw/basketball/magazine/publication/api/PublicationAcceptanceApiIT.java",\n      "apps/api/src/test/java/tw/basketball/magazine/publication/domain/PublicationWorkflowTest.java",\n      "apps/api/src/test/java/tw/basketball/magazine/readerlibrary/ReaderLibraryApiIT.java",\n      "apps/api/src/test/java/tw/basketball/magazine/security/RouteRateLimitFilterTest.java",\n      "apps/api/src/test/java/tw/basketball/magazine/security/RouteRateLimitHttpIT.java",\n      "apps/api/src/test/java/tw/basketball/magazine/security/RouteRateLimiterTest.java",\n      "apps/web/server/auth/rate-limit.ts",\n      "apps/web/server/middleware/auth.ts",\n      "apps/web/tests/e2e/us1-browse-issue.spec.ts",\n      "apps/web/tests/e2e/us2-creative-lifecycle.spec.ts",\n      "apps/web/tests/e2e/us2-no-js.spec.ts",\n      "apps/web/tests/integration/auth-rate-limit.test.ts",\n      "contracts/openapi.yaml",\n      "packages/api-client/src/generated/openapi.d.ts",\n      "scripts/validate-openapi.mjs"\n    ],\n    "head_sha": "c90270157e50a1fd8c0abc2a700d22f2481fa7f9",\n    "tree_sha": "6e130341bd03972acd4133679aea3063838abff8"\n  },\n  "invariants": [\n    "Preserve frozen T085 traceability, dispatch, acceptance and task checkbox bytes.",\n    "Do not claim T086 beta PASS, close unrelated tasks, disable the beta flag, or infer human-study/rights/provider acceptance.",\n    "Do not weaken branch rules, test assertions, required contexts, workflow permissions, dependency pins, or existing authorization scopes.",\n    "On a PR event bind live protected main to the exact base; on actual push require the matching merged PR, event.before, single parent, identical final tree and live protected main at the squash SHA.",\n    "Every required path remains changed; optional amendments are restricted to the explicit path list; every historical changed path remains inside that closed union."\n  ],\n  "issue": 121,\n  "optional_amendment_paths": [\n    "apps/api/src/main/java/tw/basketball/magazine/content/EditorialContributorConfiguration.java",\n    "apps/api/src/main/java/tw/basketball/magazine/content/api/EditorialContributorController.java",\n    "apps/api/src/main/java/tw/basketball/magazine/content/application/EditorialContributorService.java",\n    "apps/api/src/main/java/tw/basketball/magazine/identity/SecurityAuditConfiguration.java",\n    "apps/api/src/main/java/tw/basketball/magazine/identity/SecurityAuditFilter.java",\n    "apps/api/src/main/java/tw/basketball/magazine/identity/VerifiedRoleAuditService.java",\n    "apps/api/src/main/java/tw/basketball/magazine/identity/api/AccountApiExceptionHandler.java",\n    "apps/api/src/main/java/tw/basketball/magazine/media/MediaRevocationWorkerConfiguration.java",\n    "apps/api/src/main/java/tw/basketball/magazine/media/application/MediaRevocationHandler.java",\n    "apps/api/src/main/java/tw/basketball/magazine/media/application/PublisherMediaService.java",\n    "apps/api/src/main/java/tw/basketball/magazine/publication/api/EditorialApiExceptionHandler.java",\n    "apps/api/src/main/java/tw/basketball/magazine/publication/application/OfflineManifestService.java",\n    "apps/api/src/main/java/tw/basketball/magazine/readerlibrary/api/ReaderLibraryApiExceptionHandler.java",\n    "apps/api/src/main/java/tw/basketball/magazine/shared/ApiExceptionHandler.java",\n    "apps/api/src/main/java/tw/basketball/magazine/taxonomy/api/TaxonomyApiExceptionHandler.java",\n    "apps/api/src/main/resources/db/migration/V016__editorial_contributors_and_identity_audit.sql",\n    "apps/api/src/main/resources/db/migration/V017__asset_revocation_withdrawal_cursor.sql",\n    "apps/api/src/test/java/tw/basketball/magazine/content/api/EditorialContributorApiIT.java",\n    "apps/api/src/test/java/tw/basketball/magazine/editorial/EditorialApiIntegrationTestSupport.java",\n    "apps/api/src/test/java/tw/basketball/magazine/identity/SecurityAuditFilterTest.java",\n    "apps/api/src/test/java/tw/basketball/magazine/identity/VerifiedRoleAuditServiceIT.java",\n    "apps/api/src/test/java/tw/basketball/magazine/media/api/PublisherMediaRevokeApiIT.java",\n    "apps/api/src/test/java/tw/basketball/magazine/media/application/MediaRevocationHandlerIT.java",\n    "apps/api/src/test/java/tw/basketball/magazine/publication/PublicIssueApiIntegrationTestSupport.java",\n    "apps/api/src/test/java/tw/basketball/magazine/publication/api/EditorialCrudAcceptanceApiIT.java",\n    "apps/api/src/test/java/tw/basketball/magazine/shared/WriteApiConcurrencyIT.java",\n    "apps/api/src/test/java/tw/basketball/magazine/shared/WriteApiContractTest.java",\n    "apps/web/app/components/content-blocks/creative/P5CanvasHost.vue",\n    "apps/web/app/features/offline/services/OfflineIssueManager.ts",\n    "apps/web/scripts/android-chrome-performance-smoke.mjs",\n    "apps/web/scripts/android-creative-timeline.mjs",\n    "apps/web/tests/unit/android-creative-timeline.test.ts",\n    "apps/web/tests/unit/offline-issue-manager.test.ts"\n  ],\n  "pr": 175,\n  "repository": "bynanci/courtside-tw",\n  "required_paths": [\n    "apps/api/src/main/java/tw/basketball/magazine/identity/OidcSecurityConfiguration.java",\n    "apps/api/src/main/java/tw/basketball/magazine/publication/api/EditorialIssueController.java",\n    "apps/api/src/main/java/tw/basketball/magazine/publication/application/EditorialIssueService.java",\n    "apps/api/src/main/java/tw/basketball/magazine/publication/persistence/JdbcEditorialIssueRepository.java",\n    "apps/api/src/main/java/tw/basketball/magazine/publication/worker/IssuePublicationJobHandler.java",\n    "apps/api/src/main/java/tw/basketball/magazine/publication/worker/PublicationInvalidationKeys.java",\n    "apps/api/src/main/java/tw/basketball/magazine/publication/worker/PublicationWorkerConfiguration.java",\n    "apps/api/src/main/java/tw/basketball/magazine/security/RouteRateLimitFilter.java",\n    "apps/api/src/main/java/tw/basketball/magazine/security/RouteRateLimitPolicy.java",\n    "apps/api/src/main/java/tw/basketball/magazine/security/RouteRateLimiter.java",\n    "apps/api/src/main/java/tw/basketball/magazine/security/SecurityBoundaryConfiguration.java",\n    "apps/api/src/test/java/tw/basketball/magazine/identity/OidcRoleMatrixTest.java",\n    "apps/api/src/test/java/tw/basketball/magazine/publication/PublicIssueApiIT.java",\n    "apps/api/src/test/java/tw/basketball/magazine/publication/api/EditorialIssueApiIT.java",\n    "apps/api/src/test/java/tw/basketball/magazine/publication/api/PublicationAcceptanceApiIT.java",\n    "apps/api/src/test/java/tw/basketball/magazine/publication/domain/PublicationWorkflowTest.java",\n    "apps/api/src/test/java/tw/basketball/magazine/readerlibrary/ReaderLibraryApiIT.java",\n    "apps/api/src/test/java/tw/basketball/magazine/security/RouteRateLimitFilterTest.java",\n    "apps/api/src/test/java/tw/basketball/magazine/security/RouteRateLimitHttpIT.java",\n    "apps/api/src/test/java/tw/basketball/magazine/security/RouteRateLimiterTest.java",\n    "apps/web/server/auth/rate-limit.ts",\n    "apps/web/server/middleware/auth.ts",\n    "apps/web/tests/e2e/us1-browse-issue.spec.ts",\n    "apps/web/tests/e2e/us2-creative-lifecycle.spec.ts",\n    "apps/web/tests/e2e/us2-no-js.spec.ts",\n    "apps/web/tests/integration/auth-rate-limit.test.ts",\n    "contracts/openapi.yaml",\n    "packages/api-client/src/generated/openapi.d.ts",\n    "scripts/test/validate-traceability.test.mjs",\n    "scripts/validate-openapi.mjs",\n    "scripts/validate-traceability.mjs"\n  ],\n  "schema_version": "courtside-t086-product-remediation-owner-dispatch/v1",\n  "supersedes_comment": 5594575189,\n  "user_instruction": "請幫我將剩餘的任務完成 ,完成後@review 並且 @optimize ，最終再依你的經驗merge",\n  "predecessor_authorization": {\n    "ref": "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5594498950",\n    "body_sha256": "4e9dcc96b44fb04fc1b015bb24e444f49959f5c26f708c8e0ce9019472790867",\n    "recorded_at": "2026-09-09T01:44:34Z"\n  },\n  "accepted_predecessor_commit": {\n    "head_sha": "6eeb96fe7d5b0c25a631d45ccfe8db5b31fbe94b",\n    "tree_sha": "100e9a650d9fe7e5958571729a29bd4ab62744d5",\n    "parent_sha": "c90270157e50a1fd8c0abc2a700d22f2481fa7f9",\n    "changed_paths": [\n      "scripts/test/validate-traceability.test.mjs"\n    ]\n  }\n}\n```\n<!-- product175:owner-dispatch:v1:end -->'
+const productRemediationOwnerRef =
+  "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5594585089"
+const productRemediationOwnerTime = "2026-09-09T01:55:20Z"
+
+function makeProductRemediationFixture({ push = false, draft = true } = {}) {
+  const fixture = makeCompletedFixture()
+  fixture.changedPaths = [...productRemediationPaths]
+  const head = push ? "3".repeat(40) : fixtureReceiptHead
+  const gitBinding = {
+    status: "CLEAN",
+    head,
+    change_base_ref: "fixture:product-remediation-base",
+    change_base_sha: productRemediationBase,
+    change_base_ancestor: true,
+    head_parent_sha: productRemediationBase,
+    head_parent_shas: [productRemediationBase],
+    head_parent_count: 1,
+    head_tree_sha: "a".repeat(40)
+  }
+  const readback = {
+    status: "VERIFIED",
+    source: "github-api",
+    authorization: {
+      status: "VERIFIED",
+      source: "github-api",
+      html_url: productRemediationOwnerRef,
+      issue_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/121",
+      user_login: "bynanci",
+      author_association: "OWNER",
+      created_at: productRemediationOwnerTime,
+      updated_at: productRemediationOwnerTime,
+      body: productRemediationOwnerBody
+    },
+    protected_main: {
+      name: "main",
+      protected: true,
+      commit: { sha: push ? head : productRemediationBase }
+    },
+    pull_request: {
+      number: productRemediationPr,
+      html_url: `https://github.com/bynanci/courtside-tw/pull/${productRemediationPr}`,
+      state: push ? "closed" : "open",
+      draft: push ? false : draft,
+      merged: push,
+      merged_at: push ? "2026-09-09T12:00:00Z" : null,
+      merge_commit_sha: push ? head : null,
+      head: {
+        sha: fixtureReceiptHead,
+        ref: productRemediationBranch,
+        repo: { full_name: "bynanci/courtside-tw" }
+      },
+      base: {
+        sha: productRemediationBase,
+        ref: "main",
+        repo: { full_name: "bynanci/courtside-tw" }
+      }
+    },
+    candidate: {
+      head: fixtureReceiptHead,
+      tree_sha: "a".repeat(40),
+      base_ancestor: true,
+      seed_ancestor: true,
+      accepted_red_ancestor: true,
+      accepted_red_tree_sha: "100e9a650d9fe7e5958571729a29bd4ab62744d5",
+      accepted_red_parent_shas: ["c90270157e50a1fd8c0abc2a700d22f2481fa7f9"],
+      accepted_red_changed_paths: ["scripts/test/validate-traceability.test.mjs"],
+      seed_tree_sha: "6e130341bd03972acd4133679aea3063838abff8",
+      seed_parent_shas: [productRemediationBase],
+      commit_count: 2,
+      merge_commit_count: 0,
+      changed_paths: [...productRemediationPaths],
+      history_paths: [...productRemediationPaths],
+      seed_changed_paths: productRemediationPaths.filter(
+        (p) =>
+          ![
+            "scripts/validate-traceability.mjs",
+            "scripts/test/validate-traceability.test.mjs"
+          ].includes(p)
+      ),
+      frozen_blobs_match: true,
+      allowed_path_modes_match: true,
+      commits_postdate_authorization: true
+    }
+  }
+  const eventPath = path.join(fixture.root, "github-product-remediation-event.json")
+  fs.writeFileSync(
+    eventPath,
+    JSON.stringify(
+      push
+        ? {
+            repository: { full_name: "bynanci/courtside-tw" },
+            ref: "refs/heads/main",
+            before: productRemediationBase,
+            after: head
+          }
+        : {
+            repository: { full_name: "bynanci/courtside-tw" },
+            number: productRemediationPr,
+            pull_request: readback.pull_request
+          }
+    )
+  )
+  const githubActionsContext = traceabilityValidator.inspectGitHubActionsContext({
+    environment: {
+      GITHUB_ACTIONS: "true",
+      GITHUB_REPOSITORY: "bynanci/courtside-tw",
+      GITHUB_EVENT_NAME: push ? "push" : "pull_request",
+      GITHUB_EVENT_PATH: eventPath,
+      GITHUB_SHA: push ? head : fixtureActionsMergeSha,
+      GITHUB_WORKFLOW: "CI",
+      GITHUB_JOB: "frontend-contract",
+      GITHUB_RUN_ID: fixtureActionsRunId,
+      GITHUB_RUN_NUMBER: fixtureActionsRunNumber,
+      GITHUB_RUN_ATTEMPT: fixtureActionsRunAttempt,
+      GITHUB_REF: push ? "refs/heads/main" : `refs/pull/${productRemediationPr}/merge`,
+      GITHUB_REF_NAME: push ? "main" : `${productRemediationPr}/merge`,
+      GITHUB_BASE_REF: push ? "" : "main",
+      GITHUB_HEAD_REF: push ? "" : productRemediationBranch
+    },
+    gitBinding
+  })
+  writeExactHeadForActionsContext(fixture.root, githubActionsContext)
+  return { fixture, gitBinding, readback, githubActionsContext, head }
+}
+
+function runProductRemediationFixture(context, overrides = {}) {
+  return runCompletedFixture(context.fixture, {
+    currentHead: context.head,
+    changeBaseSha: productRemediationBase,
+    evaluatedHeadCommittedAt: "2026-09-09T12:00:00Z",
+    productRemediationAuthorizationReadback: context.readback,
+    requireExactHeadEvidence: true,
+    githubActionsContext: context.githubActionsContext,
+    gitBinding: context.gitBinding,
+    ...overrides
+  })
+}
+
+for (const state of ["draft", "ready", "squash-push"]) {
+  test(`product remediation authorization accepts exact ${state} candidate without changing frozen tasks`, () => {
+    const context = makeProductRemediationFixture({
+      push: state === "squash-push",
+      draft: state === "draft"
+    })
+    const report = runProductRemediationFixture(context)
+    assert.equal(report.status, "PASS", report.errors.join("\n"))
+    assert.deepEqual(report.scope_validation.unauthorized_paths, [])
+    assert.equal(report.source.product_remediation_authorization_readback.accepted, true)
+  })
+}
+
+const productRemediationReadbackNearMisses = [
+  [
+    "unavailable API",
+    (r) => {
+      r.status = "UNAVAILABLE"
+    }
+  ],
+  [
+    "wrong comment ref",
+    (r) => {
+      r.authorization.html_url += "0"
+    }
+  ],
+  [
+    "wrong issue",
+    (r) => {
+      r.authorization.issue_url = "https://api.github.com/repos/bynanci/courtside-tw/issues/173"
+    }
+  ],
+  [
+    "edited comment",
+    (r) => {
+      r.authorization.updated_at = "2026-09-10T00:00:00Z"
+    }
+  ],
+  [
+    "edited body",
+    (r) => {
+      r.authorization.body += "\n"
+    }
+  ],
+  [
+    "spoofed owner",
+    (r) => {
+      r.authorization.user_login = "attacker"
+    }
+  ],
+  [
+    "non-owner association",
+    (r) => {
+      r.authorization.author_association = "MEMBER"
+    }
+  ],
+  [
+    "wrong PR",
+    (r) => {
+      r.pull_request.number += 1
+    }
+  ],
+  [
+    "wrong branch",
+    (r) => {
+      r.pull_request.head.ref = "fix/unrelated"
+    }
+  ],
+  [
+    "wrong base",
+    (r) => {
+      r.pull_request.base.sha = "b".repeat(40)
+    }
+  ],
+  [
+    "fork head",
+    (r) => {
+      r.pull_request.head.repo.full_name = "attacker/courtside-tw"
+    }
+  ],
+  [
+    "stale head",
+    (r) => {
+      r.pull_request.head.sha = "b".repeat(40)
+    }
+  ],
+  [
+    "closed unmerged",
+    (r) => {
+      r.pull_request.state = "closed"
+    }
+  ],
+  [
+    "missing draft",
+    (r) => {
+      r.pull_request.draft = null
+    }
+  ],
+  [
+    "missing seed ancestry",
+    (r) => {
+      r.candidate.seed_ancestor = false
+    }
+  ],
+  [
+    "wrong seed tree",
+    (r) => {
+      r.candidate.seed_tree_sha = "b".repeat(40)
+    }
+  ],
+  [
+    "wrong seed parent",
+    (r) => {
+      r.candidate.seed_parent_shas = ["b".repeat(40)]
+    }
+  ],
+  [
+    "no base ancestry",
+    (r) => {
+      r.candidate.base_ancestor = false
+    }
+  ],
+  [
+    "merge commit",
+    (r) => {
+      r.candidate.merge_commit_count = 1
+    }
+  ],
+  [
+    "empty history",
+    (r) => {
+      r.candidate.commit_count = 0
+    }
+  ],
+  [
+    "restored unauthorized path",
+    (r) => {
+      r.candidate.history_paths.push("apps/web/unrelated.ts")
+    }
+  ],
+  [
+    "candidate missing path",
+    (r) => {
+      r.candidate.changed_paths.pop()
+    }
+  ],
+  [
+    "candidate changed tree",
+    (r) => {
+      r.candidate.tree_sha = "b".repeat(40)
+    }
+  ],
+  [
+    "changed frozen blob",
+    (r) => {
+      r.candidate.frozen_blobs_match = false
+    }
+  ],
+  [
+    "predated implementation",
+    (r) => {
+      r.candidate.commits_postdate_authorization = false
+    }
+  ]
+]
+for (const [name, mutate] of productRemediationReadbackNearMisses) {
+  test(`product remediation authorization rejects ${name}`, () => {
+    const context = makeProductRemediationFixture()
+    mutate(context.readback)
+    const report = runProductRemediationFixture(context)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /product remediation/u)
+  })
+}
+
+for (const [name, mutate] of [
+  [
+    "non-squash parents",
+    (c) => {
+      c.gitBinding.head_parent_count = 2
+      c.gitBinding.head_parent_shas.push(fixtureReceiptHead)
+    }
+  ],
+  [
+    "wrong squash parent",
+    (c) => {
+      c.gitBinding.head_parent_shas = ["b".repeat(40)]
+    }
+  ],
+  [
+    "unmerged PR",
+    (c) => {
+      c.readback.pull_request.merged = false
+    }
+  ],
+  [
+    "wrong merge SHA",
+    (c) => {
+      c.readback.pull_request.merge_commit_sha = "b".repeat(40)
+    }
+  ],
+  [
+    "squash tree drift",
+    (c) => {
+      c.gitBinding.head_tree_sha = "b".repeat(40)
+    }
+  ],
+  [
+    "squash before authorization",
+    (c) => {
+      c.readback.pull_request.merged_at = "2026-08-01T00:00:00Z"
+    }
+  ]
+]) {
+  test(`product remediation authorization rejects ${name}`, () => {
+    const context = makeProductRemediationFixture({ push: true })
+    mutate(context)
+    const report = runProductRemediationFixture(context)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /product remediation/u)
+  })
+}
+
+test("product remediation authorization rejects missing authority, wrong event, base and extra or removed paths", () => {
+  const context = makeProductRemediationFixture()
+  for (const overrides of [
+    { productRemediationAuthorizationReadback: null },
+    { githubActionsContext: { ...context.githubActionsContext } },
+    { requireExactHeadEvidence: false },
+    { changeBaseSha: "b".repeat(40) },
+    { changedPaths: [...productRemediationPaths, "apps/web/unrelated.ts"] },
+    {
+      changedPaths: [
+        "scripts/validate-traceability.mjs",
+        "scripts/test/validate-traceability.test.mjs"
+      ]
+    }
+  ]) {
+    const report = runProductRemediationFixture(context, overrides)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /product remediation/u)
+  }
+})
+
+test("product remediation CLI read-back uses only the fixed PR and exact owner comment", () => {
+  const context = makeProductRemediationFixture()
+  const environment = { GITHUB_TOKEN: "fixture-not-a-real-token" }
+  const calls = []
+  const readback = traceabilityValidator.inspectProductRemediationAuthorization(
+    context.fixture.root,
+    {
+      environment,
+      inspectComment(ref, options) {
+        calls.push("comment")
+        assert.equal(ref, productRemediationOwnerRef)
+        assert.equal(options.environment, environment)
+        assert.equal(options.isAuthorizedRef(ref), true)
+        assert.equal(options.isAuthorizedRef(`${ref}0`), false)
+        return context.readback.authorization
+      },
+      fetchMain(url) {
+        calls.push("main")
+        assert.equal(url, "https://api.github.com/repos/bynanci/courtside-tw/branches/main")
+        return context.readback.protected_main
+      },
+      fetchPr(url) {
+        calls.push("pr")
+        assert.equal(url, "https://api.github.com/repos/bynanci/courtside-tw/pulls/175")
+        return context.readback.pull_request
+      },
+      inspectCandidate(root, head) {
+        calls.push("git")
+        assert.equal(root, context.fixture.root)
+        assert.equal(head, context.readback.pull_request.head.sha)
+        return context.readback.candidate
+      }
+    }
+  )
+  assert.deepEqual(calls, ["comment", "pr", "main", "git"])
+  assert.equal(readback.status, "VERIFIED")
+  const report = runProductRemediationFixture(context, {
+    productRemediationAuthorizationReadback: readback
+  })
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+test("product remediation CLI fails closed on PR API failure without exposing credential errors", () => {
+  const context = makeProductRemediationFixture()
+  const readback = traceabilityValidator.inspectProductRemediationAuthorization(
+    context.fixture.root,
+    {
+      inspectComment: () => context.readback.authorization,
+      fetchPr() {
+        throw new Error("fixture-secret-must-not-be-reported")
+      },
+      inspectCandidate() {
+        assert.fail("must not inspect an unavailable PR")
+      }
+    }
+  )
+  assert.equal(readback.status, "UNAVAILABLE")
+  assert.doesNotMatch(JSON.stringify(readback), /fixture-secret-must-not-be-reported/u)
+  const report = runProductRemediationFixture(context, {
+    productRemediationAuthorizationReadback: readback
+  })
+  assert.equal(report.status, "FAIL")
+})
+
+for (const [name, mutateEvent] of [
+  [
+    "spoofed repository",
+    (event) => {
+      event.repository.full_name = "attacker/courtside-tw"
+    }
+  ],
+  [
+    "wrong PR number",
+    (event) => {
+      event.number = 176
+    }
+  ],
+  [
+    "stale PR head",
+    (event) => {
+      event.pull_request.head.sha = "b".repeat(40)
+    }
+  ],
+  [
+    "wrong PR event base",
+    (event) => {
+      event.pull_request.base.sha = "b".repeat(40)
+    }
+  ]
+]) {
+  test(`product remediation rejects actual Actions event with ${name}`, () => {
+    const context = makeProductRemediationFixture()
+    const eventPath = path.join(context.fixture.root, "github-product-remediation-event.json")
+    const event = JSON.parse(fs.readFileSync(eventPath, "utf8"))
+    mutateEvent(event)
+    fs.writeFileSync(eventPath, JSON.stringify(event))
+    const githubActionsContext = traceabilityValidator.inspectGitHubActionsContext({
+      environment: {
+        GITHUB_ACTIONS: "true",
+        GITHUB_REPOSITORY: "bynanci/courtside-tw",
+        GITHUB_EVENT_NAME: "pull_request",
+        GITHUB_EVENT_PATH: eventPath,
+        GITHUB_SHA: fixtureActionsMergeSha,
+        GITHUB_WORKFLOW: "CI",
+        GITHUB_JOB: "frontend-contract",
+        GITHUB_RUN_ID: fixtureActionsRunId,
+        GITHUB_RUN_NUMBER: fixtureActionsRunNumber,
+        GITHUB_RUN_ATTEMPT: fixtureActionsRunAttempt,
+        GITHUB_REF: "refs/pull/175/merge",
+        GITHUB_BASE_REF: "main",
+        GITHUB_HEAD_REF: productRemediationBranch
+      },
+      gitBinding: context.gitBinding
+    })
+    const report = runProductRemediationFixture(context, { githubActionsContext })
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /product remediation/u)
+  })
+}
+
+for (const [name, mutate] of [
+  [
+    "missing protected main readback",
+    (r) => {
+      r.protected_main = null
+    }
+  ],
+  [
+    "disabled main protection",
+    (r) => {
+      r.protected_main.protected = false
+    }
+  ],
+  [
+    "advanced protected main",
+    (r) => {
+      r.protected_main.commit.sha = "b".repeat(40)
+    }
+  ],
+  [
+    "wrong protected branch",
+    (r) => {
+      r.protected_main.name = "release"
+    }
+  ],
+  [
+    "deleted OWNER comment",
+    (r) => {
+      r.authorization.status = "UNAVAILABLE"
+      r.authorization.body = null
+    }
+  ],
+  [
+    "missing seed path",
+    (r) => {
+      r.candidate.seed_changed_paths.pop()
+    }
+  ],
+  [
+    "missing historical required path",
+    (r) => {
+      r.candidate.history_paths.pop()
+    }
+  ],
+  [
+    "duplicate candidate path",
+    (r) => {
+      r.candidate.changed_paths.push(r.candidate.changed_paths[0])
+    }
+  ],
+  [
+    "non-regular allowed file",
+    (r) => {
+      r.candidate.allowed_path_modes_match = false
+    }
+  ]
+]) {
+  test(`product remediation authorization rejects ${name}`, () => {
+    const context = makeProductRemediationFixture()
+    mutate(context.readback)
+    const report = runProductRemediationFixture(context)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /product remediation/u)
+  })
+}
+
+for (const optionalPath of productRemediationOptionalPaths) {
+  test(`product remediation allows the authorized optional amendment ${optionalPath}`, () => {
+    const context = makeProductRemediationFixture()
+    context.fixture.changedPaths.push(optionalPath)
+    context.readback.candidate.changed_paths.push(optionalPath)
+    context.readback.candidate.history_paths.push(optionalPath)
+    const report = runProductRemediationFixture(context)
+    assert.equal(report.status, "PASS", report.errors.join("\n"))
+  })
+}
+
+test("product remediation rejects protected-main API failure without fallback or credential leakage", () => {
+  const context = makeProductRemediationFixture()
+  const readback = traceabilityValidator.inspectProductRemediationAuthorization(
+    context.fixture.root,
+    {
+      inspectComment: () => context.readback.authorization,
+      fetchPr: () => context.readback.pull_request,
+      fetchMain() {
+        throw new Error("fixture-credential-must-stay-private")
+      },
+      inspectCandidate() {
+        assert.fail("must not inspect Git after main readback failure")
+      }
+    }
+  )
+  assert.equal(readback.status, "UNAVAILABLE")
+  assert.equal(readback.pull_request, null)
+  assert.equal(readback.protected_main, null)
+  assert.doesNotMatch(JSON.stringify(readback), /fixture-credential-must-stay-private/u)
+  assert.equal(
+    runProductRemediationFixture(context, { productRemediationAuthorizationReadback: readback })
+      .status,
+    "FAIL"
+  )
+})
+
+test("product remediation never falls back to the superseded owner scope", () => {
+  const context = makeProductRemediationFixture()
+  context.readback.authorization.html_url =
+    "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5594492270"
+  const report = runProductRemediationFixture(context)
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /immutable issue 121 OWNER dispatch/u)
+})
+
+test("product remediation Git file closure rejects deleted required files and non-regular entries", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "product-remediation-files-"))
+  try {
+    for (const filePath of productRemediationPaths) {
+      fs.mkdirSync(path.dirname(path.join(root, filePath)), { recursive: true })
+      fs.writeFileSync(path.join(root, filePath), "fixture required file\n")
+    }
+    const baseline = initializeGitFixture(root)
+    assert.equal(
+      traceabilityValidator.inspectProductRemediationFiles(root, baseline),
+      true,
+      "all required regular files exist; optional files may remain absent"
+    )
+    for (const filePath of [
+      "apps/api/src/test/java/tw/basketball/magazine/publication/PublicIssueApiIT.java",
+      "apps/api/src/main/java/tw/basketball/magazine/security/RouteRateLimitFilter.java"
+    ]) {
+      git(root, "rm", "--", filePath)
+      const deletedTree = git(root, "write-tree")
+      assert.equal(
+        traceabilityValidator.inspectProductRemediationFiles(root, deletedTree),
+        false,
+        `deleting required file must fail: ${filePath}`
+      )
+      git(root, "reset", "--hard", baseline)
+    }
+    const requiredPath = productRemediationPaths[0]
+    fs.unlinkSync(path.join(root, requiredPath))
+    fs.symlinkSync("untrusted-target", path.join(root, requiredPath))
+    git(root, "add", "--", requiredPath)
+    assert.equal(
+      traceabilityValidator.inspectProductRemediationFiles(root, git(root, "write-tree")),
+      false,
+      "a required symlink must not count as a regular source file"
+    )
+    git(root, "reset", "--hard", baseline)
+    const optionalPath = productRemediationOptionalPaths[0]
+    fs.mkdirSync(path.dirname(path.join(root, optionalPath)), { recursive: true })
+    fs.symlinkSync("untrusted-target", path.join(root, optionalPath))
+    git(root, "add", "--", optionalPath)
+    assert.equal(
+      traceabilityValidator.inspectProductRemediationFiles(root, git(root, "write-tree")),
+      false,
+      "an optional symlink must also fail"
+    )
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true })
+  }
+})
+
+for (const [name, mutate] of [
+  [
+    "missing accepted RED ancestry",
+    (r) => {
+      r.candidate.accepted_red_ancestor = false
+    }
+  ],
+  [
+    "changed accepted RED tree",
+    (r) => {
+      r.candidate.accepted_red_tree_sha = "b".repeat(40)
+    }
+  ],
+  [
+    "changed accepted RED parent",
+    (r) => {
+      r.candidate.accepted_red_parent_shas = ["b".repeat(40)]
+    }
+  ],
+  [
+    "extra pre-dispatch RED path",
+    (r) => {
+      r.candidate.accepted_red_changed_paths.push("scripts/validate-traceability.mjs")
+    }
+  ]
+]) {
+  test(`product remediation authorization rejects ${name}`, () => {
+    const context = makeProductRemediationFixture()
+    mutate(context.readback)
+    const report = runProductRemediationFixture(context)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /product remediation/u)
+  })
+}
+
+for (const supersededComment of [5594498950, 5594575189]) {
+  test(`product remediation does not fall back to superseded canonical ${supersededComment}`, () => {
+    const context = makeProductRemediationFixture()
+    context.readback.authorization.html_url = `https://github.com/bynanci/courtside-tw/issues/121#issuecomment-${supersededComment}`
+    const report = runProductRemediationFixture(context)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /immutable issue 121 OWNER dispatch/u)
+  })
+}
+
+const productFixturePath =
+  "apps/api/src/test/java/tw/basketball/magazine/publication/PublicationReliabilityIT.java"
+const productFixtureBody =
+  '<!-- product175:fixture-addendum:v1:start -->\nThis immutable, one-path addendum records the user\'s continuing completion, review, optimization and merge authorization. The assistant records it through the owner\'s connected account on the user\'s behalf; it is not a separate human release-risk acceptance.\n\nUser instruction: "請幫我將剩餘的任務完成 ,完成後@review 並且 @optimize ，最終再依你的經驗merge"; resumed with "繼續完成".\n\nRepository: bynanci/courtside-tw\nPR: 175\nBranch: fix/t086-product-remediation\nProtected base: 74d3b6dfba087394a3e522252dc4a8cf5e1b3f0d\nRequired original authorization: https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5594585089\nAlready-published boundary head: f37082e5aa61c932f1740ebb64e507fde713c67f\nBoundary tree: 7c931a371088652f066830ef6ed54ba98953520b\n\nAdditional path:\n- apps/api/src/test/java/tw/basketball/magazine/publication/PublicationReliabilityIT.java\n\nPurpose: V016 now enforces draft-only contributor changes. The historical withdrawal fixture creates an already-WITHDRAWN revision before inserting its credits, so the new invariant correctly rejects the fixture setup. Create that same fixture in DRAFT, insert its credits, then transition to WITHDRAWN before executing the original recovery assertions. Do not weaken the database trigger, test assertions, production authorization, or migration coverage.\n\nThe already-authorized scripts/validate-traceability.mjs and scripts/test/validate-traceability.test.mjs may add fail-closed validation of this exact immutable addendum. Require the original authorization as well as this addendum whenever the extra path appears in final or historical changes. Require the exact published boundary as an ancestor and every new change to this extra path to postdate this comment. Preserve existing branch/base, complete path/history, exact-head CI/Security, single-parent identical-tree squash and thread-resolution requirements.\n\nNo other path is added. All frozen T085 records, README, task checkbox lines, beta flag, T086 acceptance, participant research, Web3, deployment, provider configuration, credentials and secrets retain their current boundaries. This addendum does not adjudicate any release blocker.\n<!-- product175:fixture-addendum:v1:end -->'
+function makeProductFixtureAddendumCase(options = {}) {
+  const context = makeProductRemediationFixture(options)
+  context.fixture.changedPaths.push(productFixturePath)
+  context.readback.candidate.changed_paths.push(productFixturePath)
+  context.readback.candidate.history_paths.push(productFixturePath)
+  context.readback.candidate.fixture_addendum = {
+    boundary_ancestor: true,
+    boundary_tree_sha: "7c931a371088652f066830ef6ed54ba98953520b",
+    regular_file: true,
+    changes_postdate_addendum: true
+  }
+  context.readback.fixture_addendum = {
+    ...context.readback.authorization,
+    html_url: "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5595331899",
+    created_at: "2026-09-09T03:28:09Z",
+    updated_at: "2026-09-09T03:28:09Z",
+    body: productFixtureBody
+  }
+  return context
+}
+for (const push of [false, true]) {
+  test(`product fixture addendum accepts authenticated exact ${push ? "squash" : "PR"} amendment`, () => {
+    const c = makeProductFixtureAddendumCase({ push })
+    const r = runProductRemediationFixture(c)
+    assert.equal(r.status, "PASS", r.errors.join("\n"))
+  })
+}
+for (const [name, mutate] of [
+  [
+    "deleted or symlink fixture",
+    (c) => {
+      c.readback.candidate.fixture_addendum.regular_file = false
+    }
+  ],
+  [
+    "missing comment",
+    (c) => {
+      c.readback.fixture_addendum = null
+    }
+  ],
+  [
+    "edited comment",
+    (c) => {
+      c.readback.fixture_addendum.updated_at = "2026-09-10T00:00:00Z"
+    }
+  ],
+  [
+    "changed body",
+    (c) => {
+      c.readback.fixture_addendum.body += "\n"
+    }
+  ],
+  [
+    "wrong owner",
+    (c) => {
+      c.readback.fixture_addendum.user_login = "attacker"
+    }
+  ],
+  [
+    "wrong issue",
+    (c) => {
+      c.readback.fixture_addendum.issue_url += "0"
+    }
+  ],
+  [
+    "unavailable API",
+    (c) => {
+      c.readback.fixture_addendum.status = "UNAVAILABLE"
+    }
+  ],
+  [
+    "old boundary",
+    (c) => {
+      c.readback.candidate.fixture_addendum.boundary_ancestor = false
+    }
+  ],
+  [
+    "changed boundary tree",
+    (c) => {
+      c.readback.candidate.fixture_addendum.boundary_tree_sha = "0".repeat(40)
+    }
+  ],
+  [
+    "predated path change",
+    (c) => {
+      c.readback.candidate.fixture_addendum.changes_postdate_addendum = false
+    }
+  ],
+  [
+    "removed historical path",
+    (c) => {
+      c.fixture.changedPaths = c.fixture.changedPaths.filter((p) => p !== productFixturePath)
+      c.readback.candidate.changed_paths = [...c.fixture.changedPaths]
+    }
+  ],
+  [
+    "missing original authority",
+    (c) => {
+      c.readback.authorization = null
+    }
+  ]
+]) {
+  test(`product fixture addendum rejects ${name}`, () => {
+    const c = makeProductFixtureAddendumCase()
+    mutate(c)
+    assert.equal(runProductRemediationFixture(c).status, "FAIL")
+  })
+}
+test("product fixture addendum reader fetches the exact comment only when the path history requires it", () => {
+  const c = makeProductFixtureAddendumCase()
+  const refs = []
+  const r = traceabilityValidator.inspectProductRemediationAuthorization(c.fixture.root, {
+    inspectComment: (ref) => {
+      refs.push(ref)
+      return ref === c.readback.authorization.html_url
+        ? c.readback.authorization
+        : c.readback.fixture_addendum
+    },
+    fetchPr: () => c.readback.pull_request,
+    fetchMain: () => c.readback.protected_main,
+    inspectCandidate: () => c.readback.candidate
+  })
+  assert.deepEqual(refs, [c.readback.authorization.html_url, c.readback.fixture_addendum.html_url])
+  assert.equal(r.fixture_addendum.body, productFixtureBody)
+})
+
+test("product fixture addendum inspects isolated Git ancestry timestamps and file mode", () => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "product-fixture-git-"))
+  const cloned = path.join(root, "repo.git")
+  execFileSync("git", ["init", "--bare", "--quiet", cloned])
+  const environment = {
+    ...process.env,
+    GIT_INDEX_FILE: path.join(root, "index"),
+    GIT_AUTHOR_NAME: "Fixture",
+    GIT_AUTHOR_EMAIL: "fixture@example.invalid",
+    GIT_COMMITTER_NAME: "Fixture",
+    GIT_COMMITTER_EMAIL: "fixture@example.invalid",
+    GIT_AUTHOR_DATE: "2026-09-09T12:00:00Z",
+    GIT_COMMITTER_DATE: "2026-09-09T12:00:00Z"
+  }
+  const run = (args, input = undefined, env = environment) =>
+    execFileSync("git", args, {
+      cwd: cloned,
+      env,
+      input,
+      encoding: "utf8",
+      stdio: ["pipe", "pipe", "pipe"]
+    }).trim()
+  try {
+    run(["read-tree", "--empty"])
+    const oldBlob = run(["hash-object", "-w", "--stdin"], "old fixture\n")
+    run(["update-index", "--add", "--cacheinfo", `100644,${oldBlob},${productFixturePath}`])
+    const boundaryTree = run(["write-tree"])
+    const boundary = run(["commit-tree", boundaryTree], "Synthetic boundary\n")
+    const options = { boundary, filePath: productFixturePath, recordedAt: "2026-09-09T03:28:09Z" }
+    const blob = run(["hash-object", "-w", "--stdin"], "updated fixture\n")
+    run(["update-index", "--cacheinfo", `100644,${blob},${productFixturePath}`])
+    const tree = run(["write-tree"])
+    const head = run(["commit-tree", tree, "-p", boundary], "Synthetic local fixture only\n")
+    assert.deepEqual(traceabilityValidator.inspectProductFixtureAddendum(cloned, head, options), {
+      boundary_ancestor: true,
+      boundary_tree_sha: boundaryTree,
+      regular_file: true,
+      changes_postdate_addendum: true
+    })
+    const early = run(["commit-tree", tree, "-p", boundary], "Predated synthetic fixture\n", {
+      ...environment,
+      GIT_AUTHOR_DATE: "2026-09-09T01:00:00Z",
+      GIT_COMMITTER_DATE: "2026-09-09T01:00:00Z"
+    })
+    assert.equal(
+      traceabilityValidator.inspectProductFixtureAddendum(cloned, early, options)
+        ?.changes_postdate_addendum,
+      false
+    )
+    run(["update-index", "--index-info"], `0 ${"0".repeat(40)}\t${productFixturePath}\n`)
+    const deleted = run(
+      ["commit-tree", run(["write-tree"]), "-p", boundary],
+      "Deleted synthetic fixture\n"
+    )
+    assert.equal(
+      traceabilityValidator.inspectProductFixtureAddendum(cloned, deleted, options)?.regular_file,
+      false
+    )
+    run(["update-index", "--add", "--cacheinfo", `120000,${blob},${productFixturePath}`])
+    const symlink = run(
+      ["commit-tree", run(["write-tree"]), "-p", boundary],
+      "Symlink synthetic fixture\n"
+    )
+    assert.equal(
+      traceabilityValidator.inspectProductFixtureAddendum(cloned, symlink, options)?.regular_file,
+      false
+    )
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true })
+  }
+})
+
+const productBrowserPath = "apps/web/tests/e2e/us5-reader-library.spec.ts"
+const productBrowserBody =
+  "<!-- product175:browser-addendum:v1:start -->\nThis immutable, one-path addendum records the user's continuing instruction to finish remaining tasks, review, optimize and merge after verification. Recorded by the assistant through the owner's connected GitHub account on the user's behalf; not a separate human release-risk acceptance.\n\nRepository: bynanci/courtside-tw\nPR: 175\nBranch: fix/t086-product-remediation\nProtected base: 74d3b6dfba087394a3e522252dc4a8cf5e1b3f0d\nRequired original authorization: https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5594585089\nPublished boundary head: f37082e5aa61c932f1740ebb64e507fde713c67f\nBoundary tree: 7c931a371088652f066830ef6ed54ba98953520b\n\nAdditional path:\n- apps/web/tests/e2e/us5-reader-library.spec.ts\n\nCause and correction: CI run 34306856835 artifact 10087089132 proves the withdrawn-bookmark test is the eleventh login from the shared runner socket within 60 seconds. Both attempts receive genuine 429 RATE_LIMITED, with Retry-After 53 and 47 respectively. Its fixture reset does not reset the production Nuxt limiter. Allow only this test to verify the 429 contract, honor a bounded 1..60-second Retry-After, and retry login once before the original authenticated/withdrawn-content assertions. Keep a finite test deadline. Do not disable, bypass, reset, raise or replace the production limiter, spoof client IP, weaken assertions, or skip any test.\n\nThe already-authorized traceability validator and tests may validate this exact immutable additional scope. The original authorization is still mandatory. The fixture-only addendum https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5595331899 remains separately mandatory for PublicationReliabilityIT.java and cannot authorize this browser path. Each additional path must remain a regular file, retain its own unchanged OWNER comment, preserve the published boundary as an ancestor, and have only post-comment modifications.\n\nAll existing exact base/head/tree/history, fresh CI/Security, conversation resolution, and single-parent identical-tree squash conditions remain. No other new path, task checkbox, frozen T085 receipt, README, beta flag, release adjudication, participant research, Web3, deployment, provider configuration, credential or secret change is authorized.\n<!-- product175:browser-addendum:v1:end -->"
+function makeProductBrowserAddendumCase() {
+  const context = makeProductFixtureAddendumCase()
+  context.fixture.changedPaths.push(productBrowserPath)
+  context.readback.candidate.changed_paths.push(productBrowserPath)
+  context.readback.candidate.history_paths.push(productBrowserPath)
+  context.readback.candidate.browser_addendum = { ...context.readback.candidate.fixture_addendum }
+  context.readback.browser_addendum = {
+    ...context.readback.fixture_addendum,
+    html_url: "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5595411052",
+    created_at: "2026-09-09T03:38:26Z",
+    updated_at: "2026-09-09T03:38:26Z",
+    body: productBrowserBody
+  }
+  return context
+}
+test("product browser addendum accepts both separately authenticated repairs", () => {
+  const c = makeProductBrowserAddendumCase()
+  const r = runProductRemediationFixture(c)
+  assert.equal(r.status, "PASS", r.errors.join("\n"))
+})
+for (const [name, mutate] of [
+  [
+    "fixture comment substituted",
+    (c) => {
+      c.readback.browser_addendum = c.readback.fixture_addendum
+    }
+  ],
+  [
+    "missing browser comment",
+    (c) => {
+      c.readback.browser_addendum = null
+    }
+  ],
+  [
+    "edited browser comment",
+    (c) => {
+      c.readback.browser_addendum.updated_at = "2026-09-10T00:00:00Z"
+    }
+  ],
+  [
+    "missing fixture comment",
+    (c) => {
+      c.readback.fixture_addendum = null
+    }
+  ],
+  [
+    "pre-comment browser change",
+    (c) => {
+      c.readback.candidate.browser_addendum.changes_postdate_addendum = false
+    }
+  ],
+  [
+    "deleted browser file",
+    (c) => {
+      c.readback.candidate.browser_addendum.regular_file = false
+    }
+  ]
+]) {
+  test(`product browser addendum rejects ${name}`, () => {
+    const c = makeProductBrowserAddendumCase()
+    mutate(c)
+    assert.equal(runProductRemediationFixture(c).status, "FAIL")
+  })
+}
+test("product browser addendum reader independently fetches both live authorities", () => {
+  const c = makeProductBrowserAddendumCase()
+  const refs = []
+  const comments = [
+    c.readback.authorization,
+    c.readback.fixture_addendum,
+    c.readback.browser_addendum
+  ]
+  const r = traceabilityValidator.inspectProductRemediationAuthorization(c.fixture.root, {
+    inspectComment: (ref) => {
+      refs.push(ref)
+      return comments.find((c) => c.html_url === ref)
+    },
+    fetchPr: () => c.readback.pull_request,
+    fetchMain: () => c.readback.protected_main,
+    inspectCandidate: () => c.readback.candidate
+  })
+  assert.deepEqual(
+    refs,
+    comments.map((c) => c.html_url)
+  )
+  assert.equal(r.browser_addendum.body, productBrowserBody)
+})

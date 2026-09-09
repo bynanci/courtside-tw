@@ -378,3 +378,72 @@ test("offline manager retries transient withdrawal reads before confirmed fail-c
     globalThis.fetch = originalFetch
   }
 })
+
+test("cover revocation expires an installed issue even when its manifest endpoint is still cached", async () => {
+  const originalCaches = globalThis.caches
+  const originalFetch = globalThis.fetch
+  const originalIndexedDb = globalThis.indexedDB
+  const cacheStorage = createFakeCacheStorage()
+  const fixture = await offlineFixture(1)
+  const assetId = "0190f7b0-7c4b-7e3a-8f12-123456789ac1"
+  const assetBody = new Uint8Array([1, 2, 3])
+  fixture.manifest.assets.push({
+    assetId,
+    variant: "cover",
+    url: `/media/offline/${assetId}`,
+    mimeType: "image/webp",
+    byteSize: assetBody.byteLength,
+    checksum: await sha256Hex(assetBody.buffer),
+    expiresAt: fixture.manifest.expiresAt
+  })
+  fixture.manifest.assetBytes += assetBody.byteLength
+  const withdrawalChecksum = await sha256Hex(new TextEncoder().encode(`5\n${assetId}`).buffer)
+  let withdrawalCalls = 0
+
+  Object.defineProperty(globalThis, "caches", { configurable: true, value: cacheStorage })
+  Object.defineProperty(globalThis, "indexedDB", {
+    configurable: true,
+    value: createFakeIndexedDb()
+  })
+  globalThis.fetch = async (input) => {
+    const url = requestUrl(input)
+    if (url.endsWith(`/offline/issues/${ISSUE_SLUG}/manifest`)) {
+      return Response.json(fixture.manifest)
+    }
+    if (url.endsWith(`/media/offline/${assetId}`)) {
+      return new Response(assetBody, { headers: { "content-type": "image/webp" } })
+    }
+    if (url.endsWith(ARTICLE_PATH)) {
+      return new Response(fixture.articleBody, {
+        headers: { "content-type": "application/json" }
+      })
+    }
+    if (url.endsWith("/public/withdrawals")) {
+      withdrawalCalls += 1
+      return Response.json({
+        version: 5,
+        generatedAt: "2026-08-16T00:00:00Z",
+        withdrawals: [assetId],
+        checksum: withdrawalChecksum
+      })
+    }
+    return new Response(null, { status: 404 })
+  }
+
+  try {
+    const manager = new OfflineIssueManager("https://api.courtside.test", ISSUE_SLUG)
+    await manager.download()
+
+    deepEqual(await manager.reconcileWithdrawal(), { status: "withdrawn" })
+    equal(withdrawalCalls, 1)
+    equal(await manager.getInstalled(), null)
+    deepEqual(await cacheStorage.keys(), [])
+  } finally {
+    Object.defineProperty(globalThis, "caches", { configurable: true, value: originalCaches })
+    Object.defineProperty(globalThis, "indexedDB", {
+      configurable: true,
+      value: originalIndexedDb
+    })
+    globalThis.fetch = originalFetch
+  }
+})

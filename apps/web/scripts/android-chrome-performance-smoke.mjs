@@ -12,6 +12,7 @@ import {
   classifyPixelLauncherAnrWindow,
   acquireChromeForegroundActivityAtBoundary,
   connectNativeAndroidBrowser,
+  establishAndroidForegroundFrameBoundary,
   establishNativeAndroidBackgroundBoundary,
   evaluateAndroidBackgroundTimeline,
   evaluateAndroidForegroundFrameTimeline,
@@ -205,20 +206,24 @@ try {
   await waitForActiveRuntimeSnapshot(page, 0, 10_000)
 
   await markPhase(page, "foreground-native-surface")
-  const foregroundNativeSurface = await normalizeChromeContentSurface()
-  await page.evaluate(() => window.dispatchEvent(new Event("focus")))
-  await waitForActiveRuntimeSnapshot(page, 0, 10_000)
-
-  await markPhase(page, "foreground-frame-observation")
-  const foregroundFrameTimeline = await observeForegroundFrameTimeline(
-    page,
-    0,
-    5_000,
-    BUDGETS.foregroundObservationMilliseconds
-  )
-  const foregroundNativeSurfaceBoundary = await requireClearChromeContentSurface(
-    foregroundNativeSurface.displaySize
-  )
+  const { foregroundNativeSurface, foregroundNativeSurfaceBoundary, foregroundFrameTimeline } =
+    await establishAndroidForegroundFrameBoundary({
+      normalizeSurface: () => normalizeChromeContentSurface(),
+      requireClearSurface: (displaySize) => requireClearChromeContentSurface(displaySize),
+      restoreRuntime: async () => {
+        await page.evaluate(() => window.dispatchEvent(new Event("focus")))
+        await waitForActiveRuntimeSnapshot(page, 0, 10_000)
+      },
+      observeFrames: async () => {
+        await markPhase(page, "foreground-frame-observation")
+        return observeForegroundFrameTimeline(
+          page,
+          0,
+          5_000,
+          BUDGETS.foregroundObservationMilliseconds
+        )
+      }
+    })
   const foregroundFrames = evaluateAndroidForegroundFrameTimeline(foregroundFrameTimeline, BUDGETS)
 
   await markPhase(page, "creative-long-task-budget")

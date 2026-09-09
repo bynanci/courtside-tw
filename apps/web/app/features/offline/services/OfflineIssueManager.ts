@@ -245,7 +245,10 @@ export class OfflineIssueManager {
     const hasWithdrawnArticle = installed.manifest.articles.some((article) =>
       withdrawn.has(article.articleId)
     )
-    if (hasWithdrawnArticle) {
+    const hasWithdrawnAsset = installed.manifest.assets.some((asset) =>
+      withdrawn.has(asset.assetId)
+    )
+    if (hasWithdrawnArticle || hasWithdrawnAsset) {
       await removeStateAndCache(installed)
       return { status: "withdrawn" }
     }

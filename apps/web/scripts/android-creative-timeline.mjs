@@ -1467,6 +1467,27 @@ export function normalizeBrowserRuntimeSnapshot(rawSnapshot, rawCalibration) {
   }
 }
 
+export async function establishAndroidForegroundFrameBoundary(rawDependencies) {
+  const dependencies = requireRecord(rawDependencies, "Android foreground frame dependencies")
+  const normalizeSurface = requireCallable(dependencies.normalizeSurface, "normalizeSurface")
+  const requireClearSurface = requireCallable(
+    dependencies.requireClearSurface,
+    "requireClearSurface"
+  )
+  const restoreRuntime = requireCallable(dependencies.restoreRuntime, "restoreRuntime")
+  const observeFrames = requireCallable(dependencies.observeFrames, "observeFrames")
+
+  const foregroundNativeSurface = await normalizeSurface()
+  // Native UI inspection can stall Android frame delivery. Complete it before
+  // restoring the reader and collecting the fresh foreground proof used by HOME.
+  const foregroundNativeSurfaceBoundary = await requireClearSurface(
+    foregroundNativeSurface.displaySize
+  )
+  await restoreRuntime()
+  const foregroundFrameTimeline = await observeFrames()
+  return { foregroundNativeSurface, foregroundNativeSurfaceBoundary, foregroundFrameTimeline }
+}
+
 export async function establishNativeAndroidBackgroundBoundary(rawDependencies) {
   const dependencies = requireRecord(rawDependencies, "native Android background dependencies")
   const bringToFront = requireCallable(dependencies.bringToFront, "bringToFront")

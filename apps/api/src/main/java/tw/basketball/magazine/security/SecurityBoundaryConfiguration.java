@@ -1,5 +1,7 @@
 package tw.basketball.magazine.security;
 
+import java.time.Clock;
+
 import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -8,6 +10,11 @@ import org.springframework.context.annotation.Configuration;
 @Configuration(proxyBeanMethods = false)
 @ConditionalOnWebApplication(type = ConditionalOnWebApplication.Type.SERVLET)
 public final class SecurityBoundaryConfiguration {
+    @Bean
+    public RouteRateLimiter routeRateLimiter() {
+        return new RouteRateLimiter(Clock.systemUTC(), 10_000);
+    }
+
     @Bean
     public SecurityHeadersFilter securityHeadersFilter() {
         return new SecurityHeadersFilter();

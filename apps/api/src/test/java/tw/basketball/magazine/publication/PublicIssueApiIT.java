@@ -71,6 +71,8 @@ final class PublicIssueApiIntegrationTest extends PublicIssueApiIntegrationTestS
                 .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
                 .andExpect(jsonPath("$.items[0].slug").value("issue-2026-02"))
                 .andExpect(jsonPath("$.items[0].issueNumber").value(2))
+                .andExpect(jsonPath("$.items[0].title").value("Issue 2"))
+                .andExpect(jsonPath("$.items[0].publishedAt").value("2026-08-02T00:00:00Z"))
                 .andExpect(jsonPath("$.items[0].summary").value("Summary for issue-2026-02"))
                 .andExpect(jsonPath("$.items[0].cover.url").value("/media/issues/issue-2026-02/cover.webp"))
                 .andExpect(jsonPath("$.items[0].cover.width").value(1200))
@@ -98,6 +100,8 @@ final class PublicIssueApiIntegrationTest extends PublicIssueApiIntegrationTestS
                         .param("cursor", nextCursor))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[0].slug").value("issue-2026-01"))
+                .andExpect(jsonPath("$.items[0].title").value("Issue 1"))
+                .andExpect(jsonPath("$.items[0].publishedAt").value("2026-08-01T00:00:00Z"))
                 .andExpect(jsonPath("$.page.nextCursor").value(org.hamcrest.Matchers.nullValue()));
     }
 

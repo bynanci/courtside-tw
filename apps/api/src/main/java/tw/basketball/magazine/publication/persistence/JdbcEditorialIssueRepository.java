@@ -264,6 +264,38 @@ public final class JdbcEditorialIssueRepository implements EditorialIssueReposit
 
     @Override
     public boolean readyForPublication(UUID issueId, Instant checkedAt) {
+        // Hold the cover and its rights through immutable snapshot/impact insertion.
+        // The revocation command takes this asset lock before discovering impacts.
+        jdbcTemplate.query("""
+                SELECT asset.id FROM publication_issue issue
+                JOIN media_asset asset ON asset.id = issue.cover_asset_id
+                WHERE issue.id = ? FOR UPDATE OF asset
+                """, (resultSet, rowNumber) -> uuid(resultSet, "id"), issueId);
+        jdbcTemplate.query("""
+                SELECT rights.id FROM publication_issue issue
+                JOIN rights_record rights ON rights.asset_id = issue.cover_asset_id
+                WHERE issue.id = ? ORDER BY rights.id FOR UPDATE OF rights
+                """, (resultSet, rowNumber) -> uuid(resultSet, "id"), issueId);
+        // Keep article pointers and their referenced revisions stable through snapshot insertion.
+        // Callers hold the issue aggregate lock within the publication transaction.
+        jdbcTemplate.query("""
+                SELECT article.id
+                FROM issue_article entry
+                JOIN article ON article.id = entry.article_id
+                WHERE entry.issue_id = ?
+                ORDER BY article.id
+                FOR SHARE OF article
+                """, (resultSet, rowNumber) -> uuid(resultSet, "id"), issueId);
+        jdbcTemplate.query("""
+                SELECT revision.id
+                FROM issue_article entry
+                JOIN article ON article.id = entry.article_id
+                JOIN article_revision revision
+                  ON revision.id = article.published_revision_id AND revision.article_id = article.id
+                WHERE entry.issue_id = ?
+                ORDER BY revision.id
+                FOR SHARE OF revision
+                """, (resultSet, rowNumber) -> uuid(resultSet, "id"), issueId);
         Boolean ready = jdbcTemplate.queryForObject("""
                 SELECT EXISTS (
                     SELECT 1
@@ -274,6 +306,10 @@ public final class JdbcEditorialIssueRepository implements EditorialIssueReposit
                     WHERE issue.id = ?
                       AND asset.processing_state = 'READY'
                       AND btrim(asset.alt_text) <> ''
+                      AND NOT EXISTS (
+                          SELECT 1 FROM rights_record revoked
+                          WHERE revoked.asset_id = asset.id AND revoked.status = 'REVOKED'
+                      )
                       AND variant.public_storage_key ~ '^[a-z0-9][a-z0-9._/-]{0,255}$'
                       AND position('..' IN variant.public_storage_key) = 0
                       AND position('//' IN variant.public_storage_key) = 0
@@ -357,6 +393,8 @@ public final class JdbcEditorialIssueRepository implements EditorialIssueReposit
             return row;
         }, issueId);
         for (Map<String, Object> section : sectionRows) {
+            // Readiness already checked publication time while holding the referenced row locks.
+            // A second cutoff at transaction start could silently omit a concurrently published article.
             UUID sectionId = UUID.fromString((String) section.get("sectionId"));
             List<Map<String, Object>> articles = jdbcTemplate.query("""
                     SELECT article.id, article.slug, revision.id AS revision_id,
@@ -369,7 +407,6 @@ public final class JdbcEditorialIssueRepository implements EditorialIssueReposit
                     WHERE issue_article.issue_id = ?
                       AND issue_article.section_id = ?
                       AND article.state = 'PUBLISHED'
-                      AND article.published_at <= transaction_timestamp()
                       AND revision.state = 'PUBLISHED'
                     ORDER BY issue_article.position, issue_article.id
                     """, (resultSet, rowNumber) -> {
@@ -494,6 +531,7 @@ public final class JdbcEditorialIssueRepository implements EditorialIssueReposit
                 FROM publication_job
                 WHERE aggregate_type = 'ISSUE'
                   AND requested_by = ? AND operation = ? AND idempotency_key = ?
+                FOR UPDATE
                 """, resultSet -> resultSet.next()
                 ? Optional.of(mapPublicationJob(resultSet))
                 : Optional.empty(), requestedBy, operation, idempotencyKey);

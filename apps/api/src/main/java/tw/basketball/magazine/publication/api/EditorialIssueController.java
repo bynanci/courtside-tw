@@ -35,7 +35,7 @@ import tw.basketball.magazine.shared.RequestId;
 import tw.basketball.magazine.shared.RoleCode;
 import tw.basketball.magazine.shared.Version;
 
-/** HTTP adapter for issue draft CRUD. */
+/** HTTP adapter for issue editing and the controlled publication lifecycle. */
 @RestController
 @ConditionalOnBean(EditorialIssueService.class)
 public final class EditorialIssueController {
@@ -71,6 +71,25 @@ public final class EditorialIssueController {
                 service.listIssues(actor(authentication, request), cursor, limit),
                 requestId(request)
         );
+    }
+
+    @GetMapping(path = "/api/v1/publisher/issues", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<JsonNode> listPublisherIssues(
+            @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "20") int limit,
+            Authentication authentication,
+            HttpServletRequest request
+    ) {
+        return response(service.listPublisherIssues(actor(authentication, request), cursor, limit), requestId(request));
+    }
+
+    @GetMapping(path = "/api/v1/publisher/issues/{issueId}", produces = MediaType.APPLICATION_JSON_VALUE)
+    public ResponseEntity<JsonNode> getPublisherIssue(
+            @PathVariable String issueId,
+            Authentication authentication,
+            HttpServletRequest request
+    ) {
+        return response(service.getPublisherIssue(actor(authentication, request), uuid(issueId, "/id")), requestId(request));
     }
 
     @PatchMapping(path = "/api/v1/editor/issues", consumes = MediaType.APPLICATION_JSON_VALUE)
@@ -129,6 +148,22 @@ public final class EditorialIssueController {
             HttpServletRequest request
     ) {
         return response(service.publishIssue(
+                actor(authentication, request),
+                uuid(issueId, "/id"),
+                Version.parseIfMatch(request.getHeader(HttpHeaders.IF_MATCH)),
+                request.getHeader("Idempotency-Key"),
+                body
+        ), requestId(request));
+    }
+
+    @PostMapping(path = "/api/v1/publisher/issues/{issueId}:archive")
+    public ResponseEntity<JsonNode> archiveIssue(
+            @PathVariable String issueId,
+            @RequestBody(required = false) String body,
+            Authentication authentication,
+            HttpServletRequest request
+    ) {
+        return response(service.archiveIssue(
                 actor(authentication, request),
                 uuid(issueId, "/id"),
                 Version.parseIfMatch(request.getHeader(HttpHeaders.IF_MATCH)),

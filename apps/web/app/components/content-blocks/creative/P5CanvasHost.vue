@@ -47,7 +47,9 @@ let resizeCanvas: ((width: number, height: number) => void) | null = null
 let runtimeModules: Promise<{
   P5: (typeof import("p5"))["default"]
   presetModule: CreativePresetModule
-}> | null = null
+} | null> | null = null
+let mounting = false
+let runtimeFailed = false
 let disposed = false
 
 function hostWidth(): number {
@@ -142,9 +144,7 @@ function runDrawFrame(timestamp: number): void {
     try {
       renderFrame()
     } catch {
-      creativeActiveLoop.release(props.ownerId)
-      sketch.noLoop()
-      runtimeStatus.value = "error"
+      failSketch()
       return
     }
   }
@@ -175,7 +175,7 @@ function pauseSketch(): void {
   clearPauseTimer()
   creativeActiveLoop.release(props.ownerId)
   haltSketchLoop()
-  runtimeStatus.value = sketch ? "paused" : "idle"
+  runtimeStatus.value = runtimeFailed ? "error" : sketch ? "paused" : "idle"
 }
 
 function schedulePause(): void {
@@ -188,8 +188,34 @@ function schedulePause(): void {
   }, 250)
 }
 
+function failSketch(): void {
+  runtimeFailed = true
+  clearPauseTimer()
+  cancelDrawFrame()
+  if (resizeTimer !== null) {
+    clearTimeout(resizeTimer)
+    resizeTimer = null
+  }
+  resizeObserver?.disconnect()
+  resizeObserver = null
+  creativeActiveLoop.release(props.ownerId)
+  renderFrame = null
+  resizeCanvas = null
+  const failedSketch = sketch
+  sketch = null
+  failedSketch?.noLoop()
+  // p5 removal runs asynchronous lifecycle hooks. Keep a failed renderer from
+  // leaking a rejected cleanup promise after its canvas has been detached.
+  if (failedSketch) {
+    void Promise.resolve(failedSketch.remove()).catch(() => undefined)
+  }
+  if (!disposed) {
+    runtimeStatus.value = "error"
+  }
+}
+
 function applyLoopState(): void {
-  if (!sketch) {
+  if (!sketch || runtimeFailed) {
     return
   }
   const decision = runtimeVisibilityDecision({
@@ -232,38 +258,50 @@ async function preloadRuntime() {
     !documentActive() ||
     (!nearViewport.value && !shouldMount()) ||
     !preset ||
-    disposed
+    disposed ||
+    runtimeFailed
   ) {
     return null
   }
   if (!runtimeModules) {
     runtimeStatus.value = "loading"
-    runtimeModules = Promise.all([import("./p5-court-runtime"), preset.load()]).then(
-      ([{ default: P5 }, presetModule]) => {
-        if (!sketch && !shouldMount()) {
+    runtimeModules = Promise.all([import("./p5-court-runtime"), preset.load()])
+      .then(([{ default: P5 }, presetModule]) => {
+        if (!disposed && !sketch && !shouldMount()) {
           runtimeStatus.value = "paused"
         }
         return { P5, presetModule }
-      }
-    )
+      })
+      .catch(() => {
+        if (!disposed) {
+          failSketch()
+        }
+        return null
+      })
   }
   return runtimeModules
 }
 
 async function mountSketch(): Promise<void> {
   const host = container.value
-  if (!host || sketch || disposed || !shouldMount()) {
+  if (!host || sketch || mounting || runtimeFailed || disposed || !shouldMount()) {
     applyLoopState()
     return
   }
+  // Viewport, scroll, and focus observers can all arrive while the same import
+  // is pending. Reserve this host before awaiting so only one p5 owns its canvas.
+  mounting = true
   try {
     const modules = await preloadRuntime()
+    if (disposed || runtimeFailed) {
+      return
+    }
     if (!modules) {
       runtimeStatus.value = "idle"
       return
     }
-    const { P5, presetModule } = await modules
-    if (disposed || !container.value || !shouldMount()) {
+    const { P5, presetModule } = modules
+    if (!container.value || !shouldMount()) {
       runtimeStatus.value = "idle"
       return
     }
@@ -272,7 +310,7 @@ async function mountSketch(): Promise<void> {
       parameters: normalizeCourtPulseParameters(props.parameters),
       width: hostWidth,
       onRenderReady: (controller) => {
-        if (!disposed) {
+        if (!disposed && !runtimeFailed) {
           renderFrame = controller.render
           resizeCanvas = controller.resize
           scheduleDrawFrame()
@@ -282,17 +320,34 @@ async function mountSketch(): Promise<void> {
         frameTick.value = frame
       }
     })
-    sketch = new P5(createSketch as (instance: p5) => void, host)
+    const initializeSketch = createSketch as (instance: p5) => void
+    sketch = new P5((instance: p5) => {
+      initializeSketch(instance)
+      const setup = instance.setup
+      // p5 invokes setup asynchronously, outside the constructor's try/catch.
+      // Contain preset setup failures at the callback boundary as well.
+      instance.setup = () => {
+        if (disposed || runtimeFailed) {
+          instance.noLoop()
+          void Promise.resolve(instance.remove()).catch(() => undefined)
+          return
+        }
+        try {
+          setup?.()
+        } catch {
+          failSketch()
+        }
+      }
+    }, host)
     observeResize(host)
     await nextTick()
-    applyLoopState()
+    if (!disposed) {
+      applyLoopState()
+    }
   } catch {
-    creativeActiveLoop.release(props.ownerId)
-    renderFrame = null
-    resizeCanvas = null
-    sketch?.remove()
-    sketch = null
-    runtimeStatus.value = "error"
+    failSketch()
+  } finally {
+    mounting = false
   }
 }
 
@@ -306,12 +361,16 @@ function observeResize(host: HTMLDivElement): void {
     }
     resizeTimer = setTimeout(() => {
       resizeTimer = null
-      if (!sketch) {
+      if (!sketch || disposed || runtimeFailed) {
         return
       }
-      resizeCanvas?.(hostWidth(), 180)
-      if (runtimeStatus.value !== "running") {
-        renderFrame?.()
+      try {
+        resizeCanvas?.(hostWidth(), 180)
+        if (runtimeStatus.value !== "running") {
+          renderFrame?.()
+        }
+      } catch {
+        failSketch()
       }
     }, 100)
   })

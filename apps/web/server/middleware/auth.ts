@@ -15,6 +15,7 @@ import type { H3Event } from "h3"
 import { COOKIE_NAMES, oidcConfigFromRuntime, type OidcClientConfig } from "../auth/config.ts"
 import { parseSetCookieValue } from "../auth/cookies.ts"
 import { AuthSessionError, isAuthSessionError } from "../auth/errors.ts"
+import { enforceAuthRateLimit } from "../auth/rate-limit.ts"
 import { createAuthSessionService } from "../auth/session-service.ts"
 import { createInMemoryAuthStore, type InMemoryAuthStore } from "../auth/store.ts"
 
@@ -45,6 +46,8 @@ export type RuntimeAuthContext = {
 
 export default defineEventHandler(async (event) => {
   const path = getRequestURL(event).pathname
+  const rateLimitResponse = enforceAuthRateLimit(event, path)
+  if (rateLimitResponse) return rateLimitResponse
   const runtimeConfig = useRuntimeConfig() as AuthRuntimeConfig
   const auth = createRuntimeAuthContext(runtimeConfig)
 

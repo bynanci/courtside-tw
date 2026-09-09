@@ -208,6 +208,142 @@ test("an interrupted reduced-motion route change never hides the completed artic
   await expect(page.locator("canvas")).toHaveCount(0)
 })
 
+for (const blockedModule of ["p5", "preset"] as const) {
+  test(`a failed production ${blockedModule} chunk preserves the static article without leaked errors`, async ({
+    page
+  }) => {
+    const chunkName = blockedModule === "p5" ? findP5ChunkName() : findPresetChunkName()
+    let blockedRequests = 0
+    const pageErrors: string[] = []
+    page.on("pageerror", (error) => pageErrors.push(error.message))
+    await page.route(`**/_nuxt/${chunkName}`, (route) => {
+      blockedRequests += 1
+      return route.abort("failed")
+    })
+    await page.emulateMedia({ reducedMotion: "no-preference" })
+    await page.goto(creativeArticlePath, { waitUntil: "networkidle" })
+    await page.getByTestId("generative-canvas").first().scrollIntoViewIfNeeded()
+    await expect.poll(() => blockedRequests).toBeGreaterThan(0)
+    await expect(page.getByTestId("creative-runtime").first()).toHaveAttribute(
+      "data-runtime-status",
+      "error"
+    )
+
+    await expectStaticCreativeArticle(page)
+    await expect(page.locator("canvas")).toHaveCount(0)
+    await page.getByTestId("article-next").click()
+    await expect(page).toHaveURL(/\/articles\/courtside-notes/)
+    await expect(page.getByTestId("article-content")).toContainText("看台的聲音")
+    await expect(page.getByTestId("creative-runtime")).toHaveCount(0)
+    await expect(page.locator("canvas")).toHaveCount(0)
+    expect(pageErrors).toEqual([])
+  })
+}
+
+for (const failurePhase of ["setup", "draw", "resize"] as const) {
+  test(`a p5 ${failurePhase} failure removes its canvas and retains the static reading path`, async ({
+    page
+  }) => {
+    const pageErrors: string[] = []
+    page.on("pageerror", (error) => pageErrors.push(error.message))
+    await page.addInitScript((phase) => {
+      const originalStroke = CanvasRenderingContext2D.prototype.stroke
+      CanvasRenderingContext2D.prototype.stroke = function (
+        ...args: Parameters<typeof originalStroke>
+      ) {
+        if (
+          (phase === "setup" && this.canvas.closest('[data-testid="creative-runtime"]')) ||
+          this.canvas.dataset.failCreativeDraw === "true"
+        ) {
+          throw new Error(`T086 forced production canvas ${phase} failure`)
+        }
+        return originalStroke.apply(this, args)
+      }
+    }, failurePhase)
+    await page.emulateMedia({ reducedMotion: "no-preference" })
+    await page.goto(creativeArticlePath, { waitUntil: "networkidle" })
+    await page.getByTestId("generative-canvas").first().scrollIntoViewIfNeeded()
+    const runtime = page.getByTestId("creative-runtime").first()
+    if (failurePhase !== "setup") {
+      await expect(runtime).toHaveAttribute("data-runtime-status", "running")
+      await expect(runtime.locator("canvas")).toHaveCount(1)
+      if (failurePhase === "resize") {
+        await page.evaluate(() => window.dispatchEvent(new Event("blur")))
+        await expect(runtime).toHaveAttribute("data-runtime-status", "paused")
+      }
+      await runtime.locator("canvas").evaluate((canvas) => {
+        canvas.dataset.failCreativeDraw = "true"
+      })
+      if (failurePhase === "resize") {
+        await runtime.evaluate((host) => {
+          host.style.width = "240px"
+        })
+      }
+    }
+    await expect(runtime).toHaveAttribute("data-runtime-status", "error")
+    await expect(runtime.locator("canvas")).toHaveCount(0)
+    await expectStaticCreativeArticle(page)
+    // Focus, scroll, and the debounced resize path cannot revive a failed host.
+    await page.evaluate(() => {
+      window.dispatchEvent(new Event("blur"))
+      window.dispatchEvent(new Event("focus"))
+      window.dispatchEvent(new Event("scroll"))
+    })
+    await runtime.evaluate((host) => {
+      host.style.width = "260px"
+    })
+    await page.waitForTimeout(350)
+    await expect(runtime).toHaveAttribute("data-runtime-status", "error")
+    await expect(runtime.locator("canvas")).toHaveCount(0)
+    await page.getByTestId("article-next").click()
+    await expect(page).toHaveURL(/\/articles\/courtside-notes/)
+    await expect(page.locator("canvas")).toHaveCount(0)
+    expect(pageErrors).toEqual([])
+  })
+}
+
+async function expectStaticCreativeArticle(page: Page): Promise<void> {
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("主場燈光亮起之前")
+  await expect(page.getByTestId("article-content")).toContainText(
+    "這是一份涵蓋台籃雜誌 MVP 內容區塊的固定 fixture。"
+  )
+  const poster = page.getByTestId("generative-poster").first()
+  await expect(poster).toBeVisible()
+  await expect(poster.getByTestId("generative-poster-image")).toHaveAttribute(
+    "alt",
+    "以球場線條與投籃落點構成的抽象視覺"
+  )
+  await expect(poster).toContainText(
+    "視覺使用固定 seed 與文章數據摘要產生，互動失敗時仍以 poster 呈現。"
+  )
+  await expect(
+    page.getByTestId("article-toc").getByRole("link", { name: "本期觀察" })
+  ).toHaveAttribute("href", "#block-00000000-0000-4000-8000-000000000003")
+  await expect(page.getByTestId("article-issue-link")).toHaveAttribute(
+    "href",
+    "/issues/issue-2026-01"
+  )
+  await expect(page.getByTestId("article-share-fallback")).toHaveAttribute(
+    "href",
+    "https://courtside.test/articles/opening-night"
+  )
+}
+
+function findPresetChunkName(): string {
+  const assetDirectory = fileURLToPath(new URL("../../.output/public/_nuxt/", import.meta.url))
+  const candidates = readdirSync(assetDirectory).filter((fileName) => {
+    if (!fileName.endsWith(".js")) return false
+    const source = readFileSync(assetDirectory + fileName, "utf8")
+    return (
+      source.includes("onRenderReady") &&
+      source.includes("createSketch") &&
+      source.includes("pixelDensity")
+    )
+  })
+  expect(candidates).toHaveLength(1)
+  return candidates[0] ?? "missing-preset-chunk"
+}
+
 function findP5ChunkName(): string {
   const assetDirectory = fileURLToPath(new URL("../../.output/public/_nuxt/", import.meta.url))
   if (!existsSync(assetDirectory)) {

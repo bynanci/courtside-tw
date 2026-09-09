@@ -1224,6 +1224,546 @@ export function inspectPnpmSecurityAuthorization(
   }
 }
 
+export const PRODUCT_REMEDIATION_AUTHORIZATION_BASE_SHA = "74d3b6dfba087394a3e522252dc4a8cf5e1b3f0d"
+export const PRODUCT_REMEDIATION_AUTHORIZATION_REF =
+  "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5594585089"
+export const PRODUCT_REMEDIATION_AUTHORIZATION_BODY_SHA256 =
+  "c4b2dd0d1a8ab929e9f25a70022f67744724722989b831741b5ee9a2860e5cb2"
+const productRemediationAuthorizationRecordedAt = "2026-09-09T01:55:20Z"
+const productRemediationPullRequest = 175
+const productRemediationBranch = "fix/t086-product-remediation"
+const productRemediationSeedHead = "c90270157e50a1fd8c0abc2a700d22f2481fa7f9"
+const productRemediationSeedTree = "6e130341bd03972acd4133679aea3063838abff8"
+// The canonical successor accepts this exact already-authorized RED snapshot.
+// Only commits after this immutable boundary may use the successor scope.
+const productRemediationAcceptedRedHead = "6eeb96fe7d5b0c25a631d45ccfe8db5b31fbe94b"
+const productRemediationAcceptedRedTree = "100e9a650d9fe7e5958571729a29bd4ab62744d5"
+
+export const PRODUCT_REMEDIATION_REQUIRED_PATHS = Object.freeze([
+  "apps/api/src/main/java/tw/basketball/magazine/identity/OidcSecurityConfiguration.java",
+  "apps/api/src/main/java/tw/basketball/magazine/publication/api/EditorialIssueController.java",
+  "apps/api/src/main/java/tw/basketball/magazine/publication/application/EditorialIssueService.java",
+  "apps/api/src/main/java/tw/basketball/magazine/publication/persistence/JdbcEditorialIssueRepository.java",
+  "apps/api/src/main/java/tw/basketball/magazine/publication/worker/IssuePublicationJobHandler.java",
+  "apps/api/src/main/java/tw/basketball/magazine/publication/worker/PublicationInvalidationKeys.java",
+  "apps/api/src/main/java/tw/basketball/magazine/publication/worker/PublicationWorkerConfiguration.java",
+  "apps/api/src/main/java/tw/basketball/magazine/security/RouteRateLimitFilter.java",
+  "apps/api/src/main/java/tw/basketball/magazine/security/RouteRateLimitPolicy.java",
+  "apps/api/src/main/java/tw/basketball/magazine/security/RouteRateLimiter.java",
+  "apps/api/src/main/java/tw/basketball/magazine/security/SecurityBoundaryConfiguration.java",
+  "apps/api/src/test/java/tw/basketball/magazine/identity/OidcRoleMatrixTest.java",
+  "apps/api/src/test/java/tw/basketball/magazine/publication/PublicIssueApiIT.java",
+  "apps/api/src/test/java/tw/basketball/magazine/publication/api/EditorialIssueApiIT.java",
+  "apps/api/src/test/java/tw/basketball/magazine/publication/api/PublicationAcceptanceApiIT.java",
+  "apps/api/src/test/java/tw/basketball/magazine/publication/domain/PublicationWorkflowTest.java",
+  "apps/api/src/test/java/tw/basketball/magazine/readerlibrary/ReaderLibraryApiIT.java",
+  "apps/api/src/test/java/tw/basketball/magazine/security/RouteRateLimitFilterTest.java",
+  "apps/api/src/test/java/tw/basketball/magazine/security/RouteRateLimitHttpIT.java",
+  "apps/api/src/test/java/tw/basketball/magazine/security/RouteRateLimiterTest.java",
+  "apps/web/server/auth/rate-limit.ts",
+  "apps/web/server/middleware/auth.ts",
+  "apps/web/tests/e2e/us1-browse-issue.spec.ts",
+  "apps/web/tests/e2e/us2-creative-lifecycle.spec.ts",
+  "apps/web/tests/e2e/us2-no-js.spec.ts",
+  "apps/web/tests/integration/auth-rate-limit.test.ts",
+  "contracts/openapi.yaml",
+  "packages/api-client/src/generated/openapi.d.ts",
+  "scripts/test/validate-traceability.test.mjs",
+  "scripts/validate-openapi.mjs",
+  "scripts/validate-traceability.mjs"
+])
+export const PRODUCT_REMEDIATION_OPTIONAL_PATHS = Object.freeze([
+  "apps/api/src/main/java/tw/basketball/magazine/content/EditorialContributorConfiguration.java",
+  "apps/api/src/main/java/tw/basketball/magazine/content/api/EditorialContributorController.java",
+  "apps/api/src/main/java/tw/basketball/magazine/content/application/EditorialContributorService.java",
+  "apps/api/src/main/java/tw/basketball/magazine/identity/SecurityAuditConfiguration.java",
+  "apps/api/src/main/java/tw/basketball/magazine/identity/SecurityAuditFilter.java",
+  "apps/api/src/main/java/tw/basketball/magazine/identity/VerifiedRoleAuditService.java",
+  "apps/api/src/main/java/tw/basketball/magazine/identity/api/AccountApiExceptionHandler.java",
+  "apps/api/src/main/java/tw/basketball/magazine/media/MediaRevocationWorkerConfiguration.java",
+  "apps/api/src/main/java/tw/basketball/magazine/media/application/MediaRevocationHandler.java",
+  "apps/api/src/main/java/tw/basketball/magazine/media/application/PublisherMediaService.java",
+  "apps/api/src/main/java/tw/basketball/magazine/publication/api/EditorialApiExceptionHandler.java",
+  "apps/api/src/main/java/tw/basketball/magazine/publication/application/OfflineManifestService.java",
+  "apps/api/src/main/java/tw/basketball/magazine/readerlibrary/api/ReaderLibraryApiExceptionHandler.java",
+  "apps/api/src/main/java/tw/basketball/magazine/shared/ApiExceptionHandler.java",
+  "apps/api/src/main/java/tw/basketball/magazine/taxonomy/api/TaxonomyApiExceptionHandler.java",
+  "apps/api/src/main/resources/db/migration/V016__editorial_contributors_and_identity_audit.sql",
+  "apps/api/src/main/resources/db/migration/V017__asset_revocation_withdrawal_cursor.sql",
+  "apps/api/src/test/java/tw/basketball/magazine/content/api/EditorialContributorApiIT.java",
+  "apps/api/src/test/java/tw/basketball/magazine/editorial/EditorialApiIntegrationTestSupport.java",
+  "apps/api/src/test/java/tw/basketball/magazine/identity/SecurityAuditFilterTest.java",
+  "apps/api/src/test/java/tw/basketball/magazine/identity/VerifiedRoleAuditServiceIT.java",
+  "apps/api/src/test/java/tw/basketball/magazine/media/api/PublisherMediaRevokeApiIT.java",
+  "apps/api/src/test/java/tw/basketball/magazine/media/application/MediaRevocationHandlerIT.java",
+  "apps/api/src/test/java/tw/basketball/magazine/publication/PublicIssueApiIntegrationTestSupport.java",
+  "apps/api/src/test/java/tw/basketball/magazine/publication/api/EditorialCrudAcceptanceApiIT.java",
+  "apps/api/src/test/java/tw/basketball/magazine/shared/WriteApiConcurrencyIT.java",
+  "apps/api/src/test/java/tw/basketball/magazine/shared/WriteApiContractTest.java",
+  "apps/web/app/components/content-blocks/creative/P5CanvasHost.vue",
+  "apps/web/app/features/offline/services/OfflineIssueManager.ts",
+  "apps/web/scripts/android-chrome-performance-smoke.mjs",
+  "apps/web/scripts/android-creative-timeline.mjs",
+  "apps/web/tests/unit/android-creative-timeline.test.ts",
+  "apps/web/tests/unit/offline-issue-manager.test.ts"
+])
+const productFixturePath =
+  "apps/api/src/test/java/tw/basketball/magazine/publication/PublicationReliabilityIT.java"
+const productFixtureRef =
+  "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5595331899"
+const productFixtureBodyHash = "47b66a49d5b6be23a286ceaa322fd356812019c041e4ead232b74c6d24935216"
+const productFixtureTime = "2026-09-09T03:28:09Z"
+const productFixtureBoundary = "f37082e5aa61c932f1740ebb64e507fde713c67f"
+const productFixtureBoundaryTree = "7c931a371088652f066830ef6ed54ba98953520b"
+
+const productAdditionalScopes = Object.freeze([
+  {
+    key: "fixture_addendum",
+    path: productFixturePath,
+    ref: productFixtureRef,
+    bodyHash: productFixtureBodyHash,
+    recordedAt: productFixtureTime
+  },
+  {
+    key: "browser_addendum",
+    path: "apps/web/tests/e2e/us5-reader-library.spec.ts",
+    ref: "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5595411052",
+    bodyHash: "189ed4f11645ef05580e6742e566e1efd8ddb8b270fc4362a71d8758ec0a7dff",
+    recordedAt: "2026-09-09T03:38:26Z"
+  }
+])
+
+const productRemediationSeedPaths = PRODUCT_REMEDIATION_REQUIRED_PATHS.filter(
+  (p) =>
+    !["scripts/validate-traceability.mjs", "scripts/test/validate-traceability.test.mjs"].includes(
+      p
+    )
+)
+const productRemediationAuthorizedPaths = new Set([
+  ...PRODUCT_REMEDIATION_REQUIRED_PATHS,
+  ...PRODUCT_REMEDIATION_OPTIONAL_PATHS,
+  ...productAdditionalScopes.map((scope) => scope.path)
+])
+
+function productRemediationPathClosureMatches(paths) {
+  return (
+    Array.isArray(paths) &&
+    new Set(paths).size === paths.length &&
+    PRODUCT_REMEDIATION_REQUIRED_PATHS.every((p) => paths.includes(p)) &&
+    paths.every((p) => productRemediationAuthorizedPaths.has(p))
+  )
+}
+
+function productRemediationAuthorizationRequested(
+  changedPaths,
+  githubActionsContext,
+  readback = null,
+  changeBaseSha = null
+) {
+  return (
+    readback !== null ||
+    githubActionsContext?.pull_request_number === productRemediationPullRequest ||
+    githubActionsContext?.head_ref === productRemediationBranch ||
+    (changeBaseSha === PRODUCT_REMEDIATION_AUTHORIZATION_BASE_SHA &&
+      Array.isArray(changedPaths) &&
+      changedPaths.some(
+        (p) =>
+          productRemediationSeedPaths.includes(p) || PRODUCT_REMEDIATION_OPTIONAL_PATHS.includes(p)
+      ))
+  )
+}
+
+function validateProductRemediationAuthorization({
+  readback,
+  gitBinding,
+  changedPaths,
+  changeBaseSha,
+  boundedScopeActive,
+  githubActionsContext,
+  requireExactHeadEvidence,
+  errors
+}) {
+  const start = errors.length
+  const reject = (message) => errors.push(`product remediation authorization ${message}`)
+  if (
+    changeBaseSha !== PRODUCT_REMEDIATION_AUTHORIZATION_BASE_SHA ||
+    boundedScopeActive !== false ||
+    !productRemediationPathClosureMatches(changedPaths)
+  )
+    reject(
+      "requires all required paths, only closed optional amendments and the exact protected base"
+    )
+  const authorization = readback?.authorization
+  if (
+    readback?.status !== "VERIFIED" ||
+    readback?.source !== "github-api" ||
+    authorization?.status !== "VERIFIED" ||
+    authorization?.source !== "github-api"
+  )
+    reject("requires verified GitHub PR and immutable OWNER comment read-backs")
+  if (
+    authorization?.html_url !== PRODUCT_REMEDIATION_AUTHORIZATION_REF ||
+    authorization?.issue_url !== "https://api.github.com/repos/bynanci/courtside-tw/issues/121" ||
+    authorization?.user_login !== ACCEPTED_RECEIPT_OWNER ||
+    authorization?.author_association !== "OWNER" ||
+    authorization?.created_at !== productRemediationAuthorizationRecordedAt ||
+    authorization?.updated_at !== productRemediationAuthorizationRecordedAt ||
+    sha256(authorization?.body ?? null) !== PRODUCT_REMEDIATION_AUTHORIZATION_BODY_SHA256
+  )
+    reject("must match the exact immutable issue 121 OWNER dispatch")
+  const pr = readback?.pull_request
+  const candidate = readback?.candidate
+  if (
+    pr?.number !== productRemediationPullRequest ||
+    pr?.html_url !==
+      `https://github.com/bynanci/courtside-tw/pull/${productRemediationPullRequest}` ||
+    pr?.head?.ref !== productRemediationBranch ||
+    pr?.head?.repo?.full_name !== "bynanci/courtside-tw" ||
+    pr?.base?.ref !== "main" ||
+    pr?.base?.repo?.full_name !== "bynanci/courtside-tw" ||
+    pr?.base?.sha !== PRODUCT_REMEDIATION_AUTHORIZATION_BASE_SHA ||
+    !/^[0-9a-f]{40}$/.test(pr?.head?.sha ?? "") ||
+    candidate?.head !== pr?.head?.sha
+  )
+    reject("requires the live same-repository PR 175 head, branch and exact base")
+  if (
+    candidate?.base_ancestor !== true ||
+    candidate?.seed_ancestor !== true ||
+    candidate?.accepted_red_ancestor !== true ||
+    candidate?.accepted_red_tree_sha !== productRemediationAcceptedRedTree ||
+    !isDeepStrictEqual(candidate?.accepted_red_parent_shas, [productRemediationSeedHead]) ||
+    !isDeepStrictEqual(candidate?.accepted_red_changed_paths, [
+      "scripts/test/validate-traceability.test.mjs"
+    ]) ||
+    candidate?.seed_tree_sha !== productRemediationSeedTree ||
+    !isDeepStrictEqual(candidate?.seed_parent_shas, [PRODUCT_REMEDIATION_AUTHORIZATION_BASE_SHA]) ||
+    !Number.isInteger(candidate?.commit_count) ||
+    candidate.commit_count < 2 ||
+    candidate?.merge_commit_count !== 0 ||
+    candidate?.commits_postdate_authorization !== true ||
+    !Array.isArray(candidate?.seed_changed_paths) ||
+    !sameValues(candidate.seed_changed_paths, productRemediationSeedPaths) ||
+    !productRemediationPathClosureMatches(candidate?.changed_paths) ||
+    !sameValues(candidate.changed_paths, changedPaths) ||
+    !productRemediationPathClosureMatches(candidate?.history_paths) ||
+    candidate?.frozen_blobs_match !== true ||
+    candidate?.allowed_path_modes_match !== true
+  )
+    reject(
+      "requires the exact seed, linear post-dispatch closed history, regular files and preserved frozen blobs"
+    )
+  if (
+    gitBinding?.status !== "CLEAN" ||
+    gitBinding?.change_base_ancestor !== true ||
+    gitBinding?.change_base_sha !== PRODUCT_REMEDIATION_AUTHORIZATION_BASE_SHA ||
+    !/^[0-9a-f]{40}$/.test(candidate?.tree_sha ?? "") ||
+    candidate?.tree_sha !== gitBinding?.head_tree_sha
+  )
+    reject("requires a clean exact candidate tree and audited Git binding")
+  for (const scope of productAdditionalScopes) {
+    if (!changedPaths?.includes(scope.path) && !candidate?.history_paths?.includes(scope.path))
+      continue
+    const addendum = readback?.[scope.key]
+    const amendment = candidate?.[scope.key]
+    if (
+      addendum?.status !== "VERIFIED" ||
+      addendum?.source !== "github-api" ||
+      addendum?.html_url !== scope.ref ||
+      addendum?.issue_url !== "https://api.github.com/repos/bynanci/courtside-tw/issues/121" ||
+      addendum?.user_login !== ACCEPTED_RECEIPT_OWNER ||
+      addendum?.author_association !== "OWNER" ||
+      addendum?.created_at !== scope.recordedAt ||
+      addendum?.updated_at !== scope.recordedAt ||
+      sha256(addendum?.body ?? null) !== scope.bodyHash ||
+      amendment?.boundary_ancestor !== true ||
+      amendment?.boundary_tree_sha !== productFixtureBoundaryTree ||
+      amendment?.regular_file !== true ||
+      amendment?.changes_postdate_addendum !== true ||
+      !changedPaths?.includes(scope.path)
+    ) {
+      reject(`requires immutable ${scope.key} and post-boundary regular-file path history`)
+    }
+  }
+  const protectedMain = readback?.protected_main
+  if (
+    protectedMain?.name !== "main" ||
+    protectedMain?.protected !== true ||
+    protectedMain?.commit?.sha !==
+      (githubActionsContext?.authority === "PROTECTED_MAIN_PUSH"
+        ? gitBinding?.head
+        : PRODUCT_REMEDIATION_AUTHORIZATION_BASE_SHA)
+  )
+    reject("requires the live protected main tip for this exact PR or squash-push event")
+  if (!requireExactHeadEvidence || !isAuthenticatedGitHubActionsContext(githubActionsContext)) {
+    reject("requires exact-head CI and authenticated GitHub Actions context")
+  } else if (githubActionsContext.authority === "PULL_REQUEST") {
+    if (
+      githubActionsContext.pull_request_number !== productRemediationPullRequest ||
+      githubActionsContext.source_base_sha !== PRODUCT_REMEDIATION_AUTHORIZATION_BASE_SHA ||
+      githubActionsContext.source_head_sha !== pr?.head?.sha ||
+      githubActionsContext.source_head_sha !== gitBinding?.head ||
+      githubActionsContext.head_ref !== productRemediationBranch ||
+      !/^refs\/pull\/175\/(?:merge|head)$/.test(githubActionsContext.github_ref ?? "") ||
+      pr?.state !== "open" ||
+      pr?.merged !== false ||
+      typeof pr?.draft !== "boolean" ||
+      githubActionsContext.pull_request_draft !== pr.draft
+    )
+      reject("must bind the live open draft or ready PR 175 event")
+  } else if (githubActionsContext.authority === "PROTECTED_MAIN_PUSH") {
+    if (
+      githubActionsContext.source_base_sha !== PRODUCT_REMEDIATION_AUTHORIZATION_BASE_SHA ||
+      githubActionsContext.source_head_sha !== gitBinding?.head ||
+      pr?.state !== "closed" ||
+      pr?.merged !== true ||
+      pr?.draft !== false ||
+      pr?.merge_commit_sha !== gitBinding?.head ||
+      !isIsoTimestamp(pr?.merged_at) ||
+      Date.parse(pr.merged_at) <= Date.parse(productRemediationAuthorizationRecordedAt) ||
+      gitBinding?.head_parent_count !== 1 ||
+      !isDeepStrictEqual(gitBinding?.head_parent_shas, [PRODUCT_REMEDIATION_AUTHORIZATION_BASE_SHA])
+    )
+      reject("must bind only PR 175's exact same-tree single-parent squash push")
+  } else reject("does not authorize this GitHub event")
+  return errors.length === start
+}
+
+export function inspectProductRemediationFiles(root, head) {
+  try {
+    const entries = execFileSync(
+      "git",
+      ["ls-tree", "-r", "-z", head, "--", ...productRemediationAuthorizedPaths],
+      {
+        cwd: root,
+        encoding: "utf8",
+        maxBuffer: 1024 * 1024,
+        stdio: ["ignore", "pipe", "ignore"]
+      }
+    )
+      .split("\0")
+      .filter(Boolean)
+    const presentPaths = new Set(entries.map((entry) => entry.split("\t")[1]))
+    return (
+      PRODUCT_REMEDIATION_REQUIRED_PATHS.every((p) => presentPaths.has(p)) &&
+      entries.every((entry) => /^100644 blob [0-9a-f]{40}\t/.test(entry))
+    )
+  } catch {
+    return false
+  }
+}
+
+// Pure Git proof; production callers use the immutable defaults. Overrides are
+// for isolated Git fixtures, and never change the separate authority validation.
+export function inspectProductFixtureAddendum(
+  root,
+  head,
+  {
+    boundary = productFixtureBoundary,
+    filePath = productFixturePath,
+    recordedAt = productFixtureTime
+  } = {}
+) {
+  try {
+    const git = (args) =>
+      execFileSync("git", args, {
+        cwd: root,
+        encoding: "utf8",
+        maxBuffer: 1024 * 1024,
+        stdio: ["ignore", "pipe", "ignore"]
+      }).trim()
+    const times = git(["log", "--format=%aI%n%cI", `${boundary}..${head}`, "--", filePath])
+      .split("\n")
+      .filter(Boolean)
+    return {
+      boundary_ancestor: inspectAncestor(root, boundary, head),
+      boundary_tree_sha: inspectHeadTopology(root, boundary).headTreeSha,
+      regular_file: /^100644 blob [0-9a-f]{40}\t/u.test(git(["ls-tree", head, "--", filePath])),
+      changes_postdate_addendum:
+        times.length > 0 &&
+        times.every(
+          (time) => Number.isFinite(Date.parse(time)) && Date.parse(time) > Date.parse(recordedAt)
+        )
+    }
+  } catch {
+    return null
+  }
+}
+
+export function inspectProductRemediationCandidate(root, head) {
+  if (!/^[0-9a-f]{40}$/.test(head ?? "")) return null
+  try {
+    const git = (args) =>
+      execFileSync("git", args, {
+        cwd: root,
+        encoding: "utf8",
+        maxBuffer: 1024 * 1024,
+        stdio: ["ignore", "pipe", "ignore"]
+      }).trim()
+    const commitTimes = git([
+      "log",
+      "--format=%aI%n%cI",
+      `${productRemediationAcceptedRedHead}..${head}`
+    ])
+      .split("\n")
+      .filter(Boolean)
+    const historyPaths = git([
+      "log",
+      "--format=",
+      "--name-only",
+      "--no-renames",
+      `${PRODUCT_REMEDIATION_AUTHORIZATION_BASE_SHA}..${head}`
+    ])
+      .split("\n")
+      .filter(Boolean)
+    const seed = inspectHeadTopology(root, productRemediationSeedHead)
+    const acceptedRed = inspectHeadTopology(root, productRemediationAcceptedRedHead)
+    return {
+      head,
+      tree_sha: inspectHeadTopology(root, head).headTreeSha,
+      base_ancestor: inspectAncestor(root, PRODUCT_REMEDIATION_AUTHORIZATION_BASE_SHA, head),
+      seed_ancestor: inspectAncestor(root, productRemediationSeedHead, head),
+      accepted_red_ancestor: inspectAncestor(root, productRemediationAcceptedRedHead, head),
+      accepted_red_tree_sha: acceptedRed.headTreeSha,
+      accepted_red_parent_shas: acceptedRed.parents,
+      accepted_red_changed_paths: inspectChangedPathsBetweenCommits(
+        root,
+        productRemediationSeedHead,
+        productRemediationAcceptedRedHead
+      ),
+      seed_tree_sha: seed.headTreeSha,
+      seed_parent_shas: seed.parents,
+      commit_count: inspectCommitCountBetween(root, productRemediationSeedHead, head),
+      merge_commit_count: inspectCommitCountBetween(root, productRemediationSeedHead, head, {
+        mergesOnly: true
+      }),
+      changed_paths: inspectChangedPathsBetweenCommits(
+        root,
+        PRODUCT_REMEDIATION_AUTHORIZATION_BASE_SHA,
+        head
+      ),
+      history_paths: [...new Set(historyPaths)].sort(),
+      ...Object.fromEntries(
+        productAdditionalScopes.map((scope) => [
+          scope.key,
+          historyPaths.includes(scope.path)
+            ? inspectProductFixtureAddendum(root, head, {
+                filePath: scope.path,
+                recordedAt: scope.recordedAt
+              })
+            : null
+        ])
+      ),
+      commits_postdate_authorization:
+        commitTimes.length > 0 &&
+        commitTimes.every(
+          (time) =>
+            Number.isFinite(Date.parse(time)) &&
+            Date.parse(time) > Date.parse(productRemediationAuthorizationRecordedAt)
+        ),
+      seed_changed_paths: inspectChangedPathsBetweenCommits(
+        root,
+        PRODUCT_REMEDIATION_AUTHORIZATION_BASE_SHA,
+        productRemediationSeedHead
+      ),
+      frozen_blobs_match: git([
+        "ls-tree",
+        "-r",
+        "--name-only",
+        PRODUCT_REMEDIATION_AUTHORIZATION_BASE_SHA
+      ])
+        .split("\n")
+        .filter(
+          (p) =>
+            p === "README.md" ||
+            p.startsWith("specs/") ||
+            p.startsWith(".loop/evidence/t085") ||
+            p.startsWith(".loop/t085")
+        )
+        .every(
+          (p) =>
+            git(["ls-tree", PRODUCT_REMEDIATION_AUTHORIZATION_BASE_SHA, "--", p]) ===
+            git(["ls-tree", head, "--", p])
+        ),
+      allowed_path_modes_match: inspectProductRemediationFiles(root, head)
+    }
+  } catch {
+    return null
+  }
+}
+
+export function inspectProductRemediationAuthorization(
+  root,
+  {
+    environment = process.env,
+    inspectComment = inspectGitHubAuthorizationComment,
+    inspectCandidate = inspectProductRemediationCandidate,
+    fetchPr = (url) =>
+      JSON.parse(
+        execFileSync(
+          process.execPath,
+          ["--input-type=module", "--eval", githubCommentFetchScript, url],
+          {
+            encoding: "utf8",
+            env: githubReadbackEnvironment(environment),
+            maxBuffer: 1024 * 1024,
+            stdio: ["ignore", "pipe", "pipe"],
+            timeout: 15000
+          }
+        )
+      ),
+    fetchMain = fetchPr
+  } = {}
+) {
+  const authorization = inspectComment(PRODUCT_REMEDIATION_AUTHORIZATION_REF, {
+    environment,
+    isAuthorizedRef: (ref) => ref === PRODUCT_REMEDIATION_AUTHORIZATION_REF,
+    invalidRefError: "product remediation owner dispatch reference is not authorized",
+    readbackErrorPrefix: "product remediation OWNER dispatch read-back failed"
+  })
+  try {
+    const pullRequest = fetchPr(
+      `https://api.github.com/repos/bynanci/courtside-tw/pulls/${productRemediationPullRequest}`
+    )
+    const protectedMain = fetchMain(
+      "https://api.github.com/repos/bynanci/courtside-tw/branches/main"
+    )
+    const candidate = inspectCandidate(root, pullRequest?.head?.sha)
+    const addenda = Object.fromEntries(
+      productAdditionalScopes.map((scope) => [
+        scope.key,
+        candidate?.history_paths?.includes(scope.path)
+          ? inspectComment(scope.ref, {
+              environment,
+              isAuthorizedRef: (ref) => ref === scope.ref,
+              invalidRefError: `product ${scope.key} reference is not authorized`,
+              readbackErrorPrefix: `product ${scope.key} read-back failed`
+            })
+          : null
+      ])
+    )
+    return {
+      status: "VERIFIED",
+      source: "github-api",
+      authorization,
+      ...addenda,
+      pull_request: pullRequest,
+      protected_main: protectedMain,
+      candidate,
+      errors: []
+    }
+  } catch {
+    return {
+      status: "UNAVAILABLE",
+      source: "github-api",
+      authorization,
+      pull_request: null,
+      protected_main: null,
+      candidate: null,
+      errors: ["product remediation PR or protected-main read-back failed"]
+    }
+  }
+}
+
 function isT086LockedPath(changedPath) {
   return (
     t086LockedPaths.has(changedPath) ||
@@ -8161,6 +8701,7 @@ export function validateTraceability({
   androidNativeSurfaceAuthorizationReadback = null,
   post169GovernanceAuthorizationReadback = null,
   pnpmSecurityAuthorizationReadback = null,
+  productRemediationAuthorizationReadback = null,
   gitBinding = null,
   changedPaths = null,
   changeBaseSha = REVIEW_BASE_SHA,
@@ -8263,6 +8804,7 @@ export function validateTraceability({
         githubActionsContext.pull_request_number === POST169_GOVERNANCE_PULL_REQUEST))
   let post169GovernanceAuthorizationAccepted = false
   let pnpmSecurityAuthorizationAccepted = false
+  let productRemediationAuthorizationAccepted = false
 
   if (!/^[0-9a-f]{40}$/.test(currentHead ?? "")) {
     errors.push("currentHead must be a full lowercase commit SHA")
@@ -8364,6 +8906,26 @@ export function validateTraceability({
   }
   if (state === t085States.COMPLETE_STEADY) {
     if (
+      productRemediationAuthorizationRequested(
+        changedPaths,
+        githubActionsContext,
+        productRemediationAuthorizationReadback,
+        changeBaseSha
+      )
+    ) {
+      productRemediationAuthorizationAccepted = validateProductRemediationAuthorization({
+        readback: productRemediationAuthorizationReadback,
+        gitBinding,
+        changedPaths,
+        changeBaseSha,
+        boundedScopeActive,
+        githubActionsContext,
+        requireExactHeadEvidence,
+        errors
+      })
+    }
+
+    if (
       pnpmSecurityAuthorizationRequested(
         changedPaths,
         githubActionsContext,
@@ -8396,7 +8958,7 @@ export function validateTraceability({
         })
       }
     }
-    if (androidNativeSurfaceAuthorizationRequested) {
+    if (androidNativeSurfaceAuthorizationRequested && !productRemediationAuthorizationAccepted) {
       if (!androidNativeSurfaceAuthorizationScopeActive) {
         errors.push(
           "Android native-surface authorization requires the exact four-path PR 169 scope"
@@ -8434,6 +8996,10 @@ export function validateTraceability({
       if (
         !isAuthorizedPostT085MaintenancePath(changedPath) &&
         !(pnpmSecurityAuthorizationAccepted && pnpmSecurityAuthorizedPaths.has(changedPath)) &&
+        !(
+          productRemediationAuthorizationAccepted &&
+          productRemediationAuthorizedPaths.has(changedPath)
+        ) &&
         !(
           postT085MaintenanceAuthorizationAccepted &&
           postT085MaintenanceAuthorizedPaths.has(changedPath)
@@ -9088,6 +9654,36 @@ export function validateTraceability({
             })
           )
         : null,
+      product_remediation_authorization_readback: productRemediationAuthorizationReadback
+        ? {
+            status: productRemediationAuthorizationReadback.status,
+            accepted: productRemediationAuthorizationAccepted,
+            authorization_ref:
+              productRemediationAuthorizationReadback.authorization?.html_url ?? null,
+            body_sha256: sha256(
+              productRemediationAuthorizationReadback.authorization?.body ?? null
+            ),
+            pull_request: productRemediationAuthorizationReadback.pull_request?.number ?? null,
+            protected_main: productRemediationAuthorizationReadback.protected_main ?? null,
+            candidate: productRemediationAuthorizationReadback.candidate ?? null,
+            addenda: Object.fromEntries(
+              productAdditionalScopes.map((scope) => {
+                const entry = productRemediationAuthorizationReadback[scope.key]
+                return [
+                  scope.key,
+                  entry
+                    ? {
+                        status: entry.status,
+                        ref: entry.html_url,
+                        body_sha256: sha256(entry.body ?? null)
+                      }
+                    : null
+                ]
+              })
+            ),
+            errors: productRemediationAuthorizationReadback.errors ?? []
+          }
+        : null,
       pnpm_security_authorization_readback: pnpmSecurityAuthorizationReadback
         ? {
             status: pnpmSecurityAuthorizationReadback.status,
@@ -9215,6 +9811,10 @@ export function validateTraceability({
                   ? changedPaths.filter(
                       (changedPath) =>
                         !isAuthorizedPostT085MaintenancePath(changedPath) &&
+                        !(
+                          productRemediationAuthorizationAccepted &&
+                          productRemediationAuthorizedPaths.has(changedPath)
+                        ) &&
                         !(
                           pnpmSecurityAuthorizationAccepted &&
                           pnpmSecurityAuthorizedPaths.has(changedPath)
@@ -10378,6 +10978,14 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
   )
     ? inspectPnpmSecurityAuthorization(root, { environment })
     : null
+  const productRemediationAuthorizationReadback = productRemediationAuthorizationRequested(
+    inspection.changedPaths,
+    githubActionsContext,
+    null,
+    inspection.change_base_sha
+  )
+    ? inspectProductRemediationAuthorization(root, { environment })
+    : null
   const isGitHubActions = environment.GITHUB_ACTIONS === "true"
   const report = validateTraceability({
     root,
@@ -10389,6 +10997,7 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
     androidNativeSurfaceAuthorizationReadback,
     post169GovernanceAuthorizationReadback,
     pnpmSecurityAuthorizationReadback,
+    productRemediationAuthorizationReadback,
     gitBinding: {
       status: inspection.status,
       head: inspection.head,
