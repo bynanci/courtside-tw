@@ -1,0 +1,349 @@
+name: T086 Required Gate
+
+on:
+  pull_request_target:
+    branches: [main]
+    types: [opened, reopened, synchronize, edited, ready_for_review, converted_to_draft]
+  issue_comment:
+    types: [created, edited, deleted]
+  workflow_run:
+    workflows: [CI, Security, T086 Beta Release]
+    types: [completed]
+  push:
+    branches: [main]
+  schedule:
+    - cron: "*/5 * * * *"
+
+permissions: {}
+
+# Each run reconciles ALL current PRs, so a newer pending event safely subsumes
+# an older one. Never cancel an active invalidation or publish cached event state.
+concurrency:
+  group: t086-required-gate-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  trusted-evaluation:
+    name: Recompute trusted T086 gate
+    if: github.event_name != 'issue_comment' || github.event.issue.number == 160
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      actions: read
+      checks: write
+      contents: read
+      issues: read
+      pull-requests: read
+    steps:
+      # No checkout, dependency installation, subprocess, head-code execution,
+      # deployment, ruleset mutation, or token handoff to PR-controlled code.
+      # Bootstrap deliberately remains HOLD for T086 while protected main lacks
+      # the trusted release producer. A later bounded bootstrap must install that
+      # producer before PR #161 can become PASS; this PR cannot self-authorize it.
+      - name: Invalidate and recompute current release decisions
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8
+        env:
+          TRUSTED_WORKFLOW_SHA: ${{ github.workflow_sha }}
+        with:
+          script: |
+            const { createHash } = require('node:crypto');
+            const { inflateRawSync } = require('node:zlib');
+
+            // T086_PURE_START
+            const FROZEN_HASH = '204662214eada892332d1ddbeab8d0b8037cfc5477d9152d6fb3a61e56832b79';
+            const REPOSITORY = 'bynanci/courtside-tw';
+            const MARKER = '<!-- t086:owner-adjudication:start -->';
+            const END_MARKER = '<!-- t086:owner-adjudication:end -->';
+            const SURFACES = ['public-read','two-role-publish','retry','revision','withdrawal','backup-restore','rollback'];
+            const BOUNDARIES = {participant_research_executed:false,web3_activated:false,production_activated:false,provider_configured:false,credentials_or_secrets_accessed_or_changed:false,external_product_writes:false,t087_or_later_dispatched:false,t086_task_state_changed:false,beta_flag_removed:false};
+            function digest(value) { return createHash('sha256').update(value).digest('hex'); }
+            function equal(left,right) {
+              if (Array.isArray(left)||Array.isArray(right)) return Array.isArray(left)&&Array.isArray(right)&&left.length===right.length&&left.every((value,index)=>equal(value,right[index]));
+              if (left&&right&&typeof left==='object'&&typeof right==='object') return equal(Object.keys(left).sort(),Object.keys(right).sort())&&Object.keys(left).every(key=>equal(left[key],right[key]));
+              return left===right;
+            }
+            function classifyCandidate(number, files, count) {
+              if (number===161) return 'T086';
+              if (!Number.isSafeInteger(number)||number<1||!Array.isArray(files)||files.length===0||files.length!==count) return 'UNKNOWN';
+              for (const row of files) {
+                if (typeof row?.filename!=='string'||!row.filename|| (row.previous_filename!==undefined&&typeof row.previous_filename!=='string')) return 'UNKNOWN';
+                for (const file of [row.filename,row.previous_filename].filter(Boolean)) {
+                  if (/^(?:\.github\/workflows\/release\.yml|scripts\/(?:test\/)?validate-beta-release\.(?:test\.)?mjs|docs\/release\/beta-checklist\.md|\.loop\/(?:evidence\/)?t086[^/]*(?:\/.*)?|specs\/[^/]+\/(?:tasks|traceability)\.md)$/iu.test(file)) return 'T086';
+                }
+              }
+              return 'NOT_APPLICABLE';
+            }
+            function canonicalComment(comments) {
+              if (!Array.isArray(comments)) throw new Error('Comment pagination unavailable');
+              const candidates=comments.filter(row=>row?.user?.login==='bynanci'&&row.author_association==='OWNER'&&typeof row.body==='string'&&row.body.includes(MARKER));
+              if (candidates.some(row=>!Number.isSafeInteger(row.id)||!Number.isFinite(Date.parse(row.created_at)))) throw new Error('Malformed canonical comment identity');
+              candidates.sort((a,b)=>Date.parse(a.created_at)-Date.parse(b.created_at)||a.id-b.id);
+              return candidates.at(-1)??null;
+            }
+            function commentIdentity(comment) {
+              return comment===null ? null : {id:comment.id,created_at:comment.created_at,updated_at:comment.updated_at,body_sha256:digest(comment.body)};
+            }
+            function advanceCommentFence(previous, comment, event) {
+              let fence=previous??null;
+              if(comment && (!fence || comment.id>fence.id)) fence={...commentIdentity(comment),invalidated:false};
+              else if(comment&&fence&&comment.id===fence.id&&(!equal(commentIdentity(comment),{id:fence.id,created_at:fence.created_at,updated_at:fence.updated_at,body_sha256:fence.body_sha256}))) fence={...commentIdentity(comment),invalidated:true};
+              const row=event?.comment;
+              const relevant=event?.issue?.number===160 && row?.user?.login==='bynanci' && row.author_association==='OWNER' && Number.isSafeInteger(row.id) && (String(row.body??'').includes(MARKER) || String(event.changes?.body?.from??'').includes(MARKER) || row.id===fence?.id);
+              if(relevant && ['edited','deleted'].includes(event.action) && (!fence||row.id>=fence.id)) fence={id:row.id,created_at:row.created_at,updated_at:row.updated_at,body_sha256:digest(String(row.body??'')),invalidated:true};
+              return fence;
+            }
+            function parseUniqueJson(text) {
+              if(typeof text!=='string'||text.length>1000000) throw new Error('JSON evidence exceeds limit');
+              let offset=0;
+              const whitespace=()=>{while(/\s/u.test(text[offset]??'')&&offset<text.length) offset++;};
+              function stringToken() {
+                const start=offset++;
+                while(offset<text.length) {
+                  if(text[offset]==='\\') {offset+=2;continue;}
+                  if(text[offset++]==='"') return JSON.parse(text.slice(start,offset));
+                }
+                throw new Error('Unterminated JSON string');
+              }
+              function value(depth) {
+                if(depth>64) throw new Error('JSON evidence nesting exceeds limit');
+                whitespace(); const token=text[offset];
+                if(token==='"') {stringToken();return;}
+                if(token==='{'||token==='[') {
+                  const object=token==='{' , close=object?'}':']'; const keys=new Set();offset++;whitespace();
+                  if(text[offset]===close){offset++;return;}
+                  while(offset<text.length) {
+                    if(object) {whitespace();if(text[offset]!=='"') throw new Error('Invalid JSON object key');const key=stringToken();if(keys.has(key)) throw new Error('Duplicate JSON evidence key: '+key);keys.add(key);whitespace();if(text[offset++]!==':') throw new Error('Invalid JSON object separator');}
+                    value(depth+1);whitespace();if(text[offset]===close){offset++;return;}if(text[offset++]!==',') throw new Error('Invalid JSON entry separator');
+                  }
+                  throw new Error('Unterminated JSON container');
+                }
+                const literal=text.slice(offset).match(/^(?:true|false|null|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)/u);
+                if(!literal) throw new Error('Invalid JSON value');offset+=literal[0].length;
+              }
+              value(0);whitespace();if(offset!==text.length) throw new Error('Trailing JSON data');
+              return JSON.parse(text);
+            }
+            function embeddedContract(body,start,end) {
+              if (typeof body!=='string'||body.split(start).length!==2||body.split(end).length!==2) throw new Error('Missing or ambiguous contract markers');
+              const block=body.split(start)[1].split(end)[0].trim();
+              if (!/^```json\s+[\s\S]+\s+```$/u.test(block)) throw new Error('Malformed JSON contract');
+              return parseUniqueJson(block.replace(/^```json\s+/u,'').replace(/\s+```$/u,''));
+            }
+            function evaluateSnapshot(snapshot) {
+              const reasons=[]; const need=(condition,reason)=>{if(!condition) reasons.push(reason)};
+              try {
+                const s=snapshot; const r=s.report;
+                need(s.classification==='T086','T086 classification is missing or ambiguous');
+                need(/^[a-f0-9]{40}$/u.test(s.candidate??'')&&/^[a-f0-9]{40}$/u.test(s.base??''),'Invalid head/base identity');
+                need(s.mergeBase===s.base,'Candidate is not based on current protected main');
+                need(s.frozenHash===FROZEN_HASH,'Frozen T085 hash mismatch');
+                need(s.producerTrusted===true,'Trusted release producer unavailable on protected main or differs from candidate');
+                need(s.requiredEvidenceFresh===true,'Required exact-head workflow evidence unavailable, stale or unsuccessful');
+                const comment=canonicalComment(s.comments);
+                need(comment!==null,'Canonical OWNER adjudication is missing');
+                need(!s.commentFence || (comment && comment.id>=s.commentFence.id && !(comment.id===s.commentFence.id&&s.commentFence.invalidated)),'Canonical OWNER comment was deleted or invalidated; a new OWNER adjudication is required');
+                if (comment!==null) {
+                  need(comment.created_at===comment.updated_at,'Edited adjudication requires a new canonical OWNER decision');
+                  need(comment.html_url===`https://github.com/${REPOSITORY}/issues/160#issuecomment-${comment.id}`,'Canonical comment source mismatch');
+                  const contract=embeddedContract(comment.body,MARKER,END_MARKER);
+                  need(equal(Object.keys(contract).sort(),['accepted_by','adjudications','candidate_sha','decision','frozen_t085_traceability_sha256','issue','protected_base_sha','repository','schema_version','scope_boundaries','task'].sort()),'Adjudication fields are missing or ambiguous');
+                  need(contract.schema_version==='courtside-t086-owner-adjudication/v1'&&contract.decision==='ADJUDICATION_ACCEPTED'&&contract.accepted_by==='bynanci'&&contract.repository===REPOSITORY&&contract.issue===`https://github.com/${REPOSITORY}/issues/160`&&contract.task==='T086','Invalid OWNER adjudication contract');
+                  need(contract.candidate_sha===s.candidate&&contract.protected_base_sha===s.base&&contract.frozen_t085_traceability_sha256===FROZEN_HASH,'Adjudication head/base/hash mismatch');
+                  need(equal(contract.scope_boundaries,BOUNDARIES),'Adjudication scope expanded');
+                  const entries=contract.adjudications;
+                  need(Array.isArray(s.sourceBlockers)&&s.sourceBlockers.length>0&&Array.isArray(entries)&&entries.length===s.sourceBlockers.length,'Incomplete frozen blocker adjudication');
+                  for (const [index,entry] of (Array.isArray(entries)?entries:[]).entries()) {
+                    const blocker=s.sourceBlockers?.[index];
+                    need(equal(Object.keys(entry).sort(),['affected_ids','evidence_refs','follow_up_issue','id','outcome','rationale','severity','type'].sort()),'Malformed adjudication entry');
+                    need(blocker&&entry.id===blocker.id&&entry.severity===blocker.severity&&entry.type===blocker.type&&equal(entry.affected_ids,blocker.affected_ids),'Frozen blocker order/identity mismatch');
+                    need(['RESOLVED_BY_EVIDENCE','RISK_ACCEPTED_FOR_BETA'].includes(entry.outcome),'Invalid adjudication outcome');
+                    need(typeof entry.rationale==='string'&&entry.rationale.trim().length>=24,'Missing OWNER rationale');
+                    need(Array.isArray(entry.evidence_refs)&&entry.evidence_refs.every(ref=>/^https:\/\/github\.com\/bynanci\/courtside-tw\/(?:actions\/runs|issues|pull|commit)\/[^\s]+$/u.test(ref)),'Invalid adjudication evidence');
+                    need(entry.outcome!=='RESOLVED_BY_EVIDENCE'||entry.evidence_refs?.length>0,'Resolution evidence missing');
+                    need(entry.outcome!=='RISK_ACCEPTED_FOR_BETA'||/^https:\/\/github\.com\/bynanci\/courtside-tw\/issues\/\d+$/u.test(entry.follow_up_issue??''),'Risk acceptance follow-up missing');
+                  }
+                  need(r?.adjudication?.status==='VERIFIED'&&r.adjudication.html_url===comment.html_url&&r.adjudication.created_at===comment.created_at&&r.adjudication.updated_at===comment.updated_at&&r.adjudication.body_sha256===digest(comment.body)&&r.adjudication.candidate_sha===s.candidate,'Decision used a different canonical comment revision');
+                  need(equal(r?.adjudication?.adjudicated,entries)&&equal(r?.adjudication?.unadjudicated,[])&&equal(r?.blockers?.adjudicated,entries),'Decision adjudication differs from current OWNER evidence');
+                  need(Number.isFinite(Date.parse(s.decisionStartedAt))&&Date.parse(comment.updated_at)<=Date.parse(s.decisionStartedAt),'Canonical comment postdates decision evaluation');
+                }
+                need(r?.schema_version==='courtside-t086-beta-release/v1'&&r.task==='T086'&&r.decision_scope==='T086_GATE_ONLY'&&r.status==='PASS'&&r.release_decision==='PASS'&&equal(r.release_decision_reasons,[])&&equal(r.errors,[]),'Final release decision is not a complete PASS');
+                need(r?.candidate_sha===s.candidate&&r?.base?.branch==='main'&&r.base.sha===s.base&&r.base.authorized_sha===s.base,'Decision head/base mismatch');
+                need(r?.frozen_t085_traceability?.sha256===FROZEN_HASH&&r.frozen_t085_traceability.expected_sha256===FROZEN_HASH,'Decision frozen hash mismatch');
+                need(equal(r?.scope_boundaries,BOUNDARIES),'Decision scope expanded');
+                need(r?.surfaces?.result==='PASS'&&equal(r.surfaces.required,SURFACES),'Seven release surfaces are not PASS');
+                need(r?.stability?.result==='PASS'&&r.stability.required_consecutive_runs===20&&r.stability.same_candidate_sha===true,'Twenty-run stability is not PASS');
+                need(r?.blockers?.count===0&&equal(r.blockers.unadjudicated,[])&&r.blockers.source_count===s.sourceBlockers?.length,'Release blockers remain or were omitted');
+                need(Array.isArray(r?.blockers?.source)&&equal(r.blockers.source.map(row=>({id:row.id,severity:row.severity,type:row.type,affected_ids:row.affected_ids})),s.sourceBlockers?.map(row=>({id:row.id,severity:row.severity,type:row.type,affected_ids:row.affected_ids}))),'Decision source blockers differ from frozen evidence');
+                need(Number.isFinite(Date.parse(s.decisionCompletedAt))&&Date.parse(s.decisionCompletedAt)>=Date.parse(s.decisionStartedAt)&&Date.parse(s.artifactCreatedAt)>=Date.parse(s.decisionStartedAt),'Artifact or decision attempt timestamp is stale');
+                return {decision:reasons.length===0?'PASS':'HOLD',reasons,comment:commentIdentity(comment)};
+              } catch(error) {return {decision:'HOLD',reasons:[...reasons,error.message],comment:null};}
+            }
+            // T086_PURE_END
+
+            const CHECK_NAME='T086 final release decision';
+            const APP_ID=15368;
+            const {owner,repo}=context.repo;
+            if (`${owner}/${repo}`!==REPOSITORY) throw new Error('Unexpected repository');
+            const runUrl=`https://github.com/${REPOSITORY}/actions/runs/${context.runId}`;
+            async function paginated(route,parameters,arrayKey) {
+              const rows=[];
+              for(let page=1;page<=50;page++) {
+                const response=await github.request(route,{owner,repo,...parameters,per_page:100,page});
+                const batch=arrayKey?response.data[arrayKey]:response.data;
+                if(!Array.isArray(batch)||batch.length>100) throw new Error('Malformed paginated response');
+                rows.push(...batch);
+                const next=/(?:^|,)\s*<[^>]+>;\s*rel="next"/u.test(response.headers.link??'');
+                if(!next) {
+                  if(Number.isSafeInteger(response.data.total_count)&&response.data.total_count!==rows.length) throw new Error('Incomplete API pagination');
+                  return rows;
+                }
+                if(batch.length!==100) throw new Error('Incomplete API page');
+              }
+              throw new Error('API pagination limit exceeded');
+            }
+            async function prRead(number) {return (await github.rest.pulls.get({owner,repo,pull_number:number})).data;}
+            async function fileRead(file,ref) {
+              const {data}=await github.rest.repos.getContent({owner,repo,path:file,ref});
+              if(Array.isArray(data)||data.type!=='file'||data.encoding!=='base64'||data.size>1000000) throw new Error('Unavailable or oversized source file');
+              return {sha:data.sha,text:Buffer.from(data.content,'base64').toString('utf8')};
+            }
+            async function checkStart(pr) {
+              const existing=await paginated('GET /repos/{owner}/{repo}/commits/{ref}/check-runs',{ref:pr.head.sha,check_name:CHECK_NAME,filter:'all'},'check_runs');
+              const actionChecks=existing.filter(check=>check.app?.id===APP_ID);
+              const own=actionChecks.filter(check=>check.external_id===`courtside-t086:pr:${pr.number}`);
+              const ambiguous=existing.some(check=>check.app?.id!==APP_ID)||own.length>1||existing.length!==own.length;
+              let previousFence=null;
+              for(const check of actionChecks) {
+                try {
+                  const prior=JSON.parse(check.output.summary.replace(/^```json\s*/u,'').replace(/\s*```$/u,''));
+                  const candidate=prior.comment_fence??prior.comment;
+                  if(candidate&&Number.isSafeInteger(candidate.id)&&(!previousFence||candidate.id>previousFence.id)) previousFence=candidate;
+                } catch { /* Missing prior evidence never grants PASS. */ }
+              }
+              const fence=advanceCommentFence(previousFence,null,context.payload);
+              const invalidation={schema_version:'courtside-t086-required-gate/v1',decision:ambiguous?'HOLD':'PENDING',candidate_sha:pr.head.sha,comment_fence:fence,reasons:['Prior decision invalidated before current evidence read-back']};
+              const output={title:ambiguous?'HOLD: ambiguous producer':'Recomputing current release evidence',summary:'```json\n'+JSON.stringify(invalidation)+'\n```'};
+              // Revoke every existing Actions success BEFORE reporting producer ambiguity.
+              for(const check of actionChecks) await github.rest.checks.update({owner,repo,check_run_id:check.id,status:ambiguous?'completed':'in_progress',conclusion:ambiguous?'failure':null,started_at:new Date().toISOString(),output,details_url:runUrl});
+              if(ambiguous) {
+                if(actionChecks.length===0) await github.rest.checks.create({owner,repo,name:CHECK_NAME,head_sha:pr.head.sha,external_id:`courtside-t086:pr:${pr.number}`,status:'completed',conclusion:'failure',output,details_url:runUrl});
+                throw new Error('Required context producer is ambiguous; prior Actions successes revoked');
+              }
+              const result=own.length===1?await github.rest.checks.get({owner,repo,check_run_id:own[0].id}):await github.rest.checks.create({owner,repo,name:CHECK_NAME,head_sha:pr.head.sha,external_id:`courtside-t086:pr:${pr.number}`,status:'in_progress',started_at:new Date().toISOString(),output,details_url:runUrl});
+              if(result.data.app?.id!==APP_ID||result.data.status!=='in_progress') throw new Error('Could not invalidate the current context');
+              return {id:result.data.id,fence};
+            }
+            async function checkFinish(id,result,binding) {
+              await github.rest.checks.update({owner,repo,check_run_id:id,status:'completed',conclusion:result.decision==='PASS'||result.decision==='NOT_APPLICABLE'?'success':'failure',completed_at:new Date().toISOString(),output:{title:result.decision,summary:'```json\n'+JSON.stringify({schema_version:'courtside-t086-required-gate/v1',...binding,...result,run_id:context.runId,run_attempt:Number(process.env.GITHUB_RUN_ATTEMPT)},null,2).slice(0,55000)+'\n```'}});
+            }
+            function decisionZip(bytes) {
+              if(bytes.length>5000000) throw new Error('Decision artifact archive exceeds limit');
+              let end=-1;
+              for(let i=bytes.length-22;i>=Math.max(0,bytes.length-65557);i--) if(bytes.readUInt32LE(i)===0x06054b50){end=i;break;}
+              if(end<0||bytes.readUInt16LE(end+4)!==0||bytes.readUInt16LE(end+6)!==0) throw new Error('Invalid or split ZIP');
+              const count=bytes.readUInt16LE(end+10);let offset=bytes.readUInt32LE(end+16);const matches=[];
+              if(count>50||count===65535) throw new Error('Unsupported ZIP entry count');
+              for(let index=0;index<count;index++) {
+                if(bytes.readUInt32LE(offset)!==0x02014b50) throw new Error('Invalid ZIP directory');
+                const flags=bytes.readUInt16LE(offset+8),method=bytes.readUInt16LE(offset+10),compressed=bytes.readUInt32LE(offset+20),size=bytes.readUInt32LE(offset+24),nameLength=bytes.readUInt16LE(offset+28),extra=bytes.readUInt16LE(offset+30),comment=bytes.readUInt16LE(offset+32),local=bytes.readUInt32LE(offset+42);
+                const name=bytes.subarray(offset+46,offset+46+nameLength).toString('utf8');
+                if(name==='t086/decision.json'||name==='decision.json'||name==='artifacts/t086/decision.json') {
+                  if(flags&1||![0,8].includes(method)||size>1000000||compressed>5000000||bytes.readUInt32LE(local)!==0x04034b50) throw new Error('Invalid decision ZIP entry');
+                  const start=local+30+bytes.readUInt16LE(local+26)+bytes.readUInt16LE(local+28);
+                  if(start+compressed>offset||bytes.readUInt16LE(local+8)!==method) throw new Error('Invalid compressed entry bounds');
+                  const raw=bytes.subarray(start,start+compressed); const decoded=method===8?inflateRawSync(raw,{maxOutputLength:1000000}):raw;
+                  if(decoded.length!==size) throw new Error('Decision ZIP size mismatch');
+                  matches.push(parseUniqueJson(decoded.toString('utf8')));
+                }
+                offset+=46+nameLength+extra+comment;
+              }
+              if(matches.length!==1) throw new Error('Missing or ambiguous decision packet');
+              return matches[0];
+            }
+            async function artifactRead(artifact) {
+              const response=await github.request('GET /repos/{owner}/{repo}/actions/artifacts/{artifact_id}/{archive_format}',{owner,repo,artifact_id:artifact.id,archive_format:'zip',request:{redirect:'manual'}});
+              const location=response.headers.location;
+              if(typeof location!=='string') throw new Error('Signed artifact redirect unavailable');
+              const url=new URL(location);
+              if(url.protocol!=='https:'||url.username||url.password||!(/\.blob\.core\.windows\.net$/u.test(url.hostname)||/\.actions\.githubusercontent\.com$/u.test(url.hostname))) throw new Error('Unexpected artifact storage host');
+              // Deliberately no GitHub token or Authorization header on signed storage requests.
+              const download=await fetch(url,{redirect:'error',signal:AbortSignal.timeout(30000)});
+              if(!download.ok) throw new Error('Decision artifact download unavailable');
+              const chunks=[];let size=0;
+              for await (const chunk of download.body) {size+=chunk.length;if(size>5000000) throw new Error('Decision artifact exceeds size limit');chunks.push(Buffer.from(chunk));}
+              const bytes=Buffer.concat(chunks);
+              if(artifact.digest!==`sha256:${digest(bytes)}`) throw new Error('Decision artifact digest mismatch');
+              return decisionZip(bytes);
+            }
+            async function latestRun(path,head) {
+              const runs=await paginated('GET /repos/{owner}/{repo}/actions/workflows/{workflow_id}/runs',{workflow_id:path,head_sha:head},'workflow_runs');
+              const candidates=runs.filter(run=>run.path===`.github/workflows/${path}`&&run.head_sha===head&&run.event==='pull_request'&&run.repository?.full_name===REPOSITORY&&run.head_repository?.full_name===REPOSITORY).sort((a,b)=>b.id-a.id);
+              if(candidates.length===0) throw new Error(`Missing exact-head ${path} workflow`);
+              const {data:run}=await github.rest.actions.getWorkflowRun({owner,repo,run_id:candidates[0].id});
+              if(run.status!=='completed'||run.conclusion!=='success'||run.head_sha!==head) throw new Error(`${path} latest run is not successful`);
+              return run;
+            }
+            async function snapshot(pr,base,files,comments) {
+              const frozenPath='specs/001-taiwan-basketball-magazine-ebook/traceability.md';
+              const source=await fileRead(frozenPath,base);
+              const frozenHash=digest(source.text);
+              const contract=embeddedContract(source.text,'<!-- t085:contract:start -->','<!-- t085:contract:end -->');
+              const sourceBlockers=contract.deviations.filter(row=>row.state==='OPEN'&&row.release_impact==='BLOCKS_T086_UNLESS_ADJUDICATED').map(row=>({id:row.id,severity:row.severity??null,type:row.type??null,affected_ids:row.affected_ids??[]}));
+              const comparison=(await github.rest.repos.compareCommitsWithBasehead({owner,repo,basehead:`${base}...${pr.head.sha}`})).data;
+              const state={classification:'T086',candidate:pr.head.sha,base,mergeBase:comparison.merge_base_commit.sha,frozenHash,sourceBlockers,comments,producerTrusted:false,requiredEvidenceFresh:false,report:null};
+              // An artifact made by arbitrary PR code cannot grant release eligibility. Until
+              // the release producer is present on protected main, this bootstrap gate is HOLD.
+              for(const file of ['.github/workflows/release.yml','scripts/validate-beta-release.mjs','pnpm-lock.yaml']) {
+                let trusted;
+                try {trusted=await fileRead(file,base);} catch {throw new Error('Trusted release producer unavailable on protected main: '+file);}
+                const candidate=await fileRead(file,pr.head.sha);
+                if(trusted.sha!==candidate.sha) throw new Error('Trusted release producer differs from PR head: '+file);
+              }
+              state.producerTrusted=true;
+              const runs=await Promise.all(['ci.yml','security.yml','release.yml'].map(file=>latestRun(file,pr.head.sha)));
+              const release=runs[2];
+              const jobs=await paginated('GET /repos/{owner}/{repo}/actions/runs/{run_id}/attempts/{attempt_number}/jobs',{run_id:release.id,attempt_number:release.run_attempt},'jobs');
+              const names=['Owner dispatch and fail-closed contract','Seven-surface exact-head preflight','Twenty consecutive exact-head runs','Fail-closed beta decision'];
+              for(const name of names) {const matching=jobs.filter(job=>job.name===name);if(matching.length!==1||matching[0].conclusion!=='success'||matching[0].head_sha!==pr.head.sha) throw new Error('Release job is missing, ambiguous or unsuccessful: '+name);}
+              const decision=jobs.find(job=>job.name==='Fail-closed beta decision');
+              const artifacts=await paginated('GET /repos/{owner}/{repo}/actions/runs/{run_id}/artifacts',{run_id:release.id},'artifacts');
+              const matching=artifacts.filter(artifact=>artifact.name===`t086-decision-${pr.head.sha}`&&!artifact.expired&&artifact.workflow_run?.id===release.id&&artifact.workflow_run?.head_sha===pr.head.sha&&Date.parse(artifact.created_at)>=Date.parse(release.run_started_at));
+              if(matching.length!==1) throw new Error('Current-attempt decision artifact is missing or ambiguous');
+              state.report=await artifactRead(matching[0]);
+              Object.assign(state,{requiredEvidenceFresh:true,decisionStartedAt:decision.started_at,decisionCompletedAt:decision.completed_at,artifactCreatedAt:matching[0].created_at,runs:runs.map(run=>({id:run.id,attempt:run.run_attempt,updated_at:run.updated_at})),artifact:{id:matching[0].id,digest:matching[0].digest}});
+              return state;
+            }
+
+            const pending=[];
+            try {
+              const open=await paginated('GET /repos/{owner}/{repo}/pulls',{state:'open',base:'main'});
+              // Invalidate every current candidate before slow evidence reads. A queued event
+              // always recomputes live state; it never republishes an older event payload.
+              for(const row of open) {
+                const pr=await prRead(row.number);
+                if(pr.state==='open'&&pr.base.ref==='main') pending.push({pr,...await checkStart(pr)});
+              }
+              const main=(await github.rest.repos.getBranch({owner,repo,branch:'main'})).data;
+              if(!main.protected) throw new Error('main is not protected');
+              const workflowSource=await fileRead('.github/workflows/t086-required-gate.yml',main.commit.sha);
+              const executingSource=await fileRead('.github/workflows/t086-required-gate.yml',process.env.TRUSTED_WORKFLOW_SHA);
+              if(workflowSource.sha!==executingSource.sha) throw new Error('Executing evaluator is not current protected-main code');
+              const comments=await paginated('GET /repos/{owner}/{repo}/issues/{issue_number}/comments',{issue_number:160});
+              for(const item of pending) {
+                const binding={candidate_sha:item.pr.head.sha,protected_base_sha:main.commit.sha,workflow_blob:workflowSource.sha,comment_fence:advanceCommentFence(item.fence,canonicalComment(comments),context.payload)};
+                try {
+                  const files=await paginated('GET /repos/{owner}/{repo}/pulls/{pull_number}/files',{pull_number:item.pr.number});
+                  const classification=classifyCandidate(item.pr.number,files,item.pr.changed_files);
+                  let state=null;
+                  let result={decision:'HOLD',reasons:['Missing or ambiguous scope classification']};
+                  if(classification==='NOT_APPLICABLE') result={decision:'NOT_APPLICABLE',reasons:['Complete GitHub file read-back contains no T086 release paths']};
+                  if(classification==='T086') {state=await snapshot(item.pr,main.commit.sha,files,comments);state.commentFence=binding.comment_fence;result=evaluateSnapshot(state);Object.assign(binding,{frozen_t085_traceability_sha256:state.frozenHash,runs:state.runs,artifact:state.artifact,comment:result.comment});}
+                  const [freshPr,freshMain,freshComments]=await Promise.all([prRead(item.pr.number),github.rest.repos.getBranch({owner,repo,branch:'main'}),paginated('GET /repos/{owner}/{repo}/issues/{issue_number}/comments',{issue_number:160})]);
+                  if(freshPr.state!=='open'||freshPr.head.sha!==item.pr.head.sha||freshPr.base.ref!=='main'||freshMain.data.commit.sha!==main.commit.sha||!freshMain.data.protected||!equal(commentIdentity(canonicalComment(comments)),commentIdentity(canonicalComment(freshComments)))) throw new Error('Head, protected base or canonical comment changed during evaluation');
+                  if(state?.runs) for(const expected of state.runs) {const {data:live}=await github.rest.actions.getWorkflowRun({owner,repo,run_id:expected.id});if(live.run_attempt!==expected.attempt||live.updated_at!==expected.updated_at||live.conclusion!=='success'||live.status!=='completed') throw new Error('Workflow evidence changed during evaluation');}
+                  await checkFinish(item.id,result,binding);item.finished=true;
+                } catch(error) {await checkFinish(item.id,{decision:'HOLD',reasons:[error.message]},binding);item.finished=true;}
+              }
+            } finally {
+              for(const item of pending.filter(item=>!item.finished)) await checkFinish(item.id,{decision:'HOLD',reasons:['Current GitHub read-back unavailable; prior success invalidated']},{candidate_sha:item.pr.head.sha,comment_fence:item.fence});
+            }

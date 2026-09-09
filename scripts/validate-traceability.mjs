@@ -11,6 +11,19 @@ import YAML from "yaml"
 export const TRACEABILITY_SCHEMA = "courtside-traceability/v1"
 export const COMPLETION_RECEIPT_SCHEMA = "courtside-t085-completion-receipt/v2"
 export const OWNER_AUTHORIZATION_SCHEMA = "courtside-t085-owner-authorization/v1"
+export const REQUIRED_GATE_AUTHORIZATION_REF =
+  "https://github.com/bynanci/courtside-tw/issues/164#issuecomment-5587906233"
+export const REQUIRED_GATE_AUTHORIZATION_BASE_SHA = "c79b5ace6b6d5adce5fc20fba9f93db1f65c72c5"
+export const REQUIRED_GATE_BRANCH = "agent/t086-required-gate-c79b5ac"
+export const REQUIRED_GATE_PULL_REQUEST = 171
+export const REQUIRED_GATE_AUTHORIZATION_BODY_SHA256 =
+  "6b788a4f3ec2fbd648556fb51d1d07363d507f12fe682a36bf34dc41565a6314"
+const requiredGateAuthorizationRecordedAt = "2026-09-08T15:47:26Z"
+export const REQUIRED_GATE_AUTHORIZED_PATHS = Object.freeze([
+  ".github/workflows/t086-required-gate.yml",
+  "scripts/validate-traceability.mjs",
+  "scripts/test/validate-traceability.test.mjs"
+])
 export const POST_T085_MAINTENANCE_AUTHORIZATION_SCHEMA =
   "courtside-post-t085-maintenance-authorization/v5"
 export const ANDROID_NATIVE_SURFACE_AUTHORIZATION_SCHEMA =
@@ -3638,6 +3651,94 @@ function isExactPost169GovernanceAuthorizationScope({
   )
 }
 
+function isExactRequiredGateAuthorizationScope({
+  state,
+  changeBaseSha,
+  boundedScopeActive,
+  changedPaths
+}) {
+  return (
+    state === t085States.COMPLETE_STEADY &&
+    boundedScopeActive === false &&
+    changeBaseSha === REQUIRED_GATE_AUTHORIZATION_BASE_SHA &&
+    Array.isArray(changedPaths) &&
+    changedPaths.length === REQUIRED_GATE_AUTHORIZED_PATHS.length &&
+    sameValues(changedPaths, REQUIRED_GATE_AUTHORIZED_PATHS)
+  )
+}
+
+function validateRequiredGateAuthorization({
+  readback,
+  gitBinding,
+  currentHead,
+  evaluatedHeadCommittedAt,
+  requireExactHeadEvidence,
+  githubActionsContext,
+  errors
+}) {
+  const initialErrors = errors.length
+  if (
+    readback?.status !== "VERIFIED" ||
+    readback?.source !== "github-api" ||
+    !Array.isArray(readback?.errors) ||
+    readback.errors.length !== 0 ||
+    readback.html_url !== REQUIRED_GATE_AUTHORIZATION_REF ||
+    readback.issue_url !== "https://api.github.com/repos/bynanci/courtside-tw/issues/164" ||
+    readback.user_login !== ACCEPTED_RECEIPT_OWNER ||
+    readback.author_association !== "OWNER" ||
+    readback.created_at !== requiredGateAuthorizationRecordedAt ||
+    readback.updated_at !== requiredGateAuthorizationRecordedAt ||
+    sha256(readback.body ?? null) !== REQUIRED_GATE_AUTHORIZATION_BODY_SHA256
+  ) {
+    errors.push(
+      "issue 164 requires the verified immutable exact OWNER comment and complete body digest"
+    )
+  }
+  if (
+    gitBinding?.status !== "CLEAN" ||
+    gitBinding.head !== currentHead ||
+    currentHead === REQUIRED_GATE_AUTHORIZATION_BASE_SHA ||
+    gitBinding.change_base_sha !== REQUIRED_GATE_AUTHORIZATION_BASE_SHA ||
+    gitBinding.change_base_ancestor !== true ||
+    gitBinding.head_parent_count !== 1 ||
+    !Number.isSafeInteger(gitBinding.required_gate_commit_count) ||
+    gitBinding.required_gate_commit_count < 1 ||
+    gitBinding.required_gate_merge_commit_count !== 0 ||
+    !isIsoTimestamp(evaluatedHeadCommittedAt) ||
+    Date.parse(evaluatedHeadCommittedAt) <= Date.parse(requiredGateAuthorizationRecordedAt)
+  ) {
+    errors.push(
+      "issue 164 requires a clean post-dispatch exact head with linear ancestry from its authorized base"
+    )
+  }
+  const context = githubActionsContext
+  if (
+    requireExactHeadEvidence !== true ||
+    !isAuthenticatedGitHubActionsContext(context) ||
+    context.authority !== "PULL_REQUEST" ||
+    context.event_name !== "pull_request" ||
+    context.source_head_sha !== currentHead ||
+    context.source_base_sha !== REQUIRED_GATE_AUTHORIZATION_BASE_SHA ||
+    context.source_ref !== REQUIRED_GATE_BRANCH ||
+    context.head_ref !== REQUIRED_GATE_BRANCH ||
+    context.base_ref !== "main" ||
+    context.pull_request_draft !== true ||
+    context.pull_request_state !== "open" ||
+    context.pull_request_head_repository !== "bynanci/courtside-tw" ||
+    context.pull_request_base_repository !== "bynanci/courtside-tw" ||
+    context.pull_request_number !== REQUIRED_GATE_PULL_REQUEST ||
+    context.pull_request_payload_number !== context.pull_request_number ||
+    !["merge", "head"].some(
+      (suffix) => context.github_ref === `refs/pull/${context.pull_request_number}/${suffix}`
+    )
+  ) {
+    errors.push(
+      "issue 164 requires authenticated exact-head CI for the dedicated same-repository open draft PR; push and merge are not authorized"
+    )
+  }
+  return errors.length === initialErrors
+}
+
 function distribution(rows, key) {
   return Object.fromEntries(
     [...new Set(rows.map((row) => row?.[key]).filter(Boolean))]
@@ -3861,6 +3962,10 @@ export function inspectGitHubActionsContext({ environment = process.env, gitBind
     source_base_sha: gitBinding?.change_base_sha ?? null,
     pull_request_number: null,
     pull_request_draft: null,
+    pull_request_state: null,
+    pull_request_payload_number: null,
+    pull_request_head_repository: null,
+    pull_request_base_repository: null,
     authority: null,
     errors
   }
@@ -3911,6 +4016,10 @@ export function inspectGitHubActionsContext({ environment = process.env, gitBind
       context.authority = "PULL_REQUEST"
       context.pull_request_number = event?.number ?? event?.pull_request?.number ?? null
       context.pull_request_draft = event?.pull_request?.draft ?? null
+      context.pull_request_state = event?.pull_request?.state ?? null
+      context.pull_request_payload_number = event?.pull_request?.number ?? null
+      context.pull_request_head_repository = event?.pull_request?.head?.repo?.full_name ?? null
+      context.pull_request_base_repository = event?.pull_request?.base?.repo?.full_name ?? null
       if (context.base_ref !== "main") errors.push("GITHUB_BASE_REF must be main")
       if (!/^refs\/pull\/\d+\/(?:merge|head)$/.test(context.github_ref ?? "")) {
         errors.push("GITHUB_REF must identify a pull-request ref")
@@ -10289,6 +10398,7 @@ export function validateTraceability({
   postT085MaintenanceAuthorizationReadback = null,
   androidNativeSurfaceAuthorizationReadback = null,
   post169GovernanceAuthorizationReadback = null,
+  requiredGateAuthorizationReadback = null,
   pnpmSecurityAuthorizationReadback = null,
   productRemediationAuthorizationReadback = null,
   studioCompletionAuthorizationReadback = null,
@@ -10396,6 +10506,17 @@ export function validateTraceability({
         githubActionsContext.authority === "PULL_REQUEST" &&
         githubActionsContext.pull_request_number === POST169_GOVERNANCE_PULL_REQUEST))
   let post169GovernanceAuthorizationAccepted = false
+  const requiredGateAuthorizationScopeActive = isExactRequiredGateAuthorizationScope({
+    state,
+    changeBaseSha,
+    boundedScopeActive,
+    changedPaths
+  })
+  const requiredGateAuthorizationRequested =
+    state === t085States.COMPLETE_STEADY &&
+    (changedPaths?.includes(REQUIRED_GATE_AUTHORIZED_PATHS[0]) ||
+      githubActionsContext?.source_ref === REQUIRED_GATE_BRANCH)
+  let requiredGateAuthorizationAccepted = false
   let pnpmSecurityAuthorizationAccepted = false
   let productRemediationAuthorizationAccepted = false
   let studioCompletionAuthorizationAccepted = false
@@ -10520,6 +10641,23 @@ export function validateTraceability({
     }
   }
   if (state === t085States.COMPLETE_STEADY) {
+    if (requiredGateAuthorizationRequested) {
+      if (!requiredGateAuthorizationScopeActive) {
+        errors.push(
+          "issue 164 authorization requires exactly its three paths and immutable protected base"
+        )
+      } else {
+        requiredGateAuthorizationAccepted = validateRequiredGateAuthorization({
+          readback: requiredGateAuthorizationReadback,
+          gitBinding,
+          currentHead,
+          evaluatedHeadCommittedAt,
+          requireExactHeadEvidence,
+          githubActionsContext,
+          errors
+        })
+      }
+    }
     if (
       studioCompletionGate.requested(
         changedPaths,
@@ -10672,6 +10810,9 @@ export function validateTraceability({
     for (const changedPath of changedPaths ?? []) {
       if (
         !isAuthorizedPostT085MaintenancePath(changedPath) &&
+        !(
+          requiredGateAuthorizationAccepted && REQUIRED_GATE_AUTHORIZED_PATHS.includes(changedPath)
+        ) &&
         !(studioCompletionAuthorizationAccepted && studioCompletionGate.allowsPath(changedPath)) &&
         !(publicationCacheAuthorizationAccepted && publicationCacheGate.allowsPath(changedPath)) &&
         !(mediaRightsAuthorizationAccepted && mediaRightsGate.allowsPath(changedPath)) &&
@@ -11283,6 +11424,20 @@ export function validateTraceability({
             errors: postT085MaintenanceAuthorizationReadback.errors ?? []
           }
         : null,
+      required_gate_authorization_readback: requiredGateAuthorizationReadback
+        ? {
+            status: requiredGateAuthorizationReadback.status ?? "UNAVAILABLE",
+            source: requiredGateAuthorizationReadback.source ?? null,
+            html_url: requiredGateAuthorizationReadback.html_url ?? null,
+            issue_url: requiredGateAuthorizationReadback.issue_url ?? null,
+            user_login: requiredGateAuthorizationReadback.user_login ?? null,
+            author_association: requiredGateAuthorizationReadback.author_association ?? null,
+            created_at: requiredGateAuthorizationReadback.created_at ?? null,
+            updated_at: requiredGateAuthorizationReadback.updated_at ?? null,
+            body_sha256: sha256(requiredGateAuthorizationReadback.body ?? null),
+            errors: requiredGateAuthorizationReadback.errors ?? []
+          }
+        : null,
       android_native_surface_authorization_readback: androidNativeSurfaceAuthorizationReadback
         ? Object.fromEntries(
             ["dispatch", "addendum", "foregroundAddendum"].map((name) => {
@@ -11542,6 +11697,10 @@ export function validateTraceability({
                   ? changedPaths.filter(
                       (changedPath) =>
                         !isAuthorizedPostT085MaintenancePath(changedPath) &&
+                        !(
+                          requiredGateAuthorizationAccepted &&
+                          REQUIRED_GATE_AUTHORIZED_PATHS.includes(changedPath)
+                        ) &&
                         !(
                           studioCompletionAuthorizationAccepted &&
                           studioCompletionGate.allowsPath(changedPath)
@@ -12104,6 +12263,46 @@ export function inspectPostT085MaintenanceAuthorization(
   })
 }
 
+export function inspectRequiredGateAuthorization({ environment = process.env } = {}) {
+  return inspectGitHubAuthorizationComment(REQUIRED_GATE_AUTHORIZATION_REF, {
+    environment,
+    isAuthorizedRef: (value) => value === REQUIRED_GATE_AUTHORIZATION_REF,
+    invalidRefError: "issue 164 authorization must identify the pinned OWNER comment",
+    readbackErrorPrefix: "GitHub issue 164 authorization read-back failed"
+  })
+}
+
+export function inspectRequiredGateAuthorizationForState(
+  root,
+  {
+    changeBaseTasksText = null,
+    changeBaseSha = null,
+    boundedScopeActive = null,
+    changedPaths = null,
+    environment = process.env,
+    inspect = inspectRequiredGateAuthorization
+  } = {}
+) {
+  try {
+    const tasksText = fs.readFileSync(
+      path.join(root, "specs/001-taiwan-basketball-magazine-ebook/tasks.md"),
+      "utf8"
+    )
+    if (
+      !isExactRequiredGateAuthorizationScope({
+        state: classifyT085State(changeBaseTasksText, tasksText),
+        changeBaseSha,
+        boundedScopeActive,
+        changedPaths
+      })
+    )
+      return null
+    return inspect({ environment })
+  } catch {
+    return null
+  }
+}
+
 export function inspectAndroidNativeSurfaceAuthorization({ environment = process.env } = {}) {
   return {
     dispatch: inspectGitHubAuthorizationComment(ANDROID_NATIVE_SURFACE_DISPATCH_REF, {
@@ -12490,6 +12689,17 @@ export function inspectGit(root, { environment = process.env } = {}) {
       )
     )
     const changeBase = resolveChangeBase(root, head, environment)
+    const requiredGateCommitCount = inspectCommitCountBetween(
+      root,
+      REQUIRED_GATE_AUTHORIZATION_BASE_SHA,
+      head
+    )
+    const requiredGateMergeCommitCount = inspectCommitCountBetween(
+      root,
+      REQUIRED_GATE_AUTHORIZATION_BASE_SHA,
+      head,
+      { mergesOnly: true }
+    )
     const changeBaseCommittedAt = inspectCommitTimestamp(root, changeBase.sha)
     const implementationMergeAncestorOfChangeBase = inspectImplementationMergeAncestor(
       root,
@@ -12539,6 +12749,8 @@ export function inspectGit(root, { environment = process.env } = {}) {
       status,
       authorized_base_ancestor: authorizedBaseAncestor,
       review_base_ancestor: reviewBaseAncestor,
+      required_gate_commit_count: requiredGateCommitCount,
+      required_gate_merge_commit_count: requiredGateMergeCommitCount,
       post_t085_maintenance_authorized_head_ancestor: postT085MaintenanceAuthorizedHeadAncestor,
       post_t085_maintenance_authorized_head_committed_at:
         postT085MaintenanceAuthorizedHeadCommittedAt,
@@ -12619,6 +12831,8 @@ export function inspectGit(root, { environment = process.env } = {}) {
       status: "UNAVAILABLE",
       authorized_base_ancestor: null,
       review_base_ancestor: null,
+      required_gate_commit_count: null,
+      required_gate_merge_commit_count: null,
       post_t085_maintenance_authorized_head_ancestor: null,
       post_t085_maintenance_authorized_head_committed_at: null,
       post_t085_maintenance_e2e_matches_authorized_head: null,
@@ -12714,6 +12928,13 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
       environment
     }
   )
+  const requiredGateAuthorizationReadback = inspectRequiredGateAuthorizationForState(root, {
+    changeBaseTasksText: inspection.change_base_tasks_text,
+    changeBaseSha: inspection.change_base_sha,
+    boundedScopeActive: inspection.bounded_scope_active,
+    changedPaths: inspection.changedPaths,
+    environment
+  })
   const githubActionsContext = inspectGitHubActionsContext({ environment, gitBinding: inspection })
   const pnpmSecurityAuthorizationReadback = pnpmSecurityAuthorizationRequested(
     inspection.changedPaths,
@@ -12771,6 +12992,7 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
     postT085MaintenanceAuthorizationReadback,
     androidNativeSurfaceAuthorizationReadback,
     post169GovernanceAuthorizationReadback,
+    requiredGateAuthorizationReadback,
     pnpmSecurityAuthorizationReadback,
     productRemediationAuthorizationReadback,
     studioCompletionAuthorizationReadback,
@@ -12781,6 +13003,8 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
       status: inspection.status,
       head: inspection.head,
       head_committed_at: inspection.head_committed_at,
+      required_gate_commit_count: inspection.required_gate_commit_count,
+      required_gate_merge_commit_count: inspection.required_gate_merge_commit_count,
       authorized_base_ancestor: inspection.authorized_base_ancestor,
       review_base_ancestor: inspection.review_base_ancestor,
       post_t085_maintenance_authorized_head_ancestor:

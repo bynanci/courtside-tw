@@ -10934,22 +10934,129 @@ test("ready-for-review remains an explicit release-owner gate", () => {
   assert.match(traceability, /`EXTERNAL_READBACK_REQUIRED`/)
 })
 function requiredGateRuntime() {
-  const workflow = fs.readFileSync(path.join(repositoryRoot, ".github/workflows/t086-required-gate.yml"), "utf8")
-  const match = workflow.match(/\\/\\/ T086_PURE_START\\n([\\s\\S]*?)\\s*\\/\\/ T086_PURE_END/u)
+  const workflow = fs.readFileSync(
+    path.join(repositoryRoot, ".github/workflows/t086-required-gate.yml"),
+    "utf8"
+  )
+  const match = workflow.match(/\/\/ T086_PURE_START\n([\s\S]*?)\s*\/\/ T086_PURE_END/u)
   assert.ok(match, "trusted workflow contains the actual pure evaluator")
-  return new Function("createHash", match[1] + "\\nreturn {evaluateSnapshot, classifyCandidate, canonicalComment, commentIdentity};")(createHash)
+  return new Function(
+    "createHash",
+    match[1] +
+      "\nreturn {evaluateSnapshot, classifyCandidate, canonicalComment, commentIdentity, advanceCommentFence, parseUniqueJson};"
+  )(createHash)
 }
 
 function requiredGateFixture() {
   const candidate = "1".repeat(40)
   const base = "2".repeat(40)
   const frozen = "204662214eada892332d1ddbeab8d0b8037cfc5477d9152d6fb3a61e56832b79"
-  const boundaries = {participant_research_executed:false, web3_activated:false, production_activated:false, provider_configured:false, credentials_or_secrets_accessed_or_changed:false, external_product_writes:false, t087_or_later_dispatched:false, t086_task_state_changed:false, beta_flag_removed:false}
-  const entries = [{id:"DEV-1", severity:"P1", type:"HUMAN_OPEN", affected_ids:["SC-001"], outcome:"RISK_ACCEPTED_FOR_BETA", rationale:"Explicit owner adjudication for this exact candidate only.", evidence_refs:[], follow_up_issue:"https://github.com/bynanci/courtside-tw/issues/171"}]
-  const contract = {schema_version:"courtside-t086-owner-adjudication/v1", accepted_by:"bynanci", decision:"ADJUDICATION_ACCEPTED", repository:"bynanci/courtside-tw", issue:"https://github.com/bynanci/courtside-tw/issues/160", task:"T086", candidate_sha:candidate, protected_base_sha:base, frozen_t085_traceability_sha256:frozen, scope_boundaries:boundaries, adjudications:entries}
-  const comment = {id:987, user:{login:"bynanci"}, author_association:"OWNER", created_at:"2026-09-08T10:00:00Z", updated_at:"2026-09-08T10:00:00Z", html_url:"https://github.com/bynanci/courtside-tw/issues/160#issuecomment-987", body:"<!-- t086:owner-adjudication:start -->\\n```json\\n"+JSON.stringify(contract)+"\\n```\\n<!-- t086:owner-adjudication:end -->"}
-  const report = {schema_version:"courtside-t086-beta-release/v1", task:"T086", decision_scope:"T086_GATE_ONLY", status:"PASS", release_decision:"PASS", release_decision_reasons:[], candidate_sha:candidate, base:{branch:"main", sha:base, authorized_sha:base}, frozen_t085_traceability:{sha256:frozen, expected_sha256:frozen}, scope_boundaries:boundaries, errors:[], surfaces:{result:"PASS", required:["public-read","two-role-publish","retry","revision","withdrawal","backup-restore","rollback"]}, stability:{result:"PASS", required_consecutive_runs:20,same_candidate_sha:true}, blockers:{source_count:1,count:0,source:[{id:"DEV-1",severity:"P1",type:"HUMAN_OPEN",affected_ids:["SC-001"]}],unadjudicated:[],adjudicated:entries}, adjudication:{status:"VERIFIED",html_url:comment.html_url,created_at:comment.created_at,updated_at:comment.updated_at,candidate_sha:candidate,body_sha256:createHash("sha256").update(comment.body).digest("hex"),adjudicated:entries,unadjudicated:[]}}
-  return {classification:"T086", candidate,base,mergeBase:base,frozenHash:frozen,sourceBlockers:report.blockers.source,comments:[comment],producerTrusted:true,requiredEvidenceFresh:true,report,decisionStartedAt:"2026-09-08T11:00:00Z",decisionCompletedAt:"2026-09-08T11:01:00Z",artifactCreatedAt:"2026-09-08T11:01:01Z"}
+  const boundaries = {
+    participant_research_executed: false,
+    web3_activated: false,
+    production_activated: false,
+    provider_configured: false,
+    credentials_or_secrets_accessed_or_changed: false,
+    external_product_writes: false,
+    t087_or_later_dispatched: false,
+    t086_task_state_changed: false,
+    beta_flag_removed: false
+  }
+  const entries = [
+    {
+      id: "DEV-1",
+      severity: "P1",
+      type: "HUMAN_OPEN",
+      affected_ids: ["SC-001"],
+      outcome: "RISK_ACCEPTED_FOR_BETA",
+      rationale: "Explicit owner adjudication for this exact candidate only.",
+      evidence_refs: [],
+      follow_up_issue: "https://github.com/bynanci/courtside-tw/issues/171"
+    }
+  ]
+  const contract = {
+    schema_version: "courtside-t086-owner-adjudication/v1",
+    accepted_by: "bynanci",
+    decision: "ADJUDICATION_ACCEPTED",
+    repository: "bynanci/courtside-tw",
+    issue: "https://github.com/bynanci/courtside-tw/issues/160",
+    task: "T086",
+    candidate_sha: candidate,
+    protected_base_sha: base,
+    frozen_t085_traceability_sha256: frozen,
+    scope_boundaries: boundaries,
+    adjudications: entries
+  }
+  const comment = {
+    id: 987,
+    user: { login: "bynanci" },
+    author_association: "OWNER",
+    created_at: "2026-09-08T10:00:00Z",
+    updated_at: "2026-09-08T10:00:00Z",
+    html_url: "https://github.com/bynanci/courtside-tw/issues/160#issuecomment-987",
+    body:
+      "<!-- t086:owner-adjudication:start -->\n```json\n" +
+      JSON.stringify(contract) +
+      "\n```\n<!-- t086:owner-adjudication:end -->"
+  }
+  const report = {
+    schema_version: "courtside-t086-beta-release/v1",
+    task: "T086",
+    decision_scope: "T086_GATE_ONLY",
+    status: "PASS",
+    release_decision: "PASS",
+    release_decision_reasons: [],
+    candidate_sha: candidate,
+    base: { branch: "main", sha: base, authorized_sha: base },
+    frozen_t085_traceability: { sha256: frozen, expected_sha256: frozen },
+    scope_boundaries: boundaries,
+    errors: [],
+    surfaces: {
+      result: "PASS",
+      required: [
+        "public-read",
+        "two-role-publish",
+        "retry",
+        "revision",
+        "withdrawal",
+        "backup-restore",
+        "rollback"
+      ]
+    },
+    stability: { result: "PASS", required_consecutive_runs: 20, same_candidate_sha: true },
+    blockers: {
+      source_count: 1,
+      count: 0,
+      source: [{ id: "DEV-1", severity: "P1", type: "HUMAN_OPEN", affected_ids: ["SC-001"] }],
+      unadjudicated: [],
+      adjudicated: entries
+    },
+    adjudication: {
+      status: "VERIFIED",
+      html_url: comment.html_url,
+      created_at: comment.created_at,
+      updated_at: comment.updated_at,
+      candidate_sha: candidate,
+      body_sha256: createHash("sha256").update(comment.body).digest("hex"),
+      adjudicated: entries,
+      unadjudicated: []
+    }
+  }
+  return {
+    classification: "T086",
+    candidate,
+    base,
+    mergeBase: base,
+    frozenHash: frozen,
+    sourceBlockers: report.blockers.source,
+    comments: [comment],
+    producerTrusted: true,
+    requiredEvidenceFresh: true,
+    report,
+    decisionStartedAt: "2026-09-08T11:00:00Z",
+    decisionCompletedAt: "2026-09-08T11:01:00Z",
+    artifactCreatedAt: "2026-09-08T11:01:01Z"
+  }
 }
 
 test("required T086 gate accepts only independently bound complete PASS", () => {
@@ -11116,6 +11223,118 @@ test("required T086 gate ignores spoofed new comments but treats owner marker re
     987
   )
   assert.equal(canonicalComment([]), null)
+})
+
+test("required T086 gate does not revive an older OWNER success after canonical deletion", () => {
+  const s = requiredGateFixture()
+  s.commentFence = { id: 999, invalidated: true }
+  assert.equal(requiredGateRuntime().evaluateSnapshot(s).decision, "HOLD")
+})
+
+test("required T086 gate rejects an invalidated revision even if its body is restored", () => {
+  const s = requiredGateFixture()
+  s.commentFence = { id: s.comments[0].id, invalidated: true }
+  assert.equal(requiredGateRuntime().evaluateSnapshot(s).decision, "HOLD")
+})
+
+test("required T086 gate revokes prior own successes before rejecting ambiguous producers", async () => {
+  const workflow = fs.readFileSync(
+    path.join(repositoryRoot, ".github/workflows/t086-required-gate.yml"),
+    "utf8"
+  )
+  const source = workflow.match(
+    /async function checkStart\(pr\) \{[\s\S]*?(?=async function checkFinish\()/u
+  )?.[0]
+  assert.ok(source)
+  const updates = []
+  const github = {
+    rest: {
+      checks: {
+        update: async (payload) => {
+          updates.push(payload)
+          return { data: {} }
+        }
+      }
+    }
+  }
+  const existing = [
+    { id: 10, app: { id: 15368 }, external_id: "courtside-t086:pr:161", conclusion: "success" },
+    { id: 11, app: { id: 15368 }, external_id: "other", conclusion: "success" }
+  ]
+  const checkStart = new Function(
+    "github",
+    "paginated",
+    "CHECK_NAME",
+    "APP_ID",
+    "owner",
+    "repo",
+    "runUrl",
+    "context",
+    "advanceCommentFence",
+    source + ";return checkStart;"
+  )(
+    github,
+    async () => existing,
+    "T086 final release decision",
+    15368,
+    "bynanci",
+    "courtside-tw",
+    "https://github.com/bynanci/courtside-tw/actions/runs/1",
+    { payload: {} },
+    () => null
+  )
+  await assert.rejects(checkStart({ number: 161, head: { sha: "1".repeat(40) } }), /ambiguous/u)
+  assert.deepEqual(
+    updates.map((row) => ({
+      id: row.check_run_id,
+      status: row.status,
+      conclusion: row.conclusion
+    })),
+    [
+      { id: 10, status: "completed", conclusion: "failure" },
+      { id: 11, status: "completed", conclusion: "failure" }
+    ]
+  )
+})
+
+test("required T086 gate rejects duplicate and escaped-equivalent OWNER keys", () => {
+  for (const duplicate of [
+    '"decision":"HOLD","decision":"ADJUDICATION_ACCEPTED"',
+    '"decisi\\u006fn":"HOLD","decision":"ADJUDICATION_ACCEPTED"'
+  ]) {
+    const s = requiredGateFixture()
+    s.comments[0].body = s.comments[0].body.replace('"decision":"ADJUDICATION_ACCEPTED"', duplicate)
+    s.report.adjudication.body_sha256 = createHash("sha256")
+      .update(s.comments[0].body)
+      .digest("hex")
+    assert.equal(requiredGateRuntime().evaluateSnapshot(s).decision, "HOLD")
+  }
+})
+
+test("required T086 gate rejects duplicate artifact JSON keys at any depth", () => {
+  const { parseUniqueJson } = requiredGateRuntime()
+  assert.throws(
+    () => parseUniqueJson('{"release_decision":"HOLD","release_decision":"PASS"}'),
+    /Duplicate/u
+  )
+  assert.throws(
+    () => parseUniqueJson('{"adjudication":{"status":"INVALID","sta\\u0074us":"VERIFIED"}}'),
+    /Duplicate/u
+  )
+  assert.deepEqual(parseUniqueJson('{"nested":[true,false,null,1.25,"a\\\\b"]}'), {
+    nested: [true, false, null, 1.25, "a\\b"]
+  })
+})
+
+test("required T086 gate fences same-ID revision drift even without mutation event", () => {
+  const { advanceCommentFence, commentIdentity, evaluateSnapshot } = requiredGateRuntime()
+  const s = requiredGateFixture()
+  const prior = { ...commentIdentity(s.comments[0]), invalidated: false }
+  s.comments[0].body += "\n"
+  s.commentFence = advanceCommentFence(prior, s.comments[0], {})
+  s.report.adjudication.body_sha256 = createHash("sha256").update(s.comments[0].body).digest("hex")
+  assert.equal(s.commentFence.invalidated, true)
+  assert.equal(evaluateSnapshot(s).decision, "HOLD")
 })
 
 const pnpmSecurityBase = "db19da68807bf2974e0b052f2ce5dbcf3accbab7"
