@@ -243,7 +243,7 @@ final class EditorialIssueApiIT extends EditorialApiIntegrationTestSupport {
         reviewIssue(editor, publisher, issueId, 2);
 
         issueCommand(publisher, issueId, "publish", 4, "reject-unapproved-revision")
-                .andExpect(status().isUnprocessableEntity())
+                .andExpect(status().is(422))
                 .andExpect(jsonPath("$.code").value("RIGHTS_OR_CONTENT_GATE"))
                 .andExpect(jsonPath("$.errors[0].code").value("ISSUE_NOT_READY"));
         assertEquals("DRAFT", jdbcTemplate.queryForObject(

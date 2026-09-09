@@ -368,6 +368,80 @@ test("native Android foreground activity rejects a resolved receipt completed at
   equal(reads, 1)
 })
 
+test("native inspection completes before restoring and measuring fresh foreground frames", async () => {
+  const establishAndroidForegroundFrameBoundary = Reflect.get(
+    timelineHelpers,
+    "establishAndroidForegroundFrameBoundary"
+  )
+  equal(typeof establishAndroidForegroundFrameBoundary, "function")
+  if (typeof establishAndroidForegroundFrameBoundary !== "function") return
+
+  const events: string[] = []
+  let runtimeStatus = "running"
+  const surface = { displaySize: PIXEL_7_DISPLAY, status: "clear" }
+  const boundary = { status: "clear", activityAfter: ATTEMPT_1_RESUMED_ACTIVITY }
+  const frames = { samples: [{ frame: 40 }, { frame: 55 }] }
+  const result = await establishAndroidForegroundFrameBoundary({
+    normalizeSurface: async () => {
+      events.push("normalize")
+      return surface
+    },
+    requireClearSurface: async (displaySize: unknown) => {
+      deepEqual(displaySize, PIXEL_7_DISPLAY)
+      events.push("inspect:start")
+      await Promise.resolve()
+      runtimeStatus = "paused"
+      events.push("inspect:end")
+      return boundary
+    },
+    restoreRuntime: async () => {
+      events.push("restore")
+      runtimeStatus = "running"
+    },
+    observeFrames: async () => {
+      events.push("observe")
+      equal(runtimeStatus, "running", "native inspection must not stale the active frame proof")
+      return frames
+    }
+  })
+
+  deepEqual(events, ["normalize", "inspect:start", "inspect:end", "restore", "observe"])
+  deepEqual(result, {
+    foregroundNativeSurface: surface,
+    foregroundNativeSurfaceBoundary: boundary,
+    foregroundFrameTimeline: frames
+  })
+  equal(runtimeStatus, "running")
+})
+
+test("foreground preparation never restores a runtime or measures frames after a failed native proof", async () => {
+  const establishAndroidForegroundFrameBoundary = Reflect.get(
+    timelineHelpers,
+    "establishAndroidForegroundFrameBoundary"
+  )
+  equal(typeof establishAndroidForegroundFrameBoundary, "function")
+  if (typeof establishAndroidForegroundFrameBoundary !== "function") return
+  let restoreCalls = 0
+  let frameCalls = 0
+  await rejects(
+    establishAndroidForegroundFrameBoundary({
+      normalizeSurface: () => ({ displaySize: PIXEL_7_DISPLAY, status: "clear" }),
+      requireClearSurface: () => {
+        throw new Error("unrecognized native modal")
+      },
+      restoreRuntime: () => {
+        restoreCalls += 1
+      },
+      observeFrames: () => {
+        frameCalls += 1
+      }
+    }),
+    /unrecognized native modal/u
+  )
+  equal(restoreCalls, 0)
+  equal(frameCalls, 0)
+})
+
 test("native Android background behaviorally binds and orders the exact HOME boundary", async () => {
   const establishNativeAndroidBackgroundBoundary = Reflect.get(
     timelineHelpers,
@@ -1752,7 +1826,7 @@ test("production binds c8bb activity acquisition to existing normalization limit
   )
   match(
     performanceHarness,
-    /requireClearChromeContentSurface\(\s*foregroundNativeSurface\.displaySize\s*\)[\s\S]*CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS/u
+    /requireClearSurface: \(displaySize\) => requireClearChromeContentSurface\(displaySize\)[\s\S]*CHROME_AUTOMATION_PROBE_TIMEOUT_MILLISECONDS/u
   )
 })
 
@@ -3702,7 +3776,7 @@ test("Android smoke diagnostics preserve the failing producer and bound probes",
   doesNotMatch(performanceHarness, /result\.error\?\.code === "ETIMEDOUT"\) \{\s*return ""/u)
   match(
     performanceHarness,
-    /normalizeChromeContentSurface\(\)[\s\S]*observeForegroundFrameTimeline\([\s\S]*requireClearChromeContentSurface\(\s*foregroundNativeSurface\.displaySize\s*\)[\s\S]*evaluateAndroidForegroundFrameTimeline/u
+    /establishAndroidForegroundFrameBoundary\(\{[\s\S]*normalizeChromeContentSurface\(\)[\s\S]*requireClearSurface: \(displaySize\) => requireClearChromeContentSurface\(displaySize\)[\s\S]*restoreRuntime:[\s\S]*observeForegroundFrameTimeline\([\s\S]*evaluateAndroidForegroundFrameTimeline/u
   )
   match(performanceHarness, /timeout: probeTimeoutMilliseconds/u)
   match(
@@ -3780,7 +3854,7 @@ test("final foreground activity acquisition preserves the following UIAutomator 
   )
   match(
     performanceHarness,
-    /foregroundNativeSurfaceBoundary = await requireClearChromeContentSurface\(\s*foregroundNativeSurface\.displaySize\s*\)/u
+    /foregroundNativeSurfaceBoundary, foregroundFrameTimeline[\s\S]*establishAndroidForegroundFrameBoundary\(\{[\s\S]*requireClearSurface: \(displaySize\) => requireClearChromeContentSurface\(displaySize\)/u
   )
   match(
     performanceHarness,

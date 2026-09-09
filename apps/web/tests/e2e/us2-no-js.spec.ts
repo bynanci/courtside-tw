@@ -6,9 +6,7 @@ const fixture = JSON.parse(
   readFileSync(new URL("../fixtures/content-document-v1.json", import.meta.url), "utf8")
 ) as { blocks: Array<{ id: string; type: string; payload: Record<string, unknown> }> }
 
-test("SSR preserves the complete article and navigation without JavaScript", async ({
-  browser
-}) => {
+test("SSR renders article blocks and generative poster without JavaScript", async ({ browser }) => {
   const context = await browser.newContext({
     javaScriptEnabled: false,
     viewport: { width: 375, height: 812 },
