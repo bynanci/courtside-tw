@@ -964,6 +964,266 @@ function expectedPost169GovernanceFinalSealV4({
   }
 }
 
+export const PNPM_SECURITY_AUTHORIZATION_BASE_SHA = "db19da68807bf2974e0b052f2ce5dbcf3accbab7"
+export const PNPM_SECURITY_AUTHORIZATION_REF =
+  "https://github.com/bynanci/courtside-tw/issues/173#issuecomment-5594192010"
+export const PNPM_SECURITY_AUTHORIZATION_BODY_SHA256 =
+  "8d9fd4d7cc9ae16ebb7191fbb51941647a728bcc94ec649d8f0c172f93e306a4"
+const pnpmSecurityAuthorizationRecordedAt = "2026-09-09T01:07:32Z"
+const pnpmSecurityPullRequest = 174
+const pnpmSecurityBranch = "fix/pnpm-11-11-security"
+const pnpmSecuritySeedHead = "b8c5b086955bebe87b73ff69bb89ef100aeee5c1"
+const pnpmSecuritySeedTree = "53be27240b6097d0ac399bee743b5baa785ef66f"
+export const PNPM_SECURITY_AUTHORIZED_PATHS = Object.freeze([
+  ".github/workflows/ci.yml",
+  ".github/workflows/security.yml",
+  "Makefile",
+  "apps/web/package.json",
+  "package.json",
+  "packages/api-client/package.json",
+  "packages/content-schema/package.json",
+  "packages/creative-runtime/package.json",
+  "scripts/test/validate-traceability.test.mjs",
+  "scripts/validate-traceability.mjs"
+])
+const pnpmSecurityPinPaths = PNPM_SECURITY_AUTHORIZED_PATHS.slice(0, 8)
+const pnpmSecurityAuthorizedPaths = new Set(PNPM_SECURITY_AUTHORIZED_PATHS)
+
+function pnpmSecurityAuthorizationRequested(changedPaths, githubActionsContext, readback = null) {
+  return (
+    readback !== null ||
+    githubActionsContext?.pull_request_number === pnpmSecurityPullRequest ||
+    githubActionsContext?.head_ref === pnpmSecurityBranch ||
+    (Array.isArray(changedPaths) &&
+      changedPaths.some((changedPath) => pnpmSecurityPinPaths.slice(2).includes(changedPath)))
+  )
+}
+
+function validatePnpmSecurityAuthorization({
+  readback,
+  gitBinding,
+  changedPaths,
+  changeBaseSha,
+  boundedScopeActive,
+  githubActionsContext,
+  requireExactHeadEvidence,
+  errors
+}) {
+  const start = errors.length
+  const reject = (message) => errors.push(`pnpm security authorization ${message}`)
+  if (
+    changeBaseSha !== PNPM_SECURITY_AUTHORIZATION_BASE_SHA ||
+    boundedScopeActive !== false ||
+    !Array.isArray(changedPaths) ||
+    !sameValues(changedPaths, PNPM_SECURITY_AUTHORIZED_PATHS)
+  )
+    reject("requires the exact ten-path scope and protected base")
+  const authorization = readback?.authorization
+  if (
+    readback?.status !== "VERIFIED" ||
+    readback?.source !== "github-api" ||
+    authorization?.status !== "VERIFIED" ||
+    authorization?.source !== "github-api"
+  )
+    reject("requires verified GitHub PR and immutable OWNER comment read-backs")
+  if (
+    authorization?.html_url !== PNPM_SECURITY_AUTHORIZATION_REF ||
+    authorization?.issue_url !== "https://api.github.com/repos/bynanci/courtside-tw/issues/173" ||
+    authorization?.user_login !== ACCEPTED_RECEIPT_OWNER ||
+    authorization?.author_association !== "OWNER" ||
+    authorization?.created_at !== pnpmSecurityAuthorizationRecordedAt ||
+    authorization?.updated_at !== pnpmSecurityAuthorizationRecordedAt ||
+    sha256(authorization?.body ?? null) !== PNPM_SECURITY_AUTHORIZATION_BODY_SHA256
+  )
+    reject("must match the exact immutable issue 173 OWNER dispatch")
+  const pr = readback?.pull_request
+  const candidate = readback?.candidate
+  if (
+    pr?.number !== pnpmSecurityPullRequest ||
+    pr?.html_url !== `https://github.com/bynanci/courtside-tw/pull/${pnpmSecurityPullRequest}` ||
+    pr?.head?.ref !== pnpmSecurityBranch ||
+    pr?.head?.repo?.full_name !== "bynanci/courtside-tw" ||
+    pr?.base?.ref !== "main" ||
+    pr?.base?.repo?.full_name !== "bynanci/courtside-tw" ||
+    pr?.base?.sha !== PNPM_SECURITY_AUTHORIZATION_BASE_SHA ||
+    !/^[0-9a-f]{40}$/.test(pr?.head?.sha ?? "") ||
+    candidate?.head !== pr?.head?.sha
+  )
+    reject("requires the live same-repository PR 174 head, branch and exact base")
+  if (
+    candidate?.base_ancestor !== true ||
+    candidate?.seed_ancestor !== true ||
+    candidate?.seed_tree_sha !== pnpmSecuritySeedTree ||
+    !isDeepStrictEqual(candidate?.seed_parent_shas, [PNPM_SECURITY_AUTHORIZATION_BASE_SHA]) ||
+    !Number.isInteger(candidate?.commit_count) ||
+    candidate.commit_count < 2 ||
+    candidate?.merge_commit_count !== 0 ||
+    candidate?.commits_postdate_authorization !== true ||
+    !Array.isArray(candidate?.changed_paths) ||
+    !sameValues(candidate.changed_paths, PNPM_SECURITY_AUTHORIZED_PATHS) ||
+    !Array.isArray(candidate?.history_paths) ||
+    !sameValues(candidate.history_paths, PNPM_SECURITY_AUTHORIZED_PATHS) ||
+    candidate?.pin_replacements_match !== true
+  )
+    reject(
+      "requires the exact seed, linear post-dispatch history and version-only pin replacements"
+    )
+  if (
+    gitBinding?.status !== "CLEAN" ||
+    gitBinding?.change_base_ancestor !== true ||
+    gitBinding?.change_base_sha !== PNPM_SECURITY_AUTHORIZATION_BASE_SHA ||
+    !/^[0-9a-f]{40}$/.test(candidate?.tree_sha ?? "") ||
+    candidate?.tree_sha !== gitBinding?.head_tree_sha
+  )
+    reject("requires a clean exact candidate tree and audited Git binding")
+  if (!requireExactHeadEvidence || !isAuthenticatedGitHubActionsContext(githubActionsContext)) {
+    reject("requires exact-head CI and authenticated GitHub Actions context")
+  } else if (githubActionsContext.authority === "PULL_REQUEST") {
+    if (
+      githubActionsContext.pull_request_number !== pnpmSecurityPullRequest ||
+      githubActionsContext.source_base_sha !== PNPM_SECURITY_AUTHORIZATION_BASE_SHA ||
+      githubActionsContext.source_head_sha !== pr?.head?.sha ||
+      githubActionsContext.source_head_sha !== gitBinding?.head ||
+      githubActionsContext.head_ref !== pnpmSecurityBranch ||
+      !/^refs\/pull\/174\/(?:merge|head)$/.test(githubActionsContext.github_ref ?? "") ||
+      pr?.state !== "open" ||
+      pr?.merged !== false ||
+      typeof pr?.draft !== "boolean" ||
+      githubActionsContext.pull_request_draft !== pr.draft
+    )
+      reject("must bind the live open draft or ready PR 174 event")
+  } else if (githubActionsContext.authority === "PROTECTED_MAIN_PUSH") {
+    if (
+      githubActionsContext.source_base_sha !== PNPM_SECURITY_AUTHORIZATION_BASE_SHA ||
+      githubActionsContext.source_head_sha !== gitBinding?.head ||
+      pr?.state !== "closed" ||
+      pr?.merged !== true ||
+      pr?.draft !== false ||
+      pr?.merge_commit_sha !== gitBinding?.head ||
+      !isIsoTimestamp(pr?.merged_at) ||
+      Date.parse(pr.merged_at) <= Date.parse(pnpmSecurityAuthorizationRecordedAt) ||
+      gitBinding?.head_parent_count !== 1 ||
+      !isDeepStrictEqual(gitBinding?.head_parent_shas, [PNPM_SECURITY_AUTHORIZATION_BASE_SHA])
+    )
+      reject("must bind only PR 174's exact same-tree single-parent squash push")
+  } else reject("does not authorize this GitHub event")
+  return errors.length === start
+}
+
+export function inspectPnpmSecurityCandidate(root, head) {
+  if (!/^[0-9a-f]{40}$/.test(head ?? "")) return null
+  try {
+    const git = (args) =>
+      execFileSync("git", args, {
+        cwd: root,
+        encoding: "utf8",
+        maxBuffer: 1024 * 1024,
+        stdio: ["ignore", "pipe", "ignore"]
+      }).trim()
+    const commitTimes = git(["log", "--format=%cI", `${pnpmSecuritySeedHead}..${head}`])
+      .split("\n")
+      .filter(Boolean)
+    const historyPaths = git([
+      "log",
+      "--format=",
+      "--name-only",
+      "--no-renames",
+      `${PNPM_SECURITY_AUTHORIZATION_BASE_SHA}..${head}`
+    ])
+      .split("\n")
+      .filter(Boolean)
+    const seed = inspectHeadTopology(root, pnpmSecuritySeedHead)
+    return {
+      head,
+      tree_sha: inspectHeadTopology(root, head).headTreeSha,
+      base_ancestor: inspectAncestor(root, PNPM_SECURITY_AUTHORIZATION_BASE_SHA, head),
+      seed_ancestor: inspectAncestor(root, pnpmSecuritySeedHead, head),
+      seed_tree_sha: seed.headTreeSha,
+      seed_parent_shas: seed.parents,
+      commit_count: inspectCommitCountBetween(root, pnpmSecuritySeedHead, head),
+      merge_commit_count: inspectCommitCountBetween(root, pnpmSecuritySeedHead, head, {
+        mergesOnly: true
+      }),
+      changed_paths: inspectChangedPathsBetweenCommits(
+        root,
+        PNPM_SECURITY_AUTHORIZATION_BASE_SHA,
+        head
+      ),
+      history_paths: [...new Set(historyPaths)].sort(),
+      commits_postdate_authorization:
+        commitTimes.length > 0 &&
+        commitTimes.every(
+          (time) =>
+            Number.isFinite(Date.parse(time)) &&
+            Date.parse(time) > Date.parse(pnpmSecurityAuthorizationRecordedAt)
+        ),
+      pin_replacements_match: pnpmSecurityPinPaths.every((filePath) => {
+        const base = readTextAtCommit(root, PNPM_SECURITY_AUTHORIZATION_BASE_SHA, filePath)
+        const current = readTextAtCommit(root, head, filePath)
+        return (
+          typeof base === "string" &&
+          base !== current &&
+          current === base.replaceAll("11.7.0", "11.11.0").replaceAll("11.7.x", "11.11.x")
+        )
+      })
+    }
+  } catch {
+    return null
+  }
+}
+
+export function inspectPnpmSecurityAuthorization(
+  root,
+  {
+    environment = process.env,
+    inspectComment = inspectGitHubAuthorizationComment,
+    inspectCandidate = inspectPnpmSecurityCandidate,
+    fetchPr = (url) =>
+      JSON.parse(
+        execFileSync(
+          process.execPath,
+          ["--input-type=module", "--eval", githubCommentFetchScript, url],
+          {
+            encoding: "utf8",
+            env: githubReadbackEnvironment(environment),
+            maxBuffer: 1024 * 1024,
+            stdio: ["ignore", "pipe", "pipe"],
+            timeout: 15000
+          }
+        )
+      )
+  } = {}
+) {
+  const authorization = inspectComment(PNPM_SECURITY_AUTHORIZATION_REF, {
+    environment,
+    isAuthorizedRef: (ref) => ref === PNPM_SECURITY_AUTHORIZATION_REF,
+    invalidRefError: "pnpm security owner dispatch reference is not authorized",
+    readbackErrorPrefix: "pnpm security OWNER dispatch read-back failed"
+  })
+  try {
+    const pullRequest = fetchPr(
+      `https://api.github.com/repos/bynanci/courtside-tw/pulls/${pnpmSecurityPullRequest}`
+    )
+    return {
+      status: "VERIFIED",
+      source: "github-api",
+      authorization,
+      pull_request: pullRequest,
+      candidate: inspectCandidate(root, pullRequest?.head?.sha),
+      errors: []
+    }
+  } catch {
+    return {
+      status: "UNAVAILABLE",
+      source: "github-api",
+      authorization,
+      pull_request: null,
+      candidate: null,
+      errors: ["pnpm security PR read-back failed"]
+    }
+  }
+}
+
 function isT086LockedPath(changedPath) {
   return (
     t086LockedPaths.has(changedPath) ||
@@ -7900,6 +8160,7 @@ export function validateTraceability({
   postT085MaintenanceAuthorizationReadback = null,
   androidNativeSurfaceAuthorizationReadback = null,
   post169GovernanceAuthorizationReadback = null,
+  pnpmSecurityAuthorizationReadback = null,
   gitBinding = null,
   changedPaths = null,
   changeBaseSha = REVIEW_BASE_SHA,
@@ -8001,6 +8262,7 @@ export function validateTraceability({
         githubActionsContext.authority === "PULL_REQUEST" &&
         githubActionsContext.pull_request_number === POST169_GOVERNANCE_PULL_REQUEST))
   let post169GovernanceAuthorizationAccepted = false
+  let pnpmSecurityAuthorizationAccepted = false
 
   if (!/^[0-9a-f]{40}$/.test(currentHead ?? "")) {
     errors.push("currentHead must be a full lowercase commit SHA")
@@ -8101,6 +8363,24 @@ export function validateTraceability({
     }
   }
   if (state === t085States.COMPLETE_STEADY) {
+    if (
+      pnpmSecurityAuthorizationRequested(
+        changedPaths,
+        githubActionsContext,
+        pnpmSecurityAuthorizationReadback
+      )
+    ) {
+      pnpmSecurityAuthorizationAccepted = validatePnpmSecurityAuthorization({
+        readback: pnpmSecurityAuthorizationReadback,
+        gitBinding,
+        changedPaths,
+        changeBaseSha,
+        boundedScopeActive,
+        githubActionsContext,
+        requireExactHeadEvidence,
+        errors
+      })
+    }
     if (post169GovernanceAuthorizationRequested) {
       if (!post169GovernanceAuthorizationScopeActive) {
         errors.push(
@@ -8153,6 +8433,7 @@ export function validateTraceability({
     for (const changedPath of changedPaths ?? []) {
       if (
         !isAuthorizedPostT085MaintenancePath(changedPath) &&
+        !(pnpmSecurityAuthorizationAccepted && pnpmSecurityAuthorizedPaths.has(changedPath)) &&
         !(
           postT085MaintenanceAuthorizationAccepted &&
           postT085MaintenanceAuthorizedPaths.has(changedPath)
@@ -8807,6 +9088,17 @@ export function validateTraceability({
             })
           )
         : null,
+      pnpm_security_authorization_readback: pnpmSecurityAuthorizationReadback
+        ? {
+            status: pnpmSecurityAuthorizationReadback.status,
+            accepted: pnpmSecurityAuthorizationAccepted,
+            authorization_ref: pnpmSecurityAuthorizationReadback.authorization?.html_url ?? null,
+            body_sha256: sha256(pnpmSecurityAuthorizationReadback.authorization?.body ?? null),
+            pull_request: pnpmSecurityAuthorizationReadback.pull_request?.number ?? null,
+            candidate: pnpmSecurityAuthorizationReadback.candidate ?? null,
+            errors: pnpmSecurityAuthorizationReadback.errors ?? []
+          }
+        : null,
       exact_head_evidence: exactHeadEvidence,
       github_actions_context: githubActionsContext
         ? {
@@ -8923,6 +9215,10 @@ export function validateTraceability({
                   ? changedPaths.filter(
                       (changedPath) =>
                         !isAuthorizedPostT085MaintenancePath(changedPath) &&
+                        !(
+                          pnpmSecurityAuthorizationAccepted &&
+                          pnpmSecurityAuthorizedPaths.has(changedPath)
+                        ) &&
                         !(
                           postT085MaintenanceAuthorizationAccepted &&
                           postT085MaintenanceAuthorizedPaths.has(changedPath)
@@ -10076,6 +10372,12 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
     }
   )
   const githubActionsContext = inspectGitHubActionsContext({ environment, gitBinding: inspection })
+  const pnpmSecurityAuthorizationReadback = pnpmSecurityAuthorizationRequested(
+    inspection.changedPaths,
+    githubActionsContext
+  )
+    ? inspectPnpmSecurityAuthorization(root, { environment })
+    : null
   const isGitHubActions = environment.GITHUB_ACTIONS === "true"
   const report = validateTraceability({
     root,
@@ -10086,6 +10388,7 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
     postT085MaintenanceAuthorizationReadback,
     androidNativeSurfaceAuthorizationReadback,
     post169GovernanceAuthorizationReadback,
+    pnpmSecurityAuthorizationReadback,
     gitBinding: {
       status: inspection.status,
       head: inspection.head,

@@ -10693,3 +10693,108 @@ test("pnpm security authorization rejects missing authority, wrong event, base a
     assert.match(report.errors.join("\n"), /pnpm security/u)
   }
 })
+
+test("pnpm security CLI read-back uses only the fixed PR and exact owner comment", () => {
+  const context = makePnpmSecurityFixture()
+  const environment = { GITHUB_TOKEN: "fixture-not-a-real-token" }
+  const calls = []
+  const readback = traceabilityValidator.inspectPnpmSecurityAuthorization(context.fixture.root, {
+    environment,
+    inspectComment(ref, options) {
+      calls.push("comment")
+      assert.equal(ref, pnpmSecurityOwnerRef)
+      assert.equal(options.environment, environment)
+      assert.equal(options.isAuthorizedRef(ref), true)
+      assert.equal(options.isAuthorizedRef(`${ref}0`), false)
+      return context.readback.authorization
+    },
+    fetchPr(url) {
+      calls.push("pr")
+      assert.equal(url, "https://api.github.com/repos/bynanci/courtside-tw/pulls/174")
+      return context.readback.pull_request
+    },
+    inspectCandidate(root, head) {
+      calls.push("git")
+      assert.equal(root, context.fixture.root)
+      assert.equal(head, context.readback.pull_request.head.sha)
+      return context.readback.candidate
+    }
+  })
+  assert.deepEqual(calls, ["comment", "pr", "git"])
+  assert.equal(readback.status, "VERIFIED")
+  const report = runPnpmSecurityFixture(context, { pnpmSecurityAuthorizationReadback: readback })
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+test("pnpm security CLI fails closed on PR API failure without exposing credential errors", () => {
+  const context = makePnpmSecurityFixture()
+  const readback = traceabilityValidator.inspectPnpmSecurityAuthorization(context.fixture.root, {
+    inspectComment: () => context.readback.authorization,
+    fetchPr() {
+      throw new Error("fixture-secret-must-not-be-reported")
+    },
+    inspectCandidate() {
+      assert.fail("must not inspect an unavailable PR")
+    }
+  })
+  assert.equal(readback.status, "UNAVAILABLE")
+  assert.doesNotMatch(JSON.stringify(readback), /fixture-secret-must-not-be-reported/u)
+  const report = runPnpmSecurityFixture(context, { pnpmSecurityAuthorizationReadback: readback })
+  assert.equal(report.status, "FAIL")
+})
+
+for (const [name, mutateEvent] of [
+  [
+    "spoofed repository",
+    (event) => {
+      event.repository.full_name = "attacker/courtside-tw"
+    }
+  ],
+  [
+    "wrong PR number",
+    (event) => {
+      event.number = 175
+    }
+  ],
+  [
+    "stale PR head",
+    (event) => {
+      event.pull_request.head.sha = "b".repeat(40)
+    }
+  ],
+  [
+    "wrong PR event base",
+    (event) => {
+      event.pull_request.base.sha = "b".repeat(40)
+    }
+  ]
+]) {
+  test(`pnpm security rejects actual Actions event with ${name}`, () => {
+    const context = makePnpmSecurityFixture()
+    const eventPath = path.join(context.fixture.root, "github-pnpm-security-event.json")
+    const event = JSON.parse(fs.readFileSync(eventPath, "utf8"))
+    mutateEvent(event)
+    fs.writeFileSync(eventPath, JSON.stringify(event))
+    const githubActionsContext = traceabilityValidator.inspectGitHubActionsContext({
+      environment: {
+        GITHUB_ACTIONS: "true",
+        GITHUB_REPOSITORY: "bynanci/courtside-tw",
+        GITHUB_EVENT_NAME: "pull_request",
+        GITHUB_EVENT_PATH: eventPath,
+        GITHUB_SHA: fixtureActionsMergeSha,
+        GITHUB_WORKFLOW: "CI",
+        GITHUB_JOB: "frontend-contract",
+        GITHUB_RUN_ID: fixtureActionsRunId,
+        GITHUB_RUN_NUMBER: fixtureActionsRunNumber,
+        GITHUB_RUN_ATTEMPT: fixtureActionsRunAttempt,
+        GITHUB_REF: "refs/pull/174/merge",
+        GITHUB_BASE_REF: "main",
+        GITHUB_HEAD_REF: pnpmSecurityBranch
+      },
+      gitBinding: context.gitBinding
+    })
+    const report = runPnpmSecurityFixture(context, { githubActionsContext })
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /pnpm security/u)
+  })
+}
