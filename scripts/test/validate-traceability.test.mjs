@@ -356,6 +356,8 @@ test("T086 completed producer checks are revoked and replaced before recompute",
     workflowText,
     /checks\.create\(\{owner,repo,name:CHECK_NAME,head_sha:pr\.head\.sha,external_id:`courtside-t086:pr:\$\{pr\.number\}`,status:'in_progress'/u
   )
+  assert.doesNotMatch(workflowText, /own\.length>1/u)
+  assert.match(workflowText, /reusable\.length>1/u)
 })
 
 test("issue 164 rejects missing, stale, spoofed, edited and widened OWNER authority", () => {
