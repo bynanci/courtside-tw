@@ -2009,10 +2009,7 @@ test("media-rights dispatch keeps its legacy typo as an explicit non-scope alias
     traceabilityValidator.MEDIA_RIGHTS_DISPATCH_PATHS[2],
     "scripts/test/validate-traceability.mjs"
   )
-  assert.equal(
-    traceabilityValidator.MEDIA_RIGHTS_PATHS[2],
-    "scripts/validate-traceability.mjs"
-  )
+  assert.equal(traceabilityValidator.MEDIA_RIGHTS_PATHS[2], "scripts/validate-traceability.mjs")
   const gate = traceabilityValidator.createMediaRightsAuthorizationGate()
   assert.equal(gate.allowsPath("scripts/test/validate-traceability.mjs"), false)
   assert.equal(gate.allowsPath("scripts/validate-traceability.mjs"), true)
