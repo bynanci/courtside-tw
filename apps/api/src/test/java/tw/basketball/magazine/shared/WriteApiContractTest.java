@@ -48,9 +48,11 @@ import tw.basketball.magazine.identity.api.AccountController;
 import tw.basketball.magazine.identity.application.AccountDataService;
 import tw.basketball.magazine.media.api.EditorialMediaController;
 import tw.basketball.magazine.media.api.EditorialMediaMetadataController;
+import tw.basketball.magazine.media.api.MediaLibraryArchiveController;
 import tw.basketball.magazine.media.api.PublisherMediaController;
 import tw.basketball.magazine.media.application.EditorialMediaMetadataService;
 import tw.basketball.magazine.media.application.EditorialMediaService;
+import tw.basketball.magazine.media.application.MediaLibraryArchiveService;
 import tw.basketball.magazine.media.application.PublisherMediaService;
 import tw.basketball.magazine.publication.api.EditorialApiExceptionHandler;
 import tw.basketball.magazine.publication.api.EditorialArticleController;
@@ -71,7 +73,8 @@ final class WriteApiContractTest {
     private static final List<Class<?>> CONTROLLERS = List.of(
             EditorialArticleController.class, EditorialIssueController.class,
             EditorialMediaController.class, EditorialMediaMetadataController.class,
-            PublisherMediaController.class, EditorialTaxonomyController.class,
+            MediaLibraryArchiveController.class, PublisherMediaController.class,
+            EditorialTaxonomyController.class,
             EditorialContributorController.class, ReaderLibraryController.class, AccountController.class
     );
     private final List<Object> services = new ArrayList<>();
@@ -87,6 +90,7 @@ final class WriteApiContractTest {
                         new EditorialIssueController(service(EditorialIssueService.class)),
                         new EditorialMediaController(service(EditorialMediaService.class)),
                         new EditorialMediaMetadataController(service(EditorialMediaMetadataService.class)),
+                        new MediaLibraryArchiveController(service(MediaLibraryArchiveService.class)),
                         new PublisherMediaController(service(PublisherMediaService.class)),
                         new EditorialTaxonomyController(service(TaxonomyService.class)),
                         new EditorialContributorController(service(EditorialContributorService.class)),

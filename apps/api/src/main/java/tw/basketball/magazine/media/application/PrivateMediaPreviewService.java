@@ -1,6 +1,8 @@
 package tw.basketball.magazine.media.application;
 
 import java.io.IOException;
+import java.sql.Timestamp;
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -37,19 +39,20 @@ public final class PrivateMediaPreviewService {
         }
     }
 
-    public MediaPage list(ActorContext actor, int limit, UUID cursor) {
+    public MediaPage list(ActorContext actor, int limit, UUID cursor, boolean archived) {
         requireEditorialRole(actor);
         if (limit < 1 || limit > 100) {
             throw EditorialProblemException.invalid("/limit", "LIMIT_INVALID", "limit must be between 1 and 100");
         }
         List<MediaSummary> rows = jdbcTemplate.query("""
-                SELECT id, mime_type, processing_state, alt_text, width, height, version
-                FROM media_asset WHERE (?::uuid IS NULL OR id < ?::uuid)
+                SELECT id, mime_type, processing_state, alt_text, width, height, version, archived_at
+                FROM media_asset WHERE (archived_at IS NOT NULL) = ?
+                  AND (?::uuid IS NULL OR id < ?::uuid)
                 ORDER BY id DESC LIMIT ?
                 """, (row, index) -> new MediaSummary(row.getObject("id", UUID.class),
                 row.getString("mime_type"), row.getString("processing_state"), row.getString("alt_text"),
-                row.getObject("width", Integer.class), row.getObject("height", Integer.class), row.getLong("version")),
-                cursor, cursor, limit + 1);
+                row.getObject("width", Integer.class), row.getObject("height", Integer.class), row.getLong("version"), archivedAt(row.getTimestamp("archived_at"))),
+                archived, cursor, cursor, limit + 1);
         boolean hasNext = rows.size() > limit;
         List<MediaSummary> items = List.copyOf(rows.subList(0, Math.min(limit, rows.size())));
         return new MediaPage(items, hasNext ? items.getLast().assetId() : null);
@@ -109,8 +112,12 @@ public final class PrivateMediaPreviewService {
     private record Media(String key, String checksum, String mimeType, long byteSize, String state, long version) {
     }
 
+    private static Instant archivedAt(Timestamp value) {
+        return value == null ? null : value.toInstant();
+    }
+
     public record MediaSummary(UUID assetId, String mimeType, String processingState, String altText,
-                               Integer width, Integer height, long version) {
+                               Integer width, Integer height, long version, Instant archivedAt) {
     }
 
     public record MediaPage(List<MediaSummary> items, UUID nextCursor) {

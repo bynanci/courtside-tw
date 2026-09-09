@@ -58,3 +58,21 @@ export function buildMediaMetadataUpdate(
     }
   }
 }
+
+/** Library membership stays independent of processing and rights state. */
+export function canArchiveLibraryMedia(
+  item: { archivedAt: string | null; processingState?: string } | null,
+  busy: boolean
+): boolean {
+  return item !== null && item.archivedAt === null && !busy
+}
+
+export function mediaArchiveFeedback(status: number): string {
+  return status === 409
+    ? "媒體版本已變更；已清除選取，請重新選取最新資料後再封存。"
+    : "封存未完成，請稍後重試。"
+}
+
+export function mediaPreviewFallback(altText: string | null, state: string): string {
+  return `${altText || `媒體狀態：${state}`}；私人預覽目前無法顯示。`
+}

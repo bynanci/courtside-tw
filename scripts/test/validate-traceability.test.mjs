@@ -2015,6 +2015,82 @@ test("media-rights dispatch keeps its legacy typo as an explicit non-scope alias
   assert.equal(gate.allowsPath("scripts/validate-traceability.mjs"), true)
 })
 
+test("media-library archive authority stays closed until its owner dispatch is sealed", () => {
+  const gate = traceabilityValidator.createMediaArchiveAuthorizationGate({
+    ...traceabilityValidator.MEDIA_ARCHIVE_AUTHORIZATION,
+    ref: null,
+    body_sha256: null,
+    recorded_at: null,
+    initial_seed: {
+      ...traceabilityValidator.MEDIA_ARCHIVE_AUTHORIZATION.initial_seed,
+      head_sha: null,
+      tree_sha: null
+    }
+  })
+  const changedPaths = [...traceabilityValidator.MEDIA_ARCHIVE_PATHS]
+  const errors = []
+
+  assert.equal(gate.isBound(), false)
+  assert.equal(
+    gate.requested(
+      changedPaths,
+      null,
+      null,
+      traceabilityValidator.MEDIA_ARCHIVE_AUTHORIZATION.base_sha
+    ),
+    false
+  )
+  assert.equal(gate.allowsPath(changedPaths[0]), false)
+  assert.equal(
+    gate.validate({
+      changedPaths,
+      changeBaseSha: traceabilityValidator.MEDIA_ARCHIVE_AUTHORIZATION.base_sha,
+      boundedScopeActive: false,
+      errors
+    }),
+    false
+  )
+  assert.match(errors.join("\n"), /media archive authorization is unbound/u)
+})
+
+test("media-library archive scope cannot authorize governance or release files", () => {
+  const gate = traceabilityValidator.createMediaArchiveAuthorizationGate()
+
+  for (const blockedPath of [
+    "README.md",
+    "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+    ".github/workflows/ci.yml",
+    "apps/api/src/main/java/tw/basketball/magazine/identity/OidcSecurityConfiguration.java"
+  ]) {
+    assert.equal(gate.allowsPath(blockedPath), false, blockedPath)
+  }
+})
+
+test("media-library archive dispatch closes exactly its twenty-six regular paths", () => {
+  const paths = traceabilityValidator.MEDIA_ARCHIVE_PATHS
+  assert.equal(paths.length, 26)
+  assert.equal(new Set(paths).size, paths.length)
+  assert.ok(
+    paths.includes(
+      "apps/api/src/main/java/tw/basketball/magazine/media/api/MediaLibraryArchiveController.java"
+    )
+  )
+  assert.ok(
+    paths.includes("apps/api/src/test/java/tw/basketball/magazine/shared/WriteApiContractTest.java")
+  )
+  assert.ok(paths.includes("scripts/validate-traceability.mjs"))
+  assert.ok(paths.includes("scripts/test/validate-traceability.test.mjs"))
+  assert.equal(paths.includes("README.md"), false)
+})
+
+test("media-library archive scope records the write-controller contract fixture", () => {
+  assert.ok(
+    traceabilityValidator.MEDIA_ARCHIVE_PATHS.includes(
+      "apps/api/src/test/java/tw/basketball/magazine/shared/WriteApiContractTest.java"
+    )
+  )
+})
+
 test("receipt authority is pinned to the protected PR149 implementation snapshot", () => {
   const traceabilityText = fs.readFileSync(
     path.join(repositoryRoot, featurePath, "traceability.md"),

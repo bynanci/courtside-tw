@@ -3,10 +3,7 @@ import { onMounted, ref } from "vue"
 import { navigateTo } from "#app"
 
 import MediaLibrary from "../../../features/studio/media/MediaLibrary.vue"
-import {
-  resolveRequiredStudioRole,
-  type StudioRole
-} from "../../../features/studio/studio-contract"
+import { resolveStudioRole, type StudioRole } from "../../../features/studio/studio-contract"
 import { loginPath, readStudioSession } from "../../../features/studio/studio-session"
 
 const route = useRoute()
@@ -21,9 +18,9 @@ onMounted(async () => {
       error.value = "請先使用 OIDC 登入 Media Library。"
       return
     }
-    role.value = resolveRequiredStudioRole(session.roles, "EDITOR")
+    role.value = resolveStudioRole(session.roles, null, "EDITOR")
     if (!role.value) {
-      error.value = "Media Library 需要 EDITOR role；URL role 不能提升權限。"
+      error.value = "Media Library 需要 Editor 或 Publisher 角色。"
     }
   } catch (cause) {
     error.value = cause instanceof Error ? cause.message : "無法讀取 OIDC session。"
@@ -53,5 +50,5 @@ const login = () => navigateTo(loginPath(route.fullPath))
       使用 OIDC 登入
     </button>
   </section>
-  <MediaLibrary v-else-if="role === 'EDITOR'" :role="role" />
+  <MediaLibrary v-else-if="role" :role="role" />
 </template>

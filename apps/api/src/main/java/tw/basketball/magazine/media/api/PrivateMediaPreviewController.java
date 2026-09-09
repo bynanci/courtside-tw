@@ -38,14 +38,18 @@ public final class PrivateMediaPreviewController {
         this.service = Objects.requireNonNull(service, "service");
     }
 
-    @GetMapping(path = "/api/v1/editor/media", produces = MediaType.APPLICATION_JSON_VALUE)
+    @GetMapping(path = {"/api/v1/editor/media", "/api/v1/publisher/media"}, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<PrivateMediaPreviewService.MediaPage> list(
             @RequestParam(defaultValue = "25") String limit,
             @RequestParam(required = false) String cursor,
+            @RequestParam(defaultValue = "false") String archived,
             Authentication authentication, HttpServletRequest request
     ) {
         RequestId requestId = requestId(request);
         ActorContext actor = actor(authentication, requestId);
+        if (!"true".equals(archived) && !"false".equals(archived)) {
+            throw EditorialProblemException.invalid("/archived", "ARCHIVED_INVALID", "archived must be true or false");
+        }
         int pageLimit;
         UUID pageCursor;
         try {
@@ -56,7 +60,7 @@ public final class PrivateMediaPreviewController {
         }
         return ResponseEntity.ok().cacheControl(CacheControl.noStore().cachePrivate())
                 .header("X-Request-Id", requestId.value()).header("X-Content-Type-Options", "nosniff")
-                .body(service.list(actor, pageLimit, pageCursor));
+                .body(service.list(actor, pageLimit, pageCursor, Boolean.parseBoolean(archived)));
     }
 
     @GetMapping(path = {"/api/v1/editor/media/{assetId}/preview", "/api/v1/publisher/media/{assetId}/preview"})

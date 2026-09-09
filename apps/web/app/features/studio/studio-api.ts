@@ -174,13 +174,20 @@ export async function getArticleCredits(
   )
 }
 
-export async function getPrivateMediaPreview(assetId: string, signal: AbortSignal): Promise<Blob> {
+export async function getPrivateMediaPreview(
+  assetId: string,
+  signal: AbortSignal,
+  role: "EDITOR" | "PUBLISHER" = "EDITOR"
+): Promise<Blob> {
   const response = await studioFetch(
-    new Request(`${STUDIO_BFF_BASE}/api/v1/editor/media/${assetId}/preview`, {
-      signal,
-      headers: { accept: "image/avif,image/jpeg,image/png,image/webp" },
-      cache: "no-store"
-    })
+    new Request(
+      `${STUDIO_BFF_BASE}/api/v1/${role === "PUBLISHER" ? "publisher" : "editor"}/media/${assetId}/preview`,
+      {
+        signal,
+        headers: { accept: "image/avif,image/jpeg,image/png,image/webp" },
+        cache: "no-store"
+      }
+    )
   )
   const contentType = response.headers.get("content-type")?.split(";")[0]
   if (
@@ -237,20 +244,33 @@ export async function transitionIssue(
   })
 }
 
-export interface StudioMediaItem {
-  assetId: string
-  mimeType: string
-  processingState: "PENDING" | "PROCESSING" | "READY" | "FAILED" | "REVOKED"
-  altText: string | null
-  width: number | null
-  height: number | null
-  version: number
-}
+export type StudioMediaItem = components["schemas"]["PrivateMediaSummary"]
+export type MediaLibraryArchiveResult = components["schemas"]["MediaLibraryArchiveResult"]
+
 export async function listStudioMedia(
-  cursor?: string
-): Promise<{ items: StudioMediaItem[]; nextCursor?: string | null }> {
-  return taxonomyRequest(
-    `/api/v1/editor/media?limit=25${cursor ? `&cursor=${encodeURIComponent(cursor)}` : ""}`
+  cursor?: string,
+  archived = false,
+  role: "EDITOR" | "PUBLISHER" = "EDITOR"
+): Promise<components["schemas"]["PrivateMediaPage"]> {
+  const client = createStudioApiClient()
+  const params = { query: { limit: 25, cursor, archived } }
+  return unwrap(
+    role === "PUBLISHER"
+      ? await client.GET("/api/v1/publisher/media", { params })
+      : await client.GET("/api/v1/editor/media", { params })
+  )
+}
+
+export async function archiveStudioMedia(
+  asset: StudioMediaItem,
+  role: "EDITOR" | "PUBLISHER"
+): Promise<MediaLibraryArchiveResult> {
+  const client = createStudioApiClient()
+  const params = { path: { id: asset.assetId }, header: { "If-Match": ifMatch(asset.version) } }
+  return unwrap(
+    role === "PUBLISHER"
+      ? await client.POST("/api/v1/publisher/media/{id}:archive", { params })
+      : await client.POST("/api/v1/editor/media/{id}:archive", { params })
   )
 }
 

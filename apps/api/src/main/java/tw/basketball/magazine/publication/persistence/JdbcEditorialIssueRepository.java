@@ -25,6 +25,7 @@ import tools.jackson.databind.ObjectMapper;
 import tw.basketball.magazine.outbox.OutboxEventDraft;
 import tw.basketball.magazine.outbox.OutboxRepository;
 import tw.basketball.magazine.publication.domain.PublicationState;
+import tw.basketball.magazine.publication.application.EditorialProblemException;
 
 /** PostgreSQL adapter for issue drafts and insert-only command receipts. */
 public final class JdbcEditorialIssueRepository implements EditorialIssueRepository {
@@ -46,6 +47,7 @@ public final class JdbcEditorialIssueRepository implements EditorialIssueReposit
 
     @Override
     public IssueRecord insertDraft(String title, String slug, String summary, UUID coverAssetId) {
+        requireAvailableCover(coverAssetId, null);
         UUID issueId = jdbcTemplate.queryForObject("""
                 INSERT INTO publication_issue (
                     id, issue_number, slug, title, summary, cover_asset_id, state, version
@@ -273,12 +275,31 @@ public final class JdbcEditorialIssueRepository implements EditorialIssueReposit
             String summary,
             UUID coverAssetId
     ) {
+        requireAvailableCover(coverAssetId, issueId);
         return jdbcTemplate.update("""
                 UPDATE publication_issue
                 SET title = ?, slug = ?, summary = ?, cover_asset_id = ?,
                     version = version + 1, updated_at = transaction_timestamp()
                 WHERE id = ? AND state = 'DRAFT' AND version = ?
                 """, title, slug, summary, coverAssetId, issueId, expectedVersion) == 1;
+    }
+
+    private void requireAvailableCover(UUID assetId, UUID issueId) {
+        List<Boolean> blocked = jdbcTemplate.query("""
+                SELECT asset.archived_at IS NOT NULL AND NOT EXISTS (
+                    SELECT 1 FROM publication_issue issue
+                    WHERE issue.id = ? AND issue.cover_asset_id = asset.id
+                ) AS blocked
+                FROM media_asset asset WHERE asset.id = ? FOR SHARE OF asset
+                """, (row, index) -> row.getBoolean("blocked"), issueId, assetId);
+        if (blocked.isEmpty()) {
+            throw EditorialProblemException.invalid(
+                    "/coverAssetId", "MEDIA_REFERENCE_NOT_FOUND", "cover media was not found");
+        }
+        if (blocked.getFirst()) {
+            throw EditorialProblemException.invalid(
+                    "/coverAssetId", "MEDIA_ARCHIVED", "archived media cannot be a new cover");
+        }
     }
 
     @Override
