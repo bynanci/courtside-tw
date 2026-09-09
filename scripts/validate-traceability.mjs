@@ -12,13 +12,13 @@ export const TRACEABILITY_SCHEMA = "courtside-traceability/v1"
 export const COMPLETION_RECEIPT_SCHEMA = "courtside-t085-completion-receipt/v2"
 export const OWNER_AUTHORIZATION_SCHEMA = "courtside-t085-owner-authorization/v1"
 export const REQUIRED_GATE_AUTHORIZATION_REF =
-  "https://github.com/bynanci/courtside-tw/issues/164#issuecomment-5600783432"
-export const REQUIRED_GATE_AUTHORIZATION_BASE_SHA = "69511d513dd8134b2b12009c185d043cac1de204"
-export const REQUIRED_GATE_BRANCH = "fix/t086-check-lifecycle-main69511"
-export const REQUIRED_GATE_PULL_REQUEST = 184
+  "https://github.com/bynanci/courtside-tw/issues/164#issuecomment-5601162669"
+export const REQUIRED_GATE_AUTHORIZATION_BASE_SHA = "e284fc011d9d5dea9cdcc79b683ef38e3e17d5a2"
+export const REQUIRED_GATE_BRANCH = "fix/t086-check-history-e284fc0"
+export const REQUIRED_GATE_PULL_REQUEST = 185
 export const REQUIRED_GATE_AUTHORIZATION_BODY_SHA256 =
-  "4ccfdc9fb6f8df28253f66a8b768ead44ce29055d8bd666d075a5bd63c6a1aa6"
-const requiredGateAuthorizationRecordedAt = "2026-09-09T11:03:03Z"
+  "95c4c2945009ff24c9bbbb0f47e37d17292b503b629f97447ceffcf343c4b380"
+const requiredGateAuthorizationRecordedAt = "2026-09-09T11:34:54Z"
 export const REQUIRED_GATE_AUTHORIZED_PATHS = Object.freeze([
   ".github/workflows/t086-required-gate.yml",
   "scripts/validate-traceability.mjs",

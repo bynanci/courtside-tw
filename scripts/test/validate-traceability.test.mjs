@@ -31,10 +31,10 @@ const {
 } = traceabilityValidator
 
 const baseSha = AUTHORIZED_BASE_SHA
-const requiredGateBase = "69511d513dd8134b2b12009c185d043cac1de204"
-const requiredGateBranch = "fix/t086-check-lifecycle-main69511"
+const requiredGateBase = "e284fc011d9d5dea9cdcc79b683ef38e3e17d5a2"
+const requiredGateBranch = "fix/t086-check-history-e284fc0"
 const requiredGateAuthorizationRef =
-  "https://github.com/bynanci/courtside-tw/issues/164#issuecomment-5600783432"
+  "https://github.com/bynanci/courtside-tw/issues/164#issuecomment-5601162669"
 const requiredGatePaths = [
   ".github/workflows/t086-required-gate.yml",
   "scripts/validate-traceability.mjs",
@@ -44,49 +44,49 @@ const requiredGateProtectedPushHead = "8888888888888888888888888888888888888888"
 const requiredGateProtectedPushTree = "9999999999999999999999999999999999999999"
 // Verbatim immutable OWNER receipt, including its implementation-only boundaries.
 const requiredGateAuthorizationBody = [
-  "<!-- t086-required-gate:owner-exact-path-dispatch:v9:start -->",
-  "## Fresh OWNER exact-base dispatch — #164 completed check replacement",
+  "<!-- t086-required-gate:owner-exact-path-dispatch:v10:start -->",
+  "## Fresh OWNER exact-base dispatch — #164 completed producer history",
   "",
   "**Decision:** `DISPATCH_ACCEPTED / IMPLEMENTATION_REVIEW_OPTIMIZE_MERGE_ENGINEERING_ONLY`.",
   "",
-  "This immutable successor is bound to the protected main after PR #183. It authorizes only the observed GitHub Checks API lifecycle repair: completed producer checks cannot be reopened as in-progress; the trusted workflow must revoke completed successes and create one fresh in-progress context before recomputation. It does not refresh PR #161 or authorize provider/ruleset mutation.",
+  "This immutable successor is bound to the protected main after PR #184. It authorizes only the observed GitHub Checks API lifecycle repair: historical completed producer checks are valid revocation history and must not make the next reconciliation ambiguous; only multiple simultaneous active contexts or non-trusted producers remain ambiguous. It does not refresh PR #161 or authorize provider/ruleset mutation.",
   "",
   "```json",
   "{",
-  '  "schema_version": "courtside-t086-required-gate-owner-exact-path-dispatch/v7",',
+  '  "schema_version": "courtside-t086-required-gate-owner-exact-path-dispatch/v8",',
   '  "decision": "DISPATCH_ACCEPTED",',
   '  "accepted_by": "bynanci",',
   '  "repository": "bynanci/courtside-tw",',
   '  "tracker_issue": 164,',
-  '  "pr": 184,',
-  '  "branch": "fix/t086-check-lifecycle-main69511",',
+  '  "pr": 185,',
+  '  "branch": "fix/t086-check-history-e284fc0",',
   '  "authorization_base": {',
   '    "branch": "main",',
-  '    "sha": "69511d513dd8134b2b12009c185d043cac1de204",',
-  '    "parent_sha": "c2a4b2d2a5ba3f97fc3c50b7723c01f4d3b98e2d",',
-  '    "tree_sha": "087b85a84e277015a3e65b3063a5f4ff8a7760d2",',
+  '    "sha": "e284fc011d9d5dea9cdcc79b683ef38e3e17d5a2",',
+  '    "parent_sha": "69511d513dd8134b2b12009c185d043cac1de204",',
+  '    "tree_sha": "2275738fb5ae424c13a6172cd51413d43bc83bd0",',
   '    "protected": true,',
   '    "t086_push": {',
-  '      "run_id": 34343154979,',
+  '      "run_id": 34346129451,',
   '      "result": "FAIL",',
-  '      "reason": "Completed producer check could not be reopened as in_progress"',
+  '      "reason": "Historical completed producer checks were treated as ambiguous on the next reconciliation"',
   "    },",
   '    "ci": {',
-  '      "run_id": 34343154968,',
+  '      "run_id": 34345461386,',
   '      "result": "PENDING_READBACK"',
   "    },",
   '    "security": {',
-  '      "run_id": 34343155015,',
-  '      "result": "PENDING_READBACK"',
+  '      "run_id": 34345461427,',
+  '      "result": "PASS"',
   "    }",
   "  },",
   '  "initial_seed": {',
-  '    "head_sha": "c65142c63b7e20c5b88fcf834e0e78100285055d",',
-  '    "tree_sha": "018be6c654a47b3bac42d516cef21edb2b2d75a2",',
+  '    "head_sha": "b2d5061d3bbe82bd5af6ddd6ab5354350d540fed",',
+  '    "tree_sha": "f497317445be1717170e64c30af07bc7d77136e8",',
   '    "changed_paths": [',
   '      "scripts/test/validate-traceability.test.mjs"',
   "    ],",
-  '    "red_evidence": "The new completed-context regression is expected to fail until the workflow implementation is added."',
+  '    "red_evidence": "The completed-history regression is expected to fail until the workflow implementation is added."',
   "  },",
   '  "authorized_paths": [',
   '    ".github/workflows/t086-required-gate.yml",',
@@ -94,17 +94,17 @@ const requiredGateAuthorizationBody = [
   '    "scripts/test/validate-traceability.test.mjs"',
   "  ],",
   '  "allowed_actions": [',
-  '    "append the completed-check replacement regression and trusted workflow repair in the three exact paths",',
+  '    "append the completed-history regression and trusted workflow repair in the three exact paths",',
   '    "run exact-head non-deploying CI, Security, independent review and optimize",',
-  '    "mark PR #184 ready only after the exact-head evidence and review pass",',
-  '    "perform one protected exact-head squash merge of PR #184 after all required checks and zero unresolved threads"',
+  '    "mark PR #185 ready only after the exact-head evidence and review pass",',
+  '    "perform one protected exact-head squash merge of PR #185 after all required checks and zero unresolved threads"',
   "  ],",
   '  "invariants": [',
   '    "all frozen T085 receipt bytes, README bytes and task checkbox bytes remain unchanged",',
   '    "no ruleset, branch protection, provider, production, credential or secret mutation",',
   '    "no participant research, Web3/T087+ work or external product write",',
   '    "post-dispatch commits are linear and stay within the exact three-path closure",',
-  '    "completed producer successes are revoked before a fresh in-progress check is created"',
+  '    "completed producer history is revoked safely while multiple active contexts remain blocking"',
   "  ],",
   '  "user_instruction": "請幫我將剩餘的任務完成 ,完成後@review 並且 @optimize ，最終再依你的經驗merge",',
   '  "authorization_source": "The user\'s current instruction in this conversation, recorded through the connected OWNER account for this bounded engineering scope."',
@@ -119,7 +119,7 @@ const requiredGateAuthorizationBody = [
   "- HOLD, FAIL, UNKNOWN, missing/stale/ambiguous/spoofed/edited/deleted/unavailable evidence remains blocking.",
   "- The current 12-context ruleset remains unchanged; provider/ruleset mutation needs a separate gate.",
   "",
-  "<!-- t086-required-gate:owner-exact-path-dispatch:v9:end -->"
+  "<!-- t086-required-gate:owner-exact-path-dispatch:v10:end -->"
 ].join("\n")
 function makeRequiredGateReadback(overrides = {}) {
   return {
@@ -129,8 +129,8 @@ function makeRequiredGateReadback(overrides = {}) {
     issue_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/164",
     user_login: "bynanci",
     author_association: "OWNER",
-    created_at: "2026-09-09T11:03:03Z",
-    updated_at: "2026-09-09T11:03:03Z",
+    created_at: "2026-09-09T11:34:54Z",
+    updated_at: "2026-09-09T11:34:54Z",
     body: requiredGateAuthorizationBody,
     errors: [],
     ...overrides
@@ -143,7 +143,7 @@ function makeRequiredGateActionsContext(
 ) {
   const eventPath = path.join(root, "required-gate-event.json")
   const pullRequest = {
-    number: 184,
+    number: 185,
     state: "open",
     draft: true,
     head: {
@@ -174,7 +174,7 @@ function makeRequiredGateActionsContext(
       GITHUB_RUN_ID: fixtureActionsRunId,
       GITHUB_RUN_NUMBER: fixtureActionsRunNumber,
       GITHUB_RUN_ATTEMPT: fixtureActionsRunAttempt,
-      GITHUB_REF: "refs/pull/184/merge",
+      GITHUB_REF: "refs/pull/185/merge",
       GITHUB_BASE_REF: "main",
       GITHUB_HEAD_REF: requiredGateBranch,
       ...environmentOverrides
@@ -236,7 +236,7 @@ function runRequiredGateFixture(fixture, overrides = {}) {
   return runCompletedFixture(fixture, {
     changeBaseSha: requiredGateBase,
     changedPaths: [...requiredGatePaths],
-    evaluatedHeadCommittedAt: "2026-09-09T11:20:00.000Z",
+    evaluatedHeadCommittedAt: "2026-09-09T11:50:00.000Z",
     requireExactHeadEvidence: true,
     githubActionsContext,
     requiredGateAuthorizationReadback: makeRequiredGateReadback(),
@@ -260,7 +260,7 @@ test("issue 164 authenticates only the immutable OWNER three-path draft from its
   assert.deepEqual(report.scope_validation.unauthorized_paths, [])
   assert.equal(
     report.source.required_gate_authorization_readback.body_sha256,
-    "4ccfdc9fb6f8df28253f66a8b768ead44ce29055d8bd666d075a5bd63c6a1aa6"
+    "95c4c2945009ff24c9bbbb0f47e37d17292b503b629f97447ceffcf343c4b380"
   )
   assert.equal(report.scope_boundaries.t086_dispatched, false)
 })
@@ -273,7 +273,7 @@ test("issue 164 authenticates the exact protected-main squash push after its dra
     currentHead: requiredGateProtectedPushHead,
     changeBaseSha: requiredGateBase,
     changedPaths: [...requiredGatePaths],
-    evaluatedHeadCommittedAt: "2026-09-09T11:20:00.000Z",
+    evaluatedHeadCommittedAt: "2026-09-09T11:50:00.000Z",
     requireExactHeadEvidence: true,
     githubActionsContext,
     requiredGateAuthorizationReadback: makeRequiredGateReadback(),
@@ -309,7 +309,7 @@ test("issue 164 protected-main push rejects replayed topology", () => {
       currentHead: requiredGateProtectedPushHead,
       changeBaseSha: requiredGateBase,
       changedPaths: [...requiredGatePaths],
-      evaluatedHeadCommittedAt: "2026-09-09T11:20:00.000Z",
+      evaluatedHeadCommittedAt: "2026-09-09T11:50:00.000Z",
       requireExactHeadEvidence: true,
       githubActionsContext,
       requiredGateAuthorizationReadback: makeRequiredGateReadback(),
@@ -356,6 +356,8 @@ test("T086 completed producer checks are revoked and replaced before recompute",
     workflowText,
     /checks\.create\(\{owner,repo,name:CHECK_NAME,head_sha:pr\.head\.sha,external_id:`courtside-t086:pr:\$\{pr\.number\}`,status:'in_progress'/u
   )
+  assert.doesNotMatch(workflowText, /own\.length>1/u)
+  assert.match(workflowText, /reusable\.length>1/u)
 })
 
 test("issue 164 rejects missing, stale, spoofed, edited and widened OWNER authority", () => {
@@ -413,7 +415,7 @@ test("issue 164 rejects scope, base, exact-head, draft, PR, fork, Actions and to
     ["non-exact", { requireExactHeadEvidence: false }],
     ["untrusted", { githubActionsContext: { ...context } }],
     ["wrong evaluated head", { currentHead: fixturePostT085FinalPrHead }],
-    ["pre-dispatch head", { evaluatedHeadCommittedAt: "2026-09-09T11:03:03Z" }],
+    ["pre-dispatch head", { evaluatedHeadCommittedAt: "2026-09-09T11:34:54Z" }],
     [
       "ready",
       {

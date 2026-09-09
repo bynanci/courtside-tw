@@ -214,7 +214,7 @@ jobs:
               const actionChecks=existing.filter(check=>check.app?.id===APP_ID);
               const own=actionChecks.filter(check=>check.external_id===`courtside-t086:pr:${pr.number}`);
               const reusable=own.filter(check=>['queued','in_progress'].includes(check.status));
-              const ambiguous=existing.some(check=>check.app?.id!==APP_ID)||own.length>1||existing.length!==own.length;
+              const ambiguous=existing.some(check=>check.app?.id!==APP_ID)||reusable.length>1||existing.length!==own.length;
               let previousFence=null;
               for(const check of actionChecks) {
                 try {
