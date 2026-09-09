@@ -1898,7 +1898,7 @@ export function createStudioCompletionAuthorizationGate(binding = STUDIO_COMPLET
     [...allPaths].every(
       (p) =>
         typeof p === "string" &&
-        !p.includes("..") &&
+        !p.split("/").includes("..") &&
         !p.includes("\\") &&
         /^(?:apps\/(?:api|web)\/|contracts\/openapi\.yaml$|packages\/api-client\/src\/generated\/openapi\.d\.ts$|scripts\/(?:validate-(?:traceability|openapi)\.mjs|test\/validate-traceability\.test\.mjs)$)/.test(
           p

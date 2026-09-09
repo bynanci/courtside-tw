@@ -11886,13 +11886,11 @@ function makeStudioAuthorizationFixture({ push = false, draft = true } = {}) {
     initial_seed: {
       head_sha: "c".repeat(40),
       tree_sha: "d".repeat(40),
-      changed_paths: ["apps/web/app/features/studio/studio-api.ts"]
+      changed_paths: [
+        ...traceabilityValidator.STUDIO_COMPLETION_AUTHORIZATION.initial_seed.changed_paths
+      ]
     },
-    required_paths: [
-      "apps/web/app/features/studio/studio-api.ts",
-      "scripts/validate-traceability.mjs",
-      "scripts/test/validate-traceability.test.mjs"
-    ],
+    required_paths: [...traceabilityValidator.STUDIO_COMPLETION_AUTHORIZATION.required_paths],
     optional_paths: []
   }
   const dispatch = {
@@ -12293,7 +12291,8 @@ test("Studio completion Git inspector proves actual seed, history, frozen bytes 
     ])
       write(p, "base\n")
     config.base_sha = commit("controlled base")
-    write(config.initial_seed.changed_paths[0], "Studio seed\n")
+    assert.ok(config.initial_seed.changed_paths.includes("apps/web/server/api/studio/[...path].ts"))
+    for (const p of config.initial_seed.changed_paths) write(p, "Studio seed\n")
     config.initial_seed.head_sha = commit("accepted controlled seed")
     config.initial_seed.tree_sha = git("rev-parse", "HEAD^{tree}")
     write("scripts/test/validate-traceability.test.mjs", "RED fixture\n")
@@ -12446,3 +12445,129 @@ test("Studio completion singleton never accepts a caller-injected factory config
   assert.equal(report.source.studio_completion_authorization_readback.accepted, false)
   assert.match(report.errors.join("\n"), /Studio completion authorization/u)
 })
+
+test("Studio completion sealed singleton reaches full validator for draft, ready and same-tree squash", async () => {
+  for (const state of ["draft", "ready", "squash-push"]) {
+    const push = state === "squash-push"
+    const { config, context, options } = makeStudioAuthorizationFixture({
+      push,
+      draft: state === "draft"
+    })
+    const temporary = fs.mkdtempSync(path.join(os.tmpdir(), "studio-completion-sealed-module-"))
+    try {
+      fs.symlinkSync(
+        path.join(repositoryRoot, "node_modules"),
+        path.join(temporary, "node_modules"),
+        "dir"
+      )
+      const source = fs.readFileSync(
+        path.join(repositoryRoot, "scripts/validate-traceability.mjs"),
+        "utf8"
+      )
+      const start = source.indexOf("export const STUDIO_COMPLETION_AUTHORIZATION = Object.freeze({")
+      const end = source.indexOf("\n/** A separate closed authority.", start)
+      assert.ok(start > 0 && end > start)
+      // The controlled module substitutes only the descriptor. Production has no config input.
+      const fixtureModule = path.join(temporary, "validator.mjs")
+      fs.writeFileSync(
+        fixtureModule,
+        source.slice(0, start) +
+          "export const STUDIO_COMPLETION_AUTHORIZATION = Object.freeze(" +
+          JSON.stringify(config) +
+          ")\n" +
+          source.slice(end)
+      )
+      const { pathToFileURL } = await import("node:url")
+      const validator = await import(pathToFileURL(fixtureModule).href)
+      const actions = validator.inspectGitHubActionsContext({
+        environment: {
+          GITHUB_ACTIONS: "true",
+          GITHUB_REPOSITORY: "bynanci/courtside-tw",
+          GITHUB_EVENT_NAME: push ? "push" : "pull_request",
+          GITHUB_EVENT_PATH: path.join(context.fixture.root, "studio-event.json"),
+          GITHUB_SHA: push ? context.head : fixtureActionsMergeSha,
+          GITHUB_WORKFLOW: "CI",
+          GITHUB_JOB: "frontend-contract",
+          GITHUB_RUN_ID: fixtureActionsRunId,
+          GITHUB_RUN_NUMBER: fixtureActionsRunNumber,
+          GITHUB_RUN_ATTEMPT: "1",
+          GITHUB_REF: push ? "refs/heads/main" : `refs/pull/${config.pr}/merge`,
+          GITHUB_REF_NAME: push ? "main" : `${config.pr}/merge`,
+          GITHUB_BASE_REF: push ? "" : "main",
+          GITHUB_HEAD_REF: push ? "" : config.branch
+        },
+        gitBinding: context.gitBinding
+      })
+      writeExactHeadForActionsContext(context.fixture.root, actions)
+      const fixture = context.fixture
+      const validate = (overrides = {}) =>
+        validator.validateTraceability({
+          root: fixture.root,
+          currentHead: context.head,
+          evaluatedHeadCommittedAt: "2026-09-09T12:00:00Z",
+          boundedScopeActive: false,
+          changeBaseTasksText: fixture.changeBaseTasksText,
+          changeBaseTraceabilityText: fixture.changeBaseTraceabilityText,
+          changeBaseCompletionReceiptText: fixture.changeBaseCompletionReceiptText,
+          acceptedTraceabilitySha256: fixture.acceptedTraceabilitySha256,
+          acceptedPendingTasksSha256: fixture.acceptedPendingTasksSha256,
+          acceptedCompletedTasksSha256: fixture.acceptedCompletedTasksSha256,
+          ...options,
+          githubActionsContext: actions,
+          studioCompletionAuthorizationReadback: context.readback,
+          ...overrides
+        })
+      const report = validate()
+      assert.equal(
+        report.source.studio_completion_authorization_readback.accepted,
+        true,
+        report.errors.join("\n")
+      )
+      assert.equal(report.status, "PASS", state + "\n" + report.errors.join("\n"))
+      assert.deepEqual(report.scope_validation.unauthorized_paths, [])
+      if (state === "draft") {
+        for (const failure of ["forty-second path", "wrong PR", "missing OWNER"]) {
+          const readback = structuredClone(context.readback)
+          const changedPaths = [...options.changedPaths]
+          if (failure === "forty-second path") changedPaths.push(".github/workflows/ci.yml")
+          if (failure === "wrong PR") readback.pull_request.number = 174
+          if (failure === "missing OWNER") readback.authorization = null
+          const rejected = validate({
+            changedPaths,
+            studioCompletionAuthorizationReadback: readback
+          })
+          assert.equal(rejected.status, "FAIL", failure)
+          assert.equal(
+            rejected.source.studio_completion_authorization_readback.accepted,
+            false,
+            failure
+          )
+          assert.match(rejected.errors.join("\n"), /Studio completion authorization/u)
+        }
+      }
+    } finally {
+      fs.rmSync(temporary, { recursive: true, force: true })
+    }
+  }
+})
+
+for (const unsafePath of [
+  "apps/web/../escape.ts",
+  "apps/web/server/../../escape.ts",
+  "/apps/web/server/escape.ts",
+  "apps/web/server\\escape.ts"
+]) {
+  test(`Studio completion path guard rejects unsafe path ${unsafePath}`, () => {
+    const { config, options } = makeStudioAuthorizationFixture()
+    config.optional_paths.push(unsafePath)
+    const errors = []
+    assert.equal(
+      traceabilityValidator.createStudioCompletionAuthorizationGate(config).validate({
+        ...options,
+        errors
+      }),
+      false
+    )
+    assert.match(errors.join("\n"), /is unbound/u)
+  })
+}
