@@ -26,6 +26,7 @@ const {
   CONTRACT_END,
   CONTRACT_START,
   TRACEABILITY_SCHEMA,
+  createOidcSecurityRemediationAuthorizationGate,
   extractContract,
   validateTraceability
 } = traceabilityValidator
@@ -14434,4 +14435,42 @@ test("Publication cache sealed singleton reaches full validator for draft, ready
       fs.rmSync(temporary, { recursive: true, force: true })
     }
   }
+})
+
+
+const oidcSecurityRemediationBinding = Object.freeze({
+  schema_version: "courtside-oidc-security-remediation-owner-dispatch/v1",
+  ref: "https://github.com/bynanci/courtside-tw/issues/188",
+  api_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/188",
+  body_sha256: "863e4202b768bcc7ae88f6f43700866bc944113ad23c5a46e7f6d7f10602a929",
+  recorded_at: "2026-09-09T23:15:42Z",
+  base_sha: "2cc2cc5acac03af3667126ad28c1e80a58edb7b9",
+  base_tree_sha: "958b1af410e7d0b521469a8f4e24d131c75b7a91",
+  branch: "fix/oidc-security-mock-oauth2-6-0-2",
+  authorized_paths: [
+    "infra/compose/oidc/Dockerfile",
+    "infra/compose/compose.yaml",
+    "scripts/test/validate-traceability.test.mjs",
+    "scripts/validate-traceability.mjs"
+  ],
+  target: {
+    version: "6.0.2",
+    manifest_digest: "sha256:b538810afd589d42fbfb856c588c2065eaeed1dc528d6c532972048e67fc2aff",
+    local_compose_tag: "courtside-tw/mock-oauth2-server:6.0.2-busybox1.38"
+  }
+})
+
+test("OIDC security remediation authority fails closed when its exact scope or immutable pin drifts", () => {
+  const gate = createOidcSecurityRemediationAuthorizationGate(oidcSecurityRemediationBinding)
+  assert.equal(gate.isBound(), true)
+  assert.equal(gate.allowsPath("infra/compose/oidc/Dockerfile"), true)
+  assert.equal(gate.allowsPath(".github/workflows/security.yml"), false)
+
+  const driftedScope = structuredClone(oidcSecurityRemediationBinding)
+  driftedScope.authorized_paths.push(".github/workflows/security.yml")
+  assert.equal(createOidcSecurityRemediationAuthorizationGate(driftedScope).isBound(), false)
+
+  const driftedPin = structuredClone(oidcSecurityRemediationBinding)
+  driftedPin.target.version = "6.0.3"
+  assert.equal(createOidcSecurityRemediationAuthorizationGate(driftedPin).isBound(), false)
 })
