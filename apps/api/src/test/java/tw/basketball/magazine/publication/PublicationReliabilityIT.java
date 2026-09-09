@@ -15,12 +15,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ExecutorService;
+import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
@@ -44,6 +50,9 @@ import tw.basketball.magazine.publication.application.EditorialWorkflowService;
 import tw.basketball.magazine.publication.persistence.JdbcEditorialArticleRepository;
 import tw.basketball.magazine.publication.worker.PublicationExternalInvalidator;
 import tw.basketball.magazine.publication.worker.PublicationJobHandler;
+import tw.basketball.magazine.publication.worker.PublicationInvalidationKeys;
+import tw.basketball.magazine.search.worker.SearchProjection;
+import tw.basketball.magazine.search.worker.SearchProjectionHandler;
 import tw.basketball.magazine.shared.RoleCode;
 
 /**
@@ -95,10 +104,23 @@ final class PublicationReliabilityIT extends EditorialApiIntegrationTestSupport 
     void concurrentWorkersProduceOneSnapshotAndOneSucceededJob() throws Exception {
         MvcArticle article = createAndSchedule("concurrent-worker");
         OutboxEvent event = scheduleEvent("concurrent-worker-schedule");
+        CyclicBarrier bothPurgesStarted = new CyclicBarrier(2);
+        AtomicInteger purgeAttempts = new AtomicInteger();
+        PublicationJobHandler handler = handlerAt("2026-08-10T01:01:00Z", request -> {
+            purgeAttempts.incrementAndGet();
+            try {
+                bothPurgesStarted.await(5, TimeUnit.SECONDS);
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+                throw new AssertionError(exception);
+            } catch (java.util.concurrent.BrokenBarrierException | java.util.concurrent.TimeoutException exception) {
+                throw new AssertionError("Both deliveries must reach the committed purge boundary", exception);
+            }
+        });
         ExecutorService workers = Executors.newFixedThreadPool(2);
         try {
-            Future<?> first = workers.submit(() -> handle(event));
-            Future<?> second = workers.submit(() -> handle(event));
+            Future<?> first = workers.submit(() -> handle(event, handler));
+            Future<?> second = workers.submit(() -> handle(event, handler));
             first.get(10, TimeUnit.SECONDS);
             second.get(10, TimeUnit.SECONDS);
         } finally {
@@ -109,6 +131,344 @@ final class PublicationReliabilityIT extends EditorialApiIntegrationTestSupport 
         assertEquals("SUCCEEDED", jobStatus("concurrent-worker-schedule"));
         assertEquals("PUBLISHED", articleState(article.id()));
         assertEquals(1, snapshotCount(article.id(), article.revisionId()));
+        assertEquals(2, purgeAttempts.get());
+    }
+
+    @Test
+    void unconfiguredProviderCannotCompletePublicationDespiteCommittedOrigin() throws Exception {
+        MvcArticle article = createAndSchedule("unconfigured-purge");
+        OutboxEvent event = scheduleEvent("unconfigured-purge-schedule");
+        PublicationJobHandler handler = handlerAt("2026-08-10T01:01:00Z",
+                PublicationExternalInvalidator.unavailable());
+
+        for (int delivery = 0; delivery < 2; delivery++) {
+            OutboxHandlerException failure = assertThrows(OutboxHandlerException.class, () -> handler.handle(event));
+            assertTrue(failure.retryable());
+            assertEquals("PENDING", jobStatus("unconfigured-purge-schedule"));
+            assertEquals("PUBLISHED", articleState(article.id()));
+            assertEquals(1, snapshotCount(article.id(), article.revisionId()));
+        }
+    }
+
+    @Test
+    void delayedPublishPurgeAfterWithdrawalNeverReopensOrigin() throws Exception {
+        MvcArticle article = createAndSchedule("late-publish-purge");
+        OutboxEvent event = scheduleEvent("late-publish-purge-schedule");
+        PartialExternalInvalidation probe = new PartialExternalInvalidation();
+        PublicationJobHandler handler = handlerAt("2026-08-10T01:01:00Z", probe);
+        assertThrows(OutboxHandlerException.class, () -> handler.handle(event));
+        int version = jdbcTemplate.queryForObject("SELECT version FROM article WHERE id = ?",
+                Integer.class, article.id());
+        mockMvc.perform(post("/api/v1/publisher/articles/{id}:withdraw", article.id())
+                        .principal(actor("late-publish-purge-publisher", RoleCode.PUBLISHER))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.IF_MATCH, "\"%s\"".formatted(version))
+                        .header("Idempotency-Key", "late-publish-purge-withdraw")
+                        .content("{\"reason\":\"withdraw before purge retry\"}"))
+                .andExpect(status().isAccepted());
+
+        handler.handle(event);
+        handler.handle(event);
+
+        assertEquals("WITHDRAWN", articleState(article.id()));
+        assertEquals("SUCCEEDED", jobStatus("late-publish-purge-schedule"));
+        assertEquals(1, snapshotCount(article.id(), article.revisionId()));
+        assertEquals(2, probe.attempts);
+        assertEquals(probe.idempotencyKeys.get(0), probe.idempotencyKeys.get(1));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"SCHEDULE,false", "SCHEDULE,true", "PUBLISH,false", "PUBLISH,true"})
+    void committedRevisionPurgeSurvivesNewerDraftOrPublication(String action, boolean publishNext) throws Exception {
+        String prefix = "committed-purge-" + action.toLowerCase(java.util.Locale.ROOT) + "-" + publishNext;
+        Authentication editor = actor(prefix + "-editor", RoleCode.EDITOR);
+        Authentication publisher = actor(prefix + "-publisher", RoleCode.PUBLISHER);
+        MvcArticle first = create(editor, prefix + "-create");
+        submit(first, editor, prefix + "-submit");
+        approve(first, publisher, prefix + "-approve");
+        String jobKey = prefix + "-initial";
+        if ("SCHEDULE".equals(action)) {
+            schedule(first, publisher, jobKey);
+        } else {
+            publisherCommand(first, publisher, "publish", jobKey);
+        }
+        OutboxEvent event = publicationEvent(action, jobKey);
+        PartialExternalInvalidation probe = new PartialExternalInvalidation();
+        List<UUID> projectedRevisions = new ArrayList<>();
+        PublicationJobHandler handler = handlerAt("2026-08-10T01:01:00Z", probe, new SearchProjection() {
+            @Override
+            public void project(UUID articleId, UUID revisionId, Instant indexedAt) {
+                assertEquals(first.id(), articleId);
+                projectedRevisions.add(revisionId);
+            }
+
+            @Override
+            public void withdraw(UUID articleId, UUID revisionId, Instant indexedAt) {
+                throw new AssertionError("A purge retry must not change the current search projection");
+            }
+        });
+        assertThrows(OutboxHandlerException.class, () -> handler.handle(event));
+        assertEquals("PENDING", jobStatus(jobKey));
+        assertEquals(1, snapshotCount(first.id(), first.revisionId()));
+        assertEquals(List.of(first.revisionId()), projectedRevisions);
+
+        MvcResult revised = mockMvc.perform(post("/api/v1/editor/articles/{id}:revise", first.id())
+                        .principal(editor)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.IF_MATCH, currentIfMatch(first.id()))
+                        .header("Idempotency-Key", prefix + "-revise")
+                        .content("{\"title\":\"Newer editorial revision\",\"content\":%s}".formatted(CREATE_BODY_CONTENT)))
+                .andExpect(status().isCreated()).andReturn();
+        UUID nextRevision = UUID.fromString(JSON.readTree(revised.getResponse().getContentAsString())
+                .path("revisionId").asString());
+        MvcArticle next = new MvcArticle(first.id(), nextRevision);
+        if (publishNext) {
+            submit(next, editor, prefix + "-next-submit");
+            publisherCommand(next, publisher, "approve", prefix + "-next-approve");
+            publisherCommand(next, publisher, "publish", prefix + "-next-publish");
+        }
+        String expectedState = publishNext ? "PUBLISHED" : "DRAFT";
+        String currentVersion = currentIfMatch(first.id());
+        assertEquals(expectedState, articleState(first.id()));
+
+        handler.handle(event);
+        handler.handle(event);
+
+        assertEquals("SUCCEEDED", jobStatus(jobKey));
+        assertEquals(expectedState, articleState(first.id()));
+        assertEquals(currentVersion, currentIfMatch(first.id()));
+        assertEquals(publishNext ? nextRevision : first.revisionId(), jdbcTemplate.queryForObject(
+                "SELECT published_revision_id FROM article WHERE id = ?", UUID.class, first.id()));
+        assertEquals(nextRevision, new JdbcEditorialArticleRepository(jdbcTemplate).find(first.id()).orElseThrow().revisionId());
+        assertEquals(1, snapshotCount(first.id(), first.revisionId()));
+        assertEquals(publishNext ? 1 : 0, snapshotCount(first.id(), nextRevision));
+        assertEquals(List.of(first.revisionId()), projectedRevisions);
+        assertEquals(2, probe.attempts);
+        assertEquals(probe.idempotencyKeys.get(0), probe.idempotencyKeys.get(1));
+        assertEquals(PublicationInvalidationKeys.forArticle(first.id(), first.revisionId()), probe.lastKeys);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "WITHDRAW,false,false", "WITHDRAW,false,true", "WITHDRAW,true,false", "WITHDRAW,true,true",
+            "ARCHIVE,false,false", "ARCHIVE,false,true", "ARCHIVE,true,false", "ARCHIVE,true,true"
+    })
+    void committedRemovalPurgeSurvivesNewerDraftOrPublication(
+            String action, boolean publishNext, boolean attemptedBeforeRevision
+    ) throws Exception {
+        String prefix = "removal-purge-" + action.toLowerCase(java.util.Locale.ROOT)
+                + "-" + publishNext + "-" + attemptedBeforeRevision;
+        Authentication editor = actor(prefix + "-editor", RoleCode.EDITOR);
+        Authentication publisher = actor(prefix + "-publisher", RoleCode.PUBLISHER);
+        MvcArticle first = create(editor, prefix + "-create");
+        attachIssueForSearchProjection(first.id());
+        submit(first, editor, prefix + "-submit");
+        approve(first, publisher, prefix + "-approve");
+        publisherCommand(first, publisher, "publish", prefix + "-publish");
+        SearchProjection projection = new SearchProjectionHandler(jdbcTemplate, JSON);
+        handlerAt("2026-08-10T01:01:00Z", request -> { }, projection)
+                .handle(publicationEvent("PUBLISH", prefix + "-publish"));
+        assertEquals(1, jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM search_document WHERE article_id = ? AND revision_id = ? AND active",
+                Integer.class, first.id(), first.revisionId()));
+
+        String jobKey = prefix + "-remove";
+        removePublication(first, publisher, action, jobKey);
+        OutboxEvent event = publicationEvent(action, jobKey);
+        PartialExternalInvalidation probe = new PartialExternalInvalidation();
+        PublicationJobHandler removal = handlerAt("2026-08-10T01:02:00Z", probe, projection);
+        if (attemptedBeforeRevision) {
+            OutboxHandlerException failure = assertThrows(OutboxHandlerException.class, () -> removal.handle(event));
+            assertTrue(failure.retryable());
+            assertEquals(1, probe.attempts);
+            assertEquals("PENDING", jobStatus(jobKey));
+        }
+
+        // Exercise the public command boundary: both WITHDRAWN and ARCHIVED allow a new revision.
+        MvcArticle next = revise(first, editor, prefix + "-revise");
+        if (publishNext) {
+            submit(next, editor, prefix + "-next-submit");
+            publisherCommand(next, publisher, "approve", prefix + "-next-approve");
+            publisherCommand(next, publisher, "publish", prefix + "-next-publish");
+            handlerAt("2026-08-10T01:03:00Z", request -> { }, projection)
+                    .handle(publicationEvent("PUBLISH", prefix + "-next-publish"));
+        }
+        String expectedState = publishNext ? "PUBLISHED" : "DRAFT";
+        String currentVersion = currentIfMatch(first.id());
+        var projectionBeforeRetry = jdbcTemplate.queryForList(
+                "SELECT revision_id, active, version FROM search_document WHERE article_id = ? ORDER BY revision_id",
+                first.id());
+        assertEquals(expectedState, articleState(first.id()));
+        if (!attemptedBeforeRevision) {
+            OutboxHandlerException failure = assertThrows(OutboxHandlerException.class, () -> removal.handle(event));
+            assertTrue(failure.retryable(), "a newer revision must not dead-letter an outstanding purge");
+            assertEquals(1, probe.attempts, "first delivery must reach the committed purge obligation");
+            assertEquals("PENDING", jobStatus(jobKey));
+        }
+
+        removal.handle(event);
+        removal.handle(event);
+
+        assertEquals("SUCCEEDED", jobStatus(jobKey));
+        assertEquals(expectedState, articleState(first.id()));
+        assertEquals(currentVersion, currentIfMatch(first.id()));
+        assertEquals(next.revisionId(), new JdbcEditorialArticleRepository(jdbcTemplate)
+                .find(first.id()).orElseThrow().revisionId());
+        assertEquals(publishNext ? next.revisionId() : first.revisionId(), jdbcTemplate.queryForObject(
+                "SELECT published_revision_id FROM article WHERE id = ?", UUID.class, first.id()));
+        assertEquals(1, snapshotCount(first.id(), first.revisionId()));
+        assertEquals(publishNext ? 1 : 0, snapshotCount(first.id(), next.revisionId()));
+        assertEquals(projectionBeforeRetry, jdbcTemplate.queryForList(
+                "SELECT revision_id, active, version FROM search_document WHERE article_id = ? ORDER BY revision_id",
+                first.id()), "an old removal must not alter the newer search projection");
+        assertEquals(2, probe.attempts);
+        assertEquals(probe.idempotencyKeys.get(0), probe.idempotencyKeys.get(1));
+        assertEquals(PublicationInvalidationKeys.forArticle(first.id(), first.revisionId()), probe.lastKeys);
+    }
+
+    @Test
+    void committedWithdrawalPurgeSurvivesArchiveOfTheSameRevision() throws Exception {
+        Authentication editor = actor("withdraw-archive-editor", RoleCode.EDITOR);
+        Authentication publisher = actor("withdraw-archive-publisher", RoleCode.PUBLISHER);
+        MvcArticle article = create(editor, "withdraw-archive-create");
+        attachIssueForSearchProjection(article.id());
+        submit(article, editor, "withdraw-archive-submit");
+        approve(article, publisher, "withdraw-archive-approve");
+        publisherCommand(article, publisher, "publish", "withdraw-archive-publish");
+        SearchProjection projection = new SearchProjectionHandler(jdbcTemplate, JSON);
+        handlerAt("2026-08-10T01:01:00Z", request -> { }, projection)
+                .handle(publicationEvent("PUBLISH", "withdraw-archive-publish"));
+        removePublication(article, publisher, "WITHDRAW", "withdraw-archive-withdraw");
+        removePublication(article, publisher, "ARCHIVE", "withdraw-archive-archive");
+        String currentVersion = currentIfMatch(article.id());
+        List<PublicationExternalInvalidator.Request> purges = new ArrayList<>();
+        PublicationJobHandler removal = handlerAt("2026-08-10T01:02:00Z", purges::add, projection);
+        OutboxEvent event = publicationEvent("WITHDRAW", "withdraw-archive-withdraw");
+
+        removal.handle(event);
+        removal.handle(event);
+
+        assertEquals("SUCCEEDED", jobStatus("withdraw-archive-withdraw"));
+        assertEquals("PENDING", jobStatus("withdraw-archive-archive"));
+        assertEquals("ARCHIVED", articleState(article.id()));
+        assertEquals(currentVersion, currentIfMatch(article.id()));
+        assertEquals(0, jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM search_document WHERE article_id = ? AND active", Integer.class, article.id()));
+        assertEquals(1, purges.size());
+        assertEquals(PublicationInvalidationKeys.forArticle(article.id(), article.revisionId()),
+                purges.getFirst().surrogateKeys());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"WITHDRAW", "ARCHIVE"})
+    void removalBeforeFirstPublicationStillDeliversItsCommittedPurge(String action) throws Exception {
+        Authentication editor = actor("never-published-editor", RoleCode.EDITOR);
+        Authentication publisher = actor("never-published-publisher", RoleCode.PUBLISHER);
+        MvcArticle article = create(editor, "never-published-create");
+        submit(article, editor, "never-published-submit");
+        approve(article, publisher, "never-published-approve");
+        removePublication(article, publisher, "WITHDRAW", "never-published-withdraw");
+        String jobKey = "never-published-withdraw";
+        if ("ARCHIVE".equals(action)) {
+            jobKey = "never-published-archive";
+            removePublication(article, publisher, "ARCHIVE", jobKey);
+        }
+        List<PublicationExternalInvalidator.Request> purges = new ArrayList<>();
+        PublicationJobHandler removal = handlerAt("2026-08-10T01:02:00Z", purges::add,
+                new SearchProjectionHandler(jdbcTemplate, JSON));
+        OutboxEvent event = publicationEvent(action, jobKey);
+
+        removal.handle(event);
+        removal.handle(event);
+
+        assertEquals("ARCHIVE".equals(action) ? "ARCHIVED" : "WITHDRAWN", articleState(article.id()));
+        assertEquals("SUCCEEDED", jobStatus(jobKey));
+        assertEquals(0, snapshotCount(article.id(), article.revisionId()));
+        assertEquals(1, purges.size());
+        assertEquals(PublicationInvalidationKeys.forArticle(article.id(), article.revisionId()),
+                purges.getFirst().surrogateKeys());
+    }
+
+    @ParameterizedTest
+    @CsvSource({"PUBLISH", "WITHDRAW", "ARCHIVE"})
+    void committedSearchReconciliationRaceRetriesWithoutLosingPurge(String action) throws Exception {
+        String prefix = "search-race-" + action.toLowerCase(java.util.Locale.ROOT);
+        Authentication editor = actor(prefix + "-editor", RoleCode.EDITOR);
+        Authentication publisher = actor(prefix + "-publisher", RoleCode.PUBLISHER);
+        MvcArticle first = create(editor, prefix + "-create");
+        attachIssueForSearchProjection(first.id());
+        submit(first, editor, prefix + "-submit");
+        approve(first, publisher, prefix + "-approve");
+        String jobKey = prefix + "-publish";
+        publisherCommand(first, publisher, "publish", jobKey);
+        SearchProjection delegate = new SearchProjectionHandler(jdbcTemplate, JSON);
+        if (!"PUBLISH".equals(action)) {
+            handlerAt("2026-08-10T01:01:00Z", request -> { }, delegate)
+                    .handle(publicationEvent("PUBLISH", jobKey));
+            jobKey = prefix + "-remove";
+            removePublication(first, publisher, action, jobKey);
+        }
+        OutboxEvent event = publicationEvent(action, jobKey);
+        List<PublicationExternalInvalidator.Request> purges = new ArrayList<>();
+        AtomicBoolean raced = new AtomicBoolean();
+        AtomicReference<MvcArticle> next = new AtomicReference<>();
+        ExecutorService competingEditor = Executors.newSingleThreadExecutor();
+        try {
+            SearchProjection racingProjection = new SearchProjection() {
+                @Override
+                public void project(UUID articleId, UUID revisionId, Instant indexedAt) {
+                    commitNewRevision();
+                    delegate.project(articleId, revisionId, indexedAt);
+                }
+
+                @Override
+                public void withdraw(UUID articleId, UUID revisionId, Instant indexedAt) {
+                    commitNewRevision();
+                    delegate.withdraw(articleId, revisionId, indexedAt);
+                }
+
+                private void commitNewRevision() {
+                    if (raced.compareAndSet(false, true)) {
+                        // A separate thread uses its own transaction/connection. Its committed
+                        // edit must survive rollback of the worker's failed reconciliation.
+                        Future<MvcArticle> revised = competingEditor.submit(() -> revise(first, editor, prefix + "-revise"));
+                        try {
+                            next.set(revised.get(5, TimeUnit.SECONDS));
+                        } catch (InterruptedException exception) {
+                            Thread.currentThread().interrupt();
+                            throw new AssertionError(exception);
+                        } catch (java.util.concurrent.ExecutionException | java.util.concurrent.TimeoutException exception) {
+                            throw new AssertionError("The competing revision must commit before projection reads", exception);
+                        }
+                    }
+                }
+            };
+            PublicationJobHandler handler = handlerAt("2026-08-10T01:02:00Z", purges::add, racingProjection);
+            OutboxHandlerException failure = assertThrows(OutboxHandlerException.class, () -> handler.handle(event));
+            assertTrue(failure.retryable(), "a committed purge must not be dead-lettered by a source-state race");
+            assertTrue(raced.get());
+            assertEquals("PENDING", jobStatus(jobKey));
+            assertEquals("DRAFT", articleState(first.id()));
+            assertEquals(next.get().revisionId(), new JdbcEditorialArticleRepository(jdbcTemplate)
+                    .find(first.id()).orElseThrow().revisionId());
+            assertEquals(0, purges.size());
+            String currentVersion = currentIfMatch(first.id());
+
+            handler.handle(event);
+            handler.handle(event);
+
+            assertEquals("SUCCEEDED", jobStatus(jobKey));
+            assertEquals("DRAFT", articleState(first.id()));
+            assertEquals(currentVersion, currentIfMatch(first.id()));
+            assertEquals(1, snapshotCount(first.id(), first.revisionId()));
+            assertEquals(0, snapshotCount(first.id(), next.get().revisionId()));
+            assertEquals(1, purges.size());
+            assertEquals(PublicationInvalidationKeys.forArticle(first.id(), first.revisionId()),
+                    purges.getFirst().surrogateKeys());
+        } finally {
+            competingEditor.shutdownNow();
+            competingEditor.awaitTermination(10, TimeUnit.SECONDS);
+        }
     }
 
     @Test
@@ -214,10 +574,9 @@ final class PublicationReliabilityIT extends EditorialApiIntegrationTestSupport 
         assertEquals("COMPLETED", outbox.findById(event.id()).orElseThrow().status().name());
         assertEquals("SUCCEEDED", jobStatus("partial-external-withdraw"));
         assertEquals(2, probe.attempts);
-        assertEquals(
-                List.of("partial-external-withdraw", "partial-external-withdraw"),
-                probe.idempotencyKeys
-        );
+        String purgeKey = "article-publication:" + jdbcTemplate.queryForObject(
+                "SELECT id FROM publication_job WHERE idempotency_key = 'partial-external-withdraw'", UUID.class);
+        assertEquals(List.of(purgeKey, purgeKey), probe.idempotencyKeys);
         assertEquals(keys, probe.lastKeys);
         assertTrue(origin.findBySlug("reliability-fixture", null).isEmpty());
     }
@@ -288,9 +647,9 @@ final class PublicationReliabilityIT extends EditorialApiIntegrationTestSupport 
             {"schemaVersion":1,"documentId":"00000000-0000-7000-8000-000000000001","blocks":[{"id":"00000000-0000-4000-8000-000000000103","type":"paragraph","version":1,"payload":{"content":[{"kind":"text","text":"Reliability fixture"}]}}]}
             """;
 
-    private void handle(OutboxEvent event) {
+    private void handle(OutboxEvent event, PublicationJobHandler handler) {
         try {
-            handlerAt("2026-08-10T01:01:00Z").handle(event);
+            handler.handle(event);
         } catch (Exception exception) {
             throw new IllegalStateException(exception);
         }
@@ -350,6 +709,63 @@ final class PublicationReliabilityIT extends EditorialApiIntegrationTestSupport 
                 .andExpect(status().isAccepted());
     }
 
+    private String currentIfMatch(UUID articleId) {
+        return "\"%s\"".formatted(jdbcTemplate.queryForObject(
+                "SELECT version FROM article WHERE id = ?", Long.class, articleId));
+    }
+
+    private void publisherCommand(MvcArticle article, Authentication publisher, String action, String key) throws Exception {
+        mockMvc.perform(post("/api/v1/publisher/articles/{id}:" + action, article.id())
+                        .principal(publisher)
+                        .header(HttpHeaders.IF_MATCH, currentIfMatch(article.id()))
+                        .header("Idempotency-Key", key))
+                .andExpect(status().isAccepted());
+    }
+
+    private MvcArticle revise(MvcArticle article, Authentication editor, String key) throws Exception {
+        MvcResult revised = mockMvc.perform(post("/api/v1/editor/articles/{id}:revise", article.id())
+                        .principal(editor)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.IF_MATCH, currentIfMatch(article.id()))
+                        .header("Idempotency-Key", key)
+                        .content("{\"title\":\"Newer editorial revision\",\"content\":%s}".formatted(CREATE_BODY_CONTENT)))
+                .andExpect(status().isCreated()).andReturn();
+        return new MvcArticle(article.id(), UUID.fromString(JSON.readTree(revised.getResponse().getContentAsString())
+                .path("revisionId").asString()));
+    }
+
+    private void removePublication(MvcArticle article, Authentication publisher, String action, String key)
+            throws Exception {
+        mockMvc.perform(post("/api/v1/publisher/articles/{id}:" + action.toLowerCase(java.util.Locale.ROOT), article.id())
+                        .principal(publisher)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .header(HttpHeaders.IF_MATCH, currentIfMatch(article.id()))
+                        .header("Idempotency-Key", key)
+                        .content("WITHDRAW".equals(action) ? "{\"reason\":\"committed purge fixture\"}" : "{}"))
+                .andExpect(status().isAccepted());
+    }
+
+    private void attachIssueForSearchProjection(UUID articleId) {
+        UUID assetId = UUID.randomUUID();
+        UUID issueId = UUID.randomUUID();
+        UUID sectionId = UUID.randomUUID();
+        jdbcTemplate.update("""
+                INSERT INTO media_asset (id, private_storage_key, checksum_sha256, mime_type, byte_size,
+                    width, height, alt_text, processing_state)
+                VALUES (?, 'private/reliability-cover.webp', ?, 'image/webp', 1024, 1200, 1600, 'cover', 'READY')
+                """, assetId, "c".repeat(64));
+        jdbcTemplate.update("""
+                INSERT INTO publication_issue (id, issue_number, slug, title, summary, cover_asset_id, state)
+                VALUES (?, 91, 'reliability-search-issue', 'Reliability issue', 'Search projection fixture', ?, 'DRAFT')
+                """, issueId, assetId);
+        jdbcTemplate.update("""
+                INSERT INTO issue_section (id, issue_id, title, position) VALUES (?, ?, 'Reliability section', 1)
+                """, sectionId, issueId);
+        jdbcTemplate.update("""
+                INSERT INTO issue_article (issue_id, section_id, article_id, position) VALUES (?, ?, ?, 1)
+                """, issueId, sectionId, articleId);
+    }
+
     private OutboxEvent scheduleEvent(String key) {
         return publicationEvent("SCHEDULE", key);
     }
@@ -383,19 +799,29 @@ final class PublicationReliabilityIT extends EditorialApiIntegrationTestSupport 
     }
 
     private PublicationJobHandler handlerAt(String instant) {
-        return handlerAt(instant, PublicationExternalInvalidator.unavailable());
+        // Successful local provider seam; real HTTP acknowledgement is tested by the adapter suite.
+        return handlerAt(instant, request -> assertTrue(!request.surrogateKeys().isEmpty()));
     }
 
     private PublicationJobHandler handlerAt(
             String instant,
             PublicationExternalInvalidator invalidator
     ) {
+        return handlerAt(instant, invalidator, SearchProjection.noop());
+    }
+
+    private PublicationJobHandler handlerAt(
+            String instant,
+            PublicationExternalInvalidator invalidator,
+            SearchProjection projection
+    ) {
         return new PublicationJobHandler(
                 new JdbcEditorialArticleRepository(jdbcTemplate),
                 new TransactionTemplate(new DataSourceTransactionManager(jdbcTemplate.getDataSource())),
                 JSON,
                 Clock.fixed(Instant.parse(instant), ZoneOffset.UTC),
-                invalidator
+                invalidator,
+                projection
         );
     }
 

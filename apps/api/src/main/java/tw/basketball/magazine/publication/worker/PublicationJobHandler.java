@@ -113,7 +113,16 @@ public final class PublicationJobHandler implements OutboxEventHandler {
         }
 
         try {
-            transactionTemplate.executeWithoutResult(status -> process(command));
+            PendingInvalidation pending = transactionTemplate.execute(status -> process(command));
+            if (pending == null) {
+                return;
+            }
+            // Commit the origin and search projection before a purged cache can refill.
+            // The stable job identity also separates equal caller keys on different articles.
+            externalInvalidator.invalidate(new PublicationExternalInvalidator.Request(
+                    "article-publication:" + pending.jobId(), pending.surrogateKeys()
+            ));
+            transactionTemplate.executeWithoutResult(status -> acknowledge(command, pending));
         } catch (RetryableJobException exception) {
             throw new OutboxHandlerException(exception.getMessage(), exception, true);
         } catch (PermanentJobException exception) {
@@ -129,7 +138,20 @@ public final class PublicationJobHandler implements OutboxEventHandler {
         }
     }
 
-    private void process(Command command) {
+    private void acknowledge(Command command, PendingInvalidation pending) {
+        // A concurrent delivery can acknowledge the same purge while this request is in flight.
+        EditorialArticleRepository.PublicationJobRecord current = repository.findPublicationJob(
+                command.requestedBy(), command.action(), command.idempotencyKey()
+        ).orElseThrow(() -> new PermanentJobException("publication job disappeared before acknowledgement"));
+        if (!pending.jobId().equals(current.jobId())) {
+            throw new PermanentJobException("publication job changed before acknowledgement");
+        }
+        if (!"SUCCEEDED".equals(current.status()) && !"BLOCKED".equals(current.status())) {
+            repository.markPublicationJobSucceeded(pending.jobId(), clock.instant());
+        }
+    }
+
+    private PendingInvalidation process(Command command) {
         EditorialArticleRepository.PublicationJobRecord job = repository.findPublicationJob(
                 command.requestedBy(),
                 command.action(),
@@ -139,7 +161,7 @@ public final class PublicationJobHandler implements OutboxEventHandler {
             throw new PermanentJobException("publication job aggregate does not match the event");
         }
         if ("SUCCEEDED".equals(job.status()) || "BLOCKED".equals(job.status())) {
-            return;
+            return null;
         }
         UUID revisionId;
         try {
@@ -156,88 +178,106 @@ public final class PublicationJobHandler implements OutboxEventHandler {
             if (job.scheduledAt() == null || now.isBefore(job.scheduledAt())) {
                 throw new RetryableJobException("scheduled publication is not due");
             }
-            publishScheduled(job, revisionId, now);
-            return;
+            return publishScheduled(job, revisionId, now) ? pending(job, revisionId) : null;
         }
         if ("PUBLISH".equals(command.action())) {
-            publishOrReconcile(job, revisionId, now);
-            return;
+            return publishOrReconcile(job, revisionId, now) ? pending(job, revisionId) : null;
         }
 
-        PublicationState expectedState = switch (command.action()) {
-            case "WITHDRAW" -> PublicationState.WITHDRAWN;
-            case "ARCHIVE" -> PublicationState.ARCHIVED;
-            default -> null;
-        };
-        if (expectedState == null) {
+        if (!"WITHDRAW".equals(command.action()) && !"ARCHIVE".equals(command.action())) {
             throw new PermanentJobException("unsupported publication job action: " + command.action());
-        }
-        EditorialArticleRepository.ArticleRecord article = requireArticle(command.articleId());
-        if (!revisionId.equals(article.revisionId()) || article.state() != expectedState) {
-            throw new PermanentJobException("publication job did not reach its expected state");
         }
         if (command.surrogateKeys().isEmpty()) {
             throw new PermanentJobException("publication invalidation keys are missing");
         }
-        searchProjection.withdraw(command.articleId(), revisionId, now);
-        externalInvalidator.invalidate(new PublicationExternalInvalidator.Request(
-                command.idempotencyKey(),
-                command.surrogateKeys()
-        ));
-        repository.markPublicationJobSucceeded(job.jobId(), now);
+        EditorialArticleRepository.ArticleRecord article = requireArticle(command.articleId());
+        if (revisionId.equals(article.revisionId())
+                && (article.state() == PublicationState.WITHDRAWN || article.state() == PublicationState.ARCHIVED)
+                && repository.hasPublicationSnapshot(command.articleId(), revisionId)) {
+            reconcileCommittedSearch(() -> searchProjection.withdraw(command.articleId(), revisionId, now));
+        }
+        // Removal jobs and their outbox commands commit with the origin transition.
+        // A newer revision or subsequent archive cannot cancel that durable purge.
+        // Search reads independently require the currently published revision; never
+        // withdraw a newer projection or demand a snapshot for never-published work.
+        return new PendingInvalidation(job.jobId(), command.surrogateKeys());
     }
 
-    private void publishScheduled(
+    private PendingInvalidation pending(EditorialArticleRepository.PublicationJobRecord job, UUID revisionId) {
+        return new PendingInvalidation(job.jobId(), PublicationInvalidationKeys.forArticle(job.articleId(), revisionId));
+    }
+
+    private boolean publishScheduled(
             EditorialArticleRepository.PublicationJobRecord job,
             UUID revisionId,
             Instant now
     ) {
         EditorialArticleRepository.ArticleRecord article = requireArticle(job.articleId());
+        if (reconcileCommittedPublication(article, revisionId, now)) {
+            return true;
+        }
         if (!revisionId.equals(article.revisionId())) {
             block(job, "REVISION_CHANGED", now);
-            return;
-        }
-        if (article.state() == PublicationState.PUBLISHED
-                && repository.hasPublicationSnapshot(article.articleId(), revisionId)) {
-            searchProjection.project(article.articleId(), revisionId, now);
-            repository.markPublicationJobSucceeded(job.jobId(), now);
-            return;
+            return false;
         }
         if (article.state() != PublicationState.SCHEDULED) {
             block(job, "INVALID_SCHEDULED_STATE", now);
-            return;
+            return false;
         }
-        publishCurrent(job, article, revisionId, now);
+        return publishCurrent(job, article, revisionId, now);
     }
 
-    private void publishOrReconcile(
+    private boolean publishOrReconcile(
             EditorialArticleRepository.PublicationJobRecord job,
             UUID revisionId,
             Instant now
     ) {
         EditorialArticleRepository.ArticleRecord article = requireArticle(job.articleId());
+        if (reconcileCommittedPublication(article, revisionId, now)) {
+            return true;
+        }
         if (!revisionId.equals(article.revisionId())) {
             block(job, "REVISION_CHANGED", now);
-            return;
-        }
-        if (article.state() == PublicationState.PUBLISHED
-                && repository.hasPublicationSnapshot(article.articleId(), revisionId)) {
-            searchProjection.project(article.articleId(), revisionId, now);
-            repository.markPublicationJobSucceeded(job.jobId(), now);
-            return;
+            return false;
         }
         if (article.state() != PublicationState.APPROVED && article.state() != PublicationState.SCHEDULED) {
             block(job, "INVALID_PUBLISH_STATE", now);
-            return;
+            return false;
         }
         if (article.state() == PublicationState.SCHEDULED
                 && (article.scheduledFor() == null || now.isBefore(article.scheduledFor()))) {
             throw new RetryableJobException("scheduled publication is not due");
         }
-        publishCurrent(job, article, revisionId, now);
+        return publishCurrent(job, article, revisionId, now);
     }
 
-    private void publishCurrent(
+    private boolean reconcileCommittedPublication(
+            EditorialArticleRepository.ArticleRecord article, UUID revisionId, Instant now
+    ) {
+        if (!repository.hasPublicationSnapshot(article.articleId(), revisionId)) {
+            return false;
+        }
+        if (revisionId.equals(article.revisionId()) && article.state() == PublicationState.PUBLISHED) {
+            reconcileCommittedSearch(() -> searchProjection.project(article.articleId(), revisionId, now));
+        }
+        // The immutable snapshot proves an outstanding purge obligation for this
+        // exact job/revision. A newer draft/publication or withdrawal cannot cancel
+        // it, and this older delivery must never project or publish the newer state.
+        return true;
+    }
+
+    private void reconcileCommittedSearch(Runnable reconciliation) {
+        try {
+            reconciliation.run();
+        } catch (SearchProjectionException exception) {
+            // The live source can change after the worker's read. Retry the already
+            // committed job so the next delivery can skip obsolete projection work
+            // and still purge; only fresh publication keeps permanent gate failures.
+            throw new RetryableJobException("committed publication search reconciliation must retry", exception);
+        }
+    }
+
+    private boolean publishCurrent(
             EditorialArticleRepository.PublicationJobRecord job,
             EditorialArticleRepository.ArticleRecord article,
             UUID revisionId,
@@ -267,7 +307,7 @@ public final class PublicationJobHandler implements OutboxEventHandler {
         appendRightsEvidence(article.articleId(), revisionId, requirements, now);
         if (result.status() == PublicationWorkflow.PublicationResult.Status.BLOCKED) {
             block(job, String.join(",", result.blockingCodes()), now);
-            return;
+            return false;
         }
         if (!repository.transition(
                 article.articleId(),
@@ -307,7 +347,7 @@ public final class PublicationJobHandler implements OutboxEventHandler {
                         .toList()
         );
         searchProjection.project(published.articleId(), revisionId, now);
-        repository.markPublicationJobSucceeded(job.jobId(), now);
+        return true;
     }
 
     private void appendRightsEvidence(
@@ -442,6 +482,9 @@ public final class PublicationJobHandler implements OutboxEventHandler {
         return List.copyOf(result);
     }
 
+    private record PendingInvalidation(UUID jobId, List<String> surrogateKeys) {
+    }
+
     private record Command(
             UUID articleId,
             String action,
@@ -457,6 +500,10 @@ public final class PublicationJobHandler implements OutboxEventHandler {
 
         private RetryableJobException(String message) {
             super(message);
+        }
+
+        private RetryableJobException(String message, Throwable cause) {
+            super(message, cause);
         }
     }
 

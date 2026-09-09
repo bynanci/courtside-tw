@@ -6,7 +6,7 @@ import java.util.Objects;
 /**
  * Provider-neutral boundary for durable cache, search and sitemap invalidation.
  *
- * <p>The publication origin is closed before this boundary is invoked. A
+ * <p>The current publication origin and search projection are committed before this boundary is invoked. A
  * provider failure is allowed to escape so the existing outbox retry path can
  * retry the same idempotency key without marking the publication job complete.</p>
  */

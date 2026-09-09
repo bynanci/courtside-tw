@@ -182,6 +182,7 @@ test("robots and sitemap expose only the public reading surface", async ({ reque
 
   const sitemap = await request.get("/sitemap.xml")
   const sitemapText = await sitemap.text()
+  expect(sitemap.headers()["cache-control"]).toBe("public, max-age=30, must-revalidate")
   expect(sitemapText).toContain("<loc>https://courtside.test/issues/issue-2026-01</loc>")
   expect(sitemapText).toContain("<loc>https://courtside.test/articles/opening-night</loc>")
   expect(sitemapText).toContain("<loc>https://courtside.test/articles/courtside-notes</loc>")

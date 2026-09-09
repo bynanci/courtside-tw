@@ -24,10 +24,11 @@ public final class MediaRevocationWorkerConfiguration {
     public MediaRevocationHandler mediaRevocationHandler(
             JdbcTemplate jdbcTemplate,
             PlatformTransactionManager transactionManager,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            PublicationExternalInvalidator externalInvalidator
     ) {
         return new MediaRevocationHandler(jdbcTemplate, new TransactionTemplate(transactionManager),
-                objectMapper, PublicationExternalInvalidator.unavailable());
+                objectMapper, externalInvalidator);
     }
 
     @Bean

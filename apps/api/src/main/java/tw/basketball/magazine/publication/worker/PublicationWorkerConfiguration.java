@@ -3,7 +3,9 @@ package tw.basketball.magazine.publication.worker;
 import java.time.Clock;
 
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Profile;
@@ -25,12 +27,22 @@ import tw.basketball.magazine.shared.UuidV7Generator;
 @Profile("worker")
 @ConditionalOnProperty(prefix = "courtside.outbox", name = "enabled", havingValue = "true")
 @ConditionalOnBean({JdbcTemplate.class, PlatformTransactionManager.class})
+@EnableConfigurationProperties(PublicationInvalidationProperties.class)
 public final class PublicationWorkerConfiguration {
+    @Bean
+    @ConditionalOnMissingBean(PublicationExternalInvalidator.class)
+    public PublicationExternalInvalidator publicationExternalInvalidator(PublicationInvalidationProperties properties) {
+        return properties.configured()
+                ? new HttpPublicationExternalInvalidator(properties)
+                : PublicationExternalInvalidator.unavailable();
+    }
+
     @Bean
     public PublicationJobHandler publicationJobHandler(
             JdbcTemplate jdbcTemplate,
             PlatformTransactionManager transactionManager,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            PublicationExternalInvalidator externalInvalidator
     ) {
         EditorialArticleRepository repository = new JdbcEditorialArticleRepository(
                 jdbcTemplate,
@@ -42,7 +54,7 @@ public final class PublicationWorkerConfiguration {
                 new TransactionTemplate(transactionManager),
                 objectMapper,
                 Clock.systemUTC(),
-                PublicationExternalInvalidator.unavailable(),
+                externalInvalidator,
                 new SearchProjectionHandler(jdbcTemplate, objectMapper)
         );
     }
@@ -58,7 +70,8 @@ public final class PublicationWorkerConfiguration {
     public IssuePublicationJobHandler issuePublicationJobHandler(
             JdbcTemplate jdbcTemplate,
             PlatformTransactionManager transactionManager,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            PublicationExternalInvalidator externalInvalidator
     ) {
         return new IssuePublicationJobHandler(
                 new JdbcEditorialIssueRepository(jdbcTemplate, objectMapper),
@@ -66,7 +79,7 @@ public final class PublicationWorkerConfiguration {
                 new TransactionTemplate(transactionManager),
                 objectMapper,
                 Clock.systemUTC(),
-                PublicationExternalInvalidator.unavailable()
+                externalInvalidator
         );
     }
 

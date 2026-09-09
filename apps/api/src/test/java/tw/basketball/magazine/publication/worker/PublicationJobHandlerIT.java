@@ -9,6 +9,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -19,6 +21,7 @@ import org.springframework.http.MediaType;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import tw.basketball.magazine.audit.JdbcAuditWriter;
 import tw.basketball.magazine.editorial.EditorialApiIntegrationTestSupport;
@@ -29,6 +32,7 @@ import tw.basketball.magazine.publication.api.EditorialApiExceptionHandler;
 import tw.basketball.magazine.publication.api.EditorialArticleController;
 import tw.basketball.magazine.publication.application.EditorialWorkflowService;
 import tw.basketball.magazine.publication.persistence.JdbcEditorialArticleRepository;
+import tw.basketball.magazine.search.worker.SearchProjectionHandler;
 import tw.basketball.magazine.shared.RoleCode;
 
 final class PublicationJobHandlerIT extends EditorialApiIntegrationTestSupport {
@@ -60,6 +64,7 @@ final class PublicationJobHandlerIT extends EditorialApiIntegrationTestSupport {
         var editor = actor("worker-editor", RoleCode.EDITOR);
         var publisher = actor("worker-publisher", RoleCode.PUBLISHER);
         MvcArticle article = create(editor);
+        attachIssueForSearchProjection(article.id());
         mockMvc.perform(post("/api/v1/editor/articles/{id}:submit", article.id())
                         .principal(editor)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -110,14 +115,49 @@ final class PublicationJobHandlerIT extends EditorialApiIntegrationTestSupport {
                 String.class
         ));
 
+        List<PublicationExternalInvalidator.Request> invalidations = new ArrayList<>();
         PublicationJobHandler dueHandler = new PublicationJobHandler(
                 new JdbcEditorialArticleRepository(jdbcTemplate),
                 new TransactionTemplate(new DataSourceTransactionManager(jdbcTemplate.getDataSource())),
                 JSON,
-                Clock.fixed(Instant.parse("2026-08-11T01:00:00Z"), ZoneOffset.UTC)
+                Clock.fixed(Instant.parse("2026-08-11T01:00:00Z"), ZoneOffset.UTC),
+                request -> {
+                    assertTrue(!TransactionSynchronizationManager.isActualTransactionActive());
+                    // A fresh connection models a cache refilling from committed origin data.
+                    try (var connection = jdbcTemplate.getDataSource().getConnection();
+                            var statement = connection.prepareStatement(
+                                    "SELECT state, (SELECT count(*) FROM publication_snapshot "
+                                            + "WHERE aggregate_id = article.id), (SELECT count(*) FROM search_document "
+                                            + "WHERE article_id = article.id AND active) FROM article WHERE id = ?")) {
+                        statement.setObject(1, article.id());
+                        try (var result = statement.executeQuery()) {
+                            assertTrue(result.next());
+                            assertEquals("PUBLISHED", result.getString(1));
+                            assertEquals(1, result.getInt(2));
+                            assertEquals(1, result.getInt(3));
+                        }
+                    } catch (java.sql.SQLException exception) {
+                        throw new AssertionError(exception);
+                    }
+                    invalidations.add(request);
+                    if (invalidations.size() == 1) {
+                        throw new IllegalStateException("test provider unavailable after origin commit");
+                    }
+                },
+                new SearchProjectionHandler(jdbcTemplate, JSON)
         );
+        OutboxHandlerException failedPurge = assertThrows(OutboxHandlerException.class,
+                () -> dueHandler.handle(event));
+        assertTrue(failedPurge.retryable());
+        assertEquals("PENDING", jdbcTemplate.queryForObject(
+                "SELECT status FROM publication_job WHERE idempotency_key = 'worker-schedule'",
+                String.class));
         dueHandler.handle(event);
         dueHandler.handle(event);
+        assertEquals(2, invalidations.size());
+        assertEquals(invalidations.get(0), invalidations.get(1));
+        assertEquals(PublicationInvalidationKeys.forArticle(article.id(), article.revisionId()),
+                invalidations.get(0).surrogateKeys());
         assertEquals("SUCCEEDED", jdbcTemplate.queryForObject(
                 "SELECT status FROM publication_job WHERE idempotency_key = 'worker-schedule'",
                 String.class
@@ -286,6 +326,27 @@ final class PublicationJobHandlerIT extends EditorialApiIntegrationTestSupport {
                 "SELECT count(*) FROM publication_snapshot WHERE aggregate_id = ?",
                 Integer.class,
                 article.id()));
+    }
+
+    private void attachIssueForSearchProjection(UUID articleId) {
+        UUID assetId = UUID.randomUUID();
+        UUID issueId = UUID.randomUUID();
+        UUID sectionId = UUID.randomUUID();
+        jdbcTemplate.update("""
+                INSERT INTO media_asset (id, private_storage_key, checksum_sha256, mime_type, byte_size,
+                    width, height, alt_text, processing_state)
+                VALUES (?, 'private/worker-cover.webp', ?, 'image/webp', 1024, 1200, 1600, 'cover', 'READY')
+                """, assetId, "c".repeat(64));
+        jdbcTemplate.update("""
+                INSERT INTO publication_issue (id, issue_number, slug, title, summary, cover_asset_id, state)
+                VALUES (?, 91, 'worker-search-issue', 'Worker issue', 'Search projection fixture', ?, 'DRAFT')
+                """, issueId, assetId);
+        jdbcTemplate.update("""
+                INSERT INTO issue_section (id, issue_id, title, position) VALUES (?, ?, 'Worker section', 1)
+                """, sectionId, issueId);
+        jdbcTemplate.update("""
+                INSERT INTO issue_article (issue_id, section_id, article_id, position) VALUES (?, ?, ?, 1)
+                """, issueId, sectionId, articleId);
     }
 
     private MvcArticle create(org.springframework.security.core.Authentication editor) throws Exception {
