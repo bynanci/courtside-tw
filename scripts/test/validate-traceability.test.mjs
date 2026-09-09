@@ -10315,3 +10315,486 @@ test("ready-for-review remains an explicit release-owner gate", () => {
   assert.match(traceability, /protected `main@84db3db95aa596eb317b71c4eea0926fc1fc15ce`/)
   assert.match(traceability, /`EXTERNAL_READBACK_REQUIRED`/)
 })
+
+const pnpmSecurityBase = "db19da68807bf2974e0b052f2ce5dbcf3accbab7"
+const pnpmSecurityPr = 174
+const pnpmSecurityBranch = "fix/pnpm-11-11-security"
+const pnpmSecurityPaths = [
+  ".github/workflows/ci.yml",
+  ".github/workflows/security.yml",
+  "Makefile",
+  "apps/web/package.json",
+  "package.json",
+  "packages/api-client/package.json",
+  "packages/content-schema/package.json",
+  "packages/creative-runtime/package.json",
+  "scripts/test/validate-traceability.test.mjs",
+  "scripts/validate-traceability.mjs"
+]
+const pnpmSecurityOwnerBody =
+  '<!-- toolchain173:owner-dispatch:v1:start -->\n```json\n{\n  "schema_version": "courtside-toolchain173-owner-dispatch/v1",\n  "decision": "DISPATCH_ACCEPTED",\n  "repository": "bynanci/courtside-tw",\n  "issue": 173,\n  "pr": 174,\n  "branch": "fix/pnpm-11-11-security",\n  "base_sha": "db19da68807bf2974e0b052f2ce5dbcf3accbab7",\n  "initial_seed": {\n    "head_sha": "b8c5b086955bebe87b73ff69bb89ef100aeee5c1",\n    "tree_sha": "53be27240b6097d0ac399bee743b5baa785ef66f",\n    "changed_paths": [\n      "package.json",\n      "Makefile",\n      "apps/web/package.json",\n      "packages/api-client/package.json",\n      "packages/content-schema/package.json",\n      "packages/creative-runtime/package.json",\n      ".github/workflows/ci.yml",\n      ".github/workflows/security.yml"\n    ]\n  },\n  "authorized_paths": [\n    ".github/workflows/ci.yml",\n    ".github/workflows/security.yml",\n    "Makefile",\n    "apps/web/package.json",\n    "package.json",\n    "packages/api-client/package.json",\n    "packages/content-schema/package.json",\n    "packages/creative-runtime/package.json",\n    "scripts/test/validate-traceability.test.mjs",\n    "scripts/validate-traceability.mjs"\n  ],\n  "target_toolchain": {\n    "node": "24.14.0",\n    "pnpm": "11.11.0",\n    "pnpm_engines": "11.11.x"\n  },\n  "allowed": [\n    "tests-first exact-scope authorization support",\n    "bounded implementation and reviewed causal optimization",\n    "draft and ready same-repository PR execution",\n    "one exact-head squash merge after current required CI/Security and review pass",\n    "authenticated same-tree single-parent squash-push readback"\n  ],\n  "invariants": [\n    "all frozen T085 receipt bytes preserved",\n    "README and tasks checkbox bytes preserved",\n    "no beta flag or release acceptance",\n    "no participant evidence fabrication or risk acceptance",\n    "no provider/production/credential/secret mutation",\n    "no unrelated workflow/script/path whitelist",\n    "post-seed commits linear and created after this dispatch"\n  ],\n  "user_instruction": "請幫我將剩餘的任務完成 ,完成後@review 並且 @optimize ，最終再依你的經驗merge",\n  "authorization_source": "Explicit Mark instruction in the current conversation; recorded on his behalf for the bounded #173 successor scope."\n}\n```\n<!-- toolchain173:owner-dispatch:v1:end -->'
+const pnpmSecurityOwnerRef =
+  "https://github.com/bynanci/courtside-tw/issues/173#issuecomment-5594192010"
+const pnpmSecurityOwnerTime = "2026-09-09T01:07:32Z"
+
+function makePnpmSecurityFixture({ push = false, draft = true } = {}) {
+  const fixture = makeCompletedFixture()
+  fixture.changedPaths = [...pnpmSecurityPaths]
+  const head = push ? "3".repeat(40) : fixtureReceiptHead
+  const gitBinding = {
+    status: "CLEAN",
+    head,
+    change_base_ref: "fixture:pnpm-security-base",
+    change_base_sha: pnpmSecurityBase,
+    change_base_ancestor: true,
+    head_parent_sha: pnpmSecurityBase,
+    head_parent_shas: [pnpmSecurityBase],
+    head_parent_count: 1,
+    head_tree_sha: "a".repeat(40)
+  }
+  const readback = {
+    status: "VERIFIED",
+    source: "github-api",
+    authorization: {
+      status: "VERIFIED",
+      source: "github-api",
+      html_url: pnpmSecurityOwnerRef,
+      issue_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/173",
+      user_login: "bynanci",
+      author_association: "OWNER",
+      created_at: pnpmSecurityOwnerTime,
+      updated_at: pnpmSecurityOwnerTime,
+      body: pnpmSecurityOwnerBody
+    },
+    pull_request: {
+      number: pnpmSecurityPr,
+      html_url: `https://github.com/bynanci/courtside-tw/pull/${pnpmSecurityPr}`,
+      state: push ? "closed" : "open",
+      draft: push ? false : draft,
+      merged: push,
+      merged_at: push ? "2026-09-09T12:00:00Z" : null,
+      merge_commit_sha: push ? head : null,
+      head: {
+        sha: fixtureReceiptHead,
+        ref: pnpmSecurityBranch,
+        repo: { full_name: "bynanci/courtside-tw" }
+      },
+      base: { sha: pnpmSecurityBase, ref: "main", repo: { full_name: "bynanci/courtside-tw" } }
+    },
+    candidate: {
+      head: fixtureReceiptHead,
+      tree_sha: "a".repeat(40),
+      base_ancestor: true,
+      seed_ancestor: true,
+      seed_tree_sha: "53be27240b6097d0ac399bee743b5baa785ef66f",
+      seed_parent_shas: [pnpmSecurityBase],
+      commit_count: 2,
+      merge_commit_count: 0,
+      changed_paths: [...pnpmSecurityPaths],
+      history_paths: [...pnpmSecurityPaths],
+      pin_replacements_match: true,
+      commits_postdate_authorization: true
+    }
+  }
+  const eventPath = path.join(fixture.root, "github-pnpm-security-event.json")
+  fs.writeFileSync(
+    eventPath,
+    JSON.stringify(
+      push
+        ? {
+            repository: { full_name: "bynanci/courtside-tw" },
+            ref: "refs/heads/main",
+            before: pnpmSecurityBase,
+            after: head
+          }
+        : {
+            repository: { full_name: "bynanci/courtside-tw" },
+            number: pnpmSecurityPr,
+            pull_request: readback.pull_request
+          }
+    )
+  )
+  const githubActionsContext = traceabilityValidator.inspectGitHubActionsContext({
+    environment: {
+      GITHUB_ACTIONS: "true",
+      GITHUB_REPOSITORY: "bynanci/courtside-tw",
+      GITHUB_EVENT_NAME: push ? "push" : "pull_request",
+      GITHUB_EVENT_PATH: eventPath,
+      GITHUB_SHA: push ? head : fixtureActionsMergeSha,
+      GITHUB_WORKFLOW: "CI",
+      GITHUB_JOB: "frontend-contract",
+      GITHUB_RUN_ID: fixtureActionsRunId,
+      GITHUB_RUN_NUMBER: fixtureActionsRunNumber,
+      GITHUB_RUN_ATTEMPT: fixtureActionsRunAttempt,
+      GITHUB_REF: push ? "refs/heads/main" : `refs/pull/${pnpmSecurityPr}/merge`,
+      GITHUB_REF_NAME: push ? "main" : `${pnpmSecurityPr}/merge`,
+      GITHUB_BASE_REF: push ? "" : "main",
+      GITHUB_HEAD_REF: push ? "" : pnpmSecurityBranch
+    },
+    gitBinding
+  })
+  writeExactHeadForActionsContext(fixture.root, githubActionsContext)
+  return { fixture, gitBinding, readback, githubActionsContext, head }
+}
+
+function runPnpmSecurityFixture(context, overrides = {}) {
+  return runCompletedFixture(context.fixture, {
+    currentHead: context.head,
+    changeBaseSha: pnpmSecurityBase,
+    evaluatedHeadCommittedAt: "2026-09-09T12:00:00Z",
+    pnpmSecurityAuthorizationReadback: context.readback,
+    requireExactHeadEvidence: true,
+    githubActionsContext: context.githubActionsContext,
+    gitBinding: context.gitBinding,
+    ...overrides
+  })
+}
+
+for (const state of ["draft", "ready", "squash-push"]) {
+  test(`pnpm security authorization accepts exact ${state} candidate without changing frozen tasks`, () => {
+    const context = makePnpmSecurityFixture({
+      push: state === "squash-push",
+      draft: state === "draft"
+    })
+    const report = runPnpmSecurityFixture(context)
+    assert.equal(report.status, "PASS", report.errors.join("\n"))
+    assert.deepEqual(report.scope_validation.unauthorized_paths, [])
+    assert.equal(report.source.pnpm_security_authorization_readback.accepted, true)
+  })
+}
+
+const pnpmSecurityReadbackNearMisses = [
+  [
+    "unavailable API",
+    (r) => {
+      r.status = "UNAVAILABLE"
+    }
+  ],
+  [
+    "wrong comment ref",
+    (r) => {
+      r.authorization.html_url += "0"
+    }
+  ],
+  [
+    "wrong issue",
+    (r) => {
+      r.authorization.issue_url = "https://api.github.com/repos/bynanci/courtside-tw/issues/121"
+    }
+  ],
+  [
+    "edited comment",
+    (r) => {
+      r.authorization.updated_at = "2026-09-10T00:00:00Z"
+    }
+  ],
+  [
+    "edited body",
+    (r) => {
+      r.authorization.body += "\n"
+    }
+  ],
+  [
+    "spoofed owner",
+    (r) => {
+      r.authorization.user_login = "attacker"
+    }
+  ],
+  [
+    "non-owner association",
+    (r) => {
+      r.authorization.author_association = "MEMBER"
+    }
+  ],
+  [
+    "wrong PR",
+    (r) => {
+      r.pull_request.number += 1
+    }
+  ],
+  [
+    "wrong branch",
+    (r) => {
+      r.pull_request.head.ref = "fix/unrelated"
+    }
+  ],
+  [
+    "wrong base",
+    (r) => {
+      r.pull_request.base.sha = "b".repeat(40)
+    }
+  ],
+  [
+    "fork head",
+    (r) => {
+      r.pull_request.head.repo.full_name = "attacker/courtside-tw"
+    }
+  ],
+  [
+    "stale head",
+    (r) => {
+      r.pull_request.head.sha = "b".repeat(40)
+    }
+  ],
+  [
+    "closed unmerged",
+    (r) => {
+      r.pull_request.state = "closed"
+    }
+  ],
+  [
+    "missing draft",
+    (r) => {
+      r.pull_request.draft = null
+    }
+  ],
+  [
+    "missing seed ancestry",
+    (r) => {
+      r.candidate.seed_ancestor = false
+    }
+  ],
+  [
+    "wrong seed tree",
+    (r) => {
+      r.candidate.seed_tree_sha = "b".repeat(40)
+    }
+  ],
+  [
+    "wrong seed parent",
+    (r) => {
+      r.candidate.seed_parent_shas = ["b".repeat(40)]
+    }
+  ],
+  [
+    "no base ancestry",
+    (r) => {
+      r.candidate.base_ancestor = false
+    }
+  ],
+  [
+    "merge commit",
+    (r) => {
+      r.candidate.merge_commit_count = 1
+    }
+  ],
+  [
+    "empty history",
+    (r) => {
+      r.candidate.commit_count = 0
+    }
+  ],
+  [
+    "restored unauthorized path",
+    (r) => {
+      r.candidate.history_paths.push("apps/web/unrelated.ts")
+    }
+  ],
+  [
+    "candidate missing path",
+    (r) => {
+      r.candidate.changed_paths.pop()
+    }
+  ],
+  [
+    "candidate changed tree",
+    (r) => {
+      r.candidate.tree_sha = "b".repeat(40)
+    }
+  ],
+  [
+    "pin file scope expansion",
+    (r) => {
+      r.candidate.pin_replacements_match = false
+    }
+  ],
+  [
+    "predated implementation",
+    (r) => {
+      r.candidate.commits_postdate_authorization = false
+    }
+  ]
+]
+for (const [name, mutate] of pnpmSecurityReadbackNearMisses) {
+  test(`pnpm security authorization rejects ${name}`, () => {
+    const context = makePnpmSecurityFixture()
+    mutate(context.readback)
+    const report = runPnpmSecurityFixture(context)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /pnpm security/u)
+  })
+}
+
+for (const [name, mutate] of [
+  [
+    "non-squash parents",
+    (c) => {
+      c.gitBinding.head_parent_count = 2
+      c.gitBinding.head_parent_shas.push(fixtureReceiptHead)
+    }
+  ],
+  [
+    "wrong squash parent",
+    (c) => {
+      c.gitBinding.head_parent_shas = ["b".repeat(40)]
+    }
+  ],
+  [
+    "unmerged PR",
+    (c) => {
+      c.readback.pull_request.merged = false
+    }
+  ],
+  [
+    "wrong merge SHA",
+    (c) => {
+      c.readback.pull_request.merge_commit_sha = "b".repeat(40)
+    }
+  ],
+  [
+    "squash tree drift",
+    (c) => {
+      c.gitBinding.head_tree_sha = "b".repeat(40)
+    }
+  ],
+  [
+    "squash before authorization",
+    (c) => {
+      c.readback.pull_request.merged_at = "2026-08-01T00:00:00Z"
+    }
+  ]
+]) {
+  test(`pnpm security authorization rejects ${name}`, () => {
+    const context = makePnpmSecurityFixture({ push: true })
+    mutate(context)
+    const report = runPnpmSecurityFixture(context)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /pnpm security/u)
+  })
+}
+
+test("pnpm security authorization rejects missing authority, wrong event, base and extra or removed paths", () => {
+  const context = makePnpmSecurityFixture()
+  for (const overrides of [
+    { pnpmSecurityAuthorizationReadback: null },
+    { githubActionsContext: { ...context.githubActionsContext } },
+    { requireExactHeadEvidence: false },
+    { changeBaseSha: "b".repeat(40) },
+    { changedPaths: [...pnpmSecurityPaths, "apps/web/unrelated.ts"] },
+    {
+      changedPaths: [
+        "scripts/validate-traceability.mjs",
+        "scripts/test/validate-traceability.test.mjs"
+      ]
+    }
+  ]) {
+    const report = runPnpmSecurityFixture(context, overrides)
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /pnpm security/u)
+  }
+})
+
+test("pnpm security CLI read-back uses only the fixed PR and exact owner comment", () => {
+  const context = makePnpmSecurityFixture()
+  const environment = { GITHUB_TOKEN: "fixture-not-a-real-token" }
+  const calls = []
+  const readback = traceabilityValidator.inspectPnpmSecurityAuthorization(context.fixture.root, {
+    environment,
+    inspectComment(ref, options) {
+      calls.push("comment")
+      assert.equal(ref, pnpmSecurityOwnerRef)
+      assert.equal(options.environment, environment)
+      assert.equal(options.isAuthorizedRef(ref), true)
+      assert.equal(options.isAuthorizedRef(`${ref}0`), false)
+      return context.readback.authorization
+    },
+    fetchPr(url) {
+      calls.push("pr")
+      assert.equal(url, "https://api.github.com/repos/bynanci/courtside-tw/pulls/174")
+      return context.readback.pull_request
+    },
+    inspectCandidate(root, head) {
+      calls.push("git")
+      assert.equal(root, context.fixture.root)
+      assert.equal(head, context.readback.pull_request.head.sha)
+      return context.readback.candidate
+    }
+  })
+  assert.deepEqual(calls, ["comment", "pr", "git"])
+  assert.equal(readback.status, "VERIFIED")
+  const report = runPnpmSecurityFixture(context, { pnpmSecurityAuthorizationReadback: readback })
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
+test("pnpm security CLI fails closed on PR API failure without exposing credential errors", () => {
+  const context = makePnpmSecurityFixture()
+  const readback = traceabilityValidator.inspectPnpmSecurityAuthorization(context.fixture.root, {
+    inspectComment: () => context.readback.authorization,
+    fetchPr() {
+      throw new Error("fixture-secret-must-not-be-reported")
+    },
+    inspectCandidate() {
+      assert.fail("must not inspect an unavailable PR")
+    }
+  })
+  assert.equal(readback.status, "UNAVAILABLE")
+  assert.doesNotMatch(JSON.stringify(readback), /fixture-secret-must-not-be-reported/u)
+  const report = runPnpmSecurityFixture(context, { pnpmSecurityAuthorizationReadback: readback })
+  assert.equal(report.status, "FAIL")
+})
+
+for (const [name, mutateEvent] of [
+  [
+    "spoofed repository",
+    (event) => {
+      event.repository.full_name = "attacker/courtside-tw"
+    }
+  ],
+  [
+    "wrong PR number",
+    (event) => {
+      event.number = 175
+    }
+  ],
+  [
+    "stale PR head",
+    (event) => {
+      event.pull_request.head.sha = "b".repeat(40)
+    }
+  ],
+  [
+    "wrong PR event base",
+    (event) => {
+      event.pull_request.base.sha = "b".repeat(40)
+    }
+  ]
+]) {
+  test(`pnpm security rejects actual Actions event with ${name}`, () => {
+    const context = makePnpmSecurityFixture()
+    const eventPath = path.join(context.fixture.root, "github-pnpm-security-event.json")
+    const event = JSON.parse(fs.readFileSync(eventPath, "utf8"))
+    mutateEvent(event)
+    fs.writeFileSync(eventPath, JSON.stringify(event))
+    const githubActionsContext = traceabilityValidator.inspectGitHubActionsContext({
+      environment: {
+        GITHUB_ACTIONS: "true",
+        GITHUB_REPOSITORY: "bynanci/courtside-tw",
+        GITHUB_EVENT_NAME: "pull_request",
+        GITHUB_EVENT_PATH: eventPath,
+        GITHUB_SHA: fixtureActionsMergeSha,
+        GITHUB_WORKFLOW: "CI",
+        GITHUB_JOB: "frontend-contract",
+        GITHUB_RUN_ID: fixtureActionsRunId,
+        GITHUB_RUN_NUMBER: fixtureActionsRunNumber,
+        GITHUB_RUN_ATTEMPT: fixtureActionsRunAttempt,
+        GITHUB_REF: "refs/pull/174/merge",
+        GITHUB_BASE_REF: "main",
+        GITHUB_HEAD_REF: pnpmSecurityBranch
+      },
+      gitBinding: context.gitBinding
+    })
+    const report = runPnpmSecurityFixture(context, { githubActionsContext })
+    assert.equal(report.status, "FAIL")
+    assert.match(report.errors.join("\n"), /pnpm security/u)
+  })
+}

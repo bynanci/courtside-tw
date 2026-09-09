@@ -3,10 +3,10 @@
   "version": "0.1.0",
   "private": true,
   "description": "台灣籃球雜誌電子書的 monorepo root baseline",
-  "packageManager": "pnpm@11.7.0",
+  "packageManager": "pnpm@11.11.0",
   "engines": {
     "node": "24.14.x",
-    "pnpm": "11.7.x"
+    "pnpm": "11.11.x"
   },
   "scripts": {
     "setup": "make setup",

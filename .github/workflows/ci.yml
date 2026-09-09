@@ -19,7 +19,7 @@ concurrency:
 
 env:
   NODE_VERSION: 24.14.0
-  PNPM_VERSION: 11.7.0
+  PNPM_VERSION: 11.11.0
   GRADLE_VERSION: 8.14.3
 
 jobs:

@@ -6,7 +6,7 @@
   "description": "Nuxt SSR web application for Courtside TW.",
   "engines": {
     "node": "24.14.x",
-    "pnpm": "11.7.x"
+    "pnpm": "11.11.x"
   },
   "scripts": {
     "dev": "nuxt dev",
