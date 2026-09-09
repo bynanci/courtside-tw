@@ -2599,12 +2599,12 @@ export const MEDIA_ARCHIVE_PATHS = Object.freeze([
   "apps/web/app/pages/studio/media/index.vue",
   "apps/web/tests/component/studio/media/media-archive.test.ts",
   "apps/web/tests/e2e/us3-media-library-archive.spec.ts",
-  "apps/api/src/test/java/tw/basketball/magazine/shared/WriteApiContractTest.java",
   "contracts/openapi.yaml",
   "packages/api-client/src/generated/openapi.d.ts",
   "scripts/validate-openapi.mjs",
   "scripts/validate-traceability.mjs",
-  "scripts/test/validate-traceability.test.mjs"
+  "scripts/test/validate-traceability.test.mjs",
+  "apps/api/src/test/java/tw/basketball/magazine/shared/WriteApiContractTest.java"
 ])
 export const MEDIA_ARCHIVE_MODES = Object.freeze(
   Object.fromEntries(MEDIA_ARCHIVE_PATHS.map((filePath) => [filePath, "100644"]))
