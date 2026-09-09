@@ -341,6 +341,25 @@ test("T086 check-run lifecycle never sends a null conclusion while in progress",
   assert.doesNotMatch(workflowText, /conclusion:[^,\n}]*\bnull\b/u)
 })
 
+test("T086 completed producer checks are revoked and replaced before recompute", () => {
+  const workflowText = fs.readFileSync(
+    path.join(repositoryRoot, ".github/workflows/t086-required-gate.yml"),
+    "utf8"
+  )
+  assert.match(
+    workflowText,
+    /const reusable=own\.filter\(check=>\['queued','in_progress'\]\.includes\(check\.status\)\)/u
+  )
+  assert.match(
+    workflowText,
+    /const result=reusable\.length===1\?await github\.rest\.checks\.update/u
+  )
+  assert.match(
+    workflowText,
+    /checks\.create\(\{owner,repo,name:CHECK_NAME,head_sha:pr\.head\.sha,external_id:`courtside-t086:pr:\$\{pr\.number\}`,status:'in_progress'/u
+  )
+})
+
 test("issue 164 rejects missing, stale, spoofed, edited and widened OWNER authority", () => {
   const fixture = makeCompletedFixture()
   for (const [label, readback] of [
