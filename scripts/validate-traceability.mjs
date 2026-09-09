@@ -2442,6 +2442,7 @@ export function createMediaRightsAuthorizationGate(binding = MEDIA_RIGHTS_AUTHOR
       const check = (ok, message) => {
         if (!ok) errors.push(`media-rights authorization ${message}`)
       }
+      const push = githubActionsContext?.authority === "PROTECTED_MAIN_PUSH"
       check(bound, "is unbound")
       check(
         changeBaseSha === c.base_sha && boundedScopeActive === false && closure(changedPaths),
@@ -2522,7 +2523,7 @@ export function createMediaRightsAuthorizationGate(binding = MEDIA_RIGHTS_AUTHOR
       check(
         readback?.protected_main?.name === "main" &&
           readback?.protected_main?.protected === true &&
-          readback?.protected_main?.commit?.sha === c.base_sha,
+          readback?.protected_main?.commit?.sha === (push ? gitBinding?.head : c.base_sha),
         "requires fresh protected main"
       )
       check(
@@ -2534,20 +2535,34 @@ export function createMediaRightsAuthorizationGate(binding = MEDIA_RIGHTS_AUTHOR
           githubActionsContext?.source_head_sha === gitBinding?.head,
         "must bind the Actions event base and evaluated head"
       )
-      check(
-        githubActionsContext?.authority === "PULL_REQUEST" &&
-          githubActionsContext?.pull_request_number === c.pr &&
-          githubActionsContext?.source_head_sha === pr?.head?.sha &&
-          githubActionsContext?.head_ref === c.branch &&
-          new RegExp(`^refs/pull/${c.pr}/(?:merge|head)$`).test(
-            githubActionsContext?.github_ref ?? ""
-          ) &&
-          pr?.state === "open" &&
-          pr?.merged === false &&
-          typeof pr?.draft === "boolean" &&
-          githubActionsContext?.pull_request_draft === pr?.draft,
-        "requires the live draft or ready PR event"
-      )
+      if (push) {
+        check(
+          pr?.state === "closed" &&
+            pr?.merged === true &&
+            pr?.draft === false &&
+            pr?.merge_commit_sha === gitBinding?.head &&
+            isIsoTimestamp(pr?.merged_at) &&
+            Date.parse(pr.merged_at) > Date.parse(c.recorded_at) &&
+            gitBinding?.head_parent_count === 1 &&
+            isDeepStrictEqual(gitBinding?.head_parent_shas, [c.base_sha]),
+          "must bind only the exact same-tree single-parent squash push"
+        )
+      } else {
+        check(
+          githubActionsContext?.authority === "PULL_REQUEST" &&
+            githubActionsContext?.pull_request_number === c.pr &&
+            githubActionsContext?.source_head_sha === pr?.head?.sha &&
+            githubActionsContext?.head_ref === c.branch &&
+            new RegExp(`^refs/pull/${c.pr}/(?:merge|head)$`).test(
+              githubActionsContext?.github_ref ?? ""
+            ) &&
+            pr?.state === "open" &&
+            pr?.merged === false &&
+            typeof pr?.draft === "boolean" &&
+            githubActionsContext?.pull_request_draft === pr?.draft,
+          "requires the live draft or ready PR event"
+        )
+      }
       return errors.length === start
     },
     allowsPath(filePath) {
