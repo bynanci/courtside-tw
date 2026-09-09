@@ -2206,7 +2206,7 @@ export const MEDIA_RIGHTS_MODES = Object.freeze(
 )
 export const MEDIA_RIGHTS_AUTHORIZATION = Object.freeze({
   ref: "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5597854589",
-  body_sha256: "1d204dac76a794de99eaf8baabd9384eebf633b16d81dd74d6993d297bdcb86a",
+  body_sha256: "c30b19fcdf5d759176b2fbba932e2d5d539d39fec4731f244db0abbf31fb9f78",
   recorded_at: "2026-09-09T07:20:23Z",
   pr: 178,
   branch: "fix/media-rights-metadata",
