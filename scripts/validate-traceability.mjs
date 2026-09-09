@@ -2610,15 +2610,15 @@ export const MEDIA_ARCHIVE_MODES = Object.freeze(
   Object.fromEntries(MEDIA_ARCHIVE_PATHS.map((filePath) => [filePath, "100644"]))
 )
 export const MEDIA_ARCHIVE_AUTHORIZATION = Object.freeze({
-  ref: null,
-  body_sha256: null,
-  recorded_at: null,
+  ref: "https://github.com/bynanci/courtside-tw/issues/121#issuecomment-5599296777",
+  body_sha256: "c96f21a6647da65970611adb5ca9cfda8e8308d040b3e8d255d6cfb85daf83fe",
+  recorded_at: "2026-09-09T09:05:32Z",
   pr: 180,
   branch: "fix/media-library-archive",
   base_sha: "d0cb5bc2e0dede4dc474794fdb5c4a78452107ae",
   initial_seed: Object.freeze({
-    head_sha: null,
-    tree_sha: null,
+    head_sha: "e838a728b234bffe9fcd7ab85c09747c21fe1c58",
+    tree_sha: "3b946732baa9d4f4ebddf5899f7813babf53d86a",
     changed_paths: MEDIA_ARCHIVE_PATHS
   }),
   required_paths: MEDIA_ARCHIVE_PATHS,
