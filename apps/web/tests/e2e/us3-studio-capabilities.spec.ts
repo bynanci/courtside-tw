@@ -11,14 +11,52 @@ async function login(page: Page, path: string, state = "DRAFT", issueState = "")
       )
     ).ok()
   ).toBeTruthy()
-  await page.goto(`/auth/login?returnTo=${encodeURIComponent(path)}`)
+  const loginPath = `/auth/login?returnTo=${encodeURIComponent(path)}`
+  let response = await page.goto(loginPath)
+  if (response?.status() === 429) {
+    expect(await response.json()).toMatchObject({
+      status: 429,
+      code: "RATE_LIMITED",
+      instance: "/auth/login"
+    })
+    const retryAfter = response.headers()["retry-after"]
+    expect(retryAfter).toMatch(/^[1-9]\d?$/)
+    const seconds = Number(retryAfter)
+    expect(seconds).toBeGreaterThanOrEqual(1)
+    expect(seconds).toBeLessThanOrEqual(60)
+    test.setTimeout(Math.min(120_000, test.info().timeout + seconds * 1000))
+    await test.info().attach("studio-login-rate-limit", {
+      contentType: "application/json",
+      body: Buffer.from(
+        JSON.stringify({
+          route: "/auth/login",
+          status: 429,
+          retryAfterSeconds: seconds,
+          plannedRetries: 1
+        })
+      )
+    })
+    // Test contexts share the real socket quota. Honor one observed expiry.
+    response = await test.step("Honor the observed login Retry-After once", async () => {
+      await page.waitForTimeout(seconds * 1000)
+      return page.goto(loginPath)
+    })
+  }
+  expect(response?.ok()).toBe(true)
+  // Verify the browser's Secure loopback cookies with its own fetch context.
+  const session = await page.evaluate(async () => {
+    const result = await fetch("/auth/session", { credentials: "same-origin" })
+    return { status: result.status, body: await result.json() }
+  })
+  expect(session.status).toBe(200)
+  expect(session.body).toMatchObject({ authenticated: true })
   await page.goto(path)
 }
 async function createContributor(page: Page, slug: string, name: string) {
   await page.getByLabel("作者網址代稱").fill(slug)
   await page.getByLabel("作者公開姓名").fill(name)
   await page.getByRole("button", { name: "建立作者", exact: true }).click()
-  await expect(page.getByRole("status")).toContainText("作者已建立")
+  await expect(page.getByRole("main").getByRole("status")).toContainText("作者已建立")
 }
 
 test("editor creates article and issue drafts through their Studio forms", async ({ page }) => {
@@ -51,7 +89,7 @@ test("editor manages contributors and persists ordered bylines across reload and
   await createContributor(page, "author-one", "第一作者")
   await page.getByLabel("編輯公開姓名").fill("第一作者改名")
   await page.getByRole("button", { name: "儲存姓名" }).click()
-  await expect(page.getByRole("status")).toContainText("公開署名已更新")
+  await expect(page.getByRole("main").getByRole("status")).toContainText("公開署名已更新")
   await createContributor(page, "photo-two", "第二攝影")
   await page.goto(`/studio/articles/${articleId}`)
   await page.getByLabel("選擇作者").selectOption({ label: "第一作者改名" })
@@ -77,7 +115,7 @@ test("editor manages contributors and persists ordered bylines across reload and
   await expect(page.getByRole("alert")).toContainText("已用於文章署名的姓名會保留")
   await page.getByLabel("作者封存原因").fill("停止新增署名，保留既有作品。")
   await page.getByRole("button", { name: "確認封存作者" }).click()
-  await expect(page.getByRole("status")).toContainText("既有文章署名繼續保留")
+  await expect(page.getByRole("main").getByRole("status")).toContainText("既有文章署名繼續保留")
   await page.goto(`/studio/articles/${articleId}`)
   await expect(page.getByRole("list", { name: "已安排署名" })).toContainText("第一作者改名")
   await expect(
@@ -144,7 +182,7 @@ test("publisher archives an issue with its current server version", async ({ pag
   )
   await page.getByRole("button", { name: "確認封存期刊" }).click()
   expect((await archive).headers()["if-match"]).toBe('"1"')
-  await expect(page.getByRole("status")).toContainText("已封存")
+  await expect(page.getByRole("main").getByRole("status")).toContainText("已封存")
   await page.reload()
   await expect(page.getByRole("region", { name: "Publisher 期刊清單" })).toContainText("ARCHIVED")
 })
@@ -176,7 +214,7 @@ test("editor assigns a published article revision, submits an issue and publishe
   await title.fill(originalTitle)
   await page.getByLabel("文章所屬章節").selectOption({ label: "開場" })
   await page
-    .getByLabel("已發布文章", { exact: true })
+    .getByRole("combobox", { name: "已發布文章", exact: true })
     .selectOption({ label: "Studio fixture article · r1" })
   const assignment = page.waitForRequest(
     (request) => request.method() === "PUT" && request.url().endsWith(`/issues/${issueId}/articles`)
@@ -199,9 +237,9 @@ test("editor assigns a published article revision, submits an issue and publishe
     "Studio fixture article · 固定版本 r1"
   )
   await page.getByRole("button", { name: "核准期刊", exact: true }).click()
-  await expect(page.getByRole("status")).toContainText("期刊已核准")
+  await expect(page.getByRole("main").getByRole("status")).toContainText("期刊已核准")
   await page.getByRole("button", { name: "立即發布期刊", exact: true }).click()
-  await expect(page.getByRole("status")).toContainText("期刊已發布")
+  await expect(page.getByRole("main").getByRole("status")).toContainText("期刊已發布")
 })
 
 test("newer section reads never relabel stale metadata with a writable issue version", async ({
