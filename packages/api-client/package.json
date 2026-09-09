@@ -10,7 +10,7 @@
   "description": "Generated, type-safe TypeScript client for the Courtside TW API contract.",
   "engines": {
     "node": "24.14.x",
-    "pnpm": "11.7.x"
+    "pnpm": "11.11.x"
   },
   "scripts": {
     "generate": "node scripts/generate-client.mjs",

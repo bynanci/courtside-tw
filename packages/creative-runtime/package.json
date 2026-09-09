@@ -10,7 +10,7 @@
   "description": "Trusted, bounded creative preset registry for Courtside TW.",
   "engines": {
     "node": "24.14.x",
-    "pnpm": "11.7.x"
+    "pnpm": "11.11.x"
   },
   "scripts": {
     "lint": "eslint --max-warnings=0 src tests",
