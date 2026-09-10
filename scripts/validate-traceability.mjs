@@ -12078,11 +12078,17 @@ export function validateTraceability({
             requiredGateAuthorizationAccepted &&
             REQUIRED_GATE_AUTHORIZED_PATHS.includes(changedPath)
           ) &&
-          !(studioCompletionAuthorizationAccepted && studioCompletionGate.allowsPath(changedPath)) &&
-          !(publicationCacheAuthorizationAccepted && publicationCacheGate.allowsPath(changedPath)) &&
+          !(
+            studioCompletionAuthorizationAccepted && studioCompletionGate.allowsPath(changedPath)
+          ) &&
+          !(
+            publicationCacheAuthorizationAccepted && publicationCacheGate.allowsPath(changedPath)
+          ) &&
           !(mediaRightsAuthorizationAccepted && mediaRightsGate.allowsPath(changedPath)) &&
           !(mediaArchiveAuthorizationAccepted && mediaArchiveGate.allowsPath(changedPath)) &&
-          !(arenaEditorialV3AuthorizationAccepted && arenaEditorialV3Gate.allowsPath(changedPath)) &&
+          !(
+            arenaEditorialV3AuthorizationAccepted && arenaEditorialV3Gate.allowsPath(changedPath)
+          ) &&
           !(
             oidcSecurityRemediationAuthorizationAccepted &&
             oidcSecurityRemediationGate.allowsPath(changedPath)
