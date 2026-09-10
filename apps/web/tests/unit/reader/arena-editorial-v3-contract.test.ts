@@ -90,12 +90,18 @@ test("every non-article public surface uses the shared header and mobile dock", 
   assert.match(issueDetail, /<h1>找不到這一期<\/h1>/)
   assert.match(issueDetail, /<h1>期數目錄暫時無法載入<\/h1>/)
   assert.match(issueDetail, /<h1>正在載入期數<\/h1>/)
+
+  const privacy = pages[5]
+  assert.match(privacy, /<PublicSiteHeader\s*\/>/)
+  assert.match(privacy, /<PublicMobileDock\s*\/>/)
+  assert.doesNotMatch(privacy, /current="library"/)
 })
 
 test("v0.3 tokens and responsive rules encode a mobile scene rather than a shrunken split", async () => {
-  const [home, css] = await Promise.all([
+  const [home, css, header] = await Promise.all([
     readWeb("app/pages/index.vue"),
-    readWeb("app/assets/css/main.css")
+    readWeb("app/assets/css/main.css"),
+    readWeb("app/components/navigation/PublicSiteHeader.vue")
   ])
 
   for (const token of [
@@ -116,18 +122,29 @@ test("v0.3 tokens and responsive rules encode a mobile scene rather than a shrun
   assert.match(home, /<PublicSiteHeader\s+tone="hero"/)
   assert.match(home, /class="[^"]*arena-masthead__media[^"]*"/)
   assert.match(home, /class="arena-masthead__copy"/)
-  assert.match(css, /padding-bottom:\s*calc\([^;]*env\(safe-area-inset-bottom\)/)
-  const mobile = css.indexOf("@media (max-width: 48rem)")
+  assert.match(
+    css,
+    /\.public-mobile-dock\s*\{[\s\S]*padding-bottom:\s*env\(safe-area-inset-bottom\)/
+  )
+  const mobile = css.indexOf("@media (max-width: 48.0625rem)")
   const lock = css.indexOf("html[data-public-menu-open]")
   const desktop = css.indexOf("@media (min-width: 48.0625rem)")
   assert.ok(mobile >= 0 && mobile < lock && lock < desktop)
   assert.match(
     css,
-    /@media \(max-width: 48rem\)[\s\S]*\.arena-masthead__media\s*\{[\s\S]*position:\s*absolute/
+    /@media \(max-width: 48\.0625rem\)[\s\S]*\.arena-masthead__media\s*\{[\s\S]*position:\s*absolute/
   )
   assert.match(
     css,
     /\.arena-masthead__inner\s*\{[\s\S]*padding:[^;]*var\(--size-public-dock\)[^;]*env\(safe-area-inset-bottom\)/
+  )
+  assert.match(
+    css,
+    /@media \(max-width: 48\.0625rem\)[\s\S]*\.arena-masthead__inner\s*\{[^}]*grid-template-columns:\s*minmax\(0, 1fr\)[^}]*gap:\s*0/
+  )
+  assert.match(
+    css,
+    /@media \(max-width: 48\.0625rem\)[\s\S]*\.arena-masthead__copy::before\s*\{[^}]*background:[^}]*var\(--color-scene-scrim\)/
   )
   assert.match(
     css,
@@ -138,12 +155,35 @@ test("v0.3 tokens and responsive rules encode a mobile scene rather than a shrun
   assert.match(css, /\[data-block-type="gallery"\]/)
   assert.match(
     css,
-    /\.public-menu__panel nav a\[aria-current="page"\]\s*,?[\s\S]*?text-decoration:\s*underline/
+    /\.public-menu__panel nav a\[aria-current="page"\]\s*\{[^}]*text-decoration:\s*underline/
+  )
+  assert.match(css, /\.public-menu:not\(\[open\]\) > \.public-menu__panel\s*\{[^}]*display:\s*none/)
+  assert.match(header, /:role="enhancementReady \? 'dialog' : undefined"/)
+  assert.match(header, /:aria-modal="enhancementReady \? 'true' : undefined"/)
+  assert.match(header, /menuPanel\.value\?\.querySelector/)
+  assert.doesNotMatch(header, /querySelectorAll<HTMLElement>\("summary/)
+  assert.match(header, /else if \(menu\.value\?\.open\) handleMenuToggle\(\)/)
+  assert.match(header, /child\.inert = true/)
+  assert.match(header, /const header = menu\.value\?\.closest\("\.site-header"\)/)
+  assert.match(header, /child === menu\.value/)
+  assert.match(header, /element\.inert = wasInert/)
+  assert.match(css, /\.issue-toc__section > section\s*\{[^}]*grid-column:\s*1 \/ -1/)
+  assert.match(
+    css,
+    /\.article-header h1\s*\{[^}]*font-size:\s*clamp\(2\.8rem, 8vw, 6rem\)[^}]*text-wrap:\s*balance/
+  )
+  assert.match(
+    css,
+    /\.article-generative-poster\s*\{[^}]*height:\s*auto[^}]*min-height:\s*0[^}]*object-fit:\s*contain/
   )
   assert.match(css, /@media \(prefers-reduced-motion: reduce\)/)
   assert.match(css, /@media \(forced-colors: active\)/)
   assert.match(
     css,
-    /@media \(forced-colors: active\) and \(max-width: 48rem\)[\s\S]*?\.arena-masthead__media\s*\{[\s\S]*?display:\s*none/
+    /@media \(forced-colors: active\) and \(max-width: 48\.0625rem\)[\s\S]*?\.arena-masthead__media\s*\{[\s\S]*?display:\s*none/
+  )
+  assert.match(
+    css,
+    /@media \(forced-colors: active\) and \(max-width: 48\.0625rem\)[\s\S]*?\.arena-masthead__copy::before\s*\{[\s\S]*?content:\s*none/
   )
 })

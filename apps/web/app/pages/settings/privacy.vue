@@ -2,6 +2,8 @@
 import { navigateTo } from "#app"
 import { onMounted, ref } from "vue"
 
+import PublicMobileDock from "../../components/navigation/PublicMobileDock.vue"
+import PublicSiteHeader from "../../components/navigation/PublicSiteHeader.vue"
 import {
   deleteAccount,
   exportAccountData,
@@ -75,15 +77,10 @@ function login(): void {
 
 <template>
   <div class="site-page">
-    <header class="site-header">
-      <NuxtLink to="/" class="site-brand">Courtside TW</NuxtLink>
-      <nav aria-label="主要導覽">
-        <NuxtLink to="/library">我的收藏</NuxtLink>
-        <NuxtLink to="/settings/privacy" aria-current="page">隱私設定</NuxtLink>
-      </nav>
-    </header>
+    <a class="skip-link" href="#main-content">跳到主要內容</a>
+    <PublicSiteHeader />
 
-    <main class="site-shell privacy-page">
+    <main id="main-content" class="site-shell privacy-page" tabindex="-1">
       <header class="page-intro">
         <p class="eyebrow">Privacy &amp; Account</p>
         <h1>資料由你決定</h1>
@@ -137,6 +134,7 @@ function login(): void {
       </p>
       <p v-if="error" class="privacy-error" role="alert">{{ error }}</p>
     </main>
+    <PublicMobileDock />
   </div>
 </template>
 

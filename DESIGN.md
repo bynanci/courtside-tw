@@ -134,7 +134,7 @@ flowchart TD
 
 - 手機 app bar 只保留當前已啟用的品牌／返回與必要 actions；每個 icon 都有文字替代與 44×44 CSS px hit area。
 - Public shell 只列出 current-main 已啟用的首頁、期數、搜尋與書庫，不顯示 disabled 或「即將推出」入口。Desktop primary nav 上限四項。
-- Article route 採 distraction-reduced shell：top bar 只保留「返回本期目錄」，分享／收藏位於 article metadata，上一篇／下一篇與回目錄維持頁尾正常文件流；mobile 不載入 global bottom dock。
+- Article route 採 distraction-reduced shell：top bar 只保留 contextual return；有期數脈絡時顯示「返回本期目錄」，否則顯示「返回所有期數」。分享／收藏位於 article metadata，上一篇／下一篇與回目錄維持頁尾正常文件流；mobile 不載入 global bottom dock。
 - Global mobile dock 與 app bar 不得依捲動方向自動隱藏；top bar 高度至少 56px，dock 操作預設 48×48 CSS px，非 article 頁內容底部需加 dock + safe-area inset。
 - 第一篇／最後一篇缺少的方向顯示非互動文字，不保留空 anchor；存在的 SSR links 使用 `rel="prev"`／`rel="next"`。
 - 不混用同層級的 sidebar、tabs 與 bottom nav；目前四個已啟用目的地共用 global mobile dock，文章頁不得顯示它或同時顯示兩套 bottom navigation。
@@ -419,7 +419,7 @@ Component token examples：
 - Header：section、title、dek、作者、發布／更新時間、閱讀時間、issue link。
 - Reader page、article surface、caption、pull quote、Reader Dock 與 inline data insert 全部引用 system-adaptive semantic token；不得在 block renderer 寫死 white／black。
 - Light 使用 bone-paper page + warm surface；dark 使用 arena black page + charcoal surface。兩者保持相同 content order、measure、spacing 與 affordance，不把 dark mode 當另一份版型。
-- Top bar：品牌旁保留「返回本期目錄」；分享／收藏放在 article metadata，不製造第二套 sticky actions。窄螢幕不可截斷返回 control 的核心語意，其 accessible name 必須包含「本期目錄」。
+- Top bar：品牌旁保留 contextual return；有期數脈絡時為「返回本期目錄」，否則為「返回所有期數」。分享／收藏放在 article metadata，不製造第二套 sticky actions。窄螢幕不可截斷返回 control 的核心語意，其 accessible name 必須清楚命名返回目標。
 - Reading progress：頂部視覺條 + 可讀文字；不把 percentage 當唯一恢復定位，也不在每次 scroll 用 `aria-live` 播報。
 - Body：paragraph rhythm 優先，不讓 sticky UI、分享工具或動畫打斷段落。
 - Media breakout 在 desktop 擴欄，在 mobile 回到 viewport width 並保留 gutter／caption。
@@ -741,7 +741,7 @@ No-JS 時必須保留 Home → issue → `#toc` → article SSR links、完整 h
 開始 T003 root baseline 或任何 UI scaffold 前，必須完成：
 
 - DESIGN.md v0.3 與 `docs/design/arena-editorial-v3.md` 必須先於 production implementation commit。
-- Repository owner 已於 2026-09-09 透過 issue #186 授權 Arena Editorial v0.3 的 exact-base、exact-path 實作與合併流程。
+- Repository owner 已於 2026-09-09 透過 issue #186 授權 Arena Editorial v0.3 的 exact-base、exact-path 實作與合併流程；其 OIDC 安全與瀏覽器證據補充範圍由 [issue #190](https://github.com/bynanci/courtside-tw/issues/190) 以 exact-head addendum 綁定。
 - Root theme contract 使用三層 tokens，no-override 首幀跟隨系統，不能先建 light-only component 再補 dark patch。
 - 核准圖只作 reference；AI 人物、placeholder 文案與未授權標誌不得進入 scaffold fixtures 或 production assets。
 - 未決品牌／字體／媒體項目保留為 named gate，不被假設為已解決。
@@ -758,6 +758,11 @@ and the detailed production contract in
 public-shell, mobile-navigation, and responsive-composition details identified there. All
 anonymous reading, SSR/no-JS, rights, withdrawal, accessibility, performance, and governance
 requirements in this document remain binding.
+
+The supplemental OIDC and browser-evidence paths are bounded by issue #190. The 640/320 CSS-pixel
+reflow guards remain required; native 200% browser zoom is explicitly WAIVED/NOT_RUN in agent mode
+when the canonical T078 environment is unavailable, and must never be represented by a DPR or
+viewport-width substitute.
 
 The independent implementation ledger is
 [docs/design/arena-editorial-v3-tasks.md](docs/design/arena-editorial-v3-tasks.md). It intentionally

@@ -5,9 +5,14 @@ Authority: [GitHub issue #186](https://github.com/bynanci/courtside-tw/issues/18
 Authorization base: 2cc2cc5acac03af3667126ad28c1e80a58edb7b9 \
 Branch: feat/arena-editorial-v3
 
+Security/accessibility addendum: [GitHub issue #190](https://github.com/bynanci/courtside-tw/issues/190),
+bound to PR #187 at supplemental base `430d4e585b9cc4701ea6150fde6e492555330d5f`.
+
 ## Purpose
 
-Classification: style-reference / draft-only
+Reference classification: style-reference / draft-only
+
+Visual system: Arena Night × Editorial Paper
 
 Arena Editorial v0.3 translates the supplied courtside montage into a production-safe public
 reading system. The direction combines an “Arena Night” discovery surface with an “Editorial
@@ -22,10 +27,12 @@ people, typefaces, dates, and editorial copy are not authorized production asset
 | Reference                | Observed format   | SHA-256                                                          | Use                                 |
 | ------------------------ | ----------------- | ---------------------------------------------------------------- | ----------------------------------- |
 | 11379.png                | JPEG, 1536 × 1024 | 58aff6b6b3444f01b349bf1ca8579a430e5692591445d32d161408fb84f30453 | Composition and visual tone only    |
-| courtside-montage(1).png | PNG, 2096 × 1044  | Not used as a production binding                                 | Multi-surface layout reference only |
+| courtside-montage(1).png | PNG, 2096 × 1044  | eb4929c2564a9096cf6d08ddca8b2a6bd0d8551178a2b04d4c41bed156af8ad8 | Multi-surface layout reference only |
 
-The reference bitmap is intentionally absent from production and from this change set. Only the
-exact first fingerprint is used as a review note; neither attachment acts as production authority.
+Neither supplied attachment is imported into a production surface or introduced as a production
+asset by this change. The second fingerprint matches the pre-existing research-only artifact at
+`docs/research/assets/courtside-user-immersion-montage-2026-08-08.png`; neither attachment acts as
+production authority.
 
 ## Product interpretation
 
@@ -42,7 +49,8 @@ exact first fingerprint is used as a review note; neither attachment acts as pro
 ## Non-goals
 
 - No new People, Culture, Stories, About, or placeholder route.
-- No supplied bitmap, player likeness, third-party mark, unverified font, or copied wording.
+- No supplied bitmap on a production surface, no new copy in production assets, and no player
+  likeness, third-party mark, unverified font, or copied wording.
 - No API, database, CMS lifecycle, analytics payload, authentication, offline, or withdrawal change.
 - No workflow, branch-protection, deployment, provider, secret, research, or Web3 change.
 - No mutation of canonical T001–T112 task bytes; T086 remains HOLD.
@@ -55,7 +63,7 @@ twelve-column desktop grid. The system uses five repeatable operations:
 1. Frame: a hairline bounds each public navigation or editorial grouping.
 2. Split: desktop discovery pairs one text plane with one media plane.
 3. Stack: mobile collapses content into one vertical reading sequence.
-4. Crop: the existing cover becomes a full scene only below 48rem.
+4. Crop: the existing cover becomes a full scene only below 48.0625rem, matching the menu cleanup boundary.
 5. Breakout: selected article media may expand to 64rem while prose remains 42rem.
 
 No decorative geometry may obscure content, become the only state indicator, or introduce
@@ -86,9 +94,11 @@ Canvas, CanvasText, and LinkText. Focus uses color-focus and a visible three-pix
 | Article                                | Reader header with contextual return   | Same reader header; no global dock            | Context label names issue or all issues | Plain link remains usable                 |
 
 The mobile menu uses native details semantics. Enhancement adds Escape handling, focus
-containment, focus return, and breakpoint cleanup. The enhanced close button is not rendered
-until JavaScript is ready, so no dead control appears in the server or no-JS result. Scroll lock
-applies only at or below 48rem.
+containment, focus return, breakpoint cleanup, and modal isolation of the covered page content.
+Dialog semantics and the enhanced close button are not rendered until JavaScript is ready, so no
+false modal or dead control appears in the server or no-JS result. A closed menu panel does not
+participate in layout. Scroll lock applies only at or below 48.0625rem, the same boundary used by
+the CSS mobile switch and JavaScript desktop cleanup listener.
 
 ## Surface contracts
 
@@ -123,14 +133,14 @@ no selected global destination.
 
 ## Responsive matrix
 
-| Validation width | Composition                                                                       |
-| ---------------- | --------------------------------------------------------------------------------- |
-| 320px            | One column, 16px gutters, compact brand/menu, four dock targets                   |
-| 375px            | Full-height Home scene; CTA and Issue TOC action clear the dock and safe area     |
-| 768px            | Mobile composition through 48rem; menu closes cleanly when crossing to desktop    |
-| 1024px           | Desktop header and split discovery layout                                         |
-| 1440px           | Twelve-column rhythm; selected article media break out while prose stays readable |
-| 200% zoom        | Reflow without clipping, hidden controls, overlap, or horizontal scrolling        |
+| Validation width | Composition                                                                                                               |
+| ---------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| 320px            | One column, 16px gutters, compact brand/menu, four dock targets                                                           |
+| 375px            | Full-height Home scene; CTA and Issue TOC action clear the dock and safe area                                             |
+| 768px            | Mobile composition through 48.0625rem; menu closes cleanly when crossing to desktop                                       |
+| 1024px           | Desktop header and split discovery layout                                                                                 |
+| 1440px           | Twelve-column rhythm; selected article media break out while prose stays readable                                         |
+| 200% zoom        | 640/320 CSS-px reflow guards; native browser zoom is recorded as WAIVED/NOT_RUN in agent mode per the canonical T078 plan |
 
 ## Accessibility and resilient states
 
@@ -139,7 +149,8 @@ no selected global destination.
 - Current navigation is conveyed by aria-current and a non-color line or underline.
 - Menu Escape, Tab containment, focus return, and mobile-to-desktop resize are deterministic.
 - Reduced motion reduces all animation and transition duration.
-- Forced colors hides the full-color mobile Home media and preserves CanvasText contrast.
+- Forced colors hides the full-color mobile Home media, preserves CanvasText/LinkText semantics, and keeps selected navigation visibly underlined.
+- The hydrated mobile menu isolates covered `.site-page` siblings with `inert`, traps focus inside the dialog, and restores focus and prior inert state on close; the pre-hydration-open sequence is covered by direct browser evidence.
 - Broken or withdrawn images use existing fallbacks; no content depends on decoration.
 - SSR and no-JS preserve the reading path and native menu links.
 - Print removes navigation overlays and dock spacers.
@@ -167,7 +178,9 @@ The independent task ledger is in arena-editorial-v3-tasks.md. Merge requires:
 - formatting, typecheck, lint, unit, validator, build, reader-demo, schema, OpenAPI,
   observability, analytics-privacy, and bundle-budget checks;
 - exact-head CI, Security, responsive browser, keyboard, no-JS, reduced-motion,
-  forced-colors, broken-image, and 200% zoom evidence;
+  forced-colors, broken-image, and 640/320 reflow evidence; native 200% zoom is not claimed when
+  the agent environment cannot execute native browser zoom, and remains explicitly WAIVED/NOT_RUN
+  under `docs/quality/accessibility-test-plan.md`;
 - zero unresolved current-head P1/P2 findings and a rubric score of at least 17/20;
 - one exact-head squash merge, followed by protected-main readback.
 

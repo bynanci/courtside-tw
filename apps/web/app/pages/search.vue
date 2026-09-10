@@ -3,6 +3,8 @@ import { navigateTo, useNuxtApp } from "#app"
 import { onBeforeUnmount, ref, watch } from "vue"
 
 import ReadingState from "../components/issues/ReadingState.vue"
+import PublicMobileDock from "../components/navigation/PublicMobileDock.vue"
+import PublicSiteHeader from "../components/navigation/PublicSiteHeader.vue"
 import { canonicalUrl } from "../composables/public-seo"
 import { createSearchAnalyticsCorrelation } from "../features/analytics/search-correlation"
 import { fetchPublicSearch, type PublicSearchPage } from "../features/search/public-search-api"
@@ -210,16 +212,10 @@ function boundedTaxonomy(value: unknown): string[] {
 
 <template>
   <div class="site-page">
-    <header class="site-header">
-      <NuxtLink to="/" class="site-brand">Courtside TW</NuxtLink>
-      <nav aria-label="主要導覽">
-        <NuxtLink to="/">首頁</NuxtLink>
-        <NuxtLink to="/issues">所有期數</NuxtLink>
-        <NuxtLink to="/search" aria-current="page">搜尋</NuxtLink>
-      </nav>
-    </header>
+    <a class="skip-link" href="#main-content">跳到主要內容</a>
+    <PublicSiteHeader current="search" />
 
-    <main class="site-shell search-page">
+    <main id="main-content" class="site-shell search-page" tabindex="-1">
       <div class="page-intro search-intro">
         <p class="eyebrow">Published Archive</p>
         <h1>搜尋場邊故事</h1>
@@ -300,5 +296,6 @@ function boundedTaxonomy(value: unknown): string[] {
         </div>
       </section>
     </main>
+    <PublicMobileDock current="search" />
   </div>
 </template>

@@ -2,6 +2,8 @@
 import { navigateTo } from "#app"
 import { onMounted, ref } from "vue"
 
+import PublicMobileDock from "../components/navigation/PublicMobileDock.vue"
+import PublicSiteHeader from "../components/navigation/PublicSiteHeader.vue"
 import OfflineLibraryPanel from "../features/offline/components/OfflineLibraryPanel.vue"
 import { useProgressMerge } from "../features/library/composables/useProgressMerge"
 import {
@@ -72,14 +74,7 @@ function login(): void {
 <template>
   <div class="site-page">
     <a class="skip-link" href="#main-content">跳到主要內容</a>
-    <header class="site-header">
-      <NuxtLink to="/" class="site-brand">Courtside TW</NuxtLink>
-      <nav aria-label="主要導覽">
-        <NuxtLink to="/issues">所有期數</NuxtLink>
-        <NuxtLink to="/search">搜尋</NuxtLink>
-        <NuxtLink to="/library" aria-current="page">我的收藏</NuxtLink>
-      </nav>
-    </header>
+    <PublicSiteHeader current="library" />
 
     <main id="main-content" class="site-shell library-page" tabindex="-1">
       <header class="page-intro">
@@ -168,6 +163,7 @@ function login(): void {
         <NuxtLink to="/settings/privacy" class="text-link">匯出資料或刪除帳號</NuxtLink>
       </template>
     </main>
+    <PublicMobileDock current="library" />
   </div>
 </template>
 
