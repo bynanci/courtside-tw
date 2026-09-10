@@ -33,6 +33,7 @@ export const ARENA_EDITORIAL_V3_AUTHORIZATION_API_URL =
 export const ARENA_EDITORIAL_V3_AUTHORIZATION_BODY_SHA256 =
   "80dd6913d27352e4b6b1fe77b84cae829f7b03bc6045bf634e10ee7647f4c076"
 export const ARENA_EDITORIAL_V3_AUTHORIZATION_RECORDED_AT = "2026-09-10T03:06:25Z"
+export const ARENA_EDITORIAL_V3_AUTHORIZATION_CREATED_AT = "2026-09-10T03:05:57Z"
 export const ARENA_EDITORIAL_V3_AUTHORIZATION_BASE_SHA =
   "bf89d99320296e9febf2eab3dac8aeea08f842a0"
 export const ARENA_EDITORIAL_V3_AUTHORIZATION_BASE_TREE_SHA =
@@ -65,6 +66,7 @@ export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_API_URL =
 export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_BODY_SHA256 =
   "fa1e16fb100e8fa67c87116e0e8627288dd6fa78ea3e15f0e05726938493c9b8"
 export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_RECORDED_AT = "2026-09-10T03:06:45Z"
+export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_CREATED_AT = "2026-09-10T03:06:45Z"
 export const ARENA_EDITORIAL_V3_ADDENDUM_BASE_SHA =
   "bf89d99320296e9febf2eab3dac8aeea08f842a0"
 export const ARENA_EDITORIAL_V3_ADDENDUM_BASE_TREE_SHA =
@@ -2262,7 +2264,7 @@ export function createMediaRightsAuthorizationGate(binding = MEDIA_RIGHTS_AUTHOR
     authorization?.issue_url === "https://api.github.com/repos/bynanci/courtside-tw/issues/121" &&
     authorization?.user_login === ACCEPTED_RECEIPT_OWNER &&
     authorization?.author_association === "OWNER" &&
-    authorization?.created_at === c.recorded_at &&
+    authorization?.created_at === c.created_at &&
     authorization?.updated_at === c.recorded_at &&
     sha256(authorization?.body ?? null) === c.body_sha256
   const bound =
@@ -3077,7 +3079,7 @@ export function createArenaEditorialV3AuthorizationGate(
     authorization?.author_association === "OWNER" &&
     authorization?.state === "open" &&
     authorization?.locked === false &&
-    authorization?.created_at === c.addendum_recorded_at &&
+    authorization?.created_at === c.addendum_created_at &&
     authorization?.updated_at === c.addendum_recorded_at &&
     authorization?.closed_at === null &&
     sha256(authorization?.body ?? null) === c.addendum_body_sha256

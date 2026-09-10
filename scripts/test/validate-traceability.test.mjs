@@ -488,7 +488,7 @@ function makeArenaV3Issue(overrides = {}) {
     author_association: "OWNER",
     state: "open",
     locked: false,
-    created_at: traceabilityValidator.ARENA_EDITORIAL_V3_AUTHORIZATION_RECORDED_AT,
+    created_at: traceabilityValidator.ARENA_EDITORIAL_V3_AUTHORIZATION_CREATED_AT,
     updated_at: traceabilityValidator.ARENA_EDITORIAL_V3_AUTHORIZATION_RECORDED_AT,
     closed_at: null,
     body: arenaV3IssueBody,
