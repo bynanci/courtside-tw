@@ -10,6 +10,7 @@ import YAML from "yaml"
 
 export const TRACEABILITY_SCHEMA = "courtside-traceability/v1"
 export const COMPLETION_RECEIPT_SCHEMA = "courtside-t085-completion-receipt/v2"
+export const COMPLETION_RECEIPT_PATH = ".loop/evidence/t085-completion-receipt.json"
 export const OWNER_AUTHORIZATION_SCHEMA = "courtside-t085-owner-authorization/v1"
 export const REQUIRED_GATE_AUTHORIZATION_REF =
   "https://github.com/bynanci/courtside-tw/issues/164#issuecomment-5601162669"
