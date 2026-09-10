@@ -56,8 +56,8 @@ function authorizationReadback(overrides = {}) {
     issue_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/193",
     user_login: "bynanci",
     author_association: "OWNER",
-    created_at: "2026-09-10T06:50:39Z",
-    updated_at: "2026-09-10T06:50:39Z",
+    created_at: "2026-09-10T06:58:39Z",
+    updated_at: "2026-09-10T06:58:39Z",
     body,
     errors: [],
     ...overrides
