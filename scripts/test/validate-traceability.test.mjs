@@ -504,7 +504,7 @@ function makeArenaV3PullRequest({ push = false, draft = true, ...overrides } = {
     merged: push,
     draft: push ? false : draft,
     merge_commit_sha: push ? arenaV3PushHead : null,
-    merged_at: push ? "2026-09-09T17:30:00Z" : null,
+    merged_at: push ? "2026-09-10T04:30:00Z" : null,
     head: {
       sha: arenaV3PrHead,
       ref: arenaV3Branch,
@@ -948,7 +948,7 @@ test("Arena Editorial v0.3 inspector reads the addendum only when supplemental h
       candidateInspector: () => fixture.readback.candidate
     })
   assert.equal(readback.status, "VERIFIED", readback.errors.join("\n"))
-  assert.equal(readback.addendum_authorization.number, 190)
+  assert.equal(readback.addendum_authorization.number, 192)
   assert.deepEqual(calls, [
     traceabilityValidator.ARENA_EDITORIAL_V3_AUTHORIZATION_API_URL,
     `https://api.github.com/repos/bynanci/courtside-tw/pulls/${arenaV3PrNumber}`,
