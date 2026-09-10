@@ -15,8 +15,8 @@ export const T086_AUTHORIZED_BASE_SHA = "7598d64780558915ba88b83ee9fcbcc22ab7c60
 export const FROZEN_T085_TRACEABILITY_SHA256 =
   "204662214eada892332d1ddbeab8d0b8037cfc5477d9152d6fb3a61e56832b79"
 export const T086_AUTHORIZATION_REF =
-  "https://github.com/bynanci/courtside-tw/issues/193#issuecomment-5614391955"
-export const T086_AUTHORIZATION_CREATED_AT = "2026-09-10T06:50:39Z"
+  "https://github.com/bynanci/courtside-tw/issues/193#issuecomment-5614473278"
+export const T086_AUTHORIZATION_CREATED_AT = "2026-09-10T06:58:39Z"
 export const T086_DISPATCH_PATH = ".loop/evidence/t086-dispatch.json"
 export const T086_CHECKLIST_PATH = "docs/release/beta-checklist.md"
 export const T086_WORKFLOW_PATH = ".github/workflows/release.yml"
@@ -884,7 +884,7 @@ const githubCommentFetchScript = [
 ].join("\n")
 
 export function inspectT086OwnerAuthorization() {
-  const apiUrl = "https://api.github.com/repos/bynanci/courtside-tw/issues/comments/5614391955"
+  const apiUrl = "https://api.github.com/repos/bynanci/courtside-tw/issues/comments/5614473278"
   try {
     const raw = execFileSync(
       process.execPath,
