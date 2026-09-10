@@ -34,8 +34,7 @@ export const ARENA_EDITORIAL_V3_AUTHORIZATION_BODY_SHA256 =
   "80dd6913d27352e4b6b1fe77b84cae829f7b03bc6045bf634e10ee7647f4c076"
 export const ARENA_EDITORIAL_V3_AUTHORIZATION_RECORDED_AT = "2026-09-10T03:06:25Z"
 export const ARENA_EDITORIAL_V3_AUTHORIZATION_CREATED_AT = "2026-09-10T03:05:57Z"
-export const ARENA_EDITORIAL_V3_AUTHORIZATION_BASE_SHA =
-  "bf89d99320296e9febf2eab3dac8aeea08f842a0"
+export const ARENA_EDITORIAL_V3_AUTHORIZATION_BASE_SHA = "bf89d99320296e9febf2eab3dac8aeea08f842a0"
 export const ARENA_EDITORIAL_V3_AUTHORIZATION_BASE_TREE_SHA =
   "221fbf3df36b1b3be50095c232bfd70d19d4ccfd"
 export const ARENA_EDITORIAL_V3_BRANCH = "feat/arena-editorial-v3"
@@ -67,10 +66,8 @@ export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_BODY_SHA256 =
   "fa1e16fb100e8fa67c87116e0e8627288dd6fa78ea3e15f0e05726938493c9b8"
 export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_RECORDED_AT = "2026-09-10T03:06:45Z"
 export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_CREATED_AT = "2026-09-10T03:06:45Z"
-export const ARENA_EDITORIAL_V3_ADDENDUM_BASE_SHA =
-  "bf89d99320296e9febf2eab3dac8aeea08f842a0"
-export const ARENA_EDITORIAL_V3_ADDENDUM_BASE_TREE_SHA =
-  "221fbf3df36b1b3be50095c232bfd70d19d4ccfd"
+export const ARENA_EDITORIAL_V3_ADDENDUM_BASE_SHA = "bf89d99320296e9febf2eab3dac8aeea08f842a0"
+export const ARENA_EDITORIAL_V3_ADDENDUM_BASE_TREE_SHA = "221fbf3df36b1b3be50095c232bfd70d19d4ccfd"
 export const ARENA_EDITORIAL_V3_ADDENDUM_PULL_REQUEST = 187
 export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZED_PATHS = Object.freeze([
   "apps/web/tests/e2e/t078-accessibility-release.spec.ts"
@@ -2988,6 +2985,7 @@ export function createArenaEditorialV3AuthorizationGate(
     api_url: ARENA_EDITORIAL_V3_AUTHORIZATION_API_URL,
     body_sha256: ARENA_EDITORIAL_V3_AUTHORIZATION_BODY_SHA256,
     recorded_at: ARENA_EDITORIAL_V3_AUTHORIZATION_RECORDED_AT,
+    created_at: ARENA_EDITORIAL_V3_AUTHORIZATION_CREATED_AT,
     base_sha: ARENA_EDITORIAL_V3_AUTHORIZATION_BASE_SHA,
     base_tree_sha: ARENA_EDITORIAL_V3_AUTHORIZATION_BASE_TREE_SHA,
     branch: ARENA_EDITORIAL_V3_BRANCH,
@@ -2997,6 +2995,7 @@ export function createArenaEditorialV3AuthorizationGate(
     addendum_api_url: ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_API_URL,
     addendum_body_sha256: ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_BODY_SHA256,
     addendum_recorded_at: ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_RECORDED_AT,
+    addendum_created_at: ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_CREATED_AT,
     addendum_base_sha: ARENA_EDITORIAL_V3_ADDENDUM_BASE_SHA,
     addendum_base_tree_sha: ARENA_EDITORIAL_V3_ADDENDUM_BASE_TREE_SHA,
     addendum_pull_request: ARENA_EDITORIAL_V3_ADDENDUM_PULL_REQUEST,
@@ -3043,6 +3042,7 @@ export function createArenaEditorialV3AuthorizationGate(
     c.api_url === ARENA_EDITORIAL_V3_AUTHORIZATION_API_URL &&
     c.body_sha256 === ARENA_EDITORIAL_V3_AUTHORIZATION_BODY_SHA256 &&
     c.recorded_at === ARENA_EDITORIAL_V3_AUTHORIZATION_RECORDED_AT &&
+    c.created_at === ARENA_EDITORIAL_V3_AUTHORIZATION_CREATED_AT &&
     c.base_sha === ARENA_EDITORIAL_V3_AUTHORIZATION_BASE_SHA &&
     c.base_tree_sha === ARENA_EDITORIAL_V3_AUTHORIZATION_BASE_TREE_SHA &&
     c.branch === ARENA_EDITORIAL_V3_BRANCH &&
@@ -3052,6 +3052,7 @@ export function createArenaEditorialV3AuthorizationGate(
     c.addendum_api_url === ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_API_URL &&
     c.addendum_body_sha256 === ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_BODY_SHA256 &&
     c.addendum_recorded_at === ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_RECORDED_AT &&
+    c.addendum_created_at === ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_CREATED_AT &&
     c.addendum_base_sha === ARENA_EDITORIAL_V3_ADDENDUM_BASE_SHA &&
     c.addendum_base_tree_sha === ARENA_EDITORIAL_V3_ADDENDUM_BASE_TREE_SHA &&
     c.addendum_pull_request === ARENA_EDITORIAL_V3_ADDENDUM_PULL_REQUEST &&
@@ -3060,12 +3061,13 @@ export function createArenaEditorialV3AuthorizationGate(
     authorization?.url === c.api_url &&
     authorization?.html_url === c.ref &&
     authorization?.number === 191 &&
-    authorization?.title === "Arena Editorial v0.3｜fresh protected-main base reconciliation after PR #189" &&
+    authorization?.title ===
+      "Arena Editorial v0.3｜fresh protected-main base reconciliation after PR #189" &&
     authorization?.user?.login === ACCEPTED_RECEIPT_OWNER &&
     authorization?.author_association === "OWNER" &&
     authorization?.state === "open" &&
     authorization?.locked === false &&
-    authorization?.created_at === c.recorded_at &&
+    authorization?.created_at === c.created_at &&
     authorization?.updated_at === c.recorded_at &&
     authorization?.closed_at === null &&
     sha256(authorization?.body ?? null) === c.body_sha256

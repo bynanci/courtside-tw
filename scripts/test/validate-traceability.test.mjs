@@ -349,44 +349,26 @@ const arenaV3DocumentationPaths = [
   "docs/design/arena-editorial-v3-tasks.md"
 ]
 const arenaV3ContractPath = "apps/web/tests/unit/reader/arena-editorial-v3-contract.test.ts"
-const arenaV3BaseSha = traceabilityValidator.ARENA_EDITORIAL_V3_AUTHORIZATION_BASE_SHA
-const arenaV3BaseTree = traceabilityValidator.ARENA_EDITORIAL_V3_AUTHORIZATION_BASE_TREE_SHA
-const arenaV3Branch = traceabilityValidator.ARENA_EDITORIAL_V3_BRANCH
-const arenaV3Paths = [...traceabilityValidator.ARENA_EDITORIAL_V3_AUTHORIZED_PATHS]
-const arenaV3AddendumBaseSha = traceabilityValidator.ARENA_EDITORIAL_V3_ADDENDUM_BASE_SHA
-const arenaV3AddendumBaseTree = traceabilityValidator.ARENA_EDITORIAL_V3_ADDENDUM_BASE_TREE_SHA
-const arenaV3AddendumPaths = [...traceabilityValidator.ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZED_PATHS]
-const arenaV3AllPaths = [...arenaV3Paths, ...arenaV3AddendumPaths]
-const arenaV3PrNumber = 187
-const arenaV3PrHead = "a".repeat(40)
-const arenaV3Tree = "b".repeat(40)
-const arenaV3PushHead = "c".repeat(40)
-const arenaV3DocumentationPaths = [
-  "DESIGN.md",
-  "docs/design/arena-editorial-v3.md",
-  "docs/design/arena-editorial-v3-tasks.md"
-]
-const arenaV3ContractPath = "apps/web/tests/unit/reader/arena-editorial-v3-contract.test.ts"
 const arenaV3Dispatch = {
-  "schema_version": "courtside-arena-editorial-v3-owner-dispatch/v1",
-  "decision": "DISPATCH_ACCEPTED",
-  "accepted_by": "bynanci",
-  "repository": "bynanci/courtside-tw",
-  "branch": "feat/arena-editorial-v3",
-  "pull_request": 187,
-  "authorization_base": {
-    "branch": "main",
-    "sha": "bf89d99320296e9febf2eab3dac8aeea08f842a0",
-    "tree_sha": "221fbf3df36b1b3be50095c232bfd70d19d4ccfd",
-    "protected": true,
-    "source_pr": 189
+  schema_version: "courtside-arena-editorial-v3-owner-dispatch/v1",
+  decision: "DISPATCH_ACCEPTED",
+  accepted_by: "bynanci",
+  repository: "bynanci/courtside-tw",
+  branch: "feat/arena-editorial-v3",
+  pull_request: 187,
+  authorization_base: {
+    branch: "main",
+    sha: "bf89d99320296e9febf2eab3dac8aeea08f842a0",
+    tree_sha: "221fbf3df36b1b3be50095c232bfd70d19d4ccfd",
+    protected: true,
+    source_pr: 189
   },
-  "parent_authorization": {
-    "issue": 186,
-    "historical_base_sha": "2cc2cc5acac03af3667126ad28c1e80a58edb7b9",
-    "historical_addendum": 190
+  parent_authorization: {
+    issue: 186,
+    historical_base_sha: "2cc2cc5acac03af3667126ad28c1e80a58edb7b9",
+    historical_addendum: 190
   },
-  "authorized_paths": [
+  authorized_paths: [
     "DESIGN.md",
     "docs/design/arena-editorial-v3.md",
     "docs/design/arena-editorial-v3-tasks.md",
@@ -404,7 +386,7 @@ const arenaV3Dispatch = {
     "scripts/validate-traceability.mjs",
     "scripts/test/validate-traceability.test.mjs"
   ],
-  "allowed_actions": [
+  allowed_actions: [
     "rebind the exact Arena Editorial implementation to the protected main produced by PR #189",
     "preserve the docs-first and tests-first commit ordering",
     "retain only existing routes, rights-valid published media, and the authorized responsive accessibility evidence",
@@ -413,7 +395,7 @@ const arenaV3Dispatch = {
     "run fresh exact-head CI, Security, T086, browser, accessibility and review verification",
     "squash merge PR #187 once all current exact-head gates pass and review threads are resolved"
   ],
-  "invariants": [
+  invariants: [
     "issue #186 and issue #190 remain historical and byte-for-byte immutable",
     "the final fresh-base changed-path closure is exactly the 16 original issue #186 paths plus the browser evidence path from issue #190",
     "infra/compose/oidc/Dockerfile and infra/compose/compose.yaml remain inherited from PR #189 and are not Arena changes",
@@ -421,62 +403,62 @@ const arenaV3Dispatch = {
     "no workflow, ruleset, branch-protection, provider, deployment, credential, secret, API, schema, migration, publication, rights, research, Web3 or participant-research scope change",
     "all fresh-base commits are linear descendants of this authorization base"
   ],
-  "cancellation_conditions": [
+  cancellation_conditions: [
     "protected main, branch, pull request, path closure or historical owner references drift",
     "OIDC baseline is modified or reintroduced as an Arena delta",
     "docs-first, tests-first, responsive, keyboard, no-JS, reduced-motion or contrast evidence fails",
     "required checks fail, unresolved P1/P2 findings remain, or exact reviewed head changes before merge"
   ]
 }
-const arenaV3IssueBody = "<!-- arena-editorial-v3:owner-dispatch:v1:start -->\n## Arena Editorial v0.3 — fresh protected-main base reconciliation after PR #189\n\n**Decision:** `DISPATCH_ACCEPTED / FRESH_BASE_RECONCILIATION`.\n\nThis successor record preserves the original owner authorization in issue #186 and the historical addendum in issue #190 without mutating either record. It rebinds the same Arena Editorial scope to the protected main produced by the independently merged OIDC remediation PR #189.\n\n```json\n{\n  \"schema_version\": \"courtside-arena-editorial-v3-owner-dispatch/v1\",\n  \"decision\": \"DISPATCH_ACCEPTED\",\n  \"accepted_by\": \"bynanci\",\n  \"repository\": \"bynanci/courtside-tw\",\n  \"branch\": \"feat/arena-editorial-v3\",\n  \"pull_request\": 187,\n  \"authorization_base\": {\n    \"branch\": \"main\",\n    \"sha\": \"bf89d99320296e9febf2eab3dac8aeea08f842a0\",\n    \"tree_sha\": \"221fbf3df36b1b3be50095c232bfd70d19d4ccfd\",\n    \"protected\": true,\n    \"source_pr\": 189\n  },\n  \"parent_authorization\": {\n    \"issue\": 186,\n    \"historical_base_sha\": \"2cc2cc5acac03af3667126ad28c1e80a58edb7b9\",\n    \"historical_addendum\": 190\n  },\n  \"authorized_paths\": [\n    \"DESIGN.md\",\n    \"docs/design/arena-editorial-v3.md\",\n    \"docs/design/arena-editorial-v3-tasks.md\",\n    \"apps/web/app/assets/css/main.css\",\n    \"apps/web/app/components/navigation/PublicSiteHeader.vue\",\n    \"apps/web/app/components/navigation/PublicMobileDock.vue\",\n    \"apps/web/app/pages/index.vue\",\n    \"apps/web/app/pages/issues/index.vue\",\n    \"apps/web/app/pages/issues/[issueSlug].vue\",\n    \"apps/web/app/pages/articles/[articleSlug].vue\",\n    \"apps/web/app/pages/search.vue\",\n    \"apps/web/app/pages/library.vue\",\n    \"apps/web/app/pages/settings/privacy.vue\",\n    \"apps/web/tests/unit/reader/arena-editorial-v3-contract.test.ts\",\n    \"scripts/validate-traceability.mjs\",\n    \"scripts/test/validate-traceability.test.mjs\"\n  ],\n  \"allowed_actions\": [\n    \"rebind the exact Arena Editorial implementation to the protected main produced by PR #189\",\n    \"preserve the docs-first and tests-first commit ordering\",\n    \"retain only existing routes, rights-valid published media, and the authorized responsive accessibility evidence\",\n    \"keep the OIDC image and Compose pin supplied by PR #189 as main-owned baseline; do not modify or reintroduce them in the Arena delta\",\n    \"apply the minimal verified mobile-menu header isolation remediation\",\n    \"run fresh exact-head CI, Security, T086, browser, accessibility and review verification\",\n    \"squash merge PR #187 once all current exact-head gates pass and review threads are resolved\"\n  ],\n  \"invariants\": [\n    \"issue #186 and issue #190 remain historical and byte-for-byte immutable\",\n    \"the final fresh-base changed-path closure is exactly the 16 original issue #186 paths plus the browser evidence path from issue #190\",\n    \"infra/compose/oidc/Dockerfile and infra/compose/compose.yaml remain inherited from PR #189 and are not Arena changes\",\n    \"T001-T112 task bytes, T086 HOLD, beta release flag and frozen traceability artifacts remain unchanged\",\n    \"no workflow, ruleset, branch-protection, provider, deployment, credential, secret, API, schema, migration, publication, rights, research, Web3 or participant-research scope change\",\n    \"all fresh-base commits are linear descendants of this authorization base\"\n  ],\n  \"cancellation_conditions\": [\n    \"protected main, branch, pull request, path closure or historical owner references drift\",\n    \"OIDC baseline is modified or reintroduced as an Arena delta\",\n    \"docs-first, tests-first, responsive, keyboard, no-JS, reduced-motion or contrast evidence fails\",\n    \"required checks fail, unresolved P1/P2 findings remain, or exact reviewed head changes before merge\"\n  ]\n}\n```\n\n### Acceptance and stop rules\n\n- This record is a fresh-base successor; it does not rewrite issue #186 or #190.\n- PR #187 must be rebased/transplanted onto the exact protected main above before final evidence.\n- The final net diff must exclude the two OIDC runtime files already supplied by PR #189.\n- Squash merge is permitted only after fresh exact-head required checks, Security, T086, review and mergeability verification.\n<!-- arena-editorial-v3:owner-dispatch:v1:end -->"
+const arenaV3IssueBody =
+  '<!-- arena-editorial-v3:owner-dispatch:v1:start -->\n## Arena Editorial v0.3 — fresh protected-main base reconciliation after PR #189\n\n**Decision:** `DISPATCH_ACCEPTED / FRESH_BASE_RECONCILIATION`.\n\nThis successor record preserves the original owner authorization in issue #186 and the historical addendum in issue #190 without mutating either record. It rebinds the same Arena Editorial scope to the protected main produced by the independently merged OIDC remediation PR #189.\n\n```json\n{\n  "schema_version": "courtside-arena-editorial-v3-owner-dispatch/v1",\n  "decision": "DISPATCH_ACCEPTED",\n  "accepted_by": "bynanci",\n  "repository": "bynanci/courtside-tw",\n  "branch": "feat/arena-editorial-v3",\n  "pull_request": 187,\n  "authorization_base": {\n    "branch": "main",\n    "sha": "bf89d99320296e9febf2eab3dac8aeea08f842a0",\n    "tree_sha": "221fbf3df36b1b3be50095c232bfd70d19d4ccfd",\n    "protected": true,\n    "source_pr": 189\n  },\n  "parent_authorization": {\n    "issue": 186,\n    "historical_base_sha": "2cc2cc5acac03af3667126ad28c1e80a58edb7b9",\n    "historical_addendum": 190\n  },\n  "authorized_paths": [\n    "DESIGN.md",\n    "docs/design/arena-editorial-v3.md",\n    "docs/design/arena-editorial-v3-tasks.md",\n    "apps/web/app/assets/css/main.css",\n    "apps/web/app/components/navigation/PublicSiteHeader.vue",\n    "apps/web/app/components/navigation/PublicMobileDock.vue",\n    "apps/web/app/pages/index.vue",\n    "apps/web/app/pages/issues/index.vue",\n    "apps/web/app/pages/issues/[issueSlug].vue",\n    "apps/web/app/pages/articles/[articleSlug].vue",\n    "apps/web/app/pages/search.vue",\n    "apps/web/app/pages/library.vue",\n    "apps/web/app/pages/settings/privacy.vue",\n    "apps/web/tests/unit/reader/arena-editorial-v3-contract.test.ts",\n    "scripts/validate-traceability.mjs",\n    "scripts/test/validate-traceability.test.mjs"\n  ],\n  "allowed_actions": [\n    "rebind the exact Arena Editorial implementation to the protected main produced by PR #189",\n    "preserve the docs-first and tests-first commit ordering",\n    "retain only existing routes, rights-valid published media, and the authorized responsive accessibility evidence",\n    "keep the OIDC image and Compose pin supplied by PR #189 as main-owned baseline; do not modify or reintroduce them in the Arena delta",\n    "apply the minimal verified mobile-menu header isolation remediation",\n    "run fresh exact-head CI, Security, T086, browser, accessibility and review verification",\n    "squash merge PR #187 once all current exact-head gates pass and review threads are resolved"\n  ],\n  "invariants": [\n    "issue #186 and issue #190 remain historical and byte-for-byte immutable",\n    "the final fresh-base changed-path closure is exactly the 16 original issue #186 paths plus the browser evidence path from issue #190",\n    "infra/compose/oidc/Dockerfile and infra/compose/compose.yaml remain inherited from PR #189 and are not Arena changes",\n    "T001-T112 task bytes, T086 HOLD, beta release flag and frozen traceability artifacts remain unchanged",\n    "no workflow, ruleset, branch-protection, provider, deployment, credential, secret, API, schema, migration, publication, rights, research, Web3 or participant-research scope change",\n    "all fresh-base commits are linear descendants of this authorization base"\n  ],\n  "cancellation_conditions": [\n    "protected main, branch, pull request, path closure or historical owner references drift",\n    "OIDC baseline is modified or reintroduced as an Arena delta",\n    "docs-first, tests-first, responsive, keyboard, no-JS, reduced-motion or contrast evidence fails",\n    "required checks fail, unresolved P1/P2 findings remain, or exact reviewed head changes before merge"\n  ]\n}\n```\n\n### Acceptance and stop rules\n\n- This record is a fresh-base successor; it does not rewrite issue #186 or #190.\n- PR #187 must be rebased/transplanted onto the exact protected main above before final evidence.\n- The final net diff must exclude the two OIDC runtime files already supplied by PR #189.\n- Squash merge is permitted only after fresh exact-head required checks, Security, T086, review and mergeability verification.\n<!-- arena-editorial-v3:owner-dispatch:v1:end -->'
 const arenaV3Addendum = {
-  "schema_version": "courtside-arena-editorial-v3-owner-addendum/v1",
-  "decision": "ADDENDUM_ACCEPTED",
-  "accepted_by": "bynanci",
-  "repository": "bynanci/courtside-tw",
-  "branch": "feat/arena-editorial-v3",
-  "pull_request": 187,
-  "parent_authorization": {
-    "issue": 191,
-    "historical_parent_issue": 186,
-    "base_sha": "bf89d99320296e9febf2eab3dac8aeea08f842a0",
-    "base_tree_sha": "221fbf3df36b1b3be50095c232bfd70d19d4ccfd"
+  schema_version: "courtside-arena-editorial-v3-owner-addendum/v1",
+  decision: "ADDENDUM_ACCEPTED",
+  accepted_by: "bynanci",
+  repository: "bynanci/courtside-tw",
+  branch: "feat/arena-editorial-v3",
+  pull_request: 187,
+  parent_authorization: {
+    issue: 191,
+    historical_parent_issue: 186,
+    base_sha: "bf89d99320296e9febf2eab3dac8aeea08f842a0",
+    base_tree_sha: "221fbf3df36b1b3be50095c232bfd70d19d4ccfd"
   },
-  "historical_addendum": {
-    "issue": 190,
-    "original_paths": [
+  historical_addendum: {
+    issue: 190,
+    original_paths: [
       "infra/compose/oidc/Dockerfile",
       "infra/compose/compose.yaml",
       "apps/web/tests/e2e/t078-accessibility-release.spec.ts"
     ]
   },
-  "supplemental_base": {
-    "sha": "bf89d99320296e9febf2eab3dac8aeea08f842a0",
-    "tree_sha": "221fbf3df36b1b3be50095c232bfd70d19d4ccfd",
-    "protected_main_sha": "bf89d99320296e9febf2eab3dac8aeea08f842a0"
+  supplemental_base: {
+    sha: "bf89d99320296e9febf2eab3dac8aeea08f842a0",
+    tree_sha: "221fbf3df36b1b3be50095c232bfd70d19d4ccfd",
+    protected_main_sha: "bf89d99320296e9febf2eab3dac8aeea08f842a0"
   },
-  "authorized_paths": [
-    "apps/web/tests/e2e/t078-accessibility-release.spec.ts"
-  ],
-  "allowed_actions": [
+  authorized_paths: ["apps/web/tests/e2e/t078-accessibility-release.spec.ts"],
+  allowed_actions: [
     "retain direct forced-colors and hydrated mobile-menu accessibility evidence",
     "retain the honest native 200% zoom WAIVED/NOT_RUN record when the environment cannot execute native zoom",
     "apply the minimal browser regression assertion for header brand isolation",
     "run fresh exact-head CI, Security, T086, browser and review verification for PR #187"
   ],
-  "invariants": [
+  invariants: [
     "issue #190 remains historical and byte-for-byte immutable",
     "the two OIDC runtime paths are inherited from PR #189 and are not changed by this addendum",
     "the final supplemental net diff is exactly the one browser evidence path above",
     "no public route, product data flow, T086, workflow, provider, deployment, credential, secret, schema, migration, publication, rights, research, Web3 or participant-research scope change"
   ],
-  "cancellation_conditions": [
+  cancellation_conditions: [
     "protected main, branch, pull request or supplemental path closure drifts",
     "OIDC runtime paths are modified or reintroduced",
     "browser/accessibility evidence fails, required checks fail, unresolved review findings remain, or exact reviewed head changes before merge"
   ]
 }
-const arenaV3AddendumIssueBody = "<!-- arena-editorial-v3:owner-addendum:v1:start -->\n## Arena Editorial v0.3 — fresh browser-evidence addendum after PR #189\n\n**Decision:** `ADDENDUM_ACCEPTED / BROWSER_EVIDENCE_ONLY`.\n\nThis successor addendum preserves issue #190 as historical evidence and carries forward only the browser/accessibility evidence path that remains a net change after PR #189 supplied the OIDC runtime baseline in protected main.\n\n```json\n{\n  \"schema_version\": \"courtside-arena-editorial-v3-owner-addendum/v1\",\n  \"decision\": \"ADDENDUM_ACCEPTED\",\n  \"accepted_by\": \"bynanci\",\n  \"repository\": \"bynanci/courtside-tw\",\n  \"branch\": \"feat/arena-editorial-v3\",\n  \"pull_request\": 187,\n  \"parent_authorization\": {\n    \"issue\": 191,\n    \"historical_parent_issue\": 186,\n    \"base_sha\": \"bf89d99320296e9febf2eab3dac8aeea08f842a0\",\n    \"base_tree_sha\": \"221fbf3df36b1b3be50095c232bfd70d19d4ccfd\"\n  },\n  \"historical_addendum\": {\n    \"issue\": 190,\n    \"original_paths\": [\n      \"infra/compose/oidc/Dockerfile\",\n      \"infra/compose/compose.yaml\",\n      \"apps/web/tests/e2e/t078-accessibility-release.spec.ts\"\n    ]\n  },\n  \"supplemental_base\": {\n    \"sha\": \"bf89d99320296e9febf2eab3dac8aeea08f842a0\",\n    \"tree_sha\": \"221fbf3df36b1b3be50095c232bfd70d19d4ccfd\",\n    \"protected_main_sha\": \"bf89d99320296e9febf2eab3dac8aeea08f842a0\"\n  },\n  \"authorized_paths\": [\n    \"apps/web/tests/e2e/t078-accessibility-release.spec.ts\"\n  ],\n  \"allowed_actions\": [\n    \"retain direct forced-colors and hydrated mobile-menu accessibility evidence\",\n    \"retain the honest native 200% zoom WAIVED/NOT_RUN record when the environment cannot execute native zoom\",\n    \"apply the minimal browser regression assertion for header brand isolation\",\n    \"run fresh exact-head CI, Security, T086, browser and review verification for PR #187\"\n  ],\n  \"invariants\": [\n    \"issue #190 remains historical and byte-for-byte immutable\",\n    \"the two OIDC runtime paths are inherited from PR #189 and are not changed by this addendum\",\n    \"the final supplemental net diff is exactly the one browser evidence path above\",\n    \"no public route, product data flow, T086, workflow, provider, deployment, credential, secret, schema, migration, publication, rights, research, Web3 or participant-research scope change\"\n  ],\n  \"cancellation_conditions\": [\n    \"protected main, branch, pull request or supplemental path closure drifts\",\n    \"OIDC runtime paths are modified or reintroduced\",\n    \"browser/accessibility evidence fails, required checks fail, unresolved review findings remain, or exact reviewed head changes before merge\"\n  ]\n}\n```\n\n### Acceptance and stop rules\n\n- This is a fresh successor to issue #190; it does not rewrite the historical addendum.\n- The supplemental base is the protected main produced by PR #189.\n- Only the browser/accessibility evidence path remains supplemental in the fresh Arena diff.\n- Merge requires fresh exact-head checks, review resolution and mergeability.\n<!-- arena-editorial-v3:owner-addendum:v1:end -->"
+const arenaV3AddendumIssueBody =
+  '<!-- arena-editorial-v3:owner-addendum:v1:start -->\n## Arena Editorial v0.3 — fresh browser-evidence addendum after PR #189\n\n**Decision:** `ADDENDUM_ACCEPTED / BROWSER_EVIDENCE_ONLY`.\n\nThis successor addendum preserves issue #190 as historical evidence and carries forward only the browser/accessibility evidence path that remains a net change after PR #189 supplied the OIDC runtime baseline in protected main.\n\n```json\n{\n  "schema_version": "courtside-arena-editorial-v3-owner-addendum/v1",\n  "decision": "ADDENDUM_ACCEPTED",\n  "accepted_by": "bynanci",\n  "repository": "bynanci/courtside-tw",\n  "branch": "feat/arena-editorial-v3",\n  "pull_request": 187,\n  "parent_authorization": {\n    "issue": 191,\n    "historical_parent_issue": 186,\n    "base_sha": "bf89d99320296e9febf2eab3dac8aeea08f842a0",\n    "base_tree_sha": "221fbf3df36b1b3be50095c232bfd70d19d4ccfd"\n  },\n  "historical_addendum": {\n    "issue": 190,\n    "original_paths": [\n      "infra/compose/oidc/Dockerfile",\n      "infra/compose/compose.yaml",\n      "apps/web/tests/e2e/t078-accessibility-release.spec.ts"\n    ]\n  },\n  "supplemental_base": {\n    "sha": "bf89d99320296e9febf2eab3dac8aeea08f842a0",\n    "tree_sha": "221fbf3df36b1b3be50095c232bfd70d19d4ccfd",\n    "protected_main_sha": "bf89d99320296e9febf2eab3dac8aeea08f842a0"\n  },\n  "authorized_paths": [\n    "apps/web/tests/e2e/t078-accessibility-release.spec.ts"\n  ],\n  "allowed_actions": [\n    "retain direct forced-colors and hydrated mobile-menu accessibility evidence",\n    "retain the honest native 200% zoom WAIVED/NOT_RUN record when the environment cannot execute native zoom",\n    "apply the minimal browser regression assertion for header brand isolation",\n    "run fresh exact-head CI, Security, T086, browser and review verification for PR #187"\n  ],\n  "invariants": [\n    "issue #190 remains historical and byte-for-byte immutable",\n    "the two OIDC runtime paths are inherited from PR #189 and are not changed by this addendum",\n    "the final supplemental net diff is exactly the one browser evidence path above",\n    "no public route, product data flow, T086, workflow, provider, deployment, credential, secret, schema, migration, publication, rights, research, Web3 or participant-research scope change"\n  ],\n  "cancellation_conditions": [\n    "protected main, branch, pull request or supplemental path closure drifts",\n    "OIDC runtime paths are modified or reintroduced",\n    "browser/accessibility evidence fails, required checks fail, unresolved review findings remain, or exact reviewed head changes before merge"\n  ]\n}\n```\n\n### Acceptance and stop rules\n\n- This is a fresh successor to issue #190; it does not rewrite the historical addendum.\n- The supplemental base is the protected main produced by PR #189.\n- Only the browser/accessibility evidence path remains supplemental in the fresh Arena diff.\n- Merge requires fresh exact-head checks, review resolution and mergeability.\n<!-- arena-editorial-v3:owner-addendum:v1:end -->'
 
 function makeArenaV3Issue(overrides = {}) {
   return {
@@ -506,7 +488,7 @@ function makeArenaV3AddendumIssue(overrides = {}) {
     author_association: "OWNER",
     state: "open",
     locked: false,
-    created_at: traceabilityValidator.ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_RECORDED_AT,
+    created_at: traceabilityValidator.ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_CREATED_AT,
     updated_at: traceabilityValidator.ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_RECORDED_AT,
     closed_at: null,
     body: arenaV3AddendumIssueBody,
