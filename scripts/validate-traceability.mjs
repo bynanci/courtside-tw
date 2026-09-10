@@ -8,6 +8,14 @@ import { isDeepStrictEqual } from "node:util"
 import typescriptPlugin from "prettier/plugins/typescript"
 import YAML from "yaml"
 
+import {
+  T086_AUTHORIZED_BASE_SHA,
+  T086_DISPATCH_PATH,
+  inspectT086OwnerAuthorization,
+  isT086AuthorizedPath,
+  validateT086DispatchScope
+} from "./validate-beta-release.mjs"
+
 export const TRACEABILITY_SCHEMA = "courtside-traceability/v1"
 export const COMPLETION_RECEIPT_SCHEMA = "courtside-t085-completion-receipt/v2"
 export const COMPLETION_RECEIPT_PATH = ".loop/evidence/t085-completion-receipt.json"
@@ -11574,6 +11582,7 @@ export function validateTraceability({
   evaluatedHeadCommittedAt = null,
   changeBaseCommittedAt = null,
   ownerAuthorizationReadback = null,
+  t086OwnerAuthorizationReadback = null,
   postT085MaintenanceAuthorizationReadback = null,
   androidNativeSurfaceAuthorizationReadback = null,
   post169GovernanceAuthorizationReadback = null,
@@ -11634,6 +11643,21 @@ export function validateTraceability({
     ? readText(root, paths.completionReceipt, errors, "T085 completion receipt")
     : null
   const state = classifyT085State(changeBaseTasksText, tasksText)
+  const t086ScopeRequested =
+    state === t085States.COMPLETE_STEADY &&
+    changeBaseSha === T086_AUTHORIZED_BASE_SHA &&
+    Array.isArray(changedPaths) &&
+    changedPaths.includes(T086_DISPATCH_PATH)
+  const t086ScopeValidation = t086ScopeRequested
+    ? validateT086DispatchScope({
+        root,
+        changeBaseSha,
+        changedPaths,
+        ownerAuthorizationReadback: t086OwnerAuthorizationReadback,
+        requireOwnerReadback: true
+      })
+    : null
+  const t086ScopeActive = t086ScopeValidation?.status === "PASS"
   const postT085RemediationScopeActive = isExactPostT085RemediationScope({
     state,
     changeBaseSha,
@@ -12042,49 +12066,55 @@ export function validateTraceability({
         )
       }
     }
-    for (const changedPath of changedPaths ?? []) {
-      if (
-        !isAuthorizedPostT085MaintenancePath(changedPath) &&
-        !(
-          requiredGateAuthorizationAccepted && REQUIRED_GATE_AUTHORIZED_PATHS.includes(changedPath)
-        ) &&
-        !(studioCompletionAuthorizationAccepted && studioCompletionGate.allowsPath(changedPath)) &&
-        !(publicationCacheAuthorizationAccepted && publicationCacheGate.allowsPath(changedPath)) &&
-        !(mediaRightsAuthorizationAccepted && mediaRightsGate.allowsPath(changedPath)) &&
-        !(mediaArchiveAuthorizationAccepted && mediaArchiveGate.allowsPath(changedPath)) &&
-        !(arenaEditorialV3AuthorizationAccepted && arenaEditorialV3Gate.allowsPath(changedPath)) &&
-        !(
-          oidcSecurityRemediationAuthorizationAccepted &&
-          oidcSecurityRemediationGate.allowsPath(changedPath)
-        ) &&
-        !(pnpmSecurityAuthorizationAccepted && pnpmSecurityAuthorizedPaths.has(changedPath)) &&
-        !(
-          productRemediationAuthorizationAccepted &&
-          productRemediationAuthorizedPaths.has(changedPath)
-        ) &&
-        !(
-          postT085MaintenanceAuthorizationAccepted &&
-          postT085MaintenanceAuthorizedPaths.has(changedPath)
-        ) &&
-        !(
-          androidNativeSurfaceAuthorizationAccepted &&
-          androidNativeSurfaceAuthorizedPaths.has(changedPath)
-        ) &&
-        !(
-          post169GovernanceAuthorizationAccepted &&
-          post169GovernanceAuthorizedPaths.has(changedPath)
-        )
-      ) {
-        errors.push(
-          `changed path is outside the authorized post-T085 maintenance scope: ${changedPath}`
-        )
+    if (t086ScopeRequested) {
+      for (const error of t086ScopeValidation.errors) {
+        errors.push(`invalid owner-authorized T086 scope: ${error}`)
       }
-      if (isT086LockedPath(changedPath)) {
-        errors.push(
-          `changed path requires separately authorized T086 validator evolution: ${changedPath}`
-        )
+    } else {
+      for (const changedPath of changedPaths ?? []) {
+        if (
+          !isAuthorizedPostT085MaintenancePath(changedPath) &&
+          !(
+            requiredGateAuthorizationAccepted && REQUIRED_GATE_AUTHORIZED_PATHS.includes(changedPath)
+          ) &&
+          !(studioCompletionAuthorizationAccepted && studioCompletionGate.allowsPath(changedPath)) &&
+          !(publicationCacheAuthorizationAccepted && publicationCacheGate.allowsPath(changedPath)) &&
+          !(mediaRightsAuthorizationAccepted && mediaRightsGate.allowsPath(changedPath)) &&
+          !(mediaArchiveAuthorizationAccepted && mediaArchiveGate.allowsPath(changedPath)) &&
+          !(arenaEditorialV3AuthorizationAccepted && arenaEditorialV3Gate.allowsPath(changedPath)) &&
+          !(
+            oidcSecurityRemediationAuthorizationAccepted &&
+            oidcSecurityRemediationGate.allowsPath(changedPath)
+          ) &&
+          !(pnpmSecurityAuthorizationAccepted && pnpmSecurityAuthorizedPaths.has(changedPath)) &&
+          !(
+            productRemediationAuthorizationAccepted &&
+            productRemediationAuthorizedPaths.has(changedPath)
+          ) &&
+          !(
+            postT085MaintenanceAuthorizationAccepted &&
+            postT085MaintenanceAuthorizedPaths.has(changedPath)
+          ) &&
+          !(
+            androidNativeSurfaceAuthorizationAccepted &&
+            androidNativeSurfaceAuthorizedPaths.has(changedPath)
+          ) &&
+          !(
+            post169GovernanceAuthorizationAccepted &&
+            post169GovernanceAuthorizedPaths.has(changedPath)
+          )
+        ) {
+          errors.push(
+            `changed path is outside the authorized post-T085 maintenance scope: ${changedPath}`
+          )
+        }
+        if (isT086LockedPath(changedPath)) {
+          errors.push(
+            `changed path requires separately authorized T086 validator evolution: ${changedPath}`
+          )
+        }
       }
-    }
+      }
     if (typeof changeBaseCompletionReceiptText !== "string") {
       errors.push("completed T085 requires a readable completion receipt at the audited base")
     }
@@ -12952,7 +12982,11 @@ export function validateTraceability({
             ? "T085_RECEIPT_AUDITED"
             : "EXTERNAL_READBACK_REQUIRED"
           : state === t085States.COMPLETE_STEADY && Array.isArray(changedPaths)
-            ? "T085_COMPLETE_STEADY_AUDITED"
+            ? t086ScopeActive
+              ? "T086_DISPATCH_AUDITED"
+              : t086ScopeRequested
+                ? "T086_DISPATCH_REJECTED"
+                : "T085_COMPLETE_STEADY_AUDITED"
             : state === t085States.PENDING && Array.isArray(changedPaths)
               ? "AUDITED"
               : "EXTERNAL_READBACK_REQUIRED",
@@ -12979,7 +13013,9 @@ export function validateTraceability({
               : state === t085States.PENDING
                 ? null
                 : state === t085States.COMPLETE_STEADY && Array.isArray(changedPaths)
-                  ? changedPaths.filter(
+                  ? t086ScopeRequested
+                    ? changedPaths.filter((changedPath) => !isT086AuthorizedPath(changedPath))
+                    : changedPaths.filter(
                       (changedPath) =>
                         !isAuthorizedPostT085MaintenancePath(changedPath) &&
                         !(
@@ -13026,6 +13062,12 @@ export function validateTraceability({
                   : state === t085States.COMPLETE_STEADY
                     ? null
                     : null
+    },
+    successor_scope: {
+      t086_requested: t086ScopeRequested,
+      t086_authorized: t086ScopeActive,
+      authorization_ref: t086ScopeValidation?.authorization?.html_url ?? null,
+      errors: t086ScopeValidation?.errors ?? []
     },
     head_binding: gitBinding ?? {
       status: "UNVERIFIED_FIXTURE",
@@ -14189,6 +14231,11 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
     changeBaseTasksText: inspection.change_base_tasks_text,
     environment
   })
+  const t086OwnerAuthorizationReadback =
+    inspection.change_base_sha === T086_AUTHORIZED_BASE_SHA &&
+    inspection.changedPaths?.includes(T086_DISPATCH_PATH)
+      ? inspectT086OwnerAuthorization()
+      : null
   const postT085MaintenanceAuthorizationReadback = inspectPostT085MaintenanceAuthorizationForState(
     root,
     {
@@ -14294,6 +14341,7 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
     evaluatedHeadCommittedAt: inspection.head_committed_at,
     changeBaseCommittedAt: inspection.change_base_committed_at,
     ownerAuthorizationReadback,
+    t086OwnerAuthorizationReadback,
     postT085MaintenanceAuthorizationReadback,
     androidNativeSurfaceAuthorizationReadback,
     post169GovernanceAuthorizationReadback,
