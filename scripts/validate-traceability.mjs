@@ -12068,7 +12068,7 @@ export function validateTraceability({
     }
     if (t086ScopeRequested) {
       for (const error of t086ScopeValidation.errors) {
-        errors.push(`invalid owner-authorized T086 scope: ${error}`);
+        errors.push(`invalid owner-authorized T086 scope: ${error}`)
       }
     } else {
       for (const changedPath of changedPaths ?? []) {
@@ -12078,34 +12078,16 @@ export function validateTraceability({
             requiredGateAuthorizationAccepted &&
             REQUIRED_GATE_AUTHORIZED_PATHS.includes(changedPath)
           ) &&
-          !(
-            studioCompletionAuthorizationAccepted &&
-            studioCompletionGate.allowsPath(changedPath)
-          ) &&
-          !(
-            publicationCacheAuthorizationAccepted &&
-            publicationCacheGate.allowsPath(changedPath)
-          ) &&
-          !(
-            mediaRightsAuthorizationAccepted &&
-            mediaRightsGate.allowsPath(changedPath)
-          ) &&
-          !(
-            mediaArchiveAuthorizationAccepted &&
-            mediaArchiveGate.allowsPath(changedPath)
-          ) &&
-          !(
-            arenaEditorialV3AuthorizationAccepted &&
-            arenaEditorialV3Gate.allowsPath(changedPath)
-          ) &&
+          !(studioCompletionAuthorizationAccepted && studioCompletionGate.allowsPath(changedPath)) &&
+          !(publicationCacheAuthorizationAccepted && publicationCacheGate.allowsPath(changedPath)) &&
+          !(mediaRightsAuthorizationAccepted && mediaRightsGate.allowsPath(changedPath)) &&
+          !(mediaArchiveAuthorizationAccepted && mediaArchiveGate.allowsPath(changedPath)) &&
+          !(arenaEditorialV3AuthorizationAccepted && arenaEditorialV3Gate.allowsPath(changedPath)) &&
           !(
             oidcSecurityRemediationAuthorizationAccepted &&
             oidcSecurityRemediationGate.allowsPath(changedPath)
           ) &&
-          !(
-            pnpmSecurityAuthorizationAccepted &&
-            pnpmSecurityAuthorizedPaths.has(changedPath)
-          ) &&
+          !(pnpmSecurityAuthorizationAccepted && pnpmSecurityAuthorizedPaths.has(changedPath)) &&
           !(
             productRemediationAuthorizationAccepted &&
             productRemediationAuthorizedPaths.has(changedPath)
@@ -12124,13 +12106,13 @@ export function validateTraceability({
           )
         ) {
           errors.push(
-            `changed path is outside the authorized post-T085 maintenance scope: ${changedPath}`,
-          );
+            `changed path is outside the authorized post-T085 maintenance scope: ${changedPath}`
+          )
         }
         if (isT086LockedPath(changedPath)) {
           errors.push(
-            `changed path requires separately authorized T086 validator evolution: ${changedPath}`,
-          );
+            `changed path requires separately authorized T086 validator evolution: ${changedPath}`
+          )
         }
       }
     }
@@ -13013,9 +12995,7 @@ export function validateTraceability({
       changed_paths: changedPaths,
       unauthorized_paths:
         state === t085States.RECEIPT_CANDIDATE && Array.isArray(changedPaths)
-          ? changedPaths.filter(
-              (changedPath) => !receiptChangedPaths.includes(changedPath),
-            )
+          ? changedPaths.filter((changedPath) => !receiptChangedPaths.includes(changedPath))
           : state === t085States.RECEIPT_CANDIDATE
             ? null
             : state === t085States.PENDING && Array.isArray(changedPaths)
@@ -13029,16 +13009,13 @@ export function validateTraceability({
                             ? postT085RemediationChangedPaths
                             : receiptSupportChangedPaths
                         : authorizedChangedPaths
-                    ).has(changedPath),
+                    ).has(changedPath)
                 )
               : state === t085States.PENDING
                 ? null
-                : state === t085States.COMPLETE_STEADY &&
-                    Array.isArray(changedPaths)
+                : state === t085States.COMPLETE_STEADY && Array.isArray(changedPaths)
                   ? t086ScopeRequested
-                    ? changedPaths.filter(
-                        (changedPath) => !isT086AuthorizedPath(changedPath),
-                      )
+                    ? changedPaths.filter((changedPath) => !isT086AuthorizedPath(changedPath))
                     : changedPaths.filter(
                         (changedPath) =>
                           !isAuthorizedPostT085MaintenancePath(changedPath) &&
@@ -13081,11 +13058,11 @@ export function validateTraceability({
                           !(
                             post169GovernanceAuthorizationAccepted &&
                             post169GovernanceAuthorizedPaths.has(changedPath)
-                          ),
+                          )
                       )
                   : state === t085States.COMPLETE_STEADY
                     ? null
-                    : null,
+                    : null
     },
     successor_scope: {
       t086_requested: t086ScopeRequested,
