@@ -73,6 +73,91 @@ export const ARENA_EDITORIAL_V3_ADDENDUM_PULL_REQUEST = 187
 export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZED_PATHS = Object.freeze([
   "apps/web/tests/e2e/t078-accessibility-release.spec.ts"
 ])
+export const OIDC_SECURITY_REMEDIATION_AUTHORIZATION_SCHEMA =
+  "courtside-oidc-security-remediation-owner-dispatch/v1"
+export const OIDC_SECURITY_REMEDIATION_AUTHORIZATION_REF =
+  "https://github.com/bynanci/courtside-tw/issues/188"
+export const OIDC_SECURITY_REMEDIATION_AUTHORIZATION_API_URL =
+  "https://api.github.com/repos/bynanci/courtside-tw/issues/188"
+export const OIDC_SECURITY_REMEDIATION_AUTHORIZATION_BODY_SHA256 =
+  "863e4202b768bcc7ae88f6f43700866bc944113ad23c5a46e7f6d7f10602a929"
+export const OIDC_SECURITY_REMEDIATION_AUTHORIZATION_RECORDED_AT = "2026-09-09T23:15:42Z"
+export const OIDC_SECURITY_REMEDIATION_AUTHORIZATION_BASE_SHA =
+  "2cc2cc5acac03af3667126ad28c1e80a58edb7b9"
+export const OIDC_SECURITY_REMEDIATION_AUTHORIZATION_BASE_TREE_SHA =
+  "958b1af410e7d0b521469a8f4e24d131c75b7a91"
+export const OIDC_SECURITY_REMEDIATION_BRANCH = "fix/oidc-security-mock-oauth2-6-0-2"
+export const OIDC_SECURITY_REMEDIATION_AUTHORIZED_PATHS = Object.freeze([
+  "infra/compose/oidc/Dockerfile",
+  "infra/compose/compose.yaml",
+  "scripts/test/validate-traceability.test.mjs",
+  "scripts/validate-traceability.mjs"
+])
+export const OIDC_SECURITY_REMEDIATION_TARGET = Object.freeze({
+  version: "6.0.2",
+  manifest_digest: "sha256:b538810afd589d42fbfb856c588c2065eaeed1dc528d6c532972048e67fc2aff",
+  local_compose_tag: "courtside-tw/mock-oauth2-server:6.0.2-busybox1.38"
+})
+export const POST_T085_MAINTENANCE_AUTHORIZATION_SCHEMA =
+  "courtside-post-t085-maintenance-authorization/v5"
+export const ANDROID_NATIVE_SURFACE_AUTHORIZATION_SCHEMA =
+  "courtside-android-native-surface-traceability-addendum/v1"
+export const ANDROID_NATIVE_SURFACE_FOREGROUND_AUTHORIZATION_SCHEMA =
+  "courtside-android-native-surface-foreground-deadline-addendum/v1"
+export const POST169_GOVERNANCE_AUTHORIZATION_SCHEMA =
+  "courtside-post169-governance-reconciliation-owner-dispatch/v1"
+export const POST169_GOVERNANCE_ADDENDUM_SCHEMA =
+  "courtside-post169-governance-reconciliation-addendum/v1"
+export const POST169_GOVERNANCE_FORMAT_ADDENDUM_SCHEMA =
+  "courtside-post169-governance-reconciliation-format-addendum/v1"
+export const POST169_GOVERNANCE_REVIEW_REMEDIATION_SCHEMA =
+  "courtside-post169-governance-reconciliation-review-remediation-addendum/v1"
+export const POST169_GOVERNANCE_FINAL_SEAL_SCHEMA =
+  "courtside-post169-governance-reconciliation-final-seal/v2"
+export const POST169_GOVERNANCE_SQUASH_PUSH_SUPERSESSION_SCHEMA =
+  "courtside-post169-governance-squash-push-final-supersession/v2"
+export const POST169_GOVERNANCE_FINAL_SEAL_V4_SCHEMA = "courtside-post169-governance-final-seal/v4"
+export const ACCEPTED_IMPLEMENTATION_HEAD_SHA = "27b955581a909e292ae4fe6c1fb05de0e94753da"
+export const ACCEPTED_IMPLEMENTATION_MERGE_SHA = "a2491b81066ac225a0b5d2dab93be79fb6dfbe65"
+export const ACCEPTED_CI_RUN_ID = 33226451857
+export const ACCEPTED_SECURITY_RUN_ID = 33226451860
+export const ACCEPTED_FRONTEND_ARTIFACT_ID = 9707044002
+export const ACCEPTED_FRONTEND_ARCHIVE_SHA256 =
+  "88baa1d7bd1e3ef08193b7d65799484d16363677c7c446001fa531efb6a8706f"
+export const ACCEPTED_EXACT_HEAD_ARTIFACT_SHA256 =
+  "8126aebe79e1cacbbdcac5136373cc2cfa889b9c09264e1ce75cbf06d506e803"
+export const ACCEPTED_TRACEABILITY_REPORT_SHA256 =
+  "5e6201ee0b646e0d9c619b440cccf0dd6928bede6869032fa81d06d05bd9a440"
+export const PRE_REMEDIATION_TRACEABILITY_SHA256 =
+  "026581386d6e99e9bf1a2f124a9360e9cfd65088b8734177759801caa0723bed"
+export const ACCEPTED_TRACEABILITY_SHA256 =
+  "204662214eada892332d1ddbeab8d0b8037cfc5477d9152d6fb3a61e56832b79"
+export const ACCEPTED_PENDING_TASKS_SHA256 =
+  "b0a0a6c66b7f111c92a4e3ddfd9f3965d9c60b5867096991a12de6008570d2dc"
+export const ACCEPTED_COMPLETED_TASKS_SHA256 =
+  "f4f9bae0e9b64ae41ef8cfe110e68b594b6f5b15f0ffe869d1d4f243424b9e4d"
+const FROZEN_T085_PENDING_TASKS_SHA256 =
+  "23190fbeab15b181800ddb275478f058cc0a0514e581b8f3c2aaeb82c184b1f3"
+const FROZEN_T085_COMPLETED_TASKS_SHA256 =
+  "90b950e3522e9d6e119f57d92d4ab9f8d3fe013b456450415a8abbdd70f446c3"
+export const ACCEPTED_RECEIPT_OWNER = "bynanci"
+export const LEGACY_RECEIPT_AUTHORIZATION_REF =
+  "https://github.com/bynanci/courtside-tw/issues/145#issuecomment-5459765126"
+export const ACCEPTED_IMPLEMENTATION_CHANGED_PATHS = Object.freeze([
+  ".github/workflows/ci.yml",
+  ".loop/evidence/t085-dispatch.json",
+  ".loop/evidence/t085-local.json",
+  ".loop/evidence/t085-red.json",
+  ".loop/evidence/t085-review.json",
+  ".loop/t085-traceability-ledger.json",
+  ".loop/t085-traceability.yaml",
+  "Makefile",
+  "package.json",
+  "scripts/test/validate-traceability.test.mjs",
+  "scripts/validate-traceability.mjs",
+  "specs/001-taiwan-basketball-magazine-ebook/plan.md",
+  "specs/001-taiwan-basketball-magazine-ebook/traceability.md"
+])
 export const POST_T085_REMEDIATION_BASE_SHA = "d99df471a08608bb8b6da609e17095d285c11489"
 export const POST_T085_REMEDIATION_CHANGED_PATHS = Object.freeze([
   ".loop/evidence/t085-review.json",
