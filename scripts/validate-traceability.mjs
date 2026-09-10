@@ -11866,206 +11866,208 @@ export function validateTraceability({
     }
   }
   if (state === t085States.COMPLETE_STEADY) {
-    if (requiredGateAuthorizationRequested) {
-      if (!requiredGateAuthorizationScopeActive) {
-        errors.push(
-          "issue 164 authorization requires exactly its three paths and immutable protected base"
+    if (!t086ScopeRequested) {
+      if (requiredGateAuthorizationRequested) {
+        if (!requiredGateAuthorizationScopeActive) {
+          errors.push(
+            "issue 164 authorization requires exactly its three paths and immutable protected base"
+          )
+        } else if (githubActionsContext?.authority === "PROTECTED_MAIN_PUSH") {
+          requiredGateAuthorizationAccepted = validateRequiredGateProtectedMainPush({
+            readback: requiredGateAuthorizationReadback,
+            gitBinding,
+            currentHead,
+            evaluatedHeadCommittedAt,
+            requireExactHeadEvidence,
+            githubActionsContext,
+            errors
+          })
+        } else {
+          requiredGateAuthorizationAccepted = validateRequiredGateAuthorization({
+            readback: requiredGateAuthorizationReadback,
+            gitBinding,
+            currentHead,
+            evaluatedHeadCommittedAt,
+            requireExactHeadEvidence,
+            githubActionsContext,
+            errors
+          })
+        }
+      }
+      if (
+        studioCompletionGate.requested(
+          changedPaths,
+          githubActionsContext,
+          studioCompletionAuthorizationReadback,
+          changeBaseSha
         )
-      } else if (githubActionsContext?.authority === "PROTECTED_MAIN_PUSH") {
-        requiredGateAuthorizationAccepted = validateRequiredGateProtectedMainPush({
-          readback: requiredGateAuthorizationReadback,
+      ) {
+        studioCompletionAuthorizationAccepted = studioCompletionGate.validate({
+          readback: studioCompletionAuthorizationReadback,
           gitBinding,
-          currentHead,
-          evaluatedHeadCommittedAt,
-          requireExactHeadEvidence,
+          changedPaths,
+          changeBaseSha,
+          boundedScopeActive,
           githubActionsContext,
-          errors
-        })
-      } else {
-        requiredGateAuthorizationAccepted = validateRequiredGateAuthorization({
-          readback: requiredGateAuthorizationReadback,
-          gitBinding,
-          currentHead,
-          evaluatedHeadCommittedAt,
           requireExactHeadEvidence,
-          githubActionsContext,
           errors
         })
       }
-    }
-    if (
-      studioCompletionGate.requested(
-        changedPaths,
-        githubActionsContext,
-        studioCompletionAuthorizationReadback,
-        changeBaseSha
-      )
-    ) {
-      studioCompletionAuthorizationAccepted = studioCompletionGate.validate({
-        readback: studioCompletionAuthorizationReadback,
-        gitBinding,
-        changedPaths,
-        changeBaseSha,
-        boundedScopeActive,
-        githubActionsContext,
-        requireExactHeadEvidence,
-        errors
-      })
-    }
-    if (
-      publicationCacheGate.requested(
-        changedPaths,
-        githubActionsContext,
-        publicationCacheAuthorizationReadback,
-        changeBaseSha
-      )
-    ) {
-      publicationCacheAuthorizationAccepted = publicationCacheGate.validate({
-        readback: publicationCacheAuthorizationReadback,
-        gitBinding,
-        changedPaths,
-        changeBaseSha,
-        boundedScopeActive,
-        githubActionsContext,
-        requireExactHeadEvidence,
-        errors
-      })
-    }
-    if (mediaRightsAuthorizationRequested) {
-      mediaRightsAuthorizationAccepted = mediaRightsGate.validate({
-        readback: mediaRightsAuthorizationReadback,
-        gitBinding,
-        changedPaths,
-        changeBaseSha,
-        boundedScopeActive,
-        githubActionsContext,
-        requireExactHeadEvidence,
-        errors
-      })
-    }
-    if (mediaArchiveAuthorizationRequested) {
-      mediaArchiveAuthorizationAccepted = mediaArchiveGate.validate({
-        readback: mediaArchiveAuthorizationReadback,
-        gitBinding,
-        changedPaths,
-        changeBaseSha,
-        boundedScopeActive,
-        githubActionsContext,
-        requireExactHeadEvidence,
-        errors
-      })
-    }
-    if (arenaEditorialV3AuthorizationRequested) {
-      arenaEditorialV3AuthorizationAccepted = arenaEditorialV3Gate.validate({
-        readback: arenaEditorialV3AuthorizationReadback,
-        gitBinding,
-        changedPaths,
-        changeBaseSha,
-        boundedScopeActive,
-        githubActionsContext,
-        requireExactHeadEvidence,
-        errors
-      })
-    }
-    if (oidcSecurityRemediationAuthorizationRequested) {
-      oidcSecurityRemediationAuthorizationAccepted = oidcSecurityRemediationGate.validate({
-        readback: oidcSecurityRemediationAuthorizationReadback,
-        gitBinding,
-        changedPaths,
-        changeBaseSha,
-        boundedScopeActive,
-        githubActionsContext,
-        requireExactHeadEvidence,
-        errors
-      })
-    }
-    if (
-      productRemediationAuthorizationRequested(
-        changedPaths,
-        githubActionsContext,
-        productRemediationAuthorizationReadback,
-        changeBaseSha
-      )
-    ) {
-      productRemediationAuthorizationAccepted = validateProductRemediationAuthorization({
-        readback: productRemediationAuthorizationReadback,
-        gitBinding,
-        changedPaths,
-        changeBaseSha,
-        boundedScopeActive,
-        githubActionsContext,
-        requireExactHeadEvidence,
-        errors
-      })
-    }
-
-    if (
-      pnpmSecurityAuthorizationRequested(
-        changedPaths,
-        githubActionsContext,
-        pnpmSecurityAuthorizationReadback
-      )
-    ) {
-      pnpmSecurityAuthorizationAccepted = validatePnpmSecurityAuthorization({
-        readback: pnpmSecurityAuthorizationReadback,
-        gitBinding,
-        changedPaths,
-        changeBaseSha,
-        boundedScopeActive,
-        githubActionsContext,
-        requireExactHeadEvidence,
-        errors
-      })
-    }
-    if (post169GovernanceAuthorizationRequested) {
-      if (!post169GovernanceAuthorizationScopeActive) {
-        errors.push(
-          "post-169 governance authorization requires the exact four-path governance reconciliation scope"
-        )
-      } else {
-        post169GovernanceAuthorizationAccepted = validatePost169GovernanceAuthorizationReadback({
-          readback: post169GovernanceAuthorizationReadback,
-          gitBinding,
-          requireExactHeadEvidence,
+      if (
+        publicationCacheGate.requested(
+          changedPaths,
           githubActionsContext,
+          publicationCacheAuthorizationReadback,
+          changeBaseSha
+        )
+      ) {
+        publicationCacheAuthorizationAccepted = publicationCacheGate.validate({
+          readback: publicationCacheAuthorizationReadback,
+          gitBinding,
+          changedPaths,
+          changeBaseSha,
+          boundedScopeActive,
+          githubActionsContext,
+          requireExactHeadEvidence,
           errors
         })
       }
-    }
-    if (androidNativeSurfaceAuthorizationRequested && !productRemediationAuthorizationAccepted) {
-      if (!androidNativeSurfaceAuthorizationScopeActive) {
-        errors.push(
-          "Android native-surface authorization requires the exact four-path PR 169 scope"
+      if (mediaRightsAuthorizationRequested) {
+        mediaRightsAuthorizationAccepted = mediaRightsGate.validate({
+          readback: mediaRightsAuthorizationReadback,
+          gitBinding,
+          changedPaths,
+          changeBaseSha,
+          boundedScopeActive,
+          githubActionsContext,
+          requireExactHeadEvidence,
+          errors
+        })
+      }
+      if (mediaArchiveAuthorizationRequested) {
+        mediaArchiveAuthorizationAccepted = mediaArchiveGate.validate({
+          readback: mediaArchiveAuthorizationReadback,
+          gitBinding,
+          changedPaths,
+          changeBaseSha,
+          boundedScopeActive,
+          githubActionsContext,
+          requireExactHeadEvidence,
+          errors
+        })
+      }
+      if (arenaEditorialV3AuthorizationRequested) {
+        arenaEditorialV3AuthorizationAccepted = arenaEditorialV3Gate.validate({
+          readback: arenaEditorialV3AuthorizationReadback,
+          gitBinding,
+          changedPaths,
+          changeBaseSha,
+          boundedScopeActive,
+          githubActionsContext,
+          requireExactHeadEvidence,
+          errors
+        })
+      }
+      if (oidcSecurityRemediationAuthorizationRequested) {
+        oidcSecurityRemediationAuthorizationAccepted = oidcSecurityRemediationGate.validate({
+          readback: oidcSecurityRemediationAuthorizationReadback,
+          gitBinding,
+          changedPaths,
+          changeBaseSha,
+          boundedScopeActive,
+          githubActionsContext,
+          requireExactHeadEvidence,
+          errors
+        })
+      }
+      if (
+        productRemediationAuthorizationRequested(
+          changedPaths,
+          githubActionsContext,
+          productRemediationAuthorizationReadback,
+          changeBaseSha
         )
-      } else {
-        androidNativeSurfaceAuthorizationAccepted =
-          validateAndroidNativeSurfaceAuthorizationReadback({
-            readback: androidNativeSurfaceAuthorizationReadback,
-            post169GovernanceAuthorizationReadback,
+      ) {
+        productRemediationAuthorizationAccepted = validateProductRemediationAuthorization({
+          readback: productRemediationAuthorizationReadback,
+          gitBinding,
+          changedPaths,
+          changeBaseSha,
+          boundedScopeActive,
+          githubActionsContext,
+          requireExactHeadEvidence,
+          errors
+        })
+      }
+  
+      if (
+        pnpmSecurityAuthorizationRequested(
+          changedPaths,
+          githubActionsContext,
+          pnpmSecurityAuthorizationReadback
+        )
+      ) {
+        pnpmSecurityAuthorizationAccepted = validatePnpmSecurityAuthorization({
+          readback: pnpmSecurityAuthorizationReadback,
+          gitBinding,
+          changedPaths,
+          changeBaseSha,
+          boundedScopeActive,
+          githubActionsContext,
+          requireExactHeadEvidence,
+          errors
+        })
+      }
+      if (post169GovernanceAuthorizationRequested) {
+        if (!post169GovernanceAuthorizationScopeActive) {
+          errors.push(
+            "post-169 governance authorization requires the exact four-path governance reconciliation scope"
+          )
+        } else {
+          post169GovernanceAuthorizationAccepted = validatePost169GovernanceAuthorizationReadback({
+            readback: post169GovernanceAuthorizationReadback,
             gitBinding,
             requireExactHeadEvidence,
             githubActionsContext,
             errors
           })
+        }
       }
-    }
-    if (postT085MaintenanceAuthorizationRequested) {
-      if (!postT085MaintenanceAuthorizationScopeActive) {
-        errors.push(
-          "post-T085 maintenance authorization requires the exact seven-path combined scope"
-        )
-      } else {
-        postT085MaintenanceAuthorizationAccepted = validatePostT085MaintenanceAuthorizationReadback(
-          {
-            readback: postT085MaintenanceAuthorizationReadback,
-            gitBinding,
-            requireExactHeadEvidence,
-            githubActionsContext,
-            errors
-          }
-        )
+      if (androidNativeSurfaceAuthorizationRequested && !productRemediationAuthorizationAccepted) {
+        if (!androidNativeSurfaceAuthorizationScopeActive) {
+          errors.push(
+            "Android native-surface authorization requires the exact four-path PR 169 scope"
+          )
+        } else {
+          androidNativeSurfaceAuthorizationAccepted =
+            validateAndroidNativeSurfaceAuthorizationReadback({
+              readback: androidNativeSurfaceAuthorizationReadback,
+              post169GovernanceAuthorizationReadback,
+              gitBinding,
+              requireExactHeadEvidence,
+              githubActionsContext,
+              errors
+            })
+        }
       }
-    }
+      if (postT085MaintenanceAuthorizationRequested) {
+        if (!postT085MaintenanceAuthorizationScopeActive) {
+          errors.push(
+            "post-T085 maintenance authorization requires the exact seven-path combined scope"
+          )
+        } else {
+          postT085MaintenanceAuthorizationAccepted = validatePostT085MaintenanceAuthorizationReadback(
+            {
+              readback: postT085MaintenanceAuthorizationReadback,
+              gitBinding,
+              requireExactHeadEvidence,
+              githubActionsContext,
+              errors
+            }
+          )
+        }
+      }
+      }
     if (t086ScopeRequested) {
       for (const error of t086ScopeValidation.errors) {
         errors.push(`invalid owner-authorized T086 scope: ${error}`)
