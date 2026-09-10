@@ -11,7 +11,7 @@ the T086 checkbox, or remove a beta flag.
 ## Immutable dispatch
 
 - Owner authorization:
-  [issue #193 comment 5614391955](https://github.com/bynanci/courtside-tw/issues/193#issuecomment-5614391955)
+  [issue #193 comment 5614473278](https://github.com/bynanci/courtside-tw/issues/193#issuecomment-5614473278)
 - Protected base: `main@7598d64780558915ba88b83ee9fcbcc22ab7c600`
 - Frozen T085 traceability SHA-256:
   `204662214eada892332d1ddbeab8d0b8037cfc5477d9152d6fb3a61e56832b79`
@@ -56,7 +56,7 @@ isolated drill.
   "schema_version": "courtside-t086-beta-checklist/v1",
   "task": "T086",
   "repository": "bynanci/courtside-tw",
-  "authorization_ref": "https://github.com/bynanci/courtside-tw/issues/193#issuecomment-5614391955",
+  "authorization_ref": "https://github.com/bynanci/courtside-tw/issues/193#issuecomment-5614473278",
   "authorized_base_sha": "7598d64780558915ba88b83ee9fcbcc22ab7c600",
   "frozen_t085_traceability_sha256": "204662214eada892332d1ddbeab8d0b8037cfc5477d9152d6fb3a61e56832b79",
   "required_surfaces": [
