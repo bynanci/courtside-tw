@@ -1,10 +1,10 @@
 {
   "schema_version": "courtside-t086-dispatch/v1",
-  "recorded_at": "2026-09-10T06:50:39Z",
+  "recorded_at": "2026-09-10T06:58:39Z",
   "repository": "bynanci/courtside-tw",
   "task": "T086",
   "issue": "https://github.com/bynanci/courtside-tw/issues/193",
-  "authorization_ref": "https://github.com/bynanci/courtside-tw/issues/193#issuecomment-5614391955",
+  "authorization_ref": "https://github.com/bynanci/courtside-tw/issues/193#issuecomment-5614473278",
   "branch": "agent/t086-release-control-plane-7598d647",
   "base": {
     "branch": "main",
