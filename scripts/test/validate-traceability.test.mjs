@@ -14549,6 +14549,10 @@ test("Studio completion sealed singleton reaches full validator for draft, ready
         path.join(temporary, "node_modules"),
         "dir"
       )
+      fs.symlinkSync(
+        path.join(repositoryRoot, "scripts/validate-beta-release.mjs"),
+        path.join(temporary, "validate-beta-release.mjs")
+      )
       const source = fs.readFileSync(
         path.join(repositoryRoot, "scripts/validate-traceability.mjs"),
         "utf8"
@@ -15405,6 +15409,10 @@ test("Publication cache sealed singleton reaches full validator for draft, ready
         path.join(repositoryRoot, "node_modules"),
         path.join(temporary, "node_modules"),
         "dir"
+      )
+      fs.symlinkSync(
+        path.join(repositoryRoot, "scripts/validate-beta-release.mjs"),
+        path.join(temporary, "validate-beta-release.mjs")
       )
       const source = fs.readFileSync(
         path.join(repositoryRoot, "scripts/validate-traceability.mjs"),
