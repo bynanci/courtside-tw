@@ -95,6 +95,8 @@ function closeMenuForDesktop(): void {
   const restoreFocus = menu.value.contains(document.activeElement)
   const brand = menu.value.closest(".site-header")?.querySelector<HTMLElement>(".site-brand")
   closeMenu({ restoreFocus: false })
+  setPageIsolation(false)
+  document.documentElement.removeAttribute("data-public-menu-open")
   if (restoreFocus) void nextTick(() => brand?.focus())
 }
 
