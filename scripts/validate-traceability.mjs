@@ -10,6 +10,7 @@ import YAML from "yaml"
 
 export const TRACEABILITY_SCHEMA = "courtside-traceability/v1"
 export const COMPLETION_RECEIPT_SCHEMA = "courtside-t085-completion-receipt/v2"
+export const COMPLETION_RECEIPT_PATH = ".loop/evidence/t085-completion-receipt.json"
 export const OWNER_AUTHORIZATION_SCHEMA = "courtside-t085-owner-authorization/v1"
 export const REQUIRED_GATE_AUTHORIZATION_REF =
   "https://github.com/bynanci/courtside-tw/issues/164#issuecomment-5601162669"
@@ -68,7 +69,6 @@ export const POST169_GOVERNANCE_FINAL_SEAL_SCHEMA =
 export const POST169_GOVERNANCE_SQUASH_PUSH_SUPERSESSION_SCHEMA =
   "courtside-post169-governance-squash-push-final-supersession/v2"
 export const POST169_GOVERNANCE_FINAL_SEAL_V4_SCHEMA = "courtside-post169-governance-final-seal/v4"
-export const COMPLETION_RECEIPT_PATH = ".loop/evidence/t085-completion-receipt.json"
 export const ACCEPTED_IMPLEMENTATION_HEAD_SHA = "27b955581a909e292ae4fe6c1fb05de0e94753da"
 export const ACCEPTED_IMPLEMENTATION_MERGE_SHA = "a2491b81066ac225a0b5d2dab93be79fb6dfbe65"
 export const ACCEPTED_CI_RUN_ID = 33226451857
@@ -109,6 +109,54 @@ export const ACCEPTED_IMPLEMENTATION_CHANGED_PATHS = Object.freeze([
   "scripts/validate-traceability.mjs",
   "specs/001-taiwan-basketball-magazine-ebook/plan.md",
   "specs/001-taiwan-basketball-magazine-ebook/traceability.md"
+])
+export const ARENA_EDITORIAL_V3_AUTHORIZATION_SCHEMA =
+  "courtside-arena-editorial-v3-owner-dispatch/v1"
+export const ARENA_EDITORIAL_V3_AUTHORIZATION_REF =
+  "https://github.com/bynanci/courtside-tw/issues/191"
+export const ARENA_EDITORIAL_V3_AUTHORIZATION_API_URL =
+  "https://api.github.com/repos/bynanci/courtside-tw/issues/191"
+export const ARENA_EDITORIAL_V3_AUTHORIZATION_BODY_SHA256 =
+  "80dd6913d27352e4b6b1fe77b84cae829f7b03bc6045bf634e10ee7647f4c076"
+export const ARENA_EDITORIAL_V3_AUTHORIZATION_RECORDED_AT = "2026-09-10T03:06:25Z"
+export const ARENA_EDITORIAL_V3_AUTHORIZATION_CREATED_AT = "2026-09-10T03:05:57Z"
+export const ARENA_EDITORIAL_V3_AUTHORIZATION_BASE_SHA = "bf89d99320296e9febf2eab3dac8aeea08f842a0"
+export const ARENA_EDITORIAL_V3_AUTHORIZATION_BASE_TREE_SHA =
+  "221fbf3df36b1b3be50095c232bfd70d19d4ccfd"
+export const ARENA_EDITORIAL_V3_BRANCH = "feat/arena-editorial-v3"
+export const ARENA_EDITORIAL_V3_AUTHORIZED_PATHS = Object.freeze([
+  "DESIGN.md",
+  "docs/design/arena-editorial-v3.md",
+  "docs/design/arena-editorial-v3-tasks.md",
+  "apps/web/app/assets/css/main.css",
+  "apps/web/app/components/navigation/PublicSiteHeader.vue",
+  "apps/web/app/components/navigation/PublicMobileDock.vue",
+  "apps/web/app/pages/index.vue",
+  "apps/web/app/pages/issues/index.vue",
+  "apps/web/app/pages/issues/[issueSlug].vue",
+  "apps/web/app/pages/articles/[articleSlug].vue",
+  "apps/web/app/pages/search.vue",
+  "apps/web/app/pages/library.vue",
+  "apps/web/app/pages/settings/privacy.vue",
+  "apps/web/tests/unit/reader/arena-editorial-v3-contract.test.ts",
+  "scripts/validate-traceability.mjs",
+  "scripts/test/validate-traceability.test.mjs"
+])
+export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_SCHEMA =
+  "courtside-arena-editorial-v3-owner-addendum/v1"
+export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_REF =
+  "https://github.com/bynanci/courtside-tw/issues/192"
+export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_API_URL =
+  "https://api.github.com/repos/bynanci/courtside-tw/issues/192"
+export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_BODY_SHA256 =
+  "fa1e16fb100e8fa67c87116e0e8627288dd6fa78ea3e15f0e05726938493c9b8"
+export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_RECORDED_AT = "2026-09-10T03:06:45Z"
+export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_CREATED_AT = "2026-09-10T03:06:45Z"
+export const ARENA_EDITORIAL_V3_ADDENDUM_BASE_SHA = "bf89d99320296e9febf2eab3dac8aeea08f842a0"
+export const ARENA_EDITORIAL_V3_ADDENDUM_BASE_TREE_SHA = "221fbf3df36b1b3be50095c232bfd70d19d4ccfd"
+export const ARENA_EDITORIAL_V3_ADDENDUM_PULL_REQUEST = 187
+export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZED_PATHS = Object.freeze([
+  "apps/web/tests/e2e/t078-accessibility-release.spec.ts"
 ])
 export const POST_T085_REMEDIATION_BASE_SHA = "d99df471a08608bb8b6da609e17095d285c11489"
 export const POST_T085_REMEDIATION_CHANGED_PATHS = Object.freeze([
@@ -391,6 +439,11 @@ const ownerAuthorizationEnd = "<!-- t085:owner-authorization:end -->"
 const postT085MaintenanceAuthorizationStart =
   "<!-- post-t085-maintenance:owner-authorization:start -->"
 const postT085MaintenanceAuthorizationEnd = "<!-- post-t085-maintenance:owner-authorization:end -->"
+const arenaEditorialV3AuthorizationStart = "<!-- arena-editorial-v3:owner-dispatch:v1:start -->"
+const arenaEditorialV3AuthorizationEnd = "<!-- arena-editorial-v3:owner-dispatch:v1:end -->"
+const arenaEditorialV3AddendumAuthorizationStart =
+  "<!-- arena-editorial-v3:owner-addendum:v1:start -->"
+const arenaEditorialV3AddendumAuthorizationEnd = "<!-- arena-editorial-v3:owner-addendum:v1:end -->"
 const androidNativeSurfaceDispatchStart = "<!-- android-native-surface:owner-dispatch:v1:start -->"
 const androidNativeSurfaceDispatchEnd = "<!-- android-native-surface:owner-dispatch:v1:end -->"
 const androidNativeSurfaceAuthorizationStart =
@@ -2700,7 +2753,7 @@ export function createMediaArchiveAuthorizationGate(binding = MEDIA_ARCHIVE_AUTH
     authorization?.issue_url === "https://api.github.com/repos/bynanci/courtside-tw/issues/121" &&
     authorization?.user_login === ACCEPTED_RECEIPT_OWNER &&
     authorization?.author_association === "OWNER" &&
-    authorization?.created_at === c.recorded_at &&
+    authorization?.created_at === c.created_at &&
     authorization?.updated_at === c.recorded_at &&
     sha256(authorization?.body ?? null) === c.body_sha256
   const inspectCandidate = (root, head) => {
@@ -3348,6 +3401,612 @@ export function createOidcSecurityRemediationAuthorizationGate(
   })
 }
 const oidcSecurityRemediationGate = createOidcSecurityRemediationAuthorizationGate()
+
+const arenaEditorialV3DocumentationPaths = [
+  "DESIGN.md",
+  "docs/design/arena-editorial-v3.md",
+  "docs/design/arena-editorial-v3-tasks.md"
+]
+const arenaEditorialV3ContractPath =
+  "apps/web/tests/unit/reader/arena-editorial-v3-contract.test.ts"
+const arenaEditorialV3ChangedPaths = new Set(ARENA_EDITORIAL_V3_AUTHORIZED_PATHS)
+const arenaEditorialV3AddendumChangedPaths = new Set(ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZED_PATHS)
+const arenaEditorialV3AllChangedPaths = Object.freeze([
+  ...ARENA_EDITORIAL_V3_AUTHORIZED_PATHS,
+  ...ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZED_PATHS
+])
+
+/** A closed exact-base authority for the Arena Editorial v0.3 visual implementation. */
+export function createArenaEditorialV3AuthorizationGate(
+  binding = {
+    schema_version: ARENA_EDITORIAL_V3_AUTHORIZATION_SCHEMA,
+    ref: ARENA_EDITORIAL_V3_AUTHORIZATION_REF,
+    api_url: ARENA_EDITORIAL_V3_AUTHORIZATION_API_URL,
+    body_sha256: ARENA_EDITORIAL_V3_AUTHORIZATION_BODY_SHA256,
+    created_at: ARENA_EDITORIAL_V3_AUTHORIZATION_CREATED_AT,
+    recorded_at: ARENA_EDITORIAL_V3_AUTHORIZATION_RECORDED_AT,
+    base_sha: ARENA_EDITORIAL_V3_AUTHORIZATION_BASE_SHA,
+    base_tree_sha: ARENA_EDITORIAL_V3_AUTHORIZATION_BASE_TREE_SHA,
+    branch: ARENA_EDITORIAL_V3_BRANCH,
+    authorized_paths: ARENA_EDITORIAL_V3_AUTHORIZED_PATHS,
+    addendum_schema_version: ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_SCHEMA,
+    addendum_ref: ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_REF,
+    addendum_api_url: ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_API_URL,
+    addendum_body_sha256: ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_BODY_SHA256,
+    addendum_created_at: ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_CREATED_AT,
+    addendum_recorded_at: ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_RECORDED_AT,
+    addendum_base_sha: ARENA_EDITORIAL_V3_ADDENDUM_BASE_SHA,
+    addendum_base_tree_sha: ARENA_EDITORIAL_V3_ADDENDUM_BASE_TREE_SHA,
+    addendum_pull_request: ARENA_EDITORIAL_V3_ADDENDUM_PULL_REQUEST,
+    addendum_authorized_paths: ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZED_PATHS
+  }
+) {
+  const c = structuredClone(binding)
+  const sha = (value) => typeof value === "string" && /^[0-9a-f]{40}$/.test(value)
+  const closure = (paths) =>
+    Array.isArray(paths) &&
+    new Set(paths).size === paths.length &&
+    sameValues(paths, ARENA_EDITORIAL_V3_AUTHORIZED_PATHS) &&
+    paths.every((filePath) => arenaEditorialV3ChangedPaths.has(filePath))
+  const combinedClosure = (paths) =>
+    Array.isArray(paths) &&
+    new Set(paths).size === paths.length &&
+    sameValues(paths, arenaEditorialV3AllChangedPaths) &&
+    paths.every(
+      (filePath) =>
+        arenaEditorialV3ChangedPaths.has(filePath) ||
+        arenaEditorialV3AddendumChangedPaths.has(filePath)
+    )
+  const addendumClosure = (paths) =>
+    Array.isArray(paths) &&
+    new Set(paths).size === paths.length &&
+    sameValues(paths, ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZED_PATHS) &&
+    paths.every((filePath) => arenaEditorialV3AddendumChangedPaths.has(filePath))
+  const supplementalDiffClosure = (paths) => {
+    if (!Array.isArray(paths) || new Set(paths).size !== paths.length) return false
+    const supplementalPaths = paths.filter((filePath) =>
+      arenaEditorialV3AddendumChangedPaths.has(filePath)
+    )
+    return (
+      paths.every(
+        (filePath) =>
+          arenaEditorialV3ChangedPaths.has(filePath) ||
+          arenaEditorialV3AddendumChangedPaths.has(filePath)
+      ) && addendumClosure(supplementalPaths)
+    )
+  }
+  const bound =
+    c.schema_version === ARENA_EDITORIAL_V3_AUTHORIZATION_SCHEMA &&
+    c.ref === ARENA_EDITORIAL_V3_AUTHORIZATION_REF &&
+    c.api_url === ARENA_EDITORIAL_V3_AUTHORIZATION_API_URL &&
+    c.body_sha256 === ARENA_EDITORIAL_V3_AUTHORIZATION_BODY_SHA256 &&
+    c.recorded_at === ARENA_EDITORIAL_V3_AUTHORIZATION_RECORDED_AT &&
+    c.base_sha === ARENA_EDITORIAL_V3_AUTHORIZATION_BASE_SHA &&
+    c.base_tree_sha === ARENA_EDITORIAL_V3_AUTHORIZATION_BASE_TREE_SHA &&
+    c.branch === ARENA_EDITORIAL_V3_BRANCH &&
+    sameValues(c.authorized_paths ?? [], ARENA_EDITORIAL_V3_AUTHORIZED_PATHS) &&
+    c.addendum_schema_version === ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_SCHEMA &&
+    c.addendum_ref === ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_REF &&
+    c.addendum_api_url === ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_API_URL &&
+    c.addendum_body_sha256 === ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_BODY_SHA256 &&
+    c.addendum_recorded_at === ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_RECORDED_AT &&
+    c.addendum_base_sha === ARENA_EDITORIAL_V3_ADDENDUM_BASE_SHA &&
+    c.addendum_base_tree_sha === ARENA_EDITORIAL_V3_ADDENDUM_BASE_TREE_SHA &&
+    c.addendum_pull_request === ARENA_EDITORIAL_V3_ADDENDUM_PULL_REQUEST &&
+    sameValues(c.addendum_authorized_paths ?? [], ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZED_PATHS)
+  const authentic = (authorization) =>
+    authorization?.url === c.api_url &&
+    authorization?.html_url === c.ref &&
+    authorization?.number === 191 &&
+    authorization?.title ===
+      "Arena Editorial v0.3｜fresh protected-main base reconciliation after PR #189" &&
+    authorization?.user?.login === ACCEPTED_RECEIPT_OWNER &&
+    authorization?.author_association === "OWNER" &&
+    authorization?.state === "open" &&
+    authorization?.locked === false &&
+    authorization?.created_at === c.created_at &&
+    authorization?.updated_at === c.recorded_at &&
+    authorization?.closed_at === null &&
+    sha256(authorization?.body ?? null) === c.body_sha256
+  const authenticAddendum = (authorization) =>
+    authorization?.url === c.addendum_api_url &&
+    authorization?.html_url === c.addendum_ref &&
+    authorization?.number === 192 &&
+    authorization?.title ===
+      "Arena Editorial v0.3｜fresh browser-evidence addendum after PR #189" &&
+    authorization?.user?.login === ACCEPTED_RECEIPT_OWNER &&
+    authorization?.author_association === "OWNER" &&
+    authorization?.state === "open" &&
+    authorization?.locked === false &&
+    authorization?.created_at === c.addendum_created_at &&
+    authorization?.updated_at === c.addendum_recorded_at &&
+    authorization?.closed_at === null &&
+    sha256(authorization?.body ?? null) === c.addendum_body_sha256
+
+  const inspectCandidate = (root, head) => {
+    if (!bound || !sha(head)) return null
+    try {
+      const git = (args) =>
+        execFileSync("git", args, {
+          cwd: root,
+          encoding: "utf8",
+          maxBuffer: 4 * 1024 * 1024,
+          stdio: ["ignore", "pipe", "ignore"]
+        }).trim()
+      const list = (args) => git(args).split("\n").filter(Boolean)
+      const commits = list(["rev-list", "--reverse", `${c.base_sha}..${head}`])
+      const commitPaths = commits.map((commit, index) =>
+        inspectChangedPathsBetweenCommits(
+          root,
+          index === 0 ? c.base_sha : commits[index - 1],
+          commit
+        )
+      )
+      const topology = inspectHeadTopology(root, head)
+      const baseTopology = inspectHeadTopology(root, c.base_sha)
+      const entries = git(["ls-tree", "-r", "-z", head, "--", ...arenaEditorialV3AllChangedPaths])
+        .split("\0")
+        .filter(Boolean)
+      const present = new Set(entries.map((entry) => entry.split("\t")[1]))
+      let supplementalBaseAncestor = false
+      let supplementalChangedPaths = null
+      let supplementalCommitsPostdateAuthorization = null
+      try {
+        git(["cat-file", "-e", `${c.addendum_base_sha}^{commit}`])
+        supplementalBaseAncestor = inspectAncestor(root, c.addendum_base_sha, head)
+        if (supplementalBaseAncestor) {
+          supplementalChangedPaths = inspectChangedPathsBetweenCommits(
+            root,
+            c.addendum_base_sha,
+            head
+          )
+          supplementalCommitsPostdateAuthorization = list([
+            "log",
+            "--format=%aI%n%cI",
+            `${c.addendum_base_sha}..${head}`
+          ]).every((timestamp) => Date.parse(timestamp) > Date.parse(c.addendum_recorded_at))
+        }
+      } catch {
+        supplementalBaseAncestor = false
+      }
+      const historyPaths = [
+        ...new Set(
+          list(["log", "--format=", "--name-only", "--no-renames", `${c.base_sha}..${head}`])
+        )
+      ].sort()
+      return {
+        head,
+        tree_sha: topology.headTreeSha,
+        parent_shas: topology.parents,
+        base_tree_sha: baseTopology.headTreeSha,
+        base_ancestor: inspectAncestor(root, c.base_sha, head),
+        changed_paths: inspectChangedPathsBetweenCommits(root, c.base_sha, head),
+        history_paths: historyPaths,
+        commit_count: inspectCommitCountBetween(root, c.base_sha, head),
+        merge_commit_count: inspectCommitCountBetween(root, c.base_sha, head, {
+          mergesOnly: true
+        }),
+        commits_postdate_authorization: list([
+          "log",
+          "--format=%aI%n%cI",
+          `${c.base_sha}..${head}`
+        ]).every((timestamp) => Date.parse(timestamp) > Date.parse(c.recorded_at)),
+        documentation_commit_paths: commitPaths[0] ?? null,
+        contract_commit_paths: commitPaths[1] ?? null,
+        documentation_precedes_contract:
+          sameValues(commitPaths[0] ?? [], arenaEditorialV3DocumentationPaths) &&
+          sameValues(commitPaths[1] ?? [], [arenaEditorialV3ContractPath]),
+        allowed_path_modes_match:
+          arenaEditorialV3AllChangedPaths.every((filePath) => present.has(filePath)) &&
+          entries.every((entry) => /^100644 blob [0-9a-f]{40}\t/.test(entry)),
+        supplemental_base_ancestor: supplementalBaseAncestor,
+        supplemental_changed_paths: supplementalChangedPaths,
+        supplemental_commits_postdate_authorization: supplementalCommitsPostdateAuthorization
+      }
+    } catch {
+      return null
+    }
+  }
+
+  return Object.freeze({
+    requested(changedPaths, context, readback = null, base = null) {
+      return (
+        bound &&
+        (readback !== null ||
+          context?.head_ref === c.branch ||
+          (base === c.base_sha &&
+            Array.isArray(changedPaths) &&
+            changedPaths.some((filePath) => arenaEditorialV3ChangedPaths.has(filePath))))
+      )
+    },
+    inspect(
+      root,
+      {
+        environment = process.env,
+        fetchJson = (url) =>
+          JSON.parse(
+            execFileSync(
+              process.execPath,
+              ["--input-type=module", "--eval", githubCommentFetchScript, url],
+              {
+                encoding: "utf8",
+                env: githubReadbackEnvironment(environment),
+                maxBuffer: 1024 * 1024,
+                stdio: ["ignore", "pipe", "pipe"],
+                timeout: 15000
+              }
+            )
+          ),
+        headInspector = (repositoryRoot) =>
+          execFileSync("git", ["rev-parse", "HEAD"], {
+            cwd: repositoryRoot,
+            encoding: "utf8",
+            stdio: ["ignore", "pipe", "ignore"]
+          }).trim(),
+        commitSubjectInspector = (repositoryRoot, head) =>
+          execFileSync("git", ["show", "-s", "--format=%s", head], {
+            cwd: repositoryRoot,
+            encoding: "utf8",
+            stdio: ["ignore", "pipe", "ignore"]
+          }).trim(),
+        reviewedHeadMaterializer = (repositoryRoot, { number, expectedHeadSha }) => {
+          execFileSync(
+            "git",
+            [
+              "fetch",
+              "--no-tags",
+              "--no-recurse-submodules",
+              "https://github.com/bynanci/courtside-tw.git",
+              `refs/pull/${number}/head`
+            ],
+            {
+              cwd: repositoryRoot,
+              encoding: "utf8",
+              maxBuffer: 4 * 1024 * 1024,
+              stdio: ["ignore", "ignore", "ignore"],
+              timeout: 15000
+            }
+          )
+          const fetchedHead = execFileSync("git", ["rev-parse", "--verify", "FETCH_HEAD"], {
+            cwd: repositoryRoot,
+            encoding: "utf8",
+            stdio: ["ignore", "pipe", "ignore"]
+          }).trim()
+          if (fetchedHead !== expectedHeadSha) throw new Error("reviewed head mismatch")
+          return fetchedHead
+        },
+        candidateInspector = inspectCandidate
+      } = {}
+    ) {
+      if (!bound) {
+        return {
+          status: "UNAVAILABLE",
+          source: "github-api",
+          errors: ["Arena Editorial v0.3 authority is unbound"]
+        }
+      }
+      try {
+        const authorization = fetchJson(c.api_url)
+        if (!authentic(authorization)) throw new Error("untrusted authorization")
+        if (environment.GITHUB_ACTIONS !== "true" || !environment.GITHUB_EVENT_PATH) {
+          throw new Error("missing authenticated event")
+        }
+        const event = JSON.parse(fs.readFileSync(environment.GITHUB_EVENT_PATH, "utf8"))
+        const localHead = headInspector(root)
+        if (!sha(localHead)) throw new Error("invalid local head")
+
+        let pullRequestNumber = null
+        let squashCommitSubject = null
+        let squashPullRequestNumber = null
+        let protectedPush = false
+        if (environment.GITHUB_EVENT_NAME === "pull_request") {
+          pullRequestNumber = event?.pull_request?.number
+          if (
+            event?.pull_request?.head?.sha !== localHead ||
+            event?.pull_request?.head?.ref !== c.branch ||
+            event?.pull_request?.base?.sha !== c.base_sha ||
+            event?.pull_request?.base?.ref !== "main"
+          ) {
+            throw new Error("pull request event is not exact")
+          }
+        } else if (environment.GITHUB_EVENT_NAME === "push" && event?.ref === "refs/heads/main") {
+          protectedPush = true
+          if (event?.before !== c.base_sha || !sha(event?.after) || event.after !== localHead) {
+            throw new Error("push event is not exact")
+          }
+          squashCommitSubject = commitSubjectInspector(root, localHead)
+          const suffix = squashCommitSubject.match(/(?:^|\s)\(#([1-9]\d*)\)$/u)
+          squashPullRequestNumber = suffix ? Number(suffix[1]) : null
+          pullRequestNumber = squashPullRequestNumber
+        } else {
+          throw new Error("unsupported event")
+        }
+        if (!Number.isSafeInteger(pullRequestNumber) || pullRequestNumber <= 0) {
+          throw new Error("invalid pull request number")
+        }
+
+        const pullRequest = fetchJson(
+          `https://api.github.com/repos/bynanci/courtside-tw/pulls/${pullRequestNumber}`
+        )
+        if (
+          pullRequest?.number !== pullRequestNumber ||
+          pullRequest?.html_url !==
+            `https://github.com/bynanci/courtside-tw/pull/${pullRequestNumber}` ||
+          !sha(pullRequest?.head?.sha)
+        ) {
+          throw new Error("invalid live PR")
+        }
+        let reviewedCandidateHead = pullRequest.head.sha
+        if (protectedPush) {
+          reviewedCandidateHead = reviewedHeadMaterializer(root, {
+            number: pullRequestNumber,
+            expectedHeadSha: pullRequest.head.sha
+          })
+          if (reviewedCandidateHead !== pullRequest.head.sha) {
+            throw new Error("reviewed head mismatch")
+          }
+        }
+        const reviewedHeadCommit = fetchJson(
+          `https://api.github.com/repos/bynanci/courtside-tw/git/commits/${pullRequest.head.sha}`
+        )
+        const protectedMain = fetchJson(
+          "https://api.github.com/repos/bynanci/courtside-tw/branches/main"
+        )
+        const candidate = candidateInspector(root, reviewedCandidateHead)
+        const addendumAuthorization = candidate?.changed_paths?.some((filePath) =>
+          arenaEditorialV3AddendumChangedPaths.has(filePath)
+        )
+          ? fetchJson(c.addendum_api_url)
+          : null
+        return {
+          status: "VERIFIED",
+          source: "github-api",
+          authorization,
+          addendum_authorization: addendumAuthorization,
+          pull_request: pullRequest,
+          reviewed_head_commit: reviewedHeadCommit,
+          protected_main: protectedMain,
+          squash_commit_subject: squashCommitSubject,
+          squash_pull_request_number: squashPullRequestNumber,
+          candidate,
+          squash_candidate: protectedPush ? candidateInspector(root, localHead) : null,
+          errors: []
+        }
+      } catch {
+        return {
+          status: "UNAVAILABLE",
+          source: "github-api",
+          errors: ["Arena Editorial v0.3 OWNER read-back failed"]
+        }
+      }
+    },
+    validate({
+      readback,
+      gitBinding,
+      changedPaths,
+      changeBaseSha,
+      boundedScopeActive,
+      githubActionsContext,
+      requireExactHeadEvidence,
+      errors = []
+    } = {}) {
+      const start = errors.length
+      const check = (ok, message) => {
+        if (!ok) errors.push(`Arena Editorial v0.3 authorization ${message}`)
+      }
+      const push = githubActionsContext?.authority === "PROTECTED_MAIN_PUSH"
+      const supplementalRequested =
+        Array.isArray(changedPaths) &&
+        changedPaths.some((filePath) => arenaEditorialV3AddendumChangedPaths.has(filePath))
+      check(bound, "is unbound")
+      check(
+        changeBaseSha === c.base_sha &&
+          boundedScopeActive === false &&
+          (supplementalRequested ? combinedClosure(changedPaths) : closure(changedPaths)),
+        supplementalRequested
+          ? "requires the exact original plus addendum path scope and base"
+          : "requires the exact closed path scope and base"
+      )
+      check(
+        readback?.status === "VERIFIED" &&
+          readback?.source === "github-api" &&
+          authentic(readback?.authorization),
+        "requires the exact immutable OWNER issue"
+      )
+      const dispatch = parseArenaEditorialV3AuthorizationBody(
+        {
+          body: readback?.authorization?.body,
+          startMarker: arenaEditorialV3AuthorizationStart,
+          endMarker: arenaEditorialV3AuthorizationEnd,
+          label: "Arena Editorial v0.3 dispatch"
+        },
+        errors
+      )
+      check(
+        dispatch?.schema_version === c.schema_version &&
+          dispatch?.decision === "DISPATCH_ACCEPTED" &&
+          dispatch?.accepted_by === ACCEPTED_RECEIPT_OWNER &&
+          dispatch?.repository === "bynanci/courtside-tw" &&
+          dispatch?.branch === c.branch &&
+          dispatch?.authorization_base?.branch === "main" &&
+          dispatch?.authorization_base?.sha === c.base_sha &&
+          dispatch?.authorization_base?.tree_sha === c.base_tree_sha &&
+          dispatch?.authorization_base?.protected === true &&
+          sameValues(dispatch?.authorized_paths ?? [], c.authorized_paths),
+        "dispatch body must match the sealed descriptor"
+      )
+      const addendum = supplementalRequested
+        ? parseArenaEditorialV3AuthorizationBody(
+            {
+              body: readback?.addendum_authorization?.body,
+              startMarker: arenaEditorialV3AddendumAuthorizationStart,
+              endMarker: arenaEditorialV3AddendumAuthorizationEnd,
+              label: "Arena Editorial v0.3 addendum"
+            },
+            errors
+          )
+        : null
+      check(
+        !supplementalRequested ||
+          (readback?.addendum_authorization &&
+            authenticAddendum(readback.addendum_authorization) &&
+            addendum?.schema_version === c.addendum_schema_version &&
+            addendum?.decision === "ADDENDUM_ACCEPTED" &&
+            addendum?.accepted_by === ACCEPTED_RECEIPT_OWNER &&
+            addendum?.repository === "bynanci/courtside-tw" &&
+            addendum?.branch === c.branch &&
+            addendum?.pull_request === c.addendum_pull_request &&
+            addendum?.parent_authorization?.issue === 191 &&
+            addendum?.parent_authorization?.base_sha === c.base_sha &&
+            addendum?.parent_authorization?.base_tree_sha === c.base_tree_sha &&
+            addendum?.supplemental_base?.sha === c.addendum_base_sha &&
+            addendum?.supplemental_base?.tree_sha === c.addendum_base_tree_sha &&
+            addendum?.supplemental_base?.protected_main_sha === c.base_sha &&
+            addendumClosure(addendum?.authorized_paths)),
+        "addendum body and immutable OWNER issue must match the sealed descriptor"
+      )
+
+      const pr = readback?.pull_request
+      const candidate = readback?.candidate
+      const squashCandidate = readback?.squash_candidate
+      const reviewedHeadCommit = readback?.reviewed_head_commit
+      check(
+        Number.isSafeInteger(pr?.number) &&
+          pr.number > 0 &&
+          pr?.html_url === `https://github.com/bynanci/courtside-tw/pull/${pr.number}` &&
+          pr?.head?.ref === c.branch &&
+          pr?.base?.ref === "main" &&
+          pr?.base?.sha === c.base_sha &&
+          pr?.head?.repo?.full_name === "bynanci/courtside-tw" &&
+          pr?.base?.repo?.full_name === "bynanci/courtside-tw" &&
+          sha(pr?.head?.sha),
+        "requires the live same-repository PR binding"
+      )
+      check(
+        reviewedHeadCommit?.sha === pr?.head?.sha &&
+          sha(reviewedHeadCommit?.tree?.sha) &&
+          reviewedHeadCommit?.tree?.sha === candidate?.tree_sha,
+        "must bind the reviewed PR head tree"
+      )
+      check(
+        candidate?.head === pr?.head?.sha &&
+          candidate?.base_tree_sha === c.base_tree_sha &&
+          candidate?.base_ancestor === true &&
+          candidate?.commits_postdate_authorization === true &&
+          (supplementalRequested
+            ? combinedClosure(candidate?.changed_paths)
+            : closure(candidate?.changed_paths)) &&
+          sameValues(candidate?.changed_paths ?? [], changedPaths) &&
+          (supplementalRequested
+            ? combinedClosure(candidate?.history_paths)
+            : closure(candidate?.history_paths)) &&
+          Number.isInteger(candidate?.commit_count) &&
+          candidate.commit_count >= 3 &&
+          candidate?.merge_commit_count === 0 &&
+          candidate?.documentation_precedes_contract === true &&
+          candidate?.allowed_path_modes_match === true &&
+          (!supplementalRequested ||
+            (candidate?.supplemental_base_ancestor === true &&
+              supplementalDiffClosure(candidate?.supplemental_changed_paths) &&
+              candidate?.supplemental_commits_postdate_authorization === true)),
+        "requires the exact docs-first, tests-first linear PR history and regular files"
+      )
+      check(
+        gitBinding?.status === "CLEAN" &&
+          sha(gitBinding?.head) &&
+          gitBinding?.change_base_ancestor === true &&
+          gitBinding?.change_base_sha === c.base_sha &&
+          candidate?.tree_sha === gitBinding?.head_tree_sha,
+        "requires a clean exact Git tree"
+      )
+      check(
+        readback?.protected_main?.name === "main" &&
+          readback?.protected_main?.protected === true &&
+          readback?.protected_main?.commit?.sha === (push ? gitBinding?.head : c.base_sha),
+        "requires fresh protected main"
+      )
+
+      if (push) {
+        check(
+          squashCandidate?.head === gitBinding?.head &&
+            squashCandidate?.tree_sha === candidate?.tree_sha &&
+            squashCandidate?.base_tree_sha === c.base_tree_sha &&
+            squashCandidate?.base_ancestor === true &&
+            squashCandidate?.commits_postdate_authorization === true &&
+            (supplementalRequested
+              ? combinedClosure(squashCandidate?.changed_paths)
+              : closure(squashCandidate?.changed_paths)) &&
+            sameValues(squashCandidate?.changed_paths ?? [], changedPaths) &&
+            (supplementalRequested
+              ? combinedClosure(squashCandidate?.history_paths)
+              : closure(squashCandidate?.history_paths)) &&
+            squashCandidate?.commit_count === 1 &&
+            squashCandidate?.merge_commit_count === 0 &&
+            squashCandidate?.allowed_path_modes_match === true &&
+            isDeepStrictEqual(squashCandidate?.parent_shas, [c.base_sha]),
+          "requires the exact local squash candidate topology"
+        )
+      }
+
+      if (requireExactHeadEvidence) {
+        check(
+          isAuthenticatedGitHubActionsContext(githubActionsContext),
+          "requires authenticated exact-head Actions metadata"
+        )
+        check(
+          githubActionsContext?.source_base_sha === c.base_sha &&
+            githubActionsContext?.source_head_sha === gitBinding?.head,
+          "must bind the Actions event base and evaluated head"
+        )
+        if (push) {
+          const suffix = readback?.squash_commit_subject?.match(/(?:^|\s)\(#([1-9]\d*)\)$/u)
+          check(
+            suffix !== null &&
+              Number(suffix?.[1]) === pr?.number &&
+              readback?.squash_pull_request_number === pr?.number &&
+              pr?.state === "closed" &&
+              pr?.merged === true &&
+              pr?.draft === false &&
+              pr?.merge_commit_sha === gitBinding?.head &&
+              isIsoTimestamp(pr?.merged_at) &&
+              Date.parse(pr.merged_at) > Date.parse(c.recorded_at) &&
+              gitBinding?.head_parent_count === 1 &&
+              isDeepStrictEqual(gitBinding?.head_parent_shas, [c.base_sha]),
+            "must bind only the numbered exact same-tree single-parent squash push"
+          )
+        } else {
+          check(
+            githubActionsContext?.authority === "PULL_REQUEST" &&
+              githubActionsContext?.pull_request_number === pr?.number &&
+              githubActionsContext?.pull_request_payload_number === pr?.number &&
+              githubActionsContext?.source_head_sha === pr?.head?.sha &&
+              githubActionsContext?.head_ref === c.branch &&
+              new RegExp(`^refs/pull/${pr?.number}/(?:merge|head)$`).test(
+                githubActionsContext?.github_ref ?? ""
+              ) &&
+              pr?.state === "open" &&
+              pr?.merged === false &&
+              typeof pr?.draft === "boolean" &&
+              githubActionsContext?.pull_request_draft === pr?.draft,
+            "requires the live draft or ready PR event"
+          )
+        }
+      }
+      return errors.length === start
+    },
+    allowsPath(filePath) {
+      return (
+        bound &&
+        (arenaEditorialV3ChangedPaths.has(filePath) ||
+          arenaEditorialV3AddendumChangedPaths.has(filePath))
+      )
+    },
+    isBound() {
+      return bound
+    }
+  })
+}
+const arenaEditorialV3Gate = createArenaEditorialV3AuthorizationGate()
 
 // Deliberately unbound until the successor main, cache seed and immutable OWNER record exist.
 // Rebinding changes only this sealed descriptor. This authority never accepts a beta release.
@@ -9743,47 +10402,6 @@ function validatePostT085MaintenanceAuthorizationReadback({
   return errors.length === initialErrorCount
 }
 
-function parseAndroidNativeSurfaceAuthorizationBody(
-  { body, startMarker, endMarker, label },
-  errors
-) {
-  if (typeof body !== "string") {
-    errors.push(`${label} must contain a structured body`)
-    return null
-  }
-  const start = body.indexOf(startMarker)
-  const end = body.indexOf(endMarker)
-  if (
-    start < 0 ||
-    end <= start ||
-    body.indexOf(startMarker, start + startMarker.length) >= 0 ||
-    body.indexOf(endMarker, end + endMarker.length) >= 0
-  ) {
-    errors.push(`${label} must contain one structured body`)
-    return null
-  }
-  let payload = body.slice(start + startMarker.length, end).trim()
-  const fencedPayload = payload.match(/^```json\r?\n([\s\S]*)\r?\n```$/)
-  if (fencedPayload) {
-    payload = fencedPayload[1].trim()
-  } else if (payload.includes("```")) {
-    errors.push(`${label} JSON fence is invalid`)
-    return null
-  }
-  try {
-    assertUniqueJsonObjectKeys(payload)
-    const parsed = JSON.parse(payload)
-    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
-      errors.push(`${label} body must be a JSON object`)
-      return null
-    }
-    return parsed
-  } catch (error) {
-    errors.push(`${label} body is invalid: ${error.message}`)
-    return null
-  }
-}
-
 function parseOidcSecurityRemediationAuthorizationBody(
   { body, startMarker, endMarker, label },
   errors
@@ -9811,6 +10429,84 @@ function parseOidcSecurityRemediationAuthorizationBody(
     return null
   }
   payload = fencedPayload[1].trim()
+  try {
+    assertUniqueJsonObjectKeys(payload)
+    const parsed = JSON.parse(payload)
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      errors.push(`${label} body must be a JSON object`)
+      return null
+    }
+    return parsed
+  } catch (error) {
+    errors.push(`${label} body is invalid: ${error.message}`)
+    return null
+  }
+}
+
+function parseArenaEditorialV3AuthorizationBody({ body, startMarker, endMarker, label }, errors) {
+  if (typeof body !== "string") {
+    errors.push(`${label} must contain a structured body`)
+    return null
+  }
+  const start = body.indexOf(startMarker)
+  const end = body.indexOf(endMarker)
+  if (
+    start < 0 ||
+    end <= start ||
+    body.indexOf(startMarker, start + startMarker.length) >= 0 ||
+    body.indexOf(endMarker, end + endMarker.length) >= 0
+  ) {
+    errors.push(`${label} must contain one structured body`)
+    return null
+  }
+  const payload = body.slice(start + startMarker.length, end).trim()
+  const fencedPayloads = [...payload.matchAll(/```json\r?\n([\s\S]*?)\r?\n```/g)]
+  if (fencedPayloads.length !== 1) {
+    errors.push(`${label} must contain one JSON fence`)
+    return null
+  }
+  try {
+    const json = fencedPayloads[0][1].trim()
+    assertUniqueJsonObjectKeys(json)
+    const parsed = JSON.parse(json)
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      errors.push(`${label} body must be a JSON object`)
+      return null
+    }
+    return parsed
+  } catch (error) {
+    errors.push(`${label} body is invalid: ${error.message}`)
+    return null
+  }
+}
+
+function parseAndroidNativeSurfaceAuthorizationBody(
+  { body, startMarker, endMarker, label },
+  errors
+) {
+  if (typeof body !== "string") {
+    errors.push(`${label} must contain a structured body`)
+    return null
+  }
+  const start = body.indexOf(startMarker)
+  const end = body.indexOf(endMarker)
+  if (
+    start < 0 ||
+    end <= start ||
+    body.indexOf(startMarker, start + startMarker.length) >= 0 ||
+    body.indexOf(endMarker, end + endMarker.length) >= 0
+  ) {
+    errors.push(`${label} must contain one structured body`)
+    return null
+  }
+  let payload = body.slice(start + startMarker.length, end).trim()
+  const fencedPayload = payload.match(/^```json\r?\n([\s\S]*)\r?\n```$/)
+  if (fencedPayload) {
+    payload = fencedPayload[1].trim()
+  } else if (payload.includes("```")) {
+    errors.push(`${label} JSON fence is invalid`)
+    return null
+  }
   try {
     assertUniqueJsonObjectKeys(payload)
     const parsed = JSON.parse(payload)
@@ -10889,6 +11585,7 @@ export function validateTraceability({
   mediaRightsAuthorizationReadback = null,
   mediaArchiveAuthorizationReadback = null,
   oidcSecurityRemediationAuthorizationReadback = null,
+  arenaEditorialV3AuthorizationReadback = null,
   gitBinding = null,
   changedPaths = null,
   changeBaseSha = REVIEW_BASE_SHA,
@@ -11025,6 +11722,16 @@ export function validateTraceability({
       changeBaseSha
     )
   let mediaArchiveAuthorizationAccepted = false
+  const arenaEditorialV3AuthorizationRequested =
+    state === t085States.COMPLETE_STEADY &&
+    Array.isArray(changedPaths) &&
+    arenaEditorialV3Gate.requested(
+      changedPaths,
+      githubActionsContext,
+      arenaEditorialV3AuthorizationReadback,
+      changeBaseSha
+    )
+  let arenaEditorialV3AuthorizationAccepted = false
   const oidcSecurityRemediationAuthorizationRequested =
     state === t085States.COMPLETE_STEADY &&
     Array.isArray(changedPaths) &&
@@ -11224,6 +11931,18 @@ export function validateTraceability({
         errors
       })
     }
+    if (arenaEditorialV3AuthorizationRequested) {
+      arenaEditorialV3AuthorizationAccepted = arenaEditorialV3Gate.validate({
+        readback: arenaEditorialV3AuthorizationReadback,
+        gitBinding,
+        changedPaths,
+        changeBaseSha,
+        boundedScopeActive,
+        githubActionsContext,
+        requireExactHeadEvidence,
+        errors
+      })
+    }
     if (oidcSecurityRemediationAuthorizationRequested) {
       oidcSecurityRemediationAuthorizationAccepted = oidcSecurityRemediationGate.validate({
         readback: oidcSecurityRemediationAuthorizationReadback,
@@ -11333,6 +12052,7 @@ export function validateTraceability({
         !(publicationCacheAuthorizationAccepted && publicationCacheGate.allowsPath(changedPath)) &&
         !(mediaRightsAuthorizationAccepted && mediaRightsGate.allowsPath(changedPath)) &&
         !(mediaArchiveAuthorizationAccepted && mediaArchiveGate.allowsPath(changedPath)) &&
+        !(arenaEditorialV3AuthorizationAccepted && arenaEditorialV3Gate.allowsPath(changedPath)) &&
         !(
           oidcSecurityRemediationAuthorizationAccepted &&
           oidcSecurityRemediationGate.allowsPath(changedPath)
@@ -12075,6 +12795,36 @@ export function validateTraceability({
             errors: oidcSecurityRemediationAuthorizationReadback.errors ?? []
           }
         : null,
+      arena_editorial_v3_authorization_readback: arenaEditorialV3AuthorizationReadback
+        ? {
+            status: arenaEditorialV3AuthorizationReadback.status,
+            accepted: arenaEditorialV3AuthorizationAccepted,
+            authorization_ref:
+              arenaEditorialV3AuthorizationReadback.authorization?.html_url ?? null,
+            body_sha256: sha256(arenaEditorialV3AuthorizationReadback.authorization?.body ?? null),
+            addendum: arenaEditorialV3AuthorizationReadback.addendum_authorization
+              ? {
+                  authorization_ref:
+                    arenaEditorialV3AuthorizationReadback.addendum_authorization.html_url ?? null,
+                  body_sha256: sha256(
+                    arenaEditorialV3AuthorizationReadback.addendum_authorization.body ?? null
+                  ),
+                  issue_number:
+                    arenaEditorialV3AuthorizationReadback.addendum_authorization.number ?? null
+                }
+              : null,
+            pull_request: arenaEditorialV3AuthorizationReadback.pull_request?.number ?? null,
+            reviewed_head_commit:
+              arenaEditorialV3AuthorizationReadback.reviewed_head_commit ?? null,
+            squash_commit_subject:
+              arenaEditorialV3AuthorizationReadback.squash_commit_subject ?? null,
+            squash_pull_request_number:
+              arenaEditorialV3AuthorizationReadback.squash_pull_request_number ?? null,
+            protected_main: arenaEditorialV3AuthorizationReadback.protected_main ?? null,
+            candidate: arenaEditorialV3AuthorizationReadback.candidate ?? null,
+            errors: arenaEditorialV3AuthorizationReadback.errors ?? []
+          }
+        : null,
       product_remediation_authorization_readback: productRemediationAuthorizationReadback
         ? {
             status: productRemediationAuthorizationReadback.status,
@@ -12249,12 +12999,8 @@ export function validateTraceability({
                           mediaRightsGate.allowsPath(changedPath)
                         ) &&
                         !(
-                          mediaArchiveAuthorizationAccepted &&
-                          mediaArchiveGate.allowsPath(changedPath)
-                        ) &&
-                        !(
-                          oidcSecurityRemediationAuthorizationAccepted &&
-                          oidcSecurityRemediationGate.allowsPath(changedPath)
+                          arenaEditorialV3AuthorizationAccepted &&
+                          arenaEditorialV3Gate.allowsPath(changedPath)
                         ) &&
                         !(
                           productRemediationAuthorizationAccepted &&
@@ -13533,6 +14279,14 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
   )
     ? oidcSecurityRemediationGate.inspect(root, { environment })
     : null
+  const arenaEditorialV3AuthorizationReadback = arenaEditorialV3Gate.requested(
+    inspection.changedPaths,
+    githubActionsContext,
+    null,
+    inspection.change_base_sha
+  )
+    ? arenaEditorialV3Gate.inspect(root, { environment })
+    : null
   const isGitHubActions = environment.GITHUB_ACTIONS === "true"
   const report = validateTraceability({
     root,
@@ -13551,6 +14305,7 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
     mediaRightsAuthorizationReadback,
     mediaArchiveAuthorizationReadback,
     oidcSecurityRemediationAuthorizationReadback,
+    arenaEditorialV3AuthorizationReadback,
     gitBinding: {
       status: inspection.status,
       head: inspection.head,

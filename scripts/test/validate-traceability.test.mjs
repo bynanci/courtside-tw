@@ -265,7 +265,6 @@ test("issue 164 authenticates only the immutable OWNER three-path draft from its
   )
   assert.equal(report.scope_boundaries.t086_dispatched, false)
 })
-
 test("issue 164 authenticates the exact protected-main squash push after its draft merge", () => {
   const fixture = makeCompletedFixture()
   const githubActionsContext = makeRequiredGateProtectedPushActionsContext(fixture.root)
@@ -330,6 +329,907 @@ test("issue 164 protected-main push rejects replayed topology", () => {
     assert.equal(report.status, "FAIL", label)
     assert.match(report.errors.join("\n"), /issue 164/, label)
   }
+})
+
+const arenaV3BaseSha = traceabilityValidator.ARENA_EDITORIAL_V3_AUTHORIZATION_BASE_SHA
+const arenaV3BaseTree = traceabilityValidator.ARENA_EDITORIAL_V3_AUTHORIZATION_BASE_TREE_SHA
+const arenaV3Branch = traceabilityValidator.ARENA_EDITORIAL_V3_BRANCH
+const arenaV3Paths = [...traceabilityValidator.ARENA_EDITORIAL_V3_AUTHORIZED_PATHS]
+const arenaV3AddendumBaseSha = traceabilityValidator.ARENA_EDITORIAL_V3_ADDENDUM_BASE_SHA
+const arenaV3AddendumBaseTree = traceabilityValidator.ARENA_EDITORIAL_V3_ADDENDUM_BASE_TREE_SHA
+const arenaV3AddendumPaths = [...traceabilityValidator.ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZED_PATHS]
+const arenaV3AllPaths = [...arenaV3Paths, ...arenaV3AddendumPaths]
+const arenaV3PrNumber = 187
+const arenaV3PrHead = "a".repeat(40)
+const arenaV3Tree = "b".repeat(40)
+const arenaV3PushHead = "c".repeat(40)
+const arenaV3DocumentationPaths = [
+  "DESIGN.md",
+  "docs/design/arena-editorial-v3.md",
+  "docs/design/arena-editorial-v3-tasks.md"
+]
+const arenaV3ContractPath = "apps/web/tests/unit/reader/arena-editorial-v3-contract.test.ts"
+const arenaV3Dispatch = {
+  schema_version: "courtside-arena-editorial-v3-owner-dispatch/v1",
+  decision: "DISPATCH_ACCEPTED",
+  accepted_by: "bynanci",
+  repository: "bynanci/courtside-tw",
+  branch: "feat/arena-editorial-v3",
+  pull_request: 187,
+  authorization_base: {
+    branch: "main",
+    sha: "bf89d99320296e9febf2eab3dac8aeea08f842a0",
+    tree_sha: "221fbf3df36b1b3be50095c232bfd70d19d4ccfd",
+    protected: true,
+    source_pr: 189
+  },
+  parent_authorization: {
+    issue: 186,
+    historical_base_sha: "2cc2cc5acac03af3667126ad28c1e80a58edb7b9",
+    historical_addendum: 190
+  },
+  authorized_paths: [
+    "DESIGN.md",
+    "docs/design/arena-editorial-v3.md",
+    "docs/design/arena-editorial-v3-tasks.md",
+    "apps/web/app/assets/css/main.css",
+    "apps/web/app/components/navigation/PublicSiteHeader.vue",
+    "apps/web/app/components/navigation/PublicMobileDock.vue",
+    "apps/web/app/pages/index.vue",
+    "apps/web/app/pages/issues/index.vue",
+    "apps/web/app/pages/issues/[issueSlug].vue",
+    "apps/web/app/pages/articles/[articleSlug].vue",
+    "apps/web/app/pages/search.vue",
+    "apps/web/app/pages/library.vue",
+    "apps/web/app/pages/settings/privacy.vue",
+    "apps/web/tests/unit/reader/arena-editorial-v3-contract.test.ts",
+    "scripts/validate-traceability.mjs",
+    "scripts/test/validate-traceability.test.mjs"
+  ],
+  allowed_actions: [
+    "rebind the exact Arena Editorial implementation to the protected main produced by PR #189",
+    "preserve the docs-first and tests-first commit ordering",
+    "retain only existing routes, rights-valid published media, and the authorized responsive accessibility evidence",
+    "keep the OIDC image and Compose pin supplied by PR #189 as main-owned baseline; do not modify or reintroduce them in the Arena delta",
+    "apply the minimal verified mobile-menu header isolation remediation",
+    "run fresh exact-head CI, Security, T086, browser, accessibility and review verification",
+    "squash merge PR #187 once all current exact-head gates pass and review threads are resolved"
+  ],
+  invariants: [
+    "issue #186 and issue #190 remain historical and byte-for-byte immutable",
+    "the final fresh-base changed-path closure is exactly the 16 original issue #186 paths plus the browser evidence path from issue #190",
+    "infra/compose/oidc/Dockerfile and infra/compose/compose.yaml remain inherited from PR #189 and are not Arena changes",
+    "T001-T112 task bytes, T086 HOLD, beta release flag and frozen traceability artifacts remain unchanged",
+    "no workflow, ruleset, branch-protection, provider, deployment, credential, secret, API, schema, migration, publication, rights, research, Web3 or participant-research scope change",
+    "all fresh-base commits are linear descendants of this authorization base"
+  ],
+  cancellation_conditions: [
+    "protected main, branch, pull request, path closure or historical owner references drift",
+    "OIDC baseline is modified or reintroduced as an Arena delta",
+    "docs-first, tests-first, responsive, keyboard, no-JS, reduced-motion or contrast evidence fails",
+    "required checks fail, unresolved P1/P2 findings remain, or exact reviewed head changes before merge"
+  ]
+}
+const arenaV3IssueBody =
+  '<!-- arena-editorial-v3:owner-dispatch:v1:start -->\n## Arena Editorial v0.3 — fresh protected-main base reconciliation after PR #189\n\n**Decision:** `DISPATCH_ACCEPTED / FRESH_BASE_RECONCILIATION`.\n\nThis successor record preserves the original owner authorization in issue #186 and the historical addendum in issue #190 without mutating either record. It rebinds the same Arena Editorial scope to the protected main produced by the independently merged OIDC remediation PR #189.\n\n```json\n{\n  "schema_version": "courtside-arena-editorial-v3-owner-dispatch/v1",\n  "decision": "DISPATCH_ACCEPTED",\n  "accepted_by": "bynanci",\n  "repository": "bynanci/courtside-tw",\n  "branch": "feat/arena-editorial-v3",\n  "pull_request": 187,\n  "authorization_base": {\n    "branch": "main",\n    "sha": "bf89d99320296e9febf2eab3dac8aeea08f842a0",\n    "tree_sha": "221fbf3df36b1b3be50095c232bfd70d19d4ccfd",\n    "protected": true,\n    "source_pr": 189\n  },\n  "parent_authorization": {\n    "issue": 186,\n    "historical_base_sha": "2cc2cc5acac03af3667126ad28c1e80a58edb7b9",\n    "historical_addendum": 190\n  },\n  "authorized_paths": [\n    "DESIGN.md",\n    "docs/design/arena-editorial-v3.md",\n    "docs/design/arena-editorial-v3-tasks.md",\n    "apps/web/app/assets/css/main.css",\n    "apps/web/app/components/navigation/PublicSiteHeader.vue",\n    "apps/web/app/components/navigation/PublicMobileDock.vue",\n    "apps/web/app/pages/index.vue",\n    "apps/web/app/pages/issues/index.vue",\n    "apps/web/app/pages/issues/[issueSlug].vue",\n    "apps/web/app/pages/articles/[articleSlug].vue",\n    "apps/web/app/pages/search.vue",\n    "apps/web/app/pages/library.vue",\n    "apps/web/app/pages/settings/privacy.vue",\n    "apps/web/tests/unit/reader/arena-editorial-v3-contract.test.ts",\n    "scripts/validate-traceability.mjs",\n    "scripts/test/validate-traceability.test.mjs"\n  ],\n  "allowed_actions": [\n    "rebind the exact Arena Editorial implementation to the protected main produced by PR #189",\n    "preserve the docs-first and tests-first commit ordering",\n    "retain only existing routes, rights-valid published media, and the authorized responsive accessibility evidence",\n    "keep the OIDC image and Compose pin supplied by PR #189 as main-owned baseline; do not modify or reintroduce them in the Arena delta",\n    "apply the minimal verified mobile-menu header isolation remediation",\n    "run fresh exact-head CI, Security, T086, browser, accessibility and review verification",\n    "squash merge PR #187 once all current exact-head gates pass and review threads are resolved"\n  ],\n  "invariants": [\n    "issue #186 and issue #190 remain historical and byte-for-byte immutable",\n    "the final fresh-base changed-path closure is exactly the 16 original issue #186 paths plus the browser evidence path from issue #190",\n    "infra/compose/oidc/Dockerfile and infra/compose/compose.yaml remain inherited from PR #189 and are not Arena changes",\n    "T001-T112 task bytes, T086 HOLD, beta release flag and frozen traceability artifacts remain unchanged",\n    "no workflow, ruleset, branch-protection, provider, deployment, credential, secret, API, schema, migration, publication, rights, research, Web3 or participant-research scope change",\n    "all fresh-base commits are linear descendants of this authorization base"\n  ],\n  "cancellation_conditions": [\n    "protected main, branch, pull request, path closure or historical owner references drift",\n    "OIDC baseline is modified or reintroduced as an Arena delta",\n    "docs-first, tests-first, responsive, keyboard, no-JS, reduced-motion or contrast evidence fails",\n    "required checks fail, unresolved P1/P2 findings remain, or exact reviewed head changes before merge"\n  ]\n}\n```\n\n### Acceptance and stop rules\n\n- This record is a fresh-base successor; it does not rewrite issue #186 or #190.\n- PR #187 must be rebased/transplanted onto the exact protected main above before final evidence.\n- The final net diff must exclude the two OIDC runtime files already supplied by PR #189.\n- Squash merge is permitted only after fresh exact-head required checks, Security, T086, review and mergeability verification.\n<!-- arena-editorial-v3:owner-dispatch:v1:end -->'
+const arenaV3Addendum = {
+  schema_version: "courtside-arena-editorial-v3-owner-addendum/v1",
+  decision: "ADDENDUM_ACCEPTED",
+  accepted_by: "bynanci",
+  repository: "bynanci/courtside-tw",
+  branch: "feat/arena-editorial-v3",
+  pull_request: 187,
+  parent_authorization: {
+    issue: 191,
+    historical_parent_issue: 186,
+    base_sha: "bf89d99320296e9febf2eab3dac8aeea08f842a0",
+    base_tree_sha: "221fbf3df36b1b3be50095c232bfd70d19d4ccfd"
+  },
+  historical_addendum: {
+    issue: 190,
+    original_paths: [
+      "infra/compose/oidc/Dockerfile",
+      "infra/compose/compose.yaml",
+      "apps/web/tests/e2e/t078-accessibility-release.spec.ts"
+    ]
+  },
+  supplemental_base: {
+    sha: "bf89d99320296e9febf2eab3dac8aeea08f842a0",
+    tree_sha: "221fbf3df36b1b3be50095c232bfd70d19d4ccfd",
+    protected_main_sha: "bf89d99320296e9febf2eab3dac8aeea08f842a0"
+  },
+  authorized_paths: ["apps/web/tests/e2e/t078-accessibility-release.spec.ts"],
+  allowed_actions: [
+    "retain direct forced-colors and hydrated mobile-menu accessibility evidence",
+    "retain the honest native 200% zoom WAIVED/NOT_RUN record when the environment cannot execute native zoom",
+    "apply the minimal browser regression assertion for header brand isolation",
+    "run fresh exact-head CI, Security, T086, browser and review verification for PR #187"
+  ],
+  invariants: [
+    "issue #190 remains historical and byte-for-byte immutable",
+    "the two OIDC runtime paths are inherited from PR #189 and are not changed by this addendum",
+    "the final supplemental net diff is exactly the one browser evidence path above",
+    "no public route, product data flow, T086, workflow, provider, deployment, credential, secret, schema, migration, publication, rights, research, Web3 or participant-research scope change"
+  ],
+  cancellation_conditions: [
+    "protected main, branch, pull request or supplemental path closure drifts",
+    "OIDC runtime paths are modified or reintroduced",
+    "browser/accessibility evidence fails, required checks fail, unresolved review findings remain, or exact reviewed head changes before merge"
+  ]
+}
+const arenaV3AddendumIssueBody =
+  '<!-- arena-editorial-v3:owner-addendum:v1:start -->\n## Arena Editorial v0.3 — fresh browser-evidence addendum after PR #189\n\n**Decision:** `ADDENDUM_ACCEPTED / BROWSER_EVIDENCE_ONLY`.\n\nThis successor addendum preserves issue #190 as historical evidence and carries forward only the browser/accessibility evidence path that remains a net change after PR #189 supplied the OIDC runtime baseline in protected main.\n\n```json\n{\n  "schema_version": "courtside-arena-editorial-v3-owner-addendum/v1",\n  "decision": "ADDENDUM_ACCEPTED",\n  "accepted_by": "bynanci",\n  "repository": "bynanci/courtside-tw",\n  "branch": "feat/arena-editorial-v3",\n  "pull_request": 187,\n  "parent_authorization": {\n    "issue": 191,\n    "historical_parent_issue": 186,\n    "base_sha": "bf89d99320296e9febf2eab3dac8aeea08f842a0",\n    "base_tree_sha": "221fbf3df36b1b3be50095c232bfd70d19d4ccfd"\n  },\n  "historical_addendum": {\n    "issue": 190,\n    "original_paths": [\n      "infra/compose/oidc/Dockerfile",\n      "infra/compose/compose.yaml",\n      "apps/web/tests/e2e/t078-accessibility-release.spec.ts"\n    ]\n  },\n  "supplemental_base": {\n    "sha": "bf89d99320296e9febf2eab3dac8aeea08f842a0",\n    "tree_sha": "221fbf3df36b1b3be50095c232bfd70d19d4ccfd",\n    "protected_main_sha": "bf89d99320296e9febf2eab3dac8aeea08f842a0"\n  },\n  "authorized_paths": [\n    "apps/web/tests/e2e/t078-accessibility-release.spec.ts"\n  ],\n  "allowed_actions": [\n    "retain direct forced-colors and hydrated mobile-menu accessibility evidence",\n    "retain the honest native 200% zoom WAIVED/NOT_RUN record when the environment cannot execute native zoom",\n    "apply the minimal browser regression assertion for header brand isolation",\n    "run fresh exact-head CI, Security, T086, browser and review verification for PR #187"\n  ],\n  "invariants": [\n    "issue #190 remains historical and byte-for-byte immutable",\n    "the two OIDC runtime paths are inherited from PR #189 and are not changed by this addendum",\n    "the final supplemental net diff is exactly the one browser evidence path above",\n    "no public route, product data flow, T086, workflow, provider, deployment, credential, secret, schema, migration, publication, rights, research, Web3 or participant-research scope change"\n  ],\n  "cancellation_conditions": [\n    "protected main, branch, pull request or supplemental path closure drifts",\n    "OIDC runtime paths are modified or reintroduced",\n    "browser/accessibility evidence fails, required checks fail, unresolved review findings remain, or exact reviewed head changes before merge"\n  ]\n}\n```\n\n### Acceptance and stop rules\n\n- This is a fresh successor to issue #190; it does not rewrite the historical addendum.\n- The supplemental base is the protected main produced by PR #189.\n- Only the browser/accessibility evidence path remains supplemental in the fresh Arena diff.\n- Merge requires fresh exact-head checks, review resolution and mergeability.\n<!-- arena-editorial-v3:owner-addendum:v1:end -->'
+
+function makeArenaV3Issue(overrides = {}) {
+  return {
+    url: traceabilityValidator.ARENA_EDITORIAL_V3_AUTHORIZATION_API_URL,
+    html_url: traceabilityValidator.ARENA_EDITORIAL_V3_AUTHORIZATION_REF,
+    number: 191,
+    title: "Arena Editorial v0.3｜fresh protected-main base reconciliation after PR #189",
+    user: { login: "bynanci" },
+    author_association: "OWNER",
+    state: "open",
+    locked: false,
+    created_at: traceabilityValidator.ARENA_EDITORIAL_V3_AUTHORIZATION_CREATED_AT,
+    updated_at: traceabilityValidator.ARENA_EDITORIAL_V3_AUTHORIZATION_RECORDED_AT,
+    closed_at: null,
+    body: arenaV3IssueBody,
+    ...overrides
+  }
+}
+
+function makeArenaV3AddendumIssue(overrides = {}) {
+  return {
+    url: traceabilityValidator.ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_API_URL,
+    html_url: traceabilityValidator.ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_REF,
+    number: 192,
+    title: "Arena Editorial v0.3｜fresh browser-evidence addendum after PR #189",
+    user: { login: "bynanci" },
+    author_association: "OWNER",
+    state: "open",
+    locked: false,
+    created_at: traceabilityValidator.ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_RECORDED_AT,
+    updated_at: traceabilityValidator.ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_RECORDED_AT,
+    closed_at: null,
+    body: arenaV3AddendumIssueBody,
+    ...overrides
+  }
+}
+
+function makeArenaV3PullRequest({ push = false, draft = true, ...overrides } = {}) {
+  return {
+    number: arenaV3PrNumber,
+    html_url: `https://github.com/bynanci/courtside-tw/pull/${arenaV3PrNumber}`,
+    state: push ? "closed" : "open",
+    merged: push,
+    draft: push ? false : draft,
+    merge_commit_sha: push ? arenaV3PushHead : null,
+    merged_at: push ? "2026-09-10T04:30:00Z" : null,
+    head: {
+      sha: arenaV3PrHead,
+      ref: arenaV3Branch,
+      repo: { full_name: "bynanci/courtside-tw" }
+    },
+    base: {
+      sha: arenaV3BaseSha,
+      ref: "main",
+      repo: { full_name: "bynanci/courtside-tw" }
+    },
+    ...overrides
+  }
+}
+
+function makeArenaV3Candidate({ head = arenaV3PrHead, squash = false, supplemental = false } = {}) {
+  return {
+    head,
+    tree_sha: arenaV3Tree,
+    parent_shas: [arenaV3BaseSha],
+    base_tree_sha: arenaV3BaseTree,
+    base_ancestor: true,
+    changed_paths: [...(supplemental ? arenaV3AllPaths : arenaV3Paths)],
+    history_paths: [...(supplemental ? arenaV3AllPaths : arenaV3Paths)],
+    commit_count: squash ? 1 : 4,
+    merge_commit_count: 0,
+    commits_postdate_authorization: true,
+    documentation_commit_paths: [...arenaV3DocumentationPaths],
+    contract_commit_paths: [arenaV3ContractPath],
+    documentation_precedes_contract: !squash,
+    allowed_path_modes_match: true,
+    supplemental_base_ancestor: supplemental ? true : undefined,
+    supplemental_changed_paths: supplemental ? [...arenaV3AddendumPaths] : undefined,
+    supplemental_commits_postdate_authorization: supplemental ? true : undefined
+  }
+}
+
+function makeArenaV3Actions(root, { push = false, pr = makeArenaV3PullRequest({ push }) } = {}) {
+  const head = push ? arenaV3PushHead : pr.head.sha
+  const eventPath = path.join(root, push ? "arena-v3-push.json" : "arena-v3-pr.json")
+  fs.writeFileSync(
+    eventPath,
+    JSON.stringify(
+      push
+        ? {
+            repository: { full_name: "bynanci/courtside-tw" },
+            ref: "refs/heads/main",
+            before: arenaV3BaseSha,
+            after: head
+          }
+        : {
+            repository: { full_name: "bynanci/courtside-tw" },
+            number: pr.number,
+            pull_request: pr
+          }
+    )
+  )
+  const gitBinding = {
+    status: "CLEAN",
+    head,
+    head_tree_sha: arenaV3Tree,
+    change_base_sha: arenaV3BaseSha,
+    change_base_ancestor: true,
+    head_parent_count: 1,
+    head_parent_shas: [arenaV3BaseSha]
+  }
+  const environment = {
+    GITHUB_ACTIONS: "true",
+    GITHUB_REPOSITORY: "bynanci/courtside-tw",
+    GITHUB_EVENT_NAME: push ? "push" : "pull_request",
+    GITHUB_EVENT_PATH: eventPath,
+    GITHUB_SHA: push ? head : "d".repeat(40),
+    GITHUB_WORKFLOW: "CI",
+    GITHUB_JOB: "frontend-contract",
+    GITHUB_RUN_ID: "40000000000",
+    GITHUB_RUN_NUMBER: "4000",
+    GITHUB_RUN_ATTEMPT: "1",
+    GITHUB_REF: push ? "refs/heads/main" : `refs/pull/${pr.number}/merge`,
+    GITHUB_REF_NAME: push ? "main" : `${pr.number}/merge`,
+    GITHUB_BASE_REF: push ? "" : "main",
+    GITHUB_HEAD_REF: push ? "" : arenaV3Branch
+  }
+  const context = traceabilityValidator.inspectGitHubActionsContext({
+    environment,
+    gitBinding
+  })
+  assert.equal(context.status, "MATCHED_GITHUB_ACTIONS_METADATA", context.errors.join("\n"))
+  return { context, environment, gitBinding }
+}
+
+function makeArenaV3Case(t, { push = false, draft = true, supplemental = false } = {}) {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "arena-v3-gate-"))
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+  const pullRequest = makeArenaV3PullRequest({ push, draft })
+  const actions = makeArenaV3Actions(root, { push, pr: pullRequest })
+  const candidate = makeArenaV3Candidate({ supplemental })
+  const readback = {
+    status: "VERIFIED",
+    source: "github-api",
+    authorization: makeArenaV3Issue(),
+    addendum_authorization: supplemental ? makeArenaV3AddendumIssue() : null,
+    pull_request: pullRequest,
+    reviewed_head_commit: { sha: arenaV3PrHead, tree: { sha: arenaV3Tree } },
+    protected_main: {
+      name: "main",
+      protected: true,
+      commit: { sha: push ? arenaV3PushHead : arenaV3BaseSha }
+    },
+    squash_commit_subject: push
+      ? `feat(web): apply Arena Editorial v0.3 (#${arenaV3PrNumber})`
+      : null,
+    squash_pull_request_number: push ? arenaV3PrNumber : null,
+    candidate,
+    squash_candidate: push
+      ? makeArenaV3Candidate({
+          head: arenaV3PushHead,
+          squash: true,
+          supplemental
+        })
+      : null,
+    errors: []
+  }
+  return {
+    root,
+    actions,
+    readback,
+    options: {
+      readback,
+      gitBinding: actions.gitBinding,
+      changedPaths: [...(supplemental ? arenaV3AllPaths : arenaV3Paths)],
+      changeBaseSha: arenaV3BaseSha,
+      boundedScopeActive: false,
+      githubActionsContext: actions.context,
+      requireExactHeadEvidence: true
+    }
+  }
+}
+
+function validateArenaV3(options) {
+  const errors = []
+  const accepted = traceabilityValidator
+    .createArenaEditorialV3AuthorizationGate()
+    .validate({ ...options, errors })
+  return { accepted, errors }
+}
+
+test("Arena Editorial v0.3 descriptor seals the exact immutable OWNER issue body", () => {
+  assert.equal(
+    createHash("sha256").update(arenaV3IssueBody).digest("hex"),
+    traceabilityValidator.ARENA_EDITORIAL_V3_AUTHORIZATION_BODY_SHA256
+  )
+  assert.deepEqual(arenaV3Dispatch.authorized_paths, arenaV3Paths)
+  assert.equal(traceabilityValidator.createArenaEditorialV3AuthorizationGate().isBound(), true)
+})
+
+for (const draft of [true, false]) {
+  test(`Arena Editorial v0.3 accepts the authenticated exact-head ${draft ? "draft" : "ready"} PR`, (t) => {
+    const { options } = makeArenaV3Case(t, { draft })
+    const result = validateArenaV3(options)
+    assert.equal(result.accepted, true, result.errors.join("\n"))
+  })
+}
+
+const arenaV3PrTamperCases = [
+  [
+    "edited issue timestamp",
+    (o) => {
+      o.readback.authorization.updated_at = "2026-09-09T16:18:00Z"
+    }
+  ],
+  [
+    "edited issue body",
+    (o) => {
+      o.readback.authorization.body += " "
+    }
+  ],
+  [
+    "other PR replay",
+    (o) => {
+      o.readback.pull_request.number += 1
+    }
+  ],
+  [
+    "other branch replay",
+    (o) => {
+      o.readback.pull_request.head.ref = "feat/other-design"
+    }
+  ],
+  [
+    "reviewed tree drift",
+    (o) => {
+      o.readback.reviewed_head_commit.tree.sha = "e".repeat(40)
+    }
+  ],
+  [
+    "implementation before docs and contract",
+    (o) => {
+      o.readback.candidate.documentation_precedes_contract = false
+    }
+  ],
+  [
+    "transient path expansion",
+    (o) => {
+      o.readback.candidate.history_paths.push("README.md")
+    }
+  ],
+  [
+    "merge in PR history",
+    (o) => {
+      o.readback.candidate.merge_commit_count = 1
+    }
+  ],
+  [
+    "forged Actions object without the private authority Symbol",
+    (o) => {
+      o.githubActionsContext = structuredClone(o.githubActionsContext)
+    }
+  ]
+]
+for (const [name, mutate] of arenaV3PrTamperCases) {
+  test(`Arena Editorial v0.3 rejects PR ${name}`, (t) => {
+    const { options } = makeArenaV3Case(t)
+    mutate(options)
+    const result = validateArenaV3(options)
+    assert.equal(result.accepted, false)
+    assert.match(result.errors.join("\n"), /Arena Editorial v0\.3 authorization/u)
+  })
+}
+
+test("Arena Editorial v0.3 accepts the authenticated exact-tree squash push", (t) => {
+  const { options } = makeArenaV3Case(t, { push: true })
+  const result = validateArenaV3(options)
+  assert.equal(result.accepted, true, result.errors.join("\n"))
+})
+
+test("Arena Editorial v0.3 addendum seals the exact owner body and accepts the expanded PR closure", (t) => {
+  assert.equal(
+    createHash("sha256").update(arenaV3AddendumIssueBody).digest("hex"),
+    traceabilityValidator.ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_BODY_SHA256
+  )
+  assert.deepEqual(arenaV3Addendum.authorized_paths, arenaV3AddendumPaths)
+  const { options } = makeArenaV3Case(t, { supplemental: true })
+  const result = validateArenaV3(options)
+  assert.equal(result.accepted, true, result.errors.join("\n"))
+})
+
+test("Arena Editorial v0.3 addendum permits original-path support changes in its supplemental diff", (t) => {
+  const { options } = makeArenaV3Case(t, { supplemental: true })
+  options.readback.candidate.supplemental_changed_paths = [
+    ...arenaV3AddendumPaths,
+    "DESIGN.md",
+    "scripts/validate-traceability.mjs"
+  ]
+  const result = validateArenaV3(options)
+  assert.equal(result.accepted, true, result.errors.join("\n"))
+})
+
+test("Arena Editorial v0.3 addendum accepts the exact-tree squash push and rejects missing addendum authority", (t) => {
+  const acceptedFixture = makeArenaV3Case(t, { push: true, supplemental: true })
+  const accepted = validateArenaV3(acceptedFixture.options)
+  assert.equal(accepted.accepted, true, accepted.errors.join("\n"))
+
+  const rejectedFixture = makeArenaV3Case(t, { supplemental: true })
+  rejectedFixture.options.readback.addendum_authorization = null
+  const rejected = validateArenaV3(rejectedFixture.options)
+  assert.equal(rejected.accepted, false)
+  assert.match(rejected.errors.join("\n"), /addendum/u)
+})
+
+test("Arena Editorial v0.3 squash does not require the branch-only supplemental base ancestor", (t) => {
+  const { options } = makeArenaV3Case(t, { push: true, supplemental: true })
+  options.readback.squash_candidate.supplemental_base_ancestor = false
+  options.readback.squash_candidate.supplemental_changed_paths = undefined
+  options.readback.squash_candidate.supplemental_commits_postdate_authorization = false
+  const result = validateArenaV3(options)
+  assert.equal(result.accepted, true, result.errors.join("\n"))
+})
+
+const arenaV3PushReplayCases = [
+  [
+    "different terminal PR number",
+    (o) => {
+      o.readback.squash_commit_subject = "feat(web): Arena Editorial (#188)"
+    }
+  ],
+  [
+    "unmerged PR replay",
+    (o) => {
+      o.readback.pull_request.merged = false
+    }
+  ],
+  [
+    "different merge SHA",
+    (o) => {
+      o.readback.pull_request.merge_commit_sha = "e".repeat(40)
+    }
+  ],
+  [
+    "reviewed PR history without docs-first ordering",
+    (o) => {
+      o.readback.candidate.documentation_precedes_contract = false
+    }
+  ],
+  [
+    "reviewed PR tree different from squash tree",
+    (o) => {
+      o.readback.squash_candidate.tree_sha = "e".repeat(40)
+    }
+  ],
+  [
+    "squash with a second parent",
+    (o) => {
+      o.readback.squash_candidate.parent_shas.push(arenaV3PrHead)
+      o.gitBinding.head_parent_shas.push(arenaV3PrHead)
+      o.gitBinding.head_parent_count = 2
+    }
+  ],
+  [
+    "squash with transient history",
+    (o) => {
+      o.readback.squash_candidate.history_paths.push("README.md")
+    }
+  ]
+]
+for (const [name, mutate] of arenaV3PushReplayCases) {
+  test(`Arena Editorial v0.3 rejects push ${name}`, (t) => {
+    const { options } = makeArenaV3Case(t, { push: true })
+    mutate(options)
+    assert.equal(validateArenaV3(options).accepted, false)
+  })
+}
+
+test("Arena Editorial v0.3 unbound descriptor neither validates nor accesses GitHub", (t) => {
+  const { options } = makeArenaV3Case(t)
+  const gate = traceabilityValidator.createArenaEditorialV3AuthorizationGate({
+    schema_version: traceabilityValidator.ARENA_EDITORIAL_V3_AUTHORIZATION_SCHEMA,
+    ref: traceabilityValidator.ARENA_EDITORIAL_V3_AUTHORIZATION_REF,
+    api_url: traceabilityValidator.ARENA_EDITORIAL_V3_AUTHORIZATION_API_URL,
+    body_sha256: "0".repeat(64),
+    recorded_at: traceabilityValidator.ARENA_EDITORIAL_V3_AUTHORIZATION_RECORDED_AT,
+    base_sha: arenaV3BaseSha,
+    base_tree_sha: arenaV3BaseTree,
+    branch: arenaV3Branch,
+    authorized_paths: arenaV3Paths
+  })
+  let calls = 0
+  const readback = gate.inspect("controlled-root", {
+    fetchJson() {
+      calls++
+      throw new Error("must not access GitHub")
+    }
+  })
+  const errors = []
+  assert.equal(gate.isBound(), false)
+  assert.equal(readback.status, "UNAVAILABLE")
+  assert.equal(calls, 0)
+  assert.equal(gate.validate({ ...options, errors }), false)
+  assert.match(errors.join("\n"), /unbound/u)
+})
+
+for (const push of [false, true]) {
+  test(`Arena Editorial v0.3 API inspector uses permission-safe ${push ? "push" : "PR"} endpoints`, (t) => {
+    const fixture = makeArenaV3Case(t, { push })
+    const calls = []
+    const candidateHeads = []
+    const materializations = []
+    const fetchJson = (url) => {
+      calls.push(url)
+      if (url === traceabilityValidator.ARENA_EDITORIAL_V3_AUTHORIZATION_API_URL) {
+        return fixture.readback.authorization
+      }
+      if (url.endsWith(`/pulls/${arenaV3PrNumber}`)) return fixture.readback.pull_request
+      if (url.endsWith(`/git/commits/${arenaV3PrHead}`)) {
+        return fixture.readback.reviewed_head_commit
+      }
+      if (url.endsWith("/branches/main")) return fixture.readback.protected_main
+      throw new Error(`unexpected endpoint ${url}`)
+    }
+    const readback = traceabilityValidator
+      .createArenaEditorialV3AuthorizationGate()
+      .inspect("controlled-root", {
+        environment: fixture.actions.environment,
+        fetchJson,
+        headInspector: () => (push ? arenaV3PushHead : arenaV3PrHead),
+        commitSubjectInspector: () => `feat(web): apply Arena Editorial v0.3 (#${arenaV3PrNumber})`,
+        reviewedHeadMaterializer: (_root, binding) => {
+          materializations.push(binding)
+          if (!push) throw new Error("PR events must not materialize the reviewed head")
+          return arenaV3PrHead
+        },
+        candidateInspector: (_root, head) => {
+          candidateHeads.push(head)
+          return head === arenaV3PushHead
+            ? fixture.readback.squash_candidate
+            : fixture.readback.candidate
+        }
+      })
+    assert.equal(readback.status, "VERIFIED", readback.errors.join("\n"))
+    assert.deepEqual(calls, [
+      traceabilityValidator.ARENA_EDITORIAL_V3_AUTHORIZATION_API_URL,
+      `https://api.github.com/repos/bynanci/courtside-tw/pulls/${arenaV3PrNumber}`,
+      `https://api.github.com/repos/bynanci/courtside-tw/git/commits/${arenaV3PrHead}`,
+      "https://api.github.com/repos/bynanci/courtside-tw/branches/main"
+    ])
+    assert.equal(
+      calls.some((url) => /\/commits\/[^/]+\/pulls(?:$|\?)/u.test(url)),
+      false
+    )
+    assert.deepEqual(candidateHeads, push ? [arenaV3PrHead, arenaV3PushHead] : [arenaV3PrHead])
+    assert.deepEqual(
+      materializations,
+      push ? [{ number: arenaV3PrNumber, expectedHeadSha: arenaV3PrHead }] : []
+    )
+    const result = validateArenaV3({ ...fixture.options, readback })
+    assert.equal(result.accepted, true, result.errors.join("\n"))
+  })
+}
+
+test("Arena Editorial v0.3 inspector reads the addendum only when supplemental history is present", (t) => {
+  const fixture = makeArenaV3Case(t, { supplemental: true })
+  const calls = []
+  const readback = traceabilityValidator
+    .createArenaEditorialV3AuthorizationGate()
+    .inspect("controlled-root", {
+      environment: fixture.actions.environment,
+      fetchJson: (url) => {
+        calls.push(url)
+        if (url === traceabilityValidator.ARENA_EDITORIAL_V3_AUTHORIZATION_API_URL) {
+          return fixture.readback.authorization
+        }
+        if (url === traceabilityValidator.ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_API_URL) {
+          return fixture.readback.addendum_authorization
+        }
+        if (url.endsWith(`/pulls/${arenaV3PrNumber}`)) return fixture.readback.pull_request
+        if (url.endsWith(`/git/commits/${arenaV3PrHead}`)) {
+          return fixture.readback.reviewed_head_commit
+        }
+        if (url.endsWith("/branches/main")) return fixture.readback.protected_main
+        throw new Error(`unexpected endpoint ${url}`)
+      },
+      headInspector: () => arenaV3PrHead,
+      candidateInspector: () => fixture.readback.candidate
+    })
+  assert.equal(readback.status, "VERIFIED", readback.errors.join("\n"))
+  assert.equal(readback.addendum_authorization.number, 192)
+  assert.deepEqual(calls, [
+    traceabilityValidator.ARENA_EDITORIAL_V3_AUTHORIZATION_API_URL,
+    `https://api.github.com/repos/bynanci/courtside-tw/pulls/${arenaV3PrNumber}`,
+    `https://api.github.com/repos/bynanci/courtside-tw/git/commits/${arenaV3PrHead}`,
+    "https://api.github.com/repos/bynanci/courtside-tw/branches/main",
+    traceabilityValidator.ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_API_URL
+  ])
+})
+
+for (const subject of [
+  "feat(web): Arena Editorial v0.3",
+  `feat(web): Arena Editorial v0.3 (#${arenaV3PrNumber}) trailing`,
+  "feat(web): Arena Editorial v0.3 (#0)"
+]) {
+  test(`Arena Editorial v0.3 push inspector rejects nonterminal subject: ${subject}`, (t) => {
+    const fixture = makeArenaV3Case(t, { push: true })
+    const calls = []
+    const readback = traceabilityValidator
+      .createArenaEditorialV3AuthorizationGate()
+      .inspect("controlled-root", {
+        environment: fixture.actions.environment,
+        fetchJson: (url) => {
+          calls.push(url)
+          return fixture.readback.authorization
+        },
+        headInspector: () => arenaV3PushHead,
+        commitSubjectInspector: () => subject,
+        candidateInspector: () => {
+          throw new Error("candidate must not run")
+        }
+      })
+    assert.equal(readback.status, "UNAVAILABLE")
+    assert.deepEqual(calls, [traceabilityValidator.ARENA_EDITORIAL_V3_AUTHORIZATION_API_URL])
+  })
+}
+
+test("Arena Editorial v0.3 push inspector rejects a terminal PR replay", (t) => {
+  const fixture = makeArenaV3Case(t, { push: true })
+  const calls = []
+  const readback = traceabilityValidator
+    .createArenaEditorialV3AuthorizationGate()
+    .inspect("controlled-root", {
+      environment: fixture.actions.environment,
+      fetchJson: (url) => {
+        calls.push(url)
+        return url === traceabilityValidator.ARENA_EDITORIAL_V3_AUTHORIZATION_API_URL
+          ? fixture.readback.authorization
+          : fixture.readback.pull_request
+      },
+      headInspector: () => arenaV3PushHead,
+      commitSubjectInspector: () => "feat(web): replay (#188)",
+      candidateInspector: () => {
+        throw new Error("candidate must not run")
+      }
+    })
+  assert.equal(readback.status, "UNAVAILABLE")
+  assert.deepEqual(calls, [
+    traceabilityValidator.ARENA_EDITORIAL_V3_AUTHORIZATION_API_URL,
+    "https://api.github.com/repos/bynanci/courtside-tw/pulls/188"
+  ])
+})
+
+for (const [name, materialize] of [
+  [
+    "reviewed-head fetch failure",
+    () => {
+      throw new Error("private-fetch-detail-must-not-leak")
+    }
+  ],
+  ["missing reviewed head", () => null],
+  ["mismatched reviewed head", () => "e".repeat(40)]
+]) {
+  test(`Arena Editorial v0.3 push inspector rejects ${name}`, (t) => {
+    const fixture = makeArenaV3Case(t, { push: true })
+    const calls = []
+    const readback = traceabilityValidator
+      .createArenaEditorialV3AuthorizationGate()
+      .inspect("controlled-root", {
+        environment: fixture.actions.environment,
+        fetchJson: (url) => {
+          calls.push(url)
+          if (url === traceabilityValidator.ARENA_EDITORIAL_V3_AUTHORIZATION_API_URL) {
+            return fixture.readback.authorization
+          }
+          if (url.endsWith(`/pulls/${arenaV3PrNumber}`)) {
+            return fixture.readback.pull_request
+          }
+          throw new Error(`unexpected endpoint ${url}`)
+        },
+        headInspector: () => arenaV3PushHead,
+        commitSubjectInspector: () => `feat(web): apply Arena Editorial v0.3 (#${arenaV3PrNumber})`,
+        reviewedHeadMaterializer: materialize,
+        candidateInspector: () => {
+          throw new Error("candidate must not run")
+        }
+      })
+    assert.equal(readback.status, "UNAVAILABLE")
+    assert.deepEqual(calls, [
+      traceabilityValidator.ARENA_EDITORIAL_V3_AUTHORIZATION_API_URL,
+      `https://api.github.com/repos/bynanci/courtside-tw/pulls/${arenaV3PrNumber}`
+    ])
+    assert.doesNotMatch(JSON.stringify(readback), /private-fetch-detail/u)
+  })
+}
+
+test("Arena Editorial v0.3 Git inspector proves docs-first PR history and exact squash topology", (t) => {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "arena-v3-inspector-git-"))
+  t.after(() => fs.rmSync(root, { recursive: true, force: true }))
+  const gitEnvironment = {
+    ...process.env,
+    GIT_AUTHOR_DATE: "2026-09-10T03:10:00Z",
+    GIT_COMMITTER_DATE: "2026-09-10T03:10:00Z"
+  }
+  const git = (...args) =>
+    execFileSync("git", args, {
+      cwd: root,
+      encoding: "utf8",
+      env: gitEnvironment,
+      stdio: ["ignore", "pipe", "pipe"]
+    }).trim()
+  const write = (relativePath, content) => {
+    const absolutePath = path.join(root, relativePath)
+    fs.mkdirSync(path.dirname(absolutePath), { recursive: true })
+    fs.writeFileSync(absolutePath, content)
+  }
+  const amend = (relativePath, label) => {
+    const absolutePath = path.join(root, relativePath)
+    const current = fs.existsSync(absolutePath) ? fs.readFileSync(absolutePath, "utf8") : ""
+    write(relativePath, `${current}\n${label}\n`)
+  }
+  const commit = (message) => {
+    git("add", "--all")
+    git("commit", "--quiet", "-m", message)
+    return git("rev-parse", "HEAD")
+  }
+  execFileSync("git", ["clone", "--quiet", "--shared", "--no-checkout", repositoryRoot, root], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"]
+  })
+  git("config", "user.name", "Arena gate fixture")
+  git("config", "user.email", "arena-gate@example.test")
+  git("checkout", "--quiet", "--detach", arenaV3BaseSha)
+
+  for (const relativePath of arenaV3DocumentationPaths) amend(relativePath, "docs fixture")
+  commit("docs(design): controlled Arena fixture")
+  amend(arenaV3ContractPath, "contract fixture")
+  commit("test(web): controlled Arena fixture")
+  for (const relativePath of arenaV3Paths) {
+    if (![...arenaV3DocumentationPaths, arenaV3ContractPath].includes(relativePath)) {
+      amend(relativePath, "implementation fixture")
+    }
+  }
+  const prHead = commit("feat(web): controlled Arena fixture")
+  const tree = git("rev-parse", `${prHead}^{tree}`)
+  const pr = makeArenaV3PullRequest()
+  pr.head.sha = prHead
+  const actions = makeArenaV3Actions(root, { pr })
+  actions.gitBinding.head = prHead
+  actions.gitBinding.head_tree_sha = tree
+  const context = traceabilityValidator.inspectGitHubActionsContext({
+    environment: actions.environment,
+    gitBinding: actions.gitBinding
+  })
+  assert.equal(context.status, "MATCHED_GITHUB_ACTIONS_METADATA", context.errors.join("\n"))
+  const issue = makeArenaV3Issue()
+  const protectedMain = {
+    name: "main",
+    protected: true,
+    commit: { sha: arenaV3BaseSha }
+  }
+  const commitReadback = { sha: prHead, tree: { sha: tree } }
+  const fetchFor = (pullRequest, main) => (url) => {
+    if (url === traceabilityValidator.ARENA_EDITORIAL_V3_AUTHORIZATION_API_URL) return issue
+    if (url.endsWith(`/pulls/${arenaV3PrNumber}`)) return pullRequest
+    if (url.endsWith(`/git/commits/${prHead}`)) return commitReadback
+    if (url.endsWith("/branches/main")) return main
+    throw new Error(`unexpected endpoint ${url}`)
+  }
+  const gate = traceabilityValidator.createArenaEditorialV3AuthorizationGate()
+  const prReadback = gate.inspect(root, {
+    environment: actions.environment,
+    fetchJson: fetchFor(pr, protectedMain)
+  })
+  assert.equal(prReadback.status, "VERIFIED", prReadback.errors.join("\n"))
+  assert.equal(prReadback.candidate.commit_count, 3)
+  assert.equal(prReadback.candidate.merge_commit_count, 0)
+  assert.equal(prReadback.candidate.documentation_precedes_contract, true)
+  assert.deepEqual(
+    prReadback.candidate.documentation_commit_paths,
+    [...arenaV3DocumentationPaths].sort()
+  )
+  assert.deepEqual(prReadback.candidate.contract_commit_paths, [arenaV3ContractPath])
+  assert.deepEqual(prReadback.candidate.history_paths, [...arenaV3Paths].sort())
+  const prResult = validateArenaV3({
+    readback: prReadback,
+    gitBinding: actions.gitBinding,
+    changedPaths: [...arenaV3Paths],
+    changeBaseSha: arenaV3BaseSha,
+    boundedScopeActive: false,
+    githubActionsContext: context,
+    requireExactHeadEvidence: true
+  })
+  assert.equal(prResult.accepted, true, prResult.errors.join("\n"))
+
+  const squashHead = git(
+    "commit-tree",
+    tree,
+    "-p",
+    arenaV3BaseSha,
+    "-m",
+    `feat(web): controlled Arena fixture (#${arenaV3PrNumber})`
+  )
+  git("checkout", "--quiet", "--detach", squashHead)
+  const mergedPr = makeArenaV3PullRequest({ push: true })
+  mergedPr.head.sha = prHead
+  mergedPr.merge_commit_sha = squashHead
+  const pushMain = {
+    name: "main",
+    protected: true,
+    commit: { sha: squashHead }
+  }
+  const pushEventPath = path.join(root, "arena-v3-actual-push.json")
+  fs.writeFileSync(
+    pushEventPath,
+    JSON.stringify({
+      repository: { full_name: "bynanci/courtside-tw" },
+      ref: "refs/heads/main",
+      before: arenaV3BaseSha,
+      after: squashHead
+    })
+  )
+  const pushEnvironment = {
+    ...actions.environment,
+    GITHUB_EVENT_NAME: "push",
+    GITHUB_EVENT_PATH: pushEventPath,
+    GITHUB_SHA: squashHead,
+    GITHUB_REF: "refs/heads/main",
+    GITHUB_REF_NAME: "main",
+    GITHUB_BASE_REF: "",
+    GITHUB_HEAD_REF: ""
+  }
+  const pushBinding = {
+    status: "CLEAN",
+    head: squashHead,
+    head_tree_sha: tree,
+    change_base_sha: arenaV3BaseSha,
+    change_base_ancestor: true,
+    head_parent_count: 1,
+    head_parent_shas: [arenaV3BaseSha]
+  }
+  const pushContext = traceabilityValidator.inspectGitHubActionsContext({
+    environment: pushEnvironment,
+    gitBinding: pushBinding
+  })
+  assert.equal(pushContext.status, "MATCHED_GITHUB_ACTIONS_METADATA", pushContext.errors.join("\n"))
+  const materialized = []
+  const pushReadback = gate.inspect(root, {
+    environment: pushEnvironment,
+    fetchJson: fetchFor(mergedPr, pushMain),
+    reviewedHeadMaterializer: (_root, binding) => {
+      materialized.push(binding)
+      return prHead
+    }
+  })
+  assert.equal(pushReadback.status, "VERIFIED", pushReadback.errors.join("\n"))
+  assert.deepEqual(materialized, [{ number: arenaV3PrNumber, expectedHeadSha: prHead }])
+  assert.equal(pushReadback.candidate.head, prHead)
+  assert.equal(pushReadback.candidate.documentation_precedes_contract, true)
+  assert.equal(pushReadback.squash_candidate.head, squashHead)
+  assert.equal(pushReadback.squash_candidate.commit_count, 1)
+  assert.deepEqual(pushReadback.squash_candidate.parent_shas, [arenaV3BaseSha])
+  const pushResult = validateArenaV3({
+    readback: pushReadback,
+    gitBinding: pushBinding,
+    changedPaths: [...arenaV3Paths],
+    changeBaseSha: arenaV3BaseSha,
+    boundedScopeActive: false,
+    githubActionsContext: pushContext,
+    requireExactHeadEvidence: true
+  })
+  assert.equal(pushResult.accepted, true, pushResult.errors.join("\n"))
 })
 
 test("T086 check-run lifecycle never sends a null conclusion while in progress", () => {
@@ -13656,6 +14556,83 @@ test("Studio completion sealed singleton reaches full validator for draft, ready
     }
   }
 })
+const oidcSecurityRemediationBinding = Object.freeze({
+  schema_version: "courtside-oidc-security-remediation-owner-dispatch/v1",
+  ref: "https://github.com/bynanci/courtside-tw/issues/188",
+  api_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/188",
+  body_sha256: "863e4202b768bcc7ae88f6f43700866bc944113ad23c5a46e7f6d7f10602a929",
+  recorded_at: "2026-09-09T23:15:42Z",
+  base_sha: "2cc2cc5acac03af3667126ad28c1e80a58edb7b9",
+  base_tree_sha: "958b1af410e7d0b521469a8f4e24d131c75b7a91",
+  branch: "fix/oidc-security-mock-oauth2-6-0-2",
+  authorized_paths: [
+    "infra/compose/oidc/Dockerfile",
+    "infra/compose/compose.yaml",
+    "scripts/test/validate-traceability.test.mjs",
+    "scripts/validate-traceability.mjs"
+  ],
+  target: {
+    version: "6.0.2",
+    manifest_digest: "sha256:b538810afd589d42fbfb856c588c2065eaeed1dc528d6c532972048e67fc2aff",
+    local_compose_tag: "courtside-tw/mock-oauth2-server:6.0.2-busybox1.38"
+  }
+})
+
+test("OIDC security remediation authority fails closed when its exact scope or immutable pin drifts", () => {
+  const gate = createOidcSecurityRemediationAuthorizationGate(oidcSecurityRemediationBinding)
+  assert.equal(gate.isBound(), true)
+  assert.equal(gate.allowsPath("infra/compose/oidc/Dockerfile"), true)
+  assert.equal(gate.allowsPath(".github/workflows/security.yml"), false)
+
+  const driftedScope = structuredClone(oidcSecurityRemediationBinding)
+  driftedScope.authorized_paths.push(".github/workflows/security.yml")
+  assert.equal(createOidcSecurityRemediationAuthorizationGate(driftedScope).isBound(), false)
+
+  const driftedPin = structuredClone(oidcSecurityRemediationBinding)
+  driftedPin.target.version = "6.0.3"
+  assert.equal(createOidcSecurityRemediationAuthorizationGate(driftedPin).isBound(), false)
+
+  const errors = []
+  assert.equal(
+    gate.validate({
+      readback: null,
+      gitBinding: null,
+      changedPaths: oidcSecurityRemediationBinding.authorized_paths,
+      changeBaseSha: oidcSecurityRemediationBinding.base_sha,
+      boundedScopeActive: false,
+      githubActionsContext: null,
+      requireExactHeadEvidence: true,
+      errors
+    }),
+    false
+  )
+  assert.match(
+    errors.join("\n"),
+    /OIDC security remediation dispatch must contain a structured body/u
+  )
+
+  const proseErrors = []
+  assert.equal(
+    gate.validate({
+      readback: {
+        status: "UNAVAILABLE",
+        source: "github-api",
+        authorization: {
+          body: "<!-- oidc-security-remediation:owner-dispatch:v1:start -->\nDispatch context.\n```json\n{}\n```\nAcceptance context.\n<!-- oidc-security-remediation:owner-dispatch:v1:end -->"
+        }
+      },
+      gitBinding: null,
+      changedPaths: oidcSecurityRemediationBinding.authorized_paths,
+      changeBaseSha: oidcSecurityRemediationBinding.base_sha,
+      boundedScopeActive: false,
+      githubActionsContext: null,
+      requireExactHeadEvidence: true,
+      errors: proseErrors
+    }),
+    false
+  )
+  assert.doesNotMatch(proseErrors.join("\n"), /JSON fence is invalid/u)
+})
 
 for (const unsafePath of [
   "apps/web/../escape.ts",
@@ -14435,82 +15412,4 @@ test("Publication cache sealed singleton reaches full validator for draft, ready
       fs.rmSync(temporary, { recursive: true, force: true })
     }
   }
-})
-
-const oidcSecurityRemediationBinding = Object.freeze({
-  schema_version: "courtside-oidc-security-remediation-owner-dispatch/v1",
-  ref: "https://github.com/bynanci/courtside-tw/issues/188",
-  api_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/188",
-  body_sha256: "863e4202b768bcc7ae88f6f43700866bc944113ad23c5a46e7f6d7f10602a929",
-  recorded_at: "2026-09-09T23:15:42Z",
-  base_sha: "2cc2cc5acac03af3667126ad28c1e80a58edb7b9",
-  base_tree_sha: "958b1af410e7d0b521469a8f4e24d131c75b7a91",
-  branch: "fix/oidc-security-mock-oauth2-6-0-2",
-  authorized_paths: [
-    "infra/compose/oidc/Dockerfile",
-    "infra/compose/compose.yaml",
-    "scripts/test/validate-traceability.test.mjs",
-    "scripts/validate-traceability.mjs"
-  ],
-  target: {
-    version: "6.0.2",
-    manifest_digest: "sha256:b538810afd589d42fbfb856c588c2065eaeed1dc528d6c532972048e67fc2aff",
-    local_compose_tag: "courtside-tw/mock-oauth2-server:6.0.2-busybox1.38"
-  }
-})
-
-test("OIDC security remediation authority fails closed when its exact scope or immutable pin drifts", () => {
-  const gate = createOidcSecurityRemediationAuthorizationGate(oidcSecurityRemediationBinding)
-  assert.equal(gate.isBound(), true)
-  assert.equal(gate.allowsPath("infra/compose/oidc/Dockerfile"), true)
-  assert.equal(gate.allowsPath(".github/workflows/security.yml"), false)
-
-  const driftedScope = structuredClone(oidcSecurityRemediationBinding)
-  driftedScope.authorized_paths.push(".github/workflows/security.yml")
-  assert.equal(createOidcSecurityRemediationAuthorizationGate(driftedScope).isBound(), false)
-
-  const driftedPin = structuredClone(oidcSecurityRemediationBinding)
-  driftedPin.target.version = "6.0.3"
-  assert.equal(createOidcSecurityRemediationAuthorizationGate(driftedPin).isBound(), false)
-
-  const errors = []
-  assert.equal(
-    gate.validate({
-      readback: null,
-      gitBinding: null,
-      changedPaths: oidcSecurityRemediationBinding.authorized_paths,
-      changeBaseSha: oidcSecurityRemediationBinding.base_sha,
-      boundedScopeActive: false,
-      githubActionsContext: null,
-      requireExactHeadEvidence: true,
-      errors
-    }),
-    false
-  )
-  assert.match(
-    errors.join("\n"),
-    /OIDC security remediation dispatch must contain a structured body/u
-  )
-
-  const proseErrors = []
-  assert.equal(
-    gate.validate({
-      readback: {
-        status: "UNAVAILABLE",
-        source: "github-api",
-        authorization: {
-          body: "<!-- oidc-security-remediation:owner-dispatch:v1:start -->\nDispatch context.\n```json\n{}\n```\nAcceptance context.\n<!-- oidc-security-remediation:owner-dispatch:v1:end -->"
-        }
-      },
-      gitBinding: null,
-      changedPaths: oidcSecurityRemediationBinding.authorized_paths,
-      changeBaseSha: oidcSecurityRemediationBinding.base_sha,
-      boundedScopeActive: false,
-      githubActionsContext: null,
-      requireExactHeadEvidence: true,
-      errors: proseErrors
-    }),
-    false
-  )
-  assert.doesNotMatch(proseErrors.join("\n"), /JSON fence is invalid/u)
 })

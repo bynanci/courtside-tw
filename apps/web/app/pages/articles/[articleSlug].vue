@@ -30,6 +30,7 @@ import {
   type ReadingBlockAnchor
 } from "../../features/reader/composables/useLocalReadingProgress"
 import ContentDocumentRenderer from "../../components/content-blocks/ContentDocumentRenderer.vue"
+import PublicSiteHeader from "../../components/navigation/PublicSiteHeader.vue"
 import ReaderJourneyRail from "../../components/reader/ReaderJourneyRail.vue"
 import type { ContentBlockTelemetry } from "../../components/content-blocks/registry"
 import { formatMediaAttribution } from "../../components/content-blocks/rendering"
@@ -1012,13 +1013,11 @@ onBeforeUnmount(() => {
 <template>
   <div class="site-page">
     <a class="skip-link" href="#main-content">跳到主要內容</a>
-    <header class="site-header">
-      <NuxtLink to="/" class="site-brand">Courtside TW</NuxtLink>
-      <nav aria-label="主要導覽">
-        <NuxtLink to="/">首頁</NuxtLink>
-        <NuxtLink to="/issues">所有期數</NuxtLink>
-      </nav>
-    </header>
+    <PublicSiteHeader
+      mode="reader"
+      :context-label="articleIssueSlug ? '← 返回本期目錄' : '← 返回所有期數'"
+      :context-to="articleIssueSlug ? issueRoute(articleIssueSlug) : '/issues'"
+    />
 
     <main id="main-content" class="site-shell article-reader" tabindex="-1">
       <NuxtLink v-if="articleIssueSlug" :to="issueRoute(articleIssueSlug)" class="back-link"
@@ -1037,9 +1036,11 @@ onBeforeUnmount(() => {
           :percent="clientReady ? visibleReadingProgress : 0"
           :motion-mode="readingProgressMotionMode"
         />
-        <ReaderJourneyRail :active-step="3" tone="paper" />
         <header class="article-header" data-testid="article-header">
-          <p class="eyebrow">Public Reading</p>
+          <div class="article-header__signal">
+            <span>Story</span>
+            <span>Public Reading</span>
+          </div>
           <h1 id="article-heading" tabindex="-1">{{ article.title }}</h1>
           <p v-if="article.dek" class="article-dek">{{ article.dek }}</p>
           <div class="article-meta">
@@ -1095,6 +1096,7 @@ onBeforeUnmount(() => {
             </span>
           </div>
         </header>
+        <ReaderJourneyRail :active-step="3" tone="paper" />
 
         <section
           v-if="resumePrompt"

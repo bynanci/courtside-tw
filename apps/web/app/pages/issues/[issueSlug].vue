@@ -4,8 +4,9 @@ import { definePageMeta } from "#imports"
 import { onBeforeUnmount, onMounted, watch } from "vue"
 
 import IssueToc from "../../components/issues/IssueToc.vue"
-import ReadingState from "../../components/issues/ReadingState.vue"
 import SharedIssueCover from "../../components/issues/SharedIssueCover.vue"
+import PublicMobileDock from "../../components/navigation/PublicMobileDock.vue"
+import PublicSiteHeader from "../../components/navigation/PublicSiteHeader.vue"
 import ReaderJourneyRail from "../../components/reader/ReaderJourneyRail.vue"
 import OfflineDownloadPanel from "../../features/offline/components/OfflineDownloadPanel.vue"
 import { canonicalUrl, jsonLd } from "../../composables/public-seo"
@@ -119,15 +120,7 @@ onBeforeUnmount(() => stopIssueAnalyticsWatch?.())
 <template>
   <div class="site-page issue-detail-page">
     <a class="skip-link" href="#main-content">跳到主要內容</a>
-    <div class="issue-page-header-wrap">
-      <header class="site-header site-header--hero">
-        <NuxtLink to="/" class="site-brand">Courtside TW</NuxtLink>
-        <nav aria-label="主要導覽">
-          <NuxtLink to="/">首頁</NuxtLink>
-          <NuxtLink to="/issues">所有期數</NuxtLink>
-        </nav>
-      </header>
-    </div>
+    <PublicSiteHeader tone="hero" current="issues" />
 
     <main id="main-content" class="issue-page" tabindex="-1">
       <section v-if="issue" class="issue-hero" aria-labelledby="issue-heading">
@@ -172,19 +165,31 @@ onBeforeUnmount(() => stopIssueAnalyticsWatch?.())
             :issue-slug="issueSlug"
           />
         </template>
-        <ReadingState
+        <section
           v-else-if="error instanceof PublicIssueApiError && error.statusCode === 404"
-          title="找不到這一期"
-          body="這期可能尚未發布、已撤回，或網址不正確。"
-        />
-        <ReadingState
-          v-else-if="error"
-          tone="error"
-          title="期數目錄暫時無法載入"
-          body="請稍後重試。"
-        />
-        <ReadingState v-else-if="!pending" title="找不到這一期" body="請從公開期數目錄重新開始。" />
+          class="reading-state reading-state--empty"
+        >
+          <p class="eyebrow">雜誌檔案</p>
+          <h1>找不到這一期</h1>
+          <p>這期可能尚未發布、已撤回，或網址不正確。</p>
+        </section>
+        <section v-else-if="error" class="reading-state reading-state--error" aria-live="polite">
+          <p class="eyebrow">暫時無法載入</p>
+          <h1>期數目錄暫時無法載入</h1>
+          <p>請稍後重試。</p>
+        </section>
+        <section v-else-if="!pending" class="reading-state reading-state--empty">
+          <p class="eyebrow">雜誌檔案</p>
+          <h1>找不到這一期</h1>
+          <p>請從公開期數目錄重新開始。</p>
+        </section>
+        <section v-else class="reading-state" aria-live="polite">
+          <p class="eyebrow">雜誌檔案</p>
+          <h1>正在載入期數</h1>
+          <p>請稍候。</p>
+        </section>
       </div>
     </main>
+    <PublicMobileDock current="issues" />
   </div>
 </template>

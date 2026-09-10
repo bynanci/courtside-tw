@@ -3,6 +3,8 @@ import { definePageMeta } from "#imports"
 
 import IssueCoverCard from "../../components/issues/IssueCoverCard.vue"
 import ReadingState from "../../components/issues/ReadingState.vue"
+import PublicMobileDock from "../../components/navigation/PublicMobileDock.vue"
+import PublicSiteHeader from "../../components/navigation/PublicSiteHeader.vue"
 import { canonicalUrl, jsonLd } from "../../composables/public-seo"
 import { fetchPublicIssuePage } from "../../features/issues/public-issue-api"
 
@@ -47,13 +49,7 @@ useHead(() => ({
 <template>
   <div class="site-page">
     <a class="skip-link" href="#main-content">跳到主要內容</a>
-    <header class="site-header">
-      <NuxtLink to="/" class="site-brand">Courtside TW</NuxtLink>
-      <nav aria-label="主要導覽">
-        <NuxtLink to="/">首頁</NuxtLink>
-        <NuxtLink to="/issues">所有期數</NuxtLink>
-      </nav>
-    </header>
+    <PublicSiteHeader current="issues" />
 
     <main id="main-content" class="site-shell issue-index" tabindex="-1">
       <div class="page-intro">
@@ -77,5 +73,6 @@ useHead(() => ({
         body="完成發布與權利檢查的期數會出現在這裡。"
       />
     </main>
+    <PublicMobileDock current="issues" />
   </div>
 </template>

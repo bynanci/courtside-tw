@@ -1,14 +1,14 @@
 # DESIGN.md — Taiwan Basketball Digital Magazine
 
-**Status**: INITIAL VISUAL BASELINE APPROVED v0.2 — implementation contract; brand and production assets remain gated  
-**Date**: 2026-08-06  
-**Approved by**: Mark, 2026-08-06  
-**Working title**: `Courtside TW` is a repository label, not an approved brand name  
-**Primary platform**: Mobile-first SSR web; installable/offline PWA behavior remains roadmap-gated  
-**Implementation stack**: Nuxt 4.5, Motion for Vue, bounded p5.js preset  
-**Theme baseline**: System-adaptive light/dark surfaces; explicit manual override is optional  
-**Approved visual reference**: [`generated_images/exec-93223fcc-3e65-4571-8df1-3a8f1d47e4ec.png`](generated_images/exec-93223fcc-3e65-4571-8df1-3a8f1d47e4ec.png)  
-**Owners**: Product owner, design owner, engineering owner, PUBLISHER content owner  
+**Status**: ARENA EDITORIAL v0.3 — owner-authorized implementation contract; brand and production assets remain gated \
+**Date**: 2026-09-09 \
+**Approved by**: repository owner via [issue #186](https://github.com/bynanci/courtside-tw/issues/186), with active successor dispatch [issue #191](https://github.com/bynanci/courtside-tw/issues/191), 2026-09-09 \
+**Working title**: `Courtside TW` is a repository label, not an approved brand name \
+**Primary platform**: Mobile-first SSR web; installable/offline PWA behavior remains roadmap-gated \
+**Implementation stack**: Nuxt 4.5, Motion for Vue, bounded p5.js preset \
+**Theme baseline**: System-adaptive light/dark surfaces; explicit manual override is optional \
+**Approved visual reference**: supplied Arena Editorial montage, style-reference only; production details are in [`docs/design/arena-editorial-v3.md`](docs/design/arena-editorial-v3.md) \
+**Owners**: Product owner, design owner, engineering owner, PUBLISHER content owner \
 
 ## 0. Decision summary
 
@@ -125,19 +125,19 @@ flowchart TD
 | / | 最新一期、精選文章、過往期刊入口 | 開始閱讀 | Mobile compact app bar；Hero CTA 在首屏或第一個 scroll segment |
 | /issues | 期刊封面與摘要 | 查看一期 | 單欄起始，較大 viewport 才擴成 grid |
 | /issues/[issueSlug] | 封面、期號、主題、分章 TOC | 開啟文章 | TOC 為垂直語意清單，不使用水平 carousel |
-| /articles/[articleSlug] | 長篇正文與 11 種 block | 繼續閱讀 | 返回 issue、閱讀進度、分享；mobile 用 contextual Reader Dock 取代 global bottom nav |
-| /search（P2） | 關鍵字、filters、結果 | 開啟結果 | Flag 啟用後才出現在導覽；預設顯示最近／熱門主題 |
-| /library（P2） | 收藏與續讀 | 繼續閱讀 | Flag 啟用後才出現；未登入時不影響公開閱讀 |
+| /articles/[articleSlug] | 長篇正文與 11 種 block | 繼續閱讀 | 返回 issue、閱讀進度、分享與頁尾 prev／next；mobile 不顯示 global dock |
+| /search | 關鍵字、filters、結果 | 開啟結果 | 已啟用的公開 route；filters 與結果狀態維持既有資料契約 |
+| /library | 收藏、續讀與離線狀態 | 繼續閱讀 | 已啟用的 route；guest／登入狀態都不得阻擋公開閱讀 |
 | /studio/* | 建稿、審稿、rights、發布 | 儲存／送審／核准 | Desktop split view；mobile 採單欄與 explicit controls |
 
 ### 5.1 Public shell
 
 - 手機 app bar 只保留當前已啟用的品牌／返回與必要 actions；每個 icon 都有文字替代與 44×44 CSS px hit area。
-- P1 未啟用的搜尋／書庫 route 必須完全隱藏，不顯示 disabled 或「即將推出」的 nav item。Desktop primary nav 上限四項。
-- Article route 採 distraction-reduced shell：top bar 提供「返回本期目錄」與分享；mobile Reader Dock 提供目錄／上一篇／下一篇，並取代 global bottom nav。
-- Reader Dock 與 app bar 不得依捲動方向自動隱藏；top bar 高度至少 56px，dock 操作預設 48×48 CSS px，內容底部需加 dock + safe-area inset。
+- Public shell 只列出 current-main 已啟用的首頁、期數、搜尋與書庫，不顯示 disabled 或「即將推出」入口。Desktop primary nav 上限四項。
+- Article route 採 distraction-reduced shell：top bar 只保留 contextual return；有期數脈絡時顯示「返回本期目錄」，否則顯示「返回所有期數」。分享／收藏位於 article metadata，上一篇／下一篇與回目錄維持頁尾正常文件流；mobile 不載入 global bottom dock。
+- Global mobile dock 與 app bar 不得依捲動方向自動隱藏；top bar 高度至少 56px，dock 操作預設 48×48 CSS px，非 article 頁內容底部需加 dock + safe-area inset。
 - 第一篇／最後一篇缺少的方向顯示非互動文字，不保留空 anchor；存在的 SSR links 使用 `rel="prev"`／`rel="next"`。
-- 不混用同層級的 sidebar、tabs 與 bottom nav；P2 至少有三個啟用目的地後才評估 global bottom nav，文章頁仍不得同時顯示兩套 bottom navigation。
+- 不混用同層級的 sidebar、tabs 與 bottom nav；目前四個已啟用目的地共用 global mobile dock，文章頁不得顯示它或同時顯示兩套 bottom navigation。
 - 分享以普通 canonical link 為 SSR／no-JS 基線；Web Share API 只能 progressive enhance，不能是唯一分享方式。
 
 ## 6. Responsive layout contract
@@ -147,7 +147,7 @@ flowchart TD
 | Class | Test width | Grid | Gutter | Intended behavior |
 | --- | ---: | ---: | ---: | --- |
 | Reflow floor | 320px | 4 columns | 16px | 公開 route 不失去內容／操作；不是獨立視覺稿 |
-| Mobile baseline | 375px | 4 columns | 16px | 單欄；contextual Reader Dock；TOC 在正常文件流 |
+| Mobile baseline | 375px | 4 columns | 16px | 單欄；global dock 僅供非 article surface；文章導覽與 TOC 在正常文件流 |
 | Representative Android | 412px / Pixel 6 | 4 columns | 20px | Motion／p5、safe area、文字放大與行動網路基準 |
 | Tablet | 768px | 8 columns | 24px | Reader 仍單一主欄；Issue cover／TOC 可 5:7 排列 |
 | Desktop | 1024px | 12 columns | 32px | Sticky TOC rail、680–720px body、完整 Studio authoring 起點 |
@@ -419,7 +419,7 @@ Component token examples：
 - Header：section、title、dek、作者、發布／更新時間、閱讀時間、issue link。
 - Reader page、article surface、caption、pull quote、Reader Dock 與 inline data insert 全部引用 system-adaptive semantic token；不得在 block renderer 寫死 white／black。
 - Light 使用 bone-paper page + warm surface；dark 使用 arena black page + charcoal surface。兩者保持相同 content order、measure、spacing 與 affordance，不把 dark mode 當另一份版型。
-- Top bar：左側「返回本期目錄」、右側分享／更多；窄螢幕可省略中間期號，但不可截斷核心標題。返回 control 必須有包含「本期目錄」的 accessible name。
+- Top bar：品牌旁保留 contextual return；有期數脈絡時為「返回本期目錄」，否則為「返回所有期數」。分享／收藏放在 article metadata，不製造第二套 sticky actions。窄螢幕不可截斷返回 control 的核心語意，其 accessible name 必須清楚命名返回目標。
 - Reading progress：頂部視覺條 + 可讀文字；不把 percentage 當唯一恢復定位，也不在每次 scroll 用 `aria-live` 播報。
 - Body：paragraph rhythm 優先，不讓 sticky UI、分享工具或動畫打斷段落。
 - Media breakout 在 desktop 擴欄，在 mobile 回到 viewport width 並保留 gutter／caption。
@@ -728,7 +728,7 @@ No-JS 時必須保留 Home → issue → `#toc` → article SSR links、完整 h
 
 | Decision | Current baseline | Owner / gate | Blocks |
 | --- | --- | --- | --- |
-| 初版視覺方向 | Arena Editorial V2 已核准 | Mark／design owner | 已解除 design-direction gate |
+| 公開閱讀視覺方向 | Arena Editorial v0.3 已由 #186 授權 | Repository owner／design owner | 合併前仍需 exact-head design acceptance |
 | 雜誌正式名稱與 Logo | Courtside TW 為 working title | Product / brand owner | Production brand acceptance |
 | 最終品牌色票 | v0.2 Arena fallback 可供實作；production 前仍需品牌核准 | Brand owner + accessibility proof | Production visual sign-off |
 | 字體檔與授權 | system fallback；Noto Sans TC 與 licensed condensed display 候選 | Brand／legal／rights owner | Webfont shipping |
@@ -740,11 +740,31 @@ No-JS 時必須保留 Home → issue → `#toc` → article SSR links、完整 h
 
 開始 T003 root baseline 或任何 UI scaffold 前，必須完成：
 
-- DESIGN.md v0.2 已加入 PR 並完成 traceability read-back。
-- Mark 已於 2026-08-06 核准 Arena Editorial V2 初版視覺方向；此項不再是 open gate。
+- DESIGN.md v0.3 與 `docs/design/arena-editorial-v3.md` 必須先於 production implementation commit。
+- Repository owner 已於 2026-09-09 透過 issue #186 授權 Arena Editorial v0.3；protected `main` 前進後，active exact-base／exact-path dispatch 由 [issue #191](https://github.com/bynanci/courtside-tw/issues/191) 綁定至 `bf89d99320296e9febf2eab3dac8aeea08f842a0`（tree `221fbf3df36b1b3be50095c232bfd70d19d4ccfd`）。瀏覽器／可及性證據由 successor [issue #192](https://github.com/bynanci/courtside-tw/issues/192) 綁定；#186／#190 保持歷史不可變。
 - Root theme contract 使用三層 tokens，no-override 首幀跟隨系統，不能先建 light-only component 再補 dark patch。
 - 核准圖只作 reference；AI 人物、placeholder 文案與未授權標誌不得進入 scaffold fixtures 或 production assets。
 - 未決品牌／字體／媒體項目保留為 named gate，不被假設為已解決。
 - T003 graph 將 design preflight 標為 done，implementation frontier 才能回到 root baseline。
 
-本文件核准完成 design-direction gate，但依治理仍須以 PR merge／main read-back 作遠端生效證據。下一個 implementation action 僅能是 T003 的 root workspace baseline；T004 Nuxt、T005 Spring 與後續 UI implementation 仍分開 dispatch。
+本文件核准 Arena Editorial v0.3 的 design-direction gate；遠端生效仍以 exact-head PR、squash merge 與 protected-main read-back 為準。此變更不改寫 canonical T001–T112，且 T086 繼續維持 HOLD。
+
+
+## 20. Arena Editorial v0.3 implementation overlay
+
+This v0.3 overlay is governed by [issue #186](https://github.com/bynanci/courtside-tw/issues/186)
+and the detailed production contract in
+[docs/design/arena-editorial-v3.md](docs/design/arena-editorial-v3.md). It supersedes only the
+public-shell, mobile-navigation, and responsive-composition details identified there. All
+anonymous reading, SSR/no-JS, rights, withdrawal, accessibility, performance, and governance
+requirements in this document remain binding.
+
+The active successor dispatch and browser-evidence paths are bounded by issues #191 and #192. The
+historical OIDC/browser addendum in issue #190 remains immutable. The 640/320 CSS-pixel
+reflow guards remain required; native 200% browser zoom is explicitly WAIVED/NOT_RUN in agent mode
+when the canonical T078 environment is unavailable, and must never be represented by a DPR or
+viewport-width substitute.
+
+The independent implementation ledger is
+[docs/design/arena-editorial-v3-tasks.md](docs/design/arena-editorial-v3-tasks.md). It intentionally
+does not add, renumber, or check any canonical T001–T112 task.

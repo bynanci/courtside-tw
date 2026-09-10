@@ -249,6 +249,124 @@ test("offline control is reachable in sequential keyboard order", async ({ page 
   )
 })
 
+test("forced colors preserve the selected navigation signal and focus affordance", async ({
+  page
+}) => {
+  await page.setViewportSize({ width: 375, height: 900 })
+  await page.emulateMedia({ forcedColors: "active", reducedMotion: "reduce" })
+  await page.goto("/issues/issue-2026-01", { waitUntil: "networkidle" })
+
+  const selectedNavigation = page.locator('.public-mobile-dock a[aria-current="page"]')
+  await expect(selectedNavigation).toHaveCount(1)
+  await selectedNavigation.focus()
+  const evidence = await page.evaluate(() => {
+    const selected = document.querySelector<HTMLElement>(
+      '.public-mobile-dock a[aria-current="page"]'
+    )
+    const style = selected ? getComputedStyle(selected) : null
+    const root = getComputedStyle(document.documentElement)
+    return {
+      forcedColors: window.matchMedia("(forced-colors: active)").matches,
+      selectedTextDecoration: style?.textDecorationLine ?? null,
+      selectedOutlineStyle: style?.outlineStyle ?? null,
+      actionToken: root.getPropertyValue("--color-action").trim(),
+      seriousAxeViolations: []
+    }
+  })
+  expect(evidence.forcedColors).toBe(true)
+  expect(evidence.selectedTextDecoration).toContain("underline")
+  expect(evidence.actionToken).toBe("LinkText")
+  expect(await seriousAxeViolations(page)).toEqual([])
+
+  await page.screenshot({
+    path: visualArtifactPath("forced-colors-issue.png"),
+    fullPage: true,
+    scale: "css",
+    animations: "disabled"
+  })
+  writeAccessibilityArtifact(
+    "forced-colors.json",
+    JSON.stringify(
+      { ...evidence, seriousAxeViolations: [], screenshot: "forced-colors-issue.png" },
+      null,
+      2
+    )
+  )
+})
+
+test("mobile menu opened before hydration becomes an isolated, keyboard-modal surface", async ({
+  page
+}) => {
+  await page.setViewportSize({ width: 375, height: 900 })
+  await page.addInitScript(() => {
+    const openServerRenderedMenu = () => {
+      const menu = document.querySelector<HTMLDetailsElement>("details.public-menu")
+      if (!menu) return false
+      menu.open = true
+      return true
+    }
+    if (openServerRenderedMenu()) return
+    const observer = new MutationObserver(() => {
+      if (openServerRenderedMenu()) observer.disconnect()
+    })
+    observer.observe(document, { childList: true, subtree: true })
+  })
+  await page.emulateMedia({ reducedMotion: "reduce" })
+  await page.goto("/", { waitUntil: "networkidle" })
+
+  const menu = page.locator("details.public-menu")
+  const panel = page.locator(".public-menu__panel")
+  await expect(menu).toHaveJSProperty("open", true)
+  await expect(panel).toHaveAttribute("role", "dialog")
+  await expect(panel).toHaveAttribute("aria-modal", "true")
+  await expect(page.locator("html")).toHaveAttribute("data-public-menu-open", "")
+  await expect(panel.getByRole("button", { name: "關閉選單" })).toBeFocused()
+
+  const isolationBeforeClose = await page.locator(".site-page").evaluate((pageElement) =>
+    Array.from(pageElement.children).map((child) => ({
+      className: child.className,
+      inert: (child as HTMLElement).inert
+    }))
+  )
+  const brand = page.locator(".site-header .site-brand")
+  await expect(brand).toHaveAttribute("inert", "")
+  expect(
+    isolationBeforeClose
+      .filter((child) => !child.className.split(" ").includes("public-header-wrap"))
+      .every((child) => child.inert)
+  ).toBe(true)
+
+  await page.keyboard.press("Escape")
+  await expect(menu).toHaveJSProperty("open", false)
+  await expect(page.locator("html")).not.toHaveAttribute("data-public-menu-open")
+  await expect(menu.locator("summary")).toBeFocused()
+  await expect(brand).not.toHaveAttribute("inert")
+
+  const isolationAfterClose = await page
+    .locator(".site-page")
+    .evaluate((pageElement) =>
+      Array.from(pageElement.children).map((child) => (child as HTMLElement).inert)
+    )
+  expect(isolationAfterClose).toEqual(isolationAfterClose.map(() => false))
+  writeAccessibilityArtifact(
+    "mobile-menu-hydration.json",
+    JSON.stringify(
+      {
+        viewport: 375,
+        openedBeforeHydration: true,
+        dialog: true,
+        focusEnteredPanel: true,
+        siblingsInertBeforeClose: true,
+        focusReturnedAfterEscape: true,
+        siblingsRestoredAfterClose: true,
+        result: "pass"
+      },
+      null,
+      2
+    )
+  )
+})
+
 for (const viewportWidth of [320, 375, 412, 640, 768, 1024, 1440] as const) {
   test(`reader surfaces reflow at ${viewportWidth} CSS px`, async ({ page }) => {
     await page.setViewportSize({ width: viewportWidth, height: 900 })

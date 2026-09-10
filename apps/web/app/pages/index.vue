@@ -4,6 +4,8 @@ import { ref } from "vue"
 
 import ReadingState from "../components/issues/ReadingState.vue"
 import SharedIssueCover from "../components/issues/SharedIssueCover.vue"
+import PublicMobileDock from "../components/navigation/PublicMobileDock.vue"
+import PublicSiteHeader from "../components/navigation/PublicSiteHeader.vue"
 import ReaderJourneyRail from "../components/reader/ReaderJourneyRail.vue"
 import { canonicalUrl, jsonLd } from "../composables/public-seo"
 import { fetchPublicIssuePage, publicMediaUrl } from "../features/issues/public-issue-api"
@@ -68,15 +70,7 @@ useHead(() => ({
 <template>
   <div class="site-page">
     <a class="skip-link" href="#main-content">跳到主要內容</a>
-    <div class="home-header-wrap">
-      <header class="site-header site-header--hero">
-        <NuxtLink to="/" class="site-brand" aria-label="Courtside TW 首頁">Courtside TW</NuxtLink>
-        <nav aria-label="主要導覽">
-          <NuxtLink to="/">首頁</NuxtLink>
-          <NuxtLink to="/issues">所有期數</NuxtLink>
-        </nav>
-      </header>
-    </div>
+    <PublicSiteHeader tone="hero" current="home" />
 
     <main id="main-content" class="home-main" tabindex="-1">
       <section class="arena-masthead" aria-labelledby="home-heading">
@@ -107,21 +101,23 @@ useHead(() => ({
           </div>
 
           <figure v-if="featuredIssue && featuredCover" class="arena-masthead__issue">
-            <div class="arena-masthead__cover-wrap">
-              <SharedIssueCover
-                ref="featuredCoverMotion"
-                class="arena-masthead__cover"
-                :src="featuredCover"
-                :alt="featuredIssue.cover.alt"
-                :width="featuredIssue.cover.width"
-                :height="featuredIssue.cover.height"
-                :issue-slug="featuredIssue.slug"
-                transition-role="source"
-                priority
-              />
-              <span class="arena-masthead__issue-number" aria-hidden="true">
-                {{ featuredIssueNumber }}
-              </span>
+            <div class="arena-masthead__media">
+              <div class="arena-masthead__cover-wrap">
+                <SharedIssueCover
+                  ref="featuredCoverMotion"
+                  class="arena-masthead__cover"
+                  :src="featuredCover"
+                  :alt="featuredIssue.cover.alt"
+                  :width="featuredIssue.cover.width"
+                  :height="featuredIssue.cover.height"
+                  :issue-slug="featuredIssue.slug"
+                  transition-role="source"
+                  priority
+                />
+                <span class="arena-masthead__issue-number" aria-hidden="true">
+                  {{ featuredIssueNumber }}
+                </span>
+              </div>
             </div>
             <figcaption>
               <span>最新一期</span>
@@ -129,8 +125,10 @@ useHead(() => ({
             </figcaption>
           </figure>
           <div v-else class="arena-masthead__issue" aria-hidden="true">
-            <span class="arena-masthead__empty-number">00</span>
-            <span class="arena-masthead__empty-label">Awaiting publication</span>
+            <div class="arena-masthead__media">
+              <span class="arena-masthead__empty-number">00</span>
+              <span class="arena-masthead__empty-label">Awaiting publication</span>
+            </div>
           </div>
         </div>
       </section>
@@ -177,5 +175,6 @@ useHead(() => ({
         />
       </section>
     </main>
+    <PublicMobileDock current="home" />
   </div>
 </template>
