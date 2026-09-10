@@ -25,55 +25,6 @@ export const REQUIRED_GATE_AUTHORIZED_PATHS = Object.freeze([
   "scripts/validate-traceability.mjs",
   "scripts/test/validate-traceability.test.mjs"
 ])
-export const ARENA_EDITORIAL_V3_AUTHORIZATION_SCHEMA =
-  "courtside-arena-editorial-v3-owner-dispatch/v1"
-export const ARENA_EDITORIAL_V3_AUTHORIZATION_REF =
-  "https://github.com/bynanci/courtside-tw/issues/191"
-export const ARENA_EDITORIAL_V3_AUTHORIZATION_API_URL =
-  "https://api.github.com/repos/bynanci/courtside-tw/issues/191"
-export const ARENA_EDITORIAL_V3_AUTHORIZATION_BODY_SHA256 =
-  "80dd6913d27352e4b6b1fe77b84cae829f7b03bc6045bf634e10ee7647f4c076"
-export const ARENA_EDITORIAL_V3_AUTHORIZATION_RECORDED_AT = "2026-09-10T03:06:25Z"
-export const ARENA_EDITORIAL_V3_AUTHORIZATION_CREATED_AT = "2026-09-10T03:05:57Z"
-export const ARENA_EDITORIAL_V3_AUTHORIZATION_BASE_SHA = "bf89d99320296e9febf2eab3dac8aeea08f842a0"
-export const ARENA_EDITORIAL_V3_AUTHORIZATION_BASE_TREE_SHA =
-  "221fbf3df36b1b3be50095c232bfd70d19d4ccfd"
-export const ARENA_EDITORIAL_V3_BRANCH = "feat/arena-editorial-v3"
-export const ARENA_EDITORIAL_V3_AUTHORIZED_PATHS = Object.freeze([
-  "DESIGN.md",
-  "docs/design/arena-editorial-v3.md",
-  "docs/design/arena-editorial-v3-tasks.md",
-  "apps/web/app/assets/css/main.css",
-  "apps/web/app/components/navigation/PublicSiteHeader.vue",
-  "apps/web/app/components/navigation/PublicMobileDock.vue",
-  "apps/web/app/pages/index.vue",
-  "apps/web/app/pages/issues/index.vue",
-  "apps/web/app/pages/issues/[issueSlug].vue",
-  "apps/web/app/pages/articles/[articleSlug].vue",
-  "apps/web/app/pages/search.vue",
-  "apps/web/app/pages/library.vue",
-  "apps/web/app/pages/settings/privacy.vue",
-  "apps/web/tests/unit/reader/arena-editorial-v3-contract.test.ts",
-  "scripts/validate-traceability.mjs",
-  "scripts/test/validate-traceability.test.mjs"
-])
-export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_SCHEMA =
-  "courtside-arena-editorial-v3-owner-addendum/v1"
-export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_REF =
-  "https://github.com/bynanci/courtside-tw/issues/192"
-export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_API_URL =
-  "https://api.github.com/repos/bynanci/courtside-tw/issues/192"
-export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_BODY_SHA256 =
-  "fa1e16fb100e8fa67c87116e0e8627288dd6fa78ea3e15f0e05726938493c9b8"
-export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_RECORDED_AT = "2026-09-10T03:06:45Z"
-export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_CREATED_AT = "2026-09-10T03:06:45Z"
-export const ARENA_EDITORIAL_V3_ADDENDUM_BASE_SHA = "bf89d99320296e9febf2eab3dac8aeea08f842a0"
-export const ARENA_EDITORIAL_V3_ADDENDUM_BASE_TREE_SHA = "221fbf3df36b1b3be50095c232bfd70d19d4ccfd"
-export const ARENA_EDITORIAL_V3_ADDENDUM_PULL_REQUEST = 187
-export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZED_PATHS = Object.freeze([
-  "apps/web/tests/e2e/t078-accessibility-release.spec.ts"
-])
-
 export const OIDC_SECURITY_REMEDIATION_AUTHORIZATION_SCHEMA =
   "courtside-oidc-security-remediation-owner-dispatch/v1"
 export const OIDC_SECURITY_REMEDIATION_AUTHORIZATION_REF =
@@ -158,6 +109,54 @@ export const ACCEPTED_IMPLEMENTATION_CHANGED_PATHS = Object.freeze([
   "scripts/validate-traceability.mjs",
   "specs/001-taiwan-basketball-magazine-ebook/plan.md",
   "specs/001-taiwan-basketball-magazine-ebook/traceability.md"
+])
+export const ARENA_EDITORIAL_V3_AUTHORIZATION_SCHEMA =
+  "courtside-arena-editorial-v3-owner-dispatch/v1"
+export const ARENA_EDITORIAL_V3_AUTHORIZATION_REF =
+  "https://github.com/bynanci/courtside-tw/issues/191"
+export const ARENA_EDITORIAL_V3_AUTHORIZATION_API_URL =
+  "https://api.github.com/repos/bynanci/courtside-tw/issues/191"
+export const ARENA_EDITORIAL_V3_AUTHORIZATION_BODY_SHA256 =
+  "80dd6913d27352e4b6b1fe77b84cae829f7b03bc6045bf634e10ee7647f4c076"
+export const ARENA_EDITORIAL_V3_AUTHORIZATION_RECORDED_AT = "2026-09-10T03:06:25Z"
+export const ARENA_EDITORIAL_V3_AUTHORIZATION_CREATED_AT = "2026-09-10T03:05:57Z"
+export const ARENA_EDITORIAL_V3_AUTHORIZATION_BASE_SHA = "bf89d99320296e9febf2eab3dac8aeea08f842a0"
+export const ARENA_EDITORIAL_V3_AUTHORIZATION_BASE_TREE_SHA =
+  "221fbf3df36b1b3be50095c232bfd70d19d4ccfd"
+export const ARENA_EDITORIAL_V3_BRANCH = "feat/arena-editorial-v3"
+export const ARENA_EDITORIAL_V3_AUTHORIZED_PATHS = Object.freeze([
+  "DESIGN.md",
+  "docs/design/arena-editorial-v3.md",
+  "docs/design/arena-editorial-v3-tasks.md",
+  "apps/web/app/assets/css/main.css",
+  "apps/web/app/components/navigation/PublicSiteHeader.vue",
+  "apps/web/app/components/navigation/PublicMobileDock.vue",
+  "apps/web/app/pages/index.vue",
+  "apps/web/app/pages/issues/index.vue",
+  "apps/web/app/pages/issues/[issueSlug].vue",
+  "apps/web/app/pages/articles/[articleSlug].vue",
+  "apps/web/app/pages/search.vue",
+  "apps/web/app/pages/library.vue",
+  "apps/web/app/pages/settings/privacy.vue",
+  "apps/web/tests/unit/reader/arena-editorial-v3-contract.test.ts",
+  "scripts/validate-traceability.mjs",
+  "scripts/test/validate-traceability.test.mjs"
+])
+export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_SCHEMA =
+  "courtside-arena-editorial-v3-owner-addendum/v1"
+export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_REF =
+  "https://github.com/bynanci/courtside-tw/issues/192"
+export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_API_URL =
+  "https://api.github.com/repos/bynanci/courtside-tw/issues/192"
+export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_BODY_SHA256 =
+  "fa1e16fb100e8fa67c87116e0e8627288dd6fa78ea3e15f0e05726938493c9b8"
+export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_RECORDED_AT = "2026-09-10T03:06:45Z"
+export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_CREATED_AT = "2026-09-10T03:06:45Z"
+export const ARENA_EDITORIAL_V3_ADDENDUM_BASE_SHA = "bf89d99320296e9febf2eab3dac8aeea08f842a0"
+export const ARENA_EDITORIAL_V3_ADDENDUM_BASE_TREE_SHA = "221fbf3df36b1b3be50095c232bfd70d19d4ccfd"
+export const ARENA_EDITORIAL_V3_ADDENDUM_PULL_REQUEST = 187
+export const ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZED_PATHS = Object.freeze([
+  "apps/web/tests/e2e/t078-accessibility-release.spec.ts"
 ])
 export const POST_T085_REMEDIATION_BASE_SHA = "d99df471a08608bb8b6da609e17095d285c11489"
 export const POST_T085_REMEDIATION_CHANGED_PATHS = Object.freeze([
@@ -2348,7 +2347,7 @@ export function createMediaRightsAuthorizationGate(binding = MEDIA_RIGHTS_AUTHOR
     authorization?.issue_url === "https://api.github.com/repos/bynanci/courtside-tw/issues/121" &&
     authorization?.user_login === ACCEPTED_RECEIPT_OWNER &&
     authorization?.author_association === "OWNER" &&
-    authorization?.created_at === c.created_at &&
+    authorization?.created_at === c.recorded_at &&
     authorization?.updated_at === c.recorded_at &&
     sha256(authorization?.body ?? null) === c.body_sha256
   const bound =
@@ -2754,7 +2753,7 @@ export function createMediaArchiveAuthorizationGate(binding = MEDIA_ARCHIVE_AUTH
     authorization?.issue_url === "https://api.github.com/repos/bynanci/courtside-tw/issues/121" &&
     authorization?.user_login === ACCEPTED_RECEIPT_OWNER &&
     authorization?.author_association === "OWNER" &&
-    authorization?.created_at === c.recorded_at &&
+    authorization?.created_at === c.created_at &&
     authorization?.updated_at === c.recorded_at &&
     sha256(authorization?.body ?? null) === c.body_sha256
   const inspectCandidate = (root, head) => {
@@ -3402,6 +3401,7 @@ export function createOidcSecurityRemediationAuthorizationGate(
   })
 }
 const oidcSecurityRemediationGate = createOidcSecurityRemediationAuthorizationGate()
+
 const arenaEditorialV3DocumentationPaths = [
   "DESIGN.md",
   "docs/design/arena-editorial-v3.md",
@@ -3423,8 +3423,8 @@ export function createArenaEditorialV3AuthorizationGate(
     ref: ARENA_EDITORIAL_V3_AUTHORIZATION_REF,
     api_url: ARENA_EDITORIAL_V3_AUTHORIZATION_API_URL,
     body_sha256: ARENA_EDITORIAL_V3_AUTHORIZATION_BODY_SHA256,
-    recorded_at: ARENA_EDITORIAL_V3_AUTHORIZATION_RECORDED_AT,
     created_at: ARENA_EDITORIAL_V3_AUTHORIZATION_CREATED_AT,
+    recorded_at: ARENA_EDITORIAL_V3_AUTHORIZATION_RECORDED_AT,
     base_sha: ARENA_EDITORIAL_V3_AUTHORIZATION_BASE_SHA,
     base_tree_sha: ARENA_EDITORIAL_V3_AUTHORIZATION_BASE_TREE_SHA,
     branch: ARENA_EDITORIAL_V3_BRANCH,
@@ -3433,8 +3433,8 @@ export function createArenaEditorialV3AuthorizationGate(
     addendum_ref: ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_REF,
     addendum_api_url: ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_API_URL,
     addendum_body_sha256: ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_BODY_SHA256,
-    addendum_recorded_at: ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_RECORDED_AT,
     addendum_created_at: ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_CREATED_AT,
+    addendum_recorded_at: ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_RECORDED_AT,
     addendum_base_sha: ARENA_EDITORIAL_V3_ADDENDUM_BASE_SHA,
     addendum_base_tree_sha: ARENA_EDITORIAL_V3_ADDENDUM_BASE_TREE_SHA,
     addendum_pull_request: ARENA_EDITORIAL_V3_ADDENDUM_PULL_REQUEST,
@@ -3481,7 +3481,6 @@ export function createArenaEditorialV3AuthorizationGate(
     c.api_url === ARENA_EDITORIAL_V3_AUTHORIZATION_API_URL &&
     c.body_sha256 === ARENA_EDITORIAL_V3_AUTHORIZATION_BODY_SHA256 &&
     c.recorded_at === ARENA_EDITORIAL_V3_AUTHORIZATION_RECORDED_AT &&
-    c.created_at === ARENA_EDITORIAL_V3_AUTHORIZATION_CREATED_AT &&
     c.base_sha === ARENA_EDITORIAL_V3_AUTHORIZATION_BASE_SHA &&
     c.base_tree_sha === ARENA_EDITORIAL_V3_AUTHORIZATION_BASE_TREE_SHA &&
     c.branch === ARENA_EDITORIAL_V3_BRANCH &&
@@ -3491,7 +3490,6 @@ export function createArenaEditorialV3AuthorizationGate(
     c.addendum_api_url === ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_API_URL &&
     c.addendum_body_sha256 === ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_BODY_SHA256 &&
     c.addendum_recorded_at === ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_RECORDED_AT &&
-    c.addendum_created_at === ARENA_EDITORIAL_V3_ADDENDUM_AUTHORIZATION_CREATED_AT &&
     c.addendum_base_sha === ARENA_EDITORIAL_V3_ADDENDUM_BASE_SHA &&
     c.addendum_base_tree_sha === ARENA_EDITORIAL_V3_ADDENDUM_BASE_TREE_SHA &&
     c.addendum_pull_request === ARENA_EDITORIAL_V3_ADDENDUM_PULL_REQUEST &&
@@ -11586,6 +11584,7 @@ export function validateTraceability({
   publicationCacheAuthorizationReadback = null,
   mediaRightsAuthorizationReadback = null,
   mediaArchiveAuthorizationReadback = null,
+  oidcSecurityRemediationAuthorizationReadback = null,
   arenaEditorialV3AuthorizationReadback = null,
   gitBinding = null,
   changedPaths = null,
@@ -11733,6 +11732,16 @@ export function validateTraceability({
       changeBaseSha
     )
   let arenaEditorialV3AuthorizationAccepted = false
+  const oidcSecurityRemediationAuthorizationRequested =
+    state === t085States.COMPLETE_STEADY &&
+    Array.isArray(changedPaths) &&
+    oidcSecurityRemediationGate.requested(
+      changedPaths,
+      githubActionsContext,
+      oidcSecurityRemediationAuthorizationReadback,
+      changeBaseSha
+    )
+  let oidcSecurityRemediationAuthorizationAccepted = false
 
   if (!/^[0-9a-f]{40}$/.test(currentHead ?? "")) {
     errors.push("currentHead must be a full lowercase commit SHA")
@@ -11934,6 +11943,18 @@ export function validateTraceability({
         errors
       })
     }
+    if (oidcSecurityRemediationAuthorizationRequested) {
+      oidcSecurityRemediationAuthorizationAccepted = oidcSecurityRemediationGate.validate({
+        readback: oidcSecurityRemediationAuthorizationReadback,
+        gitBinding,
+        changedPaths,
+        changeBaseSha,
+        boundedScopeActive,
+        githubActionsContext,
+        requireExactHeadEvidence,
+        errors
+      })
+    }
     if (
       productRemediationAuthorizationRequested(
         changedPaths,
@@ -12032,6 +12053,10 @@ export function validateTraceability({
         !(mediaRightsAuthorizationAccepted && mediaRightsGate.allowsPath(changedPath)) &&
         !(mediaArchiveAuthorizationAccepted && mediaArchiveGate.allowsPath(changedPath)) &&
         !(arenaEditorialV3AuthorizationAccepted && arenaEditorialV3Gate.allowsPath(changedPath)) &&
+        !(
+          oidcSecurityRemediationAuthorizationAccepted &&
+          oidcSecurityRemediationGate.allowsPath(changedPath)
+        ) &&
         !(pnpmSecurityAuthorizationAccepted && pnpmSecurityAuthorizedPaths.has(changedPath)) &&
         !(
           productRemediationAuthorizationAccepted &&
@@ -12753,6 +12778,21 @@ export function validateTraceability({
             protected_main: mediaArchiveAuthorizationReadback.protected_main ?? null,
             candidate: mediaArchiveAuthorizationReadback.candidate ?? null,
             errors: mediaArchiveAuthorizationReadback.errors ?? []
+          }
+        : null,
+      oidc_security_remediation_authorization_readback: oidcSecurityRemediationAuthorizationReadback
+        ? {
+            status: oidcSecurityRemediationAuthorizationReadback.status,
+            accepted: oidcSecurityRemediationAuthorizationAccepted,
+            authorization_ref:
+              oidcSecurityRemediationAuthorizationReadback.authorization?.html_url ?? null,
+            body_sha256: sha256(
+              oidcSecurityRemediationAuthorizationReadback.authorization?.body ?? null
+            ),
+            pull_request: oidcSecurityRemediationAuthorizationReadback.pull_request?.number ?? null,
+            protected_main: oidcSecurityRemediationAuthorizationReadback.protected_main ?? null,
+            candidate: oidcSecurityRemediationAuthorizationReadback.candidate ?? null,
+            errors: oidcSecurityRemediationAuthorizationReadback.errors ?? []
           }
         : null,
       arena_editorial_v3_authorization_readback: arenaEditorialV3AuthorizationReadback
@@ -14231,6 +14271,14 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
   )
     ? mediaArchiveGate.inspect(root, { environment })
     : null
+  const oidcSecurityRemediationAuthorizationReadback = oidcSecurityRemediationGate.requested(
+    inspection.changedPaths,
+    githubActionsContext,
+    null,
+    inspection.change_base_sha
+  )
+    ? oidcSecurityRemediationGate.inspect(root, { environment })
+    : null
   const arenaEditorialV3AuthorizationReadback = arenaEditorialV3Gate.requested(
     inspection.changedPaths,
     githubActionsContext,
@@ -14256,6 +14304,7 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
     publicationCacheAuthorizationReadback,
     mediaRightsAuthorizationReadback,
     mediaArchiveAuthorizationReadback,
+    oidcSecurityRemediationAuthorizationReadback,
     arenaEditorialV3AuthorizationReadback,
     gitBinding: {
       status: inspection.status,
