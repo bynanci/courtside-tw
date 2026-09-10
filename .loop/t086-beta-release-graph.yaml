@@ -2,7 +2,7 @@ schema_version: courtside-loop-graph/v1
 task: T086
 repository: bynanci/courtside-tw
 issue: https://github.com/bynanci/courtside-tw/issues/193
-authorization_ref: https://github.com/bynanci/courtside-tw/issues/193#issuecomment-5614391955
+authorization_ref: https://github.com/bynanci/courtside-tw/issues/193#issuecomment-5614473278
 objective: Build and verify a non-deploying fail-closed beta release control plane from current protected main without changing release state.
 scope:
   base_sha: 7598d64780558915ba88b83ee9fcbcc22ab7c600
