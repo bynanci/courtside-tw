@@ -11999,7 +11999,7 @@ export function validateTraceability({
           errors
         })
       }
-  
+
       if (
         pnpmSecurityAuthorizationRequested(
           changedPaths,
@@ -12056,18 +12056,17 @@ export function validateTraceability({
             "post-T085 maintenance authorization requires the exact seven-path combined scope"
           )
         } else {
-          postT085MaintenanceAuthorizationAccepted = validatePostT085MaintenanceAuthorizationReadback(
-            {
+          postT085MaintenanceAuthorizationAccepted =
+            validatePostT085MaintenanceAuthorizationReadback({
               readback: postT085MaintenanceAuthorizationReadback,
               gitBinding,
               requireExactHeadEvidence,
               githubActionsContext,
               errors
-            }
-          )
+            })
         }
       }
-      }
+    }
     if (t086ScopeRequested) {
       for (const error of t086ScopeValidation.errors) {
         errors.push(`invalid owner-authorized T086 scope: ${error}`)
