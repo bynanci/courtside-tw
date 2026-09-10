@@ -25,7 +25,9 @@
     "contract:observability": "node scripts/validate-observability.mjs",
     "contract:analytics": "node scripts/validate-analytics-privacy.mjs",
     "test:traceability": "node --test scripts/test/validate-traceability.test.mjs",
-    "contract:traceability": "node --test scripts/test/validate-traceability.test.mjs && node scripts/validate-traceability.mjs"
+    "contract:traceability": "node --test scripts/test/validate-traceability.test.mjs && node scripts/validate-traceability.mjs",
+    "test:beta-release": "node --test scripts/test/validate-beta-release.test.mjs",
+    "contract:beta-release": "node --test scripts/test/validate-beta-release.test.mjs && node scripts/validate-beta-release.mjs"
   },
   "devDependencies": {
     "@eslint/js": "10.0.1",
