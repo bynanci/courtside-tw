@@ -2,11 +2,14 @@
 
 Status: owner-authorized implementation contract \
 Authority: [GitHub issue #186](https://github.com/bynanci/courtside-tw/issues/186) \
-Authorization base: 2cc2cc5acac03af3667126ad28c1e80a58edb7b9 \
+Active successor dispatch: [GitHub issue #191](https://github.com/bynanci/courtside-tw/issues/191) \
+Authorization base: bf89d99320296e9febf2eab3dac8aeea08f842a0 \
+Authorization tree: 221fbf3df36b1b3be50095c232bfd70d19d4ccfd \
 Branch: feat/arena-editorial-v3
 
-Security/accessibility addendum: [GitHub issue #190](https://github.com/bynanci/courtside-tw/issues/190),
-bound to PR #187 at supplemental base `430d4e585b9cc4701ea6150fde6e492555330d5f`.
+Active browser/accessibility addendum: [GitHub issue #192](https://github.com/bynanci/courtside-tw/issues/192),
+bound to PR #187 at supplemental base `bf89d99320296e9febf2eab3dac8aeea08f842a0`.
+Issue #190 remains historical evidence for the pre-PR-189 OIDC/browser addendum and is not mutated.
 
 ## Purpose
 

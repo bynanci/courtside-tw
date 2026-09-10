@@ -3,8 +3,10 @@
 Authority: [GitHub issue #186](https://github.com/bynanci/courtside-tw/issues/186) \
 Scope: independent UI implementation ledger; canonical T001–T112 and T086 remain unchanged.
 
-Supplemental exact-head authority: [GitHub issue #190](https://github.com/bynanci/courtside-tw/issues/190)
-extends only the OIDC security image, browser evidence, and their bounded verification paths.
+Active successor exact-head authority: [GitHub issue #191](https://github.com/bynanci/courtside-tw/issues/191),
+bound to protected-main `bf89d99320296e9febf2eab3dac8aeea08f842a0`.
+Active browser-evidence addendum: [GitHub issue #192](https://github.com/bynanci/courtside-tw/issues/192).
+Issue #190 remains historical and immutable; its OIDC runtime paths are inherited from PR #189.
 
 - [x] UIR-001 — Inspect both supplied direction images and record fingerprints.
 - [x] UIR-002 — Audit current routes, content contracts, rights constraints, and compatibility hooks.

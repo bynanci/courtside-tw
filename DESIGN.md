@@ -2,7 +2,7 @@
 
 **Status**: ARENA EDITORIAL v0.3 — owner-authorized implementation contract; brand and production assets remain gated \
 **Date**: 2026-09-09 \
-**Approved by**: repository owner via [issue #186](https://github.com/bynanci/courtside-tw/issues/186), 2026-09-09 \
+**Approved by**: repository owner via [issue #186](https://github.com/bynanci/courtside-tw/issues/186), with active successor dispatch [issue #191](https://github.com/bynanci/courtside-tw/issues/191), 2026-09-09 \
 **Working title**: `Courtside TW` is a repository label, not an approved brand name \
 **Primary platform**: Mobile-first SSR web; installable/offline PWA behavior remains roadmap-gated \
 **Implementation stack**: Nuxt 4.5, Motion for Vue, bounded p5.js preset \
@@ -741,7 +741,7 @@ No-JS 時必須保留 Home → issue → `#toc` → article SSR links、完整 h
 開始 T003 root baseline 或任何 UI scaffold 前，必須完成：
 
 - DESIGN.md v0.3 與 `docs/design/arena-editorial-v3.md` 必須先於 production implementation commit。
-- Repository owner 已於 2026-09-09 透過 issue #186 授權 Arena Editorial v0.3 的 exact-base、exact-path 實作與合併流程；其 OIDC 安全與瀏覽器證據補充範圍由 [issue #190](https://github.com/bynanci/courtside-tw/issues/190) 以 exact-head addendum 綁定。
+- Repository owner 已於 2026-09-09 透過 issue #186 授權 Arena Editorial v0.3；protected `main` 前進後，active exact-base／exact-path dispatch 由 [issue #191](https://github.com/bynanci/courtside-tw/issues/191) 綁定至 `bf89d99320296e9febf2eab3dac8aeea08f842a0`（tree `221fbf3df36b1b3be50095c232bfd70d19d4ccfd`）。瀏覽器／可及性證據由 successor [issue #192](https://github.com/bynanci/courtside-tw/issues/192) 綁定；#186／#190 保持歷史不可變。
 - Root theme contract 使用三層 tokens，no-override 首幀跟隨系統，不能先建 light-only component 再補 dark patch。
 - 核准圖只作 reference；AI 人物、placeholder 文案與未授權標誌不得進入 scaffold fixtures 或 production assets。
 - 未決品牌／字體／媒體項目保留為 named gate，不被假設為已解決。
@@ -759,7 +759,8 @@ public-shell, mobile-navigation, and responsive-composition details identified t
 anonymous reading, SSR/no-JS, rights, withdrawal, accessibility, performance, and governance
 requirements in this document remain binding.
 
-The supplemental OIDC and browser-evidence paths are bounded by issue #190. The 640/320 CSS-pixel
+The active successor dispatch and browser-evidence paths are bounded by issues #191 and #192. The
+historical OIDC/browser addendum in issue #190 remains immutable. The 640/320 CSS-pixel
 reflow guards remain required; native 200% browser zoom is explicitly WAIVED/NOT_RUN in agent mode
 when the canonical T078 environment is unavailable, and must never be represented by a DPR or
 viewport-width substitute.
