@@ -85,6 +85,7 @@ jobs:
             artifacts/frontend
             artifacts/performance
             artifacts/exact-head.json
+            artifacts/t086
             apps/**/coverage
             apps/**/test-results
             apps/**/.nuxt

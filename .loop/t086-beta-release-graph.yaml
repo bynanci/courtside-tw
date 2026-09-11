@@ -1,0 +1,55 @@
+schema_version: courtside-loop-graph/v1
+task: T086
+repository: bynanci/courtside-tw
+issue: https://github.com/bynanci/courtside-tw/issues/193
+authorization_ref: https://github.com/bynanci/courtside-tw/issues/193#issuecomment-5614473278
+objective: Build and verify a non-deploying fail-closed beta release control plane from current protected main without changing release state.
+scope:
+  base_sha: 7598d64780558915ba88b83ee9fcbcc22ab7c600
+  frozen_t085_traceability_sha256: 204662214eada892332d1ddbeab8d0b8037cfc5477d9152d6fb3a61e56832b79
+  task_state_changes: false
+  beta_flag_removal: false
+  participant_research: false
+  web3: false
+  production_or_provider_mutation: false
+  credentials_or_secrets: false
+nodes:
+  - id: A
+    action: Verify fresh owner dispatch and exact current-main binding.
+    status: completed
+    proof:
+      - .loop/evidence/t086-dispatch.json
+    stop: Owner read-back, exact base, frozen hash or authorized diff fails.
+  - id: B
+    action: Add the beta checklist, validator tests and non-deploying release workflow.
+    status: in_progress
+    needs: [A]
+    stop: Workflow requests write permission, secrets, an environment or deployment.
+  - id: C
+    action: Execute fresh exact-head control-plane, seven-surface and stability proof.
+    status: blocked
+    needs: [B]
+    stop: Any run fails, changes SHA or lacks an attributable receipt.
+  - id: D
+    action: Hand off truthful HOLD/PASS packet to #164.
+    status: blocked
+    needs: [C]
+    stop: Any required human or external evidence is absent; remain HOLD.
+delta:
+  recorded_at: 2026-09-10T06:52:00Z
+  event: fresh_owner_dispatch_bound_to_current_main
+  from: undispatched
+  to: implementation_in_progress
+  ready_frontier: [B]
+  evidence:
+    - .loop/evidence/t086-dispatch.json
+memory:
+  decision: GRAPH_LOOP
+  terminal: running
+  release_decision: HOLD
+  critical_path: [A, B, C, D]
+  minimum_cut:
+    - fresh exact-head control-plane proof
+    - seven-surface attributable evidence
+    - 20 consecutive exact-head stability runs
+    - #164 required-context gate
