@@ -10,11 +10,13 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
 
-import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.jdbc.core.JdbcOperations;
+import org.springframework.transaction.support.TransactionOperations;
 
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
 import tw.basketball.magazine.provenance.manifest.ManifestCanonicalizer;
 
 /** Durable, immutable projection. Publication is never made conditional on this service. */
@@ -46,16 +48,24 @@ public final class ProvenanceService {
             LEFT JOIN article a ON s.aggregate_type = 'ARTICLE' AND a.id = s.aggregate_id
             WHERE s.id = ?
             """;
-    private final JdbcTemplate jdbc;
-    private final TransactionTemplate transaction;
-    private final ObjectMapper json;
+    private final JdbcOperations jdbc;
+    private final TransactionOperations transaction;
+    private final ObjectReader manifestReader;
+    private final ObjectWriter jsonWriter;
     private final Clock clock;
     private final ManifestCanonicalizer canonicalizer = new ManifestCanonicalizer();
 
-    public ProvenanceService(JdbcTemplate jdbc, TransactionTemplate transaction, ObjectMapper json, Clock clock) {
+    public ProvenanceService(JdbcOperations jdbc, TransactionOperations transaction, ObjectMapper json, Clock clock) {
+        this(jdbc, transaction, Objects.requireNonNull(json).readerFor(new TypeReference<Map<String, Object>>() { }),
+                json.writer(), clock);
+    }
+
+    public ProvenanceService(JdbcOperations jdbc, TransactionOperations transaction,
+            ObjectReader manifestReader, ObjectWriter jsonWriter, Clock clock) {
         this.jdbc = Objects.requireNonNull(jdbc);
         this.transaction = Objects.requireNonNull(transaction);
-        this.json = Objects.requireNonNull(json);
+        this.manifestReader = Objects.requireNonNull(manifestReader);
+        this.jsonWriter = Objects.requireNonNull(jsonWriter);
         this.clock = Objects.requireNonNull(clock);
     }
 
@@ -85,7 +95,7 @@ public final class ProvenanceService {
                     (row, number) -> row.getString("canonical_manifest"), snapshotId);
             if (!existing.isEmpty()) {
                 // Approval changes never mutate already issued canonical bytes; external delivery rechecks live approval.
-                manifest = json.readValue(existing.get(0), new TypeReference<>() { });
+                manifest = manifestReader.readValue(existing.get(0));
             }
             ManifestCanonicalizer.Receipt receipt = canonicalizer.receipt(manifest);
             jdbc.update("""
@@ -132,7 +142,7 @@ public final class ProvenanceService {
                 """, (row, number) -> {
             String liveStatus = source.get().status();
             String status = "VERIFIED".equals(liveStatus) ? row.getString("status") : liveStatus;
-            Map<String, Object> manifest = json.readValue(row.getString("canonical_manifest"), new TypeReference<>() { });
+            Map<String, Object> manifest = manifestReader.readValue(row.getString("canonical_manifest"));
             if ("PERMANENT_PUBLIC".equals(manifest.get("rightsScope")) && !source.get().permanentMirror()) {
                 status = "WITHDRAWN";
             }
@@ -143,7 +153,7 @@ public final class ProvenanceService {
             response.put("status", status);
             response.put("cid", "WITHDRAWN".equals(status) ? null : row.getString("cid"));
             String attestation = row.getString("attestation");
-            response.put("attestation", attestation == null || "WITHDRAWN".equals(status) ? null : json.readValue(attestation, new TypeReference<Map<String, Object>>() { }));
+            response.put("attestation", attestation == null || "WITHDRAWN".equals(status) ? null : manifestReader.readValue(attestation));
             response.put("rightsScope", manifest.get("rightsScope"));
             response.put("manifestVersion", "1");
             Timestamp verifiedAt = row.getTimestamp("verified_at");
@@ -165,7 +175,7 @@ public final class ProvenanceService {
         }
         String canonical = jdbc.queryForObject("SELECT canonical_manifest FROM publication_provenance WHERE snapshot_id = ? AND manifest_version = '1'",
                 String.class, snapshotId);
-        Map<String, Object> manifest = json.readValue(canonical, new TypeReference<>() { });
+        Map<String, Object> manifest = manifestReader.readValue(canonical);
         boolean mirrorEligible = "PERMANENT_PUBLIC".equals(manifest.get("rightsScope"));
         ProvenanceExternalPublisher.Result result = publisher.publish(manifest, () -> source(snapshotId)
                 .map(value -> "VERIFIED".equals(value.status()) && (!mirrorEligible || value.permanentMirror())).orElse(false));
@@ -177,7 +187,7 @@ public final class ProvenanceService {
                     UPDATE publication_provenance SET status = ?, cid = ?, attestation = ?::jsonb
                     WHERE snapshot_id = ? AND manifest_version = '1' AND status <> 'WITHDRAWN'
                     """, finalStatus, result.cid(), result.transactionId() == null ? null
-                    : json.writeValueAsString(Map.of("transactionId", result.transactionId())), snapshotId);
+                    : jsonWriter.writeValueAsString(Map.of("transactionId", result.transactionId())), snapshotId);
         });
         return !"PENDING".equals(result.status());
     }

@@ -24,6 +24,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import org.testcontainers.postgresql.PostgreSQLContainer;
+import org.testcontainers.utility.DockerImageName;
 import tools.jackson.databind.ObjectMapper;
 import tw.basketball.magazine.basketball.application.BasketballCatalogService;
 import tw.basketball.magazine.basketball.domain.BasketballDomain;
@@ -32,7 +33,8 @@ import tw.basketball.magazine.basketball.persistence.JdbcBasketballFactStore;
 /** Forward migration, immutable storage, restart and transaction rollback proof against real PostgreSQL. */
 final class JdbcEvidenceStoreIT {
     private static final PostgreSQLContainer POSTGRES = new PostgreSQLContainer(
-            "postgres:18.6-alpine3.24@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2")
+            DockerImageName.parse("postgres:18.6-alpine3.24@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2")
+                    .asCompatibleSubstituteFor("postgres"))
             .withDatabaseName("evidence_fixture").withUsername("fixture").withPassword("fixture-only");
     private static DataSource dataSource;
     private JdbcEvidenceStore store;

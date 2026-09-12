@@ -53,7 +53,10 @@ public final class WorkerHttpTransport {
         private final CompletableFuture<byte[]> result = new CompletableFuture<>();
         private final ByteArrayOutputStream bytes = new ByteArrayOutputStream();
         private Flow.Subscription subscription;
-        @Override public CompletionStage<byte[]> getBody() { return result; }
+        @Override public CompletionStage<byte[]> getBody() {
+            // A consumer cannot complete/cancel our future or mutate bytes observed by another consumer.
+            return result.thenApply(byte[]::clone).minimalCompletionStage();
+        }
         @Override public void onSubscribe(Flow.Subscription incoming) {
             subscription = incoming;
             incoming.request(1);

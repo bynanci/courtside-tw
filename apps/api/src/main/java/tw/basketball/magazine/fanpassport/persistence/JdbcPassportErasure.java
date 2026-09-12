@@ -3,15 +3,15 @@ package tw.basketball.magazine.fanpassport.persistence;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.UUID;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.JdbcOperations;
 import tw.basketball.magazine.identity.application.AccountLifecycleParticipant;
 
 /** Runs inside account erasure: removes identity links, preserves only unidentifiable lifecycle history. */
 public final class JdbcPassportErasure implements AccountLifecycleParticipant {
 
-  private final JdbcTemplate jdbc;
+  private final JdbcOperations jdbc;
 
-  public JdbcPassportErasure(JdbcTemplate jdbc) {
+  public JdbcPassportErasure(JdbcOperations jdbc) {
     this.jdbc = jdbc;
   }
 

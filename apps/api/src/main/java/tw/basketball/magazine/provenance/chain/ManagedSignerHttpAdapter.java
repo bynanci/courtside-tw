@@ -11,6 +11,8 @@ import java.util.Objects;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectReader;
+import tools.jackson.databind.ObjectWriter;
 import tw.basketball.magazine.provenance.manifest.ManifestCanonicalizer;
 import tw.basketball.magazine.provenance.transport.WorkerHttpTransport;
 
@@ -20,7 +22,8 @@ public final class ManagedSignerHttpAdapter implements ChainAttestationPort {
     private final URI signerEndpoint;
     private final URI rpcEndpoint;
     private final WorkerHttpTransport http;
-    private final ObjectMapper json;
+    private final ObjectReader jsonReader;
+    private final ObjectWriter jsonWriter;
     private final ManagedAttestationWorker.Policy policy;
     private final Map<String, String> signerAuthentication;
     public ManagedSignerHttpAdapter(URI signerEndpoint, URI rpcEndpoint, WorkerHttpTransport http,
@@ -28,7 +31,8 @@ public final class ManagedSignerHttpAdapter implements ChainAttestationPort {
         this.signerEndpoint = Objects.requireNonNull(signerEndpoint);
         this.rpcEndpoint = Objects.requireNonNull(rpcEndpoint);
         this.http = Objects.requireNonNull(http);
-        this.json = Objects.requireNonNull(json);
+        this.jsonReader = Objects.requireNonNull(json).reader();
+        this.jsonWriter = json.writer();
         this.policy = Objects.requireNonNull(policy);
         this.signerAuthentication = Map.copyOf(signerAuthentication);
     }
@@ -48,8 +52,8 @@ public final class ManagedSignerHttpAdapter implements ChainAttestationPort {
         if (!stillEligible.getAsBoolean()) {
             throw new IllegalStateException("signer write disabled before submission");
         }
-        JsonNode response = json.readTree(http.request("POST", signerEndpoint, "application/json",
-                json.writeValueAsBytes(command), headers));
+        JsonNode response = jsonReader.readTree(http.request("POST", signerEndpoint, "application/json",
+                jsonWriter.writeValueAsBytes(command), headers));
         String transactionId = response.path("transactionId").asString("");
         if (!transactionId.matches("0x[0-9a-fA-F]{64}")) {
             throw new IllegalStateException("signer returned invalid transaction identity");
@@ -118,8 +122,8 @@ public final class ManagedSignerHttpAdapter implements ChainAttestationPort {
         }
     }
     private JsonNode rpc(String method, List<?> parameters) {
-        JsonNode response = json.readTree(http.request("POST", rpcEndpoint, "application/json",
-                json.writeValueAsBytes(Map.of("jsonrpc", "2.0", "id", 1, "method", method, "params", parameters)), Map.of()));
+        JsonNode response = jsonReader.readTree(http.request("POST", rpcEndpoint, "application/json",
+                jsonWriter.writeValueAsBytes(Map.of("jsonrpc", "2.0", "id", 1, "method", method, "params", parameters)), Map.of()));
         if (!response.path("jsonrpc").asString("").equals("2.0") || response.path("id").asInt() != 1
                 || response.has("error") || !response.has("result")) {
             throw new IllegalStateException("invalid RPC response");

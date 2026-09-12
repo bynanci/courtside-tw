@@ -8,7 +8,7 @@ import java.util.HexFormat;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import tw.basketball.magazine.fanpassport.application.FanPassportService;
@@ -20,7 +20,7 @@ import tw.basketball.magazine.shared.ApplicationClock;
 /** OIDC-owned, explicit wallet link with domain binding and atomic single-use nonce consumption. */
 public final class SiweIdentityService {
 
-  private final JdbcTemplate jdbc;
+  private final JdbcOperations jdbc;
   private final TransactionTemplate transaction;
   private final FanPassportService passport;
   private final ApplicationClock clock;
@@ -32,7 +32,7 @@ public final class SiweIdentityService {
   private final ConcurrentHashMap<String, Challenge> responseCache = new ConcurrentHashMap<>();
 
   public SiweIdentityService(
-    JdbcTemplate jdbc,
+    JdbcOperations jdbc,
     PlatformTransactionManager manager,
     FanPassportService passport,
     ApplicationClock clock,

@@ -12,7 +12,7 @@ import java.time.ZoneOffset;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.UUID;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.JdbcOperations;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import tw.basketball.magazine.fanpassport.domain.StampLifecycle;
@@ -29,13 +29,13 @@ public final class FanPassportService {
   SELECT s.*, e.reader_id, e.issue_id, e.season FROM fan_passport_stamp s
   JOIN fan_passport_entitlement e ON e.id=s.entitlement_id
   """;
-  private final JdbcTemplate jdbc;
+  private final JdbcOperations jdbc;
   private final TransactionTemplate transaction;
   private final ApplicationClock clock;
   private final JdbcPassportEligibility eligibility;
 
   public FanPassportService(
-    JdbcTemplate jdbc,
+    JdbcOperations jdbc,
     PlatformTransactionManager manager,
     ApplicationClock clock
   ) {

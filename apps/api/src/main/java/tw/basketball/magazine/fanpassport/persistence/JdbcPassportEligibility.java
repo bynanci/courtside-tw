@@ -5,14 +5,14 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.JdbcOperations;
 
 /** Server condition: revision-bound progress acknowledgements, never proof of human reading. */
 public final class JdbcPassportEligibility {
 
-  private final JdbcTemplate jdbc;
+  private final JdbcOperations jdbc;
 
-  public JdbcPassportEligibility(JdbcTemplate jdbc) {
+  public JdbcPassportEligibility(JdbcOperations jdbc) {
     this.jdbc = jdbc;
   }
 

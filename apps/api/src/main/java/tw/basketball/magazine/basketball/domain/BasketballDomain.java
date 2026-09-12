@@ -53,7 +53,7 @@ public final class BasketballDomain {
             name = text(name, "name");
             locale = text(locale, "locale");
             Objects.requireNonNull(period, "period");
-            evidenceIds = evidence(evidenceIds);
+            evidenceIds = List.copyOf(evidence(evidenceIds));
             if (id.equals(supersedesAliasId)) {
                 throw new IllegalArgumentException("alias cannot supersede itself");
             }
@@ -64,8 +64,8 @@ public final class BasketballDomain {
         public League {
             requiredIds(id);
             Objects.requireNonNull(lifecycle, "lifecycle");
-            aliases = BasketballDomain.aliases(id, aliases);
-            evidenceIds = evidence(evidenceIds);
+            aliases = List.copyOf(BasketballDomain.aliases(id, aliases));
+            evidenceIds = List.copyOf(evidence(evidenceIds));
         }
     }
 
@@ -73,8 +73,8 @@ public final class BasketballDomain {
         public Team {
             requiredIds(id);
             Objects.requireNonNull(lifecycle, "lifecycle");
-            aliases = BasketballDomain.aliases(id, aliases);
-            evidenceIds = evidence(evidenceIds);
+            aliases = List.copyOf(BasketballDomain.aliases(id, aliases));
+            evidenceIds = List.copyOf(evidence(evidenceIds));
         }
     }
 
@@ -82,8 +82,8 @@ public final class BasketballDomain {
     public record Player(UUID id, List<Alias> aliases, List<UUID> evidenceIds) {
         public Player {
             requiredIds(id);
-            aliases = BasketballDomain.aliases(id, aliases);
-            evidenceIds = evidence(evidenceIds);
+            aliases = List.copyOf(BasketballDomain.aliases(id, aliases));
+            evidenceIds = List.copyOf(evidence(evidenceIds));
         }
     }
 
@@ -92,7 +92,7 @@ public final class BasketballDomain {
             requiredIds(id, leagueId);
             officialLabel = text(officialLabel, "officialLabel");
             Objects.requireNonNull(period, "period");
-            evidenceIds = evidence(evidenceIds);
+            evidenceIds = List.copyOf(evidence(evidenceIds));
         }
     }
 
@@ -102,7 +102,7 @@ public final class BasketballDomain {
             requiredIds(id, teamId, leagueId, seasonId);
             Objects.requireNonNull(status, "status");
             Objects.requireNonNull(period, "period");
-            evidenceIds = evidence(evidenceIds);
+            evidenceIds = List.copyOf(evidence(evidenceIds));
         }
     }
 
@@ -122,7 +122,7 @@ public final class BasketballDomain {
             if (minutesPerGame != null && minutesPerGame.signum() < 0) {
                 throw new IllegalArgumentException("minutesPerGame cannot be negative");
             }
-            evidenceIds = evidence(evidenceIds);
+            evidenceIds = List.copyOf(evidence(evidenceIds));
         }
     }
 
@@ -131,7 +131,7 @@ public final class BasketballDomain {
             requiredIds(id);
             name = text(name, "name");
             Objects.requireNonNull(kind, "kind");
-            evidenceIds = evidence(evidenceIds);
+            evidenceIds = List.copyOf(evidence(evidenceIds));
         }
     }
 
@@ -141,8 +141,8 @@ public final class BasketballDomain {
             requiredIds(id, competitionId);
             officialName = text(officialName, "officialName");
             Objects.requireNonNull(period, "period");
-            aliases = BasketballDomain.aliases(id, aliases);
-            evidenceIds = evidence(evidenceIds);
+            aliases = List.copyOf(BasketballDomain.aliases(id, aliases));
+            evidenceIds = List.copyOf(evidence(evidenceIds));
         }
     }
 
@@ -155,7 +155,7 @@ public final class BasketballDomain {
             }
             Objects.requireNonNull(startsAt, "startsAt");
             venue = text(venue, "venue");
-            evidenceIds = evidence(evidenceIds);
+            evidenceIds = List.copyOf(evidence(evidenceIds));
         }
     }
 
@@ -169,7 +169,7 @@ public final class BasketballDomain {
             Objects.requireNonNull(discipline, "discipline");
             Objects.requireNonNull(period, "period");
             objective = text(objective, "objective");
-            evidenceIds = evidence(evidenceIds);
+            evidenceIds = List.copyOf(evidence(evidenceIds));
         }
     }
 
@@ -185,7 +185,7 @@ public final class BasketballDomain {
             if (playerId.equals(replacesPlayerId)) {
                 throw new IllegalArgumentException("a player cannot replace themself");
             }
-            evidenceIds = evidence(evidenceIds);
+            evidenceIds = List.copyOf(evidence(evidenceIds));
         }
     }
 
@@ -203,7 +203,7 @@ public final class BasketballDomain {
             if (entries.isEmpty() || entries.stream().map(RosterEntry::playerId).distinct().count() != entries.size()) {
                 throw new IllegalArgumentException("roster must contain distinct stable player IDs");
             }
-            evidenceIds = evidence(evidenceIds);
+            evidenceIds = List.copyOf(evidence(evidenceIds));
         }
     }
 
