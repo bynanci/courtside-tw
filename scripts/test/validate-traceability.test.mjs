@@ -9,6 +9,12 @@ import { fileURLToPath } from "node:url"
 
 import * as traceabilityValidator from "../validate-traceability.mjs"
 import {
+  taskStatusFixture,
+  authorizeTaskStatusFixture,
+  bootstrapFixture
+} from "./task-status-receipts.test.mjs"
+import "./task-status-gate.test.mjs"
+import {
   EXPECTED_OWNER_AUTHORIZATION as EXPECTED_T086_OWNER_AUTHORIZATION,
   T086_AUTHORIZATION_CREATED_AT,
   T086_AUTHORIZATION_REF,
@@ -3991,6 +3997,104 @@ test("completed T085 cannot accept a caller-claimed task receipt without authent
   })
   assert.equal(report.status, "FAIL")
   assert.match(report.errors.join("\n"), /task.status receipt/iu)
+})
+
+test("sealed receipt bootstrap authenticates its current-base six paths without replaying issue164 history", () => {
+  const completed = makeCompletedFixture()
+  const input = bootstrapFixture()
+  input.currentHead = fixtureReceiptHead
+  input.pullRequest.head.sha = fixtureReceiptHead
+  const report = runCompletedFixture(completed, {
+    changeBaseSha: input.baseSha,
+    changedPaths: input.changedPaths,
+    gitBinding: {
+      status: "CLEAN",
+      head: fixtureReceiptHead,
+      change_base_sha: input.baseSha,
+      change_base_ancestor: true
+    },
+    taskReceiptPolicyReadback: {
+      mode: "BOOTSTRAP",
+      input,
+      binding: { head: fixtureReceiptHead, base: input.baseSha }
+    }
+  })
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+  assert.equal(report.task_status_receipt_policy.mode, "BOOTSTRAP")
+  assert.deepEqual(report.scope_validation.unauthorized_paths, [])
+})
+
+function integratedTaskReceiptFixture() {
+  const completed = makeCompletedFixture()
+  const input = taskStatusFixture()
+  const p = `${featurePath}/tasks.md`
+  input.baseDocuments[p] = completed.changeBaseTasksText
+  input.targetDocuments[p] =
+    completed.changeBaseTasksText +
+    "\nCurrent task review: canonical task definitions and checkboxes are unchanged.\n"
+  input.receipt.base_sha = fixtureCompletedBase
+  input.pullRequest.base.sha = fixtureCompletedBase
+  input.pullRequest.head.sha = fixtureReceiptHead
+  input.protectedMainSha = fixtureCompletedBase
+  input.currentHead = fixtureReceiptHead
+  authorizeTaskStatusFixture(input)
+  for (const [file, text] of Object.entries(input.targetDocuments)) {
+    fs.mkdirSync(path.dirname(path.join(completed.root, file)), { recursive: true })
+    fs.writeFileSync(path.join(completed.root, file), text)
+  }
+  const receiptText = JSON.stringify(input.receipt)
+  fs.writeFileSync(
+    path.join(completed.root, ".loop/evidence/task-status-reconciliation.json"),
+    receiptText
+  )
+  return {
+    completed,
+    input,
+    receiptText,
+    binding: { head: fixtureReceiptHead, base: fixtureCompletedBase, receiptText }
+  }
+}
+
+test("authenticated docs receipt supersedes only the obsolete task-byte and post169 prose guards", () => {
+  const f = integratedTaskReceiptFixture()
+  const report = runCompletedFixture(f.completed, {
+    changedPaths: f.input.changedPaths,
+    taskReceiptPolicyReadback: { mode: "CANDIDATE", input: f.input, binding: f.binding }
+  })
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+  assert.equal(report.counts.checked_tasks, 86)
+  assert.deepEqual(report.scope_validation.unauthorized_paths, [])
+  assert.equal(report.task_status_receipt_policy.mode, "CANDIDATE")
+})
+
+test("ordinary descendant maintenance inherits an authenticated merged task snapshot without new path authority", () => {
+  const f = integratedTaskReceiptFixture()
+  f.input.mode = "ACCEPTED_BASE"
+  f.input.pullRequest.state = "closed"
+  f.input.pullRequest.merged = true
+  f.input.pullRequest.merge_commit_sha = "c".repeat(40)
+  f.input.receiptMergeAncestorOfBase = true
+  const options = {
+    changeBaseTasksText: f.input.targetDocuments[`${featurePath}/tasks.md`],
+    changedPaths: [".github/workflows/security.yml"],
+    taskReceiptPolicyReadback: {
+      mode: "ACCEPTED_BASE",
+      input: f.input,
+      binding: { ...f.binding, baseReceiptText: f.receiptText }
+    }
+  }
+  const report = runCompletedFixture(f.completed, options)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+  assert.equal(report.task_status_receipt_policy.mode, "ACCEPTED_BASE")
+  const unauthorized = runCompletedFixture(f.completed, {
+    ...options,
+    changedPaths: ["apps/web/app/pages/index.vue"]
+  })
+  assert.equal(unauthorized.status, "FAIL")
+  assert.match(
+    unauthorized.errors.join("\n"),
+    /outside the authorized post-T085 maintenance scope/u
+  )
 })
 
 for (const changedPath of [
@@ -14567,6 +14671,10 @@ test("Studio completion sealed singleton reaches full validator for draft, ready
         path.join(repositoryRoot, "scripts/validate-beta-release.mjs"),
         path.join(temporary, "validate-beta-release.mjs")
       )
+      fs.symlinkSync(
+        path.join(repositoryRoot, "scripts/task-status-receipts.mjs"),
+        path.join(temporary, "task-status-receipts.mjs")
+      )
       const source = fs.readFileSync(
         path.join(repositoryRoot, "scripts/validate-traceability.mjs"),
         "utf8"
@@ -15427,6 +15535,10 @@ test("Publication cache sealed singleton reaches full validator for draft, ready
       fs.symlinkSync(
         path.join(repositoryRoot, "scripts/validate-beta-release.mjs"),
         path.join(temporary, "validate-beta-release.mjs")
+      )
+      fs.symlinkSync(
+        path.join(repositoryRoot, "scripts/task-status-receipts.mjs"),
+        path.join(temporary, "task-status-receipts.mjs")
       )
       const source = fs.readFileSync(
         path.join(repositoryRoot, "scripts/validate-traceability.mjs"),

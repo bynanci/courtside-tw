@@ -27,7 +27,6 @@ concurrency:
 jobs:
   trusted-evaluation:
     name: Recompute trusted T086 gate
-    if: github.event_name != 'issue_comment' || github.event.issue.number == 160
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -64,11 +63,14 @@ jobs:
               if (left&&right&&typeof left==='object'&&typeof right==='object') return equal(Object.keys(left).sort(),Object.keys(right).sort())&&Object.keys(left).every(key=>equal(left[key],right[key]));
               return left===right;
             }
-            function classifyCandidate(number, files, count) {
+            function classifyCandidate(number, files, count, documentationVerdict) {
               if (number===161) return 'T086';
               if (!Number.isSafeInteger(number)||number<1||!Array.isArray(files)||files.length===0||files.length!==count) return 'UNKNOWN';
+              const documentPaths=['README.md','specs/001-taiwan-basketball-magazine-ebook/tasks.md','docs/design/arena-editorial-v3-tasks.md','.loop/evidence/task-status-reconciliation.json'];
+              if(documentationVerdict?.status==='PASS' && Array.isArray(documentationVerdict.allowedPaths) && documentationVerdict.allowedPaths.includes(documentPaths[3]) && documentationVerdict.allowedPaths.every(file=>documentPaths.includes(file)) && new Set(files.map(row=>row?.filename)).size===files.length && equal(files.map(row=>row?.filename).sort(),[...documentationVerdict.allowedPaths].sort()) && files.every(row=>['added','modified'].includes(row.status)&&row.previous_filename===undefined)) return 'NOT_APPLICABLE';
               for (const row of files) {
                 if (typeof row?.filename!=='string'||!row.filename|| (row.previous_filename!==undefined&&typeof row.previous_filename!=='string')) return 'UNKNOWN';
+                if(row.filename==='.loop/evidence/task-status-reconciliation.json'||row.previous_filename==='.loop/evidence/task-status-reconciliation.json') return 'T086';
                 for (const file of [row.filename,row.previous_filename].filter(Boolean)) {
                   if (/^(?:\.github\/workflows\/release\.yml|scripts\/(?:test\/)?validate-beta-release\.(?:test\.)?mjs|docs\/release\/beta-checklist\.md|\.loop\/(?:evidence\/)?t086[^/]*(?:\/.*)?|specs\/[^/]+\/(?:tasks|traceability)\.md)$/iu.test(file)) return 'T086';
                 }
@@ -182,6 +184,372 @@ jobs:
             }
             // T086_PURE_END
 
+            // TASK_STATUS_PURE_START
+            const TASK_STATUS_RECEIPT_PATH = ".loop/evidence/task-status-reconciliation.json"
+            const TASK_STATUS_DOCUMENT_PATHS = Object.freeze([
+              "README.md",
+              "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
+              "docs/design/arena-editorial-v3-tasks.md"
+            ])
+            const TASK_STATUS_RECEIPT_SCHEMA = "courtside-task-status-reconciliation/v1"
+            const taskReceiptHash = (text) => createHash("sha256").update(text).digest("hex")
+            const TASK_STATUS_BOUNDARIES = Object.freeze({
+              canonical_task_state_changed: false,
+              beta_flag_removed: false,
+              frozen_t085_evidence_changed: false,
+              ruleset_changed: false,
+              runtime_changed: false,
+              production_activated: false,
+              provider_configured: false,
+              credentials_or_secrets_changed: false,
+              participant_research_executed: false,
+              web3_activated: false
+            })
+            const taskReceiptEqual = (a, b) => {
+              if (Array.isArray(a) || Array.isArray(b))
+                return (
+                  Array.isArray(a) &&
+                  Array.isArray(b) &&
+                  a.length === b.length &&
+                  a.every((v, i) => taskReceiptEqual(v, b[i]))
+                )
+              if (a && b && typeof a === "object" && typeof b === "object")
+                return (
+                  taskReceiptEqual(Object.keys(a).sort(), Object.keys(b).sort()) &&
+                  Object.keys(a).every((k) => taskReceiptEqual(a[k], b[k]))
+                )
+              return a === b
+            }
+            const taskReceiptSamePaths = (a, b) =>
+              Array.isArray(a) &&
+              Array.isArray(b) &&
+              new Set(a).size === a.length &&
+              taskReceiptEqual([...a].sort(), [...b].sort())
+            const taskReceiptSha = (v) => typeof v === "string" && /^[a-f0-9]{40}$/u.test(v)
+            const taskReceiptSha256 = (v) => typeof v === "string" && /^[a-f0-9]{64}$/u.test(v)
+
+            function parseTaskReceiptJson(text) {
+              if (typeof text !== "string" || text.length > 1000000)
+                throw new Error("JSON size exceeds receipt limit")
+              let offset = 0
+              const whitespace = () => {
+                while (offset < text.length && /\s/u.test(text[offset])) offset++
+              }
+              function stringToken() {
+                const start = offset++
+                while (offset < text.length) {
+                  if (text[offset] === "\\") {
+                    offset += 2
+                    continue
+                  }
+                  if (text[offset++] === '"') return JSON.parse(text.slice(start, offset))
+                }
+                throw new Error("unterminated JSON string")
+              }
+              function value(depth) {
+                if (depth > 64) throw new Error("JSON nesting exceeds receipt limit")
+                whitespace()
+                const token = text[offset]
+                if (token === '"') {
+                  stringToken()
+                  return
+                }
+                if (token === "{" || token === "[") {
+                  const object = token === "{",
+                    close = object ? "}" : "]",
+                    keys = new Set()
+                  offset++
+                  whitespace()
+                  if (text[offset] === close) {
+                    offset++
+                    return
+                  }
+                  while (offset < text.length) {
+                    if (object) {
+                      whitespace()
+                      if (text[offset] !== '"') throw new Error("invalid JSON object key")
+                      const key = stringToken()
+                      if (keys.has(key)) throw new Error("duplicate JSON key")
+                      keys.add(key)
+                      whitespace()
+                      if (text[offset++] !== ":") throw new Error("invalid JSON object separator")
+                    }
+                    value(depth + 1)
+                    whitespace()
+                    if (text[offset] === close) {
+                      offset++
+                      return
+                    }
+                    if (text[offset++] !== ",") throw new Error("invalid JSON entry separator")
+                  }
+                  throw new Error("unterminated JSON container")
+                }
+                const literal = text
+                  .slice(offset)
+                  .match(/^(?:true|false|null|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)/u)
+                if (!literal) throw new Error("invalid JSON value")
+                offset += literal[0].length
+              }
+              value(0)
+              whitespace()
+              if (offset !== text.length) throw new Error("trailing JSON content")
+              return JSON.parse(text)
+            }
+
+            function taskReceiptContract(body) {
+              const start = "<!-- task-status-reconciliation:owner-authorization:start -->"
+              const end = "<!-- task-status-reconciliation:owner-authorization:end -->"
+              if (
+                typeof body !== "string" ||
+                body.split(start).length !== 2 ||
+                body.split(end).length !== 2 ||
+                body.indexOf(start) > body.indexOf(end)
+              )
+                throw new Error("missing or ambiguous authorization markers")
+              const block = body.split(start)[1].split(end)[0].trim()
+              if (!/^```json\s+[\s\S]+\s+```$/u.test(block)) throw new Error("invalid authorization JSON fence")
+              return parseTaskReceiptJson(block.replace(/^```json\s+/u, "").replace(/\s+```$/u, ""))
+            }
+
+            function taskStatusSignatures(text) {
+              if (typeof text !== "string") throw new Error("canonical tasks text is missing")
+              const rows = [...text.matchAll(/^- \[([ xX])\] (T\d{3})\b([^\n]*)/gmu)]
+              const expectedIds = Array.from({ length: 112 }, (_, i) => `T${String(i + 1).padStart(3, "0")}`)
+              if (
+                !taskReceiptEqual(
+                  rows.map((r) => r[2]),
+                  expectedIds
+                )
+              )
+                throw new Error("canonical task IDs must remain exactly T001–T112 in order")
+              const checkbox = taskReceiptHash(
+                rows.map(([, checked, id]) => `${id}:${checked.toLowerCase() === "x" ? "1" : "0"}`).join("\n")
+              )
+              if (checkbox !== "7229c5ad498658144e513f7af91a24b121b91817057e5673d3db3cb62aac73b3")
+                throw new Error("canonical checkbox signature must remain 86 complete and 26 pending")
+              const definition = taskReceiptHash(
+                rows
+                  .map(([row, , id]) =>
+                    id === "T086"
+                      ? row.replace(
+                          / Current governance (?:state|read-back) \(\d{4}-\d{2}-\d{2}\):[^\n]*$/u,
+                          ""
+                        )
+                      : row
+                  )
+                  .join("\n")
+              )
+              return { checkbox, definition }
+            }
+
+            function validateTaskStatusReceipt(input = {}) {
+              const errors = []
+              const need = (ok, reason) => {
+                if (!ok) errors.push(`task-status receipt: ${reason}`)
+              }
+              let allowedPaths = [],
+                baseTasksSha256 = null,
+                targetTasksSha256 = null
+              try {
+                const {
+                  receipt: r,
+                  authorization: a,
+                  baseDocuments: before,
+                  targetDocuments: after,
+                  pullRequest: pr,
+                  mode = "CANDIDATE"
+                } = input
+                need(mode === "CANDIDATE" || mode === "ACCEPTED_BASE", "invalid receipt mode")
+                need(
+                  r &&
+                    taskReceiptSamePaths(Object.keys(r), [
+                      "schema_version",
+                      "repository",
+                      "base_sha",
+                      "branch",
+                      "pull_request",
+                      "authorization_ref",
+                      "documents",
+                      "canonical_checkbox_signature_sha256",
+                      "task_definition_signature_sha256",
+                      "scope_boundaries",
+                      "completion_evidence"
+                    ]),
+                  "receipt fields are missing or unknown"
+                )
+                if (!r) throw new Error("receipt is missing")
+                need(
+                  r.schema_version === TASK_STATUS_RECEIPT_SCHEMA && r.repository === "bynanci/courtside-tw",
+                  "schema or repository mismatch"
+                )
+                need(
+                  taskReceiptSha(r.base_sha) &&
+                    Number.isSafeInteger(r.pull_request) &&
+                    r.pull_request > 0 &&
+                    typeof r.branch === "string" &&
+                    r.branch.length > 0,
+                  "invalid base or PR binding"
+                )
+                need(taskReceiptEqual(r.scope_boundaries, TASK_STATUS_BOUNDARIES), "scope boundaries changed")
+                need(
+                  taskReceiptSamePaths(Object.keys(r.documents ?? {}), TASK_STATUS_DOCUMENT_PATHS) &&
+                    taskReceiptSamePaths(Object.keys(before ?? {}), TASK_STATUS_DOCUMENT_PATHS) &&
+                    taskReceiptSamePaths(Object.keys(after ?? {}), TASK_STATUS_DOCUMENT_PATHS),
+                  "document inventory must be exactly README, canonical tasks and Arena ledger"
+                )
+                for (const p of TASK_STATUS_DOCUMENT_PATHS) {
+                  const d = r.documents?.[p]
+                  need(
+                    taskReceiptSamePaths(Object.keys(d ?? {}), ["before_sha256", "after_sha256"]) &&
+                      taskReceiptSha256(d?.before_sha256) &&
+                      taskReceiptSha256(d?.after_sha256),
+                    `invalid document digest ${p}`
+                  )
+                  need(
+                    typeof before?.[p] === "string" &&
+                      typeof after?.[p] === "string" &&
+                      taskReceiptHash(before[p]) === d?.before_sha256 &&
+                      taskReceiptHash(after[p]) === d?.after_sha256,
+                    `exact approved bytes mismatch ${p}`
+                  )
+                }
+                const ref = r.authorization_ref?.match(
+                  /^https:\/\/github\.com\/bynanci\/courtside-tw\/issues\/([1-9]\d*)#issuecomment-([1-9]\d*)$/u
+                )
+                need(
+                  ref &&
+                    a?.status === "VERIFIED" &&
+                    a?.source === "github-api" &&
+                    a?.html_url === r.authorization_ref &&
+                    a?.issue_url === `https://api.github.com/repos/bynanci/courtside-tw/issues/${ref?.[1]}` &&
+                    a?.user_login === "bynanci" &&
+                    a?.author_association === "OWNER" &&
+                    Number.isFinite(Date.parse(a?.created_at)) &&
+                    a?.created_at === a?.updated_at,
+                  "requires the exact unedited repository OWNER comment"
+                )
+                const expected = {
+                  ...r,
+                  schema_version: "courtside-task-status-reconciliation-owner-authorization/v1",
+                  decision: "TASK_STATUS_RECONCILIATION_ACCEPTED",
+                  accepted_by: "bynanci"
+                }
+                delete expected.authorization_ref
+                need(
+                  taskReceiptEqual(taskReceiptContract(a?.body), expected),
+                  "OWNER contract differs from the complete receipt"
+                )
+                const oldTasks = taskStatusSignatures(before?.[TASK_STATUS_DOCUMENT_PATHS[1]])
+                const newTasks = taskStatusSignatures(after?.[TASK_STATUS_DOCUMENT_PATHS[1]])
+                need(
+                  oldTasks.checkbox === newTasks.checkbox &&
+                    oldTasks.checkbox === r.canonical_checkbox_signature_sha256,
+                  "canonical task checkbox signature changed"
+                )
+                need(
+                  oldTasks.definition === newTasks.definition &&
+                    oldTasks.definition === r.task_definition_signature_sha256,
+                  "canonical task definitions changed"
+                )
+                const uiRows = (text) => [...text.matchAll(/^- \[([ xX])\] (UIR-\d{3})\b([^\n]*)/gmu)]
+                const oldUi = uiRows(before[TASK_STATUS_DOCUMENT_PATHS[2]])
+                const newUi = uiRows(after[TASK_STATUS_DOCUMENT_PATHS[2]])
+                need(
+                  taskReceiptEqual(
+                    oldUi.map((r) => r[2]),
+                    Array.from({ length: 17 }, (_, i) => `UIR-${String(i + 1).padStart(3, "0")}`)
+                  ) && oldUi.length === newUi.length,
+                  "UI ledger task inventory changed"
+                )
+                for (let i = 0; i < oldUi.length; i++) {
+                  if (oldUi[i][2] !== "UIR-017")
+                    need(oldUi[i][0] === newUi[i]?.[0], "only UIR-017 may change in the UI task rows")
+                  else {
+                    const definition =
+                      "UIR-017 — Merge the exact reviewed head and record the protected-main receipt."
+                    need(
+                      newUi[i]?.[2] === "UIR-017" &&
+                        oldUi[i][0].slice(6).startsWith(definition) &&
+                        newUi[i][0].slice(6).startsWith(definition) &&
+                        newUi[i][1].toLowerCase() === "x",
+                      "UIR-017 completion definition must be preserved"
+                    )
+                  }
+                }
+                const evidence = r.completion_evidence,
+                  ui = input.mergedUiPullRequest
+                need(
+                  taskReceiptSamePaths(Object.keys(evidence ?? {}), [
+                    "pull_request",
+                    "head_sha",
+                    "merge_sha"
+                  ]) &&
+                    evidence.pull_request === 187 &&
+                    taskReceiptSha(evidence.head_sha) &&
+                    taskReceiptSha(evidence.merge_sha) &&
+                    ui?.number === 187 &&
+                    ui?.state === "closed" &&
+                    ui?.merged === true &&
+                    ui?.head?.sha === evidence.head_sha &&
+                    ui?.merge_commit_sha === evidence.merge_sha &&
+                    input.uiMergeAncestorOfBase === true,
+                  "UI completion requires the exact merged PR #187 already in the authorized base"
+                )
+                need(
+                  pr?.number === r.pull_request &&
+                    pr?.head?.ref === r.branch &&
+                    pr?.head?.repo?.full_name === r.repository &&
+                    pr?.base?.repo?.full_name === r.repository &&
+                    pr?.base?.ref === "main" &&
+                    pr?.base?.sha === r.base_sha &&
+                    taskReceiptSha(pr?.head?.sha),
+                  "live same-repository PR binding differs"
+                )
+                const closure = [
+                  ...TASK_STATUS_DOCUMENT_PATHS.filter((p) => before[p] !== after[p]),
+                  TASK_STATUS_RECEIPT_PATH
+                ]
+                need(
+                  taskReceiptSamePaths(input.changedPaths, closure) &&
+                    taskReceiptSamePaths(input.candidateHistoryPaths, closure) &&
+                    input.candidateLinearHistory === true &&
+                    input.candidateCommittedAfterAuthorization === true,
+                  "requires exact closed documentation history after authorization"
+                )
+                if (mode === "CANDIDATE") {
+                  need(
+                    input.protectedMainSha === r.base_sha &&
+                      input.currentHead === pr?.head?.sha &&
+                      pr?.state === "open" &&
+                      pr?.merged === false,
+                    "candidate must bind the current protected base and exact open PR head"
+                  )
+                  allowedPaths = closure
+                } else {
+                  need(
+                    pr?.state === "closed" &&
+                      pr?.merged === true &&
+                      taskReceiptSha(pr?.merge_commit_sha) &&
+                      input.receiptMergeAncestorOfBase === true,
+                    "accepted snapshot requires a merged receipt ancestor of the evaluated base"
+                  )
+                }
+                baseTasksSha256 = r.documents[TASK_STATUS_DOCUMENT_PATHS[1]].before_sha256
+                targetTasksSha256 = r.documents[TASK_STATUS_DOCUMENT_PATHS[1]].after_sha256
+              } catch (error) {
+                errors.push(`task-status receipt: ${error.message}`)
+              }
+              return {
+                status: errors.length ? "FAIL" : "PASS",
+                errors,
+                mode: input.mode ?? "CANDIDATE",
+                allowedPaths: errors.length ? [] : allowedPaths,
+                baseTasksSha256,
+                targetTasksSha256
+              }
+            }
+            // TASK_STATUS_PURE_END
+
             const CHECK_NAME='T086 final release decision';
             const APP_ID=15368;
             const {owner,repo}=context.repo;
@@ -208,6 +576,41 @@ jobs:
               const {data}=await github.rest.repos.getContent({owner,repo,path:file,ref});
               if(Array.isArray(data)||data.type!=='file'||data.encoding!=='base64'||data.size>1000000) throw new Error('Unavailable or oversized source file');
               return {sha:data.sha,text:Buffer.from(data.content,'base64').toString('utf8')};
+            }
+            async function taskDocumentationRead(pr,base,files) {
+              if(!files.some(row=>row.filename===TASK_STATUS_RECEIPT_PATH)) return null;
+              try {
+                const receipt=parseTaskReceiptJson((await fileRead(TASK_STATUS_RECEIPT_PATH,pr.head.sha)).text);
+                const match=receipt.authorization_ref?.match(/^https:\/\/github\.com\/bynanci\/courtside-tw\/issues\/([1-9]\d*)#issuecomment-([1-9]\d*)$/u);
+                if(!match) throw new Error('Malformed documentation authority reference');
+                const comment=(await github.rest.issues.getComment({owner,repo,comment_id:Number(match[2])})).data;
+                const authorization={status:'VERIFIED',source:'github-api',html_url:comment.html_url,issue_url:comment.issue_url,user_login:comment.user?.login,author_association:comment.author_association,created_at:comment.created_at,updated_at:comment.updated_at,body:comment.body};
+                const baseDocuments={},targetDocuments={};
+                for(const file of TASK_STATUS_DOCUMENT_PATHS) {
+                  const [before,after]=await Promise.all([fileRead(file,base),fileRead(file,pr.head.sha)]);
+                  baseDocuments[file]=before.text;targetDocuments[file]=after.text;
+                }
+                const comparison=(await github.rest.repos.compareCommitsWithBasehead({owner,repo,basehead:`${base}...${pr.head.sha}`})).data;
+                if(comparison.merge_base_commit?.sha!==base||!Number.isSafeInteger(comparison.total_commits)||comparison.total_commits<1||comparison.total_commits>250||comparison.commits?.length!==comparison.total_commits) throw new Error('Incomplete documentation ancestry read-back');
+                const history=new Set();let previous=base,last=null;
+                for(const commit of comparison.commits) {
+                  if(commit.parents?.length!==1||commit.parents[0].sha!==previous) throw new Error('Nonlinear documentation history');
+                  const changes=await paginated('GET /repos/{owner}/{repo}/commits/{ref}',{ref:commit.sha},'files');
+                  if(changes.length<1||changes.length>4||changes.some(row=>!['added','modified'].includes(row.status)||row.previous_filename!==undefined)) throw new Error('Documentation history contains invalid changes');
+                  for(const row of changes) history.add(row.filename);
+                  previous=commit.sha;last=commit;
+                }
+                if(previous!==pr.head.sha) throw new Error('Documentation head is not the last compared commit');
+                const mergedUiPullRequest=await prRead(187);
+                const uiComparison=(await github.rest.repos.compareCommitsWithBasehead({owner,repo,basehead:`${receipt.completion_evidence?.merge_sha}...${base}`})).data;
+                const verdict=validateTaskStatusReceipt({mode:'CANDIDATE',receipt,authorization,baseDocuments,targetDocuments,pullRequest:pr,protectedMainSha:base,currentHead:pr.head.sha,mergedUiPullRequest,uiMergeAncestorOfBase:uiComparison.merge_base_commit?.sha===receipt.completion_evidence?.merge_sha,changedPaths:files.map(row=>row.filename),candidateHistoryPaths:[...history],candidateLinearHistory:true,candidateCommittedAfterAuthorization:Date.parse(last?.commit?.committer?.date)>Date.parse(comment.created_at)});
+                return {...verdict,authority_comment_id:comment.id,authority_identity:commentIdentity(comment),authority_url:comment.html_url};
+              } catch(error) {return {status:'FAIL',allowedPaths:[],errors:[error.message]};}
+            }
+            async function taskDocumentationRecheck(documentation) {
+              if(documentation?.status!=='PASS') return;
+              const freshAuthority=(await github.rest.issues.getComment({owner,repo,comment_id:documentation.authority_comment_id})).data;
+              if(freshAuthority.user?.login!=='bynanci'||freshAuthority.author_association!=='OWNER'||freshAuthority.html_url!==documentation.authority_url||!equal(commentIdentity(freshAuthority),documentation.authority_identity)) throw new Error('Documentation authority changed or was deleted during evaluation');
             }
             async function checkStart(pr) {
               const existing=await paginated('GET /repos/{owner}/{repo}/commits/{ref}/check-runs',{ref:pr.head.sha,check_name:CHECK_NAME,filter:'all'},'check_runs');
@@ -343,13 +746,18 @@ jobs:
                 const binding={candidate_sha:item.pr.head.sha,protected_base_sha:main.commit.sha,workflow_blob:workflowSource.sha,comment_fence:advanceCommentFence(item.fence,canonicalComment(comments),context.payload)};
                 try {
                   const files=await paginated('GET /repos/{owner}/{repo}/pulls/{pull_number}/files',{pull_number:item.pr.number});
-                  const classification=classifyCandidate(item.pr.number,files,item.pr.changed_files);
+                  const documentation=await taskDocumentationRead(item.pr,main.commit.sha,files);
+                  const classification=classifyCandidate(item.pr.number,files,item.pr.changed_files,documentation);
                   let state=null;
                   let result={decision:'HOLD',reasons:['Missing or ambiguous scope classification']};
-                  if(classification==='NOT_APPLICABLE') result={decision:'NOT_APPLICABLE',reasons:['Complete GitHub file read-back contains no T086 release paths']};
+                  if(classification==='NOT_APPLICABLE') {
+                    result={decision:'NOT_APPLICABLE',reasons:[documentation?.status==='PASS'?'Exact documentation receipt authenticated; canonical task states and definitions preserved':'Complete GitHub file read-back contains no T086 release paths']};
+                    if(documentation?.status==='PASS') binding.task_status_receipt={authorization_ref:documentation.authority_url,authority_identity:documentation.authority_identity,base_tasks_sha256:documentation.baseTasksSha256,target_tasks_sha256:documentation.targetTasksSha256};
+                  }
                   if(classification==='T086') {state=await snapshot(item.pr,main.commit.sha,files,comments);state.commentFence=binding.comment_fence;result=evaluateSnapshot(state);Object.assign(binding,{frozen_t085_traceability_sha256:state.frozenHash,runs:state.runs,artifact:state.artifact,comment:result.comment});}
                   const [freshPr,freshMain,freshComments]=await Promise.all([prRead(item.pr.number),github.rest.repos.getBranch({owner,repo,branch:'main'}),paginated('GET /repos/{owner}/{repo}/issues/{issue_number}/comments',{issue_number:160})]);
                   if(freshPr.state!=='open'||freshPr.head.sha!==item.pr.head.sha||freshPr.base.ref!=='main'||freshMain.data.commit.sha!==main.commit.sha||!freshMain.data.protected||!equal(commentIdentity(canonicalComment(comments)),commentIdentity(canonicalComment(freshComments)))) throw new Error('Head, protected base or canonical comment changed during evaluation');
+                  await taskDocumentationRecheck(documentation);
                   if(state?.runs) for(const expected of state.runs) {const {data:live}=await github.rest.actions.getWorkflowRun({owner,repo,run_id:expected.id});if(live.run_attempt!==expected.attempt||live.updated_at!==expected.updated_at||live.conclusion!=='success'||live.status!=='completed') throw new Error('Workflow evidence changed during evaluation');}
                   await checkFinish(item.id,result,binding);item.finished=true;
                 } catch(error) {await checkFinish(item.id,{decision:'HOLD',reasons:[error.message]},binding);item.finished=true;}
