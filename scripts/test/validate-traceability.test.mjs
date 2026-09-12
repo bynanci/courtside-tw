@@ -3979,6 +3979,20 @@ test("completed T085 permits unrelated post-receipt work without replaying the t
   assert.equal(report.scope_boundaries.t086_dispatched, false)
 })
 
+test("completed T085 cannot accept a caller-claimed task receipt without authenticated content", () => {
+  const fixture = makeCompletedFixture()
+  const report = runCompletedFixture(fixture, {
+    taskReceiptPolicyReadback: {
+      status: "VERIFIED",
+      source: "github-api",
+      mode: "ACCEPTED_BASE",
+      targetTasksSha256: fixture.acceptedCompletedTasksSha256
+    }
+  })
+  assert.equal(report.status, "FAIL")
+  assert.match(report.errors.join("\n"), /task.status receipt/iu)
+})
+
 for (const changedPath of [
   "infra/compose/postgres/Dockerfile",
   "infra/compose/s3mock/Dockerfile",
