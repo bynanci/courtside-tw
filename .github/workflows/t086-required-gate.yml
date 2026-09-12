@@ -16,17 +16,37 @@ on:
 
 permissions: {}
 
-# Each run reconciles ALL current PRs, so a newer pending event safely subsumes
-# an older one. Never cancel an active invalidation or publish cached event state.
-# The same exact three-path contract also read-backs the single protected-main
-# squash push after this producer is merged; push evidence never authorizes a PR.
-concurrency:
-  group: t086-required-gate-${{ github.repository }}
-  cancel-in-progress: false
-
 jobs:
   trusted-evaluation:
     name: Recompute trusted T086 gate
+    # Comment authors bind authority; an admin deleting an OWNER comment must
+    # still invalidate it even after its markers disappear. Preserve all comment
+    # events on pinned issue seals whose updated_at is checked by CI.
+    if: >-
+      github.event_name != 'issue_comment' ||
+      github.event.issue.number == 188 ||
+      github.event.issue.number == 191 ||
+      github.event.issue.number == 192 ||
+      (github.event.comment.user.login == 'bynanci' &&
+       github.event.comment.author_association == 'OWNER' &&
+       (github.event.action == 'edited' ||
+        github.event.action == 'deleted' ||
+        (github.event.action == 'created' &&
+         ((github.event.issue.number == 160 &&
+           contains(github.event.comment.body, '<!-- t086:owner-adjudication:start -->')) ||
+          (github.event.issue.number == 164 &&
+           contains(github.event.comment.body, '<!-- t086-required-gate:owner-exact-path-dispatch:')) ||
+          (github.event.issue.number == 193 &&
+           contains(github.event.comment.body, '<!-- t086:owner-authorization:start -->')) ||
+          contains(github.event.comment.body, '<!-- task-status-reconciliation:owner-authorization:start -->') ||
+          contains(github.event.comment.body, '<!-- task-receipt-bootstrap:owner-authorization:start -->')))))
+    # Only admitted jobs share the queue, so ignored comments cannot replace a
+    # pending invalidation. Each run reconciles ALL current PRs from live state;
+    # a newer pending event safely subsumes an older one. Never cancel active work.
+    # The protected-main squash read-back never authorizes a candidate PR.
+    concurrency:
+      group: t086-required-gate-${{ github.repository }}
+      cancel-in-progress: false
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -590,6 +610,9 @@ jobs:
                   const [before,after]=await Promise.all([fileRead(file,base),fileRead(file,pr.head.sha)]);
                   baseDocuments[file]=before.text;targetDocuments[file]=after.text;
                 }
+                // With neither page nor per_page, Compare returns up to 250 commits;
+                // keep that bounded contract and reject any incomplete response below.
+                // https://docs.github.com/en/rest/commits/commits#compare-two-commits
                 const comparison=(await github.rest.repos.compareCommitsWithBasehead({owner,repo,basehead:`${base}...${pr.head.sha}`})).data;
                 if(comparison.merge_base_commit?.sha!==base||!Number.isSafeInteger(comparison.total_commits)||comparison.total_commits<1||comparison.total_commits>250||comparison.commits?.length!==comparison.total_commits) throw new Error('Incomplete documentation ancestry read-back');
                 const history=new Set();let previous=base,last=null;
