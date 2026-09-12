@@ -94,3 +94,37 @@ test("publisher passport lifecycle is an exact BFF route and cannot widen identi
   assert.equal(isAllowedStudioPath(`publisher/passport/${id}/status/extra`), false)
   assert.equal(isAllowedStudioPath("publisher/passport/../admin/status"), false)
 })
+
+test("Studio BFF admits the exact reviewed evidence and recap routes", () => {
+  const id = "00000000-0000-4000-8000-000000000001"
+  assert.equal(isAllowedStudioPath("publisher/season-recaps"), true)
+  for (const role of ["publisher", "admin"]) {
+    for (const resource of ["snapshots", "facts", `evidence/${id}`, `evidence/${id}:confirm`]) {
+      assert.equal(isAllowedStudioPath(`${role}/basketball/${resource}`), true)
+    }
+  }
+})
+
+test("Studio BFF rejects widened evidence, recap, and admin surfaces", () => {
+  const id = "00000000-0000-4000-8000-000000000001"
+  for (const path of [
+    "editor/season-recaps",
+    "admin/season-recaps",
+    "publisher/season-recaps:publish",
+    "publisher/season-recaps/extra",
+    "editor/basketball/facts",
+    "admin/basketball",
+    "admin/basketball/facts/extra",
+    "publisher/basketball/snapshots:approve",
+    "publisher/basketball/evidence",
+    "publisher/basketball/evidence/invalid-id",
+    `publisher/basketball/evidence/${id}:delete`,
+    `admin/basketball/evidence/${id}:confirm/extra`,
+    "admin/basketball/evidence/../facts",
+    "admin/basketball/evidence/%2e%2e/facts",
+    "admin/basketball/evidence\\facts",
+    "publisher/basketball/facts\u0000"
+  ]) {
+    assert.equal(isAllowedStudioPath(path), false, path)
+  }
+})

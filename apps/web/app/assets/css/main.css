@@ -37,7 +37,7 @@
   --color-text-muted-on-hero: var(--palette-stone-400);
   --color-border-on-hero: rgb(242 238 229 / 20%);
   --color-line-on-hero: rgb(242 238 229 / 18%);
-  --color-issue-number-on-hero: rgb(242 238 229 / 10%);
+  --color-issue-number-on-hero: rgb(242 238 229 / 40%);
   --color-scene-scrim: var(--palette-scrim-strong);
   --color-scene-scrim-soft: var(--palette-scrim-soft);
   --color-focus: var(--color-action);

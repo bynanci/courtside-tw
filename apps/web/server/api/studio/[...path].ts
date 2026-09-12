@@ -21,6 +21,8 @@ import { validateTrustedApiOrigin } from "../../security/headers.ts"
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"])
 const PUBLISHER_PASSPORT_STATUS_PATH =
   /^publisher\/passport\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\/status$/iu
+const BASKETBALL_INTAKE_PATH =
+  /^(?:publisher|admin)\/basketball\/(?:snapshots|facts|evidence\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}(?::confirm)?)$/iu
 const ALLOWED_PREFIXES = [
   "editor/articles",
   "editor/contributors",
@@ -152,7 +154,9 @@ export function isSafeProxyPath(path: string): boolean {
 export function isAllowedStudioPath(path: string): boolean {
   return (
     isSafeProxyPath(path) &&
-    (PUBLISHER_PASSPORT_STATUS_PATH.test(path) ||
+    (path === "publisher/season-recaps" ||
+      BASKETBALL_INTAKE_PATH.test(path) ||
+      PUBLISHER_PASSPORT_STATUS_PATH.test(path) ||
       ALLOWED_PREFIXES.some(
         (prefix) =>
           path === prefix || path.startsWith(`${prefix}/`) || path.startsWith(`${prefix}:`)

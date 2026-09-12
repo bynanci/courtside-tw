@@ -974,7 +974,8 @@ public final class EditorialWorkflowService {
         if (article.title().isBlank()
                 || article.content() == null
                 || !article.content().isObject()
-                || !contentDocumentValidator.validate(article.content().toString()).valid()) {
+                || !contentDocumentValidator.validate(article.content().toString()).valid()
+                || !repository.recapContentReady(article.content(), applicationClock.now())) {
             return false;
         }
         try {

@@ -44,6 +44,7 @@ async function privateApi(page: Page) {
   await page.route("**/api/reader/me/passport", (route) =>
     route.fulfill({
       json: {
+        items: [],
         wallets: linked
           ? [{ chainNamespace: "eip155", address: ADDRESS, linkedAt: new Date().toISOString() }]
           : []
@@ -166,7 +167,7 @@ test.describe("explicitly enabled private wallet settings", () => {
         "accountsChanged"
       )
     )
-    await expect(page.getByRole("alert")).toContainText("已變更")
+    await expect(page.getByTestId("wallet-settings").getByRole("alert")).toContainText("已變更")
     await expect(page.getByRole("button", { name: "開啟錢包並簽章" })).toHaveCount(0)
     expect(
       await page.evaluate(() =>
@@ -185,7 +186,7 @@ test.describe("explicitly enabled private wallet settings", () => {
       await privateApi(page)
       await page.goto("/settings/privacy")
       await page.getByRole("button", { name: "選擇錢包並連結" }).click()
-      await expect(page.getByRole("alert")).toBeVisible()
+      await expect(page.getByTestId("wallet-settings").getByRole("alert")).toBeVisible()
       await expect(page.getByRole("button", { name: "下載資料" })).toBeVisible()
       await page.goto("/articles/opening-night")
       await expect(page.getByRole("heading", { level: 1 })).toContainText("主場燈光亮起之前")

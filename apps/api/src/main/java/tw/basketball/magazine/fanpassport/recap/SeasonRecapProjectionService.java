@@ -23,18 +23,40 @@ public final class SeasonRecapProjectionService {
 
     public Projection project(Request request) {
         SourceSnapshot snapshot = source.read(request.seasonId(), request.projectionId(), request.posterAssetId());
-        return project(request, snapshot.signals(), snapshot.rights(), clock.get());
+        return projectSnapshot(request, snapshot);
+    }
+
+    public Projection generate(Request request, List<UUID> canonicalFactIds) {
+        return projectSnapshot(request, source.readCanonical(request, canonicalFactIds));
+    }
+
+    private Projection projectSnapshot(Request request, SourceSnapshot snapshot) {
+        Projection result = project(request, snapshot.signals(), snapshot.rights(), clock.get());
+        if (!snapshot.evidenceSnapshotIds().containsAll(result.evidenceSnapshotIds())) {
+            throw new IllegalArgumentException("recap snapshot omits signal evidence");
+        }
+        return new Projection(result.seasonId(), result.projectionId(), result.posterAssetId(), result.seed(),
+                result.altText(), result.dataSummary(), result.asOf(), result.values(), snapshot.evidenceSnapshotIds());
     }
 
     /** Source must read a reviewed, immutable evidence projection and current rights through application ports. */
     public interface ProjectionSource {
         SourceSnapshot read(UUID seasonId, UUID projectionId, UUID posterAssetId);
+
+        default SourceSnapshot readCanonical(Request request, List<UUID> canonicalFactIds) {
+            throw new IllegalArgumentException("canonical recap generation is unavailable");
+        }
     }
 
-    public record SourceSnapshot(List<Signal> signals, Rights rights) {
+    public record SourceSnapshot(List<Signal> signals, Rights rights, List<UUID> evidenceSnapshotIds) {
+        public SourceSnapshot(List<Signal> signals, Rights rights) {
+            this(signals, rights, signals.stream().map(Signal::snapshotId).distinct().sorted().toList());
+        }
+
         public SourceSnapshot {
             signals = List.copyOf(signals);
             Objects.requireNonNull(rights, "rights");
+            evidenceSnapshotIds = List.copyOf(evidenceSnapshotIds);
         }
     }
 

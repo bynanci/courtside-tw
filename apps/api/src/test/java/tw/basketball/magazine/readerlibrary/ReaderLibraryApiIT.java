@@ -139,6 +139,52 @@ final class ReaderLibraryApiIT {
     }
 
     @Test
+    void acknowledgedCompletionSurvivesRereadingButNeverCarriesIntoAnotherRevision() throws Exception {
+        ArticleFixture first = publishedArticle("reader-completion");
+        putProgress(first, 100, "complete-first-version");
+        mockMvc.perform(put("/api/v1/me/progress/{articleId}", first.articleId())
+                        .principal(reader(SUBJECT))
+                        .contentType(JSON)
+                        .header("Idempotency-Key", "reread-first-version")
+                        .content(progressBody(first.revisionId(), first.blockId(), 25)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.percent").value(100));
+
+        UUID revision = UUID.randomUUID();
+        UUID finalBlock = UUID.randomUUID();
+        jdbcTemplate.update("""
+                INSERT INTO article_revision (
+                    id, article_id, revision_number, title, dek, content_document, state
+                ) SELECT ?, article_id, 2, title, dek,
+                    content_document || jsonb_build_object('blocks',
+                        (content_document->'blocks') || ?::jsonb), 'PUBLISHED'
+                  FROM article_revision WHERE id=?
+                """, revision, """
+                [{"id":"%s","type":"paragraph","version":1,
+                  "payload":{"content":[{"kind":"text","text":"New final paragraph"}]}}]
+                """.formatted(finalBlock), first.revisionId());
+        jdbcTemplate.update("UPDATE article SET published_revision_id=? WHERE id=?",
+                revision, first.articleId());
+        ArticleFixture second = new ArticleFixture(first.articleId(), revision, finalBlock);
+        putProgress(second, 20, "read-new-version");
+        putProgress(second, 100, "complete-new-version");
+        mockMvc.perform(put("/api/v1/me/progress/{articleId}", first.articleId())
+                        .principal(reader(SUBJECT))
+                        .contentType(JSON)
+                        .header("Idempotency-Key", "reread-new-version-cursor")
+                        .content(progressBody(revision, first.blockId(), 10)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.percent").value(100))
+                .andExpect(jsonPath("$.blockId").value(first.blockId().toString()));
+        mockMvc.perform(put("/api/v1/me/progress/{articleId}", first.articleId())
+                        .principal(reader(SUBJECT))
+                        .contentType(JSON)
+                        .header("Idempotency-Key", "stale-completion-denied")
+                        .content(progressBody(first.revisionId(), first.blockId(), 100)))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
     void progressIsRevisionAwareAndMergeRequiresExplicitApply() throws Exception {
         ArticleFixture article = publishedArticle("reader-progress");
         putProgress(article, 20, "progress-upsert-1");

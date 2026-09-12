@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.function.Consumer;
 import tools.jackson.databind.ObjectMapper;
 import tw.basketball.magazine.basketball.domain.BasketballDomain;
 import tw.basketball.magazine.basketball.ports.BasketballFactStore;
@@ -28,11 +29,18 @@ public final class BasketballCatalogService implements BasketballProjection {
     }
 
     public void append(Record value) {
+        appendReviewed(value, ignored -> { });
+    }
+
+    /** Validate under the catalog lock before retaining a human review, then append the immutable fact. */
+    public void appendReviewed(Record value, Consumer<BasketballFactStore.Fact> review) {
         writeAuthority.run();
+        Objects.requireNonNull(review, "review");
         BasketballFactStore.Fact fact = encode(value);
         store.transact(session -> {
             BasketballCatalog catalog = hydrate(session.history());
             add(catalog, value);
+            review.accept(fact);
             session.append(fact);
             return null;
         });

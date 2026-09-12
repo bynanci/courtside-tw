@@ -56,16 +56,10 @@ public final class ProvenanceService {
     private final ManifestCanonicalizer canonicalizer = new ManifestCanonicalizer();
 
     public ProvenanceService(JdbcOperations jdbc, TransactionOperations transaction, ObjectMapper json, Clock clock) {
-        this(jdbc, transaction, Objects.requireNonNull(json).readerFor(new TypeReference<Map<String, Object>>() { }),
-                json.writer(), clock);
-    }
-
-    public ProvenanceService(JdbcOperations jdbc, TransactionOperations transaction,
-            ObjectReader manifestReader, ObjectWriter jsonWriter, Clock clock) {
         this.jdbc = Objects.requireNonNull(jdbc);
         this.transaction = Objects.requireNonNull(transaction);
-        this.manifestReader = Objects.requireNonNull(manifestReader);
-        this.jsonWriter = Objects.requireNonNull(jsonWriter);
+        this.manifestReader = Objects.requireNonNull(json).readerFor(new TypeReference<Map<String, Object>>() { });
+        this.jsonWriter = json.writer();
         this.clock = Objects.requireNonNull(clock);
     }
 

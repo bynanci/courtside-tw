@@ -2,7 +2,7 @@ package tw.basketball.magazine.provenance.api;
 
 import java.time.Clock;
 import java.util.List;
-import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 import org.springframework.beans.factory.ObjectProvider;
@@ -17,10 +17,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RestController;
 
-import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
-import tools.jackson.databind.ObjectReader;
-import tools.jackson.databind.ObjectWriter;
 import tw.basketball.magazine.provenance.application.ProvenanceService;
 import tw.basketball.magazine.shared.ProblemCode;
 import tw.basketball.magazine.shared.ProblemDetails;
@@ -32,15 +29,14 @@ import tw.basketball.magazine.shared.RequestId;
 public final class PublicProvenanceController {
     private final ObjectProvider<JdbcTemplate> jdbc;
     private final ObjectProvider<PlatformTransactionManager> manager;
-    private final ObjectReader manifestReader;
-    private final ObjectWriter jsonWriter;
+    private final ObjectMapper json;
     private final boolean enabled;
     public PublicProvenanceController(ObjectProvider<JdbcTemplate> jdbc,
             ObjectProvider<PlatformTransactionManager> manager, ObjectMapper json,
             @Value("${courtside.web3.provenance:false}") boolean enabled) {
         this.jdbc = jdbc; this.manager = manager;
-        this.manifestReader = json.readerFor(new TypeReference<Map<String, Object>>() { });
-        this.jsonWriter = json.writer(); this.enabled = enabled;
+        // Own a configuration-preserving copy for lazy services; do not retain the injected instance.
+        this.json = Objects.requireNonNull(json).rebuild().build(); this.enabled = enabled;
     }
     @GetMapping("/api/v1/public/issues/{issueSlug}/provenance")
     public ResponseEntity<?> get(@PathVariable String issueSlug) {
@@ -53,7 +49,7 @@ public final class PublicProvenanceController {
             return problem(ProblemCode.RESOURCE_NOT_FOUND);
         }
         ProvenanceService service = new ProvenanceService(database, new TransactionTemplate(transactions),
-                manifestReader, jsonWriter, Clock.systemUTC());
+                json, Clock.systemUTC());
         return service.publicIssue(issueSlug).<ResponseEntity<?>>map(value -> ResponseEntity.ok()
                 .cacheControl(CacheControl.noStore()).header("X-Request-Id", "req-" + UUID.randomUUID()).body(value))
                 .orElseGet(() -> problem(ProblemCode.RESOURCE_NOT_FOUND));

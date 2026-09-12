@@ -145,6 +145,7 @@ public final class JdbcEditorialArticleRepository implements EditorialArticleRep
 
     @Override
     public ArticleRecord insertDraft(String title, String slug, String dek, JsonNode content) {
+        requireRecapContent(content);
         UUID articleId = idGenerator.next();
         UUID revisionId = idGenerator.next();
         jdbcTemplate.update("""
@@ -269,6 +270,7 @@ public final class JdbcEditorialArticleRepository implements EditorialArticleRep
             String dek,
             JsonNode content
     ) {
+        requireRecapContent(content);
         int articleRows = jdbcTemplate.update("""
                 UPDATE article
                 SET slug = ?, version = version + 1, updated_at = transaction_timestamp()
@@ -298,6 +300,7 @@ public final class JdbcEditorialArticleRepository implements EditorialArticleRep
             String dek,
             JsonNode content
     ) {
+        requireRecapContent(content);
         int articleRows = jdbcTemplate.update("""
                 UPDATE article
                 SET state = 'DRAFT', version = version + 1,
@@ -323,6 +326,18 @@ public final class JdbcEditorialArticleRepository implements EditorialArticleRep
         }
         syncMediaReferences(revisionId, content);
         return true;
+    }
+
+    @Override
+    public boolean recapContentReady(JsonNode content, Instant now) {
+        return tw.basketball.magazine.fanpassport.recap.SeasonRecapPublicationGuard.validate(
+                content, jdbcTemplate, objectMapper, now, "PUBLIC_WEB");
+    }
+
+    private void requireRecapContent(JsonNode content) {
+        if (!recapContentReady(content, Instant.now())) {
+            throw new IllegalArgumentException("recap must match current approved canonical projection");
+        }
     }
 
     private void syncMediaReferences(UUID revisionId, JsonNode content) {

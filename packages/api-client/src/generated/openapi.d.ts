@@ -1373,10 +1373,683 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  "/api/v1/publisher/basketball/snapshots": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Submit immutable source evidence for review
+     * @description Requires PUBLISHER. Stores a rights-approved minimal reference without fetching its URL. Server assigns retrieval time, checksum and REPORTED status; body UUID identities make an identical retry safe and reject changed bytes. Source submission does not authorize canonical publication.
+     */
+    post: operations["submitPublisherBasketballSnapshot"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/publisher/basketball/evidence/{evidenceId}:confirm": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Explicitly confirm a retained reported source
+     * @description Requires PUBLISHER. Retains the original REPORTED reference and creates a separately identified CONFIRMED reference only after an attributable human review. Rationale is required; reviewer and decision time come from server identity/time. Unknown, future, expired, stale or analysis evidence is rejected.
+     */
+    post: operations["confirmPublisherBasketballEvidence"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/publisher/basketball/facts": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Append one reviewed canonical basketball fact
+     * @description Requires PUBLISHER. Accepts exactly one immutable record using existing canonical relationship and temporal validation. Every nested evidence ID must identify fresh CONFIRMED evidence with an explicit latest human review. Alias and roster histories append. Human review is recorded before catalog append, and does not itself assert that the subsequent fact transaction committed.
+     */
+    post: operations["appendPublisherBasketballFact"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/publisher/basketball/evidence/{evidenceId}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Read private source material and its audit history
+     * @description Requires PUBLISHER. Returns retained source material, rights reference, original metadata and review history for editorial inspection; this response is private and no-store.
+     */
+    get: operations["getPublisherBasketballEvidence"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/admin/basketball/snapshots": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Submit immutable source evidence for review
+     * @description Requires ADMIN. Stores a rights-approved minimal reference without fetching its URL. Server assigns retrieval time, checksum and REPORTED status; body UUID identities make an identical retry safe and reject changed bytes. Source submission does not authorize canonical publication.
+     */
+    post: operations["submitAdminBasketballSnapshot"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/admin/basketball/evidence/{evidenceId}:confirm": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Explicitly confirm a retained reported source
+     * @description Requires ADMIN. Retains the original REPORTED reference and creates a separately identified CONFIRMED reference only after an attributable human review. Rationale is required; reviewer and decision time come from server identity/time. Unknown, future, expired, stale or analysis evidence is rejected.
+     */
+    post: operations["confirmAdminBasketballEvidence"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/admin/basketball/facts": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Append one reviewed canonical basketball fact
+     * @description Requires ADMIN. Accepts exactly one immutable record using existing canonical relationship and temporal validation. Every nested evidence ID must identify fresh CONFIRMED evidence with an explicit latest human review. Alias and roster histories append. Human review is recorded before catalog append, and does not itself assert that the subsequent fact transaction committed.
+     */
+    post: operations["appendAdminBasketballFact"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/admin/basketball/evidence/{evidenceId}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Read private source material and its audit history
+     * @description Requires ADMIN. Returns retained source material, rights reference, original metadata and review history for editorial inspection; this response is private and no-store.
+     */
+    get: operations["getAdminBasketballEvidence"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/publisher/season-recaps": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Generate an immutable recap from reviewed canonical facts
+     * @description Requires PUBLISHER. The server calculates TEAM_SEASON_COVERAGE_V1 from one to 32 canonical team-season facts and their attributable confirmed evidence. No raw metric, reader activity or caller-supplied narrative is accepted. The projection UUID binds immutable normalized content; an identical retry returns that content and changed content under the same UUID is rejected with 422. Generation does not publish the draft. Current source freshness, contradiction review and poster rights are required.
+     */
+    post: operations["generatePublisherSeasonRecap"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/public/seasons/{seasonId}/recaps/{projectionId}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Read an approved recap in its current public article
+     * @description Anonymous access is available only when the exact immutable projection is present in one current published article snapshot with its poster impact link. Recomputes canonical evidence and checks live rights before returning content, the public poster variant and the article canonical path. Drafts, withdrawn rights, disputed evidence and missing or ambiguous publication return 404. This endpoint never reads private reader activity or requires wallet access.
+     */
+    get: operations["getPublishedSeasonRecap"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/me/seasons/{seasonId}/recaps/{projectionId}": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Deny unavailable private season recap projections
+     * @description The current implementation has no owner-scoped recap storage. A validated OIDC READER request returns 404; unauthenticated requests return 401 and callers without READER return 403. A stamp or wallet never grants access to another reader history. No successful private projection response is implemented.
+     */
+    get: operations["getPrivateSeasonRecapBoundary"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
 }
 export type webhooks = Record<string, never>
 export interface components {
   schemas: {
+    EditorialBasketballLeague: {
+      /** Format: uuid */
+      id: string
+      /** @enum {unknown} */
+      lifecycle: "ACTIVE" | "SUSPENDED" | "DISSOLVED" | "REORGANIZED"
+      aliases: {
+        /** Format: uuid */
+        id: string
+        /** Format: uuid */
+        ownerId: string
+        name: string
+        locale: string
+        period: {
+          /** Format: date */
+          startDate: string
+          endDate: string | null
+        }
+        evidenceIds: string[]
+        supersedesAliasId?: string | null
+      }[]
+      evidenceIds: string[]
+    }
+    EditorialBasketballTeam: {
+      /** Format: uuid */
+      id: string
+      /** @enum {unknown} */
+      lifecycle: "ACTIVE" | "SUSPENDED" | "DISSOLVED" | "REORGANIZED"
+      aliases: {
+        /** Format: uuid */
+        id: string
+        /** Format: uuid */
+        ownerId: string
+        name: string
+        locale: string
+        period: {
+          /** Format: date */
+          startDate: string
+          endDate: string | null
+        }
+        evidenceIds: string[]
+        supersedesAliasId?: string | null
+      }[]
+      evidenceIds: string[]
+    }
+    EditorialBasketballPlayer: {
+      /** Format: uuid */
+      id: string
+      aliases: {
+        /** Format: uuid */
+        id: string
+        /** Format: uuid */
+        ownerId: string
+        name: string
+        locale: string
+        period: {
+          /** Format: date */
+          startDate: string
+          endDate: string | null
+        }
+        evidenceIds: string[]
+        supersedesAliasId?: string | null
+      }[]
+      evidenceIds: string[]
+    }
+    EditorialBasketballSeason: {
+      /** Format: uuid */
+      id: string
+      /** Format: uuid */
+      leagueId: string
+      officialLabel: string
+      period: {
+        /** Format: date */
+        startDate: string
+        endDate: string | null
+      }
+      evidenceIds: string[]
+    }
+    EditorialBasketballTeamSeason: {
+      /** Format: uuid */
+      id: string
+      /** Format: uuid */
+      teamId: string
+      /** Format: uuid */
+      leagueId: string
+      /** Format: uuid */
+      seasonId: string
+      /** @enum {unknown} */
+      status: "JOINED" | "ACTIVE" | "EXITED" | "SUSPENDED" | "DISSOLVED" | "TRANSFERRED"
+      period: {
+        /** Format: date */
+        startDate: string
+        endDate: string | null
+      }
+      evidenceIds: string[]
+    }
+    EditorialBasketballPlayerTeamStint: {
+      /** Format: uuid */
+      id: string
+      /** Format: uuid */
+      playerId: string
+      /** Format: uuid */
+      teamId: string
+      /** Format: uuid */
+      leagueId: string
+      /** Format: uuid */
+      seasonId: string
+      period: {
+        /** Format: date */
+        startDate: string
+        endDate: string | null
+      }
+      /** @enum {unknown} */
+      status: "SIGNED" | "ACTIVE" | "LOAN" | "INJURED" | "RELEASED" | "TRANSFERRED" | "UNKNOWN"
+      countryCode: string
+      system: string
+      role: string | null
+      minutesPerGame: number | null
+      tacticalPosition: string | null
+      evidenceIds: string[]
+    }
+    EditorialBasketballCompetition: {
+      /** Format: uuid */
+      id: string
+      name: string
+      /** @enum {unknown} */
+      kind: "FIBA" | "ASIA_CUP" | "WORLD_CUP_QUALIFIER" | "OLYMPIC_QUALIFIER" | "WINDOW" | "OTHER"
+      evidenceIds: string[]
+    }
+    EditorialBasketballTournament: {
+      /** Format: uuid */
+      id: string
+      /** Format: uuid */
+      competitionId: string
+      officialName: string
+      period: {
+        /** Format: date */
+        startDate: string
+        endDate: string | null
+      }
+      aliases: {
+        /** Format: uuid */
+        id: string
+        /** Format: uuid */
+        ownerId: string
+        name: string
+        locale: string
+        period: {
+          /** Format: date */
+          startDate: string
+          endDate: string | null
+        }
+        evidenceIds: string[]
+        supersedesAliasId?: string | null
+      }[]
+      evidenceIds: string[]
+    }
+    EditorialBasketballGame: {
+      /** Format: uuid */
+      id: string
+      /** Format: uuid */
+      tournamentId: string
+      /** Format: uuid */
+      homeTeamId: string
+      /** Format: uuid */
+      awayTeamId: string
+      /** Format: date-time */
+      startsAt: string
+      venue: string
+      evidenceIds: string[]
+    }
+    EditorialBasketballNationalTeamCampaign: {
+      /** Format: uuid */
+      id: string
+      /** Format: uuid */
+      competitionId: string
+      /** @enum {unknown} */
+      gender: "MEN" | "WOMEN" | "MIXED"
+      /** @enum {unknown} */
+      ageGroup: "SENIOR" | "YOUTH"
+      /** @enum {unknown} */
+      discipline: "FIVE_ON_FIVE" | "THREE_ON_THREE"
+      period: {
+        /** Format: date */
+        startDate: string
+        endDate: string | null
+      }
+      objective: string
+      evidenceIds: string[]
+    }
+    EditorialBasketballNationalTeamRoster: {
+      /** Format: uuid */
+      id: string
+      /** Format: uuid */
+      campaignId: string
+      revision: number
+      supersedesRosterId: string | null
+      /** @enum {unknown} */
+      status: "TRAINING" | "FINAL"
+      /** Format: date */
+      effectiveAt: string
+      entries: {
+        /** Format: uuid */
+        playerId: string
+        /** @enum {unknown} */
+        status: "CALLED_UP" | "ACTIVE" | "INJURED" | "WITHDRAWN" | "REPLACEMENT"
+        role: string | null
+        period: {
+          /** Format: date */
+          startDate: string
+          endDate: string | null
+        }
+        replacesPlayerId: string | null
+        evidenceIds: string[]
+      }[]
+      evidenceIds: string[]
+    }
+    EditorialBasketballAlias: {
+      /** Format: uuid */
+      id: string
+      /** Format: uuid */
+      ownerId: string
+      name: string
+      locale: string
+      period: {
+        /** Format: date */
+        startDate: string
+        endDate: string | null
+      }
+      evidenceIds: string[]
+      supersedesAliasId?: string | null
+    }
+    EditorialBasketballSource: {
+      /** Format: uuid */
+      id: string
+      /** @enum {unknown} */
+      type:
+        | "ASSOCIATION"
+        | "LEAGUE"
+        | "TEAM"
+        | "GAME_DATA"
+        | "MEDIA"
+        | "INTERVIEW"
+        | "SOCIAL"
+        | "INTERNAL_ANALYSIS"
+      name: string
+      /** Format: uri */
+      sourceUrl: string
+      publicReferenceAllowed: boolean
+    }
+    EditorialBasketballSourceSnapshot: {
+      /** Format: uuid */
+      id: string
+      /** Format: uuid */
+      sourceId: string
+      /** Format: uri */
+      sourceUrl: string
+      /** Format: date-time */
+      retrievedAt: string
+      publishedAt: string | null
+      content: string
+      sha256: string
+      rightsReference: string
+    }
+    EditorialBasketballEvidenceRef: {
+      /** Format: uuid */
+      id: string
+      /** Format: uuid */
+      sourceId: string
+      /** @enum {unknown} */
+      sourceType:
+        | "ASSOCIATION"
+        | "LEAGUE"
+        | "TEAM"
+        | "GAME_DATA"
+        | "MEDIA"
+        | "INTERVIEW"
+        | "SOCIAL"
+        | "INTERNAL_ANALYSIS"
+      /** Format: uri */
+      sourceUrl: string
+      /** Format: date-time */
+      retrievedAt: string
+      publishedAt: string | null
+      effectiveAt: string | null
+      confidence: number
+      /** @enum {unknown} */
+      status: "CONFIRMED" | "REPORTED" | "ANALYSIS" | "RUMOR" | "UNKNOWN"
+      /** @enum {unknown} */
+      freshness: "fresh" | "stale" | "expired" | "disputed"
+      /** Format: uuid */
+      snapshotId: string
+      /** Format: date-time */
+      staleAt: string
+      /** Format: date-time */
+      expiresAt: string
+      note: string
+    } & unknown
+    EditorialBasketballSnapshotInput: {
+      source: components["schemas"]["EditorialBasketballSource"]
+      /** Format: uuid */
+      snapshotId: string
+      /** Format: uuid */
+      evidenceId: string
+      publishedAt: string | null
+      effectiveAt: string | null
+      content: string
+      rightsReference: string
+      confidence: number
+      /** Format: date-time */
+      staleAt: string
+      /** Format: date-time */
+      expiresAt: string
+    }
+    EditorialBasketballConfirmationInput: {
+      /** Format: uuid */
+      confirmedEvidenceId: string
+      rationale: string
+    }
+    EditorialBasketballFactInput:
+      | {
+          /** @constant */
+          kind: "ALIAS"
+          payload: components["schemas"]["EditorialBasketballAlias"]
+          rationale: string
+        }
+      | {
+          /** @constant */
+          kind: "LEAGUE"
+          payload: components["schemas"]["EditorialBasketballLeague"]
+          rationale: string
+        }
+      | {
+          /** @constant */
+          kind: "TEAM"
+          payload: components["schemas"]["EditorialBasketballTeam"]
+          rationale: string
+        }
+      | {
+          /** @constant */
+          kind: "PLAYER"
+          payload: components["schemas"]["EditorialBasketballPlayer"]
+          rationale: string
+        }
+      | {
+          /** @constant */
+          kind: "SEASON"
+          payload: components["schemas"]["EditorialBasketballSeason"]
+          rationale: string
+        }
+      | {
+          /** @constant */
+          kind: "TEAM_SEASON"
+          payload: components["schemas"]["EditorialBasketballTeamSeason"]
+          rationale: string
+        }
+      | {
+          /** @constant */
+          kind: "PLAYER_TEAM_STINT"
+          payload: components["schemas"]["EditorialBasketballPlayerTeamStint"]
+          rationale: string
+        }
+      | {
+          /** @constant */
+          kind: "COMPETITION"
+          payload: components["schemas"]["EditorialBasketballCompetition"]
+          rationale: string
+        }
+      | {
+          /** @constant */
+          kind: "TOURNAMENT"
+          payload: components["schemas"]["EditorialBasketballTournament"]
+          rationale: string
+        }
+      | {
+          /** @constant */
+          kind: "GAME"
+          payload: components["schemas"]["EditorialBasketballGame"]
+          rationale: string
+        }
+      | {
+          /** @constant */
+          kind: "NATIONAL_TEAM_CAMPAIGN"
+          payload: components["schemas"]["EditorialBasketballNationalTeamCampaign"]
+          rationale: string
+        }
+      | {
+          /** @constant */
+          kind: "NATIONAL_TEAM_ROSTER"
+          payload: components["schemas"]["EditorialBasketballNationalTeamRoster"]
+          rationale: string
+        }
+    EditorialBasketballFactReceipt: {
+      /** Format: uuid */
+      factId: string
+      /** @enum {unknown} */
+      kind:
+        | "ALIAS"
+        | "LEAGUE"
+        | "TEAM"
+        | "PLAYER"
+        | "SEASON"
+        | "TEAM_SEASON"
+        | "PLAYER_TEAM_STINT"
+        | "COMPETITION"
+        | "TOURNAMENT"
+        | "GAME"
+        | "NATIONAL_TEAM_CAMPAIGN"
+        | "NATIONAL_TEAM_ROSTER"
+      reviewKey: string
+      evidenceIds: string[]
+    }
+    EditorialBasketballReviewEvent: {
+      /** Format: uuid */
+      id: string
+      claimKey: string
+      revision: number
+      /** @enum {unknown} */
+      kind: "PROPOSED" | "REVIEWED"
+      value: string
+      evidenceIds: string[]
+      /** @enum {unknown} */
+      status: "CONFIRMED" | "REPORTED" | "ANALYSIS" | "RUMOR" | "UNKNOWN"
+      reviewerId: string | null
+      rationale: string | null
+      /** Format: date-time */
+      createdAt: string
+    }
+    EditorialBasketballEvidenceView: {
+      source: components["schemas"]["EditorialBasketballSource"]
+      snapshot: components["schemas"]["EditorialBasketballSourceSnapshot"]
+      reference: components["schemas"]["EditorialBasketballEvidenceRef"]
+      history: components["schemas"]["EditorialBasketballReviewEvent"][]
+    }
+    SeasonRecapGenerate: {
+      projectionId: components["schemas"]["Uuid"]
+      seasonId: components["schemas"]["Uuid"]
+      posterAssetId: components["schemas"]["Uuid"]
+      /**
+       * Format: date-time
+       * @description Evidence and review cutoff; must not be later than the server time.
+       */
+      asOf: string
+      /** @description Canonical TEAM_SEASON fact identities. Values are calculated by the server. */
+      factIds: components["schemas"]["Uuid"][]
+    }
+    PublishedSeasonRecap: {
+      content: components["schemas"]["content-document.schema"]
+      poster: components["schemas"]["PublicArticleMedia"] & {
+        /** @constant */
+        variant?: "poster"
+      }
+      canonicalPath: string
+    }
     EditorialContributor: {
       contributorId: components["schemas"]["Uuid"]
       slug: string
@@ -2110,6 +2783,41 @@ export interface components {
       credit?: string
     }
     slug: string
+    courtPulsePayload: {
+      /** @constant */
+      presetId: "court-pulse-v1"
+      seed: number
+      parameters: {
+        density: number
+        tempo: number
+        lineWeight: number
+        /** @enum {string} */
+        paletteId: "court-dusk"
+        numericSequence: number[]
+      }
+      posterAssetId: components["schemas"]["uuid"]
+      altText: string
+      dataSummary: string
+    }
+    seasonRecapPayload: {
+      /** @constant */
+      presetId: "season-recap-v1"
+      seed: number
+      parameters: {
+        values: number[]
+        lineWeight: number
+        /** @constant */
+        paletteId: "season-ink"
+      }
+      posterAssetId: components["schemas"]["uuid"]
+      altText: string
+      dataSummary: string
+      seasonId: components["schemas"]["uuid"]
+      projectionId: components["schemas"]["uuid"]
+      /** Format: date-time */
+      asOf: string
+      evidenceSnapshotIds: string[]
+    }
     paragraphPayload: {
       content: components["schemas"]["inlineContent"]
     }
@@ -2162,22 +2870,8 @@ export interface components {
       articleSlug: components["schemas"]["slug"]
       label: string
     }
-    generativeCanvasPayload: {
-      /** @constant */
-      presetId: "court-pulse-v1"
-      seed: number
-      parameters: {
-        density: number
-        tempo: number
-        lineWeight: number
-        /** @enum {string} */
-        paletteId: "court-dusk"
-        numericSequence: number[]
-      }
-      posterAssetId: components["schemas"]["uuid"]
-      altText: string
-      dataSummary: string
-    }
+    generativeCanvasPayload:
+      components["schemas"]["courtPulsePayload"] | components["schemas"]["seasonRecapPayload"]
     block: {
       id: components["schemas"]["uuid"]
       /** @enum {string} */
@@ -2297,22 +2991,8 @@ export interface components {
           articleSlug: components["schemas"]["slug"]
           label: string
         }
-        generativeCanvasPayload: {
-          /** @constant */
-          presetId: "court-pulse-v1"
-          seed: number
-          parameters: {
-            density: number
-            tempo: number
-            lineWeight: number
-            /** @enum {string} */
-            paletteId: "court-dusk"
-            numericSequence: number[]
-          }
-          posterAssetId: components["schemas"]["uuid"]
-          altText: string
-          dataSummary: string
-        }
+        generativeCanvasPayload:
+          components["schemas"]["courtPulsePayload"] | components["schemas"]["seasonRecapPayload"]
         block: {
           id: components["schemas"]["uuid"]
           /** @enum {string} */
@@ -2342,6 +3022,41 @@ export interface components {
           unknown &
           unknown &
           unknown)
+        courtPulsePayload: {
+          /** @constant */
+          presetId: "court-pulse-v1"
+          seed: number
+          parameters: {
+            density: number
+            tempo: number
+            lineWeight: number
+            /** @enum {string} */
+            paletteId: "court-dusk"
+            numericSequence: number[]
+          }
+          posterAssetId: components["schemas"]["uuid"]
+          altText: string
+          dataSummary: string
+        }
+        seasonRecapPayload: {
+          /** @constant */
+          presetId: "season-recap-v1"
+          seed: number
+          parameters: {
+            values: number[]
+            lineWeight: number
+            /** @constant */
+            paletteId: "season-ink"
+          }
+          posterAssetId: components["schemas"]["uuid"]
+          altText: string
+          dataSummary: string
+          seasonId: components["schemas"]["uuid"]
+          projectionId: components["schemas"]["uuid"]
+          /** Format: date-time */
+          asOf: string
+          evidenceSnapshotIds: string[]
+        }
       }
     }
     /** Edition Provenance manifest v1: JCS string-only profile */
@@ -5168,6 +5883,341 @@ export interface operations {
       403: components["responses"]["Problem403"]
       404: components["responses"]["Problem404"]
       429: components["responses"]["Problem429"]
+    }
+  }
+  submitPublisherBasketballSnapshot: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EditorialBasketballSnapshotInput"]
+      }
+    }
+    responses: {
+      /** @description Private editorial result; exact retry retains immutable identity and metadata. */
+      201: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          "Cache-Control"?: "no-store"
+          "X-Content-Type-Options"?: "nosniff"
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["EditorialBasketballEvidenceRef"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      409: components["responses"]["Problem409"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  confirmPublisherBasketballEvidence: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        evidenceId: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EditorialBasketballConfirmationInput"]
+      }
+    }
+    responses: {
+      /** @description Private editorial result; exact retry retains immutable identity and metadata. */
+      201: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          "Cache-Control"?: "no-store"
+          "X-Content-Type-Options"?: "nosniff"
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["EditorialBasketballEvidenceRef"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      409: components["responses"]["Problem409"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  appendPublisherBasketballFact: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EditorialBasketballFactInput"]
+      }
+    }
+    responses: {
+      /** @description Private editorial result; exact retry retains immutable identity and metadata. */
+      201: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          "Cache-Control"?: "no-store"
+          "X-Content-Type-Options"?: "nosniff"
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["EditorialBasketballFactReceipt"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      409: components["responses"]["Problem409"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  getPublisherBasketballEvidence: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        evidenceId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Private editorial result; exact retry retains immutable identity and metadata. */
+      200: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          "Cache-Control"?: "no-store"
+          "X-Content-Type-Options"?: "nosniff"
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["EditorialBasketballEvidenceView"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      409: components["responses"]["Problem409"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  submitAdminBasketballSnapshot: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EditorialBasketballSnapshotInput"]
+      }
+    }
+    responses: {
+      /** @description Private editorial result; exact retry retains immutable identity and metadata. */
+      201: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          "Cache-Control"?: "no-store"
+          "X-Content-Type-Options"?: "nosniff"
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["EditorialBasketballEvidenceRef"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      409: components["responses"]["Problem409"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  confirmAdminBasketballEvidence: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        evidenceId: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EditorialBasketballConfirmationInput"]
+      }
+    }
+    responses: {
+      /** @description Private editorial result; exact retry retains immutable identity and metadata. */
+      201: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          "Cache-Control"?: "no-store"
+          "X-Content-Type-Options"?: "nosniff"
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["EditorialBasketballEvidenceRef"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      409: components["responses"]["Problem409"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  appendAdminBasketballFact: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["EditorialBasketballFactInput"]
+      }
+    }
+    responses: {
+      /** @description Private editorial result; exact retry retains immutable identity and metadata. */
+      201: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          "Cache-Control"?: "no-store"
+          "X-Content-Type-Options"?: "nosniff"
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["EditorialBasketballFactReceipt"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      409: components["responses"]["Problem409"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  getAdminBasketballEvidence: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        evidenceId: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Private editorial result; exact retry retains immutable identity and metadata. */
+      200: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          "Cache-Control"?: "no-store"
+          "X-Content-Type-Options"?: "nosniff"
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["EditorialBasketballEvidenceView"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      409: components["responses"]["Problem409"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  generatePublisherSeasonRecap: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["SeasonRecapGenerate"]
+      }
+    }
+    responses: {
+      /** @description Generated draft ContentDocument; no public publication is implied. */
+      200: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          "Cache-Control"?: "no-store"
+          "X-Content-Type-Options"?: "nosniff"
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["content-document.schema"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      422: components["responses"]["Problem422"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  getPublishedSeasonRecap: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        seasonId: components["schemas"]["Uuid"]
+        projectionId: components["schemas"]["Uuid"]
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Verified public projection with its currently permitted public poster. */
+      200: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          "Cache-Control"?: "no-store"
+          "X-Content-Type-Options"?: "nosniff"
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["PublishedSeasonRecap"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      404: components["responses"]["Problem404"]
+      422: components["responses"]["Problem422"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  getPrivateSeasonRecapBoundary: {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        seasonId: components["schemas"]["Uuid"]
+        projectionId: components["schemas"]["Uuid"]
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
     }
   }
 }

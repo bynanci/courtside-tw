@@ -21,6 +21,7 @@ const props = defineProps<{
 
 const manager = new OfflineIssueManager(props.apiBaseUrl, props.issueSlug)
 const installed = ref<InstalledOfflineIssue | null>(null)
+const ready = ref(false)
 const status = ref<"idle" | "downloading" | "removing" | "installed" | "error" | "unavailable">(
   "idle"
 )
@@ -29,7 +30,9 @@ const errorMessage = ref("")
 const progress = ref<OfflineDownloadProgress | null>(null)
 const storageEstimate = ref<BrowserStorageEstimate | null>(null)
 
-const isBusy = computed(() => status.value === "downloading" || status.value === "removing")
+const isBusy = computed(
+  () => !ready.value || status.value === "downloading" || status.value === "removing"
+)
 const hasInstalled = computed(() => installed.value !== null && status.value !== "unavailable")
 const isUnavailable = computed(() => status.value === "unavailable")
 const storageEstimateMessage = computed(() => {
@@ -50,6 +53,8 @@ onMounted(async () => {
     }
   } catch {
     // The public issue remains readable when this optional local cache is unavailable.
+  } finally {
+    ready.value = true
   }
 })
 
@@ -166,6 +171,8 @@ async function reconcileWithdrawal(): Promise<void> {
         只保存公開期數的版本化內容與資產；這不是 DRM，也不代表永久可用，連線後仍會檢查撤回狀態。
       </p>
     </div>
+
+    <noscript>離線保存需要啟用 JavaScript；公開文章仍可直接閱讀。</noscript>
 
     <div class="offline-panel__controls">
       <p data-testid="offline-storage-estimate" class="offline-panel__storage">
