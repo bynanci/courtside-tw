@@ -84,3 +84,13 @@ test("Studio BFF exposes taxonomy management without admitting admin paths", () 
   assert.equal(isAllowedStudioPath("editor/taxonomy/../admin"), false)
   assert.equal(isAllowedStudioPath("admin/taxonomy"), false)
 })
+
+test("publisher passport lifecycle is an exact BFF route and cannot widen identity access", () => {
+  const id = "00000000-0000-4000-8000-000000000001"
+  assert.equal(isAllowedStudioPath(`publisher/passport/${id}/status`), true)
+  assert.equal(isAllowedStudioPath(`editor/passport/${id}/status`), false)
+  assert.equal(isAllowedStudioPath("publisher/passport"), false)
+  assert.equal(isAllowedStudioPath(`publisher/passport/${id}/wallets`), false)
+  assert.equal(isAllowedStudioPath(`publisher/passport/${id}/status/extra`), false)
+  assert.equal(isAllowedStudioPath("publisher/passport/../admin/status"), false)
+})

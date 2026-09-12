@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { navigateTo } from "#app"
-import { onMounted, ref } from "vue"
+import { defineAsyncComponent, onMounted, ref } from "vue"
 
 import PublicMobileDock from "../../components/navigation/PublicMobileDock.vue"
 import PublicSiteHeader from "../../components/navigation/PublicSiteHeader.vue"
@@ -12,6 +12,12 @@ import {
 import { clearAllLocalReadingProgress } from "../../features/reader/composables/useLocalReadingProgress"
 
 const route = useRoute()
+const runtimeConfig = useRuntimeConfig()
+const WalletSettingsPanel = defineAsyncComponent(
+  () => import("../../features/wallet/WalletSettingsPanel.vue")
+)
+const walletEnabled = String(runtimeConfig.public.web3WalletEnabled) === "true"
+const walletChainId = String(runtimeConfig.public.web3WalletChainId ?? "")
 const loading = ref(true)
 const signedIn = ref(false)
 const confirmed = ref(false)
@@ -95,6 +101,7 @@ function login(): void {
       </section>
 
       <template v-else-if="signedIn">
+        <WalletSettingsPanel v-if="walletEnabled" :chain-id="walletChainId" />
         <section class="privacy-panel" aria-labelledby="privacy-export-heading">
           <h2 id="privacy-export-heading">匯出我的資料</h2>
           <p>下載 JSON 格式的書籤、閱讀進度及產生時間。</p>

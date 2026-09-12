@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://courtside.tw/contracts/season-recap.schema.json",
+  "title": "Season Recap public projection v1",
+  "description": "Public, evidence-backed normalized season signals. Private activity is never accepted. Withdrawal suppresses every presentation channel.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "payload"],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "payload": {
+      "$ref": "#/$defs/seasonRecapPayload"
+    }
+  },
+  "$defs": {
+    "uuid": {
+      "type": "string",
+      "not": {
+        "pattern": "\\u0000"
+      },
+      "format": "uuid",
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-57][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+    },
+    "seasonRecapPayload": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "presetId",
+        "seed",
+        "parameters",
+        "posterAssetId",
+        "altText",
+        "dataSummary",
+        "seasonId",
+        "projectionId",
+        "asOf",
+        "evidenceSnapshotIds"
+      ],
+      "properties": {
+        "presetId": {
+          "const": "season-recap-v1"
+        },
+        "seed": {
+          "type": "integer",
+          "minimum": -2147483648,
+          "maximum": 2147483647
+        },
+        "parameters": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["values", "lineWeight", "paletteId"],
+          "properties": {
+            "values": {
+              "type": "array",
+              "minItems": 1,
+              "maxItems": 32,
+              "items": {
+                "type": "number",
+                "minimum": 0,
+                "maximum": 1
+              }
+            },
+            "lineWeight": {
+              "type": "number",
+              "minimum": 1,
+              "maximum": 3
+            },
+            "paletteId": {
+              "const": "season-ink"
+            }
+          }
+        },
+        "posterAssetId": {
+          "$ref": "#/$defs/uuid"
+        },
+        "altText": {
+          "type": "string",
+          "not": {
+            "pattern": "\\u0000"
+          },
+          "minLength": 1,
+          "maxLength": 500,
+          "pattern": "\\S"
+        },
+        "dataSummary": {
+          "type": "string",
+          "not": {
+            "pattern": "\\u0000"
+          },
+          "minLength": 1,
+          "maxLength": 1000,
+          "pattern": "\\S"
+        },
+        "seasonId": {
+          "$ref": "#/$defs/uuid"
+        },
+        "projectionId": {
+          "$ref": "#/$defs/uuid"
+        },
+        "asOf": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "evidenceSnapshotIds": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "not": {
+              "pattern": "\\u0000"
+            },
+            "format": "uuid",
+            "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-57][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$"
+          }
+        }
+      }
+    }
+  }
+}

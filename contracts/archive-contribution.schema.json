@@ -1,0 +1,237 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://courtside.tw/contracts/archive-contribution.schema.json",
+  "title": "Archive contribution and explicit consent record v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "id",
+    "contributorAccountId",
+    "kind",
+    "assetId",
+    "status",
+    "consentGranted",
+    "consentAt",
+    "rights",
+    "history"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "contributorAccountId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "kind": {
+      "enum": ["HISTORICAL_PHOTO", "TICKET", "ORAL_HISTORY"]
+    },
+    "assetId": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "status": {
+      "enum": ["DRAFT", "SUBMITTED", "ACCEPTED", "WITHDRAWN"]
+    },
+    "consentGranted": {
+      "type": "boolean"
+    },
+    "consentAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "rights": {
+      "$ref": "#/$defs/rights"
+    },
+    "history": {
+      "type": "array",
+      "maxItems": 10000,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["status", "actorId", "reasonCode", "effectiveAt"],
+        "properties": {
+          "status": {
+            "enum": ["DRAFT", "SUBMITTED", "ACCEPTED", "WITHDRAWN"]
+          },
+          "actorId": {
+            "type": "string",
+            "format": "uuid"
+          },
+          "reasonCode": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Z_]{2,79}$"
+          },
+          "effectiveAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": ["SUBMITTED", "ACCEPTED"]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "consentGranted": {
+            "const": true
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": ["ACCEPTED", "WITHDRAWN"]
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "history": {
+            "minItems": 1,
+            "type": "array"
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "WITHDRAWN"
+          }
+        }
+      },
+      "then": {
+        "properties": {
+          "consentGranted": {
+            "const": false
+          }
+        }
+      }
+    }
+  ],
+  "$defs": {
+    "rights": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "assetId",
+        "rightsOwner",
+        "license",
+        "allowedChannels",
+        "collectibleAllowed",
+        "redistributionAllowed",
+        "validFrom",
+        "validUntil",
+        "credit",
+        "withdrawalPolicy",
+        "withdrawnAt"
+      ],
+      "properties": {
+        "assetId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "rightsOwner": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "\\S"
+        },
+        "license": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300,
+          "pattern": "\\S"
+        },
+        "allowedChannels": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "enum": ["PUBLIC_WEB", "CACHE", "SEARCH", "OFFLINE", "IPFS", "CREDENTIAL"]
+          }
+        },
+        "collectibleAllowed": {
+          "type": "boolean"
+        },
+        "redistributionAllowed": {
+          "type": "boolean"
+        },
+        "validFrom": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "validUntil": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "credit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300,
+          "pattern": "\\S"
+        },
+        "withdrawalPolicy": {
+          "const": "ORIGIN_WITHDRAWAL"
+        },
+        "withdrawnAt": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        }
+      }
+    },
+    "publicContribution": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["contributionId", "kind", "assetId", "credit", "rightsOwner", "license"],
+      "properties": {
+        "contributionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "kind": {
+          "enum": ["HISTORICAL_PHOTO", "TICKET", "ORAL_HISTORY"]
+        },
+        "assetId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "credit": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300,
+          "pattern": "\\S"
+        },
+        "rightsOwner": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 200,
+          "pattern": "\\S"
+        },
+        "license": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 300,
+          "pattern": "\\S"
+        }
+      }
+    }
+  }
+}

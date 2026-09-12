@@ -32,13 +32,16 @@ public final class AccountDataService {
     private final TransactionTemplate transactionTemplate;
     private final AuditWriter auditWriter;
     private final ApplicationClock clock;
+    private final AccountLifecycleParticipant lifecycleParticipant;
 
     public AccountDataService(
             JdbcTemplate jdbcTemplate,
             PlatformTransactionManager transactionManager,
             AuditWriter auditWriter,
-            ApplicationClock clock
+            ApplicationClock clock,
+            AccountLifecycleParticipant lifecycleParticipant
     ) {
+        this.lifecycleParticipant = Objects.requireNonNull(lifecycleParticipant, "lifecycleParticipant");
         this.jdbcTemplate = Objects.requireNonNull(jdbcTemplate, "jdbcTemplate");
         this.transactionTemplate = new TransactionTemplate(
                 Objects.requireNonNull(transactionManager, "transactionManager")
@@ -129,6 +132,7 @@ public final class AccountDataService {
             UUID requestUuid = UUID.randomUUID();
             UUID readerId = findReader(reader);
             if (readerId != null) {
+                lifecycleParticipant.erase(readerId, now);
                 jdbcTemplate.update("DELETE FROM bookmark WHERE reader_id = ?", readerId);
                 jdbcTemplate.update("DELETE FROM reading_progress WHERE reader_id = ?", readerId);
                 jdbcTemplate.update("""

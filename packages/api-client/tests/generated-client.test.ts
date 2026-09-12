@@ -64,3 +64,34 @@ test("serializes generated path parameters and preserves typed error responses",
   assert.equal(result.error?.code, "RESOURCE_NOT_FOUND")
   assert.equal(capturedRequest?.url, "https://api.example.test/api/v1/public/issues/opening-night")
 })
+
+test("generated Reader Stamp claim keeps eligibility on the server and sends its idempotency key", async () => {
+  let capturedRequest: Request | undefined
+  const id = "0190f7b0-7c4b-7e3a-8f12-123456789abc"
+  const client = createApiClient({
+    baseUrl: "https://api.example.test",
+    fetch: async (input: RequestInfo | URL, init?: RequestInit) => {
+      capturedRequest = new Request(input, init)
+      return respondWith(
+        {
+          id,
+          season: "2026",
+          credentialType: "READER_STAMP",
+          status: "CLAIMED",
+          issuedAt: "2026-09-12T00:00:00Z",
+          expiresAt: "2028-01-01T00:00:00Z",
+          version: 0
+        },
+        200,
+        "application/json"
+      )
+    }
+  })
+  const result = await client.POST("/api/v1/me/passport/claims", {
+    params: { header: { "Idempotency-Key": "passport-contract" } },
+    body: { issueId: id, season: "2026" }
+  })
+  assert.equal(result.data?.status, "CLAIMED")
+  assert.equal(capturedRequest?.headers.get("idempotency-key"), "passport-contract")
+  assert.deepEqual(await capturedRequest?.json(), { issueId: id, season: "2026" })
+})

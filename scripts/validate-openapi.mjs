@@ -13,6 +13,10 @@ const paths = document.paths
 const operations = []
 
 const expectedPaths = {
+  "/api/v1/me/passport": ["get"],
+  "/api/v1/me/passport/claims": ["post"],
+  "/api/v1/me/passport/{stampId}/credential": ["post"],
+  "/api/v1/publisher/passport/{stampId}/status": ["post"],
   "/api/v1/public/issues": ["get"],
   "/api/v1/public/issues/{issueSlug}": ["get"],
   "/api/v1/public/articles/{articleSlug}": ["get"],
@@ -78,6 +82,8 @@ const expectedPaths = {
 
 // Closed exceptions describe existing command semantics; omitted If-Match is never an implicit waiver.
 const writeConcurrencyExceptions = {
+  claimReaderStamp: "IDEMPOTENCY_KEY",
+  requestStampCredential: "IDEMPOTENCY_KEY",
   putBookmark: "IDEMPOTENT_SET",
   deleteBookmark: "IDEMPOTENT_SET",
   putReadingProgress: "REVISION_GUARDED_PROGRESS",
@@ -90,9 +96,9 @@ const writeConcurrencyExceptions = {
   completeMediaUpload: "IDEMPOTENCY_KEY",
   createManagedTaxonomy: "UNIQUE_KEY_CREATE",
   createEditorContributor: "IDEMPOTENCY_KEY",
-  createSiweChallenge: "PLANNED_US7",
-  verifySiweSignature: "PLANNED_US7",
-  revokeWalletLink: "PLANNED_US7"
+  createSiweChallenge: "IDEMPOTENCY_KEY",
+  verifySiweSignature: "SINGLE_USE_NONCE",
+  revokeWalletLink: "IDEMPOTENT_SET"
 }
 
 const expectedErrorStatuses = [400, 401, 403, 404, 409, 422, 429]

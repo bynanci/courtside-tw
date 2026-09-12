@@ -3,7 +3,8 @@ jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
 info:
   title: Courtside TW API
   version: 1.0.0
-  description: Contract-first REST API for public reading, reader library, editorial publication and optional provenance/SIWE boundaries.
+  description: Contract-first REST API for public reading, reader library,
+    editorial publication and optional provenance/SIWE boundaries.
 servers:
   - url: https://api.courtside.tw
     description: Production API origin placeholder; deployment is a later task.
@@ -197,7 +198,8 @@ paths:
         - Public
       operationId: searchPublicContent
       summary: Search published content
-      description: Searches the published projection with bounded filters and cursor pagination.
+      description: Searches the published projection with bounded filters and cursor
+        pagination.
       security: []
       parameters:
         - $ref: "#/components/parameters/Cursor"
@@ -302,7 +304,8 @@ paths:
         - Offline
       operationId: getWithdrawalManifest
       summary: Get the signed withdrawal manifest
-      description: Returns versioned withdrawals for offline clients; it never gates ordinary online reading.
+      description: Returns versioned withdrawals for offline clients; it never gates
+        ordinary online reading.
       security: []
       parameters: []
       responses:
@@ -333,7 +336,8 @@ paths:
         - Provenance
       operationId: getIssueProvenance
       summary: Get edition provenance
-      description: Returns digest, CID, attestation and verification status without gating content.
+      description: Returns digest, CID, attestation and verification status without
+        gating content.
       security: []
       parameters:
         - $ref: "#/components/parameters/IssueSlug"
@@ -404,7 +408,8 @@ paths:
         - Offline
       operationId: getOfflineIssueArticle
       summary: Get the immutable article bytes declared by an offline manifest
-      description: Returns only the frozen revision in the current rights-eligible issue package.
+      description: Returns only the frozen revision in the current rights-eligible
+        issue package.
       security: []
       parameters:
         - $ref: "#/components/parameters/IssueSlug"
@@ -731,7 +736,8 @@ paths:
         - Reader
       operationId: exportAccountData
       summary: Export reader account data
-      description: Returns the authenticated reader's minimal bookmark and progress data as JSON.
+      description: Returns the authenticated reader's minimal bookmark and progress
+        data as JSON.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -767,10 +773,14 @@ paths:
       tags:
         - SIWE
       operationId: createSiweChallenge
-      x-write-concurrency: PLANNED_US7
+      x-write-concurrency: IDEMPOTENCY_KEY
       summary: Create a SIWE challenge
-      description: Creates a short-lived domain- and chain-bound nonce; this optional endpoint never grants editor authority.
-      security: []
+      description: Links an auxiliary wallet only for a recently authenticated OIDC
+        reader; does not create an OIDC session or grant editorial authority. A
+        consumed nonce or a retry after server restart returns 409.
+      security:
+        - bffSession: []
+        - oidcBearer: []
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       responses:
@@ -784,8 +794,29 @@ paths:
                 valid:
                   value:
                     nonce: 0123456789abcdef
-                    message: courtside.tw wants you to sign in
-                    expiresAt: 2026-08-07T15:00:00Z
+                    message: >-
+                      courtside.tw wants you to sign in with your Ethereum
+                      account:
+
+                      0x0000000000000000000000000000000000000001
+
+
+                      Link this wallet to your Courtside reader account. No
+                      editor authority is granted.
+
+
+                      URI: https://courtside.tw
+
+                      Version: 1
+
+                      Chain ID: 1
+
+                      Nonce: 0123456789abcdef
+
+                      Issued At: 2026-09-12T00:00:00Z
+
+                      Expiration Time: 2026-09-12T00:05:00Z
+                    expiresAt: 2026-09-12T00:05:00Z
                     domain: courtside.tw
                     chainId: eip155:1
           headers:
@@ -795,6 +826,12 @@ paths:
           $ref: "#/components/responses/Problem400"
         "429":
           $ref: "#/components/responses/Problem429"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "409":
+          $ref: "#/components/responses/Problem409"
       requestBody:
         required: true
         content:
@@ -810,15 +847,21 @@ paths:
                   uri: https://courtside.tw
       x-idempotent: true
       x-optional: true
+      x-required-roles:
+        - READER
   /api/v1/auth/siwe/verify:
     post:
       tags:
         - SIWE
       operationId: verifySiweSignature
-      x-write-concurrency: PLANNED_US7
+      x-write-concurrency: SINGLE_USE_NONCE
       summary: Verify a SIWE signature
-      description: Verifies the ERC-4361 message and may link a BFF session after explicit reader action.
-      security: []
+      description: Links an auxiliary wallet only for a recently authenticated OIDC
+        reader; does not create an OIDC session or grant editorial authority. A
+        consumed nonce or a retry after server restart returns 409.
+      security:
+        - bffSession: []
+        - oidcBearer: []
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       responses:
@@ -855,17 +898,40 @@ paths:
             examples:
               valid:
                 value:
-                  message: courtside.tw wants you to sign in
+                  message: >-
+                    courtside.tw wants you to sign in with your Ethereum
+                    account:
+
+                    0x0000000000000000000000000000000000000001
+
+
+                    Link this wallet to your Courtside reader account. No editor
+                    authority is granted.
+
+
+                    URI: https://courtside.tw
+
+                    Version: 1
+
+                    Chain ID: 1
+
+                    Nonce: 0123456789abcdef
+
+                    Issued At: 2026-09-12T00:00:00Z
+
+                    Expiration Time: 2026-09-12T00:05:00Z
                   signature: "0x00"
       x-idempotent: true
       x-optional: true
+      x-required-roles:
+        - READER
   /api/v1/me/wallets/{chainNamespace}/{address}:
     delete:
       tags:
         - Reader
         - SIWE
       operationId: revokeWalletLink
-      x-write-concurrency: PLANNED_US7
+      x-write-concurrency: IDEMPOTENT_SET
       summary: Revoke a linked wallet
       description: Revokes an off-chain wallet link after re-authentication.
       security:
@@ -895,6 +961,241 @@ paths:
           $ref: "#/components/responses/Problem429"
       x-idempotent: true
       x-optional: true
+  /api/v1/me/passport:
+    get:
+      tags:
+        - Reader
+      operationId: getFanPassport
+      summary: Read private off-chain stamps and wallet links
+      description: Read private off-chain stamps and wallet links Private OIDC account
+        boundary; wallet never grants reader or editor authority.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      x-required-roles:
+        - READER
+      parameters: []
+      responses:
+        "200":
+          description: Private account response.
+          headers: &a1
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FanPassport"
+              examples:
+                valid:
+                  value:
+                    items:
+                      - &a2
+                        id: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                        season: "2026"
+                        credentialType: READER_STAMP
+                        status: CLAIMED
+                        issuedAt: 2026-09-12T00:00:00Z
+                        expiresAt: 2028-01-01T00:00:00Z
+                        version: 0
+                    wallets: []
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+  /api/v1/me/passport/claims:
+    post:
+      tags:
+        - Reader
+      operationId: claimReaderStamp
+      summary: Claim the server-verified ISSUE_PROGRESS_ACK_V1 entitlement
+      description: Claim the server-verified ISSUE_PROGRESS_ACK_V1 entitlement Private
+        OIDC account boundary; wallet never grants reader or editor authority.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      x-required-roles:
+        - READER
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Private account response.
+          headers: *a1
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReaderStamp"
+              examples:
+                valid:
+                  value: *a2
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-write-concurrency: IDEMPOTENCY_KEY
+      x-idempotent: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReaderStampClaim"
+            examples:
+              valid:
+                value:
+                  issueId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                  season: "2026"
+  /api/v1/me/passport/{stampId}/credential:
+    post:
+      tags:
+        - Reader
+      operationId: requestStampCredential
+      summary: Explicitly request optional credential delivery; external delivery
+        remains disabled
+      description: Explicitly request optional credential delivery; external delivery
+        remains disabled Private OIDC account boundary; wallet never grants
+        reader or editor authority.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      x-required-roles:
+        - READER
+      parameters:
+        - name: stampId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Private account response.
+          headers: *a1
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CredentialDeliveryResult"
+              examples:
+                valid:
+                  value:
+                    status: DISABLED
+                    transferable: false
+                    gasCeiling: 0
+                    permanenceDisclosure: Public-chain copies cannot be guaranteed deletable.
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-write-concurrency: IDEMPOTENCY_KEY
+      x-idempotent: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CredentialConsent"
+            examples:
+              valid:
+                value:
+                  consent: true
+  /api/v1/publisher/passport/{stampId}/status:
+    post:
+      tags:
+        - Publisher
+      operationId: changeReaderStampStatus
+      summary: Revoke, supersede or expire an off-chain entitlement with a version check
+      description: Revoke, supersede or expire an off-chain entitlement with a version
+        check Private OIDC account boundary; wallet never grants reader or
+        editor authority.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      x-required-roles:
+        - PUBLISHER
+      parameters:
+        - name: stampId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/IfMatch"
+      responses:
+        "200":
+          description: Private account response.
+          headers: *a1
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReaderStamp"
+              examples:
+                valid:
+                  value:
+                    id: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    season: "2026"
+                    credentialType: READER_STAMP
+                    status: REVOKED
+                    issuedAt: 2026-09-12T00:00:00Z
+                    expiresAt: 2028-01-01T00:00:00Z
+                    version: 1
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-write-concurrency: IF_MATCH
+      x-optimistic-lock: If-Match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReaderStampStatusCommand"
+            examples:
+              valid:
+                value:
+                  status: REVOKED
+                  reason: OWNER_REVOCATION
   /api/v1/me:
     delete:
       tags:
@@ -1217,8 +1518,8 @@ paths:
       operationId: replaceEditorIssueArticles
       summary: Replace draft issue article assignments
       description: Atomically replaces up to 500 article assignments on a DRAFT issue.
-        Existing unchanged article/revision pairs retain their published pin; new
-        or changed references must name the current published revision. Each
+        Existing unchanged article/revision pairs retain their published pin;
+        new or changed references must name the current published revision. Each
         article belongs to an existing section with a contiguous position. The
         issue version advances once and retries reuse the stored idempotent
         response.
@@ -1305,11 +1606,12 @@ paths:
         - Editorial
       operationId: listPrivateMedia
       summary: List private media available to editorial users
-      description: Returns bounded media metadata in descending asset UUID order.
-        The cursor is the last assetId from the previous page. Private object
-        keys, provider URLs and credentials are never included. Archived library entries
-        are excluded by default; archived=true returns only archived entries.
-        Library archive does not change processing state, rights or existing publications.
+      description: Returns bounded media metadata in descending asset UUID order. The
+        cursor is the last assetId from the previous page. Private object keys,
+        provider URLs and credentials are never included. Archived library
+        entries are excluded by default; archived=true returns only archived
+        entries. Library archive does not change processing state, rights or
+        existing publications.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -1380,11 +1682,12 @@ paths:
         - Editorial
       operationId: listPublisherPrivateMedia
       summary: List private media available to editorial users
-      description: Returns bounded media metadata in descending asset UUID order.
-        The cursor is the last assetId from the previous page. Private object
-        keys, provider URLs and credentials are never included. Archived library entries
-        are excluded by default; archived=true returns only archived entries.
-        Library archive does not change processing state, rights or existing publications.
+      description: Returns bounded media metadata in descending asset UUID order. The
+        cursor is the last assetId from the previous page. Private object keys,
+        provider URLs and credentials are never included. Archived library
+        entries are excluded by default; archived=true returns only archived
+        entries. Library archive does not change processing state, rights or
+        existing publications.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -1589,7 +1892,8 @@ paths:
         - Editorial
       operationId: listEditorIssueSections
       summary: List issue sections
-      description: Returns the server-backed, explicitly positioned table of contents for an issue draft.
+      description: Returns the server-backed, explicitly positioned table of contents
+        for an issue draft.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -1639,7 +1943,8 @@ paths:
       operationId: createEditorIssueSection
       x-write-concurrency: IF_MATCH
       summary: Create an issue section
-      description: Creates a section and persists its explicit position inside a draft issue.
+      description: Creates a section and persists its explicit position inside a draft
+        issue.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -1701,7 +2006,8 @@ paths:
       operationId: reorderEditorIssueSections
       x-write-concurrency: IF_MATCH
       summary: Reorder issue sections
-      description: Atomically replaces the complete section order with contiguous explicit positions.
+      description: Atomically replaces the complete section order with contiguous
+        explicit positions.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -1774,7 +2080,8 @@ paths:
       operationId: patchEditorIssueSection
       x-write-concurrency: IF_MATCH
       summary: Rename an issue section
-      description: Updates section metadata inside a draft issue with the issue aggregate lock.
+      description: Updates section metadata inside a draft issue with the issue
+        aggregate lock.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -1836,7 +2143,8 @@ paths:
       operationId: deleteEditorIssueSection
       x-write-concurrency: IF_MATCH
       summary: Delete an empty issue section
-      description: Deletes only an empty section and normalizes the remaining explicit positions.
+      description: Deletes only an empty section and normalizes the remaining explicit
+        positions.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -2436,7 +2744,8 @@ paths:
       operationId: publishPublisherArticle
       x-write-concurrency: IF_MATCH
       summary: Publish an article now
-      description: Publishes the approved article revision and records an immutable snapshot.
+      description: Publishes the approved article revision and records an immutable
+        snapshot.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -2761,7 +3070,8 @@ paths:
       operationId: archivePublisherIssue
       x-write-concurrency: IF_MATCH
       summary: Archive a published or withdrawn issue
-      description: Archives a published or withdrawn issue while preserving its immutable publication snapshot and audit evidence.
+      description: Archives a published or withdrawn issue while preserving its
+        immutable publication snapshot and audit evidence.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -2808,7 +3118,8 @@ paths:
       operationId: archivePublisherArticle
       x-write-concurrency: IF_MATCH
       summary: Archive a withdrawn article
-      description: Archives an already withdrawn article while preserving its publication evidence.
+      description: Archives an already withdrawn article while preserving its
+        publication evidence.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -2953,7 +3264,8 @@ paths:
                   filename: cover.jpg
                   contentType: image/jpeg
                   sizeBytes: 1024
-                  checksumSha256: "0000000000000000000000000000000000000000000000000000000000000000"
+                  checksumSha256: "00000000000000000000000000000000000000000000000000000000000000\
+                    00"
       x-idempotent: true
       x-required-roles:
         - EDITOR
@@ -3010,7 +3322,8 @@ paths:
             examples:
               valid:
                 value:
-                  checksumSha256: "0000000000000000000000000000000000000000000000000000000000000000"
+                  checksumSha256: "00000000000000000000000000000000000000000000000000000000000000\
+                    00"
                   contentType: image/jpeg
       x-idempotent: true
       x-required-roles:
@@ -3021,7 +3334,8 @@ paths:
         - Media
       operationId: getEditorMediaMetadata
       summary: Read media metadata
-      description: Reads accessibility metadata and the latest rights record for an editor-owned media asset.
+      description: Reads accessibility metadata and the latest rights record for an
+        editor-owned media asset.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -3065,7 +3379,8 @@ paths:
       operationId: updateEditorMediaMetadata
       x-write-concurrency: IF_MATCH
       summary: Update media metadata and rights
-      description: Persists alt text and a versioned rights record with an If-Match lock on the media asset.
+      description: Persists alt text and a versioned rights record with an If-Match
+        lock on the media asset.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -3138,10 +3453,11 @@ paths:
         - Media
       operationId: archiveEditorMedia
       summary: Archive media in the editorial library
-      description: Archives library membership using the asset version. Processing state,
-        rights records, bytes and existing published snapshots remain unchanged. Archived
-        media cannot be newly referenced by article drafts or issue covers. The archive
-        remains available in the archived library. A stale version returns 409.
+      description: Archives library membership using the asset version. Processing
+        state, rights records, bytes and existing published snapshots remain
+        unchanged. Archived media cannot be newly referenced by article drafts
+        or issue covers. The archive remains available in the archived library.
+        A stale version returns 409.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -3189,10 +3505,11 @@ paths:
         - Media
       operationId: archivePublisherMedia
       summary: Archive media in the editorial library
-      description: Archives library membership using the asset version. Processing state,
-        rights records, bytes and existing published snapshots remain unchanged. Archived
-        media cannot be newly referenced by article drafts or issue covers. The archive
-        remains available in the archived library. A stale version returns 409.
+      description: Archives library membership using the asset version. Processing
+        state, rights records, bytes and existing published snapshots remain
+        unchanged. Archived media cannot be newly referenced by article drafts
+        or issue covers. The archive remains available in the archived library.
+        A stale version returns 409.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -3301,7 +3618,8 @@ paths:
         - Editorial
       operationId: listManagedTaxonomy
       summary: List managed taxonomy terms
-      description: Lists taxonomy terms by immutable key; display names remain mutable attributes.
+      description: Lists taxonomy terms by immutable key; display names remain mutable
+        attributes.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -3408,7 +3726,8 @@ paths:
       operationId: patchManagedTaxonomy
       x-write-concurrency: IF_MATCH
       summary: Update taxonomy attributes
-      description: Updates display attributes and lifecycle without changing the UUID or stable key.
+      description: Updates display attributes and lifecycle without changing the UUID
+        or stable key.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -3821,8 +4140,8 @@ paths:
       operationId: getArticleRevisionContributors
       summary: Read an ordered revision byline
       description: Returns revision-scoped public credit to an editor, including
-        frozen revisions. The revision must belong to the article. The version field
-        is the current article version for conditional draft writes.
+        frozen revisions. The revision must belong to the article. The version
+        field is the current article version for conditional draft writes.
       parameters:
         - name: articleId
           in: path
@@ -4136,7 +4455,8 @@ components:
       name: If-Match
       in: header
       required: true
-      description: Optimistic-lock version or ETag. The server rejects stale values with 409 VERSION_CONFLICT.
+      description: Optimistic-lock version or ETag. The server rejects stale values
+        with 409 VERSION_CONFLICT.
       schema:
         type: string
         minLength: 1
@@ -4969,6 +5289,97 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProblemDetails"
+    ReaderStamp:
+      $ref: ./fan-passport.schema.json
+    ReaderStampClaim:
+      type: object
+      additionalProperties: false
+      required:
+        - issueId
+        - season
+      properties:
+        issueId:
+          type: string
+          format: uuid
+        season:
+          type: string
+          pattern: ^[0-9]{4}$
+    WalletIdentityLink:
+      type: object
+      additionalProperties: false
+      required:
+        - chainNamespace
+        - address
+        - linkedAt
+      properties:
+        chainNamespace:
+          const: eip155
+        address:
+          type: string
+          pattern: ^0x[0-9a-f]{40}$
+        linkedAt:
+          type: string
+          format: date-time
+    FanPassport:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - wallets
+      properties:
+        items:
+          type: array
+          maxItems: 500
+          items:
+            $ref: "#/components/schemas/ReaderStamp"
+        wallets:
+          type: array
+          items:
+            $ref: "#/components/schemas/WalletIdentityLink"
+    CredentialConsent:
+      type: object
+      additionalProperties: false
+      required:
+        - consent
+      properties:
+        consent:
+          const: true
+    CredentialDeliveryResult:
+      type: object
+      additionalProperties: false
+      required:
+        - status
+        - transferable
+        - gasCeiling
+        - permanenceDisclosure
+      properties:
+        status:
+          const: DISABLED
+        transferable:
+          const: false
+        gasCeiling:
+          const: 0
+        permanenceDisclosure:
+          type: string
+          maxLength: 500
+    ReaderStampStatusCommand:
+      type: object
+      additionalProperties: false
+      required:
+        - status
+        - reason
+      properties:
+        status:
+          enum:
+            - REVOKED
+            - SUPERSEDED
+            - EXPIRED
+        reason:
+          enum:
+            - OWNER_REVOCATION
+            - RIGHTS_WITHDRAWAL
+            - REPLACEMENT
+            - EXPIRATION
     SiweChallengeRequest:
       type: object
       additionalProperties: false
@@ -5849,7 +6260,9 @@ components:
         affectedOfflinePackages:
           type: array
           uniqueItems: true
-          description: Sorted issue IDs whose immutable snapshots reference the revoked asset or an affected article revision, including historical and archived issues; every installed version of each issue must expire.
+          description: Sorted issue IDs whose immutable snapshots reference the revoked
+            asset or an affected article revision, including historical and
+            archived issues; every installed version of each issue must expire.
           items:
             $ref: "#/components/schemas/Uuid"
         assetId:
@@ -5901,7 +6314,8 @@ components:
           minimum: 1
         contentUrl:
           type: string
-          pattern: "^/api/v1/public/offline/issues/[a-z0-9]+(?:-[a-z0-9]+)*/articles/[0-9a-f-]{36}/revisions/[0-9a-f-]{36}$"
+          pattern: "^/api/v1/public/offline/issues/[a-z0-9]+(?:-[a-z0-9]+)*/articles/[0-9\
+            a-f-]{36}/revisions/[0-9a-f-]{36}$"
           maxLength: 512
         byteSize:
           type: integer
@@ -6000,7 +6414,9 @@ components:
           format: date-time
         withdrawals:
           type: array
-          description: Withdrawn article, issue or revoked media asset IDs. Clients invalidate installed packages matching an articleId or assetId, including packages whose cover alone was revoked.
+          description: Withdrawn article, issue or revoked media asset IDs. Clients
+            invalidate installed packages matching an articleId or assetId,
+            including packages whose cover alone was revoked.
           items:
             $ref: "#/components/schemas/Uuid"
         checksum:
@@ -6039,6 +6455,19 @@ components:
             - FAILED
             - SUPERSEDED
             - WITHDRAWN
+        verifiedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+        rightsScope:
+          enum:
+            - DIGEST_ONLY
+            - PERMANENT_PUBLIC
+        manifestVersion:
+          const: "1"
+        manifest:
+          $ref: ./provenance-manifest.schema.json
     TaxonomyKind:
       type: string
       enum:
@@ -6407,7 +6836,8 @@ components:
                 code: RATE_LIMITED
       x-stable-error-code: RATE_LIMITED
     PrivateMediaPreviewUnavailable:
-      description: Private preview unavailable (503); no provider details or image bytes are returned.
+      description: Private preview unavailable (503); no provider details or image
+        bytes are returned.
       headers:
         X-Request-Id:
           $ref: "#/components/headers/XRequestId"
@@ -6437,8 +6867,13 @@ components:
       x-stable-error-code: MEDIA_PREVIEW_UNAVAILABLE
 x-contract-rules:
   problemMediaType: application/problem+json
-  invalidRequestNormalization: Malformed JSON, invalid binding values and unsupported request media types use 400 INVALID_REQUEST without reflecting submitted values.
-  writeConcurrency: Mutable editorial resources require If-Match; revision-guarded progress and submission, idempotent reader sets, unique-key creation and command idempotency retain their explicit per-operation concurrency contract.
+  invalidRequestNormalization: Malformed JSON, invalid binding values and
+    unsupported request media types use 400 INVALID_REQUEST without reflecting
+    submitted values.
+  writeConcurrency: Mutable editorial resources require If-Match; revision-guarded
+    progress and submission, idempotent reader sets, unique-key creation and
+    command idempotency retain their explicit per-operation concurrency
+    contract.
   stableErrorStatuses:
     - 400
     - 401

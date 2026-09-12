@@ -1,7 +1,7 @@
 # Taiwan Basketball Domain
 
-**Status**: Product / architecture alignment draft v0.3  
-**As of**: 2026-08-07  
+**Status**: T098–T104 implementation candidate; source activation and acceptance remain evidence-gated  
+**As of**: 2026-09-12  
 **Bounded context**: `basketball`
 
 ## Boundary
@@ -10,7 +10,7 @@
 
 `taxonomy` 只負責 editorial navigation 與內容分類。Taxonomy 可以標記一篇文章與 `TPBL`、某球員或某賽季相關，但不能作為球隊參賽、球員生涯或國家隊名單的 canonical source。
 
-本輪只定義 domain contract、邊界與未來測試；不建立資料表、API、adapter 或 migration。
+2026-09-12 使用者要求開發剩餘 tasks 後，本輪已加入 domain aggregates、application ports、JDBC append-only catalog、evidence persistence、離線 normalization adapters 與 V020／V021 additive migrations。沒有加入 provider 網路擷取、排程抓取器或新的 public／write HTTP route；實際來源覆蓋與 production activation 仍須獨立驗收。
 
 ## Canonical entities
 
@@ -68,7 +68,7 @@ Domain 必須能表達中華隊男籃、女籃、青年代表隊、5-on-5 與 3x
 
 ## Ingest and adapter boundary
 
-未來 adapter 位於既有 Spring modular monolith 的 API application boundary 內：
+Adapter 位於既有 Spring modular monolith 的 API application boundary 內：
 
 ```text
 apps/api/basketball/
@@ -110,6 +110,15 @@ flowchart LR
 
 這是 logical dependency，不是 service deployment topology。部署仍維持 Nuxt SSR/BFF → Spring Boot modular monolith → PostgreSQL、Transactional Outbox、S3-compatible storage 與 CDN。除非另有 ADR 與 scaling evidence，不建立 `basketball-service`、`evidence-service` 或其他 microservice。
 
-## Future verification
+## Implemented contract and verification
 
-後續 P2A/P2B/P2C 應先以 contract、fixture 與 architecture tests 驗證：stable identity、alias validity、team-season transitions、stint ordering、roster revisions、source snapshot immutability、adapter no-overwrite 與 module boundary。這些 future tests 不屬於本輪 runtime implementation。
+- `contracts/basketball-domain.schema.json`：UUID stable identity、required evidence、typed records、strict unknown-field rejection。
+- `BasketballDomain`：名稱不是 ID；valid periods 採 `[startDate, endDate)`；空期間不合法。Role、minutes、tactical position 未知時保持 `null`。
+- `BasketballCatalog`：append-only identities、team-season 關係、排序後 career；stint 必須連到相同 league／season 的 team participation；roster revision 只能逐次增加並引用 predecessor。
+- `BasketballCatalogService` + `JdbcBasketballFactStore`：在同一 database transaction lock 內 hydrate、validate、append，完整 retry 不重複寫入，變更同一 immutable ID 則拒絕；source evidence 與 identity kind 都需一致。
+- `BasketballConfiguration`：有 DataSource 時建立 application beans；沒有啟動查詢或抓取。Canonical writes 和 human review 需 authenticated publisher／admin；review actor 必須與登入 identity 一致。
+- `optionalProjection()`：domain storage 不可用時回傳無 enrichment；既有 article origin route 不依賴此 module。
+
+`apps/api/src/test/resources/basketball/synthetic-history.json` 中 TPBL／P. LEAGUE+／PLG／SBL 只作 contract scenario labels；球員、球隊、國家隊與生涯均是明確 synthetic fixtures，不能視為真實資料覆蓋。
+
+本輪 verification 範圍、migration forward／rollback 方法與尚待 CI 執行項目見 `basketball-implementation-review.md`。

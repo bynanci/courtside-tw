@@ -278,6 +278,36 @@ const articleProjections = new Map([
   ]
 ])
 
+// T110–T112 deterministic public recap fixture. No private reader activity is used.
+const recapContent = JSON.parse(
+  readFileSync(
+    new URL(
+      "../../../../packages/content-schema/fixtures/valid/season-recap-v1.json",
+      import.meta.url
+    ),
+    "utf8"
+  )
+)
+articleProjections.set("season-recap", {
+  ...articleProjections.get("opening-night"),
+  articleId: "00000000-0000-4000-8000-000000000812",
+  revisionId: "00000000-0000-4000-8000-000000000813",
+  slug: "season-recap",
+  title: "賽季回顧",
+  canonicalPath: "/articles/season-recap",
+  content: recapContent,
+  plainText: recapContent.blocks[0].payload.dataSummary,
+  media: [
+    {
+      ...articleProjections.get("opening-night").media[3],
+      assetId: recapContent.blocks[0].payload.posterAssetId,
+      url: "/media/published/season-recap-poster.webp",
+      altText: recapContent.blocks[0].payload.altText
+    }
+  ]
+})
+let recapWithdrawn = false
+
 const publicMediaFixtures = new Map([
   [
     issue.cover.url,
@@ -1381,10 +1411,17 @@ const apiServer = createServer(async (request, response) => {
     return
   }
 
+  if (requestUrl.pathname === "/__test/recap/withdraw" && request.method === "POST") {
+    const body = await readJson(request)
+    recapWithdrawn = body.withdrawn === true
+    writeJson(response, 200, { withdrawn: recapWithdrawn })
+    return
+  }
   const articlePrefix = "/api/v1/public/articles/"
   if (requestUrl.pathname.startsWith(articlePrefix)) {
     const articleSlug = requestUrl.pathname.slice(articlePrefix.length)
-    const article = articleProjections.get(articleSlug)
+    const article =
+      articleSlug === "season-recap" && recapWithdrawn ? null : articleProjections.get(articleSlug)
     if (article) {
       writeJson(response, 200, article)
     } else {

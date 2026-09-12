@@ -319,7 +319,7 @@ export interface paths {
     put?: never
     /**
      * Create a SIWE challenge
-     * @description Creates a short-lived domain- and chain-bound nonce; this optional endpoint never grants editor authority.
+     * @description Links an auxiliary wallet only for a recently authenticated OIDC reader; does not create an OIDC session or grant editorial authority. A consumed nonce or a retry after server restart returns 409.
      */
     post: operations["createSiweChallenge"]
     delete?: never
@@ -339,7 +339,7 @@ export interface paths {
     put?: never
     /**
      * Verify a SIWE signature
-     * @description Verifies the ERC-4361 message and may link a BFF session after explicit reader action.
+     * @description Links an auxiliary wallet only for a recently authenticated OIDC reader; does not create an OIDC session or grant editorial authority. A consumed nonce or a retry after server restart returns 409.
      */
     post: operations["verifySiweSignature"]
     delete?: never
@@ -363,6 +363,86 @@ export interface paths {
      * @description Revokes an off-chain wallet link after re-authentication.
      */
     delete: operations["revokeWalletLink"]
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/me/passport": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Read private off-chain stamps and wallet links
+     * @description Read private off-chain stamps and wallet links Private OIDC account boundary; wallet never grants reader or editor authority.
+     */
+    get: operations["getFanPassport"]
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/me/passport/claims": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Claim the server-verified ISSUE_PROGRESS_ACK_V1 entitlement
+     * @description Claim the server-verified ISSUE_PROGRESS_ACK_V1 entitlement Private OIDC account boundary; wallet never grants reader or editor authority.
+     */
+    post: operations["claimReaderStamp"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/me/passport/{stampId}/credential": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Explicitly request optional credential delivery; external delivery remains disabled
+     * @description Explicitly request optional credential delivery; external delivery remains disabled Private OIDC account boundary; wallet never grants reader or editor authority.
+     */
+    post: operations["requestStampCredential"]
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  "/api/v1/publisher/passport/{stampId}/status": {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Revoke, supersede or expire an off-chain entitlement with a version check
+     * @description Revoke, supersede or expire an off-chain entitlement with a version check Private OIDC account boundary; wallet never grants reader or editor authority.
+     */
+    post: operations["changeReaderStampStatus"]
+    delete?: never
     options?: never
     head?: never
     patch?: never
@@ -1549,6 +1629,42 @@ export interface components {
       accepted: components["schemas"]["ReadingProgress"][]
       conflicts: components["schemas"]["ProblemDetails"][]
     }
+    ReaderStamp: components["schemas"]["fan-passport.schema"]
+    ReaderStampClaim: {
+      /** Format: uuid */
+      issueId: string
+      season: string
+    }
+    WalletIdentityLink: {
+      /** @constant */
+      chainNamespace: "eip155"
+      address: string
+      /** Format: date-time */
+      linkedAt: string
+    }
+    FanPassport: {
+      items: components["schemas"]["fan-passport.schema"][]
+      wallets: components["schemas"]["WalletIdentityLink"][]
+    }
+    CredentialConsent: {
+      /** @constant */
+      consent: true
+    }
+    CredentialDeliveryResult: {
+      /** @constant */
+      status: "DISABLED"
+      /** @constant */
+      transferable: false
+      /** @constant */
+      gasCeiling: 0
+      permanenceDisclosure: string
+    }
+    ReaderStampStatusCommand: {
+      /** @enum {unknown} */
+      status: "REVOKED" | "SUPERSEDED" | "EXPIRED"
+      /** @enum {unknown} */
+      reason: "OWNER_REVOCATION" | "RIGHTS_WITHDRAWAL" | "REPLACEMENT" | "EXPIRATION"
+    }
     SiweChallengeRequest: {
       domain: string
       address: string
@@ -1885,6 +2001,13 @@ export interface components {
       attestation?: Record<string, never> | null
       /** @enum {string} */
       status: "PENDING" | "VERIFIED" | "FAILED" | "SUPERSEDED" | "WITHDRAWN"
+      /** Format: date-time */
+      verifiedAt?: string | null
+      /** @enum {unknown} */
+      rightsScope?: "DIGEST_ONLY" | "PERMANENT_PUBLIC"
+      /** @constant */
+      manifestVersion?: "1"
+      manifest?: components["schemas"]["provenance-manifest.schema"]
     }
     /** @enum {string} */
     TaxonomyKind: "LEAGUE" | "SEASON" | "TEAM" | "PLAYER" | "PERSON" | "VENUE" | "TOPIC"
@@ -2220,6 +2343,38 @@ export interface components {
           unknown &
           unknown)
       }
+    }
+    /** Edition Provenance manifest v1: JCS string-only profile */
+    "provenance-manifest.schema": {
+      /** @constant */
+      schemaVersion: "1"
+      snapshotId: string
+      publicationId: string
+      revision: string
+      /** Format: date-time */
+      publishedAt: string
+      checksum: string
+      /** @enum {unknown} */
+      rightsScope: "DIGEST_ONLY" | "PERMANENT_PUBLIC"
+      assets: {
+        assetId: string
+        digest: string
+      }[]
+    }
+    /** Minimal non-financial Reader Stamp */
+    "fan-passport.schema": {
+      /** Format: uuid */
+      id: string
+      season: string
+      /** @constant */
+      credentialType: "READER_STAMP"
+      /** @enum {unknown} */
+      status: "CLAIMABLE" | "CLAIMED" | "REVOKED" | "SUPERSEDED" | "EXPIRED"
+      /** Format: date-time */
+      issuedAt: string
+      /** Format: date-time */
+      expiresAt: string
+      version: number
     }
   }
   responses: {
@@ -2891,6 +3046,9 @@ export interface operations {
         }
       }
       400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      409: components["responses"]["Problem409"]
       429: components["responses"]["Problem429"]
     }
   }
@@ -2955,6 +3113,143 @@ export interface operations {
       403: components["responses"]["Problem403"]
       404: components["responses"]["Problem404"]
       409: components["responses"]["Problem409"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  getFanPassport: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Private account response. */
+      200: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["FanPassport"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      409: components["responses"]["Problem409"]
+      422: components["responses"]["Problem422"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  claimReaderStamp: {
+    parameters: {
+      query?: never
+      header: {
+        /** @description Stable retry key. Replays return the original operation result. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"]
+      }
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReaderStampClaim"]
+      }
+    }
+    responses: {
+      /** @description Private account response. */
+      200: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["fan-passport.schema"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      409: components["responses"]["Problem409"]
+      422: components["responses"]["Problem422"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  requestStampCredential: {
+    parameters: {
+      query?: never
+      header: {
+        /** @description Stable retry key. Replays return the original operation result. */
+        "Idempotency-Key": components["parameters"]["IdempotencyKey"]
+      }
+      path: {
+        stampId: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["CredentialConsent"]
+      }
+    }
+    responses: {
+      /** @description Private account response. */
+      200: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["CredentialDeliveryResult"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      409: components["responses"]["Problem409"]
+      422: components["responses"]["Problem422"]
+      429: components["responses"]["Problem429"]
+    }
+  }
+  changeReaderStampStatus: {
+    parameters: {
+      query?: never
+      header: {
+        /** @description Optimistic-lock version or ETag. The server rejects stale values with 409 VERSION_CONFLICT. */
+        "If-Match": components["parameters"]["IfMatch"]
+      }
+      path: {
+        stampId: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        "application/json": components["schemas"]["ReaderStampStatusCommand"]
+      }
+    }
+    responses: {
+      /** @description Private account response. */
+      200: {
+        headers: {
+          "X-Request-Id": components["headers"]["XRequestId"]
+          [name: string]: unknown
+        }
+        content: {
+          "application/json": components["schemas"]["fan-passport.schema"]
+        }
+      }
+      400: components["responses"]["Problem400"]
+      401: components["responses"]["Problem401"]
+      403: components["responses"]["Problem403"]
+      404: components["responses"]["Problem404"]
+      409: components["responses"]["Problem409"]
+      422: components["responses"]["Problem422"]
       429: components["responses"]["Problem429"]
     }
   }

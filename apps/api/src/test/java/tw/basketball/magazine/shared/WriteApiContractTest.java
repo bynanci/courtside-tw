@@ -41,6 +41,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import tools.jackson.databind.ObjectMapper;
 import tw.basketball.magazine.audit.AuditWriter;
+import tw.basketball.magazine.fanpassport.api.FanPassportController;
+import tw.basketball.magazine.identity.application.AccountLifecycleParticipant;
 import tw.basketball.magazine.content.api.EditorialContributorController;
 import tw.basketball.magazine.content.application.EditorialContributorService;
 import tw.basketball.magazine.identity.api.AccountApiExceptionHandler;
@@ -75,7 +77,7 @@ final class WriteApiContractTest {
             EditorialMediaController.class, EditorialMediaMetadataController.class,
             MediaLibraryArchiveController.class, PublisherMediaController.class,
             EditorialTaxonomyController.class,
-            EditorialContributorController.class, ReaderLibraryController.class, AccountController.class
+            EditorialContributorController.class, ReaderLibraryController.class, AccountController.class, FanPassportController.class
     );
     private final List<Object> services = new ArrayList<>();
     private MockMvc mockMvc;
@@ -98,12 +100,16 @@ final class WriteApiContractTest {
                                 providers.getBeanProvider(ReaderLibraryService.class),
                                 providers.getBeanProvider(JdbcTemplate.class),
                                 providers.getBeanProvider(PlatformTransactionManager.class)),
+                        new FanPassportController(providers.getBeanProvider(JdbcTemplate.class),
+                                providers.getBeanProvider(PlatformTransactionManager.class),
+                                new org.springframework.mock.env.MockEnvironment()),
                         new AccountController(
                                 providers.getBeanProvider(AccountDataService.class),
                                 providers.getBeanProvider(JdbcTemplate.class),
                                 providers.getBeanProvider(PlatformTransactionManager.class),
                                 providers.getBeanProvider(AuditWriter.class),
-                                providers.getBeanProvider(ObjectMapper.class)))
+                                providers.getBeanProvider(ObjectMapper.class),
+                                providers.getBeanProvider(AccountLifecycleParticipant.class)))
                 .setControllerAdvice(new ApiExceptionHandler(), new EditorialApiExceptionHandler(),
                         new TaxonomyApiExceptionHandler(), new ReaderLibraryApiExceptionHandler(),
                         new AccountApiExceptionHandler())
@@ -111,7 +117,7 @@ final class WriteApiContractTest {
     }
 
     @Test
-    void matrixCoversEveryImplementedWriteControllerAndExcludesUnimplementedWalletContracts() throws Exception {
+    void matrixCoversEveryImplementedWriteControllerIncludingOidcWalletLinks() throws Exception {
         var resolver = new PathMatchingResourcePatternResolver();
         var readers = new CachingMetadataReaderFactory(resolver);
         Set<String> actual = new HashSet<>();
@@ -126,8 +132,8 @@ final class WriteApiContractTest {
         }
         assertEquals(CONTROLLERS.stream().map(Class::getName).collect(Collectors.toSet()), actual,
                 "New write controllers must join the executable matrix");
-        assertFalse(endpoints().anyMatch(endpoint -> endpoint.path().contains("siwe")
-                || endpoint.path().contains("wallet")), "US7 is contract-only, never claimed as HTTP coverage");
+        org.junit.jupiter.api.Assertions.assertTrue(endpoints().anyMatch(endpoint -> endpoint.path().contains("siwe")),
+                "Implemented OIDC wallet links must remain in the write-error matrix");
     }
 
     @ParameterizedTest(name = "{0}")

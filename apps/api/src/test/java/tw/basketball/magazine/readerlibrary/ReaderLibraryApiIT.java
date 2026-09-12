@@ -73,6 +73,8 @@ final class ReaderLibraryApiIT {
         applyMigration(dataSource, "/db/migration/V001__foundation.sql", true);
         applyMigration(dataSource, "/db/migration/V002__publication_content_core.sql", true);
         applyMigration(dataSource, "/db/migration/V014__reader_library.sql", true);
+        applyMigration(dataSource, "/db/migration/V004__editorial_publication_workflow.sql", true);
+        applyMigration(dataSource, "/db/migration/V023__fan_passport_identity.sql", true);
     }
 
     @Autowired
@@ -227,6 +229,12 @@ final class ReaderLibraryApiIT {
         ArticleFixture article = publishedArticle("reader-erasure");
         putBookmark(article.articleId());
         putProgress(article, 45, "erasure-progress");
+        jdbcTemplate.update("""
+                INSERT INTO wallet_identity_link(id,reader_id,chain_namespace,address,linked_at)
+                SELECT ?,id,'eip155','0x0000000000000000000000000000000000000001',transaction_timestamp()
+                FROM reader_profile WHERE issuer=? AND subject=?
+                """, UUID.randomUUID(), ISSUER, SUBJECT);
+
 
         mockMvc.perform(get("/api/v1/me/export").principal(reader(SUBJECT)))
                 .andExpect(status().isOk())
@@ -259,6 +267,8 @@ final class ReaderLibraryApiIT {
 
         assertEquals(0, count("bookmark"));
         assertEquals(0, count("reading_progress"));
+        assertEquals(0, count("wallet_identity_link"));
+        assertEquals(0, count("siwe_challenge"));
         assertEquals(0, jdbcTemplate.queryForObject(
                 "SELECT count(*) FROM reader_profile WHERE issuer = ? AND subject = ?",
                 Integer.class,

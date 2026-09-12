@@ -1,0 +1,24 @@
+{
+  "name": "@courtside/web3-adapter",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./manifest": "./src/manifest/index.ts",
+    "./provider": "./src/provider/index.ts",
+    "./chain": "./src/chain/index.ts"
+  },
+  "scripts": {
+    "lint": "eslint --max-warnings=0 src tests",
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-strip-types --test tests/*.test.ts"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "typescript": "5.9.3"
+  },
+  "dependencies": {
+    "viem": "2.56.3"
+  }
+}

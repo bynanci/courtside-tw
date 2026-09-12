@@ -10,6 +10,9 @@ export default defineNuxtConfig({
       apiBaseUrl: process.env.NUXT_PUBLIC_API_BASE_URL ?? "http://127.0.0.1:8080",
       siteUrl: process.env.NUXT_PUBLIC_SITE_URL ?? "https://courtside.tw",
       localReaderDemo: false,
+      web3ProvenanceEnabled: false,
+      web3WalletEnabled: false,
+      web3WalletChainId: "",
       offlineAppShell: {
         enabled: process.env.NUXT_PUBLIC_OFFLINE_APP_SHELL_ENABLED !== "false",
         scriptPath: "/offline-sw.js",

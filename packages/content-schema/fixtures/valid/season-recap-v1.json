@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "documentId": "00000000-0000-4000-8000-000000000810",
+  "blocks": [
+    {
+      "id": "00000000-0000-4000-8000-000000000811",
+      "type": "generative-canvas",
+      "version": 1,
+      "payload": {
+        "presetId": "season-recap-v1",
+        "seed": 2026,
+        "parameters": { "values": [0.25, 0.5, 0.75], "lineWeight": 2, "paletteId": "season-ink" },
+        "posterAssetId": "00000000-0000-4000-8000-000000000816",
+        "altText": "賽季公開資料的三段視覺摘要",
+        "dataSummary": "測試賽季的公開訊號：0.25、0.5、0.75；資料截至 2026-08-01。",
+        "seasonId": "00000000-0000-4000-8000-000000000817",
+        "projectionId": "00000000-0000-4000-8000-000000000818",
+        "asOf": "2026-08-01T00:00:00Z",
+        "evidenceSnapshotIds": ["00000000-0000-4000-8000-000000000819"]
+      }
+    }
+  ]
+}

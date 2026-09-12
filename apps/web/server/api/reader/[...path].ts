@@ -19,7 +19,20 @@ import { AuthSessionError } from "../../auth/errors.ts"
 import { validateTrustedApiOrigin } from "../../security/headers.ts"
 
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"])
-const EXACT_PATHS = new Set(["me", "me/export", "me/bookmarks", "me/progress", "me/progress:merge"])
+const EXACT_PATHS = new Set([
+  "me",
+  "me/export",
+  "me/bookmarks",
+  "me/progress",
+  "me/progress:merge",
+  "me/passport",
+  "me/passport/claims",
+  "auth/siwe/challenge",
+  "auth/siwe/verify"
+])
+const PASSPORT_PATH =
+  /^me\/passport\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}\/credential$/iu
+const WALLET_PATH = /^me\/wallets\/eip155\/0x[0-9a-f]{40}$/iu
 const ARTICLE_PATH =
   /^me\/(?:bookmarks|progress)\/[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/iu
 
@@ -106,7 +119,13 @@ async function proxyReaderRequest(
 
 /** Exact fail-closed reader surface; no editor/admin path can be normalized into it. */
 export function isAllowedReaderPath(path: string): boolean {
-  return isSafeReaderPath(path) && (EXACT_PATHS.has(path) || ARTICLE_PATH.test(path))
+  return (
+    isSafeReaderPath(path) &&
+    (EXACT_PATHS.has(path) ||
+      ARTICLE_PATH.test(path) ||
+      PASSPORT_PATH.test(path) ||
+      WALLET_PATH.test(path))
+  )
 }
 
 export function isSafeReaderPath(path: string): boolean {
