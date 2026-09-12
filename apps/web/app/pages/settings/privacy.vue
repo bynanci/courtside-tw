@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { navigateTo } from "#app"
-import { onMounted, ref } from "vue"
+import { defineAsyncComponent, onMounted, ref } from "vue"
 
 import PublicMobileDock from "../../components/navigation/PublicMobileDock.vue"
 import PublicSiteHeader from "../../components/navigation/PublicSiteHeader.vue"
+import PassportPanel from "../../features/passport/PassportPanel.vue"
 import {
   deleteAccount,
   exportAccountData,
@@ -12,6 +13,12 @@ import {
 import { clearAllLocalReadingProgress } from "../../features/reader/composables/useLocalReadingProgress"
 
 const route = useRoute()
+const runtimeConfig = useRuntimeConfig()
+const WalletSettingsPanel = defineAsyncComponent(
+  () => import("../../features/wallet/WalletSettingsPanel.vue")
+)
+const walletEnabled = String(runtimeConfig.public.web3WalletEnabled) === "true"
+const walletChainId = String(runtimeConfig.public.web3WalletChainId ?? "")
 const loading = ref(true)
 const signedIn = ref(false)
 const confirmed = ref(false)
@@ -90,11 +97,13 @@ function login(): void {
       <p v-if="loading" role="status">正在確認登入狀態…</p>
       <section v-else-if="!signedIn && !deletionStatus" class="reading-state">
         <h2>請先登入</h2>
-        <p>需要有效且近期驗證的 OIDC session。</p>
+        <p>使用原本的帳號或電子郵件登入，即可查看私人護照與管理資料。閱讀不需要登入。</p>
         <button type="button" class="button-link button-link--quiet" @click="login">登入</button>
       </section>
 
       <template v-else-if="signedIn">
+        <PassportPanel :api-base-url="runtimeConfig.public.apiBaseUrl" />
+        <WalletSettingsPanel v-if="walletEnabled" :chain-id="walletChainId" />
         <section class="privacy-panel" aria-labelledby="privacy-export-heading">
           <h2 id="privacy-export-heading">匯出我的資料</h2>
           <p>下載 JSON 格式的書籤、閱讀進度及產生時間。</p>

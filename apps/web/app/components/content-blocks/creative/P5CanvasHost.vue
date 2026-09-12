@@ -4,10 +4,9 @@ import {
   creativeActiveLoop,
   nextFrameThrottleState,
   nextPauseTimerState,
-  normalizeCourtPulseParameters,
-  resolveCreativePreset,
+  prepareCreativePreset,
   runtimeVisibilityDecision,
-  type CreativePresetModule
+  type PreparedCreativePreset
 } from "@courtside/creative-runtime"
 import type p5 from "p5"
 import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue"
@@ -46,7 +45,7 @@ let renderFrame: (() => void) | null = null
 let resizeCanvas: ((width: number, height: number) => void) | null = null
 let runtimeModules: Promise<{
   P5: (typeof import("p5"))["default"]
-  presetModule: CreativePresetModule
+  presetModule: Awaited<ReturnType<PreparedCreativePreset["load"]>>
 } | null> | null = null
 let mounting = false
 let runtimeFailed = false
@@ -252,7 +251,13 @@ function applyLoopState(): void {
 }
 
 async function preloadRuntime() {
-  const preset = resolveCreativePreset(props.presetId)
+  let preset: PreparedCreativePreset | null
+  try {
+    preset = prepareCreativePreset(props.presetId, props.parameters)
+  } catch {
+    failSketch()
+    return null
+  }
   if (
     !props.enabled ||
     !documentActive() ||
@@ -307,7 +312,6 @@ async function mountSketch(): Promise<void> {
     }
     const createSketch = presetModule.createSketch({
       seed: props.seed,
-      parameters: normalizeCourtPulseParameters(props.parameters),
       width: hostWidth,
       onRenderReady: (controller) => {
         if (!disposed && !runtimeFailed) {

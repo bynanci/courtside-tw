@@ -1,12 +1,12 @@
 # Basketball Evidence Policy
 
-**Status**: Product / architecture alignment draft v0.3  
-**As of**: 2026-08-07  
+**Status**: T101–T104 implementation candidate; live-source and production acceptance pending
+**As of**: 2026-09-12
 **Applies to**: Taiwan Basketball Domain、Taiwan Hoops Archive、editorial claims
 
 ## Evidence contract
 
-籃球 domain 不只儲存 `value`。每一個會影響 canonical entity、文章敘事或讀者理解的 claim，都必須能指向 source snapshot 與其取得時間。概念 schema 如下：
+籃球 domain 不只儲存 `value`。每一個會影響 canonical entity、文章敘事或讀者理解的 claim，都必須能指向 source snapshot 與其取得時間。Canonical schema 位於 `contracts/evidence.schema.json`，欄位如下：
 
 ```text
 EvidenceRef {
@@ -83,6 +83,14 @@ Canonical data 與 editorial analysis 必須區分下列狀態：
 
 Evidence URL 不等於再散布權利。來源、照片、影片、球員 likeness、合約與票根仍受 Rights Gate；只保存必要 metadata 與受控 reference。私人 email、精確行為、IP、device ID、private media、storage key 與未公開 draft 不可進入公開 evidence 或鏈上 payload。
 
-## Future tests
+## Implemented persistence and review
 
-P2B 應驗證：每個 canonical fact 有 snapshot／evidence reference；status transition 不會提升證據等級；freshness 超期會降級；兩個衝突 snapshot 不會被覆寫；adapter retry 具冪等性；public projection 顯示 as-of／disputed 狀態；source rights withdrawal 能影響展示與鏡像 eligibility。
+`JdbcEvidenceStore` 將 Source、SourceSnapshot、EvidenceRef 和 proposal／review audit events 以 append-only records 保存。Database trigger、application-role permissions、snapshot SHA-256、exact snapshot metadata binding 均阻擋 overwrite 或 evidence 換綁。Unknown publication／effective dates 在 JSON contract 為 `UNKNOWN`，Java／SQL 內部為 `null`；不可自行補值。時間在建立 record 時規格化為 PostgreSQL microsecond precision，避免保存後的 retry identity mismatch。
+
+`ContradictionReview` 不會將 proposal 自動發佈為 canonical confirmed value。不同 value 進入 disputed；人工決定必須引用已存在的 proposal、當前 revision、登入 reviewer 與 rationale。Model／adapter 不得改變 status。確認時必須有 fresh、有效且非 analysis／rumor／unknown 的 factual evidence。人工決定後的新矛盾 evidence 會重開 review，保留上一個已確認值與全部歷史。
+
+`Evidence.project` 一律攜帶 as-of；stale／expired／disputed、尚未生效或未來擷取的 evidence 不會被呈現為 current fact。傳入當前 rights gate 的拒絕結果時，public URL 與 snapshot reference 都會被隱藏。Source URL 僅允許無 credentials、query、fragment 的 HTTPS reference；source notes 和 reviewer rationale 不在 public projection。
+
+六個 provider-named adapters 是已實作的 normalization-only ports；輸入必須先經 identity resolution 並已有 snapshot/evidence。`NormalizationIntake` 先保存 snapshot，再 normalize、validate 整批 evidence，最後只寫入 review proposals；它沒有 canonical catalog write capability，也不自行擷取任何資料。
+
+執行方式：`node --test scripts/test/domain-contracts.test.mjs`；Java core／workflow proofs、JUnit schema／architecture tests 與 `JdbcEvidenceStoreIT` 見 `basketball-implementation-review.md`。Source freshness windows 是每筆 evidence 明確提供的 policy input，fixtures 的一天／兩天窗口不代表已批准的真實來源 policy。

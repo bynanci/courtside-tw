@@ -490,7 +490,9 @@ public final class OfflineManifestService {
             throw new IllegalStateException("offline article snapshot is invalid", exception);
         }
         JsonNode content = snapshot.has("content") ? snapshot.get("content") : snapshot;
-        if (content == null || !content.isObject() || !contentValidator.validate(content.toString()).valid()) {
+        if (content == null || !content.isObject() || !contentValidator.validate(content.toString()).valid()
+                || !tw.basketball.magazine.fanpassport.recap.SeasonRecapPublicationGuard.validate(
+                        content, jdbcTemplate, objectMapper, clock.instant(), "OFFLINE")) {
             throw new IllegalStateException("offline article content is invalid");
         }
         ExtractedArticleContent extracted = contentExtractor.extract(content);

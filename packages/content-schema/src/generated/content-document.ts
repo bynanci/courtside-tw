@@ -85,7 +85,9 @@ export interface RelatedReadingPayload {
   label: string
 }
 
-export interface GenerativeCanvasPayload {
+export type GenerativeCanvasPayload = CourtPulsePayload | SeasonRecapPayload
+
+export interface CourtPulsePayload {
   presetId: "court-pulse-v1"
   seed: number
   parameters: {
@@ -98,6 +100,23 @@ export interface GenerativeCanvasPayload {
   posterAssetId: Uuid
   altText: string
   dataSummary: string
+}
+
+export interface SeasonRecapPayload {
+  presetId: "season-recap-v1"
+  seed: number
+  parameters: {
+    values: [number, ...Array<number>]
+    lineWeight: number
+    paletteId: "season-ink"
+  }
+  posterAssetId: Uuid
+  altText: string
+  dataSummary: string
+  seasonId: Uuid
+  projectionId: Uuid
+  asOf: string
+  evidenceSnapshotIds: [string, ...Array<string>]
 }
 
 export interface ParagraphBlock {

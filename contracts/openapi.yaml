@@ -3,7 +3,8 @@ jsonSchemaDialect: https://json-schema.org/draft/2020-12/schema
 info:
   title: Courtside TW API
   version: 1.0.0
-  description: Contract-first REST API for public reading, reader library, editorial publication and optional provenance/SIWE boundaries.
+  description: Contract-first REST API for public reading, reader library,
+    editorial publication and optional provenance/SIWE boundaries.
 servers:
   - url: https://api.courtside.tw
     description: Production API origin placeholder; deployment is a later task.
@@ -197,7 +198,8 @@ paths:
         - Public
       operationId: searchPublicContent
       summary: Search published content
-      description: Searches the published projection with bounded filters and cursor pagination.
+      description: Searches the published projection with bounded filters and cursor
+        pagination.
       security: []
       parameters:
         - $ref: "#/components/parameters/Cursor"
@@ -302,7 +304,8 @@ paths:
         - Offline
       operationId: getWithdrawalManifest
       summary: Get the signed withdrawal manifest
-      description: Returns versioned withdrawals for offline clients; it never gates ordinary online reading.
+      description: Returns versioned withdrawals for offline clients; it never gates
+        ordinary online reading.
       security: []
       parameters: []
       responses:
@@ -333,7 +336,8 @@ paths:
         - Provenance
       operationId: getIssueProvenance
       summary: Get edition provenance
-      description: Returns digest, CID, attestation and verification status without gating content.
+      description: Returns digest, CID, attestation and verification status without
+        gating content.
       security: []
       parameters:
         - $ref: "#/components/parameters/IssueSlug"
@@ -404,7 +408,8 @@ paths:
         - Offline
       operationId: getOfflineIssueArticle
       summary: Get the immutable article bytes declared by an offline manifest
-      description: Returns only the frozen revision in the current rights-eligible issue package.
+      description: Returns only the frozen revision in the current rights-eligible
+        issue package.
       security: []
       parameters:
         - $ref: "#/components/parameters/IssueSlug"
@@ -731,7 +736,8 @@ paths:
         - Reader
       operationId: exportAccountData
       summary: Export reader account data
-      description: Returns the authenticated reader's minimal bookmark and progress data as JSON.
+      description: Returns the authenticated reader's minimal bookmark and progress
+        data as JSON.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -767,10 +773,14 @@ paths:
       tags:
         - SIWE
       operationId: createSiweChallenge
-      x-write-concurrency: PLANNED_US7
+      x-write-concurrency: IDEMPOTENCY_KEY
       summary: Create a SIWE challenge
-      description: Creates a short-lived domain- and chain-bound nonce; this optional endpoint never grants editor authority.
-      security: []
+      description: Links an auxiliary wallet only for a recently authenticated OIDC
+        reader; does not create an OIDC session or grant editorial authority. A
+        consumed nonce or a retry after server restart returns 409.
+      security:
+        - bffSession: []
+        - oidcBearer: []
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       responses:
@@ -784,8 +794,29 @@ paths:
                 valid:
                   value:
                     nonce: 0123456789abcdef
-                    message: courtside.tw wants you to sign in
-                    expiresAt: 2026-08-07T15:00:00Z
+                    message: >-
+                      courtside.tw wants you to sign in with your Ethereum
+                      account:
+
+                      0x0000000000000000000000000000000000000001
+
+
+                      Link this wallet to your Courtside reader account. No
+                      editor authority is granted.
+
+
+                      URI: https://courtside.tw
+
+                      Version: 1
+
+                      Chain ID: 1
+
+                      Nonce: 0123456789abcdef
+
+                      Issued At: 2026-09-12T00:00:00Z
+
+                      Expiration Time: 2026-09-12T00:05:00Z
+                    expiresAt: 2026-09-12T00:05:00Z
                     domain: courtside.tw
                     chainId: eip155:1
           headers:
@@ -795,6 +826,12 @@ paths:
           $ref: "#/components/responses/Problem400"
         "429":
           $ref: "#/components/responses/Problem429"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "409":
+          $ref: "#/components/responses/Problem409"
       requestBody:
         required: true
         content:
@@ -810,15 +847,21 @@ paths:
                   uri: https://courtside.tw
       x-idempotent: true
       x-optional: true
+      x-required-roles:
+        - READER
   /api/v1/auth/siwe/verify:
     post:
       tags:
         - SIWE
       operationId: verifySiweSignature
-      x-write-concurrency: PLANNED_US7
+      x-write-concurrency: SINGLE_USE_NONCE
       summary: Verify a SIWE signature
-      description: Verifies the ERC-4361 message and may link a BFF session after explicit reader action.
-      security: []
+      description: Links an auxiliary wallet only for a recently authenticated OIDC
+        reader; does not create an OIDC session or grant editorial authority. A
+        consumed nonce or a retry after server restart returns 409.
+      security:
+        - bffSession: []
+        - oidcBearer: []
       parameters:
         - $ref: "#/components/parameters/IdempotencyKey"
       responses:
@@ -855,17 +898,40 @@ paths:
             examples:
               valid:
                 value:
-                  message: courtside.tw wants you to sign in
+                  message: >-
+                    courtside.tw wants you to sign in with your Ethereum
+                    account:
+
+                    0x0000000000000000000000000000000000000001
+
+
+                    Link this wallet to your Courtside reader account. No editor
+                    authority is granted.
+
+
+                    URI: https://courtside.tw
+
+                    Version: 1
+
+                    Chain ID: 1
+
+                    Nonce: 0123456789abcdef
+
+                    Issued At: 2026-09-12T00:00:00Z
+
+                    Expiration Time: 2026-09-12T00:05:00Z
                   signature: "0x00"
       x-idempotent: true
       x-optional: true
+      x-required-roles:
+        - READER
   /api/v1/me/wallets/{chainNamespace}/{address}:
     delete:
       tags:
         - Reader
         - SIWE
       operationId: revokeWalletLink
-      x-write-concurrency: PLANNED_US7
+      x-write-concurrency: IDEMPOTENT_SET
       summary: Revoke a linked wallet
       description: Revokes an off-chain wallet link after re-authentication.
       security:
@@ -895,6 +961,241 @@ paths:
           $ref: "#/components/responses/Problem429"
       x-idempotent: true
       x-optional: true
+  /api/v1/me/passport:
+    get:
+      tags:
+        - Reader
+      operationId: getFanPassport
+      summary: Read private off-chain stamps and wallet links
+      description: Read private off-chain stamps and wallet links Private OIDC account
+        boundary; wallet never grants reader or editor authority.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      x-required-roles:
+        - READER
+      parameters: []
+      responses:
+        "200":
+          description: Private account response.
+          headers: &a1
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/FanPassport"
+              examples:
+                valid:
+                  value:
+                    items:
+                      - &a2
+                        id: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                        season: "2026"
+                        credentialType: READER_STAMP
+                        status: CLAIMED
+                        issuedAt: 2026-09-12T00:00:00Z
+                        expiresAt: 2028-01-01T00:00:00Z
+                        version: 0
+                    wallets: []
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+  /api/v1/me/passport/claims:
+    post:
+      tags:
+        - Reader
+      operationId: claimReaderStamp
+      summary: Claim the server-verified ISSUE_PROGRESS_ACK_V1 entitlement
+      description: Claim the server-verified ISSUE_PROGRESS_ACK_V1 entitlement Private
+        OIDC account boundary; wallet never grants reader or editor authority.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      x-required-roles:
+        - READER
+      parameters:
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Private account response.
+          headers: *a1
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReaderStamp"
+              examples:
+                valid:
+                  value: *a2
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-write-concurrency: IDEMPOTENCY_KEY
+      x-idempotent: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReaderStampClaim"
+            examples:
+              valid:
+                value:
+                  issueId: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                  season: "2026"
+  /api/v1/me/passport/{stampId}/credential:
+    post:
+      tags:
+        - Reader
+      operationId: requestStampCredential
+      summary: Explicitly request optional credential delivery; external delivery
+        remains disabled
+      description: Explicitly request optional credential delivery; external delivery
+        remains disabled Private OIDC account boundary; wallet never grants
+        reader or editor authority.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      x-required-roles:
+        - READER
+      parameters:
+        - name: stampId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/IdempotencyKey"
+      responses:
+        "200":
+          description: Private account response.
+          headers: *a1
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/CredentialDeliveryResult"
+              examples:
+                valid:
+                  value:
+                    status: DISABLED
+                    transferable: false
+                    gasCeiling: 0
+                    permanenceDisclosure: Public-chain copies cannot be guaranteed deletable.
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-write-concurrency: IDEMPOTENCY_KEY
+      x-idempotent: true
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CredentialConsent"
+            examples:
+              valid:
+                value:
+                  consent: true
+  /api/v1/publisher/passport/{stampId}/status:
+    post:
+      tags:
+        - Publisher
+      operationId: changeReaderStampStatus
+      summary: Revoke, supersede or expire an off-chain entitlement with a version check
+      description: Revoke, supersede or expire an off-chain entitlement with a version
+        check Private OIDC account boundary; wallet never grants reader or
+        editor authority.
+      security:
+        - bffSession: []
+        - oidcBearer: []
+      x-required-roles:
+        - PUBLISHER
+      parameters:
+        - name: stampId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: "#/components/parameters/IfMatch"
+      responses:
+        "200":
+          description: Private account response.
+          headers: *a1
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ReaderStamp"
+              examples:
+                valid:
+                  value:
+                    id: 0190f7b0-7c4b-7e3a-8f12-123456789abc
+                    season: "2026"
+                    credentialType: READER_STAMP
+                    status: REVOKED
+                    issuedAt: 2026-09-12T00:00:00Z
+                    expiresAt: 2028-01-01T00:00:00Z
+                    version: 1
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      x-write-concurrency: IF_MATCH
+      x-optimistic-lock: If-Match
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ReaderStampStatusCommand"
+            examples:
+              valid:
+                value:
+                  status: REVOKED
+                  reason: OWNER_REVOCATION
   /api/v1/me:
     delete:
       tags:
@@ -1217,8 +1518,8 @@ paths:
       operationId: replaceEditorIssueArticles
       summary: Replace draft issue article assignments
       description: Atomically replaces up to 500 article assignments on a DRAFT issue.
-        Existing unchanged article/revision pairs retain their published pin; new
-        or changed references must name the current published revision. Each
+        Existing unchanged article/revision pairs retain their published pin;
+        new or changed references must name the current published revision. Each
         article belongs to an existing section with a contiguous position. The
         issue version advances once and retries reuse the stored idempotent
         response.
@@ -1305,11 +1606,12 @@ paths:
         - Editorial
       operationId: listPrivateMedia
       summary: List private media available to editorial users
-      description: Returns bounded media metadata in descending asset UUID order.
-        The cursor is the last assetId from the previous page. Private object
-        keys, provider URLs and credentials are never included. Archived library entries
-        are excluded by default; archived=true returns only archived entries.
-        Library archive does not change processing state, rights or existing publications.
+      description: Returns bounded media metadata in descending asset UUID order. The
+        cursor is the last assetId from the previous page. Private object keys,
+        provider URLs and credentials are never included. Archived library
+        entries are excluded by default; archived=true returns only archived
+        entries. Library archive does not change processing state, rights or
+        existing publications.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -1380,11 +1682,12 @@ paths:
         - Editorial
       operationId: listPublisherPrivateMedia
       summary: List private media available to editorial users
-      description: Returns bounded media metadata in descending asset UUID order.
-        The cursor is the last assetId from the previous page. Private object
-        keys, provider URLs and credentials are never included. Archived library entries
-        are excluded by default; archived=true returns only archived entries.
-        Library archive does not change processing state, rights or existing publications.
+      description: Returns bounded media metadata in descending asset UUID order. The
+        cursor is the last assetId from the previous page. Private object keys,
+        provider URLs and credentials are never included. Archived library
+        entries are excluded by default; archived=true returns only archived
+        entries. Library archive does not change processing state, rights or
+        existing publications.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -1589,7 +1892,8 @@ paths:
         - Editorial
       operationId: listEditorIssueSections
       summary: List issue sections
-      description: Returns the server-backed, explicitly positioned table of contents for an issue draft.
+      description: Returns the server-backed, explicitly positioned table of contents
+        for an issue draft.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -1639,7 +1943,8 @@ paths:
       operationId: createEditorIssueSection
       x-write-concurrency: IF_MATCH
       summary: Create an issue section
-      description: Creates a section and persists its explicit position inside a draft issue.
+      description: Creates a section and persists its explicit position inside a draft
+        issue.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -1701,7 +2006,8 @@ paths:
       operationId: reorderEditorIssueSections
       x-write-concurrency: IF_MATCH
       summary: Reorder issue sections
-      description: Atomically replaces the complete section order with contiguous explicit positions.
+      description: Atomically replaces the complete section order with contiguous
+        explicit positions.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -1774,7 +2080,8 @@ paths:
       operationId: patchEditorIssueSection
       x-write-concurrency: IF_MATCH
       summary: Rename an issue section
-      description: Updates section metadata inside a draft issue with the issue aggregate lock.
+      description: Updates section metadata inside a draft issue with the issue
+        aggregate lock.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -1836,7 +2143,8 @@ paths:
       operationId: deleteEditorIssueSection
       x-write-concurrency: IF_MATCH
       summary: Delete an empty issue section
-      description: Deletes only an empty section and normalizes the remaining explicit positions.
+      description: Deletes only an empty section and normalizes the remaining explicit
+        positions.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -2436,7 +2744,8 @@ paths:
       operationId: publishPublisherArticle
       x-write-concurrency: IF_MATCH
       summary: Publish an article now
-      description: Publishes the approved article revision and records an immutable snapshot.
+      description: Publishes the approved article revision and records an immutable
+        snapshot.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -2761,7 +3070,8 @@ paths:
       operationId: archivePublisherIssue
       x-write-concurrency: IF_MATCH
       summary: Archive a published or withdrawn issue
-      description: Archives a published or withdrawn issue while preserving its immutable publication snapshot and audit evidence.
+      description: Archives a published or withdrawn issue while preserving its
+        immutable publication snapshot and audit evidence.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -2808,7 +3118,8 @@ paths:
       operationId: archivePublisherArticle
       x-write-concurrency: IF_MATCH
       summary: Archive a withdrawn article
-      description: Archives an already withdrawn article while preserving its publication evidence.
+      description: Archives an already withdrawn article while preserving its
+        publication evidence.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -2953,7 +3264,8 @@ paths:
                   filename: cover.jpg
                   contentType: image/jpeg
                   sizeBytes: 1024
-                  checksumSha256: "0000000000000000000000000000000000000000000000000000000000000000"
+                  checksumSha256: "00000000000000000000000000000000000000000000000000000000000000\
+                    00"
       x-idempotent: true
       x-required-roles:
         - EDITOR
@@ -3010,7 +3322,8 @@ paths:
             examples:
               valid:
                 value:
-                  checksumSha256: "0000000000000000000000000000000000000000000000000000000000000000"
+                  checksumSha256: "00000000000000000000000000000000000000000000000000000000000000\
+                    00"
                   contentType: image/jpeg
       x-idempotent: true
       x-required-roles:
@@ -3021,7 +3334,8 @@ paths:
         - Media
       operationId: getEditorMediaMetadata
       summary: Read media metadata
-      description: Reads accessibility metadata and the latest rights record for an editor-owned media asset.
+      description: Reads accessibility metadata and the latest rights record for an
+        editor-owned media asset.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -3065,7 +3379,8 @@ paths:
       operationId: updateEditorMediaMetadata
       x-write-concurrency: IF_MATCH
       summary: Update media metadata and rights
-      description: Persists alt text and a versioned rights record with an If-Match lock on the media asset.
+      description: Persists alt text and a versioned rights record with an If-Match
+        lock on the media asset.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -3138,10 +3453,11 @@ paths:
         - Media
       operationId: archiveEditorMedia
       summary: Archive media in the editorial library
-      description: Archives library membership using the asset version. Processing state,
-        rights records, bytes and existing published snapshots remain unchanged. Archived
-        media cannot be newly referenced by article drafts or issue covers. The archive
-        remains available in the archived library. A stale version returns 409.
+      description: Archives library membership using the asset version. Processing
+        state, rights records, bytes and existing published snapshots remain
+        unchanged. Archived media cannot be newly referenced by article drafts
+        or issue covers. The archive remains available in the archived library.
+        A stale version returns 409.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -3189,10 +3505,11 @@ paths:
         - Media
       operationId: archivePublisherMedia
       summary: Archive media in the editorial library
-      description: Archives library membership using the asset version. Processing state,
-        rights records, bytes and existing published snapshots remain unchanged. Archived
-        media cannot be newly referenced by article drafts or issue covers. The archive
-        remains available in the archived library. A stale version returns 409.
+      description: Archives library membership using the asset version. Processing
+        state, rights records, bytes and existing published snapshots remain
+        unchanged. Archived media cannot be newly referenced by article drafts
+        or issue covers. The archive remains available in the archived library.
+        A stale version returns 409.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -3301,7 +3618,8 @@ paths:
         - Editorial
       operationId: listManagedTaxonomy
       summary: List managed taxonomy terms
-      description: Lists taxonomy terms by immutable key; display names remain mutable attributes.
+      description: Lists taxonomy terms by immutable key; display names remain mutable
+        attributes.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -3408,7 +3726,8 @@ paths:
       operationId: patchManagedTaxonomy
       x-write-concurrency: IF_MATCH
       summary: Update taxonomy attributes
-      description: Updates display attributes and lifecycle without changing the UUID or stable key.
+      description: Updates display attributes and lifecycle without changing the UUID
+        or stable key.
       security:
         - bffSession: []
         - oidcBearer: []
@@ -3821,8 +4140,8 @@ paths:
       operationId: getArticleRevisionContributors
       summary: Read an ordered revision byline
       description: Returns revision-scoped public credit to an editor, including
-        frozen revisions. The revision must belong to the article. The version field
-        is the current article version for conditional draft writes.
+        frozen revisions. The revision must belong to the article. The version
+        field is the current article version for conditional draft writes.
       parameters:
         - name: articleId
           in: path
@@ -4025,6 +4344,711 @@ paths:
           $ref: "#/components/responses/Problem429"
       x-required-roles:
         - PUBLISHER
+  /api/v1/publisher/basketball/snapshots:
+    post:
+      tags:
+        - Editorial
+      operationId: submitPublisherBasketballSnapshot
+      summary: Submit immutable source evidence for review
+      description: Requires PUBLISHER. Stores a rights-approved minimal reference without fetching its URL. Server assigns retrieval time, checksum and REPORTED status; body UUID identities make an identical retry safe and reject changed bytes. Source submission does not authorize canonical publication.
+      security:
+        - oidcBearer: []
+      x-required-roles:
+        - PUBLISHER
+      responses:
+        "201":
+          description: Private editorial result; exact retry retains immutable identity and metadata.
+          headers: &a1
+            X-Request-Id:
+              $ref: "#/components/headers/XRequestId"
+            Cache-Control:
+              schema:
+                type: string
+                const: no-store
+            X-Content-Type-Options:
+              schema:
+                type: string
+                const: nosniff
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EditorialBasketballEvidenceRef"
+              examples:
+                submitted:
+                  summary: Synthetic output serialized by the actual Java intake DTO.
+                  value: &a2
+                    id: 00000000-0000-4000-8000-000000000003
+                    sourceId: 00000000-0000-4000-8000-000000000001
+                    sourceType: LEAGUE
+                    sourceUrl: https://example.invalid/official
+                    retrievedAt: 2026-09-12T10:00:00Z
+                    publishedAt: null
+                    effectiveAt: 2026-09-12T09:00:00Z
+                    confidence: 0.9
+                    status: REPORTED
+                    freshness: fresh
+                    snapshotId: 00000000-0000-4000-8000-000000000002
+                    staleAt: 2026-09-12T11:00:00Z
+                    expiresAt: 2026-09-12T12:00:00Z
+                    note: Publisher-submitted source
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EditorialBasketballSnapshotInput"
+            examples:
+              reviewedWorkflow:
+                value:
+                  source:
+                    id: 00000000-0000-4000-8000-000000000001
+                    type: LEAGUE
+                    name: Synthetic official source
+                    sourceUrl: https://example.invalid/official
+                    publicReferenceAllowed: true
+                  snapshotId: 00000000-0000-4000-8000-000000000002
+                  evidenceId: 00000000-0000-4000-8000-000000000003
+                  publishedAt: null
+                  effectiveAt: 2026-09-12T09:00:00Z
+                  content: Synthetic permitted source reference
+                  rightsReference: Written permission for public reference
+                  confidence: 0.9
+                  staleAt: 2026-09-12T11:00:00Z
+                  expiresAt: 2026-09-12T12:00:00Z
+      x-write-concurrency: IMMUTABLE_SOURCE_ID
+  /api/v1/publisher/basketball/evidence/{evidenceId}:confirm:
+    post:
+      tags:
+        - Editorial
+      operationId: confirmPublisherBasketballEvidence
+      summary: Explicitly confirm a retained reported source
+      description: Requires PUBLISHER. Retains the original REPORTED reference and creates a separately identified CONFIRMED reference only after an attributable human review. Rationale is required; reviewer and decision time come from server identity/time. Unknown, future, expired, stale or analysis evidence is rejected.
+      security:
+        - oidcBearer: []
+      x-required-roles:
+        - PUBLISHER
+      responses:
+        "201":
+          description: Private editorial result; exact retry retains immutable identity and metadata.
+          headers: *a1
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EditorialBasketballEvidenceRef"
+              examples:
+                confirmed:
+                  summary: Synthetic output serialized by the actual Java intake DTO.
+                  value: &a3
+                    id: 00000000-0000-4000-8000-000000000004
+                    sourceId: 00000000-0000-4000-8000-000000000001
+                    sourceType: LEAGUE
+                    sourceUrl: https://example.invalid/official
+                    retrievedAt: 2026-09-12T10:00:00Z
+                    publishedAt: null
+                    effectiveAt: 2026-09-12T09:00:00Z
+                    confidence: 0.9
+                    status: CONFIRMED
+                    freshness: fresh
+                    snapshotId: 00000000-0000-4000-8000-000000000002
+                    staleAt: 2026-09-12T11:00:00Z
+                    expiresAt: 2026-09-12T12:00:00Z
+                    note: Reviewed reference to 00000000-0000-4000-8000-000000000003
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      parameters:
+        - name: evidenceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EditorialBasketballConfirmationInput"
+            examples:
+              reviewedWorkflow:
+                value:
+                  confirmedEvidenceId: 00000000-0000-4000-8000-000000000004
+                  rationale: Reviewed the official source and its rights reference
+      x-write-concurrency: IMMUTABLE_EVIDENCE_ID
+  /api/v1/publisher/basketball/facts:
+    post:
+      tags:
+        - Editorial
+      operationId: appendPublisherBasketballFact
+      summary: Append one reviewed canonical basketball fact
+      description: Requires PUBLISHER. Accepts exactly one immutable record using existing canonical relationship and temporal validation. Every nested evidence ID must identify fresh CONFIRMED evidence with an explicit latest human review. Alias and roster histories append. Human review is recorded before catalog append, and does not itself assert that the subsequent fact transaction committed.
+      security:
+        - oidcBearer: []
+      x-required-roles:
+        - PUBLISHER
+      responses:
+        "201":
+          description: Private editorial result; exact retry retains immutable identity and metadata.
+          headers: *a1
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EditorialBasketballFactReceipt"
+              examples:
+                appended:
+                  summary: Synthetic output serialized by the actual Java intake DTO.
+                  value: &a4
+                    factId: 00000000-0000-4000-8000-000000000010
+                    kind: LEAGUE
+                    reviewKey: basketball:fact:00000000-0000-4000-8000-000000000010
+                    evidenceIds:
+                      - 00000000-0000-4000-8000-000000000004
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EditorialBasketballFactInput"
+            examples:
+              reviewedWorkflow:
+                value:
+                  kind: LEAGUE
+                  payload:
+                    id: 00000000-0000-4000-8000-000000000010
+                    lifecycle: ACTIVE
+                    aliases:
+                      - id: 00000000-0000-4000-8000-000000000011
+                        ownerId: 00000000-0000-4000-8000-000000000010
+                        name: Synthetic league
+                        locale: zh-TW
+                        period:
+                          startDate: 2026-01-01
+                          endDate: 2027-01-01
+                        evidenceIds:
+                          - 00000000-0000-4000-8000-000000000004
+                    evidenceIds:
+                      - 00000000-0000-4000-8000-000000000004
+                  rationale: Reviewed this stable league identity against confirmed evidence
+      x-write-concurrency: IMMUTABLE_FACT_ID
+  /api/v1/publisher/basketball/evidence/{evidenceId}:
+    get:
+      tags:
+        - Editorial
+      operationId: getPublisherBasketballEvidence
+      summary: Read private source material and its audit history
+      description: Requires PUBLISHER. Returns retained source material, rights reference, original metadata and review history for editorial inspection; this response is private and no-store.
+      security:
+        - oidcBearer: []
+      x-required-roles:
+        - PUBLISHER
+      responses:
+        "200":
+          description: Private editorial result; exact retry retains immutable identity and metadata.
+          headers: *a1
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EditorialBasketballEvidenceView"
+              examples:
+                reported:
+                  summary: Synthetic output serialized by the actual Java intake DTO.
+                  value: &a5
+                    source:
+                      id: 00000000-0000-4000-8000-000000000001
+                      type: LEAGUE
+                      name: Synthetic official source
+                      sourceUrl: https://example.invalid/official
+                      publicReferenceAllowed: true
+                    snapshot:
+                      id: 00000000-0000-4000-8000-000000000002
+                      sourceId: 00000000-0000-4000-8000-000000000001
+                      sourceUrl: https://example.invalid/official
+                      retrievedAt: 2026-09-12T10:00:00Z
+                      publishedAt: null
+                      content: Synthetic permitted source reference
+                      sha256: c8d6f1bc436f67415b1717512e8693571e9e06bcacab06218fcb201703398485
+                      rightsReference: Written permission for public reference
+                    reference:
+                      id: 00000000-0000-4000-8000-000000000003
+                      sourceId: 00000000-0000-4000-8000-000000000001
+                      sourceType: LEAGUE
+                      sourceUrl: https://example.invalid/official
+                      retrievedAt: 2026-09-12T10:00:00Z
+                      publishedAt: null
+                      effectiveAt: 2026-09-12T09:00:00Z
+                      confidence: 0.9
+                      status: REPORTED
+                      freshness: fresh
+                      snapshotId: 00000000-0000-4000-8000-000000000002
+                      staleAt: 2026-09-12T11:00:00Z
+                      expiresAt: 2026-09-12T12:00:00Z
+                      note: Publisher-submitted source
+                    history:
+                      - id: 762e1430-4669-3a7e-a1db-7852b2a59b5f
+                        claimKey: evidence:00000000-0000-4000-8000-000000000003
+                        revision: 1
+                        kind: PROPOSED
+                        value: sha256:c8d6f1bc436f67415b1717512e8693571e9e06bcacab06218fcb201703398485
+                        evidenceIds:
+                          - 00000000-0000-4000-8000-000000000003
+                        status: REPORTED
+                        reviewerId: verified-oidc-publisher
+                        rationale: Source submitted for review
+                        createdAt: 2026-09-12T10:00:00Z
+                confirmed:
+                  summary: Synthetic output serialized by the actual Java intake DTO.
+                  value: &a6
+                    source:
+                      id: 00000000-0000-4000-8000-000000000001
+                      type: LEAGUE
+                      name: Synthetic official source
+                      sourceUrl: https://example.invalid/official
+                      publicReferenceAllowed: true
+                    snapshot:
+                      id: 00000000-0000-4000-8000-000000000002
+                      sourceId: 00000000-0000-4000-8000-000000000001
+                      sourceUrl: https://example.invalid/official
+                      retrievedAt: 2026-09-12T10:00:00Z
+                      publishedAt: null
+                      content: Synthetic permitted source reference
+                      sha256: c8d6f1bc436f67415b1717512e8693571e9e06bcacab06218fcb201703398485
+                      rightsReference: Written permission for public reference
+                    reference:
+                      id: 00000000-0000-4000-8000-000000000004
+                      sourceId: 00000000-0000-4000-8000-000000000001
+                      sourceType: LEAGUE
+                      sourceUrl: https://example.invalid/official
+                      retrievedAt: 2026-09-12T10:00:00Z
+                      publishedAt: null
+                      effectiveAt: 2026-09-12T09:00:00Z
+                      confidence: 0.9
+                      status: CONFIRMED
+                      freshness: fresh
+                      snapshotId: 00000000-0000-4000-8000-000000000002
+                      staleAt: 2026-09-12T11:00:00Z
+                      expiresAt: 2026-09-12T12:00:00Z
+                      note: Reviewed reference to 00000000-0000-4000-8000-000000000003
+                    history:
+                      - id: 0354357f-08d4-3773-a329-b01e093c0924
+                        claimKey: evidence:00000000-0000-4000-8000-000000000004
+                        revision: 1
+                        kind: PROPOSED
+                        value: sourceReference:00000000-0000-4000-8000-000000000003
+                        evidenceIds:
+                          - 00000000-0000-4000-8000-000000000004
+                        status: CONFIRMED
+                        reviewerId: null
+                        rationale: null
+                        createdAt: 2026-09-12T10:00:00Z
+                      - id: b047988c-faaf-3cca-8512-c2a1b17fcc2c
+                        claimKey: evidence:00000000-0000-4000-8000-000000000004
+                        revision: 2
+                        kind: REVIEWED
+                        value: sourceReference:00000000-0000-4000-8000-000000000003
+                        evidenceIds:
+                          - 00000000-0000-4000-8000-000000000004
+                        status: CONFIRMED
+                        reviewerId: verified-oidc-publisher
+                        rationale: Reviewed the official source and its rights reference
+                        createdAt: 2026-09-12T10:00:00Z
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      parameters:
+        - name: evidenceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+  /api/v1/admin/basketball/snapshots:
+    post:
+      tags:
+        - Editorial
+      operationId: submitAdminBasketballSnapshot
+      summary: Submit immutable source evidence for review
+      description: Requires ADMIN. Stores a rights-approved minimal reference without fetching its URL. Server assigns retrieval time, checksum and REPORTED status; body UUID identities make an identical retry safe and reject changed bytes. Source submission does not authorize canonical publication.
+      security:
+        - oidcBearer: []
+      x-required-roles:
+        - ADMIN
+      responses:
+        "201":
+          description: Private editorial result; exact retry retains immutable identity and metadata.
+          headers: *a1
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EditorialBasketballEvidenceRef"
+              examples:
+                submitted:
+                  summary: Synthetic output serialized by the actual Java intake DTO.
+                  value: *a2
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EditorialBasketballSnapshotInput"
+            examples:
+              reviewedWorkflow:
+                value:
+                  source:
+                    id: 00000000-0000-4000-8000-000000000001
+                    type: LEAGUE
+                    name: Synthetic official source
+                    sourceUrl: https://example.invalid/official
+                    publicReferenceAllowed: true
+                  snapshotId: 00000000-0000-4000-8000-000000000002
+                  evidenceId: 00000000-0000-4000-8000-000000000003
+                  publishedAt: null
+                  effectiveAt: 2026-09-12T09:00:00Z
+                  content: Synthetic permitted source reference
+                  rightsReference: Written permission for public reference
+                  confidence: 0.9
+                  staleAt: 2026-09-12T11:00:00Z
+                  expiresAt: 2026-09-12T12:00:00Z
+      x-write-concurrency: IMMUTABLE_SOURCE_ID
+  /api/v1/admin/basketball/evidence/{evidenceId}:confirm:
+    post:
+      tags:
+        - Editorial
+      operationId: confirmAdminBasketballEvidence
+      summary: Explicitly confirm a retained reported source
+      description: Requires ADMIN. Retains the original REPORTED reference and creates a separately identified CONFIRMED reference only after an attributable human review. Rationale is required; reviewer and decision time come from server identity/time. Unknown, future, expired, stale or analysis evidence is rejected.
+      security:
+        - oidcBearer: []
+      x-required-roles:
+        - ADMIN
+      responses:
+        "201":
+          description: Private editorial result; exact retry retains immutable identity and metadata.
+          headers: *a1
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EditorialBasketballEvidenceRef"
+              examples:
+                confirmed:
+                  summary: Synthetic output serialized by the actual Java intake DTO.
+                  value: *a3
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      parameters:
+        - name: evidenceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EditorialBasketballConfirmationInput"
+            examples:
+              reviewedWorkflow:
+                value:
+                  confirmedEvidenceId: 00000000-0000-4000-8000-000000000004
+                  rationale: Reviewed the official source and its rights reference
+      x-write-concurrency: IMMUTABLE_EVIDENCE_ID
+  /api/v1/admin/basketball/facts:
+    post:
+      tags:
+        - Editorial
+      operationId: appendAdminBasketballFact
+      summary: Append one reviewed canonical basketball fact
+      description: Requires ADMIN. Accepts exactly one immutable record using existing canonical relationship and temporal validation. Every nested evidence ID must identify fresh CONFIRMED evidence with an explicit latest human review. Alias and roster histories append. Human review is recorded before catalog append, and does not itself assert that the subsequent fact transaction committed.
+      security:
+        - oidcBearer: []
+      x-required-roles:
+        - ADMIN
+      responses:
+        "201":
+          description: Private editorial result; exact retry retains immutable identity and metadata.
+          headers: *a1
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EditorialBasketballFactReceipt"
+              examples:
+                appended:
+                  summary: Synthetic output serialized by the actual Java intake DTO.
+                  value: *a4
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/EditorialBasketballFactInput"
+            examples:
+              reviewedWorkflow:
+                value:
+                  kind: LEAGUE
+                  payload:
+                    id: 00000000-0000-4000-8000-000000000010
+                    lifecycle: ACTIVE
+                    aliases:
+                      - id: 00000000-0000-4000-8000-000000000011
+                        ownerId: 00000000-0000-4000-8000-000000000010
+                        name: Synthetic league
+                        locale: zh-TW
+                        period:
+                          startDate: 2026-01-01
+                          endDate: 2027-01-01
+                        evidenceIds:
+                          - 00000000-0000-4000-8000-000000000004
+                    evidenceIds:
+                      - 00000000-0000-4000-8000-000000000004
+                  rationale: Reviewed this stable league identity against confirmed evidence
+      x-write-concurrency: IMMUTABLE_FACT_ID
+  /api/v1/admin/basketball/evidence/{evidenceId}:
+    get:
+      tags:
+        - Editorial
+      operationId: getAdminBasketballEvidence
+      summary: Read private source material and its audit history
+      description: Requires ADMIN. Returns retained source material, rights reference, original metadata and review history for editorial inspection; this response is private and no-store.
+      security:
+        - oidcBearer: []
+      x-required-roles:
+        - ADMIN
+      responses:
+        "200":
+          description: Private editorial result; exact retry retains immutable identity and metadata.
+          headers: *a1
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EditorialBasketballEvidenceView"
+              examples:
+                reported:
+                  summary: Synthetic output serialized by the actual Java intake DTO.
+                  value: *a5
+                confirmed:
+                  summary: Synthetic output serialized by the actual Java intake DTO.
+                  value: *a6
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "409":
+          $ref: "#/components/responses/Problem409"
+        "429":
+          $ref: "#/components/responses/Problem429"
+      parameters:
+        - name: evidenceId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+  /api/v1/publisher/season-recaps:
+    post:
+      tags:
+        - Publisher
+      operationId: generatePublisherSeasonRecap
+      summary: Generate an immutable recap from reviewed canonical facts
+      description: Requires PUBLISHER. The server calculates TEAM_SEASON_COVERAGE_V1 from one to 32 canonical team-season facts and their attributable confirmed evidence. No raw metric, reader activity or caller-supplied narrative is accepted. The projection UUID binds immutable normalized content; an identical retry returns that content and changed content under the same UUID is rejected with 422. Generation does not publish the draft. Current source freshness, contradiction review and poster rights are required.
+      security:
+        - oidcBearer: []
+      x-required-roles:
+        - PUBLISHER
+      x-write-concurrency: IMMUTABLE_PROJECTION_ID
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SeasonRecapGenerate"
+            examples:
+              synthetic:
+                value:
+                  projectionId: 00000000-0000-4000-8000-000000000021
+                  seasonId: 00000000-0000-4000-8000-000000000022
+                  posterAssetId: 00000000-0000-4000-8000-000000000023
+                  asOf: 2026-09-12T00:00:00Z
+                  factIds:
+                    - 00000000-0000-4000-8000-000000000024
+      responses:
+        "200":
+          description: Generated draft ContentDocument; no public publication is implied.
+          headers: *a1
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ContentDocument"
+              examples:
+                synthetic:
+                  summary: Synthetic contract example; no live submission is asserted.
+                  value: &a8
+                    schemaVersion: 1
+                    documentId: 00000000-0000-4000-8000-000000000021
+                    blocks:
+                      - id: 00000000-0000-4000-8000-000000000021
+                        type: generative-canvas
+                        version: 1
+                        payload:
+                          presetId: season-recap-v1
+                          seed: -2147467231
+                          parameters:
+                            values:
+                              - 0.5
+                            lineWeight: 2
+                            paletteId: season-ink
+                          posterAssetId: 00000000-0000-4000-8000-000000000023
+                          altText: 球季參與紀錄的公開資料涵蓋比例
+                          dataSummary: 依 1 筆已審核球隊球季紀錄，計算各紀錄期間與截至日期前球季日數的交集比例；不是戰績或私人閱讀紀錄。
+                          seasonId: 00000000-0000-4000-8000-000000000022
+                          projectionId: 00000000-0000-4000-8000-000000000021
+                          asOf: 2026-09-12T00:00:00Z
+                          evidenceSnapshotIds:
+                            - 00000000-0000-4000-8000-000000000025
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+  /api/v1/public/seasons/{seasonId}/recaps/{projectionId}:
+    get:
+      tags:
+        - Public
+      operationId: getPublishedSeasonRecap
+      summary: Read an approved recap in its current public article
+      description: Anonymous access is available only when the exact immutable projection is present in one current published article snapshot with its poster impact link. Recomputes canonical evidence and checks live rights before returning content, the public poster variant and the article canonical path. Drafts, withdrawn rights, disputed evidence and missing or ambiguous publication return 404. This endpoint never reads private reader activity or requires wallet access.
+      security: []
+      parameters: &a9
+        - name: seasonId
+          in: path
+          required: true
+          schema: &a7
+            $ref: "#/components/schemas/Uuid"
+        - name: projectionId
+          in: path
+          required: true
+          schema: *a7
+      responses:
+        "200":
+          description: Verified public projection with its currently permitted public poster.
+          headers: *a1
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PublishedSeasonRecap"
+              examples:
+                synthetic:
+                  summary: Synthetic contract example; no live submission is asserted.
+                  value:
+                    content: *a8
+                    poster:
+                      assetId: 00000000-0000-4000-8000-000000000023
+                      variant: poster
+                      url: /media/synthetic/season-recap.webp
+                      mimeType: image/webp
+                      width: 1200
+                      height: 1600
+                      altText: Synthetic season calendar coverage poster
+                      credit: Synthetic contributor
+                      rightsOwner: Synthetic rights owner
+                      licenseName: Written permission
+                    canonicalPath: /articles/synthetic-season-recap
+        "400":
+          $ref: "#/components/responses/Problem400"
+        "404":
+          $ref: "#/components/responses/Problem404"
+        "422":
+          $ref: "#/components/responses/Problem422"
+        "429":
+          $ref: "#/components/responses/Problem429"
+  /api/v1/me/seasons/{seasonId}/recaps/{projectionId}:
+    get:
+      tags:
+        - Reader
+      operationId: getPrivateSeasonRecapBoundary
+      summary: Deny unavailable private season recap projections
+      description: The current implementation has no owner-scoped recap storage. A validated OIDC READER request returns 404; unauthenticated requests return 401 and callers without READER return 403. A stamp or wallet never grants access to another reader history. No successful private projection response is implemented.
+      security:
+        - oidcBearer: []
+      x-required-roles:
+        - READER
+      parameters: *a9
+      responses:
+        "401":
+          $ref: "#/components/responses/Problem401"
+        "403":
+          $ref: "#/components/responses/Problem403"
+        "404":
+          $ref: "#/components/responses/Problem404"
 components:
   securitySchemes:
     oidcBearer:
@@ -4136,7 +5160,8 @@ components:
       name: If-Match
       in: header
       required: true
-      description: Optimistic-lock version or ETag. The server rejects stale values with 409 VERSION_CONFLICT.
+      description: Optimistic-lock version or ETag. The server rejects stale values
+        with 409 VERSION_CONFLICT.
       schema:
         type: string
         minLength: 1
@@ -4170,6 +5195,1398 @@ components:
         minimum: 1
         maximum: 3600
   schemas:
+    EditorialBasketballLeague:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - lifecycle
+        - aliases
+        - evidenceIds
+      properties:
+        id:
+          type: string
+          format: uuid
+        lifecycle:
+          enum:
+            - ACTIVE
+            - SUSPENDED
+            - DISSOLVED
+            - REORGANIZED
+        aliases:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - id
+              - ownerId
+              - name
+              - locale
+              - period
+              - evidenceIds
+            properties:
+              id:
+                type: string
+                format: uuid
+              ownerId:
+                type: string
+                format: uuid
+              name:
+                type: string
+                minLength: 1
+                maxLength: 500
+              locale:
+                type: string
+                minLength: 1
+                maxLength: 500
+              period:
+                type: object
+                additionalProperties: false
+                required:
+                  - startDate
+                  - endDate
+                properties:
+                  startDate:
+                    type: string
+                    format: date
+                  endDate:
+                    oneOf:
+                      - type: string
+                        format: date
+                      - type: "null"
+              evidenceIds:
+                type: array
+                minItems: 1
+                uniqueItems: true
+                items:
+                  type: string
+                  format: uuid
+                maxItems: 32
+              supersedesAliasId:
+                oneOf:
+                  - type: string
+                    format: uuid
+                  - type: "null"
+          maxItems: 32
+        evidenceIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+          maxItems: 32
+    EditorialBasketballTeam:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - lifecycle
+        - aliases
+        - evidenceIds
+      properties:
+        id:
+          type: string
+          format: uuid
+        lifecycle:
+          enum:
+            - ACTIVE
+            - SUSPENDED
+            - DISSOLVED
+            - REORGANIZED
+        aliases:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - id
+              - ownerId
+              - name
+              - locale
+              - period
+              - evidenceIds
+            properties:
+              id:
+                type: string
+                format: uuid
+              ownerId:
+                type: string
+                format: uuid
+              name:
+                type: string
+                minLength: 1
+                maxLength: 500
+              locale:
+                type: string
+                minLength: 1
+                maxLength: 500
+              period:
+                type: object
+                additionalProperties: false
+                required:
+                  - startDate
+                  - endDate
+                properties:
+                  startDate:
+                    type: string
+                    format: date
+                  endDate:
+                    oneOf:
+                      - type: string
+                        format: date
+                      - type: "null"
+              evidenceIds:
+                type: array
+                minItems: 1
+                uniqueItems: true
+                items:
+                  type: string
+                  format: uuid
+                maxItems: 32
+              supersedesAliasId:
+                oneOf:
+                  - type: string
+                    format: uuid
+                  - type: "null"
+          maxItems: 32
+        evidenceIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+          maxItems: 32
+    EditorialBasketballPlayer:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - aliases
+        - evidenceIds
+      properties:
+        id:
+          type: string
+          format: uuid
+        aliases:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - id
+              - ownerId
+              - name
+              - locale
+              - period
+              - evidenceIds
+            properties:
+              id:
+                type: string
+                format: uuid
+              ownerId:
+                type: string
+                format: uuid
+              name:
+                type: string
+                minLength: 1
+                maxLength: 500
+              locale:
+                type: string
+                minLength: 1
+                maxLength: 500
+              period:
+                type: object
+                additionalProperties: false
+                required:
+                  - startDate
+                  - endDate
+                properties:
+                  startDate:
+                    type: string
+                    format: date
+                  endDate:
+                    oneOf:
+                      - type: string
+                        format: date
+                      - type: "null"
+              evidenceIds:
+                type: array
+                minItems: 1
+                uniqueItems: true
+                items:
+                  type: string
+                  format: uuid
+                maxItems: 32
+              supersedesAliasId:
+                oneOf:
+                  - type: string
+                    format: uuid
+                  - type: "null"
+          maxItems: 32
+        evidenceIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+          maxItems: 32
+    EditorialBasketballSeason:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - leagueId
+        - officialLabel
+        - period
+        - evidenceIds
+      properties:
+        id:
+          type: string
+          format: uuid
+        leagueId:
+          type: string
+          format: uuid
+        officialLabel:
+          type: string
+          minLength: 1
+          maxLength: 500
+        period:
+          type: object
+          additionalProperties: false
+          required:
+            - startDate
+            - endDate
+          properties:
+            startDate:
+              type: string
+              format: date
+            endDate:
+              oneOf:
+                - type: string
+                  format: date
+                - type: "null"
+        evidenceIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+          maxItems: 32
+    EditorialBasketballTeamSeason:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - teamId
+        - leagueId
+        - seasonId
+        - status
+        - period
+        - evidenceIds
+      properties:
+        id:
+          type: string
+          format: uuid
+        teamId:
+          type: string
+          format: uuid
+        leagueId:
+          type: string
+          format: uuid
+        seasonId:
+          type: string
+          format: uuid
+        status:
+          enum:
+            - JOINED
+            - ACTIVE
+            - EXITED
+            - SUSPENDED
+            - DISSOLVED
+            - TRANSFERRED
+        period:
+          type: object
+          additionalProperties: false
+          required:
+            - startDate
+            - endDate
+          properties:
+            startDate:
+              type: string
+              format: date
+            endDate:
+              oneOf:
+                - type: string
+                  format: date
+                - type: "null"
+        evidenceIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+          maxItems: 32
+    EditorialBasketballPlayerTeamStint:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - playerId
+        - teamId
+        - leagueId
+        - seasonId
+        - period
+        - status
+        - countryCode
+        - system
+        - role
+        - minutesPerGame
+        - tacticalPosition
+        - evidenceIds
+      properties:
+        id:
+          type: string
+          format: uuid
+        playerId:
+          type: string
+          format: uuid
+        teamId:
+          type: string
+          format: uuid
+        leagueId:
+          type: string
+          format: uuid
+        seasonId:
+          type: string
+          format: uuid
+        period:
+          type: object
+          additionalProperties: false
+          required:
+            - startDate
+            - endDate
+          properties:
+            startDate:
+              type: string
+              format: date
+            endDate:
+              oneOf:
+                - type: string
+                  format: date
+                - type: "null"
+        status:
+          enum:
+            - SIGNED
+            - ACTIVE
+            - LOAN
+            - INJURED
+            - RELEASED
+            - TRANSFERRED
+            - UNKNOWN
+        countryCode:
+          type: string
+          pattern: ^[A-Z]{2}$
+        system:
+          type: string
+          minLength: 1
+          maxLength: 500
+        role:
+          type:
+            - string
+            - "null"
+        minutesPerGame:
+          type:
+            - number
+            - "null"
+          minimum: 0
+        tacticalPosition:
+          type:
+            - string
+            - "null"
+        evidenceIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+          maxItems: 32
+    EditorialBasketballCompetition:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - name
+        - kind
+        - evidenceIds
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 500
+        kind:
+          enum:
+            - FIBA
+            - ASIA_CUP
+            - WORLD_CUP_QUALIFIER
+            - OLYMPIC_QUALIFIER
+            - WINDOW
+            - OTHER
+        evidenceIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+          maxItems: 32
+    EditorialBasketballTournament:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - competitionId
+        - officialName
+        - period
+        - aliases
+        - evidenceIds
+      properties:
+        id:
+          type: string
+          format: uuid
+        competitionId:
+          type: string
+          format: uuid
+        officialName:
+          type: string
+          minLength: 1
+          maxLength: 500
+        period:
+          type: object
+          additionalProperties: false
+          required:
+            - startDate
+            - endDate
+          properties:
+            startDate:
+              type: string
+              format: date
+            endDate:
+              oneOf:
+                - type: string
+                  format: date
+                - type: "null"
+        aliases:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - id
+              - ownerId
+              - name
+              - locale
+              - period
+              - evidenceIds
+            properties:
+              id:
+                type: string
+                format: uuid
+              ownerId:
+                type: string
+                format: uuid
+              name:
+                type: string
+                minLength: 1
+                maxLength: 500
+              locale:
+                type: string
+                minLength: 1
+                maxLength: 500
+              period:
+                type: object
+                additionalProperties: false
+                required:
+                  - startDate
+                  - endDate
+                properties:
+                  startDate:
+                    type: string
+                    format: date
+                  endDate:
+                    oneOf:
+                      - type: string
+                        format: date
+                      - type: "null"
+              evidenceIds:
+                type: array
+                minItems: 1
+                uniqueItems: true
+                items:
+                  type: string
+                  format: uuid
+                maxItems: 32
+              supersedesAliasId:
+                oneOf:
+                  - type: string
+                    format: uuid
+                  - type: "null"
+          maxItems: 32
+        evidenceIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+          maxItems: 32
+    EditorialBasketballGame:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - tournamentId
+        - homeTeamId
+        - awayTeamId
+        - startsAt
+        - venue
+        - evidenceIds
+      properties:
+        id:
+          type: string
+          format: uuid
+        tournamentId:
+          type: string
+          format: uuid
+        homeTeamId:
+          type: string
+          format: uuid
+        awayTeamId:
+          type: string
+          format: uuid
+        startsAt:
+          type: string
+          format: date-time
+        venue:
+          type: string
+          minLength: 1
+          maxLength: 500
+        evidenceIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+          maxItems: 32
+    EditorialBasketballNationalTeamCampaign:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - competitionId
+        - gender
+        - ageGroup
+        - discipline
+        - period
+        - objective
+        - evidenceIds
+      properties:
+        id:
+          type: string
+          format: uuid
+        competitionId:
+          type: string
+          format: uuid
+        gender:
+          enum:
+            - MEN
+            - WOMEN
+            - MIXED
+        ageGroup:
+          enum:
+            - SENIOR
+            - YOUTH
+        discipline:
+          enum:
+            - FIVE_ON_FIVE
+            - THREE_ON_THREE
+        period:
+          type: object
+          additionalProperties: false
+          required:
+            - startDate
+            - endDate
+          properties:
+            startDate:
+              type: string
+              format: date
+            endDate:
+              oneOf:
+                - type: string
+                  format: date
+                - type: "null"
+        objective:
+          type: string
+          minLength: 1
+          maxLength: 500
+        evidenceIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+          maxItems: 32
+    EditorialBasketballNationalTeamRoster:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - campaignId
+        - revision
+        - supersedesRosterId
+        - status
+        - effectiveAt
+        - entries
+        - evidenceIds
+      properties:
+        id:
+          type: string
+          format: uuid
+        campaignId:
+          type: string
+          format: uuid
+        revision:
+          type: integer
+          minimum: 1
+        supersedesRosterId:
+          oneOf:
+            - type: string
+              format: uuid
+            - type: "null"
+        status:
+          enum:
+            - TRAINING
+            - FINAL
+        effectiveAt:
+          type: string
+          format: date
+        entries:
+          type: array
+          minItems: 1
+          items:
+            type: object
+            additionalProperties: false
+            required:
+              - playerId
+              - status
+              - role
+              - period
+              - replacesPlayerId
+              - evidenceIds
+            properties:
+              playerId:
+                type: string
+                format: uuid
+              status:
+                enum:
+                  - CALLED_UP
+                  - ACTIVE
+                  - INJURED
+                  - WITHDRAWN
+                  - REPLACEMENT
+              role:
+                type:
+                  - string
+                  - "null"
+              period:
+                type: object
+                additionalProperties: false
+                required:
+                  - startDate
+                  - endDate
+                properties:
+                  startDate:
+                    type: string
+                    format: date
+                  endDate:
+                    oneOf:
+                      - type: string
+                        format: date
+                      - type: "null"
+              replacesPlayerId:
+                oneOf:
+                  - type: string
+                    format: uuid
+                  - type: "null"
+              evidenceIds:
+                type: array
+                minItems: 1
+                uniqueItems: true
+                items:
+                  type: string
+                  format: uuid
+                maxItems: 32
+          maxItems: 32
+        evidenceIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+          maxItems: 32
+    EditorialBasketballAlias:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - ownerId
+        - name
+        - locale
+        - period
+        - evidenceIds
+      properties:
+        id:
+          type: string
+          format: uuid
+        ownerId:
+          type: string
+          format: uuid
+        name:
+          type: string
+          minLength: 1
+          maxLength: 500
+        locale:
+          type: string
+          minLength: 1
+          maxLength: 500
+        period:
+          type: object
+          additionalProperties: false
+          required:
+            - startDate
+            - endDate
+          properties:
+            startDate:
+              type: string
+              format: date
+            endDate:
+              oneOf:
+                - type: string
+                  format: date
+                - type: "null"
+        evidenceIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+          maxItems: 32
+        supersedesAliasId:
+          oneOf:
+            - type: string
+              format: uuid
+            - type: "null"
+    EditorialBasketballSource:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - type
+        - name
+        - sourceUrl
+        - publicReferenceAllowed
+      properties:
+        id:
+          type: string
+          format: uuid
+        type:
+          enum:
+            - ASSOCIATION
+            - LEAGUE
+            - TEAM
+            - GAME_DATA
+            - MEDIA
+            - INTERVIEW
+            - SOCIAL
+            - INTERNAL_ANALYSIS
+        name:
+          type: string
+          minLength: 1
+          maxLength: 500
+        sourceUrl:
+          type: string
+          format: uri
+          pattern: ^https://[^/?#@]+(?:/[^?#]*)?$
+        publicReferenceAllowed:
+          type: boolean
+    EditorialBasketballSourceSnapshot:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - sourceId
+        - sourceUrl
+        - retrievedAt
+        - publishedAt
+        - content
+        - sha256
+        - rightsReference
+      properties:
+        id:
+          type: string
+          format: uuid
+        sourceId:
+          type: string
+          format: uuid
+        sourceUrl:
+          type: string
+          format: uri
+          pattern: ^https://[^/?#@]+(?:/[^?#]*)?$
+        retrievedAt:
+          type: string
+          format: date-time
+        publishedAt:
+          oneOf:
+            - type: string
+              format: date-time
+            - type: "null"
+        content:
+          type: string
+          minLength: 1
+          maxLength: 1000000
+        sha256:
+          type: string
+          pattern: ^[0-9a-f]{64}$
+        rightsReference:
+          type: string
+          minLength: 1
+          maxLength: 500
+    EditorialBasketballEvidenceRef:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - sourceId
+        - sourceType
+        - sourceUrl
+        - retrievedAt
+        - publishedAt
+        - effectiveAt
+        - confidence
+        - status
+        - freshness
+        - snapshotId
+        - staleAt
+        - expiresAt
+        - note
+      properties:
+        id:
+          type: string
+          format: uuid
+        sourceId:
+          type: string
+          format: uuid
+        sourceType:
+          enum:
+            - ASSOCIATION
+            - LEAGUE
+            - TEAM
+            - GAME_DATA
+            - MEDIA
+            - INTERVIEW
+            - SOCIAL
+            - INTERNAL_ANALYSIS
+        sourceUrl:
+          type: string
+          format: uri
+          pattern: ^https://[^/?#@]+(?:/[^?#]*)?$
+        retrievedAt:
+          type: string
+          format: date-time
+        publishedAt:
+          oneOf:
+            - type: string
+              format: date-time
+            - type: "null"
+        effectiveAt:
+          oneOf:
+            - type: string
+              format: date-time
+            - type: "null"
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        status:
+          enum:
+            - CONFIRMED
+            - REPORTED
+            - ANALYSIS
+            - RUMOR
+            - UNKNOWN
+        freshness:
+          enum:
+            - fresh
+            - stale
+            - expired
+            - disputed
+        snapshotId:
+          type: string
+          format: uuid
+        staleAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+        note:
+          type: string
+          maxLength: 1000
+      allOf:
+        - if:
+            properties:
+              status:
+                const: CONFIRMED
+          then:
+            properties:
+              effectiveAt:
+                type: string
+                format: date-time
+    EditorialBasketballSnapshotInput:
+      type: object
+      additionalProperties: false
+      required:
+        - source
+        - snapshotId
+        - evidenceId
+        - publishedAt
+        - effectiveAt
+        - content
+        - rightsReference
+        - confidence
+        - staleAt
+        - expiresAt
+      properties:
+        source:
+          $ref: "#/components/schemas/EditorialBasketballSource"
+        snapshotId:
+          type: string
+          format: uuid
+        evidenceId:
+          type: string
+          format: uuid
+        publishedAt:
+          oneOf:
+            - type: string
+              format: date-time
+            - type: "null"
+        effectiveAt:
+          oneOf:
+            - type: string
+              format: date-time
+            - type: "null"
+        content:
+          type: string
+          minLength: 1
+          maxLength: 16000
+        rightsReference:
+          type: string
+          minLength: 1
+          maxLength: 500
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        staleAt:
+          type: string
+          format: date-time
+        expiresAt:
+          type: string
+          format: date-time
+    EditorialBasketballConfirmationInput:
+      type: object
+      additionalProperties: false
+      required:
+        - confirmedEvidenceId
+        - rationale
+      properties:
+        confirmedEvidenceId:
+          type: string
+          format: uuid
+        rationale:
+          type: string
+          minLength: 1
+          maxLength: 1000
+          pattern: ^[^\x00-\x1F\x7F]+$
+    EditorialBasketballFactInput:
+      oneOf:
+        - type: object
+          additionalProperties: false
+          required:
+            - kind
+            - payload
+            - rationale
+          properties:
+            kind:
+              const: ALIAS
+            payload:
+              $ref: "#/components/schemas/EditorialBasketballAlias"
+            rationale:
+              type: string
+              minLength: 1
+              maxLength: 1000
+              pattern: ^[^\x00-\x1F\x7F]+$
+        - type: object
+          additionalProperties: false
+          required:
+            - kind
+            - payload
+            - rationale
+          properties:
+            kind:
+              const: LEAGUE
+            payload:
+              $ref: "#/components/schemas/EditorialBasketballLeague"
+            rationale:
+              type: string
+              minLength: 1
+              maxLength: 1000
+              pattern: ^[^\x00-\x1F\x7F]+$
+        - type: object
+          additionalProperties: false
+          required:
+            - kind
+            - payload
+            - rationale
+          properties:
+            kind:
+              const: TEAM
+            payload:
+              $ref: "#/components/schemas/EditorialBasketballTeam"
+            rationale:
+              type: string
+              minLength: 1
+              maxLength: 1000
+              pattern: ^[^\x00-\x1F\x7F]+$
+        - type: object
+          additionalProperties: false
+          required:
+            - kind
+            - payload
+            - rationale
+          properties:
+            kind:
+              const: PLAYER
+            payload:
+              $ref: "#/components/schemas/EditorialBasketballPlayer"
+            rationale:
+              type: string
+              minLength: 1
+              maxLength: 1000
+              pattern: ^[^\x00-\x1F\x7F]+$
+        - type: object
+          additionalProperties: false
+          required:
+            - kind
+            - payload
+            - rationale
+          properties:
+            kind:
+              const: SEASON
+            payload:
+              $ref: "#/components/schemas/EditorialBasketballSeason"
+            rationale:
+              type: string
+              minLength: 1
+              maxLength: 1000
+              pattern: ^[^\x00-\x1F\x7F]+$
+        - type: object
+          additionalProperties: false
+          required:
+            - kind
+            - payload
+            - rationale
+          properties:
+            kind:
+              const: TEAM_SEASON
+            payload:
+              $ref: "#/components/schemas/EditorialBasketballTeamSeason"
+            rationale:
+              type: string
+              minLength: 1
+              maxLength: 1000
+              pattern: ^[^\x00-\x1F\x7F]+$
+        - type: object
+          additionalProperties: false
+          required:
+            - kind
+            - payload
+            - rationale
+          properties:
+            kind:
+              const: PLAYER_TEAM_STINT
+            payload:
+              $ref: "#/components/schemas/EditorialBasketballPlayerTeamStint"
+            rationale:
+              type: string
+              minLength: 1
+              maxLength: 1000
+              pattern: ^[^\x00-\x1F\x7F]+$
+        - type: object
+          additionalProperties: false
+          required:
+            - kind
+            - payload
+            - rationale
+          properties:
+            kind:
+              const: COMPETITION
+            payload:
+              $ref: "#/components/schemas/EditorialBasketballCompetition"
+            rationale:
+              type: string
+              minLength: 1
+              maxLength: 1000
+              pattern: ^[^\x00-\x1F\x7F]+$
+        - type: object
+          additionalProperties: false
+          required:
+            - kind
+            - payload
+            - rationale
+          properties:
+            kind:
+              const: TOURNAMENT
+            payload:
+              $ref: "#/components/schemas/EditorialBasketballTournament"
+            rationale:
+              type: string
+              minLength: 1
+              maxLength: 1000
+              pattern: ^[^\x00-\x1F\x7F]+$
+        - type: object
+          additionalProperties: false
+          required:
+            - kind
+            - payload
+            - rationale
+          properties:
+            kind:
+              const: GAME
+            payload:
+              $ref: "#/components/schemas/EditorialBasketballGame"
+            rationale:
+              type: string
+              minLength: 1
+              maxLength: 1000
+              pattern: ^[^\x00-\x1F\x7F]+$
+        - type: object
+          additionalProperties: false
+          required:
+            - kind
+            - payload
+            - rationale
+          properties:
+            kind:
+              const: NATIONAL_TEAM_CAMPAIGN
+            payload:
+              $ref: "#/components/schemas/EditorialBasketballNationalTeamCampaign"
+            rationale:
+              type: string
+              minLength: 1
+              maxLength: 1000
+              pattern: ^[^\x00-\x1F\x7F]+$
+        - type: object
+          additionalProperties: false
+          required:
+            - kind
+            - payload
+            - rationale
+          properties:
+            kind:
+              const: NATIONAL_TEAM_ROSTER
+            payload:
+              $ref: "#/components/schemas/EditorialBasketballNationalTeamRoster"
+            rationale:
+              type: string
+              minLength: 1
+              maxLength: 1000
+              pattern: ^[^\x00-\x1F\x7F]+$
+    EditorialBasketballFactReceipt:
+      type: object
+      additionalProperties: false
+      required:
+        - factId
+        - kind
+        - reviewKey
+        - evidenceIds
+      properties:
+        factId:
+          type: string
+          format: uuid
+        kind:
+          enum:
+            - ALIAS
+            - LEAGUE
+            - TEAM
+            - PLAYER
+            - SEASON
+            - TEAM_SEASON
+            - PLAYER_TEAM_STINT
+            - COMPETITION
+            - TOURNAMENT
+            - GAME
+            - NATIONAL_TEAM_CAMPAIGN
+            - NATIONAL_TEAM_ROSTER
+        reviewKey:
+          type: string
+          pattern: ^basketball:fact:[0-9a-f-]{36}$
+        evidenceIds:
+          type: array
+          minItems: 1
+          maxItems: 32
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+    EditorialBasketballReviewEvent:
+      type: object
+      additionalProperties: false
+      required:
+        - id
+        - claimKey
+        - revision
+        - kind
+        - value
+        - evidenceIds
+        - status
+        - reviewerId
+        - rationale
+        - createdAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        claimKey:
+          type: string
+          maxLength: 200
+        revision:
+          type: integer
+          minimum: 1
+        kind:
+          enum:
+            - PROPOSED
+            - REVIEWED
+        value:
+          type: string
+          minLength: 1
+          maxLength: 2000
+        evidenceIds:
+          type: array
+          minItems: 1
+          items:
+            type: string
+            format: uuid
+        status:
+          enum:
+            - CONFIRMED
+            - REPORTED
+            - ANALYSIS
+            - RUMOR
+            - UNKNOWN
+        reviewerId:
+          type:
+            - string
+            - "null"
+        rationale:
+          type:
+            - string
+            - "null"
+          maxLength: 1000
+        createdAt:
+          type: string
+          format: date-time
+    EditorialBasketballEvidenceView:
+      type: object
+      additionalProperties: false
+      required:
+        - source
+        - snapshot
+        - reference
+        - history
+      properties:
+        source:
+          $ref: "#/components/schemas/EditorialBasketballSource"
+        snapshot:
+          $ref: "#/components/schemas/EditorialBasketballSourceSnapshot"
+        reference:
+          $ref: "#/components/schemas/EditorialBasketballEvidenceRef"
+        history:
+          type: array
+          items:
+            $ref: "#/components/schemas/EditorialBasketballReviewEvent"
+    SeasonRecapGenerate:
+      type: object
+      additionalProperties: false
+      required:
+        - projectionId
+        - seasonId
+        - posterAssetId
+        - asOf
+        - factIds
+      properties:
+        projectionId: &a1
+          $ref: "#/components/schemas/Uuid"
+        seasonId: *a1
+        posterAssetId: *a1
+        asOf:
+          type: string
+          format: date-time
+          description: Evidence and review cutoff; must not be later than the server time.
+        factIds:
+          type: array
+          minItems: 1
+          maxItems: 32
+          uniqueItems: true
+          items: *a1
+          description: Canonical TEAM_SEASON fact identities. Values are calculated by the server.
+    PublishedSeasonRecap:
+      type: object
+      additionalProperties: false
+      required:
+        - content
+        - poster
+        - canonicalPath
+      properties:
+        content:
+          $ref: "#/components/schemas/ContentDocument"
+        poster:
+          allOf:
+            - $ref: "#/components/schemas/PublicArticleMedia"
+            - type: object
+              properties:
+                variant:
+                  const: poster
+        canonicalPath:
+          type: string
+          pattern: ^/articles/[a-z0-9][a-z0-9-]{0,127}$
     EditorialContributor:
       type: object
       additionalProperties: false
@@ -4969,6 +7386,97 @@ components:
           type: array
           items:
             $ref: "#/components/schemas/ProblemDetails"
+    ReaderStamp:
+      $ref: ./fan-passport.schema.json
+    ReaderStampClaim:
+      type: object
+      additionalProperties: false
+      required:
+        - issueId
+        - season
+      properties:
+        issueId:
+          type: string
+          format: uuid
+        season:
+          type: string
+          pattern: ^[0-9]{4}$
+    WalletIdentityLink:
+      type: object
+      additionalProperties: false
+      required:
+        - chainNamespace
+        - address
+        - linkedAt
+      properties:
+        chainNamespace:
+          const: eip155
+        address:
+          type: string
+          pattern: ^0x[0-9a-f]{40}$
+        linkedAt:
+          type: string
+          format: date-time
+    FanPassport:
+      type: object
+      additionalProperties: false
+      required:
+        - items
+        - wallets
+      properties:
+        items:
+          type: array
+          maxItems: 500
+          items:
+            $ref: "#/components/schemas/ReaderStamp"
+        wallets:
+          type: array
+          items:
+            $ref: "#/components/schemas/WalletIdentityLink"
+    CredentialConsent:
+      type: object
+      additionalProperties: false
+      required:
+        - consent
+      properties:
+        consent:
+          const: true
+    CredentialDeliveryResult:
+      type: object
+      additionalProperties: false
+      required:
+        - status
+        - transferable
+        - gasCeiling
+        - permanenceDisclosure
+      properties:
+        status:
+          const: DISABLED
+        transferable:
+          const: false
+        gasCeiling:
+          const: 0
+        permanenceDisclosure:
+          type: string
+          maxLength: 500
+    ReaderStampStatusCommand:
+      type: object
+      additionalProperties: false
+      required:
+        - status
+        - reason
+      properties:
+        status:
+          enum:
+            - REVOKED
+            - SUPERSEDED
+            - EXPIRED
+        reason:
+          enum:
+            - OWNER_REVOCATION
+            - RIGHTS_WITHDRAWAL
+            - REPLACEMENT
+            - EXPIRATION
     SiweChallengeRequest:
       type: object
       additionalProperties: false
@@ -5849,7 +8357,9 @@ components:
         affectedOfflinePackages:
           type: array
           uniqueItems: true
-          description: Sorted issue IDs whose immutable snapshots reference the revoked asset or an affected article revision, including historical and archived issues; every installed version of each issue must expire.
+          description: Sorted issue IDs whose immutable snapshots reference the revoked
+            asset or an affected article revision, including historical and
+            archived issues; every installed version of each issue must expire.
           items:
             $ref: "#/components/schemas/Uuid"
         assetId:
@@ -5901,7 +8411,8 @@ components:
           minimum: 1
         contentUrl:
           type: string
-          pattern: "^/api/v1/public/offline/issues/[a-z0-9]+(?:-[a-z0-9]+)*/articles/[0-9a-f-]{36}/revisions/[0-9a-f-]{36}$"
+          pattern: "^/api/v1/public/offline/issues/[a-z0-9]+(?:-[a-z0-9]+)*/articles/[0-9\
+            a-f-]{36}/revisions/[0-9a-f-]{36}$"
           maxLength: 512
         byteSize:
           type: integer
@@ -6000,7 +8511,9 @@ components:
           format: date-time
         withdrawals:
           type: array
-          description: Withdrawn article, issue or revoked media asset IDs. Clients invalidate installed packages matching an articleId or assetId, including packages whose cover alone was revoked.
+          description: Withdrawn article, issue or revoked media asset IDs. Clients
+            invalidate installed packages matching an articleId or assetId,
+            including packages whose cover alone was revoked.
           items:
             $ref: "#/components/schemas/Uuid"
         checksum:
@@ -6039,6 +8552,19 @@ components:
             - FAILED
             - SUPERSEDED
             - WITHDRAWN
+        verifiedAt:
+          type:
+            - string
+            - "null"
+          format: date-time
+        rightsScope:
+          enum:
+            - DIGEST_ONLY
+            - PERMANENT_PUBLIC
+        manifestVersion:
+          const: "1"
+        manifest:
+          $ref: ./provenance-manifest.schema.json
     TaxonomyKind:
       type: string
       enum:
@@ -6407,7 +8933,8 @@ components:
                 code: RATE_LIMITED
       x-stable-error-code: RATE_LIMITED
     PrivateMediaPreviewUnavailable:
-      description: Private preview unavailable (503); no provider details or image bytes are returned.
+      description: Private preview unavailable (503); no provider details or image
+        bytes are returned.
       headers:
         X-Request-Id:
           $ref: "#/components/headers/XRequestId"
@@ -6437,8 +8964,13 @@ components:
       x-stable-error-code: MEDIA_PREVIEW_UNAVAILABLE
 x-contract-rules:
   problemMediaType: application/problem+json
-  invalidRequestNormalization: Malformed JSON, invalid binding values and unsupported request media types use 400 INVALID_REQUEST without reflecting submitted values.
-  writeConcurrency: Mutable editorial resources require If-Match; revision-guarded progress and submission, idempotent reader sets, unique-key creation and command idempotency retain their explicit per-operation concurrency contract.
+  invalidRequestNormalization: Malformed JSON, invalid binding values and
+    unsupported request media types use 400 INVALID_REQUEST without reflecting
+    submitted values.
+  writeConcurrency: Mutable editorial resources require If-Match; revision-guarded
+    progress and submission, idempotent reader sets, unique-key creation and
+    command idempotency retain their explicit per-operation concurrency
+    contract.
   stableErrorStatuses:
     - 400
     - 401

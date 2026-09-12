@@ -169,6 +169,10 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
         ArticleRow row = rows.getFirst();
         try {
             FrozenArticle article = frozenArticle(row);
+            if (!tw.basketball.magazine.fanpassport.recap.SeasonRecapPublicationGuard.validate(
+                    article.content(), jdbcTemplate, objectMapper, now, "PUBLIC_WEB")) {
+                return Optional.empty();
+            }
             Optional<List<PublicArticleMedia>> resolvedMedia = resolvePublicMedia(article, now);
             if (resolvedMedia.isEmpty()) {
                 return Optional.empty();

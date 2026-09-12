@@ -27,9 +27,20 @@ type Props = {
 const props = defineProps<Props>()
 const saveData = ref(false)
 const manualOverride = ref(false)
+// A recap's public media projection is the current rights decision. Never keep
+// displaying its derived values after that projection is withdrawn/unavailable.
+const presentationAvailable = computed(
+  () =>
+    props.payload.presetId !== "season-recap-v1" ||
+    Boolean(props.getAssetUrl(props.payload.posterAssetId, "wide"))
+)
 
 const runtimeEnabled = computed(
-  () => props.clientReady && props.interactiveEnabled && (!saveData.value || manualOverride.value)
+  () =>
+    presentationAvailable.value &&
+    props.clientReady &&
+    props.interactiveEnabled &&
+    (!saveData.value || manualOverride.value)
 )
 const posterWidth = computed(() => props.getAssetWidth(props.payload.posterAssetId, "wide"))
 const posterHeight = computed(() => props.getAssetHeight(props.payload.posterAssetId, "wide"))
@@ -55,6 +66,7 @@ onMounted(() => {
 <template>
   <section class="article-generative">
     <figure
+      v-if="presentationAvailable"
       data-testid="generative-poster"
       data-fallback="true"
       class="article-generative-fallback"
@@ -93,8 +105,14 @@ onMounted(() => {
         </small>
       </figcaption>
     </figure>
+    <p v-else data-testid="recap-unavailable">此賽季回顧目前無法顯示。</p>
     <button
-      v-if="props.clientReady && (!props.interactiveEnabled || saveData) && !manualOverride"
+      v-if="
+        presentationAvailable &&
+        props.clientReady &&
+        (!props.interactiveEnabled || saveData) &&
+        !manualOverride
+      "
       type="button"
       class="button-link creative-enable"
       data-testid="creative-enable"
@@ -104,6 +122,7 @@ onMounted(() => {
       顯示互動視覺
     </button>
     <div
+      v-if="presentationAvailable"
       data-testid="generative-canvas"
       :data-creative-block-id="props.blockId"
       :data-seed="String(numberValue(props.payload.seed))"

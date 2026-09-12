@@ -1,0 +1,20 @@
+{
+  "manifest": {
+    "schemaVersion": "1",
+    "snapshotId": "0190f7b0-7c4b-7e3a-8f12-123456789abc",
+    "revision": "9007199254740993",
+    "publishedAt": "2026-09-12T00:00:00Z",
+    "checksum": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "rightsScope": "DIGEST_ONLY",
+    "assets": [
+      {
+        "assetId": "0190f7b0-7c4b-7e3a-8f12-123456789abe",
+        "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      }
+    ],
+    "publicationId": "0190f7b0-7c4b-7e3a-8f12-123456789abd"
+  },
+  "canonical": "{\"assets\":[{\"assetId\":\"0190f7b0-7c4b-7e3a-8f12-123456789abe\",\"digest\":\"sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb\"}],\"checksum\":\"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"publicationId\":\"0190f7b0-7c4b-7e3a-8f12-123456789abd\",\"publishedAt\":\"2026-09-12T00:00:00Z\",\"revision\":\"9007199254740993\",\"rightsScope\":\"DIGEST_ONLY\",\"schemaVersion\":\"1\",\"snapshotId\":\"0190f7b0-7c4b-7e3a-8f12-123456789abc\"}",
+  "digest": "sha256:89f6e601946e568b465eddddceec4872236624b878a79e5e873ad08c827b01ca",
+  "cid": "bafkreiej63tadfdok2fumxw53xhoysdsentcjodyu6pf5bz22cgie6ybzi"
+}

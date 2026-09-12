@@ -20,13 +20,15 @@ public class IdentityAccountConfiguration {
     AccountDataService accountDataService(
             JdbcTemplate jdbcTemplate,
             PlatformTransactionManager transactionManager,
-            AuditWriter auditWriter
+            AuditWriter auditWriter,
+            tw.basketball.magazine.identity.application.AccountLifecycleParticipant lifecycleParticipant
     ) {
         return new AccountDataService(
                 jdbcTemplate,
                 transactionManager,
                 auditWriter,
-                ApplicationClock.systemUtc()
+                ApplicationClock.systemUtc(),
+                lifecycleParticipant
         );
     }
 }

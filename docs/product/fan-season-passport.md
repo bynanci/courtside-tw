@@ -8,9 +8,9 @@
 
 `Edition Provenance` 與 `Fan Season Passport` 不是同一個產品：
 
-| Concept | Answers | Owns |
-| --- | --- | --- |
-| Edition Provenance | 這個出版版本是否與原始發布 snapshot 一致？ | manifest、revision、digest、checksum、publishedAt、rights scope、CID、attestation status |
+| Concept             | Answers                                                      | Owns                                                                                               |
+| ------------------- | ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------- |
+| Edition Provenance  | 這個出版版本是否與原始發布 snapshot 一致？                   | manifest、revision、digest、checksum、publishedAt、rights scope、CID、attestation status           |
 | Fan Season Passport | 這個球迷在某個 season 的閱讀／活動／貢獻 credential 是什麼？ | Reader Stamp、Issue Stamp、Event Credential、Archive Contributor、Creator Credential、Season Recap |
 
 Edition Provenance 不宣稱內容真實、著作權一定合法或內容永遠可用。Fan Passport 不宣稱金融價值、投資報酬或 ownership。
@@ -106,3 +106,19 @@ Minimal credential
 - **P3**：Season Recap、Archive Contributor、歷史照片／票根／口述歷史；每個 asset 仍受 Rights Gate。
 
 任何 Web3、RPC、wallet、IPFS 或 provider 故障，Article 公開閱讀必須回到 P1 baseline。
+
+## Development implementation: ISSUE_PROGRESS_ACK_V1
+
+The initial machine-verifiable condition is named `ISSUE_PROGRESS_ACK_V1`. It records acknowledged completion, not proof that a person read or understood an article. The server loads the latest immutable published issue snapshot, requires explicit article and revision IDs in every frozen entry, checks each current published revision against that snapshot, and requires the authenticated reader's stored progress acknowledgement to equal 100 for every entry. Clients cannot submit an eligibility boolean or a snapshot/digest to trust. Missing, empty, legacy unbound or withdrawn publication data is ineligible. The season is the UTC year of the issue publication date; stamps expire at the start of the second following year.
+
+Claims are private OIDC reader operations. A unique reader/issue/season/condition entitlement plus a database reader-row lock serializes concurrent retries; request keys are hashed and bound to the claim parameters. Replays return the existing stamp's current status, including a revoked/expired state. They never revive a terminal entitlement. Publisher status changes require the current quoted version via `If-Match`; superseding requires a newly published immutable snapshot and fresh condition verification, while expiry cannot occur before the stored deadline. Status changes append only sanitized reason enums, actor role and timestamps. No raw OIDC subject, email, wallet, article history or free-form reason enters that audit stream.
+
+Wallet challenge/verify now require recent OIDC reader authentication. This closes the earlier planned anonymous SIWE contract because wallet identity is an auxiliary account link. The BFF forwards the existing OIDC bearer token after CSRF validation and never creates a separate wallet session. Exact-message digest, reader, domain, URI, chain, issued time and five-minute nonce TTL are bound at challenge creation. Only nonce and message digests are persisted; successful challenge retry responses are temporarily cached in memory. A replay after a process restart or consumption returns 409 and the user starts a new challenge. Local EIP-191 EOA signature recovery verifies the signed message; no external provider, signer or RPC participates in backend verification.
+
+Private routes: `GET /api/v1/me/passport`, `POST /api/v1/me/passport/claims`, `POST /api/v1/me/passport/{stampId}/credential`, and publisher-only `POST /api/v1/publisher/passport/{stampId}/status`. Optional delivery returns `DISABLED` with gas ceiling zero and a permanence disclosure. No production activation or external write is implied by these development endpoints. Java 21/Spring/PostgreSQL CI and owner acceptance remain separate evidence gates.
+
+## Reader interface and completion acknowledgement
+
+Signed-in readers use `/settings/privacy` to view live stamp status, choose a public issue and explicitly consent to a claim. The catalog's publication UTC year supplies the request season; candidates are never labelled claimable before the server verifies eligibility. Retry reuses an in-memory idempotency key for the same issue and season; reloading still cannot duplicate the database entitlement. Wallet linking is optional and not required for the panel. Session expiry clears the displayed private stamps and offers normal account sign-in.
+
+Each authenticated article footer has an explicit completion acknowledgement. Scrolling alone does not acknowledge completion. The write uses the current published revision and its actual final block after prior progress writes finish. An accepted 100% acknowledgement remains 100% for that same revision when the reader revisits; the resume block and timestamp still update. A new published revision starts from its own supplied progress and cannot inherit completion. This is an acknowledged action, not proof of reading comprehension. Anonymous reading and local resume behavior remain available.

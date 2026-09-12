@@ -14,6 +14,11 @@ import tw.basketball.magazine.publication.domain.PublicationState;
 
 /** Persistence boundary for the bounded T043 article workflow. */
 public interface EditorialArticleRepository {
+    /** Optional recap persistence must fail closed while ordinary article content stays independent. */
+    default boolean recapContentReady(JsonNode content, Instant now) {
+        return !tw.basketball.magazine.fanpassport.recap.SeasonRecapPublicationGuard.containsRecap(content);
+    }
+
     ArticleRecord insertDraft(String title, String slug, String dek, JsonNode content);
 
     Optional<ArticleRecord> find(UUID articleId);
