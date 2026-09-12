@@ -12,7 +12,7 @@ CREATE TABLE basketball_fact (
     id uuid PRIMARY KEY,
     owner_id uuid NOT NULL REFERENCES basketball_identity (id),
     fact_kind text NOT NULL CHECK (fact_kind IN
-        ('LEAGUE', 'TEAM', 'PLAYER', 'LEAGUE_ALIAS', 'TEAM_ALIAS', 'PLAYER_ALIAS', 'LIFECYCLE', 'SEASON', 'TEAM_SEASON',
+        ('LEAGUE', 'TEAM', 'PLAYER', 'ALIAS', 'LEAGUE_ALIAS', 'TEAM_ALIAS', 'PLAYER_ALIAS', 'LIFECYCLE', 'SEASON', 'TEAM_SEASON',
          'PLAYER_TEAM_STINT', 'NATIONAL_TEAM_CAMPAIGN', 'NATIONAL_TEAM_ROSTER', 'ROSTER_ENTRY',
          'COMPETITION', 'TOURNAMENT', 'GAME')),
     identity_kind text,

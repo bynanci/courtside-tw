@@ -18,8 +18,11 @@ public final class VerifiedMirror {
         this.writeEnabled = Objects.requireNonNull(writeEnabled);
     }
     public Result mirror(Map<String, Object> manifest, boolean permanentRights, String key) {
+        return mirror(manifest, () -> permanentRights, key);
+    }
+    public Result mirror(Map<String, Object> manifest, BooleanSupplier permanentRights, String key) {
         ManifestCanonicalizer.Receipt receipt = new ManifestCanonicalizer().receipt(manifest);
-        if (!writeEnabled.getAsBoolean() || !permanentRights || !"PERMANENT_PUBLIC".equals(manifest.get("rightsScope"))) {
+        if (!writeEnabled.getAsBoolean() || !permanentRights.getAsBoolean() || !"PERMANENT_PUBLIC".equals(manifest.get("rightsScope"))) {
             return new Result("DIGEST_ONLY", null);
         }
         if (routes.size() < 2 || routes.get(0) == routes.get(1)) {
@@ -31,17 +34,18 @@ public final class VerifiedMirror {
             throw new IllegalArgumentException("invalid receipt CID");
         }
         for (DecentralizedMirrorPort route : routes.subList(0, 2)) {
-            if (!writeEnabled.getAsBoolean()) {
+            if (!writeEnabled.getAsBoolean() || !permanentRights.getAsBoolean()) {
                 return new Result("DIGEST_ONLY", null);
             }
             try {
-                route.putRaw(receipt.cid(), bytes.clone(), key);
+                route.putRaw(receipt.cid(), bytes.clone(), key, () -> writeEnabled.getAsBoolean() && permanentRights.getAsBoolean());
                 for (DecentralizedMirrorPort reader : routes.subList(0, 2)) {
                     try {
                         byte[] roundTrip = reader.getRaw(receipt.cid());
                         if (roundTrip != null && roundTrip.length == bytes.length
                                 && MessageDigest.isEqual(hash, ManifestCanonicalizer.sha256(roundTrip))) {
-                            return new Result("VERIFIED", receipt.cid());
+                            return writeEnabled.getAsBoolean() && permanentRights.getAsBoolean()
+                                    ? new Result("VERIFIED", receipt.cid()) : new Result("DIGEST_ONLY", null);
                         }
                     } catch (RuntimeException ignored) {
                         // Bounded failover, with no provider error or credential reflected into public data.

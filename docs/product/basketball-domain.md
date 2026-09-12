@@ -1,7 +1,7 @@
 # Taiwan Basketball Domain
 
-**Status**: T098–T104 implementation candidate; source activation and acceptance remain evidence-gated  
-**As of**: 2026-09-12  
+**Status**: T098–T104 implementation candidate; source activation and acceptance remain evidence-gated
+**As of**: 2026-09-12
 **Bounded context**: `basketball`
 
 ## Boundary
@@ -113,7 +113,7 @@ flowchart LR
 ## Implemented contract and verification
 
 - `contracts/basketball-domain.schema.json`：UUID stable identity、required evidence、typed records、strict unknown-field rejection。
-- `BasketballDomain`：名稱不是 ID；valid periods 採 `[startDate, endDate)`；空期間不合法。Role、minutes、tactical position 未知時保持 `null`。
+- `BasketballDomain`：名稱不是 ID；valid periods 採 `[startDate, endDate)`；空期間不合法。Alias rename 以新的 stable alias ID 與 `supersedesAliasId` 追加，舊文章仍可查當時名稱。Role、minutes、tactical position 未知時保持 `null`。
 - `BasketballCatalog`：append-only identities、team-season 關係、排序後 career；stint 必須連到相同 league／season 的 team participation；roster revision 只能逐次增加並引用 predecessor。
 - `BasketballCatalogService` + `JdbcBasketballFactStore`：在同一 database transaction lock 內 hydrate、validate、append，完整 retry 不重複寫入，變更同一 immutable ID 則拒絕；source evidence 與 identity kind 都需一致。
 - `BasketballConfiguration`：有 DataSource 時建立 application beans；沒有啟動查詢或抓取。Canonical writes 和 human review 需 authenticated publisher／admin；review actor 必須與登入 identity 一致。

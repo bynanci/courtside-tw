@@ -83,13 +83,7 @@ public final class ArchiveContributionPolicy {
             if (!KINDS.contains(kind) || !STATES.contains(status) || !assetId.equals(rights.assetId())) {
                 throw new IllegalArgumentException("invalid archive identity, kind, status or asset rights");
             }
-            if (!history.isEmpty() && !history.get(history.size() - 1).status().equals(status)) {
-                throw new IllegalArgumentException("status must match append-only history");
-            }
-            if (("ACCEPTED".equals(status) && (!consentGranted || history.isEmpty()))
-                    || ("WITHDRAWN".equals(status) && (consentGranted || history.isEmpty()))) {
-                throw new IllegalArgumentException("accepted and withdrawn records require lifecycle evidence");
-            }
+            validateHistory(status, consentGranted, consentAt, rights, history);
         }
 
         /** actorId is the reader-profile ID resolved from the authenticated context by the identity application port. */
@@ -121,12 +115,50 @@ public final class ArchiveContributionPolicy {
         }
 
         public Optional<Map<String, Object>> publicProjection(String channel, Instant now) {
-            if (!"ACCEPTED".equals(status) || !consentGranted || now.isBefore(consentAt) || !rights.permits(channel, now)) {
+            Objects.requireNonNull(now, "now");
+            if (!"ACCEPTED".equals(status) || !consentGranted || now.isBefore(consentAt)
+                    || now.isBefore(history.get(history.size() - 1).effectiveAt()) || !rights.permits(channel, now)) {
                 return Optional.empty();
             }
             return Optional.of(Map.of("contributionId", id.toString(), "kind", kind,
                     "assetId", assetId.toString(), "credit", rights.credit(),
                     "rightsOwner", rights.rightsOwner(), "license", rights.license()));
+        }
+    }
+
+    /** Rehydration must enforce the same lifecycle as commands, including terminal withdrawal. */
+    private static void validateHistory(String status, boolean consentGranted, Instant consentAt,
+            Rights rights, List<StatusEvent> history) {
+        if (history.size() > 10000 || (!"DRAFT".equals(status) && history.isEmpty())
+                || (("SUBMITTED".equals(status) || "ACCEPTED".equals(status)) && !consentGranted)
+                || ("WITHDRAWN".equals(status) && consentGranted)) {
+            throw new IllegalArgumentException("archive status requires bounded lifecycle and consent evidence");
+        }
+        String previous = "DRAFT";
+        Instant previousAt = consentAt;
+        for (int index = 0; index < history.size(); index++) {
+            StatusEvent event = history.get(index);
+            boolean creation = index == 0 && "DRAFT".equals(event.status());
+            boolean allowed = ("DRAFT".equals(previous) && Set.of("SUBMITTED", "ACCEPTED", "WITHDRAWN").contains(event.status()))
+                    || ("SUBMITTED".equals(previous) && Set.of("ACCEPTED", "WITHDRAWN").contains(event.status()))
+                    || ("ACCEPTED".equals(previous) && "WITHDRAWN".equals(event.status()));
+            if ((!creation && !allowed) || event.effectiveAt().isBefore(previousAt)) {
+                throw new IllegalArgumentException("invalid or nonchronological archive lifecycle history");
+            }
+            if (("SUBMITTED".equals(event.status()) || "ACCEPTED".equals(event.status()))
+                    && (!rights.allowedChannels().contains("PUBLIC_WEB") || event.effectiveAt().isBefore(rights.validFrom())
+                        || !event.effectiveAt().isBefore(rights.validUntil())
+                        || (rights.withdrawnAt() != null && event.effectiveAt().isAfter(rights.withdrawnAt())))) {
+                throw new IllegalArgumentException("archive approval occurred without effective rights");
+            }
+            previous = event.status();
+            previousAt = event.effectiveAt();
+        }
+        if (!previous.equals(status)) {
+            throw new IllegalArgumentException("status must match complete append-only history");
+        }
+        if ("WITHDRAWN".equals(status) && (rights.withdrawnAt() == null || rights.withdrawnAt().isAfter(previousAt))) {
+            throw new IllegalArgumentException("withdrawn archive must retain its effective rights withdrawal");
         }
     }
 

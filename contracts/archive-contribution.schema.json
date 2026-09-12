@@ -96,7 +96,7 @@
       "if": {
         "properties": {
           "status": {
-            "enum": ["ACCEPTED", "WITHDRAWN"]
+            "enum": ["SUBMITTED", "ACCEPTED", "WITHDRAWN"]
           }
         }
       },
@@ -121,6 +121,15 @@
         "properties": {
           "consentGranted": {
             "const": false
+          },
+          "rights": {
+            "type": "object",
+            "properties": {
+              "withdrawnAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
           }
         }
       }

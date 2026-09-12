@@ -217,10 +217,14 @@ public final class FanPassportController {
 
   private static ResponseEntity<?> response(Object body, HttpServletRequest request) {
     String id = request.getHeader("X-Request-Id");
-    try {
-      id = RequestId.of(id).value();
-    } catch (IllegalArgumentException | NullPointerException ignored) {
+    if (id == null) {
       id = "req-" + UUID.randomUUID();
+    } else {
+      try {
+        id = RequestId.of(id).value();
+      } catch (IllegalArgumentException ignored) {
+        id = "req-" + UUID.randomUUID();
+      }
     }
     return ResponseEntity.ok()
       .cacheControl(CacheControl.noStore())
@@ -229,11 +233,11 @@ public final class FanPassportController {
       .body(body);
   }
 
-  private record Services(FanPassportService passport, SiweIdentityService wallet) {}
+  private record Services(FanPassportService passport, SiweIdentityService wallet) { }
 
-  public record Claim(UUID issueId, String season) {}
+  public record Claim(UUID issueId, String season) { }
 
-  public record Consent(boolean consent) {}
+  public record Consent(boolean consent) { }
 
-  public record StatusCommand(String status, String reason) {}
+  public record StatusCommand(String status, String reason) { }
 }

@@ -42,13 +42,21 @@ public final class BasketballDomain {
     }
 
     /** The same alias type is used as LeagueAlias, TeamAlias and PlayerAlias by its owner aggregate. */
-    public record Alias(UUID id, UUID ownerId, String name, String locale, Period period, List<UUID> evidenceIds) {
+    public record Alias(UUID id, UUID ownerId, String name, String locale, Period period, List<UUID> evidenceIds,
+                        UUID supersedesAliasId) {
+        public Alias(UUID id, UUID ownerId, String name, String locale, Period period, List<UUID> evidenceIds) {
+            this(id, ownerId, name, locale, period, evidenceIds, null);
+        }
+
         public Alias {
             requiredIds(id, ownerId);
             name = text(name, "name");
             locale = text(locale, "locale");
             Objects.requireNonNull(period, "period");
             evidenceIds = evidence(evidenceIds);
+            if (id.equals(supersedesAliasId)) {
+                throw new IllegalArgumentException("alias cannot supersede itself");
+            }
         }
     }
 
@@ -200,7 +208,10 @@ public final class BasketballDomain {
     }
 
     public static List<Alias> aliasesAt(List<Alias> aliases, LocalDate at, String locale) {
-        return aliases.stream().filter(alias -> alias.locale().equals(locale) && alias.period().contains(at)).toList();
+        return aliases.stream().filter(alias -> alias.locale().equals(locale) && alias.period().contains(at))
+                .filter(alias -> aliases.stream().noneMatch(next -> alias.id().equals(next.supersedesAliasId())
+                        && !at.isBefore(next.period().startDate())))
+                .toList();
     }
 
     private static List<Alias> aliases(UUID ownerId, List<Alias> aliases) {

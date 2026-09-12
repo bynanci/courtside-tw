@@ -22,15 +22,21 @@ public final class ProvenanceService {
     private static final String SOURCE_QUERY = """
             SELECT s.id, s.aggregate_type, s.aggregate_id, s.snapshot_version, s.checksum_sha256, s.created_at,
                 COALESCE(i.state, a.state) AS publication_state,
+                NOT EXISTS (SELECT 1 FROM publication_impact_link impact WHERE impact.snapshot_id = s.id
+                    AND NOT EXISTS (SELECT 1 FROM publication_provenance_asset proof
+                        WHERE proof.snapshot_id = impact.snapshot_id AND proof.asset_id = impact.asset_id)) AS asset_coverage_complete,
                 EXISTS (SELECT 1 FROM publication_provenance_mirror_approval approval
                     WHERE approval.publication_id = s.aggregate_id AND approval.snapshot_checksum = lower(s.checksum_sha256)
                     AND approval.revoked_at IS NULL) AS permanent_mirror,
                 NOT EXISTS (
                     SELECT 1 FROM publication_impact_link impact
-                    WHERE impact.snapshot_id = s.id AND NOT EXISTS (
-                        SELECT 1 FROM rights_record rights WHERE rights.asset_id = impact.asset_id
-                        AND rights.status = 'VALID' AND rights.allowed_channels @> ARRAY['PUBLIC_WEB']::text[]
-                        AND rights.valid_from <= ? AND rights.valid_until > ?
+                    WHERE impact.snapshot_id = s.id AND (
+                        NOT EXISTS (SELECT 1 FROM media_asset media WHERE media.id = impact.asset_id AND media.processing_state = 'READY' AND media.archived_at IS NULL)
+                        OR EXISTS (SELECT 1 FROM rights_record revoked WHERE revoked.asset_id = impact.asset_id
+                            AND revoked.status IN ('REVOKED', 'BLOCKED'))
+                        OR NOT EXISTS (SELECT 1 FROM rights_record rights WHERE rights.asset_id = impact.asset_id
+                            AND rights.status = 'VALID' AND rights.allowed_channels @> ARRAY['PUBLIC_WEB']::text[]
+                            AND rights.valid_from <= ? AND rights.valid_until > ?)
                     )
                 ) AS rights_valid,
                 EXISTS (SELECT 1 FROM publication_snapshot newer WHERE newer.aggregate_type = s.aggregate_type
@@ -72,7 +78,7 @@ public final class ProvenanceService {
             manifest.put("revision", Long.toString(source.version()));
             manifest.put("publishedAt", source.publishedAt().toString());
             manifest.put("checksum", "sha256:" + source.checksum().toLowerCase(java.util.Locale.ROOT));
-            // Existing rights_record has finite validity; PUBLIC_WEB never establishes permanent rights.
+            // PUBLIC_WEB alone never establishes permanence; only a separately stored operations approval may do so.
             manifest.put("rightsScope", source.permanentMirror() ? "PERMANENT_PUBLIC" : "DIGEST_ONLY");
             manifest.put("assets", assets);
             List<String> existing = jdbc.query("SELECT canonical_manifest FROM publication_provenance WHERE snapshot_id = ? AND manifest_version = '1'",
@@ -126,15 +132,18 @@ public final class ProvenanceService {
                 """, (row, number) -> {
             String liveStatus = source.get().status();
             String status = "VERIFIED".equals(liveStatus) ? row.getString("status") : liveStatus;
+            Map<String, Object> manifest = json.readValue(row.getString("canonical_manifest"), new TypeReference<>() { });
+            if ("PERMANENT_PUBLIC".equals(manifest.get("rightsScope")) && !source.get().permanentMirror()) {
+                status = "WITHDRAWN";
+            }
             Map<String, Object> response = new LinkedHashMap<>();
             response.put("snapshotId", id.toString());
             response.put("schemaVersion", 1);
             response.put("digest", row.getString("digest"));
             response.put("status", status);
-            response.put("cid", row.getString("cid"));
-                        String attestation = row.getString("attestation");
-            response.put("attestation", attestation == null ? null : json.readValue(attestation, new TypeReference<Map<String, Object>>() { }));
-            Map<String, Object> manifest = json.readValue(row.getString("canonical_manifest"), new TypeReference<>() { });
+            response.put("cid", "WITHDRAWN".equals(status) ? null : row.getString("cid"));
+            String attestation = row.getString("attestation");
+            response.put("attestation", attestation == null || "WITHDRAWN".equals(status) ? null : json.readValue(attestation, new TypeReference<Map<String, Object>>() { }));
             response.put("rightsScope", manifest.get("rightsScope"));
             response.put("manifestVersion", "1");
             Timestamp verifiedAt = row.getTimestamp("verified_at");
@@ -150,6 +159,10 @@ public final class ProvenanceService {
         if (!publisher.configured()) {
             return true;
         }
+        if (source(snapshotId).map(value -> "PENDING".equals(value.status())).orElse(true)) {
+            // Historical snapshots without frozen asset proof need a new reviewed publication, not guessed bytes.
+            return true;
+        }
         String canonical = jdbc.queryForObject("SELECT canonical_manifest FROM publication_provenance WHERE snapshot_id = ? AND manifest_version = '1'",
                 String.class, snapshotId);
         Map<String, Object> manifest = json.readValue(canonical, new TypeReference<>() { });
@@ -157,7 +170,8 @@ public final class ProvenanceService {
         ProvenanceExternalPublisher.Result result = publisher.publish(manifest, () -> source(snapshotId)
                 .map(value -> "VERIFIED".equals(value.status()) && (!mirrorEligible || value.permanentMirror())).orElse(false));
         transaction.executeWithoutResult(ignored -> {
-            String liveStatus = source(snapshotId).map(Source::status).orElse("WITHDRAWN");
+            String liveStatus = source(snapshotId).map(value -> mirrorEligible && !value.permanentMirror()
+                    ? "WITHDRAWN" : value.status()).orElse("WITHDRAWN");
             String finalStatus = "VERIFIED".equals(liveStatus) ? result.status() : liveStatus;
             jdbc.update("""
                     UPDATE publication_provenance SET status = ?, cid = ?, attestation = ?::jsonb
@@ -173,17 +187,17 @@ public final class ProvenanceService {
         return jdbc.query(SOURCE_QUERY, (row, number) -> new Source(row.getObject("aggregate_id", UUID.class),
                 row.getString("aggregate_type"), row.getLong("snapshot_version"), row.getString("checksum_sha256"),
                 row.getTimestamp("created_at").toInstant(), row.getString("publication_state"),
-                row.getBoolean("rights_valid"), row.getBoolean("superseded"), row.getBoolean("permanent_mirror")), Timestamp.from(now), Timestamp.from(now), id)
+                row.getBoolean("rights_valid"), row.getBoolean("superseded"), row.getBoolean("permanent_mirror"), row.getBoolean("asset_coverage_complete")), Timestamp.from(now), Timestamp.from(now), id)
                 .stream().findFirst();
     }
 
     private record Source(UUID aggregateId, String aggregateType, long version, String checksum,
-            Instant publishedAt, String publicationState, boolean rightsValid, boolean superseded, boolean permanentMirror) {
+            Instant publishedAt, String publicationState, boolean rightsValid, boolean superseded, boolean permanentMirror, boolean assetCoverageComplete) {
         private String status() {
             if (!"PUBLISHED".equals(publicationState) || !rightsValid) {
                 return "WITHDRAWN";
             }
-            return superseded ? "SUPERSEDED" : "VERIFIED";
+            return superseded ? "SUPERSEDED" : assetCoverageComplete ? "VERIFIED" : "PENDING";
         }
     }
 }

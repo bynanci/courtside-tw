@@ -37,6 +37,14 @@ public final class BasketballDomainProof {
         }
         check(!catalog.player(id(5)).orElseThrow().id().equals(catalog.player(id(6)).orElseThrow().id()),
                 "same name players keep separate stable IDs");
+        BasketballDomain.Alias originalPlayerName = catalog.aliases(id(5)).get(0);
+        BasketballDomain.Alias changedPlayerName = new BasketballDomain.Alias(id(200), id(5), "Synthetic revised name", "zh-TW",
+                period("2026-07-01", "2027-01-01"), EVIDENCE, originalPlayerName.id());
+        catalog.add(changedPlayerName);
+        check(BasketballDomain.aliasesAt(catalog.aliases(id(5)), LocalDate.parse("2026-06-01"), "zh-TW").equals(List.of(originalPlayerName)),
+                "appended rename does not rewrite the earlier article label");
+        check(BasketballDomain.aliasesAt(catalog.aliases(id(5)), LocalDate.parse("2026-08-01"), "zh-TW").equals(List.of(changedPlayerName)),
+                "appended rename supersedes an initially open alias period");
         catalog.add(new BasketballDomain.Season(id(7), id(1), "Synthetic season", YEAR, EVIDENCE));
         catalog.add(new BasketballDomain.Season(id(8), id(2), "Synthetic overseas season", YEAR, EVIDENCE));
         catalog.add(new BasketballDomain.TeamSeason(id(20), id(3), id(1), id(7), BasketballDomain.Participation.ACTIVE, YEAR, EVIDENCE));
@@ -71,7 +79,7 @@ public final class BasketballDomainProof {
                 BasketballDomain.RosterStatus.FINAL, LocalDate.parse("2026-03-01"), List.of(replacement), EVIDENCE)), "no missing roster revision");
         rejected(() -> new BasketballDomain.NationalTeamRoster(id(53), id(41), 1, null,
                 BasketballDomain.RosterStatus.FINAL, LocalDate.parse("2026-03-01"), List.of(first, first), EVIDENCE), "duplicate player in roster");
-        System.out.println("PASS 13 basketball identity/period/relationship/career/roster invariants");
+        System.out.println("PASS basketball identity/alias-supersession/period/relationship/career/roster invariants");
     }
 
     private static BasketballDomain.PlayerTeamStint stint(int id, int team, int league, int season, String country,

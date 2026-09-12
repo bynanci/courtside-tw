@@ -36,13 +36,13 @@ final class SiweIdentityIT extends PublicIssueApiIntegrationTestSupport {
   @Test
   void nonceIsBoundToAccountExactMessageAndSingleUseThenUnlinkDeletesPrivateLink() {
     var manager = new DataSourceTransactionManager(jdbcTemplate.getDataSource());
-    var passport = new FanPassportService(jdbcTemplate, manager, () -> NOW);
+    var passport = new FanPassportService(jdbcTemplate, manager, PassportTestClock.fixed(NOW));
     // Signature cryptography has a separate real EOA test; this injects a valid cryptographic result.
     var service = new SiweIdentityService(
       jdbcTemplate,
       manager,
       passport,
-      () -> NOW,
+      PassportTestClock.fixed(NOW),
       (message, signature, address) -> true,
       "courtside.tw",
       "https://courtside.tw",
@@ -85,8 +85,8 @@ final class SiweIdentityIT extends PublicIssueApiIntegrationTestSupport {
     var service = new SiweIdentityService(
       jdbcTemplate,
       manager,
-      new FanPassportService(jdbcTemplate, manager, () -> NOW),
-      () -> NOW,
+      new FanPassportService(jdbcTemplate, manager, PassportTestClock.fixed(NOW)),
+      PassportTestClock.fixed(NOW),
       (message, signature, address) -> false,
       "courtside.tw",
       "https://courtside.tw",
@@ -123,12 +123,12 @@ final class SiweIdentityIT extends PublicIssueApiIntegrationTestSupport {
   @Test
   void concurrentVerificationConsumesTheNonceExactlyOnce() throws Exception {
     var manager = new DataSourceTransactionManager(jdbcTemplate.getDataSource());
-    var passport = new FanPassportService(jdbcTemplate, manager, () -> NOW);
+    var passport = new FanPassportService(jdbcTemplate, manager, PassportTestClock.fixed(NOW));
     var service = new SiweIdentityService(
       jdbcTemplate,
       manager,
       passport,
-      () -> NOW,
+      PassportTestClock.fixed(NOW),
       (message, signature, address) -> true,
       "courtside.tw",
       "https://courtside.tw",
@@ -176,12 +176,12 @@ final class SiweIdentityIT extends PublicIssueApiIntegrationTestSupport {
   void nonceExpiryAndUnlinkInvalidateOutstandingProofWithoutRemovingOidcIdentity() {
     var now = new java.util.concurrent.atomic.AtomicReference<>(NOW);
     var manager = new DataSourceTransactionManager(jdbcTemplate.getDataSource());
-    var passport = new FanPassportService(jdbcTemplate, manager, now::get);
+    var passport = new FanPassportService(jdbcTemplate, manager, PassportTestClock.following(now));
     var service = new SiweIdentityService(
       jdbcTemplate,
       manager,
       passport,
-      now::get,
+      PassportTestClock.following(now),
       (message, signature, address) -> true,
       "courtside.tw",
       "https://courtside.tw",

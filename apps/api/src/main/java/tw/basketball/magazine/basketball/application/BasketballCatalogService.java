@@ -53,6 +53,11 @@ public final class BasketballCatalogService implements BasketballProjection {
         return hydrate(store.history()).rosters(campaignId);
     }
 
+    @Override
+    public List<BasketballDomain.Alias> aliases(UUID ownerId) {
+        return hydrate(store.history()).aliases(ownerId);
+    }
+
     /** Enrichment clients may choose this explicit origin-first fallback; canonical mutation never falls back. */
     public Optional<BasketballProjection> optionalProjection() {
         try {
@@ -67,6 +72,7 @@ public final class BasketballCatalogService implements BasketballProjection {
         for (BasketballFactStore.Fact fact : facts) {
             Class<? extends Record> type = switch (fact.kind()) {
                 case "LEAGUE" -> BasketballDomain.League.class;
+                case "ALIAS" -> BasketballDomain.Alias.class;
                 case "TEAM" -> BasketballDomain.Team.class;
                 case "PLAYER" -> BasketballDomain.Player.class;
                 case "SEASON" -> BasketballDomain.Season.class;
@@ -93,6 +99,9 @@ public final class BasketballCatalogService implements BasketballProjection {
 
     private BasketballFactStore.Fact encode(Record value) {
         String payload = json.writeValueAsString(value);
+        if (value instanceof BasketballDomain.Alias row) {
+            return fact(row.id(), row.ownerId(), "ALIAS", null, row.period(), payload, row.evidenceIds());
+        }
         if (value instanceof BasketballDomain.League row) {
             return identity(row.id(), "LEAGUE", row.aliases().get(0).period(), payload, row.evidenceIds());
         }
@@ -144,7 +153,9 @@ public final class BasketballCatalogService implements BasketballProjection {
     }
 
     private static void add(BasketballCatalog catalog, Record value) {
-        if (value instanceof BasketballDomain.League row) {
+        if (value instanceof BasketballDomain.Alias row) {
+            catalog.add(row);
+        } else if (value instanceof BasketballDomain.League row) {
             catalog.add(row);
         } else if (value instanceof BasketballDomain.Team row) {
             catalog.add(row);

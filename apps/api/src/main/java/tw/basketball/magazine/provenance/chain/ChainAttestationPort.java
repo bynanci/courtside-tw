@@ -3,6 +3,10 @@ package tw.basketball.magazine.provenance.chain;
 /** Isolated managed signer/registry port; no signer capability exists in HTTP request paths. */
 public interface ChainAttestationPort {
     Submission submit(Attestation request);
+    default Submission submit(Attestation request, java.util.function.BooleanSupplier stillEligible) {
+        if (!stillEligible.getAsBoolean()) { throw new IllegalStateException("external write disabled"); }
+        return submit(request);
+    }
     Confirmation confirm(Attestation request, String transactionId);
     record Attestation(String idempotencyKey, String network, String contract, String method,
             long gasCeiling, String snapshotId, String manifestDigest, String cidDigest,

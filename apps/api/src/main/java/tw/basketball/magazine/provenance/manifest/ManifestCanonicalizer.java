@@ -33,7 +33,7 @@ public final class ManifestCanonicalizer {
         text(manifest.get("publicationId"), UUID_PATTERN);
         text(manifest.get("revision"), "[1-9][0-9]{0,18}");
         text(manifest.get("checksum"), DIGEST_PATTERN);
-        String at = text(manifest.get("publishedAt"), "[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}(\\.[0-9]{1,9})?Z");
+        String at = text(manifest.get("publishedAt"), "[0-9]{4}-[0-9]{2}-[0-9]{2}T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9](\\.[0-9]{1,9})?Z");
         Instant.parse(at);
         if (!Set.of("DIGEST_ONLY", "PERMANENT_PUBLIC").contains(manifest.get("rightsScope"))) {
             throw new IllegalArgumentException("explicit dissemination scope is required");

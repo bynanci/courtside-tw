@@ -6,7 +6,7 @@ import java.util.UUID;
 public interface CredentialAdapter {
   DeliveryResult deliver(MinimalCredential credential, DeliveryPolicy policy);
 
-  record MinimalCredential(UUID id, String season, String credentialType) {}
+  record MinimalCredential(UUID id, String season, String credentialType) { }
 
   record DeliveryPolicy(
     boolean externalWritesEnabled,
@@ -16,12 +16,12 @@ public interface CredentialAdapter {
     boolean transferable,
     long gasCeiling,
     long estimatedGas
-  ) {}
+  ) { }
 
   record DeliveryResult(
     String status,
     boolean transferable,
     long gasCeiling,
     String permanenceDisclosure
-  ) {}
+  ) { }
 }

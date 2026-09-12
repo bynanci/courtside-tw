@@ -14,7 +14,7 @@ public final class StampLifecycle {
     "EXPIRED"
   );
 
-  private StampLifecycle() {}
+  private StampLifecycle() { }
 
   public static String transition(String from, String to) {
     if (!STATES.contains(from) || !STATES.contains(to)) {

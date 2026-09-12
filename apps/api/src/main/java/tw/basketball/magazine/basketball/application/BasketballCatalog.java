@@ -24,6 +24,7 @@ public final class BasketballCatalog implements BasketballProjection {
     private final TemporalHistory<BasketballDomain.Game> games = new TemporalHistory<>();
     private final TemporalHistory<BasketballDomain.NationalTeamCampaign> campaigns = new TemporalHistory<>();
     private final TemporalHistory<BasketballDomain.NationalTeamRoster> rosters = new TemporalHistory<>();
+    private final TemporalHistory<BasketballDomain.Alias> aliasRevisions = new TemporalHistory<>();
 
     public BasketballCatalog(EvidenceLookup evidence) {
         this.evidence = Objects.requireNonNull(evidence, "evidence");
@@ -33,6 +34,40 @@ public final class BasketballCatalog implements BasketballProjection {
         validate(value.evidenceIds());
         value.aliases().forEach(alias -> validate(alias.evidenceIds()));
         leagues.append(value.id(), value);
+    }
+
+    public synchronized void add(BasketballDomain.Alias value) {
+        List<BasketballDomain.Alias> previous = aliases(value.ownerId());
+        require(!previous.isEmpty(), "alias requires an existing stable identity");
+        Optional<BasketballDomain.Alias> retry = previous.stream().filter(row -> row.id().equals(value.id())).findFirst();
+        if (retry.isPresent()) {
+            if (!retry.get().equals(value)) {
+                throw new IllegalStateException("alias identity cannot be overwritten");
+            }
+            return;
+        }
+        if (value.supersedesAliasId() != null) {
+            BasketballDomain.Alias prior = previous.stream().filter(row -> row.id().equals(value.supersedesAliasId()))
+                    .findFirst().orElseThrow(() -> new IllegalArgumentException("unknown predecessor alias"));
+            require(prior.locale().equals(value.locale()) && !value.period().startDate().isBefore(prior.period().startDate()),
+                    "alias supersession must preserve locale and historical ordering");
+            require(previous.stream().noneMatch(row -> value.supersedesAliasId().equals(row.supersedesAliasId())),
+                    "alias supersession must extend the current revision");
+        }
+        validate(value.evidenceIds());
+        aliasRevisions.append(value.id(), value);
+    }
+
+    @Override
+    public List<BasketballDomain.Alias> aliases(UUID ownerId) {
+        List<BasketballDomain.Alias> initial = java.util.stream.Stream.of(
+                leagues.values().stream().filter(row -> row.id().equals(ownerId)).flatMap(row -> row.aliases().stream()),
+                teams.values().stream().filter(row -> row.id().equals(ownerId)).flatMap(row -> row.aliases().stream()),
+                players.values().stream().filter(row -> row.id().equals(ownerId)).flatMap(row -> row.aliases().stream()),
+                tournaments.values().stream().filter(row -> row.id().equals(ownerId)).flatMap(row -> row.aliases().stream()))
+                .flatMap(stream -> stream).toList();
+        return java.util.stream.Stream.concat(initial.stream(), aliasRevisions.values().stream()
+                .filter(row -> row.ownerId().equals(ownerId))).toList();
     }
 
     public synchronized void add(BasketballDomain.Team value) {

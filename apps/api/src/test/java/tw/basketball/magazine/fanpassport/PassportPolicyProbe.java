@@ -8,7 +8,7 @@ import tw.basketball.magazine.fanpassport.domain.StampLifecycle;
 /** Dependency-free executable probe; JUnit invokes the same behavioral checks. */
 public final class PassportPolicyProbe {
 
-  private PassportPolicyProbe() {}
+  private PassportPolicyProbe() { }
 
   public static void main(String[] args) {
     Instant now = Instant.parse("2026-09-12T00:00:00Z");

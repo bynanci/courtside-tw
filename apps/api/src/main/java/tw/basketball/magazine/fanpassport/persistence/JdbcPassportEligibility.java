@@ -94,8 +94,8 @@ public final class JdbcPassportEligibility {
                   JOIN publication_snapshot s ON s.id=l.snapshot_id AND s.aggregate_type='ARTICLE'
                   JOIN frozen_articles f ON f.article_id=s.aggregate_id AND f.revision_id=s.revision_id
           ) assets JOIN media_asset m ON m.id=assets.asset_id
-          WHERE m.processing_state<>'READY'
-              OR EXISTS (SELECT 1 FROM rights_record r WHERE r.asset_id=m.id AND r.status='REVOKED')
+          WHERE m.processing_state<>'READY' OR m.archived_at IS NOT NULL
+              OR EXISTS (SELECT 1 FROM rights_record r WHERE r.asset_id=m.id AND r.status IN ('REVOKED','BLOCKED'))
               OR NOT EXISTS (SELECT 1 FROM rights_record r WHERE r.asset_id=m.id
                   AND r.status='VALID' AND 'PUBLIC_WEB'=ANY(r.allowed_channels)
                   AND r.valid_from<=? AND r.valid_until>?)
@@ -112,5 +112,5 @@ public final class JdbcPassportEligibility {
     return Boolean.TRUE.equals(available);
   }
 
-  private record Snapshot(UUID id, Instant publishedAt) {}
+  private record Snapshot(UUID id, Instant publishedAt) { }
 }

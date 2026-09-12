@@ -26,12 +26,14 @@ public final class ProvenanceExternalPublisher {
         }
         String key = "provenance:" + manifest.get("snapshotId") + ":v1";
         String cid = null;
+        boolean mirrorPending = false;
         if (mirror.isPresent()) {
-            VerifiedMirror.Result result = mirror.get().mirror(manifest, rightsStillValid.getAsBoolean(), key);
+            VerifiedMirror.Result result = mirror.get().mirror(manifest, rightsStillValid, key);
             cid = result.cid();
+            mirrorPending = "UNAVAILABLE".equals(result.status());
         }
         if (chain.isEmpty()) {
-            return new Result("VERIFIED", cid, null);
+            return new Result(mirrorPending ? "PENDING" : "VERIFIED", cid, null);
         }
         if (!rightsStillValid.getAsBoolean()) {
             return new Result("WITHDRAWN", null, null);
@@ -39,13 +41,13 @@ public final class ProvenanceExternalPublisher {
         ChainAttestationPort.Attestation request = new ChainAttestationPort.Attestation(key, policy.network(),
                 policy.contract(), "attest", policy.gasCeiling(), (String) manifest.get("snapshotId"), receipt.digest(),
                 receipt.digest(), "1", (String) manifest.get("publishedAt"));
-        ManagedAttestationWorker.Result result = chain.get().attest(request);
+        ManagedAttestationWorker.Result result = chain.get().attest(request, rightsStillValid);
         String status = switch (result.status()) {
             case "VERIFIED", "DISABLED" -> "VERIFIED";
             case "PENDING", "UNAVAILABLE" -> "PENDING";
             default -> "FAILED";
         };
-        return new Result(status, cid, result.transactionId());
+        return new Result(mirrorPending && "VERIFIED".equals(status) ? "PENDING" : status, cid, result.transactionId());
     }
     public record Result(String status, String cid, String transactionId) { }
 }

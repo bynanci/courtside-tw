@@ -8,7 +8,7 @@ import java.util.Locale;
 /** Strict server-generated ERC-4361 message; verification compares the entire issued message digest. */
 public final class SiweMessage {
 
-  private SiweMessage() {}
+  private SiweMessage() { }
 
   public static String address(String value) {
     if (value == null || !value.matches("0x[0-9a-fA-F]{40}")) {

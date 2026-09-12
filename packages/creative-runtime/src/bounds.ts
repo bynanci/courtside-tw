@@ -12,7 +12,7 @@ export function normalizeSeasonRecapParameters(value: unknown): SeasonRecapParam
     !Array.isArray(value.values) ||
     value.values.length < 1 ||
     value.values.length > 32 ||
-    value.values.some(
+    Array.from(value.values).some(
       (entry) => typeof entry !== "number" || !Number.isFinite(entry) || entry < 0 || entry > 1
     )
   ) {

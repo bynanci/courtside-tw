@@ -10,4 +10,8 @@ public interface BasketballProjection {
     Optional<BasketballDomain.Player> player(UUID playerId);
     List<BasketballDomain.PlayerTeamStint> career(UUID playerId);
     List<BasketballDomain.NationalTeamRoster> rosters(UUID campaignId);
+
+    default List<BasketballDomain.Alias> aliases(UUID ownerId) {
+        return player(ownerId).map(BasketballDomain.Player::aliases).orElse(List.of());
+    }
 }

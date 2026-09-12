@@ -239,9 +239,9 @@ public final class SiweIdentityService {
     }
   }
 
-  public record ChallengeRequest(String domain, String address, String chainId, String uri) {}
+  public record ChallengeRequest(String domain, String address, String chainId, String uri) { }
 
-  public record VerifyRequest(String message, String signature) {}
+  public record VerifyRequest(String message, String signature) { }
 
   public record Challenge(
     String nonce,
@@ -249,9 +249,9 @@ public final class SiweIdentityService {
     Instant expiresAt,
     String domain,
     String chainId
-  ) {}
+  ) { }
 
-  public record VerifyResult(boolean verified, boolean sessionLinked, Instant expiresAt) {}
+  public record VerifyResult(boolean verified, boolean sessionLinked, Instant expiresAt) { }
 
   private record NonceRow(
     String nonceDigest,
@@ -262,5 +262,5 @@ public final class SiweIdentityService {
     Instant issuedAt,
     Instant expiresAt,
     boolean consumed
-  ) {}
+  ) { }
 }

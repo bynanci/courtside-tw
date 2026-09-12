@@ -7,7 +7,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -62,6 +61,9 @@ final class ProvenanceHttpTransportIT {
         AtomicInteger signatures = new AtomicInteger();
         AtomicReference<String> chainId = new AtomicReference<>("0xaa36a7");
         AtomicReference<String> input = new AtomicReference<>();
+        AtomicReference<String> returnedBlockHash = new AtomicReference<>("0x" + "d".repeat(64));
+        java.util.concurrent.atomic.AtomicBoolean disableWhileReadingChain = new java.util.concurrent.atomic.AtomicBoolean(false);
+        java.util.concurrent.atomic.AtomicBoolean stillEligible = new java.util.concurrent.atomic.AtomicBoolean(true);
         String transaction = "0x" + "c".repeat(64);
         String blockHash = "0x" + "d".repeat(64);
         String contract = "0x" + "a".repeat(40);
@@ -75,13 +77,16 @@ final class ProvenanceHttpTransportIT {
         });
         server.createContext("/rpc", exchange -> {
             var request = JSON.readTree(exchange.getRequestBody().readAllBytes());
+            if ("eth_chainId".equals(request.path("method").asString()) && disableWhileReadingChain.get()) {
+                stillEligible.set(false);
+            }
             Object result = switch (request.path("method").asString()) {
                 case "eth_chainId" -> chainId.get();
-                case "eth_getTransactionReceipt" -> Map.of("transactionHash", transaction, "to", contract, "gasUsed", "0x5208", "status", "0x1", "blockNumber", "0xa", "blockHash", blockHash);
+                case "eth_getTransactionReceipt" -> Map.of("transactionHash", transaction, "to", contract, "gasUsed", "0x5208", "status", "0x1", "blockNumber", "0xa", "blockHash", returnedBlockHash.get());
                 case "eth_getTransactionByHash" -> Map.of("hash", transaction, "to", contract, "input", input.get(), "value", "0x0", "gas", "0x186a0");
                 case "eth_blockNumber" -> "0xb";
                 case "eth_call" -> "0x" + "a".repeat(64);
-                case "eth_getBlockByNumber" -> Map.of("hash", blockHash);
+                case "eth_getBlockByNumber" -> Map.of("hash", returnedBlockHash.get());
                 default -> throw new IllegalArgumentException("unexpected RPC method");
             };
             byte[] response = JSON.writeValueAsBytes(Map.of("jsonrpc", "2.0", "id", 1, "result", result));
@@ -98,6 +103,13 @@ final class ProvenanceHttpTransportIT {
                     "sha256:" + "a".repeat(64), "1", "2026-09-12T00:00:00Z");
             assertEquals("VERIFIED", new ManagedAttestationWorker(policy, adapter, () -> true).attest(request).status());
             assertEquals(1, signatures.get());
+            returnedBlockHash.set("");
+            assertEquals(false, adapter.confirm(request, transaction).successful());
+            returnedBlockHash.set(blockHash);
+            disableWhileReadingChain.set(true);
+            assertThrows(IllegalStateException.class, () -> adapter.submit(request, stillEligible::get));
+            assertEquals(1, signatures.get());
+            disableWhileReadingChain.set(false);
             input.set("0xdeadbeef");
             assertEquals(false, adapter.confirm(request, transaction).successful());
             chainId.set("0x1");

@@ -34,6 +34,26 @@ test("recap rejects private or unbounded input instead of silently including it"
   assert.equal(valid.values[0], 0)
 })
 
+test("recap rejects sparse series before the trusted canvas is constructed", () => {
+  const partial = [0.25, 0.5, 0.75]
+  delete partial[1]
+  for (const values of [new Array<number>(2), partial]) {
+    assert.throws(
+      () => normalizeSeasonRecapParameters({ values, lineWeight: 2, paletteId: "season-ink" }),
+      /invalid season recap/
+    )
+    assert.throws(
+      () =>
+        prepareCreativePreset("season-recap-v1", {
+          values,
+          lineWeight: 2,
+          paletteId: "season-ink"
+        }),
+      /invalid season recap/
+    )
+  }
+})
+
 async function drawing(seed: number, values = [0.25, 0.5, 0.75]): Promise<string> {
   const commands: unknown[] = []
   const record = (name: string, ...args: unknown[]) => commands.push([name, ...args])

@@ -38,6 +38,37 @@ final class PublicationProvenanceReliabilityIT {
     }
 
     @Test
+    void withdrawalBetweenMirrorRoutesPreventsTheNextWrite() {
+        java.util.concurrent.atomic.AtomicBoolean eligible = new java.util.concurrent.atomic.AtomicBoolean(true);
+        AtomicInteger secondWrites = new AtomicInteger();
+        DecentralizedMirrorPort first = new DecentralizedMirrorPort() {
+            @Override public void putRaw(String cid, byte[] bytes, String key) { eligible.set(false); throw new IllegalStateException("withdrawn"); }
+            @Override public byte[] getRaw(String cid) { throw new AssertionError("no reads after withdrawal"); }
+        };
+        assertEquals("DIGEST_ONLY", new VerifiedMirror(List.of(first, route(secondWrites, false, false)), () -> true)
+                .mirror(manifest(), eligible::get, "same-key").status());
+        assertEquals(0, secondWrites.get());
+    }
+
+    @Test
+    void configuredMirrorOutageRemainsRetryable() {
+        VerifiedMirror mirror = new VerifiedMirror(List.of(route(new AtomicInteger(), true, false),
+                route(new AtomicInteger(), true, false)), () -> true);
+        var publisher = new tw.basketball.magazine.provenance.application.ProvenanceExternalPublisher(
+                java.util.Optional.of(mirror), java.util.Optional.empty(), new ManagedAttestationWorker.Policy("", "", 0, 1));
+        assertEquals("PENDING", publisher.publish(manifest(), () -> true).status());
+    }
+
+    @Test
+    void timestampValidationMatchesTypeScriptForLeapSecondAndEndOfDay() {
+        for (String timestamp : List.of("2016-12-31T23:59:60Z", "2026-09-12T24:00:00Z", "2026-02-30T00:00:00Z")) {
+            Map<String, Object> invalid = new java.util.HashMap<>(manifest());
+            invalid.put("publishedAt", timestamp);
+            assertThrows(RuntimeException.class, () -> new ManifestCanonicalizer().receipt(invalid));
+        }
+    }
+
+    @Test
     void signerNeverReceivesUnapprovedDestinationOrGas() {
         AtomicInteger calls = new AtomicInteger();
         ChainAttestationPort denied = new ChainAttestationPort() {

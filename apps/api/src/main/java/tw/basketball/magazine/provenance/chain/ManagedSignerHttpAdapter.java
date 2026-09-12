@@ -34,6 +34,10 @@ public final class ManagedSignerHttpAdapter implements ChainAttestationPort {
     }
     @Override
     public Submission submit(Attestation request) {
+        return submit(request, () -> true);
+    }
+    @Override
+    public Submission submit(Attestation request, java.util.function.BooleanSupplier stillEligible) {
         allowed(request);
         verifyChain();
         Map<String, Object> command = Map.of("network", request.network(), "to", request.contract(),
@@ -41,6 +45,9 @@ public final class ManagedSignerHttpAdapter implements ChainAttestationPort {
                 "value", "0", "idempotencyKey", request.idempotencyKey());
         Map<String, String> headers = new java.util.HashMap<>(signerAuthentication);
         headers.put("Idempotency-Key", request.idempotencyKey());
+        if (!stillEligible.getAsBoolean()) {
+            throw new IllegalStateException("signer write disabled before submission");
+        }
         JsonNode response = json.readTree(http.request("POST", signerEndpoint, "application/json",
                 json.writeValueAsBytes(command), headers));
         String transactionId = response.path("transactionId").asString("");
@@ -83,7 +90,9 @@ public final class ManagedSignerHttpAdapter implements ChainAttestationPort {
         String registryDigest = rpc("eth_call", List.of(Map.of("to", policy.contract(), "data", "0x6901eb1e" + registryKey),
                 "0x" + block.toString(16))).asString("");
         boolean canonical = ("0x" + request.manifestDigest().substring(7)).equalsIgnoreCase(registryDigest)
+                && receipt.path("blockHash").asString("").matches("0x[0-9a-fA-F]{64}")
                 && canonicalBlock != null && canonicalBlock.isObject()
+                && canonicalBlock.path("hash").asString("").matches("0x[0-9a-fA-F]{64}")
                 && canonicalBlock.path("hash").asString("").equalsIgnoreCase(receipt.path("blockHash").asString("invalid"));
         long confirmations = latest.compareTo(block) >= 0 ? latest.subtract(block).add(BigInteger.ONE).min(BigInteger.valueOf(Long.MAX_VALUE)).longValue() : 0;
         return new Confirmation(canonical, confirmations, policy.network(), policy.contract(), request.manifestDigest(), request.snapshotId());

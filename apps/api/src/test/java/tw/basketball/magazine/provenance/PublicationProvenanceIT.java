@@ -16,6 +16,14 @@ import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.jdbc.core.JdbcTemplate;
+import tw.basketball.magazine.outbox.OutboxHandlerRegistration;
+import tw.basketball.magazine.outbox.OutboxHandlerRegistry;
+import tw.basketball.magazine.outbox.OutboxProperties;
+import tw.basketball.magazine.outbox.OutboxRepository;
+import tw.basketball.magazine.outbox.OutboxWorker;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -31,8 +39,40 @@ final class PublicationProvenanceIT extends PublicIssueApiIntegrationTestSupport
 
     @BeforeAll
     static void applyProvenanceMigration() throws Exception {
+        PublicationProvenanceIT fixture = new PublicationProvenanceIT();
+        IssueFixture historical = fixture.createIssue("historical-provenance", 99, NOW.minusSeconds(60), "PUBLISHED", true);
+        UUID historicalSnapshot = fixture.latest(historical.id());
         jdbcTemplate.execute(Files.readString(Path.of(System.getProperty("courtside.repoRoot"),
                 "apps/api/src/main/resources/db/migration/V022__publication_provenance.sql")));
+        fixture.service().project(historicalSnapshot);
+        assertEquals("PENDING", fixture.service().publicIssue(historical.slug()).orElseThrow().get("status"));
+        assertEquals(0, jdbcTemplate.queryForObject("SELECT count(*) FROM publication_provenance_asset WHERE snapshot_id = ?", Integer.class, historicalSnapshot));
+    }
+
+    @Test
+    void realWorkerContextRegistersAndConsumesCommittedSnapshotOutboxWithExternalFlagsOff() {
+        jdbcTemplate.execute("TRUNCATE outbox_event");
+        IssueFixture issue = createIssue("worker-provenance", 11, Instant.now().minusSeconds(60), "PUBLISHED", true);
+        UUID snapshot = latest(issue.id());
+        ApplicationContextRunner runner = new ApplicationContextRunner().withUserConfiguration(ProvenanceConfiguration.class)
+                .withBean(JdbcTemplate.class, () -> jdbcTemplate)
+                .withBean(PlatformTransactionManager.class, () -> new DataSourceTransactionManager(jdbcTemplate.getDataSource()))
+                .withBean(ObjectMapper.class, () -> JSON);
+        runner.withPropertyValues("spring.profiles.active=worker", "courtside.outbox.enabled=true").run(context -> {
+            assertEquals(null, context.getStartupFailure());
+            OutboxHandlerRegistration registration = context.getBean(OutboxHandlerRegistration.class);
+            assertEquals("provenance.snapshot", registration.eventType());
+            OutboxWorker worker = new OutboxWorker(new OutboxRepository(jdbcTemplate),
+                    new OutboxProperties(true, "provenance-it", 10, null, 3, null, null, null, null), Clock.systemUTC(),
+                    new OutboxHandlerRegistry(java.util.List.of(registration)));
+            assertEquals(1, worker.runOnce().completed());
+            assertEquals("COMPLETED", jdbcTemplate.queryForObject("SELECT status FROM outbox_event WHERE aggregate_id = ?", String.class, snapshot));
+            assertEquals("VERIFIED", jdbcTemplate.queryForObject("SELECT status FROM publication_provenance WHERE snapshot_id = ?", String.class, snapshot));
+        });
+        runner.withPropertyValues("spring.profiles.active=api", "courtside.outbox.enabled=true").run(context ->
+                assertTrue(context.getBeansOfType(OutboxHandlerRegistration.class).isEmpty()));
+        runner.withPropertyValues("spring.profiles.active=worker", "courtside.outbox.enabled=false").run(context ->
+                assertTrue(context.getBeansOfType(OutboxHandlerRegistration.class).isEmpty()));
     }
 
     @Test
@@ -77,6 +117,27 @@ final class PublicationProvenanceIT extends PublicIssueApiIntegrationTestSupport
         jdbcTemplate.update("UPDATE publication_issue SET state = 'WITHDRAWN' WHERE id = ?", issue.id());
         assertEquals("WITHDRAWN", jdbcTemplate.queryForObject("SELECT status FROM publication_provenance WHERE snapshot_id = ?", String.class, latest(issue.id())));
         assertThrows(RuntimeException.class, () -> jdbcTemplate.update("UPDATE publication_provenance SET status = 'VERIFIED' WHERE snapshot_id = ?", latest(issue.id())));
+    }
+
+    @Test
+    void revokedRecordDominatesAnotherValidGrantBeforeFirstProjection() {
+        IssueFixture issue = createIssue("provenance-revoked", 9, NOW.minusSeconds(60), "PUBLISHED", true);
+        jdbcTemplate.update("""
+                INSERT INTO rights_record(asset_id, rights_owner, license_name, allowed_channels, territories,
+                    valid_from, valid_until, credit, withdrawal_terms, status)
+                SELECT asset_id, rights_owner, license_name, allowed_channels, territories,
+                    valid_from, valid_until, credit, withdrawal_terms, 'REVOKED' FROM rights_record
+                """);
+        service().project(latest(issue.id()));
+        assertEquals("WITHDRAWN", service().publicIssue(issue.slug()).orElseThrow().get("status"));
+    }
+
+    @Test
+    void mediaMustStillBeReadyAtReadTime() {
+        IssueFixture issue = createIssue("provenance-media", 10, NOW.minusSeconds(60), "PUBLISHED", true);
+        service().project(latest(issue.id()));
+        jdbcTemplate.update("UPDATE media_asset SET processing_state = 'FAILED'");
+        assertEquals("WITHDRAWN", service().publicIssue(issue.slug()).orElseThrow().get("status"));
     }
 
     @Test

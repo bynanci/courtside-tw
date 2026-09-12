@@ -29,6 +29,10 @@ public final class KuboHttpMirrorAdapter implements DecentralizedMirrorPort {
     }
     @Override
     public void putRaw(String cid, byte[] canonicalBytes, String idempotencyKey) {
+        putRaw(cid, canonicalBytes, idempotencyKey, () -> true);
+    }
+    @Override
+    public void putRaw(String cid, byte[] canonicalBytes, String idempotencyKey, java.util.function.BooleanSupplier stillEligible) {
         if (!cid.matches("b[a-z2-7]{58}") || canonicalBytes.length > 150_000
                 || !MessageDigest.isEqual(cid.getBytes(StandardCharsets.US_ASCII),
                 ManifestCanonicalizer.rawCid(ManifestCanonicalizer.sha256(canonicalBytes)).getBytes(StandardCharsets.US_ASCII))) {
@@ -44,6 +48,9 @@ public final class KuboHttpMirrorAdapter implements DecentralizedMirrorPort {
         System.arraycopy(suffix, 0, multipart, prefix.length + canonicalBytes.length, suffix.length);
         Map<String, String> headers = new java.util.HashMap<>(authentication);
         headers.put("Idempotency-Key", idempotencyKey);
+        if (!stillEligible.getAsBoolean()) {
+            throw new IllegalStateException("mirror write disabled before upload");
+        }
         http.request("POST", rpcRoot.resolve("block/put?cid-codec=raw&mhtype=sha2-256&mhlen=32&pin=true"),
                 "multipart/form-data; boundary=" + boundary, multipart, headers);
     }

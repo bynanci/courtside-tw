@@ -134,6 +134,13 @@ final class JdbcEvidenceStoreIT {
         assertThrows(IllegalStateException.class, () -> catalog.append(new BasketballDomain.Player(player.id(),
                 List.of(new BasketballDomain.Alias(EvidenceWorkflowProof.id(102), player.id(),
                         "Synthetic silently renamed player", "zh-TW", period, evidence)), evidence)));
+        var renamed = new BasketballDomain.Alias(EvidenceWorkflowProof.id(103), player.id(), "Synthetic reviewed new name", "zh-TW",
+                new BasketballDomain.Period(LocalDate.parse("2026-07-01"), period.endDate()), evidence, player.aliases().get(0).id());
+        catalog.append(renamed);
+        assertEquals(List.of(renamed), BasketballDomain.aliasesAt(catalog(repository).aliases(player.id()),
+                LocalDate.parse("2026-08-01"), "zh-TW"));
+        assertEquals(player.aliases(), BasketballDomain.aliasesAt(catalog(repository).aliases(player.id()),
+                LocalDate.parse("2026-06-01"), "zh-TW"));
         var competition = new BasketballDomain.Competition(EvidenceWorkflowProof.id(110), "Synthetic FIBA window",
                 BasketballDomain.CompetitionKind.FIBA, evidence);
         catalog.append(competition);

@@ -46,3 +46,12 @@ test("reject non I-JSON, precision-sensitive numbers, invalid digest and duplica
 test("permanent dissemination rights cannot be inferred from ordinary web rights", () => {
   assert.throws(() => canonicalizeManifest({ ...fixture.manifest, rightsScope: "PUBLIC_WEB" }))
 })
+
+test("timestamps reject leap second, end-of-day normalization and nonexistent calendar dates", () => {
+  for (const publishedAt of [
+    "2016-12-31T23:59:60Z",
+    "2026-09-12T24:00:00Z",
+    "2026-02-30T00:00:00Z"
+  ])
+    assert.throws(() => canonicalizeManifest({ ...fixture.manifest, publishedAt }))
+})

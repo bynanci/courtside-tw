@@ -1,7 +1,7 @@
 # Basketball Evidence Policy
 
-**Status**: T101–T104 implementation candidate; live-source and production acceptance pending  
-**As of**: 2026-09-12  
+**Status**: T101–T104 implementation candidate; live-source and production acceptance pending
+**As of**: 2026-09-12
 **Applies to**: Taiwan Basketball Domain、Taiwan Hoops Archive、editorial claims
 
 ## Evidence contract

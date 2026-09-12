@@ -46,7 +46,7 @@ contract-schema: check-toolchain
 	@$(PNPM) run contract:schema
 
 contract-domain: check-toolchain
-	@node --experimental-strip-types --test scripts/test/domain-contracts.test.mjs scripts/test/fan-passport-contract.test.mjs
+	@node --experimental-strip-types --test scripts/test/domain-contracts.test.mjs scripts/test/fan-passport-contract.test.mjs scripts/test/archive-lifecycle-contract.test.mjs
 
 contract-openapi: check-toolchain
 	@$(PNPM) run contract:openapi

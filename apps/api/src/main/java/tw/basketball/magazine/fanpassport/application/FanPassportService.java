@@ -341,7 +341,7 @@ public final class FanPassportService {
     );
   }
 
-  private record Command(String requestDigest, UUID stampId) {}
+  private record Command(String requestDigest, UUID stampId) { }
 
   private record StampRow(
     UUID id,
@@ -368,9 +368,9 @@ public final class FanPassportService {
     Instant issuedAt,
     Instant expiresAt,
     long version
-  ) {}
+  ) { }
 
-  public record WalletView(String chainNamespace, String address, Instant linkedAt) {}
+  public record WalletView(String chainNamespace, String address, Instant linkedAt) { }
 
   public record PassportView(List<StampView> items, List<WalletView> wallets) {
     public PassportView {

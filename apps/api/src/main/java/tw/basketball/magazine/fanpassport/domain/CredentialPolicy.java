@@ -3,7 +3,7 @@ package tw.basketball.magazine.fanpassport.domain;
 /** Every predicate is required at delivery time; cost is expressed in chain gas units. */
 public final class CredentialPolicy {
 
-  private CredentialPolicy() {}
+  private CredentialPolicy() { }
 
   public static boolean mayDeliver(
     boolean enabled,

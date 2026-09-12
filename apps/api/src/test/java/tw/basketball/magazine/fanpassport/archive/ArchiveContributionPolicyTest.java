@@ -21,6 +21,16 @@ final class ArchiveContributionPolicyTest {
     private static final ActorContext PUBLISHER = ActorContext.user("reviewer", Set.of(RoleCode.PUBLISHER), RequestId.of("recap-review"));
 
     @Test
+    void acceptanceIsPrivateUntilTheEffectiveTimestamp() {
+        ArchiveLifecycleProof.futureAcceptanceRemainsPrivateUntilEffective();
+    }
+
+    @Test
+    void rehydrationValidatesFullLifecycleHistoryAndNeverReopensWithdrawal() {
+        ArchiveLifecycleProof.rehydratedHistoryPreservesTerminalWithdrawalAndOrdering();
+    }
+
+    @Test
     void aReaderCannotApproveAndAnotherReaderCannotWithdrawPrivateContribution() {
         var reader = ActorContext.user("reader", Set.of(RoleCode.READER), RequestId.of("recap-reader"));
         var draft = contribution("DRAFT", true);

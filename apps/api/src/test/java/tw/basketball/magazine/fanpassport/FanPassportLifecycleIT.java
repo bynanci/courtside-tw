@@ -52,7 +52,7 @@ final class FanPassportLifecycleIT extends PublicIssueApiIntegrationTestSupport 
     service = new FanPassportService(
       jdbcTemplate,
       new DataSourceTransactionManager(jdbcTemplate.getDataSource()),
-      () -> NOW
+      PassportTestClock.fixed(NOW)
     );
     IssueFixture issue = createIssue(
       "passport-issue",
@@ -187,8 +187,34 @@ final class FanPassportLifecycleIT extends PublicIssueApiIntegrationTestSupport 
     var future = new FanPassportService(
       jdbcTemplate,
       new DataSourceTransactionManager(jdbcTemplate.getDataSource()),
-      () -> Instant.parse("2028-01-01T00:00:00Z")
+      PassportTestClock.fixed(Instant.parse("2028-01-01T00:00:00Z"))
     );
     assertEquals("EXPIRED", future.claim(READER, issueId, "2026", "expired-retry").status());
+  }
+
+  @Test
+  void archivedMediaSuppressesAnOtherwiseReadyStamp() {
+    service.claim(READER, issueId, "2026", "before-archive");
+    jdbcTemplate.update("UPDATE media_asset SET archived_at=?", Timestamp.from(NOW));
+    assertEquals("REVOKED", service.list(READER).items().getFirst().status());
+  }
+
+  @Test
+  void blockedRightsRecordDominatesAnotherValidRecordBeforeFirstClaim() {
+    jdbcTemplate.update(
+      """
+      INSERT INTO rights_record(id,asset_id,rights_owner,license_name,allowed_channels,territories,
+          valid_from,valid_until,credit,withdrawal_terms,status)
+      SELECT uuidv7(),asset_id,rights_owner,license_name,allowed_channels,territories,
+          valid_from,valid_until,credit,withdrawal_terms,'BLOCKED' FROM rights_record WHERE status='VALID'
+      """
+    );
+    assertThrows(IllegalArgumentException.class, () ->
+      service.claim(READER, issueId, "2026", "blocked-rights")
+    );
+    assertEquals(
+      0,
+      jdbcTemplate.queryForObject("SELECT count(*) FROM fan_passport_stamp", Integer.class)
+    );
   }
 }

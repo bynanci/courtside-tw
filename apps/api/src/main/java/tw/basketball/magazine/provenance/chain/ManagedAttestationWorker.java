@@ -14,6 +14,12 @@ public final class ManagedAttestationWorker {
         this.writeEnabled = Objects.requireNonNull(writeEnabled);
     }
     public Result attest(ChainAttestationPort.Attestation request) {
+        return attest(request, () -> true);
+    }
+    public Result attest(ChainAttestationPort.Attestation request, BooleanSupplier eligible) {
+        if (!eligible.getAsBoolean()) {
+            return new Result("DENIED", null);
+        }
         if (!writeEnabled.getAsBoolean() || policy.gasCeiling() == 0) {
             return new Result("DISABLED", null);
         }
@@ -26,8 +32,13 @@ public final class ManagedAttestationWorker {
                 || !"1".equals(request.schemaVersion()) || request.idempotencyKey().isBlank()) {
             return new Result("DENIED", null);
         }
+        String transactionId = null;
         try {
-            ChainAttestationPort.Submission submission = port.submit(request);
+            if (!eligible.getAsBoolean() || !writeEnabled.getAsBoolean()) {
+                return new Result("DENIED", null);
+            }
+            ChainAttestationPort.Submission submission = port.submit(request, () -> eligible.getAsBoolean() && writeEnabled.getAsBoolean());
+            transactionId = submission.transactionId();
             if (!policy.network().equals(submission.network()) || !policy.contract().equals(submission.contract())
                     || submission.gasUsed() > request.gasCeiling() || submission.gasUsed() < 0) {
                 return new Result("DENIED", null);
@@ -39,16 +50,18 @@ public final class ManagedAttestationWorker {
                     || !request.snapshotId().equals(confirmation.snapshotId())) {
                 return new Result("FAILED", submission.transactionId());
             }
-            return new Result(confirmation.confirmations() >= policy.minimumConfirmations() ? "VERIFIED" : "PENDING",
+            return new Result(!eligible.getAsBoolean() ? "DENIED"
+                    : confirmation.confirmations() >= policy.minimumConfirmations() ? "VERIFIED" : "PENDING",
                     submission.transactionId());
         } catch (RuntimeException ignored) {
-            return new Result("UNAVAILABLE", null);
+            return new Result("UNAVAILABLE", transactionId);
         }
     }
     public record Policy(String network, String contract, long gasCeiling, long minimumConfirmations) {
         public Policy {
             Objects.requireNonNull(network); Objects.requireNonNull(contract);
-            if (gasCeiling < 0 || minimumConfirmations < 1) {
+            if (gasCeiling < 0 || minimumConfirmations < 1 || (gasCeiling > 0
+                    && (!network.matches("eip155:[1-9][0-9]{0,18}") || !contract.matches("0x[0-9a-fA-F]{40}")))) {
                 throw new IllegalArgumentException("invalid attestation policy");
             }
         }
