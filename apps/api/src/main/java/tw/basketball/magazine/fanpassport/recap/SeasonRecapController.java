@@ -44,8 +44,11 @@ public final class SeasonRecapController {
     @GetMapping("/api/v1/public/seasons/{seasonId}/recaps/{projectionId}")
     public ResponseEntity<?> published(@PathVariable UUID seasonId, @PathVariable UUID projectionId,
             HttpServletRequest request) {
-        return service().published(seasonId, projectionId).map(body -> response(200, body, request))
-                .orElseGet(() -> problem(ProblemCode.RESOURCE_NOT_FOUND, "recap_unavailable", request));
+        var published = service().published(seasonId, projectionId);
+        if (published.isEmpty()) {
+            return problem(ProblemCode.RESOURCE_NOT_FOUND, "recap_unavailable", request);
+        }
+        return response(200, published.get(), request);
     }
 
     @GetMapping("/api/v1/me/seasons/{seasonId}/recaps/{projectionId}")
