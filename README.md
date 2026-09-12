@@ -37,7 +37,7 @@ Courtside TW 不只是文章集合，也不是把雜誌換成另一種內容管�
 | 先看見 | 這一期在談什麼？為什麼值得讀？ | 以 Issue 與編輯策展建立第一眼的方向 | 已完成核心閱讀入口 |
 | 讀進去 | 我可以順暢讀完一篇長文嗎？ | 文章、目錄、圖片、引用與閱讀進度保持連續 | 已完成核心長文閱讀 |
 | 看懂脈絡 | 這個故事與球員、賽季、球隊有什麼關係？ | 透過內容結構與未來的台灣籃球資料層補足上下文 | P1 已建立基礎；P2 domain 尚未開始 |
-| 留下記憶 | 我下次回來，還能接著讀嗎？ | 書籤、跨裝置進度、離線閱讀與 Reader Stamp | 已完成主要 P2/P3 閱讀延續能力 |
+| 留下記憶 | 我下次回來，還能接著讀嗎？ | 書籤、跨裝置進度與離線閱讀；Reader Stamp 規劃於 T105–T106 | 閱讀延續已完成；Reader Stamp 尚未開始 |
 | 驗證來源 | 我能相信這份出版內容嗎？ | 在不影響公開閱讀的前提下，提供出版版本與來源驗證 | Web3/provenance 尚未開始 |
 
 ## 產品原則
@@ -51,7 +51,9 @@ Courtside TW 不只是文章集合，也不是把雜誌換成另一種內容管�
 
 ## 目前進度
 
-截至目前，`tasks.md` 已記錄 86 個完成項目：`T001–T085` 與 `T097`。這代表產品已經從基礎契約與公開閱讀，推進到出版流程、搜尋、閱讀延續、離線能力，以及部署、rollback、觀測與隱私分析準備；`T086` 仍維持 HOLD。
+2026-09-12 重新核對 protected `main@ac92f88a7267736325519a8bf12dc6b9ee2bcb86`：`tasks.md` 共 112 項，86 項已完成（`T001–T085`、`T097`），26 項未完成（`T086–T096`、`T098–T112`）。這是已接受的任務收據統計，不代表所有需求缺口或 beta release 驗收均已完成；`T086` 保持未勾選。
+
+Arena Editorial v0.3 已由 [PR #187](https://github.com/bynanci/courtside-tw/pull/187#issuecomment-5613249111) 合併並完成 protected-main read-back；獨立 [UI 任務清單](docs/design/arena-editorial-v3-tasks.md) 的 `UIR-001–UIR-017` 已完成，不加計至 T001–T112。
 
 | 產品階段 | 已完成 | 下一步／狀態 |
 | --- | --- | --- |
@@ -59,7 +61,7 @@ Courtside TW 不只是文章集合，也不是把雜誌換成另一種內容管�
 | 公開閱讀 MVP | T024–T041 | 已完成：Issue、TOC、Article、長文閱讀與媒體權利邊界 |
 | 編輯出版 | T042–T056 | 已完成：編輯、審閱、發佈、撤回與可靠性場景 |
 | 搜尋與探索 | T057–T063 | 已完成：搜尋、更新、重試、撤回與部分失敗處理 |
-| 閱讀延續 | T064–T076 | 已完成：書籤、跨裝置進度、Reader Stamp 基礎與離線閱讀 |
+| 閱讀延續 | T064–T076 | 已完成：書籤、跨裝置進度與離線閱讀 |
 | P1 品質與復原 | T077–T081 | 已完成：first issue、品質驗證、威脅模型、備份與 isolated restore |
 | 產品／架構對齊 | T097 | 已完成：台灣籃球、evidence graph、Fan Passport 與 Web3 邊界 |
 | 生產準備 | T082–T085 | 已完成：部署、rollback、觀測與隱私分析準備；T086 beta gate 維持 HOLD |
@@ -70,7 +72,9 @@ Courtside TW 不只是文章集合，也不是把雜誌換成另一種內容管�
 
 - **可以展示的核心**：從 Home／Issue 進入 TOC、Article、Closure 的公開閱讀旅程。
 - **已建立的產品信任基礎**：出版版本、權利判定、撤回、搜尋／快取／離線同步，以及可驗證的備份復原流程。
-- **下一個產品準備工作**：先讓 #169 合併後的 protected-main CI/Security 恢復 GREEN，完成 #164 required-context enforcement，再以 fresh exact-base OWNER dispatch 推進 draft PR #161 的 T086 gate。
+- **已完成的近期工程**：[PR #189](https://github.com/bynanci/courtside-tw/pull/189) OIDC 修復、PR #187 Arena Editorial，以及 [PR #194](https://github.com/bynanci/courtside-tw/pull/194) T086 release producer 均已合併。PR #161、#171 已關閉為 superseded。
+- **下一個 release gate**：[#164](https://github.com/bynanci/courtside-tw/issues/164) 尚缺實際 required context 安裝、安裝後 read-back 與 negative mergeability 證據。現有 ruleset 仍只有 12 個 required contexts。
+- **驗證限制**：current-main CI 5/5、Security 8/8 通過；`Recompute trusted T086 gate` 工作成功不等於 `T086 final release decision` PASS。#194 的歷史 Beta Release PASS 僅適用原 candidate 與當時 adjudication。
 - **刻意暫緩的方向**：Web3、wallet、IPFS、chain attestation、參與者研究與更深的台灣籃球資料建模。
 
 ## 完成證據
@@ -96,6 +100,7 @@ Courtside TW 不只是文章集合，也不是把雜誌換成另一種內容管�
 - T078 的原生 OS／輔助科技／裝置／字體驗證仍須依原紀錄標示為 WAIVED 或 NOT_RUN，不將自動化測試寫成人工通過。
 - T079 的效能與 Android 證據不取代 T078，也不會自動解除後續 release gate。
 - `tasks.md` 是進度索引；PR、驗證紀錄與人工 gate 才是完整完成判定的依據。
+- [#160 的 18 項 adjudication](https://github.com/bynanci/courtside-tw/issues/160#issuecomment-5618664464) 記錄的是 `RISK_ACCEPTED_FOR_BETA`，不等於 `RESOLVED_BY_EVIDENCE`。後續修復與驗收收據仍須逐項對帳；T085 audit 完成不代表所有 FR/SC 都已滿足。
 
 ## 產品邊界
 
@@ -110,14 +115,14 @@ Courtside TW 不只是文章集合，也不是把雜誌換成另一種內容管�
 
 - 尚未承諾 chain attestation、IPFS mirror、SIWE、wallet credential 或任何金融／投機用途。
 - 尚未承諾完成正式 participant study、使用者採用率、留存率或營收驗證。
-- 尚未宣稱 beta/GA release；T082–T085 已完成，T086 仍在 draft PR #161 維持 HOLD，beta flag 未移除。
+- 尚未宣稱 beta/GA release；T082–T085 已有完成收據，T086 producer 已合併，但 #164 enforcement 與完整 release acceptance 尚未完成，beta flag 未移除。
 
 ## 下一步路線
 
-1. **恢復 protected-main GREEN**：驗證 #169 合併後的 CI 與 Security，並完成 #164 required-context enforcement。
-2. **T086／PR #161**：維持 draft、HOLD、NO MERGE；取得 fresh exact-base OWNER dispatch 後才可 rebase，並重新建立 exact-head checks、review 與 blocker adjudication。
-3. **完成 P1 release gates 後**：再評估 T087–T096 的 provenance／Web3 方向。
-4. **獨立研究 frontier**：依產品決策與真實使用者研究結果，再推進 T098–T112 的台灣籃球 domain、evidence、Fan Passport 與 archive。
+1. **#164 required-context enforcement**：完成另行記錄的 owner decision，追加唯一 `T086 final release decision`（GitHub Actions integration `15368`），再核驗既有 12 contexts、strict、main-only、無 bypass 與負向合併證據。
+2. **T086 完整驗收**：重新綁定實際 candidate、current base 與 owner evidence，取得完整 release acceptance 後才處理任務勾選及 beta flag；本次對帳不授權這些變更。
+3. **後續產品工作**：依 [#121](https://github.com/bynanci/courtside-tw/issues/121) 追蹤 18 項 beta 風險的修復／證據；T087–T096、T098–T112 維持未派遣。
+4. **獨立研究**：[#110](https://github.com/bynanci/courtside-tw/issues/110) 仍需六位真實參與者的同意與觀察資料；既有簡報、模擬畫面及自動化測試不作為真人研究結果。
 
 ## 給協作者
 
