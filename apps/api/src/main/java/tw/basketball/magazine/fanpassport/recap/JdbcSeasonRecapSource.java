@@ -174,17 +174,15 @@ public final class JdbcSeasonRecapSource implements SeasonRecapProjectionService
 
     public void insert(Request request, List<UUID> facts, JsonNode payload) {
         String[] ids = boundedIds(facts).stream().map(UUID::toString).toArray(String[]::new);
-        jdbc.update(connection -> {
-            var statement = connection.prepareStatement("""
-                    INSERT INTO season_recap_projection(id,season_id,poster_asset_id,metric,fact_ids,payload)
-                    VALUES(?,?,?,'TEAM_SEASON_COVERAGE_V1',?,?::jsonb) ON CONFLICT(id) DO NOTHING
-                    """);
+        jdbc.update("""
+                INSERT INTO season_recap_projection(id,season_id,poster_asset_id,metric,fact_ids,payload)
+                VALUES(?,?,?,'TEAM_SEASON_COVERAGE_V1',?,?::jsonb) ON CONFLICT(id) DO NOTHING
+                """, statement -> {
             statement.setObject(1, request.projectionId());
             statement.setObject(2, request.seasonId());
             statement.setObject(3, request.posterAssetId());
-            statement.setArray(4, connection.createArrayOf("uuid", ids));
+            statement.setArray(4, statement.getConnection().createArrayOf("uuid", ids));
             statement.setString(5, json.writeValueAsString(payload));
-            return statement;
         });
         Stored saved = stored(request.projectionId());
         if (!saved.factIds().equals(boundedIds(facts)) || !saved.payload().equals(payload)) {

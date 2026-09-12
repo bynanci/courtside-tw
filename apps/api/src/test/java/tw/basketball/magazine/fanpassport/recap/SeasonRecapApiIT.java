@@ -120,7 +120,7 @@ final class SeasonRecapApiIT extends PublicIssueApiIntegrationTestSupport {
     void rawArticleAuthoringCannotChangeApprovedValuesOrInventProjectionIds() throws Exception {
         Fixture fixture = fixture();
         JsonNode document = generate(fixture);
-        ObjectNode forged = document.deepCopy();
+        ObjectNode forged = (ObjectNode) document.deepCopy();
         ((ObjectNode) forged.path("blocks").path(0).path("payload").path("parameters"))
                 .set("values", JSON.valueToTree(List.of(0.99)));
         var repository = new JdbcEditorialArticleRepository(jdbcTemplate);

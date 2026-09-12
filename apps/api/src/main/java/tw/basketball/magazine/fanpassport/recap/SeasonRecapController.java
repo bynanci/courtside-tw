@@ -78,10 +78,13 @@ public final class SeasonRecapController {
     }
 
     private static boolean oidc(Authentication authentication) {
-        return authentication != null && authentication.isAuthenticated()
-                && !(authentication instanceof AnonymousAuthenticationToken)
-                && authentication.getPrincipal() instanceof Jwt jwt
-                && jwt.getSubject() != null && !jwt.getSubject().isBlank() && jwt.getClaimAsString("iss") != null;
+        if (authentication == null || !authentication.isAuthenticated()
+                || authentication instanceof AnonymousAuthenticationToken
+                || !(authentication.getPrincipal() instanceof Jwt jwt)) {
+            return false;
+        }
+        String subject = jwt.getSubject();
+        return subject != null && !subject.isBlank() && jwt.getClaimAsString("iss") != null;
     }
 
     private static ResponseEntity<?> response(int status, Object body, HttpServletRequest request) {
