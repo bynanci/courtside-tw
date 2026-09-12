@@ -14644,7 +14644,13 @@ test("Studio completion singleton never accepts a caller-injected factory config
   const report = runCompletedFixture(context.fixture, {
     currentHead: context.head,
     evaluatedHeadCommittedAt: "2026-09-09T12:00:00Z",
-    ...options,
+    // Gate options have their own readback; pass only full-validator context fields.
+    gitBinding: options.gitBinding,
+    changedPaths: options.changedPaths,
+    changeBaseSha: options.changeBaseSha,
+    boundedScopeActive: options.boundedScopeActive,
+    githubActionsContext: options.githubActionsContext,
+    requireExactHeadEvidence: options.requireExactHeadEvidence,
     studioCompletionAuthorizationReadback: context.readback,
     studioCompletionConfiguration: config
   })
