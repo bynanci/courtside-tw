@@ -206,16 +206,14 @@ jobs:
             // T086_PURE_END
 
             // TASK_STATUS_PURE_START
-            const TASK_STATUS_RECEIPT_PATH =
-              ".loop/evidence/task-status-reconciliation.json";
+            const TASK_STATUS_RECEIPT_PATH = ".loop/evidence/task-status-reconciliation.json"
             const TASK_STATUS_DOCUMENT_PATHS = Object.freeze([
               "README.md",
               "specs/001-taiwan-basketball-magazine-ebook/tasks.md",
-              "docs/design/arena-editorial-v3-tasks.md",
-            ]);
-            const TASK_STATUS_RECEIPT_SCHEMA = "courtside-task-status-reconciliation/v1";
-            const taskReceiptHash = (text) =>
-              createHash("sha256").update(text).digest("hex");
+              "docs/design/arena-editorial-v3-tasks.md"
+            ])
+            const TASK_STATUS_RECEIPT_SCHEMA = "courtside-task-status-reconciliation/v1"
+            const taskReceiptHash = (text) => createHash("sha256").update(text).digest("hex")
             const TASK_STATUS_BOUNDARIES = Object.freeze({
               canonical_task_state_changed: false,
               beta_flag_removed: false,
@@ -226,8 +224,8 @@ jobs:
               provider_configured: false,
               credentials_or_secrets_changed: false,
               participant_research_executed: false,
-              web3_activated: false,
-            });
+              web3_activated: false
+            })
             const taskReceiptEqual = (a, b) => {
               if (Array.isArray(a) || Array.isArray(b))
                 return (
@@ -235,191 +233,167 @@ jobs:
                   Array.isArray(b) &&
                   a.length === b.length &&
                   a.every((v, i) => taskReceiptEqual(v, b[i]))
-                );
+                )
               if (a && b && typeof a === "object" && typeof b === "object")
                 return (
                   taskReceiptEqual(Object.keys(a).sort(), Object.keys(b).sort()) &&
                   Object.keys(a).every((k) => taskReceiptEqual(a[k], b[k]))
-                );
-              return a === b;
-            };
+                )
+              return a === b
+            }
             const taskReceiptSamePaths = (a, b) =>
               Array.isArray(a) &&
               Array.isArray(b) &&
               new Set(a).size === a.length &&
-              taskReceiptEqual([...a].sort(), [...b].sort());
-            const taskReceiptSha = (v) =>
-              typeof v === "string" && /^[a-f0-9]{40}$/u.test(v);
-            const taskReceiptSha256 = (v) =>
-              typeof v === "string" && /^[a-f0-9]{64}$/u.test(v);
+              taskReceiptEqual([...a].sort(), [...b].sort())
+            const taskReceiptSha = (v) => typeof v === "string" && /^[a-f0-9]{40}$/u.test(v)
+            const taskReceiptSha256 = (v) => typeof v === "string" && /^[a-f0-9]{64}$/u.test(v)
             
             function parseTaskReceiptJson(text) {
               if (typeof text !== "string" || text.length > 1000000)
-                throw new Error("JSON size exceeds receipt limit");
-              let offset = 0;
+                throw new Error("JSON size exceeds receipt limit")
+              let offset = 0
               const whitespace = () => {
-                while (offset < text.length && /\s/u.test(text[offset])) offset++;
-              };
+                while (offset < text.length && /\s/u.test(text[offset])) offset++
+              }
               function stringToken() {
-                const start = offset++;
+                const start = offset++
                 while (offset < text.length) {
                   if (text[offset] === "\\") {
-                    offset += 2;
-                    continue;
+                    offset += 2
+                    continue
                   }
-                  if (text[offset++] === '"') return JSON.parse(text.slice(start, offset));
+                  if (text[offset++] === '"') return JSON.parse(text.slice(start, offset))
                 }
-                throw new Error("unterminated JSON string");
+                throw new Error("unterminated JSON string")
               }
               function value(depth) {
-                if (depth > 64) throw new Error("JSON nesting exceeds receipt limit");
-                whitespace();
-                const token = text[offset];
+                if (depth > 64) throw new Error("JSON nesting exceeds receipt limit")
+                whitespace()
+                const token = text[offset]
                 if (token === '"') {
-                  stringToken();
-                  return;
+                  stringToken()
+                  return
                 }
                 if (token === "{" || token === "[") {
                   const object = token === "{",
                     close = object ? "}" : "]",
-                    keys = new Set();
-                  offset++;
-                  whitespace();
+                    keys = new Set()
+                  offset++
+                  whitespace()
                   if (text[offset] === close) {
-                    offset++;
-                    return;
+                    offset++
+                    return
                   }
                   while (offset < text.length) {
                     if (object) {
-                      whitespace();
-                      if (text[offset] !== '"') throw new Error("invalid JSON object key");
-                      const key = stringToken();
-                      if (keys.has(key)) throw new Error("duplicate JSON key");
-                      keys.add(key);
-                      whitespace();
-                      if (text[offset++] !== ":")
-                        throw new Error("invalid JSON object separator");
+                      whitespace()
+                      if (text[offset] !== '"') throw new Error("invalid JSON object key")
+                      const key = stringToken()
+                      if (keys.has(key)) throw new Error("duplicate JSON key")
+                      keys.add(key)
+                      whitespace()
+                      if (text[offset++] !== ":") throw new Error("invalid JSON object separator")
                     }
-                    value(depth + 1);
-                    whitespace();
+                    value(depth + 1)
+                    whitespace()
                     if (text[offset] === close) {
-                      offset++;
-                      return;
+                      offset++
+                      return
                     }
-                    if (text[offset++] !== ",")
-                      throw new Error("invalid JSON entry separator");
+                    if (text[offset++] !== ",") throw new Error("invalid JSON entry separator")
                   }
-                  throw new Error("unterminated JSON container");
+                  throw new Error("unterminated JSON container")
                 }
                 const literal = text
                   .slice(offset)
-                  .match(
-                    /^(?:true|false|null|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)/u,
-                  );
-                if (!literal) throw new Error("invalid JSON value");
-                offset += literal[0].length;
+                  .match(/^(?:true|false|null|-?(?:0|[1-9]\d*)(?:\.\d+)?(?:[eE][+-]?\d+)?)/u)
+                if (!literal) throw new Error("invalid JSON value")
+                offset += literal[0].length
               }
-              value(0);
-              whitespace();
-              if (offset !== text.length) throw new Error("trailing JSON content");
-              return JSON.parse(text);
+              value(0)
+              whitespace()
+              if (offset !== text.length) throw new Error("trailing JSON content")
+              return JSON.parse(text)
             }
             
             function taskReceiptContract(body) {
-              const start = "<!-- task-status-reconciliation:owner-authorization:start -->";
-              const end = "<!-- task-status-reconciliation:owner-authorization:end -->";
+              const start = "<!-- task-status-reconciliation:owner-authorization:start -->"
+              const end = "<!-- task-status-reconciliation:owner-authorization:end -->"
               if (
                 typeof body !== "string" ||
                 body.split(start).length !== 2 ||
                 body.split(end).length !== 2 ||
                 body.indexOf(start) > body.indexOf(end)
               )
-                throw new Error("missing or ambiguous authorization markers");
-              const block = body.split(start)[1].split(end)[0].trim();
-              if (!/^```json\s+[\s\S]+\s+```$/u.test(block))
-                throw new Error("invalid authorization JSON fence");
-              return parseTaskReceiptJson(
-                block.replace(/^```json\s+/u, "").replace(/\s+```$/u, ""),
-              );
+                throw new Error("missing or ambiguous authorization markers")
+              const block = body.split(start)[1].split(end)[0].trim()
+              if (!/^```json\s+[\s\S]+\s+```$/u.test(block)) throw new Error("invalid authorization JSON fence")
+              return parseTaskReceiptJson(block.replace(/^```json\s+/u, "").replace(/\s+```$/u, ""))
             }
             
             function taskStatusSignatures(text) {
-              if (typeof text !== "string")
-                throw new Error("canonical tasks text is missing");
-              const lines = text.split("\n");
-              const taskStart = /^- \[([ xX])\] (T\d{3})\b/u;
-              const rows = [];
+              if (typeof text !== "string") throw new Error("canonical tasks text is missing")
+              const lines = text.split("\n")
+              const taskStart = /^- \[([ xX])\] (T\d{3})\b/u
+              const rows = []
               for (let index = 0; index < lines.length; index++) {
-                const match = lines[index].match(taskStart);
-                if (!match) continue;
-                const block = [lines[index]];
-                const pendingBlank = [];
+                const match = lines[index].match(taskStart)
+                if (!match) continue
+                const block = [lines[index]]
+                const pendingBlank = []
                 for (let cursor = index + 1; cursor < lines.length; cursor++) {
-                  const line = lines[cursor];
-                  if (taskStart.test(line)) break;
+                  const line = lines[cursor]
+                  if (taskStart.test(line)) break
                   if (/^(?: {2,}|\t)/u.test(line)) {
-                    block.push(...pendingBlank, line);
-                    pendingBlank.length = 0;
+                    block.push(...pendingBlank, line)
+                    pendingBlank.length = 0
                   } else if (line.trim() === "") {
-                    pendingBlank.push(line);
+                    pendingBlank.push(line)
                   } else {
-                    break;
+                    break
                   }
                 }
-                rows.push({ id: match[2], checked: match[1], text: block.join("\n") });
+                rows.push({ id: match[2], checked: match[1], text: block.join("\n") })
               }
-              const expectedIds = Array.from(
-                { length: 112 },
-                (_, i) => `T${String(i + 1).padStart(3, "0")}`,
-              );
+              const expectedIds = Array.from({ length: 112 }, (_, i) => `T${String(i + 1).padStart(3, "0")}`)
               if (
                 !taskReceiptEqual(
                   rows.map((row) => row.id),
-                  expectedIds,
+                  expectedIds
                 )
               )
-                throw new Error(
-                  "canonical task IDs must remain exactly T001–T112 in order",
-                );
+                throw new Error("canonical task IDs must remain exactly T001–T112 in order")
               const checkbox = taskReceiptHash(
-                rows
-                  .map(
-                    (row) => `${row.id}:${row.checked.toLowerCase() === "x" ? "1" : "0"}`,
-                  )
-                  .join("\n"),
-              );
-              if (
-                checkbox !==
-                "7229c5ad498658144e513f7af91a24b121b91817057e5673d3db3cb62aac73b3"
+                rows.map((row) => `${row.id}:${row.checked.toLowerCase() === "x" ? "1" : "0"}`).join("\n")
               )
-                throw new Error(
-                  "canonical checkbox signature must remain 86 complete and 26 pending",
-                );
+              if (checkbox !== "7229c5ad498658144e513f7af91a24b121b91817057e5673d3db3cb62aac73b3")
+                throw new Error("canonical checkbox signature must remain 86 complete and 26 pending")
               const definition = taskReceiptHash(
                 rows
                   .map(({ text: row, id }) => {
-                    if (id !== "T086") return row;
-                    const [first, ...continuation] = row.split("\n");
+                    if (id !== "T086") return row
+                    const [first, ...continuation] = row.split("\n")
                     return [
                       first.replace(
                         / Current governance (?:state|read-back) \(\d{4}-\d{2}-\d{2}\):[^\n]*$/u,
-                        "",
+                        ""
                       ),
-                      ...continuation,
-                    ].join("\n");
+                      ...continuation
+                    ].join("\n")
                   })
-                  .join("\n"),
-              );
-              return { checkbox, definition };
+                  .join("\n")
+              )
+              return { checkbox, definition }
             }
             function validateTaskStatusReceipt(input = {}) {
-              const errors = [];
+              const errors = []
               const need = (ok, reason) => {
-                if (!ok) errors.push(`task-status receipt: ${reason}`);
-              };
+                if (!ok) errors.push(`task-status receipt: ${reason}`)
+              }
               let allowedPaths = [],
                 baseTasksSha256 = null,
-                targetTasksSha256 = null;
+                targetTasksSha256 = null
               try {
                 const {
                   receipt: r,
@@ -427,12 +401,9 @@ jobs:
                   baseDocuments: before,
                   targetDocuments: after,
                   pullRequest: pr,
-                  mode = "CANDIDATE",
-                } = input;
-                need(
-                  mode === "CANDIDATE" || mode === "ACCEPTED_BASE",
-                  "invalid receipt mode",
-                );
+                  mode = "CANDIDATE"
+                } = input
+                need(mode === "CANDIDATE" || mode === "ACCEPTED_BASE", "invalid receipt mode")
                 need(
                   r &&
                     taskReceiptSamePaths(Object.keys(r), [
@@ -446,146 +417,116 @@ jobs:
                       "canonical_checkbox_signature_sha256",
                       "task_definition_signature_sha256",
                       "scope_boundaries",
-                      "completion_evidence",
+                      "completion_evidence"
                     ]),
-                  "receipt fields are missing or unknown",
-                );
-                if (!r) throw new Error("receipt is missing");
+                  "receipt fields are missing or unknown"
+                )
+                if (!r) throw new Error("receipt is missing")
                 need(
-                  r.schema_version === TASK_STATUS_RECEIPT_SCHEMA &&
-                    r.repository === "bynanci/courtside-tw",
-                  "schema or repository mismatch",
-                );
+                  r.schema_version === TASK_STATUS_RECEIPT_SCHEMA && r.repository === "bynanci/courtside-tw",
+                  "schema or repository mismatch"
+                )
                 need(
                   taskReceiptSha(r.base_sha) &&
                     Number.isSafeInteger(r.pull_request) &&
                     r.pull_request > 0 &&
                     typeof r.branch === "string" &&
                     r.branch.length > 0,
-                  "invalid base or PR binding",
-                );
+                  "invalid base or PR binding"
+                )
+                need(taskReceiptEqual(r.scope_boundaries, TASK_STATUS_BOUNDARIES), "scope boundaries changed")
                 need(
-                  taskReceiptEqual(r.scope_boundaries, TASK_STATUS_BOUNDARIES),
-                  "scope boundaries changed",
-                );
-                need(
-                  taskReceiptSamePaths(
-                    Object.keys(r.documents ?? {}),
-                    TASK_STATUS_DOCUMENT_PATHS,
-                  ) &&
-                    taskReceiptSamePaths(
-                      Object.keys(before ?? {}),
-                      TASK_STATUS_DOCUMENT_PATHS,
-                    ) &&
-                    taskReceiptSamePaths(
-                      Object.keys(after ?? {}),
-                      TASK_STATUS_DOCUMENT_PATHS,
-                    ),
-                  "document inventory must be exactly README, canonical tasks and Arena ledger",
-                );
+                  taskReceiptSamePaths(Object.keys(r.documents ?? {}), TASK_STATUS_DOCUMENT_PATHS) &&
+                    taskReceiptSamePaths(Object.keys(before ?? {}), TASK_STATUS_DOCUMENT_PATHS) &&
+                    taskReceiptSamePaths(Object.keys(after ?? {}), TASK_STATUS_DOCUMENT_PATHS),
+                  "document inventory must be exactly README, canonical tasks and Arena ledger"
+                )
                 for (const p of TASK_STATUS_DOCUMENT_PATHS) {
-                  const d = r.documents?.[p];
+                  const d = r.documents?.[p]
                   need(
-                    taskReceiptSamePaths(Object.keys(d ?? {}), [
-                      "before_sha256",
-                      "after_sha256",
-                    ]) &&
+                    taskReceiptSamePaths(Object.keys(d ?? {}), ["before_sha256", "after_sha256"]) &&
                       taskReceiptSha256(d?.before_sha256) &&
                       taskReceiptSha256(d?.after_sha256),
-                    `invalid document digest ${p}`,
-                  );
+                    `invalid document digest ${p}`
+                  )
                   need(
                     typeof before?.[p] === "string" &&
                       typeof after?.[p] === "string" &&
                       taskReceiptHash(before[p]) === d?.before_sha256 &&
                       taskReceiptHash(after[p]) === d?.after_sha256,
-                    `exact approved bytes mismatch ${p}`,
-                  );
+                    `exact approved bytes mismatch ${p}`
+                  )
                 }
                 const ref = r.authorization_ref?.match(
-                  /^https:\/\/github\.com\/bynanci\/courtside-tw\/issues\/([1-9]\d*)#issuecomment-([1-9]\d*)$/u,
-                );
+                  /^https:\/\/github\.com\/bynanci\/courtside-tw\/issues\/([1-9]\d*)#issuecomment-([1-9]\d*)$/u
+                )
                 need(
                   ref &&
                     a?.status === "VERIFIED" &&
                     a?.source === "github-api" &&
                     a?.html_url === r.authorization_ref &&
-                    a?.issue_url ===
-                      `https://api.github.com/repos/bynanci/courtside-tw/issues/${ref?.[1]}` &&
+                    a?.issue_url === `https://api.github.com/repos/bynanci/courtside-tw/issues/${ref?.[1]}` &&
                     a?.user_login === "bynanci" &&
                     a?.author_association === "OWNER" &&
                     Number.isFinite(Date.parse(a?.created_at)) &&
                     a?.created_at === a?.updated_at,
-                  "requires the exact unedited repository OWNER comment",
-                );
+                  "requires the exact unedited repository OWNER comment"
+                )
                 const expected = {
                   ...r,
-                  schema_version:
-                    "courtside-task-status-reconciliation-owner-authorization/v1",
+                  schema_version: "courtside-task-status-reconciliation-owner-authorization/v1",
                   decision: "TASK_STATUS_RECONCILIATION_ACCEPTED",
-                  accepted_by: "bynanci",
-                };
-                delete expected.authorization_ref;
+                  accepted_by: "bynanci"
+                }
+                delete expected.authorization_ref
                 need(
                   taskReceiptEqual(taskReceiptContract(a?.body), expected),
-                  "OWNER contract differs from the complete receipt",
-                );
-                const oldTasks = taskStatusSignatures(
-                  before?.[TASK_STATUS_DOCUMENT_PATHS[1]],
-                );
-                const newTasks = taskStatusSignatures(
-                  after?.[TASK_STATUS_DOCUMENT_PATHS[1]],
-                );
+                  "OWNER contract differs from the complete receipt"
+                )
+                const oldTasks = taskStatusSignatures(before?.[TASK_STATUS_DOCUMENT_PATHS[1]])
+                const newTasks = taskStatusSignatures(after?.[TASK_STATUS_DOCUMENT_PATHS[1]])
                 need(
                   oldTasks.checkbox === newTasks.checkbox &&
                     oldTasks.checkbox === r.canonical_checkbox_signature_sha256,
-                  "canonical task checkbox signature changed",
-                );
+                  "canonical task checkbox signature changed"
+                )
                 need(
                   oldTasks.definition === newTasks.definition &&
                     oldTasks.definition === r.task_definition_signature_sha256,
-                  "canonical task definitions changed",
-                );
-                const uiRows = (text) => [
-                  ...text.matchAll(/^- \[([ xX])\] (UIR-\d{3})\b([^\n]*)/gmu),
-                ];
-                const oldUi = uiRows(before[TASK_STATUS_DOCUMENT_PATHS[2]]);
-                const newUi = uiRows(after[TASK_STATUS_DOCUMENT_PATHS[2]]);
+                  "canonical task definitions changed"
+                )
+                const uiRows = (text) => [...text.matchAll(/^- \[([ xX])\] (UIR-\d{3})\b([^\n]*)/gmu)]
+                const oldUi = uiRows(before[TASK_STATUS_DOCUMENT_PATHS[2]])
+                const newUi = uiRows(after[TASK_STATUS_DOCUMENT_PATHS[2]])
                 need(
                   taskReceiptEqual(
                     oldUi.map((r) => r[2]),
-                    Array.from(
-                      { length: 17 },
-                      (_, i) => `UIR-${String(i + 1).padStart(3, "0")}`,
-                    ),
+                    Array.from({ length: 17 }, (_, i) => `UIR-${String(i + 1).padStart(3, "0")}`)
                   ) && oldUi.length === newUi.length,
-                  "UI ledger task inventory changed",
-                );
+                  "UI ledger task inventory changed"
+                )
                 for (let i = 0; i < oldUi.length; i++) {
                   if (oldUi[i][2] !== "UIR-017")
-                    need(
-                      oldUi[i][0] === newUi[i]?.[0],
-                      "only UIR-017 may change in the UI task rows",
-                    );
+                    need(oldUi[i][0] === newUi[i]?.[0], "only UIR-017 may change in the UI task rows")
                   else {
                     const definition =
-                      "UIR-017 — Merge the exact reviewed head and record the protected-main receipt.";
+                      "UIR-017 — Merge the exact reviewed head and record the protected-main receipt."
                     need(
                       newUi[i]?.[2] === "UIR-017" &&
                         oldUi[i][0].slice(6).startsWith(definition) &&
                         newUi[i][0].slice(6).startsWith(definition) &&
                         newUi[i][1].toLowerCase() === "x",
-                      "UIR-017 completion definition must be preserved",
-                    );
+                      "UIR-017 completion definition must be preserved"
+                    )
                   }
                 }
                 const evidence = r.completion_evidence,
-                  ui = input.mergedUiPullRequest;
+                  ui = input.mergedUiPullRequest
                 need(
                   taskReceiptSamePaths(Object.keys(evidence ?? {}), [
                     "pull_request",
                     "head_sha",
-                    "merge_sha",
+                    "merge_sha"
                   ]) &&
                     evidence.pull_request === 187 &&
                     taskReceiptSha(evidence.head_sha) &&
@@ -596,8 +537,8 @@ jobs:
                     ui?.head?.sha === evidence.head_sha &&
                     ui?.merge_commit_sha === evidence.merge_sha &&
                     input.uiMergeAncestorOfBase === true,
-                  "UI completion requires the exact merged PR #187 already in the authorized base",
-                );
+                  "UI completion requires the exact merged PR #187 already in the authorized base"
+                )
                 need(
                   pr?.number === r.pull_request &&
                     pr?.head?.ref === r.branch &&
@@ -606,41 +547,41 @@ jobs:
                     pr?.base?.ref === "main" &&
                     pr?.base?.sha === r.base_sha &&
                     taskReceiptSha(pr?.head?.sha),
-                  "live same-repository PR binding differs",
-                );
+                  "live same-repository PR binding differs"
+                )
                 const closure = [
                   ...TASK_STATUS_DOCUMENT_PATHS.filter((p) => before[p] !== after[p]),
-                  TASK_STATUS_RECEIPT_PATH,
-                ];
+                  TASK_STATUS_RECEIPT_PATH
+                ]
                 need(
                   taskReceiptSamePaths(input.changedPaths, closure) &&
                     taskReceiptSamePaths(input.candidateHistoryPaths, closure) &&
                     input.candidateLinearHistory === true &&
                     input.candidateCommittedAfterAuthorization === true,
-                  "requires exact closed documentation history after authorization",
-                );
+                  "requires exact closed documentation history after authorization"
+                )
                 if (mode === "CANDIDATE") {
                   need(
                     input.protectedMainSha === r.base_sha &&
                       input.currentHead === pr?.head?.sha &&
                       pr?.state === "open" &&
                       pr?.merged === false,
-                    "candidate must bind the current protected base and exact open PR head",
-                  );
-                  allowedPaths = closure;
+                    "candidate must bind the current protected base and exact open PR head"
+                  )
+                  allowedPaths = closure
                 } else {
                   need(
                     pr?.state === "closed" &&
                       pr?.merged === true &&
                       taskReceiptSha(pr?.merge_commit_sha) &&
                       input.receiptMergeAncestorOfBase === true,
-                    "accepted snapshot requires a merged receipt ancestor of the evaluated base",
-                  );
+                    "accepted snapshot requires a merged receipt ancestor of the evaluated base"
+                  )
                 }
-                baseTasksSha256 = r.documents[TASK_STATUS_DOCUMENT_PATHS[1]].before_sha256;
-                targetTasksSha256 = r.documents[TASK_STATUS_DOCUMENT_PATHS[1]].after_sha256;
+                baseTasksSha256 = r.documents[TASK_STATUS_DOCUMENT_PATHS[1]].before_sha256
+                targetTasksSha256 = r.documents[TASK_STATUS_DOCUMENT_PATHS[1]].after_sha256
               } catch (error) {
-                errors.push(`task-status receipt: ${error.message}`);
+                errors.push(`task-status receipt: ${error.message}`)
               }
               return {
                 status: errors.length ? "FAIL" : "PASS",
@@ -648,8 +589,8 @@ jobs:
                 mode: input.mode ?? "CANDIDATE",
                 allowedPaths: errors.length ? [] : allowedPaths,
                 baseTasksSha256,
-                targetTasksSha256,
-              };
+                targetTasksSha256
+              }
             }
             // TASK_STATUS_PURE_END
 
