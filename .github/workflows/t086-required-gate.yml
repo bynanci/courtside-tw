@@ -86,6 +86,7 @@ jobs:
             function classifyCandidate(number, files, count, documentationVerdict) {
               if (number===161) return 'T086';
               if (!Number.isSafeInteger(number)||number<1||!Array.isArray(files)||files.length===0||files.length!==count) return 'UNKNOWN';
+              if(documentationVerdict?.status==='FAIL'&&documentationVerdict.requested===true) return 'UNKNOWN';
               const documentPaths=['README.md','specs/001-taiwan-basketball-magazine-ebook/tasks.md','docs/design/arena-editorial-v3-tasks.md','.loop/evidence/task-status-reconciliation.json'];
               if(documentationVerdict?.status==='PASS' && Array.isArray(documentationVerdict.allowedPaths) && documentationVerdict.allowedPaths.includes(documentPaths[3]) && documentationVerdict.allowedPaths.every(file=>documentPaths.includes(file)) && new Set(files.map(row=>row?.filename)).size===files.length && equal(files.map(row=>row?.filename).sort(),[...documentationVerdict.allowedPaths].sort()) && files.every(row=>['added','modified'].includes(row.status)&&row.previous_filename===undefined)) return 'NOT_APPLICABLE';
               for (const row of files) {
@@ -247,7 +248,7 @@ jobs:
               taskReceiptEqual([...a].sort(), [...b].sort())
             const taskReceiptSha = (v) => typeof v === "string" && /^[a-f0-9]{40}$/u.test(v)
             const taskReceiptSha256 = (v) => typeof v === "string" && /^[a-f0-9]{64}$/u.test(v)
-
+            
             function parseTaskReceiptJson(text) {
               if (typeof text !== "string" || text.length > 1000000)
                 throw new Error("JSON size exceeds receipt limit")
@@ -315,7 +316,7 @@ jobs:
               if (offset !== text.length) throw new Error("trailing JSON content")
               return JSON.parse(text)
             }
-
+            
             function taskReceiptContract(body) {
               const start = "<!-- task-status-reconciliation:owner-authorization:start -->"
               const end = "<!-- task-status-reconciliation:owner-authorization:end -->"
@@ -330,38 +331,56 @@ jobs:
               if (!/^```json\s+[\s\S]+\s+```$/u.test(block)) throw new Error("invalid authorization JSON fence")
               return parseTaskReceiptJson(block.replace(/^```json\s+/u, "").replace(/\s+```$/u, ""))
             }
-
+            
             function taskStatusSignatures(text) {
               if (typeof text !== "string") throw new Error("canonical tasks text is missing")
-              const rows = [...text.matchAll(/^- \[([ xX])\] (T\d{3})\b([^\n]*)/gmu)]
+              const lines = text.split("\n")
+              const taskStart = /^- \[([ xX])\] (T\d{3})\b/u
+              const rows = []
+              for (let index = 0; index < lines.length; index++) {
+                const match = lines[index].match(taskStart)
+                if (!match) continue
+                const block = [lines[index]]
+                const pendingBlank = []
+                for (let cursor = index + 1; cursor < lines.length; cursor++) {
+                  const line = lines[cursor]
+                  if (taskStart.test(line)) break
+                  if (/^(?: {2,}|\t)/u.test(line)) {
+                    block.push(...pendingBlank, line)
+                    pendingBlank.length = 0
+                  } else if (line.trim() === "") {
+                    pendingBlank.push(line)
+                  } else {
+                    break
+                  }
+                }
+                rows.push({ id: match[2], checked: match[1], text: block.join("\n") })
+              }
               const expectedIds = Array.from({ length: 112 }, (_, i) => `T${String(i + 1).padStart(3, "0")}`)
-              if (
-                !taskReceiptEqual(
-                  rows.map((r) => r[2]),
-                  expectedIds
-                )
-              )
+              if (!taskReceiptEqual(rows.map((row) => row.id), expectedIds))
                 throw new Error("canonical task IDs must remain exactly T001–T112 in order")
               const checkbox = taskReceiptHash(
-                rows.map(([, checked, id]) => `${id}:${checked.toLowerCase() === "x" ? "1" : "0"}`).join("\n")
+                rows.map((row) => `${row.id}:${row.checked.toLowerCase() === "x" ? "1" : "0"}`).join("\n")
               )
               if (checkbox !== "7229c5ad498658144e513f7af91a24b121b91817057e5673d3db3cb62aac73b3")
                 throw new Error("canonical checkbox signature must remain 86 complete and 26 pending")
               const definition = taskReceiptHash(
                 rows
-                  .map(([row, , id]) =>
-                    id === "T086"
-                      ? row.replace(
-                          / Current governance (?:state|read-back) \(\d{4}-\d{2}-\d{2}\):[^\n]*$/u,
-                          ""
-                        )
-                      : row
-                  )
+                  .map(({ text: row, id }) => {
+                    if (id !== "T086") return row
+                    const [first, ...continuation] = row.split("\n")
+                    return [
+                      first.replace(
+                        / Current governance (?:state|read-back) \(\d{4}-\d{2}-\d{2}\):[^\n]*$/u,
+                        ""
+                      ),
+                      ...continuation
+                    ].join("\n")
+                  })
                   .join("\n")
               )
               return { checkbox, definition }
             }
-
             function validateTaskStatusReceipt(input = {}) {
               const errors = []
               const need = (ok, reason) => {
@@ -597,38 +616,79 @@ jobs:
               if(Array.isArray(data)||data.type!=='file'||data.encoding!=='base64'||data.size>1000000) throw new Error('Unavailable or oversized source file');
               return {sha:data.sha,text:Buffer.from(data.content,'base64').toString('utf8')};
             }
+            async function optionalFileRead(file,ref) {
+              try { return await fileRead(file,ref); }
+              catch(error) {
+                if(error?.status===404||error?.response?.status===404||/\b404\b|not found/iu.test(String(error?.message??''))) return null;
+                throw error;
+              }
+            }
+            async function taskDocumentationHistory(base,head,allowedPaths) {
+              const comparison=(await github.rest.repos.compareCommitsWithBasehead({owner,repo,basehead:base+'...'+head})).data;
+              if(comparison.merge_base_commit?.sha!==base||!Number.isSafeInteger(comparison.total_commits)||comparison.total_commits<1||comparison.total_commits>250||!Array.isArray(comparison.commits)||comparison.commits.length!==comparison.total_commits) throw new Error('Incomplete documentation ancestry read-back');
+              const history=new Set();let previous=base,last=null;
+              for(const commit of comparison.commits) {
+                if(!/^[a-f0-9]{40}$/u.test(commit?.sha??'')||commit.parents?.length!==1||commit.parents[0]?.sha!==previous) throw new Error('Nonlinear documentation history');
+                const changes=await paginated('GET /repos/{owner}/{repo}/commits/{ref}',{ref:commit.sha},'files');
+                if(changes.length<1||changes.length>allowedPaths.length||new Set(changes.map(row=>row?.filename)).size!==changes.length||changes.some(row=>!allowedPaths.includes(row?.filename)||!['added','modified'].includes(row?.status)||row.previous_filename!==undefined)) throw new Error('Documentation history contains invalid changes');
+                for(const row of changes) history.add(row.filename);
+                previous=commit.sha;last=commit;
+              }
+              if(previous!==head) throw new Error('Documentation head is not the last compared commit');
+              return {paths:[...history].sort(),last};
+            }
             async function taskDocumentationRead(pr,base,files) {
-              if(!files.some(row=>row.filename===TASK_STATUS_RECEIPT_PATH)) return null;
+              const receiptChanged=files.some(row=>row.filename===TASK_STATUS_RECEIPT_PATH||row.previous_filename===TASK_STATUS_RECEIPT_PATH);
+              let baseReceipt=null;
+              try { baseReceipt=await optionalFileRead(TASK_STATUS_RECEIPT_PATH,base); }
+              catch(error) { return {status:'FAIL',requested:true,allowedPaths:[],errors:[error.message]}; }
+              if(!receiptChanged&&!baseReceipt) return null;
               try {
-                const receipt=parseTaskReceiptJson((await fileRead(TASK_STATUS_RECEIPT_PATH,pr.head.sha)).text);
+                const currentReceipt=await optionalFileRead(TASK_STATUS_RECEIPT_PATH,pr.head.sha);
+                if(!currentReceipt) throw new Error('Documentation receipt is missing at the candidate head');
+                const inherited=!receiptChanged;
+                if(inherited&&currentReceipt.text!==baseReceipt.text) throw new Error('Inherited documentation receipt differs from protected main');
+                const receipt=parseTaskReceiptJson(currentReceipt.text);
                 const match=receipt.authorization_ref?.match(/^https:\/\/github\.com\/bynanci\/courtside-tw\/issues\/([1-9]\d*)#issuecomment-([1-9]\d*)$/u);
                 if(!match) throw new Error('Malformed documentation authority reference');
                 const comment=(await github.rest.issues.getComment({owner,repo,comment_id:Number(match[2])})).data;
                 const authorization={status:'VERIFIED',source:'github-api',html_url:comment.html_url,issue_url:comment.issue_url,user_login:comment.user?.login,author_association:comment.author_association,created_at:comment.created_at,updated_at:comment.updated_at,body:comment.body};
+                if(inherited) {
+                  const sourcePullRequest=await prRead(receipt.pull_request);
+                  const sourceHead=sourcePullRequest?.merge_commit_sha;
+                  if(!/^[a-f0-9]{40}$/u.test(sourceHead??'')) throw new Error('Merged documentation receipt source commit is unavailable');
+                  const sourceReceipt=await fileRead(TASK_STATUS_RECEIPT_PATH,sourceHead);
+                  if(sourceReceipt.text!==currentReceipt.text) throw new Error('Inherited receipt differs from its merged source');
+                  const [mergedCommit,reviewedCommit]=await Promise.all([
+                    github.rest.git.getCommit({owner,repo,commit_sha:sourceHead}),
+                    github.rest.git.getCommit({owner,repo,commit_sha:sourcePullRequest.head?.sha})
+                  ]);
+                  if(!Array.isArray(mergedCommit.data.parents)||mergedCommit.data.parents.length!==1||mergedCommit.data.parents[0]?.sha!==receipt.base_sha||mergedCommit.data.tree?.sha!==reviewedCommit.data.tree?.sha) throw new Error('Merged receipt is not the reviewed single-parent source tree');
+                  const baseDocuments={},targetDocuments={};
+                  for(const file of TASK_STATUS_DOCUMENT_PATHS) {
+                    const [before,after]=await Promise.all([fileRead(file,receipt.base_sha),fileRead(file,sourceHead)]);
+                    baseDocuments[file]=before.text;targetDocuments[file]=after.text;
+                  }
+                  const sourceHistory=await taskDocumentationHistory(receipt.base_sha,sourcePullRequest.head.sha,[...TASK_STATUS_DOCUMENT_PATHS,TASK_STATUS_RECEIPT_PATH]);
+                  const sourceFiles=await paginated('GET /repos/{owner}/{repo}/pulls/{pull_number}/files',{pull_number:sourcePullRequest.number});
+                  if(sourceFiles.length<1||sourceFiles.length>4||new Set(sourceFiles.map(row=>row?.filename)).size!==sourceFiles.length||sourceFiles.some(row=>!['added','modified'].includes(row?.status)||row.previous_filename!==undefined)) throw new Error('Merged documentation source contains invalid changes');
+                  const mergedUiPullRequest=await prRead(187);
+                  const uiComparison=(await github.rest.repos.compareCommitsWithBasehead({owner,repo,basehead:receipt.completion_evidence?.merge_sha+'...'+base})).data;
+                  const sourceComparison=(await github.rest.repos.compareCommitsWithBasehead({owner,repo,basehead:receipt.base_sha+'...'+sourceHead})).data;
+                  const verdict=validateTaskStatusReceipt({mode:'ACCEPTED_BASE',receipt,authorization,baseDocuments,targetDocuments,pullRequest:sourcePullRequest,protectedMainSha:base,currentHead:pr.head.sha,mergedUiPullRequest,uiMergeAncestorOfBase:uiComparison.merge_base_commit?.sha===receipt.completion_evidence?.merge_sha,changedPaths:sourceFiles.map(row=>row.filename),candidateHistoryPaths:sourceHistory.paths,candidateLinearHistory:true,candidateCommittedAfterAuthorization:Date.parse(sourceHistory.last?.commit?.committer?.date)>Date.parse(comment.created_at),receiptMergeAncestorOfBase:sourceComparison.merge_base_commit?.sha===sourceHead});
+                  return {...verdict,requested:true,inherited:true,allowedPaths:[],authority_comment_id:comment.id,authority_identity:commentIdentity(comment),authority_url:comment.html_url};
+                }
                 const baseDocuments={},targetDocuments={};
                 for(const file of TASK_STATUS_DOCUMENT_PATHS) {
                   const [before,after]=await Promise.all([fileRead(file,base),fileRead(file,pr.head.sha)]);
                   baseDocuments[file]=before.text;targetDocuments[file]=after.text;
                 }
-                // With neither page nor per_page, Compare returns up to 250 commits;
-                // keep that bounded contract and reject any incomplete response below.
-                // https://docs.github.com/en/rest/commits/commits#compare-two-commits
-                const comparison=(await github.rest.repos.compareCommitsWithBasehead({owner,repo,basehead:`${base}...${pr.head.sha}`})).data;
-                if(comparison.merge_base_commit?.sha!==base||!Number.isSafeInteger(comparison.total_commits)||comparison.total_commits<1||comparison.total_commits>250||comparison.commits?.length!==comparison.total_commits) throw new Error('Incomplete documentation ancestry read-back');
-                const history=new Set();let previous=base,last=null;
-                for(const commit of comparison.commits) {
-                  if(commit.parents?.length!==1||commit.parents[0].sha!==previous) throw new Error('Nonlinear documentation history');
-                  const changes=await paginated('GET /repos/{owner}/{repo}/commits/{ref}',{ref:commit.sha},'files');
-                  if(changes.length<1||changes.length>4||changes.some(row=>!['added','modified'].includes(row.status)||row.previous_filename!==undefined)) throw new Error('Documentation history contains invalid changes');
-                  for(const row of changes) history.add(row.filename);
-                  previous=commit.sha;last=commit;
-                }
-                if(previous!==pr.head.sha) throw new Error('Documentation head is not the last compared commit');
+                const history=await taskDocumentationHistory(base,pr.head.sha,[...TASK_STATUS_DOCUMENT_PATHS,TASK_STATUS_RECEIPT_PATH]);
                 const mergedUiPullRequest=await prRead(187);
-                const uiComparison=(await github.rest.repos.compareCommitsWithBasehead({owner,repo,basehead:`${receipt.completion_evidence?.merge_sha}...${base}`})).data;
-                const verdict=validateTaskStatusReceipt({mode:'CANDIDATE',receipt,authorization,baseDocuments,targetDocuments,pullRequest:pr,protectedMainSha:base,currentHead:pr.head.sha,mergedUiPullRequest,uiMergeAncestorOfBase:uiComparison.merge_base_commit?.sha===receipt.completion_evidence?.merge_sha,changedPaths:files.map(row=>row.filename),candidateHistoryPaths:[...history],candidateLinearHistory:true,candidateCommittedAfterAuthorization:Date.parse(last?.commit?.committer?.date)>Date.parse(comment.created_at)});
-                return {...verdict,authority_comment_id:comment.id,authority_identity:commentIdentity(comment),authority_url:comment.html_url};
-              } catch(error) {return {status:'FAIL',allowedPaths:[],errors:[error.message]};}
+                const uiComparison=(await github.rest.repos.compareCommitsWithBasehead({owner,repo,basehead:receipt.completion_evidence?.merge_sha+'...'+base})).data;
+                const verdict=validateTaskStatusReceipt({mode:'CANDIDATE',receipt,authorization,baseDocuments,targetDocuments,pullRequest:pr,protectedMainSha:base,currentHead:pr.head.sha,mergedUiPullRequest,uiMergeAncestorOfBase:uiComparison.merge_base_commit?.sha===receipt.completion_evidence?.merge_sha,changedPaths:files.map(row=>row.filename),candidateHistoryPaths:history.paths,candidateLinearHistory:true,candidateCommittedAfterAuthorization:Date.parse(history.last?.commit?.committer?.date)>Date.parse(comment.created_at)});
+                return {...verdict,requested:true,inherited:false,authority_comment_id:comment.id,authority_identity:commentIdentity(comment),authority_url:comment.html_url};
+              } catch(error) {return {status:'FAIL',requested:true,allowedPaths:[],errors:[error.message]};}
             }
             async function taskDocumentationRecheck(documentation) {
               if(documentation?.status!=='PASS') return;

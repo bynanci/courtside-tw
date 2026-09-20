@@ -131,35 +131,53 @@ function taskReceiptContract(body) {
 
 function taskStatusSignatures(text) {
   if (typeof text !== "string") throw new Error("canonical tasks text is missing")
-  const rows = [...text.matchAll(/^- \[([ xX])\] (T\d{3})\b([^\n]*)/gmu)]
+  const lines = text.split("\n")
+  const taskStart = /^- \[([ xX])\] (T\d{3})\b/u
+  const rows = []
+  for (let index = 0; index < lines.length; index++) {
+    const match = lines[index].match(taskStart)
+    if (!match) continue
+    const block = [lines[index]]
+    const pendingBlank = []
+    for (let cursor = index + 1; cursor < lines.length; cursor++) {
+      const line = lines[cursor]
+      if (taskStart.test(line)) break
+      if (/^(?: {2,}|\t)/u.test(line)) {
+        block.push(...pendingBlank, line)
+        pendingBlank.length = 0
+      } else if (line.trim() === "") {
+        pendingBlank.push(line)
+      } else {
+        break
+      }
+    }
+    rows.push({ id: match[2], checked: match[1], text: block.join("\n") })
+  }
   const expectedIds = Array.from({ length: 112 }, (_, i) => `T${String(i + 1).padStart(3, "0")}`)
-  if (
-    !taskReceiptEqual(
-      rows.map((r) => r[2]),
-      expectedIds
-    )
-  )
+  if (!taskReceiptEqual(rows.map((row) => row.id), expectedIds))
     throw new Error("canonical task IDs must remain exactly T001–T112 in order")
   const checkbox = taskReceiptHash(
-    rows.map(([, checked, id]) => `${id}:${checked.toLowerCase() === "x" ? "1" : "0"}`).join("\n")
+    rows.map((row) => `${row.id}:${row.checked.toLowerCase() === "x" ? "1" : "0"}`).join("\n")
   )
   if (checkbox !== "7229c5ad498658144e513f7af91a24b121b91817057e5673d3db3cb62aac73b3")
     throw new Error("canonical checkbox signature must remain 86 complete and 26 pending")
   const definition = taskReceiptHash(
     rows
-      .map(([row, , id]) =>
-        id === "T086"
-          ? row.replace(
-              / Current governance (?:state|read-back) \(\d{4}-\d{2}-\d{2}\):[^\n]*$/u,
-              ""
-            )
-          : row
-      )
+      .map(({ text: row, id }) => {
+        if (id !== "T086") return row
+        const [first, ...continuation] = row.split("\n")
+        return [
+          first.replace(
+            / Current governance (?:state|read-back) \(\d{4}-\d{2}-\d{2}\):[^\n]*$/u,
+            ""
+          ),
+          ...continuation
+        ].join("\n")
+      })
       .join("\n")
   )
   return { checkbox, definition }
 }
-
 function validateTaskStatusReceipt(input = {}) {
   const errors = []
   const need = (ok, reason) => {

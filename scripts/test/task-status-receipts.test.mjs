@@ -291,6 +291,23 @@ test("even a newly authenticated target hash cannot change a canonical definitio
   }
 })
 
+test("task signatures include indented continuation bytes under each task", () => {
+  const f = fixture()
+  const baseline = receiptModule.taskStatusSignatures(f.baseDocuments[tasksPath])
+  const continued = f.baseDocuments[tasksPath].replace(
+    /^- \[ \] T086[^\n]*$/mu,
+    "$&\n  reviewer note: the receipt must bind this continuation"
+  )
+  const changed = receiptModule.taskStatusSignatures(continued)
+  assert.equal(changed.checkbox, baseline.checkbox)
+  assert.notEqual(changed.definition, baseline.definition)
+  f.targetDocuments[tasksPath] = continued
+  authorizeTaskStatusFixture(f)
+  const result = validate(f)
+  assert.equal(result.status, "FAIL")
+  assert.match(result.errors.join("\n"), /definitions/u)
+})
+
 const validate = (options) => {
   assert.equal(
     typeof receiptModule.validateTaskStatusReceipt,

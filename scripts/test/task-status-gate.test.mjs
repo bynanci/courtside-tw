@@ -39,6 +39,30 @@ test("missing or rejected documentation proof preserves the T086 classification"
   }
 })
 
+test("an inherited receipt authenticates only its sealed snapshot and never grants current changed paths", () => {
+  const inherited = { status: "PASS", inherited: true, allowedPaths: [] }
+  assert.equal(
+    sandbox.classifyCandidate(195, [{ filename: "apps/web/app/pages/index.vue", status: "modified" }], 1, inherited),
+    "NOT_APPLICABLE"
+  )
+  assert.equal(
+    sandbox.classifyCandidate(195, [{ filename: "specs/001-taiwan-basketball-magazine-ebook/tasks.md", status: "modified" }], 1, inherited),
+    "T086"
+  )
+})
+
+test("a failed inherited receipt keeps an ordinary descendant in HOLD", () => {
+  assert.equal(
+    sandbox.classifyCandidate(
+      195,
+      [{ filename: "apps/web/app/pages/index.vue", status: "modified" }],
+      1,
+      { status: "FAIL", requested: true, allowedPaths: [] }
+    ),
+    "UNKNOWN"
+  )
+})
+
 test("documentation verdict cannot exempt release files, arbitrary scope, renames or incomplete pagination", () => {
   const verdict = { status: "PASS", allowedPaths: docs }
   for (const filename of [
