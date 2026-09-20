@@ -7,6 +7,7 @@ import { fileURLToPath, pathToFileURL } from "node:url"
 import { isDeepStrictEqual } from "node:util"
 import typescriptPlugin from "prettier/plugins/typescript"
 import YAML from "yaml"
+import { inspectTaskReceiptPolicy, validateTaskReceiptPolicy } from "./task-status-receipts.mjs"
 
 import {
   T086_AUTHORIZED_BASE_SHA,
@@ -11473,6 +11474,7 @@ function validateAcceptedSnapshots({
   postT085RemediationScopeActive,
   post169GovernanceAuthorizationAccepted,
   exactAndroidNativeSurfaceProtectedPushAccepted,
+  taskReceiptPolicy = null,
   requireAuditedScope,
   errors
 }) {
@@ -11495,13 +11497,18 @@ function validateAcceptedSnapshots({
     errors.push("traceability must match the accepted implementation snapshot")
   }
 
-  const expectedCurrentTasksSha = exactAndroidNativeSurfaceProtectedPushAccepted
-    ? frozenT085CompletedTasksSha256
-    : state === t085States.PENDING
-      ? acceptedPendingTasksSha256
-      : acceptedCompletedTasksSha256
-  const expectedBaseTasksSha =
-    post169GovernanceAuthorizationAccepted || exactAndroidNativeSurfaceProtectedPushAccepted
+  const receiptSnapshotAccepted =
+    taskReceiptPolicy?.status === "PASS" && taskReceiptPolicy.mode !== "BOOTSTRAP"
+  const expectedCurrentTasksSha = receiptSnapshotAccepted
+    ? taskReceiptPolicy.targetTasksSha256
+    : exactAndroidNativeSurfaceProtectedPushAccepted
+      ? frozenT085CompletedTasksSha256
+      : state === t085States.PENDING
+        ? acceptedPendingTasksSha256
+        : acceptedCompletedTasksSha256
+  const expectedBaseTasksSha = receiptSnapshotAccepted
+    ? taskReceiptPolicy.baseTasksSha256
+    : post169GovernanceAuthorizationAccepted || exactAndroidNativeSurfaceProtectedPushAccepted
       ? acceptedCompletedTasksSha256 === ACCEPTED_COMPLETED_TASKS_SHA256
         ? frozenT085CompletedTasksSha256
         : acceptedCompletedTasksSha256
@@ -11595,6 +11602,7 @@ export function validateTraceability({
   mediaArchiveAuthorizationReadback = null,
   oidcSecurityRemediationAuthorizationReadback = null,
   arenaEditorialV3AuthorizationReadback = null,
+  taskReceiptPolicyReadback = null,
   gitBinding = null,
   changedPaths = null,
   changeBaseSha = REVIEW_BASE_SHA,
@@ -11643,6 +11651,39 @@ export function validateTraceability({
     ? readText(root, paths.completionReceipt, errors, "T085 completion receipt")
     : null
   const state = classifyT085State(changeBaseTasksText, tasksText)
+  const taskReceiptPolicy = validateTaskReceiptPolicy(taskReceiptPolicyReadback, {
+    currentHead,
+    changeBaseSha,
+    changedPaths,
+    tasksText,
+    changeBaseTasksText,
+    gitBinding
+  })
+  if (taskReceiptPolicy.status === "FAIL") errors.push(...taskReceiptPolicy.errors)
+  const taskReceiptPolicyAccepted =
+    state === t085States.COMPLETE_STEADY && taskReceiptPolicy.status === "PASS"
+  const taskReceiptCandidateAccepted =
+    taskReceiptPolicyAccepted && ["CANDIDATE", "RECEIPT_PUSH"].includes(taskReceiptPolicy.mode)
+  if (
+    taskReceiptPolicyAccepted &&
+    requireExactHeadEvidence &&
+    !isAuthenticatedGitHubActionsContext(githubActionsContext)
+  ) {
+    errors.push("task-status receipt requires authenticated exact-head Actions metadata")
+  }
+  if (
+    taskReceiptPolicyAccepted &&
+    requireExactHeadEvidence &&
+    (githubActionsContext?.source_head_sha !== currentHead ||
+      githubActionsContext?.source_base_sha !== changeBaseSha ||
+      (taskReceiptPolicy.mode === "CANDIDATE" &&
+        (githubActionsContext?.authority !== "PULL_REQUEST" ||
+          githubActionsContext?.pull_request_number !==
+            taskReceiptPolicyReadback.input.pullRequest.number)) ||
+      (taskReceiptPolicy.mode === "RECEIPT_PUSH" &&
+        githubActionsContext?.authority !== "PROTECTED_MAIN_PUSH"))
+  )
+    errors.push("task-status receipt Actions event does not bind the evaluated receipt")
   const t086ScopeRequested =
     state === t085States.COMPLETE_STEADY &&
     changeBaseSha === T086_AUTHORIZED_BASE_SHA &&
@@ -11703,6 +11744,7 @@ export function validateTraceability({
   })
   const post169GovernanceAuthorizationRequested =
     state === t085States.COMPLETE_STEADY &&
+    !taskReceiptCandidateAccepted &&
     ((Array.isArray(changedPaths) &&
       changedPaths.some((changedPath) =>
         ["README.md", "specs/001-taiwan-basketball-magazine-ebook/tasks.md"].includes(changedPath)
@@ -11719,6 +11761,7 @@ export function validateTraceability({
   })
   const requiredGateAuthorizationRequested =
     state === t085States.COMPLETE_STEADY &&
+    !(taskReceiptPolicyAccepted && taskReceiptPolicy.mode === "BOOTSTRAP") &&
     (changedPaths?.includes(REQUIRED_GATE_AUTHORIZED_PATHS[0]) ||
       githubActionsContext?.source_ref === REQUIRED_GATE_BRANCH)
   let requiredGateAuthorizationAccepted = false
@@ -12075,6 +12118,7 @@ export function validateTraceability({
       for (const changedPath of changedPaths ?? []) {
         if (
           !isAuthorizedPostT085MaintenancePath(changedPath) &&
+          !(taskReceiptPolicyAccepted && taskReceiptPolicy.allowedPaths.includes(changedPath)) &&
           !(
             requiredGateAuthorizationAccepted &&
             REQUIRED_GATE_AUTHORIZED_PATHS.includes(changedPath)
@@ -12142,7 +12186,7 @@ export function validateTraceability({
           errors.push("post-169 governance README must match the exact current HOLD state")
         }
       }
-    } else if (tasksText !== changeBaseTasksText) {
+    } else if (!taskReceiptCandidateAccepted && tasksText !== changeBaseTasksText) {
       errors.push("completed T085 must preserve base tasks.md byte-for-byte")
     }
     if (traceabilityText !== changeBaseTraceabilityText) {
@@ -12235,6 +12279,7 @@ export function validateTraceability({
     postT085RemediationScopeActive,
     post169GovernanceAuthorizationAccepted,
     exactAndroidNativeSurfaceProtectedPushAccepted,
+    taskReceiptPolicy: taskReceiptPolicyAccepted ? taskReceiptPolicy : null,
     requireAuditedScope,
     errors
   })
@@ -12667,6 +12712,13 @@ export function validateTraceability({
     analysis_valid: analysisValid,
     receipt_eligible: receiptEligible,
     external_readback_required: externalReadbackRequired,
+    task_status_receipt_policy: {
+      status: taskReceiptPolicy.status,
+      mode: taskReceiptPolicy.mode,
+      authorization_ref: taskReceiptPolicyReadback?.input?.authorization?.html_url ?? null,
+      base_tasks_sha256: taskReceiptPolicy.baseTasksSha256 ?? null,
+      target_tasks_sha256: taskReceiptPolicy.targetTasksSha256 ?? null
+    },
     source: {
       repository: contract?.repository ?? "bynanci/courtside-tw",
       authorized_base_sha: contract?.authorized_base_sha ?? dispatch?.base?.sha ?? null,
@@ -13026,6 +13078,10 @@ export function validateTraceability({
                     : changedPaths.filter(
                         (changedPath) =>
                           !isAuthorizedPostT085MaintenancePath(changedPath) &&
+                          !(
+                            taskReceiptPolicyAccepted &&
+                            taskReceiptPolicy.allowedPaths.includes(changedPath)
+                          ) &&
                           !(
                             requiredGateAuthorizationAccepted &&
                             REQUIRED_GATE_AUTHORIZED_PATHS.includes(changedPath)
@@ -14343,6 +14399,7 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
     ? arenaEditorialV3Gate.inspect(root, { environment })
     : null
   const isGitHubActions = environment.GITHUB_ACTIONS === "true"
+  const taskReceiptPolicyReadback = inspectTaskReceiptPolicy(root, { inspection, environment })
   const report = validateTraceability({
     root,
     currentHead: inspection.head,
@@ -14362,6 +14419,7 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
     mediaArchiveAuthorizationReadback,
     oidcSecurityRemediationAuthorizationReadback,
     arenaEditorialV3AuthorizationReadback,
+    taskReceiptPolicyReadback,
     gitBinding: {
       status: inspection.status,
       head: inspection.head,
