@@ -23,3 +23,29 @@ test("reader BFF rejects traversal, arbitrary self paths and privileged routes",
   assert.equal(isAllowedReaderPath("admin/users"), false)
   assert.equal(isAllowedReaderPath("me/bookmarks/not-a-uuid"), false)
 })
+
+test("passport claims and OIDC wallet links have explicit bounded BFF routes", () => {
+  for (const route of [
+    "me/passport",
+    "me/passport/claims",
+    `me/passport/${ARTICLE_ID}/credential`,
+    "auth/siwe/challenge",
+    "auth/siwe/verify",
+    "me/wallets/eip155/0x0000000000000000000000000000000000000001"
+  ]) {
+    assert.equal(isAllowedReaderPath(route), true, route)
+  }
+})
+
+test("passport route additions reject arbitrary identity, chain and publisher operations", () => {
+  for (const route of [
+    "auth/siwe/session",
+    "auth/siwe/../admin",
+    "me/wallets/eip155:1/0x0000000000000000000000000000000000000001",
+    "me/wallets/eip155/not-an-address",
+    `publisher/passport/${ARTICLE_ID}/status`,
+    `me/passport/${ARTICLE_ID}/status`
+  ]) {
+    assert.equal(isAllowedReaderPath(route), false, route)
+  }
+})

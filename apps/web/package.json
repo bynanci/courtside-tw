@@ -13,9 +13,9 @@
     "dev:demo": "node scripts/start-reader-demo.mjs",
     "lint": "eslint --max-warnings=0 .",
     "build": "nuxt build",
-    "test": "node --experimental-strip-types --test tests/integration/*.test.ts tests/unit/*.test.ts tests/unit/reader/*.test.ts tests/unit/analytics/*.test.ts tests/component/content-blocks/*.test.ts tests/component/reader/*.test.ts tests/component/studio/issues/*.test.ts tests/component/studio/media/*.test.ts",
+    "test": "node --experimental-strip-types --test tests/integration/*.test.ts tests/unit/*.test.ts tests/unit/reader/*.test.ts tests/unit/analytics/*.test.ts tests/component/content-blocks/*.test.ts tests/component/reader/*.test.ts tests/component/studio/issues/*.test.ts tests/component/studio/media/*.test.ts tests/unit/wallet/*.test.ts tests/unit/provenance/*.test.ts tests/unit/passport/*.test.ts",
     "test:demo": "node scripts/verify-reader-demo.mjs",
-    "test:e2e": "playwright test",
+    "test:e2e": "playwright test && playwright test --config playwright.wallet.config.ts",
     "test:us1": "playwright test tests/e2e/us1-browse-issue.spec.ts",
     "test:us2": "playwright test tests/e2e/us2-no-js.spec.ts tests/e2e/us2-read-article.spec.ts tests/e2e/us2-reduced-motion.spec.ts tests/e2e/us2-read-article.a11y.spec.ts tests/e2e/us2-creative-lifecycle.spec.ts tests/e2e/t079-creative-background.spec.ts",
     "test:us4": "playwright test tests/e2e/us4-search.spec.ts tests/e2e/us4-taxonomy.spec.ts",
@@ -38,7 +38,8 @@
     "jose": "6.2.4",
     "nuxt": "4.5.1",
     "p5": "2.3.0",
-    "vue": "3.5.41"
+    "vue": "3.5.41",
+    "@courtside/web3-adapter": "workspace:*"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.12.1",

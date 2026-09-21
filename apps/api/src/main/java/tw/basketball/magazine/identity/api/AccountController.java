@@ -40,6 +40,7 @@ public final class AccountController {
 
     private final Supplier<AccountDataService> serviceResolver;
     private volatile AccountDataService resolvedService;
+    private org.springframework.beans.factory.ObjectProvider<tw.basketball.magazine.identity.application.AccountLifecycleParticipant> lifecycleProvider;
 
     /**
      * Resolves persistence lazily because component scanning precedes JDBC
@@ -51,8 +52,10 @@ public final class AccountController {
             ObjectProvider<JdbcTemplate> jdbcTemplateProvider,
             ObjectProvider<PlatformTransactionManager> transactionManagerProvider,
             ObjectProvider<AuditWriter> auditWriterProvider,
-            ObjectProvider<ObjectMapper> objectMapperProvider
+            ObjectProvider<ObjectMapper> objectMapperProvider,
+            ObjectProvider<tw.basketball.magazine.identity.application.AccountLifecycleParticipant> lifecycleProvider
     ) {
+        this.lifecycleProvider = Objects.requireNonNull(lifecycleProvider, "lifecycleProvider");
         Objects.requireNonNull(serviceProvider, "serviceProvider");
         Objects.requireNonNull(jdbcTemplateProvider, "jdbcTemplateProvider");
         Objects.requireNonNull(transactionManagerProvider, "transactionManagerProvider");
@@ -147,7 +150,8 @@ public final class AccountController {
                 jdbcTemplate,
                 transactionManager,
                 auditWriter,
-                ApplicationClock.systemUtc()
+                ApplicationClock.systemUtc(),
+                lifecycleProvider.getObject()
         );
         resolvedService = created;
         return created;

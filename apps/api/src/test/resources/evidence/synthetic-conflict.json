@@ -1,0 +1,77 @@
+{
+  "schemaVersion": 1,
+  "synthetic": true,
+  "scenario": "Two synthetic contradictory snapshots; unknown publication dates remain unknown",
+  "sources": [
+    {
+      "id": "00000000-0000-4000-8000-000000000321",
+      "type": "LEAGUE",
+      "name": "Synthetic source 0",
+      "sourceUrl": "https://example.invalid/source-0",
+      "publicReferenceAllowed": true
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000322",
+      "type": "LEAGUE",
+      "name": "Synthetic source 1",
+      "sourceUrl": "https://example.invalid/source-1",
+      "publicReferenceAllowed": true
+    }
+  ],
+  "snapshots": [
+    {
+      "id": "00000000-0000-4000-8000-000000000353",
+      "sourceId": "00000000-0000-4000-8000-000000000321",
+      "sourceUrl": "https://example.invalid/source-0",
+      "retrievedAt": "2026-01-01T00:00:00Z",
+      "publishedAt": "UNKNOWN",
+      "content": "Synthetic conflicting team claim 0",
+      "sha256": "66b632eba25e003df2b006e140755296e2afade2a37b11cd32e16ddf0542f339",
+      "rightsReference": "synthetic-fixture-only"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000354",
+      "sourceId": "00000000-0000-4000-8000-000000000322",
+      "sourceUrl": "https://example.invalid/source-1",
+      "retrievedAt": "2026-01-01T00:00:00Z",
+      "publishedAt": "UNKNOWN",
+      "content": "Synthetic conflicting team claim 1",
+      "sha256": "81195c2e0f1e384ac053028525000088113f0d2f25cc0016b3eb30f0078df17e",
+      "rightsReference": "synthetic-fixture-only"
+    }
+  ],
+  "references": [
+    {
+      "id": "00000000-0000-4000-8000-000000000385",
+      "sourceId": "00000000-0000-4000-8000-000000000321",
+      "sourceType": "LEAGUE",
+      "sourceUrl": "https://example.invalid/source-0",
+      "retrievedAt": "2026-01-01T00:00:00Z",
+      "publishedAt": "UNKNOWN",
+      "effectiveAt": "2026-01-01T00:00:00Z",
+      "confidence": 0.8,
+      "status": "REPORTED",
+      "freshness": "fresh",
+      "snapshotId": "00000000-0000-4000-8000-000000000353",
+      "staleAt": "2026-01-02T00:00:00Z",
+      "expiresAt": "2026-01-03T00:00:00Z",
+      "note": "Synthetic conflict retained; requires human adjudication"
+    },
+    {
+      "id": "00000000-0000-4000-8000-000000000386",
+      "sourceId": "00000000-0000-4000-8000-000000000322",
+      "sourceType": "LEAGUE",
+      "sourceUrl": "https://example.invalid/source-1",
+      "retrievedAt": "2026-01-01T00:00:00Z",
+      "publishedAt": "UNKNOWN",
+      "effectiveAt": "2026-01-01T00:00:00Z",
+      "confidence": 0.8,
+      "status": "REPORTED",
+      "freshness": "fresh",
+      "snapshotId": "00000000-0000-4000-8000-000000000354",
+      "staleAt": "2026-01-02T00:00:00Z",
+      "expiresAt": "2026-01-03T00:00:00Z",
+      "note": "Synthetic conflict retained; requires human adjudication"
+    }
+  ]
+}

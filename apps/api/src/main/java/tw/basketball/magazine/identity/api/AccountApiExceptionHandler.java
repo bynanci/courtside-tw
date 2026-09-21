@@ -19,7 +19,8 @@ import tw.basketball.magazine.shared.ProblemDetailsMapper;
 import tw.basketball.magazine.shared.RequestId;
 
 /** Stable RFC 9457 mapping for account-data operations. */
-@RestControllerAdvice(assignableTypes = AccountController.class)
+@RestControllerAdvice(assignableTypes = {AccountController.class,
+        tw.basketball.magazine.fanpassport.api.FanPassportController.class})
 public final class AccountApiExceptionHandler {
     private static final String REQUEST_ID_HEADER = "X-Request-Id";
 

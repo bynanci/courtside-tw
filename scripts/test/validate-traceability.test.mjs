@@ -7654,6 +7654,25 @@ test("an exact unfiltered Playwright runner remains attributable proof", () => {
   assert.equal(report.status, "PASS", report.errors.join("\n"))
 })
 
+test("a standard Playwright run followed by the wallet suite remains attributable proof", () => {
+  const root = makeFixture(({ contract, files }) => {
+    const proofPath = "apps/web/tests/e2e/fixture-proof.spec.ts"
+    contract.requirements[0].proofs[0].path = proofPath
+    files[proofPath] = 'import { test } from "@playwright/test"\ntest("fixture-proof", () => {})\n'
+    files["apps/web/package.json"] = JSON.stringify({
+      private: true,
+      scripts: {
+        "test:e2e": "playwright test && playwright test --config playwright.wallet.config.ts"
+      }
+    })
+    files["apps/web/playwright.config.ts"] = 'export default { testDir: "./tests/e2e" }\n'
+    files[".github/workflows/ci.yml"] =
+      "jobs:\n  verify:\n    steps:\n      - run: pnpm --filter @courtside/web run test:e2e\n"
+  })
+  const report = run(root)
+  assert.equal(report.status, "PASS", report.errors.join("\n"))
+})
+
 test("a Playwright workflow comment cannot select proof", () => {
   const root = makeFixture(({ contract, files }) => {
     const proofPath = "apps/web/tests/e2e/fixture-proof.spec.ts"

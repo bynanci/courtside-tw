@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test"
+import { expect, test, type Page } from "@playwright/test"
 
 const OPENING_ARTICLE_ID = "0190f7b0-7c4b-7e3a-8f12-123456789abd"
 const OPENING_REVISION_ID = "0190f7b0-7c4b-7e3a-8f12-123456789ab1"
@@ -8,7 +8,104 @@ function progressKey(kind: "index" | "record" | "slug", ...segments: string[]): 
   return `courtside.reader.progress:v1:${kind}:${segments.map(encodeURIComponent).join(":")}`
 }
 
+async function loginReader(page: Page, returnTo: string): Promise<void> {
+  const loginPath = `/auth/login?returnTo=${encodeURIComponent(returnTo)}`
+  let response = await page.goto(loginPath)
+  if (response?.status() === 429) {
+    expect(await response.json()).toMatchObject({
+      status: 429,
+      code: "RATE_LIMITED",
+      instance: "/auth/login"
+    })
+    const retryAfter = response.headers()["retry-after"]
+    expect(retryAfter).toMatch(/^[1-9]\d?$/)
+    const seconds = Number(retryAfter)
+    expect(seconds).toBeGreaterThanOrEqual(1)
+    expect(seconds).toBeLessThanOrEqual(60)
+    test.setTimeout(Math.min(120_000, test.info().timeout + seconds * 1000))
+    await test.info().attach("reader-login-rate-limit", {
+      contentType: "application/json",
+      body: Buffer.from(
+        JSON.stringify({
+          route: "/auth/login",
+          status: 429,
+          retryAfterSeconds: seconds,
+          plannedRetries: 1
+        })
+      )
+    })
+    // Test contexts share the real socket quota. Honor one observed expiry.
+    response = await test.step("Honor the observed login Retry-After once", async () => {
+      await page.waitForTimeout(seconds * 1000)
+      return page.goto(loginPath)
+    })
+  }
+  expect(response?.ok()).toBe(true)
+  const session = await page.evaluate(async () => {
+    const result = await fetch("/auth/session", { credentials: "same-origin" })
+    return { status: result.status, body: await result.json() }
+  })
+  expect(session.status).toBe(200)
+  expect(session.body).toMatchObject({
+    authenticated: true,
+    roles: expect.arrayContaining(["READER"])
+  })
+}
+
 test.describe("US5 reader library", () => {
+  test("reader login honors one observed Retry-After before checking the session", async ({
+    page
+  }) => {
+    let attempts = 0
+    const observed: number[] = []
+    await page.route("**/auth/login?*", (route) => {
+      attempts++
+      observed.push(Date.now())
+      if (attempts === 1)
+        return route.fulfill({
+          status: 429,
+          headers: { "retry-after": "1" },
+          json: { status: 429, code: "RATE_LIMITED", instance: "/auth/login" }
+        })
+      return route.fulfill({
+        status: 200,
+        contentType: "text/html",
+        body: "<html><body>Login fixture</body></html>"
+      })
+    })
+    // These controlled responses exercise retry policy; the cases below use real OIDC login.
+    await page.route("**/auth/session", (route) =>
+      route.fulfill({
+        status: 200,
+        json: { authenticated: true, roles: ["READER"] }
+      })
+    )
+    await loginReader(page, "/library")
+    expect(attempts).toBe(2)
+    expect(observed[1]! - observed[0]!).toBeGreaterThanOrEqual(1000)
+    const session = await page.evaluate(async () =>
+      (await fetch("/auth/session", { credentials: "same-origin" })).json()
+    )
+    expect(session).toMatchObject({
+      authenticated: true,
+      roles: expect.arrayContaining(["READER"])
+    })
+  })
+
+  test("reader login rejects a terminal second rate-limit response", async ({ page }) => {
+    let attempts = 0
+    await page.route("**/auth/login?*", (route) => {
+      attempts++
+      return route.fulfill({
+        status: 429,
+        headers: { "retry-after": "1" },
+        json: { status: 429, code: "RATE_LIMITED", instance: "/auth/login" }
+      })
+    })
+    await expect(loginReader(page, "/library")).rejects.toThrow()
+    expect(attempts).toBe(2)
+  })
+
   test("exposes the deterministic reader-library fixture contract", async ({ request }) => {
     const reset = await request.post("http://127.0.0.1:4010/test/reader-library/reset")
     expect(reset.status()).toBe(204)
@@ -62,12 +159,12 @@ test.describe("US5 reader library", () => {
     const firstPage = await firstDevice.newPage()
     const secondPage = await secondDevice.newPage()
 
-    await firstPage.goto("/auth/login?returnTo=%2Farticles%2Fopening-night")
+    await loginReader(firstPage, "/articles/opening-night")
     await firstPage.goto("/articles/opening-night", { waitUntil: "domcontentloaded" })
     await firstPage.getByTestId("bookmark-toggle").click()
     await expect(firstPage.getByTestId("bookmark-toggle")).toHaveAttribute("aria-pressed", "true")
 
-    await secondPage.goto("/auth/login?returnTo=%2Flibrary")
+    await loginReader(secondPage, "/library")
     await secondPage.goto("/library", { waitUntil: "domcontentloaded" })
     await expect(
       secondPage.getByTestId("library-bookmark").filter({ hasText: "Opening Night" })
@@ -122,7 +219,7 @@ test.describe("US5 reader library", () => {
     )
     const page = await context.newPage()
 
-    await page.goto("/auth/login?returnTo=%2Farticles%2Fopening-night")
+    await loginReader(page, "/articles/opening-night")
     await page.goto("/articles/opening-night", { waitUntil: "domcontentloaded" })
     await expect(page.getByTestId("bookmark-toggle")).toBeVisible()
 
@@ -142,7 +239,7 @@ test.describe("US5 reader library", () => {
     await expect(page.getByTestId("bookmark-toggle")).toHaveCount(0)
     await expect(page.getByTestId("reader-resume")).toBeVisible()
 
-    await page.goto("/auth/login?returnTo=%2Farticles%2Fopening-night")
+    await loginReader(page, "/articles/opening-night")
     await context.clearCookies()
     await page.goto("/articles/opening-night", { waitUntil: "domcontentloaded" })
     await expect(page.getByTestId("bookmark-toggle")).toHaveCount(0)
@@ -210,33 +307,7 @@ test.describe("US5 reader library", () => {
     )
     expect(reset.ok()).toBeTruthy()
 
-    const loginPath = "/auth/login?returnTo=%2Flibrary"
-    let loginResponse = await page.goto(loginPath)
-    if (loginResponse?.status() === 429) {
-      expect(await loginResponse.json()).toMatchObject({
-        status: 429,
-        code: "RATE_LIMITED",
-        instance: "/auth/login"
-      })
-      const retryAfter = loginResponse.headers()["retry-after"]
-      expect(retryAfter).toMatch(/^[1-9]\d?$/)
-      const retryAfterSeconds = Number(retryAfter)
-      expect(retryAfterSeconds).toBeGreaterThanOrEqual(1)
-      expect(retryAfterSeconds).toBeLessThanOrEqual(60)
-      // The shared socket's production quota spans test contexts. Honor its
-      // observed expiry once; preserve both the limiter and withdrawal checks.
-      await page.waitForTimeout(retryAfterSeconds * 1000)
-      loginResponse = await page.goto(loginPath)
-    }
-    expect(loginResponse?.ok()).toBe(true)
-    // Chromium sends Secure __Host cookies on trusted loopback HTTP; the
-    // separate API request client does not. Verify the browser's own session.
-    const session = await page.evaluate(async () => {
-      const response = await fetch("/auth/session", { credentials: "same-origin" })
-      return { status: response.status, body: await response.json() }
-    })
-    expect(session.status).toBe(200)
-    expect(session.body).toMatchObject({ authenticated: true })
+    await loginReader(page, "/library")
     await page.goto("/library", { waitUntil: "domcontentloaded" })
 
     await expect(page.getByTestId("library-unavailable")).toBeVisible()

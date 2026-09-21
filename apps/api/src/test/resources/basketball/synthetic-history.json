@@ -1,0 +1,467 @@
+{
+  "schemaVersion": 1,
+  "synthetic": true,
+  "scenario": "Synthetic TPBL / P. LEAGUE+ / PLG / SBL contract scenarios, not live league facts",
+  "records": [
+    {
+      "type": "League",
+      "id": "00000000-0000-4000-8000-000000000001",
+      "lifecycle": "ACTIVE",
+      "aliases": [
+        {
+          "id": "00000000-0000-4000-8000-000000000065",
+          "ownerId": "00000000-0000-4000-8000-000000000001",
+          "name": "Synthetic TPBL",
+          "locale": "zh-TW",
+          "period": {
+            "startDate": "2026-01-01",
+            "endDate": "2027-01-01"
+          },
+          "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+        }
+      ],
+      "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+    },
+    {
+      "type": "Season",
+      "id": "00000000-0000-4000-8000-000000000015",
+      "leagueId": "00000000-0000-4000-8000-000000000001",
+      "officialLabel": "Synthetic 2026 season",
+      "period": {
+        "startDate": "2026-01-01",
+        "endDate": "2027-01-01"
+      },
+      "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+    },
+    {
+      "type": "League",
+      "id": "00000000-0000-4000-8000-000000000002",
+      "lifecycle": "ACTIVE",
+      "aliases": [
+        {
+          "id": "00000000-0000-4000-8000-000000000066",
+          "ownerId": "00000000-0000-4000-8000-000000000002",
+          "name": "Synthetic P. LEAGUE+",
+          "locale": "zh-TW",
+          "period": {
+            "startDate": "2026-01-01",
+            "endDate": "2027-01-01"
+          },
+          "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+        },
+        {
+          "id": "00000000-0000-4000-8000-00000000006e",
+          "ownerId": "00000000-0000-4000-8000-000000000002",
+          "name": "Synthetic PLG",
+          "locale": "zh-TW",
+          "period": {
+            "startDate": "2026-01-01",
+            "endDate": "2027-01-01"
+          },
+          "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+        }
+      ],
+      "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+    },
+    {
+      "type": "Season",
+      "id": "00000000-0000-4000-8000-000000000016",
+      "leagueId": "00000000-0000-4000-8000-000000000002",
+      "officialLabel": "Synthetic 2026 season",
+      "period": {
+        "startDate": "2026-01-01",
+        "endDate": "2027-01-01"
+      },
+      "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+    },
+    {
+      "type": "League",
+      "id": "00000000-0000-4000-8000-000000000003",
+      "lifecycle": "ACTIVE",
+      "aliases": [
+        {
+          "id": "00000000-0000-4000-8000-000000000067",
+          "ownerId": "00000000-0000-4000-8000-000000000003",
+          "name": "Synthetic SBL",
+          "locale": "zh-TW",
+          "period": {
+            "startDate": "2026-01-01",
+            "endDate": "2027-01-01"
+          },
+          "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+        }
+      ],
+      "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+    },
+    {
+      "type": "Season",
+      "id": "00000000-0000-4000-8000-000000000017",
+      "leagueId": "00000000-0000-4000-8000-000000000003",
+      "officialLabel": "Synthetic 2026 season",
+      "period": {
+        "startDate": "2026-01-01",
+        "endDate": "2027-01-01"
+      },
+      "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+    },
+    {
+      "type": "Team",
+      "id": "00000000-0000-4000-8000-000000000004",
+      "lifecycle": "DISSOLVED",
+      "aliases": [
+        {
+          "id": "00000000-0000-4000-8000-000000000068",
+          "ownerId": "00000000-0000-4000-8000-000000000004",
+          "name": "Synthetic Former Team",
+          "locale": "zh-TW",
+          "period": {
+            "startDate": "2026-01-01",
+            "endDate": "2026-07-01"
+          },
+          "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+        },
+        {
+          "id": "00000000-0000-4000-8000-000000000069",
+          "ownerId": "00000000-0000-4000-8000-000000000004",
+          "name": "Synthetic Renamed Team",
+          "locale": "zh-TW",
+          "period": {
+            "startDate": "2026-07-01",
+            "endDate": "2027-01-01"
+          },
+          "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+        }
+      ],
+      "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+    },
+    {
+      "type": "Team",
+      "id": "00000000-0000-4000-8000-000000000005",
+      "lifecycle": "ACTIVE",
+      "aliases": [
+        {
+          "id": "00000000-0000-4000-8000-00000000006a",
+          "ownerId": "00000000-0000-4000-8000-000000000005",
+          "name": "Synthetic Overseas Team",
+          "locale": "zh-TW",
+          "period": {
+            "startDate": "2026-01-01",
+            "endDate": "2027-01-01"
+          },
+          "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+        }
+      ],
+      "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+    },
+    {
+      "type": "Player",
+      "id": "00000000-0000-4000-8000-000000000006",
+      "aliases": [
+        {
+          "id": "00000000-0000-4000-8000-00000000006a",
+          "ownerId": "00000000-0000-4000-8000-000000000006",
+          "name": "Synthetic Same Name",
+          "locale": "zh-TW",
+          "period": {
+            "startDate": "2026-01-01",
+            "endDate": "2027-01-01"
+          },
+          "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+        }
+      ],
+      "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+    },
+    {
+      "type": "Player",
+      "id": "00000000-0000-4000-8000-000000000007",
+      "aliases": [
+        {
+          "id": "00000000-0000-4000-8000-00000000006b",
+          "ownerId": "00000000-0000-4000-8000-000000000007",
+          "name": "Synthetic Same Name",
+          "locale": "zh-TW",
+          "period": {
+            "startDate": "2026-01-01",
+            "endDate": "2027-01-01"
+          },
+          "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+        }
+      ],
+      "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+    },
+    {
+      "type": "TeamSeason",
+      "id": "00000000-0000-4000-8000-00000000001f",
+      "teamId": "00000000-0000-4000-8000-000000000004",
+      "leagueId": "00000000-0000-4000-8000-000000000001",
+      "seasonId": "00000000-0000-4000-8000-000000000015",
+      "status": "JOINED",
+      "period": {
+        "startDate": "2026-01-01",
+        "endDate": "2026-06-01"
+      },
+      "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+    },
+    {
+      "type": "TeamSeason",
+      "id": "00000000-0000-4000-8000-000000000020",
+      "teamId": "00000000-0000-4000-8000-000000000004",
+      "leagueId": "00000000-0000-4000-8000-000000000001",
+      "seasonId": "00000000-0000-4000-8000-000000000015",
+      "status": "EXITED",
+      "period": {
+        "startDate": "2026-06-01",
+        "endDate": "2026-07-01"
+      },
+      "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+    },
+    {
+      "type": "TeamSeason",
+      "id": "00000000-0000-4000-8000-000000000021",
+      "teamId": "00000000-0000-4000-8000-000000000004",
+      "leagueId": "00000000-0000-4000-8000-000000000002",
+      "seasonId": "00000000-0000-4000-8000-000000000016",
+      "status": "TRANSFERRED",
+      "period": {
+        "startDate": "2026-07-01",
+        "endDate": "2026-08-01"
+      },
+      "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+    },
+    {
+      "type": "TeamSeason",
+      "id": "00000000-0000-4000-8000-000000000022",
+      "teamId": "00000000-0000-4000-8000-000000000004",
+      "leagueId": "00000000-0000-4000-8000-000000000002",
+      "seasonId": "00000000-0000-4000-8000-000000000016",
+      "status": "ACTIVE",
+      "period": {
+        "startDate": "2026-08-01",
+        "endDate": "2026-11-01"
+      },
+      "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+    },
+    {
+      "type": "TeamSeason",
+      "id": "00000000-0000-4000-8000-000000000023",
+      "teamId": "00000000-0000-4000-8000-000000000004",
+      "leagueId": "00000000-0000-4000-8000-000000000002",
+      "seasonId": "00000000-0000-4000-8000-000000000016",
+      "status": "DISSOLVED",
+      "period": {
+        "startDate": "2026-11-01",
+        "endDate": "2027-01-01"
+      },
+      "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+    },
+    {
+      "type": "TeamSeason",
+      "id": "00000000-0000-4000-8000-000000000024",
+      "teamId": "00000000-0000-4000-8000-000000000005",
+      "leagueId": "00000000-0000-4000-8000-000000000003",
+      "seasonId": "00000000-0000-4000-8000-000000000017",
+      "status": "ACTIVE",
+      "period": {
+        "startDate": "2026-01-01",
+        "endDate": "2027-01-01"
+      },
+      "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+    },
+    {
+      "type": "PlayerTeamStint",
+      "id": "00000000-0000-4000-8000-000000000029",
+      "playerId": "00000000-0000-4000-8000-000000000006",
+      "teamId": "00000000-0000-4000-8000-000000000004",
+      "leagueId": "00000000-0000-4000-8000-000000000001",
+      "seasonId": "00000000-0000-4000-8000-000000000015",
+      "period": {
+        "startDate": "2026-01-01",
+        "endDate": "2026-05-01"
+      },
+      "status": "ACTIVE",
+      "countryCode": "TW",
+      "system": "PRO",
+      "role": null,
+      "minutesPerGame": null,
+      "tacticalPosition": null,
+      "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+    },
+    {
+      "type": "PlayerTeamStint",
+      "id": "00000000-0000-4000-8000-00000000002a",
+      "playerId": "00000000-0000-4000-8000-000000000006",
+      "teamId": "00000000-0000-4000-8000-000000000005",
+      "leagueId": "00000000-0000-4000-8000-000000000003",
+      "seasonId": "00000000-0000-4000-8000-000000000017",
+      "period": {
+        "startDate": "2026-05-01",
+        "endDate": "2026-08-01"
+      },
+      "status": "ACTIVE",
+      "countryCode": "JP",
+      "system": "PRO",
+      "role": null,
+      "minutesPerGame": null,
+      "tacticalPosition": null,
+      "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+    },
+    {
+      "type": "PlayerTeamStint",
+      "id": "00000000-0000-4000-8000-00000000002b",
+      "playerId": "00000000-0000-4000-8000-000000000006",
+      "teamId": "00000000-0000-4000-8000-000000000005",
+      "leagueId": "00000000-0000-4000-8000-000000000003",
+      "seasonId": "00000000-0000-4000-8000-000000000017",
+      "period": {
+        "startDate": "2026-08-01",
+        "endDate": "2026-09-01"
+      },
+      "status": "ACTIVE",
+      "countryCode": "US",
+      "system": "NCAA",
+      "role": null,
+      "minutesPerGame": null,
+      "tacticalPosition": null,
+      "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+    },
+    {
+      "type": "PlayerTeamStint",
+      "id": "00000000-0000-4000-8000-00000000002c",
+      "playerId": "00000000-0000-4000-8000-000000000006",
+      "teamId": "00000000-0000-4000-8000-000000000005",
+      "leagueId": "00000000-0000-4000-8000-000000000003",
+      "seasonId": "00000000-0000-4000-8000-000000000017",
+      "period": {
+        "startDate": "2026-09-01",
+        "endDate": "2027-01-01"
+      },
+      "status": "ACTIVE",
+      "countryCode": "US",
+      "system": "G_LEAGUE",
+      "role": null,
+      "minutesPerGame": null,
+      "tacticalPosition": null,
+      "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+    },
+    {
+      "type": "Competition",
+      "id": "00000000-0000-4000-8000-000000000032",
+      "name": "Synthetic FIBA qualification window",
+      "kind": "WORLD_CUP_QUALIFIER",
+      "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+    },
+    {
+      "type": "NationalTeamCampaign",
+      "id": "00000000-0000-4000-8000-000000000033",
+      "competitionId": "00000000-0000-4000-8000-000000000032",
+      "gender": "MEN",
+      "ageGroup": "SENIOR",
+      "discipline": "FIVE_ON_FIVE",
+      "period": {
+        "startDate": "2026-01-01",
+        "endDate": "2027-01-01"
+      },
+      "objective": "Synthetic campaign; no real roster claim",
+      "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+    },
+    {
+      "type": "NationalTeamCampaign",
+      "id": "00000000-0000-4000-8000-000000000034",
+      "competitionId": "00000000-0000-4000-8000-000000000032",
+      "gender": "WOMEN",
+      "ageGroup": "SENIOR",
+      "discipline": "FIVE_ON_FIVE",
+      "period": {
+        "startDate": "2026-01-01",
+        "endDate": "2027-01-01"
+      },
+      "objective": "Synthetic campaign; no real roster claim",
+      "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+    },
+    {
+      "type": "NationalTeamCampaign",
+      "id": "00000000-0000-4000-8000-000000000035",
+      "competitionId": "00000000-0000-4000-8000-000000000032",
+      "gender": "MEN",
+      "ageGroup": "YOUTH",
+      "discipline": "FIVE_ON_FIVE",
+      "period": {
+        "startDate": "2026-01-01",
+        "endDate": "2027-01-01"
+      },
+      "objective": "Synthetic campaign; no real roster claim",
+      "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+    },
+    {
+      "type": "NationalTeamCampaign",
+      "id": "00000000-0000-4000-8000-000000000036",
+      "competitionId": "00000000-0000-4000-8000-000000000032",
+      "gender": "WOMEN",
+      "ageGroup": "YOUTH",
+      "discipline": "THREE_ON_THREE",
+      "period": {
+        "startDate": "2026-01-01",
+        "endDate": "2027-01-01"
+      },
+      "objective": "Synthetic campaign; no real roster claim",
+      "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+    },
+    {
+      "type": "NationalTeamRoster",
+      "id": "00000000-0000-4000-8000-00000000003d",
+      "campaignId": "00000000-0000-4000-8000-000000000033",
+      "revision": 1,
+      "supersedesRosterId": null,
+      "status": "TRAINING",
+      "effectiveAt": "2026-01-01",
+      "entries": [
+        {
+          "playerId": "00000000-0000-4000-8000-000000000006",
+          "status": "CALLED_UP",
+          "role": null,
+          "period": {
+            "startDate": "2026-01-01",
+            "endDate": "2027-01-01"
+          },
+          "replacesPlayerId": null,
+          "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+        }
+      ],
+      "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+    },
+    {
+      "type": "NationalTeamRoster",
+      "id": "00000000-0000-4000-8000-00000000003e",
+      "campaignId": "00000000-0000-4000-8000-000000000033",
+      "revision": 2,
+      "supersedesRosterId": "00000000-0000-4000-8000-00000000003d",
+      "status": "FINAL",
+      "effectiveAt": "2026-02-01",
+      "entries": [
+        {
+          "playerId": "00000000-0000-4000-8000-000000000006",
+          "status": "WITHDRAWN",
+          "role": null,
+          "period": {
+            "startDate": "2026-01-01",
+            "endDate": "2027-01-01"
+          },
+          "replacesPlayerId": null,
+          "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+        },
+        {
+          "playerId": "00000000-0000-4000-8000-000000000007",
+          "status": "REPLACEMENT",
+          "role": null,
+          "period": {
+            "startDate": "2026-01-01",
+            "endDate": "2027-01-01"
+          },
+          "replacesPlayerId": "00000000-0000-4000-8000-000000000006",
+          "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+        }
+      ],
+      "evidenceIds": ["00000000-0000-4000-8000-000000000385"]
+    }
+  ]
+}

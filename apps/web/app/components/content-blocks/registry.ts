@@ -2,7 +2,7 @@ export const CONTENT_BLOCK_RENDERER_VERSION = 1 as const
 
 type ContentBlockRegistryEntry = {
   version: typeof CONTENT_BLOCK_RENDERER_VERSION
-  preset?: string
+  presets?: readonly string[]
 }
 
 export const CONTENT_BLOCK_RENDERERS = {
@@ -16,7 +16,10 @@ export const CONTENT_BLOCK_RENDERERS = {
   stat: { version: CONTENT_BLOCK_RENDERER_VERSION },
   video: { version: CONTENT_BLOCK_RENDERER_VERSION },
   "related-reading": { version: CONTENT_BLOCK_RENDERER_VERSION },
-  "generative-canvas": { version: CONTENT_BLOCK_RENDERER_VERSION, preset: "court-pulse-v1" }
+  "generative-canvas": {
+    version: CONTENT_BLOCK_RENDERER_VERSION,
+    presets: ["court-pulse-v1", "season-recap-v1"]
+  }
 } as const satisfies Record<string, ContentBlockRegistryEntry>
 
 export type ContentBlockRendererKey = keyof typeof CONTENT_BLOCK_RENDERERS
@@ -77,7 +80,7 @@ export function resolveContentBlockRenderer(
       telemetryCode: "CONTENT_BLOCK_RENDERER_UNSUPPORTED_VERSION"
     }
   }
-  if (renderer.preset && block.payload.presetId !== renderer.preset) {
+  if (renderer.presets && !renderer.presets.includes(String(block.payload.presetId))) {
     return {
       kind: "fallback",
       reason: "unknown-preset-version",
