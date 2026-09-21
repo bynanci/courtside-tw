@@ -101,6 +101,14 @@ public final class SeasonRecapApplication {
                 "blocks", List.of(Map.of("id", id, "type", "generative-canvas", "version", 1, "payload", payload))));
     }
 
+    public static final class InvalidRequestException extends RuntimeException {
+        private static final long serialVersionUID = 1L;
+
+        public InvalidRequestException(String message) {
+            super(message);
+        }
+    }
+
     public record Generate(UUID projectionId, UUID seasonId, UUID posterAssetId, Instant asOf, List<UUID> factIds) {
         public Generate {
             factIds = factIds == null ? List.of() : List.copyOf(factIds);
@@ -108,7 +116,7 @@ public final class SeasonRecapApplication {
 
         @JsonAnySetter
         public void rejectUnknown(String field, JsonNode value) {
-            throw new IllegalArgumentException("unexpected recap input field");
+            throw new InvalidRequestException("unexpected recap input field");
         }
     }
 }

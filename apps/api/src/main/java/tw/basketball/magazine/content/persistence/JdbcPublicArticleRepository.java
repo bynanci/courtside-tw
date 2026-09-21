@@ -670,7 +670,8 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
             switch (typeNode.asString()) {
                 case "image" -> references.add(reference(payload, "assetId", variant(payload, "inline")));
                 case "gallery" -> addGalleryReferences(references, payload);
-                case "generative-canvas" -> references.add(reference(payload, "posterAssetId", "wide"));
+                case "generative-canvas" -> references.add(reference(payload, "posterAssetId",
+                        "season-recap-v1".equals(payload.path("presetId").asString()) ? "poster" : "wide"));
                 default -> {
                     // Canonical non-media blocks do not need public media resolution.
                 }

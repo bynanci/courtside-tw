@@ -64,6 +64,11 @@ public final class SeasonRecapController {
         return problem(ProblemCode.RESOURCE_NOT_FOUND, "recap_unavailable", request);
     }
 
+    @ExceptionHandler(SeasonRecapApplication.InvalidRequestException.class)
+    public ResponseEntity<?> invalidRequest(HttpServletRequest request) {
+        return problem(ProblemCode.INVALID_REQUEST, "invalid_request", request);
+    }
+
     @ExceptionHandler({IllegalArgumentException.class, NullPointerException.class})
     public ResponseEntity<?> invalidInput(HttpServletRequest request) {
         return problem(ProblemCode.RIGHTS_OR_CONTENT_GATE, "recap_evidence_or_rights_unavailable", request);

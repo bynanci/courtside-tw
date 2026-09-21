@@ -152,8 +152,20 @@ public final class EditorialBasketballIntakeController {
     }
 
     private static ResponseEntity<ProblemDetails> problem(ProblemCode code, HttpServletRequest request) {
-        RequestId requestId = RequestId.of("req-" + UUID.randomUUID());
+        RequestId requestId = requestId(request);
         return ResponseEntity.status(code.status()).contentType(MediaType.APPLICATION_PROBLEM_JSON).cacheControl(CacheControl.noStore())
                 .header("X-Request-Id", requestId.value()).body(ProblemDetailsMapper.from(code, request.getRequestURI(), requestId, List.of()));
+    }
+
+    private static RequestId requestId(HttpServletRequest request) {
+        String candidate = request.getHeader("X-Request-Id");
+        if (candidate != null) {
+            try {
+                return RequestId.of(candidate);
+            } catch (IllegalArgumentException ignored) {
+                // Do not reflect malformed caller input.
+            }
+        }
+        return RequestId.of("req-" + UUID.randomUUID());
     }
 }

@@ -5370,14 +5370,30 @@ function packageRunnerSelectsJavaScriptProof(root, relativePath) {
 
 function playwrightRunnerCommandSelectsAllProofs(command) {
   if (typeof command !== "string") return false
-  const tokens = command.match(/"[^"]*"|'[^']*'|[^\s]+/g) ?? []
-  const normalizedTokens = tokens.map((rawToken) =>
-    rawToken.replace(/^(?:"([^"]*)"|'([^']*)')$/, "$1$2")
-  )
+  const tokenize = (segment) => {
+    const tokens = segment.match(/"[^"]*"|'[^']*'|[^\s]+/g) ?? []
+    return tokens.map((rawToken) =>
+      rawToken.replace(/^(?:"([^"]*)"|'([^']*)')$/, "$1$2")
+    )
+  }
+  const runs = command.split("&&").map((segment) => tokenize(segment.trim()))
+  const standardRun = runs[0]
+  if (
+    standardRun.length !== 2 ||
+    standardRun[0] !== "playwright" ||
+    standardRun[1] !== "test"
+  ) {
+    return false
+  }
+  if (runs.length === 1) return true
+  if (runs.length !== 2) return false
+  const walletRun = runs[1]
   return (
-    normalizedTokens.length === 2 &&
-    normalizedTokens[0] === "playwright" &&
-    normalizedTokens[1] === "test"
+    walletRun.length === 4 &&
+    walletRun[0] === "playwright" &&
+    walletRun[1] === "test" &&
+    walletRun[2] === "--config" &&
+    walletRun[3] === "playwright.wallet.config.ts"
   )
 }
 
