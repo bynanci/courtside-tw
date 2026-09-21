@@ -5372,17 +5372,11 @@ function playwrightRunnerCommandSelectsAllProofs(command) {
   if (typeof command !== "string") return false
   const tokenize = (segment) => {
     const tokens = segment.match(/"[^"]*"|'[^']*'|[^\s]+/g) ?? []
-    return tokens.map((rawToken) =>
-      rawToken.replace(/^(?:"([^"]*)"|'([^']*)')$/, "$1$2")
-    )
+    return tokens.map((rawToken) => rawToken.replace(/^(?:"([^"]*)"|'([^']*)')$/, "$1$2"))
   }
   const runs = command.split("&&").map((segment) => tokenize(segment.trim()))
   const standardRun = runs[0]
-  if (
-    standardRun.length !== 2 ||
-    standardRun[0] !== "playwright" ||
-    standardRun[1] !== "test"
-  ) {
+  if (standardRun.length !== 2 || standardRun[0] !== "playwright" || standardRun[1] !== "test") {
     return false
   }
   if (runs.length === 1) return true
@@ -7300,7 +7294,9 @@ function javaScriptProofCall(
   }
   if (binding.role === "node-test") {
     if (
-      classifyNodeTestOptions(overload.options, { rejectCallbackOverride: true }) !== "active" ||
+      classifyNodeTestOptions(overload.options, {
+        rejectCallbackOverride: true
+      }) !== "active" ||
       hasNodeTestContextDisable(overload.callback)
     ) {
       return false
@@ -7433,7 +7429,9 @@ function hasUnsafeNodeTestHook(ast, bindings, playwrightDisableNames) {
       hasNodeTestContextDisable(callback) ||
       (callback.type === "Identifier" && processExitTerminators.has(callback.name)) ||
       hasJavaScriptProcessExit(callback, { includeFunctions: true }) ||
-      javaScriptCallsTerminator(callback, processExitTerminators, { includeFunctions: true })
+      javaScriptCallsTerminator(callback, processExitTerminators, {
+        includeFunctions: true
+      })
   })
   return terminating
 }
@@ -7715,7 +7713,10 @@ function javaScriptProcessExitTerminatorNames(expression) {
     const referencesProcess = javaScriptExpressionReferencesProcessObject(body, processObjectNames)
     if (
       referencesProcess ||
-      hasJavaScriptProcessExit(body, { includeFunctions: true, processObjectNames })
+      hasJavaScriptProcessExit(body, {
+        includeFunctions: true,
+        processObjectNames
+      })
     ) {
       terminatorNames.add(name)
     }
@@ -7724,7 +7725,10 @@ function javaScriptProcessExitTerminatorNames(expression) {
     const referencesProcess = javaScriptExpressionReferencesProcessObject(body, processObjectNames)
     if (
       referencesProcess ||
-      hasJavaScriptProcessExit(body, { includeFunctions: true, processObjectNames })
+      hasJavaScriptProcessExit(body, {
+        includeFunctions: true,
+        processObjectNames
+      })
     ) {
       terminatorNames.add(name)
     }
@@ -7736,7 +7740,9 @@ function javaScriptProcessExitTerminatorNames(expression) {
     for (const [name, body] of functionBodies) {
       if (
         !terminatorNames.has(name) &&
-        javaScriptCallsTerminator(body, terminatorNames, { includeFunctions: true })
+        javaScriptCallsTerminator(body, terminatorNames, {
+          includeFunctions: true
+        })
       ) {
         terminatorNames.add(name)
         changed = true
@@ -7811,7 +7817,9 @@ function javaScriptProcessExitTerminatorMemberPaths(expression, terminatorNames)
       if (
         (value?.type === "Identifier" && terminatorNames.has(value.name)) ||
         hasJavaScriptProcessExit(value, { includeFunctions: true }) ||
-        javaScriptCallsTerminator(value, terminatorNames, { includeFunctions: true })
+        javaScriptCallsTerminator(value, terminatorNames, {
+          includeFunctions: true
+        })
       ) {
         paths.add(path)
       }
@@ -7839,7 +7847,9 @@ function hasInvokedJavaScriptProcessExit(expression, terminatorNames = new Set()
     if (
       !callee.ambiguous &&
       javaScriptFunctionTypes.has(callee.expression?.type) &&
-      (hasJavaScriptProcessExit(callee.expression.body, { includeFunctions: true }) ||
+      (hasJavaScriptProcessExit(callee.expression.body, {
+        includeFunctions: true
+      }) ||
         javaScriptCallsTerminator(callee.expression.body, terminatorNames, {
           includeFunctions: true
         }))
@@ -8065,7 +8075,9 @@ function hasScheduledJavaScriptProcessExit(ast, bindings, playwrightDisableNames
       return (
         (callback?.type === "Identifier" && terminatorNames.has(callback.name)) ||
         hasJavaScriptProcessExit(callback, { includeFunctions: true }) ||
-        javaScriptCallsTerminator(callback, terminatorNames, { includeFunctions: true })
+        javaScriptCallsTerminator(callback, terminatorNames, {
+          includeFunctions: true
+        })
       )
     })
     const constructorCallee =
@@ -8076,8 +8088,12 @@ function hasScheduledJavaScriptProcessExit(ast, bindings, playwrightDisableNames
       ((constructorCallee.type === "Identifier" && terminatorNames.has(constructorCallee.name)) ||
         (!constructorPath.ambiguous &&
           terminatorMemberPaths.has(constructorPath.segments.join("."))) ||
-        hasJavaScriptProcessExit(constructorCallee, { includeFunctions: true }) ||
-        javaScriptCallsTerminator(constructorCallee, terminatorNames, { includeFunctions: true }))
+        hasJavaScriptProcessExit(constructorCallee, {
+          includeFunctions: true
+        }) ||
+        javaScriptCallsTerminator(constructorCallee, terminatorNames, {
+          includeFunctions: true
+        }))
     if (
       (!schedulesCallback && !hasTerminatingCallback && !hasTerminatingConstructor) ||
       !hasPotentialJavaScriptHookRegistration(ancestors, bindings, playwrightDisableNames)
@@ -8125,14 +8141,17 @@ function canBypassLaterJavaScriptStatement(statement, { breakBypasses = true } =
   }
   if (statement?.type === "IfStatement") {
     return (
-      canBypassLaterJavaScriptStatement(statement.consequent, { breakBypasses }) ||
-      canBypassLaterJavaScriptStatement(statement.alternate, { breakBypasses })
+      canBypassLaterJavaScriptStatement(statement.consequent, {
+        breakBypasses
+      }) || canBypassLaterJavaScriptStatement(statement.alternate, { breakBypasses })
     )
   }
   if (statement?.type === "TryStatement") {
     return (
       canBypassLaterJavaScriptStatement(statement.block, { breakBypasses }) ||
-      canBypassLaterJavaScriptStatement(statement.handler?.body, { breakBypasses }) ||
+      canBypassLaterJavaScriptStatement(statement.handler?.body, {
+        breakBypasses
+      }) ||
       canBypassLaterJavaScriptStatement(statement.finalizer, { breakBypasses })
     )
   }
@@ -8548,7 +8567,9 @@ function hasUnsafePlaywrightTestHook(ast, bindings, disableNames) {
     if (javaScriptFunctionTypes.has(callback.expression?.type)) {
       unsafe =
         hasPlaywrightTestDisable(callback.expression, bindings, disableNames) ||
-        hasJavaScriptProcessExit(callback.expression, { includeFunctions: true }) ||
+        hasJavaScriptProcessExit(callback.expression, {
+          includeFunctions: true
+        }) ||
         javaScriptCallsTerminator(callback.expression, processExitTerminators, {
           includeFunctions: true
         })
@@ -8587,7 +8608,9 @@ function hasExecutableJavaScriptProofAnchor(text, selector, proofPath) {
 
   let ast
   try {
-    ast = typescriptPlugin.parsers.typescript.parse(text, { filepath: proofPath })
+    ast = typescriptPlugin.parsers.typescript.parse(text, {
+      filepath: proofPath
+    })
   } catch {
     return false
   }
@@ -8796,7 +8819,12 @@ function javaClassRanges(maskedText, targetOffset) {
       }
     }
     if (open < targetOffset && targetOffset < close) {
-      ranges.push({ close, declarationOffset: match.index, name: match[1], open })
+      ranges.push({
+        close,
+        declarationOffset: match.index,
+        name: match[1],
+        open
+      })
     }
   }
   return ranges.sort((left, right) => left.open - right.open)
@@ -9335,7 +9363,11 @@ function shellSelectorInsideSubstitution(text, selector) {
       if (character === '"') quote = null
       else if (character === "\\") escaped = true
       else if (character === "$" && text[index + 1] === "(" && text[index + 2] !== "(") {
-        substitutions.push({ depth: 1, kind: "parenthesized", outerQuote: quote })
+        substitutions.push({
+          depth: 1,
+          kind: "parenthesized",
+          outerQuote: quote
+        })
         quote = null
         index += 1
       } else if (character === "`") {
@@ -13178,7 +13210,10 @@ function eventChangeBaseCandidates(environment) {
       const pushBefore = event?.before
       constrained = event?.pull_request !== undefined || event?.before !== undefined
       if (/^[0-9a-f]{40}$/.test(pullRequestBase ?? "")) {
-        candidates.push({ ref: pullRequestBase, source: "github-event:pull_request.base.sha" })
+        candidates.push({
+          ref: pullRequestBase,
+          source: "github-event:pull_request.base.sha"
+        })
       } else if (/^[0-9a-f]{40}$/.test(pushBefore ?? "") && !/^0{40}$/.test(pushBefore)) {
         candidates.push({ ref: pushBefore, source: "github-event:before" })
       }
@@ -14014,7 +14049,9 @@ export function inspectGit(root, { environment = process.env } = {}) {
       root,
       POST169_GOVERNANCE_SEED_HEAD_SHA,
       head,
-      { mergesOnly: true }
+      {
+        mergesOnly: true
+      }
     )
     const post169GovernanceSeedTestBlobSha = inspectPathBlobOid(
       root,
@@ -14295,7 +14332,10 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
     changedPaths: inspection.changedPaths,
     environment
   })
-  const githubActionsContext = inspectGitHubActionsContext({ environment, gitBinding: inspection })
+  const githubActionsContext = inspectGitHubActionsContext({
+    environment,
+    gitBinding: inspection
+  })
   const pnpmSecurityAuthorizationReadback = pnpmSecurityAuthorizationRequested(
     inspection.changedPaths,
     githubActionsContext
