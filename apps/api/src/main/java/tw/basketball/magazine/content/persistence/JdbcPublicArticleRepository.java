@@ -643,7 +643,14 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
     private Optional<List<PublicArticleMedia>> resolvePublicMedia(FrozenArticle article, Instant now) {
         List<JdbcPublicMediaResolver.MediaReference> references = extractMediaReferences(article.content());
         if (article.media() == null) {
-            return references.isEmpty() ? Optional.of(List.of()) : Optional.empty();
+            if (references.isEmpty()) {
+                return Optional.of(List.of());
+            }
+            if (!tw.basketball.magazine.fanpassport.recap.SeasonRecapPublicationGuard.containsRecap(
+                    article.content())) {
+                return Optional.empty();
+            }
+            return mediaResolver.resolveAll(references, now);
         }
         if (!mediaResolver.areAllVisible(references, now)) {
             return Optional.empty();
