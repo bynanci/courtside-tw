@@ -568,7 +568,8 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
             throw invalid("published snapshot exceeds the bounded media limit");
         }
         if (!snapshot.has("media")) {
-            if (!unique.isEmpty()) {
+            if (!unique.isEmpty()
+                    && !tw.basketball.magazine.fanpassport.recap.SeasonRecapPublicationGuard.containsRecap(content)) {
                 throw invalid("legacy published snapshot cannot synthesize media metadata");
             }
             return;
