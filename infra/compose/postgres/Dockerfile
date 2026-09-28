@@ -5,7 +5,7 @@
 # from its pinned upstream source with a patched Go toolchain and x/sys version.
 # The pinned builder also excludes the Go standard library versions flagged by
 # CVE-2026-39821 and CVE-2026-46600 in the previous build stage.
-FROM golang:1.27.1@sha256:512690a5660563b57d37ecc31129e7f136e831db2aed24a1dbeb8ad7380dc0fa AS gosu-build
+FROM golang:1.27.1@sha256:3680233e3204827fbdc66088528ae6d4b3d034f51d03a99d454f6de034888244 AS gosu-build
 
 ARG GOSU_COMMIT=40506998e34a7a679e6dae41374c1b7aa37eb73f
 ARG GOSU_X_SYS_VERSION=0.44.0
@@ -33,7 +33,7 @@ RUN set -eux; \
 # mounted data directory, then drops privileges through gosu.
 USER nobody
 
-FROM postgres:18.6-alpine3.24@sha256:d3e1620b530c944afa6e887d22eb899824da68e19c52024bf98f5220c88a65b2
+FROM postgres:18.6-alpine3.24@sha256:77f585114c32fbca283dc835b0596f4e52b51b4c6662d7810b2f4084f60a1873
 
 # CVE-2026-14456 requires both Alpine OpenSSL libraries at 3.5.8-r0 or newer.
 ARG OPENSSL_MINIMUM_VERSION=3.5.8-r0
