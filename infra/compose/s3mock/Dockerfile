@@ -29,7 +29,7 @@ RUN set -eux; \
 # by the local stub; the build stage still verifies non-root execution.
 USER nobody
 
-FROM alpine:3.24.1@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b AS staging_area
+FROM alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 AS staging_area
 
 RUN apk --no-cache add openjdk25-jdk openjdk25-jmods unzip
 
@@ -59,7 +59,7 @@ RUN set -eux; \
       --strip-java-debug-attributes \
       --output "$JAVA_MINIMAL"
 
-FROM alpine:3.24.1@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b
+FROM alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
 
 # CVE-2026-14456 requires both Alpine OpenSSL libraries at 3.5.8-r0 or newer.
 ARG OPENSSL_MINIMUM_VERSION=3.5.8-r0
