@@ -1,4 +1,11 @@
 export const COURT_PULSE_PRESET_ID = "court-pulse-v1" as const
+export const SEASON_RECAP_PRESET_ID = "season-recap-v1" as const
+
+export type SeasonRecapParameters = {
+  values: number[]
+  lineWeight: number
+  paletteId: "season-ink"
+}
 
 export type CourtPulseParameters = {
   density: number
@@ -45,18 +52,32 @@ export type CourtPulseP5 = {
   noLoop: () => void
 }
 
-export type CreativePresetModule = {
-  createSketch: (
-    input: CourtPulsePresetInput & {
-      width: () => number
-      onRenderReady: (controller: CreativeRuntimeController) => void
-      onFrame: (frame: number) => void
-    }
-  ) => (instance: CourtPulseP5) => void
+export type CreativePresetModule<Parameters = CourtPulseParameters> = {
+  createSketch: (input: {
+    seed: number
+    parameters: Parameters
+    width: () => number
+    onRenderReady: (controller: CreativeRuntimeController) => void
+    onFrame: (frame: number) => void
+  }) => (instance: CourtPulseP5) => void
 }
 
-export type CreativePresetDefinition = {
-  id: typeof COURT_PULSE_PRESET_ID
+type PresetDefinition<Id extends string, Parameters> = {
+  id: Id
   version: 1
-  load: () => Promise<CreativePresetModule>
+  normalizeParameters: (value: unknown) => Parameters
+  load: () => Promise<CreativePresetModule<Parameters>>
+}
+
+export type CreativePresetDefinition =
+  | PresetDefinition<typeof COURT_PULSE_PRESET_ID, CourtPulseParameters>
+  | PresetDefinition<typeof SEASON_RECAP_PRESET_ID, SeasonRecapParameters>
+
+export type PreparedCreativePreset = {
+  id: CreativePresetDefinition["id"]
+  load: () => Promise<{
+    createSketch: (
+      input: Omit<Parameters<CreativePresetModule["createSketch"]>[0], "parameters">
+    ) => (instance: CourtPulseP5) => void
+  }>
 }

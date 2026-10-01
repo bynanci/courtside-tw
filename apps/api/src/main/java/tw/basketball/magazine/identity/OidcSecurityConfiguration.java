@@ -122,6 +122,8 @@ public final class OidcSecurityConfiguration {
                     .authorizeHttpRequests(authorize -> authorize
                             .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**").permitAll()
                             .requestMatchers(HttpMethod.GET, "/api/v1/public/**").permitAll()
+                            .requestMatchers("/api/v1/auth/siwe/challenge", "/api/v1/auth/siwe/verify")
+                            .hasAuthority(OidcRolePolicy.authority(RoleCode.READER))
                             .requestMatchers("/api/v1/me", "/api/v1/me/**")
                             .hasAuthority(OidcRolePolicy.authority(RoleCode.READER))
                             .requestMatchers("/api/v1/editor/**")

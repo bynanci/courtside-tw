@@ -169,6 +169,10 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
         ArticleRow row = rows.getFirst();
         try {
             FrozenArticle article = frozenArticle(row);
+            if (!tw.basketball.magazine.fanpassport.recap.SeasonRecapPublicationGuard.validate(
+                    article.content(), jdbcTemplate, objectMapper, now, "PUBLIC_WEB")) {
+                return Optional.empty();
+            }
             Optional<List<PublicArticleMedia>> resolvedMedia = resolvePublicMedia(article, now);
             if (resolvedMedia.isEmpty()) {
                 return Optional.empty();
@@ -564,7 +568,8 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
             throw invalid("published snapshot exceeds the bounded media limit");
         }
         if (!snapshot.has("media")) {
-            if (!unique.isEmpty()) {
+            if (!unique.isEmpty()
+                    && !tw.basketball.magazine.fanpassport.recap.SeasonRecapPublicationGuard.containsRecap(content)) {
                 throw invalid("legacy published snapshot cannot synthesize media metadata");
             }
             return;
@@ -639,7 +644,14 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
     private Optional<List<PublicArticleMedia>> resolvePublicMedia(FrozenArticle article, Instant now) {
         List<JdbcPublicMediaResolver.MediaReference> references = extractMediaReferences(article.content());
         if (article.media() == null) {
-            return references.isEmpty() ? Optional.of(List.of()) : Optional.empty();
+            if (references.isEmpty()) {
+                return Optional.of(List.of());
+            }
+            if (!tw.basketball.magazine.fanpassport.recap.SeasonRecapPublicationGuard.containsRecap(
+                    article.content())) {
+                return Optional.empty();
+            }
+            return mediaResolver.resolveAll(references, now);
         }
         if (!mediaResolver.areAllVisible(references, now)) {
             return Optional.empty();
@@ -666,7 +678,8 @@ public final class JdbcPublicArticleRepository implements PublicArticleRepositor
             switch (typeNode.asString()) {
                 case "image" -> references.add(reference(payload, "assetId", variant(payload, "inline")));
                 case "gallery" -> addGalleryReferences(references, payload);
-                case "generative-canvas" -> references.add(reference(payload, "posterAssetId", "wide"));
+                case "generative-canvas" -> references.add(reference(payload, "posterAssetId",
+                        "season-recap-v1".equals(payload.path("presetId").asString()) ? "poster" : "wide"));
                 default -> {
                     // Canonical non-media blocks do not need public media resolution.
                 }

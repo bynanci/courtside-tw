@@ -1,0 +1,257 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://courtside.tw/contracts/evidence.schema.json",
+  "title": "Immutable basketball evidence dataset",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "synthetic", "scenario", "sources", "snapshots", "references"],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "synthetic": {
+      "type": "boolean"
+    },
+    "scenario": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "sources": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/Source"
+      }
+    },
+    "snapshots": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/SourceSnapshot"
+      }
+    },
+    "references": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/EvidenceRef"
+      }
+    }
+  },
+  "$defs": {
+    "Source": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "type", "name", "sourceUrl", "publicReferenceAllowed"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "type": {
+          "enum": [
+            "ASSOCIATION",
+            "LEAGUE",
+            "TEAM",
+            "GAME_DATA",
+            "MEDIA",
+            "INTERVIEW",
+            "SOCIAL",
+            "INTERNAL_ANALYSIS"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "sourceUrl": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://[^/?#@]+(?:/[^?#]*)?$"
+        },
+        "publicReferenceAllowed": {
+          "type": "boolean"
+        }
+      }
+    },
+    "SourceSnapshot": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "sourceId",
+        "sourceUrl",
+        "retrievedAt",
+        "publishedAt",
+        "content",
+        "sha256",
+        "rightsReference"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sourceId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sourceUrl": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://[^/?#@]+(?:/[^?#]*)?$"
+        },
+        "retrievedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "publishedAt": {
+          "oneOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "const": "UNKNOWN"
+            }
+          ]
+        },
+        "content": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1000000
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "rightsReference": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        }
+      }
+    },
+    "EvidenceRef": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "id",
+        "sourceId",
+        "sourceType",
+        "sourceUrl",
+        "retrievedAt",
+        "publishedAt",
+        "effectiveAt",
+        "confidence",
+        "status",
+        "freshness",
+        "snapshotId",
+        "staleAt",
+        "expiresAt",
+        "note"
+      ],
+      "properties": {
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sourceId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "sourceType": {
+          "enum": [
+            "ASSOCIATION",
+            "LEAGUE",
+            "TEAM",
+            "GAME_DATA",
+            "MEDIA",
+            "INTERVIEW",
+            "SOCIAL",
+            "INTERNAL_ANALYSIS"
+          ]
+        },
+        "sourceUrl": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https://[^/?#@]+(?:/[^?#]*)?$"
+        },
+        "retrievedAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "publishedAt": {
+          "oneOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "const": "UNKNOWN"
+            }
+          ]
+        },
+        "effectiveAt": {
+          "oneOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "const": "UNKNOWN"
+            }
+          ]
+        },
+        "confidence": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "status": {
+          "enum": ["CONFIRMED", "REPORTED", "ANALYSIS", "RUMOR", "UNKNOWN"]
+        },
+        "freshness": {
+          "enum": ["fresh", "stale", "expired", "disputed"]
+        },
+        "snapshotId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "staleAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "expiresAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "note": {
+          "type": "string",
+          "maxLength": 1000
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "CONFIRMED"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "effectiveAt": {
+                "type": "string",
+                "format": "date-time"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

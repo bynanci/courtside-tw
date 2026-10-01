@@ -39,6 +39,7 @@ import BookmarkControl from "../../features/reader/components/BookmarkControl.vu
 import ReadingProgress from "../../features/reader/components/ReadingProgress.vue"
 import ShareArticleButton from "../../features/reader/components/ShareArticleButton.vue"
 import { readingProgressPercent } from "../../features/reader/reading-progress"
+import { acknowledgeArticleCompletion } from "../../features/passport/article-completion"
 import { buildArticleSeo } from "../../features/reader/seo/article-seo"
 import {
   putProgress as putServerProgress,
@@ -201,6 +202,8 @@ const clientReady = ref(false)
 const interactiveEnabled = ref(false)
 const readerCanSync = ref(false)
 const progressSyncState = ref<"idle" | "syncing" | "synced" | "local-only">("idle")
+const completionState = ref<"idle" | "saving" | "confirmed">("idle")
+const completionError = ref<string | null>(null)
 const readerHasMounted = useState("public-article-reader-has-mounted", () => false)
 const readerMotionPolicyState = useState<ReaderMotionPolicy>("reader-motion-policy", () => ({
   ...staticReaderMotionPolicy,
@@ -216,6 +219,17 @@ let reloadManualScrollPosition: number | null = null
 let previousScrollRestoration: "auto" | "manual" | null = null
 let progressSaveTimer: number | null = null
 let progressSyncQueue = Promise.resolve()
+let progressGeneration = 0
+let progressDisposed = false
+const stopProgressIdentityWatch = watch(
+  [() => readingContext.value?.articleId, () => readingContext.value?.revisionId, readerCanSync],
+  () => {
+    progressGeneration += 1
+    completionState.value = "idle"
+    completionError.value = null
+  },
+  { flush: "sync" }
+)
 
 useHead(() => {
   const current = article.value
@@ -527,22 +541,78 @@ function queueServerProgress(
   context: LocalReadingContext,
   location: { blockId: string; documentProgress: number }
 ): void {
+  const generation = progressGeneration
+  if (completionState.value !== "idle" || !progressWriteIsCurrent(generation, context)) return
   progressSyncState.value = "syncing"
   progressSyncQueue = progressSyncQueue
     .then(async () => {
+      if (!progressWriteIsCurrent(generation, context)) return
       await putServerProgress(context.articleId, {
         revisionId: context.revisionId,
         blockId: location.blockId,
         percent: Math.round(location.documentProgress * 10_000) / 100
       })
+      if (!progressWriteIsCurrent(generation, context)) return
       progressSyncState.value = "synced"
     })
     .catch((cause: unknown) => {
-      if (cause instanceof ReaderLibraryApiError && cause.status === 401) {
+      if (!progressWriteIsCurrent(generation, context)) return
+      if (
+        cause instanceof ReaderLibraryApiError &&
+        (cause.status === 401 || cause.status === 403)
+      ) {
         readerCanSync.value = false
       }
       progressSyncState.value = "local-only"
     })
+}
+
+function progressWriteIsCurrent(generation: number, context: LocalReadingContext): boolean {
+  return (
+    !progressDisposed &&
+    generation === progressGeneration &&
+    readerCanSync.value &&
+    readingContext.value?.articleId === context.articleId &&
+    readingContext.value?.revisionId === context.revisionId
+  )
+}
+
+async function confirmArticleCompletion(): Promise<void> {
+  const context = readingContext.value
+  const generation = progressGeneration
+  if (!context || !progressWriteIsCurrent(generation, context) || completionState.value !== "idle")
+    return
+  const blockIds = articleBlocks.value.map((block) => block.id)
+  completionState.value = "saving"
+  completionError.value = null
+  try {
+    // Keep a slower earlier position write from overwriting the explicit acknowledgement.
+    await progressSyncQueue
+    if (!progressWriteIsCurrent(generation, context)) return
+    await acknowledgeArticleCompletion(
+      {
+        authenticated: readerCanSync.value,
+        articleId: context.articleId,
+        revisionId: context.revisionId,
+        blockIds
+      },
+      putServerProgress
+    )
+    if (!progressWriteIsCurrent(generation, context)) return
+    completionState.value = "confirmed"
+    progressSyncState.value = "synced"
+    const storage = browserProgressStorage()
+    if (storage) readingProgress.clearCompleted(storage, context)
+  } catch (cause) {
+    if (!progressWriteIsCurrent(generation, context)) return
+    completionState.value = "idle"
+    if (cause instanceof ReaderLibraryApiError && (cause.status === 401 || cause.status === 403)) {
+      readerCanSync.value = false
+      completionError.value = "登入或操作驗證已到期，請重新登入後確認。"
+    } else {
+      completionError.value = "尚未確認完成。請確認文章仍為最新版本，稍後重試。"
+    }
+  }
 }
 
 function scheduleReadingProgressSave(): void {
@@ -948,10 +1018,12 @@ onMounted(() => {
   readerHasMounted.value = true
   void readReaderSession()
     .then((session) => {
+      if (progressDisposed) return
       readerCanSync.value = session.canSync
       progressSyncState.value = session.canSync ? "idle" : "local-only"
     })
     .catch(() => {
+      if (progressDisposed) return
       readerCanSync.value = false
       progressSyncState.value = "local-only"
     })
@@ -981,6 +1053,8 @@ onMounted(() => {
       if (revisionId === activeRevisionId) return
       activeRevisionId = revisionId
       failedAssets.value = new Set()
+      completionState.value = "idle"
+      completionError.value = null
       if (!revisionId) return
       void $analytics.trackArticleView()
       await nextTick()
@@ -996,6 +1070,9 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  progressDisposed = true
+  progressGeneration += 1
+  stopProgressIdentityWatch()
   stopResumeWatch?.()
   stopArticleFocusWatch?.()
   stopReaderMotionPolicyWatch?.()
@@ -1157,6 +1234,42 @@ onBeforeUnmount(() => {
           </p>
         </div>
 
+        <section
+          v-if="readerCanSync || completionError"
+          class="article-completion"
+          aria-labelledby="article-completion-heading"
+          data-testid="article-completion"
+        >
+          <h2 id="article-completion-heading">記下這篇閱讀</h2>
+          <p>由你確認目前版本已閱讀完成，作為帳號內的閱讀紀錄與本期印章申請依據。</p>
+          <button
+            v-if="readerCanSync"
+            type="button"
+            class="button-link"
+            :disabled="completionState !== 'idle'"
+            @click="confirmArticleCompletion"
+          >
+            {{
+              completionState === "saving"
+                ? "正在確認…"
+                : completionState === "confirmed"
+                  ? "本篇已確認完成"
+                  : "確認本篇閱讀完成"
+            }}
+          </button>
+          <p v-if="completionState === 'confirmed'" role="status">
+            閱讀完成紀錄已同步。完成本期各篇後，可前往護照申請印章。
+          </p>
+          <p v-if="completionError" role="alert">
+            {{ completionError }}
+            <a
+              v-if="!readerCanSync"
+              :href="'/auth/login?returnTo=' + encodeURIComponent(route.fullPath)"
+              >重新登入</a
+            >
+          </p>
+          <NuxtLink to="/settings/privacy">查看我的賽季護照</NuxtLink>
+        </section>
         <ArticleNavigation
           :issue-slug="articleIssueSlug"
           :issue-navigation="article.issueNavigation"
@@ -1189,6 +1302,23 @@ onBeforeUnmount(() => {
 </template>
 
 <style scoped>
+.article-completion {
+  margin-block: 2rem;
+  padding-block: 1.5rem;
+  border-block: 1px solid var(--color-text-primary);
+}
+.article-completion .button-link {
+  min-height: 44px;
+  cursor: pointer;
+}
+.article-completion .button-link:disabled {
+  cursor: default;
+}
+.article-completion :is(button, a):focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
 .reader-resume p {
   margin: 0;
 }

@@ -197,7 +197,11 @@ public final class ReaderLibraryService {
                 DO UPDATE SET
                     revision_id = EXCLUDED.revision_id,
                     block_id = EXCLUDED.block_id,
-                    percent = EXCLUDED.percent,
+                    percent = CASE
+                        WHEN reading_progress.revision_id = EXCLUDED.revision_id
+                            AND reading_progress.percent = 100 THEN 100
+                        ELSE EXCLUDED.percent
+                    END,
                     updated_at = EXCLUDED.updated_at,
                     version = reading_progress.version + 1
                 """ + updateCondition + """

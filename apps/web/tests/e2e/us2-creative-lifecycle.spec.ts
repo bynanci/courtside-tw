@@ -337,7 +337,10 @@ function findPresetChunkName(): string {
     return (
       source.includes("onRenderReady") &&
       source.includes("createSketch") &&
-      source.includes("pixelDensity")
+      source.includes("pixelDensity") &&
+      // The opening-night fixture uses court-pulse, whose input includes this field.
+      // Other registered presets must not make its actual chunk-failure test ambiguous.
+      source.includes("numericSequence")
     )
   })
   expect(candidates).toHaveLength(1)

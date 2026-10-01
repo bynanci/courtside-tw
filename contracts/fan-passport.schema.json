@@ -1,0 +1,36 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://courtside.tw/contracts/fan-passport.schema.json",
+  "title": "Minimal non-financial Reader Stamp",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["id", "season", "credentialType", "status", "issuedAt", "expiresAt", "version"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "format": "uuid"
+    },
+    "season": {
+      "type": "string",
+      "pattern": "^[0-9]{4}$"
+    },
+    "credentialType": {
+      "const": "READER_STAMP"
+    },
+    "status": {
+      "enum": ["CLAIMABLE", "CLAIMED", "REVOKED", "SUPERSEDED", "EXPIRED"]
+    },
+    "issuedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "expiresAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "version": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+}

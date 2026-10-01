@@ -3,6 +3,8 @@ import { readFileSync, readdirSync } from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
 import { test } from "node:test"
+import Ajv2020 from "ajv/dist/2020.js"
+import addFormats from "ajv-formats"
 
 import { validateContentDocument as validateBrowserContentDocument } from "../src/browser.ts"
 import { validateContentDocument } from "../src/index.ts"
@@ -26,6 +28,84 @@ test("accepts the canonical valid fixture and all 11 block types", () => {
 
   strictEqual(result.valid, true, JSON.stringify(result.errors))
   strictEqual(result.errors.length, 0)
+})
+
+test("season recap passes identical server and CSP-safe browser schema validation", () => {
+  const recap = readFixture(path.join(fixturesRoot, "valid/season-recap-v1.json"))
+  for (const validate of [validateContentDocument, validateBrowserContentDocument]) {
+    const result = validate(recap)
+    strictEqual(result.valid, true, JSON.stringify(result.errors))
+  }
+})
+
+test("recap schema rejects private payload, missing lineage, invalid times and excessive values", () => {
+  const source = readFixture(path.join(fixturesRoot, "valid/season-recap-v1.json"))
+  const mutations = [
+    (payload: Record<string, unknown>) => {
+      payload.email = "private@example.invalid"
+    },
+    (payload: Record<string, unknown>) => {
+      payload.readingHistory = ["private-article"]
+    },
+    (payload: Record<string, unknown>) => {
+      payload.asOf = "2026-02-30T00:00:00Z"
+    },
+    (payload: Record<string, unknown>) => {
+      payload.evidenceSnapshotIds = []
+    },
+    (payload: Record<string, unknown>) => {
+      payload.parameters = { values: [2], lineWeight: 2, paletteId: "season-ink" }
+    }
+  ]
+  for (const mutation of mutations) {
+    const fixture = structuredClone(source) as {
+      blocks: Array<{ payload: Record<string, unknown> }>
+    }
+    mutation(fixture.blocks[0]!.payload)
+    for (const validate of [validateContentDocument, validateBrowserContentDocument]) {
+      strictEqual(validate(fixture).valid, false)
+    }
+  }
+})
+
+test("standalone recap and archive schemas enforce the public projection boundary", () => {
+  const ajv = new Ajv2020({ allErrors: true, strict: true })
+  addFormats(ajv)
+  const recapSchema = readFixture(
+    path.join(repositoryRoot, "contracts/season-recap.schema.json")
+  ) as object
+  const archiveSchema = readFixture(
+    path.join(repositoryRoot, "contracts/archive-contribution.schema.json")
+  ) as { $id: string }
+  const validateRecap = ajv.compile(recapSchema)
+  const recap = readFixture(path.join(fixturesRoot, "valid/season-recap-v1.json")) as {
+    blocks: Array<{ payload: Record<string, unknown> }>
+  }
+  strictEqual(validateRecap({ schemaVersion: 1, payload: recap.blocks[0]!.payload }), true)
+  ajv.addSchema(archiveSchema)
+  const validateArchivePublic = ajv.compile({
+    $ref: archiveSchema.$id + "#/$defs/publicContribution"
+  })
+  const archive = {
+    contributionId: "00000000-0000-4000-8000-000000000821",
+    kind: "HISTORICAL_PHOTO",
+    assetId: "00000000-0000-4000-8000-000000000816",
+    credit: "測試署名",
+    rightsOwner: "測試權利人",
+    license: "測試授權"
+  }
+  strictEqual(validateArchivePublic(archive), true)
+  for (const prohibited of [
+    "contributorAccountId",
+    "email",
+    "readingHistory",
+    "rightsContract",
+    "storageKey",
+    "consent",
+    "history"
+  ]) {
+    strictEqual(validateArchivePublic({ ...archive, [prohibited]: "private" }), false)
+  }
 })
 
 test("rejects every canonical invalid fixture", () => {

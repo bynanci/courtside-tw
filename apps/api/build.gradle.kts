@@ -17,6 +17,7 @@ java {
 }
 
 dependencies {
+    implementation("org.web3j:crypto:6.0.0")
     implementation("org.springframework.boot:spring-boot-starter-web:4.1.1")
     implementation("org.springframework.boot:spring-boot-starter-jdbc:4.1.1")
     implementation("org.springframework.boot:spring-boot-starter-actuator:4.1.1")

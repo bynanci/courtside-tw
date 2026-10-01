@@ -1,4 +1,5 @@
 import assert from "node:assert/strict"
+import { execFileSync } from "node:child_process"
 import fs from "node:fs"
 import path from "node:path"
 import { fileURLToPath } from "node:url"
@@ -13,6 +14,21 @@ const paths = document.paths
 const operations = []
 
 const expectedPaths = {
+  "/api/v1/publisher/basketball/snapshots": ["post"],
+  "/api/v1/publisher/basketball/evidence/{evidenceId}:confirm": ["post"],
+  "/api/v1/publisher/basketball/facts": ["post"],
+  "/api/v1/publisher/basketball/evidence/{evidenceId}": ["get"],
+  "/api/v1/admin/basketball/snapshots": ["post"],
+  "/api/v1/admin/basketball/evidence/{evidenceId}:confirm": ["post"],
+  "/api/v1/admin/basketball/facts": ["post"],
+  "/api/v1/admin/basketball/evidence/{evidenceId}": ["get"],
+  "/api/v1/publisher/season-recaps": ["post"],
+  "/api/v1/public/seasons/{seasonId}/recaps/{projectionId}": ["get"],
+  "/api/v1/me/seasons/{seasonId}/recaps/{projectionId}": ["get"],
+  "/api/v1/me/passport": ["get"],
+  "/api/v1/me/passport/claims": ["post"],
+  "/api/v1/me/passport/{stampId}/credential": ["post"],
+  "/api/v1/publisher/passport/{stampId}/status": ["post"],
   "/api/v1/public/issues": ["get"],
   "/api/v1/public/issues/{issueSlug}": ["get"],
   "/api/v1/public/articles/{articleSlug}": ["get"],
@@ -78,6 +94,15 @@ const expectedPaths = {
 
 // Closed exceptions describe existing command semantics; omitted If-Match is never an implicit waiver.
 const writeConcurrencyExceptions = {
+  submitPublisherBasketballSnapshot: "IMMUTABLE_SOURCE_ID",
+  confirmPublisherBasketballEvidence: "IMMUTABLE_EVIDENCE_ID",
+  appendPublisherBasketballFact: "IMMUTABLE_FACT_ID",
+  submitAdminBasketballSnapshot: "IMMUTABLE_SOURCE_ID",
+  confirmAdminBasketballEvidence: "IMMUTABLE_EVIDENCE_ID",
+  appendAdminBasketballFact: "IMMUTABLE_FACT_ID",
+  generatePublisherSeasonRecap: "IMMUTABLE_PROJECTION_ID",
+  claimReaderStamp: "IDEMPOTENCY_KEY",
+  requestStampCredential: "IDEMPOTENCY_KEY",
   putBookmark: "IDEMPOTENT_SET",
   deleteBookmark: "IDEMPOTENT_SET",
   putReadingProgress: "REVISION_GUARDED_PROGRESS",
@@ -90,9 +115,9 @@ const writeConcurrencyExceptions = {
   completeMediaUpload: "IDEMPOTENCY_KEY",
   createManagedTaxonomy: "UNIQUE_KEY_CREATE",
   createEditorContributor: "IDEMPOTENCY_KEY",
-  createSiweChallenge: "PLANNED_US7",
-  verifySiweSignature: "PLANNED_US7",
-  revokeWalletLink: "PLANNED_US7"
+  createSiweChallenge: "IDEMPOTENCY_KEY",
+  verifySiweSignature: "SINGLE_USE_NONCE",
+  revokeWalletLink: "IDEMPOTENT_SET"
 }
 
 const expectedErrorStatuses = [400, 401, 403, 404, 409, 422, 429]
@@ -437,7 +462,184 @@ for (const [method, pathName] of optimisticLockTargets) {
   )
 }
 
-console.log(
+const implementedIntakeAndRecap = {
+  "/api/v1/publisher/basketball/snapshots": {
+    method: "post",
+    operationId: "submitPublisherBasketballSnapshot",
+    roles: ["PUBLISHER"],
+    security: [
+      {
+        oidcBearer: []
+      }
+    ],
+    statuses: ["201", "400", "401", "403", "409", "429"],
+    concurrency: "IMMUTABLE_SOURCE_ID"
+  },
+  "/api/v1/publisher/basketball/evidence/{evidenceId}:confirm": {
+    method: "post",
+    operationId: "confirmPublisherBasketballEvidence",
+    roles: ["PUBLISHER"],
+    security: [
+      {
+        oidcBearer: []
+      }
+    ],
+    statuses: ["201", "400", "401", "403", "409", "429"],
+    concurrency: "IMMUTABLE_EVIDENCE_ID"
+  },
+  "/api/v1/publisher/basketball/facts": {
+    method: "post",
+    operationId: "appendPublisherBasketballFact",
+    roles: ["PUBLISHER"],
+    security: [
+      {
+        oidcBearer: []
+      }
+    ],
+    statuses: ["201", "400", "401", "403", "409", "429"],
+    concurrency: "IMMUTABLE_FACT_ID"
+  },
+  "/api/v1/publisher/basketball/evidence/{evidenceId}": {
+    method: "get",
+    operationId: "getPublisherBasketballEvidence",
+    roles: ["PUBLISHER"],
+    security: [
+      {
+        oidcBearer: []
+      }
+    ],
+    statuses: ["200", "400", "401", "403", "409", "429"],
+    concurrency: null
+  },
+  "/api/v1/admin/basketball/snapshots": {
+    method: "post",
+    operationId: "submitAdminBasketballSnapshot",
+    roles: ["ADMIN"],
+    security: [
+      {
+        oidcBearer: []
+      }
+    ],
+    statuses: ["201", "400", "401", "403", "409", "429"],
+    concurrency: "IMMUTABLE_SOURCE_ID"
+  },
+  "/api/v1/admin/basketball/evidence/{evidenceId}:confirm": {
+    method: "post",
+    operationId: "confirmAdminBasketballEvidence",
+    roles: ["ADMIN"],
+    security: [
+      {
+        oidcBearer: []
+      }
+    ],
+    statuses: ["201", "400", "401", "403", "409", "429"],
+    concurrency: "IMMUTABLE_EVIDENCE_ID"
+  },
+  "/api/v1/admin/basketball/facts": {
+    method: "post",
+    operationId: "appendAdminBasketballFact",
+    roles: ["ADMIN"],
+    security: [
+      {
+        oidcBearer: []
+      }
+    ],
+    statuses: ["201", "400", "401", "403", "409", "429"],
+    concurrency: "IMMUTABLE_FACT_ID"
+  },
+  "/api/v1/admin/basketball/evidence/{evidenceId}": {
+    method: "get",
+    operationId: "getAdminBasketballEvidence",
+    roles: ["ADMIN"],
+    security: [
+      {
+        oidcBearer: []
+      }
+    ],
+    statuses: ["200", "400", "401", "403", "409", "429"],
+    concurrency: null
+  },
+  "/api/v1/publisher/season-recaps": {
+    method: "post",
+    operationId: "generatePublisherSeasonRecap",
+    roles: ["PUBLISHER"],
+    security: [
+      {
+        oidcBearer: []
+      }
+    ],
+    statuses: ["200", "400", "401", "403", "422", "429"],
+    concurrency: "IMMUTABLE_PROJECTION_ID"
+  },
+  "/api/v1/public/seasons/{seasonId}/recaps/{projectionId}": {
+    method: "get",
+    operationId: "getPublishedSeasonRecap",
+    roles: [],
+    security: [],
+    statuses: ["200", "400", "404", "422", "429"],
+    concurrency: null
+  },
+  "/api/v1/me/seasons/{seasonId}/recaps/{projectionId}": {
+    method: "get",
+    operationId: "getPrivateSeasonRecapBoundary",
+    roles: ["READER"],
+    security: [
+      {
+        oidcBearer: []
+      }
+    ],
+    statuses: ["401", "403", "404"],
+    concurrency: null
+  }
+}
+for (const [pathName, expected] of Object.entries(implementedIntakeAndRecap)) {
+  const operation = paths[pathName]?.[expected.method]
+  assert.equal(
+    operation?.operationId,
+    expected.operationId,
+    "implemented operation identity drifted"
+  )
+  assert.deepEqual(
+    operation["x-required-roles"] ?? [],
+    expected.roles,
+    "implemented role boundary drifted"
+  )
+  assert.deepEqual(
+    operation.security,
+    expected.security,
+    "implemented authentication boundary drifted"
+  )
+  assert.deepEqual(
+    Object.keys(operation.responses).sort(),
+    [...expected.statuses].sort(),
+    "implemented response inventory drifted"
+  )
+  assert.equal(
+    operation["x-write-concurrency"] ?? null,
+    expected.concurrency,
+    "immutable identity concurrency drifted"
+  )
+  if (expected.concurrency) {
+    assert.equal(
+      operation["x-idempotent"],
+      undefined,
+      "UUID identity must not claim an unimplemented idempotency header"
+    )
+    assert.equal(
+      operation["x-optimistic-lock"],
+      undefined,
+      "immutable identity must not claim If-Match support"
+    )
+  }
+}
+
+execFileSync(
+  process.execPath,
+  ["--test", path.join(root, "scripts/test/extended-openapi-contracts.test.mjs")],
+  { stdio: "inherit" }
+)
+
+process.stdout.write(
   JSON.stringify(
     {
       openapi: document.openapi,
@@ -449,5 +651,5 @@ console.log(
     },
     null,
     2
-  )
+  ) + "\n"
 )

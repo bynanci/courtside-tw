@@ -401,7 +401,8 @@ public final class PublicationJobHandler implements OutboxEventHandler {
         if (article.title().isBlank()
                 || article.content() == null
                 || !article.content().isObject()
-                || !contentDocumentValidator.validate(article.content().toString()).valid()) {
+                || !contentDocumentValidator.validate(article.content().toString()).valid()
+                || !repository.recapContentReady(article.content(), clock.instant())) {
             return false;
         }
         try {

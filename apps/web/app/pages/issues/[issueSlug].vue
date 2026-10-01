@@ -8,6 +8,7 @@ import SharedIssueCover from "../../components/issues/SharedIssueCover.vue"
 import PublicMobileDock from "../../components/navigation/PublicMobileDock.vue"
 import PublicSiteHeader from "../../components/navigation/PublicSiteHeader.vue"
 import ReaderJourneyRail from "../../components/reader/ReaderJourneyRail.vue"
+import ProvenancePanel from "../../features/provenance/ProvenancePanel.vue"
 import OfflineDownloadPanel from "../../features/offline/components/OfflineDownloadPanel.vue"
 import { canonicalUrl, jsonLd } from "../../composables/public-seo"
 import {
@@ -159,6 +160,11 @@ onBeforeUnmount(() => stopIssueAnalyticsWatch?.())
         <NuxtLink v-if="!issue" to="/issues" class="back-link">← 返回所有期數</NuxtLink>
         <IssueToc v-if="issue" :issue="issue" />
         <template v-if="issue">
+          <ProvenancePanel
+            v-if="config.public.web3ProvenanceEnabled"
+            :api-base-url="config.public.apiBaseUrl"
+            :issue-slug="issueSlug"
+          />
           <OfflineDownloadPanel
             v-if="!config.public.localReaderDemo"
             :api-base-url="config.public.apiBaseUrl"

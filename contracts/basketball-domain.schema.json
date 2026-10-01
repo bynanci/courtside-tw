@@ -1,0 +1,1065 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://courtside.tw/contracts/basketball-domain.schema.json",
+  "title": "Basketball domain canonical records",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schemaVersion", "synthetic", "scenario", "records"],
+  "properties": {
+    "schemaVersion": {
+      "const": 1
+    },
+    "synthetic": {
+      "type": "boolean"
+    },
+    "scenario": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 500
+    },
+    "records": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "oneOf": [
+          {
+            "$ref": "#/$defs/League"
+          },
+          {
+            "$ref": "#/$defs/Team"
+          },
+          {
+            "$ref": "#/$defs/Player"
+          },
+          {
+            "$ref": "#/$defs/Season"
+          },
+          {
+            "$ref": "#/$defs/TeamSeason"
+          },
+          {
+            "$ref": "#/$defs/PlayerTeamStint"
+          },
+          {
+            "$ref": "#/$defs/Competition"
+          },
+          {
+            "$ref": "#/$defs/Tournament"
+          },
+          {
+            "$ref": "#/$defs/Game"
+          },
+          {
+            "$ref": "#/$defs/NationalTeamCampaign"
+          },
+          {
+            "$ref": "#/$defs/NationalTeamRoster"
+          },
+          {
+            "$ref": "#/$defs/Alias"
+          }
+        ]
+      }
+    }
+  },
+  "$defs": {
+    "League": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "lifecycle", "aliases", "evidenceIds"],
+      "properties": {
+        "type": {
+          "const": "League"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "lifecycle": {
+          "enum": ["ACTIVE", "SUSPENDED", "DISSOLVED", "REORGANIZED"]
+        },
+        "aliases": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "ownerId", "name", "locale", "period", "evidenceIds"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "ownerId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "locale": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "period": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["startDate", "endDate"],
+                "properties": {
+                  "startDate": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "endDate": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              },
+              "evidenceIds": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "supersedesAliasId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "evidenceIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      }
+    },
+    "Team": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "lifecycle", "aliases", "evidenceIds"],
+      "properties": {
+        "type": {
+          "const": "Team"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "lifecycle": {
+          "enum": ["ACTIVE", "SUSPENDED", "DISSOLVED", "REORGANIZED"]
+        },
+        "aliases": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "ownerId", "name", "locale", "period", "evidenceIds"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "ownerId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "locale": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "period": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["startDate", "endDate"],
+                "properties": {
+                  "startDate": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "endDate": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              },
+              "evidenceIds": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "supersedesAliasId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "evidenceIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      }
+    },
+    "Player": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "aliases", "evidenceIds"],
+      "properties": {
+        "type": {
+          "const": "Player"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "aliases": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "ownerId", "name", "locale", "period", "evidenceIds"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "ownerId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "locale": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "period": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["startDate", "endDate"],
+                "properties": {
+                  "startDate": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "endDate": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              },
+              "evidenceIds": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "supersedesAliasId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "evidenceIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      }
+    },
+    "Season": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "leagueId", "officialLabel", "period", "evidenceIds"],
+      "properties": {
+        "type": {
+          "const": "Season"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "leagueId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "officialLabel": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "period": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["startDate", "endDate"],
+          "properties": {
+            "startDate": {
+              "type": "string",
+              "format": "date"
+            },
+            "endDate": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "evidenceIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      }
+    },
+    "TeamSeason": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "id",
+        "teamId",
+        "leagueId",
+        "seasonId",
+        "status",
+        "period",
+        "evidenceIds"
+      ],
+      "properties": {
+        "type": {
+          "const": "TeamSeason"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "teamId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "leagueId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "seasonId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "status": {
+          "enum": ["JOINED", "ACTIVE", "EXITED", "SUSPENDED", "DISSOLVED", "TRANSFERRED"]
+        },
+        "period": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["startDate", "endDate"],
+          "properties": {
+            "startDate": {
+              "type": "string",
+              "format": "date"
+            },
+            "endDate": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "evidenceIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      }
+    },
+    "PlayerTeamStint": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "id",
+        "playerId",
+        "teamId",
+        "leagueId",
+        "seasonId",
+        "period",
+        "status",
+        "countryCode",
+        "system",
+        "role",
+        "minutesPerGame",
+        "tacticalPosition",
+        "evidenceIds"
+      ],
+      "properties": {
+        "type": {
+          "const": "PlayerTeamStint"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "playerId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "teamId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "leagueId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "seasonId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "period": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["startDate", "endDate"],
+          "properties": {
+            "startDate": {
+              "type": "string",
+              "format": "date"
+            },
+            "endDate": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "status": {
+          "enum": ["SIGNED", "ACTIVE", "LOAN", "INJURED", "RELEASED", "TRANSFERRED", "UNKNOWN"]
+        },
+        "countryCode": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}$"
+        },
+        "system": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "role": {
+          "type": ["string", "null"]
+        },
+        "minutesPerGame": {
+          "type": ["number", "null"],
+          "minimum": 0
+        },
+        "tacticalPosition": {
+          "type": ["string", "null"]
+        },
+        "evidenceIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      }
+    },
+    "Competition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "name", "kind", "evidenceIds"],
+      "properties": {
+        "type": {
+          "const": "Competition"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "kind": {
+          "enum": [
+            "FIBA",
+            "ASIA_CUP",
+            "WORLD_CUP_QUALIFIER",
+            "OLYMPIC_QUALIFIER",
+            "WINDOW",
+            "OTHER"
+          ]
+        },
+        "evidenceIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      }
+    },
+    "Tournament": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "id",
+        "competitionId",
+        "officialName",
+        "period",
+        "aliases",
+        "evidenceIds"
+      ],
+      "properties": {
+        "type": {
+          "const": "Tournament"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "competitionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "officialName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "period": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["startDate", "endDate"],
+          "properties": {
+            "startDate": {
+              "type": "string",
+              "format": "date"
+            },
+            "endDate": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "aliases": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["id", "ownerId", "name", "locale", "period", "evidenceIds"],
+            "properties": {
+              "id": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "ownerId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "name": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "locale": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 500
+              },
+              "period": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["startDate", "endDate"],
+                "properties": {
+                  "startDate": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "endDate": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              },
+              "evidenceIds": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              },
+              "supersedesAliasId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "evidenceIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      }
+    },
+    "Game": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "id",
+        "tournamentId",
+        "homeTeamId",
+        "awayTeamId",
+        "startsAt",
+        "venue",
+        "evidenceIds"
+      ],
+      "properties": {
+        "type": {
+          "const": "Game"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "tournamentId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "homeTeamId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "awayTeamId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "startsAt": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "venue": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "evidenceIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      }
+    },
+    "NationalTeamCampaign": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "id",
+        "competitionId",
+        "gender",
+        "ageGroup",
+        "discipline",
+        "period",
+        "objective",
+        "evidenceIds"
+      ],
+      "properties": {
+        "type": {
+          "const": "NationalTeamCampaign"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "competitionId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "gender": {
+          "enum": ["MEN", "WOMEN", "MIXED"]
+        },
+        "ageGroup": {
+          "enum": ["SENIOR", "YOUTH"]
+        },
+        "discipline": {
+          "enum": ["FIVE_ON_FIVE", "THREE_ON_THREE"]
+        },
+        "period": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["startDate", "endDate"],
+          "properties": {
+            "startDate": {
+              "type": "string",
+              "format": "date"
+            },
+            "endDate": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "objective": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "evidenceIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      }
+    },
+    "NationalTeamRoster": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "type",
+        "id",
+        "campaignId",
+        "revision",
+        "supersedesRosterId",
+        "status",
+        "effectiveAt",
+        "entries",
+        "evidenceIds"
+      ],
+      "properties": {
+        "type": {
+          "const": "NationalTeamRoster"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "campaignId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "revision": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "supersedesRosterId": {
+          "oneOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "status": {
+          "enum": ["TRAINING", "FINAL"]
+        },
+        "effectiveAt": {
+          "type": "string",
+          "format": "date"
+        },
+        "entries": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["playerId", "status", "role", "period", "replacesPlayerId", "evidenceIds"],
+            "properties": {
+              "playerId": {
+                "type": "string",
+                "format": "uuid"
+              },
+              "status": {
+                "enum": ["CALLED_UP", "ACTIVE", "INJURED", "WITHDRAWN", "REPLACEMENT"]
+              },
+              "role": {
+                "type": ["string", "null"]
+              },
+              "period": {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["startDate", "endDate"],
+                "properties": {
+                  "startDate": {
+                    "type": "string",
+                    "format": "date"
+                  },
+                  "endDate": {
+                    "oneOf": [
+                      {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                }
+              },
+              "replacesPlayerId": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "format": "uuid"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "evidenceIds": {
+                "type": "array",
+                "minItems": 1,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "format": "uuid"
+                }
+              }
+            }
+          }
+        },
+        "evidenceIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        }
+      }
+    },
+    "Alias": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "id", "ownerId", "name", "locale", "period", "evidenceIds"],
+      "properties": {
+        "type": {
+          "const": "Alias"
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "ownerId": {
+          "type": "string",
+          "format": "uuid"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "locale": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 500
+        },
+        "period": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": ["startDate", "endDate"],
+          "properties": {
+            "startDate": {
+              "type": "string",
+              "format": "date"
+            },
+            "endDate": {
+              "oneOf": [
+                {
+                  "type": "string",
+                  "format": "date"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            }
+          }
+        },
+        "evidenceIds": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "format": "uuid"
+          }
+        },
+        "supersedesAliasId": {
+          "oneOf": [
+            {
+              "type": "string",
+              "format": "uuid"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    }
+  }
+}

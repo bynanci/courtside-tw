@@ -1,4 +1,29 @@
-import type { CourtPulseParameters } from "./contracts.ts"
+import type { CourtPulseParameters, SeasonRecapParameters } from "./contracts.ts"
+
+export function normalizeSeasonRecapParameters(value: unknown): SeasonRecapParameters {
+  if (
+    !isRecord(value) ||
+    Object.keys(value).some((key) => !["values", "lineWeight", "paletteId"].includes(key)) ||
+    value.paletteId !== "season-ink" ||
+    typeof value.lineWeight !== "number" ||
+    !Number.isFinite(value.lineWeight) ||
+    value.lineWeight < 1 ||
+    value.lineWeight > 3 ||
+    !Array.isArray(value.values) ||
+    value.values.length < 1 ||
+    value.values.length > 32 ||
+    Array.from(value.values).some(
+      (entry) => typeof entry !== "number" || !Number.isFinite(entry) || entry < 0 || entry > 1
+    )
+  ) {
+    throw new TypeError("invalid season recap parameters")
+  }
+  return {
+    values: [...value.values] as number[],
+    lineWeight: value.lineWeight,
+    paletteId: "season-ink"
+  }
+}
 
 const DEFAULT_PARAMETERS: CourtPulseParameters = {
   density: 24,

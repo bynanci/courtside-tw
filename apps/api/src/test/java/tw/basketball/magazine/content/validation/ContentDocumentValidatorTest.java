@@ -24,6 +24,14 @@ final class ContentDocumentValidatorTest {
     private final ContentDocumentValidator validator = new ContentDocumentValidator();
 
     @Test
+    void acceptsTheSharedSeasonRecapFixture() throws IOException {
+        ContentDocumentValidator.ValidationResult result = validator.validate(
+                read(FIXTURE_ROOT.resolve("valid/season-recap-v1.json"))
+        );
+        assertTrue(result.valid(), result.errors().toString());
+    }
+
+    @Test
     void acceptsCanonicalValidFixture() throws IOException {
         JsonNode fixture = read(FIXTURE_ROOT.resolve("valid/content-document-v1-all-blocks.json"));
         ContentDocumentValidator.ValidationResult result = validator.validate(fixture);
