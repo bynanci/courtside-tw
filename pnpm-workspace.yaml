@@ -9,7 +9,11 @@ sharedWorkspaceLockfile: true
 managePackageManagerVersions: false
 verifyDepsBeforeRun: false
 overrides:
-  fast-uri: 3.1.6
+  fast-uri: 3.1.7
+  undici@^8.0.0: 8.10.2
+  brace-expansion@^2.0.0: 2.1.6
+  brace-expansion@^5.0.0: 5.0.11
+  devalue@^5.0.0: 5.9.3
   js-yaml: 4.3.2
   nanoid: 3.3.18
   svgo: 4.1.0
