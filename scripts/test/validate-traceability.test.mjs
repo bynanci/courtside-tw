@@ -4031,7 +4031,7 @@ function integratedTaskReceiptFixture() {
   input.baseDocuments[p] = completed.changeBaseTasksText
   input.targetDocuments[p] =
     completed.changeBaseTasksText +
-    "\nCurrent task review: canonical task definitions and checkboxes are unchanged.\n"
+    "\n\nCurrent task review: canonical task definitions and checkboxes are unchanged.\n"
   input.receipt.base_sha = fixtureCompletedBase
   input.pullRequest.base.sha = fixtureCompletedBase
   input.pullRequest.head.sha = fixtureReceiptHead

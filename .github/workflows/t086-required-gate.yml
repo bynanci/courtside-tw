@@ -248,7 +248,7 @@ jobs:
               taskReceiptEqual([...a].sort(), [...b].sort())
             const taskReceiptSha = (v) => typeof v === "string" && /^[a-f0-9]{40}$/u.test(v)
             const taskReceiptSha256 = (v) => typeof v === "string" && /^[a-f0-9]{64}$/u.test(v)
-            
+
             function parseTaskReceiptJson(text) {
               if (typeof text !== "string" || text.length > 1000000)
                 throw new Error("JSON size exceeds receipt limit")
@@ -316,7 +316,7 @@ jobs:
               if (offset !== text.length) throw new Error("trailing JSON content")
               return JSON.parse(text)
             }
-            
+
             function taskReceiptContract(body) {
               const start = "<!-- task-status-reconciliation:owner-authorization:start -->"
               const end = "<!-- task-status-reconciliation:owner-authorization:end -->"
@@ -331,11 +331,9 @@ jobs:
               if (!/^```json\s+[\s\S]+\s+```$/u.test(block)) throw new Error("invalid authorization JSON fence")
               return parseTaskReceiptJson(block.replace(/^```json\s+/u, "").replace(/\s+```$/u, ""))
             }
-            
-            function taskStatusSignatures(text) {
-              if (typeof text !== "string") throw new Error("canonical tasks text is missing")
+
+            function taskReceiptRows(text, taskStart) {
               const lines = text.split("\n")
-              const taskStart = /^- \[([ xX])\] (T\d{3})\b/u
               const rows = []
               for (let index = 0; index < lines.length; index++) {
                 const match = lines[index].match(taskStart)
@@ -350,12 +348,21 @@ jobs:
                     pendingBlank.length = 0
                   } else if (line.trim() === "") {
                     pendingBlank.push(line)
+                  } else if (pendingBlank.length === 0) {
+                    // Bind adjacent prose conservatively: Markdown permits lazy continuation.
+                    block.push(line)
                   } else {
                     break
                   }
                 }
                 rows.push({ id: match[2], checked: match[1], text: block.join("\n") })
               }
+              return rows
+            }
+
+            function taskStatusSignatures(text) {
+              if (typeof text !== "string") throw new Error("canonical tasks text is missing")
+              const rows = taskReceiptRows(text, /^- \[([ xX])\] (T\d{3})\b/u)
               const expectedIds = Array.from({ length: 112 }, (_, i) => `T${String(i + 1).padStart(3, "0")}`)
               if (
                 !taskReceiptEqual(
@@ -495,27 +502,27 @@ jobs:
                     oldTasks.definition === r.task_definition_signature_sha256,
                   "canonical task definitions changed"
                 )
-                const uiRows = (text) => [...text.matchAll(/^- \[([ xX])\] (UIR-\d{3})\b([^\n]*)/gmu)]
+                const uiRows = (text) => taskReceiptRows(text, /^- \[([ xX])\] (UIR-\d{3})\b/u)
                 const oldUi = uiRows(before[TASK_STATUS_DOCUMENT_PATHS[2]])
                 const newUi = uiRows(after[TASK_STATUS_DOCUMENT_PATHS[2]])
                 need(
                   taskReceiptEqual(
-                    oldUi.map((r) => r[2]),
+                    oldUi.map((r) => r.id),
                     Array.from({ length: 17 }, (_, i) => `UIR-${String(i + 1).padStart(3, "0")}`)
                   ) && oldUi.length === newUi.length,
                   "UI ledger task inventory changed"
                 )
                 for (let i = 0; i < oldUi.length; i++) {
-                  if (oldUi[i][2] !== "UIR-017")
-                    need(oldUi[i][0] === newUi[i]?.[0], "only UIR-017 may change in the UI task rows")
+                  if (oldUi[i].id !== "UIR-017")
+                    need(oldUi[i].text === newUi[i]?.text, "only UIR-017 may change in the UI task rows")
                   else {
                     const definition =
                       "UIR-017 — Merge the exact reviewed head and record the protected-main receipt."
                     need(
-                      newUi[i]?.[2] === "UIR-017" &&
-                        oldUi[i][0].slice(6).startsWith(definition) &&
-                        newUi[i][0].slice(6).startsWith(definition) &&
-                        newUi[i][1].toLowerCase() === "x",
+                      newUi[i]?.id === "UIR-017" &&
+                        oldUi[i].text.slice(6).startsWith(definition) &&
+                        newUi[i].text.slice(6).startsWith(definition) &&
+                        newUi[i].checked.toLowerCase() === "x",
                       "UIR-017 completion definition must be preserved"
                     )
                   }
@@ -679,7 +686,7 @@ jobs:
                   if(sourceFiles.length<1||sourceFiles.length>4||new Set(sourceFiles.map(row=>row?.filename)).size!==sourceFiles.length||sourceFiles.some(row=>!['added','modified'].includes(row?.status)||row.previous_filename!==undefined)) throw new Error('Merged documentation source contains invalid changes');
                   const mergedUiPullRequest=await prRead(187);
                   const uiComparison=(await github.rest.repos.compareCommitsWithBasehead({owner,repo,basehead:receipt.completion_evidence?.merge_sha+'...'+base})).data;
-                  const sourceComparison=(await github.rest.repos.compareCommitsWithBasehead({owner,repo,basehead:receipt.base_sha+'...'+sourceHead})).data;
+                  const sourceComparison=(await github.rest.repos.compareCommitsWithBasehead({owner,repo,basehead:sourceHead+'...'+base})).data;
                   const verdict=validateTaskStatusReceipt({mode:'ACCEPTED_BASE',receipt,authorization,baseDocuments,targetDocuments,pullRequest:sourcePullRequest,protectedMainSha:base,currentHead:pr.head.sha,mergedUiPullRequest,uiMergeAncestorOfBase:uiComparison.merge_base_commit?.sha===receipt.completion_evidence?.merge_sha,changedPaths:sourceFiles.map(row=>row.filename),candidateHistoryPaths:sourceHistory.paths,candidateLinearHistory:true,candidateCommittedAfterAuthorization:Date.parse(sourceHistory.last?.commit?.committer?.date)>Date.parse(comment.created_at),receiptMergeAncestorOfBase:sourceComparison.merge_base_commit?.sha===sourceHead});
                   return {...verdict,requested:true,inherited:true,allowedPaths:[],authority_comment_id:comment.id,authority_identity:commentIdentity(comment),authority_url:comment.html_url};
                 }

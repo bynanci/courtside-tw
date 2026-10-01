@@ -335,6 +335,96 @@ const validate = (options) => {
   return receiptModule.validateTaskStatusReceipt(options)
 }
 
+for (const indent of ["", " "]) {
+  test(`task signatures reject ${indent.length}-space lazy canonical continuation`, () => {
+    const f = fixture()
+    f.targetDocuments[tasksPath] = f.targetDocuments[tasksPath].replace(
+      /^- \[[ xX]\] T112[^\n]*$/mu,
+      `$&\n${indent}Change the canonical task requirement.`
+    )
+    authorizeTaskStatusFixture(f)
+    const result = validate(f)
+    assert.equal(result.status, "FAIL")
+    assert.match(result.errors.join("\n"), /canonical task definitions changed/u)
+  })
+}
+
+function continueUiTask(text, id, continuation) {
+  return text.replace(new RegExp(`^- \\[x\\] ${id}[^\\n]*$`, "mu"), `$&\n${continuation}`)
+}
+
+for (let index = 1; index <= 16; index++) {
+  const id = `UIR-${String(index).padStart(3, "0")}`
+  for (const [name, continuation] of [
+    ["indented", "  Unapproved change to this completed task.\n\n  - A nested requirement."],
+    ["unindented lazy", "This requirement is now waived."],
+    ["one-space lazy", " This requirement is now waived."]
+  ]) {
+    test(`UI ledger rejects added ${name} continuation under ${id} despite exact OWNER digests`, () => {
+      const f = fixture()
+      f.targetDocuments[ledgerPath] = continueUiTask(
+        f.targetDocuments[ledgerPath],
+        id,
+        continuation
+      )
+      authorizeTaskStatusFixture(f)
+      const result = validate(f)
+      assert.equal(result.status, "FAIL")
+      assert.match(result.errors.join("\n"), /only UIR-017 may change/u)
+    })
+  }
+}
+
+for (const [name, before, after] of [
+  ["changed", "  Original requirement.", "  Different requirement."],
+  ["removed", "  Original requirement.", ""],
+  ["tab-indented", "", "\tDifferent requirement."],
+  ["blank-separated", "", "\n  Different requirement."],
+  ["changed lazy", "Original requirement.", "Different requirement."],
+  ["removed lazy", "Original requirement.", ""],
+  ["changed one-space lazy", " Original requirement.", " Different requirement."],
+  ["removed one-space lazy", " Original requirement.", ""],
+  [
+    "lazy after indented paragraph",
+    "  Original requirement.",
+    "  Original requirement.\nDifferent requirement."
+  ],
+  [
+    "lazy after blank-separated indented paragraph",
+    "\n  Original requirement.",
+    "\n  Original requirement.\nDifferent requirement."
+  ]
+]) {
+  test(`UI ledger rejects ${name} continuation content`, () => {
+    const f = fixture()
+    f.baseDocuments[ledgerPath] = continueUiTask(f.baseDocuments[ledgerPath], "UIR-016", before)
+    f.targetDocuments[ledgerPath] = continueUiTask(f.targetDocuments[ledgerPath], "UIR-016", after)
+    authorizeTaskStatusFixture(f)
+    const result = validate(f)
+    assert.equal(result.status, "FAIL")
+    assert.match(result.errors.join("\n"), /only UIR-017 may change/u)
+  })
+}
+
+test("UI ledger accepts unchanged complete task items and separate governance prose", () => {
+  const f = fixture()
+  for (const id of ["UIR-001", "UIR-016"])
+    for (const documents of [f.baseDocuments, f.targetDocuments])
+      documents[ledgerPath] = continueUiTask(
+        documents[ledgerPath],
+        id,
+        "Original lazy requirement.\n One-space lazy detail.\n  Original requirement.\n\n  - Nested requirement.\n\tTab-indented detail."
+      )
+  f.targetDocuments[ledgerPath] = continueUiTask(
+    f.targetDocuments[ledgerPath],
+    "UIR-008",
+    "\nSeparate governance paragraph outside this task."
+  )
+  authorizeTaskStatusFixture(f)
+  const result = validate(f)
+  assert.equal(result.status, "PASS", result.errors.join("\n"))
+})
+
 test("authenticates an exact docs receipt while preserving all 112 task definitions and 86/26 checkboxes", () => {
   const f = fixture()
   const result = validate(f)

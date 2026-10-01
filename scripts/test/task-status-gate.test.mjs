@@ -133,7 +133,8 @@ test("a malformed receipt without canonical tasks edits still requires release c
   )
 })
 
-const { taskStatusFixture } = await import("./task-status-receipts.test.mjs")
+const { taskStatusFixture, authorizeTaskStatusFixture } =
+  await import("./task-status-receipts.test.mjs")
 function liveGate(fixture, mutate = () => {}) {
   const f = fixture
   const state = {
@@ -173,7 +174,14 @@ function liveGate(fixture, mutate = () => {}) {
           return { data: structuredClone(state.comment) }
         }
       },
-      pulls: { get: async () => ({ data: f.mergedUiPullRequest }) },
+      pulls: {
+        get: async ({ pull_number }) => ({
+          data: pull_number === 187 ? f.mergedUiPullRequest : state.sourcePr
+        })
+      },
+      git: {
+        getCommit: async ({ commit_sha }) => ({ data: state.gitCommits?.[commit_sha] })
+      },
       repos: {
         getContent: async ({ path, ref }) => ({
           data: {
@@ -191,23 +199,28 @@ function liveGate(fixture, mutate = () => {}) {
         compareCommitsWithBasehead: async (parameters) => {
           state.comparisonRequests.push(parameters)
           return {
-            data: parameters.basehead.startsWith(f.protectedMainSha)
-              ? {
-                  merge_base_commit: { sha: state.mainSha },
-                  total_commits: state.commits.length,
-                  commits: state.commits.slice(0, state.comparisonLimit)
-                }
-              : {
-                  merge_base_commit: {
-                    sha: f.receipt.completion_evidence.merge_sha
+            data:
+              parameters.basehead === `${f.protectedMainSha}...${f.currentHead}`
+                ? {
+                    merge_base_commit: { sha: f.protectedMainSha },
+                    total_commits: state.commits.length,
+                    commits: state.commits.slice(0, state.comparisonLimit)
                   }
-                }
+                : {
+                    merge_base_commit: {
+                      sha: state.commitParents
+                        ? mergeBase(state.commitParents, ...parameters.basehead.split("..."))
+                        : f.receipt.completion_evidence.merge_sha
+                    }
+                  }
           }
         }
       }
     },
-    request: async () => ({
-      data: { files: state.historyFiles },
+    request: async (route) => ({
+      data: route.endsWith("/pulls/{pull_number}/files")
+        ? state.sourceFiles
+        : { files: state.historyFiles },
       headers: {
         link: state.incompletePage ? '<https://api.github.com/next>; rel="next"' : ""
       }
@@ -236,12 +249,150 @@ function liveGate(fixture, mutate = () => {}) {
   }
 }
 
+function mergeBase(parents, base, head) {
+  const ancestors = new Set()
+  for (let sha = base; sha; sha = parents[sha]) ancestors.add(sha)
+  for (let sha = head; sha; sha = parents[sha]) if (ancestors.has(sha)) return sha
+  return null
+}
+
+function liveInheritedGate(mutate = () => {}) {
+  const f = taskStatusFixture()
+  return liveGate(f, (state) => {
+    const sourceHead = "c".repeat(40)
+    const currentBase = "f".repeat(40)
+    const currentHead = "9".repeat(40)
+    const tree = "8".repeat(40)
+    state.sourcePr = {
+      ...structuredClone(f.pullRequest),
+      state: "closed",
+      merged: true,
+      merge_commit_sha: sourceHead
+    }
+    state.sourceFiles = structuredClone(state.files)
+    state.mainSha = currentBase
+    state.pr = {
+      ...structuredClone(f.pullRequest),
+      number: 200,
+      head: { ...f.pullRequest.head, sha: currentHead, ref: "maintenance" },
+      base: { ...f.pullRequest.base, sha: currentBase }
+    }
+    state.files = [{ filename: "apps/web/app/pages/index.vue", status: "modified" }]
+    state.gitCommits = {
+      [sourceHead]: { parents: [{ sha: f.receipt.base_sha }], tree: { sha: tree } },
+      [f.currentHead]: { tree: { sha: tree } }
+    }
+    state.commitParents = {
+      [f.receipt.base_sha]: f.receipt.completion_evidence.merge_sha,
+      [f.currentHead]: f.receipt.base_sha,
+      [sourceHead]: f.receipt.base_sha,
+      [currentBase]: sourceHead,
+      [currentHead]: currentBase
+    }
+    mutate(state)
+  })
+}
+
+test("trusted inherited receipt checks its squash merge against current protected main", async () => {
+  const gate = liveInheritedGate()
+  const verdict = await gate.read()
+  assert.equal(verdict.status, "PASS", verdict.errors.join("\n"))
+  assert.equal(verdict.inherited, true)
+  assert.equal(verdict.mode, "ACCEPTED_BASE")
+  assert.deepEqual(Array.from(verdict.allowedPaths), [])
+  assert.equal(sandbox.classifyCandidate(200, gate.state.files, 1, verdict), "NOT_APPLICABLE")
+  assert.ok(
+    gate.state.comparisonRequests.some(
+      ({ basehead }) =>
+        basehead === `${gate.state.sourcePr.merge_commit_sha}...${gate.state.mainSha}`
+    )
+  )
+  await gate.recheck(verdict)
+})
+
+for (const [name, mutate, error] of [
+  [
+    "receipt merge outside current main ancestry",
+    (state) => {
+      state.commitParents[state.mainSha] = state.sourcePr.base.sha
+    },
+    /merged receipt ancestor/u
+  ],
+  [
+    "source tree differs from reviewed head",
+    (state) => {
+      state.gitCommits[state.sourcePr.merge_commit_sha].tree.sha = "7".repeat(40)
+    },
+    /reviewed single-parent source tree/u
+  ],
+  [
+    "source squash parent differs from authorized base",
+    (state) => {
+      state.gitCommits[state.sourcePr.merge_commit_sha].parents[0].sha = "7".repeat(40)
+    },
+    /reviewed single-parent source tree/u
+  ],
+  [
+    "edited inherited authority",
+    (state) => {
+      state.comment.updated_at = "2026-09-12T10:02:00Z"
+    },
+    /exact unedited repository OWNER/u
+  ],
+  [
+    "deleted inherited authority",
+    (state) => {
+      state.unavailable = true
+    },
+    /Comment not found/u
+  ],
+  [
+    "hidden runtime work in inherited source history",
+    (state) => {
+      state.historyFiles[0].filename = "apps/web/app/pages/index.vue"
+    },
+    /history contains invalid changes/u
+  ]
+]) {
+  test(`trusted inherited receipt rejects ${name}`, async () => {
+    const gate = liveInheritedGate(mutate)
+    const verdict = await gate.read()
+    assert.equal(verdict.status, "FAIL")
+    assert.match(verdict.errors.join("\n"), error)
+    assert.equal(sandbox.classifyCandidate(200, gate.state.files, 1, verdict), "UNKNOWN")
+  })
+}
+
 test("trusted API read-back authenticates source bytes, merged UI evidence and the complete commit history", async () => {
   const gate = liveGate(taskStatusFixture())
   const verdict = await gate.read()
   assert.equal(verdict.status, "PASS", verdict.errors.join("\n"))
   assert.equal(verdict.authority_comment_id, 6000000000)
   await gate.recheck(verdict)
+})
+
+test("trusted API read-back rejects changed UI task continuations even with matching authority", async () => {
+  const f = taskStatusFixture()
+  f.targetDocuments[docs[2]] = f.targetDocuments[docs[2]].replace(
+    /^- \[x\] UIR-016[^\n]*$/mu,
+    "$&\n\n  Change the existing acceptance requirement."
+  )
+  authorizeTaskStatusFixture(f)
+  const verdict = await liveGate(f).read()
+  assert.equal(verdict.status, "FAIL")
+  assert.match(verdict.errors.join("\n"), /only UIR-017 may change/u)
+})
+
+test("trusted API read-back rejects lazy UI task continuations even with matching authority", async () => {
+  const f = taskStatusFixture()
+  f.targetDocuments[docs[2]] = f.targetDocuments[docs[2]].replace(
+    /^- \[x\] UIR-016[^\n]*$/mu,
+    "$&\nChange the existing acceptance requirement."
+  )
+  authorizeTaskStatusFixture(f)
+  const verdict = await liveGate(f).read()
+  assert.equal(verdict.status, "FAIL")
+  assert.match(verdict.errors.join("\n"), /only UIR-017 may change/u)
 })
 
 for (const [name, mutate] of [

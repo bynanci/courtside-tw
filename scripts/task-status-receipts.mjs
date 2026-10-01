@@ -129,10 +129,8 @@ function taskReceiptContract(body) {
   return parseTaskReceiptJson(block.replace(/^```json\s+/u, "").replace(/\s+```$/u, ""))
 }
 
-function taskStatusSignatures(text) {
-  if (typeof text !== "string") throw new Error("canonical tasks text is missing")
+function taskReceiptRows(text, taskStart) {
   const lines = text.split("\n")
-  const taskStart = /^- \[([ xX])\] (T\d{3})\b/u
   const rows = []
   for (let index = 0; index < lines.length; index++) {
     const match = lines[index].match(taskStart)
@@ -147,12 +145,21 @@ function taskStatusSignatures(text) {
         pendingBlank.length = 0
       } else if (line.trim() === "") {
         pendingBlank.push(line)
+      } else if (pendingBlank.length === 0) {
+        // Bind adjacent prose conservatively: Markdown permits lazy continuation.
+        block.push(line)
       } else {
         break
       }
     }
     rows.push({ id: match[2], checked: match[1], text: block.join("\n") })
   }
+  return rows
+}
+
+function taskStatusSignatures(text) {
+  if (typeof text !== "string") throw new Error("canonical tasks text is missing")
+  const rows = taskReceiptRows(text, /^- \[([ xX])\] (T\d{3})\b/u)
   const expectedIds = Array.from({ length: 112 }, (_, i) => `T${String(i + 1).padStart(3, "0")}`)
   if (
     !taskReceiptEqual(
@@ -292,27 +299,27 @@ function validateTaskStatusReceipt(input = {}) {
         oldTasks.definition === r.task_definition_signature_sha256,
       "canonical task definitions changed"
     )
-    const uiRows = (text) => [...text.matchAll(/^- \[([ xX])\] (UIR-\d{3})\b([^\n]*)/gmu)]
+    const uiRows = (text) => taskReceiptRows(text, /^- \[([ xX])\] (UIR-\d{3})\b/u)
     const oldUi = uiRows(before[TASK_STATUS_DOCUMENT_PATHS[2]])
     const newUi = uiRows(after[TASK_STATUS_DOCUMENT_PATHS[2]])
     need(
       taskReceiptEqual(
-        oldUi.map((r) => r[2]),
+        oldUi.map((r) => r.id),
         Array.from({ length: 17 }, (_, i) => `UIR-${String(i + 1).padStart(3, "0")}`)
       ) && oldUi.length === newUi.length,
       "UI ledger task inventory changed"
     )
     for (let i = 0; i < oldUi.length; i++) {
-      if (oldUi[i][2] !== "UIR-017")
-        need(oldUi[i][0] === newUi[i]?.[0], "only UIR-017 may change in the UI task rows")
+      if (oldUi[i].id !== "UIR-017")
+        need(oldUi[i].text === newUi[i]?.text, "only UIR-017 may change in the UI task rows")
       else {
         const definition =
           "UIR-017 — Merge the exact reviewed head and record the protected-main receipt."
         need(
-          newUi[i]?.[2] === "UIR-017" &&
-            oldUi[i][0].slice(6).startsWith(definition) &&
-            newUi[i][0].slice(6).startsWith(definition) &&
-            newUi[i][1].toLowerCase() === "x",
+          newUi[i]?.id === "UIR-017" &&
+            oldUi[i].text.slice(6).startsWith(definition) &&
+            newUi[i].text.slice(6).startsWith(definition) &&
+            newUi[i].checked.toLowerCase() === "x",
           "UIR-017 completion definition must be preserved"
         )
       }
