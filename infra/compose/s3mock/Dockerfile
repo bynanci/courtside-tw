@@ -6,6 +6,7 @@ FROM maven:3.9.15-eclipse-temurin-26@sha256:029a8e2838ae68238ffb8be407cddbb3f07d
 
 ARG S3MOCK_COMMIT=627bf8d37938a5eb89e5775391c0b475c2686f98
 ARG TOMCAT_EMBED_VERSION=11.0.25
+ARG JACKSON_BOM_VERSION=3.1.7
 
 RUN set -eux; \
     git init /src; \
@@ -17,12 +18,16 @@ RUN set -eux; \
 WORKDIR /src
 
 RUN mvn -B -ntp -pl server -am -DskipTests -DskipDocker=true \
-      -Dtomcat.version="$TOMCAT_EMBED_VERSION" package
+      -Dtomcat.version="$TOMCAT_EMBED_VERSION" \
+      -Djackson-bom.version="$JACKSON_BOM_VERSION" package
 
 RUN set -eux; \
     jar="$(find server/target -maxdepth 1 -type f -name 's3mock-*-exec.jar' -print -quit)"; \
     test -n "$jar"; \
     jar tf "$jar" | grep -Fx "BOOT-INF/lib/tomcat-embed-core-$TOMCAT_EMBED_VERSION.jar"; \
+    for module in jackson-core jackson-databind jackson-dataformat-xml jackson-module-kotlin; do \
+      jar tf "$jar" | grep -Fx "BOOT-INF/lib/$module-$JACKSON_BOM_VERSION.jar"; \
+    done; \
     cp "$jar" /tmp/s3mock-exec.jar
 
 # The final image keeps root so the Compose named volume can be initialized
