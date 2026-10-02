@@ -4209,6 +4209,513 @@ export function createOctoberSecurityIntegrationAuthorizationGate(
 }
 const octoberSecurityIntegrationGate = createOctoberSecurityIntegrationAuthorizationGate()
 
+// Independent additive authority for PR204's pinned audit-test-only composition.
+// Earlier sources and factories remain immutable; no source override is admitted.
+export const AUDIT_SYNC_COMPOSITION_AUTHORIZATION_SOURCE = Object.freeze({
+  comment_id: 5943017802,
+  ref: "https://github.com/bynanci/courtside-tw/issues/160#issuecomment-5943017802",
+  api_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/comments/5943017802",
+  recorded_at: "2026-10-02T00:03:05Z",
+  body_sha256: "4f0f3c7bd0e3753b8588c6a68bb8f333077e682a9a4188a75ddc6d0ab4744223"
+})
+export const AUDIT_SYNC_COMPOSITION_INHERITED_PARENT = Object.freeze({
+  head_sha: "3405f072e97492703c504232226ddaec611011fe",
+  tree_sha: "be3104231db0707efb1ad31f0e413cb2fd6b5ada",
+  red_head_sha: "ba851de5bf0a1d4c9392f6f2df4ce30c48abba7b",
+  red_tree_sha: "86b2e9a6c128e1bc75a6453680ad1cbb71d812bd",
+  red_parent_sha: "ac92f88a7267736325519a8bf12dc6b9ee2bcb86",
+  parent_parent_sha: "ba851de5bf0a1d4c9392f6f2df4ce30c48abba7b",
+  source_ref: "https://github.com/bynanci/courtside-tw/issues/160#issuecomment-5942584763",
+  source_body_sha256: "d6f3b34a365d7e69dfe1d395e07b143f37f008f533c6b88560971075e2dfd5d2",
+  source_recorded_at: "2026-10-01T23:22:04Z",
+  acceptance_boundary:
+    "This exact parent is an immutable development baseline only. Verify its actual GitHub commit identity/tree, local ancestry and inherited two-commit seven-path history; do not infer overall Security, merge or release acceptance from individual passing checks."
+})
+export const AUDIT_SYNC_COMPOSITION_AUTHORIZED_PATHS = Object.freeze([
+  "infra/compose/s3mock/Dockerfile",
+  "pnpm-lock.yaml",
+  "pnpm-workspace.yaml",
+  "infra/compose/oidc/Dockerfile",
+  "infra/compose/compose.yaml",
+  "apps/api/src/test/java/tw/basketball/magazine/security/RouteRateLimitHttpIT.java",
+  "scripts/test/validate-traceability.test.mjs",
+  "scripts/validate-traceability.mjs"
+])
+export const AUDIT_SYNC_COMPOSITION_DELTA_PATHS = Object.freeze([
+  "apps/api/src/test/java/tw/basketball/magazine/security/RouteRateLimitHttpIT.java",
+  "scripts/test/validate-traceability.test.mjs",
+  "scripts/validate-traceability.mjs"
+])
+export const AUDIT_SYNC_COMPOSITION_PRESERVED_PAYLOADS = Object.freeze(
+  [
+    {
+      path: "infra/compose/s3mock/Dockerfile",
+      git_blob_oid: "3ce8816ee80de915c461e30db1b3db5c6554a293",
+      sha256: "0cce6cdfadcdd98503b4a1019fc0aa19fa9f8721c8f12e31d9e030a5ea8932eb"
+    },
+    {
+      path: "pnpm-lock.yaml",
+      git_blob_oid: "3da429748ee50458640dd496986c6bb3211edf7b",
+      sha256: "d196d2f2b336426115741c5ef70597676b6e9e439c2a6fbe9c964fec1401b917"
+    },
+    {
+      path: "pnpm-workspace.yaml",
+      git_blob_oid: "544ffa4a6844b7504e1727da3cb9e147a84a8ccd",
+      sha256: "7392565039a634ea1ac4e38acc8c4fa47411b5c5efef142ca52df0d9d946a47a"
+    },
+    {
+      path: "infra/compose/oidc/Dockerfile",
+      git_blob_oid: "99c85b9c644ec60f3ffea88a04991372febbe730",
+      sha256: "a081726f538f331cdc57ef2c3a60f963072ea3f726a0e3c9d1bd814aba4fc66e"
+    },
+    {
+      path: "infra/compose/compose.yaml",
+      git_blob_oid: "85bdcd5ee06f582387b4eec10306b66e64fdbb68",
+      sha256: "5e6393de07ce43fb6160a7962631b3e4233b5a6fa5e899c9045b26a6e15c9bd0"
+    }
+  ].map((payload) => Object.freeze(payload))
+)
+export const AUDIT_SYNC_COMPOSITION_AUDIT_TEST_TARGET = Object.freeze({
+  path: "apps/api/src/test/java/tw/basketball/magazine/security/RouteRateLimitHttpIT.java",
+  git_blob_oid: "757d929e0e2591f1f0de54c78db4c458835b9443",
+  sha256: "6f37fa8385599ed084392259a9bc64f6925a19f2425b38131cb59f3c882452c5"
+})
+export const AUDIT_SYNC_COMPOSITION_AUDIT_TEST_BASELINE = Object.freeze({
+  path: "apps/api/src/test/java/tw/basketball/magazine/security/RouteRateLimitHttpIT.java",
+  git_blob_oid: "e355fb152726f105901d819b70e8ffef60a6469a",
+  sha256: "7c6ae100a99d8486f6b60e60f4357a3a338895d0dca1efc53d96474781e95fc6"
+})
+
+const auditSyncCompositionPaths = new Set(AUDIT_SYNC_COMPOSITION_AUTHORIZED_PATHS)
+
+export function createAuditSyncCompositionAuthorizationGate(
+  authorizationSource = AUDIT_SYNC_COMPOSITION_AUTHORIZATION_SOURCE
+) {
+  const source = structuredClone(authorizationSource)
+  const c = {
+    schema_version: "courtside-security-audit-sync-composition-owner-dispatch/v1",
+    base_sha: OCTOBER_SECURITY_INTEGRATION_BASE_SHA,
+    base_tree_sha: OCTOBER_SECURITY_INTEGRATION_BASE_TREE_SHA,
+    branch: OCTOBER_SECURITY_INTEGRATION_BRANCH,
+    authorized_paths: AUDIT_SYNC_COMPOSITION_AUTHORIZED_PATHS,
+    recorded_at: source?.recorded_at,
+    api_url: source?.api_url,
+    ref: source?.ref,
+    body_sha256: source?.body_sha256
+  }
+  const sha = (value) => typeof value === "string" && /^[0-9a-f]{40}$/.test(value)
+  const same = (left, right) =>
+    Array.isArray(left) && Array.isArray(right) && sameValues(left, right)
+  const closure = (paths) =>
+    Array.isArray(paths) &&
+    new Set(paths).size === paths.length &&
+    same(paths, AUDIT_SYNC_COMPOSITION_AUTHORIZED_PATHS) &&
+    paths.every((filePath) => auditSyncCompositionPaths.has(filePath))
+  const deltaClosure = (paths) =>
+    Array.isArray(paths) &&
+    new Set(paths).size === paths.length &&
+    same(paths, AUDIT_SYNC_COMPOSITION_DELTA_PATHS)
+  const parent = AUDIT_SYNC_COMPOSITION_INHERITED_PARENT
+  const bound = isDeepStrictEqual(source, AUDIT_SYNC_COMPOSITION_AUTHORIZATION_SOURCE)
+  const parentMatches = (commit) =>
+    commit?.sha === parent.head_sha &&
+    commit?.tree?.sha === parent.tree_sha &&
+    Array.isArray(commit?.parents) &&
+    commit.parents.length === 1 &&
+    commit.parents[0]?.sha === parent.red_head_sha
+  const authentic = (authorization) =>
+    bound &&
+    authorization?.id === source.comment_id &&
+    authorization?.url === c.api_url &&
+    authorization?.html_url === c.ref &&
+    authorization?.issue_url === "https://api.github.com/repos/bynanci/courtside-tw/issues/160" &&
+    authorization?.user?.login === ACCEPTED_RECEIPT_OWNER &&
+    authorization?.author_association === "OWNER" &&
+    authorization?.created_at === c.recorded_at &&
+    authorization?.updated_at === c.recorded_at &&
+    typeof authorization?.body === "string" &&
+    sha256(authorization.body) === c.body_sha256
+
+  const inspectCandidate = (root, head) => {
+    if (!bound || !sha(head)) return null
+    try {
+      const git = (args) =>
+        execFileSync("git", args, {
+          cwd: root,
+          encoding: "utf8",
+          maxBuffer: 4 * 1024 * 1024,
+          stdio: ["ignore", "pipe", "ignore"]
+        }).trim()
+      const list = (args) => git(args).split("\n").filter(Boolean)
+      const range = `${parent.head_sha}..${head}`
+      const commits = list(["rev-list", "--reverse", range])
+      const history = (range) =>
+        [...new Set(list(["log", "--format=", "--name-only", "--no-renames", range]))].sort()
+      const modes = (ref) =>
+        new Map(
+          git(["ls-tree", "-r", "-z", ref, "--", ...c.authorized_paths])
+            .split("\0")
+            .filter(Boolean)
+            .map((entry) => {
+              const [metadata, filePath] = entry.split("\t")
+              return [filePath, metadata]
+            })
+        )
+      const regular = (ref) => {
+        const entries = modes(ref)
+        return c.authorized_paths.every((file) =>
+          /^100644 blob [0-9a-f]{40}$/.test(entries.get(file) ?? "")
+        )
+      }
+      const payloadMatches = (ref, payload) =>
+        modes(ref).get(payload.path) === `100644 blob ${payload.git_blob_oid}` &&
+        sha256(
+          execFileSync("git", ["show", `${ref}:${payload.path}`], {
+            cwd: root,
+            maxBuffer: 4 * 1024 * 1024,
+            stdio: ["ignore", "pipe", "ignore"]
+          })
+        ) === payload.sha256
+      const inheritedCommits = list(["rev-list", "--reverse", `${c.base_sha}..${parent.head_sha}`])
+      return {
+        head,
+        tree_sha: git(["rev-parse", `${head}^{tree}`]),
+        base_tree_sha: git(["rev-parse", `${c.base_sha}^{tree}`]),
+        base_ancestor: inspectAncestor(root, c.base_sha, head),
+        inherited_parent_sha: parent.head_sha,
+        inherited_parent_tree_sha: git(["rev-parse", `${parent.head_sha}^{tree}`]),
+        parent_ancestor: inspectAncestor(root, parent.head_sha, head),
+        inherited_prefix_match:
+          same(inheritedCommits, [parent.red_head_sha, parent.head_sha]) &&
+          inheritedCommits[0] === parent.red_head_sha &&
+          git(["show", "-s", "--format=%P", parent.head_sha]) === parent.red_head_sha &&
+          git(["show", "-s", "--format=%P", parent.red_head_sha]) === c.base_sha &&
+          git(["rev-parse", `${parent.red_head_sha}^{tree}`]) === parent.red_tree_sha &&
+          git(["rev-parse", `${parent.head_sha}^{tree}`]) === parent.tree_sha &&
+          same(inspectChangedPathsBetweenCommits(root, c.base_sha, parent.red_head_sha), [
+            "scripts/test/validate-traceability.test.mjs"
+          ]) &&
+          same(
+            inspectChangedPathsBetweenCommits(root, c.base_sha, parent.head_sha),
+            OCTOBER_SECURITY_INTEGRATION_AUTHORIZED_PATHS
+          ) &&
+          same(
+            history(`${c.base_sha}..${parent.head_sha}`),
+            OCTOBER_SECURITY_INTEGRATION_AUTHORIZED_PATHS
+          ),
+        changed_paths: inspectChangedPathsBetweenCommits(root, c.base_sha, head),
+        history_paths: history(`${c.base_sha}..${head}`),
+        delta_paths: inspectChangedPathsBetweenCommits(root, parent.head_sha, head),
+        delta_history_paths: history(range),
+        commit_count: commits.length,
+        merge_commit_count: inspectCommitCountBetween(root, parent.head_sha, head, {
+          mergesOnly: true
+        }),
+        commits_postdate_authorization:
+          commits.length > 0 &&
+          list(["log", "--format=%aI%n%cI", range]).every(
+            (timestamp) => Date.parse(timestamp) > Date.parse(c.recorded_at)
+          ),
+        tests_first:
+          commits.length > 0 &&
+          git(["show", "-s", "--format=%P", commits[0]]) === parent.head_sha &&
+          same(inspectChangedPathsBetweenCommits(root, parent.head_sha, commits[0]), [
+            "scripts/test/validate-traceability.test.mjs"
+          ]) &&
+          commits.every(
+            (commit, index) =>
+              git(["show", "-s", "--format=%P", commit]) ===
+              (index === 0 ? parent.head_sha : commits[index - 1])
+          ),
+        allowed_path_modes_match: regular(head),
+        delta_history_modes_match: commits.every(regular),
+        preserved_payloads_match: AUDIT_SYNC_COMPOSITION_PRESERVED_PAYLOADS.every(
+          (payload) => payloadMatches(head, payload) && payloadMatches(parent.head_sha, payload)
+        ),
+        audit_test_target_match:
+          payloadMatches(head, AUDIT_SYNC_COMPOSITION_AUDIT_TEST_TARGET) &&
+          commits.every(
+            (commit) =>
+              payloadMatches(commit, AUDIT_SYNC_COMPOSITION_AUDIT_TEST_BASELINE) ||
+              payloadMatches(commit, AUDIT_SYNC_COMPOSITION_AUDIT_TEST_TARGET)
+          ),
+        audit_test_baseline_match: payloadMatches(
+          parent.head_sha,
+          AUDIT_SYNC_COMPOSITION_AUDIT_TEST_BASELINE
+        )
+      }
+    } catch {
+      return null
+    }
+  }
+
+  return Object.freeze({
+    requested(changedPaths, context, readback = null, base = null) {
+      return (
+        readback !== null ||
+        (base === c.base_sha &&
+          Array.isArray(changedPaths) &&
+          changedPaths.includes(AUDIT_SYNC_COMPOSITION_AUDIT_TEST_TARGET.path))
+      )
+    },
+    inspect(
+      root,
+      {
+        environment = process.env,
+        fetchJson = (url) =>
+          JSON.parse(
+            execFileSync(
+              process.execPath,
+              ["--input-type=module", "--eval", githubCommentFetchScript, url],
+              {
+                encoding: "utf8",
+                env: githubReadbackEnvironment(environment),
+                maxBuffer: 1024 * 1024,
+                stdio: ["ignore", "pipe", "pipe"],
+                timeout: 15000
+              }
+            )
+          ),
+        headInspector = (repositoryRoot) =>
+          execFileSync("git", ["rev-parse", "HEAD"], {
+            cwd: repositoryRoot,
+            encoding: "utf8",
+            stdio: ["ignore", "pipe", "ignore"]
+          }).trim(),
+        candidateInspector = inspectCandidate
+      } = {}
+    ) {
+      if (!bound) {
+        return {
+          status: "UNAVAILABLE",
+          source: "github-api",
+          errors: ["audit synchronization composition immutable OWNER source is not sealed"]
+        }
+      }
+      try {
+        const authorization = fetchJson(c.api_url)
+        if (!authentic(authorization)) throw new Error("untrusted authorization")
+        if (
+          environment.GITHUB_ACTIONS !== "true" ||
+          environment.GITHUB_REPOSITORY !== "bynanci/courtside-tw" ||
+          !environment.GITHUB_EVENT_PATH
+        ) {
+          throw new Error("missing authenticated event")
+        }
+        const event = JSON.parse(fs.readFileSync(environment.GITHUB_EVENT_PATH, "utf8"))
+        const localHead = headInspector(root)
+        if (
+          !sha(localHead) ||
+          environment.GITHUB_EVENT_NAME !== "pull_request" ||
+          event?.pull_request?.head?.sha !== localHead ||
+          event?.pull_request?.head?.ref !== c.branch ||
+          event?.pull_request?.base?.sha !== c.base_sha ||
+          event?.pull_request?.base?.ref !== "main" ||
+          event?.repository?.full_name !== "bynanci/courtside-tw" ||
+          event?.pull_request?.head?.repo?.full_name !== "bynanci/courtside-tw" ||
+          event?.pull_request?.base?.repo?.full_name !== "bynanci/courtside-tw" ||
+          event?.number !== event?.pull_request?.number
+        ) {
+          throw new Error("pull request event is not exact")
+        }
+        const pullRequestNumber = event?.pull_request?.number
+        if (pullRequestNumber !== 204) {
+          throw new Error("invalid pull request number")
+        }
+        const pullRequest = fetchJson(
+          `https://api.github.com/repos/bynanci/courtside-tw/pulls/${pullRequestNumber}`
+        )
+        if (pullRequest?.head?.sha !== localHead || pullRequest?.number !== pullRequestNumber) {
+          throw new Error("live pull request head drifted")
+        }
+        const reviewedHeadCommit = fetchJson(
+          `https://api.github.com/repos/bynanci/courtside-tw/git/commits/${pullRequest?.head?.sha}`
+        )
+        const inheritedParentCommit = fetchJson(
+          `https://api.github.com/repos/bynanci/courtside-tw/git/commits/${parent.head_sha}`
+        )
+        if (!parentMatches(inheritedParentCommit)) throw new Error("inherited parent changed")
+        const protectedMain = fetchJson(
+          "https://api.github.com/repos/bynanci/courtside-tw/branches/main"
+        )
+        return {
+          status: "VERIFIED",
+          source: "github-api",
+          authorization,
+          pull_request: pullRequest,
+          reviewed_head_commit: reviewedHeadCommit,
+          inherited_parent_commit: inheritedParentCommit,
+          protected_main: protectedMain,
+          candidate: candidateInspector(root, pullRequest?.head?.sha),
+          errors: []
+        }
+      } catch {
+        return {
+          status: "UNAVAILABLE",
+          source: "github-api",
+          errors: ["audit synchronization composition OWNER read-back failed"]
+        }
+      }
+    },
+    validate({
+      readback,
+      gitBinding,
+      changedPaths,
+      changeBaseSha,
+      boundedScopeActive,
+      githubActionsContext,
+      requireExactHeadEvidence,
+      errors = []
+    } = {}) {
+      const start = errors.length
+      const check = (ok, message) => {
+        if (!ok) errors.push(`audit synchronization composition authorization ${message}`)
+      }
+      check(bound, "is unbound")
+      check(
+        changeBaseSha === c.base_sha && boundedScopeActive === false && closure(changedPaths),
+        "requires the exact eight-path scope and base"
+      )
+      check(
+        readback?.status === "VERIFIED" &&
+          readback?.source === "github-api" &&
+          Array.isArray(readback?.errors) &&
+          readback.errors.length === 0 &&
+          authentic(readback?.authorization),
+        "requires the exact immutable OWNER comment"
+      )
+      const dispatch = parseOidcSecurityRemediationAuthorizationBody(
+        {
+          body: readback?.authorization?.body,
+          startMarker: "<!-- security-audit-sync-composition:owner-dispatch:v1:start -->",
+          endMarker: "<!-- security-audit-sync-composition:owner-dispatch:v1:end -->",
+          label: "audit synchronization composition dispatch"
+        },
+        errors
+      )
+      check(
+        dispatch?.schema_version === c.schema_version &&
+          dispatch?.decision === "DISPATCH_ACCEPTED" &&
+          dispatch?.accepted_by === ACCEPTED_RECEIPT_OWNER &&
+          dispatch?.repository === "bynanci/courtside-tw" &&
+          dispatch?.branch === c.branch &&
+          dispatch?.protected_base?.branch === "main" &&
+          dispatch?.protected_base?.sha === c.base_sha &&
+          dispatch?.protected_base?.tree_sha === c.base_tree_sha &&
+          dispatch?.protected_base?.protected === true &&
+          same(dispatch?.authorized_paths, c.authorized_paths) &&
+          dispatch?.pull_request === 204 &&
+          deltaClosure(dispatch?.authorized_delta_paths) &&
+          isDeepStrictEqual(dispatch?.inherited_parent, parent) &&
+          isDeepStrictEqual(
+            dispatch?.preserved_payloads,
+            AUDIT_SYNC_COMPOSITION_PRESERVED_PAYLOADS
+          ) &&
+          isDeepStrictEqual(
+            dispatch?.audit_test_target,
+            AUDIT_SYNC_COMPOSITION_AUDIT_TEST_TARGET
+          ) &&
+          isDeepStrictEqual(
+            dispatch?.audit_test_baseline,
+            AUDIT_SYNC_COMPOSITION_AUDIT_TEST_BASELINE
+          ) &&
+          dispatch?.original_oidc_source?.ref === OCTOBER_OIDC_SECURITY_AUTHORIZATION_SOURCE.ref &&
+          dispatch?.original_oidc_source?.body_sha256 ===
+            OCTOBER_OIDC_SECURITY_AUTHORIZATION_SOURCE.body_sha256 &&
+          dispatch?.merge_authorization ===
+            "NONE — stop at fresh exact-head evidence; a separate owner decision is required before merge.",
+        "dispatch body must match the sealed descriptor and no-merge boundary"
+      )
+      const pr = readback?.pull_request
+      const candidate = readback?.candidate
+      check(
+        pr?.number === 204 &&
+          pr?.html_url === `https://github.com/bynanci/courtside-tw/pull/${pr.number}` &&
+          pr?.head?.ref === c.branch &&
+          pr?.base?.ref === "main" &&
+          pr?.base?.sha === c.base_sha &&
+          pr?.head?.repo?.full_name === "bynanci/courtside-tw" &&
+          pr?.base?.repo?.full_name === "bynanci/courtside-tw" &&
+          sha(pr?.head?.sha) &&
+          pr?.state === "open" &&
+          pr?.merged === false &&
+          typeof pr?.draft === "boolean",
+        "requires the live same-repository PR binding"
+      )
+      check(
+        sha(candidate?.tree_sha) &&
+          readback?.reviewed_head_commit?.sha === pr?.head?.sha &&
+          readback?.reviewed_head_commit?.tree?.sha === candidate?.tree_sha &&
+          candidate?.head === pr?.head?.sha &&
+          candidate?.base_tree_sha === c.base_tree_sha &&
+          candidate?.base_ancestor === true &&
+          parentMatches(readback?.inherited_parent_commit) &&
+          candidate?.inherited_parent_sha === parent.head_sha &&
+          candidate?.inherited_parent_tree_sha === parent.tree_sha &&
+          candidate?.inherited_prefix_match === true &&
+          candidate?.parent_ancestor === true &&
+          deltaClosure(candidate?.delta_paths) &&
+          deltaClosure(candidate?.delta_history_paths) &&
+          candidate?.commits_postdate_authorization === true &&
+          candidate?.tests_first === true &&
+          Number.isInteger(candidate?.commit_count) &&
+          candidate.commit_count >= 2 &&
+          candidate?.merge_commit_count === 0 &&
+          closure(candidate?.changed_paths) &&
+          same(candidate?.changed_paths, changedPaths) &&
+          closure(candidate?.history_paths) &&
+          candidate?.allowed_path_modes_match === true &&
+          candidate?.delta_history_modes_match === true &&
+          candidate?.audit_test_target_match === true &&
+          candidate?.audit_test_baseline_match === true &&
+          candidate?.preserved_payloads_match === true,
+        "requires the immutable inherited prefix, tests-first linear three-path delta, pinned payloads and exact eight-path scope"
+      )
+      check(
+        gitBinding?.status === "CLEAN" &&
+          sha(gitBinding?.head) &&
+          gitBinding?.change_base_ancestor === true &&
+          gitBinding?.change_base_sha === c.base_sha &&
+          gitBinding?.head === candidate?.head &&
+          candidate?.tree_sha === gitBinding?.head_tree_sha,
+        "requires a clean exact Git tree"
+      )
+      check(
+        readback?.protected_main?.name === "main" &&
+          readback?.protected_main?.protected === true &&
+          readback?.protected_main?.commit?.sha === c.base_sha,
+        "requires the still-current protected main base"
+      )
+      check(
+        requireExactHeadEvidence && isAuthenticatedGitHubActionsContext(githubActionsContext),
+        "requires authenticated exact-head Actions metadata"
+      )
+      check(
+        githubActionsContext?.authority === "PULL_REQUEST" &&
+          githubActionsContext?.pull_request_number === pr?.number &&
+          githubActionsContext?.pull_request_payload_number === pr?.number &&
+          githubActionsContext?.source_base_sha === c.base_sha &&
+          githubActionsContext?.source_head_sha === gitBinding?.head &&
+          githubActionsContext?.head_ref === c.branch &&
+          new RegExp(`^refs/pull/${pr?.number}/(?:merge|head)$`).test(
+            githubActionsContext?.github_ref ?? ""
+          ) &&
+          githubActionsContext?.pull_request_draft === pr?.draft,
+        "must bind the live draft or ready PR event"
+      )
+      return errors.length === start
+    },
+    allowsPath(filePath) {
+      return bound && auditSyncCompositionPaths.has(filePath)
+    },
+    isBound() {
+      return bound
+    },
+    inspectCandidate
+  })
+}
+const auditSyncCompositionGate = createAuditSyncCompositionAuthorizationGate()
+
 const arenaEditorialV3DocumentationPaths = [
   "DESIGN.md",
   "docs/design/arena-editorial-v3.md",
@@ -12395,6 +12902,7 @@ export function validateTraceability({
   oidcSecurityRemediationAuthorizationReadback = null,
   octoberOidcSecurityAuthorizationReadback = null,
   octoberSecurityIntegrationAuthorizationReadback = null,
+  auditSyncCompositionAuthorizationReadback = null,
   arenaEditorialV3AuthorizationReadback = null,
   gitBinding = null,
   changedPaths = null,
@@ -12587,6 +13095,16 @@ export function validateTraceability({
       changeBaseSha
     )
   let octoberSecurityIntegrationAuthorizationAccepted = false
+  const auditSyncCompositionAuthorizationRequested =
+    state === t085States.COMPLETE_STEADY &&
+    Array.isArray(changedPaths) &&
+    auditSyncCompositionGate.requested(
+      changedPaths,
+      githubActionsContext,
+      auditSyncCompositionAuthorizationReadback,
+      changeBaseSha
+    )
+  let auditSyncCompositionAuthorizationAccepted = false
 
   if (!/^[0-9a-f]{40}$/.test(currentHead ?? "")) {
     errors.push("currentHead must be a full lowercase commit SHA")
@@ -12801,7 +13319,22 @@ export function validateTraceability({
           errors
         })
       }
-      if (octoberSecurityIntegrationAuthorizationRequested) {
+      if (auditSyncCompositionAuthorizationRequested) {
+        auditSyncCompositionAuthorizationAccepted = auditSyncCompositionGate.validate({
+          readback: auditSyncCompositionAuthorizationReadback,
+          gitBinding,
+          changedPaths,
+          changeBaseSha,
+          boundedScopeActive,
+          githubActionsContext,
+          requireExactHeadEvidence,
+          errors
+        })
+      }
+      if (
+        octoberSecurityIntegrationAuthorizationRequested &&
+        !auditSyncCompositionAuthorizationAccepted
+      ) {
         octoberSecurityIntegrationAuthorizationAccepted = octoberSecurityIntegrationGate.validate({
           readback: octoberSecurityIntegrationAuthorizationReadback,
           gitBinding,
@@ -12815,7 +13348,8 @@ export function validateTraceability({
       }
       if (
         octoberOidcSecurityAuthorizationRequested &&
-        !octoberSecurityIntegrationAuthorizationAccepted
+        !octoberSecurityIntegrationAuthorizationAccepted &&
+        !auditSyncCompositionAuthorizationAccepted
       ) {
         octoberOidcSecurityAuthorizationAccepted = octoberOidcSecurityGate.validate({
           readback: octoberOidcSecurityAuthorizationReadback,
@@ -12949,6 +13483,10 @@ export function validateTraceability({
           !(
             octoberSecurityIntegrationAuthorizationAccepted &&
             octoberSecurityIntegrationGate.allowsPath(changedPath)
+          ) &&
+          !(
+            auditSyncCompositionAuthorizationAccepted &&
+            auditSyncCompositionGate.allowsPath(changedPath)
           ) &&
           !(pnpmSecurityAuthorizationAccepted && pnpmSecurityAuthorizedPaths.has(changedPath)) &&
           !(
@@ -13727,6 +14265,23 @@ export function validateTraceability({
               errors: octoberSecurityIntegrationAuthorizationReadback.errors ?? []
             }
           : null,
+      audit_sync_composition_authorization_readback: auditSyncCompositionAuthorizationReadback
+        ? {
+            status: auditSyncCompositionAuthorizationReadback.status,
+            accepted: auditSyncCompositionAuthorizationAccepted,
+            authorization_ref:
+              auditSyncCompositionAuthorizationReadback.authorization?.html_url ?? null,
+            body_sha256: sha256(
+              typeof auditSyncCompositionAuthorizationReadback.authorization?.body === "string"
+                ? auditSyncCompositionAuthorizationReadback.authorization.body
+                : null
+            ),
+            pull_request: auditSyncCompositionAuthorizationReadback.pull_request?.number ?? null,
+            protected_main: auditSyncCompositionAuthorizationReadback.protected_main ?? null,
+            candidate: auditSyncCompositionAuthorizationReadback.candidate ?? null,
+            errors: auditSyncCompositionAuthorizationReadback.errors ?? []
+          }
+        : null,
       arena_editorial_v3_authorization_readback: arenaEditorialV3AuthorizationReadback
         ? {
             status: arenaEditorialV3AuthorizationReadback.status,
@@ -13951,6 +14506,10 @@ export function validateTraceability({
                           !(
                             octoberSecurityIntegrationAuthorizationAccepted &&
                             octoberSecurityIntegrationGate.allowsPath(changedPath)
+                          ) &&
+                          !(
+                            auditSyncCompositionAuthorizationAccepted &&
+                            auditSyncCompositionGate.allowsPath(changedPath)
                           ) &&
                           !(
                             pnpmSecurityAuthorizationAccepted &&
@@ -15252,6 +15811,14 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
   )
     ? octoberSecurityIntegrationGate.inspect(root, { environment })
     : null
+  const auditSyncCompositionAuthorizationReadback = auditSyncCompositionGate.requested(
+    inspection.changedPaths,
+    githubActionsContext,
+    null,
+    inspection.change_base_sha
+  )
+    ? auditSyncCompositionGate.inspect(root, { environment })
+    : null
   const arenaEditorialV3AuthorizationReadback = arenaEditorialV3Gate.requested(
     inspection.changedPaths,
     githubActionsContext,
@@ -15281,6 +15848,7 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
     oidcSecurityRemediationAuthorizationReadback,
     octoberOidcSecurityAuthorizationReadback,
     octoberSecurityIntegrationAuthorizationReadback,
+    auditSyncCompositionAuthorizationReadback,
     arenaEditorialV3AuthorizationReadback,
     gitBinding: {
       status: inspection.status,

@@ -17769,6 +17769,18 @@ for (const [label, setup, flag] of [
     "audit_test_target_match"
   ],
   [
+    "reverted Java assertion drift",
+    (r) => {
+      const p = path.join(r.root, auditCompositionJavaPath)
+      const approved = fs.readFileSync(p, "utf8")
+      fs.appendFileSync(p, "\n// Unapproved intermediate fixture\n")
+      r.commit()
+      fs.writeFileSync(p, approved)
+      r.commit()
+    },
+    "audit_test_target_match"
+  ],
+  [
     "preserved runtime drift",
     (r) => {
       fs.appendFileSync(path.join(r.root, "infra/compose/oidc/Dockerfile"), "\n")
@@ -17918,14 +17930,12 @@ for (const label of [
             }
           : auditCompositionFetch(f)
       assert.equal(
-        traceabilityValidator
-          .createAuditSyncCompositionAuthorizationGate()
-          .inspect(f.root, {
-            environment: f.environment,
-            fetchJson,
-            headInspector: () => f.head,
-            candidateInspector: () => f.options.readback.candidate
-          }).status,
+        traceabilityValidator.createAuditSyncCompositionAuthorizationGate().inspect(f.root, {
+          environment: f.environment,
+          fetchJson,
+          headInspector: () => f.head,
+          candidateInspector: () => f.options.readback.candidate
+        }).status,
         "UNAVAILABLE"
       )
     } finally {
