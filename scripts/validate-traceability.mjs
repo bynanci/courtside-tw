@@ -3059,6 +3059,415 @@ const mediaArchiveGate = createMediaArchiveAuthorizationGate()
 
 const oidcSecurityRemediationPaths = new Set(OIDC_SECURITY_REMEDIATION_AUTHORIZED_PATHS)
 
+/** Sealed development-only admission for the inherited PR200 workflow pins. */
+export const WORKFLOW_PIN_AUTHORIZATION = Object.freeze({
+  ref: "https://github.com/bynanci/courtside-tw/issues/160#issuecomment-5943020281",
+  body_sha256: "dd389f8e441e8fea96ecb27097a2a6257ecce3a21cf6136d0f96ae025f45fb77",
+  recorded_at: "2026-10-02T00:03:19Z",
+  pr: 200,
+  branch: "dependabot/github_actions/github-actions-78c432dcf9",
+  base_sha: "ac92f88a7267736325519a8bf12dc6b9ee2bcb86",
+  base_tree_sha: "9bff16cfc654a8d506bdc4ecc7ae989595525f79",
+  inherited_head_sha: "b82d734988e67441ea3ca795e5de3fc8fce2ced9",
+  inherited_tree_sha: "888231c83b038fc405ad7f94e52fb0b55f376a16",
+  workflow_manifest: [
+    {
+      path: ".github/workflows/ci.yml",
+      base_blob_sha: "f7d72f8de931ad24d86c667540681d89c7da91c4",
+      inherited_blob_sha: "849365543b535a219e0d959a9c21470da18164a3",
+      base_sha256: "984bbdee2f5d794ebb6f6b134e0dcc2296218b23f947f789accd6d7015451d09",
+      inherited_sha256: "9f667557ed153bede90b56939200b9b5e4eafb7d4d791bdbd008fbacdd1b5b69",
+      mode: "100644"
+    },
+    {
+      path: ".github/workflows/release.yml",
+      base_blob_sha: "ea9661c0e9c4c564a0a27b35f7889c118d77d15c",
+      inherited_blob_sha: "6a5bf50427d21f329cf1e6292ee4c2b092840b3d",
+      base_sha256: "d60aaa142aafd9756d30dc1dc1aa4bdd0655caf84e0947abed3d4beb2f1a6197",
+      inherited_sha256: "5ddfb632c8622507249109179066a77bf1a4a2bc4a06fe8596e79ee344a87144",
+      mode: "100644"
+    },
+    {
+      path: ".github/workflows/security.yml",
+      base_blob_sha: "7c9d59ac49db854878736222db224557717505e7",
+      inherited_blob_sha: "3d64a22003a2f1ef9c1db1b76f10052fc02c7076",
+      base_sha256: "2a6ea760e627313c52bc27a3f60c6a51590afd5e3acf59becd7063b34d06cc81",
+      inherited_sha256: "32ad97faba71b6c019b9e0514efd3faa3522df9672f6f67a88cabf268ed73a73",
+      mode: "100644"
+    },
+    {
+      path: ".github/workflows/t086-required-gate.yml",
+      base_blob_sha: "4ef9fe2b3b14c25744cad799e3d62dbc1b19447d",
+      inherited_blob_sha: "36e6b1474f4976eb811d2f5a215d02ebd7180100",
+      base_sha256: "5298bcffcce924d61570d1e25fe493c02fb48c5b38120fdb59c3908e7ae59b17",
+      inherited_sha256: "083ef97968107d89417de2b68531b64cbf6fa2140af6a0465917a6444bb3afb3",
+      mode: "100644"
+    }
+  ],
+  action_pins: [
+    {
+      action: "pnpm/setup",
+      old_sha: "84cb39b217b10273981911c288cd62326dc7c6d2",
+      new_sha: "703c52620218391530e48b9e8870d5c0082e1b9b",
+      old_version: "2.0.2",
+      new_version: "2.1.0",
+      occurrences: 3
+    },
+    {
+      action: "actions/setup-java",
+      old_sha: "dd06d9cba3e5552c54d9f8ea23572deb30010f7c",
+      new_sha: "de7274f081f381c8f8158605e0321c36c376e2e6",
+      old_version: "6.0.0",
+      new_version: "6.0.1",
+      occurrences: 5
+    },
+    {
+      action: "actions/github-script",
+      old_sha: "ed597411d8f924073f98dfc5c65a23a2325f34cd",
+      new_sha: "3a2844b7e9c422d3c10d287c895573f7108da1b3",
+      old_version: "8.0.0",
+      new_version: "9.0.0",
+      occurrences: 1
+    }
+  ],
+  authorized_paths: [
+    ".github/workflows/ci.yml",
+    ".github/workflows/release.yml",
+    ".github/workflows/security.yml",
+    ".github/workflows/t086-required-gate.yml",
+    "scripts/validate-traceability.mjs",
+    "scripts/test/validate-traceability.test.mjs"
+  ]
+})
+
+/** Development-only, immutable pin admission. No runtime-supplied descriptor reaches this singleton. */
+export function createWorkflowPinAuthorizationGate(binding = WORKFLOW_PIN_AUTHORIZATION) {
+  const c = structuredClone(binding)
+  const bound = isDeepStrictEqual(c, WORKFLOW_PIN_AUTHORIZATION)
+  const sha = (value) => typeof value === "string" && /^[0-9a-f]{40}$/u.test(value)
+  const same = (left, right) =>
+    Array.isArray(left) &&
+    Array.isArray(right) &&
+    new Set(left).size === left.length &&
+    sameValues(left, right)
+  const workflowPaths = WORKFLOW_PIN_AUTHORIZATION.workflow_manifest.map((row) => row.path)
+  const supportPaths = [
+    "scripts/test/validate-traceability.test.mjs",
+    "scripts/validate-traceability.mjs"
+  ]
+  const closure = (paths) => same(paths, WORKFLOW_PIN_AUTHORIZATION.authorized_paths)
+  const authentic = (a) =>
+    a?.status === "VERIFIED" &&
+    a?.source === "github-api" &&
+    a?.html_url === c.ref &&
+    a?.issue_url === "https://api.github.com/repos/bynanci/courtside-tw/issues/160" &&
+    a?.user_login === ACCEPTED_RECEIPT_OWNER &&
+    a?.author_association === "OWNER" &&
+    a?.created_at === c.recorded_at &&
+    a?.updated_at === c.recorded_at &&
+    sha256(a?.body ?? null) === c.body_sha256
+  const inspectCandidate = (root, head) => {
+    if (!bound || !sha(head)) return null
+    try {
+      const git = (args) =>
+        execFileSync("git", args, {
+          cwd: root,
+          encoding: "utf8",
+          maxBuffer: 4 * 1024 * 1024,
+          stdio: ["ignore", "pipe", "ignore"]
+        }).trim()
+      const list = (args) => git(args).split("\n").filter(Boolean)
+      const commits = list(["rev-list", "--reverse", `${c.inherited_head_sha}..${head}`])
+      const first = commits[0]
+      const inherited = inspectHeadTopology(root, c.inherited_head_sha)
+      const topology = inspectHeadTopology(root, head)
+      const allWorkflowBytes = (commit) =>
+        c.workflow_manifest.every(
+          (row) =>
+            git(["ls-tree", commit, "--", row.path]) ===
+            `${row.mode} blob ${row.inherited_blob_sha}\t${row.path}`
+        )
+      const inheritedPinsMatch = c.workflow_manifest.every((row) => {
+        const baseText = readTextAtCommit(root, c.base_sha, row.path)
+        const inheritedText = readTextAtCommit(root, c.inherited_head_sha, row.path)
+        if (
+          typeof baseText !== "string" ||
+          typeof inheritedText !== "string" ||
+          sha256(baseText) !== row.base_sha256 ||
+          sha256(inheritedText) !== row.inherited_sha256
+        )
+          return false
+        if (
+          git(["ls-tree", c.base_sha, "--", row.path]) !==
+          `${row.mode} blob ${row.base_blob_sha}\t${row.path}`
+        )
+          return false
+        let expected = baseText
+        for (const pin of c.action_pins) {
+          const oldComment = pin.action === "actions/github-script" ? "v8" : `v${pin.old_version}`
+          expected = expected.replaceAll(
+            `${pin.action}@${pin.old_sha} # ${oldComment}`,
+            `${pin.action}@${pin.new_sha} # v${pin.new_version}`
+          )
+        }
+        return expected === inheritedText
+      })
+      const regularFiles = (commit) => {
+        const entries = git(["ls-tree", "-r", "-z", commit, "--", ...c.authorized_paths])
+          .split("\0")
+          .filter(Boolean)
+        return (
+          entries.length === c.authorized_paths.length &&
+          entries.every((entry) => /^100644 blob [0-9a-f]{40}\t/u.test(entry)) &&
+          same(
+            entries.map((entry) => entry.split("\t")[1]),
+            c.authorized_paths
+          )
+        )
+      }
+      return {
+        head,
+        tree_sha: topology.headTreeSha,
+        base_tree_sha: inspectHeadTopology(root, c.base_sha).headTreeSha,
+        base_ancestor: inspectAncestor(root, c.base_sha, head),
+        inherited_ancestor: inspectAncestor(root, c.inherited_head_sha, head),
+        inherited_tree_sha: inherited.headTreeSha,
+        inherited_parent_shas: inherited.parents,
+        inherited_changed_paths: inspectChangedPathsBetweenCommits(
+          root,
+          c.base_sha,
+          c.inherited_head_sha
+        ),
+        inherited_pins_match: inheritedPinsMatch && allWorkflowBytes(c.inherited_head_sha),
+        workflow_bytes_preserved: [c.inherited_head_sha, ...commits].every(allWorkflowBytes),
+        commit_count: commits.length,
+        merge_commit_count: inspectCommitCountBetween(root, c.inherited_head_sha, head, {
+          mergesOnly: true
+        }),
+        commits_postdate_authorization: list([
+          "log",
+          "--format=%aI%n%cI",
+          `${c.inherited_head_sha}..${head}`
+        ]).every((timestamp) => Date.parse(timestamp) > Date.parse(c.recorded_at)),
+        first_amendment_parent_shas: first ? inspectHeadTopology(root, first).parents : null,
+        first_amendment_changed_paths: first
+          ? inspectChangedPathsBetweenCommits(root, c.inherited_head_sha, first)
+          : null,
+        changed_paths: inspectChangedPathsBetweenCommits(root, c.base_sha, head),
+        history_paths: [
+          ...new Set(
+            list([
+              "log",
+              "--format=",
+              "--name-only",
+              "--no-renames",
+              `${c.inherited_head_sha}..${head}`
+            ])
+          )
+        ].sort(),
+        allowed_path_modes_match: [c.inherited_head_sha, ...commits].every(regularFiles)
+      }
+    } catch {
+      return null
+    }
+  }
+  return Object.freeze({
+    requested(changedPaths, context, readback = null, base = null) {
+      return (
+        readback !== null ||
+        context?.head_ref === c.branch ||
+        (base === c.base_sha &&
+          Array.isArray(changedPaths) &&
+          workflowPaths.every((file) => changedPaths.includes(file)))
+      )
+    },
+    inspect(
+      root,
+      {
+        environment = process.env,
+        inspectComment = inspectGitHubAuthorizationComment,
+        fetchJson = (url) =>
+          JSON.parse(
+            execFileSync(
+              process.execPath,
+              ["--input-type=module", "--eval", githubCommentFetchScript, url],
+              {
+                encoding: "utf8",
+                env: githubReadbackEnvironment(environment),
+                maxBuffer: 1024 * 1024,
+                stdio: ["ignore", "pipe", "pipe"],
+                timeout: 15000
+              }
+            )
+          ),
+        candidateInspector = inspectCandidate
+      } = {}
+    ) {
+      const unavailable = {
+        status: "UNAVAILABLE",
+        source: "github-api",
+        errors: ["workflow pin authority read-back unavailable or untrusted"]
+      }
+      if (!bound) return unavailable
+      try {
+        const authorization = inspectComment(c.ref, {
+          environment,
+          isAuthorizedRef: (ref) => ref === c.ref,
+          invalidRefError: "workflow pin ref is not authorized",
+          readbackErrorPrefix: "workflow pin OWNER read-back failed"
+        })
+        if (!authentic(authorization)) return unavailable
+        const pull_request = fetchJson(
+          "https://api.github.com/repos/bynanci/courtside-tw/pulls/200"
+        )
+        const protected_main = fetchJson(
+          "https://api.github.com/repos/bynanci/courtside-tw/branches/main"
+        )
+        return {
+          status: "VERIFIED",
+          source: "github-api",
+          authorization,
+          pull_request,
+          protected_main,
+          candidate: candidateInspector(root, pull_request?.head?.sha),
+          errors: []
+        }
+      } catch {
+        return unavailable
+      }
+    },
+    validate({
+      readback,
+      gitBinding,
+      changedPaths,
+      changeBaseSha,
+      boundedScopeActive,
+      githubActionsContext,
+      requireExactHeadEvidence,
+      errors = []
+    } = {}) {
+      const start = errors.length
+      const check = (ok, message) => {
+        if (!ok) errors.push(`workflow pin admission ${message}`)
+      }
+      check(bound, "descriptor is unbound")
+      check(
+        changeBaseSha === c.base_sha && boundedScopeActive === false && closure(changedPaths),
+        "requires the exact six-path scope and protected base"
+      )
+      check(
+        readback?.status === "VERIFIED" &&
+          readback?.source === "github-api" &&
+          authentic(readback?.authorization),
+        "requires the immutable OWNER record"
+      )
+      const dispatch = parseAndroidNativeSurfaceAuthorizationBody(
+        {
+          body: readback?.authorization?.body,
+          startMarker: "<!-- workflow-pin-maintenance:owner-dispatch:v1:start -->",
+          endMarker: "<!-- workflow-pin-maintenance:owner-dispatch:v1:end -->",
+          label: "workflow pin dispatch"
+        },
+        errors
+      )
+      check(
+        dispatch?.schema_version === "courtside-workflow-pin-maintenance-owner-dispatch/v1" &&
+          dispatch?.decision === "DEVELOPMENT_ONLY_DISPATCH" &&
+          dispatch?.accepted_by === ACCEPTED_RECEIPT_OWNER &&
+          dispatch?.repository === "bynanci/courtside-tw" &&
+          dispatch?.tracker_issue === 160 &&
+          dispatch?.pull_request === c.pr &&
+          dispatch?.branch === c.branch &&
+          dispatch?.authorization_base?.sha === c.base_sha &&
+          dispatch?.authorization_base?.tree_sha === c.base_tree_sha &&
+          dispatch?.authorization_base?.protected === true &&
+          dispatch?.inherited_prefix?.head_sha === c.inherited_head_sha &&
+          dispatch?.inherited_prefix?.tree_sha === c.inherited_tree_sha &&
+          dispatch?.inherited_prefix?.parent_sha === c.base_sha &&
+          closure(dispatch?.authorized_paths) &&
+          same(dispatch?.post_record_delta_paths, supportPaths) &&
+          isDeepStrictEqual(dispatch?.workflow_manifest, c.workflow_manifest) &&
+          isDeepStrictEqual(dispatch?.action_pins, c.action_pins),
+        "record must match the exact inherited prefix and development-only scope"
+      )
+      const pr = readback?.pull_request
+      const candidate = readback?.candidate
+      check(
+        pr?.number === c.pr &&
+          pr?.html_url === "https://github.com/bynanci/courtside-tw/pull/200" &&
+          pr?.state === "open" &&
+          pr?.merged === false &&
+          typeof pr?.draft === "boolean" &&
+          pr?.head?.ref === c.branch &&
+          pr?.base?.ref === "main" &&
+          pr?.base?.sha === c.base_sha &&
+          pr?.head?.repo?.full_name === "bynanci/courtside-tw" &&
+          pr?.base?.repo?.full_name === "bynanci/courtside-tw" &&
+          sha(pr?.head?.sha) &&
+          candidate?.head === pr?.head?.sha,
+        "requires the live same-repository PR200"
+      )
+      check(
+        candidate?.base_tree_sha === c.base_tree_sha &&
+          candidate?.base_ancestor === true &&
+          candidate?.inherited_ancestor === true &&
+          candidate?.inherited_tree_sha === c.inherited_tree_sha &&
+          same(candidate?.inherited_parent_shas, [c.base_sha]) &&
+          same(candidate?.inherited_changed_paths, workflowPaths) &&
+          candidate?.inherited_pins_match === true &&
+          candidate?.workflow_bytes_preserved === true,
+        "requires the byte-identical inherited pin prefix throughout history"
+      )
+      check(
+        Number.isInteger(candidate?.commit_count) &&
+          candidate.commit_count >= 2 &&
+          candidate?.merge_commit_count === 0 &&
+          candidate?.commits_postdate_authorization === true &&
+          same(candidate?.first_amendment_parent_shas, [c.inherited_head_sha]) &&
+          same(candidate?.first_amendment_changed_paths, [supportPaths[0]]) &&
+          closure(candidate?.changed_paths) &&
+          same(candidate?.changed_paths, changedPaths) &&
+          same(candidate?.history_paths, supportPaths) &&
+          candidate?.allowed_path_modes_match === true,
+        "requires post-record tests-first linear history restricted to the two validator paths"
+      )
+      check(
+        gitBinding?.status === "CLEAN" &&
+          sha(gitBinding?.head) &&
+          gitBinding?.head === pr?.head?.sha &&
+          gitBinding?.change_base_sha === c.base_sha &&
+          gitBinding?.change_base_ancestor === true &&
+          candidate?.tree_sha === gitBinding?.head_tree_sha,
+        "requires a clean exact-head Git tree"
+      )
+      check(
+        readback?.protected_main?.name === "main" &&
+          readback?.protected_main?.protected === true &&
+          readback?.protected_main?.commit?.sha === c.base_sha,
+        "requires still-current protected main"
+      )
+      check(
+        requireExactHeadEvidence &&
+          isAuthenticatedGitHubActionsContext(githubActionsContext) &&
+          githubActionsContext?.authority === "PULL_REQUEST" &&
+          githubActionsContext?.pull_request_number === c.pr &&
+          githubActionsContext?.pull_request_payload_number === c.pr &&
+          githubActionsContext?.source_head_sha === gitBinding?.head &&
+          githubActionsContext?.source_base_sha === c.base_sha &&
+          githubActionsContext?.head_ref === c.branch &&
+          /^refs\/pull\/200\/(?:merge|head)$/u.test(githubActionsContext?.github_ref ?? "") &&
+          githubActionsContext?.pull_request_draft === pr?.draft,
+        "requires authenticated exact-head PR Actions metadata; push and release are not admitted"
+      )
+      return errors.length === start
+    },
+    allowsPath(filePath) {
+      return bound && WORKFLOW_PIN_AUTHORIZATION.authorized_paths.includes(filePath)
+    }
+  })
+}
+const workflowPinGate = createWorkflowPinAuthorizationGate()
+
 /** A closed exact-base authority for the OIDC image-only security remediation. */
 export function createOidcSecurityRemediationAuthorizationGate(
   binding = {
@@ -11593,6 +12002,7 @@ export function validateTraceability({
   publicationCacheAuthorizationReadback = null,
   mediaRightsAuthorizationReadback = null,
   mediaArchiveAuthorizationReadback = null,
+  workflowPinAuthorizationReadback = null,
   oidcSecurityRemediationAuthorizationReadback = null,
   arenaEditorialV3AuthorizationReadback = null,
   gitBinding = null,
@@ -11722,6 +12132,7 @@ export function validateTraceability({
     (changedPaths?.includes(REQUIRED_GATE_AUTHORIZED_PATHS[0]) ||
       githubActionsContext?.source_ref === REQUIRED_GATE_BRANCH)
   let requiredGateAuthorizationAccepted = false
+  let workflowPinAuthorizationAccepted = false
   let pnpmSecurityAuthorizationAccepted = false
   let productRemediationAuthorizationAccepted = false
   let studioCompletionAuthorizationAccepted = false
@@ -11867,7 +12278,26 @@ export function validateTraceability({
   }
   if (state === t085States.COMPLETE_STEADY) {
     if (!t086ScopeRequested) {
-      if (requiredGateAuthorizationRequested) {
+      if (
+        workflowPinGate.requested(
+          changedPaths,
+          githubActionsContext,
+          workflowPinAuthorizationReadback,
+          changeBaseSha
+        )
+      ) {
+        workflowPinAuthorizationAccepted = workflowPinGate.validate({
+          readback: workflowPinAuthorizationReadback,
+          gitBinding,
+          changedPaths,
+          changeBaseSha,
+          boundedScopeActive,
+          githubActionsContext,
+          requireExactHeadEvidence,
+          errors
+        })
+      }
+      if (requiredGateAuthorizationRequested && !workflowPinAuthorizationAccepted) {
         if (!requiredGateAuthorizationScopeActive) {
           errors.push(
             "issue 164 authorization requires exactly its three paths and immutable protected base"
@@ -12075,6 +12505,7 @@ export function validateTraceability({
       for (const changedPath of changedPaths ?? []) {
         if (
           !isAuthorizedPostT085MaintenancePath(changedPath) &&
+          !(workflowPinAuthorizationAccepted && workflowPinGate.allowsPath(changedPath)) &&
           !(
             requiredGateAuthorizationAccepted &&
             REQUIRED_GATE_AUTHORIZED_PATHS.includes(changedPath)
@@ -12116,7 +12547,10 @@ export function validateTraceability({
             `changed path is outside the authorized post-T085 maintenance scope: ${changedPath}`
           )
         }
-        if (isT086LockedPath(changedPath)) {
+        if (
+          isT086LockedPath(changedPath) &&
+          !(workflowPinAuthorizationAccepted && workflowPinGate.allowsPath(changedPath))
+        ) {
           errors.push(
             `changed path requires separately authorized T086 validator evolution: ${changedPath}`
           )
@@ -12818,6 +13252,18 @@ export function validateTraceability({
             errors: mediaArchiveAuthorizationReadback.errors ?? []
           }
         : null,
+      workflow_pin_authorization_readback: workflowPinAuthorizationReadback
+        ? {
+            status: workflowPinAuthorizationReadback.status,
+            accepted: workflowPinAuthorizationAccepted,
+            decision_scope: "DEVELOPMENT_ONLY",
+            release_accepted: false,
+            authorization_ref: workflowPinAuthorizationReadback.authorization?.html_url ?? null,
+            body_sha256: sha256(workflowPinAuthorizationReadback.authorization?.body ?? null),
+            candidate: workflowPinAuthorizationReadback.candidate ?? null,
+            errors: workflowPinAuthorizationReadback.errors ?? []
+          }
+        : null,
       oidc_security_remediation_authorization_readback: oidcSecurityRemediationAuthorizationReadback
         ? {
             status: oidcSecurityRemediationAuthorizationReadback.status,
@@ -13026,6 +13472,10 @@ export function validateTraceability({
                     : changedPaths.filter(
                         (changedPath) =>
                           !isAuthorizedPostT085MaintenancePath(changedPath) &&
+                          !(
+                            workflowPinAuthorizationAccepted &&
+                            workflowPinGate.allowsPath(changedPath)
+                          ) &&
                           !(
                             requiredGateAuthorizationAccepted &&
                             REQUIRED_GATE_AUTHORIZED_PATHS.includes(changedPath)
@@ -14342,6 +14792,14 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
   )
     ? arenaEditorialV3Gate.inspect(root, { environment })
     : null
+  const workflowPinAuthorizationReadback = workflowPinGate.requested(
+    inspection.changedPaths,
+    githubActionsContext,
+    null,
+    inspection.change_base_sha
+  )
+    ? workflowPinGate.inspect(root, { environment })
+    : null
   const isGitHubActions = environment.GITHUB_ACTIONS === "true"
   const report = validateTraceability({
     root,
@@ -14360,6 +14818,7 @@ export function runCli(root = repositoryRoot, { environment = process.env } = {}
     publicationCacheAuthorizationReadback,
     mediaRightsAuthorizationReadback,
     mediaArchiveAuthorizationReadback,
+    workflowPinAuthorizationReadback,
     oidcSecurityRemediationAuthorizationReadback,
     arenaEditorialV3AuthorizationReadback,
     gitBinding: {
