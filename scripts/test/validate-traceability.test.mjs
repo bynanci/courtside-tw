@@ -15504,3 +15504,2492 @@ test("Publication cache sealed singleton reaches full validator for draft, ready
     }
   }
 })
+
+// Synthetic owner source is confined to the pure factory; runCli has no source override.
+const octoberOidcBase = "ac92f88a7267736325519a8bf12dc6b9ee2bcb86"
+const octoberOidcTree = "9bff16cfc654a8d506bdc4ecc7ae989595525f79"
+const octoberOidcBranch = "fix/2026-10-oidc-security"
+const octoberOidcPaths = [
+  "infra/compose/oidc/Dockerfile",
+  "infra/compose/compose.yaml",
+  "scripts/test/validate-traceability.test.mjs",
+  "scripts/validate-traceability.mjs"
+]
+const octoberOidcTarget = {
+  version: "6.0.4",
+  manifest_digest: "sha256:47374fe063995d9b6d39ebb6ea21eb5f765025bf0aa08b61b08b439eb91adaf0",
+  local_compose_tag: "courtside-tw/mock-oauth2-server:6.0.4-busybox1.38"
+}
+
+function makeOctoberOidcFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "october-oidc-"))
+  const head = "a".repeat(40)
+  const tree = "b".repeat(40)
+  const dispatch = {
+    schema_version: "courtside-oidc-october-security-owner-dispatch/v1",
+    decision: "DISPATCH_ACCEPTED",
+    accepted_by: "bynanci",
+    repository: "bynanci/courtside-tw",
+    branch: octoberOidcBranch,
+    authorization_base: {
+      branch: "main",
+      sha: octoberOidcBase,
+      tree_sha: octoberOidcTree,
+      protected: true
+    },
+    authorized_paths: octoberOidcPaths,
+    target: octoberOidcTarget,
+    merge_authorization:
+      "NONE — stop at fresh exact-head evidence; a separate owner decision is required before merge."
+  }
+  const bodyFor = (value) =>
+    [
+      "<!-- oidc-october-security:owner-dispatch:v1:start -->",
+      "```json",
+      JSON.stringify(value, null, 2),
+      "```",
+      "<!-- oidc-october-security:owner-dispatch:v1:end -->"
+    ].join("\n")
+  const body = bodyFor(dispatch)
+  const source = {
+    comment_id: 999999,
+    ref: "https://github.com/bynanci/courtside-tw/issues/160#issuecomment-999999",
+    api_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/comments/999999",
+    recorded_at: "2026-10-01T22:00:00Z",
+    body_sha256: createHash("sha256").update(body).digest("hex")
+  }
+  const authorization = {
+    id: source.comment_id,
+    url: source.api_url,
+    html_url: source.ref,
+    issue_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/160",
+    user: { login: "bynanci" },
+    author_association: "OWNER",
+    state: "open",
+    locked: false,
+    created_at: source.recorded_at,
+    updated_at: source.recorded_at,
+    closed_at: null,
+    body
+  }
+  const gitBinding = {
+    status: "CLEAN",
+    head,
+    head_tree_sha: tree,
+    change_base_sha: octoberOidcBase,
+    change_base_ancestor: true
+  }
+  const readback = {
+    status: "VERIFIED",
+    source: "github-api",
+    authorization,
+    errors: [],
+    pull_request: {
+      number: 999998,
+      html_url: "https://github.com/bynanci/courtside-tw/pull/999998",
+      state: "open",
+      merged: false,
+      draft: true,
+      head: { sha: head, ref: octoberOidcBranch, repo: { full_name: "bynanci/courtside-tw" } },
+      base: { sha: octoberOidcBase, ref: "main", repo: { full_name: "bynanci/courtside-tw" } }
+    },
+    reviewed_head_commit: { sha: head, tree: { sha: tree } },
+    protected_main: { name: "main", protected: true, commit: { sha: octoberOidcBase } },
+    candidate: {
+      head,
+      tree_sha: tree,
+      base_tree_sha: octoberOidcTree,
+      base_ancestor: true,
+      changed_paths: [...octoberOidcPaths],
+      history_paths: [...octoberOidcPaths],
+      commit_count: 2,
+      merge_commit_count: 0,
+      commits_postdate_authorization: true,
+      tests_first: true,
+      allowed_path_modes_match: true,
+      runtime_pins_match: true
+    }
+  }
+  const eventPath = path.join(root, "event.json")
+  const environment = {
+    GITHUB_ACTIONS: "true",
+    GITHUB_REPOSITORY: "bynanci/courtside-tw",
+    GITHUB_EVENT_NAME: "pull_request",
+    GITHUB_EVENT_PATH: eventPath,
+    GITHUB_SHA: fixtureActionsMergeSha,
+    GITHUB_WORKFLOW: "CI",
+    GITHUB_JOB: "frontend-contract",
+    GITHUB_RUN_ID: fixtureActionsRunId,
+    GITHUB_RUN_NUMBER: fixtureActionsRunNumber,
+    GITHUB_RUN_ATTEMPT: fixtureActionsRunAttempt,
+    GITHUB_REF: "refs/pull/999998/merge",
+    GITHUB_REF_NAME: "999998/merge",
+    GITHUB_BASE_REF: "main",
+    GITHUB_HEAD_REF: octoberOidcBranch
+  }
+  fs.writeFileSync(
+    eventPath,
+    JSON.stringify({
+      repository: { full_name: "bynanci/courtside-tw" },
+      number: 999998,
+      pull_request: readback.pull_request
+    })
+  )
+  const context = traceabilityValidator.inspectGitHubActionsContext({ environment, gitBinding })
+  const options = {
+    readback,
+    gitBinding,
+    changedPaths: [...octoberOidcPaths],
+    changeBaseSha: octoberOidcBase,
+    boundedScopeActive: false,
+    githubActionsContext: context,
+    requireExactHeadEvidence: true
+  }
+  return { root, head, tree, source, dispatch, bodyFor, environment, options }
+}
+
+test("October OIDC admission requires a real sealed production source", () => {
+  const gate = traceabilityValidator.createOctoberOidcSecurityAuthorizationGate(null)
+  assert.equal(gate.isBound(), false)
+  assert.equal(gate.allowsPath(octoberOidcPaths[0]), false)
+  assert.equal(
+    gate.requested(octoberOidcPaths, { head_ref: octoberOidcBranch }, null, octoberOidcBase),
+    true
+  )
+  const result = gate.inspect("unused", {
+    fetchJson() {
+      assert.fail("unbound authority must not fetch an invented source")
+    }
+  })
+  assert.equal(result.status, "UNAVAILABLE")
+  assert.match(result.errors.join("\n"), /immutable OWNER source is not sealed/u)
+})
+
+test("October OIDC admission accepts only a sealed exact-base four-path PR", () => {
+  const fixture = makeOctoberOidcFixture()
+  try {
+    const gate = traceabilityValidator.createOctoberOidcSecurityAuthorizationGate(fixture.source)
+    assert.equal(gate.isBound(), true)
+    const errors = []
+    assert.equal(gate.validate({ ...fixture.options, errors }), true, errors.join("\n"))
+    assert.equal(gate.allowsPath(".github/workflows/security.yml"), false)
+    assert.equal(gate.allowsPath("infra/compose/oidc/../s3mock/Dockerfile"), false)
+    assert.equal(
+      createOidcSecurityRemediationAuthorizationGate(oidcSecurityRemediationBinding).isBound(),
+      true
+    )
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
+for (const [label, mutate] of [
+  [
+    "missing source",
+    (o) => {
+      o.readback.authorization = null
+    }
+  ],
+  [
+    "non-owner",
+    (o) => {
+      o.readback.authorization.user.login = "another-user"
+    }
+  ],
+  [
+    "member association",
+    (o) => {
+      o.readback.authorization.author_association = "MEMBER"
+    }
+  ],
+  [
+    "edited issue",
+    (o) => {
+      o.readback.authorization.updated_at = "2026-10-01T22:01:00Z"
+    }
+  ],
+  [
+    "edited body",
+    (o) => {
+      o.readback.authorization.body += "\n"
+    }
+  ],
+  [
+    "non-string body",
+    (o) => {
+      o.readback.authorization.body = { forged: true }
+    }
+  ],
+  [
+    "wrong issue API",
+    (o) => {
+      o.readback.authorization.url += "0"
+    }
+  ],
+  [
+    "wrong source issue",
+    (o) => {
+      o.readback.authorization.issue_url += "0"
+    }
+  ],
+  [
+    "partial readback",
+    (o) => {
+      o.readback.errors.push("incomplete source")
+    }
+  ],
+  [
+    "old base",
+    (o) => {
+      o.changeBaseSha = oidcSecurityRemediationBinding.base_sha
+    }
+  ],
+  [
+    "missing path",
+    (o) => {
+      o.changedPaths.pop()
+    }
+  ],
+  [
+    "extra path",
+    (o) => {
+      o.changedPaths.push(".github/workflows/security.yml")
+    }
+  ],
+  [
+    "duplicate path",
+    (o) => {
+      o.changedPaths.push(o.changedPaths[0])
+    }
+  ],
+  [
+    "bounded fallback",
+    (o) => {
+      o.boundedScopeActive = true
+    }
+  ],
+  [
+    "fork",
+    (o) => {
+      o.readback.pull_request.head.repo.full_name = "someone/courtside-tw"
+    }
+  ],
+  [
+    "wrong branch",
+    (o) => {
+      o.readback.pull_request.head.ref = "fix/other"
+    }
+  ],
+  [
+    "wrong PR head",
+    (o) => {
+      o.readback.pull_request.head.sha = "c".repeat(40)
+    }
+  ],
+  [
+    "wrong local head",
+    (o) => {
+      o.gitBinding.head = "c".repeat(40)
+    }
+  ],
+  [
+    "wrong reviewed tree",
+    (o) => {
+      o.readback.reviewed_head_commit.tree.sha = "c".repeat(40)
+    }
+  ],
+  [
+    "missing tree",
+    (o) => {
+      o.gitBinding.head_tree_sha = undefined
+      o.readback.candidate.tree_sha = undefined
+      o.readback.reviewed_head_commit.tree.sha = undefined
+    }
+  ],
+  [
+    "wrong base tree",
+    (o) => {
+      o.readback.candidate.base_tree_sha = "c".repeat(40)
+    }
+  ],
+  [
+    "dirty tree",
+    (o) => {
+      o.gitBinding.status = "DIRTY"
+    }
+  ],
+  [
+    "stale protected main",
+    (o) => {
+      o.readback.protected_main.commit.sha = "c".repeat(40)
+    }
+  ],
+  [
+    "unprotected main",
+    (o) => {
+      o.readback.protected_main.protected = false
+    }
+  ],
+  [
+    "pre-authorization commit",
+    (o) => {
+      o.readback.candidate.commits_postdate_authorization = false
+    }
+  ],
+  [
+    "implementation before tests",
+    (o) => {
+      o.readback.candidate.tests_first = false
+    }
+  ],
+  [
+    "squashed tests",
+    (o) => {
+      o.readback.candidate.commit_count = 1
+    }
+  ],
+  [
+    "merge commit",
+    (o) => {
+      o.readback.candidate.merge_commit_count = 1
+    }
+  ],
+  [
+    "hidden historical path",
+    (o) => {
+      o.readback.candidate.history_paths.push("README.md")
+    }
+  ],
+  [
+    "wrong file mode",
+    (o) => {
+      o.readback.candidate.allowed_path_modes_match = false
+    }
+  ],
+  [
+    "runtime drift",
+    (o) => {
+      o.readback.candidate.runtime_pins_match = false
+    }
+  ],
+  [
+    "unauthenticated metadata",
+    (o) => {
+      o.githubActionsContext = { ...o.githubActionsContext }
+    }
+  ],
+  [
+    "non-exact evidence",
+    (o) => {
+      o.requireExactHeadEvidence = false
+    }
+  ],
+  [
+    "merge boundary",
+    (o) => {
+      o.readback.pull_request.merged = true
+    }
+  ]
+]) {
+  test(`October OIDC admission rejects ${label}`, () => {
+    const fixture = makeOctoberOidcFixture()
+    try {
+      const gate = traceabilityValidator.createOctoberOidcSecurityAuthorizationGate(fixture.source)
+      mutate(fixture.options)
+      const errors = []
+      assert.equal(gate.validate({ ...fixture.options, errors }), false, label)
+      assert.match(errors.join("\n"), /October OIDC security authorization/u)
+    } finally {
+      fs.rmSync(fixture.root, { recursive: true, force: true })
+    }
+  })
+}
+
+for (const [label, mutate] of [
+  [
+    "other base",
+    (d) => {
+      d.authorization_base.sha = "c".repeat(40)
+    }
+  ],
+  [
+    "other branch",
+    (d) => {
+      d.branch = "fix/other"
+    }
+  ],
+  [
+    "extra path",
+    (d) => {
+      d.authorized_paths.push("README.md")
+    }
+  ],
+  [
+    "unapproved target",
+    (d) => {
+      d.target.version = "6.0.5"
+    }
+  ],
+  [
+    "merge permission",
+    (d) => {
+      d.merge_authorization = "APPROVED"
+    }
+  ]
+]) {
+  test(`October OIDC admission rejects a sealed source with ${label}`, () => {
+    const fixture = makeOctoberOidcFixture()
+    try {
+      const dispatch = structuredClone(fixture.dispatch)
+      mutate(dispatch)
+      fixture.options.readback.authorization.body = fixture.bodyFor(dispatch)
+      fixture.source.body_sha256 = createHash("sha256")
+        .update(fixture.options.readback.authorization.body)
+        .digest("hex")
+      const gate = traceabilityValidator.createOctoberOidcSecurityAuthorizationGate(fixture.source)
+      const errors = []
+      assert.equal(gate.validate({ ...fixture.options, errors }), false)
+      assert.match(errors.join("\n"), /sealed descriptor and no-merge boundary/u)
+    } finally {
+      fs.rmSync(fixture.root, { recursive: true, force: true })
+    }
+  })
+}
+
+test("October OIDC runtime upgrade is digest pinned and preserves package floors and unprivileged user", () => {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
+  const git = (...args) => execFileSync("git", args, { cwd: root, encoding: "utf8" })
+  const baseDockerfile = git("show", `${octoberOidcBase}:infra/compose/oidc/Dockerfile`)
+  const baseCompose = git("show", `${octoberOidcBase}:infra/compose/compose.yaml`)
+  const expectedDockerfile = baseDockerfile
+    .replaceAll("6.0.2", "6.0.4")
+    .replaceAll(
+      oidcSecurityRemediationBinding.target.manifest_digest,
+      octoberOidcTarget.manifest_digest
+    )
+  assert.equal(
+    fs.readFileSync(path.join(root, "infra/compose/oidc/Dockerfile"), "utf8"),
+    expectedDockerfile
+  )
+  assert.equal(
+    fs.readFileSync(path.join(root, "infra/compose/compose.yaml"), "utf8"),
+    baseCompose.replaceAll(
+      oidcSecurityRemediationBinding.target.local_compose_tag,
+      octoberOidcTarget.local_compose_tag
+    )
+  )
+  assert.match(expectedDockerfile, /ARG BUSYBOX_MINIMUM_VERSION=1\.38\.0-r0/u)
+  assert.match(expectedDockerfile, /ARG OPENSSL_MINIMUM_VERSION=3\.6\.3-r5/u)
+  assert.match(expectedDockerfile, /USER 65532\s*$/u)
+})
+
+function makeOctoberOidcGitCandidate(fixture, { testsFirst = true } = {}) {
+  const sourceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
+  const root = path.join(fixture.root, "repository")
+  execFileSync("git", ["clone", "--shared", "--no-checkout", sourceRoot, root], { stdio: "ignore" })
+  const git = (...args) =>
+    execFileSync("git", args, {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+      env: {
+        ...process.env,
+        GIT_AUTHOR_NAME: "OIDC fixture",
+        GIT_AUTHOR_EMAIL: "fixture@example.invalid",
+        GIT_COMMITTER_NAME: "OIDC fixture",
+        GIT_COMMITTER_EMAIL: "fixture@example.invalid",
+        GIT_AUTHOR_DATE: "2026-10-01T22:05:00Z",
+        GIT_COMMITTER_DATE: "2026-10-01T22:05:00Z"
+      }
+    }).trim()
+  git("checkout", "--detach", octoberOidcBase)
+  const append = (file) =>
+    fs.appendFileSync(path.join(root, file), "\n// October OIDC test fixture\n")
+  const commit = () => {
+    git("add", ".")
+    git("commit", "-m", "Synthetic OIDC candidate")
+  }
+  if (testsFirst) {
+    append(octoberOidcPaths[2])
+    commit()
+  }
+  for (const file of octoberOidcPaths.slice(0, 2)) {
+    const filePath = path.join(root, file)
+    fs.writeFileSync(
+      filePath,
+      fs
+        .readFileSync(filePath, "utf8")
+        .replaceAll("6.0.2", "6.0.4")
+        .replaceAll(
+          oidcSecurityRemediationBinding.target.manifest_digest,
+          octoberOidcTarget.manifest_digest
+        )
+    )
+  }
+  append(octoberOidcPaths[3])
+  commit()
+  if (!testsFirst) {
+    append(octoberOidcPaths[2])
+    commit()
+  }
+  return { root, git, commit }
+}
+
+test("October OIDC candidate inspector computes exact tree, history, modes and runtime bytes", () => {
+  const fixture = makeOctoberOidcFixture()
+  try {
+    const repository = makeOctoberOidcGitCandidate(fixture)
+    const gate = traceabilityValidator.createOctoberOidcSecurityAuthorizationGate(fixture.source)
+    const head = repository.git("rev-parse", "HEAD")
+    const candidate = gate.inspectCandidate(repository.root, head)
+    assert.equal(candidate.head, head)
+    assert.equal(candidate.tree_sha, repository.git("rev-parse", "HEAD^{tree}"))
+    assert.equal(candidate.base_tree_sha, octoberOidcTree)
+    assert.equal(candidate.base_ancestor, true)
+    assert.equal(candidate.commit_count, 2)
+    assert.equal(candidate.merge_commit_count, 0)
+    assert.equal(candidate.tests_first, true)
+    assert.equal(candidate.commits_postdate_authorization, true)
+    assert.equal(candidate.allowed_path_modes_match, true)
+    assert.equal(candidate.runtime_pins_match, true)
+    assert.deepEqual(candidate.changed_paths.sort(), [...octoberOidcPaths].sort())
+    assert.deepEqual(candidate.history_paths.sort(), [...octoberOidcPaths].sort())
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
+for (const [label, setup, assertion] of [
+  [
+    "transient out-of-scope changes",
+    (repository) => {
+      fs.appendFileSync(path.join(repository.root, "README.md"), "\nTemporary drift\n")
+      repository.commit()
+      repository.git("checkout", octoberOidcBase, "--", "README.md")
+      repository.commit()
+    },
+    (candidate) => {
+      assert(candidate.history_paths.includes("README.md"))
+      assert(!candidate.changed_paths.includes("README.md"))
+    }
+  ],
+  [
+    "runtime package floor drift",
+    (repository) => {
+      const file = path.join(repository.root, octoberOidcPaths[0])
+      fs.writeFileSync(file, fs.readFileSync(file, "utf8").replace("3.6.3-r5", "3.6.0-r0"))
+      repository.commit()
+    },
+    (candidate) => {
+      assert.equal(candidate.runtime_pins_match, false)
+    }
+  ],
+  [
+    "executable runtime mode",
+    (repository) => {
+      fs.chmodSync(path.join(repository.root, octoberOidcPaths[0]), 0o755)
+      repository.commit()
+    },
+    (candidate) => {
+      assert.equal(candidate.allowed_path_modes_match, false)
+    }
+  ],
+  [
+    "implementation before tests",
+    () => {},
+    (candidate) => {
+      assert.equal(candidate.tests_first, false)
+    }
+  ]
+]) {
+  test(`October OIDC candidate inspector detects ${label}`, () => {
+    const fixture = makeOctoberOidcFixture()
+    try {
+      const repository = makeOctoberOidcGitCandidate(fixture, {
+        testsFirst: label !== "implementation before tests"
+      })
+      setup(repository)
+      const gate = traceabilityValidator.createOctoberOidcSecurityAuthorizationGate(fixture.source)
+      const candidate = gate.inspectCandidate(repository.root, repository.git("rev-parse", "HEAD"))
+      assertion(candidate)
+    } finally {
+      fs.rmSync(fixture.root, { recursive: true, force: true })
+    }
+  })
+}
+
+test("October OIDC inspector reads only the sealed comment and exact PR/head/main endpoints", () => {
+  const fixture = makeOctoberOidcFixture()
+  try {
+    const gate = traceabilityValidator.createOctoberOidcSecurityAuthorizationGate(fixture.source)
+    const calls = []
+    const result = gate.inspect(fixture.root, {
+      environment: fixture.environment,
+      headInspector: () => fixture.head,
+      candidateInspector: (_root, head) => {
+        assert.equal(head, fixture.head)
+        return fixture.options.readback.candidate
+      },
+      fetchJson: (url) => {
+        calls.push(url)
+        if (url === fixture.source.api_url) return fixture.options.readback.authorization
+        if (url.endsWith("/pulls/999998")) return fixture.options.readback.pull_request
+        if (url.endsWith(`/git/commits/${fixture.head}`))
+          return fixture.options.readback.reviewed_head_commit
+        if (url.endsWith("/branches/main")) return fixture.options.readback.protected_main
+        assert.fail(`unexpected URL ${url}`)
+      }
+    })
+    assert.equal(result.status, "VERIFIED", result.errors.join("\n"))
+    assert.deepEqual(calls, [
+      fixture.source.api_url,
+      "https://api.github.com/repos/bynanci/courtside-tw/pulls/999998",
+      `https://api.github.com/repos/bynanci/courtside-tw/git/commits/${fixture.head}`,
+      "https://api.github.com/repos/bynanci/courtside-tw/branches/main"
+    ])
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
+for (const label of ["wrong repository", "push event", "fork event", "mismatched live head"]) {
+  test(`October OIDC inspector rejects ${label}`, () => {
+    const fixture = makeOctoberOidcFixture()
+    try {
+      if (label === "wrong repository")
+        fixture.environment.GITHUB_REPOSITORY = "someone/courtside-tw"
+      if (label === "push event") fixture.environment.GITHUB_EVENT_NAME = "push"
+      if (label === "fork event") {
+        const event = JSON.parse(fs.readFileSync(fixture.environment.GITHUB_EVENT_PATH, "utf8"))
+        event.pull_request.head.repo.full_name = "someone/courtside-tw"
+        fs.writeFileSync(fixture.environment.GITHUB_EVENT_PATH, JSON.stringify(event))
+      }
+      const calls = []
+      let candidateCalls = 0
+      const result = traceabilityValidator
+        .createOctoberOidcSecurityAuthorizationGate(fixture.source)
+        .inspect(fixture.root, {
+          environment: fixture.environment,
+          headInspector: () => fixture.head,
+          candidateInspector: () => {
+            candidateCalls++
+            return fixture.options.readback.candidate
+          },
+          fetchJson: (url) => {
+            calls.push(url)
+            if (url === fixture.source.api_url) return fixture.options.readback.authorization
+            if (url.endsWith("/pulls/999998") && label === "mismatched live head") {
+              const pr = structuredClone(fixture.options.readback.pull_request)
+              pr.head.sha = "c".repeat(40)
+              return pr
+            }
+            assert.fail(`unsafe event must not fetch ${url}`)
+          }
+        })
+      assert.deepEqual(
+        calls,
+        label === "mismatched live head"
+          ? [
+              fixture.source.api_url,
+              "https://api.github.com/repos/bynanci/courtside-tw/pulls/999998"
+            ]
+          : [fixture.source.api_url]
+      )
+      assert.equal(candidateCalls, 0)
+      assert.equal(result.status, "UNAVAILABLE")
+      assert.match(result.errors.join("\n"), /OWNER read-back failed/u)
+    } finally {
+      fs.rmSync(fixture.root, { recursive: true, force: true })
+    }
+  })
+}
+
+test("October OIDC sealed singleton reaches full validator without widening frozen or T086 scope", async () => {
+  const fixture = makeOctoberOidcFixture()
+  const completed = makeCompletedFixture()
+  const temporary = fs.mkdtempSync(path.join(os.tmpdir(), "october-oidc-sealed-module-"))
+  try {
+    fs.symlinkSync(
+      path.join(repositoryRoot, "node_modules"),
+      path.join(temporary, "node_modules"),
+      "dir"
+    )
+    fs.symlinkSync(
+      path.join(repositoryRoot, "scripts/validate-beta-release.mjs"),
+      path.join(temporary, "validate-beta-release.mjs")
+    )
+    const source = fs.readFileSync(
+      path.join(repositoryRoot, "scripts/validate-traceability.mjs"),
+      "utf8"
+    )
+    const start = source.indexOf("export const OCTOBER_OIDC_SECURITY_AUTHORIZATION_SOURCE =")
+    const end = source.indexOf("\n\nconst octoberOidcSecurityPaths", start)
+    assert.ok(start > 0 && end > start)
+    const fixtureModule = path.join(temporary, "validator.mjs")
+    fs.writeFileSync(
+      fixtureModule,
+      source.slice(0, start) +
+        "export const OCTOBER_OIDC_SECURITY_AUTHORIZATION_SOURCE = Object.freeze(" +
+        JSON.stringify(fixture.source) +
+        ")" +
+        source.slice(end)
+    )
+    const { pathToFileURL } = await import("node:url")
+    const validator = await import(pathToFileURL(fixtureModule).href)
+    const context = validator.inspectGitHubActionsContext({
+      environment: fixture.environment,
+      gitBinding: fixture.options.gitBinding
+    })
+    writeExactHeadForActionsContext(completed.root, context)
+    const validate = (overrides = {}) =>
+      validator.validateTraceability({
+        root: completed.root,
+        currentHead: fixture.head,
+        evaluatedHeadCommittedAt: "2026-10-01T22:05:00Z",
+        changeBaseTasksText: completed.changeBaseTasksText,
+        changeBaseTraceabilityText: completed.changeBaseTraceabilityText,
+        changeBaseCompletionReceiptText: completed.changeBaseCompletionReceiptText,
+        acceptedTraceabilitySha256: completed.acceptedTraceabilitySha256,
+        acceptedPendingTasksSha256: completed.acceptedPendingTasksSha256,
+        acceptedCompletedTasksSha256: completed.acceptedCompletedTasksSha256,
+        ...fixture.options,
+        githubActionsContext: context,
+        octoberOidcSecurityAuthorizationReadback: fixture.options.readback,
+        ...overrides
+      })
+    const report = validate()
+    assert.equal(report.status, "PASS", report.errors.join("\n"))
+    assert.equal(report.source.october_oidc_security_authorization_readback.accepted, true)
+    assert.deepEqual(report.scope_validation.unauthorized_paths, [])
+    assert.equal(report.successor_scope.t086_authorized, false)
+    for (const label of ["extra path", "missing source", "frozen checkbox"]) {
+      const overrides = {}
+      if (label === "extra path")
+        overrides.changedPaths = [...octoberOidcPaths, ".github/workflows/ci.yml"]
+      if (label === "missing source") overrides.octoberOidcSecurityAuthorizationReadback = null
+      if (label === "frozen checkbox") {
+        const tasks = path.join(completed.root, featurePath, "tasks.md")
+        fs.writeFileSync(tasks, fs.readFileSync(tasks, "utf8").replace("- [ ] T086", "- [x] T086"))
+      }
+      const rejected = validate(overrides)
+      assert.equal(rejected.status, "FAIL", label)
+      assert.match(
+        rejected.errors.join("\n"),
+        label === "frozen checkbox" ? /T086 checkbox/u : /October OIDC security authorization/u
+      )
+    }
+  } finally {
+    fs.rmSync(temporary, { recursive: true, force: true })
+    fs.rmSync(fixture.root, { recursive: true, force: true })
+    fs.rmSync(completed.root, { recursive: true, force: true })
+  }
+})
+
+test("October OIDC production source is sealed to the genuine immutable owner comment", () => {
+  assert.deepEqual(traceabilityValidator.OCTOBER_OIDC_SECURITY_AUTHORIZATION_SOURCE, {
+    comment_id: 5942529061,
+    ref: "https://github.com/bynanci/courtside-tw/issues/160#issuecomment-5942529061",
+    api_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/comments/5942529061",
+    recorded_at: "2026-10-01T23:16:56Z",
+    body_sha256: "16720a6f34ba92807484ed0228a1fdfbdb1199974d5f47730666139d37142775"
+  })
+  assert.equal(traceabilityValidator.createOctoberOidcSecurityAuthorizationGate().isBound(), true)
+  assert.equal(
+    Object.isFrozen(traceabilityValidator.OCTOBER_OIDC_SECURITY_AUTHORIZATION_SOURCE),
+    true
+  )
+})
+
+test("seven-path integration admission is a separate exported factory", () => {
+  assert.equal(
+    typeof traceabilityValidator.createOctoberSecurityIntegrationAuthorizationGate,
+    "function"
+  )
+})
+
+// Synthetic owner source is confined to the pure factory; runCli has no source override.
+const octoberIntegrationBase = "ac92f88a7267736325519a8bf12dc6b9ee2bcb86"
+const octoberIntegrationTree = "9bff16cfc654a8d506bdc4ecc7ae989595525f79"
+const octoberIntegrationBranch = "fix/2026-10-security-integration"
+const octoberIntegrationPaths = [
+  "infra/compose/oidc/Dockerfile",
+  "infra/compose/compose.yaml",
+  "scripts/test/validate-traceability.test.mjs",
+  "scripts/validate-traceability.mjs",
+  "infra/compose/s3mock/Dockerfile",
+  "pnpm-lock.yaml",
+  "pnpm-workspace.yaml"
+]
+const octoberIntegrationTarget = {
+  version: "6.0.4",
+  manifest_digest: "sha256:47374fe063995d9b6d39ebb6ea21eb5f765025bf0aa08b61b08b439eb91adaf0",
+  local_compose_tag: "courtside-tw/mock-oauth2-server:6.0.4-busybox1.38"
+}
+
+const octoberIntegrationPayloads = [
+  {
+    path: "infra/compose/s3mock/Dockerfile",
+    git_blob_oid: "3ce8816ee80de915c461e30db1b3db5c6554a293",
+    sha256: "0cce6cdfadcdd98503b4a1019fc0aa19fa9f8721c8f12e31d9e030a5ea8932eb"
+  },
+  {
+    path: "pnpm-lock.yaml",
+    git_blob_oid: "3da429748ee50458640dd496986c6bb3211edf7b",
+    sha256: "d196d2f2b336426115741c5ef70597676b6e9e439c2a6fbe9c964fec1401b917"
+  },
+  {
+    path: "pnpm-workspace.yaml",
+    git_blob_oid: "544ffa4a6844b7504e1727da3cb9e147a84a8ccd",
+    sha256: "7392565039a634ea1ac4e38acc8c4fa47411b5c5efef142ca52df0d9d946a47a"
+  }
+]
+const octoberIntegrationParents = {
+  oidc: {
+    ref: "https://github.com/bynanci/courtside-tw/issues/160#issuecomment-5942529061",
+    body_sha256: "16720a6f34ba92807484ed0228a1fdfbdb1199974d5f47730666139d37142775",
+    recorded_at: "2026-10-01T23:16:56Z",
+    scope: "Original four-path authority remains immutable and separate."
+  },
+  javascript_s3: {
+    pull_request: 203,
+    ref: "https://github.com/bynanci/courtside-tw/pull/203",
+    head_sha: "b18fd6e8a07b6e9995a6672cbafc704f5f05d2e0",
+    approved_paths: ["infra/compose/s3mock/Dockerfile", "pnpm-lock.yaml", "pnpm-workspace.yaml"],
+    preserved_payloads: [
+      {
+        path: "infra/compose/s3mock/Dockerfile",
+        git_blob_oid: "3ce8816ee80de915c461e30db1b3db5c6554a293",
+        sha256: "0cce6cdfadcdd98503b4a1019fc0aa19fa9f8721c8f12e31d9e030a5ea8932eb"
+      },
+      {
+        path: "pnpm-lock.yaml",
+        git_blob_oid: "3da429748ee50458640dd496986c6bb3211edf7b",
+        sha256: "d196d2f2b336426115741c5ef70597676b6e9e439c2a6fbe9c964fec1401b917"
+      },
+      {
+        path: "pnpm-workspace.yaml",
+        git_blob_oid: "544ffa4a6844b7504e1727da3cb9e147a84a8ccd",
+        sha256: "7392565039a634ea1ac4e38acc8c4fa47411b5c5efef142ca52df0d9d946a47a"
+      }
+    ]
+  }
+}
+
+function makeOctoberIntegrationFixture() {
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "october-integration-"))
+  const head = "a".repeat(40)
+  const tree = "b".repeat(40)
+  const dispatch = {
+    schema_version: "courtside-october-security-integration-owner-dispatch/v1",
+    decision: "DISPATCH_ACCEPTED",
+    accepted_by: "bynanci",
+    repository: "bynanci/courtside-tw",
+    branch: octoberIntegrationBranch,
+    authorization_base: {
+      branch: "main",
+      sha: octoberIntegrationBase,
+      tree_sha: octoberIntegrationTree,
+      protected: true
+    },
+    authorized_paths: octoberIntegrationPaths,
+    oidc_target: octoberIntegrationTarget,
+    parent_authorizations: structuredClone(octoberIntegrationParents),
+    merge_authorization:
+      "NONE — stop at fresh exact-head evidence; a separate owner decision is required before merge."
+  }
+  const bodyFor = (value) =>
+    [
+      "<!-- october-security-integration:owner-dispatch:v1:start -->",
+      "```json",
+      JSON.stringify(value, null, 2),
+      "```",
+      "<!-- october-security-integration:owner-dispatch:v1:end -->"
+    ].join("\n")
+  const body = bodyFor(dispatch)
+  const source = {
+    comment_id: 999999,
+    ref: "https://github.com/bynanci/courtside-tw/issues/160#issuecomment-999999",
+    api_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/comments/999999",
+    recorded_at: "2026-10-01T22:00:00Z",
+    body_sha256: createHash("sha256").update(body).digest("hex")
+  }
+  const authorization = {
+    id: source.comment_id,
+    url: source.api_url,
+    html_url: source.ref,
+    issue_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/160",
+    user: { login: "bynanci" },
+    author_association: "OWNER",
+    state: "open",
+    locked: false,
+    created_at: source.recorded_at,
+    updated_at: source.recorded_at,
+    closed_at: null,
+    body
+  }
+  const gitBinding = {
+    status: "CLEAN",
+    head,
+    head_tree_sha: tree,
+    change_base_sha: octoberIntegrationBase,
+    change_base_ancestor: true
+  }
+  const readback = {
+    status: "VERIFIED",
+    source: "github-api",
+    authorization,
+    errors: [],
+    pull_request: {
+      number: 999998,
+      html_url: "https://github.com/bynanci/courtside-tw/pull/999998",
+      state: "open",
+      merged: false,
+      draft: true,
+      head: {
+        sha: head,
+        ref: octoberIntegrationBranch,
+        repo: { full_name: "bynanci/courtside-tw" }
+      },
+      base: {
+        sha: octoberIntegrationBase,
+        ref: "main",
+        repo: { full_name: "bynanci/courtside-tw" }
+      }
+    },
+    reviewed_head_commit: { sha: head, tree: { sha: tree } },
+    protected_main: { name: "main", protected: true, commit: { sha: octoberIntegrationBase } },
+    candidate: {
+      head,
+      tree_sha: tree,
+      base_tree_sha: octoberIntegrationTree,
+      base_ancestor: true,
+      changed_paths: [...octoberIntegrationPaths],
+      history_paths: [...octoberIntegrationPaths],
+      commit_count: 2,
+      merge_commit_count: 0,
+      commits_postdate_authorization: true,
+      tests_first: true,
+      allowed_path_modes_match: true,
+      runtime_pins_match: true,
+      preserved_payloads_match: true
+    }
+  }
+  const eventPath = path.join(root, "event.json")
+  const environment = {
+    GITHUB_ACTIONS: "true",
+    GITHUB_REPOSITORY: "bynanci/courtside-tw",
+    GITHUB_EVENT_NAME: "pull_request",
+    GITHUB_EVENT_PATH: eventPath,
+    GITHUB_SHA: fixtureActionsMergeSha,
+    GITHUB_WORKFLOW: "CI",
+    GITHUB_JOB: "frontend-contract",
+    GITHUB_RUN_ID: fixtureActionsRunId,
+    GITHUB_RUN_NUMBER: fixtureActionsRunNumber,
+    GITHUB_RUN_ATTEMPT: fixtureActionsRunAttempt,
+    GITHUB_REF: "refs/pull/999998/merge",
+    GITHUB_REF_NAME: "999998/merge",
+    GITHUB_BASE_REF: "main",
+    GITHUB_HEAD_REF: octoberIntegrationBranch
+  }
+  fs.writeFileSync(
+    eventPath,
+    JSON.stringify({
+      repository: { full_name: "bynanci/courtside-tw" },
+      number: 999998,
+      pull_request: readback.pull_request
+    })
+  )
+  const context = traceabilityValidator.inspectGitHubActionsContext({ environment, gitBinding })
+  const options = {
+    readback,
+    gitBinding,
+    changedPaths: [...octoberIntegrationPaths],
+    changeBaseSha: octoberIntegrationBase,
+    boundedScopeActive: false,
+    githubActionsContext: context,
+    requireExactHeadEvidence: true
+  }
+  return { root, head, tree, source, dispatch, bodyFor, environment, options }
+}
+
+test("October security integration admission requires a real sealed production source", () => {
+  const gate = traceabilityValidator.createOctoberSecurityIntegrationAuthorizationGate(null)
+  assert.equal(gate.isBound(), false)
+  assert.equal(gate.allowsPath(octoberIntegrationPaths[0]), false)
+  assert.equal(
+    gate.requested(
+      octoberIntegrationPaths,
+      { head_ref: octoberIntegrationBranch },
+      null,
+      octoberIntegrationBase
+    ),
+    true
+  )
+  const result = gate.inspect("unused", {
+    fetchJson() {
+      assert.fail("unbound authority must not fetch an invented source")
+    }
+  })
+  assert.equal(result.status, "UNAVAILABLE")
+  assert.match(result.errors.join("\n"), /immutable OWNER source is not sealed/u)
+})
+
+test("October security integration admission accepts only a sealed exact-base seven-path PR", () => {
+  const fixture = makeOctoberIntegrationFixture()
+  try {
+    const gate = traceabilityValidator.createOctoberSecurityIntegrationAuthorizationGate(
+      fixture.source
+    )
+    assert.equal(gate.isBound(), true)
+    const errors = []
+    assert.equal(gate.validate({ ...fixture.options, errors }), true, errors.join("\n"))
+    assert.equal(gate.allowsPath(".github/workflows/security.yml"), false)
+    assert.equal(gate.allowsPath("infra/compose/oidc/../s3mock/Dockerfile"), false)
+    assert.equal(
+      createOidcSecurityRemediationAuthorizationGate(oidcSecurityRemediationBinding).isBound(),
+      true
+    )
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
+for (const [label, mutate] of [
+  [
+    "missing source",
+    (o) => {
+      o.readback.authorization = null
+    }
+  ],
+  [
+    "non-owner",
+    (o) => {
+      o.readback.authorization.user.login = "another-user"
+    }
+  ],
+  [
+    "member association",
+    (o) => {
+      o.readback.authorization.author_association = "MEMBER"
+    }
+  ],
+  [
+    "edited issue",
+    (o) => {
+      o.readback.authorization.updated_at = "2026-10-01T22:01:00Z"
+    }
+  ],
+  [
+    "edited body",
+    (o) => {
+      o.readback.authorization.body += "\n"
+    }
+  ],
+  [
+    "non-string body",
+    (o) => {
+      o.readback.authorization.body = { forged: true }
+    }
+  ],
+  [
+    "wrong issue API",
+    (o) => {
+      o.readback.authorization.url += "0"
+    }
+  ],
+  [
+    "wrong source issue",
+    (o) => {
+      o.readback.authorization.issue_url += "0"
+    }
+  ],
+  [
+    "partial readback",
+    (o) => {
+      o.readback.errors.push("incomplete source")
+    }
+  ],
+  [
+    "old base",
+    (o) => {
+      o.changeBaseSha = oidcSecurityRemediationBinding.base_sha
+    }
+  ],
+  [
+    "missing path",
+    (o) => {
+      o.changedPaths.pop()
+    }
+  ],
+  [
+    "extra path",
+    (o) => {
+      o.changedPaths.push(".github/workflows/security.yml")
+    }
+  ],
+  [
+    "duplicate path",
+    (o) => {
+      o.changedPaths.push(o.changedPaths[0])
+    }
+  ],
+  [
+    "bounded fallback",
+    (o) => {
+      o.boundedScopeActive = true
+    }
+  ],
+  [
+    "fork",
+    (o) => {
+      o.readback.pull_request.head.repo.full_name = "someone/courtside-tw"
+    }
+  ],
+  [
+    "wrong branch",
+    (o) => {
+      o.readback.pull_request.head.ref = "fix/other"
+    }
+  ],
+  [
+    "wrong PR head",
+    (o) => {
+      o.readback.pull_request.head.sha = "c".repeat(40)
+    }
+  ],
+  [
+    "wrong local head",
+    (o) => {
+      o.gitBinding.head = "c".repeat(40)
+    }
+  ],
+  [
+    "wrong reviewed tree",
+    (o) => {
+      o.readback.reviewed_head_commit.tree.sha = "c".repeat(40)
+    }
+  ],
+  [
+    "missing tree",
+    (o) => {
+      o.gitBinding.head_tree_sha = undefined
+      o.readback.candidate.tree_sha = undefined
+      o.readback.reviewed_head_commit.tree.sha = undefined
+    }
+  ],
+  [
+    "wrong base tree",
+    (o) => {
+      o.readback.candidate.base_tree_sha = "c".repeat(40)
+    }
+  ],
+  [
+    "dirty tree",
+    (o) => {
+      o.gitBinding.status = "DIRTY"
+    }
+  ],
+  [
+    "stale protected main",
+    (o) => {
+      o.readback.protected_main.commit.sha = "c".repeat(40)
+    }
+  ],
+  [
+    "unprotected main",
+    (o) => {
+      o.readback.protected_main.protected = false
+    }
+  ],
+  [
+    "pre-authorization commit",
+    (o) => {
+      o.readback.candidate.commits_postdate_authorization = false
+    }
+  ],
+  [
+    "implementation before tests",
+    (o) => {
+      o.readback.candidate.tests_first = false
+    }
+  ],
+  [
+    "squashed tests",
+    (o) => {
+      o.readback.candidate.commit_count = 1
+    }
+  ],
+  [
+    "merge commit",
+    (o) => {
+      o.readback.candidate.merge_commit_count = 1
+    }
+  ],
+  [
+    "hidden historical path",
+    (o) => {
+      o.readback.candidate.history_paths.push("README.md")
+    }
+  ],
+  [
+    "wrong file mode",
+    (o) => {
+      o.readback.candidate.allowed_path_modes_match = false
+    }
+  ],
+  [
+    "preserved payload drift",
+    (o) => {
+      o.readback.candidate.preserved_payloads_match = false
+    }
+  ],
+  [
+    "runtime drift",
+    (o) => {
+      o.readback.candidate.runtime_pins_match = false
+    }
+  ],
+  [
+    "unauthenticated metadata",
+    (o) => {
+      o.githubActionsContext = { ...o.githubActionsContext }
+    }
+  ],
+  [
+    "non-exact evidence",
+    (o) => {
+      o.requireExactHeadEvidence = false
+    }
+  ],
+  [
+    "merge boundary",
+    (o) => {
+      o.readback.pull_request.merged = true
+    }
+  ]
+]) {
+  test(`October security integration admission rejects ${label}`, () => {
+    const fixture = makeOctoberIntegrationFixture()
+    try {
+      const gate = traceabilityValidator.createOctoberSecurityIntegrationAuthorizationGate(
+        fixture.source
+      )
+      mutate(fixture.options)
+      const errors = []
+      assert.equal(gate.validate({ ...fixture.options, errors }), false, label)
+      assert.match(errors.join("\n"), /October security integration authorization/u)
+    } finally {
+      fs.rmSync(fixture.root, { recursive: true, force: true })
+    }
+  })
+}
+
+for (const [label, mutate] of [
+  [
+    "other base",
+    (d) => {
+      d.authorization_base.sha = "c".repeat(40)
+    }
+  ],
+  [
+    "other branch",
+    (d) => {
+      d.branch = "fix/other"
+    }
+  ],
+  [
+    "extra path",
+    (d) => {
+      d.authorized_paths.push("README.md")
+    }
+  ],
+  [
+    "changed pinned payload",
+    (d) => {
+      d.parent_authorizations.javascript_s3.preserved_payloads[0].git_blob_oid = "c".repeat(40)
+    }
+  ],
+  [
+    "changed parent reference",
+    (d) => {
+      d.parent_authorizations.oidc.ref += "0"
+    }
+  ],
+  [
+    "unapproved target",
+    (d) => {
+      d.oidc_target.version = "6.0.5"
+    }
+  ],
+  [
+    "merge permission",
+    (d) => {
+      d.merge_authorization = "APPROVED"
+    }
+  ]
+]) {
+  test(`October security integration admission rejects a sealed source with ${label}`, () => {
+    const fixture = makeOctoberIntegrationFixture()
+    try {
+      const dispatch = structuredClone(fixture.dispatch)
+      mutate(dispatch)
+      fixture.options.readback.authorization.body = fixture.bodyFor(dispatch)
+      fixture.source.body_sha256 = createHash("sha256")
+        .update(fixture.options.readback.authorization.body)
+        .digest("hex")
+      const gate = traceabilityValidator.createOctoberSecurityIntegrationAuthorizationGate(
+        fixture.source
+      )
+      const errors = []
+      assert.equal(gate.validate({ ...fixture.options, errors }), false)
+      assert.match(errors.join("\n"), /sealed descriptor and no-merge boundary/u)
+    } finally {
+      fs.rmSync(fixture.root, { recursive: true, force: true })
+    }
+  })
+}
+
+test("October security integration runtime upgrade is digest pinned and preserves package floors and unprivileged user", () => {
+  const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
+  const git = (...args) => execFileSync("git", args, { cwd: root, encoding: "utf8" })
+  const baseDockerfile = git("show", `${octoberIntegrationBase}:infra/compose/oidc/Dockerfile`)
+  const baseCompose = git("show", `${octoberIntegrationBase}:infra/compose/compose.yaml`)
+  const expectedDockerfile = baseDockerfile
+    .replaceAll("6.0.2", "6.0.4")
+    .replaceAll(
+      oidcSecurityRemediationBinding.target.manifest_digest,
+      octoberIntegrationTarget.manifest_digest
+    )
+  assert.equal(
+    fs.readFileSync(path.join(root, "infra/compose/oidc/Dockerfile"), "utf8"),
+    expectedDockerfile
+  )
+  assert.equal(
+    fs.readFileSync(path.join(root, "infra/compose/compose.yaml"), "utf8"),
+    baseCompose.replaceAll(
+      oidcSecurityRemediationBinding.target.local_compose_tag,
+      octoberIntegrationTarget.local_compose_tag
+    )
+  )
+  assert.match(expectedDockerfile, /ARG BUSYBOX_MINIMUM_VERSION=1\.38\.0-r0/u)
+  assert.match(expectedDockerfile, /ARG OPENSSL_MINIMUM_VERSION=3\.6\.3-r5/u)
+  assert.match(expectedDockerfile, /USER 65532\s*$/u)
+})
+
+function makeOctoberIntegrationGitCandidate(fixture, { testsFirst = true } = {}) {
+  const sourceRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "../..")
+  const root = path.join(fixture.root, "repository")
+  execFileSync("git", ["clone", "--shared", "--no-checkout", sourceRoot, root], { stdio: "ignore" })
+  const git = (...args) =>
+    execFileSync("git", args, {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+      env: {
+        ...process.env,
+        GIT_AUTHOR_NAME: "OIDC fixture",
+        GIT_AUTHOR_EMAIL: "fixture@example.invalid",
+        GIT_COMMITTER_NAME: "OIDC fixture",
+        GIT_COMMITTER_EMAIL: "fixture@example.invalid",
+        GIT_AUTHOR_DATE: "2026-10-01T22:05:00Z",
+        GIT_COMMITTER_DATE: "2026-10-01T22:05:00Z"
+      }
+    }).trim()
+  git("checkout", "--detach", octoberIntegrationBase)
+  const append = (file) =>
+    fs.appendFileSync(path.join(root, file), "\n// October security integration test fixture\n")
+  const commit = () => {
+    git("add", ".")
+    git("commit", "-m", "Synthetic OIDC candidate")
+  }
+  if (testsFirst) {
+    append(octoberIntegrationPaths[2])
+    commit()
+  }
+  for (const file of octoberIntegrationPaths.slice(0, 2)) {
+    const filePath = path.join(root, file)
+    fs.writeFileSync(
+      filePath,
+      fs
+        .readFileSync(filePath, "utf8")
+        .replaceAll("6.0.2", "6.0.4")
+        .replaceAll(
+          oidcSecurityRemediationBinding.target.manifest_digest,
+          octoberIntegrationTarget.manifest_digest
+        )
+    )
+  }
+  for (const payload of octoberIntegrationPayloads) {
+    fs.writeFileSync(
+      path.join(root, payload.path),
+      execFileSync("git", ["show", `b18fd6e8a07b6e9995a6672cbafc704f5f05d2e0:${payload.path}`], {
+        cwd: sourceRoot
+      })
+    )
+  }
+  append(octoberIntegrationPaths[3])
+  commit()
+  if (!testsFirst) {
+    append(octoberIntegrationPaths[2])
+    commit()
+  }
+  return { root, git, commit }
+}
+
+test("October security integration candidate inspector computes exact tree, history, modes and runtime bytes", () => {
+  const fixture = makeOctoberIntegrationFixture()
+  try {
+    const repository = makeOctoberIntegrationGitCandidate(fixture)
+    const gate = traceabilityValidator.createOctoberSecurityIntegrationAuthorizationGate(
+      fixture.source
+    )
+    const head = repository.git("rev-parse", "HEAD")
+    const candidate = gate.inspectCandidate(repository.root, head)
+    assert.equal(candidate.head, head)
+    assert.equal(candidate.tree_sha, repository.git("rev-parse", "HEAD^{tree}"))
+    assert.equal(candidate.base_tree_sha, octoberIntegrationTree)
+    assert.equal(candidate.base_ancestor, true)
+    assert.equal(candidate.commit_count, 2)
+    assert.equal(candidate.merge_commit_count, 0)
+    assert.equal(candidate.tests_first, true)
+    assert.equal(candidate.commits_postdate_authorization, true)
+    assert.equal(candidate.allowed_path_modes_match, true)
+    assert.equal(candidate.runtime_pins_match, true)
+    assert.equal(candidate.preserved_payloads_match, true)
+    assert.deepEqual(candidate.changed_paths.sort(), [...octoberIntegrationPaths].sort())
+    assert.deepEqual(candidate.history_paths.sort(), [...octoberIntegrationPaths].sort())
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
+for (const [label, setup, assertion] of [
+  [
+    "transient out-of-scope changes",
+    (repository) => {
+      fs.appendFileSync(path.join(repository.root, "README.md"), "\nTemporary drift\n")
+      repository.commit()
+      repository.git("checkout", octoberIntegrationBase, "--", "README.md")
+      repository.commit()
+    },
+    (candidate) => {
+      assert(candidate.history_paths.includes("README.md"))
+      assert(!candidate.changed_paths.includes("README.md"))
+    }
+  ],
+  [
+    "runtime package floor drift",
+    (repository) => {
+      const file = path.join(repository.root, octoberIntegrationPaths[0])
+      fs.writeFileSync(file, fs.readFileSync(file, "utf8").replace("3.6.3-r5", "3.6.0-r0"))
+      repository.commit()
+    },
+    (candidate) => {
+      assert.equal(candidate.runtime_pins_match, false)
+    }
+  ],
+  [
+    "executable runtime mode",
+    (repository) => {
+      fs.chmodSync(path.join(repository.root, octoberIntegrationPaths[0]), 0o755)
+      repository.commit()
+    },
+    (candidate) => {
+      assert.equal(candidate.allowed_path_modes_match, false)
+    }
+  ],
+  [
+    "changed preserved payload",
+    (repository) => {
+      fs.appendFileSync(path.join(repository.root, "pnpm-workspace.yaml"), "\n# drift\n")
+      repository.commit()
+    },
+    (candidate) => {
+      assert.equal(candidate.preserved_payloads_match, false)
+    }
+  ],
+  [
+    "executable payload mode",
+    (repository) => {
+      fs.chmodSync(path.join(repository.root, "pnpm-lock.yaml"), 0o755)
+      repository.commit()
+    },
+    (candidate) => {
+      assert.equal(candidate.allowed_path_modes_match, false)
+    }
+  ],
+  [
+    "implementation before tests",
+    () => {},
+    (candidate) => {
+      assert.equal(candidate.tests_first, false)
+    }
+  ]
+]) {
+  test(`October security integration candidate inspector detects ${label}`, () => {
+    const fixture = makeOctoberIntegrationFixture()
+    try {
+      const repository = makeOctoberIntegrationGitCandidate(fixture, {
+        testsFirst: label !== "implementation before tests"
+      })
+      setup(repository)
+      const gate = traceabilityValidator.createOctoberSecurityIntegrationAuthorizationGate(
+        fixture.source
+      )
+      const candidate = gate.inspectCandidate(repository.root, repository.git("rev-parse", "HEAD"))
+      assertion(candidate)
+    } finally {
+      fs.rmSync(fixture.root, { recursive: true, force: true })
+    }
+  })
+}
+
+test("October security integration inspector reads only the sealed comment and exact PR/head/main endpoints", () => {
+  const fixture = makeOctoberIntegrationFixture()
+  try {
+    const gate = traceabilityValidator.createOctoberSecurityIntegrationAuthorizationGate(
+      fixture.source
+    )
+    const calls = []
+    const result = gate.inspect(fixture.root, {
+      environment: fixture.environment,
+      headInspector: () => fixture.head,
+      candidateInspector: (_root, head) => {
+        assert.equal(head, fixture.head)
+        return fixture.options.readback.candidate
+      },
+      fetchJson: (url) => {
+        calls.push(url)
+        if (url === fixture.source.api_url) return fixture.options.readback.authorization
+        if (url.endsWith("/pulls/999998")) return fixture.options.readback.pull_request
+        if (url.endsWith(`/git/commits/${fixture.head}`))
+          return fixture.options.readback.reviewed_head_commit
+        if (url.endsWith("/branches/main")) return fixture.options.readback.protected_main
+        assert.fail(`unexpected URL ${url}`)
+      }
+    })
+    assert.equal(result.status, "VERIFIED", result.errors.join("\n"))
+    assert.deepEqual(calls, [
+      fixture.source.api_url,
+      "https://api.github.com/repos/bynanci/courtside-tw/pulls/999998",
+      `https://api.github.com/repos/bynanci/courtside-tw/git/commits/${fixture.head}`,
+      "https://api.github.com/repos/bynanci/courtside-tw/branches/main"
+    ])
+  } finally {
+    fs.rmSync(fixture.root, { recursive: true, force: true })
+  }
+})
+
+for (const label of [
+  "wrong repository",
+  "push event",
+  "fork event",
+  "mismatched live head",
+  "deleted source"
+]) {
+  test(`October security integration inspector rejects ${label}`, () => {
+    const fixture = makeOctoberIntegrationFixture()
+    try {
+      if (label === "wrong repository")
+        fixture.environment.GITHUB_REPOSITORY = "someone/courtside-tw"
+      if (label === "push event") fixture.environment.GITHUB_EVENT_NAME = "push"
+      if (label === "fork event") {
+        const event = JSON.parse(fs.readFileSync(fixture.environment.GITHUB_EVENT_PATH, "utf8"))
+        event.pull_request.head.repo.full_name = "someone/courtside-tw"
+        fs.writeFileSync(fixture.environment.GITHUB_EVENT_PATH, JSON.stringify(event))
+      }
+      const calls = []
+      let candidateCalls = 0
+      const result = traceabilityValidator
+        .createOctoberSecurityIntegrationAuthorizationGate(fixture.source)
+        .inspect(fixture.root, {
+          environment: fixture.environment,
+          headInspector: () => fixture.head,
+          candidateInspector: () => {
+            candidateCalls++
+            return fixture.options.readback.candidate
+          },
+          fetchJson: (url) => {
+            calls.push(url)
+            if (url === fixture.source.api_url) {
+              if (label === "deleted source") throw new Error("404 Not Found")
+              return fixture.options.readback.authorization
+            }
+            if (url.endsWith("/pulls/999998") && label === "mismatched live head") {
+              const pr = structuredClone(fixture.options.readback.pull_request)
+              pr.head.sha = "c".repeat(40)
+              return pr
+            }
+            assert.fail(`unsafe event must not fetch ${url}`)
+          }
+        })
+      assert.deepEqual(
+        calls,
+        label === "mismatched live head"
+          ? [
+              fixture.source.api_url,
+              "https://api.github.com/repos/bynanci/courtside-tw/pulls/999998"
+            ]
+          : [fixture.source.api_url]
+      )
+      assert.equal(candidateCalls, 0)
+      assert.equal(result.status, "UNAVAILABLE")
+      assert.match(result.errors.join("\n"), /OWNER read-back failed/u)
+    } finally {
+      fs.rmSync(fixture.root, { recursive: true, force: true })
+    }
+  })
+}
+
+test("October security integration sealed singleton reaches full validator without widening frozen or T086 scope", async () => {
+  const fixture = makeOctoberIntegrationFixture()
+  const completed = makeCompletedFixture()
+  const temporary = fs.mkdtempSync(path.join(os.tmpdir(), "october-integration-sealed-module-"))
+  try {
+    fs.symlinkSync(
+      path.join(repositoryRoot, "node_modules"),
+      path.join(temporary, "node_modules"),
+      "dir"
+    )
+    fs.symlinkSync(
+      path.join(repositoryRoot, "scripts/validate-beta-release.mjs"),
+      path.join(temporary, "validate-beta-release.mjs")
+    )
+    const source = fs.readFileSync(
+      path.join(repositoryRoot, "scripts/validate-traceability.mjs"),
+      "utf8"
+    )
+    const start = source.indexOf("export const OCTOBER_SECURITY_INTEGRATION_AUTHORIZATION_SOURCE =")
+    const end = source.indexOf("\n\nconst octoberSecurityIntegrationPaths", start)
+    assert.ok(start > 0 && end > start)
+    const fixtureModule = path.join(temporary, "validator.mjs")
+    fs.writeFileSync(
+      fixtureModule,
+      source.slice(0, start) +
+        "export const OCTOBER_SECURITY_INTEGRATION_AUTHORIZATION_SOURCE = Object.freeze(" +
+        JSON.stringify(fixture.source) +
+        ")" +
+        source.slice(end)
+    )
+    const { pathToFileURL } = await import("node:url")
+    const validator = await import(pathToFileURL(fixtureModule).href)
+    const context = validator.inspectGitHubActionsContext({
+      environment: fixture.environment,
+      gitBinding: fixture.options.gitBinding
+    })
+    writeExactHeadForActionsContext(completed.root, context)
+    const validate = (overrides = {}) =>
+      validator.validateTraceability({
+        root: completed.root,
+        currentHead: fixture.head,
+        evaluatedHeadCommittedAt: "2026-10-01T22:05:00Z",
+        changeBaseTasksText: completed.changeBaseTasksText,
+        changeBaseTraceabilityText: completed.changeBaseTraceabilityText,
+        changeBaseCompletionReceiptText: completed.changeBaseCompletionReceiptText,
+        acceptedTraceabilitySha256: completed.acceptedTraceabilitySha256,
+        acceptedPendingTasksSha256: completed.acceptedPendingTasksSha256,
+        acceptedCompletedTasksSha256: completed.acceptedCompletedTasksSha256,
+        ...fixture.options,
+        githubActionsContext: context,
+        octoberSecurityIntegrationAuthorizationReadback: fixture.options.readback,
+        ...overrides
+      })
+    const report = validate()
+    assert.equal(report.status, "PASS", report.errors.join("\n"))
+    assert.equal(report.source.october_security_integration_authorization_readback.accepted, true)
+    assert.deepEqual(report.scope_validation.unauthorized_paths, [])
+    assert.equal(report.successor_scope.t086_authorized, false)
+    assert.equal(report.source.october_oidc_security_authorization_readback, null)
+    for (const label of ["extra path", "missing source", "frozen checkbox"]) {
+      const overrides = {}
+      if (label === "extra path")
+        overrides.changedPaths = [...octoberIntegrationPaths, ".github/workflows/ci.yml"]
+      if (label === "missing source")
+        overrides.octoberSecurityIntegrationAuthorizationReadback = null
+      if (label === "frozen checkbox") {
+        const tasks = path.join(completed.root, featurePath, "tasks.md")
+        fs.writeFileSync(tasks, fs.readFileSync(tasks, "utf8").replace("- [ ] T086", "- [x] T086"))
+      }
+      const rejected = validate(overrides)
+      assert.equal(rejected.status, "FAIL", label)
+      if (label !== "frozen checkbox")
+        assert.match(rejected.errors.join("\n"), /October OIDC security authorization/u)
+      assert.match(
+        rejected.errors.join("\n"),
+        label === "frozen checkbox"
+          ? /T086 checkbox/u
+          : /October security integration authorization/u
+      )
+    }
+  } finally {
+    fs.rmSync(temporary, { recursive: true, force: true })
+    fs.rmSync(fixture.root, { recursive: true, force: true })
+    fs.rmSync(completed.root, { recursive: true, force: true })
+  }
+})
+
+test("October security integration production source is sealed to the genuine immutable owner comment", () => {
+  assert.deepEqual(traceabilityValidator.OCTOBER_SECURITY_INTEGRATION_AUTHORIZATION_SOURCE, {
+    comment_id: 5942584763,
+    ref: "https://github.com/bynanci/courtside-tw/issues/160#issuecomment-5942584763",
+    api_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/comments/5942584763",
+    recorded_at: "2026-10-01T23:22:04Z",
+    body_sha256: "d6f3b34a365d7e69dfe1d395e07b143f37f008f533c6b88560971075e2dfd5d2"
+  })
+  assert.equal(
+    traceabilityValidator.createOctoberSecurityIntegrationAuthorizationGate().isBound(),
+    true
+  )
+  assert.equal(
+    Object.isFrozen(traceabilityValidator.OCTOBER_SECURITY_INTEGRATION_AUTHORIZATION_SOURCE),
+    true
+  )
+})
+
+// Verbatim live OWNER record, pinned by hash. Synthetic PR/head values below are test-only.
+const auditCompositionOwnerBody =
+  '<!-- security-audit-sync-composition:owner-dispatch:v1:start -->\n## PR #204: bounded audit-test synchronization composition\n\nRecorded by the assistant on the user\'s instruction. This adds only the three-file test/admission delta to the existing immutable seven-file security work; it does not replace earlier owner records or claim complete Security acceptance.\n\n```json\n{\n  "schema_version": "courtside-security-audit-sync-composition-owner-dispatch/v1",\n  "decision": "DISPATCH_ACCEPTED",\n  "accepted_by": "bynanci",\n  "repository": "bynanci/courtside-tw",\n  "branch": "fix/2026-10-security-integration",\n  "pull_request": 204,\n  "authorization_source": "Recorded by the assistant on the user\'s instruction through the connected GitHub account. This is independent additive development-only authority to compose the previously approved audit-test synchronization fix with PR #204. It preserves existing owner records and history, does not claim complete Security acceptance, and does not grant merge, deployment, release, or project-acceptance authority.",\n  "user_instruction": "Courtside-tw 幫我把issues tasks pr都處理完",\n  "prior_user_instruction": "我同意你針對這兩個專案進行操作",\n  "protected_base": {\n    "branch": "main",\n    "sha": "ac92f88a7267736325519a8bf12dc6b9ee2bcb86",\n    "tree_sha": "9bff16cfc654a8d506bdc4ecc7ae989595525f79",\n    "protected": true\n  },\n  "inherited_parent": {\n    "head_sha": "3405f072e97492703c504232226ddaec611011fe",\n    "tree_sha": "be3104231db0707efb1ad31f0e413cb2fd6b5ada",\n    "red_head_sha": "ba851de5bf0a1d4c9392f6f2df4ce30c48abba7b",\n    "red_tree_sha": "86b2e9a6c128e1bc75a6453680ad1cbb71d812bd",\n    "red_parent_sha": "ac92f88a7267736325519a8bf12dc6b9ee2bcb86",\n    "parent_parent_sha": "ba851de5bf0a1d4c9392f6f2df4ce30c48abba7b",\n    "source_ref": "https://github.com/bynanci/courtside-tw/issues/160#issuecomment-5942584763",\n    "source_body_sha256": "d6f3b34a365d7e69dfe1d395e07b143f37f008f533c6b88560971075e2dfd5d2",\n    "source_recorded_at": "2026-10-01T23:22:04Z",\n    "acceptance_boundary": "This exact parent is an immutable development baseline only. Verify its actual GitHub commit identity/tree, local ancestry and inherited two-commit seven-path history; do not infer overall Security, merge or release acceptance from individual passing checks."\n  },\n  "original_oidc_source": {\n    "ref": "https://github.com/bynanci/courtside-tw/issues/160#issuecomment-5942529061",\n    "body_sha256": "16720a6f34ba92807484ed0228a1fdfbdb1199974d5f47730666139d37142775"\n  },\n  "authorized_delta_paths": [\n    "apps/api/src/test/java/tw/basketball/magazine/security/RouteRateLimitHttpIT.java",\n    "scripts/test/validate-traceability.test.mjs",\n    "scripts/validate-traceability.mjs"\n  ],\n  "authorized_paths": [\n    "infra/compose/s3mock/Dockerfile",\n    "pnpm-lock.yaml",\n    "pnpm-workspace.yaml",\n    "infra/compose/oidc/Dockerfile",\n    "infra/compose/compose.yaml",\n    "apps/api/src/test/java/tw/basketball/magazine/security/RouteRateLimitHttpIT.java",\n    "scripts/test/validate-traceability.test.mjs",\n    "scripts/validate-traceability.mjs"\n  ],\n  "preserved_payloads": [\n    {\n      "path": "infra/compose/s3mock/Dockerfile",\n      "git_blob_oid": "3ce8816ee80de915c461e30db1b3db5c6554a293",\n      "sha256": "0cce6cdfadcdd98503b4a1019fc0aa19fa9f8721c8f12e31d9e030a5ea8932eb"\n    },\n    {\n      "path": "pnpm-lock.yaml",\n      "git_blob_oid": "3da429748ee50458640dd496986c6bb3211edf7b",\n      "sha256": "d196d2f2b336426115741c5ef70597676b6e9e439c2a6fbe9c964fec1401b917"\n    },\n    {\n      "path": "pnpm-workspace.yaml",\n      "git_blob_oid": "544ffa4a6844b7504e1727da3cb9e147a84a8ccd",\n      "sha256": "7392565039a634ea1ac4e38acc8c4fa47411b5c5efef142ca52df0d9d946a47a"\n    },\n    {\n      "path": "infra/compose/oidc/Dockerfile",\n      "git_blob_oid": "99c85b9c644ec60f3ffea88a04991372febbe730",\n      "sha256": "a081726f538f331cdc57ef2c3a60f963072ea3f726a0e3c9d1bd814aba4fc66e"\n    },\n    {\n      "path": "infra/compose/compose.yaml",\n      "git_blob_oid": "85bdcd5ee06f582387b4eec10306b66e64fdbb68",\n      "sha256": "5e6393de07ce43fb6160a7962631b3e4233b5a6fa5e899c9045b26a6e15c9bd0"\n    }\n  ],\n  "audit_test_target": {\n    "path": "apps/api/src/test/java/tw/basketball/magazine/security/RouteRateLimitHttpIT.java",\n    "git_blob_oid": "757d929e0e2591f1f0de54c78db4c458835b9443",\n    "sha256": "6f37fa8385599ed084392259a9bc64f6925a19f2425b38131cb59f3c882452c5"\n  },\n  "audit_test_baseline": {\n    "path": "apps/api/src/test/java/tw/basketball/magazine/security/RouteRateLimitHttpIT.java",\n    "git_blob_oid": "e355fb152726f105901d819b70e8ffef60a6469a",\n    "sha256": "7c6ae100a99d8486f6b60e60f4357a3a338895d0dca1efc53d96474781e95fc6"\n  },\n  "allowed_actions": [\n    "Append a fresh tests-only RED commit after the exact inherited parent and after this immutable record is created; then implement the minimal GREEN synchronization fix and separate eight-path composition admission.",\n    "Change only the three authorized delta paths. Preserve the five inherited runtime/configuration payloads byte-for-byte, and preserve every original parent commit, owner record, historical gate, four-path gate and seven-path gate.",\n    "Apply only the pinned test fixture: add Mockito timeout import and timeout(5000).times(10/30) at the two existing verification sites plus their explanatory comments; keep all exact-count, capture, 401/429, read-budget and no-more-interactions assertions intact. No experimental barrier or production runtime change is authorized.",\n    "Validate new three-path post-parent history separately from the overall eight-path protected-main diff. Require exact parent/base/tree, clean head, same-repository PR #204, live immutable OWNER source, authenticated Actions metadata and fresh exact-head CI/Security/browser/Android results.",\n    "Publish the reviewed delta to the existing draft PR #204 through the authorized parent workflow. Keep old four/seven-path fallback behavior; only successful complete eight-path admission may suppress seven-path validation."\n  ],\n  "invariants": [\n    "All old issue #160 owner records, historical OIDC and original October four/seven-path authority constants and factory behavior remain unchanged.",\n    "The inherited chain is exactly protected base -> pinned inherited RED -> pinned inherited parent. New post-parent commits are linear, postdate this record, start with scripts/test/validate-traceability.test.mjs only, and stay within the exact three-path delta closure.",\n    "The full final diff/history from protected main is the exact eight-path union. All inherited runtime/configuration payload hashes and the new Java test target hash are mandatory.",\n    "No task checkbox, frozen T085 evidence, T086 HOLD status, required checks, workflow, branch protection, ruleset, provider, credential, secret, deployment, release or production runtime change.",\n    "Missing, edited, deleted, untrusted or partial eight-path authority never bypasses the existing seven/four-path failures. Parent references are provenance; this record independently authorizes only the pinned composition and does not assert their historical CI acceptance."\n  ],\n  "merge_authorization": "NONE — stop at fresh exact-head evidence; a separate owner decision is required before merge."\n}\n```\n<!-- security-audit-sync-composition:owner-dispatch:v1:end -->\n'
+const auditCompositionSource = {
+  comment_id: 5943017802,
+  ref: "https://github.com/bynanci/courtside-tw/issues/160#issuecomment-5943017802",
+  api_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/comments/5943017802",
+  recorded_at: "2026-10-02T00:03:05Z",
+  body_sha256: "4f0f3c7bd0e3753b8588c6a68bb8f333077e682a9a4188a75ddc6d0ab4744223"
+}
+const auditCompositionDispatch = JSON.parse(
+  auditCompositionOwnerBody.split("```json\n")[1].split("\n```")[0]
+)
+const auditCompositionPaths = auditCompositionDispatch.authorized_paths
+const auditCompositionDelta = auditCompositionDispatch.authorized_delta_paths
+const auditCompositionParent = auditCompositionDispatch.inherited_parent
+const auditCompositionJavaPath = auditCompositionDispatch.audit_test_target.path
+
+function makeAuditCompositionFixture() {
+  const f = makeOctoberIntegrationFixture()
+  const rb = f.options.readback
+  const source = auditCompositionSource
+  rb.authorization = {
+    id: source.comment_id,
+    url: source.api_url,
+    html_url: source.ref,
+    issue_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/160",
+    user: { login: "bynanci" },
+    author_association: "OWNER",
+    created_at: source.recorded_at,
+    updated_at: source.recorded_at,
+    body: auditCompositionOwnerBody
+  }
+  rb.pull_request.number = 204
+  rb.pull_request.html_url = "https://github.com/bynanci/courtside-tw/pull/204"
+  rb.inherited_parent_commit = {
+    sha: auditCompositionParent.head_sha,
+    tree: { sha: auditCompositionParent.tree_sha },
+    parents: [{ sha: auditCompositionParent.red_head_sha }]
+  }
+  Object.assign(rb.candidate, {
+    changed_paths: [...auditCompositionPaths],
+    history_paths: [...auditCompositionPaths],
+    delta_paths: [...auditCompositionDelta],
+    delta_history_paths: [...auditCompositionDelta],
+    inherited_parent_sha: auditCompositionParent.head_sha,
+    inherited_parent_tree_sha: auditCompositionParent.tree_sha,
+    inherited_prefix_match: true,
+    parent_ancestor: true,
+    audit_test_target_match: true,
+    audit_test_baseline_match: true,
+    delta_history_modes_match: true
+  })
+  f.options.changedPaths = [...auditCompositionPaths]
+  f.environment.GITHUB_REF = "refs/pull/204/merge"
+  f.environment.GITHUB_REF_NAME = "204/merge"
+  fs.writeFileSync(
+    f.environment.GITHUB_EVENT_PATH,
+    JSON.stringify({
+      repository: { full_name: "bynanci/courtside-tw" },
+      number: 204,
+      pull_request: rb.pull_request
+    })
+  )
+  f.options.githubActionsContext = traceabilityValidator.inspectGitHubActionsContext({
+    environment: f.environment,
+    gitBinding: f.options.gitBinding
+  })
+  return f
+}
+
+test("audit composition is a separate sealed eight-path factory and exact Java fixture", () => {
+  assert.equal(typeof traceabilityValidator.createAuditSyncCompositionAuthorizationGate, "function")
+  assert.deepEqual(
+    traceabilityValidator.AUDIT_SYNC_COMPOSITION_AUTHORIZATION_SOURCE,
+    auditCompositionSource
+  )
+  assert.equal(
+    createHash("sha256").update(auditCompositionOwnerBody).digest("hex"),
+    auditCompositionSource.body_sha256
+  )
+  assert.equal(
+    createHash("sha256")
+      .update(fs.readFileSync(path.join(repositoryRoot, auditCompositionJavaPath)))
+      .digest("hex"),
+    auditCompositionDispatch.audit_test_target.sha256
+  )
+  assert.equal(traceabilityValidator.OCTOBER_SECURITY_INTEGRATION_AUTHORIZED_PATHS.length, 7)
+  assert.equal(traceabilityValidator.OCTOBER_OIDC_SECURITY_AUTHORIZED_PATHS.length, 4)
+})
+
+test("audit composition rejects source injection and admits only the immutable production source", () => {
+  const gate = traceabilityValidator.createAuditSyncCompositionAuthorizationGate()
+  assert.equal(gate.isBound(), true)
+  assert.equal(
+    Object.isFrozen(traceabilityValidator.AUDIT_SYNC_COMPOSITION_AUTHORIZATION_SOURCE),
+    true
+  )
+  for (const source of [
+    null,
+    { ...auditCompositionSource, comment_id: 999999 },
+    { ...auditCompositionSource, body_sha256: "a".repeat(64) },
+    { ...auditCompositionSource, recorded_at: "2026-10-01T00:00:00Z" }
+  ]) {
+    const unbound = traceabilityValidator.createAuditSyncCompositionAuthorizationGate(source)
+    assert.equal(unbound.isBound(), false)
+    assert.equal(unbound.allowsPath(auditCompositionJavaPath), false)
+    assert.equal(
+      unbound.inspect("unused", {
+        fetchJson() {
+          assert.fail("unbound source must not fetch")
+        }
+      }).status,
+      "UNAVAILABLE"
+    )
+  }
+})
+
+test("audit composition accepts exact PR204 only and does not request seven-path-only work", () => {
+  const f = makeAuditCompositionFixture()
+  try {
+    const gate = traceabilityValidator.createAuditSyncCompositionAuthorizationGate()
+    const errors = []
+    assert.equal(gate.validate({ ...f.options, errors }), true, errors.join("\n"))
+    assert.equal(
+      gate.requested(
+        octoberIntegrationPaths,
+        f.options.githubActionsContext,
+        null,
+        octoberIntegrationBase
+      ),
+      false
+    )
+    assert.equal(
+      gate.requested(
+        auditCompositionPaths,
+        f.options.githubActionsContext,
+        null,
+        octoberIntegrationBase
+      ),
+      true
+    )
+    assert.equal(gate.allowsPath(auditCompositionJavaPath), true)
+    for (const file of [
+      ".github/workflows/security.yml",
+      "README.md",
+      "apps/api/src/main/java/AuditWriter.java",
+      "infra/compose/oidc/../s3mock/Dockerfile"
+    ])
+      assert.equal(gate.allowsPath(file), false)
+  } finally {
+    fs.rmSync(f.root, { recursive: true, force: true })
+  }
+})
+
+for (const [label, mutate] of [
+  [
+    "missing authorization",
+    (o) => {
+      o.readback.authorization = null
+    }
+  ],
+  [
+    "deleted source",
+    (o) => {
+      o.readback.status = "UNAVAILABLE"
+    }
+  ],
+  [
+    "non-owner",
+    (o) => {
+      o.readback.authorization.user.login = "attacker"
+    }
+  ],
+  [
+    "member association",
+    (o) => {
+      o.readback.authorization.author_association = "MEMBER"
+    }
+  ],
+  [
+    "edited timestamp",
+    (o) => {
+      o.readback.authorization.updated_at = "2026-10-02T00:03:06Z"
+    }
+  ],
+  [
+    "stale creation",
+    (o) => {
+      o.readback.authorization.created_at = "2026-10-01T00:03:05Z"
+    }
+  ],
+  [
+    "edited body",
+    (o) => {
+      o.readback.authorization.body += "\n"
+    }
+  ],
+  [
+    "wrong URL",
+    (o) => {
+      o.readback.authorization.url += "0"
+    }
+  ],
+  [
+    "wrong issue",
+    (o) => {
+      o.readback.authorization.issue_url += "0"
+    }
+  ],
+  [
+    "readback errors",
+    (o) => {
+      o.readback.errors.push("partial")
+    }
+  ],
+  [
+    "injected source",
+    (o) => {
+      o.readback.source = "local-file"
+    }
+  ],
+  [
+    "wrong PR",
+    (o) => {
+      o.readback.pull_request.number = 205
+    }
+  ],
+  [
+    "wrong branch",
+    (o) => {
+      o.readback.pull_request.head.ref += "-other"
+    }
+  ],
+  [
+    "fork",
+    (o) => {
+      o.readback.pull_request.head.repo.full_name = "attacker/courtside-tw"
+    }
+  ],
+  [
+    "merged PR",
+    (o) => {
+      o.readback.pull_request.merged = true
+    }
+  ],
+  [
+    "closed PR",
+    (o) => {
+      o.readback.pull_request.state = "closed"
+    }
+  ],
+  [
+    "stale PR head",
+    (o) => {
+      o.readback.pull_request.head.sha = "c".repeat(40)
+    }
+  ],
+  [
+    "head tree mismatch",
+    (o) => {
+      o.readback.reviewed_head_commit.tree.sha = "c".repeat(40)
+    }
+  ],
+  [
+    "altered remote parent",
+    (o) => {
+      o.readback.inherited_parent_commit.sha = "c".repeat(40)
+    }
+  ],
+  [
+    "altered parent tree",
+    (o) => {
+      o.readback.inherited_parent_commit.tree.sha = "c".repeat(40)
+    }
+  ],
+  [
+    "altered parent ancestry",
+    (o) => {
+      o.readback.inherited_parent_commit.parents[0].sha = "c".repeat(40)
+    }
+  ],
+  [
+    "parent merge",
+    (o) => {
+      o.readback.inherited_parent_commit.parents.push({ sha: "c".repeat(40) })
+    }
+  ],
+  [
+    "unprotected base",
+    (o) => {
+      o.readback.protected_main.protected = false
+    }
+  ],
+  [
+    "moving protected base",
+    (o) => {
+      o.readback.protected_main.commit.sha = "c".repeat(40)
+    }
+  ],
+  [
+    "dirty tree",
+    (o) => {
+      o.gitBinding.status = "DIRTY"
+    }
+  ],
+  [
+    "different base",
+    (o) => {
+      o.changeBaseSha = "c".repeat(40)
+    }
+  ],
+  [
+    "bounded scope",
+    (o) => {
+      o.boundedScopeActive = true
+    }
+  ],
+  [
+    "extra path",
+    (o) => {
+      o.changedPaths.push("README.md")
+    }
+  ],
+  [
+    "duplicate path",
+    (o) => {
+      o.changedPaths.push(o.changedPaths[0])
+    }
+  ],
+  [
+    "missing Java",
+    (o) => {
+      o.changedPaths = [...octoberIntegrationPaths]
+    }
+  ],
+  [
+    "transient outside scope",
+    (o) => {
+      o.readback.candidate.delta_history_paths.push("README.md")
+    }
+  ],
+  [
+    "missing delta",
+    (o) => {
+      o.readback.candidate.delta_paths.pop()
+    }
+  ],
+  [
+    "extra inherited history",
+    (o) => {
+      o.readback.candidate.history_paths.push("README.md")
+    }
+  ],
+  [
+    "one suffix commit",
+    (o) => {
+      o.readback.candidate.commit_count = 1
+    }
+  ],
+  [
+    "merge commit",
+    (o) => {
+      o.readback.candidate.merge_commit_count = 1
+    }
+  ],
+  [
+    "missing exact head",
+    (o) => {
+      o.requireExactHeadEvidence = false
+    }
+  ],
+  [
+    "forged actions",
+    (o) => {
+      o.githubActionsContext = { ...o.githubActionsContext }
+    }
+  ]
+]) {
+  test(`audit composition rejects ${label}`, () => {
+    const f = makeAuditCompositionFixture()
+    try {
+      mutate(f.options)
+      const errors = []
+      assert.equal(
+        traceabilityValidator
+          .createAuditSyncCompositionAuthorizationGate()
+          .validate({ ...f.options, errors }),
+        false
+      )
+      assert.match(errors.join("\n"), /audit synchronization composition authorization/u)
+    } finally {
+      fs.rmSync(f.root, { recursive: true, force: true })
+    }
+  })
+}
+for (const flag of [
+  "base_ancestor",
+  "parent_ancestor",
+  "inherited_prefix_match",
+  "tests_first",
+  "commits_postdate_authorization",
+  "allowed_path_modes_match",
+  "delta_history_modes_match",
+  "preserved_payloads_match",
+  "audit_test_target_match",
+  "audit_test_baseline_match"
+]) {
+  test(`audit composition rejects candidate with false ${flag}`, () => {
+    const f = makeAuditCompositionFixture()
+    try {
+      f.options.readback.candidate[flag] = false
+      assert.equal(
+        traceabilityValidator.createAuditSyncCompositionAuthorizationGate().validate(f.options),
+        false
+      )
+    } finally {
+      fs.rmSync(f.root, { recursive: true, force: true })
+    }
+  })
+}
+
+function makeAuditCompositionGitCandidate(
+  f,
+  { testsFirst = true, date = "2026-10-02T00:04:00Z" } = {}
+) {
+  const root = path.join(f.root, "repository")
+  execFileSync("git", ["clone", "--shared", "--no-checkout", repositoryRoot, root], {
+    stdio: "ignore"
+  })
+  const git = (...args) =>
+    execFileSync("git", args, {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"],
+      env: {
+        ...process.env,
+        GIT_AUTHOR_NAME: "Audit test fixture",
+        GIT_AUTHOR_EMAIL: "fixture@example.invalid",
+        GIT_COMMITTER_NAME: "Audit test fixture",
+        GIT_COMMITTER_EMAIL: "fixture@example.invalid",
+        GIT_AUTHOR_DATE: date,
+        GIT_COMMITTER_DATE: date
+      }
+    }).trim()
+  git("checkout", "--detach", auditCompositionParent.head_sha)
+  const commit = () => {
+    git("add", ".")
+    git("commit", "-m", "Synthetic audit composition candidate")
+  }
+  const append = (file) =>
+    fs.appendFileSync(path.join(root, file), "\n// Audit composition fixture\n")
+  if (testsFirst) {
+    append("scripts/test/validate-traceability.test.mjs")
+    commit()
+  }
+  const java = path.join(root, auditCompositionJavaPath)
+  const target = fs
+    .readFileSync(java, "utf8")
+    .replace(
+      "import static org.mockito.Mockito.times;",
+      "import static org.mockito.Mockito.timeout;\nimport static org.mockito.Mockito.times;"
+    )
+    .replace(
+      "        verify(auditWriter, times(10))",
+      "        // The HTTP response can complete before SecurityAuditFilter appends in its finally block.\n        verify(auditWriter, timeout(5000).times(10))"
+    )
+    .replace(
+      "        verify(auditWriter, times(30))",
+      "        // Wait for audit completion independently of the already-completed HTTP responses.\n        verify(auditWriter, timeout(5000).times(30))"
+    )
+  fs.writeFileSync(java, target)
+  append("scripts/validate-traceability.mjs")
+  commit()
+  if (!testsFirst) {
+    append("scripts/test/validate-traceability.test.mjs")
+    commit()
+  }
+  return { root, git, commit }
+}
+
+test("audit composition candidate computes immutable prefix and separate exact three-path suffix", () => {
+  const f = makeAuditCompositionFixture()
+  try {
+    const r = makeAuditCompositionGitCandidate(f)
+    const c = traceabilityValidator
+      .createAuditSyncCompositionAuthorizationGate()
+      .inspectCandidate(r.root, r.git("rev-parse", "HEAD"))
+    assert.equal(c.inherited_parent_sha, auditCompositionParent.head_sha)
+    assert.equal(c.inherited_parent_tree_sha, auditCompositionParent.tree_sha)
+    for (const flag of [
+      "base_ancestor",
+      "parent_ancestor",
+      "inherited_prefix_match",
+      "tests_first",
+      "commits_postdate_authorization",
+      "allowed_path_modes_match",
+      "delta_history_modes_match",
+      "preserved_payloads_match",
+      "audit_test_target_match",
+      "audit_test_baseline_match"
+    ])
+      assert.equal(c[flag], true, flag)
+    assert.equal(c.commit_count, 2)
+    assert.equal(c.merge_commit_count, 0)
+    assert.deepEqual(c.changed_paths.sort(), [...auditCompositionPaths].sort())
+    assert.deepEqual(c.history_paths.sort(), [...auditCompositionPaths].sort())
+    assert.deepEqual(c.delta_paths.sort(), [...auditCompositionDelta].sort())
+    assert.deepEqual(c.delta_history_paths.sort(), [...auditCompositionDelta].sort())
+  } finally {
+    fs.rmSync(f.root, { recursive: true, force: true })
+  }
+})
+for (const [label, setup, flag] of [
+  [
+    "Java assertion drift",
+    (r) => {
+      fs.appendFileSync(path.join(r.root, auditCompositionJavaPath), "\n")
+      r.commit()
+    },
+    "audit_test_target_match"
+  ],
+  [
+    "reverted Java assertion drift",
+    (r) => {
+      const p = path.join(r.root, auditCompositionJavaPath)
+      const approved = fs.readFileSync(p, "utf8")
+      fs.appendFileSync(p, "\n// Unapproved intermediate fixture\n")
+      r.commit()
+      fs.writeFileSync(p, approved)
+      r.commit()
+    },
+    "audit_test_target_match"
+  ],
+  [
+    "preserved runtime drift",
+    (r) => {
+      fs.appendFileSync(path.join(r.root, "infra/compose/oidc/Dockerfile"), "\n")
+      r.commit()
+    },
+    "preserved_payloads_match"
+  ],
+  [
+    "symlink substitution",
+    (r) => {
+      const p = path.join(r.root, auditCompositionJavaPath)
+      fs.unlinkSync(p)
+      fs.symlinkSync("/tmp/no-target", p)
+      r.commit()
+    },
+    "allowed_path_modes_match"
+  ],
+  [
+    "temporary executable mode",
+    (r) => {
+      const p = path.join(r.root, auditCompositionJavaPath)
+      fs.chmodSync(p, 0o755)
+      r.commit()
+      fs.chmodSync(p, 0o644)
+      r.commit()
+    },
+    "delta_history_modes_match"
+  ]
+]) {
+  test(`audit composition candidate detects ${label}`, () => {
+    const f = makeAuditCompositionFixture()
+    try {
+      const r = makeAuditCompositionGitCandidate(f)
+      setup(r)
+      const c = traceabilityValidator
+        .createAuditSyncCompositionAuthorizationGate()
+        .inspectCandidate(r.root, r.git("rev-parse", "HEAD"))
+      assert.equal(c[flag], false)
+    } finally {
+      fs.rmSync(f.root, { recursive: true, force: true })
+    }
+  })
+}
+for (const [label, options, flag] of [
+  ["implementation before tests", { testsFirst: false }, "tests_first"],
+  ["pre-authorization history", { date: "2026-10-02T00:02:00Z" }, "commits_postdate_authorization"]
+]) {
+  test(`audit composition candidate detects ${label}`, () => {
+    const f = makeAuditCompositionFixture()
+    try {
+      const r = makeAuditCompositionGitCandidate(f, options)
+      assert.equal(
+        traceabilityValidator
+          .createAuditSyncCompositionAuthorizationGate()
+          .inspectCandidate(r.root, r.git("rev-parse", "HEAD"))[flag],
+        false
+      )
+    } finally {
+      fs.rmSync(f.root, { recursive: true, force: true })
+    }
+  })
+}
+test("audit composition candidate keeps reverted outside-scope paths in suffix history", () => {
+  const f = makeAuditCompositionFixture()
+  try {
+    const r = makeAuditCompositionGitCandidate(f)
+    fs.appendFileSync(path.join(r.root, "README.md"), "\nTemporary drift\n")
+    r.commit()
+    r.git("checkout", auditCompositionParent.head_sha, "--", "README.md")
+    r.commit()
+    const c = traceabilityValidator
+      .createAuditSyncCompositionAuthorizationGate()
+      .inspectCandidate(r.root, r.git("rev-parse", "HEAD"))
+    assert.equal(c.delta_paths.includes("README.md"), false)
+    assert.equal(c.delta_history_paths.includes("README.md"), true)
+  } finally {
+    fs.rmSync(f.root, { recursive: true, force: true })
+  }
+})
+
+function auditCompositionFetch(f, calls = []) {
+  return (url) => {
+    calls.push(url)
+    const rb = f.options.readback
+    const resources = new Map([
+      [auditCompositionSource.api_url, rb.authorization],
+      ["https://api.github.com/repos/bynanci/courtside-tw/pulls/204", rb.pull_request],
+      [
+        `https://api.github.com/repos/bynanci/courtside-tw/git/commits/${f.head}`,
+        rb.reviewed_head_commit
+      ],
+      [
+        `https://api.github.com/repos/bynanci/courtside-tw/git/commits/${auditCompositionParent.head_sha}`,
+        rb.inherited_parent_commit
+      ],
+      ["https://api.github.com/repos/bynanci/courtside-tw/branches/main", rb.protected_main]
+    ])
+    assert.ok(resources.has(url), `unexpected endpoint ${url}`)
+    return resources.get(url)
+  }
+}
+test("audit composition inspector reads live source, PR204, head, parent and protected main", () => {
+  const f = makeAuditCompositionFixture()
+  try {
+    const calls = []
+    const readback = traceabilityValidator
+      .createAuditSyncCompositionAuthorizationGate()
+      .inspect(f.root, {
+        environment: f.environment,
+        fetchJson: auditCompositionFetch(f, calls),
+        headInspector: () => f.head,
+        candidateInspector: () => f.options.readback.candidate
+      })
+    assert.equal(readback.status, "VERIFIED")
+    assert.equal(calls.length, 5)
+    assert.deepEqual(readback.inherited_parent_commit, f.options.readback.inherited_parent_commit)
+  } finally {
+    fs.rmSync(f.root, { recursive: true, force: true })
+  }
+})
+for (const label of [
+  "deleted",
+  "edited",
+  "stale",
+  "wrong PR event",
+  "local environment",
+  "parent tree"
+]) {
+  test(`audit composition inspector fails closed for ${label}`, () => {
+    const f = makeAuditCompositionFixture()
+    try {
+      if (label === "edited") f.options.readback.authorization.body += "\n"
+      if (label === "stale") f.options.readback.authorization.updated_at = "2026-10-02T00:03:06Z"
+      if (label === "local environment") delete f.environment.GITHUB_ACTIONS
+      if (label === "parent tree")
+        f.options.readback.inherited_parent_commit.tree.sha = "c".repeat(40)
+      if (label === "wrong PR event") {
+        const event = JSON.parse(fs.readFileSync(f.environment.GITHUB_EVENT_PATH, "utf8"))
+        event.number = 205
+        event.pull_request.number = 205
+        fs.writeFileSync(f.environment.GITHUB_EVENT_PATH, JSON.stringify(event))
+      }
+      const fetchJson =
+        label === "deleted"
+          ? () => {
+              throw new Error("404")
+            }
+          : auditCompositionFetch(f)
+      assert.equal(
+        traceabilityValidator.createAuditSyncCompositionAuthorizationGate().inspect(f.root, {
+          environment: f.environment,
+          fetchJson,
+          headInspector: () => f.head,
+          candidateInspector: () => f.options.readback.candidate
+        }).status,
+        "UNAVAILABLE"
+      )
+    } finally {
+      fs.rmSync(f.root, { recursive: true, force: true })
+    }
+  })
+}
+
+test("audit composition full validator suppresses old gates only after complete admission", () => {
+  const f = makeAuditCompositionFixture()
+  const completed = makeCompletedFixture()
+  try {
+    writeExactHeadForActionsContext(completed.root, f.options.githubActionsContext)
+    const validate = (overrides = {}) =>
+      traceabilityValidator.validateTraceability({
+        root: completed.root,
+        currentHead: f.head,
+        evaluatedHeadCommittedAt: "2026-10-02T00:04:00Z",
+        changeBaseTasksText: completed.changeBaseTasksText,
+        changeBaseTraceabilityText: completed.changeBaseTraceabilityText,
+        changeBaseCompletionReceiptText: completed.changeBaseCompletionReceiptText,
+        acceptedTraceabilitySha256: completed.acceptedTraceabilitySha256,
+        acceptedPendingTasksSha256: completed.acceptedPendingTasksSha256,
+        acceptedCompletedTasksSha256: completed.acceptedCompletedTasksSha256,
+        ...f.options,
+        auditSyncCompositionAuthorizationReadback: f.options.readback,
+        ...overrides
+      })
+    const report = validate()
+    assert.equal(report.status, "PASS", report.errors.join("\n"))
+    assert.equal(report.source.audit_sync_composition_authorization_readback.accepted, true)
+    assert.deepEqual(report.scope_validation.unauthorized_paths, [])
+    assert.equal(report.successor_scope.t086_authorized, false)
+    for (const label of ["missing", "edited", "partial candidate", "extra path"]) {
+      const overrides = {}
+      if (label === "missing") overrides.auditSyncCompositionAuthorizationReadback = null
+      if (label === "edited" || label === "partial candidate") {
+        const rb = structuredClone(f.options.readback)
+        if (label === "edited") rb.authorization.body += "\n"
+        else rb.candidate.inherited_prefix_match = false
+        overrides.auditSyncCompositionAuthorizationReadback = rb
+      }
+      if (label === "extra path") overrides.changedPaths = [...auditCompositionPaths, "README.md"]
+      const bad = validate(overrides)
+      assert.equal(bad.status, "FAIL", label)
+      assert.match(bad.errors.join("\n"), /audit synchronization composition authorization/u)
+      assert.match(bad.errors.join("\n"), /October security integration authorization/u)
+      assert.match(bad.errors.join("\n"), /October OIDC security authorization/u)
+    }
+    const tasks = path.join(completed.root, featurePath, "tasks.md")
+    fs.writeFileSync(tasks, fs.readFileSync(tasks, "utf8").replace("- [ ] T086", "- [x] T086"))
+    assert.match(validate().errors.join("\n"), /T086 checkbox/u)
+  } finally {
+    fs.rmSync(f.root, { recursive: true, force: true })
+    fs.rmSync(completed.root, { recursive: true, force: true })
+  }
+})

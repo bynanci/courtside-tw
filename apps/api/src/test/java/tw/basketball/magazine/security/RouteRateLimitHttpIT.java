@@ -6,6 +6,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -129,7 +130,8 @@ final class RouteRateLimitHttpIT {
             assertEquals("req-http-rate-limit", denied.headers().firstValue("X-Request-Id").orElseThrow());
         }
         var events = ArgumentCaptor.forClass(AuditEventDraft.class);
-        verify(auditWriter, times(10)).append(events.capture());
+        // The HTTP response can complete before SecurityAuditFilter appends in its finally block.
+        verify(auditWriter, timeout(5000).times(10)).append(events.capture());
         for (AuditEventDraft event : events.getAllValues()) {
             assertEquals("PERMISSION_DENIED", event.action());
             assertEquals("req-http-rate-limit", event.actor().requestId().value());
@@ -152,7 +154,8 @@ final class RouteRateLimitHttpIT {
         for (int attempt = 0; attempt < 30; attempt++) {
             assertEquals(401, request("/unknown-path", null).statusCode());
         }
-        verify(auditWriter, times(30)).append(org.mockito.ArgumentMatchers.any());
+        // Wait for audit completion independently of the already-completed HTTP responses.
+        verify(auditWriter, timeout(5000).times(30)).append(org.mockito.ArgumentMatchers.any());
         HttpResponse<String> denied = request("/unknown-path", null);
         assertEquals(429, denied.statusCode());
         assertProblem(denied);
