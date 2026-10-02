@@ -15504,3 +15504,537 @@ test("Publication cache sealed singleton reaches full validator for draft, ready
     }
   }
 })
+
+// PR200 is a development-only admission; the actual OWNER record is immutable.
+const workflowPinOwnerBody =
+  '## PR #200 workflow pin maintenance: bounded development dispatch\n\nThis is a new record for the exact inherited Dependabot prefix and a new tests-first admission delta. It does not rewrite or broaden any historical #164/T086 record. The actual GitHub comment ID, author association, creation/update timestamp and body SHA-256 must be read back after posting; none is invented here.\n\n<!-- workflow-pin-maintenance:owner-dispatch:v1:start -->\n```json\n{\n  "schema_version": "courtside-workflow-pin-maintenance-owner-dispatch/v1",\n  "decision": "DEVELOPMENT_ONLY_DISPATCH",\n  "accepted_by": "bynanci",\n  "recorded_by": "OpenAI assistant through the connected account; this is an assistant-recorded interpretation of the exact user instructions below, not a claim that the owner authored this text.",\n  "repository": "bynanci/courtside-tw",\n  "tracker_issue": 160,\n  "pull_request": 200,\n  "branch": "dependabot/github_actions/github-actions-78c432dcf9",\n  "authorization_base": {\n    "branch": "main",\n    "sha": "ac92f88a7267736325519a8bf12dc6b9ee2bcb86",\n    "tree_sha": "9bff16cfc654a8d506bdc4ecc7ae989595525f79",\n    "protected": true\n  },\n  "inherited_prefix": {\n    "head_sha": "b82d734988e67441ea3ca795e5de3fc8fce2ced9",\n    "tree_sha": "888231c83b038fc405ad7f94e52fb0b55f376a16",\n    "parent_sha": "ac92f88a7267736325519a8bf12dc6b9ee2bcb86",\n    "committed_at": "2026-09-14T03:48:44Z",\n    "provenance": "Existing Dependabot commit predates this record. Its original implementation has no newly claimed tests-first provenance. It is admitted only as the exact byte-bound pin-only prefix below."\n  },\n  "authorized_paths": [\n    ".github/workflows/ci.yml",\n    ".github/workflows/release.yml",\n    ".github/workflows/security.yml",\n    ".github/workflows/t086-required-gate.yml",\n    "scripts/validate-traceability.mjs",\n    "scripts/test/validate-traceability.test.mjs"\n  ],\n  "post_record_delta_paths": [\n    "scripts/test/validate-traceability.test.mjs",\n    "scripts/validate-traceability.mjs"\n  ],\n  "action_pins": [\n    {\n      "action": "pnpm/setup",\n      "old_sha": "84cb39b217b10273981911c288cd62326dc7c6d2",\n      "new_sha": "703c52620218391530e48b9e8870d5c0082e1b9b",\n      "old_version": "2.0.2",\n      "new_version": "2.1.0",\n      "occurrences": 3\n    },\n    {\n      "action": "actions/setup-java",\n      "old_sha": "dd06d9cba3e5552c54d9f8ea23572deb30010f7c",\n      "new_sha": "de7274f081f381c8f8158605e0321c36c376e2e6",\n      "old_version": "6.0.0",\n      "new_version": "6.0.1",\n      "occurrences": 5\n    },\n    {\n      "action": "actions/github-script",\n      "old_sha": "ed597411d8f924073f98dfc5c65a23a2325f34cd",\n      "new_sha": "3a2844b7e9c422d3c10d287c895573f7108da1b3",\n      "old_version": "8.0.0",\n      "new_version": "9.0.0",\n      "occurrences": 1\n    }\n  ],\n  "workflow_manifest": [\n    {\n      "path": ".github/workflows/ci.yml",\n      "base_blob_sha": "f7d72f8de931ad24d86c667540681d89c7da91c4",\n      "inherited_blob_sha": "849365543b535a219e0d959a9c21470da18164a3",\n      "base_sha256": "984bbdee2f5d794ebb6f6b134e0dcc2296218b23f947f789accd6d7015451d09",\n      "inherited_sha256": "9f667557ed153bede90b56939200b9b5e4eafb7d4d791bdbd008fbacdd1b5b69",\n      "mode": "100644"\n    },\n    {\n      "path": ".github/workflows/release.yml",\n      "base_blob_sha": "ea9661c0e9c4c564a0a27b35f7889c118d77d15c",\n      "inherited_blob_sha": "6a5bf50427d21f329cf1e6292ee4c2b092840b3d",\n      "base_sha256": "d60aaa142aafd9756d30dc1dc1aa4bdd0655caf84e0947abed3d4beb2f1a6197",\n      "inherited_sha256": "5ddfb632c8622507249109179066a77bf1a4a2bc4a06fe8596e79ee344a87144",\n      "mode": "100644"\n    },\n    {\n      "path": ".github/workflows/security.yml",\n      "base_blob_sha": "7c9d59ac49db854878736222db224557717505e7",\n      "inherited_blob_sha": "3d64a22003a2f1ef9c1db1b76f10052fc02c7076",\n      "base_sha256": "2a6ea760e627313c52bc27a3f60c6a51590afd5e3acf59becd7063b34d06cc81",\n      "inherited_sha256": "32ad97faba71b6c019b9e0514efd3faa3522df9672f6f67a88cabf268ed73a73",\n      "mode": "100644"\n    },\n    {\n      "path": ".github/workflows/t086-required-gate.yml",\n      "base_blob_sha": "4ef9fe2b3b14c25744cad799e3d62dbc1b19447d",\n      "inherited_blob_sha": "36e6b1474f4976eb811d2f5a215d02ebd7180100",\n      "base_sha256": "5298bcffcce924d61570d1e25fe493c02fb48c5b38120fdb59c3908e7ae59b17",\n      "inherited_sha256": "083ef97968107d89417de2b68531b64cbf6fa2140af6a0465917a6444bb3afb3",\n      "mode": "100644"\n    }\n  ],\n  "post_record_history": {\n    "linear": true,\n    "minimum_commits": 2,\n    "first_commit_paths": [\n      "scripts/test/validate-traceability.test.mjs"\n    ],\n    "all_new_commit_timestamps_strictly_after_actual_github_record_created_at": true,\n    "red_source": "Fresh admission-gate negative and acceptance tests, executed before implementing the gate. Archive exact command, output, timestamp, source hash and commit for the new delta; never relabel this as original Dependabot RED.",\n    "green_source": "Exact final candidate local tests and fresh non-deploying CI/Security with explicit inherited failures reported."\n  },\n  "allowed_actions": [\n    "Prepare the bounded admission validator with tests first after this record exists",\n    "Read live issue-comment/PR/protected-base evidence; verify immutable source bodies, exact base/head/tree/path/pin identities, history and modes",\n    "Run non-deploying local verification, CI, Security, independent review and optimize",\n    "Append only development commits to the named PR branch once the actual record is read back"\n  ],\n  "forbidden_actions": [\n    "Merge, auto-merge, release or deploy",\n    "Change live ruleset 20822671, branch protection, bypass, permissions, secrets, providers, credentials or external product state",\n    "Alter workflow semantics, triggers, permissions, scripts, environments, job names, security decisions, timeouts, concurrency or any bytes beyond the existing sealed pin prefix",\n    "Alter historical #164/T086 authorities, inherited release adjudications, frozen T085 evidence, README or task checkbox bytes",\n    "Claim T086 PASS, beta acceptance, task completion, original RED provenance or resolved security failures from this development admission"\n  ],\n  "invariants": [\n    "Exact workflow bytes must remain equal to the inherited prefix throughout every post-record commit; even change-and-revert history is rejected",\n    "New delta is restricted to the two validator paths and begins with a test-only commit after the actual record timestamp",\n    "Missing, edited, deleted, spoofed, stale, unavailable or mismatched authorization/PR/base/head evidence fails closed",\n    "No generic workflow exemption, no bypass of the existing required gate and no relabeling of T086-classified candidates as NOT_APPLICABLE",\n    "Canonical tasks remain 86 checked / 26 unchecked, with T086 and T087+ untouched"\n  ],\n  "user_instructions": [\n    "Courtside-tw 幫我把issues tasks pr都處理完",\n    "我同意你針對這兩個專案進行操作"\n  ],\n  "acceptance": "Development admission only. All existing T086 release gates and #164 live enforcement requirements remain blocking until separately satisfied; no merge or release authorization is supplied by this record."\n}\n```\n<!-- workflow-pin-maintenance:owner-dispatch:v1:end -->\n'
+const workflowPinPaths = [
+  ".github/workflows/ci.yml",
+  ".github/workflows/release.yml",
+  ".github/workflows/security.yml",
+  ".github/workflows/t086-required-gate.yml",
+  "scripts/validate-traceability.mjs",
+  "scripts/test/validate-traceability.test.mjs"
+]
+function makeWorkflowPinFixture({ draft = true, validator = traceabilityValidator } = {}) {
+  const context = makePnpmSecurityFixture({ draft })
+  const dispatch = JSON.parse(workflowPinOwnerBody.match(/```json\n([\s\S]*?)\n```/u)[1])
+  const config = {
+    ref: "https://github.com/bynanci/courtside-tw/issues/160#issuecomment-5943020281",
+    body_sha256: "dd389f8e441e8fea96ecb27097a2a6257ecce3a21cf6136d0f96ae025f45fb77",
+    recorded_at: "2026-10-02T00:03:19Z",
+    pr: 200,
+    branch: dispatch.branch,
+    base_sha: dispatch.authorization_base.sha,
+    base_tree_sha: dispatch.authorization_base.tree_sha,
+    inherited_head_sha: dispatch.inherited_prefix.head_sha,
+    inherited_tree_sha: dispatch.inherited_prefix.tree_sha,
+    workflow_manifest: dispatch.workflow_manifest,
+    action_pins: dispatch.action_pins,
+    authorized_paths: workflowPinPaths
+  }
+  Object.assign(context.gitBinding, { change_base_sha: config.base_sha })
+  context.readback.authorization = {
+    status: "VERIFIED",
+    source: "github-api",
+    html_url: config.ref,
+    issue_url: "https://api.github.com/repos/bynanci/courtside-tw/issues/160",
+    user_login: "bynanci",
+    author_association: "OWNER",
+    created_at: config.recorded_at,
+    updated_at: config.recorded_at,
+    body: workflowPinOwnerBody,
+    errors: []
+  }
+  Object.assign(context.readback.pull_request, {
+    number: 200,
+    html_url: "https://github.com/bynanci/courtside-tw/pull/200",
+    state: "open",
+    merged: false,
+    draft
+  })
+  Object.assign(context.readback.pull_request.head, { ref: config.branch, sha: context.head })
+  Object.assign(context.readback.pull_request.base, { ref: "main", sha: config.base_sha })
+  context.readback.protected_main = {
+    name: "main",
+    protected: true,
+    commit: { sha: config.base_sha }
+  }
+  context.readback.candidate = {
+    head: context.head,
+    tree_sha: context.gitBinding.head_tree_sha,
+    base_tree_sha: config.base_tree_sha,
+    base_ancestor: true,
+    inherited_ancestor: true,
+    inherited_tree_sha: config.inherited_tree_sha,
+    inherited_parent_shas: [config.base_sha],
+    inherited_changed_paths: workflowPinPaths.slice(0, 4),
+    inherited_pins_match: true,
+    workflow_bytes_preserved: true,
+    commit_count: 2,
+    merge_commit_count: 0,
+    commits_postdate_authorization: true,
+    first_amendment_parent_shas: [config.inherited_head_sha],
+    first_amendment_changed_paths: ["scripts/test/validate-traceability.test.mjs"],
+    changed_paths: [...workflowPinPaths],
+    history_paths: workflowPinPaths.slice(4),
+    allowed_path_modes_match: true
+  }
+  const eventPath = path.join(context.fixture.root, "workflow-pin-event.json")
+  fs.writeFileSync(
+    eventPath,
+    JSON.stringify({
+      repository: { full_name: "bynanci/courtside-tw" },
+      number: 200,
+      pull_request: context.readback.pull_request
+    })
+  )
+  const environment = {
+    GITHUB_ACTIONS: "true",
+    GITHUB_REPOSITORY: "bynanci/courtside-tw",
+    GITHUB_EVENT_NAME: "pull_request",
+    GITHUB_EVENT_PATH: eventPath,
+    GITHUB_SHA: fixtureActionsMergeSha,
+    GITHUB_WORKFLOW: "CI",
+    GITHUB_JOB: "frontend-contract",
+    GITHUB_RUN_ID: fixtureActionsRunId,
+    GITHUB_RUN_NUMBER: fixtureActionsRunNumber,
+    GITHUB_RUN_ATTEMPT: "1",
+    GITHUB_REF: "refs/pull/200/merge",
+    GITHUB_REF_NAME: "200/merge",
+    GITHUB_BASE_REF: "main",
+    GITHUB_HEAD_REF: config.branch
+  }
+  context.githubActionsContext = validator.inspectGitHubActionsContext({
+    environment,
+    gitBinding: context.gitBinding
+  })
+  writeExactHeadForActionsContext(context.fixture.root, context.githubActionsContext)
+  return {
+    config,
+    context,
+    environment,
+    options: {
+      readback: context.readback,
+      gitBinding: context.gitBinding,
+      changedPaths: [...workflowPinPaths],
+      changeBaseSha: config.base_sha,
+      boundedScopeActive: false,
+      githubActionsContext: context.githubActionsContext,
+      requireExactHeadEvidence: true
+    }
+  }
+}
+function workflowPinGate() {
+  assert.equal(
+    typeof traceabilityValidator.createWorkflowPinAuthorizationGate,
+    "function",
+    "missing bounded PR200 workflow pin admission"
+  )
+  return traceabilityValidator.createWorkflowPinAuthorizationGate()
+}
+for (const draft of [true, false]) {
+  test(`Workflow pin admission accepts the sealed ${draft ? "draft" : "ready"} development candidate`, () => {
+    const { options } = makeWorkflowPinFixture({ draft })
+    const errors = []
+    assert.equal(workflowPinGate().validate({ ...options, errors }), true, errors.join("\n"))
+  })
+}
+const workflowPinNegatives = [
+  [
+    "missing owner",
+    (o) => {
+      o.readback.authorization = null
+    }
+  ],
+  [
+    "unavailable readback",
+    (o) => {
+      o.readback.status = "UNAVAILABLE"
+    }
+  ],
+  [
+    "spoofed owner",
+    (o) => {
+      o.readback.authorization.user_login = "contributor"
+    }
+  ],
+  [
+    "wrong association",
+    (o) => {
+      o.readback.authorization.author_association = "MEMBER"
+    }
+  ],
+  [
+    "edited record",
+    (o) => {
+      o.readback.authorization.updated_at = "2026-10-02T00:04:00Z"
+    }
+  ],
+  [
+    "changed body",
+    (o) => {
+      o.readback.authorization.body += " "
+    }
+  ],
+  [
+    "wrong record",
+    (o) => {
+      o.readback.authorization.html_url += "1"
+    }
+  ],
+  [
+    "wrong issue",
+    (o) => {
+      o.readback.authorization.issue_url += "1"
+    }
+  ],
+  [
+    "stale protected main",
+    (o) => {
+      o.readback.protected_main.commit.sha = "f".repeat(40)
+    }
+  ],
+  [
+    "unprotected base",
+    (o) => {
+      o.readback.protected_main.protected = false
+    }
+  ],
+  [
+    "other PR replay",
+    (o) => {
+      o.readback.pull_request.number = 201
+    }
+  ],
+  [
+    "fork branch",
+    (o) => {
+      o.readback.pull_request.head.repo.full_name = "other/courtside-tw"
+    }
+  ],
+  [
+    "other branch",
+    (o) => {
+      o.readback.pull_request.head.ref = "other"
+    }
+  ],
+  [
+    "closed PR",
+    (o) => {
+      o.readback.pull_request.state = "closed"
+    }
+  ],
+  [
+    "merged PR",
+    (o) => {
+      o.readback.pull_request.merged = true
+    }
+  ],
+  [
+    "head drift",
+    (o) => {
+      o.readback.pull_request.head.sha = "f".repeat(40)
+    }
+  ],
+  [
+    "tree drift",
+    (o) => {
+      o.readback.candidate.tree_sha = "f".repeat(40)
+    }
+  ],
+  [
+    "base tree drift",
+    (o) => {
+      o.readback.candidate.base_tree_sha = "f".repeat(40)
+    }
+  ],
+  [
+    "detached prefix",
+    (o) => {
+      o.readback.candidate.inherited_ancestor = false
+    }
+  ],
+  [
+    "different prefix tree",
+    (o) => {
+      o.readback.candidate.inherited_tree_sha = "f".repeat(40)
+    }
+  ],
+  [
+    "different prefix parent",
+    (o) => {
+      o.readback.candidate.inherited_parent_shas = ["f".repeat(40)]
+    }
+  ],
+  [
+    "unsealed pin replacement",
+    (o) => {
+      o.readback.candidate.inherited_pins_match = false
+    }
+  ],
+  [
+    "workflow semantic drift",
+    (o) => {
+      o.readback.candidate.workflow_bytes_preserved = false
+    }
+  ],
+  [
+    "pre-record new commit",
+    (o) => {
+      o.readback.candidate.commits_postdate_authorization = false
+    }
+  ],
+  [
+    "merged delta",
+    (o) => {
+      o.readback.candidate.merge_commit_count = 1
+    }
+  ],
+  [
+    "no implementation delta",
+    (o) => {
+      o.readback.candidate.commit_count = 1
+    }
+  ],
+  [
+    "implementation before RED",
+    (o) => {
+      o.readback.candidate.first_amendment_changed_paths = ["scripts/validate-traceability.mjs"]
+    }
+  ],
+  [
+    "detached RED",
+    (o) => {
+      o.readback.candidate.first_amendment_parent_shas = ["f".repeat(40)]
+    }
+  ],
+  [
+    "extra path",
+    (o) => {
+      o.changedPaths.push("README.md")
+    }
+  ],
+  [
+    "duplicate path",
+    (o) => {
+      o.changedPaths.push(o.changedPaths[0])
+    }
+  ],
+  [
+    "missing path",
+    (o) => {
+      o.changedPaths.pop()
+    }
+  ],
+  [
+    "transient workflow edit",
+    (o) => {
+      o.readback.candidate.history_paths.push(".github/workflows/release.yml")
+    }
+  ],
+  [
+    "unrelated historical write",
+    (o) => {
+      o.readback.candidate.history_paths.push("README.md")
+    }
+  ],
+  [
+    "symlink or executable mode",
+    (o) => {
+      o.readback.candidate.allowed_path_modes_match = false
+    }
+  ],
+  [
+    "dirty worktree",
+    (o) => {
+      o.gitBinding.status = "DIRTY"
+    }
+  ],
+  [
+    "unbound Actions metadata",
+    (o) => {
+      o.githubActionsContext = { ...o.githubActionsContext }
+    }
+  ],
+  [
+    "non-exact run",
+    (o) => {
+      o.requireExactHeadEvidence = false
+    }
+  ]
+]
+for (const [name, mutate] of workflowPinNegatives) {
+  test(`Workflow pin admission rejects ${name}`, () => {
+    const { options } = makeWorkflowPinFixture()
+    mutate(options)
+    const errors = []
+    assert.equal(workflowPinGate().validate({ ...options, errors }), false)
+    assert.ok(errors.length > 0)
+  })
+}
+test("Workflow pin admission refuses descriptor expansion or replacement", () => {
+  const { config, options } = makeWorkflowPinFixture()
+  workflowPinGate()
+  for (const change of [
+    (c) => {
+      c.authorized_paths.push("README.md")
+    },
+    (c) => {
+      c.body_sha256 = "f".repeat(64)
+    },
+    (c) => {
+      c.inherited_head_sha = "f".repeat(40)
+    }
+  ]) {
+    const changed = structuredClone(config)
+    change(changed)
+    const errors = []
+    assert.equal(
+      traceabilityValidator
+        .createWorkflowPinAuthorizationGate(changed)
+        .validate({ ...options, errors }),
+      false
+    )
+  }
+})
+test("Workflow pin admission fetches only the immutable record, PR200 and protected main", () => {
+  const { context, config } = makeWorkflowPinFixture()
+  const requested = []
+  const gate = workflowPinGate()
+  const result = gate.inspect(context.fixture.root, {
+    inspectComment(ref) {
+      assert.equal(ref, config.ref)
+      return context.readback.authorization
+    },
+    fetchJson(url) {
+      requested.push(url)
+      return url.endsWith("/pulls/200")
+        ? context.readback.pull_request
+        : context.readback.protected_main
+    },
+    candidateInspector(root, head) {
+      assert.equal(head, context.head)
+      return context.readback.candidate
+    }
+  })
+  assert.equal(result.status, "VERIFIED")
+  assert.deepEqual(requested, [
+    "https://api.github.com/repos/bynanci/courtside-tw/pulls/200",
+    "https://api.github.com/repos/bynanci/courtside-tw/branches/main"
+  ])
+  assert.equal(
+    gate.inspect(context.fixture.root, {
+      inspectComment() {
+        throw Error("sensitive token")
+      }
+    }).status,
+    "UNAVAILABLE"
+  )
+  assert.doesNotMatch(
+    JSON.stringify(
+      gate.inspect(context.fixture.root, {
+        inspectComment() {
+          throw Error("sensitive token")
+        }
+      })
+    ),
+    /sensitive token/u
+  )
+})
+test("Workflow pin admission proves real Git inherited pins and rejects changed-and-reverted history", () => {
+  const gate = workflowPinGate()
+  const { config, context } = makeWorkflowPinFixture()
+  const root = fs.mkdtempSync(path.join(os.tmpdir(), "workflow-pin-history-"))
+  const git = (...args) =>
+    execFileSync("git", args, {
+      cwd: root,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "pipe"],
+      env: {
+        ...process.env,
+        GIT_AUTHOR_NAME: "Fixture",
+        GIT_AUTHOR_EMAIL: "fixture@example.invalid",
+        GIT_COMMITTER_NAME: "Fixture",
+        GIT_COMMITTER_EMAIL: "fixture@example.invalid",
+        GIT_AUTHOR_DATE: "2026-10-02T00:04:00Z",
+        GIT_COMMITTER_DATE: "2026-10-02T00:04:00Z"
+      }
+    }).trim()
+  try {
+    git("clone", "--shared", "--no-checkout", repositoryRoot, ".")
+    git("checkout", "--detach", config.inherited_head_sha)
+    const amend = (file, text, message) => {
+      fs.appendFileSync(path.join(root, file), text)
+      git("add", "--", file)
+      git("commit", "-m", message)
+    }
+    amend(workflowPinPaths[5], "\n// fixture RED\n", "test: admission RED")
+    amend(workflowPinPaths[4], "\n// fixture GREEN\n", "fix: admission GREEN")
+    const inspect = () =>
+      gate.inspect(root, {
+        inspectComment: () => context.readback.authorization,
+        fetchJson: (url) =>
+          url.endsWith("/pulls/200")
+            ? {
+                ...context.readback.pull_request,
+                head: { ...context.readback.pull_request.head, sha: git("rev-parse", "HEAD") }
+              }
+            : context.readback.protected_main
+      }).candidate
+    const accepted = inspect()
+    assert.equal(accepted.inherited_pins_match, true)
+    assert.equal(accepted.workflow_bytes_preserved, true)
+    assert.equal(accepted.allowed_path_modes_match, true)
+    assert.deepEqual(accepted.history_paths.sort(), workflowPinPaths.slice(4).sort())
+    assert.deepEqual(accepted.first_amendment_changed_paths, [workflowPinPaths[5]])
+    assert.equal(accepted.commits_postdate_authorization, true)
+    const sealed = fs.readFileSync(path.join(root, workflowPinPaths[1]), "utf8")
+    amend(workflowPinPaths[1], "\n# forbidden drift\n", "edit workflow")
+    fs.writeFileSync(path.join(root, workflowPinPaths[1]), sealed)
+    git("add", "--", workflowPinPaths[1])
+    git("commit", "-m", "revert workflow")
+    const rejected = inspect()
+    assert.equal(rejected.workflow_bytes_preserved, false)
+    assert.ok(rejected.history_paths.includes(workflowPinPaths[1]))
+  } finally {
+    fs.rmSync(root, { recursive: true, force: true })
+  }
+})
+test("Workflow pin admission reaches the full validator without granting T086 acceptance", () => {
+  workflowPinGate()
+  for (const draft of [true, false]) {
+    const { context, options } = makeWorkflowPinFixture({ draft })
+    const fixture = context.fixture
+    const validate = (overrides) =>
+      traceabilityValidator.validateTraceability({
+        root: fixture.root,
+        currentHead: context.head,
+        evaluatedHeadCommittedAt: "2026-10-02T00:04:00Z",
+        changeBaseTasksText: fixture.changeBaseTasksText,
+        changeBaseTraceabilityText: fixture.changeBaseTraceabilityText,
+        changeBaseCompletionReceiptText: fixture.changeBaseCompletionReceiptText,
+        acceptedTraceabilitySha256: fixture.acceptedTraceabilitySha256,
+        acceptedPendingTasksSha256: fixture.acceptedPendingTasksSha256,
+        acceptedCompletedTasksSha256: fixture.acceptedCompletedTasksSha256,
+        ...options,
+        workflowPinAuthorizationReadback: context.readback,
+        ...overrides
+      })
+    const report = validate({})
+    assert.equal(report.status, "PASS", report.errors.join("\n"))
+    assert.equal(report.source.workflow_pin_authorization_readback.accepted, true)
+    assert.deepEqual(report.scope_validation.unauthorized_paths, [])
+    assert.equal(report.successor_scope.t086_authorized, false)
+    assert.equal(validate({ workflowPinAuthorizationReadback: null }).status, "FAIL")
+    assert.equal(validate({ changedPaths: [...workflowPinPaths, "README.md"] }).status, "FAIL")
+  }
+  const workflow = fs.readFileSync(
+    path.join(repositoryRoot, ".github/workflows/t086-required-gate.yml"),
+    "utf8"
+  )
+  assert.equal(
+    createHash("sha256").update(workflow).digest("hex"),
+    "083ef97968107d89417de2b68531b64cbf6fa2140af6a0465917a6444bb3afb3"
+  )
+})
