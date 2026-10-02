@@ -15983,12 +15983,67 @@ test("Workflow pin admission proves real Git inherited pins and rejects changed-
             : context.readback.protected_main
       }).candidate
     const accepted = inspect()
+    assert.deepEqual(accepted.inherited_parent_shas, [config.base_sha])
+    assert.deepEqual(accepted.first_amendment_parent_shas, [config.inherited_head_sha])
     assert.equal(accepted.inherited_pins_match, true)
     assert.equal(accepted.workflow_bytes_preserved, true)
     assert.equal(accepted.allowed_path_modes_match, true)
     assert.deepEqual(accepted.history_paths.sort(), workflowPinPaths.slice(4).sort())
     assert.deepEqual(accepted.first_amendment_changed_paths, [workflowPinPaths[5]])
     assert.equal(accepted.commits_postdate_authorization, true)
+    const fixtureHead = git("rev-parse", "HEAD")
+    context.readback.candidate = accepted
+    context.readback.pull_request.head.sha = fixtureHead
+    Object.assign(context.gitBinding, { head: fixtureHead, head_tree_sha: accepted.tree_sha })
+    const eventPath = path.join(context.fixture.root, "workflow-pin-real-event.json")
+    fs.writeFileSync(
+      eventPath,
+      JSON.stringify({
+        repository: { full_name: "bynanci/courtside-tw" },
+        number: 200,
+        pull_request: context.readback.pull_request
+      })
+    )
+    const realActions = traceabilityValidator.inspectGitHubActionsContext({
+      environment: {
+        GITHUB_ACTIONS: "true",
+        GITHUB_REPOSITORY: "bynanci/courtside-tw",
+        GITHUB_EVENT_NAME: "pull_request",
+        GITHUB_EVENT_PATH: eventPath,
+        GITHUB_SHA: fixtureActionsMergeSha,
+        GITHUB_WORKFLOW: "CI",
+        GITHUB_JOB: "frontend-contract",
+        GITHUB_RUN_ID: fixtureActionsRunId,
+        GITHUB_RUN_NUMBER: fixtureActionsRunNumber,
+        GITHUB_RUN_ATTEMPT: "1",
+        GITHUB_REF: "refs/pull/200/merge",
+        GITHUB_REF_NAME: "200/merge",
+        GITHUB_BASE_REF: "main",
+        GITHUB_HEAD_REF: config.branch
+      },
+      gitBinding: context.gitBinding
+    })
+    const realErrors = []
+    assert.equal(
+      gate.validate({
+        readback: context.readback,
+        gitBinding: context.gitBinding,
+        changedPaths: workflowPinPaths,
+        changeBaseSha: config.base_sha,
+        boundedScopeActive: false,
+        githubActionsContext: realActions,
+        requireExactHeadEvidence: true,
+        errors: realErrors
+      }),
+      true,
+      realErrors.join("\n")
+    )
+
+    git("update-index", "--chmod=+x", workflowPinPaths[4])
+    git("commit", "-m", "transient executable validator")
+    git("update-index", "--chmod=-x", workflowPinPaths[4])
+    git("commit", "-m", "restore validator mode")
+    assert.equal(inspect().allowed_path_modes_match, false)
     const sealed = fs.readFileSync(path.join(root, workflowPinPaths[1]), "utf8")
     amend(workflowPinPaths[1], "\n# forbidden drift\n", "edit workflow")
     fs.writeFileSync(path.join(root, workflowPinPaths[1]), sealed)
@@ -16024,6 +16079,11 @@ test("Workflow pin admission reaches the full validator without granting T086 ac
     const report = validate({})
     assert.equal(report.status, "PASS", report.errors.join("\n"))
     assert.equal(report.source.workflow_pin_authorization_readback.accepted, true)
+    assert.equal(
+      report.source.workflow_pin_authorization_readback.decision_scope,
+      "DEVELOPMENT_ONLY"
+    )
+    assert.equal(report.source.workflow_pin_authorization_readback.release_accepted, false)
     assert.deepEqual(report.scope_validation.unauthorized_paths, [])
     assert.equal(report.successor_scope.t086_authorized, false)
     assert.equal(validate({ workflowPinAuthorizationReadback: null }).status, "FAIL")
@@ -16037,4 +16097,53 @@ test("Workflow pin admission reaches the full validator without granting T086 ac
     createHash("sha256").update(workflow).digest("hex"),
     "083ef97968107d89417de2b68531b64cbf6fa2140af6a0465917a6444bb3afb3"
   )
+})
+
+test("Workflow pin admission triggers only on the named branch, readback or four-workflow exact base", () => {
+  const { config } = makeWorkflowPinFixture()
+  const gate = workflowPinGate()
+  assert.equal(gate.requested(null, { head_ref: config.branch }), true)
+  assert.equal(gate.requested(workflowPinPaths.slice(0, 4), null, null, config.base_sha), true)
+  assert.equal(gate.requested(workflowPinPaths.slice(0, 3), null, null, config.base_sha), false)
+  assert.equal(gate.requested(workflowPinPaths, null, null, "f".repeat(40)), false)
+  assert.equal(gate.requested(workflowPinPaths.slice(4), null, null, config.base_sha), false)
+  assert.equal(gate.requested([], null, null, null), false)
+})
+
+test("Workflow pin admission denies authenticated protected-main pushes and release events", () => {
+  for (const eventName of ["push", "release"]) {
+    const { config, context, environment, options } = makeWorkflowPinFixture()
+    const eventPath = path.join(context.fixture.root, `workflow-pin-${eventName}.json`)
+    fs.writeFileSync(
+      eventPath,
+      JSON.stringify({
+        repository: { full_name: "bynanci/courtside-tw" },
+        ref: "refs/heads/main",
+        before: config.base_sha,
+        after: context.head
+      })
+    )
+    const actions = traceabilityValidator.inspectGitHubActionsContext({
+      environment: {
+        ...environment,
+        GITHUB_EVENT_NAME: eventName,
+        GITHUB_EVENT_PATH: eventPath,
+        GITHUB_SHA: context.head,
+        GITHUB_REF: "refs/heads/main",
+        GITHUB_REF_NAME: "main",
+        GITHUB_BASE_REF: "",
+        GITHUB_HEAD_REF: ""
+      },
+      gitBinding: context.gitBinding
+    })
+    if (eventName === "push") assert.equal(actions.authority, "PROTECTED_MAIN_PUSH")
+    const errors = []
+    assert.equal(
+      workflowPinGate().validate({ ...options, githubActionsContext: actions, errors }),
+      false
+    )
+    assert.match(errors.join("\n"), /push and release are not admitted/u)
+  }
+  const files = workflowPinPaths.map((filename) => ({ filename }))
+  assert.equal(requiredGateRuntime().classifyCandidate(200, files, files.length), "T086")
 })
