@@ -2,7 +2,7 @@
 
 # Build the pinned upstream S3Mock source and override its managed Tomcat line;
 # even the 5.2.0 release resolves below the first fixed 11.0.x version.
-FROM maven:3-eclipse-temurin-24@sha256:a137a467ec89b5713d0be817b55bdba6b4d6ef16e3d05565a79bc08d8e775a1c AS s3mock-build
+FROM maven:3.9.15-eclipse-temurin-26@sha256:029a8e2838ae68238ffb8be407cddbb3f07d4d839c60c6f26c619a69fd184531 AS s3mock-build
 
 ARG S3MOCK_COMMIT=627bf8d37938a5eb89e5775391c0b475c2686f98
 ARG TOMCAT_EMBED_VERSION=11.0.25
