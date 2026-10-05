@@ -2,7 +2,7 @@
 
 # Build the pinned upstream S3Mock source and override its managed Tomcat line;
 # even the 5.2.0 release resolves below the first fixed 11.0.x version.
-FROM maven:3.9.15-eclipse-temurin-26@sha256:029a8e2838ae68238ffb8be407cddbb3f07d4d839c60c6f26c619a69fd184531 AS s3mock-build
+FROM maven:3-eclipse-temurin-24@sha256:a137a467ec89b5713d0be817b55bdba6b4d6ef16e3d05565a79bc08d8e775a1c AS s3mock-build
 
 ARG S3MOCK_COMMIT=627bf8d37938a5eb89e5775391c0b475c2686f98
 ARG TOMCAT_EMBED_VERSION=11.0.25
@@ -29,7 +29,7 @@ RUN set -eux; \
 # by the local stub; the build stage still verifies non-root execution.
 USER nobody
 
-FROM alpine:3.24.1@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b AS staging_area
+FROM alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6 AS staging_area
 
 RUN apk --no-cache add openjdk25-jdk openjdk25-jmods unzip
 
@@ -59,7 +59,7 @@ RUN set -eux; \
       --strip-java-debug-attributes \
       --output "$JAVA_MINIMAL"
 
-FROM alpine:3.24.1@sha256:28bd5fe8b56d1bd048e5babf5b10710ebe0bae67db86916198a6eec434943f8b
+FROM alpine:3.24.2@sha256:294b683cb724975bec92580e1e685676bd4b50bda910ddb8c51d4cabeaec77e6
 
 # CVE-2026-14456 requires both Alpine OpenSSL libraries at 3.5.8-r0 or newer.
 ARG OPENSSL_MINIMUM_VERSION=3.5.8-r0
